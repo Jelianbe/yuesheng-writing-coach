@@ -1,0 +1,2578 @@
+{
+  "timestamp": "2026-06-04T04:51:20.626Z",
+  "summary": {
+    "totalSuites": 97,
+    "passedSuites": 97,
+    "total": 182,
+    "passed": 182,
+    "failed": 0,
+    "skipped": 0,
+    "passRate": 100,
+    "duration": "1.2",
+    "startTime": 1780548657396,
+    "success": true
+  },
+  "modules": [
+    {
+      "id": "M-EVID",
+      "name": "证据管理",
+      "total": 34,
+      "passed": 34,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "0.4",
+      "totalDuration": "14",
+      "tests": [
+        {
+          "name": "EvidenceService save 插入一条证据记录到数据库中",
+          "status": "passed",
+          "duration": 3.7292999999999665
+        },
+        {
+          "name": "EvidenceService save 使用正确的 INSERT 列名",
+          "status": "passed",
+          "duration": 0.7044000000000779
+        },
+        {
+          "name": "EvidenceService save 可以保存 type=pattern 和 level=4 的证据",
+          "status": "passed",
+          "duration": 0.45869999999990796
+        },
+        {
+          "name": "EvidenceService getByDisease 根据疾病 ID 和作品 ID 查询证据",
+          "status": "passed",
+          "duration": 0.8482000000000198
+        },
+        {
+          "name": "EvidenceService getByDisease 当提供 minLevel 时添加 level >= 过滤",
+          "status": "passed",
+          "duration": 0.40199999999992997
+        },
+        {
+          "name": "EvidenceService getByDisease 当 minLevel 为 undefined 时不添加 level >= 过滤条件",
+          "status": "passed",
+          "duration": 0.3020999999999958
+        },
+        {
+          "name": "EvidenceService getByDisease 当 minLevel 为 0 时仍添加过滤（语义上返回全部）",
+          "status": "passed",
+          "duration": 0.16869999999994434
+        },
+        {
+          "name": "EvidenceService getByDisease 结果按 level DESC, created_at ASC 排序",
+          "status": "passed",
+          "duration": 0.11339999999995598
+        },
+        {
+          "name": "EvidenceService getByDisease 没有匹配证据时返回空数组",
+          "status": "passed",
+          "duration": 0.3084999999999809
+        },
+        {
+          "name": "EvidenceService getByDisease 将数据库行正确映射为 EvidenceRecord（camelCase）",
+          "status": "passed",
+          "duration": 0.3088000000000193
+        },
+        {
+          "name": "EvidenceService getByDisease 返回多条匹配结果",
+          "status": "passed",
+          "duration": 0.24689999999998236
+        },
+        {
+          "name": "EvidenceService getByAbility 根据能力 ID 和作者 ID 查询证据",
+          "status": "passed",
+          "duration": 0.4633000000000038
+        },
+        {
+          "name": "EvidenceService getByAbility 当提供 fromDate 时添加 created_at >= 过滤",
+          "status": "passed",
+          "duration": 0.19399999999995998
+        },
+        {
+          "name": "EvidenceService getByAbility 当提供 toDate 时添加 created_at <= 过滤",
+          "status": "passed",
+          "duration": 0.12450000000001182
+        },
+        {
+          "name": "EvidenceService getByAbility 同时提供 fromDate 和 toDate 时添加两个过滤",
+          "status": "passed",
+          "duration": 0.11979999999994106
+        },
+        {
+          "name": "EvidenceService getByAbility 结果按 created_at ASC 排序",
+          "status": "passed",
+          "duration": 0.07849999999996271
+        },
+        {
+          "name": "EvidenceService getByAbility 没有匹配时返回空数组",
+          "status": "passed",
+          "duration": 0.09329999999999927
+        },
+        {
+          "name": "EvidenceService getChainForDiagnosis 返回包含 primaryEvidence 和 supportingEvidence 的证据链",
+          "status": "passed",
+          "duration": 0.44210000000009586
+        },
+        {
+          "name": "EvidenceService getChainForDiagnosis 将 level=3 的证据归类到 statistics",
+          "status": "passed",
+          "duration": 0.2636999999999716
+        },
+        {
+          "name": "EvidenceService getChainForDiagnosis 将 relevance=contextual 归到 supportingEvidence",
+          "status": "passed",
+          "duration": 0.23659999999995307
+        },
+        {
+          "name": "EvidenceService getChainForDiagnosis 使用 JOIN 查询 evidence 和 diagnosis_evidence 表",
+          "status": "passed",
+          "duration": 0.16790000000003147
+        },
+        {
+          "name": "EvidenceService getChainForDiagnosis 没有关联证据时返回 null",
+          "status": "passed",
+          "duration": 0.12530000000003838
+        },
+        {
+          "name": "EvidenceService linkToDiagnosis 插入诊断-证据关联记录",
+          "status": "passed",
+          "duration": 0.3626000000000431
+        },
+        {
+          "name": "EvidenceService linkToDiagnosis 支持 supporting 关联类型",
+          "status": "passed",
+          "duration": 0.16269999999997253
+        },
+        {
+          "name": "EvidenceService linkToDiagnosis 支持 contextual 关联类型",
+          "status": "passed",
+          "duration": 0.09640000000001692
+        },
+        {
+          "name": "EvidenceService getEvidenceById 根据证据 ID 查询单条证据",
+          "status": "passed",
+          "duration": 0.29589999999996053
+        },
+        {
+          "name": "EvidenceService getEvidenceById 证据不存在时返回 null",
+          "status": "passed",
+          "duration": 0.09640000000001692
+        },
+        {
+          "name": "EvidenceService 错误处理 prepare 失败时所有方法抛出错误",
+          "status": "passed",
+          "duration": 1.1515000000000555
+        },
+        {
+          "name": "EvidenceService 错误处理 run 失败时 save / linkToDiagnosis 抛出错误",
+          "status": "passed",
+          "duration": 0.3891999999999598
+        },
+        {
+          "name": "EvidenceService 错误处理 all 失败时 getByDisease / getByAbility / getChainForDiagnosis 抛出错误",
+          "status": "passed",
+          "duration": 0.38239999999996144
+        },
+        {
+          "name": "EvidenceService 错误处理 get 失败时 getEvidenceById 抛出错误",
+          "status": "passed",
+          "duration": 0.16999999999995907
+        },
+        {
+          "name": "EvidenceService 多方法集成场景 保存证据后可通过 ID 查询到",
+          "status": "passed",
+          "duration": 0.18859999999995125
+        },
+        {
+          "name": "EvidenceService 多方法集成场景 保存证据后可在疾病查询结果中找到",
+          "status": "passed",
+          "duration": 0.20510000000001583
+        },
+        {
+          "name": "EvidenceService 多方法集成场景 关联证据后可获取完整证据链",
+          "status": "passed",
+          "duration": 0.2639000000000351
+        }
+      ]
+    },
+    {
+      "id": "M-CHAT-STORE",
+      "name": "聊天存储",
+      "total": 21,
+      "passed": 21,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "0.4",
+      "totalDuration": "9",
+      "tests": [
+        {
+          "name": "ChatStore 基础状态 初始状态为空",
+          "status": "passed",
+          "duration": 1.821999999999889
+        },
+        {
+          "name": "ChatStore addMessage 添加消息到列表",
+          "status": "passed",
+          "duration": 0.9169000000001688
+        },
+        {
+          "name": "ChatStore appendToLastAssistant 追加内容到最后一条 assistant 消息",
+          "status": "passed",
+          "duration": 0.2925000000000182
+        },
+        {
+          "name": "ChatStore appendToLastAssistant 多条 assistant 消息时追加到最后一条",
+          "status": "passed",
+          "duration": 0.19800000000009277
+        },
+        {
+          "name": "ChatStore sendMessage 发送消息创建 user + assistant 两条消息",
+          "status": "passed",
+          "duration": 0.8423000000000229
+        },
+        {
+          "name": "ChatStore sendMessage 发送时设置 isLoading = true",
+          "status": "passed",
+          "duration": 0.2781999999999698
+        },
+        {
+          "name": "ChatStore sendMessage 发送完成后 isLoading 保持 true（由 stream end 事件处理）",
+          "status": "passed",
+          "duration": 0.17440000000010514
+        },
+        {
+          "name": "ChatStore sendMessage 发送时调用 IPC invoke 传递正确参数",
+          "status": "passed",
+          "duration": 1.297399999999925
+        },
+        {
+          "name": "ChatStore sendMessage 发送时传递当前 attitudeLevel",
+          "status": "passed",
+          "duration": 0.3846000000000913
+        },
+        {
+          "name": "ChatStore sendMessage attitudeLevel 默认值为 yuesheng",
+          "status": "passed",
+          "duration": 0.33349999999995816
+        },
+        {
+          "name": "ChatStore sendMessage IPC 返回失败时移除空的 assistant 消息但保留 user 消息并设置错误",
+          "status": "passed",
+          "duration": 0.2660000000000764
+        },
+        {
+          "name": "ChatStore sendMessage IPC 抛出异常时移除空的 assistant 消息但保留 user 消息并设置错误",
+          "status": "passed",
+          "duration": 0.3311999999998534
+        },
+        {
+          "name": "ChatStore sendMessage 空消息不发送",
+          "status": "passed",
+          "duration": 0.24230000000011387
+        },
+        {
+          "name": "ChatStore sendMessage 空格消息不发送",
+          "status": "passed",
+          "duration": 0.1066000000000713
+        },
+        {
+          "name": "ChatStore sendMessage loading 状态下不发送新消息",
+          "status": "passed",
+          "duration": 0.09470000000010259
+        },
+        {
+          "name": "ChatStore sendMessage 发送时传递历史消息（不包括刚添加的新消息）",
+          "status": "passed",
+          "duration": 0.5782999999998992
+        },
+        {
+          "name": "ChatStore getHistory 只返回 user 和 assistant 消息",
+          "status": "passed",
+          "duration": 0.2481999999999971
+        },
+        {
+          "name": "ChatStore getHistory 超过 20 条消息时截断",
+          "status": "passed",
+          "duration": 0.1754000000000815
+        },
+        {
+          "name": "ChatStore clearMessages 清空消息和错误",
+          "status": "passed",
+          "duration": 0.13589999999999236
+        },
+        {
+          "name": "ChatStore setLoading / setError 设置加载状态",
+          "status": "passed",
+          "duration": 0.0907999999999447
+        },
+        {
+          "name": "ChatStore setLoading / setError 设置错误信息",
+          "status": "passed",
+          "duration": 0.07660000000009859
+        }
+      ]
+    },
+    {
+      "id": "M-TEACH-SM",
+      "name": "教学状态机",
+      "total": 16,
+      "passed": 16,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "0.3",
+      "totalDuration": "5",
+      "tests": [
+        {
+          "name": "teaching-state-machine getPhaseName 返回正确的阶段中文名称",
+          "status": "passed",
+          "duration": 1.4492999999999938
+        },
+        {
+          "name": "teaching-state-machine getSubphaseName 返回正确的子阶段中文名称",
+          "status": "passed",
+          "duration": 0.23829999999998108
+        },
+        {
+          "name": "teaching-state-machine getNextPhase INIT → WORLD",
+          "status": "passed",
+          "duration": 0.1331000000000131
+        },
+        {
+          "name": "teaching-state-machine getNextPhase WORLD → PRACTICE_LOOP",
+          "status": "passed",
+          "duration": 0.10790000000008604
+        },
+        {
+          "name": "teaching-state-machine getNextPhase PRACTICE_LOOP 不自动离开",
+          "status": "passed",
+          "duration": 0.10519999999996799
+        },
+        {
+          "name": "teaching-state-machine getNextPhase REVIEW → PRACTICE_LOOP",
+          "status": "passed",
+          "duration": 0.08090000000004238
+        },
+        {
+          "name": "teaching-state-machine getFirstSubphaseOf 返回 WORLD 阶段的第一个子阶段",
+          "status": "passed",
+          "duration": 0.11549999999999727
+        },
+        {
+          "name": "teaching-state-machine getFirstSubphaseOf 返回 PRACTICE_LOOP 阶段的第一个子阶段",
+          "status": "passed",
+          "duration": 0.08680000000003929
+        },
+        {
+          "name": "teaching-state-machine getFirstSubphaseOf INIT 阶段无子阶段时抛出错误",
+          "status": "passed",
+          "duration": 0.6941000000000486
+        },
+        {
+          "name": "teaching-state-machine getNextSubphase 推进到下一个子阶段",
+          "status": "passed",
+          "duration": 0.2498000000000502
+        },
+        {
+          "name": "teaching-state-machine getNextSubphase 子阶段末尾返回 null",
+          "status": "passed",
+          "duration": 0.11820000000000164
+        },
+        {
+          "name": "teaching-state-machine getNextSubphase 不存在的子阶段返回 null",
+          "status": "passed",
+          "duration": 0.7644999999999982
+        },
+        {
+          "name": "teaching-state-machine calculatePhaseProgress WORLD 阶段第一个子阶段进度为 0.2",
+          "status": "passed",
+          "duration": 0.19659999999998945
+        },
+        {
+          "name": "teaching-state-machine calculatePhaseProgress WORLD 阶段最后一个子阶段进度为 1",
+          "status": "passed",
+          "duration": 0.08119999999996708
+        },
+        {
+          "name": "teaching-state-machine calculatePhaseProgress PRACTICE_LOOP 第一阶段进度为 0.25",
+          "status": "passed",
+          "duration": 0.053699999999935244
+        },
+        {
+          "name": "teaching-state-machine calculatePhaseProgress 不存在的子阶段返回 0",
+          "status": "passed",
+          "duration": 0.06899999999995998
+        }
+      ]
+    },
+    {
+      "id": "M-API-PROXY",
+      "name": "API代理",
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "3.5",
+      "totalDuration": "53",
+      "tests": [
+        {
+          "name": "ApiProxy chatStream - 流式 SSE 解析 正确解析单个 data chunk",
+          "status": "passed",
+          "duration": 21.51389999999992
+        },
+        {
+          "name": "ApiProxy chatStream - 流式 SSE 解析 处理跨 chunk 的 SSE 行拆分",
+          "status": "passed",
+          "duration": 0.7869999999999209
+        },
+        {
+          "name": "ApiProxy chatStream - 流式 SSE 解析 跳过无 content 的 delta",
+          "status": "passed",
+          "duration": 0.6005999999999858
+        },
+        {
+          "name": "ApiProxy chatStream - 流式 SSE 解析 静默跳过格式错误的 JSON chunk",
+          "status": "passed",
+          "duration": 0.5670000000000073
+        },
+        {
+          "name": "ApiProxy chatStream - 流式 SSE 解析 跳过非 data: 开头的行",
+          "status": "passed",
+          "duration": 0.48090000000001965
+        },
+        {
+          "name": "ApiProxy chatStream - 流式 SSE 解析 长时间流式响应中累积多个 token",
+          "status": "passed",
+          "duration": 0.45069999999998345
+        },
+        {
+          "name": "ApiProxy chatStream - HTTP 错误处理 401 认证失败时抛出明确错误",
+          "status": "passed",
+          "duration": 2.3682000000000016
+        },
+        {
+          "name": "ApiProxy chatStream - HTTP 错误处理 500 服务端错误时抛出明确错误",
+          "status": "passed",
+          "duration": 0.5168999999999642
+        },
+        {
+          "name": "ApiProxy chatStream - HTTP 错误处理 网络错误时抛出",
+          "status": "passed",
+          "duration": 0.4454999999999245
+        },
+        {
+          "name": "ApiProxy chatStream - AbortController AbortController 停止后抛出",
+          "status": "passed",
+          "duration": 22.56740000000002
+        },
+        {
+          "name": "ApiProxy chatStream - 响应体为空 无 body 时抛出明确错误",
+          "status": "passed",
+          "duration": 0.4356999999999971
+        },
+        {
+          "name": "ApiProxy testConnection 连接成功返回 success: true",
+          "status": "passed",
+          "duration": 0.39790000000004966
+        },
+        {
+          "name": "ApiProxy testConnection HTTP 401 返回带错误信息的失败",
+          "status": "passed",
+          "duration": 0.31720000000007076
+        },
+        {
+          "name": "ApiProxy testConnection 网络错误返回带错误信息的失败",
+          "status": "passed",
+          "duration": 0.20650000000000546
+        },
+        {
+          "name": "ApiProxy updateConfig 更新配置后使用新 baseUrl",
+          "status": "passed",
+          "duration": 1.3632000000000062
+        }
+      ]
+    },
+    {
+      "id": "M-DIAG-PARSE",
+      "name": "诊断解析器",
+      "total": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.0",
+      "totalDuration": "13",
+      "tests": [
+        {
+          "name": "parseDiagnosisFromAIResponse 正常解析 正确解析包含诊断表 JSON 的 AI 回复",
+          "status": "passed",
+          "duration": 5.3250000000000455
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 正常解析 AI 同时回答问题和生成诊断表 - 端到端",
+          "status": "passed",
+          "duration": 0.935799999999972
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 正常解析 正确解析新增症候 P009-P010",
+          "status": "passed",
+          "duration": 0.6046000000000049
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 边界情况 无诊断表标记时返回原始回复和 null",
+          "status": "passed",
+          "duration": 1.0866000000000895
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 边界情况 仅存在开始标记但缺少结束标记时返回原始回复和 null",
+          "status": "passed",
+          "duration": 0.2676999999999907
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 边界情况 诊断表 JSON 格式错误时返回纯净回复和 null",
+          "status": "passed",
+          "duration": 3.525800000000004
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 边界情况 AI 回复为空字符串时返回空和 null",
+          "status": "passed",
+          "duration": 0.25270000000000437
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 安全性过滤 不存在的病症 ID 被过滤",
+          "status": "passed",
+          "duration": 0.27359999999998763
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 安全性过滤 非法严重度等级被过滤",
+          "status": "passed",
+          "duration": 0.241800000000012
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 安全性过滤 所有枚举中的病症 ID 都应被认可",
+          "status": "passed",
+          "duration": 0.35019999999997253
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 值域裁剪 confidence 大值被裁剪到 1",
+          "status": "passed",
+          "duration": 0.15040000000010423
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 值域裁剪 confidence 负值被裁剪到 0",
+          "status": "passed",
+          "duration": 0.11099999999999
+        },
+        {
+          "name": "parseDiagnosisFromAIResponse 值域裁剪 无病症但有建议动作时生成有效诊断条目",
+          "status": "passed",
+          "duration": 0.2180999999999358
+        }
+      ]
+    },
+    {
+      "id": "M-UI",
+      "name": "UI组件",
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "77.6",
+      "totalDuration": "931",
+      "tests": [
+        {
+          "name": "MessageInput 应该渲染输入框和发送按钮",
+          "status": "passed",
+          "duration": 88.6599000000001
+        },
+        {
+          "name": "MessageInput 输入内容后点击发送应触发 onSend 并清空输入框",
+          "status": "passed",
+          "duration": 182.86220000000003
+        },
+        {
+          "name": "MessageInput 空内容时点击发送不应触发 onSend",
+          "status": "passed",
+          "duration": 45.46460000000002
+        },
+        {
+          "name": "MessageInput disabled 时输入框和按钮应被禁用",
+          "status": "passed",
+          "duration": 4.350900000000138
+        },
+        {
+          "name": "MessageInput isStreaming 时应显示停止按钮",
+          "status": "passed",
+          "duration": 3.356999999999971
+        },
+        {
+          "name": "MessageInput 点击停止按钮应调用 onStop",
+          "status": "passed",
+          "duration": 54.15219999999999
+        },
+        {
+          "name": "MessageInput 按 Enter 发送消息",
+          "status": "passed",
+          "duration": 201.73810000000003
+        },
+        {
+          "name": "MessageInput 按 Shift+Enter 不应发送消息",
+          "status": "passed",
+          "duration": 168.6612
+        },
+        {
+          "name": "AppSidebar 应该渲染侧栏容器",
+          "status": "passed",
+          "duration": 33.41399999999999
+        },
+        {
+          "name": "AppSidebar 折叠时应渲染 aria-label 为折叠侧边栏",
+          "status": "passed",
+          "duration": 80.04459999999995
+        },
+        {
+          "name": "AppSidebar 切换按钮点击应调用 onToggleCollapse",
+          "status": "passed",
+          "duration": 59.91039999999998
+        },
+        {
+          "name": "AppSidebar 有会话时应显示会话列表标题",
+          "status": "passed",
+          "duration": 8.576199999999972
+        }
+      ]
+    },
+    {
+      "id": "M-FLOW-E2E",
+      "name": "全链路E2E",
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "4.3",
+      "totalDuration": "51",
+      "tests": [
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 带诊断分析的完整流程",
+          "status": "passed",
+          "duration": 24.26400000000001
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 诊断分析结果通过 diagnosis:update 推送到前端",
+          "status": "passed",
+          "duration": 2.5703999999999496
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 完整诊断数据结构和内容正确",
+          "status": "passed",
+          "duration": 2.432800000000043
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 流式数据通过 chat:stream:data 转发",
+          "status": "passed",
+          "duration": 1.8558000000000447
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 chat:stream:end 在流结束后发送",
+          "status": "passed",
+          "duration": 2.0686000000000604
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景2：旧格式诊断标记（---DIAGNOSIS_START---）的兼容处理 Teaching Agent 回复中的诊断标记被 processDiagnosisFromAI 解析",
+          "status": "passed",
+          "duration": 1.4702000000000908
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景3：短文本不触发诊断分析 100字以下的短文本跳过 Diagnosis Agent",
+          "status": "passed",
+          "duration": 1.3745000000000118
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景4：错误处理 API 失败时返回错误且不崩溃",
+          "status": "passed",
+          "duration": 3.6356000000000677
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景4：错误处理 非 200 响应时返回错误",
+          "status": "passed",
+          "duration": 4.184700000000021
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景5：修改原文 → 评估流程 原文修改通过 wire mock 调用评估 API",
+          "status": "passed",
+          "duration": 2.1439000000000306
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景6：训练计划关联 诊断症候映射到正确技法",
+          "status": "passed",
+          "duration": 0.6378999999999451
+        },
+        {
+          "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景7：多轮对话（协作式） 用户在诊断后提交改写练习，系统继续教学",
+          "status": "passed",
+          "duration": 4.600599999999986
+        }
+      ]
+    },
+    {
+      "id": "M-DIAG-FLOW",
+      "name": "诊断流程",
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.1",
+      "totalDuration": "12",
+      "tests": [
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:query 会话存在时返回活跃问题列表",
+          "status": "passed",
+          "duration": 4.116200000000049
+        },
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:query 会话不存在时返回 null",
+          "status": "passed",
+          "duration": 0.4255999999999176
+        },
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:getComparison 有两次诊断时返回对比数据",
+          "status": "passed",
+          "duration": 0.7449000000000296
+        },
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:getComparison 仅有一次诊断时返回 hasHistory=false",
+          "status": "passed",
+          "duration": 0.30939999999998236
+        },
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:getComparison 诊断服务未初始化时友好返回",
+          "status": "passed",
+          "duration": 0.2541999999999689
+        },
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:submitRewrite 成功提交修改并返回评估",
+          "status": "passed",
+          "duration": 1.5271000000000186
+        },
+        {
+          "name": "诊断 Handler 集成测试 diagnosis:submitRewrite 缺少 syndromeName 时仍能处理",
+          "status": "passed",
+          "duration": 0.6983999999999924
+        },
+        {
+          "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 从 AI 回复中解析诊断并推送",
+          "status": "passed",
+          "duration": 2.350999999999999
+        },
+        {
+          "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 解析无诊断结果时不触发流程",
+          "status": "passed",
+          "duration": 0.6106999999999516
+        },
+        {
+          "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 Store 未初始化时提前返回",
+          "status": "passed",
+          "duration": 0.561800000000062
+        },
+        {
+          "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 合并诊断结果到 TeachingState",
+          "status": "passed",
+          "duration": 0.7417000000000371
+        }
+      ]
+    },
+    {
+      "id": "M-SESS-SVC",
+      "name": "会话服务",
+      "total": 9,
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "0.9",
+      "totalDuration": "8",
+      "tests": [
+        {
+          "name": "SessionService createSession 应创建并返回新会话",
+          "status": "passed",
+          "duration": 3.8064999999999145
+        },
+        {
+          "name": "SessionService listSessions 应返回会话列表",
+          "status": "passed",
+          "duration": 0.6956000000000131
+        },
+        {
+          "name": "SessionService renameSession 应执行 UPDATE 语句",
+          "status": "passed",
+          "duration": 0.4904000000000224
+        },
+        {
+          "name": "SessionService deleteSession 应执行 DELETE 语句",
+          "status": "passed",
+          "duration": 0.3611999999999398
+        },
+        {
+          "name": "SessionService saveMessage 应保存并返回消息",
+          "status": "passed",
+          "duration": 0.5887000000000171
+        },
+        {
+          "name": "SessionService getMessages 应返回消息数组",
+          "status": "passed",
+          "duration": 0.2685000000000173
+        },
+        {
+          "name": "SessionService getOrCreateDefaultSession 无会话时应新建",
+          "status": "passed",
+          "duration": 0.3249000000000706
+        },
+        {
+          "name": "SessionService getOrCreateDefaultSession 有会话时应返回第一个",
+          "status": "passed",
+          "duration": 0.2685999999999922
+        },
+        {
+          "name": "SessionService autoGenerateTitle 应从首条消息截取标题",
+          "status": "passed",
+          "duration": 0.9531999999999243
+        }
+      ]
+    },
+    {
+      "id": "M-OTHER",
+      "name": "其他",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.3",
+      "totalDuration": "9",
+      "tests": [
+        {
+          "name": "Evidence Handler evidence:getByDisease 按症候查询证据",
+          "status": "passed",
+          "duration": 5.3700000000000045
+        },
+        {
+          "name": "Evidence Handler evidence:getByDisease 服务未初始化时返回空数组",
+          "status": "passed",
+          "duration": 0.8845000000000027
+        },
+        {
+          "name": "Evidence Handler evidence:getByAbility 按能力查询证据",
+          "status": "passed",
+          "duration": 0.7886999999999489
+        },
+        {
+          "name": "Evidence Handler evidence:getChain 返回诊断证据链",
+          "status": "passed",
+          "duration": 0.6617999999999711
+        },
+        {
+          "name": "Evidence Handler evidence:getChain 服务未初始化时返回 null",
+          "status": "passed",
+          "duration": 0.31729999999993197
+        },
+        {
+          "name": "Evidence Handler evidence:create 创建证据成功返回",
+          "status": "passed",
+          "duration": 1.0597999999999956
+        },
+        {
+          "name": "Evidence Handler evidence:create 服务未初始化时返回错误",
+          "status": "passed",
+          "duration": 0.29550000000006094
+        }
+      ]
+    },
+    {
+      "id": "M-DIAG-MERGE",
+      "name": "症候合并",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "0.7",
+      "totalDuration": "5",
+      "tests": [
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 空状态时添加第一个病症",
+          "status": "passed",
+          "duration": 2.511700000000019
+        },
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 已有病症列表时追加新病症",
+          "status": "passed",
+          "duration": 0.4920000000000755
+        },
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 新增症候 P009-P010 被正确合并",
+          "status": "passed",
+          "duration": 0.23319999999989705
+        },
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 更新已有病症 严重度不变的已有病症保持 active 状态",
+          "status": "passed",
+          "duration": 0.5682999999999083
+        },
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 更新已有病症 严重度降低的病症状态变为 improving",
+          "status": "passed",
+          "duration": 0.21660000000008495
+        },
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 多病症并发诊断 3个病症同时识别的完整合并",
+          "status": "passed",
+          "duration": 0.2504999999999882
+        },
+        {
+          "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 动作去重 suggestedActions 合并后自动去重",
+          "status": "passed",
+          "duration": 0.30179999999995744
+        }
+      ]
+    },
+    {
+      "id": "M-SESS-FLOW",
+      "name": "会话流程",
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.1",
+      "totalDuration": "6",
+      "tests": [
+        {
+          "name": "Session Handler session:list 返回会话列表",
+          "status": "passed",
+          "duration": 3.683899999999994
+        },
+        {
+          "name": "Session Handler session:list 无消息的会话 lastMessage 为 undefined",
+          "status": "passed",
+          "duration": 0.5827000000000453
+        },
+        {
+          "name": "Session Handler session:create 创建新会话并返回",
+          "status": "passed",
+          "duration": 0.39039999999999964
+        },
+        {
+          "name": "Session Handler session:delete 删除指定会话",
+          "status": "passed",
+          "duration": 0.9995000000000118
+        },
+        {
+          "name": "Session Handler session:rename 重命名会话",
+          "status": "passed",
+          "duration": 0.38219999999989795
+        },
+        {
+          "name": "Session Handler session:getMessages 返回会话消息",
+          "status": "passed",
+          "duration": 0.35170000000005075
+        }
+      ]
+    },
+    {
+      "id": "M-DIAG-SVC",
+      "name": "诊断服务",
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.6",
+      "totalDuration": "10",
+      "tests": [
+        {
+          "name": "DiagnosisService 保存诊断结果到数据库",
+          "status": "passed",
+          "duration": 4.283400000000029
+        },
+        {
+          "name": "DiagnosisService 保存新增症候 P009-P010 的诊断结果",
+          "status": "passed",
+          "duration": 0.9779999999999518
+        },
+        {
+          "name": "DiagnosisService 按会话查询诊断结果",
+          "status": "passed",
+          "duration": 0.9950000000000045
+        },
+        {
+          "name": "DiagnosisService 获取最近 N 条诊断结果",
+          "status": "passed",
+          "duration": 1.453899999999976
+        },
+        {
+          "name": "DiagnosisService 按会话删除诊断结果",
+          "status": "passed",
+          "duration": 0.8285999999999376
+        },
+        {
+          "name": "DiagnosisService JSON 序列化/反序列化正确",
+          "status": "passed",
+          "duration": 1.3071999999999662
+        }
+      ]
+    },
+    {
+      "id": "M-CONF-FLOW",
+      "name": "配置流程",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.6",
+      "totalDuration": "6",
+      "tests": [
+        {
+          "name": "Config Handler config:get 返回指定配置键的值",
+          "status": "passed",
+          "duration": 3.4950999999999794
+        },
+        {
+          "name": "Config Handler config:get 返回模型配置值",
+          "status": "passed",
+          "duration": 0.6707000000000107
+        },
+        {
+          "name": "Config Handler config:set 设置配置值",
+          "status": "passed",
+          "duration": 1.75750000000005
+        },
+        {
+          "name": "Config Handler config:testConnection 测试 API 连接",
+          "status": "passed",
+          "duration": 0.46119999999996253
+        }
+      ]
+    },
+    {
+      "id": "M-TEACH-FLOW",
+      "name": "教学状态流程",
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "17.5",
+      "totalDuration": "70",
+      "tests": [
+        {
+          "name": "教学状态 Handler teachingState:get 会话无状态时返回默认初始化状态",
+          "status": "passed",
+          "duration": 65.9790999999999
+        },
+        {
+          "name": "教学状态 Handler teachingState:get 会话已有状态时返回存储的状态",
+          "status": "passed",
+          "duration": 2.0809000000000424
+        },
+        {
+          "name": "教学状态 Handler teachingState:confirm 确认后推进到下一阶段",
+          "status": "passed",
+          "duration": 1.4656999999999698
+        },
+        {
+          "name": "教学状态 Handler teachingState:confirm 不存在的会话返回 null",
+          "status": "passed",
+          "duration": 0.28710000000000946
+        }
+      ]
+    },
+    {
+      "id": "M-CONF-STORE",
+      "name": "配置存储",
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "1.7",
+      "totalDuration": "5",
+      "tests": [
+        {
+          "name": "ConfigStore - attitudeLevel 默认 attitudeLevel 为 yuesheng",
+          "status": "passed",
+          "duration": 1.748700000000099
+        },
+        {
+          "name": "ConfigStore - attitudeLevel setAttitudeLevel 更新状态并通过 IPC 持久化",
+          "status": "passed",
+          "duration": 2.919499999999971
+        },
+        {
+          "name": "ConfigStore - attitudeLevel setAttitudeLevel 可切换回 yuesheng",
+          "status": "passed",
+          "duration": 0.32780000000002474
+        }
+      ]
+    },
+    {
+      "id": "M-PROF",
+      "name": "作者画像",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "skipped": 0,
+      "passRate": 100,
+      "avgDuration": "3.6",
+      "totalDuration": "7",
+      "tests": [
+        {
+          "name": "AbilityProfile Handler ability:getProfile 返回能力画像",
+          "status": "passed",
+          "duration": 5.53570000000002
+        },
+        {
+          "name": "AbilityProfile Handler ability:getProfile 服务未初始化时返回 null",
+          "status": "passed",
+          "duration": 1.700800000000072
+        }
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "name": "evidence",
+      "total": 34,
+      "passed": 34,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.0"
+    },
+    {
+      "name": "chat",
+      "total": 36,
+      "passed": 36,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.1"
+    },
+    {
+      "name": "teaching",
+      "total": 20,
+      "passed": 20,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.1"
+    },
+    {
+      "name": "diagnosis",
+      "total": 37,
+      "passed": 37,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.0"
+    },
+    {
+      "name": "ui",
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.9"
+    },
+    {
+      "name": "e2e",
+      "total": 12,
+      "passed": 12,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.1"
+    },
+    {
+      "name": "session",
+      "total": 15,
+      "passed": 15,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.0"
+    },
+    {
+      "name": "other",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.0"
+    },
+    {
+      "name": "config",
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.0"
+    },
+    {
+      "name": "profile",
+      "total": 2,
+      "passed": 2,
+      "failed": 0,
+      "passRate": 100,
+      "duration": "0.0"
+    }
+  ],
+  "slowestTests": [
+    {
+      "name": "MessageInput 按 Enter 发送消息",
+      "status": "passed",
+      "duration": 201.73810000000003,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 输入内容后点击发送应触发 onSend 并清空输入框",
+      "status": "passed",
+      "duration": 182.86220000000003,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 按 Shift+Enter 不应发送消息",
+      "status": "passed",
+      "duration": 168.6612,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 应该渲染输入框和发送按钮",
+      "status": "passed",
+      "duration": 88.6599000000001,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "AppSidebar 折叠时应渲染 aria-label 为折叠侧边栏",
+      "status": "passed",
+      "duration": 80.04459999999995,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    },
+    {
+      "name": "教学状态 Handler teachingState:get 会话无状态时返回默认初始化状态",
+      "status": "passed",
+      "duration": 65.9790999999999,
+      "module": "M-TEACH-FLOW",
+      "file": "teaching-state-flow.test.ts"
+    },
+    {
+      "name": "AppSidebar 切换按钮点击应调用 onToggleCollapse",
+      "status": "passed",
+      "duration": 59.91039999999998,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    },
+    {
+      "name": "MessageInput 点击停止按钮应调用 onStop",
+      "status": "passed",
+      "duration": 54.15219999999999,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 空内容时点击发送不应触发 onSend",
+      "status": "passed",
+      "duration": 45.46460000000002,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "AppSidebar 应该渲染侧栏容器",
+      "status": "passed",
+      "duration": 33.41399999999999,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    }
+  ],
+  "allTests": [
+    {
+      "name": "MessageInput 按 Enter 发送消息",
+      "status": "passed",
+      "duration": 201.73810000000003,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 输入内容后点击发送应触发 onSend 并清空输入框",
+      "status": "passed",
+      "duration": 182.86220000000003,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 按 Shift+Enter 不应发送消息",
+      "status": "passed",
+      "duration": 168.6612,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 应该渲染输入框和发送按钮",
+      "status": "passed",
+      "duration": 88.6599000000001,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "AppSidebar 折叠时应渲染 aria-label 为折叠侧边栏",
+      "status": "passed",
+      "duration": 80.04459999999995,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    },
+    {
+      "name": "教学状态 Handler teachingState:get 会话无状态时返回默认初始化状态",
+      "status": "passed",
+      "duration": 65.9790999999999,
+      "module": "M-TEACH-FLOW",
+      "file": "teaching-state-flow.test.ts"
+    },
+    {
+      "name": "AppSidebar 切换按钮点击应调用 onToggleCollapse",
+      "status": "passed",
+      "duration": 59.91039999999998,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    },
+    {
+      "name": "MessageInput 点击停止按钮应调用 onStop",
+      "status": "passed",
+      "duration": 54.15219999999999,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "MessageInput 空内容时点击发送不应触发 onSend",
+      "status": "passed",
+      "duration": 45.46460000000002,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "AppSidebar 应该渲染侧栏容器",
+      "status": "passed",
+      "duration": 33.41399999999999,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 带诊断分析的完整流程",
+      "status": "passed",
+      "duration": 24.26400000000001,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - AbortController AbortController 停止后抛出",
+      "status": "passed",
+      "duration": 22.56740000000002,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 流式 SSE 解析 正确解析单个 data chunk",
+      "status": "passed",
+      "duration": 21.51389999999992,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "AppSidebar 有会话时应显示会话列表标题",
+      "status": "passed",
+      "duration": 8.576199999999972,
+      "module": "M-UI",
+      "file": "AppSidebar.test.tsx"
+    },
+    {
+      "name": "AbilityProfile Handler ability:getProfile 返回能力画像",
+      "status": "passed",
+      "duration": 5.53570000000002,
+      "module": "M-PROF",
+      "file": "ability-profile-flow.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:getByDisease 按症候查询证据",
+      "status": "passed",
+      "duration": 5.3700000000000045,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 正常解析 正确解析包含诊断表 JSON 的 AI 回复",
+      "status": "passed",
+      "duration": 5.3250000000000455,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景7：多轮对话（协作式） 用户在诊断后提交改写练习，系统继续教学",
+      "status": "passed",
+      "duration": 4.600599999999986,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "MessageInput disabled 时输入框和按钮应被禁用",
+      "status": "passed",
+      "duration": 4.350900000000138,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "DiagnosisService 保存诊断结果到数据库",
+      "status": "passed",
+      "duration": 4.283400000000029,
+      "module": "M-DIAG-SVC",
+      "file": "diagnosis.service.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景4：错误处理 非 200 响应时返回错误",
+      "status": "passed",
+      "duration": 4.184700000000021,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:query 会话存在时返回活跃问题列表",
+      "status": "passed",
+      "duration": 4.116200000000049,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "SessionService createSession 应创建并返回新会话",
+      "status": "passed",
+      "duration": 3.8064999999999145,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "EvidenceService save 插入一条证据记录到数据库中",
+      "status": "passed",
+      "duration": 3.7292999999999665,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "Session Handler session:list 返回会话列表",
+      "status": "passed",
+      "duration": 3.683899999999994,
+      "module": "M-SESS-FLOW",
+      "file": "session-flow.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景4：错误处理 API 失败时返回错误且不崩溃",
+      "status": "passed",
+      "duration": 3.6356000000000677,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 边界情况 诊断表 JSON 格式错误时返回纯净回复和 null",
+      "status": "passed",
+      "duration": 3.525800000000004,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "Config Handler config:get 返回指定配置键的值",
+      "status": "passed",
+      "duration": 3.4950999999999794,
+      "module": "M-CONF-FLOW",
+      "file": "config-flow.test.ts"
+    },
+    {
+      "name": "MessageInput isStreaming 时应显示停止按钮",
+      "status": "passed",
+      "duration": 3.356999999999971,
+      "module": "M-UI",
+      "file": "MessageInput.test.tsx"
+    },
+    {
+      "name": "ConfigStore - attitudeLevel setAttitudeLevel 更新状态并通过 IPC 持久化",
+      "status": "passed",
+      "duration": 2.919499999999971,
+      "module": "M-CONF-STORE",
+      "file": "config.store.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 诊断分析结果通过 diagnosis:update 推送到前端",
+      "status": "passed",
+      "duration": 2.5703999999999496,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 空状态时添加第一个病症",
+      "status": "passed",
+      "duration": 2.511700000000019,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 完整诊断数据结构和内容正确",
+      "status": "passed",
+      "duration": 2.432800000000043,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - HTTP 错误处理 401 认证失败时抛出明确错误",
+      "status": "passed",
+      "duration": 2.3682000000000016,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 从 AI 回复中解析诊断并推送",
+      "status": "passed",
+      "duration": 2.350999999999999,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景5：修改原文 → 评估流程 原文修改通过 wire mock 调用评估 API",
+      "status": "passed",
+      "duration": 2.1439000000000306,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "教学状态 Handler teachingState:get 会话已有状态时返回存储的状态",
+      "status": "passed",
+      "duration": 2.0809000000000424,
+      "module": "M-TEACH-FLOW",
+      "file": "teaching-state-flow.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 chat:stream:end 在流结束后发送",
+      "status": "passed",
+      "duration": 2.0686000000000604,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 流式数据通过 chat:stream:data 转发",
+      "status": "passed",
+      "duration": 1.8558000000000447,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "ChatStore 基础状态 初始状态为空",
+      "status": "passed",
+      "duration": 1.821999999999889,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "Config Handler config:set 设置配置值",
+      "status": "passed",
+      "duration": 1.75750000000005,
+      "module": "M-CONF-FLOW",
+      "file": "config-flow.test.ts"
+    },
+    {
+      "name": "ConfigStore - attitudeLevel 默认 attitudeLevel 为 yuesheng",
+      "status": "passed",
+      "duration": 1.748700000000099,
+      "module": "M-CONF-STORE",
+      "file": "config.store.test.ts"
+    },
+    {
+      "name": "AbilityProfile Handler ability:getProfile 服务未初始化时返回 null",
+      "status": "passed",
+      "duration": 1.700800000000072,
+      "module": "M-PROF",
+      "file": "ability-profile-flow.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:submitRewrite 成功提交修改并返回评估",
+      "status": "passed",
+      "duration": 1.5271000000000186,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景2：旧格式诊断标记（---DIAGNOSIS_START---）的兼容处理 Teaching Agent 回复中的诊断标记被 processDiagnosisFromAI 解析",
+      "status": "passed",
+      "duration": 1.4702000000000908,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "教学状态 Handler teachingState:confirm 确认后推进到下一阶段",
+      "status": "passed",
+      "duration": 1.4656999999999698,
+      "module": "M-TEACH-FLOW",
+      "file": "teaching-state-flow.test.ts"
+    },
+    {
+      "name": "DiagnosisService 获取最近 N 条诊断结果",
+      "status": "passed",
+      "duration": 1.453899999999976,
+      "module": "M-DIAG-SVC",
+      "file": "diagnosis.service.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getPhaseName 返回正确的阶段中文名称",
+      "status": "passed",
+      "duration": 1.4492999999999938,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景3：短文本不触发诊断分析 100字以下的短文本跳过 Diagnosis Agent",
+      "status": "passed",
+      "duration": 1.3745000000000118,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "ApiProxy updateConfig 更新配置后使用新 baseUrl",
+      "status": "passed",
+      "duration": 1.3632000000000062,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "DiagnosisService JSON 序列化/反序列化正确",
+      "status": "passed",
+      "duration": 1.3071999999999662,
+      "module": "M-DIAG-SVC",
+      "file": "diagnosis.service.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 发送时调用 IPC invoke 传递正确参数",
+      "status": "passed",
+      "duration": 1.297399999999925,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "EvidenceService 错误处理 prepare 失败时所有方法抛出错误",
+      "status": "passed",
+      "duration": 1.1515000000000555,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 边界情况 无诊断表标记时返回原始回复和 null",
+      "status": "passed",
+      "duration": 1.0866000000000895,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:create 创建证据成功返回",
+      "status": "passed",
+      "duration": 1.0597999999999956,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "Session Handler session:delete 删除指定会话",
+      "status": "passed",
+      "duration": 0.9995000000000118,
+      "module": "M-SESS-FLOW",
+      "file": "session-flow.test.ts"
+    },
+    {
+      "name": "DiagnosisService 按会话查询诊断结果",
+      "status": "passed",
+      "duration": 0.9950000000000045,
+      "module": "M-DIAG-SVC",
+      "file": "diagnosis.service.test.ts"
+    },
+    {
+      "name": "DiagnosisService 保存新增症候 P009-P010 的诊断结果",
+      "status": "passed",
+      "duration": 0.9779999999999518,
+      "module": "M-DIAG-SVC",
+      "file": "diagnosis.service.test.ts"
+    },
+    {
+      "name": "SessionService autoGenerateTitle 应从首条消息截取标题",
+      "status": "passed",
+      "duration": 0.9531999999999243,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 正常解析 AI 同时回答问题和生成诊断表 - 端到端",
+      "status": "passed",
+      "duration": 0.935799999999972,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "ChatStore addMessage 添加消息到列表",
+      "status": "passed",
+      "duration": 0.9169000000001688,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:getByDisease 服务未初始化时返回空数组",
+      "status": "passed",
+      "duration": 0.8845000000000027,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 根据疾病 ID 和作品 ID 查询证据",
+      "status": "passed",
+      "duration": 0.8482000000000198,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 发送消息创建 user + assistant 两条消息",
+      "status": "passed",
+      "duration": 0.8423000000000229,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "DiagnosisService 按会话删除诊断结果",
+      "status": "passed",
+      "duration": 0.8285999999999376,
+      "module": "M-DIAG-SVC",
+      "file": "diagnosis.service.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:getByAbility 按能力查询证据",
+      "status": "passed",
+      "duration": 0.7886999999999489,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 流式 SSE 解析 处理跨 chunk 的 SSE 行拆分",
+      "status": "passed",
+      "duration": 0.7869999999999209,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextSubphase 不存在的子阶段返回 null",
+      "status": "passed",
+      "duration": 0.7644999999999982,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:getComparison 有两次诊断时返回对比数据",
+      "status": "passed",
+      "duration": 0.7449000000000296,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 合并诊断结果到 TeachingState",
+      "status": "passed",
+      "duration": 0.7417000000000371,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService save 使用正确的 INSERT 列名",
+      "status": "passed",
+      "duration": 0.7044000000000779,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:submitRewrite 缺少 syndromeName 时仍能处理",
+      "status": "passed",
+      "duration": 0.6983999999999924,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "SessionService listSessions 应返回会话列表",
+      "status": "passed",
+      "duration": 0.6956000000000131,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getFirstSubphaseOf INIT 阶段无子阶段时抛出错误",
+      "status": "passed",
+      "duration": 0.6941000000000486,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "Config Handler config:get 返回模型配置值",
+      "status": "passed",
+      "duration": 0.6707000000000107,
+      "module": "M-CONF-FLOW",
+      "file": "config-flow.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:getChain 返回诊断证据链",
+      "status": "passed",
+      "duration": 0.6617999999999711,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "全链路 Wire Mock 测试（基于《修仙传》） 场景6：训练计划关联 诊断症候映射到正确技法",
+      "status": "passed",
+      "duration": 0.6378999999999451,
+      "module": "M-FLOW-E2E",
+      "file": "full-flow.wiremock.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 解析无诊断结果时不触发流程",
+      "status": "passed",
+      "duration": 0.6106999999999516,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 正常解析 正确解析新增症候 P009-P010",
+      "status": "passed",
+      "duration": 0.6046000000000049,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 流式 SSE 解析 跳过无 content 的 delta",
+      "status": "passed",
+      "duration": 0.6005999999999858,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "SessionService saveMessage 应保存并返回消息",
+      "status": "passed",
+      "duration": 0.5887000000000171,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "Session Handler session:list 无消息的会话 lastMessage 为 undefined",
+      "status": "passed",
+      "duration": 0.5827000000000453,
+      "module": "M-SESS-FLOW",
+      "file": "session-flow.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 发送时传递历史消息（不包括刚添加的新消息）",
+      "status": "passed",
+      "duration": 0.5782999999998992,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 更新已有病症 严重度不变的已有病症保持 active 状态",
+      "status": "passed",
+      "duration": 0.5682999999999083,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 流式 SSE 解析 静默跳过格式错误的 JSON chunk",
+      "status": "passed",
+      "duration": 0.5670000000000073,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 processDiagnosisFromAI 流程 Store 未初始化时提前返回",
+      "status": "passed",
+      "duration": 0.561800000000062,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - HTTP 错误处理 500 服务端错误时抛出明确错误",
+      "status": "passed",
+      "duration": 0.5168999999999642,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 已有病症列表时追加新病症",
+      "status": "passed",
+      "duration": 0.4920000000000755,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "SessionService renameSession 应执行 UPDATE 语句",
+      "status": "passed",
+      "duration": 0.4904000000000224,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 流式 SSE 解析 跳过非 data: 开头的行",
+      "status": "passed",
+      "duration": 0.48090000000001965,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "EvidenceService getByAbility 根据能力 ID 和作者 ID 查询证据",
+      "status": "passed",
+      "duration": 0.4633000000000038,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "Config Handler config:testConnection 测试 API 连接",
+      "status": "passed",
+      "duration": 0.46119999999996253,
+      "module": "M-CONF-FLOW",
+      "file": "config-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService save 可以保存 type=pattern 和 level=4 的证据",
+      "status": "passed",
+      "duration": 0.45869999999990796,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 流式 SSE 解析 长时间流式响应中累积多个 token",
+      "status": "passed",
+      "duration": 0.45069999999998345,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - HTTP 错误处理 网络错误时抛出",
+      "status": "passed",
+      "duration": 0.4454999999999245,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "EvidenceService getChainForDiagnosis 返回包含 primaryEvidence 和 supportingEvidence 的证据链",
+      "status": "passed",
+      "duration": 0.44210000000009586,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ApiProxy chatStream - 响应体为空 无 body 时抛出明确错误",
+      "status": "passed",
+      "duration": 0.4356999999999971,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:query 会话不存在时返回 null",
+      "status": "passed",
+      "duration": 0.4255999999999176,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 当提供 minLevel 时添加 level >= 过滤",
+      "status": "passed",
+      "duration": 0.40199999999992997,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ApiProxy testConnection 连接成功返回 success: true",
+      "status": "passed",
+      "duration": 0.39790000000004966,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "Session Handler session:create 创建新会话并返回",
+      "status": "passed",
+      "duration": 0.39039999999999964,
+      "module": "M-SESS-FLOW",
+      "file": "session-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService 错误处理 run 失败时 save / linkToDiagnosis 抛出错误",
+      "status": "passed",
+      "duration": 0.3891999999999598,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 发送时传递当前 attitudeLevel",
+      "status": "passed",
+      "duration": 0.3846000000000913,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "EvidenceService 错误处理 all 失败时 getByDisease / getByAbility / getChainForDiagnosis 抛出错误",
+      "status": "passed",
+      "duration": 0.38239999999996144,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "Session Handler session:rename 重命名会话",
+      "status": "passed",
+      "duration": 0.38219999999989795,
+      "module": "M-SESS-FLOW",
+      "file": "session-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService linkToDiagnosis 插入诊断-证据关联记录",
+      "status": "passed",
+      "duration": 0.3626000000000431,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "SessionService deleteSession 应执行 DELETE 语句",
+      "status": "passed",
+      "duration": 0.3611999999999398,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "Session Handler session:getMessages 返回会话消息",
+      "status": "passed",
+      "duration": 0.35170000000005075,
+      "module": "M-SESS-FLOW",
+      "file": "session-flow.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 安全性过滤 所有枚举中的病症 ID 都应被认可",
+      "status": "passed",
+      "duration": 0.35019999999997253,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage attitudeLevel 默认值为 yuesheng",
+      "status": "passed",
+      "duration": 0.33349999999995816,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage IPC 抛出异常时移除空的 assistant 消息但保留 user 消息并设置错误",
+      "status": "passed",
+      "duration": 0.3311999999998534,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "ConfigStore - attitudeLevel setAttitudeLevel 可切换回 yuesheng",
+      "status": "passed",
+      "duration": 0.32780000000002474,
+      "module": "M-CONF-STORE",
+      "file": "config.store.test.ts"
+    },
+    {
+      "name": "SessionService getOrCreateDefaultSession 无会话时应新建",
+      "status": "passed",
+      "duration": 0.3249000000000706,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:getChain 服务未初始化时返回 null",
+      "status": "passed",
+      "duration": 0.31729999999993197,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "ApiProxy testConnection HTTP 401 返回带错误信息的失败",
+      "status": "passed",
+      "duration": 0.31720000000007076,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:getComparison 仅有一次诊断时返回 hasHistory=false",
+      "status": "passed",
+      "duration": 0.30939999999998236,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 将数据库行正确映射为 EvidenceRecord（camelCase）",
+      "status": "passed",
+      "duration": 0.3088000000000193,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 没有匹配证据时返回空数组",
+      "status": "passed",
+      "duration": 0.3084999999999809,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 当 minLevel 为 undefined 时不添加 level >= 过滤条件",
+      "status": "passed",
+      "duration": 0.3020999999999958,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 动作去重 suggestedActions 合并后自动去重",
+      "status": "passed",
+      "duration": 0.30179999999995744,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "EvidenceService getEvidenceById 根据证据 ID 查询单条证据",
+      "status": "passed",
+      "duration": 0.29589999999996053,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "Evidence Handler evidence:create 服务未初始化时返回错误",
+      "status": "passed",
+      "duration": 0.29550000000006094,
+      "module": "M-OTHER",
+      "file": "evidence-flow.test.ts"
+    },
+    {
+      "name": "ChatStore appendToLastAssistant 追加内容到最后一条 assistant 消息",
+      "status": "passed",
+      "duration": 0.2925000000000182,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "教学状态 Handler teachingState:confirm 不存在的会话返回 null",
+      "status": "passed",
+      "duration": 0.28710000000000946,
+      "module": "M-TEACH-FLOW",
+      "file": "teaching-state-flow.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 发送时设置 isLoading = true",
+      "status": "passed",
+      "duration": 0.2781999999999698,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 安全性过滤 不存在的病症 ID 被过滤",
+      "status": "passed",
+      "duration": 0.27359999999998763,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "SessionService getOrCreateDefaultSession 有会话时应返回第一个",
+      "status": "passed",
+      "duration": 0.2685999999999922,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "SessionService getMessages 应返回消息数组",
+      "status": "passed",
+      "duration": 0.2685000000000173,
+      "module": "M-SESS-SVC",
+      "file": "session.service.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 边界情况 仅存在开始标记但缺少结束标记时返回原始回复和 null",
+      "status": "passed",
+      "duration": 0.2676999999999907,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage IPC 返回失败时移除空的 assistant 消息但保留 user 消息并设置错误",
+      "status": "passed",
+      "duration": 0.2660000000000764,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "EvidenceService 多方法集成场景 关联证据后可获取完整证据链",
+      "status": "passed",
+      "duration": 0.2639000000000351,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getChainForDiagnosis 将 level=3 的证据归类到 statistics",
+      "status": "passed",
+      "duration": 0.2636999999999716,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "诊断 Handler 集成测试 diagnosis:getComparison 诊断服务未初始化时友好返回",
+      "status": "passed",
+      "duration": 0.2541999999999689,
+      "module": "M-DIAG-FLOW",
+      "file": "diagnosis-flow.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 边界情况 AI 回复为空字符串时返回空和 null",
+      "status": "passed",
+      "duration": 0.25270000000000437,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 多病症并发诊断 3个病症同时识别的完整合并",
+      "status": "passed",
+      "duration": 0.2504999999999882,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextSubphase 推进到下一个子阶段",
+      "status": "passed",
+      "duration": 0.2498000000000502,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "ChatStore getHistory 只返回 user 和 assistant 消息",
+      "status": "passed",
+      "duration": 0.2481999999999971,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 返回多条匹配结果",
+      "status": "passed",
+      "duration": 0.24689999999998236,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 空消息不发送",
+      "status": "passed",
+      "duration": 0.24230000000011387,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 安全性过滤 非法严重度等级被过滤",
+      "status": "passed",
+      "duration": 0.241800000000012,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getSubphaseName 返回正确的子阶段中文名称",
+      "status": "passed",
+      "duration": 0.23829999999998108,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "EvidenceService getChainForDiagnosis 将 relevance=contextual 归到 supportingEvidence",
+      "status": "passed",
+      "duration": 0.23659999999995307,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 新增症候 P009-P010 被正确合并",
+      "status": "passed",
+      "duration": 0.23319999999989705,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 值域裁剪 无病症但有建议动作时生成有效诊断条目",
+      "status": "passed",
+      "duration": 0.2180999999999358,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "mergeSyndromesIntoState - TeachingState 合并逻辑 更新已有病症 严重度降低的病症状态变为 improving",
+      "status": "passed",
+      "duration": 0.21660000000008495,
+      "module": "M-DIAG-MERGE",
+      "file": "merge-diagnosis.test.ts"
+    },
+    {
+      "name": "ApiProxy testConnection 网络错误返回带错误信息的失败",
+      "status": "passed",
+      "duration": 0.20650000000000546,
+      "module": "M-API-PROXY",
+      "file": "api-proxy.test.ts"
+    },
+    {
+      "name": "EvidenceService 多方法集成场景 保存证据后可在疾病查询结果中找到",
+      "status": "passed",
+      "duration": 0.20510000000001583,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore appendToLastAssistant 多条 assistant 消息时追加到最后一条",
+      "status": "passed",
+      "duration": 0.19800000000009277,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "teaching-state-machine calculatePhaseProgress WORLD 阶段第一个子阶段进度为 0.2",
+      "status": "passed",
+      "duration": 0.19659999999998945,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "EvidenceService getByAbility 当提供 fromDate 时添加 created_at >= 过滤",
+      "status": "passed",
+      "duration": 0.19399999999995998,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService 多方法集成场景 保存证据后可通过 ID 查询到",
+      "status": "passed",
+      "duration": 0.18859999999995125,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore getHistory 超过 20 条消息时截断",
+      "status": "passed",
+      "duration": 0.1754000000000815,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 发送完成后 isLoading 保持 true（由 stream end 事件处理）",
+      "status": "passed",
+      "duration": 0.17440000000010514,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "EvidenceService 错误处理 get 失败时 getEvidenceById 抛出错误",
+      "status": "passed",
+      "duration": 0.16999999999995907,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 当 minLevel 为 0 时仍添加过滤（语义上返回全部）",
+      "status": "passed",
+      "duration": 0.16869999999994434,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getChainForDiagnosis 使用 JOIN 查询 evidence 和 diagnosis_evidence 表",
+      "status": "passed",
+      "duration": 0.16790000000003147,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService linkToDiagnosis 支持 supporting 关联类型",
+      "status": "passed",
+      "duration": 0.16269999999997253,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 值域裁剪 confidence 大值被裁剪到 1",
+      "status": "passed",
+      "duration": 0.15040000000010423,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "ChatStore clearMessages 清空消息和错误",
+      "status": "passed",
+      "duration": 0.13589999999999236,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextPhase INIT → WORLD",
+      "status": "passed",
+      "duration": 0.1331000000000131,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "EvidenceService getChainForDiagnosis 没有关联证据时返回 null",
+      "status": "passed",
+      "duration": 0.12530000000003838,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getByAbility 当提供 toDate 时添加 created_at <= 过滤",
+      "status": "passed",
+      "duration": 0.12450000000001182,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getByAbility 同时提供 fromDate 和 toDate 时添加两个过滤",
+      "status": "passed",
+      "duration": 0.11979999999994106,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextSubphase 子阶段末尾返回 null",
+      "status": "passed",
+      "duration": 0.11820000000000164,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getFirstSubphaseOf 返回 WORLD 阶段的第一个子阶段",
+      "status": "passed",
+      "duration": 0.11549999999999727,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "EvidenceService getByDisease 结果按 level DESC, created_at ASC 排序",
+      "status": "passed",
+      "duration": 0.11339999999995598,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "parseDiagnosisFromAIResponse 值域裁剪 confidence 负值被裁剪到 0",
+      "status": "passed",
+      "duration": 0.11099999999999,
+      "module": "M-DIAG-PARSE",
+      "file": "diagnosis-parser.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextPhase WORLD → PRACTICE_LOOP",
+      "status": "passed",
+      "duration": 0.10790000000008604,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage 空格消息不发送",
+      "status": "passed",
+      "duration": 0.1066000000000713,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextPhase PRACTICE_LOOP 不自动离开",
+      "status": "passed",
+      "duration": 0.10519999999996799,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "EvidenceService linkToDiagnosis 支持 contextual 关联类型",
+      "status": "passed",
+      "duration": 0.09640000000001692,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "EvidenceService getEvidenceById 证据不存在时返回 null",
+      "status": "passed",
+      "duration": 0.09640000000001692,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore sendMessage loading 状态下不发送新消息",
+      "status": "passed",
+      "duration": 0.09470000000010259,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "EvidenceService getByAbility 没有匹配时返回空数组",
+      "status": "passed",
+      "duration": 0.09329999999999927,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore setLoading / setError 设置加载状态",
+      "status": "passed",
+      "duration": 0.0907999999999447,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getFirstSubphaseOf 返回 PRACTICE_LOOP 阶段的第一个子阶段",
+      "status": "passed",
+      "duration": 0.08680000000003929,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "teaching-state-machine calculatePhaseProgress WORLD 阶段最后一个子阶段进度为 1",
+      "status": "passed",
+      "duration": 0.08119999999996708,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "teaching-state-machine getNextPhase REVIEW → PRACTICE_LOOP",
+      "status": "passed",
+      "duration": 0.08090000000004238,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "EvidenceService getByAbility 结果按 created_at ASC 排序",
+      "status": "passed",
+      "duration": 0.07849999999996271,
+      "module": "M-EVID",
+      "file": "evidence.service.test.ts"
+    },
+    {
+      "name": "ChatStore setLoading / setError 设置错误信息",
+      "status": "passed",
+      "duration": 0.07660000000009859,
+      "module": "M-CHAT-STORE",
+      "file": "chat.store.test.ts"
+    },
+    {
+      "name": "teaching-state-machine calculatePhaseProgress 不存在的子阶段返回 0",
+      "status": "passed",
+      "duration": 0.06899999999995998,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    },
+    {
+      "name": "teaching-state-machine calculatePhaseProgress PRACTICE_LOOP 第一阶段进度为 0.25",
+      "status": "passed",
+      "duration": 0.053699999999935244,
+      "module": "M-TEACH-SM",
+      "file": "teaching-state-machine.test.ts"
+    }
+  ]
+}

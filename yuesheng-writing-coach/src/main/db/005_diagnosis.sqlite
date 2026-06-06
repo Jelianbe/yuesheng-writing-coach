@@ -1,0 +1,17 @@
+-- 005 诊断结果持久化
+-- 将 AI 诊断结果持久化到 SQLite，支持追溯和查询
+
+CREATE TABLE IF NOT EXISTS diagnosis_results (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  syndromes TEXT NOT NULL,
+  suggested_actions TEXT NOT NULL,
+  confidence REAL NOT NULL DEFAULT 0,
+  timestamp TEXT NOT NULL,
+  next_focus TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_diagnosis_session ON diagnosis_results(session_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_diagnosis_message ON diagnosis_results(message_id);

@@ -1,0 +1,139 @@
+/**
+ * TrainingWorkshop 训练工坊主面板
+ *
+ * 三区块布局（V4.0 §4.3）：
+ * 区块一：你的常见问题（ErrorCardsSection）
+ * 区块二：推荐训练任务（RecommendationsSection）
+ * 区块三：近期训练记录（HistorySection）
+ *
+ * 步骤式练习（activeTraining 不为 null）：
+ *   所有 mode 共享通用三步框架，Step 2 提交后由 AI 评估是否符合约束。
+ *   前端不做任何 mode 特定的硬编码校验。添加新 mode 只需改模板 JSON。
+ */
+
+import React from 'react';
+import type { ErrorCard, TrainingRecommendation, ActiveTrainingSession, TrainingRecord } from '../../shared/types';
+import ErrorCardsSection from './ErrorCardsSection';
+import RecommendationsSection from './RecommendationsSection';
+import HistorySection from './HistorySection';
+import ActiveTrainingView from './ActiveTrainingView';
+import {
+  containerStyle,
+  loadingStyle,
+  backBtnStyle,
+} from './training-styles';
+
+// ===== 类型定义 =====
+
+export interface TrainingWorkshopProps {
+  errorCards: ErrorCard[];
+  recommendations: TrainingRecommendation[];
+  activeTraining: ActiveTrainingSession | null;
+  history: TrainingRecord[];
+  /** AI 提交评估结果（null = 未提交或已清除） */
+  submissionResult: { passed: boolean; feedback: string } | null;
+  isLoading: boolean;
+  error: string | null;
+  onStartTraining: (challengeId: string) => void;
+  onBackToChat: () => void;
+  onSubmitStep: () => void;
+  onSkipTraining: () => void;
+  onUpdateDraft: (content: string) => void;
+}
+
+// ===== 主组件 =====
+
+export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
+  errorCards,
+  recommendations,
+  activeTraining,
+  history,
+  submissionResult,
+  isLoading,
+  error,
+  onStartTraining,
+  onBackToChat,
+  onSubmitStep,
+  onSkipTraining,
+  onUpdateDraft,
+}) => {
+  // 加载中（仅首次加载时显示）
+  if (isLoading && !activeTraining) {
+    return (
+      <div style={containerStyle}>
+        <div style={loadingStyle}>
+          <div style={{ fontSize: '1rem', color: 'var(--color-text-secondary)' }}>加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // 错误状态
+  if (error && !activeTraining) {
+    return (
+      <div style={containerStyle}>
+        <div style={loadingStyle}>
+          <div style={{ fontSize: '0.875rem', color: '#e74c3c' }}>{error}</div>
+          <button onClick={onBackToChat} style={{ marginTop: 12, ...backBtnStyle }}>
+            返回对话
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 步骤式练习视图
+  if (activeTraining) {
+    return (
+      <ActiveTrainingView
+        activeTraining={activeTraining}
+        submissionResult={submissionResult}
+        isLoading={isLoading}
+        onBackToChat={onBackToChat}
+        onSubmitStep={onSubmitStep}
+        onSkipTraining={onSkipTraining}
+        onUpdateDraft={onUpdateDraft}
+      />
+    );
+  }
+
+  // 训练工坊主面板（三区块布局）
+  return (
+    <div style={containerStyle}>
+      {/* 工坊头部 */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '16px 24px',
+        backgroundColor: 'var(--color-accent-subtle)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+          🎯 训练工坊
+        </div>
+        <button onClick={onBackToChat} style={backBtnStyle}>
+          返回对话
+        </button>
+      </div>
+
+      {/* 三区块内容 */}
+      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <ErrorCardsSection
+            cards={errorCards}
+            onStartTraining={onStartTraining}
+          />
+          <RecommendationsSection
+            recommendations={recommendations}
+            onStartTraining={onStartTraining}
+          />
+          <HistorySection
+            history={history}
+            isLoading={isLoading}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

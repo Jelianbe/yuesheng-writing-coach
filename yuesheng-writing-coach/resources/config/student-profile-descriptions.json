@@ -1,0 +1,19 @@
+{
+  "$source": "teaching-knowledge-bridge_V1.0.md §八 Phase E, student-model-redesign_V1.0.md §3.2",
+  "proficiency": {
+    "beginner": "你正处于模仿期，偶尔能写出不错的段落，但有时还会出现较严重的问题。建议通过具体示范和结构化步骤来学习。",
+    "intermediate": "你已有一定基础，能识别大多数问题，但在某些复杂场景下仍需指导。适合通过引导和案例分析来深化理解。",
+    "advanced": "你已具备成熟的写作能力，现在适合挑战更高难度的创作技巧。可以在约束条件下自由创作，探索个人风格。"
+  },
+  "cognitiveStyle": {
+    "analytical": "你更擅长从逻辑和结构角度理解问题，喜欢系统化的分析方法。教学中应多使用框架、规则和推理。",
+    "emotional": "你更擅长从感受和情感共鸣中学习，通过案例体验效果更好。教学中应多引用故事和情感连接。",
+    "mixed": "你兼具逻辑分析和情感体验两种学习方式，可以根据情况灵活切换。教学中可结合两种方法。"
+  },
+  "syndromeSummary": {
+    "noData": "暂无诊断数据，请先上传你的作品进行分析。",
+    "hasIssues": "目前最需要关注的问题是：{topIssue}（{tierLabel}）。这是你当前最需要优先解决的问题。",
+    "improving": "你的写作正在进步中！之前最严重的问题是{topIssue}，现在已有改善。继续保持。",
+    "multipleIssues": "你有多个需要注意的问题，建议一次只专注于一个：{topIssue}（{tierLabel}）。"
+  }
+}

@@ -1,0 +1,738 @@
+{
+  "_meta": {
+    "title": "月笙写作教练 - 项目结构索引",
+    "version": "1.0.0",
+    "updated": "2026-06-01",
+    "purpose": "轻量级 CodeGraph 替代。每次修改前读取此文件，快速理解跨层依赖关系，确保不漏改任何关联文件。",
+    "maintain": "每次变更后更新末尾的变更记录"
+  },
+
+  "file_tree": {
+    "description": "项目核心文件概览，按架构层分组",
+    "layers": {
+      "shared_types": ["src/renderer/shared/types.ts"],
+      "preload": ["src/preload/index.ts"],
+      "main_ipc": [
+        "src/main/ipc/config.handler.ts",
+        "src/main/ipc/chat.handler.ts",
+        "src/main/ipc/session.handler.ts",
+        "src/main/ipc/diagnosis.handler.ts",
+        "src/main/ipc/teaching-state.handler.ts"
+      ],
+      "main_services": [
+        "src/main/services/config.service.ts",
+        "src/main/services/session.service.ts",
+        "src/main/services/teaching-state.store.ts",
+        "src/main/services/teaching-state-machine.ts",
+        "src/main/services/teaching-state.types.ts",
+        "src/main/services/diagnosis-parser.ts",
+        "src/main/services/recommendation-engine.ts",
+        "src/main/services/student-classifier.ts",
+        "src/main/services/feedback-engine.ts",
+        "src/main/services/writing-analyzer.ts"
+      ],
+      "main_core": [
+        "src/main/api-proxy.ts",
+        "src/main/database.ts",
+        "src/main/index.ts"
+      ],
+      "main_db": [
+        "src/main/db/003_create_teaching_state.sql",
+        "src/main/db/004_create_chat.sql"
+      ],
+      "renderer_stores": [
+        "src/renderer/stores/config.store.ts",
+        "src/renderer/stores/chat.store.ts",
+        "src/renderer/stores/session.store.ts",
+        "src/renderer/stores/diag.store.ts",
+        "src/renderer/stores/teaching-state.store.ts",
+        "src/renderer/stores/task.store.ts"
+      ],
+      "renderer_components": [
+        "src/renderer/components/ApiConfig.tsx",
+        "src/renderer/components/ChatPage.tsx",
+        "src/renderer/components/DiagnosisPanel.tsx",
+        "src/renderer/components/TeachingProgressPanel.tsx",
+        "src/renderer/components/SessionSidebar.tsx",
+        "src/renderer/components/common/Icons.tsx"
+      ],
+      "renderer_root": [
+        "src/renderer/App.tsx",
+        "src/renderer/main.tsx"
+      ],
+      "prompts": [
+        "resources/prompts/yuesheng-prompt-v3.md",
+        "resources/prompts/core-principles.md",
+        "resources/prompts/syndrome-manual.md",
+        "resources/prompts/action-library.md",
+        "resources/prompts/training-tasks.md",
+        "resources/prompts/blind-test-plan.md"
+      ]
+    }
+  },
+
+  "ipc_channels": {
+    "description": "完整 IPC 通道映射。每条通道格式：【通道名】→ invoke/on →【handler 文件】→【service 文件】→【前端调用方】",
+    "invoke_channels": [
+      {
+        "id": "1",
+        "channel": "config:get",
+        "constant": "CONFIG_GET",
+        "type": "invoke",
+        "handler": "config.handler.ts",
+        "service": "ConfigService",
+        "preload": true,
+        "frontend": "config.store.ts -> loadConfig()"
+      },
+      {
+        "id": "2",
+        "channel": "config:set",
+        "constant": "CONFIG_SET",
+        "type": "invoke",
+        "handler": "config.handler.ts",
+        "service": "ConfigService",
+        "preload": true,
+        "frontend": "config.store.ts -> setApiKey/setBaseUrl/setModelName/setTemperature/setAttitudeLevel"
+      },
+      {
+        "id": "3",
+        "channel": "config:testConnection",
+        "constant": "CONFIG_TEST_CONNECTION",
+        "type": "invoke",
+        "handler": "config.handler.ts",
+        "service": "ConfigService",
+        "preload": true,
+        "frontend": "config.store.ts -> testConnection()"
+      },
+      {
+        "id": "4",
+        "channel": "diagnosis:query",
+        "constant": "DIAGNOSIS_QUERY",
+        "type": "invoke",
+        "handler": "diagnosis.handler.ts",
+        "service": "TeachingStateStore",
+        "preload": true,
+        "frontend": "未使用（预留通道）"
+      },
+      {
+        "id": "5",
+        "channel": "teachingState:get",
+        "constant": "TEACHING_STATE_GET",
+        "type": "invoke",
+        "handler": "teaching-state.handler.ts",
+        "service": "TeachingStateStore + TeachingStateMachine",
+        "preload": true,
+        "frontend": "TeachingProgressPanel.tsx"
+      },
+      {
+        "id": "6",
+        "channel": "teachingState:update",
+        "constant": "TEACHING_STATE_UPDATE",
+        "type": "invoke",
+        "handler": "teaching-state.handler.ts",
+        "service": "TeachingStateStore",
+        "preload": true,
+        "frontend": "未使用（主进程内部调用）"
+      },
+      {
+        "id": "7",
+        "channel": "teachingState:confirm",
+        "constant": "TEACHING_STATE_CONFIRM",
+        "type": "invoke",
+        "handler": "teaching-state.handler.ts",
+        "service": "TeachingStateStore + TeachingStateMachine",
+        "preload": true,
+        "frontend": "TeachingProgressPanel.tsx -> handleConfirm()"
+      },
+      {
+        "id": "8",
+        "channel": "teachingState:getPrompt",
+        "constant": "TEACHING_STATE_GET_PROMPT",
+        "type": "invoke",
+        "handler": "teaching-state.handler.ts",
+        "service": "TeachingStateMachine",
+        "preload": true,
+        "frontend": "未使用（预留通道）"
+      },
+      {
+        "id": "9",
+        "channel": "teachingState:updateSummary",
+        "constant": "TEACHING_STATE_UPDATE_SUMMARY",
+        "type": "invoke",
+        "handler": "teaching-state.handler.ts",
+        "service": "TeachingStateStore",
+        "preload": true,
+        "frontend": "未使用（主进程内部调用）"
+      },
+      {
+        "id": "10",
+        "channel": "chat:send",
+        "constant": "CHAT_SEND",
+        "type": "invoke",
+        "handler": "chat.handler.ts",
+        "service": "ApiProxy + SessionService + diagnosis-parser (内部调用)",
+        "preload": true,
+        "frontend": "chat.store.ts -> sendMessage()"
+      },
+      {
+        "id": "11",
+        "channel": "session:list",
+        "constant": "SESSION_LIST",
+        "type": "invoke",
+        "handler": "session.handler.ts",
+        "service": "SessionService",
+        "preload": true,
+        "frontend": "session.store.ts -> loadSessions()"
+      },
+      {
+        "id": "12",
+        "channel": "session:create",
+        "constant": "SESSION_CREATE",
+        "type": "invoke",
+        "handler": "session.handler.ts",
+        "service": "SessionService",
+        "preload": true,
+        "frontend": "session.store.ts -> createSession()"
+      },
+      {
+        "id": "13",
+        "channel": "session:delete",
+        "constant": "SESSION_DELETE",
+        "type": "invoke",
+        "handler": "session.handler.ts",
+        "service": "SessionService",
+        "preload": true,
+        "frontend": "session.store.ts -> deleteSession()"
+      },
+      {
+        "id": "14",
+        "channel": "session:rename",
+        "constant": "SESSION_RENAME",
+        "type": "invoke",
+        "handler": "session.handler.ts",
+        "service": "SessionService",
+        "preload": true,
+        "frontend": "session.store.ts -> renameSession()"
+      },
+      {
+        "id": "15",
+        "channel": "session:getMessages",
+        "constant": "SESSION_GET_MESSAGES",
+        "type": "invoke",
+        "handler": "session.handler.ts",
+        "service": "SessionService",
+        "preload": true,
+        "frontend": "session.store.ts -> switchSession()"
+      }
+    ],
+    "event_channels": [
+      {
+        "id": "16",
+        "channel": "diagnosis:update",
+        "constant": "DIAGNOSIS_UPDATE",
+        "type": "event (push)",
+        "sender_file": "diagnosis.handler.ts -> processDiagnosisFromAI()",
+        "preload": true,
+        "frontend": "App.tsx (electronAPI.on)"
+      },
+      {
+        "id": "17",
+        "channel": "teachingState:updated",
+        "constant": "TEACHING_STATE_UPDATED",
+        "type": "event (push)",
+        "sender_file": "teaching-state.handler.ts (confirmPhaseComplete/pushTeachingStateUpdate)",
+        "preload": true,
+        "frontend": "TeachingProgressPanel.tsx (electronAPI.on)"
+      },
+      {
+        "id": "18",
+        "channel": "chat:stream:data",
+        "constant": "CHAT_STREAM_DATA",
+        "type": "event (push)",
+        "sender_file": "chat.handler.ts (流式块推送)",
+        "preload": true,
+        "frontend": "App.tsx (electronAPI.on)"
+      },
+      {
+        "id": "19",
+        "channel": "chat:stream:end",
+        "constant": "CHAT_STREAM_END",
+        "type": "event (push)",
+        "sender_file": "chat.handler.ts (流结束/出错推送)",
+        "preload": true,
+        "frontend": "App.tsx (electronAPI.on)"
+      }
+    ],
+    "handler_to_channel_map": {
+      "config.handler.ts": {
+        "invoke": ["config:get", "config:set", "config:testConnection"],
+        "event": []
+      },
+      "session.handler.ts": {
+        "invoke": ["session:list", "session:create", "session:delete", "session:rename", "session:getMessages"],
+        "event": []
+      },
+      "chat.handler.ts": {
+        "invoke": ["chat:send"],
+        "event": ["chat:stream:data", "chat:stream:end"]
+      },
+      "diagnosis.handler.ts": {
+        "invoke": ["diagnosis:query"],
+        "event": ["diagnosis:update"]
+      },
+      "teaching-state.handler.ts": {
+        "invoke": ["teachingState:get", "teachingState:update", "teachingState:confirm", "teachingState:getPrompt", "teachingState:updateSummary"],
+        "event": ["teachingState:updated"]
+      }
+    }
+  },
+
+  "types": {
+    "description": "核心类型/枚举/接口定义位置及其引用文件。修改任何类型前查阅此表以了解影响面。",
+    "entries": [
+      {
+        "name": "SyndromeId",
+        "kind": "enum",
+        "definition": "types.ts:L43-L51",
+        "values": ["P001", "P002", "P003", "P004", "P005", "P006", "P007"],
+        "referenced_by": [
+          "diagnosis-parser.ts", "diagnosis.handler.ts", "diag.store.ts",
+          "test-factories.ts", "diagnosis-parser.test.ts", "merge-diagnosis.test.ts",
+          "teaching-state.types.ts", "recommendation-engine.ts"
+        ]
+      },
+      {
+        "name": "ActionId",
+        "kind": "enum",
+        "definition": "types.ts:L54-L63",
+        "values": ["A001", "A002", "A003", "A004", "A005", "A006", "A007", "A008"],
+        "referenced_by": [
+          "diagnosis-parser.ts", "teaching-state-machine.ts", "DiagnosisPanel.tsx",
+          "test-factories.ts", "diagnosis-parser.test.ts", "merge-diagnosis.test.ts",
+          "teaching-state.types.ts"
+        ]
+      },
+      {
+        "name": "SeverityLevel",
+        "kind": "type",
+        "definition": "types.ts:L40",
+        "values": ["'L1'", "'L2'", "'L3'"],
+        "referenced_by": [
+          "diagnosis-parser.ts", "diag.store.ts", "DiagnosisPanel.tsx",
+          "test-factories.ts", "diagnosis-parser.test.ts", "teaching-state.types.ts"
+        ]
+      },
+      {
+        "name": "DiagnosisEntry",
+        "kind": "interface",
+        "definition": "types.ts:L96-L111",
+        "fields": ["sessionId", "messageId", "syndromes", "suggestedActions", "confidence", "timestamp", "nextFocus?"],
+        "referenced_by": [
+          "diag.store.ts", "DiagnosisPanel.tsx", "App.tsx",
+          "diagnosis-parser.ts", "diagnosis.handler.ts",
+          "test-factories.ts", "merge-diagnosis.test.ts"
+        ]
+      },
+      {
+        "name": "SyndromeResult",
+        "kind": "interface",
+        "definition": "types.ts:L80-L93",
+        "fields": ["id", "name", "severity", "evidence", "score?", "suggestedActions"],
+        "referenced_by": [
+          "diagnosis-parser.ts", "DiagnosisPanel.tsx", "test-factories.ts"
+        ]
+      },
+      {
+        "name": "ChatMessage",
+        "kind": "interface",
+        "definition": "types.ts:L117-L123",
+        "fields": ["id", "role", "content", "timestamp"],
+        "referenced_by": ["chat.store.ts", "App.tsx"]
+      },
+      {
+        "name": "Session",
+        "kind": "interface",
+        "definition": "types.ts:L126-L133",
+        "fields": ["id", "title", "createdAt", "updatedAt", "messages", "lastMessage?"],
+        "referenced_by": ["session.store.ts"]
+      },
+      {
+        "name": "MessageRow",
+        "kind": "interface",
+        "definition": "types.ts:L292",
+        "fields": ["id", "sessionId", "role", "content", "timestamp"],
+        "referenced_by": ["session.store.ts"]
+      },
+      {
+        "name": "TeachingPhase",
+        "kind": "enum",
+        "definition": "types.ts:L183-L192",
+        "values": ["P0_INIT", "P1_WORLD", "P2_PRACTICE_LOOP", "P4_REVIEW"],
+        "referenced_by": [
+          "teaching-state.store.ts (main)", "teaching-state-machine.ts",
+          "teaching-state-machine.test.ts", "merge-diagnosis.test.ts",
+          "teaching-state.types.ts"
+        ]
+      },
+      {
+        "name": "TeachingSubphase",
+        "kind": "enum",
+        "definition": "types.ts:L195-L208",
+        "values": ["S0_INIT", "S1_PROTAGONIST", "S1_FIRST_SCENE", "S2_IDENTIFY", "S2_TEACHING", "S2_ASSIGN_TASK", "S2_REVIEW_TASK", "S4_SUMMARY", "S4_SESSION_END"],
+        "referenced_by": [
+          "teaching-state.store.ts (main)", "teaching-state-machine.ts",
+          "teaching-state-machine.test.ts", "merge-diagnosis.test.ts",
+          "teaching-state.types.ts"
+        ]
+      },
+      {
+        "name": "TeachingState",
+        "kind": "interface",
+        "definition": "types.ts:L244-L267",
+        "fields": ["sessionId", "currentPhase", "currentSubphase", "completedActions", "completedTasks", "activeProblems", "diagnosisSummary", "lastUserConfirmation", "updatedAt"],
+        "referenced_by": [
+          "teaching-state.store.ts (renderer)", "TeachingProgressPanel.tsx",
+          "teaching-state.store.ts (main)", "teaching-state-machine.ts",
+          "teaching-state.handler.ts", "diagnosis.handler.ts",
+          "merge-diagnosis.test.ts", "teaching-state.types.ts"
+        ]
+      },
+      {
+        "name": "ActiveProblem",
+        "kind": "interface",
+        "definition": "types.ts:L214-L231",
+        "referenced_by": ["diagnosis.handler.ts", "teaching-state.types.ts"]
+      },
+      {
+        "name": "TeachingProgressDisplay",
+        "kind": "interface",
+        "definition": "types.ts:L276-L289",
+        "referenced_by": ["teaching-state.store.ts (renderer)", "teaching-state.types.ts"]
+      },
+      {
+        "name": "ApiConfig",
+        "kind": "interface",
+        "definition": "types.ts:L8-L19",
+        "fields": ["apiKey", "baseUrl", "modelName", "temperature", "attitudeLevel"],
+        "referenced_by": [
+          "config.store.ts", "ApiConfig.tsx", "App.tsx",
+          "config.service.ts", "config.handler.ts", "api-proxy.ts",
+          "api-proxy.test.ts", "config.store.test.ts"
+        ]
+      },
+      {
+        "name": "AttitudeLevel",
+        "kind": "type",
+        "definition": "types.ts:L5",
+        "values": ["'doubao'", "'yuesheng'"],
+        "referenced_by": ["config.store.ts", "chat.store.ts", "chat.handler.ts", "ChatPage.tsx"]
+      },
+      {
+        "name": "IPC_CHANNELS",
+        "kind": "const",
+        "definition": "types.ts:L155-L180",
+        "referenced_by": [
+          "config.store.ts", "chat.store.ts", "session.store.ts",
+          "TeachingProgressPanel.tsx", "App.tsx",
+          "config.handler.ts", "chat.handler.ts", "session.handler.ts",
+          "teaching-state.handler.ts", "diagnosis.handler.ts",
+          "config.store.test.ts", "chat.store.test.ts"
+        ]
+      },
+      {
+        "name": "IPCRequestMap",
+        "kind": "interface",
+        "definition": "types.ts:L301-L322",
+        "referenced_by": []
+      },
+      {
+        "name": "IPCResponseMap",
+        "kind": "interface",
+        "definition": "types.ts:L325-L346",
+        "referenced_by": []
+      },
+      {
+        "name": "IPCEventMap",
+        "kind": "interface",
+        "definition": "types.ts:L349-L354",
+        "referenced_by": []
+      }
+    ],
+    "impact_notes": [
+      "SyndromeId 和 ActionId 是最核心的枚举，新增值需要同步修改：枚举定义 + 解析逻辑 + 映射配置 + 测试工厂 + 前端展示",
+      "TeachingPhase 和 TeachingSubphase 是状态机的骨架，新增子阶段需要同步修改：枚举 + state-machine 流转逻辑 + store 持久化",
+      "IPC_CHANNELS 是跨层神经中枢，新增通道需要同步修改：常量定义 + preload 白名单 + handler 注册 + store 调用"
+    ]
+  },
+
+  "services": {
+    "description": "主进程服务依赖关系。调用方分为 IPC handler（通过注册通道响应前端请求）和内部调用链。",
+    "entries": [
+      {
+        "name": "ConfigService",
+        "file": "config.service.ts",
+        "pattern": "单例模式 (getInstance)",
+        "depends_on": ["electron-store"],
+        "called_by": ["config.handler.ts", "chat.handler.ts (读取配置/态度档位)"]
+      },
+      {
+        "name": "SessionService",
+        "file": "session.service.ts",
+        "pattern": "依赖注入 (constructor + setSessionService)",
+        "depends_on": ["Database"],
+        "called_by": ["session.handler.ts", "chat.handler.ts (saveMessage/autoGenerateTitle)"],
+        "init_location": "main/index.ts (new + 注入)"
+      },
+      {
+        "name": "TeachingStateStore (main)",
+        "file": "teaching-state.store.ts",
+        "pattern": "依赖注入 (initStore + setTeachingStateMachine)",
+        "depends_on": ["Database", "TeachingStateMachine"],
+        "called_by": ["teaching-state.handler.ts", "diagnosis.handler.ts (合并诊断到状态)"],
+        "init_location": "teaching-state.handler.ts -> initStore(db)"
+      },
+      {
+        "name": "TeachingStateMachine",
+        "file": "teaching-state-machine.ts",
+        "pattern": "纯函数模块",
+        "depends_on": [],
+        "called_by": ["teaching-state.handler.ts", "TeachingStateStore (main) -> confirmAndAdvance()"],
+        "key_functions": ["confirmPhaseComplete", "getNextPhase", "getPhaseName", "getSubphaseName", "calculatePhaseProgress", "buildSystemPromptWithState", "updateDiagnosisSummary"]
+      },
+      {
+        "name": "DiagnosisParser",
+        "file": "diagnosis-parser.ts",
+        "pattern": "纯函数",
+        "depends_on": [],
+        "called_by": ["diagnosis.handler.ts -> processDiagnosisFromAI()"],
+        "key_function": "parseDiagnosisFromAIResponse"
+      },
+      {
+        "name": "RecommendationEngine",
+        "file": "recommendation-engine.ts",
+        "pattern": "骨架 (Phase 2 待实现)",
+        "depends_on": [],
+        "called_by": [],
+        "status": "TODO - 当前未启用"
+      },
+      {
+        "name": "StudentClassifier",
+        "file": "student-classifier.ts",
+        "pattern": "骨架 (Phase 2 待实现)",
+        "depends_on": [],
+        "called_by": [],
+        "status": "TODO - 当前未启用"
+      },
+      {
+        "name": "FeedbackEngine",
+        "file": "feedback-engine.ts",
+        "pattern": "骨架 (Phase 2 待实现)",
+        "depends_on": [],
+        "called_by": [],
+        "status": "TODO - 当前未启用"
+      },
+      {
+        "name": "WritingAnalyzer",
+        "file": "writing-analyzer.ts",
+        "pattern": "骨架 (Phase 2 待实现)",
+        "depends_on": [],
+        "called_by": [],
+        "status": "TODO - 当前未启用"
+      }
+    ],
+    "syndrome_training_mapping": {
+      "description": "症候到训练任务的映射表（定义在 recommendation-engine.ts 的 SYNDROME_TASK_MAP 中）",
+      "mappings": {
+        "P001": ["T001", "T002"],
+        "P002": ["T003", "T004"],
+        "P003": ["T005", "T006"],
+        "P004": ["T007", "T008"],
+        "P005": ["T009", "T010"],
+        "P006": ["T011", "T012"],
+        "P007": ["T013", "T014"]
+      },
+      "note": "偶数编号 (T002/T004/T006/T008/T010/T012) 当前未填充内容，需后续补充"
+    }
+  },
+
+  "stores": {
+    "description": "前端 Zustand Store 依赖关系。Store 是前端数据的枢纽，跨 Store 调用需要特别注意初始化时序。",
+    "entries": [
+      {
+        "name": "useConfigStore",
+        "file": "config.store.ts",
+        "ipc_invoke": ["config:get", "config:set", "config:testConnection"],
+        "cross_store_deps": [],
+        "used_by_components": ["ApiConfig.tsx", "ChatPage.tsx"],
+        "test_file": "config.store.test.ts"
+      },
+      {
+        "name": "useChatStore",
+        "file": "chat.store.ts",
+        "ipc_invoke": ["chat:send"],
+        "cross_store_deps": ["useConfigStore (attitudeLevel)", "useSessionStore (currentSessionId)"],
+        "used_by_components": ["ChatPage.tsx"],
+        "test_file": "chat.store.test.ts"
+      },
+      {
+        "name": "useSessionStore",
+        "file": "session.store.ts",
+        "ipc_invoke": ["session:list", "session:create", "session:delete", "session:rename", "session:getMessages"],
+        "cross_store_deps": [],
+        "used_by_components": ["SessionSidebar.tsx"],
+        "test_file": "无"
+      },
+      {
+        "name": "useDiagStore",
+        "file": "diag.store.ts",
+        "ipc_invoke": [],
+        "note": "诊断数据通过 IPC 事件推送 (diagnosis:update) 接收，不主动 invoke",
+        "cross_store_deps": [],
+        "used_by_components": ["DiagnosisPanel.tsx"],
+        "test_file": "无"
+      },
+      {
+        "name": "useTeachingStateStore",
+        "file": "teaching-state.store.ts",
+        "ipc_invoke": [],
+        "note": "数据在 TeachingProgressPanel.tsx 中直接 electronAPI.invoke，store 仅做状态容器",
+        "cross_store_deps": [],
+        "used_by_components": ["TeachingProgressPanel.tsx"],
+        "test_file": "无"
+      },
+      {
+        "name": "useTaskStore",
+        "file": "task.store.ts",
+        "status": "骨架（仅含注释）",
+        "test_file": "无"
+      }
+    ],
+    "cross_store_flow": "重要: chat.store.ts 是唯一存在跨 Store 依赖的 Store。修改 sendMessage 时确保 useSessionStore.getState().currentSessionId 和 useConfigStore.getState().attitudeLevel 已被初始化。"
+  },
+
+  "components": {
+    "description": "React 组件及其依赖的 Store/Service。",
+    "entries": [
+      {
+        "name": "App.tsx",
+        "file": "App.tsx",
+        "stores_used": ["useChatStore (messages)", "useSessionStore (sessions, currentSessionId, loadSessions, switchSession)"],
+        "events_listened": ["diagnosis:update -> useDiagStore.setCurrentDiagnosis", "chat:stream:data -> useChatStore.appendChunk", "chat:stream:end -> useChatStore.finalizeMessage"],
+        "note": "事件监听枢纽——所有 IPC 事件在 App.tsx 中接收并分发到各个 Store"
+      },
+      {
+        "name": "ApiConfig.tsx",
+        "stores_used": ["useConfigStore (全部字段和方法)"],
+        "icons_used": ["SpinnerIcon", "CheckIcon", "XIcon", "EyeIcon", "EyeOffIcon"]
+      },
+      {
+        "name": "ChatPage.tsx",
+        "stores_used": ["useChatStore (messages, isLoading, error, sendMessage)", "useConfigStore (attitudeLevel, setAttitudeLevel)"],
+        "types_used": ["ChatMessage", "AttitudeLevel"]
+      },
+      {
+        "name": "DiagnosisPanel.tsx",
+        "stores_used": ["useDiagStore (selectCurrentSyndromes, selectCurrentActions, selectCurrentConfidence, selectHasDiagnosis)"],
+        "types_used": ["SyndromeResult", "ActionId", "SeverityLevel"]
+      },
+      {
+        "name": "TeachingProgressPanel.tsx",
+        "stores_used": ["useTeachingStateStore (selectProgressDisplay, setCurrentState, setLoading)"],
+        "ipc_direct": ["teachingState:get (invoke)", "teachingState:confirm (invoke)", "teachingState:updated (on)"]
+      },
+      {
+        "name": "SessionSidebar.tsx",
+        "stores_used": ["useSessionStore (全部字段和方法)"]
+      },
+      {
+        "name": "common/Icons.tsx",
+        "stores_used": []
+      }
+    ]
+  },
+
+  "database": {
+    "description": "数据库迁移文件及创建的表结构。",
+    "migrations": [
+      {
+        "file": "003_create_teaching_state.sql",
+        "table": "teaching_state",
+        "purpose": "教学状态持久化",
+        "key_fields": ["session_id", "current_phase", "current_subphase", "completed_actions", "completed_tasks", "active_problems", "diagnosis_summary", "last_user_confirmation", "updated_at"]
+      },
+      {
+        "file": "004_create_chat.sql",
+        "tables": ["sessions", "messages"],
+        "purpose": "聊天会话与消息持久化",
+        "key_fields_sessions": ["id", "title", "created_at", "updated_at"],
+        "key_fields_messages": ["id", "session_id", "role", "content", "timestamp"]
+      }
+    ],
+    "data_flow": {
+      "chain": "用户输入 → chat.handler (流处理) → session.service (saveMessage 持久化) → diagnosis-parser (诊断解析) → diagnosis.handler (推送诊断事件) → teaching-state store (合并诊断到教学状态)"
+    }
+  },
+
+  "prompts": {
+    "description": "教学提示词文件。系统 Prompt 的核心资产。",
+    "entries": [
+      {
+        "file": "yuesheng-prompt-v3.md",
+        "version": "V3.0.1",
+        "purpose": "核心系统 Prompt，定义 AI 导师行为规范",
+        "contents": ["铁三角原则", "态度档位 (doubao/yuesheng)", "病症抽屉 (P001-P007)", "动作抽屉 (A001-A008)"]
+      },
+      {
+        "file": "core-principles.md",
+        "version": "V1.0",
+        "purpose": "核心原则与教学逻辑文档",
+        "contents": ["第一性原理", "三档态度", "场景应对逻辑"]
+      },
+      {
+        "file": "syndrome-manual.md",
+        "version": "V1.0",
+        "purpose": "病症识别手册——AI 诊断依据",
+        "contents": ["P001-P007 详细识别标准", "严重度分级 (L1-L3)", "权重评分"]
+      },
+      {
+        "file": "action-library.md",
+        "version": "V3.0 (一句话版)",
+        "purpose": "教学动作库——训练策略",
+        "contents": ["A001-A008 详细定义", "话术模板"]
+      },
+      {
+        "file": "training-tasks.md",
+        "version": "V2.0",
+        "purpose": "训练任务库",
+        "contents": ["T001-T014 任务描述", "场景设定", "评估标准"]
+      },
+      {
+        "file": "blind-test-plan.md",
+        "version": "V2.0",
+        "purpose": "盲测方案——验证 AI 训练能力",
+        "contents": ["5 个测试案例", "多轮对话设计"]
+      }
+    ]
+  },
+
+  "change_log": [
+    {
+      "date": "2026-06-01",
+      "version": "1.0.0",
+      "author": "design-philosophy_V1.0.md",
+      "changes": "初始创建。完整梳理了项目结构、IPC 通道、类型定义、服务依赖、组件关联、数据库和提示词文件。"
+    },
+    {
+      "date": "2026-06-01",
+      "version": "1.0.1",
+      "author": "T-003",
+      "changes": "更新 SyndromeId 枚举（P008-P010）和 TeachingSubphase 枚举（+3 子阶段）。更新 SYNDROME_TASK_MAP。更新测试工厂。"
+    },
+    {
+      "date": "2026-06-01",
+      "version": "1.0.2",
+      "author": "T-004",
+      "changes": "新增诊断结果持久化：005 迁移文件、DiagnosisService、handler 集成、7 个测试用例。"
+    }
+  ]
+}
