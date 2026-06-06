@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 全面测试结果报告 v2.0</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Noto Sans SC', 'Microsoft YaHei', sans-serif; background: #F5F0E8; color: #3D3229; padding: 0; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .report-header { background: linear-gradient(135deg, #3D3229 0%, #5A4A3C 100%); color: #F5F0E8; padding: 40px 32px; border-radius: 16px; margin-bottom: 32px; }
+  .report-header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }
+  .report-header .subtitle { color: #C4B5A5; font-size: 0.9rem; }
+  .report-header .meta { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
+  .report-header .meta-item { font-size: 0.85rem; color: #B8A89A; }
+  .report-header .meta-item strong { color: #E8DDD0; }
+  .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .summary-card { background: #fff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 1px 4px rgba(61,50,41,0.06); }
+  .summary-card .num { font-size: 2.2rem; font-weight: 700; }
+  .summary-card .label { font-size: 0.78rem; color: #A89888; margin-top: 4px; }
+  .summary-card .num.green { color: #7A9E7E; }
+  .summary-card .num.red { color: #C0766E; }
+  .summary-card .num.brown { color: #3D3229; }
+  .section { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(61,50,41,0.06); }
+  .section-title { font-size: 1.1rem; font-weight: 600; color: #3D3229; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #F0EAE0; display: flex; align-items: center; gap: 8px; }
+  .section-title .icon { font-size: 1.2rem; background: #3D3229; color: #F5F0E8; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+  .module-card { border: 1px solid #F0EAE0; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+  .mod-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #FAF7F2; }
+  .mod-id { font-family: monospace; font-size: 0.8rem; background: #3D3229; color: #F5F0E8; padding: 2px 8px; border-radius: 4px; font-weight: 600; letter-spacing: 0.5px; }
+  .mod-name { font-weight: 600; font-size: 0.9rem; flex: 1; }
+  .mod-badge { font-size: 0.78rem; padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+  .badge-pass { background: #E8F0E5; color: #5A8A5E; }
+  .badge-fail { background: #F5E5E2; color: #B06050; }
+  .badge-warn { background: #F5F0E0; color: #B09040; }
+  .mod-body { padding: 12px 16px; }
+  .mod-stats { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 0.82rem; color: #7A6B5D; margin-bottom: 8px; }
+  .mod-stats span { background: #F5F0E8; padding: 1px 8px; border-radius: 4px; }
+  .progress-bar { height: 6px; background: #F0EAE0; border-radius: 3px; margin: 8px 0 12px; }
+  .progress-fill { height: 100%; border-radius: 3px; background: #7A9E7E; }
+  .mod-tests details { margin-top: 8px; }
+  .mod-tests summary { font-size: 0.82rem; color: #7A6B5D; cursor: pointer; padding: 4px 0; }
+  .mod-tests table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.8rem; }
+  .mod-tests th { background: #F5F0E8; text-align: left; padding: 6px 10px; color: #7A6B5D; font-weight: 600; }
+  .mod-tests td { padding: 5px 10px; border-bottom: 1px solid #F0EAE0; }
+  .mod-tests .passed { color: #7A9E7E; font-weight: 600; }
+  .mod-tests .failed { color: #C0766E; font-weight: 600; }
+  table.wide { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.wide th { background: #F5F0E8; text-align: left; padding: 8px 12px; color: #7A6B5D; font-weight: 600; }
+  table.wide td { padding: 8px 12px; border-bottom: 1px solid #F0EAE0; }
+  table.wide tr:hover { background: #FAF7F2; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 4px; font-size: 0.78rem; font-weight: 600; }
+  .tag-pass { background: #E8F0E5; color: #5A8A5E; }
+  .tag-fail { background: #F5E5E2; color: #B06050; }
+  .tag-info { background: #E5EDF5; color: #4A7A9E; }
+  .tag-warn { background: #F5F0E0; color: #B09040; }
+  .verification-item { padding: 12px 16px; border-left: 3px solid #7A9E7E; background: #F8FAF5; border-radius: 0 8px 8px 0; margin-bottom: 8px; }
+  .verification-item .v-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+  .verification-item .v-detail { font-size: 0.82rem; color: #7A6B5D; }
+  .verification-item .v-result { font-size: 0.82rem; margin-top: 4px; color: #5A8A5E; font-weight: 600; }
+  .verification-item.warn { border-left-color: #D4A56A; background: #FDFAF5; }
+  .verification-item.warn .v-result { color: #B09040; }
+  .slow-list { list-style: none; }
+  .slow-list li { padding: 6px 0; border-bottom: 1px solid #F0EAE0; font-size: 0.85rem; display: flex; justify-content: space-between; }
+  .slow-list .duration { font-family: monospace; color: #A89888; }
+  .footer { text-align: center; color: #A89888; font-size: 0.78rem; padding: 24px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="report-header">
+  <h1>测试结果报告 v2.0</h1>
+  <div class="subtitle">月笙写作教练 · 全功能模块综合验证 · 新增 UI 交互组件测试</div>
+  <div class="meta">
+    <div class="meta-item">生成时间: <strong>2026/6/4 13:01:19</strong></div>
+    <div class="meta-item">总执行时间: <strong>2.9s</strong></div>
+    <div class="meta-item">测试框架: <strong>Vitest 4.1.7</strong></div>
+    <div class="meta-item">测试环境: <strong>Node.js + jsdom / Node.js</strong></div>
+    <div class="meta-item">报告版本: <strong>V2.0</strong></div>
+  </div>
+</div>
+
+<div class="summary-row">
+  <div class="summary-card"><div class="num brown">214</div><div class="label">测试用例总数</div></div>
+  <div class="summary-card"><div class="num green">214</div><div class="label">通过</div></div>
+  <div class="summary-card"><div class="num red">0</div><div class="label">失败</div></div>
+  <div class="summary-card"><div class="num brown">105</div><div class="label">测试文件</div></div>
+  <div class="summary-card"><div class="num green">100%</div><div class="label">通过率</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">1</span> 各模块响应状态、执行时间及成功率</div>
+  <p style="font-size:0.85rem;color:#7A6B5D;margin-bottom:16px;">
+    系统共覆盖 <strong>17</strong> 个功能模块。新增 UI 组件测试 32 项（DiagnosisCard 10 / EditPanel 10 / EvaluationCard 8 / GrowthCard 4）。
+  </p>
+  <div class="module-grid">
+    
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-UI</span>
+        <span class="mod-name">UI组件</span>
+        <span class="mod-badge badge-pass">44/44 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 44</span>
+          <span>通过: 44</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 59.1ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 44 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>MessageInput 应该渲染输入框和发送按钮</td><td class="passed">PASS</td><td>100.0ms</td></tr><tr><td>MessageInput 输入内容后点击发送应触发 onSend 并清空输入框</td><td class="passed">PASS</td><td>178.2ms</td></tr><tr><td>MessageInput 空内容时点击发送不应触发 onSend</td><td class="passed">PASS</td><td>61.4ms</td></tr><tr><td>MessageInput disabled 时输入框和按钮应被禁用</td><td class="passed">PASS</td><td>4.4ms</td></tr><tr><td>MessageInput isStreaming 时应显示停止按钮</td><td class="passed">PASS</td><td>3.2ms</td></tr><tr><td>MessageInput 点击停止按钮应调用 onStop</td><td class="passed">PASS</td><td>55.0ms</td></tr><tr><td>MessageInput 按 Enter 发送消息</td><td class="passed">PASS</td><td>189.0ms</td></tr><tr><td>MessageInput 按 Shift+Enter 不应发送消息</td><td class="passed">PASS</td><td>155.0ms</td></tr><tr><td>DiagnosisCard 无症候时返回 null</td><td class="passed">PASS</td><td>9.6ms</td></tr><tr><td>DiagnosisCard 摘要行显示主要症候名称和证据预览</td><td class="passed">PASS</td><td>18.4ms</td></tr><tr><td>DiagnosisCard 严重度标签显示在摘要行</td><td class="passed">PASS</td><td>2.8ms</td></tr><tr><td>DiagnosisCard 点击展开按钮显示详细症候列表</td><td class="passed">PASS</td><td>133.8ms</td></tr><tr><td>DiagnosisCard 展开后显示证据文本</td><td class="passed">PASS</td><td>45.4ms</td></tr><tr><td>DiagnosisCard 点击'尝试修改'按钮调用 onEdit</td><td class="passed">PASS</td><td>122.7ms</td></tr><tr><td>DiagnosisCard onEdit 未传入时不显示'尝试修改'按钮</td><td class="passed">PASS</td><td>63.4ms</td></tr><tr><td>DiagnosisCard 症候有 rewriteSuggestion 时显示'查看建议'按钮和建议内容</td><td class="passed">PASS</td><td>46.7ms</td></tr><tr><td>DiagnosisCard 展开/折叠状态由 aria-expanded 反映</td><td class="passed">PASS</td><td>124.2ms</td></tr><tr><td>EditPanel 标题显示症候名称</td><td class="passed">PASS</td><td>28.2ms</td></tr><tr><td>EditPanel 显示只读原文区域</td><td class="passed">PASS</td><td>3.6ms</td></tr><tr><td>EditPanel 多条原文逐一显示</td><td class="passed">PASS</td><td>4.6ms</td></tr><tr><td>EditPanel 关闭按钮调用 onCancel</td><td class="passed">PASS</td><td>130.6ms</td></tr><tr><td>EditPanel "取消"按钮调用 onCancel</td><td class="passed">PASS</td><td>61.1ms</td></tr><tr><td>EditPanel 文本区可以输入内容</td><td class="passed">PASS</td><td>312.9ms</td></tr><tr><td>EditPanel 空内容时提交按钮禁用</td><td class="passed">PASS</td><td>6.2ms</td></tr><tr><td>EditPanel 提交按钮在 isSubmitting 时禁用并显示加载</td><td class="passed">PASS</td><td>5.4ms</td></tr><tr><td>EditPanel 输入内容后提交按钮可用，点击触发 onSubmit</td><td class="passed">PASS</td><td>346.2ms</td></tr><tr><td>EditPanel 只输入空格时提交按钮禁用</td><td class="passed">PASS</td><td>110.5ms</td></tr><tr><td>EvaluationCard '明显改善'时显示'这个改法有效'</td><td class="passed">PASS</td><td>24.8ms</td></tr><tr><td>EvaluationCard '略有改善'时显示'部分改善'</td><td class="passed">PASS</td><td>3.0ms</td></tr><tr><td>EvaluationCard '无明显改善'时显示'需要调整'</td><td class="passed">PASS</td><td>2.4ms</td></tr><tr><td>EvaluationCard 显示分析文本</td><td class="passed">PASS</td><td>2.2ms</td></tr><tr><td>EvaluationCard 有 suggestion 时显示建议内容</td><td class="passed">PASS</td><td>2.1ms</td></tr><tr><td>EvaluationCard 无 suggestion 时不显示建议区块</td><td class="passed">PASS</td><td>2.7ms</td></tr><tr><td>EvaluationCard 显示改前改后对比</td><td class="passed">PASS</td><td>4.1ms</td></tr><tr><td>EvaluationCard 未提供原文时不显示对比区域</td><td class="passed">PASS</td><td>1.5ms</td></tr><tr><td>EvaluationCard 显示自定义 actions</td><td class="passed">PASS</td><td>2.3ms</td></tr><tr><td>GrowthCard 加载状态显示骨架屏</td><td class="passed">PASS</td><td>18.0ms</td></tr><tr><td>GrowthCard 有历史记录时显示成长摘要</td><td class="passed">PASS</td><td>9.8ms</td></tr><tr><td>GrowthCard 无历史记录时显示提示文案</td><td class="passed">PASS</td><td>2.3ms</td></tr><tr><td>GrowthCard 始终显示'成长记录'标题</td><td class="passed">PASS</td><td>2.1ms</td></tr><tr><td>AppSidebar 应该渲染侧栏容器</td><td class="passed">PASS</td><td>38.4ms</td></tr><tr><td>AppSidebar 折叠时应渲染 aria-label 为折叠侧边栏</td><td class="passed">PASS</td><td>96.5ms</td></tr><tr><td>AppSidebar 切换按钮点击应调用 onToggleCollapse</td><td class="passed">PASS</td><td>55.9ms</td></tr><tr><td>AppSidebar 有会话时应显示会话列表标题</td><td class="passed">PASS</td><td>10.2ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-EVID</span>
+        <span class="mod-name">证据管理</span>
+        <span class="mod-badge badge-pass">34/34 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 34</span>
+          <span>通过: 34</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 0.4ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 34 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>EvidenceService save 插入一条证据记录到数据库中</td><td class="passed">PASS</td><td>3.7ms</td></tr><tr><td>EvidenceService save 使用正确的 INSERT 列名</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>EvidenceService save 可以保存 type=pattern 和 level=4 的证据</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>EvidenceService getByDisease 根据疾病 ID 和作品 ID 查询证据</td><td class="passed">PASS</td><td>0.8ms</td></tr><tr><td>EvidenceService getByDisease 当提供 minLevel 时添加 level >= 过滤</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>EvidenceService getByDisease 当 minLevel 为 undefined 时不添加 level >= 过滤条件</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>EvidenceService getByDisease 当 minLevel 为 0 时仍添加过滤（语义上返回全部）</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService getByDisease 结果按 level DESC, created_at ASC 排序</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService getByDisease 没有匹配证据时返回空数组</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>EvidenceService getByDisease 将数据库行正确映射为 EvidenceRecord（camelCase）</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>EvidenceService getByDisease 返回多条匹配结果</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService getByAbility 根据能力 ID 和作者 ID 查询证据</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>EvidenceService getByAbility 当提供 fromDate 时添加 created_at >= 过滤</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService getByAbility 当提供 toDate 时添加 created_at <= 过滤</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService getByAbility 同时提供 fromDate 和 toDate 时添加两个过滤</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService getByAbility 结果按 created_at ASC 排序</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService getByAbility 没有匹配时返回空数组</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService getChainForDiagnosis 返回包含 primaryEvidence 和 supportingEvidence 的证据链</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>EvidenceService getChainForDiagnosis 将 level=3 的证据归类到 statistics</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>EvidenceService getChainForDiagnosis 将 relevance=contextual 归到 supportingEvidence</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>EvidenceService getChainForDiagnosis 使用 JOIN 查询 evidence 和 diagnosis_evidence 表</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService getChainForDiagnosis 没有关联证据时返回 null</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService linkToDiagnosis 插入诊断-证据关联记录</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService linkToDiagnosis 支持 supporting 关联类型</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService linkToDiagnosis 支持 contextual 关联类型</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService getEvidenceById 根据证据 ID 查询单条证据</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>EvidenceService getEvidenceById 证据不存在时返回 null</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>EvidenceService 错误处理 prepare 失败时所有方法抛出错误</td><td class="passed">PASS</td><td>1.0ms</td></tr><tr><td>EvidenceService 错误处理 run 失败时 save / linkToDiagnosis 抛出错误</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>EvidenceService 错误处理 all 失败时 getByDisease / getByAbility / getChainForDiagnosis 抛出错误</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>EvidenceService 错误处理 get 失败时 getEvidenceById 抛出错误</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService 多方法集成场景 保存证据后可通过 ID 查询到</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService 多方法集成场景 保存证据后可在疾病查询结果中找到</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>EvidenceService 多方法集成场景 关联证据后可获取完整证据链</td><td class="passed">PASS</td><td>0.2ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-CHAT-STORE</span>
+        <span class="mod-name">聊天存储</span>
+        <span class="mod-badge badge-pass">21/21 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 21</span>
+          <span>通过: 21</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 0.5ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 21 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>ChatStore 基础状态 初始状态为空</td><td class="passed">PASS</td><td>2.1ms</td></tr><tr><td>ChatStore addMessage 添加消息到列表</td><td class="passed">PASS</td><td>0.9ms</td></tr><tr><td>ChatStore appendToLastAssistant 追加内容到最后一条 assistant 消息</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>ChatStore appendToLastAssistant 多条 assistant 消息时追加到最后一条</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>ChatStore sendMessage 发送消息创建 user + assistant 两条消息</td><td class="passed">PASS</td><td>0.9ms</td></tr><tr><td>ChatStore sendMessage 发送时设置 isLoading = true</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>ChatStore sendMessage 发送完成后 isLoading 保持 true（由 stream end 事件处理）</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>ChatStore sendMessage 发送时调用 IPC invoke 传递正确参数</td><td class="passed">PASS</td><td>1.6ms</td></tr><tr><td>ChatStore sendMessage 发送时传递当前 attitudeLevel</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ChatStore sendMessage attitudeLevel 默认值为 yuesheng</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>ChatStore sendMessage IPC 返回失败时移除空的 assistant 消息但保留 user 消息并设置错误</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>ChatStore sendMessage IPC 抛出异常时移除空的 assistant 消息但保留 user 消息并设置错误</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>ChatStore sendMessage 空消息不发送</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>ChatStore sendMessage 空格消息不发送</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>ChatStore sendMessage loading 状态下不发送新消息</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>ChatStore sendMessage 发送时传递历史消息（不包括刚添加的新消息）</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>ChatStore getHistory 只返回 user 和 assistant 消息</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>ChatStore getHistory 超过 20 条消息时截断</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>ChatStore clearMessages 清空消息和错误</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>ChatStore setLoading / setError 设置加载状态</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>ChatStore setLoading / setError 设置错误信息</td><td class="passed">PASS</td><td>0.1ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-TEACH-SM</span>
+        <span class="mod-name">教学状态机</span>
+        <span class="mod-badge badge-pass">16/16 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 16</span>
+          <span>通过: 16</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 0.3ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 16 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>teaching-state-machine getPhaseName 返回正确的阶段中文名称</td><td class="passed">PASS</td><td>1.6ms</td></tr><tr><td>teaching-state-machine getSubphaseName 返回正确的子阶段中文名称</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>teaching-state-machine getNextPhase INIT → WORLD</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine getNextPhase WORLD → PRACTICE_LOOP</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine getNextPhase PRACTICE_LOOP 不自动离开</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>teaching-state-machine getNextPhase REVIEW → PRACTICE_LOOP</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine getFirstSubphaseOf 返回 WORLD 阶段的第一个子阶段</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine getFirstSubphaseOf 返回 PRACTICE_LOOP 阶段的第一个子阶段</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine getFirstSubphaseOf INIT 阶段无子阶段时抛出错误</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>teaching-state-machine getNextSubphase 推进到下一个子阶段</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>teaching-state-machine getNextSubphase 子阶段末尾返回 null</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine getNextSubphase 不存在的子阶段返回 null</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>teaching-state-machine calculatePhaseProgress WORLD 阶段第一个子阶段进度为 0.2</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine calculatePhaseProgress WORLD 阶段最后一个子阶段进度为 1</td><td class="passed">PASS</td><td>0.1ms</td></tr><tr><td>teaching-state-machine calculatePhaseProgress PRACTICE_LOOP 第一阶段进度为 0.25</td><td class="passed">PASS</td><td>0.0ms</td></tr><tr><td>teaching-state-machine calculatePhaseProgress 不存在的子阶段返回 0</td><td class="passed">PASS</td><td>0.0ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-API-PROXY</span>
+        <span class="mod-name">API代理</span>
+        <span class="mod-badge badge-pass">15/15 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 15</span>
+          <span>通过: 15</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 3.8ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 15 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>ApiProxy chatStream - 流式 SSE 解析 正确解析单个 data chunk</td><td class="passed">PASS</td><td>20.7ms</td></tr><tr><td>ApiProxy chatStream - 流式 SSE 解析 处理跨 chunk 的 SSE 行拆分</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>ApiProxy chatStream - 流式 SSE 解析 跳过无 content 的 delta</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ApiProxy chatStream - 流式 SSE 解析 静默跳过格式错误的 JSON chunk</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>ApiProxy chatStream - 流式 SSE 解析 跳过非 data: 开头的行</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ApiProxy chatStream - 流式 SSE 解析 长时间流式响应中累积多个 token</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>ApiProxy chatStream - HTTP 错误处理 401 认证失败时抛出明确错误</td><td class="passed">PASS</td><td>2.8ms</td></tr><tr><td>ApiProxy chatStream - HTTP 错误处理 500 服务端错误时抛出明确错误</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ApiProxy chatStream - HTTP 错误处理 网络错误时抛出</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ApiProxy chatStream - AbortController AbortController 停止后抛出</td><td class="passed">PASS</td><td>25.4ms</td></tr><tr><td>ApiProxy chatStream - 响应体为空 无 body 时抛出明确错误</td><td class="passed">PASS</td><td>1.1ms</td></tr><tr><td>ApiProxy testConnection 连接成功返回 success: true</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>ApiProxy testConnection HTTP 401 返回带错误信息的失败</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ApiProxy testConnection 网络错误返回带错误信息的失败</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>ApiProxy updateConfig 更新配置后使用新 baseUrl</td><td class="passed">PASS</td><td>2.3ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-DIAG-PARSE</span>
+        <span class="mod-name">诊断解析器</span>
+        <span class="mod-badge badge-pass">13/13 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 13</span>
+          <span>通过: 13</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.0ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 13 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>parseDiagnosisFromAIResponse 正常解析 正确解析包含诊断表 JSON 的 AI 回复</td><td class="passed">PASS</td><td>4.2ms</td></tr><tr><td>parseDiagnosisFromAIResponse 正常解析 AI 同时回答问题和生成诊断表 - 端到端</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>parseDiagnosisFromAIResponse 正常解析 正确解析新增症候 P009-P010</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>parseDiagnosisFromAIResponse 边界情况 无诊断表标记时返回原始回复和 null</td><td class="passed">PASS</td><td>1.0ms</td></tr><tr><td>parseDiagnosisFromAIResponse 边界情况 仅存在开始标记但缺少结束标记时返回原始回复和 null</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>parseDiagnosisFromAIResponse 边界情况 诊断表 JSON 格式错误时返回纯净回复和 null</td><td class="passed">PASS</td><td>3.7ms</td></tr><tr><td>parseDiagnosisFromAIResponse 边界情况 AI 回复为空字符串时返回空和 null</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>parseDiagnosisFromAIResponse 安全性过滤 不存在的病症 ID 被过滤</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>parseDiagnosisFromAIResponse 安全性过滤 非法严重度等级被过滤</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>parseDiagnosisFromAIResponse 安全性过滤 所有枚举中的病症 ID 都应被认可</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>parseDiagnosisFromAIResponse 值域裁剪 confidence 大值被裁剪到 1</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>parseDiagnosisFromAIResponse 值域裁剪 confidence 负值被裁剪到 0</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>parseDiagnosisFromAIResponse 值域裁剪 无病症但有建议动作时生成有效诊断条目</td><td class="passed">PASS</td><td>0.4ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-FLOW-E2E</span>
+        <span class="mod-name">全链路E2E</span>
+        <span class="mod-badge badge-pass">12/12 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 12</span>
+          <span>通过: 12</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 4.7ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 12 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 带诊断分析的完整流程</td><td class="passed">PASS</td><td>28.3ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 诊断分析结果通过 diagnosis:update 推送到前端</td><td class="passed">PASS</td><td>2.4ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 完整诊断数据结构和内容正确</td><td class="passed">PASS</td><td>2.4ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 流式数据通过 chat:stream:data 转发</td><td class="passed">PASS</td><td>2.2ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景1：提交长文本 → 诊断分析 → 教学回复 chat:stream:end 在流结束后发送</td><td class="passed">PASS</td><td>2.6ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景2：旧格式诊断标记（---DIAGNOSIS_START---）的兼容处理 Teaching Agent 回复中的诊断标记被 processDiagnosisFromAI 解析</td><td class="passed">PASS</td><td>1.7ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景3：短文本不触发诊断分析 100字以下的短文本跳过 Diagnosis Agent</td><td class="passed">PASS</td><td>1.3ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景4：错误处理 API 失败时返回错误且不崩溃</td><td class="passed">PASS</td><td>4.4ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景4：错误处理 非 200 响应时返回错误</td><td class="passed">PASS</td><td>6.1ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景5：修改原文 → 评估流程 原文修改通过 wire mock 调用评估 API</td><td class="passed">PASS</td><td>2.1ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景6：训练计划关联 诊断症候映射到正确技法</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>全链路 Wire Mock 测试（基于《修仙传》） 场景7：多轮对话（协作式） 用户在诊断后提交改写练习，系统继续教学</td><td class="passed">PASS</td><td>2.2ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-DIAG-FLOW</span>
+        <span class="mod-name">诊断流程</span>
+        <span class="mod-badge badge-pass">11/11 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 11</span>
+          <span>通过: 11</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.5ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 11 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>诊断 Handler 集成测试 diagnosis:query 会话存在时返回活跃问题列表</td><td class="passed">PASS</td><td>4.0ms</td></tr><tr><td>诊断 Handler 集成测试 diagnosis:query 会话不存在时返回 null</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>诊断 Handler 集成测试 diagnosis:getComparison 有两次诊断时返回对比数据</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>诊断 Handler 集成测试 diagnosis:getComparison 仅有一次诊断时返回 hasHistory=false</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>诊断 Handler 集成测试 diagnosis:getComparison 诊断服务未初始化时友好返回</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>诊断 Handler 集成测试 diagnosis:submitRewrite 成功提交修改并返回评估</td><td class="passed">PASS</td><td>1.5ms</td></tr><tr><td>诊断 Handler 集成测试 diagnosis:submitRewrite 缺少 syndromeName 时仍能处理</td><td class="passed">PASS</td><td>0.8ms</td></tr><tr><td>诊断 Handler 集成测试 processDiagnosisFromAI 流程 从 AI 回复中解析诊断并推送</td><td class="passed">PASS</td><td>4.4ms</td></tr><tr><td>诊断 Handler 集成测试 processDiagnosisFromAI 流程 解析无诊断结果时不触发流程</td><td class="passed">PASS</td><td>1.3ms</td></tr><tr><td>诊断 Handler 集成测试 processDiagnosisFromAI 流程 Store 未初始化时提前返回</td><td class="passed">PASS</td><td>1.0ms</td></tr><tr><td>诊断 Handler 集成测试 processDiagnosisFromAI 流程 合并诊断结果到 TeachingState</td><td class="passed">PASS</td><td>1.4ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-SESS-SVC</span>
+        <span class="mod-name">会话服务</span>
+        <span class="mod-badge badge-pass">9/9 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 9</span>
+          <span>通过: 9</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 0.7ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 9 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>SessionService createSession 应创建并返回新会话</td><td class="passed">PASS</td><td>3.7ms</td></tr><tr><td>SessionService listSessions 应返回会话列表</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>SessionService renameSession 应执行 UPDATE 语句</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>SessionService deleteSession 应执行 DELETE 语句</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>SessionService saveMessage 应保存并返回消息</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>SessionService getMessages 应返回消息数组</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>SessionService getOrCreateDefaultSession 无会话时应新建</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>SessionService getOrCreateDefaultSession 有会话时应返回第一个</td><td class="passed">PASS</td><td>0.2ms</td></tr><tr><td>SessionService autoGenerateTitle 应从首条消息截取标题</td><td class="passed">PASS</td><td>0.6ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-OTHER</span>
+        <span class="mod-name">其他</span>
+        <span class="mod-badge badge-pass">7/7 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 7</span>
+          <span>通过: 7</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.2ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 7 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>Evidence Handler evidence:getByDisease 按症候查询证据</td><td class="passed">PASS</td><td>4.5ms</td></tr><tr><td>Evidence Handler evidence:getByDisease 服务未初始化时返回空数组</td><td class="passed">PASS</td><td>0.8ms</td></tr><tr><td>Evidence Handler evidence:getByAbility 按能力查询证据</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>Evidence Handler evidence:getChain 返回诊断证据链</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>Evidence Handler evidence:getChain 服务未初始化时返回 null</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>Evidence Handler evidence:create 创建证据成功返回</td><td class="passed">PASS</td><td>1.2ms</td></tr><tr><td>Evidence Handler evidence:create 服务未初始化时返回错误</td><td class="passed">PASS</td><td>0.3ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-DIAG-MERGE</span>
+        <span class="mod-name">症候合并</span>
+        <span class="mod-badge badge-pass">7/7 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 7</span>
+          <span>通过: 7</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 0.7ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 7 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 空状态时添加第一个病症</td><td class="passed">PASS</td><td>2.6ms</td></tr><tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 已有病症列表时追加新病症</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 新增病症 新增症候 P009-P010 被正确合并</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 更新已有病症 严重度不变的已有病症保持 active 状态</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 更新已有病症 严重度降低的病症状态变为 improving</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 多病症并发诊断 3个病症同时识别的完整合并</td><td class="passed">PASS</td><td>0.3ms</td></tr><tr><td>mergeSyndromesIntoState - TeachingState 合并逻辑 动作去重 suggestedActions 合并后自动去重</td><td class="passed">PASS</td><td>0.3ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-DIAG-SVC</span>
+        <span class="mod-name">诊断服务</span>
+        <span class="mod-badge badge-pass">6/6 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 6</span>
+          <span>通过: 6</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.4ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 6 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>DiagnosisService 保存诊断结果到数据库</td><td class="passed">PASS</td><td>3.9ms</td></tr><tr><td>DiagnosisService 保存新增症候 P009-P010 的诊断结果</td><td class="passed">PASS</td><td>0.8ms</td></tr><tr><td>DiagnosisService 按会话查询诊断结果</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>DiagnosisService 获取最近 N 条诊断结果</td><td class="passed">PASS</td><td>0.7ms</td></tr><tr><td>DiagnosisService 按会话删除诊断结果</td><td class="passed">PASS</td><td>0.8ms</td></tr><tr><td>DiagnosisService JSON 序列化/反序列化正确</td><td class="passed">PASS</td><td>1.7ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-SESS-FLOW</span>
+        <span class="mod-name">会话流程</span>
+        <span class="mod-badge badge-pass">6/6 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 6</span>
+          <span>通过: 6</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.0ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 6 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>Session Handler session:list 返回会话列表</td><td class="passed">PASS</td><td>3.2ms</td></tr><tr><td>Session Handler session:list 无消息的会话 lastMessage 为 undefined</td><td class="passed">PASS</td><td>0.5ms</td></tr><tr><td>Session Handler session:create 创建新会话并返回</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>Session Handler session:delete 删除指定会话</td><td class="passed">PASS</td><td>0.9ms</td></tr><tr><td>Session Handler session:rename 重命名会话</td><td class="passed">PASS</td><td>0.4ms</td></tr><tr><td>Session Handler session:getMessages 返回会话消息</td><td class="passed">PASS</td><td>0.4ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-CONF-FLOW</span>
+        <span class="mod-name">配置流程</span>
+        <span class="mod-badge badge-pass">4/4 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 4</span>
+          <span>通过: 4</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.3ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 4 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>Config Handler config:get 返回指定配置键的值</td><td class="passed">PASS</td><td>2.7ms</td></tr><tr><td>Config Handler config:get 返回模型配置值</td><td class="passed">PASS</td><td>0.6ms</td></tr><tr><td>Config Handler config:set 设置配置值</td><td class="passed">PASS</td><td>1.6ms</td></tr><tr><td>Config Handler config:testConnection 测试 API 连接</td><td class="passed">PASS</td><td>0.5ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-TEACH-FLOW</span>
+        <span class="mod-name">教学状态流程</span>
+        <span class="mod-badge badge-pass">4/4 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 4</span>
+          <span>通过: 4</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 20.5ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 4 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>教学状态 Handler teachingState:get 会话无状态时返回默认初始化状态</td><td class="passed">PASS</td><td>77.8ms</td></tr><tr><td>教学状态 Handler teachingState:get 会话已有状态时返回存储的状态</td><td class="passed">PASS</td><td>2.3ms</td></tr><tr><td>教学状态 Handler teachingState:confirm 确认后推进到下一阶段</td><td class="passed">PASS</td><td>1.6ms</td></tr><tr><td>教学状态 Handler teachingState:confirm 不存在的会话返回 null</td><td class="passed">PASS</td><td>0.3ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-CONF-STORE</span>
+        <span class="mod-name">配置存储</span>
+        <span class="mod-badge badge-pass">3/3 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 3</span>
+          <span>通过: 3</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 1.2ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 3 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>ConfigStore - attitudeLevel 默认 attitudeLevel 为 yuesheng</td><td class="passed">PASS</td><td>1.5ms</td></tr><tr><td>ConfigStore - attitudeLevel setAttitudeLevel 更新状态并通过 IPC 持久化</td><td class="passed">PASS</td><td>1.9ms</td></tr><tr><td>ConfigStore - attitudeLevel setAttitudeLevel 可切换回 yuesheng</td><td class="passed">PASS</td><td>0.3ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="mod-header">
+        <span class="mod-id">M-PROF</span>
+        <span class="mod-name">作者画像</span>
+        <span class="mod-badge badge-pass">2/2 (100%)</span>
+      </div>
+      <div class="mod-body">
+        <div class="mod-stats">
+          <span>用例: 2</span>
+          <span>通过: 2</span>
+          <span>失败: 0</span>
+          <span>跳过: 0</span>
+          <span>平均: 2.7ms</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+        <div class="mod-tests">
+          <details><summary>查看全部 2 个测试</summary>
+            <table><tr><th>名称</th><th>状态</th><th>耗时</th></tr>
+            <tr><td>AbilityProfile Handler ability:getProfile 返回能力画像</td><td class="passed">PASS</td><td>4.3ms</td></tr><tr><td>AbilityProfile Handler ability:getProfile 服务未初始化时返回 null</td><td class="passed">PASS</td><td>1.1ms</td></tr>
+            </table>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="font-size:0.85rem;color:#7A6B5D;margin-top:12px;">
+    分类汇总: ui: 44/44 (100%) | evidence: 34/34 (100%) | chat: 36/36 (100%) | teaching: 20/20 (100%) | diagnosis: 37/37 (100%) | e2e: 12/12 (100%) | session: 15/15 (100%) | other: 7/7 (100%) | config: 7/7 (100%) | profile: 2/2 (100%)
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">2</span> UI 交互组件测试（新增）</div>
+  <p style="font-size:0.85rem;color:#7A6B5D;margin-bottom:16px;">
+    覆盖你模拟的"诊断&rarr;修改&rarr;评估&rarr;成长"完整流程的 UI 渲染和交互层：
+  </p>
+  <table class="wide">
+    <tr><th>组件</th><th>测试数</th><th>结果</th><th>覆盖的交互行为</th></tr>
+    <tr><td>DiagnosisCard</td><td>10</td><td><span class="tag tag-pass">PASS</span></td><td>折叠/展开、症候列表、严重度标签(中/重)、证据文本、尝试修改按钮、查看建议按钮、aria 状态</td></tr>
+    <tr><td>EditPanel</td><td>10</td><td><span class="tag tag-pass">PASS</span></td><td>症候标题、原文展示(多条)、textarea 输入、提交/取消按钮、空内容禁用、加载态禁用、空格检查、关闭按钮</td></tr>
+    <tr><td>EvaluationCard</td><td>8</td><td><span class="tag tag-pass">PASS</span></td><td>3种改善状态(all improved/partial/unchanged)、分析文本、建议文本、前/后对比、actions 区域</td></tr>
+    <tr><td>GrowthCard</td><td>4</td><td><span class="tag tag-pass">PASS</span></td><td>加载骨架屏、有历史摘要、无历史提示、标题固定</td></tr>
+  </table>
+  <div style="margin-top:12px;background:#F5F0E8;border-radius:8px;padding:12px;font-size:0.82rem;color:#7A6B5D;">
+    <strong>关键验证点：</strong> EditPanel 的提交按钮禁用/启用状态、DiagnosisCard 的 aria-expanded 折叠状态、EvaluationCard 的三种改善等级文案映射、GrowthCard 的加载/有历史/无历史三种状态 — 全部符合你描述的"诊断→修改→评估→成长"交互流程。
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">3</span> 用户画像数据存储完整性及准确性验证</div>
+  <div class="verification-item">
+    <div class="v-title">作者画像查询 (ability:getProfile)</div>
+    <div class="v-detail">IPC 通道正常返回能力画像数据</div>
+    <div class="v-result">通过 (2 测试, avg: 2.7ms)</div>
+  </div>
+  <div class="verification-item">
+    <div class="v-title">证据链数据完整性 (EvidenceService)</div>
+    <div class="v-detail">CRUD + 诊断关联 + 链式查询 — 34 测试全部通过</div>
+    <div class="v-result">通过 (34 测试, 100%)</div>
+  </div>
+  <div class="verification-item">
+    <div class="v-title">服务降级</div>
+    <div class="v-detail">服务未初始化返回 null 不崩溃</div>
+    <div class="v-result">通过</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">4</span> 诊断内容存储格式、关联关系及数据一致性</div>
+  <table class="wide" style="margin-bottom:16px;">
+    <tr><th>验证项</th><th>结果</th><th>测试数</th></tr>
+    <tr><td>诊断解析器 (JSON/边界/安全/值域)</td><td><span class="tag tag-pass">通过</span></td><td>13</td></tr>
+    <tr><td>诊断服务 (SQLite CRUD+JSON序列化)</td><td><span class="tag tag-pass">通过</span></td><td>6</td></tr>
+    <tr><td>诊断流程 (IPC+processDiagnosisFromAI)</td><td><span class="tag tag-pass">通过</span></td><td>11</td></tr>
+    <tr><td>症候合并 (追加/更新/严重度/去重)</td><td><span class="tag tag-pass">通过</span></td><td>7</td></tr>
+    <tr><td>全链路E2E (WireMock 修仙传7场景)</td><td><span class="tag tag-pass">通过</span></td><td>12</td></tr>
+  </table>
+  <div class="verification-item">
+    <div class="v-title">数据一致性保障</div>
+    <div class="v-detail">4级处理链: DiagnosisAgent → diagnosis-parser → processDiagnosisFromAI → mergeSyndromesIntoState。症候ID 枚举验证，严重度 L1/L2/L3 限定，confidence [0,1] 裁剪，同时写入 Store + Service + IPC。</div>
+    <div class="v-result">通过 (共 49 个诊断相关测试)</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">5</span> 改写分析功能输出质量评估及关键指标</div>
+  <table class="wide">
+    <tr><th>功能点</th><th>结果</th><th>数值</th></tr>
+    <tr><td>提交修改 + AI评估</td><td><span class="tag tag-pass">通过</span></td><td>improvement = '明显改善', 链路完整</td></tr>
+    <tr><td>成长对比 (有/无历史)</td><td><span class="tag tag-pass">通过</span></td><td>2次返回对比 / 1次 hasHistory=false</td></tr>
+    <tr><td>训练计划关联 (5技法)</td><td><span class="tag tag-pass">通过</span></td><td>中级2/初级2/高级1, 难度匹配</td></tr>
+    <tr><td>多轮协作教学</td><td><span class="tag tag-pass">通过</span></td><td>历史会话+继续教学</td></tr>
+  </table>
+  <div style="font-size:0.82rem;color:#5A6A4A;margin-top:12px;padding:12px;background:#F8FAF5;border:1px solid #E0E8D8;border-radius:8px;font-family:monospace;">
+    原始文本: &quot;筑基中期。普通散修资质。金丹便是终点。&quot;<br>
+    改写文本: &quot;他摸了摸袖口仅剩的两张匿气符,符纸边缘已经磨得起毛。&quot;<br>
+    AI评估结果: 明显改善
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">6</span> 性能分析</div>
+  <ul class="slow-list">
+    <li><span>EditPanel 输入内容后提交按钮可用，点击触发 onSubmit <span style="color:#A89888;font-size:0.78rem;">(EditPanel.test.tsx)</span></span> <span class="duration">346ms</span></li><li><span>EditPanel 文本区可以输入内容 <span style="color:#A89888;font-size:0.78rem;">(EditPanel.test.tsx)</span></span> <span class="duration">313ms</span></li><li><span>MessageInput 按 Enter 发送消息 <span style="color:#A89888;font-size:0.78rem;">(MessageInput.test.tsx)</span></span> <span class="duration">189ms</span></li><li><span>MessageInput 输入内容后点击发送应触发 onSend 并清空输入框 <span style="color:#A89888;font-size:0.78rem;">(MessageInput.test.tsx)</span></span> <span class="duration">178ms</span></li><li><span>MessageInput 按 Shift+Enter 不应发送消息 <span style="color:#A89888;font-size:0.78rem;">(MessageInput.test.tsx)</span></span> <span class="duration">155ms</span></li><li><span>DiagnosisCard 点击展开按钮显示详细症候列表 <span style="color:#A89888;font-size:0.78rem;">(DiagnosisCard.test.tsx)</span></span> <span class="duration">134ms</span></li><li><span>EditPanel 关闭按钮调用 onCancel <span style="color:#A89888;font-size:0.78rem;">(EditPanel.test.tsx)</span></span> <span class="duration">131ms</span></li><li><span>DiagnosisCard 展开/折叠状态由 aria-expanded 反映 <span style="color:#A89888;font-size:0.78rem;">(DiagnosisCard.test.tsx)</span></span> <span class="duration">124ms</span></li><li><span>DiagnosisCard 点击'尝试修改'按钮调用 onEdit <span style="color:#A89888;font-size:0.78rem;">(DiagnosisCard.test.tsx)</span></span> <span class="duration">123ms</span></li><li><span>EditPanel 只输入空格时提交按钮禁用 <span style="color:#A89888;font-size:0.78rem;">(EditPanel.test.tsx)</span></span> <span class="duration">110ms</span></li>
+  </ul>
+  <p style="font-size:0.85rem;color:#7A6B5D;margin-top:12px;">
+    总 CPU 执行时间 2.9s。UI 组件测试占主要 (jsdom渲染~1.8s)，核心业务逻辑均在 5ms/用例 以内。
+  </p>
+</div>
+
+<div class="section">
+  <div class="section-title"><span class="icon">7</span> 异常与结论</div>
+  <div style="background:#F8F6F0;border:1px solid #E8E0D5;border-radius:8px;padding:16px;margin-bottom:12px;">
+    <strong>异常:</strong> 0 个 (214/214 通过) — API错误/边界/降级 全部覆盖通过<br>
+    <strong>改进项:</strong> Playwright E2E 未搭建 / 训练任务(V1.1-6)未实现 / 文字分级(V1.1-7)未实现
+  </div>
+  <div style="padding:16px;background:#F0F5EE;border-radius:8px;text-align:center;">
+    <div style="font-size:1.1rem;font-weight:700;color:#5A8A5E;">整体结论：全部通过</div>
+    <div style="font-size:0.85rem;color:#7A6B5D;margin-top:4px;">
+      214 测试用例 · 17 功能模块 · 通过率 100% · 零失败 · 零跳过
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  月笙写作教练 · AI 教学系统 · 测试报告 V2.0 · 2026/6/4
+</div>
+</div>
+</body>
+</html>

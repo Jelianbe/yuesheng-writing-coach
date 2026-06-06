@@ -1,0 +1,102 @@
+{
+  "$source": "action-library.md §3 + teaching-knowledge-bridge_V1.0.md §3.4",
+  "description": "Challenge-Unlock 挑战式微练模板。T-013 反思关卡用此生成引导问题。",
+  "templates": [
+    {
+      "id": "CH-P001",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "challenge": "你的开篇设定很宏大。现在请你挑出其中**一个**具体的场景，把其他设定全部删掉，只留这个场景。",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "只能保留一个具体场景，其余全部删除",
+      "expectedOutcome": "用户学会聚焦核心场景，而非铺陈整个世界"
+    },
+    {
+      "id": "CH-P002",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具人化",
+      "challenge": "你刚刚写了一个配角告诉主角某件事。现在，让这个配角做一件完全不符合他'工具人'身份的事——他有自己的立场，他会反对主角。",
+      "mode": "deepen_character",
+      "tier": "structural",
+      "constraint": "配角必须有独立于主角的立场和行为",
+      "expectedOutcome": "用户学会赋予角色独立动机"
+    },
+    {
+      "id": "CH-P003",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "challenge": "你刚刚写了'他很紧张'。现在，删掉'紧张'这个词，只用一个具体的动作或神态来让读者感受到紧张。",
+      "mode": "show_dont_tell",
+      "tier": "surface",
+      "constraint": "不准出现任何情绪词，只能用动作/神态/环境暗示",
+      "expectedOutcome": "用户学会用展示替代告知"
+    },
+    {
+      "id": "CH-P004",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "challenge": "你刚刚写了一段世界观说明。能不能删掉它，只用一个角色的动作来暗示同样的信息？",
+      "mode": "rewrite_constrained",
+      "tier": "structural",
+      "constraint": "不能有任何说明性文字，只能通过角色行为暗示",
+      "expectedOutcome": "用户学会将信息嵌入场景而非直接陈述"
+    },
+    {
+      "id": "CH-P005",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "challenge": "你刚刚写了'大家都很紧张'。现在，把这段话改成只通过主角的眼睛能看到的内容。主角看不到的，全部删掉。",
+      "mode": "perspective_lock",
+      "tier": "structural",
+      "constraint": "只能写主角能看到/听到/感知到的内容",
+      "expectedOutcome": "用户学会锁定单一视角"
+    },
+    {
+      "id": "CH-P006",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "challenge": "你的开篇还没有发生任何事。现在，让你的主角在前三段内必须做一个选择——不管多小的选择。",
+      "mode": "force_action",
+      "tier": "structural",
+      "constraint": "前三段内必须有主角的主动选择",
+      "expectedOutcome": "用户学会在开篇制造推动力"
+    },
+    {
+      "id": "CH-P007",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "challenge": "找一本你最近读的传统文学（不是网文），只读前三章。带着一个任务：作者怎么在开场就把主角的性格写出来的？读完告诉我你的发现。",
+      "mode": "reading_task",
+      "tier": "surface",
+      "constraint": "必须带着具体问题去读，不是泛读",
+      "expectedOutcome": "用户学会从传统文学中吸收叙事技巧"
+    },
+    {
+      "id": "CH-P009",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "challenge": "你的角色正在做某个决定。写一句他内心真正的恐惧——不是剧情需要他做什么，而是他害怕什么。",
+      "mode": "deepen_motivation",
+      "tier": "fatal",
+      "constraint": "必须写出角色内在恐惧，而非外部事件推动",
+      "expectedOutcome": "用户学会从角色内心驱动行为"
+    },
+    {
+      "id": "CH-P010",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "challenge": "你的角色从头到尾性格没变。现在，给他一个经历重大事件后性格改变的转折点——他从A变成了B，不再是原来的他。",
+      "mode": "character_arc",
+      "tier": "structural",
+      "constraint": "必须有一个明确的性格转变点",
+      "expectedOutcome": "用户学会设计角色成长弧光"
+    }
+  ],
+  "fallbackChallenge": {
+    "challenge": "你刚刚写的这段文字，如果删掉最后一句，读者会更想知道接下来发生什么。试试看。",
+    "mode": "generic",
+    "description": "通用挑战模板，当无匹配症候时使用"
+  },
+  "principle": "反思过关后推荐训练，形成流畅的用户体验流 — TASK-CHAIN.md"
+}

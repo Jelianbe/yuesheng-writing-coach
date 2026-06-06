@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "description": "跨语境迁移库：用现代/日常类比激活陌生设定的共情通道",
+  "mappings": [
+    {
+      "id": "CCT-001",
+      "originalSetting": "古代主仆/师徒",
+      "modernEquivalent": "职场老员工被开",
+      "coreRelationship": "长期效忠→被背叛",
+      "examplePrompt": "假设一个公司的老员工被开了，他当然会闹，那么就会摆资历：我从嘉靖二十三年就跟着大老板啦！一路上风风雨雨，多少多少年替老板挡了刀，背了锅，扛了枪。",
+      "applicableSyndromes": ["P004"]
+    },
+    {
+      "id": "CCT-002",
+      "originalSetting": "玄幻宗门",
+      "modernEquivalent": "学校社团/公司部门",
+      "coreRelationship": "集体归属→个人抉择",
+      "examplePrompt": "就像社团里的老人被新人架空，你在社团干了三年，突然新来的成了你的上司。",
+      "applicableSyndromes": ["P001", "P004"]
+    },
+    {
+      "id": "CCT-003",
+      "originalSetting": "重生/穿越",
+      "modernEquivalent": "失忆后回到故乡",
+      "coreRelationship": "熟悉又陌生→认知错位",
+      "examplePrompt": "就像你离开老家十年后回去，路都不认识了，但每条街的名字你还记得。",
+      "applicableSyndromes": ["P004", "P006"]
+    },
+    {
+      "id": "CCT-004",
+      "originalSetting": "契约/绑定",
+      "modernEquivalent": "合租室友/被迫搭档",
+      "coreRelationship": "强制接近→情感变化",
+      "examplePrompt": "就像被分配到一个项目组，不得不合作。一开始互相看不顺眼，后来发现对方其实还行。",
+      "applicableSyndromes": ["P002", "P010"]
+    },
+    {
+      "id": "CCT-005",
+      "originalSetting": "修仙等级",
+      "modernEquivalent": "职场晋升/学校排名",
+      "coreRelationship": "能力认可→身份焦虑",
+      "examplePrompt": "同期都升职了，我还在原地。明明我比他们努力，为什么先升的是他们？",
+      "applicableSyndromes": ["P002", "P009"]
+    },
+    {
+      "id": "CCT-006",
+      "originalSetting": "死亡/牺牲",
+      "modernEquivalent": "离职/分手",
+      "coreRelationship": "付出→被否定→重新评估",
+      "examplePrompt": "为公司加班三年，裁员名单第一个是我。不是我不够好，是我太好替代了。",
+      "applicableSyndromes": ["P003", "P004"]
+    }
+  ]
+}

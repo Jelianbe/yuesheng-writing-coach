@@ -1,0 +1,2345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 V2.0 - 全新设计</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+  :root {
+    /* 背景色 */
+    --bg-primary: #F8F9FA;
+    --bg-secondary: #FFFFFF;
+    --bg-tertiary: #F1F3F5;
+    --bg-hover: #E9ECEF;
+
+    /* 边框 */
+    --border-color: #DEE2E6;
+
+    /* 强调色 */
+    --accent-primary: #4C6EF5;
+    --accent-primary-hover: #3B5BDB;
+    --accent-primary-light: #EDF2FF;
+    --accent-secondary: #20C997;
+    --accent-warning: #FAB005;
+    --accent-danger: #FA5252;
+    --accent-info: #228BE6;
+
+    /* 文字色 */
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-muted: #868E96;
+    --text-inverse: #FFFFFF;
+
+    /* 字体 */
+    --font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-serif: 'Noto Serif SC', 'Source Han Serif SC', serif;
+
+    /* 圆角 */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-full: 9999px;
+
+    /* 阴影 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+    /* 过渡 */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 200ms ease-in-out;
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* 尺寸 */
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 72px;
+    --panel-width: 340px;
+    --panel-collapsed-width: 0;
+    --header-height: 64px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ===== 应用容器 ===== */
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ===== 顶部栏 ===== */
+  .header {
+    height: var(--header-height);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    flex-shrink: 0;
+    z-index: 100;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent-primary), #6366f1);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-md);
+  }
+
+  .app-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-primary);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* 态度选择器 */
+  .attitude-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 4px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+  }
+
+  .attitude-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--transition-base);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .attitude-option:hover {
+    color: var(--text-primary);
+  }
+
+  .attitude-option.active {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .attitude-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    transition: all var(--transition-base);
+  }
+
+  .attitude-option.active .attitude-dot {
+    transform: scale(1.2);
+  }
+
+  /* 设置按钮 */
+  .settings-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+  }
+
+  .settings-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* ===== 主体区域 ===== */
+  .main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ===== 侧边栏 ===== */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width var(--transition-slow), transform var(--transition-slow);
+    position: relative;
+  }
+
+  .sidebar.collapsed {
+    width: var(--sidebar-collapsed-width);
+  }
+
+  .sidebar.collapsed .sidebar-text,
+  .sidebar.collapsed .session-item span,
+  .sidebar.collapsed .nav-label {
+    display: none;
+  }
+
+  .sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 12px;
+  }
+
+  .sidebar.collapsed .new-session-btn span {
+    display: none;
+  }
+
+  .sidebar.collapsed .sidebar-header {
+    padding: 20px 12px;
+  }
+
+  /* 侧边栏收起按钮 */
+  .sidebar-toggle-btn {
+    position: absolute;
+    right: -14px;
+    top: 24px;
+    width: 28px;
+    height: 28px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .sidebar-toggle-btn:hover {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .sidebar.collapsed .sidebar-toggle-btn {
+    transform: rotate(180deg);
+  }
+
+  .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .new-session-btn {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--text-inverse);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
+  }
+
+  .new-session-btn:hover {
+    background: var(--accent-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 12px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .nav-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .nav-item.active {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .session-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 8px 12px 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .session-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .session-item:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .session-item.active {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+    font-weight: 500;
+  }
+
+  /* ===== 主内容区 ===== */
+  .content-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-primary);
+  }
+
+  /* 页面切换 */
+  .page { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+  .page.active { display: flex; }
+
+  /* ===== 聊天页面 ===== */
+  .chat-header {
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chat-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .toggle-panel-btn {
+    padding: 8px 16px;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .toggle-panel-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* 消息列表 */
+  .message-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .message {
+    max-width: 75%;
+    animation: messageSlideIn 0.3s ease;
+  }
+
+  @keyframes messageSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user { align-self: flex-end; }
+  .message.ai { align-self: flex-start; }
+
+  .message-bubble {
+    padding: 14px 18px;
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    line-height: 1.7;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .message.user .message-bubble {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    border-bottom-right-radius: 4px;
+  }
+
+  .message.ai .message-bubble {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+  }
+
+  .message-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+
+  .message.user .message-time { text-align: right; }
+
+  /* 输入区域 */
+  .input-area {
+    padding: 20px 24px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .input-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .message-input {
+    flex: 1;
+    min-height: 56px;
+    max-height: 180px;
+    padding: 14px 18px;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    transition: all var(--transition-base);
+  }
+
+  .message-input:focus {
+    border-color: var(--accent-primary);
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .message-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .send-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-lg);
+    background: var(--accent-primary);
+    border: none;
+    color: var(--text-inverse);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
+  }
+
+  .send-btn:hover {
+    background: var(--accent-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .stop-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-lg);
+    background: var(--accent-danger);
+    border: none;
+    color: var(--text-inverse);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
+  }
+
+  .stop-btn.visible {
+    display: flex;
+  }
+
+  .stop-btn:hover {
+    background: #E03E3E;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .send-btn.hidden { display: none; }
+
+  /* ===== 右侧面板 ===== */
+  .right-panel {
+    width: var(--panel-width);
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    overflow-y: auto;
+    flex-shrink: 0;
+    transition: width var(--transition-slow), opacity var(--transition-slow);
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.03);
+  }
+
+  .right-panel.collapsed {
+    width: 0;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  /* 右侧面板收起按钮 */
+  .panel-toggle-btn {
+    width: 28px;
+    height: 28px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .panel-toggle-btn:hover {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+  }
+
+  .panel-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+  }
+
+  .panel-icon {
+    width: 24px;
+    height: 24px;
+    background: var(--accent-primary-light);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent-primary);
+  }
+
+  .panel-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .section-title {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  /* 症候卡片 */
+  .syndrome-card {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base);
+  }
+
+  .syndrome-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+  }
+
+  .syndrome-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .syndrome-id {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    background: var(--accent-primary-light);
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+  }
+
+  .syndrome-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .severity-bar {
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .severity-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease;
+  }
+
+  .severity-fill.low { width: 30%; background: var(--accent-secondary); }
+  .severity-fill.medium { width: 60%; background: var(--accent-warning); }
+  .severity-fill.high { width: 85%; background: var(--accent-danger); }
+
+  .severity-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+
+  .trigger-signals {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .trigger-signal {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-base);
+  }
+
+  .trigger-signal:hover {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+  }
+
+  /* 教学动作 */
+  .action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    transition: all var(--transition-base);
+  }
+
+  .action-item:hover {
+    background: var(--accent-primary-light);
+    transform: translateX(4px);
+  }
+
+  .action-id {
+    font-weight: 700;
+    color: var(--accent-primary);
+    background: var(--accent-primary-light);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  .action-desc {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* 置信度 */
+  .confidence-bar {
+    height: 10px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .confidence-fill {
+    height: 100%;
+    width: 80%;
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent-info));
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease;
+  }
+
+  .confidence-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  /* ===== 训练任务页面 ===== */
+  .tasks-header {
+    padding: 20px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tasks-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .tasks-filter {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    flex-wrap: wrap;
+  }
+
+  .filter-btn {
+    padding: 8px 16px;
+    background: var(--bg-tertiary);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+  }
+
+  .filter-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  .filter-btn.active {
+    background: var(--accent-primary);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-md);
+  }
+
+  .tasks-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .task-card {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .task-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
+
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .task-id {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    background: var(--accent-primary-light);
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+  }
+
+  .task-difficulty {
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: var(--radius-full);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .task-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .task-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .task-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .task-tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: all var(--transition-base);
+  }
+
+  .task-tag:hover {
+    background: var(--accent-primary-light);
+    color: var(--accent-primary);
+  }
+
+  /* ===== 配置页面 ===== */
+  .config-page {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background: var(--bg-primary);
+  }
+
+  .config-page.active {
+    display: flex;
+  }
+
+  .config-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    max-width: 560px;
+    width: 100%;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .config-title {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .config-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    line-height: 1.6;
+  }
+
+  .config-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .config-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+
+  .config-field input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: all var(--transition-base);
+  }
+
+  .config-field input:focus {
+    border-color: var(--accent-primary);
+    background: var(--bg-secondary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .config-field input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .config-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .config-save-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    color: var(--text-inverse);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-md);
+  }
+
+  .config-save-btn:hover {
+    background: var(--accent-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .config-test-btn {
+    padding: 12px 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+  }
+
+  .config-test-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+  }
+
+  /* ===== 底部状态栏 ===== */
+  .footer {
+    height: 36px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .status-left, .status-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-secondary);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ===== 打字指示器 ===== */
+  .typing-indicator {
+    display: flex;
+    gap: 6px;
+    padding: 14px 18px;
+  }
+
+  .typing-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    animation: typingBounce 1.4s infinite;
+  }
+
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-10px); opacity: 1; }
+  }
+
+  /* ===== 滚动条 ===== */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+
+  /* ===== 空状态 ===== */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 48px;
+  }
+
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 36px;
+    color: var(--text-muted);
+  }
+
+  .empty-title {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+
+  .empty-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    max-width: 360px;
+    line-height: 1.6;
+  }
+
+  /* ===== 作者档案面板 ===== */
+  .profile-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+  }
+
+  .profile-tab {
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    border: none;
+    background: transparent;
+  }
+
+  .profile-tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  .profile-tab.active {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .profile-content { display: none; }
+  .profile-content.active { display: block; }
+
+  /* 能力雷达图 */
+  .radar-chart-container {
+    padding: 20px;
+    text-align: center;
+  }
+
+  .radar-chart-container svg {
+    max-width: 240px;
+    margin: 0 auto;
+  }
+
+  .ability-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+  }
+
+  .ability-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  .ability-label { color: var(--text-secondary); }
+  .ability-score {
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+
+  /* 成长时间线 */
+  .timeline-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .timeline-item:last-child { border-bottom: none; }
+
+  .timeline-dot-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .timeline-dot.diagnosis { background: var(--accent-info); }
+  .timeline-dot.training { background: var(--accent-primary); }
+  .timeline-dot.evaluation { background: var(--accent-secondary); }
+
+  .timeline-line {
+    width: 2px;
+    flex: 1;
+    background: var(--border-color);
+  }
+
+  .timeline-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .timeline-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .timeline-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .timeline-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .timeline-score {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .improvement-note {
+    font-size: 11px;
+    color: var(--accent-secondary);
+    margin-top: 6px;
+    padding: 4px 8px;
+    background: rgba(32, 201, 151, 0.1);
+    border-radius: var(--radius-sm);
+  }
+
+  /* 成长对比视图 */
+  .comparison-item {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+  }
+
+  .comparison-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .comparison-ids {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .comparison-ability {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .comparison-syndrome {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .comparison-diff {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+  }
+
+  .comparison-diff.positive {
+    color: var(--accent-secondary);
+    background: rgba(32, 201, 151, 0.1);
+  }
+
+  .comparison-diff.negative {
+    color: var(--accent-danger);
+    background: rgba(250, 82, 82, 0.1);
+  }
+
+  .comparison-bars {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .comparison-bar-group {
+    flex: 1;
+  }
+
+  .comparison-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .comparison-bar {
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .comparison-bar-fill.before {
+    height: 100%;
+    background: var(--accent-danger);
+    opacity: 0.6;
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease;
+  }
+
+  .comparison-bar-fill.after {
+    height: 100%;
+    background: var(--accent-secondary);
+    opacity: 0.8;
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease;
+  }
+
+  .comparison-arrow {
+    font-size: 16px;
+    color: var(--text-muted);
+  }
+
+  .comparison-score {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* 状态点 */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .status-badge.active {
+    color: var(--accent-danger);
+    background: rgba(250, 82, 82, 0.1);
+  }
+
+  .status-badge.improving {
+    color: var(--accent-warning);
+    background: rgba(250, 176, 5, 0.1);
+  }
+
+  .status-badge.resolved {
+    color: var(--accent-secondary);
+    background: rgba(32, 201, 151, 0.1);
+  }
+
+  .status-badge.recurred {
+    color: var(--accent-danger);
+    background: rgba(250, 82, 82, 0.15);
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 1024px) {
+    .right-panel {
+      position: fixed;
+      right: 0;
+      top: var(--header-height);
+      bottom: 0;
+      z-index: 90;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: var(--header-height);
+      bottom: 0;
+      z-index: 90;
+      transform: translateX(-100%);
+    }
+
+    .sidebar.mobile-open {
+      transform: translateX(0);
+    }
+
+    .message {
+      max-width: 85%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="app-container">
+  <!-- 标题栏 -->
+  <header class="header">
+    <div class="header-left">
+      <div class="logo">月</div>
+      <span class="app-title">月笙写作教练 V2.0</span>
+    </div>
+    <div class="header-right">
+      <div class="attitude-group">
+        <div class="attitude-option active doubao" onclick="setAttitude('doubao')">
+          <div class="attitude-dot"></div>
+          <span>温和引导</span>
+        </div>
+        <div class="attitude-option yuesheng" onclick="setAttitude('yuesheng')">
+          <div class="attitude-dot"></div>
+          <span>专业教练</span>
+        </div>
+      </div>
+      <button class="settings-btn" title="设置" onclick="showConfigPage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主体区域 -->
+  <div class="main-area">
+    <!-- 侧边栏 -->
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle-btn" onclick="toggleSidebar()" title="折叠侧边栏">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <div class="sidebar-header">
+        <button class="new-session-btn" onclick="newSession()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          <span class="sidebar-text">新会话</span>
+        </button>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <div class="nav-item active" onclick="switchPage('chat')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="nav-label">对话</span>
+        </div>
+        <div class="nav-item" onclick="switchPage('tasks')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          <span class="nav-label">训练任务</span>
+        </div>
+      </nav>
+
+      <div class="session-list">
+        <div class="session-label">今天</div>
+        <div class="session-item active" onclick="selectSession(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>世界观构建讨论</span>
+        </div>
+        <div class="session-label">昨天</div>
+        <div class="session-item" onclick="selectSession(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>角色塑造问题</span>
+        </div>
+        <div class="session-item" onclick="selectSession(this)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>开头怎么写</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="content-area">
+      <!-- 聊天页面 -->
+      <div class="page active" id="chatPage">
+        <div class="chat-header">
+          <span class="chat-title">世界观构建讨论</span>
+        </div>
+
+        <div class="message-list" id="messageList">
+          <!-- 消息通过 JS 动态添加 -->
+        </div>
+
+        <div class="input-area">
+          <div class="input-wrapper">
+            <textarea class="message-input" id="messageInput" placeholder="输入你的问题或分享你的写作..." onkeydown="handleKeyDown(event)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+            <button class="stop-btn" id="stopBtn" onclick="stopGeneration()">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="6" width="12" height="12" rx="2"></rect>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 训练任务页面 -->
+      <div class="page" id="tasksPage">
+        <div class="tasks-header">
+          <span class="tasks-title">训练任务库</span>
+        </div>
+        <div class="tasks-filter">
+          <button class="filter-btn active">全部</button>
+          <button class="filter-btn">P001 世界观</button>
+          <button class="filter-btn">P003 人物</button>
+          <button class="filter-btn">P004 信息</button>
+          <button class="filter-btn">P007 节奏</button>
+        </div>
+        <div class="tasks-list">
+          <div class="task-card">
+            <div class="task-header">
+              <span class="task-id">T001</span>
+              <span class="task-difficulty">入门</span>
+            </div>
+            <div class="task-name">一句话主角</div>
+            <div class="task-desc">用一句话描述你的主角最想要什么、最害怕什么。不超过30字。</div>
+            <div class="task-tags">
+              <span class="task-tag">P001</span>
+              <span class="task-tag">P002</span>
+              <span class="task-tag">聚焦</span>
+            </div>
+          </div>
+          <div class="task-card">
+            <div class="task-header">
+              <span class="task-id">T002</span>
+              <span class="task-difficulty">进阶</span>
+            </div>
+            <div class="task-name">场景翻转练习</div>
+            <div class="task-desc">写一个100字以内的场景，其中必须包含一次预期翻转。</div>
+            <div class="task-tags">
+              <span class="task-tag">P003</span>
+              <span class="task-tag">叙事</span>
+              <span class="task-tag">A007</span>
+            </div>
+          </div>
+          <div class="task-card">
+            <div class="task-header">
+              <span class="task-id">T003</span>
+              <span class="task-difficulty">基础</span>
+            </div>
+            <div class="task-name">分段练习</div>
+            <div class="task-desc">把一段300字的长段落拆分成至少5段以上，注意对话必须分段。</div>
+            <div class="task-tags">
+              <span class="task-tag">P004</span>
+              <span class="task-tag">节奏</span>
+            </div>
+          </div>
+          <div class="task-card">
+            <div class="task-header">
+              <span class="task-id">T004</span>
+              <span class="task-difficulty">进阶</span>
+            </div>
+            <div class="task-name">视角切换训练</div>
+            <div class="task-desc">用不同角色的视角重写同一场景，注意每个角色的关注点不同。</div>
+            <div class="task-tags">
+              <span class="task-tag">P005</span>
+              <span class="task-tag">视角</span>
+              <span class="task-tag">A007</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 右侧面板 -->
+    <aside class="right-panel" id="rightPanel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <div class="panel-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          本轮诊断
+        </div>
+        <button class="panel-toggle-btn" onclick="togglePanel()" title="收起面板">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 档案标签页 -->
+      <div class="profile-tabs">
+        <button class="profile-tab active" onclick="switchProfileTab('diagnosis')">诊断</button>
+        <button class="profile-tab" onclick="switchProfileTab('profile')">档案</button>
+        <button class="profile-tab" onclick="switchProfileTab('growth')">成长</button>
+      </div>
+
+      <!-- 诊断内容 -->
+      <div class="profile-content active" id="profileDiagnosis">
+
+      <div class="panel-section">
+        <div class="section-title">识别到的病症</div>
+        
+        <div class="syndrome-card">
+          <div class="syndrome-header">
+            <span class="syndrome-id">P001</span>
+            <span class="syndrome-name">世界观膨胀</span>
+          </div>
+          <div class="severity-bar">
+            <div class="severity-fill medium"></div>
+          </div>
+          <div class="severity-label">严重度：中度 | 信号总分: 4</div>
+          <div class="trigger-signals">
+            <span class="trigger-signal">世界观</span>
+            <span class="trigger-signal">主角未确定</span>
+            <span class="trigger-signal">势力过多</span>
+          </div>
+        </div>
+
+        <div class="syndrome-card">
+          <div class="syndrome-header">
+            <span class="syndrome-id">P004</span>
+            <span class="syndrome-name">信息硬塞</span>
+          </div>
+          <div class="severity-bar">
+            <div class="severity-fill low"></div>
+          </div>
+          <div class="severity-label">严重度：轻度 | 信号总分: 2</div>
+          <div class="trigger-signals">
+            <span class="trigger-signal">说明句</span>
+            <span class="trigger-signal">设定堆砌</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title">建议教学动作</div>
+        <div class="action-item">
+          <span class="action-id">A001</span>
+          <span class="action-desc">缩小范围：从宏大设定拉回具体场景</span>
+        </div>
+        <div class="action-item">
+          <span class="action-id">A002</span>
+          <span class="action-desc">回归主角：从上帝视角回到角色眼睛</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-title">整体置信度</div>
+        <div class="confidence-bar">
+          <div class="confidence-fill"></div>
+        </div>
+        <div class="confidence-text">80%</div>
+      </div>
+      </div>
+
+      <!-- 档案内容（能力雷达图） -->
+      <div class="profile-content" id="profileProfile">
+        <div class="panel-section">
+          <div class="section-title">能力雷达图</div>
+          <div class="radar-chart-container">
+            <svg width="240" height="260" viewBox="0 0 240 260" id="radarChart">
+              <!-- Grid levels -->
+              <polygon points="120,30 197.9,75 197.9,165 120,210 42.1,165 42.1,75" fill="none" stroke="rgba(148,163,184,0.2)" stroke-width="1"/>
+              <polygon points="120,52.5 159.0,75 159.0,142.5 120,165 81.0,142.5 81.0,75" fill="none" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              <polygon points="120,75 120,120 120,142.5" fill="none" stroke="rgba(148,163,184,0.1)" stroke-width="1"/>
+              
+              <!-- Axis lines -->
+              <line x1="120" y1="120" x2="120" y2="30" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              <line x1="120" y1="120" x2="197.9" y2="75" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              <line x1="120" y1="120" x2="197.9" y2="165" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              <line x1="120" y1="120" x2="120" y2="210" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              <line x1="120" y1="120" x2="42.1" y2="165" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              <line x1="120" y1="120" x2="42.1" y2="75" stroke="rgba(148,163,184,0.15)" stroke-width="1"/>
+              
+              <!-- Data polygon (sample scores: OBS=65, CHAR=78, PLOT=55, EMO=70, WORLD=45, STYLE=82) -->
+              <polygon points="120,61.5 183.0,89.8 168.7,149.3 120,147 63.0,149.3 57.0,75" 
+                       fill="rgba(76,110,245,0.15)" stroke="rgb(76,110,245)" stroke-width="2"/>
+              
+              <!-- Data points -->
+              <circle cx="120" cy="61.5" r="4" fill="rgb(76,110,245)"/>
+              <circle cx="183.0" cy="89.8" r="4" fill="rgb(76,110,245)"/>
+              <circle cx="168.7" cy="149.3" r="4" fill="rgb(76,110,245)"/>
+              <circle cx="120" cy="147" r="4" fill="rgb(76,110,245)"/>
+              <circle cx="63.0" cy="149.3" r="4" fill="rgb(76,110,245)"/>
+              <circle cx="57.0" cy="75" r="4" fill="rgb(76,110,245)"/>
+              
+              <!-- Labels -->
+              <text x="120" y="22" text-anchor="middle" dominant-baseline="middle" fill="var(--text-muted)" font-size="11">观察</text>
+              <text x="210" y="68" text-anchor="start" dominant-baseline="middle" fill="var(--text-muted)" font-size="11">角色</text>
+              <text x="210" y="172" text-anchor="start" dominant-baseline="middle" fill="var(--text-muted)" font-size="11">剧情</text>
+              <text x="120" y="222" text-anchor="middle" dominant-baseline="middle" fill="var(--text-muted)" font-size="11">情绪</text>
+              <text x="30" y="172" text-anchor="end" dominant-baseline="middle" fill="var(--text-muted)" font-size="11">世界观</text>
+              <text x="30" y="68" text-anchor="end" dominant-baseline="middle" fill="var(--text-muted)" font-size="11">表达</text>
+            </svg>
+            
+            <div class="ability-legend">
+              <div class="ability-item">
+                <span class="ability-label">观察</span>
+                <span class="ability-score">65</span>
+              </div>
+              <div class="ability-item">
+                <span class="ability-label">角色</span>
+                <span class="ability-score">78</span>
+              </div>
+              <div class="ability-item">
+                <span class="ability-label">剧情</span>
+                <span class="ability-score">55</span>
+              </div>
+              <div class="ability-item">
+                <span class="ability-label">情绪</span>
+                <span class="ability-score">70</span>
+              </div>
+              <div class="ability-item">
+                <span class="ability-label">世界观</span>
+                <span class="ability-score">45</span>
+              </div>
+              <div class="ability-item">
+                <span class="ability-label">表达</span>
+                <span class="ability-score">82</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 成长内容（时间线 + 对比视图） -->
+      <div class="profile-content" id="profileGrowth">
+        <div class="panel-section">
+          <div class="section-title">成长时间线</div>
+          
+          <!-- 时间线项目 1 -->
+          <div class="timeline-item">
+            <div class="timeline-dot-wrapper">
+              <div class="timeline-dot diagnosis"></div>
+              <div class="timeline-line"></div>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-date">2026-06-02 14:32</div>
+              <div class="timeline-title">诊断：世界观膨胀 P001</div>
+              <div class="timeline-desc">识别到过度关注世界构建，主角被淹没</div>
+              <div class="timeline-score">信号分: 4 | 严重度: L2</div>
+            </div>
+          </div>
+          
+          <!-- 时间线项目 2 -->
+          <div class="timeline-item">
+            <div class="timeline-dot-wrapper">
+              <div class="timeline-dot training"></div>
+              <div class="timeline-line"></div>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-date">2026-06-02 14:45</div>
+              <div class="timeline-title">训练：T001 一句话主角</div>
+              <div class="timeline-desc">完成聚焦主角核心动机的训练</div>
+              <div class="improvement-note">✓ 主角描述更聚焦，减少世界观铺陈</div>
+            </div>
+          </div>
+          
+          <!-- 时间线项目 3 -->
+          <div class="timeline-item">
+            <div class="timeline-dot-wrapper">
+              <div class="timeline-dot evaluation"></div>
+            </div>
+            <div class="timeline-content">
+              <div class="timeline-date">2026-06-02 15:00</div>
+              <div class="timeline-title">评估：P001 改善中</div>
+              <div class="timeline-score">从 75 分 → 55 分（-20）</div>
+              <div class="improvement-note">持续改善中，建议继续聚焦训练</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="section-title">进步对比</div>
+          
+          <!-- 对比项目 1 -->
+          <div class="comparison-item">
+            <div class="comparison-header">
+              <div class="comparison-ids">
+                <span class="comparison-ability">WORLD</span>
+                <span class="comparison-syndrome">世界观膨胀</span>
+              </div>
+              <span class="comparison-diff positive">-20</span>
+            </div>
+            <div class="comparison-bars">
+              <div class="comparison-bar-group">
+                <div class="comparison-bar-label">
+                  <span>之前</span>
+                  <span>2026-06-01</span>
+                </div>
+                <div class="comparison-bar">
+                  <div class="comparison-bar-fill before" style="width: 75%"></div>
+                </div>
+                <div class="comparison-score">75分</div>
+              </div>
+              <div class="comparison-arrow">→</div>
+              <div class="comparison-bar-group">
+                <div class="comparison-bar-label">
+                  <span>现在</span>
+                  <span>2026-06-02</span>
+                </div>
+                <div class="comparison-bar">
+                  <div class="comparison-bar-fill after" style="width: 55%"></div>
+                </div>
+                <div class="comparison-score">55分</div>
+              </div>
+            </div>
+            <div class="improvement-note">持续聚焦主角动机训练，世界观铺陈有所减少</div>
+          </div>
+          
+          <!-- 对比项目 2 -->
+          <div class="comparison-item">
+            <div class="comparison-header">
+              <div class="comparison-ids">
+                <span class="comparison-ability">CHAR</span>
+                <span class="comparison-syndrome">角色悬浮</span>
+              </div>
+              <span class="comparison-diff positive">-15</span>
+            </div>
+            <div class="comparison-bars">
+              <div class="comparison-bar-group">
+                <div class="comparison-bar-label">
+                  <span>之前</span>
+                  <span>2026-05-30</span>
+                </div>
+                <div class="comparison-bar">
+                  <div class="comparison-bar-fill before" style="width: 80%"></div>
+                </div>
+                <div class="comparison-score">80分</div>
+              </div>
+              <div class="comparison-arrow">→</div>
+              <div class="comparison-bar-group">
+                <div class="comparison-bar-label">
+                  <span>现在</span>
+                  <span>2026-06-02</span>
+                </div>
+                <div class="comparison-bar">
+                  <div class="comparison-bar-fill after" style="width: 65%"></div>
+                </div>
+                <div class="comparison-score">65分</div>
+              </div>
+            </div>
+            <div class="improvement-note">角色缺陷意识提升，开始尝试给角色增加弱点</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- API 配置页面 -->
+  <div class="config-page" id="configPage">
+    <div class="config-card">
+      <div class="config-title">API 配置</div>
+      <div class="config-desc">配置您的 AI 服务连接信息。API Key 仅存储在本地，不会上传到任何服务器。</div>
+      <div class="config-form">
+        <div class="config-field">
+          <label>API Key *</label>
+          <input type="password" placeholder="sk-..." id="configApiKey">
+        </div>
+        <div class="config-field">
+          <label>Base URL *</label>
+          <input type="url" placeholder="https://api.deepseek.com/v1" value="https://api.deepseek.com/v1">
+        </div>
+        <div class="config-field">
+          <label>Model Name *</label>
+          <input type="text" placeholder="deepseek-chat" value="deepseek-chat">
+        </div>
+        <div class="config-actions">
+          <button class="config-test-btn">测试连接</button>
+          <button class="config-save-btn">保存配置</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部状态栏 -->
+  <footer class="footer">
+    <div class="status-left">
+      <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span>已连接</span>
+      </div>
+      <span>当前会话: <strong>世界观构建讨论</strong></span>
+      <span id="messageCount">消息: 2</span>
+    </div>
+    <div class="status-right">
+      <span>v2.0.0</span>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const sessionData = {
+    '世界观构建讨论': [
+      { type: 'ai', content: '你好，我是月笙。看起来你在构思一个世界观，能说说你现在遇到的最大困惑是什么吗？', time: '14:32' },
+      { type: 'user', content: '我想写一个修仙世界，设定了很多势力、境界、功法，但写着写着感觉主角被淹没了，不知道该怎么推进故事。', time: '14:33' }
+    ],
+    '角色塑造问题': [
+      { type: 'ai', content: '你提到角色塑造的问题，能具体说说你的主角现在是什么状态吗？', time: '10:15' },
+      { type: 'user', content: '我写的主角太完美了，什么都会，读者说没有代入感。但我不知道该怎么让他有缺点。', time: '10:16' },
+      { type: 'ai', content: '这其实是个好问题。**完美的角色=无趣的角色**。想想看，你的主角最害怕失去什么？这个恐惧会让他做出什么样的错误选择？', time: '10:17' }
+    ],
+    '开头怎么写': [
+      { type: 'ai', content: '关于开头，你觉得目前最大的困难是什么？', time: '09:00' }
+    ]
+  };
+
+  let currentSession = '世界观构建讨论';
+  let messageCount = 0;
+  let currentAttitude = 'doubao';
+  let panelVisible = true;
+  let isGenerating = false;
+  let currentPage = 'chat';
+  let sidebarCollapsed = false;
+
+  const aiResponses = [
+    '你描述的情况很常见。当我们过度关注世界构建时，往往会忘了故事的核心——**主角想要什么、害怕什么、会做什么选择**。不如我们先放下那些设定，想想你的主角此刻最想做的一件事是什么？',
+    '这是个好的开始。你提到了"想要证明自己"，这就是一个很好的情感锚点。现在让我们把这个情感和具体的场景绑在一起：主角会在什么样的情境下，第一次尝试证明自己？',
+    '注意，你刚才说的是"一场大战"，这仍然是一个宏大的概念。我们需要的不是大战，而是一个具体的、小小的场景——也许只是主角在众人面前说了一句话，做了一个动作。试着把这个场景写得再具体一些？',
+    '很好，你开始从"宏大叙事"回到"具体场景"了。这就是我们一直在练习的能力：**用一滴水看到整个海洋**，而不是直接把海洋倒进读者眼里。接下来，我们可以在这个场景中加入一个对立的人事关系，让张力自然产生。'
+  ];
+
+  let aiResponseIndex = 0;
+
+  const sessionData = {
+    '你描述的情况很常见。当我们过度关注世界构建时，往往会忘了故事的核心——**主角想要什么、害怕什么、会做什么选择**。不如我们先放下那些设定，想想你的主角此刻最想做的一件事是什么？',
+    '这是个好的开始。你提到了"想要证明自己"，这就是一个很好的情感锚点。现在让我们把这个情感和具体的场景绑在一起：主角会在什么样的情境下，第一次尝试证明自己？',
+    '注意，你刚才说的是"一场大战"，这仍然是一个宏大的概念。我们需要的不是大战，而是一个具体的、小小的场景——也许只是主角在众人面前说了一句话，做了一个动作。试着把这个场景写得再具体一些？',
+    '很好，你开始从"宏大叙事"回到"具体场景"了。这就是我们一直在练习的能力：**用一滴水看到整个海洋**，而不是直接把海洋倒进读者眼里。接下来，我们可以在这个场景中加入一个对立的人事关系，让张力自然产生。'
+  ];
+
+  let aiResponseIndex = 0;
+
+  function init() {
+    loadSession(currentSession);
+  }
+
+  function loadSession(sessionName) {
+    currentSession = sessionName;
+    const messageList = document.getElementById('messageList');
+    messageList.innerHTML = '';
+    messageCount = 0;
+    aiResponseIndex = 0;
+
+    const messages = sessionData[sessionName] || [];
+    messages.forEach(msg => addMessage(msg.type, msg.content, msg.time));
+    updateMessageCount();
+
+    document.querySelector('.chat-title').textContent = sessionName;
+    document.querySelector('.status-left span:nth-child(2)').innerHTML = `当前会话: <strong>${sessionName}</strong>`;
+
+    updateDiagnosisForSession(sessionName);
+  }
+
+  function updateDiagnosisForSession(sessionName) {
+    const panel = document.getElementById('rightPanel');
+    const syndromeSection = panel.querySelector('.panel-section:first-of-type');
+    const actionSection = panel.querySelector('.panel-section:nth-of-type(2)');
+
+    if (sessionName === '世界观构建讨论') {
+      syndromeSection.innerHTML = `
+        <div class="section-title">识别到的病症</div>
+        <div class="syndrome-card">
+          <div class="syndrome-header">
+            <span class="syndrome-id">P001</span>
+            <span class="syndrome-name">世界观膨胀</span>
+          </div>
+          <div class="severity-bar"><div class="severity-fill medium"></div></div>
+          <div class="severity-label">严重度：中度 | 信号总分: 4</div>
+          <div class="trigger-signals">
+            <span class="trigger-signal">世界观</span>
+            <span class="trigger-signal">主角未确定</span>
+            <span class="trigger-signal">势力过多</span>
+          </div>
+        </div>
+        <div class="syndrome-card">
+          <div class="syndrome-header">
+            <span class="syndrome-id">P004</span>
+            <span class="syndrome-name">信息硬塞</span>
+          </div>
+          <div class="severity-bar"><div class="severity-fill low"></div></div>
+          <div class="severity-label">严重度：轻度 | 信号总分: 2</div>
+          <div class="trigger-signals">
+            <span class="trigger-signal">说明句</span>
+            <span class="trigger-signal">设定堆砌</span>
+          </div>
+        </div>
+      `;
+      actionSection.innerHTML = `
+        <div class="section-title">建议教学动作</div>
+        <div class="action-item">
+          <span class="action-id">A001</span>
+          <span class="action-desc">缩小范围：从宏大设定拉回具体场景</span>
+        </div>
+        <div class="action-item">
+          <span class="action-id">A002</span>
+          <span class="action-desc">回归主角：从上帝视角回到角色眼睛</span>
+        </div>
+      `;
+    } else if (sessionName === '角色塑造问题') {
+      syndromeSection.innerHTML = `
+        <div class="section-title">识别到的病症</div>
+        <div class="syndrome-card">
+          <div class="syndrome-header">
+            <span class="syndrome-id">P003</span>
+            <span class="syndrome-name">角色悬浮</span>
+          </div>
+          <div class="severity-bar"><div class="severity-fill high"></div></div>
+          <div class="severity-label">严重度：重度 | 信号总分: 6</div>
+          <div class="trigger-signals">
+            <span class="trigger-signal">太完美</span>
+            <span class="trigger-signal">没有弱点</span>
+            <span class="trigger-signal">什么都会</span>
+          </div>
+        </div>
+      `;
+      actionSection.innerHTML = `
+        <div class="section-title">建议教学动作</div>
+        <div class="action-item">
+          <span class="action-id">A003</span>
+          <span class="action-desc">给缺点：让角色有恐惧和错误选择</span>
+        </div>
+        <div class="action-item">
+          <span class="action-id">A004</span>
+          <span class="action-desc">现实锚点：把角色放回具体生活场景</span>
+        </div>
+      `;
+    } else {
+      syndromeSection.innerHTML = `
+        <div class="section-title">识别到的病症</div>
+        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
+          暂无诊断结果，开始对话后将自动分析
+        </div>
+      `;
+      actionSection.innerHTML = `
+        <div class="section-title">建议教学动作</div>
+        <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px;">
+          等待分析中...
+        </div>
+      `;
+    }
+  }
+
+  function addMessage(type, content, time) {
+    const messageList = document.getElementById('messageList');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    messageDiv.innerHTML = `
+      <div class="message-bubble">${content}</div>
+      <div class="message-time">${time || getCurrentTime()}</div>
+    `;
+    messageList.appendChild(messageDiv);
+    messageList.scrollTop = messageList.scrollHeight;
+    messageCount++;
+    updateMessageCount();
+  }
+
+  function getCurrentTime() {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  }
+
+  function updateMessageCount() {
+    document.getElementById('messageCount').textContent = `消息: ${messageCount}`;
+  }
+
+  function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    if (!content) return;
+
+    addMessage('user', content);
+    input.value = '';
+
+    setGeneratingState(true);
+    showTypingIndicator();
+
+    setTimeout(() => {
+      removeTypingIndicator();
+      const response = aiResponses[aiResponseIndex % aiResponses.length];
+      aiResponseIndex++;
+      addMessage('ai', response);
+      setGeneratingState(false);
+    }, 1500);
+  }
+
+  function stopGeneration() {
+    setGeneratingState(false);
+    removeTypingIndicator();
+    addMessage('ai', '<em style="color: var(--text-muted); font-size: 12px;">[已停止生成]</em>', getCurrentTime());
+  }
+
+  function setGeneratingState(generating) {
+    isGenerating = generating;
+    const sendBtn = document.getElementById('sendBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const input = document.getElementById('messageInput');
+    
+    if (generating) {
+      sendBtn.classList.add('hidden');
+      stopBtn.classList.add('visible');
+      input.disabled = true;
+    } else {
+      sendBtn.classList.remove('hidden');
+      stopBtn.classList.remove('visible');
+      input.disabled = false;
+    }
+  }
+
+  function showTypingIndicator() {
+    const messageList = document.getElementById('messageList');
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message ai';
+    typingDiv.id = 'typingIndicator';
+    typingDiv.innerHTML = `
+      <div class="message-bubble">
+        <div class="typing-indicator">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    `;
+    messageList.appendChild(typingDiv);
+    messageList.scrollTop = messageList.scrollHeight;
+  }
+
+  function removeTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) indicator.remove();
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function setAttitude(mode) {
+    currentAttitude = mode;
+    const options = document.querySelectorAll('.attitude-option');
+    options.forEach(opt => {
+      opt.classList.remove('active');
+    });
+    
+    if (mode === 'doubao') {
+      options[0].classList.add('active');
+    } else {
+      options[1].classList.add('active');
+    }
+  }
+
+  function togglePanel() {
+    const panel = document.getElementById('rightPanel');
+    panelVisible = !panelVisible;
+    
+    if (panelVisible) {
+      panel.classList.remove('collapsed');
+    } else {
+      panel.classList.add('collapsed');
+    }
+  }
+
+  function newSession() {
+    const messageList = document.getElementById('messageList');
+    messageList.innerHTML = '';
+    messageCount = 0;
+    updateMessageCount();
+    aiResponseIndex = 0;
+    
+    addMessage('ai', '新会话开始了。今天想聊些什么？', getCurrentTime());
+  }
+
+  function selectSession(element) {
+    document.querySelectorAll('.session-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    element.classList.add('active');
+    
+    const sessionName = element.querySelector('span').textContent;
+    loadSession(sessionName);
+  }
+
+  function switchPage(page) {
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+
+    const chatPage = document.getElementById('chatPage');
+    const tasksPage = document.getElementById('tasksPage');
+    
+    chatPage.classList.remove('active');
+    tasksPage.classList.remove('active');
+    
+    if (page === 'chat') {
+      chatPage.classList.add('active');
+    } else if (page === 'tasks') {
+      tasksPage.classList.add('active');
+    }
+    
+    currentPage = page;
+  }
+
+  function showConfigPage() {
+    const chatPage = document.getElementById('chatPage');
+    const tasksPage = document.getElementById('tasksPage');
+    const configPage = document.getElementById('configPage');
+    
+    chatPage.classList.remove('active');
+    tasksPage.classList.remove('active');
+    configPage.classList.add('active');
+    
+    currentPage = 'config';
+  }
+
+  // 侧边栏收起/展开
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebarCollapsed = !sidebarCollapsed;
+    
+    if (sidebarCollapsed) {
+      sidebar.classList.add('collapsed');
+    } else {
+      sidebar.classList.remove('collapsed');
+    }
+  }
+
+  // 档案标签页切换
+  function switchProfileTab(tab) {
+    // 更新标签按钮状态
+    document.querySelectorAll('.profile-tab').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    event.currentTarget.classList.add('active');
+    
+    // 切换内容面板
+    document.querySelectorAll('.profile-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    if (tab === 'diagnosis') {
+      document.getElementById('profileDiagnosis').classList.add('active');
+    } else if (tab === 'profile') {
+      document.getElementById('profileProfile').classList.add('active');
+    } else if (tab === 'growth') {
+      document.getElementById('profileGrowth').classList.add('active');
+    }
+  }
+
+  // 初始化
+  init();
+</script>
+</body>
+</html>

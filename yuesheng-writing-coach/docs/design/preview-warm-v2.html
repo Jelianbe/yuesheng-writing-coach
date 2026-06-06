@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 设计预览 v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;1,7..72,400&family=DM+Sans:opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-page: #F5F0E8;
+    --bg-sidebar: #F0EAE0;
+    --bg-main: #FAF7F2;
+    --bg-card: #FFFFFFF0;
+    --bg-hover: #EDE6DA;
+    --bg-active: #E6DDD0;
+    --bg-input: #FFFFFF;
+
+    --text-primary: #3D3229;
+    --text-secondary: #7A6B5D;
+    --text-tertiary: #A89888;
+    --text-on-accent: #FFFFFF;
+
+    --accent: #C0766E;
+    --accent-hover: #B0655D;
+    --accent-light: #F0E0DE;
+    --accent-subtle: #F5EAE8;
+
+    --success: #7A9E7E;
+    --success-light: #E8F0E9;
+    --warning: #D4A56A;
+    --warning-light: #F5EDE0;
+    --error: #C0766E;
+    --error-light: #F5E8E6;
+    --info: #6A8FD4;
+    --info-light: #E4EDF5;
+
+    --border: #E6DDD0;
+    --border-light: #F0EAE0;
+
+    --shadow-sm: 0 1px 3px rgba(61, 50, 41, 0.06);
+    --shadow-md: 0 4px 12px rgba(61, 50, 41, 0.08);
+    --shadow-lg: 0 8px 24px rgba(61, 50, 41, 0.10);
+    --shadow-xl: 0 16px 48px rgba(61, 50, 41, 0.12);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    --font-display: 'Literata', 'Noto Serif SC', Georgia, serif;
+    --font-body: 'DM Sans', 'Noto Sans SC', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --sidebar-w: 280px;
+    --sidebar-collapsed-w: 56px;
+    --header-h: 80px;
+    --right-panel-w: 340px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    background: var(--bg-page);
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== App Shell ===== */
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--bg-page);
+  }
+
+  /* ===== Header (Full-width top bar) ===== */
+  .header {
+    height: var(--header-h);
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-main);
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+    z-index: 100;
+    position: relative;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-logo {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #D4A56A);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-on-accent);
+    box-shadow: var(--shadow-md);
+  }
+  .header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .header-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .header-model-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--success-light);
+    color: var(--success);
+    font-weight: 500;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-icon-btn {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary);
+    transition: all 0.15s;
+    font-size: 0.85rem;
+  }
+  .header-icon-btn:hover { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent); }
+  .header-icon-btn:active { transform: scale(0.95); }
+  .header-attitude {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .attitude-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .attitude-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .attitude-btn.active {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-color: var(--accent);
+  }
+
+  /* ===== Content Row (sidebar + main + right panel) ===== */
+  .content-row {
+    display: flex;
+    flex: 1;
+    overflow: visible;
+    position: relative;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), min-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    z-index: 50;
+  }
+  .sidebar.collapsed {
+    width: var(--sidebar-collapsed-w);
+    min-width: var(--sidebar-collapsed-w);
+  }
+
+  /* Sidebar toggle button - 圆形按钮，放在 sidebar 右边缘中间偏上 */
+  .sidebar-toggle {
+    position: absolute;
+    right: -20px;
+    top: 80px;
+    width: 39px; height: 39px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    box-shadow: var(--shadow-md);
+  }
+  .sidebar-toggle:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lg);
+    transform: scale(1.15);
+  }
+  .sidebar.collapsed .sidebar-toggle {
+    transform: rotate(180deg);
+  }
+  .sidebar.collapsed .sidebar-toggle:hover {
+    transform: rotate(180deg) scale(1.15);
+  }
+
+  /* Hide scrollbar for collapsed sidebar list */
+  .sidebar.collapsed .sidebar-list { overflow-y: hidden; }
+
+  /* Sidebar header with new session button */
+  .sidebar-header {
+    padding: 16px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-new-btn {
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: var(--text-on-accent);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: var(--shadow-md);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .sidebar-new-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Collapsed: new session button becomes a circle with + */
+  .sidebar.collapsed .sidebar-new-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-md);
+  }
+
+  /* Sidebar section label */
+  .sidebar-section-label {
+    padding: 12px 14px 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* Sidebar session list */
+  .sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 10px 10px;
+  }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .chat-item {
+    padding: 9px 10px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .chat-item:hover { background: var(--bg-hover); }
+  .chat-item.active { background: var(--bg-active); }
+
+  .chat-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .chat-item-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+    line-height: 1.4;
+  }
+  .chat-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    gap: 4px;
+  }
+  .chat-item-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .chat-item-tag {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+    background: var(--border-light);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+  }
+
+  /* ===== Collapsed state ===== */
+  /* Hide all text elements */
+  .sidebar.collapsed .sidebar-section-label,
+  .sidebar.collapsed .chat-item-info,
+  .sidebar.collapsed .chat-item-meta {
+    display: none;
+  }
+
+  /* Show only "+" icon in new session button */
+  .sidebar.collapsed .sidebar-new-btn {
+    position: relative;
+  }
+  .sidebar.collapsed .sidebar-new-btn span {
+    display: none;
+  }
+  .sidebar.collapsed .sidebar-new-btn::before {
+    content: "+";
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+
+  /* Show dot indicator for each session item */
+  .sidebar.collapsed .chat-item {
+    justify-content: center;
+    padding: 10px 4px;
+  }
+  .sidebar.collapsed .chat-item::after {
+    content: "";
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .sidebar.collapsed .chat-item.active::after {
+    background: var(--accent);
+  }
+
+  /* ===== Settings Panel ===== */
+
+  /* ===== Main Area ===== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-main);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(61, 50, 41, 0.3);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(4px);
+  }
+  .settings-overlay.open { display: flex; }
+  .settings-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    width: 480px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-xl);
+    animation: settingsIn 0.3s ease-out;
+  }
+  @keyframes settingsIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .settings-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+  .settings-close {
+    width: 28px; height: 28px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--bg-hover);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-tertiary);
+    transition: all 0.15s;
+  }
+  .settings-close:hover { background: var(--accent-subtle); color: var(--accent); }
+  .settings-section { margin-bottom: 20px; }
+  .settings-section-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .settings-field { margin-bottom: 12px; }
+  .settings-field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .settings-field input, .settings-field select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: var(--bg-input);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .settings-field input:focus, .settings-field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .settings-save-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 8px;
+  }
+  .settings-save-btn:hover { background: var(--accent-hover); }
+
+  /* ===== Chat Area ===== */
+  .chat-area {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 24px 20px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    max-width: 80%;
+    animation: msgIn 0.3s ease-out;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .message.user { align-self: flex-end; flex-direction: row-reverse; }
+  .message.assistant { align-self: flex-start; }
+
+  .message-avatar {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+  .message.assistant .message-avatar {
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border: 1px solid var(--accent-light);
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
+  .message.user .message-avatar {
+    background: #E8E0D6;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .message-content {
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    position: relative;
+  }
+  .message.assistant .message-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-bottom-left-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+  }
+  .message.user .message-content {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  .message-content p { margin-bottom: 8px; }
+  .message-content p:last-child { margin-bottom: 0; }
+
+  .message-time {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    text-align: right;
+    padding: 0 4px;
+  }
+  .message.user .message-time { color: rgba(255,255,255,0.6); }
+
+  /* ===== Diagnosis Card (inline) ===== */
+  .diagnosis-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    max-width: 80%;
+    align-self: flex-start;
+    width: 100%;
+    animation: msgIn 0.3s ease-out 0.1s both;
+  }
+  .diagnosis-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .diagnosis-header:hover { background: var(--bg-hover); }
+  .diagnosis-header-icon {
+    width: 24px; height: 24px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+  .diagnosis-header-icon.problem { background: var(--error-light); color: var(--error); }
+  .diagnosis-header-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    flex: 1;
+  }
+  .diagnosis-header-chevron {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .diagnosis-header-chevron.open { transform: rotate(180deg); }
+
+  .diagnosis-body {
+    padding: 0 16px 16px;
+    display: none;
+  }
+  .diagnosis-body.open { display: block; }
+
+  .diagnosis-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .diagnosis-tag.severity-high { background: var(--error-light); color: var(--error); }
+  .diagnosis-tag.severity-mid { background: var(--warning-light); color: var(--warning); }
+
+  .diagnosis-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .diagnosis-evidence {
+    background: var(--bg-sidebar);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .diagnosis-evidence-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .diagnosis-evidence-text::before { content: '\201C'; }
+  .diagnosis-evidence-text::after { content: '\201D'; }
+
+  .diagnosis-exercise-btn {
+    padding: 8px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    width: 100%;
+  }
+  .diagnosis-exercise-btn:hover { background: var(--accent-hover); }
+
+  /* ===== Typing Indicator ===== */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-sm);
+    align-self: flex-start;
+    box-shadow: var(--shadow-sm);
+  }
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    animation: dotPulse 1.4s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotPulse {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ===== Input Area (Fixed at bottom, DeepSeek-inspired) ===== */
+  .input-area {
+    position: fixed;
+    bottom: 0;
+    left: var(--sidebar-w);
+    right: var(--right-panel-w);
+    padding: 16px 32px 24px;
+    background: linear-gradient(180deg, transparent 0%, var(--bg-main) 20%);
+    z-index: 50;
+    transition: left 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), right 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .input-area.sidebar-collapsed {
+    left: var(--sidebar-collapsed-w);
+  }
+  .input-area.right-panel-collapsed {
+    right: 0;
+  }
+  .input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px 14px 22px;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    max-width: 720px;
+    margin: 0 auto;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .input-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light), 0 4px 16px rgba(0,0,0,0.08);
+  }
+  .input-wrapper textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--text-primary);
+    resize: none;
+    line-height: 1.6;
+    max-height: 200px;
+    min-height: 28px;
+  }
+  .input-wrapper textarea::placeholder { color: var(--text-tertiary); font-size: 0.95rem; }
+  .input-send-btn {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .input-send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+  .input-send-btn:active { transform: scale(0.95); }
+  .input-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ===== Right Panel ===== */
+  .right-panel {
+    width: var(--right-panel-w);
+    min-width: var(--right-panel-w);
+    background: var(--bg-sidebar);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: visible;
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), min-width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  .right-panel.collapsed {
+    width: 0;
+    min-width: 0;
+    border-left: none;
+  }
+  .right-panel.collapsed .panel-tabs,
+  .right-panel.collapsed .panel-content { display: none; }
+
+  /* Right panel toggle button - 放在 content-row 上，定位在右栏左侧边缘中间偏上 */
+  .right-panel-toggle {
+    position: absolute;
+    right: var(--right-panel-w);
+    top: 80px;
+    width: 39px; height: 39px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    box-shadow: var(--shadow-md);
+  }
+  .right-panel-toggle:hover {
+    background: var(--accent-light);
+    color: var(--accent);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lg);
+    transform: scale(1.15);
+  }
+  .right-panel-toggle.collapsed-right {
+    right: 0;
+    transform: rotate(180deg);
+  }
+  .right-panel-toggle.collapsed-right:hover {
+    transform: rotate(180deg) scale(1.15);
+  }
+
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 4px;
+  }
+  .panel-tab {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .panel-tab:hover { color: var(--text-secondary); }
+  .panel-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .panel-content { display: none; flex: 1; overflow-y: auto; padding: 12px; }
+  .panel-content.active { display: block; }
+  .panel-content::-webkit-scrollbar { width: 4px; }
+  .panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Teaching Progress */
+  .progress-section { margin-bottom: 16px; }
+  .progress-section-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+  .progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    margin-bottom: 4px;
+    transition: background 0.15s;
+  }
+  .progress-step:hover { background: var(--bg-hover); }
+  .progress-step.active { background: var(--accent-subtle); }
+  .progress-step.completed { opacity: 0.7; }
+  .progress-step-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .progress-step.completed .progress-step-dot { border-color: var(--success); background: var(--success); color: white; font-size: 0.6rem; }
+  .progress-step.active .progress-step-dot { border-color: var(--accent); background: var(--accent); color: white; font-size: 0.65rem; }
+  .progress-step-info { flex: 1; }
+  .progress-step-title { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); }
+  .progress-step-desc { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 1px; }
+
+  /* Next Step Suggestion */
+  .next-step-box {
+    background: var(--accent-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-top: 12px;
+    border: 1px solid var(--accent-light);
+  }
+  .next-step-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 6px;
+  }
+  .next-step-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Growth Card */
+  .growth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .growth-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .growth-card-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+  .growth-card-value {
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .growth-card-value.improving { color: var(--success); }
+  .growth-card-value.stable { color: var(--warning); }
+  .growth-bar {
+    height: 4px;
+    background: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .growth-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .growth-bar-fill.improving { background: var(--success); }
+  .growth-bar-fill.stable { background: var(--warning); }
+  .growth-card-desc {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+  }
+
+  /* Diagnosis Panel Content */
+  .diagnosis-panel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .diagnosis-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .diagnosis-panel-id {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--warning-light);
+    color: var(--warning);
+  }
+  .diagnosis-panel-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .diagnosis-panel-bar {
+    height: 4px;
+    background: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .diagnosis-panel-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .diagnosis-panel-bar-fill.high { width: 80%; background: var(--error); }
+  .diagnosis-panel-bar-fill.mid { width: 55%; background: var(--warning); }
+  .diagnosis-panel-bar-fill.low { width: 30%; background: var(--success); }
+  .diagnosis-panel-status {
+    font-size: 0.72rem;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+  .diagnosis-panel-evidence {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    background: var(--bg-sidebar);
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    line-height: 1.5;
+  }
+  .diagnosis-panel-evidence::before { content: '\201C'; }
+  .diagnosis-panel-evidence::after { content: '\201D'; }
+
+  /* Empty State */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+  }
+  .empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+  .empty-state-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .empty-state-desc {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    max-width: 240px;
+  }
+
+  /* Config Page (overlay for initial state) */
+  .config-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-page);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .config-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    width: 420px;
+    max-width: 90vw;
+    box-shadow: var(--shadow-xl);
+    text-align: center;
+  }
+  .config-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+  }
+  .config-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .config-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .config-field {
+    text-align: left;
+    margin-bottom: 16px;
+  }
+  .config-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .config-field input, .config-field select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    background: var(--bg-input);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .config-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .config-save-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 8px;
+  }
+  .config-save-btn:hover { background: var(--accent-hover); }
+
+  /* ===== SVG Decorations ===== */
+  .bg-texture {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.3;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(192, 118, 110, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(212, 165, 106, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(122, 158, 126, 0.04) 0%, transparent 50%);
+  }
+
+  /* ===== Transitions ===== */
+  .fade-in { animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ===== Preview Toggle ===== */
+  .preview-state {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 200;
+    display: flex;
+    gap: 6px;
+  }
+  .preview-state button {
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .preview-state button:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ===== Welcome Empty State ===== */
+  .welcome-empty {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    padding: 30px 20px 16px;
+    overflow-y: auto;
+    gap: 8px;
+  }
+  .welcome-empty.visible { display: flex; }
+  .welcome-icon {
+    width: 64px; height: 64px;
+    background: var(--accent-subtle);
+    border-radius: var(--radius-xl);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--accent);
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .welcome-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+  }
+  .welcome-desc {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    max-width: 400px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+  .welcome-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+  }
+  .welcome-suggestion {
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    font-family: var(--font-body);
+  }
+  .welcome-suggestion:hover {
+    background: var(--accent-subtle);
+    border-color: var(--accent-light);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-texture"></div>
+
+<!-- ===== Config Overlay ===== -->
+<!-- ===== Settings Panel ===== -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings(event)">
+  <div class="settings-panel" onclick="event.stopPropagation()">
+    <div class="settings-header">
+      <span class="settings-title">设置</span>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-label">API 配置</div>
+      <div class="settings-field">
+        <label>API 密钥</label>
+        <input type="password" id="settingsApiKey" value="sk-demo-key" placeholder="sk-...">
+      </div>
+      <div class="settings-field">
+        <label>模型</label>
+        <select id="settingsModel" onchange="updateModel(this.value)">
+          <option>GPT-4o</option>
+          <option>GPT-4o-mini</option>
+          <option selected>Claude Sonnet 4</option>
+          <option>Claude Opus 4</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-label">教学风格</div>
+      <div class="settings-field">
+        <label>教学态度</label>
+        <select id="settingsAttitude">
+          <option>温和引导 - 循序渐进，多鼓励少批评</option>
+          <option selected>直接指导 - 明确问题，给出具体建议</option>
+          <option>尖锐挑战 - 直接指出问题，推动快速进步</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-label">关于</div>
+      <div style="font-size: 0.78rem; color: var(--text-tertiary); line-height: 1.6;">
+        月笙写作教练 v2.0 MVP<br>
+        基于诊断引擎的 AI 写作教学系统
+      </div>
+    </div>
+    <button class="settings-save-btn" onclick="saveSettings()">保存设置</button>
+  </div>
+</div>
+
+<div class="config-overlay" id="configOverlay" style="display:none">
+  <div class="config-card fade-in">
+    <div class="config-icon">✍️</div>
+    <div class="config-title">月笙写作教练</div>
+    <div class="config-subtitle">配置你的 API 密钥，开始写作之旅</div>
+    <div class="config-field">
+      <label>API 密钥</label>
+      <input type="password" id="configApiKey" placeholder="sk-..." value="sk-demo-key">
+    </div>
+    <div class="config-field">
+      <label>模型</label>
+      <select id="configModel">
+        <option>GPT-4o</option>
+        <option>GPT-4o-mini</option>
+        <option selected>Claude Sonnet 4</option>
+      </select>
+    </div>
+    <div class="config-field">
+      <label>教学态度</label>
+      <select id="configAttitude">
+        <option>温和引导</option>
+        <option selected>直接指导</option>
+        <option>尖锐挑战</option>
+      </select>
+    </div>
+    <button class="config-save-btn" onclick="startUsing()">开始使用</button>
+  </div>
+</div>
+
+<!-- ===== App ===== -->
+<div class="app" id="appMain">
+  <!-- Full-width Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-logo">月</div>
+      <div class="header-title-group">
+        <span class="header-title" id="headerTitle">第三章 主角出场方式</span>
+        <span class="header-badge" id="headerBadge">世界观阶段</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="header-model-badge" id="headerModel">Claude Sonnet 4</span>
+      <div class="header-actions">
+        <div class="header-attitude">
+          <button class="attitude-btn" onclick="setAttitude(this, 'gentle')">温和</button>
+          <button class="attitude-btn active" onclick="setAttitude(this, 'direct')">直接</button>
+          <button class="attitude-btn" onclick="setAttitude(this, 'sharp')">尖锐</button>
+        </div>
+        <button class="header-icon-btn" onclick="openSettings()" title="设置">⚙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content Row -->
+  <div class="content-row">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-toggle" onclick="toggleSidebar()" title="折叠侧边栏">▸</div>
+      <div class="sidebar-header">
+        <button class="sidebar-new-btn" onclick="newSession()"><span>+ 新建会话</span></button>
+      </div>
+
+      <div class="sidebar-section-label">最近会话</div>
+
+      <div class="sidebar-list" id="sessionList">
+        <div class="chat-item active" onclick="selectSession(this, 0)">
+          <div class="chat-item-info">
+            <div class="chat-item-title">第三章 主角出场方式</div>
+            <div class="chat-item-meta">
+              <div class="chat-item-tags">
+                <span class="chat-item-tag">世界观</span>
+                <span class="chat-item-tag">主角塑造</span>
+              </div>
+              <span>2h前</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-item" onclick="selectSession(this, 1)">
+          <div class="chat-item-info">
+            <div class="chat-item-title">第二章 战斗场景重写</div>
+            <div class="chat-item-meta">
+              <div class="chat-item-tags">
+                <span class="chat-item-tag">叙事节奏</span>
+                <span class="chat-item-tag">动作描写</span>
+              </div>
+              <span>昨天</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-item" onclick="selectSession(this, 2)">
+          <div class="chat-item-info">
+            <div class="chat-item-title">开篇第一章 整体诊断</div>
+            <div class="chat-item-meta">
+              <div class="chat-item-tags">
+                <span class="chat-item-tag">世界观</span>
+                <span class="chat-item-tag">人物</span>
+                <span class="chat-item-tag">悬念</span>
+              </div>
+              <span>3天前</span>
+            </div>
+          </div>
+        </div>
+        <div class="chat-item" onclick="selectSession(this, 3)">
+          <div class="chat-item-info">
+            <div class="chat-item-title">世界观的日常细节</div>
+            <div class="chat-item-meta">
+              <div class="chat-item-tags">
+                <span class="chat-item-tag">日常描写</span>
+                <span class="chat-item-tag">阶层刻画</span>
+              </div>
+              <span>5天前</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chatArea">
+      <!-- Messages rendered by JS -->
+    </div>
+
+    <!-- Welcome Empty State -->
+    <div class="welcome-empty" id="welcomeEmpty">
+      <div class="welcome-icon">月</div>
+      <div class="welcome-title">今天想聊些什么？</div>
+      <div class="welcome-desc">你可以分享你的写作，或者问我任何关于写作的问题。我会帮你发现可以改进的地方。</div>
+      <div class="welcome-suggestions">
+        <button class="welcome-suggestion" onclick="useSuggestion('我写了一段开头，帮我看看有什么问题')">💡 我写了一段开头，帮我看看有什么问题</button>
+        <button class="welcome-suggestion" onclick="useSuggestion('怎么让角色更立体、更有记忆点？')">💡 怎么让角色更立体、更有记忆点？</button>
+        <button class="welcome-suggestion" onclick="useSuggestion('世界观设定太多，第一章塞不进去怎么办？')">💡 世界观设定太多，第一章塞不进去怎么办？</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Panel Toggle (outside panel so it stays visible when collapsed) -->
+  <div class="right-panel-toggle" id="rightPanelToggle" onclick="toggleRightPanel()" title="折叠右栏">▸</div>
+
+  <!-- Right Panel -->
+  <aside class="right-panel" id="rightPanel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" onclick="switchPanelTab('diagnosis')">诊断</button>
+      <button class="panel-tab" onclick="switchPanelTab('teaching')">教学</button>
+      <button class="panel-tab" onclick="switchPanelTab('growth')">成长</button>
+    </div>
+
+    <!-- Diagnosis Tab -->
+    <div class="panel-content active" id="panelDiagnosis">
+      <div class="progress-section">
+        <div class="progress-section-label">本轮诊断</div>
+        <div class="diagnosis-panel-card">
+          <div class="diagnosis-panel-header">
+            <span class="diagnosis-panel-id">P004</span>
+            <span class="diagnosis-panel-name">信息倾销</span>
+          </div>
+          <div class="diagnosis-panel-bar">
+            <div class="diagnosis-panel-bar-fill high"></div>
+          </div>
+          <div class="diagnosis-panel-status">严重度：高 | 通过外貌描写而非行动呈现角色</div>
+        </div>
+        <div class="diagnosis-panel-card">
+          <div class="diagnosis-panel-header">
+            <span class="diagnosis-panel-id">P001</span>
+            <span class="diagnosis-panel-name">世界观膨胀</span>
+          </div>
+          <div class="diagnosis-panel-bar">
+            <div class="diagnosis-panel-bar-fill mid"></div>
+          </div>
+          <div class="diagnosis-panel-status">严重度：中 | 过多势力设定淹没了主角</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teaching Tab -->
+    <div class="panel-content" id="panelTeaching">
+      <div class="progress-section">
+        <div class="progress-section-label">当前阶段 · 世界观</div>
+        <div class="progress-step completed">
+          <div class="progress-step-dot">✓</div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">自然法则</div>
+            <div class="progress-step-desc">世界观的基础设定</div>
+          </div>
+        </div>
+        <div class="progress-step completed">
+          <div class="progress-step-dot">✓</div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">主角定位</div>
+            <div class="progress-step-desc">确定主角在社会中的位置</div>
+          </div>
+        </div>
+        <div class="progress-step active">
+          <div class="progress-step-dot">●</div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">社会结构</div>
+            <div class="progress-step-desc">阶层刻画与日常细节</div>
+          </div>
+        </div>
+        <div class="progress-step">
+          <div class="progress-step-dot"></div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">第一个场景</div>
+            <div class="progress-step-desc">将前面设定自然呈现</div>
+          </div>
+        </div>
+
+        <div class="next-step-box">
+          <div class="next-step-label">💡 下一步建议</div>
+          <div class="next-step-text">在日常对话中自然呈现阶层差异。尝试写一段主角与不同阶层人物的互动，注意每个人物的说话方式和关注点应该不同。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Growth Tab -->
+    <div class="panel-content" id="panelGrowth">
+      <div class="progress-section">
+        <div class="progress-section-label">能力成长</div>
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <span class="growth-card-title">角色塑造</span>
+            <span class="growth-card-value improving">持续进步中 ↑</span>
+          </div>
+          <div class="growth-bar">
+            <div class="growth-bar-fill improving" style="width: 62%"></div>
+          </div>
+          <div class="growth-card-desc">通过 3 次训练，从"直接描述"向"通过行动展现"转变</div>
+        </div>
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <span class="growth-card-title">叙事节奏</span>
+            <span class="growth-card-value stable">需要更多训练 →</span>
+          </div>
+          <div class="growth-bar">
+            <div class="growth-bar-fill stable" style="width: 45%"></div>
+          </div>
+          <div class="growth-card-desc">开始注意到信息释放的节奏控制</div>
+        </div>
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <span class="growth-card-title">日常描写</span>
+            <span class="growth-card-value improving">进步显著 ↑</span>
+          </div>
+          <div class="growth-bar">
+            <div class="growth-bar-fill improving" style="width: 78%"></div>
+          </div>
+          <div class="growth-card-desc">已掌握通过日常细节呈现世界观的技巧</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  </div>
+
+  <!-- Input Area (Fixed at bottom, outside flex layout) -->
+  <div class="input-area" id="inputArea">
+    <div class="input-wrapper">
+      <textarea id="messageInput" rows="1" placeholder="输入你的写作内容或问题..." onkeydown="handleKeyDown(event)"></textarea>
+      <button class="input-send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== State =====
+  let sidebarCollapsed = false;
+  let rightPanelCollapsed = false;
+  let currentSessionIdx = 0;
+  let isGenerating = false;
+
+  const sessions = [
+    {
+      title: '第三章 主角出场方式',
+      badge: '世界观阶段',
+      messages: [
+        { type: 'assistant', content: '<p>我们来看看你这个版本的第三章开场。主角在酒楼登场，用了整整三段描写他的外貌穿着，但从你的设定来看，这个角色应该是个底层出身的少年——</p><p>这里的矛盾在于：<strong>描写的精致程度和角色的真实身份不匹配</strong>。一个酒楼跑堂不会被这样细致地打量衣着。</p>', time: '10:32' },
+        { type: 'diagnosis', id: 'P004', name: '信息倾销', severity: 'high', desc: '通过大段外貌描写而非行动/对话来呈现角色，读者无法在信息堆砌中建立情感连接。', evidence: '他一袭白衣胜雪，腰间佩一柄三尺青锋，剑鞘上镶嵌七颗宝石，步履从容间衣袂飘飘，引来路人侧目。' },
+        { type: 'user', content: '<p>可是我觉得这样写才能让读者想象出角色的样子啊。</p>', time: '10:35' },
+        { type: 'assistant', content: '<p>我理解你想让角色形象立体。但一个好用的原则是：<strong>「展示，而非告知」</strong>。</p><p>与其写"他衣着华贵"，不如让他在点菜时自然地展现——比如他随手甩出一锭银子，说"挑好的上"。这一个动作，比他穿了什么更说明问题。</p><p>要不要试着改写一下这段，把描写转化成动作或对话？</p>', time: '10:36' }
+      ]
+    },
+    {
+      title: '第二章 战斗场景重写',
+      badge: '叙事阶段',
+      messages: [
+        { type: 'assistant', content: '<p>你上次写的战斗场景有个问题：信息释放太快了。主角刚进场就直接开打，读者还没来得及紧张，战斗就结束了。</p><p>好的战斗场景需要<strong>铺垫 → 交锋 → 转折 → 余韵</strong>四个阶段。你现在只做了前两个。</p>', time: '14:20' },
+        { type: 'user', content: '<p>那我该怎么加铺垫呢？已经写了两千字了。</p>', time: '14:25' },
+        { type: 'assistant', content: '<p>不需要大幅改动。在战斗开始前加入 2-3 个细节就够了：</p><p>1. 对手的一个小动作（比如漫不经心地擦拭武器）<br>2. 周围环境的变化（比如围观者的安静）<br>3. 主角内心的一个闪念（比如想起上次输的屈辱）</p><p>这三样加在一起，张力就出来了。要不要试试？</p>', time: '14:27' }
+      ]
+    },
+    {
+      title: '开篇第一章 整体诊断',
+      badge: '诊断阶段',
+      messages: [
+        { type: 'assistant', content: '<p>第一章整体来看，你做了很多正确的事：主角出场及时、有明确的目标感、开头有冲突。</p><p>但有一个需要关注的地方：<strong>第一段用了整整 200 字介绍世界观背景</strong>，然后才进入场景。读者在还没认识主角之前，就被一堆设定淹没了。</p>', time: '09:00' },
+        { type: 'diagnosis', id: 'P001', name: '世界观膨胀', severity: 'mid', desc: '开头用大段背景说明替代了场景呈现，读者无法建立情感连接。', evidence: '天元大陆，分九州十三州，每州又有...（200字设定介绍）...在这样的世界中，主角李青云...' },
+        { type: 'user', content: '<p>但我怕读者看不懂设定，不交代清楚后面的剧情没法展开啊。</p>', time: '09:05' },
+        { type: 'assistant', content: '<p>这个担忧很常见。但好小说的秘诀是：<strong>让读者在不知道全部设定的情况下也能被故事吸引</strong>。</p><p>想想《哈利波特》——第一页完全没有解释魔法世界的规则，只是展示了一个不寻常的场景。读者是因为好奇才跟着看下去的。</p><p>建议：把世界观设定拆碎，只在角色需要做决定的时候才透露相关信息。你觉得你的第一章里，哪些设定是主角此刻必须知道的？</p>', time: '09:08' }
+      ]
+    },
+    {
+      title: '世界观的日常细节',
+      badge: '世界观阶段',
+      messages: [
+        { type: 'assistant', content: '<p>你上次提到想通过日常细节展现世界观，这个方向是对的。关键是要让日常细节<strong>本身就在讲故事</strong>，而不是单纯的信息陈列。</p>', time: '16:00' },
+        { type: 'user', content: '<p>比如呢？我写的都是主角每天起床修炼，然后去集市买东西，感觉好无聊。</p>', time: '16:03' },
+        { type: 'assistant', content: '<p>"起床修炼 + 集市买东西"这个框架没错，问题出在<strong>缺少矛盾</strong>。</p><p>如果主角起床后发现灵力不顺畅（矛盾 1），去集市时发现物价涨了（矛盾 2），买到的丹药质量有问题（矛盾 3）——三个小矛盾叠加，世界观自然就出来了：这个世界资源在枯竭，修士的生活越来越艰难。</p><p>不需要任何说明性文字，读者自己就能拼出这个世界的全貌。这就是"展示，而非告知"。</p>', time: '16:06' }
+      ]
+    }
+  ];
+
+  const aiResponses = [
+    '<p>你描述的情况很常见。很多时候我们太想把设定交代清楚了，反而忘了故事的真正核心是<strong>人物和他们的选择</strong>。</p><p>不如先放下设定，想想你的主角此刻最想做的一件事是什么？</p>',
+    '<p>这是一个很好的直觉。但要注意：<strong>读者的想象力比你描写的任何东西都更精确</strong>。</p><p>你只需要给出 2-3 个关键细节，读者就会自动补全整个画面。试试看？</p>',
+    '<p>你开始从"说明"转向"呈现"了，这就是我们一直在练习的能力。</p><p>下一步，试着在这个场景中加入一个对立的人事关系——也许是一个不同意主角观点的人，或者一个让主角不得不做出选择的情境。张力自然就产生了。</p>',
+    '<p>很好。你注意到了信息释放节奏的问题，这是很多写作者需要花很久才意识到的。</p><p>记住一个简单的规则：<strong>每一段都应该推动故事前进或者揭示人物</strong>。如果一段文字既没有推动故事也没有揭示人物，那它可能就是可以删掉的。</p>'
+  ];
+  let aiResponseIdx = 0;
+
+  // ===== Init =====
+  function init() {
+    loadSession(0);
+    setupTextarea();
+  }
+
+  function setupTextarea() {
+    const textarea = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    textarea.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+      sendBtn.disabled = !this.value.trim();
+    });
+  }
+
+  // ===== Session Management =====
+  function loadSession(idx) {
+    currentSessionIdx = idx;
+    const session = sessions[idx];
+    const chatArea = document.getElementById('chatArea');
+    const welcomeEmpty = document.getElementById('welcomeEmpty');
+    chatArea.innerHTML = '';
+    welcomeEmpty.classList.remove('visible');
+    chatArea.style.display = 'flex';
+
+    session.messages.forEach(msg => renderMessage(msg));
+    document.getElementById('headerTitle').textContent = session.title;
+    document.getElementById('headerBadge').textContent = session.badge;
+
+    // Update sidebar active state
+    document.querySelectorAll('.chat-item').forEach((item, i) => {
+      item.classList.toggle('active', i === idx);
+    });
+
+    aiResponseIdx = 0;
+    scrollToBottom();
+  }
+
+  function selectSession(el, idx) {
+    loadSession(idx);
+  }
+
+  function newSession() {
+    currentSessionIdx = -1;
+    const chatArea = document.getElementById('chatArea');
+    const welcomeEmpty = document.getElementById('welcomeEmpty');
+    const inputArea = document.querySelector('.input-area');
+    chatArea.innerHTML = '';
+    chatArea.style.display = 'none';
+    inputArea.style.display = 'block';
+    welcomeEmpty.classList.add('visible');
+    document.getElementById('headerTitle').textContent = '新会话';
+    document.getElementById('headerBadge').textContent = '';
+    document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
+  }
+
+  function useSuggestion(text) {
+    document.getElementById('messageInput').value = text;
+    document.getElementById('sendBtn').disabled = false;
+    sendMessage();
+  }
+
+  // ===== Message Rendering =====
+  function renderMessage(msg) {
+    const chatArea = document.getElementById('chatArea');
+
+    if (msg.type === 'assistant') {
+      const div = document.createElement('div');
+      div.className = 'message assistant';
+      div.innerHTML = `
+        <div class="message-avatar">月</div>
+        <div>
+          <div class="message-content">${msg.content}</div>
+          <div class="message-time">${msg.time}</div>
+        </div>`;
+      chatArea.appendChild(div);
+    } else if (msg.type === 'user') {
+      const div = document.createElement('div');
+      div.className = 'message user';
+      div.innerHTML = `
+        <div class="message-avatar">你</div>
+        <div>
+          <div class="message-content">${msg.content}</div>
+          <div class="message-time">${msg.time}</div>
+        </div>`;
+      chatArea.appendChild(div);
+    } else if (msg.type === 'diagnosis') {
+      const div = document.createElement('div');
+      div.className = 'diagnosis-card';
+      const sevClass = msg.severity === 'high' ? 'severity-high' : 'severity-mid';
+      div.innerHTML = `
+        <div class="diagnosis-header" onclick="toggleDiagnosisCard(this)">
+          <div class="diagnosis-header-icon problem">!</div>
+          <span class="diagnosis-header-title">识别到问题</span>
+          <span class="diagnosis-header-chevron open">▾</span>
+        </div>
+        <div class="diagnosis-body open">
+          <span class="diagnosis-tag ${sevClass}">${msg.id} ${msg.name}</span>
+          <div class="diagnosis-desc">${msg.desc}</div>
+          <div class="diagnosis-evidence">
+            <div class="diagnosis-evidence-text">${msg.evidence}</div>
+          </div>
+          <button class="diagnosis-exercise-btn">开始针对性训练</button>
+        </div>`;
+      chatArea.appendChild(div);
+    }
+  }
+
+  function toggleDiagnosisCard(header) {
+    const body = header.nextElementSibling;
+    const chevron = header.querySelector('.diagnosis-header-chevron');
+    body.classList.toggle('open');
+    chevron.classList.toggle('open');
+  }
+
+  // ===== Send Message =====
+  function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    if (!content || isGenerating) return;
+
+    // Hide welcome empty state
+    document.getElementById('welcomeEmpty').classList.remove('visible');
+    document.getElementById('chatArea').style.display = 'flex';
+
+    // Add user message
+    const chatArea = document.getElementById('chatArea');
+    const userDiv = document.createElement('div');
+    userDiv.className = 'message user';
+    const time = getCurrentTime();
+    userDiv.innerHTML = `
+      <div class="message-avatar">你</div>
+      <div>
+        <div class="message-content"><p>${escapeHtml(content)}</p></div>
+        <div class="message-time">${time}</div>
+      </div>`;
+    chatArea.appendChild(userDiv);
+
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('sendBtn').disabled = true;
+
+    isGenerating = true;
+    showTyping();
+
+    setTimeout(() => {
+      removeTyping();
+      const response = aiResponses[aiResponseIdx % aiResponses.length];
+      aiResponseIdx++;
+      const aiDiv = document.createElement('div');
+      aiDiv.className = 'message assistant';
+      aiDiv.innerHTML = `
+        <div class="message-avatar">月</div>
+        <div>
+          <div class="message-content">${response}</div>
+          <div class="message-time">${getCurrentTime()}</div>
+        </div>`;
+      chatArea.appendChild(aiDiv);
+      isGenerating = false;
+      scrollToBottom();
+    }, 1200 + Math.random() * 800);
+
+    scrollToBottom();
+  }
+
+  function showTyping() {
+    const chatArea = document.getElementById('chatArea');
+    const typing = document.createElement('div');
+    typing.className = 'typing-indicator';
+    typing.id = 'typingIndicator';
+    typing.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+    chatArea.appendChild(typing);
+    scrollToBottom();
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typingIndicator');
+    if (el) el.remove();
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  // ===== Toggle Panels =====
+  function toggleSidebar() {
+    sidebarCollapsed = !sidebarCollapsed;
+    document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
+    document.querySelector('.input-area').classList.toggle('sidebar-collapsed', sidebarCollapsed);
+  }
+
+  function toggleRightPanel() {
+    rightPanelCollapsed = !rightPanelCollapsed;
+    document.getElementById('rightPanel').classList.toggle('collapsed', rightPanelCollapsed);
+    document.getElementById('rightPanelToggle').classList.toggle('collapsed-right', rightPanelCollapsed);
+    document.querySelector('.input-area').classList.toggle('right-panel-collapsed', rightPanelCollapsed);
+  }
+
+  // ===== Panel Tabs =====
+  function switchPanelTab(tab) {
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
+
+    if (tab === 'diagnosis') document.getElementById('panelDiagnosis').classList.add('active');
+    else if (tab === 'teaching') document.getElementById('panelTeaching').classList.add('active');
+    else if (tab === 'growth') document.getElementById('panelGrowth').classList.add('active');
+  }
+
+  // ===== Attitude =====
+  function setAttitude(btn, mode) {
+    btn.parentElement.querySelectorAll('.attitude-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ===== Settings =====
+  function openSettings() {
+    document.getElementById('settingsOverlay').classList.add('open');
+  }
+  function closeSettings(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('settingsOverlay').classList.remove('open');
+  }
+  function saveSettings() {
+    const model = document.getElementById('settingsModel').value;
+    updateModel(model);
+    closeSettings();
+  }
+  function updateModel(model) {
+    document.getElementById('headerModel').textContent = model;
+  }
+
+  // ===== Config =====
+  function startUsing() {
+    document.getElementById('configOverlay').style.display = 'none';
+  }
+
+  // ===== Helpers =====
+  function getCurrentTime() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function scrollToBottom() {
+    const chatArea = document.getElementById('chatArea');
+    setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 50);
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ===== Start =====
+  init();
+</script>
+
+</body>
+</html>

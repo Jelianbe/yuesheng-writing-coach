@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 修改原文入口 Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-page: #F5F0E8;
+    --bg-main: #FAF7F2;
+    --bg-card: #FFFFFF;
+    --bg-secondary: #F0EAE0;
+    --bg-highlight: #FDF6E9;
+    --bg-hover: #EDE6DA;
+
+    --text-primary: #3D3229;
+    --text-secondary: #7A6B5D;
+    --text-tertiary: #A89888;
+
+    --accent: #C0766E;
+    --accent-hover: #B0655D;
+    --accent-light: #F0E0DE;
+
+    --success: #7A9E7E;
+    --success-light: #E8F0E9;
+    --warning: #D4A56A;
+    --warning-light: #F5EDE0;
+    --error: #C0766E;
+    --error-light: #F5E8E6;
+
+    --border: #E6DDD0;
+    --border-light: #F0EAE0;
+
+    --shadow-sm: 0 1px 3px rgba(61,50,41,0.06);
+    --shadow-md: 0 4px 12px rgba(61,50,41,0.08);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+
+    --font-body: 'DM Sans', 'Noto Sans SC', -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .app-container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .demo-header {
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 8px;
+  }
+  .demo-header h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+  .demo-header p {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  /* ── Chat Messages ── */
+  .message-bubble {
+    display: flex;
+    gap: 12px;
+    animation: fadeUp 0.4s ease both;
+  }
+  .message-bubble.user {
+    flex-direction: row-reverse;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .avatar.ai {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+  .avatar.user-av {
+    background: var(--secondary);
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+  }
+
+  .bubble-content {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    font-size: 0.85rem;
+    line-height: 1.7;
+  }
+  .message-bubble.user .bubble-content {
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: var(--radius-sm);
+  }
+  .message-bubble.ai .bubble-content {
+    background: var(--bg-secondary);
+    border-bottom-left-radius: var(--radius-sm);
+  }
+
+  /* ── Diagnosis Card ── */
+  .diagnosis-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+    animation-delay: 0.3s;
+  }
+  .diagnosis-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    user-select: none;
+  }
+  .diagnosis-header:hover {
+    background: var(--bg-hover);
+  }
+  .diagnosis-bar {
+    width: 4px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .diagnosis-title {
+    flex: 1;
+  }
+  .diagnosis-title h3 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .diagnosis-title p {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+  .badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .badge-warning { background: var(--warning-light); color: #8B6914; }
+  .badge-danger { background: var(--error-light); color: var(--error); }
+  .chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--text-tertiary);
+    transition: transform 0.2s;
+  }
+  .chevron.open { transform: rotate(180deg); }
+
+  .diagnosis-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s;
+    opacity: 0;
+  }
+  .diagnosis-body.open {
+    max-height: 800px;
+    opacity: 1;
+  }
+  .diagnosis-body-inner {
+    padding: 16px;
+    border-top: 1px solid var(--border-light);
+  }
+  .syndrome-section { margin-bottom: 16px; }
+  .syndrome-section:last-child { margin-bottom: 0; }
+  .syndrome-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .syndrome-label svg { width: 14px; height: 14px; color: var(--accent); }
+
+  .evidence-box {
+    background: var(--bg-highlight);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .evidence-box p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-style: italic;
+  }
+  .evidence-label {
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    font-style: normal;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  /* ── Buttons ── */
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+  .btn-secondary:hover { background: var(--bg-hover); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-tertiary);
+  }
+  .btn-ghost:hover { background: var(--bg-hover); color: var(--text-secondary); }
+
+  /* ── Edit Panel ── */
+  .edit-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    animation: expandHeight 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    overflow: hidden;
+  }
+  @keyframes expandHeight {
+    from { opacity: 0; max-height: 0; transform: translateY(-8px); }
+    to { opacity: 1; max-height: 600px; transform: translateY(0); }
+  }
+  .edit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .edit-header h3 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .edit-close {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-secondary);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .edit-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+  .edit-body { padding: 16px; }
+
+  .edit-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .original-text {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 14px;
+    user-select: none;
+  }
+
+  .rewrite-textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    line-height: 1.7;
+    color: var(--text-primary);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .rewrite-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(192, 118, 110, 0.15);
+  }
+  .rewrite-textarea::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  .edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  /* ── Evaluation Card ── */
+  .eval-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+  .eval-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eval-icon { font-size: 1.1rem; }
+  .eval-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  .eval-title.good { color: var(--success); }
+  .eval-title.partial { color: var(--warning); }
+
+  .eval-body { padding: 16px; }
+  .eval-comment {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .eval-suggestion {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    border-top: 1px solid var(--border-light);
+    padding-top: 12px;
+  }
+  .eval-suggestion strong { color: var(--text-primary); }
+
+  .eval-comparison {
+    margin-top: 12px;
+    border-top: 1px solid var(--border-light);
+    padding-top: 12px;
+  }
+  .eval-comparison-label {
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .eval-before, .eval-after {
+    font-size: 0.78rem;
+    line-height: 1.7;
+    padding: 8px 0;
+  }
+  .eval-before {
+    color: var(--text-tertiary);
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+  .eval-after {
+    color: var(--text-primary);
+  }
+  .eval-before::before { content: "❌ "; font-size: 0.7rem; }
+  .eval-after::before { content: "✅ "; font-size: 0.7rem; }
+
+  /* ── Growth Card ── */
+  .growth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--accent-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    animation: fadeUp 0.4s ease both;
+  }
+  .growth-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .growth-icon {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .growth-icon svg { width: 16px; height: 16px; color: var(--accent); }
+  .growth-label {
+    font-size: 0.65rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .growth-text {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.7;
+  }
+
+  /* ── Input Area ── */
+  .input-area {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-page);
+    padding: 12px 0;
+    animation: fadeUp 0.4s ease both;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 8px 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .input-field {
+    flex: 1;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 4px 0;
+  }
+  .input-field::placeholder { color: var(--text-tertiary); }
+  .send-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn svg { width: 18px; height: 18px; }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Loading spinner ── */
+  .loading { display: flex; gap: 6px; padding: 16px; }
+  .loading span {
+    width: 6px; height: 6px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+  }
+  .loading span:nth-child(1) { animation-delay: -0.32s; }
+  .loading span:nth-child(2) { animation-delay: -0.16s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  .hidden { display: none !important; }
+
+  /* ── Demo controls ── */
+  .demo-controls {
+    text-align: center;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 8px;
+  }
+  .demo-controls p {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+  .demo-controls .btn { margin: 0 4px; }
+</style>
+</head>
+<body>
+
+<div class="app-container" id="app">
+  <div class="demo-header">
+    <h1>✦ 月笙写作教练 — 修改原文入口 Demo</h1>
+    <p>模拟「诊断 → 修改 → 评估 → 成长」完整流程</p>
+  </div>
+
+  <div class="demo-controls" id="demoControls">
+    <p>点击以下按钮模拟完整流程，或逐步体验：</p>
+    <button class="btn btn-primary" onclick="runFullDemo()">▶ 完整演示</button>
+    <button class="btn btn-secondary" onclick="resetDemo()">↻ 重置</button>
+  </div>
+
+  <!-- Chat area -->
+  <div id="chatArea"></div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <div class="input-row">
+      <input class="input-field" id="inputField" placeholder="粘贴你的写作内容..." disabled />
+      <button class="send-btn" id="sendBtn" disabled onclick="demoSend()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Demo Data ──
+const DEMO = {
+  userText: "第一章 凡人的起点\n\n林凡出生在青云宗最外围的外门弟子院。他资质平平，只是一个普通的散修，修为筑基中期。在修真界，散修是最底层的存在，没有资源，没有背景，没有人指导。林凡每天早起修炼，吐纳灵气，但他知道，以自己的资质，恐怕这辈子都到不了金丹期。他看着那些内门弟子穿着华丽的道袍，拿着顶级的法宝，心中充满了羡慕和不甘。",
+  diagnosis: {
+    syndromes: [
+      {
+        id: "P004",
+        name: "信息硬塞",
+        severity: "L2",
+        evidence: ["他资质平平，只是一个普通的散修，修为筑基中期。"],
+        badge: "badge-warning"
+      },
+      {
+        id: "P002",
+        name: "角色工具人化",
+        severity: "L3",
+        evidence: ["在修真界，散修是最底层的存在，没有资源，没有背景，没有人指导。"],
+        badge: "badge-danger"
+      }
+    ]
+  }
+};
+
+const EVALUATION = {
+  improvement: "明显改善",
+  analysis: "你的修改用'吐纳了三息便散去'和'摸了摸腰间仅剩的两张匿气符'这两个小动作，替代了原来旁白式的设定说明——读者自己就能感受到主角的处境和修为水平。这种写法比直接讲'筑基中期'和'资质平平'要好很多。",
+  suggestion: "建议再试一步：如果在这两个动作之后加一个环境细节（比如阴冷的风顺着破窗吹进来），氛围会更完整。",
+  before: "他资质平平，只是一个普通的散修，修为筑基中期。",
+  after: "他盘坐在硬板床上吐纳了三息便散去，又摸了摸腰间仅剩的两张匿气符。"
+};
+
+const GROWTH = {
+  text: "这次你试了'用动作替代设定旁白'。上次还在直接讲设定，今天已经能通过角色的手的动作传达'资源稀缺'了。继续——下一步是'环境也在说话'。"
+};
+
+// ── State ──
+let step = 0;
+const chatArea = document.getElementById('chatArea');
+const demoControls = document.getElementById('demoControls');
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function addUserMsg(text) {
+  chatArea.innerHTML += `
+    <div class="message-bubble user">
+      <div class="avatar user-av">我</div>
+      <div class="bubble-content">${text.replace(/\n/g, '<br>')}</div>
+    </div>`;
+}
+
+function addTyping() {
+  const id = 'typing-' + Date.now();
+  chatArea.innerHTML += `
+    <div class="message-bubble ai" id="${id}">
+      <div class="avatar ai">月</div>
+      <div class="loading"><span></span><span></span><span></span></div>
+    </div>`;
+  return id;
+}
+
+function replaceTyping(id, html) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.querySelector('.loading').outerHTML = `<div class="bubble-content">${html}</div>`;
+  }
+}
+
+function addDiagnosisCard(diag) {
+  const s = diag.syndromes[0];
+  chatArea.innerHTML += `
+    <div class="diagnosis-card" id="diagnosisCard">
+      <div class="diagnosis-header" onclick="toggleDiagnosis()">
+        <div class="diagnosis-bar"></div>
+        <div class="diagnosis-title">
+          <h3>📋 ${s.name}</h3>
+          <p>${diag.syndromes.map(s => s.name).join(' · ')} — 共发现 ${diag.syndromes.length} 个问题</p>
+        </div>
+        <span class="badge ${s.badge}">中度</span>
+        <svg class="chevron" id="diagChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="diagnosis-body" id="diagnosisBody">
+        <div class="diagnosis-body-inner">
+          ${diag.syndromes.map(s => `
+            <div class="syndrome-section">
+              <div class="syndrome-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                ${s.name}
+                <span class="badge ${s.badge}">${s.severity === 'L2' ? '中度' : '严重'}</span>
+              </div>
+              <div class="evidence-box">
+                <p>"${s.evidence[0]}"</p>
+                <p class="evidence-label">诊断依据：${s.name}的典型表现</p>
+              </div>
+              <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="openEditPanel('${s.id}', '${s.name}', '${s.evidence[0]}')">✏️ 尝试修改</button>
+                <button class="btn btn-ghost">📖 查看建议</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleDiagnosis() {
+  const body = document.getElementById('diagnosisBody');
+  const chev = document.getElementById('diagChevron');
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function openEditPanel(syndromeId, syndromeName, originalText) {
+  const panelHTML = '<div class="edit-panel" id="editPanel">'
+    + '<div class="edit-header"><h3>✏️ 修改 — ' + syndromeName + '</h3>'
+    + '<button class="edit-close" onclick="closeEditPanel()">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>'
+    + '<div class="edit-body">'
+    + '<div class="edit-label">📄 原文</div>'
+    + '<div class="original-text">' + originalText + '</div>'
+    + '<div class="edit-label">✍️ 你的修改</div>'
+    + '<textarea class="rewrite-textarea" id="rewriteText" placeholder="在这里写下你的修改，试着用动作或细节替代旁白说明...">' + EVALUATION.after + '</textarea>'
+    + '<div class="edit-actions">'
+    + '<button class="btn btn-secondary" onclick="closeEditPanel()">取消</button>'
+    + '<button class="btn btn-primary" id="submitBtn" onclick="submitRewrite()">提交评估 →</button>'
+    + '</div></div></div>';
+  chatArea.innerHTML += panelHTML;
+  document.getElementById('rewriteText').focus();
+}
+
+function closeEditPanel() {
+  const panel = document.getElementById('editPanel');
+  if (panel) panel.remove();
+}
+
+function addEvaluationCard(ev) {
+  chatArea.innerHTML += `
+    <div class="eval-card">
+      <div class="eval-header">
+        <span class="eval-icon">✅</span>
+        <span class="eval-title good">这个改法有效</span>
+      </div>
+      <div class="eval-body">
+        <div class="eval-comment">${ev.analysis}</div>
+        <div class="eval-suggestion">
+          <strong>建议：</strong>${ev.suggestion}
+        </div>
+        <div class="eval-comparison">
+          <div class="eval-comparison-label">对比之前：</div>
+          <div class="eval-before">${ev.before}</div>
+          <div class="eval-after">${ev.after}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addGrowthCard(growth) {
+  chatArea.innerHTML += `
+    <div class="growth-card">
+      <div class="growth-inner">
+        <div class="growth-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        </div>
+        <div>
+          <div class="growth-label">成长记录</div>
+          <div class="growth-text">${growth.text}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function submitRewrite() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '评估中...';
+  
+  setTimeout(() => {
+    closeEditPanel();
+    addEvaluationCard(EVALUATION);
+    scrollToBottom();
+    
+    setTimeout(() => {
+      addGrowthCard(GROWTH);
+      scrollToBottom();
+      demoControls.innerHTML = `
+        <p style="color: var(--accent); font-weight: 500;">✅ 完整流程演示完成！</p>
+        <p>这就是「诊断 → 修改 → 评估 → 成长」的完整用户体验</p>
+        <button class="btn btn-primary" onclick="resetDemo()">↻ 重新演示</button>
+      `;
+    }, 600);
+  }, 800);
+}
+
+function scrollToBottom() {
+  setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }), 50);
+}
+
+async function runFullDemo() {
+  resetDemo();
+  demoControls.innerHTML = '<p style="color:var(--accent)">▶ 演示进行中...</p>';
+  
+  // Step 1: User sends text
+  await delay(400);
+  addUserMsg(DEMO.userText);
+  scrollToBottom();
+  
+  // Step 2: AI typing
+  await delay(600);
+  const typingId = addTyping();
+  scrollToBottom();
+  
+  await delay(1200);
+  replaceTyping(typingId, '你这段开篇直接交代了主角的资质和修为。问题在于——你用的是旁白告诉读者'他很弱'，而不是让读者自己感受到。我们来看看具体哪里可以调整。');
+  scrollToBottom();
+  
+  // Step 3: Diagnosis card
+  await delay(500);
+  addDiagnosisCard(DEMO.diagnosis);
+  scrollToBottom();
+  demoControls.innerHTML = `
+    <p style="color:var(--text-tertiary)">📋 诊断已出现 — 点击卡片展开，或点击 "✏️ 尝试修改"</p>
+    <button class="btn btn-ghost" onclick="nextStep()">下一步: 展开诊断 ↓</button>
+  `;
+}
+
+let fullDemoStep = 0;
+function nextStep() {
+  fullDemoStep++;
+  if (fullDemoStep === 1) {
+    toggleDiagnosis();
+    demoControls.innerHTML = `
+      <p style="color:var(--text-tertiary)">📋 诊断已展开 — 点击 "✏️ 尝试修改" 进入编辑</p>
+      <button class="btn btn-secondary" onclick="nextStep()">下一步: 打开编辑面板 ✏️</button>
+    `;
+  } else if (fullDemoStep === 2) {
+    openEditPanel('P004', '信息硬塞', DEMO.diagnosis.syndromes[0].evidence[0]);
+    scrollToBottom();
+    demoControls.innerHTML = `
+      <p style="color:var(--text-tertiary)">✏️ 编辑面板已打开 — 点击 "提交评估" 查看 AI 反馈</p>
+      <button class="btn btn-primary" onclick="submitRewrite()">下一步: 提交评估 →</button>
+    `;
+  }
+}
+
+function demoSend() {}
+
+function resetDemo() {
+  chatArea.innerHTML = '';
+  step = 0;
+  fullDemoStep = 0;
+  demoControls.innerHTML = `
+    <p>点击以下按钮模拟完整流程，或逐步体验：</p>
+    <button class="btn btn-primary" onclick="runFullDemo()">▶ 完整演示</button>
+    <button class="btn btn-secondary" onclick="resetDemo()">↻ 重置</button>
+  `;
+}
+</script>
+
+</body>
+</html>

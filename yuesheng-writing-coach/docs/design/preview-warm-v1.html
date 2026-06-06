@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 设计预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;1,7..72,400&family=DM+Sans:opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-page: #F5F0E8;
+    --bg-sidebar: #F0EAE0;
+    --bg-main: #FAF7F2;
+    --bg-card: #FFFFFFF0;
+    --bg-hover: #EDE6DA;
+    --bg-active: #E6DDD0;
+    --bg-input: #FFFFFF;
+
+    --text-primary: #3D3229;
+    --text-secondary: #7A6B5D;
+    --text-tertiary: #A89888;
+    --text-on-accent: #FFFFFF;
+
+    --accent: #C0766E;
+    --accent-hover: #B0655D;
+    --accent-light: #F0E0DE;
+    --accent-subtle: #F5EAE8;
+
+    --success: #7A9E7E;
+    --success-light: #E8F0E9;
+    --warning: #D4A56A;
+    --warning-light: #F5EDE0;
+    --error: #C0766E;
+    --error-light: #F5E8E6;
+
+    --border: #E6DDD0;
+    --border-light: #F0EAE0;
+
+    --shadow-sm: 0 1px 3px rgba(61, 50, 41, 0.06);
+    --shadow-md: 0 4px 12px rgba(61, 50, 41, 0.08);
+    --shadow-lg: 0 8px 24px rgba(61, 50, 41, 0.10);
+    --shadow-xl: 0 16px 48px rgba(61, 50, 41, 0.12);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    --font-display: 'Literata', 'Noto Serif SC', Georgia, serif;
+    --font-body: 'DM Sans', 'Noto Sans SC', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --sidebar-w: 280px;
+    --header-h: 56px;
+    --right-panel-w: 340px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: 15px; }
+  body {
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    background: var(--bg-page);
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ===== App Shell ===== */
+  .app { display: flex; height: 100vh; background: var(--bg-page); }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .sidebar-brand {
+    padding: 16px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-brand-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px;
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.5px;
+  }
+  .sidebar-brand-text {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+  }
+  .sidebar-brand-version {
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+    background: var(--bg-hover);
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+    margin-left: auto;
+  }
+
+  .sidebar-search {
+    padding: 10px 16px;
+  }
+  .sidebar-search input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .sidebar-search input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .sidebar-search input::placeholder { color: var(--text-tertiary); }
+
+  .sidebar-section-label {
+    padding: 12px 16px 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+  }
+
+  .sidebar-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px 8px;
+  }
+  .sidebar-list::-webkit-scrollbar { width: 4px; }
+  .sidebar-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .chat-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-bottom: 2px;
+  }
+  .chat-item:hover { background: var(--bg-hover); }
+  .chat-item.active { background: var(--bg-active); }
+  .chat-item-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .chat-item-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+  }
+
+  .sidebar-new-btn {
+    margin: 8px 12px 12px;
+    padding: 9px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .sidebar-new-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-subtle);
+  }
+
+  /* ===== Main Area ===== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-width: 0;
+    background: var(--bg-main);
+  }
+
+  /* ===== Header ===== */
+  .header {
+    height: var(--header-h);
+    min-height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-main);
+    gap: 12px;
+  }
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .header-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .header-spacer { flex: 1; }
+  .header-attitude {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .attitude-btn {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .attitude-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .attitude-btn.active {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-color: var(--accent);
+  }
+
+  /* ===== Chat Area ===== */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    max-width: 85%;
+    animation: msgIn 0.3s ease-out;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .message.user { align-self: flex-end; flex-direction: row-reverse; }
+  .message.assistant { align-self: flex-start; }
+
+  .message-avatar {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    margin-top: 4px;
+  }
+  .message.assistant .message-avatar {
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border: 1px solid var(--accent-light);
+    font-family: var(--font-display);
+    font-weight: 500;
+  }
+  .message.user .message-avatar {
+    background: #E8E0D6;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+
+  .message-content {
+    padding: 10px 14px;
+    border-radius: var(--radius-lg);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    position: relative;
+  }
+  .message.assistant .message-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-bottom-left-radius: var(--radius-sm);
+    box-shadow: var(--shadow-sm);
+  }
+  .message.user .message-content {
+    background: var(--accent);
+    color: var(--text-on-accent);
+    border-bottom-right-radius: var(--radius-sm);
+  }
+
+  .message-content p { margin-bottom: 6px; }
+  .message-content p:last-child { margin-bottom: 0; }
+
+  .message-time {
+    font-size: 0.6rem;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    text-align: right;
+  }
+  .message.user .message-time { color: rgba(255,255,255,0.6); }
+
+  /* ===== Diagnosis Card (inline) ===== */
+  .diagnosis-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    max-width: 85%;
+    align-self: flex-start;
+    width: 100%;
+    animation: msgIn 0.3s ease-out 0.1s both;
+  }
+  .diagnosis-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .diagnosis-header:hover { background: var(--bg-hover); }
+  .diagnosis-header-icon {
+    width: 24px; height: 24px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+  }
+  .diagnosis-header-icon.problem { background: var(--error-light); color: var(--error); }
+  .diagnosis-header-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    flex: 1;
+  }
+  .diagnosis-header-chevron {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+  }
+  .diagnosis-header-chevron.open { transform: rotate(180deg); }
+
+  .diagnosis-body {
+    padding: 0 16px 16px;
+    display: none;
+  }
+  .diagnosis-body.open { display: block; }
+
+  .diagnosis-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .diagnosis-tag.severity-high { background: var(--error-light); color: var(--error); }
+  .diagnosis-tag.severity-mid { background: var(--warning-light); color: var(--warning); }
+
+  .diagnosis-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .diagnosis-evidence {
+    background: var(--bg-sidebar);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .diagnosis-evidence-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .diagnosis-evidence-text::before { content: '"'; }
+  .diagnosis-evidence-text::after { content: '"'; }
+
+  .diagnosis-exercise-btn {
+    padding: 8px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    width: 100%;
+  }
+  .diagnosis-exercise-btn:hover { background: var(--accent-hover); }
+
+  /* ===== Typing Indicator ===== */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-sm);
+    align-self: flex-start;
+    box-shadow: var(--shadow-sm);
+  }
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--text-tertiary);
+    border-radius: 50%;
+    animation: dotPulse 1.4s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotPulse {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ===== Input Area ===== */
+  .input-area {
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border-light);
+    background: var(--bg-main);
+  }
+  .input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 8px 12px 8px 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .input-wrapper textarea {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    resize: none;
+    line-height: 1.5;
+    max-height: 120px;
+    min-height: 22px;
+  }
+  .input-wrapper textarea::placeholder { color: var(--text-tertiary); }
+  .input-send-btn {
+    width: 34px; height: 34px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .input-send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+  .input-send-btn:active { transform: scale(0.95); }
+  .input-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ===== Right Panel ===== */
+  .right-panel {
+    width: var(--right-panel-w);
+    min-width: var(--right-panel-w);
+    background: var(--bg-sidebar);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 4px;
+  }
+  .panel-tab {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .panel-tab:hover { color: var(--text-secondary); }
+  .panel-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .panel-content::-webkit-scrollbar { width: 4px; }
+  .panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Teaching Progress */
+  .progress-section { margin-bottom: 16px; }
+  .progress-section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+  .progress-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    margin-bottom: 4px;
+    transition: background 0.15s;
+  }
+  .progress-step:hover { background: var(--bg-hover); }
+  .progress-step.active { background: var(--accent-subtle); }
+  .progress-step.completed { opacity: 0.7; }
+  .progress-step-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .progress-step.completed .progress-step-dot { border-color: var(--success); background: var(--success); color: white; font-size: 0.6rem; }
+  .progress-step.active .progress-step-dot { border-color: var(--accent); background: var(--accent); color: white; font-size: 0.65rem; }
+  .progress-step-info { flex: 1; }
+  .progress-step-title { font-size: 0.78rem; font-weight: 500; color: var(--text-primary); }
+  .progress-step-desc { font-size: 0.7rem; color: var(--text-tertiary); margin-top: 1px; }
+
+  /* Growth Card */
+  .growth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .growth-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .growth-card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+  .growth-card-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--success);
+  }
+  .growth-bar {
+    height: 4px;
+    background: var(--border-light);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .growth-bar-fill {
+    height: 100%;
+    background: var(--success);
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  .growth-card-desc {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+  }
+
+  /* Empty State */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-tertiary);
+  }
+  .empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
+  .empty-state-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .empty-state-desc {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    max-width: 240px;
+  }
+
+  /* Config Page (overlay for initial state) */
+  .config-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-page);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .config-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    padding: 40px;
+    width: 420px;
+    max-width: 90vw;
+    box-shadow: var(--shadow-xl);
+    text-align: center;
+  }
+  .config-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+  }
+  .config-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .config-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .config-field {
+    text-align: left;
+    margin-bottom: 16px;
+  }
+  .config-field label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .config-field input, .config-field select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--text-primary);
+    background: var(--bg-input);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .config-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+  .config-save-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 8px;
+  }
+  .config-save-btn:hover { background: var(--accent-hover); }
+
+  /* ===== SVG Decorations ===== */
+  .bg-texture {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.3;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(192, 118, 110, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(212, 165, 106, 0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(122, 158, 126, 0.04) 0%, transparent 50%);
+  }
+
+  /* ===== Transitions ===== */
+  .fade-in { animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ===== Mock toggle (just for preview) ===== */
+  .preview-state {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 200;
+    display: flex;
+    gap: 6px;
+  }
+  .preview-state button {
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+  }
+  .preview-state button:hover { border-color: var(--accent); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="bg-texture"></div>
+
+<!-- ===== Config Overlay (hidden by default) ===== -->
+<div class="config-overlay" id="configOverlay" style="display:none">
+  <div class="config-card fade-in">
+    <div class="config-icon">✍️</div>
+    <div class="config-title">月笙写作教练</div>
+    <div class="config-subtitle">配置你的 API 密钥，开始写作之旅</div>
+    <div class="config-field">
+      <label>API 密钥</label>
+      <input type="password" placeholder="sk-..." value="sk-demo-key">
+    </div>
+    <div class="config-field">
+      <label>模型</label>
+      <select>
+        <option>GPT-4o</option>
+        <option>GPT-4o-mini</option>
+        <option selected>Claude Sonnet 4</option>
+      </select>
+    </div>
+    <div class="config-field">
+      <label>教学态度</label>
+      <select>
+        <option>温和引导</option>
+        <option selected>直接指导</option>
+        <option>尖锐挑战</option>
+      </select>
+    </div>
+    <button class="config-save-btn">开始使用</button>
+  </div>
+</div>
+
+<!-- ===== App ===== -->
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">月</div>
+      <span class="sidebar-brand-text">月笙</span>
+      <span class="sidebar-brand-version">v2.0</span>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="text" placeholder="搜索会话...">
+    </div>
+
+    <div class="sidebar-section-label">最近会话</div>
+
+    <div class="sidebar-list">
+      <div class="chat-item active">
+        <div class="chat-item-title">第三章 主角出场方式</div>
+        <div class="chat-item-meta">
+          <span>世界观 · 主角塑造</span>
+          <span>2h前</span>
+        </div>
+      </div>
+      <div class="chat-item">
+        <div class="chat-item-title">第二章 战斗场景重写</div>
+        <div class="chat-item-meta">
+          <span>叙事节奏 · 动作描写</span>
+          <span>昨天</span>
+        </div>
+      </div>
+      <div class="chat-item">
+        <div class="chat-item-title">开篇第一章 整体诊断</div>
+        <div class="chat-item-meta">
+          <span>世界观 · 人物 · 悬念</span>
+          <span>3天前</span>
+        </div>
+      </div>
+      <div class="chat-item">
+        <div class="chat-item-title">世界观的日常细节</div>
+        <div class="chat-item-meta">
+          <span>日常描写 · 阶层刻画</span>
+          <span>5天前</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="sidebar-new-btn">+ 新建会话</button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Header -->
+    <header class="header">
+      <span class="header-title">主角出场方式</span>
+      <span class="header-badge">世界观阶段</span>
+      <div class="header-spacer"></div>
+      <div class="header-attitude">
+        <span>态度</span>
+        <button class="attitude-btn">温和</button>
+        <button class="attitude-btn active">直接</button>
+        <button class="attitude-btn">尖锐</button>
+      </div>
+    </header>
+
+    <!-- Chat Area -->
+    <div class="chat-area">
+      <!-- Assistant message -->
+      <div class="message assistant">
+        <div class="message-avatar">月</div>
+        <div>
+          <div class="message-content">
+            <p>我们来看看你这个版本的第三章开场。主角在酒楼登场，用了整整三段描写他的外貌穿着，但从你的设定来看，这个角色应该是个底层出身的少年——</p>
+            <p>这里的矛盾在于：<strong>描写的精致程度和角色的真实身份不匹配</strong>。一个酒楼跑堂不会被这样细致地打量衣着。</p>
+          </div>
+          <div class="message-time">10:32</div>
+        </div>
+      </div>
+
+      <!-- Diagnosis Card -->
+      <div class="diagnosis-card">
+        <div class="diagnosis-header" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.diagnosis-header-chevron').classList.toggle('open')">
+          <div class="diagnosis-header-icon problem">!</div>
+          <span class="diagnosis-header-title">识别到问题</span>
+          <span class="diagnosis-header-chevron">▾</span>
+        </div>
+        <div class="diagnosis-body open">
+          <span class="diagnosis-tag severity-high">P004 信息倾销</span>
+          <div class="diagnosis-desc">
+            通过大段外貌描写而非行动/对话来呈现角色，读者无法在信息堆砌中建立情感连接。
+          </div>
+          <div class="diagnosis-evidence">
+            <div class="diagnosis-evidence-text">
+              他一袭白衣胜雪，腰间佩一柄三尺青锋，剑鞘上镶嵌七颗宝石，步履从容间衣袂飘飘，引来路人侧目。
+            </div>
+          </div>
+          <button class="diagnosis-exercise-btn">开始针对性训练</button>
+        </div>
+      </div>
+
+      <!-- User message -->
+      <div class="message user">
+        <div class="message-avatar">你</div>
+        <div>
+          <div class="message-content">
+            <p>可是我觉得这样写才能让读者想象出角色的样子啊。</p>
+          </div>
+          <div class="message-time">10:35</div>
+        </div>
+      </div>
+
+      <!-- Assistant response -->
+      <div class="message assistant">
+        <div class="message-avatar">月</div>
+        <div>
+          <div class="message-content">
+            <p>我理解你想让角色形象立体。但一个好用的原则是：<strong>「展示，而非告知」</strong>。</p>
+            <p>与其写"他衣着华贵"，不如让他在点菜时自然地展现——比如他随手甩出一锭银子，说"挑好的上"。这一个动作，比他穿了什么更说明问题。</p>
+            <p>要不要试着改写一下这段，把描写转化成动作或对话？</p>
+          </div>
+          <div class="message-time">10:36</div>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-wrapper">
+        <textarea rows="1" placeholder="输入你的写作内容或问题..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight, 120)+'px'"></textarea>
+        <button class="input-send-btn" disabled>➤</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Right Panel -->
+  <aside class="right-panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active">教学</button>
+      <button class="panel-tab">成长</button>
+    </div>
+
+    <div class="panel-content">
+      <!-- Teaching Progress -->
+      <div class="progress-section">
+        <div class="progress-section-label">当前阶段 · 世界观</div>
+        <div class="progress-step completed">
+          <div class="progress-step-dot">✓</div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">自然法则</div>
+            <div class="progress-step-desc">世界观的基础设定</div>
+          </div>
+        </div>
+        <div class="progress-step completed">
+          <div class="progress-step-dot">✓</div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">主角定位</div>
+            <div class="progress-step-desc">确定主角在社会中的位置</div>
+          </div>
+        </div>
+        <div class="progress-step active">
+          <div class="progress-step-dot">●</div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">社会结构</div>
+            <div class="progress-step-desc">阶层刻画与日常细节</div>
+          </div>
+        </div>
+        <div class="progress-step">
+          <div class="progress-step-dot"></div>
+          <div class="progress-step-info">
+            <div class="progress-step-title">第一个场景</div>
+            <div class="progress-step-desc">将前面设定自然呈现</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Growth Cards -->
+      <div class="progress-section">
+        <div class="progress-section-label">能力成长</div>
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <span class="growth-card-title">角色塑造</span>
+            <span class="growth-card-value">+15%</span>
+          </div>
+          <div class="growth-bar">
+            <div class="growth-bar-fill" style="width: 62%"></div>
+          </div>
+          <div class="growth-card-desc">通过 3 次训练，从"直接描述"向"通过行动展现"转变</div>
+        </div>
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <span class="growth-card-title">叙事节奏</span>
+            <span class="growth-card-value">+8%</span>
+          </div>
+          <div class="growth-bar">
+            <div class="growth-bar-fill" style="width: 45%"></div>
+          </div>
+          <div class="growth-card-desc">开始注意到信息释放的节奏控制</div>
+        </div>
+        <div class="growth-card">
+          <div class="growth-card-header">
+            <span class="growth-card-title">日常描写</span>
+            <span class="growth-card-value">+22%</span>
+          </div>
+          <div class="growth-bar">
+            <div class="growth-bar-fill" style="width: 78%"></div>
+          </div>
+          <div class="growth-card-desc">进步显著，已掌握通过日常细节呈现世界观的技巧</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ===== Preview State Toggle ===== -->
+<div class="preview-state">
+  <button onclick="document.getElementById('configOverlay').style.display='flex'">配置页</button>
+  <button onclick="document.getElementById('configOverlay').style.display='none'">主界面</button>
+</div>
+
+<script>
+  // Auto-resize textarea
+  document.querySelector('textarea').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
+</script>
+
+</body>
+</html>

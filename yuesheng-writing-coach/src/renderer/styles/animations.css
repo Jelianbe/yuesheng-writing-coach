@@ -1,0 +1,117 @@
+/* ========================================
+   月笙写作教练 — 微交互动效 V1
+   依据 FRONTEND_REDESIGN_V1.md 第6章
+   ======================================== */
+
+/* ── 淡入 ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── 上移淡入 ── */
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── 下滑展开（面板） ── */
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+/* ── 品牌色边框滑动（评估卡片） ── */
+@keyframes borderSlide {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+/* ── 脉冲点（打字指示器） ── */
+@keyframes pulseDot {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── 摇晃（错误提示） ── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/* ── 脉冲（加载） ── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── 实用类 ── */
+.animate-fade-in {
+  animation: fadeIn var(--transition-normal) ease both;
+}
+
+.animate-slide-up {
+  animation: slideUpFadeIn var(--transition-slow) ease both;
+}
+
+.animate-expand {
+  animation: expandDown var(--transition-slide) ease both;
+  overflow: hidden;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease both;
+}
+
+.animate-pulse-custom {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ── 按钮微动效 ── */
+.btn-hover-effect {
+  transition: transform var(--transition-fast) ease,
+              box-shadow var(--transition-fast) ease;
+}
+
+.btn-hover-effect:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-hover-effect:active {
+  transform: scale(0.97);
+}
+
+/* ── 消息出现 ── */
+.message-enter {
+  animation: slideUpFadeIn 300ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── 减敏动效 ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

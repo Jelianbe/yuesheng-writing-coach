@@ -1,0 +1,392 @@
+{
+  "_meta": {
+    "title": "月笙能力图谱",
+    "version": "1.0.0",
+    "updated": "2026-06-01",
+    "purpose": "结构化表达写作能力、症候、训练任务之间的映射关系。能力图谱是月笙的核心资产，所有教学内容的组织骨架。",
+    "based_on": [
+      "design-philosophy_V1.0.md → 第八章「能力图谱」",
+      "worldbuilding-character-craft-foundation.md",
+      "syndrome-manual.md",
+      "training-tasks.md"
+    ]
+  },
+
+  "abilities": [
+    {
+      "id": "ABL-001",
+      "name": "结构控制",
+      "description": "能控制信息的投放节奏和结构组织，知道什么时候该放什么信息",
+      "category": "叙事能力",
+      "syndromes": ["P001", "P006"],
+      "primary_tasks": ["T001", "T009", "T011", "T015"],
+      "actions": ["A001", "A004", "A005"],
+      "prerequisites": ["ABL-002"],
+      "level": 2,
+      "training_focus": "信息密度控制、节奏管理、章节结构"
+    },
+    {
+      "id": "ABL-002",
+      "name": "场景构建",
+      "description": "能在单一场景中有效布置冲突、信息、情绪元素",
+      "category": "叙事能力",
+      "syndromes": ["P004", "P006"],
+      "primary_tasks": ["T005", "T007", "T009"],
+      "actions": ["A002", "A003"],
+      "prerequisites": [],
+      "level": 1,
+      "training_focus": "场景内的信息嵌入、视角控制、冲突设计"
+    },
+    {
+      "id": "ABL-003",
+      "name": "角色塑造",
+      "description": "能设计有内在驱动力和成长弧光的角色",
+      "category": "角色能力",
+      "syndromes": ["P002", "P009", "P010"],
+      "primary_tasks": ["T003", "T017", "T019"],
+      "actions": ["A002", "A006", "A007"],
+      "prerequisites": ["ABL-002"],
+      "level": 2,
+      "training_focus": "动机设计、两难选择、矛盾塑造、弧光设计"
+    },
+    {
+      "id": "ABL-004",
+      "name": "角色逻辑链",
+      "description": "能确保角色行为在动机驱动下前后一致",
+      "category": "角色能力",
+      "syndromes": ["P002", "P009"],
+      "primary_tasks": ["T003", "T017", "T018"],
+      "actions": ["A002"],
+      "prerequisites": ["ABL-003"],
+      "level": 3,
+      "training_focus": "行为动机一致性、决策合理性"
+    },
+    {
+      "id": "ABL-005",
+      "name": "世界观工程",
+      "description": "能用冰山理论设计世界观，让读者感受到而非被告知",
+      "category": "世界观能力",
+      "syndromes": ["P001", "P004"],
+      "primary_tasks": ["T011", "T005", "T007"],
+      "actions": ["A001", "A004", "A005"],
+      "prerequisites": ["ABL-001"],
+      "level": 3,
+      "training_focus": "冰山理论、show-don't-tell、世界观的展示而非说明"
+    },
+    {
+      "id": "ABL-006",
+      "name": "视角控制",
+      "description": "能稳定地保持叙事视角，不会无意识漂移",
+      "category": "叙事能力",
+      "syndromes": ["P005"],
+      "primary_tasks": ["T007", "T008"],
+      "actions": ["A002", "A007"],
+      "prerequisites": ["ABL-002"],
+      "level": 2,
+      "training_focus": "POV一致性、限制性视角、视角切换技巧"
+    },
+    {
+      "id": "ABL-007",
+      "name": "表达能力",
+      "description": "能用具体描写替代抽象概括，让读者在感官层面感受到",
+      "category": "语言能力",
+      "syndromes": ["P003"],
+      "primary_tasks": ["T001"],
+      "actions": ["A005", "A003"],
+      "prerequisites": [],
+      "level": 1,
+      "training_focus": "感官描写、情绪外化、细节选择"
+    },
+    {
+      "id": "ABL-008",
+      "name": "阅读素养",
+      "description": "能从阅读中提取可借鉴的技法，拓宽自己的写作工具箱",
+      "category": "学习能力",
+      "syndromes": ["P007"],
+      "primary_tasks": ["T013", "T014"],
+      "actions": ["A008"],
+      "prerequisites": [],
+      "level": 1,
+      "training_focus": "精读方法、技法提取、跨体裁阅读"
+    }
+  ],
+
+  "syndromes": [
+    {
+      "id": "P001",
+      "name": "世界观膨胀",
+      "description": "设定超过主角，主角目标不明确",
+      "related_abilities": ["ABL-001", "ABL-005"],
+      "severity_L1": "世界观略多，主角有雏形",
+      "severity_L2": "世界观明显过多，主角模糊",
+      "severity_L3": "世界观庞大，主角完全未确定",
+      "training_tasks": ["T011", "T012"],
+      "primary_action": "A001"
+    },
+    {
+      "id": "P002",
+      "name": "角色工具人化",
+      "description": "角色缺乏独立动机，只为衬托主角",
+      "related_abilities": ["ABL-003", "ABL-004"],
+      "severity_L1": "角色略有工具人倾向",
+      "severity_L2": "角色明显工具人化",
+      "severity_L3": "角色完全无独立人格",
+      "training_tasks": ["T003", "T004"],
+      "primary_action": "A004"
+    },
+    {
+      "id": "P003",
+      "name": "情绪标签化",
+      "description": "用概括词代替具体描写",
+      "related_abilities": ["ABL-007"],
+      "severity_L1": "偶尔使用情绪词，有部分描写",
+      "severity_L2": "频繁使用情绪词，缺乏描写",
+      "severity_L3": "全文依赖情绪词，无任何描写",
+      "training_tasks": ["T001", "T002"],
+      "primary_action": "A004"
+    },
+    {
+      "id": "P004",
+      "name": "信息硬塞",
+      "description": "世界观直接陈述，不嵌在场景中",
+      "related_abilities": ["ABL-002", "ABL-005"],
+      "severity_L1": "偶尔说明，大部分嵌在场景",
+      "severity_L2": "开篇直接说明，缺乏场景嵌入",
+      "severity_L3": "全文依赖说明，无场景嵌入",
+      "training_tasks": ["T005", "T006"],
+      "primary_action": "A002"
+    },
+    {
+      "id": "P005",
+      "name": "视角漂移",
+      "description": "视角切换生硬，上帝视角泛滥",
+      "related_abilities": ["ABL-006"],
+      "severity_L1": "偶尔全知描写，大部分主角视角",
+      "severity_L2": "频繁全知描写，视角切换生硬",
+      "severity_L3": "全文上帝视角，无主角视角",
+      "training_tasks": ["T007", "T008"],
+      "primary_action": "A002"
+    },
+    {
+      "id": "P006",
+      "name": "节奏停滞",
+      "description": "开篇无冲突，没有推进力",
+      "related_abilities": ["ABL-001", "ABL-002"],
+      "severity_L1": "开篇略慢，有后续冲突",
+      "severity_L2": "开篇无冲突，背景介绍过多",
+      "severity_L3": "全文无冲突，纯背景介绍",
+      "training_tasks": ["T009", "T010"],
+      "primary_action": "A005"
+    },
+    {
+      "id": "P007",
+      "name": "阅读结构单一",
+      "description": "只读网文，不读传统文学，导致笔力不足",
+      "related_abilities": ["ABL-008"],
+      "severity_L1": "主要读网文，有少量传统文学",
+      "severity_L2": "只读网文，笔力明显不足",
+      "severity_L3": "只读网文且辩驳",
+      "training_tasks": ["T013", "T014"],
+      "primary_action": "A008"
+    },
+    {
+      "id": "P009",
+      "name": "角色动机缺失",
+      "description": "角色行为缺乏内在驱动力",
+      "related_abilities": ["ABL-003", "ABL-004"],
+      "severity_L1": "配角偶发行为动机模糊",
+      "severity_L2": "核心角色行为动机不清晰",
+      "severity_L3": "所有角色行为由剧情推动",
+      "training_tasks": ["T017", "T018"],
+      "primary_action": "A002"
+    },
+    {
+      "id": "P010",
+      "name": "OC平面化",
+      "description": "角色只有标签没有成长弧光",
+      "related_abilities": ["ABL-003"],
+      "severity_L1": "配角扁平，主角有弧光但不明确",
+      "severity_L2": "主角弧光缺失",
+      "severity_L3": "所有角色都像纸板人",
+      "training_tasks": ["T019", "T020"],
+      "primary_action": "A006"
+    }
+  ],
+
+  "training_tasks": [
+    {
+      "id": "T001",
+      "type": "情绪描写",
+      "syndrome": "P003",
+      "related_abilities": ["ABL-007"],
+      "difficulty": 1
+    },
+    {
+      "id": "T002",
+      "type": "情绪描写",
+      "syndrome": "P003",
+      "related_abilities": ["ABL-007"],
+      "difficulty": 2
+    },
+    {
+      "id": "T003",
+      "type": "角色塑造",
+      "syndrome": "P002",
+      "related_abilities": ["ABL-003", "ABL-004"],
+      "difficulty": 2
+    },
+    {
+      "id": "T004",
+      "type": "角色塑造",
+      "syndrome": "P002",
+      "related_abilities": ["ABL-003"],
+      "difficulty": 1
+    },
+    {
+      "id": "T005",
+      "type": "信息嵌入",
+      "syndrome": "P004",
+      "related_abilities": ["ABL-002", "ABL-005"],
+      "difficulty": 2
+    },
+    {
+      "id": "T006",
+      "type": "信息嵌入",
+      "syndrome": "P004",
+      "related_abilities": ["ABL-002"],
+      "difficulty": 2
+    },
+    {
+      "id": "T007",
+      "type": "视角练习",
+      "syndrome": "P005",
+      "related_abilities": ["ABL-006"],
+      "difficulty": 2
+    },
+    {
+      "id": "T008",
+      "type": "视角练习",
+      "syndrome": "P005",
+      "related_abilities": ["ABL-006"],
+      "difficulty": 1
+    },
+    {
+      "id": "T009",
+      "type": "开头练习",
+      "syndrome": "P006",
+      "related_abilities": ["ABL-001", "ABL-002"],
+      "difficulty": 2
+    },
+    {
+      "id": "T010",
+      "type": "开头练习",
+      "syndrome": "P006",
+      "related_abilities": ["ABL-001"],
+      "difficulty": 3
+    },
+    {
+      "id": "T011",
+      "type": "缩小练习",
+      "syndrome": "P001",
+      "related_abilities": ["ABL-001", "ABL-005"],
+      "difficulty": 2
+    },
+    {
+      "id": "T012",
+      "type": "缩小练习",
+      "syndrome": "P001",
+      "related_abilities": ["ABL-001"],
+      "difficulty": 3
+    },
+    {
+      "id": "T013",
+      "type": "阅读拓展",
+      "syndrome": "P007",
+      "related_abilities": ["ABL-008"],
+      "difficulty": 1
+    },
+    {
+      "id": "T014",
+      "type": "阅读锚点",
+      "syndrome": "P007",
+      "related_abilities": ["ABL-008"],
+      "difficulty": 2
+    },
+    {
+      "id": "T015",
+      "type": "展示练习",
+      "syndrome": "P004",
+      "related_abilities": ["ABL-001", "ABL-002", "ABL-005"],
+      "difficulty": 2
+    },
+    {
+      "id": "T016",
+      "type": "展示练习",
+      "syndrome": "P004",
+      "related_abilities": ["ABL-005"],
+      "difficulty": 3
+    },
+    {
+      "id": "T017",
+      "type": "动机练习",
+      "syndrome": "P009",
+      "related_abilities": ["ABL-003", "ABL-004"],
+      "difficulty": 1
+    },
+    {
+      "id": "T018",
+      "type": "动机练习",
+      "syndrome": "P009",
+      "related_abilities": ["ABL-003", "ABL-004"],
+      "difficulty": 3
+    },
+    {
+      "id": "T019",
+      "type": "弧光练习",
+      "syndrome": "P010",
+      "related_abilities": ["ABL-003"],
+      "difficulty": 2
+    },
+    {
+      "id": "T020",
+      "type": "弧光练习",
+      "syndrome": "P010",
+      "related_abilities": ["ABL-003"],
+      "difficulty": 3
+    }
+  ],
+
+  "queries": {
+    "description": "预定义的图谱查询路径，用于快速理解能力之间的关系",
+    "paths": [
+      {
+        "name": "世界观教学路径",
+        "from": "ABL-005 (世界观工程)",
+        "path": "ABL-005 → P004 (信息倾倒/世界观说明书) + P001 (世界观膨胀) → T015/T016 + T011/T012"
+      },
+      {
+        "name": "角色教学路径",
+        "from": "ABL-003 (角色塑造)",
+        "path": "ABL-003 → P009 (动机缺失) + P010 (OC平面化) → T017/T018 + T019/T020"
+      },
+      {
+        "name": "入门路径（无前置能力）",
+        "from": "无前置要求",
+        "path": "ABL-007 (表达) + ABL-008 (阅读) → 打好基础 → 进入叙事能力"
+      },
+      {
+        "name": "完整闭环查询",
+        "from": "特定症候→能力→训练",
+        "path": "例如：P004 → ABL-005 (世界观工程) + ABL-002 (场景构建) → T015 (用动作展现设定)"
+      }
+    ]
+  },
+
+  "change_log": [
+    {
+      "date": "2026-06-01",
+      "version": "1.0.0",
+      "changes": "初始创建。8 项能力、10 个症候、20 个训练任务的完整映射体系。"
+    }
+  ]
+}
