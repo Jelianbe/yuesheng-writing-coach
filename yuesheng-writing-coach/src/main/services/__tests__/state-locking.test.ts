@@ -9,6 +9,7 @@ import {
   updateSyndromeStatus,
   unlockResolvedSyndromes,
   areAllSyndromesResolved,
+  autoLockConsistentSyndromes,
 } from '../teaching-state-machine';
 import { TeachingState } from '../teaching-state.types';
 import type { ActiveProblem } from '../../../renderer/shared/types';
@@ -95,6 +96,8 @@ describe('updateSyndromeStatus', () => {
           evidence: ['旧证据'],
           firstDetected: '2026-01-01T00:00:00.000Z',
           status: 'active',
+          detectionCount: 1,
+          missedCount: 0,
           suggestedActions: ['A001'],
         },
       ],
@@ -116,6 +119,8 @@ describe('updateSyndromeStatus', () => {
           evidence: ['旧证据'],
           firstDetected: '2026-01-01T00:00:00.000Z',
           status: 'improving',
+          detectionCount: 1,
+          missedCount: 0,
           suggestedActions: ['A001'],
         },
       ],
@@ -137,6 +142,8 @@ describe('updateSyndromeStatus', () => {
           evidence: ['旧证据'],
           firstDetected: '2026-01-01T00:00:00.000Z',
           status: 'improving',
+          detectionCount: 1,
+          missedCount: 0,
           suggestedActions: ['A001'],
         },
       ],
@@ -157,6 +164,8 @@ describe('updateSyndromeStatus', () => {
           evidence: ['旧证据'],
           firstDetected: '2026-01-01T00:00:00.000Z',
           status: 'active',
+          detectionCount: 2,
+          missedCount: 0,
           suggestedActions: ['A001'],
         },
       ],
@@ -168,6 +177,184 @@ describe('updateSyndromeStatus', () => {
     expect(result.activeProblems).toHaveLength(2);
     expect(result.activeProblems.find((p) => p.id === 'P001')!.status).toBe('improving');
     expect(result.activeProblems.find((p) => p.id === 'P002')!.status).toBe('active');
+  });
+});
+
+// ===== P-06: detectionCount/missedCount 追踪 =====
+
+describe('P-06 detectionCount 追踪', () => {
+  it('重新检测到的症候应 increment detectionCount 并重置 missedCount', () => {
+    const state = makeBaseState({
+      activeProblems: [
+        {
+          id: 'P001', name: '世界观膨胀', severity: 'L2',
+          evidence: ['旧证据'], firstDetected: '2026-01-01T00:00:00.000Z',
+          status: 'active', detectionCount: 2, missedCount: 1,
+          suggestedActions: ['A001'],
+        },
+      ],
+    });
+    const result = updateSyndromeStatus(state, [
+      { id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['新证据'], suggestedActions: ['A001'] },
+    ]);
+    expect(result.activeProblems[0].detectionCount).toBe(3);
+    expect(result.activeProblems[0].missedCount).toBe(0);
+  });
+
+  it('本轮未检测到的症候应 increment missedCount 但 detectionCount 不变', () => {
+    const state = makeBaseState({
+      activeProblems: [
+        {
+          id: 'P001', name: '世界观膨胀', severity: 'L2',
+          evidence: ['旧证据'], firstDetected: '2026-01-01T00:00:00.000Z',
+          status: 'active', detectionCount: 2, missedCount: 0,
+          suggestedActions: ['A001'],
+        },
+      ],
+    });
+    // 本轮只检测了 P002，P001 未被检测到
+    const result = updateSyndromeStatus(state, [
+      { id: 'P002', name: '角色工具人化', severity: 'L2', evidence: ['新证据'], suggestedActions: ['A004'] },
+    ]);
+    const p001 = result.activeProblems.find((p) => p.id === 'P001')!;
+    expect(p001.detectionCount).toBe(2);   // 不变
+    expect(p001.missedCount).toBe(1);       // +1
+  });
+
+  it('新增症候应初始化为 detectionCount=1, missedCount=0', () => {
+    const state = makeBaseState({ activeProblems: [] });
+    const result = updateSyndromeStatus(state, [
+      { id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据'], suggestedActions: ['A001'] },
+    ]);
+    expect(result.activeProblems[0].detectionCount).toBe(1);
+    expect(result.activeProblems[0].missedCount).toBe(0);
+  });
+
+  it('多次跨轮次检测应累积 detectionCount', () => {
+    let activeProblems: ActiveProblem[] = [];
+
+    // 第 1 轮：首次检测到 P001
+    let result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [{ id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据1'], suggestedActions: ['A001'] }],
+    );
+    activeProblems = result.activeProblems;
+    expect(activeProblems[0].detectionCount).toBe(1);
+
+    // 第 2 轮：再次检测到 P001
+    result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [{ id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据2'], suggestedActions: ['A001'] }],
+    );
+    activeProblems = result.activeProblems;
+    expect(activeProblems[0].detectionCount).toBe(2);
+
+    // 第 3 轮：再次检测到 P001
+    result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [{ id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据3'], suggestedActions: ['A001'] }],
+    );
+    activeProblems = result.activeProblems;
+    expect(activeProblems[0].detectionCount).toBe(3);
+  });
+
+  it('检测→消失→再检测 时 missedCount 应先增后重置', () => {
+    let activeProblems: ActiveProblem[] = [];
+
+    // 第 1 轮：检测到 P001
+    let result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [{ id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据1'], suggestedActions: ['A001'] }],
+    );
+    activeProblems = result.activeProblems;
+
+    // 第 2 轮：P001 未被检测到（只检测了 P002）
+    result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [{ id: 'P002', name: '角色工具人化', severity: 'L2', evidence: ['证据2'], suggestedActions: ['A004'] }],
+    );
+    activeProblems = result.activeProblems;
+    expect(activeProblems.find((p) => p.id === 'P001')!.missedCount).toBe(1);
+
+    // 第 3 轮：P001 再次被检测到
+    result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [
+        { id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据3'], suggestedActions: ['A001'] },
+        { id: 'P002', name: '角色工具人化', severity: 'L2', evidence: ['证据3'], suggestedActions: ['A004'] },
+      ],
+    );
+    activeProblems = result.activeProblems;
+    const p001 = activeProblems.find((p) => p.id === 'P001')!;
+    expect(p001.missedCount).toBe(0);   // 重置
+    expect(p001.detectionCount).toBe(2); // +1
+  });
+});
+
+// ===== autoLockConsistentSyndromes (P-06) =====
+
+describe('autoLockConsistentSyndromes', () => {
+  it('detectionCount >= 2 的症候应自动锁定', () => {
+    const state = makeBaseState({
+      lockedSyndromes: [],
+      activeProblems: [
+        { ...makeProblem('P001', 'L2', 'active'), detectionCount: 2 },
+        { ...makeProblem('P002', 'L2', 'active'), detectionCount: 1 },
+      ],
+    });
+    const result = autoLockConsistentSyndromes(state);
+    expect(result.lockedSyndromes).toContain('P001');
+    expect(result.lockedSyndromes).not.toContain('P002');
+  });
+
+  it('已锁定的症候不应重复锁定', () => {
+    const state = makeBaseState({
+      lockedSyndromes: ['P001'],
+      activeProblems: [
+        { ...makeProblem('P001', 'L2', 'active'), detectionCount: 3 },
+      ],
+    });
+    const result = autoLockConsistentSyndromes(state);
+    expect(result.lockedSyndromes).toEqual(['P001']);
+  });
+
+  it('detectionCount < 2 的症候不应锁定', () => {
+    const state = makeBaseState({
+      lockedSyndromes: [],
+      activeProblems: [
+        { ...makeProblem('P001', 'L2', 'active'), detectionCount: 1 },
+        { ...makeProblem('P002', 'L2', 'active'), detectionCount: 1 },
+      ],
+    });
+    const result = autoLockConsistentSyndromes(state);
+    expect(result.lockedSyndromes).toEqual([]);
+  });
+
+  it('空 activeProblems 应返回空锁定列表', () => {
+    const state = makeBaseState({ activeProblems: [] });
+    const result = autoLockConsistentSyndromes(state);
+    expect(result.lockedSyndromes).toEqual([]);
+  });
+
+  it('应与 updateSyndromeStatus 配合实现 P-06 完整流程', () => {
+    // 模拟：P001 连续 2 轮被检测到 → 自动锁定
+    let activeProblems: ActiveProblem[] = [];
+
+    // 第 1 轮：检测到 P001
+    let result = updateSyndromeStatus(
+      makeBaseState({ activeProblems }),
+      [{ id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据1'], suggestedActions: ['A001'] }],
+    );
+
+    // 第 2 轮：再次检测到 P001 → detectionCount = 2
+    result = updateSyndromeStatus(
+      makeBaseState({ activeProblems: result.activeProblems }),
+      [{ id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['证据2'], suggestedActions: ['A001'] }],
+    );
+
+    const state2 = makeBaseState({ activeProblems: result.activeProblems });
+    const lockResult = autoLockConsistentSyndromes(state2);
+    expect(lockResult.lockedSyndromes).toContain('P001');
   });
 });
 
@@ -334,6 +521,8 @@ function makeProblem(id: string, severity: 'L1' | 'L2' | 'L3', status: 'active' 
     evidence: ['证据片段'],
     firstDetected: '2026-01-01T00:00:00.000Z',
     status,
+    detectionCount: 1, // 默认已检测 1 轮
+    missedCount: 0,
     suggestedActions: ['A001'] as ActiveProblem['suggestedActions'],
   };
 }

@@ -404,7 +404,7 @@ describe('TrainingStore', () => {
       expect(state.submissionResult).toEqual({ passed: true, feedback: '改得很好！' });
     });
 
-    it('Step 2 完成后调用 complete IPC 并切回 chat', async () => {
+    it('Step 2 完成后调用 complete IPC 并保留评估视图', async () => {
       useTrainingStore.setState({
         activeTraining: {
           challengeId: 'CH-001',
@@ -432,8 +432,10 @@ describe('TrainingStore', () => {
         IPC_CHANNELS.TRAINING_COMPLETE,
         expect.objectContaining({ recordId: 'rec-001', userResponse: '最终稿' }),
       );
-      expect(state.activeTraining).toBeNull();
-      expect(state.centerMode).toBe('chat');
+      // B3: 评估视图保留，不再自动切回
+      expect(state.activeTraining).not.toBeNull();
+      expect(state.activeTraining?.currentStepIndex).toBe(2);
+      // centerMode 不受影响（测试默认是 chat，B3 不主动改它）
     });
   });
 });

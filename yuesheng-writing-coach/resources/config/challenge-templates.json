@@ -3,104 +3,568 @@
   "description": "Challenge-Unlock 挑战式微练模板。T-013 反思关卡用此生成引导问题。",
   "templates": [
     {
-      "id": "CH-P001",
+      "id": "CH-P001-001",
       "syndromeId": "P001",
       "syndromeName": "世界观膨胀",
       "challenge": "你的开篇设定很宏大。现在请你挑出其中**一个**具体的场景，把其他设定全部删掉，只留这个场景。",
       "mode": "narrow_focus",
       "tier": "structural",
       "constraint": "只能保留一个具体场景，其余全部删除",
-      "expectedOutcome": "用户学会聚焦核心场景，而非铺陈整个世界"
+      "expectedOutcome": "用户学会聚焦核心场景，而非铺陈整个世界",
+      "scenario": "主角出场的一个场景——从庞大的世界观中切出最核心的一幕",
+      "wordCount": 500,
+      "forbiddenWords": ["世界观","设定","体系","大陆","千百年来","自古以来","在这个世界"],
+      "evaluationCriteria": [
+        "全文只有一个场景",
+        "没有世界观背景介绍",
+        "出现世界观背景介绍 → 不合格"
+      ]
     },
     {
-      "id": "CH-P002",
+      "id": "CH-P001-002",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "challenge": "你的第一章可能先写了世界观再写主角。现在反过来——先让主角上场，用他的行动和感知来暗示世界。",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "主角信息必须先于世界观信息，让世界观成为背景而非主角",
+      "expectedOutcome": "用户学会以角色为中心构建世界，而非以世界为中心引入角色",
+      "scenario": "主角的第一章开篇——让主角先出现，世界通过他的眼睛展现",
+      "wordCount": 1000,
+      "forbiddenWords": ["这个世界","在这个世界","设定","体系"],
+      "evaluationCriteria": [
+        "主角信息先于世界观信息",
+        "主角是核心，世界观是背景",
+        "世界观信息超过主角信息 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P001-003",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "challenge": "写一个角色早晨醒来的日常场景。不交代任何世界设定，只通过角色看到什么、做什么来让读者感知这是一个怎样的世界。",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "通过角色的日常活动展现世界，不出现直接说明",
+      "expectedOutcome": "用户学会用微观日常替代宏观世界说明",
+      "scenario": "角色早晨醒来，开始一天的生活",
+      "wordCount": 400,
+      "forbiddenWords": ["世界观","设定","体系","这个世界","规则","千百年来"],
+      "evaluationCriteria": [
+        "世界信息通过角色行为展现",
+        "全文只有一个场景",
+        "没有直接的世界观说明 → 合格；出现任何直接说明 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P002-001",
       "syndromeId": "P002",
       "syndromeName": "角色工具人化",
       "challenge": "你刚刚写了一个配角告诉主角某件事。现在，让这个配角做一件完全不符合他'工具人'身份的事——他有自己的立场，他会反对主角。",
       "mode": "deepen_character",
       "tier": "structural",
       "constraint": "配角必须有独立于主角的立场和行为",
-      "expectedOutcome": "用户学会赋予角色独立动机"
+      "expectedOutcome": "用户学会赋予角色独立动机",
+      "scenario": "主角请求朋友帮忙，朋友拒绝",
+      "wordCount": 500,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "配角有明确的拒绝理由",
+        "配角的拒绝符合其性格和处境",
+        "配角的拒绝理由模糊或牵强 → 不合格"
+      ]
     },
     {
-      "id": "CH-P003",
+      "id": "CH-P002-002",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具人化",
+      "challenge": "写一个只出场一次的NPC角色。给他一句台词或一个动作，但这一句话要让人感受到他是一个活人，有自己的生活。",
+      "mode": "deepen_character",
+      "tier": "structural",
+      "constraint": "NPC的角色必须符合其身份和处境，不是为了传递信息而存在",
+      "expectedOutcome": "用户学会让即使是背景角色也有生命力",
+      "scenario": "主角在食堂排队，前面的同学被撞了一下",
+      "wordCount": 200,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "NPC的反应符合其身份",
+        "NPC不是为了传递信息而存在",
+        "NPC的反应过于书面化 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P002-003",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具人化",
+      "challenge": "主角急需帮助，但配角有自己的优先级。写配角为了自己的事拒绝主角——而且他的理由让读者觉得他说得对。",
+      "mode": "deepen_character",
+      "tier": "structural",
+      "constraint": "配角有独立动机，且其动机能让读者共情",
+      "expectedOutcome": "用户学会让每个角色都有独立的生活和优先级",
+      "scenario": "主角急需帮助，但配角有自己的优先级",
+      "wordCount": 400,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "配角有独立于主角的动机",
+        "配角的行为不服务于主角的剧情推进",
+        "配角的反应符合其身份和处境"
+      ]
+    },
+    {
+      "id": "CH-P003-001",
       "syndromeId": "P003",
       "syndromeName": "情绪标签化",
       "challenge": "你刚刚写了'他很紧张'。现在，删掉'紧张'这个词，只用一个具体的动作或神态来让读者感受到紧张。",
       "mode": "show_dont_tell",
       "tier": "surface",
       "constraint": "不准出现任何情绪词，只能用动作/神态/环境暗示",
-      "expectedOutcome": "用户学会用展示替代告知"
+      "expectedOutcome": "用户学会用展示替代告知",
+      "scenario": "考试发卷前，主角坐在教室里",
+      "wordCount": 300,
+      "forbiddenWords": ["紧张","害怕","恐惧","慌张","焦虑","不安","忐忑","心跳加速","手心出汗"],
+      "evaluationCriteria": [
+        "有具体的身体反应",
+        "有环境互动",
+        "情绪通过行为传达",
+        "出现任何禁止词 → 不合格"
+      ]
     },
     {
-      "id": "CH-P004",
+      "id": "CH-P003-002",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "challenge": "请描写一个愤怒的人。不能出现任何直接的情绪词，只能通过动作、对话和环境来展现。",
+      "mode": "show_dont_tell",
+      "tier": "surface",
+      "constraint": "不准出现任何情绪词，只能用动作/对话/环境暗示",
+      "expectedOutcome": "用户学会用展示替代告知",
+      "scenario": "主角和朋友吵架后，独自走在街上",
+      "wordCount": 300,
+      "forbiddenWords": ["愤怒","生气","恼火","暴怒","火冒三丈","气得发抖"],
+      "evaluationCriteria": [
+        "有具体的身体反应",
+        "有环境互动",
+        "情绪通过行为传达",
+        "出现任何禁止词 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P003-003",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "challenge": "请描写一个悲伤的人。不用'悲伤'这个词，让读者从细节中感受到这种情绪。",
+      "mode": "show_dont_tell",
+      "tier": "surface",
+      "constraint": "不准出现任何情绪词，只能用细节和动作暗示",
+      "expectedOutcome": "用户学会用展示替代告知",
+      "scenario": "主角收到坏消息后，独自一人坐在房间里",
+      "wordCount": 300,
+      "forbiddenWords": ["悲伤","难过","伤心","痛苦","绝望","泪流满面","心如刀割","悲痛"],
+      "evaluationCriteria": [
+        "有具体的身体反应",
+        "有环境互动",
+        "情绪通过行为传达",
+        "出现任何禁止词 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P004-001",
       "syndromeId": "P004",
       "syndromeName": "信息硬塞",
       "challenge": "你刚刚写了一段世界观说明。能不能删掉它，只用一个角色的动作来暗示同样的信息？",
       "mode": "rewrite_constrained",
       "tier": "structural",
       "constraint": "不能有任何说明性文字，只能通过角色行为暗示",
-      "expectedOutcome": "用户学会将信息嵌入场景而非直接陈述"
+      "expectedOutcome": "用户学会将信息嵌入场景而非直接陈述",
+      "scenario": "角色之间需要交代世界设定——通过对话自然流露，非单独成段",
+      "wordCount": 400,
+      "forbiddenWords": ["设定是","这个世界","所谓","指的是"],
+      "evaluationCriteria": [
+        "设定通过对话自然流露",
+        "对话符合真人说话习惯",
+        "出现单独成段的设定说明 → 不合格"
+      ]
     },
     {
-      "id": "CH-P005",
+      "id": "CH-P004-002",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "challenge": "你有一段需要交代的设定。现在不直接写它——让主角通过观察和反应来展现，他看到了什么、他为什么困惑。",
+      "mode": "rewrite_constrained",
+      "tier": "structural",
+      "constraint": "不能有单独成段的设定说明，主角不能突然知道设定",
+      "expectedOutcome": "用户学会通过角色观察自然流露设定",
+      "scenario": "主角刚穿越/来到新地方，不知道这个世界的规则",
+      "wordCount": 500,
+      "forbiddenWords": ["这个世界","原来这里","所谓","指的是","众所周知"],
+      "evaluationCriteria": [
+        "设定通过主角的观察和反应自然流露",
+        "主角有真实的困惑反应",
+        "出现单独成段的设定说明 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P004-003",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "challenge": "写一个场景，让读者自己发现世界的规则——不直接告诉读者'这个世界有超凡力量'，让角色亲眼看到后，读者自然明白。",
+      "mode": "rewrite_constrained",
+      "tier": "structural",
+      "constraint": "不能出现任何直接说明句，角色不能停下来解释设定",
+      "expectedOutcome": "用户学会让读者从场景中推断设定而非被告知",
+      "scenario": "主角第一次看到别人使用超凡力量",
+      "wordCount": 400,
+      "forbiddenWords": ["这个世界","有魔法","超凡力量","需要消耗","设定"],
+      "evaluationCriteria": [
+        "设定通过角色看到的和感受到的展现",
+        "读者能从场景中推断出设定",
+        "出现直接说明句 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P005-001",
       "syndromeId": "P005",
       "syndromeName": "视角漂移",
       "challenge": "你刚刚写了'大家都很紧张'。现在，把这段话改成只通过主角的眼睛能看到的内容。主角看不到的，全部删掉。",
       "mode": "perspective_lock",
       "tier": "structural",
       "constraint": "只能写主角能看到/听到/感知到的内容",
-      "expectedOutcome": "用户学会锁定单一视角"
+      "expectedOutcome": "用户学会锁定单一视角",
+      "scenario": "一个教室场景——只写主角的所见所闻",
+      "wordCount": 400,
+      "forbiddenWords": ["大家都很","众人","所有人","心中想","心里想"],
+      "evaluationCriteria": [
+        "全文只写主角视角",
+        "其他人的情绪通过行为传达",
+        "出现全知描写 → 不合格"
+      ]
     },
     {
-      "id": "CH-P006",
+      "id": "CH-P005-002",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "challenge": "写一段主角和朋友的对话。全程只以主角的视角叙述——你不知道朋友心里在想什么，只能从他的表情、语气和动作来推测。",
+      "mode": "perspective_lock",
+      "tier": "structural",
+      "constraint": "不能描写朋友的心理活动，只能写主角能观察到的",
+      "expectedOutcome": "用户学会在对话中保持单一视角",
+      "scenario": "主角和朋友的对话——全程锁定主角视角",
+      "wordCount": 300,
+      "forbiddenWords": ["心中想","心里想","心想","觉得（第三人称全知）"],
+      "evaluationCriteria": [
+        "全文只写主角视角",
+        "出现主角知道朋友内心的描写 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P005-003",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "challenge": "写一个主角进入陌生场所的场景。他只能看到、听到、闻到、触碰到——不能知道任何其他人的内心，也不能写他看不见的地方。",
+      "mode": "perspective_lock",
+      "tier": "structural",
+      "constraint": "全程限制在主角的五感范围内，不允许上帝视角",
+      "expectedOutcome": "用户学会通过限制视角增强代入感",
+      "scenario": "主角第一次进入一个陌生场所",
+      "wordCount": 400,
+      "forbiddenWords": ["大家","众人","所有人","心中想","实际上","其实（全知视角）"],
+      "evaluationCriteria": [
+        "全程只写主角视角",
+        "其他人通过行为和对话展现",
+        "不出现全知描写 → 合格；出现任何全知视角 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P006-001",
       "syndromeId": "P006",
       "syndromeName": "节奏停滞",
       "challenge": "你的开篇还没有发生任何事。现在，让你的主角在前三段内必须做一个选择——不管多小的选择。",
       "mode": "force_action",
       "tier": "structural",
       "constraint": "前三段内必须有主角的主动选择",
-      "expectedOutcome": "用户学会在开篇制造推动力"
+      "expectedOutcome": "用户学会在开篇制造推动力",
+      "scenario": "一个小说开篇——第一段必须有事件发生",
+      "wordCount": 500,
+      "forbiddenWords": ["从前","很久以前","在很久很久以前"],
+      "evaluationCriteria": [
+        "第一段有事件",
+        "事件有冲突",
+        "开篇纯背景介绍 → 不合格"
+      ]
     },
     {
-      "id": "CH-P007",
+      "id": "CH-P006-002",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "challenge": "写一个开篇，前三段内必须有一个钩子——悬念、反常或冲突，让读者忍不住想往下看。",
+      "mode": "force_action",
+      "tier": "structural",
+      "constraint": "前三段内必须有明确的钩子",
+      "expectedOutcome": "用户学会在开篇设置钩子吸引读者",
+      "scenario": "小说开篇——需要在前三段内抓住读者",
+      "wordCount": 500,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "开篇有明确的钩子",
+        "钩子在前三段内出现",
+        "开篇没有钩子 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P006-003",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "challenge": "写一个开篇，从对话的中间开始。不交代谁在说话、在哪里、为什么——让读者从对话内容中自己拼凑出来。",
+      "mode": "force_action",
+      "tier": "structural",
+      "constraint": "第一句就是对话，不交代任何背景信息",
+      "expectedOutcome": "用户学会用对话推进节奏，跳过冗长铺垫",
+      "scenario": "两个角色正在对话——从中间切入，不交代背景",
+      "wordCount": 400,
+      "forbiddenWords": ["从前","很久以前","在这个"],
+      "evaluationCriteria": [
+        "第一句就是对话",
+        "通过对话暗示背景和关系",
+        "不出现旁白交代 → 合格；出现背景说明 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P007-001",
       "syndromeId": "P007",
       "syndromeName": "阅读结构单一",
       "challenge": "找一本你最近读的传统文学（不是网文），只读前三章。带着一个任务：作者怎么在开场就把主角的性格写出来的？读完告诉我你的发现。",
       "mode": "reading_task",
       "tier": "surface",
       "constraint": "必须带着具体问题去读，不是泛读",
-      "expectedOutcome": "用户学会从传统文学中吸收叙事技巧"
+      "expectedOutcome": "用户学会从传统文学中吸收叙事技巧",
+      "scenario": "精读传统文学片段——分析情绪传达、视角和叙事手法",
+      "wordCount": 0,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "用户能识别情绪标签词的使用方式",
+        "用户能理解通过行为传达情绪",
+        "用户无法回答问题 → 需要进一步引导"
+      ]
     },
     {
-      "id": "CH-P008",
+      "id": "CH-P007-002",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "challenge": "找一本传统文学，只读前三章。带着一个问题去读：作者是怎么在开场就把主角的性格写出来的？读完回答三个问题。",
+      "mode": "reading_task",
+      "tier": "surface",
+      "constraint": "必须带着具体问题去读，不推荐具体书目",
+      "expectedOutcome": "用户学会带着任务阅读，从经典中吸收技巧",
+      "scenario": "找一本传统文学，只读前三章，带着具体问题",
+      "wordCount": 0,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "用户能说出主角印象",
+        "用户能识别作者的方法",
+        "用户能说出可借鉴的点",
+        "用户只说读完感觉不错 → 需要进一步引导"
+      ]
+    },
+    {
+      "id": "CH-P007-003",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "challenge": "找一篇你喜欢的网文和一篇传统文学，对比它们的开场方式。哪一方的开场更吸引你？那个作者用了什么技巧？你能借鉴什么？",
+      "mode": "reading_task",
+      "tier": "surface",
+      "constraint": "必须做对比分析，不能只评价一种",
+      "expectedOutcome": "用户学会对比分析不同文学类型的叙事技巧",
+      "scenario": "对比阅读网文和传统文学的开场方式",
+      "wordCount": 0,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "能说出网文的开场特点",
+        "能说出传统文学的开场特点",
+        "能找出至少一个可借鉴的点",
+        "只评价一种类型 → 需要进一步引导"
+      ]
+    },
+    {
+      "id": "CH-P008-001",
       "syndromeId": "P008",
       "syndromeName": "世界观说明书症",
       "challenge": "你刚刚用一段说明文字交代了世界设定。现在删掉它，改写成一个角色在这个世界中生活的日常场景——让读者通过他的行为'发现'这个设定。",
       "mode": "show_dont_tell",
       "tier": "structural",
       "constraint": "不允许出现任何直接说明设定、体系介绍或名词解释的句子",
-      "expectedOutcome": "用户学会将世界观信息融入角色行为和场景描写中"
+      "expectedOutcome": "用户学会将世界观信息融入角色行为和场景描写中",
+      "scenario": "角色在自己的世界中生活的日常——通过行为展现设定",
+      "wordCount": 500,
+      "forbiddenWords": ["设定","体系","规则","这个世界分为","所谓","指的是"],
+      "evaluationCriteria": [
+        "设定通过角色行为展现",
+        "不出现直接说明设定",
+        "读者能通过场景发现设定",
+        "出现直接说明 → 不合格"
+      ]
     },
     {
-      "id": "CH-P009",
+      "id": "CH-P008-002",
+      "syndromeId": "P008",
+      "syndromeName": "世界观说明书症",
+      "challenge": "写一个角色使用世界特有能力的场景。不解释这个能力是什么、怎么运作——只写角色做了什么、发生了什么。让读者自己推断规则。",
+      "mode": "show_dont_tell",
+      "tier": "structural",
+      "constraint": "能力通过动作展现，不出现能力名称和规则解释",
+      "expectedOutcome": "用户学会通过动作展现世界规则而非说明书式交代",
+      "scenario": "角色在需要使用世界特殊能力的日常情境中",
+      "wordCount": 400,
+      "forbiddenWords": ["设定","能力","规则","这个世界","体系"],
+      "evaluationCriteria": [
+        "能力通过动作展现",
+        "不出现能力名称和规则解释",
+        "读者能从场景推断世界规则"
+      ]
+    },
+    {
+      "id": "CH-P008-003",
+      "syndromeId": "P008",
+      "syndromeName": "世界观说明书症",
+      "challenge": "写一个异乡人第一次来到你的世界的场景。通过他的困惑、误解和观察来展现世界设定——他不是在'发现设定'，他只是在努力理解眼前的一切。",
+      "mode": "show_dont_tell",
+      "tier": "structural",
+      "constraint": "通过异乡人的视角展现世界，不出现旁白直接交代",
+      "expectedOutcome": "用户学会通过外来者视角自然展现世界观",
+      "scenario": "异乡人刚来到这个世界——通过他的困惑展现设定",
+      "wordCount": 500,
+      "forbiddenWords": ["这个世界是","设定","规则","体系","原来这里"],
+      "evaluationCriteria": [
+        "设定通过异乡人的疑问展现",
+        "信息通过NPC行为和对话揭示",
+        "不出现旁白直接交代设定 → 合格；出现直接说明 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P008-004",
+      "syndromeId": "P008",
+      "syndromeName": "世界观说明书症",
+      "challenge": "写一段两个本地人的日常对话。不让任何一个人'解释'设定——他们只是在聊家常，但读者能从对话中自然了解这个世界的基础规则。",
+      "mode": "show_dont_tell",
+      "tier": "structural",
+      "constraint": "设定在对话中自然流露，对话符合人物身份",
+      "expectedOutcome": "用户学会通过日常对话展现世界观",
+      "scenario": "两个本地人谈论日常琐事——读者从对话中了解世界",
+      "wordCount": 400,
+      "forbiddenWords": ["设定","规则","体系","大家都知道","众所周知"],
+      "evaluationCriteria": [
+        "设定在对话中自然流露",
+        "对话符合人物身份和日常习惯",
+        "不出现说明性文字 → 合格；出现设定解释 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P009-001",
       "syndromeId": "P009",
       "syndromeName": "角色动机缺失",
       "challenge": "你的角色正在做某个决定。写一句他内心真正的恐惧——不是剧情需要他做什么，而是他害怕什么。",
       "mode": "deepen_motivation",
       "tier": "fatal",
       "constraint": "必须写出角色内在恐惧，而非外部事件推动",
-      "expectedOutcome": "用户学会从角色内心驱动行为"
+      "expectedOutcome": "用户学会从角色内心驱动行为",
+      "scenario": "为角色设计想要的东西和害怕失去的东西",
+      "wordCount": 0,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "目标具体可衡量",
+        "动机与过去经历挂钩",
+        "目标太抽象 → 要求细化"
+      ]
     },
     {
-      "id": "CH-P010",
+      "id": "CH-P009-002",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "challenge": "给角色设置一个两难选择。两个选项都不能轻易放弃，无论选哪一个都会失去重要的东西——写出他的挣扎。",
+      "mode": "deepen_motivation",
+      "tier": "fatal",
+      "constraint": "两个选项都有合理理由，不能一个明显正确",
+      "expectedOutcome": "用户学会通过两难选择深化角色动机",
+      "scenario": "角色面对两难选择——两个选项都难以放弃",
+      "wordCount": 600,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "两个选项都有合理的理由",
+        "角色有内心挣扎的描写",
+        "一个选项明显正确 → 两难不够"
+      ]
+    },
+    {
+      "id": "CH-P009-003",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "challenge": "写一个角色表面做一件事，但实际有隐藏动机的场景。不让读者直接知道他的真实目的——让读者从行为细节中猜出来。",
+      "mode": "deepen_motivation",
+      "tier": "fatal",
+      "constraint": "不直接说明隐藏动机，通过行为细节暗示",
+      "expectedOutcome": "用户学会用行为展现多层次的动机",
+      "scenario": "主角在做一件看似平常的事，但实际另有目的",
+      "wordCount": 500,
+      "forbiddenWords": ["其实","实际上","真正的原因是","真实目的是"],
+      "evaluationCriteria": [
+        "表面动机清晰",
+        "隐藏动机通过行为细节暗示",
+        "不直接说明隐藏动机 → 合格；直接说明 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P010-001",
       "syndromeId": "P010",
       "syndromeName": "OC平面化",
       "challenge": "你的角色从头到尾性格没变。现在，给他一个经历重大事件后性格改变的转折点——他从A变成了B，不再是原来的他。",
       "mode": "character_arc",
-      "tier": "structural",
+      "tier": "fatal",
       "constraint": "必须有一个明确的性格转变点",
-      "expectedOutcome": "用户学会设计角色成长弧光"
+      "expectedOutcome": "用户学会设计角色成长弧光",
+      "scenario": "通过一个场景展现角色内在矛盾——外表与内心的反差",
+      "wordCount": 500,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "矛盾在行动中展现，不是通过说明",
+        "场景中有反平时行为时刻",
+        "直接用文字说明角色矛盾 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P010-002",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "challenge": "写一个角色经历重大事件前后的变化。先写他原来怎么看待某件事，再写发生了什么冲击了他，最后写他变成了什么样。",
+      "mode": "character_arc",
+      "tier": "fatal",
+      "constraint": "事件前→事件冲击→事件后变化，三个阶段都必须清晰",
+      "expectedOutcome": "用户学会设计完整的角色成长弧光",
+      "scenario": "角色经历事件前后的变化——从A到B的转变",
+      "wordCount": 800,
+      "forbiddenWords": [],
+      "evaluationCriteria": [
+        "事件前的态度明确",
+        "事件对角色有实质冲击",
+        "事件后的变化可感知",
+        "事件前后角色没变化 → 不合格"
+      ]
+    },
+    {
+      "id": "CH-P010-003",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "challenge": "写一个角色面临危机时的反应——这个反应要与他平时的形象完全相反。平时的他是什么样一笔带过即可，重点写危机中那个不一样的他。",
+      "mode": "character_arc",
+      "tier": "fatal",
+      "constraint": "危机中的反应必须与平时形成反差，通过行动展现",
+      "expectedOutcome": "用户学会通过反差塑造角色的多面性",
+      "scenario": "突发事件中，角色做出了与平时相反的反应",
+      "wordCount": 500,
+      "forbiddenWords": ["其实","他变了","从此以后","他不再是过去的他"],
+      "evaluationCriteria": [
+        "平时的形象有交代",
+        "危机中的反应与平时形成反差",
+        "变化通过行动展现，不靠说明 → 合格；直接说明 → 不合格"
+      ]
     }
   ],
   "fallbackChallenge": {

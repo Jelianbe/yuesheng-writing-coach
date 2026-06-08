@@ -25,7 +25,7 @@ describe('PromptBuilder', () => {
     completedActions: ['A001'],
     completedTasks: [],
     activeProblems: [
-      { id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['test'], firstDetected: '2026-01-01', status: 'active', suggestedActions: [] },
+      { id: 'P001', name: '世界观膨胀', severity: 'L2', evidence: ['test'], firstDetected: '2026-01-01', status: 'active', detectionCount: 1, missedCount: 0, suggestedActions: [] },
     ],
     nextSuggestedActions: ['A002'],
     currentTaskId: null,

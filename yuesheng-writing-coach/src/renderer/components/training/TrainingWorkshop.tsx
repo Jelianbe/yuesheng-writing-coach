@@ -41,6 +41,8 @@ export interface TrainingWorkshopProps {
   onSubmitStep: () => void;
   onSkipTraining: () => void;
   onUpdateDraft: (content: string) => void;
+  /** X-02: 将训练稿写入编辑器 */
+  onSendToEditor?: () => void;
 }
 
 // ===== 主组件 =====
@@ -59,11 +61,18 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   onSubmitStep,
   onSkipTraining,
   onUpdateDraft,
+  onSendToEditor,
 }) => {
   /** 点击"开始练习"直接进入训练 */
   const handleStartTrainingClick = React.useCallback((challengeId: string) => {
     onStartTraining(challengeId);
   }, [onStartTraining]);
+
+  /** B4: 根据任务 ID 获取可读名称 */
+  const getTaskName = React.useCallback((taskId: string): string | undefined => {
+    const match = recommendations.find(r => r.challengeId === taskId);
+    return match?.challengeName;
+  }, [recommendations]);
 
   // 加载中（仅首次加载时显示）
   if (isLoading && !activeTraining) {
@@ -100,6 +109,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
           onSubmitStep={onSubmitStep}
           onSkipTraining={onSkipTraining}
           onUpdateDraft={onUpdateDraft}
+          onSendToEditor={onSendToEditor}
         />
       </div>
     );
@@ -126,18 +136,19 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <ErrorCardsSection
-            cards={errorCards}
-            onStartTraining={handleStartTrainingClick}
-          />
+          cards={errorCards}
+          recommendations={recommendations}
+          onStartTraining={handleStartTrainingClick}
+        />
           <RecommendationsSection
             recommendations={recommendations}
             onStartTraining={handleStartTrainingClick}
           />
-          <div style={{ height: 12 }} />
           <BehaviorDerivationTool />
           <HistorySection
             history={history}
             isLoading={isLoading}
+            getTaskName={getTaskName}
           />
         </div>
       </div>

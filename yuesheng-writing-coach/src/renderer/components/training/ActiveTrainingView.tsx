@@ -38,6 +38,8 @@ interface ActiveTrainingViewProps {
   onSubmitStep: () => void;
   onSkipTraining: () => void;
   onUpdateDraft: (content: string) => void;
+  /** X-02: 将训练稿写入编辑器 */
+  onSendToEditor?: () => void;
 }
 
 const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
@@ -49,6 +51,7 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
   onSubmitStep,
   onSkipTraining,
   onUpdateDraft,
+  onSendToEditor,
 }) => {
 
   // SF-001: 场景元数据（仅 Step 1 显示，纯前端状态不入训练记录）
@@ -223,8 +226,36 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
           ))}
         </div>
 
-        {/* Step 0: 阅读原始文本 */}
-        {activeTraining.currentStepIndex === 0 && activeTraining.originalQuote && (
+        {/* Step 0: 阅读原始文本（通用）/ 阅读指导（阅读任务） */}
+        {activeTraining.currentStepIndex === 0 && activeTraining.mode === 'reading_task' && (
+          <div style={{
+            padding: 12,
+            backgroundColor: '#eafaf1',
+            borderRadius: 8,
+            borderLeft: '3px solid #27ae60',
+            marginBottom: 16,
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)',
+            lineHeight: 1.6,
+          }}>
+            {activeTraining.challengeDescription ? (
+              <>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  阅读分析指导
+                </div>
+                {activeTraining.challengeDescription}
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  阅读分析练习
+                </div>
+                <p style={{ margin: 0 }}>请仔细阅读你的文本，重点关注本次训练涉及的写作问题。在下一步中写下你的分析和观察。</p>
+              </>
+            )}
+          </div>
+        )}
+        {activeTraining.currentStepIndex === 0 && activeTraining.originalQuote && activeTraining.mode !== 'reading_task' && (
           <div style={{
             padding: 12,
             backgroundColor: '#fdf0ef',
@@ -242,15 +273,15 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
           </div>
         )}
 
-        {/* Step 1: 约束改写 */}
+        {/* Step 1: 约束改写（通用） / 写下分析（阅读任务） */}
         {activeTraining.currentStepIndex === 1 && (
           <>
             {activeTraining.challengeDescription && (
               <div style={{
                 padding: 12,
-                backgroundColor: '#eaf7fd',
+                backgroundColor: activeTraining.mode === 'reading_task' ? '#eafaf1' : '#eaf7fd',
                 borderRadius: 8,
-                borderLeft: '3px solid #3498db',
+                borderLeft: activeTraining.mode === 'reading_task' ? '3px solid #27ae60' : '3px solid #3498db',
                 marginBottom: 12,
                 fontSize: '0.85rem',
                 lineHeight: 1.6,
@@ -260,7 +291,7 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
               </div>
             )}
 
-            {activeTraining.constraint && (
+            {activeTraining.constraint && activeTraining.mode !== 'reading_task' && (
               <div style={{
                 padding: 10,
                 backgroundColor: '#fef5e7',
@@ -398,7 +429,8 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
               </>
             )}
 
-            {/* SF-001: 场景元数据面板 — 3个下拉选择 */}
+            {/* SF-001: 场景元数据面板 — 3个下拉选择（仅通用改写模式） */}
+            {activeTraining.mode !== 'reading_task' && (
             <div style={{
               display: 'flex',
               gap: 8,
@@ -435,11 +467,12 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
                 <option value="sub_b">副线 B</option>
               </select>
             </div>
+            )}
 
             <textarea
               value={activeTraining.userDraft}
               onChange={(e) => { onUpdateDraft(e.target.value); }}
-              placeholder="在此输入你的改写..."
+              placeholder={activeTraining.mode === 'reading_task' ? '在此写下你的阅读分析和观察...' : '在此输入你的改写...'}
               style={{
                 width: '100%',
                 minHeight: 160,
@@ -546,6 +579,8 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
             </p>
 
             {/* === 训练完成后的操作出口 === */}
+            {/* B3: 最后一步时显示"返回对话"，用户主动退出 */}
+            {/* X-02: 同时显示"写入编辑器"，将训练稿写入当前章节 */}
             <div style={{
               display: 'flex',
               gap: 10,
@@ -553,8 +588,27 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
               paddingTop: 16,
               borderTop: '1px dashed #a9dfbf',
             }}>
+              {evaluationResult && onSendToEditor && (
+                <button
+                  onClick={onSendToEditor}
+                  style={{
+                    flex: 1,
+                    padding: '10px 20px',
+                    borderRadius: 8,
+                    border: '1px solid var(--accent)',
+                    background: 'transparent',
+                    color: 'var(--accent)',
+                    cursor: 'pointer',
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  写入编辑器
+                </button>
+              )}
               <button
-                onClick={onSubmitStep}
+                onClick={evaluationResult ? onBackToChat : onSubmitStep}
                 disabled={isLoading}
                 style={{
                   flex: 1,
@@ -570,7 +624,7 @@ const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
                   transition: 'all 0.15s',
                 }}
               >
-                {isLoading ? '加载中...' : '完成训练'}
+                {evaluationResult ? '返回对话' : (isLoading ? '加载中...' : '完成训练')}
               </button>
             </div>
           </div>

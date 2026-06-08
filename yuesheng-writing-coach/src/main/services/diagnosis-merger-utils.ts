@@ -47,6 +47,8 @@ export function mergeSyndromesIntoState(
         score: syndrome.score,
         firstDetected: now,
         status: 'active',
+        detectionCount: 1,
+        missedCount: 0,
         suggestedActions: syndrome.suggestedActions,
       });
     }

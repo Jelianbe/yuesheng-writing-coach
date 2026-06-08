@@ -324,6 +324,8 @@ export function lockSyndromes(
  * - 新严重度 < 旧严重度 → status = improving
  * - 新严重度 = 旧严重度 → status 不变（保持锁定）
  * - 新严重度 > 旧严重度 → status = active（复发）
+ * - P-06: 重新检测到的症候 → detectionCount++，missedCount=0
+ * - P-06: 本轮未检测到的症候 → missedCount++（检测不连续）
  *
  * @param state - 当前教学状态
  * @param newDiagnosisSyndromes - 新诊断的症候列表
@@ -334,18 +336,16 @@ export function updateSyndromeStatus(
   newDiagnosisSyndromes: Array<{ id: string; name: string; severity: 'L1' | 'L2' | 'L3'; evidence: string[]; suggestedActions: string[] }>,
 ): Pick<TeachingState, 'activeProblems'> {
   const now = new Date().toISOString();
+  const newIds = new Set(newDiagnosisSyndromes.map((s) => s.id));
 
-  const updated = [...state.activeProblems];
-
-  for (const newSyndrome of newDiagnosisSyndromes) {
-    const existingIndex = updated.findIndex((p) => p.id === newSyndrome.id);
-
-    if (existingIndex >= 0) {
-      const existing = updated[existingIndex];
+  // Step 1: 更新已有症候 —— 重新检测到的 increment detectionCount，未检测到的 increment missedCount
+  const updated = state.activeProblems.map((existing) => {
+    if (newIds.has(existing.id)) {
+      const newSyndrome = newDiagnosisSyndromes.find((s) => s.id === existing.id)!;
       const newSev = severityToNumber(newSyndrome.severity);
       const oldSev = severityToNumber(existing.severity);
 
-      updated[existingIndex] = {
+      return {
         ...existing,
         severity: newSyndrome.severity,
         evidence: newSyndrome.evidence,
@@ -356,9 +356,22 @@ export function updateSyndromeStatus(
             : newSev > oldSev
               ? 'active'
               : existing.status,
+        detectionCount: existing.detectionCount + 1,
+        missedCount: 0,
       };
     } else {
-      // 新增症候
+      // 本轮未检测到 —— 检测不连续
+      return {
+        ...existing,
+        missedCount: existing.missedCount + 1,
+      };
+    }
+  });
+
+  // Step 2: 新增本次首次检测到的症候
+  const existingIds = new Set(state.activeProblems.map((p) => p.id));
+  for (const newSyndrome of newDiagnosisSyndromes) {
+    if (!existingIds.has(newSyndrome.id)) {
       updated.push({
         id: newSyndrome.id as TeachingState['activeProblems'][number]['id'],
         name: newSyndrome.name,
@@ -367,11 +380,37 @@ export function updateSyndromeStatus(
         firstDetected: now,
         status: 'active',
         suggestedActions: newSyndrome.suggestedActions as TeachingState['activeProblems'][number]['suggestedActions'],
+        detectionCount: 1,
+        missedCount: 0,
       });
     }
   }
 
   return { activeProblems: updated };
+}
+
+/**
+ * 自动锁定连续检测到的一致性症候（P-06）
+ *
+ * 规则：当某个症的 detectionCount >= 2 时，自动将其加入 lockedSyndromes。
+ * 这解决了"症候偶发出现→消失→再出现"场景下的锁定不一致问题。
+ * 只有经过至少 2 轮检测确认的症候才会被锁定。
+ *
+ * @param state - 当前教学状态
+ * @returns 更新后的 lockedSyndromes
+ */
+export function autoLockConsistentSyndromes(
+  state: TeachingState,
+): Pick<TeachingState, 'lockedSyndromes'> {
+  const locked = new Set(state.lockedSyndromes ?? []);
+
+  for (const problem of state.activeProblems) {
+    if (problem.detectionCount >= 2 && !locked.has(problem.id)) {
+      locked.add(problem.id);
+    }
+  }
+
+  return { lockedSyndromes: Array.from(locked) };
 }
 
 /**
