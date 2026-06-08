@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "外部资源提及清单及话术，供 Teaching Agent 参考引用",
+  "rules": [
+    "只提及书名和作者，不展开具体章节内容",
+    "不确定书中是否有相关内容时，不提",
+    "不编造任何出版物的具体章节、页码和原文",
+    "用户追问具体内容时，说'具体内容我不太确定，你可以自己去翻一下那本书'"
+  ],
+  "resources": [
+    {
+      "title": "小说课",
+      "author": "许荣哲",
+      "edition": "1",
+      "applicableScenarios": ["结构分析", "人物塑造"],
+      "mentionTemplate": "许荣哲在《小说课》里说——",
+      "caution": "只引用方法论框架，不引用具体案例"
+    },
+    {
+      "title": "超棒小说这样写",
+      "author": "弗雷",
+      "edition": "1",
+      "applicableScenarios": ["开篇技巧", "大场景写作"],
+      "mentionTemplate": "弗雷的《超棒小说这样写》里提到过——",
+      "caution": "只引用方法论框架，不引用具体案例"
+    },
+    {
+      "title": "小说写作工具箱",
+      "author": "詹姆斯·斯科特·贝尔",
+      "edition": "1",
+      "applicableScenarios": ["写作技巧", "常见问题"],
+      "mentionTemplate": "詹姆斯·斯科特·贝尔的《小说写作工具箱》里有一个方法——",
+      "caution": "只引用方法论框架，不引用具体案例"
+    },
+    {
+      "title": "故事:材质、结构、风格和银幕剧作的原理",
+      "author": "罗伯特·麦基",
+      "edition": "1",
+      "applicableScenarios": ["故事结构", "人物弧光"],
+      "mentionTemplate": "麦基在《故事》里说——",
+      "caution": "只引用原则，不引用具体案例"
+    },
+    {
+      "title": "写作这回事",
+      "author": "斯蒂芬·金",
+      "edition": "1",
+      "applicableScenarios": ["写作心态", "日常练习"],
+      "mentionTemplate": "斯蒂芬·金在《写作这回事》里提到过——",
+      "caution": "只引用方法论框架，不引用具体案例"
+    },
+    {
+      "title": "网文写作课",
+      "author": "狂更猫",
+      "edition": "1",
+      "applicableScenarios": ["网文入门", "零基础", "情节设计"],
+      "mentionTemplate": "狂更猫的《网文写作课》里有一个方法——",
+      "caution": "只引用方法论框架，不引用具体案例"
+    }
+  ]
+}

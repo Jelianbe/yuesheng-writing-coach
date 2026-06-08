@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { SyndromeId, ActionId } from '../../../shared/constants';
-import { SeverityLevel } from '../../../renderer/shared/types';
 import { parseDiagnosisFromAIResponse } from '../diagnosis-parser';
 import {
   buildAIResponseWithDiagnosis,

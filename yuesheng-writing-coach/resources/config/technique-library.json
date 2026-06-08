@@ -1,0 +1,3028 @@
+[
+  {
+    "id": "TQ-001",
+    "name": "三词递进开篇",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用三个递进的短句作为开篇，从单字到双字到三字，制造感官冲击",
+    "example": "冷。好冷。刺骨的冷。",
+    "exercise": "选一个感官词，写出三个递进短句；把当前小说开头替换为三词递进，对比效果",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-002",
+    "name": "物件反常法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P001"
+    ],
+    "description": "在日常场景中放置一个不属于这里的东西，让读者自己发现异常",
+    "example": "书桌上出现左轮手枪",
+    "exercise": "写一个日常场景，放一个不属于这里的东西；不解释原因，只描述主角的反应",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-003",
+    "name": "视觉确认法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P004"
+    ],
+    "description": "用一个视觉奇观代替'这是异世界'的讲解",
+    "example": "绯红之月",
+    "exercise": "列出世界观中3个与地球不同的视觉特征；选最有冲击力的一个，让主角'看到'它",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-004",
+    "name": "证据链式悬念",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用2-3个物理证据构成推理链，让读者参与推理",
+    "example": "笔记上的死亡宣告+太阳穴弹孔+弹头位置不对",
+    "exercise": "写一个异常事件；给出2-3条物理证据，至少一条指向'表面解释不对'",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-005",
+    "name": "三段式情绪递降",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "前三章情绪曲线设计为'高压→中压→低压'，而非持续高压",
+    "example": "第1章恐惧→第2章好奇→第3章温情",
+    "exercise": "画出前三章情绪曲线；如果三条都是'紧张'，把第三章改为'温情'或'日常'",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-006",
+    "name": "行动预告断点",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在章节末尾让主角决定下一步行动，给读者明确的期待",
+    "example": "明天在这里试一试转运仪式",
+    "exercise": "在当前章节最后加一句主角的'决定'；确保下一章开头3段内被提及",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-007",
+    "name": "绝境开局法",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "让主角在第一章就面临生死危机，读者立刻想知道他怎么翻盘",
+    "example": "穿越即入狱，两天后流放边疆",
+    "exercise": "写出主角的日常开局，然后把最严重的危机提前到第一章",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-008",
+    "name": "内心吐槽破冰",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "用主角的吐槽式内心独白打破严肃氛围，让读者快速记住性格",
+    "example": "系统爸爸你出来啊",
+    "exercise": "写一个严肃场景，让主角在心里吐槽一句；确保吐槽符合主角身份和性格",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-009",
+    "name": "双线叙事制造信息差",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "同时展现两条叙事线，让读者掌握比任何一条线上的角色都多的信息",
+    "example": "许七安在牢里推理+官方在外面查案",
+    "exercise": "设计一条平行线；让两条线在同一个事件上各自推进",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-010",
+    "name": "反常识推理破局",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "让主角用一个所有人都能理解但没人想到的常识推翻共识",
+    "example": "十五万两白银重九千三百七十五斤，驽马不可能走三十里",
+    "exercise": "列出当前情节中'所有人都认为是这样'的共识；找常识性事实推翻它",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-011",
+    "name": "倒计时制造紧迫感",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "给主角一个可见的倒计时，让读者跟着一起紧张",
+    "example": "手臂上的白色数字'5:58:13'",
+    "exercise": "在情节中设置一个时间限制；让主角能看到具体的倒计时数字",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-012",
+    "name": "缺席式情感书写",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "不写角色有多悲伤，只写他转身走开",
+    "example": "庆尘要等的人来了，但他又不想了——母亲来了，他转身就走",
+    "exercise": "删掉所有'他心里很难过'的描写；只写一个动作：转身/沉默/关上门",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-013",
+    "name": "行动代替情绪",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "在危机面前，不写主角多害怕，只写他做了什么",
+    "example": "买钳子铁锹、买抗生素、菜刀放枕头下、写遗书",
+    "exercise": "删掉情绪词，换成3个具体的准备行动；确保每个行动暗示心理状态",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-014",
+    "name": "世界碎裂式转场",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用视觉化的方式描写世界转换，让读者'看到'而非'被告知'穿越发生了",
+    "example": "世界宛如镜子般碎裂开来",
+    "exercise": "删掉所有'他穿越了'的叙述；用一个视觉画面代替：碎裂/溶解/坠落/燃烧",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-015",
+    "name": "远期预告钩子",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在第一章末尾用一句话预告主角的未来方向，给读者远期期待",
+    "example": "他竟然走上了一条与凡人不同的仙业大道",
+    "exercise": "在第一章最后加一句预告方向的话；不要剧透具体情节，只预告方向",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "奇幻/科幻",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-016",
+    "name": "小人物大命运反差",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "让主角从最底层出发，用极端的出身与未来的命运形成反差",
+    "example": "韩立——'二愣子'、穷得吃不上肉、用窝头换名字",
+    "exercise": "把主角的出身再降低一档；用一个具体细节展现底层",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-017",
+    "name": "密闭空间开局",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "把主角放在一个无法逃离的密闭空间里，配合未知威胁",
+    "example": "没有门的房间+面具杀人者",
+    "exercise": "设计一个密闭空间；在空间内放一个明确的威胁；让主角第一章就意识到'出不去了'",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "推理/悬疑",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-018",
+    "name": "数字矛盾制造悬念",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用一个数字/数量的矛盾引发读者好奇",
+    "example": "'九位'vs实际十个人",
+    "exercise": "在开篇中设计一个数字矛盾；让主角第一个注意到这个矛盾",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-019",
+    "name": "暴力事件定调",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在开篇用一次出其不意的暴力事件建立'真的会死'的规则",
+    "example": "山羊头把年轻人的头撞碎在桌面上",
+    "exercise": "设计一次出其不意的暴力事件（针对配角/路人）；让事件同时震撼主角和读者",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "推理/悬疑",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-020",
+    "name": "身份反转断点",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在章节末尾揭示主角的特殊身份，制造强烈翻页冲动",
+    "example": "上面赫然写着'说谎者'三个字",
+    "exercise": "找到主角隐藏的身份；在章节末尾用视觉化方式揭示；揭示后立刻结束章节",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-021",
+    "name": "规则漏洞推理",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "让主角发现游戏规则的漏洞并利用它",
+    "example": "'名字说谎'——规则说'有一个人说了假话'，但假名字也算",
+    "exercise": "为情节设计一套明确的规则；在规则中故意留一个不明显的漏洞",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "推理/悬疑",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-022",
+    "name": "反差视觉开局",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用一个身份与行为极度反差的视觉画面作为开篇钩子",
+    "example": "盲人扛着导盲杖拎花生油过马路",
+    "exercise": "写出主角的核心身份特征；设计一个与这个身份完全矛盾的行为",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-023",
+    "name": "双重身份悬念",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "让主角同时拥有两个矛盾的身份，读者不知道哪个是真的",
+    "example": "他说他能看见，他说谎了。但他又没有说谎",
+    "exercise": "给主角设计两个矛盾的身份/能力；在第一章让其他角色只看到表面身份",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-024",
+    "name": "梦境世界暗示",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用反复出现的梦境暗示更大的世界观，制造长线悬念",
+    "example": "诸神精神病院——每晚做同一个梦，敲一扇打不开的门",
+    "exercise": "设计一个与主线相关的梦境场景；让主角反复进入，每次发现一点新细节",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "奇幻/悬疑",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TC-001",
+    "name": "日常行为释放设定",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "description": "让角色做日常动作时自然带出设定信息，而不是专门停下来讲解",
+    "example": "投一枚铜便士进煤气灯计费器（带出货币体系和能源系统）",
+    "exercise": "列出当前章节需要传达的3条设定信息；为每条设定设计一个角色日常动作",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TC-002",
+    "name": "重复台词塑造人物",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "给角色一句反复出现的台词，每次出现的语境略有不同",
+    "example": "记得买面包，只要八磅",
+    "exercise": "为配角写一句口头禅（不超过10字）；在当前章节让他说两次，语境不同",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-003",
+    "name": "一句话情感锚点",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "在告别/分离场景中，用一句极短的台词建立情感锚点",
+    "example": "活下去",
+    "exercise": "把长篇告别词缩减为一句不超过5个字的台词",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-004",
+    "name": "日常反差建立人物",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "用一个日常小场景展现主角的特长和性格反差",
+    "example": "少年赢老头下棋赚钱+毒舌'那来不及了'",
+    "exercise": "列出主角的3个核心特征；设计一个日常场景同时展现这3个特征",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-005",
+    "name": "平凡出身共鸣",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "用具体的贫困细节让读者产生共鸣，而非笼统地说'他很穷'",
+    "example": "用两个窝头换名字",
+    "exercise": "为每个困境找一个具体的细节（不是'很穷'而是'吃不上肉'）",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-006",
+    "name": "绰号反差",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "给主角一个与实际能力相反的绰号，制造记忆点",
+    "example": "'二愣子'——村里最聪明的人的绰号",
+    "exercise": "给主角想一个与核心能力相反的绰号；在第一章让其他人用这个绰号叫他",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-007",
+    "name": "群像快速建立",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "给每个角色一个视觉标签，让读者在群像场景中快速区分",
+    "example": "花臂男/白大褂/清冷女/性感女/健硕男",
+    "exercise": "为每个角色分配一个视觉标签（服装/饰品/体型/动作）；确保标签不重叠",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-008",
+    "name": "旁观者视角引入主角",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "通过旁观者的讨论来介绍主角，而非直接描写",
+    "example": "路人讨论'真盲假盲'",
+    "exercise": "设计2-3个旁观者角色；让他们讨论主角的某个反常之处",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TC-009",
+    "name": "日常温情锚点",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "在紧张剧情中插入一个日常温情场景，让读者对主角产生情感连接",
+    "example": "姨妈/表弟/狗的三人一家+分肉给狗",
+    "exercise": "为主角设计2-3个日常温情细节；在紧张场景之后插入一个温情场景",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TN-001",
+    "name": "设定倾倒式开篇",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "description": "【反面教材】不要这样做。大量使用旁白直接讲解门派历史、势力格局、修炼体系",
+    "example": "第2章整段讲七玄门和野狼帮的百年恩怨",
+    "exercise": "对照反面教材检查自己的开篇；把讲解段落替换为'动作+设定'的融合句",
+    "coreId": "negative-example",
+    "coreName": "反面教材",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-025",
+    "name": "感官替代法",
+    "source": "道诡异仙",
+    "sourceAuthor": "狐尾的笔",
+    "difficulty": "intermediate",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003"
+    ],
+    "description": "用五感细节替代情绪词。不写'他恐惧'，写'后颈的汗毛一根根竖起来'。选择与情绪对应的身体反应——恐惧对应皮肤/毛发，悲伤对应喉咙/胸口，愤怒对应拳头/牙关",
+    "example": "后颈的汗毛一根根竖起来（替代'他很恐惧'）",
+    "exercise": "列出5个常用情绪词，为每个写出2-3个身体替代描写；找到作品中所有'他很XX'的句子，用身体反应替换",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-012"
+    ]
+  },
+  {
+    "id": "TQ-026",
+    "name": "环境映射法",
+    "source": "深空彼岸",
+    "sourceAuthor": "辰东",
+    "difficulty": "intermediate",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003"
+    ],
+    "description": "用环境状态映射角色内心。不写'他焦虑'，写'窗外的雨越下越大'。环境不是装饰，是情绪的放大器。环境变化必须与角色情绪变化同步",
+    "example": "走廊尽头的灯又灭了一盏（替代'她绝望'）",
+    "exercise": "为当前场景的情绪选择对应环境元素；在角色情绪变化时让环境同步变化；删掉情绪词只保留环境描写",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-012"
+    ]
+  },
+  {
+    "id": "TQ-027",
+    "name": "微动作泄露法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003"
+    ],
+    "description": "用不自觉的小动作泄露真实情绪。微动作比情绪词有力，因为读者是'发现'情绪而非'被告知'情绪。微动作必须是不自觉的、重复出现的",
+    "example": "克莱恩紧张时摸袖口里的符纸",
+    "exercise": "为主角设计2个紧张时的微动作；在3个不同场景中让微动作出现；删掉所有'他很紧张/害怕'的描写",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TQ-028",
+    "name": "气味触发法",
+    "source": "道诡异仙",
+    "sourceAuthor": "狐尾的笔",
+    "difficulty": "intermediate",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003"
+    ],
+    "description": "用气味唤起情绪记忆。嗅觉是与记忆和情绪连接最直接的感官。气味必须具体到能闻到，不是'香味'而是'烧秸秆的味道'",
+    "example": "空气里飘来一股灶台烧秸秆的味道，他愣住了",
+    "exercise": "列出3个与主角过去相关的气味；在情节中突然引入，让角色自己愣住；不解释气味为什么出现，只写即时反应",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-012"
+    ]
+  },
+  {
+    "id": "TQ-029",
+    "name": "沉默替代法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "advanced",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003"
+    ],
+    "description": "用沉默的长度和方式表达情绪强度。短沉默=震惊，长沉默=消化坏消息，打断别人沉默=愤怒，被叫才回神=恐惧。沉默是读者自己填充的，每个读者填充的痛苦都不同",
+    "example": "克莱恩面对噩耗时'沉默了很久'",
+    "exercise": "找到所有'他很难过/震惊/愤怒'的描写；替换为沉默（短=震惊，中=悲伤，长=创伤）；在沉默前后各加一个微动作",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-013",
+      "TE-009"
+    ]
+  },
+  {
+    "id": "TQ-030",
+    "name": "视角锚定物法",
+    "source": "第一序列",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P005"
+    ],
+    "description": "给每个视角角色分配一个专属锚定物——只在这个角色视角中出现的物品/习惯/关注点。读者看到锚定物就知道切到谁了",
+    "example": "任小粟视角总出现他的破碗",
+    "exercise": "为每个POV角色分配1个锚定物；在每次视角切换的前2句内让锚定物出现；确保锚定物不会在其他角色视角中出现",
+    "coreId": "pov-control",
+    "coreName": "视角控制",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-031",
+    "name": "限知信息墙法",
+    "source": "第一序列",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "intermediate",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P005"
+    ],
+    "description": "严格限制每个视角角色'能知道什么'。写每个场景前列出'这个角色此刻知道什么/不知道什么'，只写他知道的部分。不知道的用'感觉不对'代替全知叙述",
+    "example": "任小粟不知道的事，即使读者知道，她的视角里也绝不出现",
+    "exercise": "写场景前列出当前视角角色的已知/未知清单；写完后检查有无越界信息；把越界信息改为角色的猜测",
+    "coreId": "pov-control",
+    "coreName": "视角控制",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-008",
+      "TQ-030",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-032",
+    "name": "切换信号句法",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "beginner",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P005"
+    ],
+    "description": "用固定的句式标记视角切换。读者形成条件反射后，不需要额外说明就能跟上视角变化。信号句必须简短、固定、每次一样",
+    "example": "切到许七安总以'许七安……'开头；切到其他角色以'与此同时，XX……'开头",
+    "exercise": "为主角视角设计固定开头句式；为配角视角设计另一个固定开头句式；连续写3次视角切换确保用信号句",
+    "coreId": "pov-control",
+    "coreName": "视角控制",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-033",
+    "name": "视角纵深分层法",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "advanced",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P005"
+    ],
+    "description": "在同一个场景中用不同角色的视角纵深制造层次感：浅层视角（看到什么）→深层视角（推断出什么）→旁观者视角（其他人看到主角在做什么）。三层叠加，信息量远超单一视角",
+    "example": "许七安浅层（看到证据）→深层（推断真相）→旁观者（看到他突然站起）",
+    "exercise": "选一个多人场景；先写主角浅层视角；再写深层推断；最后用1-2句旁观者视角收尾",
+    "coreId": "pov-control",
+    "coreName": "视角控制",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TC-011",
+      "TQ-031",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-034",
+    "name": "规则嵌套法",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "intermediate",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P007"
+    ],
+    "description": "在大规则里嵌套小规则，制造结构层次。三层嵌套让读者始终处于'发现新规则'的兴奋中。每层规则必须比上一层更出人意料，但逻辑自洽",
+    "example": "十日游戏（大规则）→每日子游戏（小规则）→隐藏规则（最深层）",
+    "exercise": "设计核心规则；在核心规则内设计子规则；在子规则内设计隐藏规则；安排3个揭示节点",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "设定驱动/奇幻",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TQ-035",
+    "name": "双线交叉法",
+    "source": "赤心巡天",
+    "sourceAuthor": "烽火戏诸侯",
+    "difficulty": "intermediate",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P007"
+    ],
+    "description": "同时推进两条叙事线，在关键节点让它们交叉。读者在A线积累的紧张感带到B线，B线的信息又反过来改变A线的理解。两条线必须有因果关系",
+    "example": "主角成长线+天下大势线交替推进，交叉点即高潮",
+    "exercise": "设计主线和副线；列出5个关键节点找到交叉位置；在交叉点让一条线的信息改变另一条线的走向",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TQ-036",
+    "name": "时间折叠法",
+    "source": "赤心巡天",
+    "sourceAuthor": "烽火戏诸侯",
+    "difficulty": "advanced",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P007"
+    ],
+    "description": "先写结果，再回溯过程。读者带着'为什么会变成这样'的悬念读回溯，每个细节都被赋予双重含义。结果必须足够震撼，让读者愿意回溯",
+    "example": "先写'他站在废墟上'，再倒叙三天前发生了什么",
+    "exercise": "写出高潮结果（震撼画面）；把结果放到高潮前3-5章开头；在回溯中埋3个'原来如此'的细节",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-010",
+      "TE-001",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TQ-037",
+    "name": "矛盾动机法",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "intermediate",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P010"
+    ],
+    "description": "给每个重要配角两个互相矛盾的动机，让他们在关键时刻必须做选择。单一动机的角色是工具人，矛盾动机的角色是人",
+    "example": "宋卿既想升官又想保命——矛盾动机让角色立刻立体",
+    "exercise": "列出重要配角检查是否只有一个动机；为单动机角色添加矛盾动机；在关键场景让两个动机同时起作用",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TQ-038",
+    "name": "一句话秘密法",
+    "source": "全职高手",
+    "sourceAuthor": "蝴蝶蓝",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P010"
+    ],
+    "description": "给每个配角一个只有读者知道的秘密，这个秘密改变读者对他所有行为的理解。秘密不需要复杂，一句话就够",
+    "example": "黄少天看似话痨，但话痨是战术——秘密让每句话有了双层含义",
+    "exercise": "为每个重要配角写一个'只有读者知道的秘密'（不超过15字）；在3-5章内揭示；检查秘密是否让之前行为有新含义",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TQ-039",
+    "name": "立场碰撞法",
+    "source": "全职高手",
+    "sourceAuthor": "蝴蝶蓝",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P010"
+    ],
+    "description": "让两个角色在对话中表达完全相反的立场，不需要旁白解释谁对谁错。立场必须通过角色原话表达，不加'他觉得XX'的叙述",
+    "example": "叶修和各战队队长的对话——每句话都代表一个角色的价值观",
+    "exercise": "找到两个立场相反的角色；让他们就一个具体问题对话5-8回合；删掉所有旁白只保留角色原话",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-040",
+    "name": "弧光预埋法",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "advanced",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P010"
+    ],
+    "description": "在角色出场时就埋下他未来变化的种子。出场时只是小细节，到关键时刻却成为转变的驱动力。预埋让角色变化可信，而非突变",
+    "example": "许七安出场时帮陌生人查案的习惯，成为后来转变的种子",
+    "exercise": "为角色设计未来变化方向；在出场时给一个与变化方向一致的小习惯；让小习惯在关键时刻成为转变触发点",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-014",
+      "AIP-018",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TQ-041",
+    "name": "章节内节奏变速法",
+    "source": "十日终焉",
+    "sourceAuthor": "杀虫队队长",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P007"
+    ],
+    "description": "在单个章节内制造速度变化：快段（短句/动作密集）→慢段（长句/心理描写）→快段。单一速度让读者疲劳，变速让读者上瘾",
+    "example": "游戏规则揭示用快节奏，角色思考对策放慢，行动时再加速",
+    "exercise": "检查当前章节句长分布；动作场景用5-10字短句，思考场景用20-30字长句；确保每章至少1个快→慢→快变速周期",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-042",
+    "name": "设定折旧法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001"
+    ],
+    "description": "让早期出现的设定在后续情节中'折旧'——被新信息推翻、修正或降级。折旧不是推翻世界观，而是深化理解——表面规则不变，底层逻辑更复杂",
+    "example": "克莱恩对塔罗会的理解在不断修正，早期'事实'后来被证明是误解",
+    "exercise": "列出前10章建立的3个核心设定；为每个设计'更深层的真相'；在30-50章后通过新事件揭示",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-002",
+      "AIP-007",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TQ-043",
+    "name": "对话夹带法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P004"
+    ],
+    "description": "把设定信息藏在角色争论中。争论双方各持一部分正确信息，读者需要综合双方才能理解全貌。争论同时推进冲突，不是纯信息传递",
+    "example": "两个角色对'时间规则'理解不同，争论中自然带出设定",
+    "exercise": "列出需要传达的设定信息；设计两个对该设定有不同理解的角色；让他们争论3-5回合自然带出设定",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-002",
+      "AIP-007",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TQ-044",
+    "name": "后果反推法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P004"
+    ],
+    "description": "不解释规则是什么，只展示规则被违反后的后果，让读者反推规则。后果必须足够严重，让读者主动想知道'为什么会这样'",
+    "example": "不解释'扮演法'规则，展示克莱恩扮演失败后的代价",
+    "exercise": "列出一个需要解释的设定规则；不写规则本身，写违反后的严重后果；让主角从后果中推断出规则",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-002",
+      "AIP-007",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TQ-045",
+    "name": "动机可视化法",
+    "source": "全职高手",
+    "sourceAuthor": "蝴蝶蓝",
+    "difficulty": "beginner",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P009"
+    ],
+    "description": "把角色的动机变成一个可见的物品/行为，而非抽象的描述。读者不需要被告诉'他为什么这样做'，看到载体就懂了",
+    "example": "叶修的动机'重返巅峰'被具象化为账号卡'君莫笑'",
+    "exercise": "列出主角的核心动机；为动机找一个可见的载体（物品/习惯/地点）；每5章让载体至少出现一次",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TQ-046",
+    "name": "潜台词对话法",
+    "source": "大奉打更人",
+    "sourceAuthor": "卖报小郎君",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P002",
+      "P003"
+    ],
+    "description": "让角色说的每句话都有两层含义——字面意思和真实意图。潜台词必须通过上下文可推断，不能让读者完全猜不到",
+    "example": "许七安审讯时聊天气、聊家常，但每句话都在试探",
+    "exercise": "写一段对话先写'真正想说什么'；把每句真话替换为表面无关但保留线索的话；让另一个角色从线索中推断出潜台词",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TC-010",
+    "name": "冰山情绪法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "advanced",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003"
+    ],
+    "description": "只写情绪的1/8（水面上的部分），让读者自己想象7/8。写角色做了什么，不写角色感觉什么。日常动作比悲伤描写更有力，因为读者知道他是在用日常对抗崩溃",
+    "example": "克莱恩得知队长死讯后'去杂货店买了面包'",
+    "exercise": "选一个强烈情绪场景；删掉所有情绪词和内心独白；只写3个角色做的具体动作，确保每个都'不太对劲'",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-013",
+      "TE-009"
+    ]
+  },
+  {
+    "id": "TC-011",
+    "name": "焦点收束法",
+    "source": "传统限知叙事",
+    "sourceAuthor": "—",
+    "difficulty": "intermediate",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P005"
+    ],
+    "description": "每次视角切换后，用3句内把焦点收束到一个具体对象上。第1句交代谁在看，第2句交代他在看什么，第3句交代他对此的反应。三句话完成视角着陆",
+    "example": "切换后：'许七安看着桌上的卷宗。上面的字迹他认识。这是宋卿的笔迹。'",
+    "exercise": "找到所有视角切换位置；检查切换后读者需要几句话确认视角；如果超过3句，用'谁+看什么+反应'三句式重写",
+    "coreId": "pov-control",
+    "coreName": "视角控制",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-008",
+      "TQ-030",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TC-012",
+    "name": "章回钩连法",
+    "source": "传统章回体",
+    "sourceAuthor": "—",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P007"
+    ],
+    "description": "每章结尾留一个未完成的动作或未回答的问题，下一章开头先回应它。钩连让章节之间形成链条，而非独立单元",
+    "example": "用'他推开了门'结尾，下章开头'门后是……'",
+    "exercise": "找到当前章节最后一句话；如果是完整句改为未完成句；下一章开头3段内回应这个未完成的动作",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TC-013",
+    "name": "三面刻画法",
+    "source": "传统人物塑造",
+    "sourceAuthor": "—",
+    "difficulty": "intermediate",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P010"
+    ],
+    "description": "用三个不同场景展现角色的三个不同面：公开场合的表现（面具）、亲密关系中的表现（真实）、危机中的表现（本质）。三面不一致的角色才立体",
+    "example": "公开场合强硬→私下温柔→危机中崩溃",
+    "exercise": "列出重要配角检查是否只有'一面'；为单面角色设计三个场景（公开/私下/危机）；确保三个场景中角色表现不一致",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TC-014",
+    "name": "地图边界法",
+    "source": "传统奇幻世界观管理",
+    "sourceAuthor": "—",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001"
+    ],
+    "description": "为世界观设定明确的'当前可见范围'，只写范围内的内容。每10章画一次'主角已知世界'的边界，只写边界内的设定。新区域进入视野时才展开新设定",
+    "example": "只写主角到过的地方的设定，远方只用'据说'带过",
+    "exercise": "画出当前主角'已知世界'的边界；删掉所有边界外的详细设定描写；主角进入新区域时才展开设定",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "冒险/奇幻",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TC-015",
+    "name": "代价锚定法",
+    "source": "传统叙事",
+    "sourceAuthor": "—",
+    "difficulty": "intermediate",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P009"
+    ],
+    "description": "用角色'不愿意付出的代价'来反向定义动机。不写'他想要什么'，写'他不愿意失去什么'。代价比目标更具体、更紧迫、更容易让读者共情",
+    "example": "不愿失去妹妹的人，动机就是保护妹妹；不愿回到底层的人，动机就是往上爬",
+    "exercise": "列出角色最不愿失去的3样东西；设计场景让它们同时受威胁；角色在威胁面前的选择就是真实动机",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TQ-047",
+    "name": "日常-异常交替法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在中段章节中，用一段完全日常的场景紧接一个异常细节，让读者在放松时被突然拉回紧张。日常越真实，异常越刺眼",
+    "example": "克莱恩吃早餐、看报纸、和妹妹聊天——一切正常，然后他翻开日记，发现昨天的自己写了一段他不记得的话",
+    "exercise": "写一段2-3句的日常场景；在最后一句插入一个不属于这里的异常细节；确保异常不解释原因",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-048",
+    "name": "信息分层释放法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "description": "把一个大设定拆成3层信息，按'现象→规则→来源'的顺序逐层释放。先让读者看到效果，再解释规则，最后揭示来源",
+    "example": "第4章看到日记上的异常文字（现象）→第6章得知超凡者存在（规则）→第8章了解序列体系（来源）",
+    "exercise": "选一个你的核心设定；拆成3层：读者先看到什么、再知道什么、最后理解什么；每层间隔至少1章",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-049",
+    "name": "悬念链条法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用小悬念链接大悬念：每个小悬念在1-2章内解决，但解决的同时抛出更大的悬念。读者永远在'刚满足又好奇'的状态",
+    "example": "日记上的文字是什么？（小悬念）→是超凡力量（解决+新悬念）→超凡力量从哪来？（中悬念）→序列体系（解决+更大悬念）→谁在操控序列？",
+    "exercise": "列出当前情节中的3个悬念；按大小排序；解决最小悬念时，在答案中埋入最大悬念的线索",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-050",
+    "name": "仪式锚点法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在连续的日常章节中，插入一个有固定流程的仪式性场景（聚会/修炼/汇报），用仪式的节奏感打断日常的平淡，同时自然释放设定",
+    "example": "塔罗会聚会：固定流程（入座→汇报→交流→散会），每次聚会在3-4章日常后出现，成为读者的期待锚点",
+    "exercise": "设计一个主角参与的固定仪式场景；定义仪式的3个固定步骤；让每次仪式至少释放1条新设定信息",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-051",
+    "name": "不对称知情对话",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "让对话双方掌握不同的信息量，读者通过对比双方的话语发现隐藏含义。知情者的回避和不知情者的追问制造天然张力",
+    "example": "克莱恩问'你们怎么看待占卜家？'——'正义'和'倒吊人'的回答避开了核心，但他们的回避本身暴露了危险",
+    "exercise": "写一段对话，A知道真相但不能说，B不知道但直觉有问题；让A的每句回答都是'安全的模糊'；让B的追问越来越接近真相",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-052",
+    "name": "代号暗语对话",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P004"
+    ],
+    "description": "让角色用代号、暗语或隐喻代替直白表述，读者需要从上下文推断真实含义。这既减少信息硬塞，又增加参与感",
+    "example": "塔罗会成员互称'正义'、'倒吊人'、'愚者'——代号本身就是序列体系的线索，但读者此时还不知道",
+    "exercise": "为你的组织/势力设计3个代号；写一段对话，角色只使用代号，不解释含义；确保读者能从上下文猜到70%的含义",
+    "note": "第4-10章蒸馏",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "组织/冒险",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-053",
+    "name": "日记/笔记释放法",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "description": "用角色发现的日记、笔记、信件等书面材料释放设定信息，而不是旁白讲解。书面材料天然带有'发现感'，读者跟着角色一起探索",
+    "example": "克莱恩翻阅前任主人的日记，通过日记内容了解到非凡者的存在和占卜家的危险",
+    "exercise": "写一段主角发现的书面材料（日记/信/便条）；材料中包含1条关键设定信息；信息只透露一半，留一半让读者猜测",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TQ-054",
+    "name": "沉默回避式对话",
+    "source": "诡秘之主",
+    "sourceAuthor": "爱潜水的乌贼",
+    "difficulty": "advanced",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P003",
+      "P009"
+    ],
+    "description": "角色用沉默、转移话题或答非所问来回应关键问题，比直接说谎更有张力。沉默本身就是信息——它告诉读者'这里有秘密'",
+    "example": "克莱恩问'占卜家有什么危险？'，对方沉默了三秒后说'你还是不要知道比较好'",
+    "exercise": "写一段对话，A问了一个关键问题；B不直接回答，而是沉默/转移话题/反问；让B的回避方式暗示答案的性质（危险？悲伤？禁忌？）",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TQ-039",
+      "TQ-046",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-055",
+    "name": "双世界镜像事件法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "description": "在两个世界写同一个主题的事件（如'考试'），用不同世界的规则制造对比张力。读者同时获得两份信息，自然产生'如果用那边的规则解决这边的问题会怎样'的期待",
+    "example": "表世界庆尘在学校考试，里世界庆尘在帮帮派完成'入门考核'——都是考试，但代价完全不同，对比产生张力",
+    "exercise": "选一个日常事件（考试/面试/搬家）；在两个不同世界写同一事件；让一个世界的规则在另一个世界失效",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "双世界观/奇幻",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TQ-056",
+    "name": "跨世界信息差驱动法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "主角在一个世界获得的信息，在另一个世界产生意想不到的效果。信息差本身就是驱动力——读者期待'他什么时候用那边的知识解决这边的问题'",
+    "example": "庆尘在里世界学到的格斗技巧，让他在表世界的校园霸凌中反败为胜——读者早就期待这一刻",
+    "exercise": "列出主角在A世界拥有的1项特殊知识/技能；设计B世界中一个该知识恰好能解决的困境；让读者提前知道困境但主角还不知道",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "双世界观/奇幻",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TQ-057",
+    "name": "身份切换节奏法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用主角在不同世界的身份切换来制造节奏变化：一个身份紧张时切到另一个身份放松，反之亦然。切换本身就是呼吸点",
+    "example": "里世界帮派火拼刚结束（紧张）→切到表世界和同学吃火锅（放松）→火锅时接到里世界电话（再紧张）",
+    "exercise": "设计主角的两个身份；在一个身份的紧张场景后切到另一个身份的日常；日常中埋入下一个紧张的触发点",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "双世界观/都市",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-058",
+    "name": "日常对话暗战法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "表面上是日常闲聊，但每句话都有隐藏的试探和博弈。读者通过角色微妙的措辞变化感知暗流，对话的表面意思和真实意图形成双层结构",
+    "example": "庆尘和同学聊'你们觉得时间旅行可能吗'——表面是闲聊，实际在试探对方是否也是穿越者",
+    "exercise": "写一段表面闲聊的对话（天气/美食/游戏）；每句话都有一个隐藏的试探目的；让读者能从措辞的微妙变化感知暗流",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-059",
+    "name": "规则边界测试法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P004",
+      "P007"
+    ],
+    "description": "通过角色对规则的提问和测试来释放设定，而不是旁白讲解。每个'如果打破规则会怎样'的提问都是一次设定释放的机会",
+    "example": "'如果我在表世界使用里世界的能力会怎样？'——这个问题本身就释放了'能力有使用限制'这个设定，答案再释放更多",
+    "exercise": "列出你的设定中的1条规则；让角色提出'如果违反这条规则会怎样'；用答案释放更多设定信息",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 2,
+    "genreScope": "设定驱动/奇幻",
+    "prerequisites": [
+      "AIP-002",
+      "AIP-007",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TQ-060",
+    "name": "双线汇合爆点法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "advanced",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "两条看似无关的故事线在第8-10章突然交汇，交汇点就是全书第一个大爆点。前期每条线独立发展，交汇时读者恍然大悟'原来这是同一件事'",
+    "example": "表世界的校园霸凌线和里世界的帮派斗争线，在第8章因为同一个人物的出现而交汇——读者才发现两个世界的关联比想象中深",
+    "exercise": "设计两条独立的故事线；在每条线中埋入1个共同的线索（人物/物品/事件）；在第8-10章让两条线因为共同线索而交汇",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-010",
+      "TE-001",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TQ-061",
+    "name": "反差人格对话法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "同一个角色在不同世界用完全不同的说话方式，让读者通过对话风格的变化感知身份切换。不需要旁白说明'他切换了身份'，对话本身就是信号",
+    "example": "表世界庆尘说话温和有礼，里世界庆尘说话简短冷酷——读者听到对话风格变化就知道他'进入状态'了",
+    "exercise": "为主角设计两种对话风格（温和/冷酷、幽默/严肃等）；写两段对话，同一个人在不同情境下用不同风格；确保读者仅凭对话就能判断角色状态",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-062",
+    "name": "代价递增法",
+    "source": "夜的命名术",
+    "sourceAuthor": "会说话的肘子",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P009"
+    ],
+    "description": "每次主角使用特殊能力，代价都比上一次更大。代价递增制造天然张力——读者知道他下次使用会更危险，但不用又不行",
+    "example": "第4章用能力只是头疼→第6章用能力会流鼻血→第9章用能力可能暴露身份——代价递增让每次使用都是一次赌注",
+    "exercise": "定义主角能力的1个代价；设计代价的3个递增等级；让第3次使用的代价恰好与主角最在乎的事物冲突",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "超能力/奇幻",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-063",
+    "name": "凡人式生存节奏法",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "description": "用'资源获取→危机→脱险→新资源'的循环代替'升级打怪'的直线节奏。主角永远在'差一点就够'的状态，每次进步都伴随新的匮乏，节奏来自匮乏感而非成就感",
+    "example": "韩立得到灵根（资源）→引来觊觎（危机）→侥幸脱身（脱险）→发现修为不够需要更多丹药（新匮乏）",
+    "exercise": "设计主角当前最缺乏的1样资源；让获取资源的过程引发1个新危机；危机解决后发现还需要另1样资源",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "凡人流/修仙",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-064",
+    "name": "低调求生法",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P009"
+    ],
+    "description": "主角的核心策略是'不引人注意'，每次被发现都是危机，每次隐藏成功都是进展。隐藏vs暴露的拉锯本身就是节奏引擎",
+    "example": "韩立发现修仙者存在后，第一反应不是'我要变强'而是'不能让别人知道我也能修仙'——这个选择定义了整本书的节奏",
+    "exercise": "设计主角必须隐藏的1个秘密；让隐藏秘密的行为本身制造2个困难；每次困难都让主角更接近暴露",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "凡人流/修仙",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-065",
+    "name": "小恩小惠收买法",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P002",
+      "P009"
+    ],
+    "description": "通过角色间的小恩小惠和利益交换来建立关系，而不是大段独白或情感宣泄。每次对话都在交换利益，关系在交易中自然建立",
+    "example": "韩立给师叔送药草（小恩），师叔回报一个修炼窍门（小惠）——没有'谢谢你'的煽情，但关系已经建立",
+    "exercise": "设计2个角色之间的1次利益交换；让交换过程中自然释放1条设定信息；确保没有角色说'我们是朋友'之类的话",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 1,
+    "genreScope": "凡人流/修仙",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-066",
+    "name": "试探性对话法",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P004",
+      "P009"
+    ],
+    "description": "修仙世界的对话充满试探——每句话都在评估对方的实力和意图，同时隐藏自己的底牌。对话的潜台词是'你到底知道多少'",
+    "example": "'道友修为精进啊'——表面是恭维，实际在试探对方修为到了什么境界；'哪里哪里'——表面谦虚，实际在隐藏真实实力",
+    "exercise": "写一段两个修仙者的对话；每句话都有表面意思和试探目的；让双方都在隐藏真实实力但都想摸清对方底细",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "凡人流/修仙",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-067",
+    "name": "资源瓶颈断点法",
+    "source": "凡人修仙传",
+    "sourceAuthor": "忘语",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "在主角即将突破时设置资源瓶颈（缺丹药/缺灵石/缺功法），瓶颈本身就是章末断点。读者追读的动力不是'主角要变强了'而是'他怎么解决这个缺'",
+    "example": "韩立修炼到瓶颈，需要一颗筑基丹才能突破——但筑基丹价值连城，他买不起。这个'买不起'就是下一章的驱动力",
+    "exercise": "设计主角的1个修炼瓶颈；定义突破瓶颈需要的1样稀缺资源；让获取资源的难度恰好超出主角当前能力",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "凡人流/修仙",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TQ-068",
+    "name": "能力觉醒日常化法",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P004",
+      "P006"
+    ],
+    "description": "超能力第一次觉醒不在战斗中，而在最日常的场景里。日常场景+超自然现象的反差，比'战斗中觉醒'更震撼，因为读者没防备",
+    "example": "林七夜在食堂吃饭时，突然看到同学的'死亡倒计时'浮在头顶——不是战斗，不是修炼，就是吃饭，但一切都不一样了",
+    "exercise": "选一个最日常的场景（吃饭/上课/等公交）；让主角在这个场景中第一次发现超自然现象；确保现象出现前没有任何铺垫",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "超能力/奇幻",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-069",
+    "name": "规则解释对话法",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P004"
+    ],
+    "description": "通过角色之间的问答来解释超能力规则，而不是旁白讲解。关键是让提问者代表读者的疑惑，回答者用角色自己的理解来解释，而非百科式说明",
+    "example": "'为什么我能看到别人看不到的东西？''因为你觉醒了，每个觉醒者的能力不同，你的是……看见死亡'——问答式释放设定",
+    "exercise": "列出读者此刻最想知道的1个设定问题；让主角问出这个问题；让回答者用角色视角（而非旁白视角）回答",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "超能力/奇幻",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TQ-070",
+    "name": "能力代价情感化法",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "intermediate",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P003",
+      "P009"
+    ],
+    "description": "超能力的代价不是'消耗法力'这种数值型代价，而是情感型代价——使用能力会失去某段记忆/感受不到某种情绪/疏远某个重要的人。情感代价让每次使用都是一次选择",
+    "example": "林七夜的能力让他能看到死亡，但代价是他越来越难以感受到恐惧——而恐惧恰恰是保护人的本能",
+    "exercise": "设计主角能力的1个情感型代价；让代价与主角最在乎的事物相关；写一段对话，角色讨论'要不要继续使用这个能力'",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 2,
+    "genreScope": "超能力/奇幻",
+    "prerequisites": [
+      "TQ-008",
+      "TQ-061",
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-071",
+    "name": "队友互损对话法",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "对话",
+    "applicableSyndromes": [
+      "P002"
+    ],
+    "description": "队友之间的对话以互损和吐槽为主，而非正经讨论。互损天然有节奏感（你说我一句，我回你一句），且能快速建立角色性格——损人的方式和被损的反应都是人物刻画",
+    "example": "'你刚才差点被秒了''你也没好到哪去，跑得比兔子还快''那叫战术撤退'——三句话建立三个人的性格",
+    "exercise": "设计3个队友角色；写一段5轮互损对话；确保每句话都同时推进性格和剧情",
+    "coreId": "dialogue-depth",
+    "coreName": "对话层次",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "TQ-072",
+    "name": "能力克制式战斗节奏法",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "战斗中主角不全力输出，而是克制使用能力（因为代价/因为隐藏/因为策略）。克制本身制造悬念——读者知道他还有底牌，期待'什么时候亮出来'",
+    "example": "林七夜明明有更强的能力但不敢用（代价太大），每次战斗都在'用多少'和'保留多少'之间纠结——纠结本身就是节奏",
+    "exercise": "设计主角的1个强力能力及其代价；在战斗中让主角只使用30%的能力；让读者知道他还有70%没用，制造期待",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "超能力/奇幻",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TQ-073",
+    "name": "日常-危机-日常呼吸法",
+    "source": "我在精神病院学斩神",
+    "sourceAuthor": "三九音域",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "description": "用'日常→危机→日常'的三段式呼吸节奏，让危机后的日常成为情感沉淀时间。没有呼吸的连续危机会让读者疲劳，呼吸后的下一次危机会更有冲击力",
+    "example": "第4章遭遇超自然事件（危机）→第5章回学校上课，假装什么都没发生（日常/呼吸）→第6章新危机来袭，但这次主角已经有了心理准备",
+    "exercise": "写一段危机后的日常场景；让日常中有一个细节暗示主角因危机而改变；用改变后的日常引出下一次危机",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TE-001",
+    "name": "核心梗设计法",
+    "source": "白蘸糖NGA经验整理",
+    "sourceAuthor": "白蘸糖/白特慢啊",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "不是制造悬念，而是制造'意料之内的惊喜'——让读者猜到结局但猜不到过程",
+    "description": "核心梗不是悬念，是'读者知道结果但不知道过程'的信息差。好的核心梗设计不是藏到最后让读者震惊，而是让读者在第一章就猜到结局，然后每一章都担心'他怎么走到那个结局'。悬念是'是什么？'，核心梗是'怎么到那里？'",
+    "teachingLogic": "白蘸糖用'烂俗的复仇故事vs精彩的复仇叙事'对比来教：核心梗相同（主角复仇成功），区别在于复仇过程中读者知道主角会成功但不知道代价。先给读者结果，再让读者为了过程追读",
+    "example": "'他知道自己最后一定会杀了那个人——但他没想到代价是失去所有朋友'",
+    "exercise": "写下你小说的结局（一句话）；在第一章用一句暗示让读者知道这个结局；让中间的每一步都让读者担心'这样下去能到那个结局吗？'",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TE-002",
+    "name": "剧情循环模式",
+    "source": "白蘸糖NGA经验整理",
+    "sourceAuthor": "白蘸糖/白特慢啊",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "coreIdea": "'获取信息→筛选运用→触发事件→升级反馈'的循环是剧情推进的引擎",
+    "description": "好的网文不是靠'主角遇到敌人→打败敌人→遇到更强敌人'的直线推进，而是靠信息循环驱动：主角获得新信息→筛选有用信息→运用信息触发事件→事件带来反馈（奖励/惩罚/新信息）→进入下一轮循环。每个循环都是一次能力升级和格局扩展",
+    "teachingLogic": "白蘸糖用RPG游戏的任务循环类比：接任务→做任务→交任务→接更高级的任务。区别是网文的信息循环中，主角需要自己判断'哪些信息有用'，这个过程本身就是智力乐趣",
+    "example": "主角获得高级功法（获取信息）→发现功法需要特定体质（筛选）→冒险去改变体质（触发事件）→获得新能力+发现功法不全（升级+新信息）",
+    "exercise": "列出主角当前拥有的3条关键信息；让其中一条信息触发一个新事件；事件的结果同时产生奖励和新信息",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TE-003",
+    "name": "人设非正常化",
+    "source": "白蘸糖NGA经验整理",
+    "sourceAuthor": "白蘸糖/白特慢啊",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P010"
+    ],
+    "coreIdea": "人设不是'正常人的道德准则'，是'异于常人的点'——差异点比完美点更让人记住",
+    "description": "新手写角色总想写一个'好人'——善良、正直、有担当，但这连'人设'都算不上，只是一个道德标准模板。真正的人设是角色的异常点：他有什么和正常人不一样的思维模式？有什么怪癖？有什么非理性的执念？这些'不正常'才是读者记住的",
+    "teachingLogic": "白蘸糖用一个对比教：'你写一个乐于助人的好青年，读者三章就忘了；你写一个每天给流浪猫起名字的杀手，读者一辈子忘不了。'差异点必须和行为绑定，不是'他很怪'而是'他做什么怪事'",
+    "example": "一个温柔体贴的暖男——无记忆点 / 一个给每只流浪猫起名字的杀手——读者记到结局",
+    "exercise": "列出主角的3个正常品质；给每个正常品质加一个异常行为；只保留异常行为，删掉品质描述",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TE-004",
+    "name": "开篇减法法则",
+    "source": "白蘸糖NGA经验整理",
+    "sourceAuthor": "白蘸糖/白特慢啊",
+    "sourceType": "public_teaching",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P001",
+      "P006"
+    ],
+    "coreIdea": "开篇元素过多=全部没表达出来——减到只剩1个核心元素",
+    "description": "新手开篇喜欢把所有好设定都塞进去：世界观背景+能力体系+势力格局+人物关系……结果是读者什么都没记住。开篇只传递1个核心信息，其他全部砍掉或推迟到后面的章节。读者只需要知道'主角是谁'和'现在最紧急的事是什么'",
+    "teachingLogic": "白蘸糖用电影海报类比教：'一张好的电影海报只有一个视觉焦点。你在海报上放五样东西，观众什么都看不见。开篇就是你小说的海报。'示范：把一个拥有8条设定的开篇逐步删到只剩1条核心设定",
+    "example": "改前：第一章同时写穿越设定+修仙体系+门派势力+主角身世 / 改后：第一章只写'主角穿越了，而且穿越的方式不对劲'",
+    "exercise": "列出第一章出现的所有设定信息（至少3条）；删除其中2条推迟到第3章后释放；只保留1条核心信息",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TE-005",
+    "name": "人设出格-代价绑定法",
+    "source": "白蘸糖NGA经验整理",
+    "sourceAuthor": "白蘸糖/白特慢啊",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P009",
+      "P010"
+    ],
+    "coreIdea": "人设要'出格'到让人记住，但出格必须有代价——没有人能一直'出格'而不付出代价",
+    "description": "极端人设必须伴随极端代价：反派有魅力的原因是'他做坏事但他承受了做坏事的代价'。不做代价绑定的出格人设=玛丽苏。出格和代价的比例决定了角色的可信度",
+    "teachingLogic": "白蘸糖用乔布斯和猎魔人杰洛特举例教：'乔布斯的出格（偏执/暴躁）让苹果有了好产品，但他付出了被自己公司驱逐的代价。杰洛特的出格（不带感情）让他活了下来，但他付出了孤独的代价。没有代价的出格=爽文里的人设崩了。'",
+    "example": "冷酷无情的杀手救了猫（出格）→但救猫耽误了任务导致同伴死亡（代价）→冷酷是保护色，不是设定",
+    "exercise": "列出角色最出格的1个特质；为这个特质设计1个代价；让代价在3章内出现",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TE-006",
+    "name": "金手指信息有用原则",
+    "source": "白蘸糖NGA经验整理",
+    "sourceAuthor": "白蘸糖/白特慢啊",
+    "sourceType": "public_teaching",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "coreIdea": "给主角的信息必须让读者马上看到'这个信息有用'，否则就是无效设定",
+    "description": "金手指和信息类设定的核心原则：不给无法立刻产生收益的信息。如果主角获得了一个'未来有用但现在没用'的信息，读者不会觉得'好期待'，只会觉得'哦'。每一条信息都要在获得的同一情节中至少产生一次'有效使用'",
+    "teachingLogic": "白蘸糖用'你去饭店点菜，服务员给你一本全是你不认识的菜名的菜单'类比：读者拿到一堆看不懂的设定时的心情和你在饭店一样茫然。他教的方法是'先让主角用一次，再解释这个设定是什么'",
+    "example": "主角获得一本丹方大全→不列清单，而是立刻遇到'需要解毒丹'的场景→主角从大全中翻出解毒丹方（证明有用）",
+    "exercise": "列出主角获得的每条新信息；检查每条信息是否在获得后3章内被使用；没被使用的信息要么删掉要么提前使用场景",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TE-007",
+    "name": "世界观六维构建法",
+    "source": "阅文起点创作学堂——爱潜水的乌贼",
+    "sourceAuthor": "爱潜水的乌贼",
+    "sourceType": "public_teaching",
+    "difficulty": "advanced",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "coreIdea": "世界观不是1个维度，是6个维度（地理/历史/文化/政治/科技/社会）的有机组合",
+    "description": "很多作者的世界观只有'地图+修炼体系'两个维度。乌贼的世界观构建法是六维度矩阵：地理决定资源分布，历史决定势力格局，文化决定行为模式，政治决定冲突根源，科技决定战斗方式，社会决定日常形态。六维度中至少3个必须被情节触发，否则世界观就只是背景板",
+    "teachingLogic": "乌贼在他的创作课程中教'世界构建六问法'：这个世界的资源从哪来（地理）？这个世界过去发生了什么大事（历史）？这里的人相信什么（文化）？谁说了算（政治）？他们用什么工具（科技）？日常生活是什么样的（社会）？每设计一个新地区/新势力，先回答这6个问题",
+    "example": "诡秘之主的鲁恩王国：地理（工业革命背景的港口城市）→历史（所罗门帝国遗产）→文化（蒸汽与机械之神信仰）→政治（王室+教会+资本三角）→科技（蒸汽机+煤气灯+左轮手枪）→社会（贵族vs工人俱乐部）",
+    "exercise": "选你小说中的一个核心地点；用六维度回答每个维度1句话；检查哪些维度和情节无关——删掉或设计相关情节",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 3,
+    "genreScope": "奇幻/玄幻",
+    "prerequisites": [
+      "AIP-001",
+      "AIP-006",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "TE-008",
+    "name": "伏笔三分法",
+    "source": "阅文起点创作学堂——愤怒的乌贼",
+    "sourceAuthor": "愤怒的乌贼",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "伏笔分三层：透明（读者猜得到）、半透明（有线索但不确定）、不透明（完全想不到）——每层服务的阅读体验不同",
+    "description": "很多作者只会用'不透明伏笔'（藏到最后一刻揭晓），但读者体验最好的其实是'半透明伏笔'——给足线索让读者参与推理，然后在揭晓时让读者产生'果然如此！'的快感。透明伏笔适合爽文（猜对了爽），半透明伏笔适合悬疑（推理爽），不透明伏笔只能偶尔用",
+    "teachingLogic": "愤怒的乌贼用三个具体案例对比教：透明伏笔=主角的金手指被封印了（读者百分百猜到后面会解开）；半透明伏笔=主角师父的死有很多疑点（读者猜到有隐情但猜不到具体）；不透明伏笔=路边的乞丐其实是最终BOSS（读者完全想不到）。三个案例讲完后让学生自己判断伏笔类型",
+    "example": "透明伏笔：'这个封印总有一天会解开' / 半透明伏笔：'密室里的血迹不是被害人的' / 不透明伏笔：开篇的路人甲在第100章被揭示为幕后黑手",
+    "exercise": "列出你当前埋下的3个伏笔；给每个伏笔标类型；如果全部是不透明→把2个改为半透明/透明",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TE-009",
+    "name": "情绪七法",
+    "source": "阅文起点创作学堂——古羲",
+    "sourceAuthor": "古羲",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003",
+      "P009"
+    ],
+    "coreIdea": "七情（喜怒哀惧爱恶欲）不是写出来的，是按照释放节奏'控制'出来的——每种情绪都有自己的释放曲线",
+    "description": "新手写情绪的问题不是'不会写情绪'，是'所有情绪都用同样的方式写'。古羲教的是：愤怒要递进（从皱眉到拍桌到砸东西），悲伤要下沉（从眼眶红到沉默到崩溃），恐惧要延迟（从不理解到发现到确认）。每种情绪的释放节奏不同，节奏对了读者才感受到",
+    "teachingLogic": "古羲用'调音师'类比教情绪释放：'写情绪和调音一样——悲伤是低音提琴，不能一上来就拉满，要从低声嗡鸣开始。恐惧是小提琴，突然拉高音然后停，停的那一下最恐怖。喜悦是钢琴快板，跳跃的、快速的、不连贯的。每个人物的情感调音方式不同，你要找到他的乐器。'",
+    "example": "愤怒递进：'他皱了一下眉→指节捏得发白→猛地一拳砸在桌上，茶杯跳了起来→'我看错了你''（不是从0直接到100）",
+    "exercise": "选一种情绪（愤怒/悲伤/恐惧）；写出它的3级递进（轻度→中度→爆发）；删掉所有'他很XX'的直接描述",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-012"
+    ]
+  },
+  {
+    "id": "TE-010",
+    "name": "结与解框架",
+    "source": "阅文起点创作学堂——鹿时七",
+    "sourceAuthor": "鹿时七",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "每章=铺垫伏笔+多重反转+翘起来的结尾——'结与解'的节奏让读者每一章都有满足感",
+    "description": "鹿时七把章节结构总结为'结与解'：前1/3结（制造一个问题/悬念/矛盾），中1/3解（部分解决或推进），后1/3再结（新的问题/更高的悬念）。每章完成一次'结→解→更高结'的循环，读者在一章内同时获得满足感（解了一部分）和期待感（新的结更大了）",
+    "teachingLogic": "鹿时七用'拆礼物'类比教：'读者打开一章就像打开一个礼盒：先看到包装纸（开头悬念）→撕开纸发现一个小盒子（部分解答）→打开盒子发现里面有另一个盒子（新悬念更大）→盒子上的纸条写着'打开下一个盒子要在第7章'。读者追更就是追着拆盒子。'",
+    "example": "结：主角被困密室 / 解：发现密室有通风管道 / 更高结：通风管道通向另一个囚室，里面有一个人正等着他",
+    "exercise": "把你的一章拆成3段；第1段制造一个悬念；第2段部分解决；第3段制造一个更大的悬念；第3段结尾的悬念要在下一章开头被提及",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "TE-011",
+    "name": "三重期待设计法",
+    "source": "阅文起点创作学堂——烽仙",
+    "sourceAuthor": "烽仙",
+    "sourceType": "public_teaching",
+    "difficulty": "advanced",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "好故事有三重期待（短期/中期/长期），读者同时追三重期待时才会持续追读",
+    "description": "大多数书只有一重期待（'主角什么时候变强'），读者追到主角变强后就弃书了。烽仙教三重期待设计：短期期待（3-5章的小目标/小冲突，让读者每天有追读理由）、中期期待（1-2卷的地图转换/势力更迭，让读者有追月的动力）、长期期待（全书的终极目标，不超过3条主线）。三重期待同时在读者心中运转",
+    "teachingLogic": "烽仙用'打游戏'类比教：'短期期待=这一关怎么过（3-5章）；中期期待=这个副本的BOSS是谁（1-2卷）；长期期待=这个世界的真相是什么（全书）。好的游戏从来不只让你想「打完这关」——你打完这关还想着「下一关的BOSS更强吧」，推完这个副本还想着「这个世界的秘密到底是什么」。",
+    "example": "短期：主角如何通过入门考核（5章解决）/ 中期：主角如何在宗门大比中崛起（一卷）/ 长期：主角的身世之谜（全书主线）",
+    "exercise": "写下你的书的短期/中期/长期期待各1条；检查短期期待是否在5章内能给读者一个回应；如果只有长期期待→补充短期和中期",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 3,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-012",
+      "AIP-019",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TE-012",
+    "name": "OOC处理机制",
+    "source": "2025国际网文周——红刺北",
+    "sourceAuthor": "红刺北",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "人物",
+    "applicableSyndromes": [
+      "P002",
+      "P010"
+    ],
+    "coreIdea": "角色'做不符合人设的事'（OOC）不是错误，是必然——重要的是有机制让OOC变得合理",
+    "description": "长篇写作中角色一定会出现OOC（Out of Character）——写了100章的角色不可能永远保持第1章的人设。OOC本身不是问题，问题是没给OOC提供合理的触发机制。红刺北教的方法是：在角色的人设文件中写入'什么场景下他会破例'——一个人设写了'冷静'，就要同时写'什么能让他不冷静'",
+    "teachingLogic": "红刺北用'人的多重面'教：'你在父母面前是一个样子，在朋友面前是另一个样子，在恋人面前又是一个样子。角色也一样——一个人设不是一条线，是不同场景下的不同反应集合。'OOC不是'角色变了'，是'我们看到了角色的另一面'",
+    "example": "冷静理智的军师→当他的家人受到威胁时，他会冲动行事→冲动不是OOC，是'家人'触发了他的'另一面'",
+    "exercise": "为主角写一个'破例清单'：什么事情、什么场景、什么人能让他打破平时的人设？在关键情节中至少使用1次破例",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "TE-013",
+    "name": "摄像机思维法",
+    "source": "踏歌爱写作五步高效写小说法",
+    "sourceAuthor": "踏歌爱写作",
+    "sourceType": "public_teaching",
+    "difficulty": "beginner",
+    "category": "情绪",
+    "applicableSyndromes": [
+      "P003",
+      "P002"
+    ],
+    "coreIdea": "把'描写'（作者在写）转化为'拍摄'（摄像机在拍）——先决定镜头位置，再决定拍到什么",
+    "description": "新手写场景时的问题是'想到什么写什么'，没有空间感。摄像机思维的核心是：先确定摄像机的机位（远景/中景/近景/特写），再决定摄像机拍到什么。机位决定信息优先级——特写拍到的就是最重要的。这个转换把'不知道写什么'变成'摄像机放在哪'",
+    "teachingLogic": "踏歌用'你是一位导演'的角色扮演教：'闭上眼睛，想象你手里有一台摄像机。你的主角走进一个房间。你站哪拍？是站门口拍他进门（全景），还是贴着他脸拍他的表情（特写），还是站窗外拍他（旁观者视角）？选一个机位，然后告诉我你的摄像机拍到了什么。'这个角色转换让学员从'憋描写'变成'拍场景'",
+    "example": "改前：'他走进了一个古老的图书馆，里面有很多书，光线很暗，空气中有灰尘的味道' / 改后（摄像机跟拍）：'门吱呀一声开了。镜头推进——书架顶天立地，书架间的缝隙几乎不透光。再推进——光束里灰尘在翻涌。'",
+    "exercise": "选一个场景；先确定机位（3个选项：全景/中景/特写）；只用这个机位能拍到的东西写场景；删掉所有'机位拍不到'的信息",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TE-014",
+    "name": "300字钩子法",
+    "source": "知乎风短篇过稿教程",
+    "sourceAuthor": "知乎风短篇教程",
+    "sourceType": "public_teaching",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P006",
+      "P002"
+    ],
+    "coreIdea": "前300字决定读者去留——300字内必须完成'谁+在哪+什么不正常+为什么在乎'",
+    "description": "300字=网文读者在前300字内决定是否弃书。300字钩子法要求在前300字内完成4件事：让读者知道主角是谁（身份标签）、在哪（场景锚定）、什么不正常（异常信号）、为什么在乎（共情锚点）。不用全展开——给线索让读者自己拼。尤其是'为什么在乎'：必须让读者在300字内对主角产生'他不要出事'的感觉",
+    "teachingLogic": "教法很具体：'先写300字，然后问自己4个问题——读者知道主角是谁了吗？知道在哪了吗？知道什么不对劲吗？关心他吗？如果任何一个是'否'，重写。'用自己作品的修改前后对比展示效果",
+    "example": "改前：'李明是一个普通的大学生，今天他像往常一样去上课……' / 改后：'李明的左眼皮跳了三天了。外婆说左眼跳灾。他本来不信——直到今天早上，他在教室门口看到了一个不应该出现在这里的人。'",
+    "exercise": "写300字开篇；回答4个问题；如果任一问题答案是否定的，重写",
+    "coreId": "opening-hook",
+    "coreName": "开篇钩子",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": []
+  },
+  {
+    "id": "TE-015",
+    "name": "冲突升级滚雪球法",
+    "source": "知乎风短篇过稿教程",
+    "sourceAuthor": "知乎风短篇教程",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "冲突不是单个爆发点，是滚雪球式的升级链——每个小冲突都是下一个大冲突的触发条件",
+    "description": "很多作者的冲突设计是'遇到A→打败A→遇到更强的B→打败B'，这是升级但不是冲突滚雪球。滚雪球的核心是：解决一个冲突的同时制造至少2个新冲突。第一个冲突被主角解决时，它的'余波'本身就是新冲突的来源——打败一个敌人，他的盟友来复仇；获得一个宝物，引来觊觎者",
+    "teachingLogic": "用'多米诺骨牌'的连锁反应教：'你推倒第一块骨牌，它撞倒第二块，第二块撞倒第三块。你的冲突也是这样——主角解决了第一个问题，但解决的方式引发了第二个问题，第二个问题的答案又是个陷阱——直到第5个、第6个问题同时爆发。读者追的不是解决，是看你怎么从一堆问题里爬出来。'",
+    "example": "主角救了人（解决）→被救者其实是通缉犯（新冲突1）→通缉犯的同伙以为主角是同伙（新冲突2）→主角被官府追杀（新冲突3）→逃跑途中发现了更大的阴谋（冲突升级）",
+    "exercise": "写一个冲突；让主角解决它；在解决的过程中制造2个新冲突；安排3个冲突同时爆发的节点",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TE-016",
+    "name": "爽点密度控制法",
+    "source": "狂更猫课程体系",
+    "sourceAuthor": "狂更猫",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "爽点要有密度标准——太长没有爽点=读者跑路，但爽点太多=读者疲劳，找到合适的节奏密度",
+    "description": "爽点的核心不是'多'，是'密度和间隔的控制'。狂更猫给出的经验标准：每3000字设计1个小爽点，每3个小爽点后设计1个中爽点，每3个中爽点后设计1个大爽点。爽点间隔太近=读者刚爽完又爽，很快阈值升高不好使了；间隔太远=读者已经忘了为什么要追这本小说",
+    "teachingLogic": "狂更猫用'糖葫芦'类比教：'爽点密度=糖葫芦上糖和山楂的比例。糖太少了酸得没法吃（没爽点），糖太多了腻得慌（爽过头了）。糖（爽点）得黏在山楂（情节）上，不是单独一坨塞进去。标准是一串7个山楂的山楂葫芦——3个山楂之间裹一次糖。'用这个类比让学员理解间隔和密度的关系",
+    "example": "小爽点：主角在小比试中赢了同门（第2章）/ 中爽点：主角在宗门大比中爆冷（第8章）/ 大爽点：主角揭开了宗门内奸的真相（第25章）",
+    "exercise": "画出你最近10章的爽点分布图；检查最长无爽点间隔是否超过3000字；超过则插入一个小爽点",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "TE-017",
+    "name": "期待感管理法",
+    "source": "狂更猫课程体系",
+    "sourceAuthor": "狂更猫",
+    "sourceType": "public_teaching",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P009"
+    ],
+    "coreIdea": "读者追更的动力=知道主角要干什么+知道他为什么要干+知道他干成了有多爽——缺少任何一环期待感就断了",
+    "description": "很多书的期待感断裂不是因为'故事不好看'，是因为读者在一段时间后忘记了'主角到底要干什么'。期待感管理要求实时维护读者的记忆：每隔一段时间（3-5章）提醒一次主角的核心目标，每次提醒要有新信息（进度更新/障碍升级/新发现），让目标被遗忘时重新亮起来",
+    "teachingLogic": "狂更猫用'追剧'类比教：'你追一部剧的动力是什么？'想知道凶手是谁'——你记得这个目标，但编剧每集会给你一个新线索（让你别忘了他还在查），也会给你一个新障碍（让他更难查了）。如果编剧三集不查案，你就忘了这剧是悬疑剧了。期待感=目标清晰度+进度可见性+障碍感知度。'",
+    "example": "第3章：'我一定要找到师父的死因'（目标设定）→第8章：'查到了一个关键人物'（进度+新线索）→第12章：'关键人物被灭口了'（障碍升级）→第18章：'有人寄来了匿名信'（新线索+悬念升级）",
+    "exercise": "写下主角的核心目标；检查最近5章中有多少章提到了它；如果连续5章都没提→插入一段进度提醒",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "TE-018",
+    "name": "起承转合四步大纲法",
+    "source": "作家千夜十种经典故事类型",
+    "sourceAuthor": "作家千夜",
+    "sourceType": "public_teaching",
+    "difficulty": "beginner",
+    "category": "开篇",
+    "applicableSyndromes": [
+      "P007"
+    ],
+    "coreIdea": "大纲不需要复杂，起（设定）→承（发展）→转（转折）→合（解决）四步足够支撑一个完整故事",
+    "description": "很多新手觉得大纲很神秘，千夜把大纲简化为起承转合四步：起=人物设定+初始状态+核心问题（300字）；承=主角开始行动→第一个阻碍→调整策略→新进展（500字）；转=核心冲突爆发→主角陷入最大危机→必须做出选择（500字）；合=选择的结果→问题解决→新的常态（300字）。四步加起来=一个短篇，乘3=一个长篇卷",
+    "teachingLogic": "千夜用'做饭'类比教：'大纲不是你要做满汉全席的菜谱，是你今天要炒一盘番茄炒蛋的步骤。起=准备好番茄和鸡蛋；承=打蛋切番茄下锅；转=发现番茄太酸了赶紧加点糖救回来；合=出锅装盘撒葱花。一个故事就是一盘菜，炒完一盘再炒下一盘。每个步骤的操作顺序变了，菜就糊了。'",
+    "example": "起：一个杀手想过平凡生活（设定）→承：他试图融入社区但过去的阴影追来了（发展）→转：旧组织找上门，他必须在'回去杀人'和'连累邻居'之间选择（转折）→合：他选择了面对过去，但也因此找到了新的自己（解决）",
+    "exercise": "用起-承-转-合四个部分写出你的故事大纲；每部分不超过100字；检查'转'是否占了大纲的30%以上（不够就是冲突不够）",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "AIP-001",
+    "name": "世界观五维构建法",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "coreIdea": "从五个维度系统搭建世界观，防止膨胀或硬塞",
+    "description": "写世界观前列出'世界基本设定、核心规则、社会结构、势力分布、历史背景'五个维度，每个维度只写3-5条核心内容。先定3-5条铁律（绝对不能违反的核心规则），其他设定围绕铁律展开。每个维度只选1-2个最有趣的点在正文中展示，其余留在设定本里参考",
+    "teachingLogic": "WinkNovel 通过100+问题问卷引导用户系统构建世界观，此处提取为可独立执行的五维清单法",
+    "example": "诡秘之主没有在开篇讲'22条神之途径'完整体系，而是通过克莱恩服用魔药、看到绯红之月等体验逐步展开。铁律是'非凡特性守恒'，所有情节围绕这条铁律运转",
+    "exercise": "写一份五维清单，每个维度不超过5条，每条不超过20字。标注哪些是铁律级、哪些是弹性级",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-002",
+      "AIP-007",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "AIP-002",
+    "name": "规则分层法",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001"
+    ],
+    "coreIdea": "给设定分优先级，铁律不可违反，次要规则灵活处理",
+    "description": "将所有设定分为'铁律层'（不可违反）、'弹性层'（可以调整）、'装饰层'（随时可删）。写新情节时如果和铁律冲突就必须改情节，如果和弹性层冲突可以改设定。每写完一卷检查装饰层设定是否被用过，没用的直接删除",
+    "teachingLogic": "WinkNovel 的规则优先级系统允许 AI 自动判断哪些规则可弹性处理，此处提取为三层分级法",
+    "example": "诡秘之主中'非凡特性守恒'是铁律层（所有情节必须遵守），'塔罗会成员的座位安排'是弹性层（可以调整），'某条街道的名字'是装饰层（不影响故事）",
+    "exercise": "列出当前小说的所有设定，按铁律/弹性/装饰三层分类。删掉装饰层中从未在正文中出现的条目",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "AIP-003",
+    "name": "人物卡完整框架",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "角色",
+    "applicableSyndromes": [
+      "P002",
+      "P010"
+    ],
+    "coreIdea": "用八要素建立角色，让配角也有自己的故事",
+    "description": "为每个重要角色填写'外貌特征、性格标签、口头禅、行为习惯、背景故事、能力设定、人物关系、成长弧线'八个要素。每个角色至少有一个'表面特征'和'内在真相'的反差。每个配角写一句'如果主角不存在，他/她最想做什么'——这决定了配角的独立性",
+    "teachingLogic": "WinkNovel 的实体卡生成系统为每个角色自动生成标准化卡片，此处提取为用户自主完成的人物卡框架",
+    "example": "大奉打更人许七安表面是纨绔子弟，内在是正义感极强的前刑警。口头禅'我有一个大胆的想法'成为角色标签",
+    "exercise": "选一个配角填写八要素人物卡，重点写'如果主角不存在，他/她最想做什么'",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "AIP-004",
+    "name": "三-五-十节奏骨架",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "每3-5章小高潮、每10章大高潮，让读者始终有期待",
+    "description": "每3章安排一个小高潮（打斗、揭秘、冲突升级），中间用日常过渡。每10章安排一个大高潮（身份揭露、大战、关系质变），大高潮后1-2章展示改变。大高潮前3-5章必须埋线索，让读者回头看时觉得'原来早有预兆'",
+    "teachingLogic": "WinkNovel 的大纲 Agent 要求每卷有明确的核心冲突和节奏分布，此处提取为可自主执行的节奏骨架",
+    "example": "诡秘之主中克莱恩每3-5章解决一个小谜题（小高潮），每10章左右身份或能力发生质变（大高潮），大高潮前的线索回头看才注意到",
+    "exercise": "为接下来10章画节奏地图，标注每章类型（铺垫/日常/小高潮/大高潮/后效），确保至少2个小高潮和1个大高潮",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "AIP-005",
+    "name": "章尾悬念钩子",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "coreIdea": "每章结尾留悬念点，让读者必须翻下一章",
+    "description": "章尾悬念分三类——'行动预告'（主角决定做某事）、'信息缺口'（揭示一个新问题）、'情感断点'（在情感最浓处断章）。每写完一章记录'本章埋了什么钩子'，下一章必须回应至少一个。永远在事件即将升级时断章，而非事件结束后",
+    "teachingLogic": "WinkNovel 的大纲和正文生成要求每章结尾设计悬念，此处提取为三类钩子法",
+    "example": "诡秘之主中克莱恩决定尝试转运仪式→断章（行动预告）；笔记上的死亡宣告→断章（信息缺口）；'他看到了不该看到的东西'→断章（情感断点）",
+    "exercise": "检查最近3章的结尾，如果结尾是'事件结束后的总结'，改为三类钩子之一。确保下一章开头3段内回应了钩子",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "AIP-006",
+    "name": "场景完整性框架",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "场景",
+    "applicableSyndromes": [
+      "P004",
+      "P001"
+    ],
+    "coreIdea": "每个场景检查六要素，用场景本身传递设定",
+    "description": "每个重要场景检查'地理位置、外观描述、内部结构、常驻人物、历史背景、隐藏秘密'是否通过角色体验展现。设定信息通过角色的感官和行动展现，而非旁白讲解。每个场景至少承担一个叙事功能（推进剧情/揭示角色/埋伏笔），纯展示场景删掉",
+    "teachingLogic": "WinkNovel 的地点卡框架要求每个地点包含六要素，此处提取为可自主执行的场景检查法",
+    "example": "诡秘之主中克莱恩进入占卜俱乐部，通过'投铜便士进煤气灯计费器'同时传递了货币体系、能源系统、社会阶层三个设定，没有一句旁白讲解",
+    "exercise": "选一个场景检查六要素，如果某个要素是'旁白讲解'而非'角色体验'，改写为角色体验版本",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-002",
+      "AIP-007",
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "AIP-007",
+    "name": "世界观自检清单",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P004"
+    ],
+    "coreIdea": "写完世界观后对照自检，确保完整但不膨胀",
+    "description": "写完世界观后回答7个核心问题——世界运行法则是什么？有什么不能打破的禁忌？社会怎么运转？谁掌握权力？普通人怎么生活？历史上有过什么大事件？当前世界面临什么危机？统计正文中'设定讲解段落'和'角色体验段落'的比例，目标1:4。假装自己是第一次读的读者，能否只通过角色行动理解世界",
+    "teachingLogic": "WinkNovel 的世界观基底问卷包含100+问题，此处提取为7个核心自检问题",
+    "example": "诡秘之主的读者不需要任何旁白讲解就能理解'非凡者需要服用魔药'——因为克莱恩的整个经历都在展示这个过程",
+    "exercise": "找一个人只读你的正文不看设定文档，回答7个核心问题。答不出来的就是展示不够的地方",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "AIP-008",
+    "name": "章节一致性自查表",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "表达",
+    "applicableSyndromes": [
+      "P001",
+      "P005"
+    ],
+    "coreIdea": "每章写完后对照铁律自查，确保不违反规则、视角不乱跳",
+    "description": "写完每章后把铁律列在左边，逐条核对是否违反。每章开头明确'这章从谁的视角写'，写完后检查是否有'主角不可能知道的信息'混入。每章标注时间节点，写完后检查时间是否连贯",
+    "teachingLogic": "WinkNovel 的一致性校验引擎自动检查内容是否违反世界观规则，此处提取为自助自查表",
+    "example": "诡秘之主严格保持克莱恩的限知视角，读者只能通过克莱恩的感官获取信息。当需要展示其他线索时用'塔罗会'等机制让其他角色汇报",
+    "exercise": "写完最新一章后执行双检——(1)逐条对照铁律标注是否违反；(2)标记视角人物检查是否有'他不该知道的信息'",
+    "coreId": "pov-control",
+    "coreName": "视角控制",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013"
+    ]
+  },
+  {
+    "id": "AIP-009",
+    "name": "叙事线索管理法",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "剧情",
+    "applicableSyndromes": [
+      "P005",
+      "P007"
+    ],
+    "coreIdea": "每章只聚焦2-3条活跃线索，防止线索混乱",
+    "description": "写每章前列出'当前活跃的线索/人物/地点'，只保留与本章相关的2-3条，其余暂时搁置。每条线索标注'推进中/搁置中/待回收'，确保搁置的线索标注预计回收章节。不要贪多把所有线索都塞进一章",
+    "teachingLogic": "WinkNovel 的动态上下文注入机制自动检索相关上下文并排除无关信息，此处提取为线索聚焦法",
+    "example": "诡秘之主中克莱恩每次行动只聚焦1-2条线索，其他线索通过塔罗会成员的汇报间接推进",
+    "exercise": "列出所有活跃线索标注状态，为下一章只选2-3条最相关的线索，其余标记搁置到第X章",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "AIP-010",
+    "name": "分阶段审稿法",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "表达",
+    "applicableSyndromes": [
+      "P007",
+      "P004"
+    ],
+    "coreIdea": "写完后分三次审稿，每次只关注一个层面",
+    "description": "第一审只看结构（情节推进是否合理、节奏是否对）；第二审只看画面（场景是否有画面感、角色是否立体）；第三审只看语言（通不通顺、有没有错别字）。每审列出问题清单不混在一起。结构问题不改完不进入画面审稿，画面问题不改完不进入语言审稿",
+    "teachingLogic": "WinkNovel 的多 Agent 分工模式（大纲Agent→正文Agent→润色Agent）相当于分层审稿的自动化版本，此处提取为自主审稿法",
+    "example": "诡秘之主的创作流程是先确定章节结构，再填充场景细节，最后打磨语言——这种分层方式保证了每层质量",
+    "exercise": "选最近写的一章执行三次审稿，每审只标注一类问题，每审后修改再进入下一审",
+    "coreId": "structure-innovation",
+    "coreName": "结构创新",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-018",
+      "TC-008",
+      "AIP-017",
+      "AIP-003"
+    ]
+  },
+  {
+    "id": "AIP-011",
+    "name": "重要物品登记表",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "世界观",
+    "applicableSyndromes": [
+      "P001",
+      "P002"
+    ],
+    "coreIdea": "追踪关键物品确保在剧情中发挥作用",
+    "description": "为每个重要物品记录'名称、外观、来历、功能、在剧情中的作用、当前持有者'六栏信息。每次物品在正文中出现时标注章节号，超过10章未出现的物品需决定回收或删除。每个重要物品必须绑定至少一个剧情功能（推动情节/揭示角色/制造冲突）",
+    "teachingLogic": "WinkNovel 的物品卡框架自动生成标准化物品卡并关联剧情，此处提取为自主登记表",
+    "example": "诡秘之主中克莱恩的'阿罗德斯'铜镜——来历神秘、功能是回答问题但代价不菲、在剧情中多次推动关键决策",
+    "exercise": "列出所有重要物品按六栏登记，标注每个物品最后一次出现的章节，超10章未出现的决定回收或删除",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "AIP-012",
+    "name": "伏笔管理三问",
+    "source": "WinkNovel 世界观构建体系",
+    "sourceAuthor": "WinkNovel",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "剧情",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "埋伏笔前先回答三个问题，确保伏笔有规划有回收",
+    "description": "每次埋伏笔前回答——(1)这个伏笔准备什么时候收？(2)用什么方式收？(3)收的时候能产生什么效果？记录所有伏笔的'埋设章节、预期回收章节、回收方式、实际效果'，每5章检查一次。遵循'揭一埋二'原则：每回收一个伏笔至少新埋两个",
+    "teachingLogic": "WinkNovel 要求 Agent 合理安排伏笔和回收，此处提取为伏笔管理三问法",
+    "example": "诡秘之主中克莱恩的'转运仪式'伏笔——第1章埋设、第3章回收（成功但出意外）、回收效果（进入非凡者世界）。回收同时新埋'占卜俱乐部''魔药'等伏笔",
+    "exercise": "列出所有未回收伏笔，对每个回答三问。答不上来'什么时候收'的重新规划或删除",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "AIP-013",
+    "name": "展示而非告知法则",
+    "source": "InkoS 写作心法体系",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "表达",
+    "applicableSyndromes": [
+      "P003",
+      "P004"
+    ],
+    "coreIdea": "用细节堆出真实，重要剧情用场景不用总结",
+    "description": "展示而非告知：用细节堆出真实，不要用形容词堆出描述。重要剧情必须用场景展现，不能靠旁白总结。拒绝流水账，不要'然后他去了A，然后他去了B'——每段叙事必须有进展或新信息。连续叙事段必须有节奏变化，避免句式整齐划一",
+    "teachingLogic": "InkoS 的创作宪法14条中展示而非告知、重要剧情用场景、拒绝流水账三条核心原则，是解决P003和P004的根本技法",
+    "example": "好的写法是'他没说话，手指在杯沿上反复摩挲，咖啡凉了也没喝一口'而非'他很焦虑'",
+    "exercise": "选最近写的一章标记所有'告知'段落（用形容词直接描述情绪/状态的），改为'展示'段落（用动作/环境/对话间接表达）",
+    "coreId": "show-dont-tell",
+    "coreName": "展示而非告知",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "TQ-012"
+    ]
+  },
+  {
+    "id": "AIP-014",
+    "name": "角色行为三腿支撑法",
+    "source": "InkoS 写作心法体系",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "角色",
+    "applicableSyndromes": [
+      "P002",
+      "P009",
+      "P010"
+    ],
+    "coreIdea": "任何角色行动立于三条腿——过往经历、当前利益、性格底色",
+    "description": "任何角色行动必须有'过往经历、当前利益、性格底色'三腿支撑。每个配角有自己的利益账本——他想要什么、害怕什么、愿意付出什么代价，不是主角的工具。反派不降智，配角不犯蠢——所有角色智商在线，行动有理有据",
+    "teachingLogic": "InkoS 的创作宪法要求'全员智商在线''行动三腿支撑''配角有账本'，是从角色层面解决平面化问题的核心原则",
+    "example": "诡秘之主中邓恩·史密斯的行为——过往经历（老资格非凡者见过太多失控）→利益（保护队员）→性格（负责任但固执）→阻止克莱恩冒险。每个行动都有清晰的推导链",
+    "exercise": "选一个配角写利益账本（想要什么/害怕什么/愿意付出什么代价）。检查最近一个关键行动是否有三腿支撑",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "AIP-015",
+    "name": "节奏呼吸与章尾缺口法",
+    "source": "InkoS 写作心法体系",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "节奏即呼吸，高压后必须有低压，每章结尾留缺口",
+    "description": "日常当饵用不是填充——过渡段必须承担伏笔或蓄压功能。高压后必须有低压让读者喘息。每章结尾必须有小悬念或情绪缺口让读者想翻页。日常场景70%必须成为主线伏笔，确保日常不白写",
+    "teachingLogic": "InkoS 的创作宪法关于'节奏即呼吸'和'日常七成伏笔'的原则，为节奏管理提供了可操作的标准",
+    "example": "诡秘之主中克莱恩在紧张行动之间总有'回家休息'的日常段，但这些日常段不是填充——期间往往有新线索的伏笔或角色深化的机会",
+    "exercise": "检查最近一章的高压-低压分布，如果没有低压段就插入一段。检查章尾是否有悬念或情绪缺口",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "TQ-005",
+      "TC-008"
+    ]
+  },
+  {
+    "id": "AIP-016",
+    "name": "断在上升沿法则",
+    "source": "InkoS 多Agent写作系统",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "coreIdea": "永远在事件即将升级时断章，不讲完一个完整事件",
+    "description": "在事件即将升级、冲突即将爆发、真相即将揭露的那一刻断章。一章只讲80%的故事，留20%给下一章。章节结构优先于字数——如果断章点在2000字处，不要为了凑字数继续写",
+    "teachingLogic": "InkoS 的80/20断章法要求 AI 写手在 action-climax 处断章，此处提取为可独立执行的断章决策法",
+    "example": "诡秘之主中克莱恩决定尝试转运仪式→断章（不是'仪式成功了'再断，而是'他决定做'就断）。十日终焉中游戏规则揭示到一半→断章",
+    "exercise": "检查最近3章的结尾，如果结尾是'事件结束后的总结'，找到'事件即将升级'的点改为在那里断章",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "AIP-017",
+    "name": "看点密度自检法",
+    "source": "InkoS 多Agent写作系统",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "节奏",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "coreIdea": "每300字1个爽点、每500字1个钩子，用硬尺量密度",
+    "description": "每300字至少有一个让读者'爽'的点（悬念/反转/冲突升级/角色高光）；每500字至少有一个钩子（未解答的问题/即将发生的事件）；每1000-1500字至少有一个完整悬念弧（提出问题→制造紧张→部分解答）。叙事段必须>=40字，连续3+短段并排需调整",
+    "teachingLogic": "InkoS 的看点密集度硬尺是纯规则检测不依赖LLM，此处提取为自助密度扫描法",
+    "example": "诡秘之主几乎每段都有新信息或新悬念，300字内必有'他发现了什么'或'有什么不对劲'",
+    "exercise": "选最近写的1000字标记所有'爽点'和'钩子'，统计爽点是否>=3个、钩子是否>=2个",
+    "coreId": "rhythm-control",
+    "coreName": "节奏呼吸",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TC-008"
+    ]
+  },
+  {
+    "id": "AIP-018",
+    "name": "角色行为推导法",
+    "source": "InkoS 多Agent写作系统",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "角色",
+    "applicableSyndromes": [
+      "P002",
+      "P009",
+      "P010"
+    ],
+    "coreIdea": "用三问推导角色行为，而非按剧情需要安排",
+    "description": "写角色做任何事前先问三问——(1)他的过往经历让他怎么看待这件事？(2)他当前的利益诉求是什么？(3)他的性格底色驱使他怎么做？每个配角写一份'利益账本'——他想要什么、他害怕什么、他愿意付出什么代价。如果三问推导的行为和'主角需要他做的事'矛盾，让角色按三问行动",
+    "teachingLogic": "InkoS 的六步走人物心理分析原为 AI 内部推理逻辑，此处改造为作者自主推导的角色行为框架",
+    "example": "诡秘之主中邓恩队长的行为始终由三问推导——过往经历（见过太多失控）→利益（保护队员）→性格（负责任但固执）→阻止克莱恩冒险。即使主角需要他放行，他也会按性格行动",
+    "exercise": "选一个配角写三问推导过程，如果推导结果和'主角需要他做的事'矛盾，按推导结果重写该段",
+    "coreId": "character-depth",
+    "coreName": "角色立体化",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-003",
+      "TC-002",
+      "TE-013",
+      "TQ-008"
+    ]
+  },
+  {
+    "id": "AIP-019",
+    "name": "伏笔生命周期管理",
+    "source": "InkoS 多Agent写作系统",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "intermediate",
+    "category": "剧情",
+    "applicableSyndromes": [
+      "P006",
+      "P007"
+    ],
+    "coreIdea": "伏笔有生命周期，超期不推进读者会忘",
+    "description": "每个伏笔标注'埋设→推进→回收'三阶段，推进阶段至少每5章出现一次。引入半衰期概念——小伏笔10章、中伏笔30章、大伏笔80章内不推进就会失效。核心伏笔超期自动升级为'需关注'，5章内必须推进或回收",
+    "teachingLogic": "InkoS 的 Hook-debt 升级规则和半衰期自动推导是 AI 自动追踪伏笔的核心机制，此处改造为手动管理框架",
+    "example": "诡秘之主中'占卜俱乐部'伏笔——第1章埋设、每3-5章推进（获得新信息）、第20章回收（发现真正目的）。半衰期约10章，始终在有效期内推进",
+    "exercise": "列出所有未回收伏笔标注当前阶段和半衰期。超期未推进的标'需关注'，5章内必须推进或删除",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 2,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-005",
+      "AIP-016",
+      "AIP-017",
+      "AIP-002"
+    ]
+  },
+  {
+    "id": "AIP-020",
+    "name": "写作前信息整理法",
+    "source": "InkoS 多Agent写作系统",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "表达",
+    "applicableSyndromes": [
+      "P001",
+      "P005"
+    ],
+    "coreIdea": "写每章前整理需要的设定和前情，只保留核心",
+    "description": "写每章前列出'本章需要的设定/角色/前情'，删掉不相关的只保留2-3条核心要素。前情摘要只保留最近5章，更早的只保留关键事件。本章不出现的角色不列入清单，避免写到一半突然想起'这个角色应该也在场'",
+    "teachingLogic": "InkoS 的输入治理体系（上下文过滤+智能检索）自动排除无关信息，此处改造为自主信息筛选法",
+    "example": "诡秘之主中克莱恩每章只聚焦1-2条线索，其他角色通过塔罗会间接推进，不会在一章里把所有角色都拉出来",
+    "exercise": "为下一章写'章前清单'列出需要的设定/角色/前情，然后删掉不相关的只保留2-3条核心要素",
+    "coreId": "worldbuilding-embed",
+    "coreName": "设定融入",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "TE-013",
+      "AIP-017"
+    ]
+  },
+  {
+    "id": "AIP-021",
+    "name": "伏笔追踪表",
+    "source": "InkoS 多Agent写作系统",
+    "sourceAuthor": "InkoS",
+    "sourceType": "ai_tool",
+    "difficulty": "beginner",
+    "category": "剧情",
+    "applicableSyndromes": [
+      "P006"
+    ],
+    "coreIdea": "用六栏表追踪伏笔状态，防止埋了就忘",
+    "description": "每个伏笔记录'编号/埋设章节/内容/状态(活跃/搁置/已收)/预期回收/实际回收'六栏信息。每写完一章更新伏笔状态——新埋的加'活跃'、推进的更新章节号、回收的改'已收'。每5章检查一次伏笔表，活跃伏笔是否在推进、搁置是否需要激活",
+    "teachingLogic": "InkoS 的13列伏笔池是 AI 自动管理的核心机制，此处简化改造为6栏手动追踪表",
+    "example": "诡秘之主中'占卜俱乐部'伏笔从第1章活跃到第20章回收，期间每3-5章推进一次，是伏笔管理的模范案例",
+    "exercise": "建立伏笔追踪表列出所有伏笔的六栏信息，标注每个伏笔的当前状态，超期未推进的标红",
+    "coreId": "suspense-engine",
+    "coreName": "悬念驱动",
+    "difficultyOrder": 1,
+    "genreScope": "通用",
+    "prerequisites": [
+      "AIP-017",
+      "AIP-002"
+    ]
+  }
+]

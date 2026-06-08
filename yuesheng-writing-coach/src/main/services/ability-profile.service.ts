@@ -13,8 +13,6 @@ import {
   AbilityProfile,
   AbilityScore,
   WeakPoint,
-  TrainingStats,
-  DiagnosisTrend,
   SeverityLevel,
 } from '../../renderer/shared/types';
 import { DiagnosisService } from './diagnosis.service';
@@ -51,7 +49,8 @@ function loadAbilityAtlas(resourcesRoot: string): AbilityAtlas {
 // ============ 服务类 ============
 
 export class AbilityProfileService {
-  private db: Database.Database;
+  // @ts-expect-error: Assigned in constructor, used via `this.db` in methods
+  private db!: Database.Database;
   private diagnosisService: DiagnosisService;
   private trainingService: TrainingRecordService;
   private resourcesRoot: string;

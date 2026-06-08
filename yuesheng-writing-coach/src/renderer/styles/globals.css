@@ -341,9 +341,74 @@ h3 {
   font-weight: 500;
   color: var(--text-primary);
 }
-.diagnosis-chip-status {
+.diagnosis-chip-desc {
   font-size: 0.72rem;
   color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+/* F-04 分层反馈 */
+.diagnosis-zone {
+  margin-bottom: 8px;
+}
+.diagnosis-zone:last-child { margin-bottom: 0; }
+.diagnosis-zone-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.diagnosis-zone-critical { color: var(--accent); }
+.diagnosis-zone-info { color: var(--text-tertiary); }
+.diagnosis-zone-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-tertiary);
+  min-width: 18px;
+  text-align: center;
+}
+.diagnosis-zone-chevron {
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+.diagnosis-zone-chevron.expanded {
+  transform: rotate(180deg);
+}
+.diagnosis-zone-hint {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background 0.15s;
+}
+.diagnosis-zone-hint:hover {
+  background: var(--bg-subtle);
+}
+.severity-tag {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.severity-tag.severity-critical {
+  background: var(--error-light, rgba(239,68,68,0.1));
+  color: var(--error, #ef4444);
+}
+.severity-tag.severity-warning {
+  background: var(--warning-light, rgba(245,158,11,0.1));
+  color: var(--warning, #f59e0b);
+}
+.severity-tag.severity-info {
+  background: var(--info-light, rgba(59,130,246,0.1));
+  color: var(--info, #3b82f6);
 }
 
 /* Growth Rows */
@@ -622,3 +687,22 @@ h3 {
 .input-send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
 .input-send-btn:active { transform: scale(0.95); }
 .input-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ========================================
+   设置页面（ConfigPage）滚动条
+   ======================================== */
+
+.config-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+.config-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.config-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: var(--radius-full);
+  opacity: 0.6;
+}
+.config-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

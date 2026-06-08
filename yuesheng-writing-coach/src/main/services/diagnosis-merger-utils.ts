@@ -90,3 +90,25 @@ function appendToSummary(current: string, diagnosis: DiagnosisEntry): string {
 
   return rounds.join('\n---\n');
 }
+
+/**
+ * 过滤诊断结果中的内部 ID，生成用户可见的诊断摘要
+ *
+ * Layer 1 不可见铁律的代码兜底：
+ * - 移除 syndromeRef（P001 等内部编号）
+ * - 保留 syndromeName（症候中文名）
+ * - 移除 techniqueId（TQ-001 等技法编号）
+ * - 保留诊断结论的描述性文字
+ *
+ * @param diagnosis - 原始诊断结果
+ * @returns 过滤后的、仅包含用户可见信息的诊断摘要
+ */
+export function stripInternalIds(diagnosis: DiagnosisEntry): {
+  syndromeNames: string[];
+  evidence: string[];
+} {
+  return {
+    syndromeNames: diagnosis.syndromes.map((s) => s.name),
+    evidence: diagnosis.syndromes.flatMap((s) => s.evidence),
+  };
+}

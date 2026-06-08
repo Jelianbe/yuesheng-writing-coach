@@ -86,7 +86,7 @@ export function groupPassagesBySyndrome(
 export function getEvidenceForSyndrome(
   passagesBySyndrome: Map<string, string[]>,
   syndromeId: string,
-  fallbackShared: string[],
+  _fallbackShared: string[],
 ): string[] {
   // 如果是降级模式（__shared__ 键存在），所有症候用共享证据
   if (passagesBySyndrome.has('__shared__')) {

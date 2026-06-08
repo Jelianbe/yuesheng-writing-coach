@@ -63,8 +63,8 @@ const mockSessionService = {
 };
 
 // ===== 被测试模块导入 =====
-import { setSessionService as setChatSessionService, registerChatHandlers, setMainWindow as setChatMainWindow, setPromptLoader, setMessageRouter, setConfigService as setChatConfigService } from '../chat.handler';
-import { setDiagnosisMerger, setTeachingStateGetter, setDiagnosisService, setEvidenceService, setMainWindow, setSessionService as setDiagSessionService, setConfigService as setDiagConfigService } from '../diagnosis.handler';
+import { initChatHandlers, registerChatHandlers } from '../chat.handler';
+import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../diagnosis.handler';
 
 // ===== 修仙传测试文本（第1章精华片段） =====
 const XIUXIAN_TEXT = `午阳山的山风吹在身上，带着一股硫磺与草木腐烂混合的独特气味。孙项明站在蜿蜒的队伍中，心中那份穿越者的傲气早已被现实磨砺得只剩下冰冷的棱角。
@@ -103,48 +103,87 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
 
-    // === 注入 ConfigService（替代静态 getInstance 调用） ===
-    setChatConfigService(mockConfigService as any);
-    setDiagConfigService(mockConfigService as any);
-
     // === 设置 electron mock ===
     const { ipcMain, BrowserWindow } = await import('electron');
     const mockWindow = (BrowserWindow as any)();
     sendMock = mockWindow.webContents.send;
-    setMainWindow(mockWindow);
-    setChatMainWindow(mockWindow);
-
-    // === 设置 chat.handler DI ===
-    setChatSessionService(mockSessionService as any);
 
     // === 设置 diagnosis.handler DI ===
     const mockDiagService = {
-      getRecentBySession: vi.fn(), save: vi.fn(), saveAnalysis: vi.fn(), getBySession: vi.fn(),
+      getRecentBySession: vi.fn().mockReturnValue([]),
+      save: vi.fn(),
+      saveAnalysis: vi.fn(),
+      getBySession: vi.fn(),
     };
     const mockEvidService = {
       save: vi.fn(), linkToDiagnosis: vi.fn(), getByDisease: vi.fn(),
       getByAbility: vi.fn(), getChainForDiagnosis: vi.fn(),
     };
 
-    setDiagnosisMerger({ merge: vi.fn() } as any);
-    setTeachingStateGetter(vi.fn(() => null));
-    setDiagnosisService(mockDiagService as any);
-    setEvidenceService(mockEvidService as any);
-    setDiagSessionService(mockSessionService as any);
+    const mockDiagnosisMerger = { merge: vi.fn() } as any;
 
     // === 设置 PromptLoader 和 MessageRouter mock ===
-    setPromptLoader({
-      loadSystemPrompt: vi.fn((_attitude, diagnosisAnalysis, diagnosisHistory, _studentContext, _sessionId) => {
+    const mockPromptLoader = {
+      loadSystemPrompt: vi.fn((_attitude, diagnosisAnalysis, _diagnosisHistory, _studentContext, _sessionId) => {
         if (diagnosisAnalysis) return 'Teaching Agent Prompt';
         return 'Yuesheng Prompt';
       }),
-    } as any);
-    setMessageRouter({
+    } as any;
+    const mockMessageRouter = {
       shouldRunDiagnosis: () => true,
-    } as any);
+    } as any;
+
+    // === 初始化 Chat Handlers ===
+    const mockDisputeTracker = {
+      checkMessage: vi.fn().mockReturnValue({ hasDispute: false }),
+      getEffectiveAttitude: vi.fn().mockReturnValue('gentle'),
+    };
+    const mockReflectionGate = {
+      shouldEnterReflection: vi.fn().mockReturnValue(false),
+      shouldTriggerReflection: vi.fn().mockReturnValue(false),
+    };
+
+    const mockStudentModelService = {
+      toPromptText: vi.fn().mockReturnValue(''),
+      inferProficiency: vi.fn().mockReturnValue(0.5),
+      inferCognitiveStyle: vi.fn().mockReturnValue('unknown'),
+    };
+    const mockTeachingStrategyService = {
+      decide: vi.fn().mockReturnValue({ strategy: 'diagnosis', rationale: 'test' }),
+    };
+    const mockProblemPrioritizer = {
+      prioritize: vi.fn().mockReturnValue([]),
+    };
+
+    initChatHandlers({
+      configService: mockConfigService as any,
+      sessionService: mockSessionService as any,
+      diagnosisService: mockDiagService as any,
+      promptLoader: mockPromptLoader,
+      messageRouter: mockMessageRouter,
+      studentModelService: mockStudentModelService as any,
+      teachingStrategyService: mockTeachingStrategyService as any,
+      problemPrioritizer: mockProblemPrioritizer as any,
+      disputeTracker: mockDisputeTracker as any,
+      reflectionGate: mockReflectionGate as any,
+      mainWindow: mockWindow,
+    });
+
+    // === 初始化 Diagnosis Handlers ===
+    initDiagnosisHandlers({
+      configService: mockConfigService as any,
+      diagnosisService: mockDiagService as any,
+      evidenceService: mockEvidService as any,
+      sessionService: mockSessionService as any,
+      growthTrendService: {} as any,
+      getTeachingStateBySession: () => null,
+      diagnosisMerger: mockDiagnosisMerger,
+      mainWindow: mockWindow,
+    });
 
     // === 注册 handler ===
     registerChatHandlers();
+    registerDiagnosisHandlers();
 
     const handleCalls = (ipcMain.handle as any).mock.calls;
     const chatHandler = handleCalls.find((c: any[]) => c[0] === IPC_CHANNELS.CHAT_SEND);
@@ -420,9 +459,6 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
       }));
 
       const { ipcMain } = await import('electron');
-      const { registerDiagnosisHandlers } = await import('../diagnosis.handler');
-      registerDiagnosisHandlers();
-
       const handleCalls = (ipcMain.handle as any).mock.calls;
       const submitHandler = handleCalls.find(
         (c: any[]) => c[0] === IPC_CHANNELS.DIAGNOSIS_SUBMIT_REWRITE

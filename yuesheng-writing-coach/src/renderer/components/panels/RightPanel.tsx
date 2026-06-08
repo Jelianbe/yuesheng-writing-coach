@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ChevronRight,
+  ChevronDown,
   Check,
   AlertTriangle,
   Target,
@@ -29,8 +30,9 @@ export interface RightPanelProps {
   diagnoses: Array<{
     id: string;
     name: string;
+    description: string;
     severity: 'high' | 'mid' | 'low';
-    status: string;
+    status?: string;
   }>;
   /** 成长数据 */
   growthItems: Array<{
@@ -57,6 +59,23 @@ export const RightPanel: React.FC<RightPanelProps> = ({
   const hasActiveDiagnosis = diagnoses.length > 0;
   const hasTeachingSteps = steps.length > 0;
   const hasGrowth = growthItems.length > 0;
+
+  // F-04 分层反馈：按严重度拆分症候
+  const criticalDiagnoses = diagnoses.filter(d => d.severity === 'high' || d.severity === 'mid');
+  const infoDiagnoses = diagnoses.filter(d => d.severity === 'low');
+  const [infoCollapsed, setInfoCollapsed] = useState(true);
+
+  const severityLabel: Record<string, string> = {
+    high: '严重',
+    mid: '注意',
+    low: '轻微',
+  };
+
+  const severityClass: Record<string, string> = {
+    high: 'severity-critical',
+    mid: 'severity-warning',
+    low: 'severity-info',
+  };
 
   return (
     <aside
@@ -154,20 +173,77 @@ export const RightPanel: React.FC<RightPanelProps> = ({
             </div>
           )}
 
-          {/* ===== 诊断发现 ===== */}
+          {/* ===== 诊断发现（F-04 分层反馈） ===== */}
           {hasActiveDiagnosis && (
             <div className="section">
               <div className="section-header">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 <span>诊断发现</span>
               </div>
-              {diagnoses.map((d) => (
-                <div key={d.id} className="diagnosis-chip">
-                  <div className={`diagnosis-chip-severity ${d.severity}`} />
-                  <span className="diagnosis-chip-name">{d.name}</span>
-                  <span className="diagnosis-chip-status">{d.status}</span>
+
+              {/* 需要处理区 */}
+              {criticalDiagnoses.length > 0 && (
+                <div className="diagnosis-zone">
+                  <div className="diagnosis-zone-header diagnosis-zone-critical">
+                    <span>需要处理</span>
+                    <span className="diagnosis-zone-badge">{criticalDiagnoses.length}</span>
+                  </div>
+                  {criticalDiagnoses.map((d) => (
+                    <div key={d.id} className="diagnosis-chip">
+                      <div className={`diagnosis-chip-severity ${d.severity}`} />
+                      <span className="diagnosis-chip-name">{d.name}</span>
+                      <span className={`severity-tag ${severityClass[d.severity]}`}>
+                        {severityLabel[d.severity]}
+                      </span>
+                      {d.description && <span className="diagnosis-chip-desc">{d.description}</span>}
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* 仅供参考区 */}
+              {infoDiagnoses.length > 0 && (
+                <div className="diagnosis-zone">
+                  <button
+                    className="diagnosis-zone-header diagnosis-zone-info"
+                    onClick={() => setInfoCollapsed(!infoCollapsed)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      cursor: 'pointer',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: 'inherit',
+                      fontSize: 'inherit',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    <span>仅供参考</span>
+                    <span className="diagnosis-zone-badge">{infoDiagnoses.length}</span>
+                    <ChevronDown
+                      className={`w-3 h-3 diagnosis-zone-chevron${infoCollapsed ? '' : ' expanded'}`}
+                    />
+                  </button>
+                  {!infoCollapsed && infoDiagnoses.map((d) => (
+                    <div key={d.id} className="diagnosis-chip">
+                      <div className={`diagnosis-chip-severity ${d.severity}`} />
+                      <span className="diagnosis-chip-name">{d.name}</span>
+                      <span className={`severity-tag ${severityClass[d.severity]}`}>
+                        {severityLabel[d.severity]}
+                      </span>
+                      {d.description && <span className="diagnosis-chip-desc">{d.description}</span>}
+                    </div>
+                  ))}
+                  {infoCollapsed && (
+                    <div className="diagnosis-zone-hint">
+                      还有 {infoDiagnoses.length} 个轻微问题，点击展开查看
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

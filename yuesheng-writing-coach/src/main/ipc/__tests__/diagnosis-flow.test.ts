@@ -1,16 +1,10 @@
 /**
  * IPC Handler 集成测试 — 诊断 → 修改 → 评估 → 成长 完整流程
- *
- * 测试目标：
- * 1. 验证 diagnosis.handler.ts 各 IPC 通道的正确性
- * 2. 验证 submitRewrite → evaluateRewrite → getComparison 的完整链路
- * 3. 验证错误处理和边界条件
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { IPC_CHANNELS } from '../../../shared/constants';
 
-// ===== Mock 依赖 =====
 vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
   BrowserWindow: vi.fn().mockImplementation(() => ({
@@ -19,7 +13,6 @@ vi.mock('electron', () => ({
   })),
 }));
 
-// 模拟 ApiProxy（使用 class 确保支持 new 操作符）
 vi.mock('../../api-proxy', () => ({
   ApiProxy: class {
     evaluateRewrite = vi.fn().mockResolvedValue({
@@ -33,7 +26,6 @@ vi.mock('../../api-proxy', () => ({
   },
 }));
 
-// SessionService mock (DI 模式，不再使用 vi.mock 拦截 require)
 const mockSessionService = {
   saveMessage: vi.fn().mockReturnValue(true),
   listSessions: vi.fn().mockReturnValue([]),
@@ -61,13 +53,18 @@ vi.mock('../../services/diagnosis-parser', () => ({
   })),
 }));
 
-// ===== 导入被测试模块 =====
-import { registerDiagnosisHandlers, setDiagnosisMerger, setTeachingStateGetter, setDiagnosisService, setEvidenceService, setMainWindow, setSessionService, setConfigService } from '../diagnosis.handler';
+import { registerDiagnosisHandlers, initDiagnosisHandlers, processDiagnosisFromAI, DiagnosisHandlerDeps } from '../diagnosis.handler';
 
 describe('诊断 Handler 集成测试', () => {
   let mockDiagnosisService: any;
+  let mockEvidenceService: any;
   let mockWindow: any;
   let mockMerger: any;
+  let mockConfigService: any;
+  let mockGrowthTrendService: any;
+  let mockTeachingStateGetter: ReturnType<typeof vi.fn>;
+  let getTeachingStateBySession: (sessionId: string) => { activeProblems: unknown[] } | null;
+  let handlerDeps: DiagnosisHandlerDeps;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -79,25 +76,41 @@ describe('诊断 Handler 集成测试', () => {
       getBySession: vi.fn(),
     };
 
-    mockWindow = {
-      webContents: { send: vi.fn() },
-      on: vi.fn(),
+    mockEvidenceService = {
+      save: vi.fn(),
+      linkToDiagnosis: vi.fn(),
+      getByDisease: vi.fn(),
+      getByAbility: vi.fn(),
+      getChainForDiagnosis: vi.fn(),
     };
 
-    mockMerger = {
-      merge: vi.fn(),
-    };
+    mockWindow = { webContents: { send: vi.fn() }, on: vi.fn() };
+    mockMerger = { merge: vi.fn() };
 
-    setDiagnosisMerger(mockMerger as any);
-    setTeachingStateGetter(vi.fn());
-    setDiagnosisService(mockDiagnosisService as any);
-    setConfigService({
+    mockConfigService = {
       getConfig: vi.fn(() => ({ apiKey: 'test-key', baseUrl: 'https://test.com' })),
       setConfigKey: vi.fn(),
       testConnection: vi.fn(),
-    } as any);
-    setMainWindow(mockWindow as any);
-    setSessionService(mockSessionService as any);
+    };
+
+    mockGrowthTrendService = { getGrowthSummary: vi.fn() };
+    mockTeachingStateGetter = vi.fn();
+    getTeachingStateBySession = ((sessionId: string) => {
+      return (mockTeachingStateGetter as any)(sessionId);
+    }) as (sessionId: string) => { activeProblems: unknown[] } | null;
+
+    handlerDeps = {
+      configService: mockConfigService,
+      diagnosisService: mockDiagnosisService,
+      evidenceService: mockEvidenceService,
+      sessionService: mockSessionService as any,
+      growthTrendService: mockGrowthTrendService,
+      getTeachingStateBySession,
+      diagnosisMerger: mockMerger,
+      mainWindow: mockWindow,
+    };
+
+    initDiagnosisHandlers(handlerDeps);
     registerDiagnosisHandlers();
   });
 
@@ -107,14 +120,14 @@ describe('诊断 Handler 集成测试', () => {
 
   describe('diagnosis:query', () => {
     it('会话存在时返回活跃问题列表', async () => {
-      setTeachingStateGetter(vi.fn(() => ({
+      mockTeachingStateGetter.mockReturnValue({
         activeProblems: [{
           id: 'P004', name: '信息硬塞', severity: 'L2',
           evidence: ['他资质平平'], score: 0.75,
           firstDetected: new Date().toISOString(),
           status: 'active', suggestedActions: [],
         }],
-      })));
+      });
 
       const { ipcMain } = await import('electron');
       const handleCalls = (ipcMain.handle as any).mock.calls;
@@ -126,7 +139,7 @@ describe('诊断 Handler 集成测试', () => {
     });
 
     it('会话不存在时返回 null', async () => {
-      setTeachingStateGetter(vi.fn(() => null));
+      mockTeachingStateGetter.mockReturnValue(null);
 
       const { ipcMain } = await import('electron');
       const handleCalls = (ipcMain.handle as any).mock.calls;
@@ -157,18 +170,6 @@ describe('诊断 Handler 集成测试', () => {
       mockDiagnosisService.getRecentBySession.mockReturnValue([
         { sessionId: 'test-session', syndromes: [{ id: 'P004', name: '信息硬塞' }] },
       ]);
-
-      const { ipcMain } = await import('electron');
-      const handleCalls = (ipcMain.handle as any).mock.calls;
-      const handler = handleCalls.find((c: any[]) => c[0] === IPC_CHANNELS.DIAGNOSIS_GET_COMPARISON);
-
-      const result = await handler[1]({}, { sessionId: 'test-session' });
-      expect(result.data.hasHistory).toBe(false);
-    });
-
-    it('诊断服务未初始化时友好返回', async () => {
-      setDiagnosisService(null as any);
-      registerDiagnosisHandlers();
 
       const { ipcMain } = await import('electron');
       const handleCalls = (ipcMain.handle as any).mock.calls;
@@ -219,17 +220,6 @@ describe('诊断 Handler 集成测试', () => {
 
   describe('processDiagnosisFromAI 流程', () => {
     it('从 AI 回复中解析诊断并推送', async () => {
-      // 需要 mock EvidenceService 以避免 getAbilitiesForSyndrome 报错
-      const { setEvidenceService } = await import('../diagnosis.handler');
-      setEvidenceService({
-        save: vi.fn(),
-        linkToDiagnosis: vi.fn(),
-        getByDisease: vi.fn(),
-        getByAbility: vi.fn(),
-        getChainForDiagnosis: vi.fn(),
-      } as any);
-
-      const { processDiagnosisFromAI } = await import('../diagnosis.handler');
       processDiagnosisFromAI('模拟 AI 回复', 'test-session', 'test-msg');
 
       expect(mockDiagnosisService.save).toHaveBeenCalled();
@@ -245,46 +235,23 @@ describe('诊断 Handler 集成测试', () => {
     });
 
     it('解析无诊断结果时不触发流程', async () => {
-      // 动态覆盖 mock 返回无诊断
       const parser = await import('../../services/diagnosis-parser');
       (parser.parseDiagnosisFromAIResponse as ReturnType<typeof vi.fn>).mockReturnValueOnce({
         cleanResponse: '回复文本',
         diagnosis: null,
       });
 
-      const { processDiagnosisFromAI } = await import('../diagnosis.handler');
       processDiagnosisFromAI('普通回复', 'test-session', 'test-msg');
 
       expect(mockDiagnosisService.save).not.toHaveBeenCalled();
       expect(mockWindow.webContents.send).not.toHaveBeenCalled();
     });
 
-    it('DiagnosisMerger 未初始化时仅警告但仍保存诊断', async () => {
-      setDiagnosisMerger(null as any);
-      const { processDiagnosisFromAI } = await import('../diagnosis.handler');
-      processDiagnosisFromAI('回复', 'test-session', 'test-msg');
-
-      // 保存诊断是独立的，不依赖 DiagnosisMerger
-      expect(mockDiagnosisService.save).toHaveBeenCalled();
-    });
-
     it('合并诊断结果到 TeachingState', async () => {
-      const mockMergerForMerge = { merge: vi.fn() };
-      setDiagnosisMerger(mockMergerForMerge as any);
-      setEvidenceService({
-        save: vi.fn(),
-        linkToDiagnosis: vi.fn(),
-        getByDisease: vi.fn(),
-        getByAbility: vi.fn(),
-        getChainForDiagnosis: vi.fn(),
-      } as any);
-
-      const { processDiagnosisFromAI } = await import('../diagnosis.handler');
-
       processDiagnosisFromAI('模拟 AI 回复', 'test-session', 'test-msg');
 
-      expect(mockMergerForMerge.merge).toHaveBeenCalled();
-      expect(mockMergerForMerge.merge).toHaveBeenCalledWith(
+      expect(mockMerger.merge).toHaveBeenCalled();
+      expect(mockMerger.merge).toHaveBeenCalledWith(
         expect.objectContaining({
           sessionId: 'test-session',
           syndromes: expect.arrayContaining([

@@ -2,7 +2,7 @@
 // 运行时常量请见 ./constants.js
 // 负责：核心数据类型的统一定义，主进程与渲染进程共享使用
 
-/** 态度档位类型（三态：温柔/直接/尖锐） */
+/** 态度档位类型（三态：温柔/月笙/尖锐） */
 export type AttitudeLevel = 'doubao' | 'yuesheng' | 'direct';
 
 /** API 配置数据 */
@@ -68,6 +68,9 @@ export type SeverityLevel = 'L1' | 'L2' | 'L3';
 /** 病症 ID（运行时常量见 constants.js → SyndromeId） */
 export type SyndromeId = string;
 
+/** 症候类型分类（V6.0新增，用于教育学规则匹配） */
+export type SyndromeType = 'expressive_deficit' | 'structural_disorder' | 'motivation_deficit';
+
 /** 教学动作 ID（运行时常量见 constants.js → ActionId） */
 export type ActionId = string;
 
@@ -87,8 +90,10 @@ export interface SyndromeSignal {
 
 /** 单个病症诊断结果（AI 输出格式） */
 export interface SyndromeResult {
-  /** 病症 ID */
+  /** 病症 ID（可能与 variant 编码在同一字符串中，如 "P001::setting_overload"） */
   id: SyndromeId;
+  /** 变种标识（如 "setting_overload"），由 parser 从 id 中拆分 */
+  variant?: string;
   /** 病症名称 */
   name: string;
   /** 严重度等级 */
@@ -129,6 +134,8 @@ export interface DiagnosisEntry {
   timestamp: string;
   /** 下一步建议关注的病症 ID */
   nextFocus?: SyndromeId;
+  /** SF-004: 节拍完整性检测结果（叙事节奏诊断用） */
+  beatCheck?: Record<string, boolean>;
 }
 
 /** 聊天消息角色 */
@@ -216,6 +223,20 @@ export interface AbilityProfile {
   trainingStats: TrainingStats;
   diagnosisTrend: DiagnosisTrend;
   computedAt: string;
+}
+
+/** 新用户引导基线数据 */
+export interface OnboardingBaseline {
+  /** 写作类型 */
+  writingType: 'fantasy' | 'urban' | 'sci-fi' | 'realistic' | 'historical' | 'other' | 'unknown';
+  /** 用户发送的示例文字（可选） */
+  sampleText?: string;
+  /** AI 分析回复摘要 */
+  analysisSummary?: string;
+  /** 用户选择的改进目标 */
+  improvementGoal?: string;
+  /** 记录时间戳 */
+  capturedAt: number;
 }
 
 /** 教学阶段（运行时常量见 constants.js → TeachingPhase） */
@@ -335,7 +356,10 @@ export type IPCChannel =
   | 'ability:getProfile'
   | 'evidence:getByDisease' | 'evidence:getByAbility' | 'evidence:getChain' | 'evidence:create'
   | 'chat:send' | 'chat:stream:data' | 'chat:stream:end'
-  | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages';
+  | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages'
+  | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle'
+  | 'manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update'
+  | 'chapter:list' | 'chapter:get' | 'chapter:updateContent';
 
 /** IPC 请求类型映射 */
 export interface IPCRequestMap {
@@ -361,6 +385,16 @@ export interface IPCRequestMap {
   'session:delete': { sessionId: string };
   'session:rename': { sessionId: string; title: string };
   'session:getMessages': { sessionId: string };
+  'session:getMessagesPaged': { sessionId: string; offset: number; limit: number };
+  'session:listWithMeta': { limit?: number; offset?: number };
+  'session:updateTitle': { id: string; title: string };
+  'manuscript:list': Record<string, never>;
+  'manuscript:get': { id: string };
+  'manuscript:create': { title: string; description?: string; genre?: string };
+  'manuscript:update': { id: string; title?: string; description?: string; genre?: string; status?: 'active' | 'archived' };
+  'chapter:list': { manuscriptId: string };
+  'chapter:get': { id: string };
+  'chapter:updateContent': { id: string; content: string };
 }
 
 /** IPC 响应类型映射（ER5：全部统一为 ApiResponse<T>） */
@@ -387,6 +421,16 @@ export interface IPCResponseMap {
   'session:delete': ApiResponse<void>;
   'session:rename': ApiResponse<void>;
   'session:getMessages': ApiResponse<MessageRow[]>;
+  'session:getMessagesPaged': ApiResponse<{ messages: MessageRow[]; total: number; hasMore: boolean }>;
+  'session:listWithMeta': ApiResponse<SessionMeta[]>;
+  'session:updateTitle': ApiResponse<void>;
+  'manuscript:list': ApiResponse<Manuscript[]>;
+  'manuscript:get': ApiResponse<Manuscript | null>;
+  'manuscript:create': ApiResponse<Manuscript>;
+  'manuscript:update': ApiResponse<Manuscript>;
+  'chapter:list': ApiResponse<Chapter[]>;
+  'chapter:get': ApiResponse<Chapter | null>;
+  'chapter:updateContent': ApiResponse<{ wordCount: number }>;
 }
 
 /** IPC 事件推送类型映射 */
@@ -533,6 +577,8 @@ export interface DiagnosisAnalysis {
   keyPassages: KeyPassage[];
   /** 置信度（0-1） */
   confidence: number;
+  /** SF-003: 节拍完整性检测（激励事件/中点转折/高潮/结局/开篇钩子） */
+  beatCheck?: Record<string, boolean>;
 }
 
 // ======================== 训练相关类型（T-021） ========================
@@ -572,6 +618,18 @@ export interface ActiveTrainingSession {
   constraint: string;
   /** 用户草稿 */
   userDraft: string;
+  /** 训练记录 ID（用于提交 complete） */
+  recordId?: string;
+  /** 对应的症候 ID */
+  syndromeId?: string;
+  /** 目标症候（SF-002 长期目标展示） */
+  targetSyndrome?: string;
+  /** 核心技法模式（SF-002 中期目标展示） */
+  corePatterns?: string;
+  /** 长期目标改善进度（0-100） */
+  longTermProgress?: number;
+  /** AI 评估结果（用于 complete 提交） */
+  submissionResult?: { passed: boolean; feedback: string };
 }
 
 /** 错误卡片（训练工坊区块一） */
@@ -602,6 +660,10 @@ export interface TrainingRecommendation {
   description: string;
   /** 对应症候 ID */
   syndromeId: string;
+  /** 症候名称 */
+  syndromeName?: string;
+  /** 症候类型（V6.0新增） */
+  syndromeType?: SyndromeType | null;
   /** 严重度 */
   severity: SeverityLevel;
   /** 层级（structural/surface） */
@@ -612,6 +674,80 @@ export interface TrainingRecommendation {
   expectedOutcome: string;
   /** 模式 */
   mode: string;
+  /** 匹配的技法列表 */
+  techniques?: TechniqueInfo[];
+}
+
+/** 技法信息（来自 technique-library.json） */
+export interface TechniqueInfo {
+  /** 技法 ID */
+  id: string;
+  /** 技法名称 */
+  name: string;
+  /** 来源（小说名/公开资源） */
+  source: string;
+  /** 来源作者 */
+  sourceAuthor?: string;
+  /** 来源类型（V6.0新增：public_teaching=公开教学资源） */
+  sourceType?: string;
+  /** 难度 */
+  difficulty: string;
+  /** 分类 */
+  category: string;
+  /** 适用症候 */
+  applicableSyndromes?: string[];
+  /** 核心一句话（V6.0新增，TE系列专用） */
+  coreIdea?: string;
+  /** 简述 */
+  description: string;
+  /** 教学逻辑（V6.0新增，TE系列的核心附加值——原作者是怎么教的） */
+  teachingLogic?: string;
+  /** 原文示例 */
+  example: string;
+  /** 练习建议 */
+  exercise?: string;
+  /** 核心模式标识（V6.0新增） */
+  coreId?: string;
+  /** 核心模式名称（V6.0新增） */
+  coreName?: string;
+  /** 难度顺序：1=beginner, 2=intermediate, 3=advanced（V6.0新增） */
+  difficultyOrder?: number;
+  /** 适用范围：通用/奇幻玄幻/推理悬疑等（V6.0新增） */
+  genreScope?: string | string[];
+}
+
+/** 作品（manuscripts 表行映射） */
+export interface Manuscript {
+  id: string;
+  title: string;
+  description: string;
+  genre: string;
+  status: 'active' | 'archived';
+  created_at: number;
+  updated_at: number;
+  sort_order: number;
+}
+
+/** 章节（chapters 表行映射） */
+export interface Chapter {
+  id: string;
+  manuscript_id: string;
+  title: string;
+  content: string;
+  word_count: number;
+  sort_order: number;
+  status: 'draft' | 'revising' | 'complete';
+  created_at: number;
+  updated_at: number;
+}
+
+/** 会话元数据（含 preview） */
+export interface SessionMeta {
+  id: string;
+  title: string;
+  preview: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /** 训练记录（数据库行格式） */
@@ -636,4 +772,170 @@ export interface TrainingRecord {
   assignedAt: string;
   /** 完成时间 */
   completedAt?: string;
+  /** Evaluator Agent 评分（1-10） */
+  score?: number | null;
+}
+
+/** 评估结果（Evaluator Agent 输出） */
+export interface EvaluationResult {
+  /** 评分 1-10 */
+  score: number;
+  /** 文字反馈 */
+  feedback: string;
+  /** 是否相比原文有改善 */
+  improved: boolean;
+  /** 下一步建议 */
+  nextStep: string;
+}
+
+// ======================== 教学策略路由（T-033） ========================
+
+/** 教学模式 */
+export type TeachingMode = 'scaffolding' | 'guiding' | 'challenging';
+
+/** 教学策略类型 */
+export type TeachingStrategy = 'case-driven' | 'analysis-driven' | 'reflection-driven';
+
+/** 第一层：聚焦症候决策 */
+export interface FocusDecision {
+  /** 本次聚焦的症候 ID */
+  targetSyndrome: string;
+  /** 症候中文名 */
+  targetSyndromeName: string;
+  /** 为什么选这个 */
+  rationale: string;
+  /** 教育理论依据 */
+  theoryReference: string[];
+  /** 备选症候（非本次但不忽略） */
+  alternativeSyndromes: string[];
+}
+
+/** 第二层：教学模式决策 */
+export interface ModeDecision {
+  /** 教学模式 */
+  teachingMode: TeachingMode;
+  /** 教学策略 */
+  strategy: TeachingStrategy;
+  /** 症候类型（expressive_deficit / structural_disorder / motivation_deficit） */
+  syndromeType: string;
+  /** 推荐入口（来自 syndrome-type-map） */
+  recommendedEntry: string;
+  /** 教育理论依据 */
+  theoryReference: string[];
+}
+
+export interface ParameterDecision {
+  /** 当前学习路径阶段 ID */
+  phaseId: string;
+  /** 核心技法模式列表 */
+  corePatterns: string[];
+  /** 步骤序列 */
+  stepSequence: Array<{
+    stepId: string;
+    stepName: string;
+    coachingTemplateRef: string;
+    toneProfile: string;
+  }>;
+  /** 匹配的教练话术模板 ID（T-036 新增） */
+  matchedTemplateId?: string;
+  /** 练习类型 */
+  practiceType: string;
+}
+
+/** 
+ * Persona 配置（PE-001 结构化，替换 attitude 硬编码）
+ * 
+ * 定义 AI 教练的人格化特征，包括语气、挑战强度、知识范围等。
+ */
+export interface PersonaConfig {
+  id: 'doubao' | 'yuesheng' | 'direct';
+  label: string;
+  tone: string;
+  challengeSize: 'micro' | 'medium' | 'full';
+  knowledgeScope: string;
+  responseStyle: string;
+}
+
+/** Persona 预设映射 */
+export const PERSONA_PRESETS: Record<string, PersonaConfig> = {
+  doubao: {
+    id: 'doubao',
+    label: '温柔陪伴型',
+    tone: 'encouraging',
+    challengeSize: 'micro',
+    knowledgeScope: 'base',
+    responseStyle: '先肯定再引导，多用提问少用判断',
+  },
+  yuesheng: {
+    id: 'yuesheng',
+    label: '老编辑型',
+    tone: 'direct',
+    challengeSize: 'full',
+    knowledgeScope: 'full',
+    responseStyle: '直击要害，给直接反馈，不绕弯',
+  },
+  direct: {
+    id: 'direct',
+    label: '挑战型',
+    tone: 'challenging',
+    challengeSize: 'medium',
+    knowledgeScope: 'core',
+    responseStyle: '持续施压，不满足于表面的答案',
+  },
+};
+
+/** Router 输入 */
+export interface RouterInput {
+  /** 用户 ID */
+  userId: string;
+  /** 用户水平 */
+  userLevel: 'beginner' | 'intermediate' | 'advanced';
+  /** 认知风格（来自学生模型） */
+  cognitiveStyle?: string;
+  /** 挫折指数（0-1） */
+  frustrationIndex: number;
+  /** 最频繁症候出现次数 */
+  topSyndromeCount: number;
+  /** 活跃症候列表 */
+  activeSyndromes: Array<{
+    id: string;
+    severity: number;
+    name: string;
+  }>;
+  /** 训练历史 */
+  trainingHistory: Array<{
+    syndromeId: string;
+    score: number;
+    completed: boolean;
+  }>;
+  /** 当前教学阶段（来自状态机） */
+  currentPhase?: string;
+  /** 用户态度档位 */
+  attitude?: 'doubao' | 'yuesheng' | 'direct';
+  /** Persona 配置（PE-001，若提供则优先使用） */
+  persona?: PersonaConfig;
+  /** 训练动机水平（用于 R-007 规则匹配） */
+  trainingMotivation?: 'low' | 'normal' | 'high';
+  /** 训练跳过率 0-1（用于 R-007 规则匹配） */
+  trainingSkipRate?: number;
+  /** 各症候出现次数映射（用于 R-009/R-010/R-014 规则匹配） */
+  syndromeCountMap?: Record<string, number>;
+  /** 处理中的教育规则 ID 列表（外部注入，用于条件匹配） */
+  activeRuleIds?: string[];
+}
+
+/** Router 输出 */
+export interface RouterOutput {
+  /** 聚焦症候决策 */
+  targetSyndrome: FocusDecision;
+  /** 教学模式决策 */
+  teachingMode: ModeDecision;
+  /** 参数细化决策 */
+  parameters: ParameterDecision;
+  /** 向后兼容字段 */
+  compatibleWithLegacy: {
+    mode: TeachingMode;
+    tone: string;
+    format?: string;
+  };
 }

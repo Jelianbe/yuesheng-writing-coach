@@ -59,6 +59,13 @@ function getStore(): TeachingStateStore {
 }
 
 /**
+ * 公开获取教学状态存储实例（供其他 handler 使用）
+ */
+export function getTeachingStateStore(): TeachingStateStore {
+  return getStore();
+}
+
+/**
  * 初始化教学状态存储
  * @param db - better-sqlite3 数据库实例
  */

@@ -30,6 +30,15 @@ export const statusColors: Record<string, string> = {
   skipped: '#95a5a6',
 };
 
+// ===== 缓动常量 =====
+
+/** ease-out-quart 缓动 */
+export const EASE_OUT = 'cubic-bezier(0.25, 1, 0.5, 1)';
+/** 默认过渡时长 */
+export const TRANSITION_NORMAL = '250ms';
+/** 慢过渡 */
+export const TRANSITION_SLOW = '350ms';
+
 // ===== 布局容器 =====
 
 export const containerStyle: React.CSSProperties = {
@@ -37,7 +46,7 @@ export const containerStyle: React.CSSProperties = {
   flexDirection: 'column',
   height: '100%',
   width: '100%',
-  backgroundColor: 'var(--color-bg-primary)',
+  backgroundColor: 'var(--bg-primary)',
 };
 
 export const sectionStyle: React.CSSProperties = {
@@ -47,7 +56,7 @@ export const sectionStyle: React.CSSProperties = {
 export const sectionTitleStyle: React.CSSProperties = {
   fontSize: '0.9rem',
   fontWeight: 600,
-  color: 'var(--color-text-primary)',
+  color: 'var(--text-primary)',
   marginBottom: 12,
   paddingBottom: 6,
   borderBottom: '1px solid var(--border)',
@@ -55,7 +64,7 @@ export const sectionTitleStyle: React.CSSProperties = {
 
 export const emptyStyle: React.CSSProperties = {
   padding: 16,
-  backgroundColor: 'var(--color-bg-secondary)',
+  backgroundColor: 'var(--bg-secondary)',
   borderRadius: 8,
   textAlign: 'center',
 };
@@ -97,7 +106,7 @@ export const recCardStyle: React.CSSProperties = {
 
 export const startBtnStyle: React.CSSProperties = {
   padding: '5px 14px',
-  backgroundColor: 'var(--color-accent-primary)',
+  backgroundColor: 'var(--accent)',
   color: '#fff',
   border: 'none',
   borderRadius: 6,
@@ -105,13 +114,13 @@ export const startBtnStyle: React.CSSProperties = {
   fontWeight: 500,
   cursor: 'pointer',
   whiteSpace: 'nowrap',
-  transition: 'opacity 0.15s',
+  transition: `opacity ${TRANSITION_NORMAL} ${EASE_OUT}, transform ${TRANSITION_NORMAL} ${EASE_OUT}`,
 };
 
 export const backBtnStyle: React.CSSProperties = {
   padding: '6px 16px',
   backgroundColor: 'transparent',
-  color: 'var(--color-text-secondary)',
+  color: 'var(--text-secondary)',
   border: '1px solid var(--border)',
   borderRadius: 6,
   fontSize: '0.85rem',
@@ -120,22 +129,23 @@ export const backBtnStyle: React.CSSProperties = {
 
 export const primaryBtnStyle: React.CSSProperties = {
   padding: '8px 20px',
-  backgroundColor: 'var(--color-accent-primary)',
+  backgroundColor: 'var(--accent)',
   color: '#fff',
   border: 'none',
   borderRadius: 6,
   fontSize: '0.85rem',
   fontWeight: 500,
   cursor: 'pointer',
-  transition: 'opacity 0.15s',
+  transition: `opacity ${TRANSITION_NORMAL} ${EASE_OUT}, transform ${TRANSITION_NORMAL} ${EASE_OUT}`,
 };
 
 export const secondaryBtnStyle: React.CSSProperties = {
   padding: '8px 20px',
   backgroundColor: 'transparent',
-  color: 'var(--color-text-secondary)',
+  color: 'var(--text-secondary)',
   border: '1px solid var(--border)',
   borderRadius: 6,
   fontSize: '0.85rem',
   cursor: 'pointer',
+  transition: `all ${TRANSITION_NORMAL} ${EASE_OUT}`,
 };

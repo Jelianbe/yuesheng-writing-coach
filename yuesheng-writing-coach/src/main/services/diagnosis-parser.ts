@@ -120,7 +120,26 @@ function validateAndBuildDiagnosis(
     confidence,
     timestamp: new Date().toISOString(),
     nextFocus: validateNextFocus(obj.nextFocus),
+    beatCheck: validateBeatCheck(obj.beatCheck),
   };
+}
+
+/**
+ * 验证 beatCheck（SF-004: 节拍完整性检测）
+ * 接受 Record<string, boolean>，只保留布尔值字段
+ */
+function validateBeatCheck(value: unknown): Record<string, boolean> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const obj = value as Record<string, unknown>;
+  const result: Record<string, boolean> = {};
+  let hasValid = false;
+  for (const [key, val] of Object.entries(obj)) {
+    if (typeof val === 'boolean') {
+      result[key] = val;
+      hasValid = true;
+    }
+  }
+  return hasValid ? result : undefined;
 }
 
 /**
@@ -137,16 +156,30 @@ function validateSyndromes(value: unknown): SyndromeResult[] {
     if (!item || typeof item !== 'object') continue;
     const s = item as Record<string, unknown>;
 
+    // 提取 syndrome ID（可能含 variant，如 "P001::setting_overload"）
+    let rawId = '';
+    let variant: string | undefined;
+    if (typeof s.id === 'string') {
+      const sepIndex = s.id.indexOf('::');
+      if (sepIndex !== -1) {
+        rawId = s.id.substring(0, sepIndex);
+        variant = s.id.substring(sepIndex + 2);
+      } else {
+        rawId = s.id;
+      }
+    }
+
     // 验证 id
-    if (!s.id || !validIds.has(s.id as string)) continue;
+    if (!rawId || !validIds.has(rawId)) continue;
     // P008 已合并到 P004，视为非法 ID，跳过
-    if (s.id === 'P008') continue;
+    if (rawId === 'P008') continue;
 
     // 验证 severity
     if (!s.severity || !validSeverities.includes(s.severity as SeverityLevel)) continue;
 
     validSyndromes.push({
-      id: s.id as SyndromeId,
+      id: rawId as SyndromeId,
+      variant,
       name: typeof s.name === 'string' ? s.name : '',
       severity: s.severity as SeverityLevel,
       evidence: Array.isArray(s.evidence) ? s.evidence.filter((e): e is string => typeof e === 'string') : [],

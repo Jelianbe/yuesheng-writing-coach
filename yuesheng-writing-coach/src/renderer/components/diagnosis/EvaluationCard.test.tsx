@@ -2,9 +2,8 @@
  * EvaluationCard 组件测试
  * 覆盖：三种改善状态展示、分析/建议文本、改前改后对比、操作按钮
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { EvaluationCard } from './EvaluationCard';
 import { createRewriteEvaluation } from '../../../test/fixtures';
 

@@ -90,12 +90,12 @@ const DEFAULT_CONFIG: FeedbackConfig = {
  * @param config 反馈配置
  */
 export async function generateFeedback(
-  content: string,
-  contentType: 'narrative' | 'dialogue' | 'description' | 'mixed' = 'mixed',
-  context?: FeedbackContext,
-  config: Partial<FeedbackConfig> = {},
+  _content: string,
+  _contentType: 'narrative' | 'dialogue' | 'description' | 'mixed' = 'mixed',
+  _context?: FeedbackContext,
+  _config: Partial<FeedbackConfig> = {},
 ): Promise<FeedbackResult> {
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  void { ...DEFAULT_CONFIG, ..._config };
   
   // TODO: 实现反馈逻辑
   // 1. 分析段落结构

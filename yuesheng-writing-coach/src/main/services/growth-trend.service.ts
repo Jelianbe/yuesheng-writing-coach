@@ -99,6 +99,7 @@ export class GrowthTrendService {
     trends: SyndromeTrend[];
     masteredCount: number;
     improvingCount: number;
+    stableCount: number;
     needsAttentionCount: number;
   } {
     const trends = this.getSyndromeTrends(sessionId, getSyndromeName);
@@ -107,6 +108,7 @@ export class GrowthTrendService {
       trends,
       masteredCount: trends.filter((t) => t.status === 'mastered').length,
       improvingCount: trends.filter((t) => t.status === 'improving').length,
+      stableCount: trends.filter((t) => t.status === 'stable').length,
       needsAttentionCount: trends.filter((t) => t.status === 'needsAttention').length,
     };
   }
@@ -115,7 +117,7 @@ export class GrowthTrendService {
    * 计算单个症候的状态
    */
   private computeStatus(
-    id: string,
+    _id: string,
     agg: {
       occurrenceCount: number;
       latestSeverity: 'L1' | 'L2' | 'L3';

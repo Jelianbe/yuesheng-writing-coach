@@ -25,12 +25,12 @@ const mockSessionService = {
 };
 
 // ===== 导入被测试模块 =====
-import { registerSessionHandlers, setSessionService } from '../session.handler';
+import { registerSessionHandlers, initSessionHandlers } from '../session.handler';
 
 describe('Session Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setSessionService(mockSessionService as any);
+    initSessionHandlers({ sessionService: mockSessionService as any });
     registerSessionHandlers();
   });
 

@@ -10,7 +10,7 @@ import {
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { EmptyState } from '../common/EmptyState';
-import { ActiveProblem, ActionId, SeverityLevel } from '../../shared/types';
+import { ActiveProblem, ActionId } from '../../shared/types';
 
 interface TasksPageProps {
   activeProblems: ActiveProblem[];

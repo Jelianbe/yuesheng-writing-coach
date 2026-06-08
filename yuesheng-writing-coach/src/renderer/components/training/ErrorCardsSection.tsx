@@ -23,7 +23,7 @@ const ErrorCardsSection: React.FC<{
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>你的常见问题</div>
         <div style={emptyStyle}>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
             暂无诊断记录。发送写作内容后，AI 会自动分析并显示在此处。
           </p>
         </div>
@@ -47,7 +47,7 @@ const ErrorCardsSection: React.FC<{
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                 <div>
-                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
                     {card.syndromeName}
                   </span>
                   <span
@@ -65,14 +65,14 @@ const ErrorCardsSection: React.FC<{
                     {card.severity} · {sevStyle.label}
                   </span>
                 </div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', marginLeft: 8 }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', marginLeft: 8 }}>
                   {card.diagnosisCount} 次诊断
                 </span>
               </div>
               {card.lastQuote && (
                 <div style={{
                   fontSize: '0.8rem',
-                  color: 'var(--color-text-secondary)',
+                  color: 'var(--text-secondary)',
                   lineHeight: 1.5,
                   marginBottom: 8,
                   paddingLeft: 8,

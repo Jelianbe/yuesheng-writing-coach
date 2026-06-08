@@ -5,8 +5,12 @@
  * 从训练任务库中匹配最适合的任务
  * 
  * @module services/recommendation-engine
- * @phase Phase 2（MVP 后实现，当前为类型骨架）
  */
+
+import challengeTemplates from '../../../resources/config/challenge-templates.json';
+import techniqueLibrary from '../../../resources/config/technique-library.json';
+
+// ===== 类型定义 =====
 
 export interface TrainingRecord {
   taskId: string;
@@ -30,11 +34,11 @@ export interface DiagnosisResult {
 export interface TaskRecommendation {
   taskId: string;
   taskName: string;
-  priority: number;             // 1-10
-  matchScore: number;           // 0-1
+  priority: number;
+  matchScore: number;
   targetSyndrome?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
-  estimatedTime: number;        // 分钟
+  estimatedTime: number;
   description: string;
   expectedOutcome: string;
 }
@@ -85,65 +89,148 @@ const DEFAULT_CONFIG: RecommendationConfig = {
   },
 };
 
-/**
- * 病症到训练任务的映射
- */
-const SYNDROME_TASK_MAP: Record<string, { taskId: string; priority: number }> = {
-  'P001': { taskId: 'T001', priority: 9 },
-  'P002': { taskId: 'T003', priority: 9 },
-  'P003': { taskId: 'T005', priority: 7 },
-  'P004': { taskId: 'T007', priority: 9 },
-  'P005': { taskId: 'T009', priority: 7 },
-  'P006': { taskId: 'T011', priority: 7 },
-  'P007': { taskId: 'T013', priority: 5 },
-  'P009': { taskId: 'T017', priority: 8 },
-  'P010': { taskId: 'T019', priority: 7 },
-};
-
-/**
- * 聚焦方向优先关注的症候列表
- */
 const FOCUS_AREA_SYNDROMES: Record<string, string[]> = {
   worldbuilding: ['P001', 'P004'],
   character: ['P002', 'P009', 'P010'],
   general: [],
 };
 
+// 挑战模板 JSON 类型
+interface ChallengeTemplate {
+  id: string;
+  syndromeId: string;
+  syndromeName: string;
+  challenge: string;
+  mode: string;
+  tier: string;
+  constraint: string;
+  expectedOutcome: string;
+}
+
+interface ChallengeTemplatesJson {
+  templates: ChallengeTemplate[];
+  fallbackChallenge: {
+    challenge: string;
+    mode: string;
+    description: string;
+  };
+}
+
+const templates = challengeTemplates as unknown as ChallengeTemplatesJson;
+
+// 技法库类型
+interface TechniqueEntry {
+  id: string;
+  name: string;
+  difficulty: string;
+  applicableSyndromes: string[];
+  description: string;
+  example: string;
+}
+
+const techniques = techniqueLibrary as unknown as TechniqueEntry[];
+
 /**
  * 推荐训练任务
- * @param diagnosisResult 诊断结果（可选）
- * @param studentProfile 用户画像
- * @param context 推荐上下文
- * @param config 推荐配置
- * @param focusArea 聚焦方向（可选）
+ * 根据诊断结果和用户画像，从训练任务库中匹配最高优先级的任务。
  */
 export async function recommendTasks(
   studentProfile: StudentProfile,
   diagnosisResult?: DiagnosisResult,
-  context?: RecommendationContext,
+  _context?: RecommendationContext,
   config: Partial<RecommendationConfig> = {},
   focusArea?: string | null,
 ): Promise<RecommendationResult> {
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
 
-  // TODO: 实现推荐逻辑
-  // 1. 加载训练任务库
-  // 2. 排除已完成任务
-  // 3. 根据病症筛选候选任务
-  // 4. 计算匹配度
-  // 5. 按 focusArea 排序并选择 Top N
+  // 1. 确定难度等级
+  const difficulty = getDifficultyForSessions(studentProfile.totalSessions, mergedConfig.difficultyRules);
+
+  // 2. 收集待匹配的症候（按诊断得分降序排列）
+  const targetSyndromeIds: string[] = [];
+  if (diagnosisResult?.syndromes) {
+    const sorted = [...diagnosisResult.syndromes]
+      .sort((a, b) => b.score - a.score);
+    targetSyndromeIds.push(...sorted.map(s => s.syndromeId));
+  } else if (studentProfile.weaknesses.length > 0) {
+    targetSyndromeIds.push(...studentProfile.weaknesses);
+  }
+
+  // 3. 排除已完成的训练任务
+  const completedIds = new Set(
+    studentProfile.trainingHistory
+      .filter(tr => tr.score && tr.score >= 6)
+      .map(tr => tr.taskId),
+  );
+
+  // 4. 遍历症候→挑战模板匹配，构建推荐列表
+  const recommendations: TaskRecommendation[] = [];
+
+  for (const syndromeId of targetSyndromeIds) {
+    if (recommendations.length >= mergedConfig.maxRecommendations) break;
+
+    const template = templates.templates.find(t => t.syndromeId === syndromeId);
+    const challengeId = template?.id ?? 'CH-FALLBACK';
+
+    if (completedIds.has(challengeId)) continue;
+
+    // 匹配技法（仅用于丰富描述）
+    const matchedTechniques = techniques
+      .filter(t => t.applicableSyndromes.includes(syndromeId))
+      .slice(0, 2);
+
+    // 计算匹配度
+    const syndromeScore = 1.0; // 直接命中
+    const difficultyMatch = matchedTechniques.some(t => t.difficulty === difficulty) ? 1.0 : 0.5;
+    const historyScore = studentProfile.trainingHistory.length === 0 ? 0.3 : 0.7;
+    const preferenceScore = focusArea && FOCUS_AREA_SYNDROMES[focusArea]?.includes(syndromeId) ? 1.0 : 0.6;
+
+    const matchScore = calculateMatchScore(
+      syndromeScore,
+      difficultyMatch,
+      historyScore,
+      preferenceScore,
+      mergedConfig.weights,
+    );
+
+    if (matchScore < mergedConfig.minMatchScore) continue;
+
+    const priority = Math.round(matchScore * 10);
+    const techniqueDesc = matchedTechniques.length > 0
+      ? `推荐技法：${matchedTechniques.map(t => t.name).join('、')}。`
+      : '';
+
+    recommendations.push({
+      taskId: challengeId,
+      taskName: template?.syndromeName ?? syndromeId,
+      priority,
+      matchScore: Math.round(matchScore * 100) / 100,
+      targetSyndrome: syndromeId,
+      difficulty,
+      estimatedTime: 15,
+      description: template?.challenge
+        ? `${template.challenge} ${techniqueDesc}`
+        : `针对性训练：解决 "${syndromeId}" 问题。${techniqueDesc}`,
+      expectedOutcome: template?.expectedOutcome ?? '改善该症候',
+    });
+  }
+
+  // 5. 按优先级排序
+  recommendations.sort((a, b) => b.priority - a.priority);
+
+  // 6. 按 focusArea 排序
+  const sorted = sortByFocusArea(recommendations, focusArea);
 
   return {
-    recommendations: [],
-    reasoning: focusArea ? `按 ${focusArea} 优先排序` : '待实现',
+    recommendations: sorted.slice(0, mergedConfig.maxRecommendations),
+    reasoning: focusArea
+      ? `按 "${focusArea}" 方向优先排序，匹配 ${recommendations.length} 项推荐`
+      : `基于 ${targetSyndromeIds.length} 个活跃症候生成 ${recommendations.length} 项推荐`,
+    estimatedTime: sorted.length * 15,
     timestamp: new Date().toISOString(),
   };
 }
 
-/**
- * 根据 focusArea 对推荐结果排序
- * 相关症候的训练任务优先排在前面
- */
 export function sortByFocusArea(
   recommendations: TaskRecommendation[],
   focusArea?: string | null,
@@ -160,9 +247,6 @@ export function sortByFocusArea(
   });
 }
 
-/**
- * 计算任务匹配度
- */
 export function calculateMatchScore(
   syndromeScore: number,
   difficultyMatch: number,
@@ -178,10 +262,10 @@ export function calculateMatchScore(
   );
 }
 
-/**
- * 根据会话数判定难度
- */
-export function getDifficultyForSessions(totalSessions: number, rules: RecommendationConfig['difficultyRules']): 'beginner' | 'intermediate' | 'advanced' {
+export function getDifficultyForSessions(
+  totalSessions: number,
+  rules: RecommendationConfig['difficultyRules'],
+): 'beginner' | 'intermediate' | 'advanced' {
   if (totalSessions <= rules.novice.maxSessions) {
     return 'beginner';
   } else if (totalSessions <= rules.intermediate.maxSessions) {

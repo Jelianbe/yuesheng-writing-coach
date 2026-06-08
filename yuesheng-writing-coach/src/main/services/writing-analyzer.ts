@@ -73,11 +73,11 @@ const DEFAULT_CONFIG: AnalyzerConfig = {
  * @param config 分析配置（可选）
  */
 export async function analyzeWriting(
-  content: string,
-  context?: AnalysisContext,
+  _content: string,
+  _context?: AnalysisContext,
   config: Partial<AnalyzerConfig> = {},
 ): Promise<AnalysisResult> {
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  void { ...DEFAULT_CONFIG, ...config };
   
   // TODO: 实现病症识别逻辑
   // 1. 加载病症识别手册

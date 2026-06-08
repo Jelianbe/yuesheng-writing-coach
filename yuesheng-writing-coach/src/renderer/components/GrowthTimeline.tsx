@@ -37,7 +37,6 @@ export function GrowthTimeline({ chains }: Props): React.ReactElement {
     <div className="flex flex-col gap-3">
       {sortedChains.map((chain) => {
         const statusColor = STATUS_COLORS[chain.status] ?? 'bg-slate-500';
-        const latestScore = chain.timeline[chain.timeline.length - 1]?.score;
         return (
           <div key={chain.chainId} className="bg-slate-800/50 rounded-lg p-3">
             <div className="flex items-center justify-between mb-2">

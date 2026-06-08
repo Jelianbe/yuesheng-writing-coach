@@ -1,0 +1,213 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "按用户水平定义核心模式的学习顺序（阶段化路径），含 syndromeOverride 映射",
+  "beginner": {
+    "description": "新手期：核心目标是'能写、敢写'——先建立信心，再构建基础，最后初步进阶",
+    "phases": [
+      {
+        "phase": 1,
+        "name": "建立信心",
+        "corePatterns": [
+          {
+            "id": "show-dont-tell",
+            "reason": "展示而非告知是网文最基础、最重要的技能，上手快、见效明显。beginner 有 3 条可选，且允许选 2 条 intermediate",
+            "maxDifficultyOrder": 2
+          },
+          {
+            "id": "opening-hook",
+            "reason": "开篇钩子是新人最需要掌握的开局技能，12 条全是 beginner，能快速看到效果",
+            "maxDifficultyOrder": 1
+          }
+        ],
+        "maxTechniquesPerPattern": 2
+      },
+      {
+        "phase": 2,
+        "name": "基础构建",
+        "corePatterns": [
+          {
+            "id": "character-depth",
+            "reason": "角色立体化是创作核心，新手容易忽略。8 条 beginner 技法足够支撑",
+            "maxDifficultyOrder": 1
+          },
+          {
+            "id": "rhythm-control",
+            "reason": "节奏呼吸帮助新人控制文脉流动。9 条 beginner 技法覆盖面广",
+            "maxDifficultyOrder": 1
+          }
+        ],
+        "maxTechniquesPerPattern": 3
+      },
+      {
+        "phase": 3,
+        "name": "初步进阶",
+        "corePatterns": [
+          {
+            "id": "suspense-engine",
+            "reason": "悬念驱动略微抽象，放在基础之后学习。10 条 beginner 技法充裕",
+            "maxDifficultyOrder": 1
+          },
+          {
+            "id": "dialogue-depth",
+            "reason": "对话涉及多角色，有一定复杂度。5 条 beginner 技法够用",
+            "maxDifficultyOrder": 1
+          }
+        ],
+        "maxTechniquesPerPattern": 2
+      }
+    ],
+    "skipPatterns": ["pov-control", "structure-innovation", "worldbuilding-embed", "negative-example"],
+    "skipReason": "视角控制、结构创新、设定融入对新手过于抽象，负面教材可能误导。留到进阶阶段再接触"
+  },
+  "intermediate": {
+    "description": "进阶期：核心目标是'写得稳、写得巧'——深化基础，学会结构控制，全面覆盖",
+    "phases": [
+      {
+        "phase": 1,
+        "name": "深化基础",
+        "corePatterns": [
+          {
+            "id": "show-dont-tell",
+            "reason": "从 beginner 技法过渡到 intermediate 技法（共 5 条 intermediate），学感官替代、环境映射等进阶技巧",
+            "maxDifficultyOrder": 2
+          },
+          {
+            "id": "character-depth",
+            "reason": "深化人物塑造，学习矛盾动机法、代价锚定法等 intermediate 技法（共 7 条 intermediate），接触角色弧光",
+            "maxDifficultyOrder": 2
+          }
+        ],
+        "maxTechniquesPerPattern": 3
+      },
+      {
+        "phase": 2,
+        "name": "结构控制",
+        "corePatterns": [
+          {
+            "id": "pov-control",
+            "reason": "视角控制需一定基础才能理解。限知信息墙、视角纵深分层等 intermediate~advanced 技法需要分析能力",
+            "maxDifficultyOrder": 3
+          },
+          {
+            "id": "rhythm-control",
+            "reason": "深化节奏控制，学习能力克制、双线汇合等更复杂的呼吸技巧（6 条 intermediate）",
+            "maxDifficultyOrder": 2
+          },
+          {
+            "id": "structure-innovation",
+            "reason": "结构创新需要基础写作经验才能理解。双线交叉、规则嵌套等 6 条 intermediate 技法",
+            "maxDifficultyOrder": 2
+          }
+        ],
+        "maxTechniquesPerPattern": 3
+      },
+      {
+        "phase": 3,
+        "name": "全面覆盖",
+        "corePatterns": [
+          {
+            "id": "dialogue-depth",
+            "reason": "对话层次到了需要系统掌握的阶段。7 条 intermediate 技法覆盖潜台词、不对称知情、规则边界测试",
+            "maxDifficultyOrder": 2
+          },
+          {
+            "id": "worldbuilding-embed",
+            "reason": "世界观融入对进阶作者很关键。4 条 beginner + 4 条 intermediate 技法覆盖日常释放、对话夹带、后果反推",
+            "maxDifficultyOrder": 2
+          },
+          {
+            "id": "suspense-engine",
+            "reason": "开始学习更复杂的悬念设计（10 条 intermediate），如悬念链条、信息分层释放、日常-异常交替",
+            "maxDifficultyOrder": 2
+          }
+        ],
+        "maxTechniquesPerPattern": 3
+      }
+    ],
+    "skipPatterns": ["negative-example"],
+    "skipReason": "反面教材仅 1 条，对进阶用户无教学价值"
+  },
+  "advanced": {
+    "description": "高手期：核心目标是'突破瓶颈、建立风格'——深度打磨已有模式，突破创新瓶颈",
+    "phases": [
+      {
+        "phase": 1,
+        "name": "深度打磨",
+        "corePatterns": [
+          {
+            "id": "show-dont-tell",
+            "reason": "学习 advanced 变种：沉默替代法（TQ-029）、冰山情绪法（TC-010），磨练极简表达",
+            "maxDifficultyOrder": 3
+          },
+          {
+            "id": "suspense-engine",
+            "reason": "悬念驱动的 advanced 变种（2 条），掌握伏笔三分法、三重期待设计等策略级技法",
+            "maxDifficultyOrder": 3
+          }
+        ],
+        "maxTechniquesPerPattern": 2
+      },
+      {
+        "phase": 2,
+        "name": "突破创新",
+        "corePatterns": [
+          {
+            "id": "structure-innovation",
+            "reason": "结构创新的 advanced 变种（时间折叠法、双线汇合爆点法），学习非线性叙事",
+            "maxDifficultyOrder": 3
+          },
+          {
+            "id": "dialogue-depth",
+            "reason": "对话层次的 advanced 变种（沉默回避式对话），学习极致潜台词",
+            "maxDifficultyOrder": 3
+          },
+          {
+            "id": "worldbuilding-embed",
+            "reason": "世界观六维构建法（TE-007，advanced），学习系统性世界观设计",
+            "maxDifficultyOrder": 3
+          }
+        ],
+        "maxTechniquesPerPattern": 3
+      },
+      {
+        "phase": 3,
+        "name": "风格固化",
+        "corePatterns": [
+          {
+            "id": "pov-control",
+            "reason": "视角纵深分层法（TQ-033，advanced），掌握多视角叙事的高级技巧",
+            "maxDifficultyOrder": 3
+          },
+          {
+            "id": "rhythm-control",
+            "reason": "节奏呼吸的 advanced 变种（能力克制式节奏法），打磨个人节奏感",
+            "maxDifficultyOrder": 3
+          },
+          {
+            "id": "character-depth",
+            "reason": "弧光预埋法（TQ-040，advanced），学习长篇人物的成长设计",
+            "maxDifficultyOrder": 3
+          }
+        ],
+        "maxTechniquesPerPattern": 2
+      }
+    ],
+    "skipPatterns": ["negative-example", "opening-hook"],
+    "skipReason": "反面教材无教学价值；开篇钩子全部是 beginner 技法，高手已掌握"
+  },
+  "syndromeOverride": {
+    "description": "当用户被诊断出特定症候时，优先推荐该症候对应的核心模式，不受 phases 顺序限制",
+    "syndromePatternMap": {
+      "P001": ["worldbuilding-embed"],
+      "P002": ["character-depth"],
+      "P003": ["show-dont-tell"],
+      "P004": ["worldbuilding-embed"],
+      "P005": ["pov-control"],
+      "P006": ["rhythm-control"],
+      "P007": ["structure-innovation", "suspense-engine"],
+      "P009": ["character-depth"],
+      "P010": ["character-depth", "dialogue-depth"]
+    }
+  }
+}

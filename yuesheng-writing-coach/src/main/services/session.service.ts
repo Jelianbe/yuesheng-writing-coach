@@ -46,8 +46,11 @@ export class SessionService {
   saveMessage(sessionId: string, role: 'user' | 'assistant' | 'system', content: string): MessageRow {
     const id = crypto.randomUUID();
     const timestamp = Date.now();
-    this.db.prepare('INSERT INTO messages (id, session_id, role, content, timestamp) VALUES (?, ?, ?, ?, ?)').run(id, sessionId, role, content, timestamp);
-    this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId);
+    const saveTransaction = this.db.transaction(() => {
+      this.db.prepare('INSERT INTO messages (id, session_id, role, content, timestamp) VALUES (?, ?, ?, ?, ?)').run(id, sessionId, role, content, timestamp);
+      this.db.prepare('UPDATE sessions SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), sessionId);
+    });
+    saveTransaction();
     return { id, session_id: sessionId, role, content, timestamp };
   }
 
@@ -55,8 +58,38 @@ export class SessionService {
     return this.db.prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC').all(sessionId) as MessageRow[];
   }
 
+  getMessagesPaged(sessionId: string, offset: number, limit: number): { messages: MessageRow[]; total: number; hasMore: boolean } {
+    const total = (this.db.prepare('SELECT COUNT(*) as count FROM messages WHERE session_id = ?').get(sessionId) as { count: number }).count;
+    const messages = this.db.prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp ASC LIMIT ? OFFSET ?').all(sessionId, limit, offset) as MessageRow[];
+    return { messages, total, hasMore: offset + limit < total };
+  }
+
   getLastMessage(sessionId: string): MessageRow | undefined {
     return this.db.prepare('SELECT * FROM messages WHERE session_id = ? ORDER BY timestamp DESC LIMIT 1').get(sessionId) as MessageRow | undefined;
+  }
+
+  searchMessages(query: string, limitPerSession: number = 5, maxSessions: number = 10): Array<{ sessionId: string; sessionTitle: string; messages: MessageRow[] }> {
+    const likePattern = `%${query}%`;
+    const sessionIds = this.db.prepare(
+      `SELECT m.session_id, s.title
+       FROM messages m
+       LEFT JOIN sessions s ON s.id = m.session_id
+       WHERE m.content LIKE ?
+       GROUP BY m.session_id
+       ORDER BY MAX(m.timestamp) DESC
+       LIMIT ?`
+    ).all(likePattern, maxSessions) as { session_id: string; title: string }[];
+
+    return sessionIds.map(row => {
+      const messages = this.db.prepare(
+        'SELECT * FROM messages WHERE session_id = ? AND content LIKE ? ORDER BY timestamp ASC LIMIT ?'
+      ).all(row.session_id, likePattern, limitPerSession) as MessageRow[];
+      return {
+        sessionId: row.session_id,
+        sessionTitle: row.title || '未命名会话',
+        messages,
+      };
+    });
   }
 
   autoGenerateTitle(sessionId: string): void {

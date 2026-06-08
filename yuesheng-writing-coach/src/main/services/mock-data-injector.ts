@@ -9,8 +9,6 @@
  */
 
 import Database from 'better-sqlite3';
-import * as path from 'path';
-import * as fs from 'fs';
 
 /** 模拟诊断条目 */
 interface MockDiagnosis {
@@ -23,12 +21,6 @@ interface MockDiagnosis {
   timestamp: string;
   next_focus: string | null;
 }
-
-/** 模拟数据定义 */
-const MOCK_SESSIONS = [
-  { id: 'mock-newbie-session', title: '写作新手 - 第一次对话' },
-  { id: 'mock-progress-session', title: '进步用户 - 第 5 次对话' },
-];
 
 /** 新手诊断数据：症候严重度高，趋势恶化或稳定 */
 const NEWBIE_DIAGNOSES: MockDiagnosis[] = [

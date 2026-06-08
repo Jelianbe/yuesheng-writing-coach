@@ -12,15 +12,15 @@
  */
 
 import React from 'react';
-import type { ErrorCard, TrainingRecommendation, ActiveTrainingSession, TrainingRecord } from '../../shared/types';
+import type { ErrorCard, TrainingRecommendation, ActiveTrainingSession, TrainingRecord, EvaluationResult } from '../../shared/types';
 import ErrorCardsSection from './ErrorCardsSection';
 import RecommendationsSection from './RecommendationsSection';
 import HistorySection from './HistorySection';
 import ActiveTrainingView from './ActiveTrainingView';
+import BehaviorDerivationTool from './BehaviorDerivationTool';
 import {
   containerStyle,
   loadingStyle,
-  backBtnStyle,
 } from './training-styles';
 
 // ===== 类型定义 =====
@@ -32,6 +32,8 @@ export interface TrainingWorkshopProps {
   history: TrainingRecord[];
   /** AI 提交评估结果（null = 未提交或已清除） */
   submissionResult: { passed: boolean; feedback: string } | null;
+  /** 训练评分结果（Evaluator Agent 输出，null = 未评估） */
+  evaluationResult: EvaluationResult | null;
   isLoading: boolean;
   error: string | null;
   onStartTraining: (challengeId: string) => void;
@@ -49,6 +51,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   activeTraining,
   history,
   submissionResult,
+  evaluationResult,
   isLoading,
   error,
   onStartTraining,
@@ -57,12 +60,17 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   onSkipTraining,
   onUpdateDraft,
 }) => {
+  /** 点击"开始练习"直接进入训练 */
+  const handleStartTrainingClick = React.useCallback((challengeId: string) => {
+    onStartTraining(challengeId);
+  }, [onStartTraining]);
+
   // 加载中（仅首次加载时显示）
   if (isLoading && !activeTraining) {
     return (
       <div style={containerStyle}>
-        <div style={loadingStyle}>
-          <div style={{ fontSize: '1rem', color: 'var(--color-text-secondary)' }}>加载中...</div>
+        <div style={loadingStyle} className="animate-fade-in">
+          <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>加载中...</div>
         </div>
       </div>
     );
@@ -72,11 +80,8 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   if (error && !activeTraining) {
     return (
       <div style={containerStyle}>
-        <div style={loadingStyle}>
+        <div style={loadingStyle} className="animate-fade-in">
           <div style={{ fontSize: '0.875rem', color: '#e74c3c' }}>{error}</div>
-          <button onClick={onBackToChat} style={{ marginTop: 12, ...backBtnStyle }}>
-            返回对话
-          </button>
         </div>
       </div>
     );
@@ -85,36 +90,36 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   // 步骤式练习视图
   if (activeTraining) {
     return (
-      <ActiveTrainingView
-        activeTraining={activeTraining}
-        submissionResult={submissionResult}
-        isLoading={isLoading}
-        onBackToChat={onBackToChat}
-        onSubmitStep={onSubmitStep}
-        onSkipTraining={onSkipTraining}
-        onUpdateDraft={onUpdateDraft}
-      />
+      <div className="animate-fade-in" style={{ height: '100%' }}>
+        <ActiveTrainingView
+          activeTraining={activeTraining}
+          submissionResult={submissionResult}
+          evaluationResult={evaluationResult}
+          isLoading={isLoading}
+          onBackToChat={onBackToChat}
+          onSubmitStep={onSubmitStep}
+          onSkipTraining={onSkipTraining}
+          onUpdateDraft={onUpdateDraft}
+        />
+      </div>
     );
   }
 
   // 训练工坊主面板（三区块布局）
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} className="animate-fade-in">
       {/* 工坊头部 */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '16px 24px',
-        backgroundColor: 'var(--color-accent-subtle)',
+        backgroundColor: 'var(--accent-subtle)',
         borderBottom: '1px solid var(--border)',
       }}>
-        <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-          🎯 训练工坊
+        <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+          训练工坊
         </div>
-        <button onClick={onBackToChat} style={backBtnStyle}>
-          返回对话
-        </button>
       </div>
 
       {/* 三区块内容 */}
@@ -122,12 +127,14 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <ErrorCardsSection
             cards={errorCards}
-            onStartTraining={onStartTraining}
+            onStartTraining={handleStartTrainingClick}
           />
           <RecommendationsSection
             recommendations={recommendations}
-            onStartTraining={onStartTraining}
+            onStartTraining={handleStartTrainingClick}
           />
+          <div style={{ height: 12 }} />
+          <BehaviorDerivationTool />
           <HistorySection
             history={history}
             isLoading={isLoading}

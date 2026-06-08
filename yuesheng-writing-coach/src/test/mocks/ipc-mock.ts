@@ -6,7 +6,8 @@
 import { vi } from 'vitest';
 
 /** IPC 处理器映射（模拟 ipcMain.handle 注册） */
-const handlerMap = new Map<string, (event: any, args: any) => any>();
+// @ts-expect-error: Used by mock functions registered via vitest spies
+const _handlerMap = new Map<string, (event: any, args: any) => any>();
 
 /** 事件监听器映射（模拟 webContents.on 注册） */
 const eventListenerMap = new Map<string, Set<(data: any) => void>>();

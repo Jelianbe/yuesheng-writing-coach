@@ -8,7 +8,7 @@
  * 4. 配置加载和降级
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import * as path from 'path';
 

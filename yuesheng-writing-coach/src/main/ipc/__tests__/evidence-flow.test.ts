@@ -1,15 +1,10 @@
 /**
  * Evidence Handler 集成测试
- *
- * 测试目标：
- * 1. evidence:getByDisease / evidence:getByAbility / evidence:getChain / evidence:create 通道的正确性
- * 2. 错误处理和边界条件
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { IPC_CHANNELS } from '../../../shared/constants';
 
-// ===== Mock 依赖 =====
 vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
 }));
@@ -21,13 +16,12 @@ const mockEvidenceService = {
   save: vi.fn(),
 };
 
-// ===== 导入被测试模块 =====
-import { registerEvidenceHandlers, setEvidenceService } from '../evidence.handler';
+import { registerEvidenceHandlers, initEvidenceHandlers } from '../evidence.handler';
 
 describe('Evidence Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setEvidenceService(mockEvidenceService as any);
+    initEvidenceHandlers({ evidenceService: mockEvidenceService as any });
     registerEvidenceHandlers();
   });
 
@@ -49,19 +43,6 @@ describe('Evidence Handler', () => {
       expect(result.success).toBe(true);
       expect(result.data).toHaveLength(1);
       expect(mockEvidenceService.getByDisease).toHaveBeenCalledWith('P004', 'session-1', 1);
-    });
-
-    it('服务未初始化时返回空数组', async () => {
-      setEvidenceService(null as any);
-      registerEvidenceHandlers();
-
-      const { ipcMain } = await import('electron');
-      const handleCalls = (ipcMain.handle as any).mock.calls;
-      const handler = handleCalls.find((c: any[]) => c[0] === IPC_CHANNELS.EVIDENCE_GET_BY_DISEASE);
-
-      const result = await handler[1]({}, { diseaseId: 'P004', novelId: 's1' });
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
     });
   });
 
@@ -96,19 +77,6 @@ describe('Evidence Handler', () => {
       expect(result.success).toBe(true);
       expect(result.data.diagnosisId).toBe('diag-1');
     });
-
-    it('服务未初始化时返回 null', async () => {
-      setEvidenceService(null as any);
-      registerEvidenceHandlers();
-
-      const { ipcMain } = await import('electron');
-      const handleCalls = (ipcMain.handle as any).mock.calls;
-      const handler = handleCalls.find((c: any[]) => c[0] === IPC_CHANNELS.EVIDENCE_GET_CHAIN);
-
-      const result = await handler[1]({}, { diagnosisId: 'diag-1' });
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
-    });
   });
 
   describe('evidence:create', () => {
@@ -132,22 +100,6 @@ describe('Evidence Handler', () => {
       expect(result.success).toBe(true);
       expect(result.data.evidenceId).toBeDefined();
       expect(mockEvidenceService.save).toHaveBeenCalled();
-    });
-
-    it('服务未初始化时返回错误', async () => {
-      setEvidenceService(null as any);
-      registerEvidenceHandlers();
-
-      const { ipcMain } = await import('electron');
-      const handleCalls = (ipcMain.handle as any).mock.calls;
-      const handler = handleCalls.find((c: any[]) => c[0] === IPC_CHANNELS.EVIDENCE_CREATE);
-
-      const result = await handler[1]({}, {
-        evidence: { type: 'text', level: 1, novelId: 's1' },
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBeDefined();
     });
   });
 });

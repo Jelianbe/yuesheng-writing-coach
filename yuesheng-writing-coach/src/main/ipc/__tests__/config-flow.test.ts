@@ -1,14 +1,9 @@
 /**
  * Config Handler 集成测试
- *
- * 测试目标：
- * 1. config:get / config:set / config:testConnection 通道的正确性
- * 2. ConfigService 单例的调用验证
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// ===== Mock 依赖 =====
 vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
 }));
@@ -21,8 +16,7 @@ const mockConfig = {
   maxTokens: 2048,
 };
 
-// ===== 导入被测试模块 =====
-import { registerConfigHandlers, setConfigService } from '../config.handler';
+import { registerConfigHandlers, initConfigHandlers } from '../config.handler';
 
 const mockConfigService = {
   getConfig: vi.fn().mockReturnValue(mockConfig),
@@ -33,7 +27,7 @@ const mockConfigService = {
 describe('Config Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    setConfigService(mockConfigService as any);
+    initConfigHandlers({ configService: mockConfigService as any });
     registerConfigHandlers();
   });
 

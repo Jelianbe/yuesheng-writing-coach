@@ -17,6 +17,8 @@ export interface TrainingRecord {
   userResponse: string | null;
   aiFeedback: string | null;
   effectiveness: number | null;
+  /** Evaluator Agent 评分（1-10） */
+  score: number | null;
 }
 
 export interface TrainingRecordRow {
@@ -30,6 +32,7 @@ export interface TrainingRecordRow {
   user_response: string | null;
   ai_feedback: string | null;
   effectiveness: number | null;
+  score: number | null;
 }
 
 function rowToRecord(row: TrainingRecordRow): TrainingRecord {
@@ -44,6 +47,7 @@ function rowToRecord(row: TrainingRecordRow): TrainingRecord {
     userResponse: row.user_response,
     aiFeedback: row.ai_feedback,
     effectiveness: row.effectiveness,
+    score: row.score,
   };
 }
 
@@ -59,6 +63,7 @@ function recordToRow(record: Omit<TrainingRecord, 'id'> & { id?: string }): Omit
     user_response: record.userResponse,
     ai_feedback: record.aiFeedback,
     effectiveness: record.effectiveness,
+    score: record.score,
   };
 }
 
@@ -85,8 +90,8 @@ export class TrainingRecordService {
 
     const stmt = this.db.prepare(`
       INSERT INTO user_training_records
-      (id, session_id, task_id, syndrome_id, status, assigned_at, completed_at, user_response, ai_feedback, effectiveness)
-      VALUES (@id, @session_id, @task_id, @syndrome_id, @status, @assigned_at, @completed_at, @user_response, @ai_feedback, @effectiveness)
+      (id, session_id, task_id, syndrome_id, status, assigned_at, completed_at, user_response, ai_feedback, effectiveness, score)
+      VALUES (@id, @session_id, @task_id, @syndrome_id, @status, @assigned_at, @completed_at, @user_response, @ai_feedback, @effectiveness, @score)
     `);
     stmt.run(recordToRow(fullRecord));
     return fullRecord;
@@ -97,7 +102,7 @@ export class TrainingRecordService {
    */
   complete(
     id: string,
-    updates: { userResponse?: string; aiFeedback?: string; effectiveness?: number },
+    updates: { userResponse?: string; aiFeedback?: string; effectiveness?: number; score?: number },
   ): TrainingRecord | null {
     const existing = this.getById(id);
     if (!existing) return null;
@@ -108,7 +113,8 @@ export class TrainingRecordService {
           completed_at = @completed_at,
           user_response = COALESCE(@user_response, user_response),
           ai_feedback = COALESCE(@ai_feedback, ai_feedback),
-          effectiveness = COALESCE(@effectiveness, effectiveness)
+          effectiveness = COALESCE(@effectiveness, effectiveness),
+          score = COALESCE(@score, score)
       WHERE id = @id
     `);
 
@@ -118,6 +124,7 @@ export class TrainingRecordService {
       user_response: updates.userResponse ?? null,
       ai_feedback: updates.aiFeedback ?? null,
       effectiveness: updates.effectiveness ?? null,
+      score: updates.score ?? null,
     });
 
     return this.getById(id);
