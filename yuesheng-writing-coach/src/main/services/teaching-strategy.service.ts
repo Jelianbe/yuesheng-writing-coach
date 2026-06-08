@@ -16,12 +16,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { ProficiencyLevel, CognitiveStyle } from './student-model.service';
+import { TeachingStrategyRouter } from './teaching-strategy-router';
+import type { RouterInput, TeachingMode as RouterTeachingMode, FocusDecision, ModeDecision, ParameterDecision } from '../../renderer/shared/types';
 
 /** 教学模式 */
-export type TeachingMode = 'scaffolding' | 'guiding' | 'challenging';
+export type TeachingMode = RouterTeachingMode;
 
-/** 语气类型 */
-export type ToneType = 'encouraging' | 'direct' | 'logical' | 'resonant';
+/** 教学语气 */
+export type ToneType = 'encouraging' | 'direct' | 'logical' | 'resonant' | 'challenging';
 
 /** 教学策略决策 */
 export interface TeachingStrategyDecision {
@@ -31,6 +33,17 @@ export interface TeachingStrategyDecision {
   tone: ToneType;
   /** 输出格式偏好 */
   format?: 'problem→cause→evidence→solution' | 'example→feeling→demonstration';
+
+  // === T-034 Router 集成扩展字段 ===
+
+  /** 聚焦症候决策（来自 Router 第一层） */
+  targetSyndrome?: FocusDecision;
+  /** 教学模式决策（来自 Router 第二层） */
+  teachingMode?: ModeDecision;
+  /** 参数细化决策（来自 Router 第三层） */
+  parameters?: ParameterDecision;
+  /** 症候类型入口指令（教学策略指令用） */
+  entryInstruction?: string;
 }
 
 /** 教学策略配置（从 teaching-strategies.json 加载） */
@@ -75,6 +88,8 @@ export interface StrategyInput {
   topSyndromeCount: number;
   /** 挫折指标（0-1） */
   frustrationIndex: number;
+  /** 当前态度档位（T-017 新增，用于语气联动） */
+  attitude?: 'doubao' | 'yuesheng' | 'direct';
 }
 
 /**
@@ -85,8 +100,19 @@ export class TeachingStrategyService {
   private config: TeachingStrategiesConfig | null = null;
   private userTypeMatrix: UserTypeMatrixConfig | null = null;
 
+  /** TeachingStrategyRouter 实例（可选注入） */
+  router: TeachingStrategyRouter | null = null;
+
   constructor(resourcesRoot: string) {
     this.resourcesRoot = resourcesRoot;
+  }
+
+  /**
+   * 设置 Router 实例
+   * 当 Router 可用时，decide() 将优先委托给 Router
+   */
+  setRouter(router: TeachingStrategyRouter): void {
+    this.router = router;
   }
 
   /** 获取配置文件路径 */
@@ -160,21 +186,93 @@ export class TeachingStrategyService {
    * 决定教学模式
    * 规则从 teaching-strategies.json 的 modeSwitchRules 读取
    * 决策逻辑参考：SPEC_adaptive-teaching_V1.0.md §4.2
+   *
+   * 如果 Router 已设置，优先委托给 Router 的三层决策引擎，
+   * 然后从输出中提取 compatibleWithLegacy 作为反向兼容的结果
    */
   decide(input: StrategyInput): TeachingStrategyDecision {
+    // 如果 Router 可用，委托给 Router
+    if (this.router) {
+      const routerInput = this.buildRouterInput(input);
+      const routerOutput = this.router.decide(routerInput);
+      return this.extractLegacyDecision(routerOutput);
+    }
+
+    // 降级：使用原有的简单条件映射
+    return this.legacyDecide(input);
+  }
+
+  /**
+   * 原有的简单条件映射决策逻辑（提取为私有方法）
+   */
+  private legacyDecide(input: StrategyInput): TeachingStrategyDecision {
     const config = this.loadTeachingStrategiesConfig();
     const userTypeMatrix = this.loadUserTypeMatrixConfig();
 
     // === 第一步：决定教学模式（按规则优先级匹配） ===
     const mode = this.decideMode(config, input);
 
-    // === 第二步：决定语气（根据用户类型） ===
-    const tone = this.decideTone(userTypeMatrix, input);
+    // === 第二步：决定语气（态度档位优先，T-017 联动） ===
+    const tone = this.decideTone(userTypeMatrix, input, input.attitude);
 
     // === 第三步：决定输出格式 ===
     const format = this.decideFormat(userTypeMatrix, input);
 
     return { mode, tone, format };
+  }
+
+  /**
+   * 将旧版 StrategyInput 转换为 RouterInput
+   * 缺少的字段使用默认值
+   */
+  private buildRouterInput(input: StrategyInput): RouterInput {
+    return {
+      userId: '',
+      userLevel: input.proficiency,
+      cognitiveStyle: input.cognitiveStyle,
+      frustrationIndex: input.frustrationIndex,
+      topSyndromeCount: input.topSyndromeCount,
+      activeSyndromes: [],
+      trainingHistory: [],
+      currentPhase: undefined,
+      attitude: input.attitude,
+    };
+  }
+
+  /**
+   * 从 RouterOutput 中提取 TeachingStrategyDecision
+   * 携带完整的三层决策信息
+   */
+  private extractLegacyDecision(routerOutput: {
+    targetSyndrome: FocusDecision;
+    teachingMode: ModeDecision;
+    parameters: ParameterDecision;
+    compatibleWithLegacy: { mode: RouterTeachingMode; tone: string; format?: string };
+  }): TeachingStrategyDecision {
+    return {
+      mode: routerOutput.compatibleWithLegacy.mode,
+      tone: routerOutput.compatibleWithLegacy.tone as ToneType,
+      format: routerOutput.compatibleWithLegacy.format as TeachingStrategyDecision['format'],
+      targetSyndrome: routerOutput.targetSyndrome,
+      teachingMode: routerOutput.teachingMode,
+      parameters: routerOutput.parameters,
+      entryInstruction: routerOutput.teachingMode?.recommendedEntry
+        ? this.buildEntryInstruction(routerOutput.teachingMode)
+        : undefined,
+    };
+  }
+
+  /**
+   * 根据症候类型构建入口指令
+   * 对应教育学规则 R-004~R-006
+   */
+  private buildEntryInstruction(modeDecision: ModeDecision): string {
+    const instructions: Record<string, string> = {
+      expressive_deficit: '优先使用"先案例再模仿"入口：给用户一个优秀案例，让其对比自己的文本，再尝试模仿。',
+      structural_disorder: '优先使用"先反思再练习"入口：先让用户自己分析文本结构问题，再给出针对性练习。',
+      motivation_deficit: '优先使用"先提问激发再案例"入口：先用问题唤醒用户的创作动机，再给案例示范。',
+    };
+    return instructions[modeDecision.syndromeType] ?? '';
   }
 
   /**
@@ -210,11 +308,20 @@ export class TeachingStrategyService {
 
   /**
    * 语气决策
-   * 根据能力等级和用户类型从 user-type-matrix.json 查找
-   * 优先级：proficiency（能力等级） > cognitiveStyle（认知风格）
-   * 如果 proficiency 返回的是通用语气（direct），则进一步检查 cognitiveStyle
+   * T-017 联动：态度档位优先于教学策略的语气
+   * 优先级：attitude（用户态度） > proficiency（能力等级） > cognitiveStyle（认知风格）
    */
-  private decideTone(matrix: UserTypeMatrixConfig, input: StrategyInput): ToneType {
+  private decideTone(
+    matrix: UserTypeMatrixConfig,
+    input: StrategyInput,
+    attitude?: 'doubao' | 'yuesheng' | 'direct',
+  ): ToneType {
+    // 态度优先：如果用户指定了态度档位，覆盖教学策略的语气
+    if (attitude === 'direct') return 'challenging';
+    if (attitude === 'yuesheng') return 'direct';
+    if (attitude === 'doubao') return 'encouraging';
+
+    // 正常教学策略决策
     // 先根据能力等级查找 toneProfile
     const userType = matrix.userTypes[input.proficiency];
     if (userType) {

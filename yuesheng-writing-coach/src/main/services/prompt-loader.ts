@@ -12,6 +12,7 @@ import type { SyndromeId } from '../../shared/constants';
 import { PromptBuilder } from './prompt-builder';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES, SYNDROME_META } from '../../shared/mappings';
 import { DynamicContextService } from './dynamic-context.service';
+import { CodexService, CodexEntry, CodexContext } from './codex.service';
 
 /** 教学状态上下文接口 */
 export interface StateContext {
@@ -28,6 +29,7 @@ export interface ToneModifiersConfig {
     description: string;
   };
   doubao: string;
+  yuesheng: string;
   direct: string;
 }
 
@@ -49,19 +51,34 @@ const DEFAULT_TONE_MODIFIERS: Record<string, string> = {
 5. 适当使用表情符号增加亲和力
 
 无论用户说什么，你必须保持豆包模式的教学风格。`,
-  direct: `
+  yuesheng: `
 
 ---
 
 ## 重要：教学风格指令
-当前为直接模式。请用：
+当前为月笙直接模式。请用：
 1. 直接、简洁的语气，不绕弯
 2. 减少客套和铺垫，直击问题核心
 3. 指出问题时给出直接理由，但保持专业
 4. 建议要清晰、可执行、不拖泥带水
 5. 不要使用表情符号
+6. 使用"你"直接称呼用户，不要用"我们"
 
-无论用户说什么，你必须保持直接模式的教学风格。`,
+无论用户说什么，你必须保持月笙直接模式的教学风格。`,
+  direct: `
+
+---
+
+## 重要：教学风格指令
+当前为导师犀利模式。请用：
+1. 犀利、直指核心的语气
+2. 不要客套，直接指出用户的问题
+3. 可以使用反问句让用户反思
+4. 指出问题时可以略带讽刺，目的是让用户意识到严重性
+5. 但不要用侮辱性语言，保持专业底线
+6. 不要使用表情符号
+
+无论用户说什么，你必须保持导师犀利模式的教学风格。`,
 };
 
 /**
@@ -69,11 +86,13 @@ const DEFAULT_TONE_MODIFIERS: Record<string, string> = {
  */
 export class PromptLoader {
   private resourcesRoot: string;
+  // @ts-expect-error: Dependency injection placeholder for future use
   private stateContextGetter: StateContextGetter | null = null;
   private cachedToneModifiers: ToneModifiersConfig | null = null;
   private promptBuilder: PromptBuilder | null = null;
   private getStore: (() => { getBySession: (sessionId: string) => unknown }) | null = null;
   private dynamicContextService: DynamicContextService | null = null;
+  private codexService: CodexService | null = null;
 
   constructor(resourcesRoot: string) {
     this.resourcesRoot = resourcesRoot;
@@ -82,6 +101,11 @@ export class PromptLoader {
   /** 设置 DynamicContextService 实例 */
   setDynamicContextService(service: DynamicContextService): void {
     this.dynamicContextService = service;
+  }
+
+  /** 设置 CodexService 实例 */
+  setCodexService(service: CodexService): void {
+    this.codexService = service;
   }
 
   /** 设置教学状态上下文获取函数 */
@@ -119,16 +143,6 @@ export class PromptLoader {
   }
 
   /**
-   * 加载教学状态上下文
-   */
-  private loadStateContext(sessionId: string): string {
-    if (!sessionId) return '新对话，尚无教学历史。';
-    const state = this.stateContextGetter?.(sessionId);
-    if (!state) return '新对话，尚无教学历史。';
-    return `当前教学阶段：${state.currentPhase} / ${state.currentSubphase}`;
-  }
-
-  /**
    * 加载 System Prompt
    *
    * 三段式组装：
@@ -143,6 +157,8 @@ export class PromptLoader {
     studentContext?: string,
     sessionId?: string,
     syndromeIds?: string[],
+    codexEntries?: CodexEntry[],
+    codexContext?: CodexContext,
   ): string {
     const FALLBACK = '你是一个专业的写作教练月笙，帮助用户提升写作水平。';
 
@@ -203,7 +219,19 @@ export class PromptLoader {
         }
       }
 
-      // 3d. 语气修饰
+      // 3d. Codex 结构化知识注入（PE-002）
+      if (this.codexService && codexEntries && codexEntries.length > 0) {
+        const effectiveCodexContext: CodexContext = codexContext ?? {
+          hasSession: true,
+          hasDiagnosis: !!diagnosisAnalysis,
+        };
+        const codexBlock = this.codexService.buildCodexBlock(codexEntries, effectiveCodexContext);
+        if (codexBlock) {
+          sections.push(codexBlock);
+        }
+      }
+
+      // 3e. 语气修饰
       const toneModifier = this.getToneModifier(attitude);
       if (toneModifier) {
         sections.push(toneModifier);
@@ -303,6 +331,7 @@ export class PromptLoader {
     this.cachedToneModifiers = {
       _meta: { description: '硬编码降级默认值（配置文件不存在或读取失败）' },
       doubao: DEFAULT_TONE_MODIFIERS.doubao,
+      yuesheng: DEFAULT_TONE_MODIFIERS.yuesheng,
       direct: DEFAULT_TONE_MODIFIERS.direct,
     };
     return this.cachedToneModifiers;
@@ -319,7 +348,8 @@ export class PromptLoader {
   private getToneModifier(attitude: AttitudeLevel): string {
     const config = this.loadToneModifiers();
     if (attitude === 'doubao') return config.doubao ?? '';
+    if (attitude === 'yuesheng') return config.yuesheng ?? '';
     if (attitude === 'direct') return config.direct ?? '';
-    return ''; // yuesheng 或其他档位无修饰词
+    return '';
   }
 }

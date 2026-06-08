@@ -1,16 +1,21 @@
 import React, { useEffect, useCallback } from 'react';
 import { useSessionStore } from '../stores/session.store';
 
-function groupByDate(sessions: { id: string; title: string; createdAt: string; updatedAt: string }[]) {
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const yesterdayStr = new Date(today.getTime() - 86400000).toISOString().slice(0, 10);
+function groupByDate(sessions: { id: string; title: string; createdAt: number | string; updatedAt: number | string; lastMessage?: string }[]) {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+  const yesterdayStr = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+
+  const toDateStr = (v: number | string): string => {
+    if (typeof v === 'number') return new Date(v).toISOString().slice(0, 10);
+    return v.slice(0, 10);
+  };
 
   const groups: { label: string; sessions: typeof sessions }[] = [];
-  const todaySessions = sessions.filter(s => s.createdAt?.startsWith(todayStr));
-  const yesterdaySessions = sessions.filter(s => s.createdAt?.startsWith(yesterdayStr));
+  const todaySessions = sessions.filter(s => toDateStr(s.createdAt) === todayStr);
+  const yesterdaySessions = sessions.filter(s => toDateStr(s.createdAt) === yesterdayStr);
   const earlierSessions = sessions.filter(s => {
-    const d = s.createdAt?.slice(0, 10);
+    const d = toDateStr(s.createdAt);
     return d !== todayStr && d !== yesterdayStr;
   });
 

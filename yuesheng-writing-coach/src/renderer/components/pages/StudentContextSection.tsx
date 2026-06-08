@@ -3,7 +3,6 @@
  */
 
 import React from 'react';
-import { Brain } from 'lucide-react';
 import { Button } from '../common/Button';
 import { useStudentContextStore, UserType, ThinkingStyle } from '../../stores/student-context.store';
 

@@ -67,10 +67,10 @@ const DEFAULT_CONFIG: ClassifierConfig = {
  * @param config 分类配置（可选）
  */
 export async function classifyStudent(
-  dialogueHistory: DialogueEntry[],
+  _dialogueHistory: DialogueEntry[],
   config: Partial<ClassifierConfig> = {},
 ): Promise<ClassificationResult> {
-  const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+  void { ...DEFAULT_CONFIG, ...config };
   
   // TODO: 实现学员类型分类逻辑
   // 1. 分析对话模式

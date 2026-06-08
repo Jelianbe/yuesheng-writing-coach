@@ -9,10 +9,7 @@
  * 5. loadContext 和 formatReferenceDrawer 集成测试
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as path from 'path';
-
-const RESOURCES_ROOT = path.join(process.cwd(), 'resources');
+import { describe, it, expect, beforeEach } from 'vitest';
 
 import { DynamicContextService, extractSnippetsFromMarkdown, getRelevantActionIds } from '../dynamic-context.service';
 

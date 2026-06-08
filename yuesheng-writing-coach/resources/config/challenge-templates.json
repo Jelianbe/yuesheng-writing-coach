@@ -73,6 +73,16 @@
       "expectedOutcome": "用户学会从传统文学中吸收叙事技巧"
     },
     {
+      "id": "CH-P008",
+      "syndromeId": "P008",
+      "syndromeName": "世界观说明书症",
+      "challenge": "你刚刚用一段说明文字交代了世界设定。现在删掉它，改写成一个角色在这个世界中生活的日常场景——让读者通过他的行为'发现'这个设定。",
+      "mode": "show_dont_tell",
+      "tier": "structural",
+      "constraint": "不允许出现任何直接说明设定、体系介绍或名词解释的句子",
+      "expectedOutcome": "用户学会将世界观信息融入角色行为和场景描写中"
+    },
+    {
       "id": "CH-P009",
       "syndromeId": "P009",
       "syndromeName": "角色动机缺失",

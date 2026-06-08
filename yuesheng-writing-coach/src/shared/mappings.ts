@@ -129,6 +129,7 @@ export const SUBPHASE_TO_ACTIONS: Partial<Record<TeachingSubphase, string[]>> = 
   S1_FIRST_SCENE: ['A003', 'A005'],
   S1_DAILY_DETAIL: ['A003', 'A005'],
   S2_IDENTIFY: [],
+  S2_REFLECTION: [],
   S2_TEACHING: [],
   S2_ASSIGN_TASK: [],
   S2_REVIEW_TASK: [],

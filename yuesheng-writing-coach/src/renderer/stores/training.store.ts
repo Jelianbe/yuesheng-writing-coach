@@ -17,6 +17,7 @@ import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
 import { getInvoke } from '../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
+import { severityToNumber } from '../../shared/severity-utils';
 import type {
   CenterMode,
   ErrorCard,
@@ -24,6 +25,7 @@ import type {
   ActiveTrainingSession,
   TrainingStep,
   TrainingRecord,
+  EvaluationResult,
 } from '../shared/types';
 
 // ===== 类型定义 =====
@@ -31,6 +33,9 @@ import type {
 interface TrainingSubmissionResult {
   passed: boolean;
   feedback: string;
+  score?: number;
+  improved?: boolean;
+  nextStep?: string;
 }
 
 interface TrainingState {
@@ -52,11 +57,17 @@ interface TrainingState {
   /** AI 提交评估结果（null = 未提交或已清除） */
   submissionResult: TrainingSubmissionResult | null;
 
+  /** 训练评分结果（Evaluator Agent 输出，null = 未评估） */
+  evaluationResult: EvaluationResult | null;
+
   /** 加载中 */
   isLoading: boolean;
 
   /** 加载错误 */
   error: string | null;
+
+  /** 对话流桥接卡片推荐（null = 无推荐或已关闭） */
+  bridgeRecommendation: TrainingRecommendation | null;
 
   // ===== 模式切换 =====
 
@@ -85,6 +96,15 @@ interface TrainingState {
 
   /** 刷新训练工坊数据（从诊断数据聚合 + IPC 推荐） */
   refreshFromDiagnosis: () => Promise<void>;
+
+  /** 设置桥接卡片推荐（诊断后自动调用） */
+  setBridgeRecommendation: (rec: TrainingRecommendation | null) => void;
+
+  /** 关闭桥接卡片 */
+  dismissBridge: () => void;
+
+  /** 评估训练（调用 Evaluator Agent 获取评分） */
+  evaluateTraining: () => Promise<void>;
 }
 
 // ===== 通用三步框架 =====
@@ -104,8 +124,10 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   activeTraining: null,
   history: [],
   submissionResult: null,
+  evaluationResult: null,
   isLoading: false,
   error: null,
+  bridgeRecommendation: null,
 
   enterWorkshop: async () => {
     set({ centerMode: 'training' });
@@ -143,6 +165,12 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
         ? get().errorCards.find(c => c.syndromeId === match.syndromeId)
         : null;
 
+      // 计算长期目标改善进度（基于症候最新严重度）
+      // L3=0%, L2=50%, L1=100%
+      const longTermProgress = errorCard
+        ? Math.round(((3 - severityToNumber(errorCard.severity)) / 2) * 100)
+        : 0;
+
       // 构建活跃训练会话
       const session: ActiveTrainingSession = {
         challengeId,
@@ -157,9 +185,13 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
         originalQuote: errorCard?.lastQuote ?? '',
         constraint: match?.constraint ?? '',
         userDraft: '',
+        recordId: result.record?.id,
+        syndromeId: match?.syndromeId,
+        targetSyndrome: match?.syndromeName,
+        longTermProgress,
       };
 
-      set({ activeTraining: session, isLoading: false, submissionResult: null });
+      set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
     } catch (error) {
       console.error('[TrainingStore] startTraining failed:', error);
       set({ error: String(error), isLoading: false });
@@ -188,12 +220,18 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
           constraint: active.constraint,
           originalQuote: active.originalQuote,
           userDraft: active.userDraft,
-        }) as { passed: boolean; feedback: string };
+        }) as { passed: boolean; feedback: string; score?: number; improved?: boolean; nextStep?: string };
+
+        // 构建评估结果
+        const evalResult: EvaluationResult | null = result.score != null
+          ? { score: result.score, feedback: result.feedback, improved: result.improved ?? result.passed, nextStep: result.nextStep ?? '继续练习' }
+          : null;
 
         if (!result.passed) {
           // 未通过：停在 Step 2，展示 AI 反馈，不清空草稿
           set({
             submissionResult: result,
+            evaluationResult: evalResult,
             isLoading: false,
           });
           return;
@@ -213,7 +251,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
             currentStepIndex: step3Index,
             steps: updatedSteps,
           },
-          submissionResult: { passed: true, feedback: result.feedback },
+          submissionResult: { passed: true, feedback: result.feedback, score: result.score, improved: result.improved, nextStep: result.nextStep },
+          evaluationResult: evalResult,
           isLoading: false,
         });
         return;
@@ -235,9 +274,38 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
           isLoading: false,
         });
       } else {
-        // 所有步骤完成 → T-021.7 接入 training:complete
-        console.log('[TrainingStore] All steps completed');
-        set({ activeTraining: null, isLoading: false, submissionResult: null });
+        // 所有步骤完成 → 调用 training:complete 保存记录 + 切回对话
+        if (active.recordId) {
+          try {
+            await getInvoke()(IPC_CHANNELS.TRAINING_COMPLETE, {
+              recordId: active.recordId,
+              userResponse: active.userDraft,
+              aiFeedback: get().submissionResult?.feedback ?? '',
+              score: get().evaluationResult?.score,
+            });
+          } catch (e) {
+            console.warn('[TrainingStore] complete IPC failed:', e);
+          }
+        }
+
+        // 在对话流中添加训练完成反馈消息
+        const feedback = get().submissionResult?.feedback;
+        const evalResult = get().evaluationResult;
+        if (feedback) {
+          const { addMessage } = useChatStore.getState();
+          const scoreText = evalResult ? ` | 评分：${evalResult.score}/10` : '';
+          const improvedText = evalResult?.improved ? ' | 相比原文有改善' : '';
+          addMessage({
+            id: `training_complete_${Date.now()}`,
+            role: 'assistant',
+            content: `**训练完成**\n\n你的「${active.challengeName}」练习已完成${scoreText}${improvedText}。\n\n${feedback}${evalResult?.nextStep ? `\n\n**下一步建议：**${evalResult.nextStep}` : ''}`,
+            timestamp: Date.now(),
+          });
+        }
+
+        set({ activeTraining: null, isLoading: false, submissionResult: null, evaluationResult: null });
+        // 自动切回对话模式
+        set({ centerMode: 'chat' });
       }
     } catch (error) {
       console.error('[TrainingStore] submitStep failed:', error);
@@ -328,8 +396,48 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       }
 
       set({ errorCards, recommendations, isLoading: false });
+
+      // 自动设置桥接卡片推荐（推荐 L2+ 的第一个症候）
+      if (recommendations.length > 0) {
+        set({ bridgeRecommendation: recommendations[0] });
+      } else {
+        set({ bridgeRecommendation: null });
+      }
     } catch (error) {
       console.error('[TrainingStore] refreshFromDiagnosis failed:', error);
+      set({ error: String(error), isLoading: false });
+    }
+  },
+
+  setBridgeRecommendation: (rec: TrainingRecommendation | null) => {
+    set({ bridgeRecommendation: rec });
+  },
+
+  dismissBridge: () => {
+    set({ bridgeRecommendation: null });
+  },
+
+  evaluateTraining: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const active = get().activeTraining;
+      if (!active) throw new Error('No active training');
+
+      const sessionId = useChatStore.getState().currentSessionId;
+
+      const result = await getInvoke()(IPC_CHANNELS.TRAINING_EVALUATE, {
+        recordId: active.recordId,
+        sessionId,
+        syndromeId: active.syndromeId,
+        challengeDescription: active.challengeDescription,
+        constraint: active.constraint,
+        originalQuote: active.originalQuote,
+        userDraft: active.userDraft,
+      }) as EvaluationResult;
+
+      set({ evaluationResult: result, isLoading: false });
+    } catch (error) {
+      console.error('[TrainingStore] evaluateTraining failed:', error);
       set({ error: String(error), isLoading: false });
     }
   },

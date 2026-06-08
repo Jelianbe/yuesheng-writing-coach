@@ -5,7 +5,6 @@ import {
   Plus,
   Search,
   Trash2,
-  ChevronRight,
   MessageCircle,
 } from 'lucide-react';
 import { Button } from '../common/Button';
@@ -28,6 +27,7 @@ interface SidebarProps {
 
 const phaseLabels: Record<TeachingPhase, string> = {
   [TeachingPhase.INIT]: '初次见面',
+  [TeachingPhase.ENGAGE]: '投入建立',
   [TeachingPhase.WORLD]: '世界观搭建',
   [TeachingPhase.PRACTICE_LOOP]: '诊断-训练',
   [TeachingPhase.REVIEW]: '复盘总结',

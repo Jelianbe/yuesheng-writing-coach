@@ -5,6 +5,8 @@
  * 职责分离：从 teaching-state-machine.ts 提取的 Prompt 层职责
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { getPhaseName, getSubphaseName } from './teaching-state-machine';
 import { TeachingState } from './teaching-state.types';
 import type { FocusArea } from '../../renderer/shared/types';
@@ -17,6 +19,25 @@ export interface StrategyPromptOptions {
   strategyDecision?: TeachingStrategyDecision;
   /** 排序后的问题列表 */
   prioritizedProblems?: PrioritizedProblem[];
+}
+
+/** 教练话术模板的 TS 视图 */
+interface CoachingTemplate {
+  id: string;
+  name: string;
+  description: string;
+  triggerConditions: {
+    signals: string[];
+    applicableLevels: string[];
+    applicableSyndromes: string[];
+  };
+  steps: Array<{
+    stepId: string;
+    instruction: string;
+  }>;
+  contraindications?: string[];
+  toneProfile?: string;
+  challengeSize?: string;
 }
 
 /**
@@ -162,21 +183,42 @@ export class PromptBuilder {
     lines.push('【教学策略指令】');
     lines.push('');
 
-    // 1. 教学模式指令
+    // 1. 症候类型入口指令（R-004~R-006，来自 Router 第二层）
+    if (strategyDecision.entryInstruction) {
+      lines.push(strategyDecision.entryInstruction);
+      lines.push('');
+    }
+
+    // 2. 教学模式指令
     const modeInstruction = this.getModeInstruction(strategyDecision.mode);
     if (modeInstruction) {
       lines.push(modeInstruction);
       lines.push('');
     }
 
-    // 2. 语气指令
+    // 3. 语气指令
     const toneInstruction = this.getToneInstruction(strategyDecision.tone);
     if (toneInstruction) {
       lines.push(toneInstruction);
       lines.push('');
     }
 
-    // 3. 输出格式指令
+    // 4. 步骤序列（来自 Router 第三层 Parameters）
+    if (strategyDecision.parameters?.stepSequence) {
+      lines.push('建议执行顺序：');
+      for (const step of strategyDecision.parameters.stepSequence) {
+        lines.push(`- ${step.stepName}（语气：${step.toneProfile}）`);
+      }
+      lines.push('');
+    }
+
+    // 5. 核心模式推荐（来自 Router 第三层 Parameters）
+    if (strategyDecision.parameters?.corePatterns && strategyDecision.parameters.corePatterns.length > 0) {
+      lines.push(`推荐聚焦技法核心模式：${strategyDecision.parameters.corePatterns.join('、')}`);
+      lines.push('');
+    }
+
+    // 6. 输出格式指令
     if (strategyDecision.format) {
       const formatInstruction = this.getFormatInstruction(strategyDecision.format);
       if (formatInstruction) {
@@ -185,7 +227,7 @@ export class PromptBuilder {
       }
     }
 
-    // 4. 最高优先级问题
+    // 7. 最高优先级问题
     if (prioritizedProblems && prioritizedProblems.length > 0) {
       const top = prioritizedProblems[0];
       const actionLabel = top.action === 'must_fix' ? '必须先修复' : top.action === 'priority' ? '优先处理' : '可延后';
@@ -193,6 +235,43 @@ export class PromptBuilder {
       lines.push(`行动级别：${actionLabel}`);
       lines.push('请在本轮对话中聚焦于此问题，一次只说一个问题。');
       lines.push('');
+    }
+
+    // 8. 聚焦症候（来自 Router 第一层 FocusDecision）
+    if (strategyDecision.targetSyndrome) {
+      const focus = strategyDecision.targetSyndrome;
+      lines.push(`**本次聚焦**：${focus.targetSyndromeName}`);
+      if (focus.rationale) {
+        lines.push(`原因：${focus.rationale}`);
+      }
+      lines.push('');
+    }
+
+    // 9. 匹配的教练话术模板（来自 Router 第三层 ParameterDecision.matchedTemplateId）
+    const matchedTemplateId = strategyDecision.parameters?.matchedTemplateId;
+    if (matchedTemplateId) {
+      try {
+        const configPath = path.resolve(process.resourcesPath ?? __dirname, '../../resources/config/coaching-templates.json');
+        const raw = fs.readFileSync(configPath, 'utf-8');
+        const templates: CoachingTemplate[] = JSON.parse(raw).templates;
+        const template = templates.find(t => t.id === matchedTemplateId);
+        if (template) {
+          lines.push(`**匹配话术模板**：${template.name}`);
+          lines.push(`提示：${template.description}`);
+          if (template.steps && template.steps.length > 0) {
+            lines.push('推荐话术步骤：');
+            for (const step of template.steps) {
+              lines.push(`- ${step.instruction}`);
+            }
+          }
+          if (template.contraindications && template.contraindications.length > 0) {
+            lines.push(`避免：${template.contraindications.join('；')}`);
+          }
+          lines.push('');
+        }
+      } catch {
+        // 文件不存在或解析失败时不注入模板内容（降级）
+      }
     }
 
     return lines;
@@ -215,6 +294,7 @@ export class PromptBuilder {
       direct: '使用直接简洁的语气，直击问题核心。',
       logical: '使用逻辑化的语气，以推理和结构化方式表达。',
       resonant: '使用共鸣的语气，通过案例和情感连接来表达。',
+      challenging: '使用犀利的语气，直指问题核心，不要客套。',
     };
     return map[tone] ?? '';
   }

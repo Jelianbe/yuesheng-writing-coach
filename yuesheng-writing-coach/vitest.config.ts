@@ -24,6 +24,15 @@ export default defineConfig({
           globals: true,
         },
       },
+      {
+        test: {
+          name: 'shared',
+          root: '.',
+          include: ['src/shared/**/*.test.ts'],
+          environment: 'node',
+          globals: true,
+        },
+      },
     ],
   },
 });

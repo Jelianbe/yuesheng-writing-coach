@@ -14,7 +14,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { SYNDROME_NAMES, SYNDROME_META, SYNDROME_TO_ACTIONS, ACTION_NAMES, ACTION_GOALS } from '../../shared/mappings';
+import { SYNDROME_NAMES, SYNDROME_TO_ACTIONS, ACTION_NAMES, ACTION_GOALS } from '../../shared/mappings';
 import type { SyndromeId, ActionId } from '../../shared/constants';
 
 /** 从知识文件中提取的片段 */
@@ -84,11 +84,13 @@ export class DynamicContextService {
   /** 核心 Prompt 缓存（铁三角不变，只读一次） */
   private cachedCorePrompt: string | null = null;
 
-  /** 症候手册全文缓存 */
-  private cachedSyndromeManual: string | null = null;
+  /** 症候手册全文缓存（已废弃） */
+  // @ts-expect-error: Kept for backward compatibility, set but not read
+  private _cachedSyndromeManual: string | null = null;
 
-  /** 动作库全文缓存 */
-  private cachedActionLibrary: string | null = null;
+  /** 动作库全文缓存（已废弃） */
+  // @ts-expect-error: Kept for backward compatibility, set but not read
+  private _cachedActionLibrary: string | null = null;
 
   /** 症候片段索引 */
   private syndromeSnippetIndex: Map<string, string> | null = null;
@@ -168,7 +170,7 @@ export class DynamicContextService {
       return;
     }
 
-    this.cachedSyndromeManual = fullText;
+    this._cachedSyndromeManual = fullText;
     this.syndromeSnippetIndex = new Map();
 
     // 尝试提取带标记的片段
@@ -217,7 +219,7 @@ export class DynamicContextService {
       return;
     }
 
-    this.cachedActionLibrary = fullText;
+    this._cachedActionLibrary = fullText;
     this.actionSnippetIndex = new Map();
 
     // 尝试提取带标记的片段
@@ -352,8 +354,8 @@ export class DynamicContextService {
    */
   clearCache(): void {
     this.cachedCorePrompt = null;
-    this.cachedSyndromeManual = null;
-    this.cachedActionLibrary = null;
+    this._cachedSyndromeManual = null;
+    this._cachedActionLibrary = null;
     this.syndromeSnippetIndex = null;
     this.actionSnippetIndex = null;
   }

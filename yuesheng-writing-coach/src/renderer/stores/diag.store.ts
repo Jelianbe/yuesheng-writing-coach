@@ -7,7 +7,9 @@
 //   3. 提供便捷的选择器方法
 
 import { create } from 'zustand';
-import { DiagnosisEntry, SeverityLevel, SyndromeId } from '../shared/types';
+import { DiagnosisEntry, EvidenceRecord, SeverityLevel, SyndromeId } from '../shared/types';
+import { getInvoke } from '../utils/ipc';
+import { IPC_CHANNELS } from '../../shared/constants';
 
 /**
  * 诊断状态接口
@@ -18,6 +20,8 @@ export interface DiagState {
   currentDiagnosis: DiagnosisEntry | null;
   /** 历史诊断记录（按会话ID分组） */
   history: Record<string, DiagnosisEntry[]>;
+  /** 证据缓存（按 syndromeId 索引） */
+  evidenceMap: Record<string, EvidenceRecord[]>;
   /** 是否正在加载诊断数据 */
   isLoading: boolean;
   /** 诊断错误信息 */
@@ -29,6 +33,10 @@ export interface DiagState {
   addToHistory: (sessionId: string, entry: DiagnosisEntry) => void;
   /** 查询指定会话的诊断历史 */
   getHistoryBySession: (sessionId: string) => DiagnosisEntry[];
+  /** 加载症候的原文证据（从 IPC 获取并缓存） */
+  loadEvidence: (syndromeId: string, sessionId: string) => Promise<EvidenceRecord[]>;
+  /** 获取缓存的证据数据 */
+  getEvidence: (syndromeId: string) => EvidenceRecord[];
   /** 清除所有诊断数据 */
   clear: () => void;
   /** 设置错误状态 */
@@ -44,6 +52,7 @@ export interface DiagState {
 export const useDiagStore = create<DiagState>((set, get) => ({
   currentDiagnosis: null,
   history: {},
+  evidenceMap: {},
   isLoading: false,
   error: null,
 
@@ -67,10 +76,37 @@ export const useDiagStore = create<DiagState>((set, get) => ({
     return get().history[sessionId] || [];
   },
 
+  loadEvidence: async (syndromeId: string, sessionId: string) => {
+    // 已缓存则直接返回
+    const cached = get().evidenceMap[syndromeId];
+    if (cached && cached.length > 0) return cached;
+
+    try {
+      const result = await getInvoke()(IPC_CHANNELS.EVIDENCE_GET_BY_SYNDROME, {
+        syndromeId,
+        sessionId,
+      }) as { success: boolean; data?: EvidenceRecord[]; error?: string };
+
+      const records = result.data ?? [];
+      set((state) => ({
+        evidenceMap: { ...state.evidenceMap, [syndromeId]: records },
+      }));
+      return records;
+    } catch (e) {
+      console.warn('[DiagStore] loadEvidence failed:', e);
+      return [];
+    }
+  },
+
+  getEvidence: (syndromeId: string) => {
+    return get().evidenceMap[syndromeId] ?? [];
+  },
+
   clear: () => {
     set({
       currentDiagnosis: null,
       history: {},
+      evidenceMap: {},
       error: null,
       isLoading: false,
     });

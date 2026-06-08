@@ -85,7 +85,7 @@ function parseVitestOutput(output: string): TestResult[] {
     const testMatch = line.match(/^\s+(✓|×)\s+(.+?)\s+\((\d+)ms\)/);
     if (testMatch && currentFile) {
       const status = testMatch[1] === '✓' ? 'passed' : 'failed';
-      const [moduleId, moduleName] = detectModule(currentFile);
+      const [moduleId, _moduleName] = detectModule(currentFile);
       results.push({
         name: testMatch[2],
         module: moduleId,
@@ -111,7 +111,7 @@ function generateModuleReport(results: TestResult[]): ModuleReport[] {
 
   const reports: ModuleReport[] = [];
   for (const [moduleId, tests] of moduleGroups) {
-    const moduleName = MODULE_MAP.find(([p, id]) => id === moduleId)?.[2] || moduleId;
+    const moduleName = MODULE_MAP.find(([, id]) => id === moduleId)?.[2] || moduleId;
     const passed = tests.filter((t) => t.status === 'passed').length;
     const failed = tests.filter((t) => t.status === 'failed').length;
     const skipped = tests.filter((t) => t.status === 'skipped').length;

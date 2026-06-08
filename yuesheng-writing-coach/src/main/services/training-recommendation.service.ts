@@ -10,8 +10,10 @@
  * 4. 无匹配模板的症候使用 fallbackChallenge
  */
 
-import { ActiveProblem, TrainingRecommendation } from '../../renderer/shared/types';
+import { ActiveProblem, TrainingRecommendation, TechniqueInfo, SyndromeType } from '../../renderer/shared/types';
 import challengeTemplates from '../../../resources/config/challenge-templates.json';
+import techniqueLibrary from '../../../resources/config/technique-library.json';
+import syndromeTypeMap from '../../../resources/config/syndrome-type-map.json';
 
 // 类型定义：challenge-templates.json 的结构
 interface ChallengeTemplate {
@@ -35,6 +37,74 @@ interface ChallengeTemplatesJson {
 }
 
 const templates = challengeTemplates as unknown as ChallengeTemplatesJson;
+
+// 技法库类型
+interface TechniqueEntry {
+  id: string;
+  name: string;
+  source: string;
+  difficulty: string;
+  category: string;
+  applicableSyndromes: string[];
+  description: string;
+  example: string;
+}
+
+const techniques = techniqueLibrary as unknown as TechniqueEntry[];
+
+// 症候类型映射 JSON 结构
+interface SyndromeTypeEntry {
+  name: string;
+  syndromes: string[];
+  coreIssue: string;
+  recommendedEntry: string;
+  rationale: string;
+}
+
+interface SyndromeTypeMapJson {
+  version: string;
+  updatedAt: string;
+  types: Record<string, SyndromeTypeEntry>;
+}
+
+const typeMap = syndromeTypeMap as unknown as SyndromeTypeMapJson;
+
+/**
+ * 获取症候所属类型（用于教育学规则匹配）
+ * @param syndromeId - 症候 ID
+ * @returns 症候类型或 null（未找到时）
+ */
+export function getSyndromeType(syndromeId: string): SyndromeType | null {
+  for (const [type, info] of Object.entries(typeMap.types)) {
+    if (info.syndromes.includes(syndromeId)) {
+      return type as SyndromeType;
+    }
+  }
+  return null;
+}
+
+/**
+ * 根据症候 ID 匹配技法（最多 3 条，按难度排序）
+ */
+function matchTechniques(syndromeId: string): TechniqueInfo[] {
+  const matched = techniques
+    .filter(t => t.applicableSyndromes.includes(syndromeId))
+    .sort((a, b) => {
+      const order: Record<string, number> = { beginner: 0, intermediate: 1, advanced: 2 };
+      return (order[a.difficulty] ?? 3) - (order[b.difficulty] ?? 3);
+    })
+    .slice(0, 3);
+
+  return matched.map(t => ({
+    id: t.id,
+    name: t.name,
+    source: t.source,
+    difficulty: t.difficulty,
+    category: t.category,
+    description: t.description,
+    example: t.example,
+  }));
+}
 
 /**
  * 根据活跃症候生成训练推荐列表
@@ -72,11 +142,13 @@ export function generateRecommendations(
         challengeName: matchedTemplate.syndromeName,
         description: matchedTemplate.challenge,
         syndromeId: problem.id,
+        syndromeType: getSyndromeType(problem.id),
         severity: problem.severity,
         tier: matchedTemplate.tier,
         constraint: matchedTemplate.constraint,
         expectedOutcome: matchedTemplate.expectedOutcome,
         mode: matchedTemplate.mode,
+        techniques: matchTechniques(problem.id),
       };
     }
 
@@ -86,11 +158,13 @@ export function generateRecommendations(
       challengeName: problem.name,
       description: fallback.challenge,
       syndromeId: problem.id,
+      syndromeType: getSyndromeType(problem.id),
       severity: problem.severity,
       tier: 'surface',
       constraint: '',
       expectedOutcome: '改善该症候',
       mode: fallback.mode,
+      techniques: matchTechniques(problem.id),
     };
   });
 }

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import Database from 'better-sqlite3';
 import { DiagnosisEntry, SyndromeResult, ActionId, SyndromeId, DiagnosisAnalysis } from '../../renderer/shared/types';
 
@@ -21,32 +22,35 @@ export class DiagnosisService {
     this.db = db;
   }
 
-  save(diagnosis: DiagnosisEntry): void {
+  save(diagnosis: DiagnosisEntry): string {
+    const id = `diag_${crypto.randomUUID()}`;
+    const safeMessageId = diagnosis.messageId || 'unknown';
     const stmt = this.db.prepare(`
       INSERT INTO diagnosis_results (id, session_id, message_id, syndromes, suggested_actions, confidence, timestamp, next_focus)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
-      diagnosis.sessionId + '_' + diagnosis.messageId,
+      id,
       diagnosis.sessionId,
-      diagnosis.messageId,
+      safeMessageId,
       JSON.stringify(diagnosis.syndromes),
       JSON.stringify(diagnosis.suggestedActions),
       diagnosis.confidence,
       diagnosis.timestamp,
       diagnosis.nextFocus ?? null,
     );
+    return id;
   }
 
-  /** 保存 Diagnosis Agent 的结构化分析结果 */
-  saveAnalysis(analysis: DiagnosisAnalysis, sessionId: string, messageId: string): void {
+  /** 保存 Diagnosis Agent 的结构化分析结果（按主键 id 更新） */
+  saveAnalysis(analysis: DiagnosisAnalysis, id: string): void {
     const stmt = this.db.prepare(`
       UPDATE diagnosis_results
       SET root_cause_analysis = ?
-      WHERE session_id = ? AND message_id = ?
+      WHERE id = ?
     `);
-    stmt.run(JSON.stringify(analysis), sessionId, messageId);
+    stmt.run(JSON.stringify(analysis), id);
   }
 
   /** 获取最近的分析结果 */

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
-import type { ChatMessage, AttitudeLevel } from '../shared/types';
+import type { ChatMessage } from '../shared/types';
 import { useConfigStore } from './config.store';
 import { useSessionStore } from './session.store';
 import { useStudentContextStore } from './student-context.store';

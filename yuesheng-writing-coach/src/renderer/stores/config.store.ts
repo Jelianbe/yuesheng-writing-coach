@@ -207,7 +207,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         invoke(IPC_CHANNELS.CONFIG_GET, { key: 'maxTokens' }),
       ]) as ApiResponse<unknown>[];
 
-      const extractValue = <T>(r: ApiResponse<unknown>, fallback: T): T => r.success ? (r.data as T) : fallback;
+      const extractValue = <T>(r: ApiResponse<unknown> | undefined | null, fallback: T): T =>
+        r && typeof r === 'object' && 'success' in r ? (r.success ? (r.data as T) : fallback) : fallback;
 
       const apiKey = extractValue<string>(results[0], '');
       const baseUrl = extractValue<string>(results[1], DEFAULT_CONFIG.baseUrl);

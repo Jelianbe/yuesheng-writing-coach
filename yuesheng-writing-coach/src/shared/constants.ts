@@ -49,9 +49,11 @@ export type ActionId = (typeof ActionId)[keyof typeof ActionId];
 
 /** 教学阶段常量 */
 export const TeachingPhase = {
-  /** 初次见面，了解用户写作目标 */
+  /** 初次见面 */
   INIT: 'P0_INIT',
-  /** 世界观搭建：确定主角 + 缩小到第一个具体场景 */
+  /** 投入建立（V2.2 阶段一演进）—— 让用户愿意暴露 */
+  ENGAGE: 'P0_ENGAGE',
+  /** 世界观搭建 */
   WORLD: 'P1_WORLD',
   /** 诊断-训练循环：识别问题 → 推荐任务 → 练习 → 反馈 */
   PRACTICE_LOOP: 'P2_PRACTICE_LOOP',
@@ -64,6 +66,8 @@ export type TeachingPhase = (typeof TeachingPhase)[keyof typeof TeachingPhase];
 
 /** 教学子阶段常量 */
 export const TeachingSubphase = {
+  // P0_ENGAGE 子阶段
+  ENGAGE_CONFIRM: 'S0_CONFIRM',
   // P1_WORLD 子阶段
   WORLD_NATURAL_LAW: 'S1_NATURAL_LAW',
   WORLD_PROTAGONIST: 'S1_PROTAGONIST',
@@ -72,6 +76,7 @@ export const TeachingSubphase = {
   WORLD_DAILY_DETAIL: 'S1_DAILY_DETAIL',
   // P2_PRACTICE_LOOP 子阶段
   PRACTICE_IDENTIFY: 'S2_IDENTIFY',
+  PRACTICE_REFLECTION: 'S2_REFLECTION',
   PRACTICE_TEACHING: 'S2_TEACHING',
   PRACTICE_ASSIGN: 'S2_ASSIGN_TASK',
   PRACTICE_REVIEW: 'S2_REVIEW_TASK',
@@ -116,6 +121,7 @@ export const IPC_CHANNELS = {
   EVIDENCE_GET_BY_ABILITY: 'evidence:getByAbility',
   EVIDENCE_GET_CHAIN: 'evidence:getChain',
   EVIDENCE_CREATE: 'evidence:create',
+  EVIDENCE_GET_BY_SYNDROME: 'evidence:getBySyndrome',
   // === 训练 ===
   TRAINING_RECOMMEND: 'training:recommend',
   TRAINING_ASSIGN: 'training:assign',
@@ -123,6 +129,8 @@ export const IPC_CHANNELS = {
   TRAINING_SKIP: 'training:skip',
   TRAINING_HISTORY: 'training:history',
   TRAINING_SUBMIT: 'training:submit',
+  TRAINING_EVALUATE: 'training:evaluate',
+  TRAINING_DERIVE_BEHAVIOR: 'training:derive-behavior',
   // === 聊天 ===
   CHAT_SEND: 'chat:send',
   CHAT_STREAM_DATA: 'chat:stream:data',
@@ -133,4 +141,17 @@ export const IPC_CHANNELS = {
   SESSION_DELETE: 'session:delete',
   SESSION_RENAME: 'session:rename',
   SESSION_GET_MESSAGES: 'session:getMessages',
+  SESSION_GET_MESSAGES_PAGED: 'session:getMessagesPaged',
+  SESSION_LIST_WITH_META: 'session:listWithMeta',
+  SESSION_UPDATE_TITLE: 'session:updateTitle',
+  SESSION_SEARCH_MESSAGES: 'session:searchMessages',
+  // === 作品管理 ===
+  MANUSCRIPT_LIST: 'manuscript:list',
+  MANUSCRIPT_GET: 'manuscript:get',
+  MANUSCRIPT_CREATE: 'manuscript:create',
+  MANUSCRIPT_UPDATE: 'manuscript:update',
+  CHAPTER_LIST: 'chapter:list',
+  CHAPTER_GET: 'chapter:get',
+  CHAPTER_CREATE: 'chapter:create',
+  CHAPTER_UPDATE_CONTENT: 'chapter:updateContent',
 } as const;

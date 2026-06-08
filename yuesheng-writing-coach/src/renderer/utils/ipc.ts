@@ -28,10 +28,12 @@ export async function invoke<C extends keyof IPCRequestMap & string>(
 
 /**
  * 获取安全的 IPC invoke 函数（无类型校验，用于无法使用类型化版本的场景）
+ * 在非 Electron 环境（HMR / 浏览器预览）中返回空操作函数，不抛异常
  */
 export function getInvoke(): (channel: string, args?: unknown) => Promise<unknown> {
   if (!window.electronAPI?.invoke) {
-    throw new Error('[IPC] ElectronAPI not available. Make sure preload script is loaded.');
+    // 非 Electron 环境返回空操作（HMR / 浏览器预览）
+    return async () => ({ success: false, error: 'IPC not available' });
   }
   return window.electronAPI.invoke.bind(window.electronAPI);
 }
@@ -50,7 +52,8 @@ export function subscribe<C extends keyof IPCEventMap & string>(
   callback: (data: IPCEventMap[C]) => void,
 ): () => void {
   if (!window.electronAPI?.on) {
-    throw new Error('[IPC] ElectronAPI not available.');
+    // 非 Electron 环境返回空 cleanup（HMR / 浏览器预览）
+    return () => {};
   }
   return window.electronAPI.on(channel, (...args: unknown[]) => {
     callback(args[0] as IPCEventMap[C]);

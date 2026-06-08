@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { GrowthTrendService, SyndromeTrend } from '../growth-trend.service';
+import { describe, it, expect, vi } from 'vitest';
+import { GrowthTrendService } from '../growth-trend.service';
 import { StudentModelService } from '../student-model.service';
 
 // Mock StudentModelService

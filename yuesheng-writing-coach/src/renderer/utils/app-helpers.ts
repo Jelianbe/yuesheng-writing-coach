@@ -6,6 +6,7 @@
 
 import type { AttitudeLevel, TeachingState, DiagnosisEntry } from '../shared/types';
 import type { RightPanelProps } from '../components/panels/RightPanel';
+import { diagnosisToUserFacing } from '../../shared/diagnosis-translations';
 
 // ===== 右侧面板辅助 =====
 
@@ -56,12 +57,15 @@ export function buildRightPanelDiagnoses(
   currentDiagnosis: DiagnosisEntry | null,
 ): RightPanelProps['diagnoses'] {
   if (!currentDiagnosis?.syndromes?.length) return [];
-  return currentDiagnosis.syndromes.map((s) => ({
-    id: s.id,
-    name: s.name,
-    severity: s.severity === 'L3' ? 'high' : s.severity === 'L2' ? 'mid' : 'low',
-    status: `信号分 ${(s.score ?? 0).toFixed(1)}`,
-  }));
+  return currentDiagnosis.syndromes.map((s) => {
+    const translated = diagnosisToUserFacing(s.id, s.severity);
+    return {
+      id: s.id,
+      name: translated.name,
+      description: translated.description,
+      severity: s.severity === 'L3' ? 'high' : s.severity === 'L2' ? 'mid' : 'low',
+    };
+  });
 }
 
 // ===== 成长趋势辅助 =====
@@ -134,16 +138,16 @@ export function getTimeAgo(dateStr: string): string {
 export function mapHeaderAttitude(attitudeLevel: string): 'gentle' | 'direct' | 'sharp' {
   const map: Record<string, 'gentle' | 'direct' | 'sharp'> = {
     doubao: 'gentle',
-    direct: 'direct',
-    yuesheng: 'sharp',
+    yuesheng: 'direct',
+    direct: 'sharp',
   };
-  return map[attitudeLevel] ?? 'sharp';
+  return map[attitudeLevel] ?? 'direct';
 }
 
 export function getAttitudeMap(): Record<string, AttitudeLevel> {
   return {
     gentle: 'doubao',
-    direct: 'direct',
-    sharp: 'yuesheng',
+    direct: 'yuesheng',
+    sharp: 'direct',
   };
 }

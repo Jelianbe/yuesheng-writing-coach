@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 新范式 V2（教练交互版）</title>
+<style>
+:root {
+  --bg:        #f7f3ee;
+  --bg-sidebar: #eee8df;
+  --bg-editor:  #fffefc;
+  --bg-card:    #faf6f0;
+  --bg-hover:   #e8dfd3;
+  --bg-active:  #d4c8b8;
+  --bg-coach:   #f5f0e8;
+  --border:     #e0d6c8;
+  --border-focus:#c47a2a;
+  --text:       #3c2f1e;
+  --text-secondary: #6b5b43;
+  --text-tertiary:  #9a8c7a;
+  --accent:     #c47a2a;
+  --accent-dim: rgba(196,122,42,0.10);
+  --accent-text:#a0623a;
+  --warning:    #c47a2a;
+  --warning-dim:rgba(196,122,42,0.08);
+  --error:      #b85c3a;
+  --error-dim:  rgba(184,92,58,0.08);
+  --success:    #5a8a3a;
+  --success-dim:rgba(90,138,58,0.08);
+  --info:       #4a7a9a;
+  --info-dim:   rgba(74,122,154,0.08);
+  --coach-bg:   #f0ead8;
+  --coach-border:#d6ccb0;
+  --user-bg:    #e8e0d4;
+  --radius:     8px;
+  --radius-sm:  5px;
+  --shadow:     0 2px 8px rgba(60,47,30,0.08);
+  --font-ui:    "LXGW WenKai", "Noto Sans SC", "PingFang SC", serif;
+  --font-editor:"LXGW WenKai", "Noto Serif SC", serif;
+  --font-mono:  "Cascadia Code", "Fira Code", monospace;
+  --transition: 0.2s ease;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--font-ui);
+  background: #ddd5c8;
+  display:flex; justify-content:center; align-items:center;
+  min-height:100vh; color:var(--text);
+}
+
+.shell {
+  width:1300px; height:840px;
+  background:var(--bg);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  border-radius:12px;
+  border:1px solid var(--border);
+  box-shadow:0 20px 60px rgba(60,47,30,0.18);
+}
+
+/* ===== Header ===== */
+.header {
+  height:44px; flex-shrink:0;
+  background:linear-gradient(135deg,#c47a2a 0%,#a0623a 100%);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px; color:#fff; font-size:13px;
+}
+.header-left { display:flex; align-items:center; gap:10px; }
+.header-logo { font-size:16px; font-weight:700; letter-spacing:1px; }
+.header-sep { opacity:0.5; }
+.header-right { display:flex; gap:8px; }
+.header-btn {
+  background:rgba(255,255,255,0.15); border:none; color:#fff;
+  padding:4px 12px; border-radius:var(--radius-sm);
+  font-size:11px; cursor:pointer; transition:var(--transition);
+}
+.header-btn:hover { background:rgba(255,255,255,0.28); }
+
+/* ===== Main ===== */
+.main { display:flex; flex:1; overflow:hidden; }
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width:220px; min-width:220px;
+  background:var(--bg-sidebar);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  transition:width 0.25s, min-width 0.25s;
+}
+.sidebar.collapsed { width:0; min-width:0; overflow:hidden; border-right:none; }
+
+.sidebar-header {
+  padding:10px 12px 6px;
+  font-size:11px; color:var(--text-tertiary);
+  text-transform:uppercase; letter-spacing:1px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.sidebar-toggle { background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:14px; }
+.sidebar-toggle:hover { color:var(--accent); }
+
+.tree { flex:1; overflow-y:auto; padding:4px 0; }
+.tree-item {
+  display:flex; align-items:center; gap:4px;
+  padding:5px 12px; font-size:12.5px; color:var(--text-secondary);
+  cursor:pointer; transition:var(--transition);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tree-item:hover { background:var(--bg-hover); color:var(--text); }
+.tree-item.active { background:var(--accent-dim); color:var(--accent-text); font-weight:600; }
+.tree-item .indent { display:inline-block; width:16px; flex-shrink:0; }
+.tree-item .arrow { display:inline-flex; width:14px; height:14px; align-items:center; justify-content:center; font-size:9px; color:var(--text-tertiary); transition:transform 0.15s; flex-shrink:0; }
+.tree-item .arrow.open { transform:rotate(90deg); }
+.tree-item .icon { flex-shrink:0; font-size:13px; }
+.tree-item .badge { margin-left:auto; font-size:10px; background:var(--accent-dim); color:var(--accent-text); padding:0 5px; border-radius:8px; flex-shrink:0; }
+
+.sidebar-bottom { border-top:1px solid var(--border); padding:8px 12px; }
+.sidebar-bottom-title { font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.task-item { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-secondary); padding:3px 0; }
+.task-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.task-dot.green { background:var(--success); }
+.task-dot.amber { background:var(--warning); }
+
+/* ===== Editor Area (left half) ===== */
+.editor-area {
+  flex:1; display:flex; flex-direction:column;
+  overflow:hidden; min-width:0;
+  border-right:1px solid var(--border);
+}
+
+.breadcrumb {
+  height:30px; min-height:30px;
+  display:flex; align-items:center;
+  padding:0 14px; font-size:11.5px; color:var(--text-tertiary);
+  border-bottom:1px solid var(--border); background:var(--bg-card); gap:4px;
+}
+.breadcrumb span { cursor:pointer; }
+.breadcrumb span:hover { color:var(--accent); }
+.breadcrumb .sep { cursor:default; }
+.breadcrumb .current { color:var(--text); font-weight:600; }
+
+.editor-tabs {
+  height:34px; min-height:34px;
+  display:flex; align-items:center;
+  padding:0 8px; background:var(--bg-card);
+  border-bottom:1px solid var(--border); gap:2px;
+}
+.editor-tab {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 12px; font-size:12px; color:var(--text-secondary);
+  border-radius:var(--radius-sm) var(--radius-sm) 0 0;
+  cursor:pointer; transition:var(--transition);
+  white-space:nowrap; border-bottom:2px solid transparent;
+}
+.editor-tab:hover { background:var(--bg-hover); color:var(--text); }
+.editor-tab.active { background:var(--bg-editor); color:var(--accent-text); border-bottom-color:var(--accent); font-weight:600; }
+
+.editor-scroll {
+  flex:1; display:flex; overflow:hidden; background:var(--bg-editor);
+}
+
+.line-numbers {
+  width:44px; min-width:44px;
+  padding:14px 0; text-align:right;
+  font-family:var(--font-mono); font-size:12px; line-height:1.85;
+  color:var(--text-tertiary); background:var(--bg-card);
+  border-right:1px solid var(--border);
+  user-select:none; overflow:hidden;
+}
+.ln { padding-right:8px; display:block; height:1.85em; line-height:1.85; }
+.ln.active { color:var(--accent); font-weight:600; }
+
+.editor-body {
+  flex:1; overflow-y:auto; padding:14px 20px;
+  font-family:var(--font-editor); font-size:15px; line-height:1.85;
+  color:var(--text); outline:none;
+}
+.editor-line { line-height:1.85; margin-bottom:0; }
+.editor-line.heading { font-size:17px; font-weight:700; color:var(--text); }
+
+/* Inline diagnostics */
+.diag-mark {
+  border-bottom:2px wavy var(--warning);
+  cursor:pointer; position:relative;
+  background:var(--warning-dim); border-radius:2px; padding:0 1px;
+}
+.diag-mark.error { border-bottom-color:var(--error); background:var(--error-dim); }
+.diag-mark.active-diag {
+  background:rgba(196,122,42,0.2);
+  box-shadow:0 0 0 2px rgba(196,122,42,0.3);
+  border-radius:2px;
+}
+.diag-mark:hover { background:rgba(196,122,42,0.18); }
+
+/* ===== Coach Area (right half) ===== */
+.coach-area {
+  width:380px; min-width:380px;
+  display:flex; flex-direction:column;
+  background:var(--bg-coach);
+  overflow:hidden;
+  transition:width 0.25s, min-width 0.25s;
+}
+.coach-area.collapsed { width:0; min-width:0; overflow:hidden; }
+
+.coach-header {
+  height:40px; min-height:40px;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 14px;
+  border-bottom:1px solid var(--coach-border);
+  background:var(--coach-bg);
+}
+.coach-header-left {
+  display:flex; align-items:center; gap:8px;
+  font-size:13px; font-weight:600; color:var(--accent-text);
+}
+.coach-header-left .coach-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--success); animation:pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+.coach-header-right { display:flex; gap:4px; }
+.coach-tab-btn {
+  font-size:11px; padding:3px 10px;
+  border-radius:var(--radius-sm); border:1px solid var(--coach-border);
+  background:var(--bg-card); color:var(--text-secondary);
+  cursor:pointer; transition:var(--transition);
+}
+.coach-tab-btn:hover { border-color:var(--accent); color:var(--accent); }
+.coach-tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+/* Coach thread list (overview) */
+.coach-threads {
+  flex:1; overflow-y:auto; padding:12px;
+}
+.coach-threads.hidden { display:none; }
+
+.thread-card {
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:var(--radius); padding:12px 14px;
+  margin-bottom:10px; cursor:pointer;
+  transition:var(--transition);
+  border-left:3px solid var(--warning);
+}
+.thread-card.error { border-left-color:var(--error); }
+.thread-card.resolved { border-left-color:var(--success); opacity:0.6; }
+.thread-card:hover { box-shadow:var(--shadow); transform:translateY(-1px); }
+.thread-card.active { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-dim); }
+.thread-card-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.thread-card-preview { font-size:12px; color:var(--text-secondary); line-height:1.5; }
+.thread-card-meta { font-size:11px; color:var(--text-tertiary); margin-top:6px; display:flex; justify-content:space-between; align-items:center; }
+.thread-card-status {
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:10px; padding:2px 6px; border-radius:8px;
+}
+.thread-card-status.awaiting { background:var(--warning-dim); color:var(--accent-text); }
+.thread-card-status.in-progress { background:var(--info-dim); color:var(--info); }
+.thread-card-status.resolved { background:var(--success-dim); color:var(--success); }
+
+/* Coach active conversation */
+.coach-conversation {
+  flex:1; display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.coach-conversation.hidden { display:none; }
+
+.coach-conversation-header {
+  padding:10px 14px;
+  border-bottom:1px solid var(--coach-border);
+  background:var(--coach-bg);
+}
+.coach-conversation-header .back-btn {
+  background:none; border:none; color:var(--accent-text);
+  font-size:12px; cursor:pointer; padding:0; margin-bottom:4px;
+}
+.coach-conversation-header .back-btn:hover { text-decoration:underline; }
+.coach-conversation-header .thread-title {
+  font-size:14px; font-weight:600; color:var(--text);
+}
+.coach-conversation-header .thread-line {
+  font-size:11px; color:var(--text-tertiary); margin-top:2px;
+}
+
+.coach-messages {
+  flex:1; overflow-y:auto; padding:14px;
+}
+
+.coach-msg {
+  margin-bottom:14px;
+}
+.coach-msg-role {
+  font-size:11px; font-weight:600; margin-bottom:3px;
+  display:flex; align-items:center; gap:4px;
+}
+.coach-msg-role.coach { color:var(--accent-text); }
+.coach-msg-role.user { color:var(--info); justify-content:flex-end; }
+.coach-msg-bubble {
+  padding:10px 14px; border-radius:var(--radius);
+  font-size:13px; line-height:1.6; max-width:92%;
+}
+.coach-msg-bubble.coach {
+  background:var(--coach-bg); border:1px solid var(--coach-border);
+  border-top-left-radius:2px; color:var(--text);
+}
+.coach-msg-bubble.user {
+  background:var(--user-bg); border:1px solid var(--border);
+  border-top-right-radius:2px; color:var(--text);
+  margin-left:auto;
+}
+.coach-msg-bubble .highlight-quote {
+  display:block; margin:6px 0; padding:4px 10px;
+  background:var(--accent-dim); border-left:2px solid var(--accent);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  font-size:12px; color:var(--accent-text); font-style:italic;
+}
+.coach-msg-bubble .coach-question {
+  display:block; margin-top:8px; padding:6px 10px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  font-size:12.5px; color:var(--text); font-weight:600;
+}
+
+/* Quick reply suggestions */
+.coach-quick-replies {
+  display:flex; flex-wrap:wrap; gap:6px;
+  padding:8px 14px; border-top:1px solid var(--coach-border);
+}
+.quick-reply {
+  font-size:11.5px; padding:4px 10px;
+  border-radius:14px; border:1px solid var(--border);
+  background:var(--bg); color:var(--accent-text);
+  cursor:pointer; transition:var(--transition);
+}
+.quick-reply:hover { border-color:var(--accent); background:var(--accent-dim); }
+
+/* Coach input */
+.coach-input-row {
+  display:flex; gap:6px; padding:10px 14px;
+  border-top:1px solid var(--coach-border);
+  background:var(--coach-bg);
+}
+.coach-input {
+  flex:1; padding:8px 12px; border:1px solid var(--coach-border);
+  border-radius:var(--radius-sm); font-size:13px;
+  font-family:var(--font-ui); background:var(--bg);
+  color:var(--text); outline:none; transition:var(--transition);
+}
+.coach-input:focus { border-color:var(--accent); }
+.coach-send {
+  padding:8px 16px; background:var(--accent); color:#fff;
+  border:none; border-radius:var(--radius-sm);
+  font-size:13px; cursor:pointer; transition:var(--transition);
+}
+.coach-send:hover { background:#b06a20; }
+
+/* ===== Bottom Bar ===== */
+.bottom-bar {
+  height:36px; min-height:36px;
+  border-top:1px solid var(--border);
+  background:var(--bg-card);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 14px;
+}
+.bottom-bar-left { display:flex; align-items:center; gap:8px; }
+.bottom-pill {
+  font-size:11px; padding:3px 10px; border-radius:10px;
+  background:var(--accent-dim); color:var(--accent-text);
+  border:1px solid transparent; cursor:pointer; transition:var(--transition);
+}
+.bottom-pill:hover { border-color:var(--accent); }
+.bottom-bar-right { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--text-tertiary); }
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--bg-active); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text-tertiary); }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <span class="header-logo">🌙 月笙写作教练</span>
+      <span class="header-sep">|</span>
+      <span>星河之外 · 第一章：启程</span>
+    </div>
+    <div class="header-right">
+      <button class="header-btn" onclick="toggleSidebar()">☰ 作品</button>
+      <button class="header-btn" onclick="toggleCoach()">🎯 教练</button>
+      <button class="header-btn">⚙ 设置</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span>作品空间</span>
+        <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+      </div>
+      <div class="tree" id="treeView"></div>
+      <div class="sidebar-bottom">
+        <div class="sidebar-bottom-title">当前任务</div>
+        <div class="task-item"><span class="task-dot green"></span> P003 对话机械感</div>
+        <div class="task-item"><span class="task-dot amber"></span> 现实锚点训练</div>
+      </div>
+    </div>
+
+    <!-- Editor Area -->
+    <div class="editor-area">
+      <div class="breadcrumb">
+        <span>星河之外</span><span class="sep">›</span>
+        <span>第一章</span><span class="sep">›</span>
+        <span class="current">文稿</span>
+      </div>
+      <div class="editor-tabs">
+        <div class="editor-tab active">✏️ 文稿</div>
+        <div class="editor-tab">🏋️ 训练</div>
+        <div class="editor-tab">🏆 成就</div>
+        <div class="editor-tab">🗺️ 地图</div>
+      </div>
+      <div class="editor-scroll">
+        <div class="line-numbers" id="lineNumbers"></div>
+        <div class="editor-body" id="editorBody"></div>
+      </div>
+    </div>
+
+    <!-- Coach Area -->
+    <div class="coach-area" id="coachArea">
+      <div class="coach-header">
+        <div class="coach-header-left">
+          <span class="coach-dot"></span>
+          教练
+        </div>
+        <div class="coach-header-right">
+          <button class="coach-tab-btn active" id="btnThreads" onclick="showThreads()">诊断</button>
+          <button class="coach-tab-btn" id="btnConv" onclick="showConversation()">对话</button>
+        </div>
+      </div>
+
+      <!-- Thread List View -->
+      <div class="coach-threads" id="threadsView">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Conversation View -->
+      <div class="coach-conversation hidden" id="conversationView">
+        <div class="coach-conversation-header">
+          <button class="back-btn" onclick="showThreads()">← 返回诊断列表</button>
+          <div class="thread-title" id="convTitle"></div>
+          <div class="thread-line" id="convLine"></div>
+        </div>
+        <div class="coach-messages" id="convMessages"></div>
+        <div class="coach-quick-replies" id="convQuickReplies"></div>
+        <div class="coach-input-row">
+          <input class="coach-input" id="convInput" placeholder="和教练聊聊你的想法..." onkeydown="if(event.key==='Enter')sendCoachMsg()">
+          <button class="coach-send" onclick="sendCoachMsg()">发送</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div class="bottom-bar-left">
+      <span class="bottom-pill" onclick="quickAction('全身诊断')">🔍 全身诊断</span>
+      <span class="bottom-pill" onclick="quickAction('选段诊断')">📋 选段诊断</span>
+      <span class="bottom-pill" onclick="quickAction('给点灵感')">💡 灵感</span>
+      <span class="bottom-pill" onclick="quickAction('继续写')">✍️ 续写</span>
+    </div>
+    <div class="bottom-bar-right">
+      <span>态度: 直接</span>
+      <span>·</span>
+      <span>DeepSeek V4</span>
+      <span>·</span>
+      <span>3 症候</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== Data =====
+const threads = [
+  {
+    id:'d1', line:5, type:'warning', status:'awaiting',
+    title:'P003 对话机械感',
+    preview:'"你好，我是林逸。"——登场对话太直白，缺少角色个性展示。',
+    snippet:'"你好，我是林逸。"',
+    messages:[
+      { role:'coach', text:'我注意到第5行的登场对话——' , quote:'"你好，我是林逸。"' },
+      { role:'coach', text:'这句话本身没问题，但作为角色首次亮相，它没有帮读者"看见"林逸是什么样的人。你觉得林逸在说这句话的时候，内心是什么状态？', question:'他紧张吗？自信吗？还是假装镇定？' },
+    ],
+    quickReplies:['他其实很紧张','他故作轻松','我想保留这句，但加细节']
+  },
+  {
+    id:'d2', line:11, type:'error', status:'in-progress',
+    title:'P009 角色动机缺失',
+    preview:'苏瑶提出合作，但读者不知道她为什么选林逸。',
+    snippet:'"我们合作吧。"她说。',
+    messages:[
+      { role:'coach', text:'来看第11行——', quote:'"我们合作吧。"她说。' },
+      { role:'coach', text:'苏瑶突然提出合作，但读者此刻对她的了解为零。她为什么选林逸？她观察他多久了？她有什么目的？' },
+      { role:'user', text:'她其实是看到林逸从残骸里活着出来了，觉得他适合当搭档' },
+      { role:'coach', text:'这个动机很好！但现在文本里完全没有体现。你不用"告诉"读者，可以"展示"——比如苏瑶之前有什么行为暗示她在观察林逸？', question:'试试在对话之前，加一个苏瑶观察林逸的细节？' },
+    ],
+    quickReplies:['加一个她注视的细节','她在暗处等着他','换个方式引入']
+  },
+  {
+    id:'d3', line:14, type:'warning', status:'awaiting',
+    title:'P015 节奏单一',
+    preview:'连续对话缺少叙述穿插，节奏像"弹幕"。',
+    snippet:'他们就这样聊了很久。',
+    messages:[
+      { role:'coach', text:'第14行有个节奏问题——', quote:'他们就这样聊了很久。' },
+      { role:'coach', text:'连续几段都是"他说/她说"，中间没有环境描写、动作或心理活动来缓冲。读者的感受就像在看弹幕，没有呼吸空间。', question:'你想在对话之间加什么来调节节奏？环境？动作？还是内心独白？' },
+    ],
+    quickReplies:['加环境描写','加动作描写','加心理活动']
+  },
+];
+
+const manuscriptLines = [
+  { text:'第一章：启程', type:'heading' },
+  { text:'', type:'blank' },
+  { text:'林逸从星舰残骸中爬出来时，地平线上的双星正缓缓沉入紫色的尘埃海。', type:'normal' },
+  { text:'他拍了拍身上的碎屑，环顾四周。这里没有任何生命的迹象——至少看起来没有。', type:'normal' },
+  { text:'没有人回答。', type:'normal' },
+  { text:'"你好，我是林逸。"他对着空旷的荒原说道，声音被风扯得支离破碎。', type:'dialogue', diag:'d1' },
+  { text:'他叹了口气，走向那座半埋在沙丘里的未知建筑。正当他伸手触碰那扇布满藤蔓纹路的金属门时——', type:'normal' },
+  { text:'"别动。"', type:'dialogue' },
+  { text:'林逸僵住了。', type:'normal' },
+  { text:'"转身，慢慢转。"那个声音说道。是一个年轻女子的声音，带着一种不容置疑的冷静。', type:'normal' },
+  { text:'他转过身，看见了她。', type:'normal' },
+  { text:'"我们合作吧。"她说。', type:'dialogue', diag:'d2' },
+  { text:'林逸愣了一下。"为什么？我们刚认识。"', type:'dialogue' },
+  { text:'"因为你能活着从残骸里爬出来，说明你比我见过的所有人都更有韧性。"她顿了顿，"而且，我知道星核的下落。"', type:'dialogue' },
+  { text:'他们就这样聊了很久。', type:'normal', diag:'d3' },
+  { text:'林逸发现苏瑶知道很多关于这片星域的事情，但她不愿意多说自己的来历。每一次他试图追问，她就会把话题转回星核和接下来的行程。', type:'normal' },
+  { text:'"你总是这样回避问题吗？"林逸终于忍不住问。', type:'dialogue' },
+  { text:'苏瑶沉默了一会儿，然后笑了——那种笑容里有很多东西，但林逸一样都读不懂。', type:'normal' },
+  { text:'"等你真的了解我了，你会发现今天这个问题问得多么可笑。"', type:'dialogue' },
+  { text:'风又起了。双星完全沉入尘埃海，天际线燃起一片深红色的余烬。', type:'normal' },
+];
+
+const treeData = [
+  { type:'work', label:'星河之外', open:true, children:[
+    { type:'chapter', label:'第一章：启程', active:true, open:true, children:[
+      { type:'session', label:'诊断会话 #12', badge:'3' },
+      { type:'session', label:'诊断会话 #11', badge:'' },
+      { type:'session', label:'大纲梳理', badge:'' },
+    ]},
+    { type:'chapter', label:'第二章：异星遗迹', open:false, children:[
+      { type:'session', label:'世界观讨论', badge:'' },
+    ]},
+    { type:'chapter', label:'第三章：归途', children:[] },
+  ]},
+  { type:'work', label:'深海回声', open:false, children:[
+    { type:'chapter', label:'序言', children:[
+      { type:'session', label:'开篇诊断', badge:'' },
+    ]},
+  ]},
+];
+
+let activeThreadId = null;
+
+// ===== Render Tree =====
+function renderTree(data, container, depth=0) {
+  data.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'tree-item' + (item.active?' active':'');
+    let indent = '';
+    for(let i=0;i<depth;i++) indent += '<span class="indent"></span>';
+    let arrow = item.children && item.children.length>0
+      ? `<span class="arrow ${item.open?'open':''}">▶</span>`
+      : '<span class="arrow" style="visibility:hidden;">▶</span>';
+    let icon = item.type==='work'?'📚': item.type==='chapter'?'📖':'💬';
+    let badge = item.badge ? `<span class="badge">${item.badge}</span>` : '';
+    el.innerHTML = `${indent}${arrow}<span class="icon">${icon}</span>${item.label}${badge}`;
+    el.onclick = () => { if(item.children?.length){ item.open=!item.open; renderFullTree(); } };
+    container.appendChild(el);
+    if(item.children?.length && item.open) renderTree(item.children, container, depth+1);
+  });
+}
+function renderFullTree() {
+  const tv = document.getElementById('treeView');
+  tv.innerHTML = '';
+  renderTree(treeData, tv);
+}
+renderFullTree();
+
+// ===== Render Editor =====
+function renderEditor() {
+  const lnEl = document.getElementById('lineNumbers');
+  const ebEl = document.getElementById('editorBody');
+  lnEl.innerHTML = ''; ebEl.innerHTML = '';
+  manuscriptLines.forEach((line, i) => {
+    const n = i+1;
+    const ln = document.createElement('span');
+    ln.className = 'ln' + (line.diag?' active':'');
+    ln.textContent = n;
+    lnEl.appendChild(ln);
+
+    const pl = document.createElement('div');
+    pl.className = 'editor-line' + (line.type==='heading'?' heading':'');
+
+    if(line.type==='blank') { pl.innerHTML='<br>'; }
+    else if(line.diag) {
+      const d = threads.find(t=>t.id===line.diag);
+      const cls = d.type==='error'?'error':'';
+      pl.innerHTML = `<span class="diag-mark ${cls}" data-thread="${line.diag}" onclick="openThread('${line.diag}')">${esc(line.text)}</span>`;
+    } else {
+      pl.innerHTML = esc(line.text);
+    }
+    ebEl.appendChild(pl);
+  });
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+renderEditor();
+
+// ===== Render Thread List =====
+function renderThreads() {
+  const v = document.getElementById('threadsView');
+  v.innerHTML = '';
+  threads.forEach(t => {
+    const statusLabel = t.status==='awaiting'?'等回复': t.status==='in-progress'?'进行中':'已解决';
+    const statusCls = t.status;
+    const typeCls = t.type==='error'?'error':'';
+    const activeCls = activeThreadId===t.id?' active':'';
+    v.innerHTML += `
+      <div class="thread-card ${typeCls}${activeCls}" onclick="openThread('${t.id}')">
+        <div class="thread-card-title">${t.title}</div>
+        <div class="thread-card-preview">${t.preview}</div>
+        <div class="thread-card-meta">
+          <span>第 ${t.line} 行</span>
+          <span class="thread-card-status ${statusCls}">${statusLabel}</span>
+        </div>
+      </div>`;
+  });
+}
+renderThreads();
+
+// ===== Open Thread =====
+function openThread(id) {
+  activeThreadId = id;
+  const t = threads.find(th=>th.id===id);
+  if(!t) return;
+
+  // Highlight in editor
+  document.querySelectorAll('.diag-mark').forEach(el => {
+    el.classList.remove('active-diag');
+    if(el.dataset.thread===id) el.classList.add('active-diag');
+  });
+
+  // Show conversation
+  document.getElementById('threadsView').classList.add('hidden');
+  document.getElementById('conversationView').classList.remove('hidden');
+  document.getElementById('btnConv').classList.add('active');
+  document.getElementById('btnThreads').classList.remove('active');
+
+  document.getElementById('convTitle').textContent = t.title;
+  document.getElementById('convLine').textContent = `第 ${t.line} 行 · ${t.snippet}`;
+
+  renderMessages(t);
+  renderQuickReplies(t);
+}
+
+function renderMessages(t) {
+  const mc = document.getElementById('convMessages');
+  mc.innerHTML = '';
+  t.messages.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'coach-msg';
+    let bubbleContent = '';
+    if(m.quote) bubbleContent += `<span class="highlight-quote">${esc(m.quote)}</span>`;
+    bubbleContent += esc(m.text);
+    if(m.question) bubbleContent += `<span class="coach-question">❓ ${esc(m.question)}</span>`;
+    div.innerHTML = `
+      <div class="coach-msg-role ${m.role}">${m.role==='coach'?'🌙 教练':'✍️ 你'}</div>
+      <div class="coach-msg-bubble ${m.role}">${bubbleContent}</div>`;
+    mc.appendChild(div);
+  });
+  mc.scrollTop = mc.scrollHeight;
+}
+
+function renderQuickReplies(t) {
+  const qr = document.getElementById('convQuickReplies');
+  qr.innerHTML = '';
+  t.quickReplies.forEach(r => {
+    qr.innerHTML += `<span class="quick-reply" onclick="quickReply('${esc(r)}')">${r}</span>`;
+  });
+}
+
+// ===== Show Threads / Conversation =====
+function showThreads() {
+  activeThreadId = null;
+  document.getElementById('threadsView').classList.remove('hidden');
+  document.getElementById('conversationView').classList.add('hidden');
+  document.getElementById('btnThreads').classList.add('active');
+  document.getElementById('btnConv').classList.remove('active');
+  document.querySelectorAll('.diag-mark').forEach(el => el.classList.remove('active-diag'));
+  renderThreads();
+}
+
+function showConversation() {
+  if(activeThreadId) {
+    openThread(activeThreadId);
+  } else {
+    // Open first thread by default
+    openThread(threads[0].id);
+  }
+}
+
+// ===== Send Message =====
+function sendCoachMsg() {
+  const input = document.getElementById('convInput');
+  const text = input.value.trim();
+  if(!text || !activeThreadId) return;
+
+  const t = threads.find(th=>th.id===activeThreadId);
+  t.messages.push({ role:'user', text });
+  input.value = '';
+
+  // Simulate coach reply
+  setTimeout(()=>{
+    const replies = {
+      'd1': { text:'好的，那试试把这个紧张感写进文本里——不用改对话内容，在他说话之前加一个动作细节就行。比如手指在发抖？还是吞了口唾沫？', question:'你选哪个细节来展示他的紧张？' },
+      'd2': { text:'可以！在苏瑶开口之前，加一句她观察林逸的动作描写。比如她在暗处看了他多久？她注意到了什么？', question:'试试在对话前加一句她的观察？' },
+      'd3': { text:'好选择。环境描写是调节节奏的好工具——这段对话发生在什么环境下？风？光？声音？', question:'你想加什么环境描写？' },
+    };
+    const r = replies[activeThreadId] || { text:'继续说，我在听。', question:'你怎么想？' };
+    t.messages.push({ role:'coach', text:r.text, question:r.question });
+    t.status = 'in-progress';
+    renderMessages(t);
+    renderQuickReplies({...t, quickReplies:['我试试','换个方向','帮我看改后的效果']});
+  }, 800);
+
+  renderMessages(t);
+}
+
+// ===== Quick Reply =====
+function quickReply(text) {
+  document.getElementById('convInput').value = text;
+  sendCoachMsg();
+}
+
+// ===== Quick Action =====
+function quickAction(type) {
+  alert('快捷操作：' + type + '（演示模式）');
+}
+
+// ===== Toggle Sidebar =====
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ===== Toggle Coach =====
+function toggleCoach() {
+  document.getElementById('coachArea').classList.toggle('collapsed');
+}
+</script>
+</body>
+</html>

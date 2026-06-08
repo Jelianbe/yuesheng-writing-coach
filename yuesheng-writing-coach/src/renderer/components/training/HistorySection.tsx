@@ -21,7 +21,7 @@ const HistorySection: React.FC<{
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>近期训练记录</div>
         <div style={emptyStyle}>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
             加载中...
           </p>
         </div>
@@ -34,7 +34,7 @@ const HistorySection: React.FC<{
       <div style={sectionStyle}>
         <div style={sectionTitleStyle}>近期训练记录</div>
         <div style={emptyStyle}>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
             暂无训练记录。完成练习后，记录会显示在此处。
           </p>
         </div>
@@ -55,7 +55,7 @@ const HistorySection: React.FC<{
               gap: 8,
               padding: '6px 0',
               fontSize: '0.85rem',
-              color: record.status === 'skipped' ? 'var(--color-text-secondary)' : 'var(--color-text-primary)',
+              color: record.status === 'skipped' ? 'var(--text-secondary)' : 'var(--text-primary)',
               opacity: record.status === 'skipped' ? 0.7 : 1,
             }}
           >
@@ -68,7 +68,7 @@ const HistorySection: React.FC<{
                 {Math.round(record.effectiveness * 100)}% 有效
               </span>
             )}
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
               {record.completedAt ?? record.assignedAt}
             </span>
           </div>

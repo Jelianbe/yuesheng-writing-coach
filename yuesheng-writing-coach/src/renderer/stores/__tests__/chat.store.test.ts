@@ -27,8 +27,6 @@ describe('ChatStore', () => {
     useSessionStore.setState({
       sessions: [],
       currentSessionId: 'test-session',
-      currentMessages: [],
-      isLoading: false,
     });
     clearMock();
     vi.restoreAllMocks();
@@ -111,8 +109,7 @@ describe('ChatStore', () => {
       let loadingStarted = false;
 
       // 拦截 setState 以在发送过程中检查 loading 状态
-      const origInvoke = window.electronAPI!.invoke;
-      window.electronAPI!.invoke = vi.fn().mockImplementation(async (...args: unknown[]) => {
+      window.electronAPI!.invoke = vi.fn().mockImplementation(async () => {
         loadingStarted = useChatStore.getState().isLoading;
         return { success: true, messageId: 'mock-id' };
       });

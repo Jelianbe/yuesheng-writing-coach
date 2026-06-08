@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { IPC_CHANNELS } from '../shared/constants';
-import type { SyndromeResult, RewriteEvaluation, ApiResponse } from '../shared/types';
+import type { RewriteEvaluation, ApiResponse } from '../shared/types';
 
 interface EditingSyndrome {
   id: string;

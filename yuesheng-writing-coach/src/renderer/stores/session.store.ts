@@ -1,72 +1,110 @@
+/**
+ * session.store.ts — 聊天会话管理（主会话，非面板会话）
+ *
+ * 职责：
+ * - 管理聊天会话列表（创建/切换/删除）
+ * - 通过 IPC 与主进程 SessionService 交互
+ * - 提供 currentSessionId 给 chat.store 使用
+ */
+
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
-import type { Session, MessageRow, ApiResponse } from '../shared/types';
 import { getInvoke } from '../utils/ipc';
 
-interface SessionState {
-  sessions: Session[];
-  currentSessionId: string | null;
-  currentMessages: MessageRow[];
-  isLoading: boolean;
-  loadSessions: () => Promise<void>;
-  createSession: () => Promise<Session | null>;
-  deleteSession: (sessionId: string) => Promise<void>;
-  renameSession: (sessionId: string, title: string) => Promise<void>;
-  switchSession: (sessionId: string) => Promise<void>;
-  setCurrentSessionId: (id: string | null) => void;
+/** 聊天会话 */
+export interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  lastMessage?: string;
+  messages?: unknown[];
 }
 
-export const useSessionStore = create<SessionState>((set, get) => ({
+interface SessionState {
+  /** 所有聊天会话 */
+  sessions: ChatSession[];
+  /** 当前激活的会话 ID */
+  currentSessionId: string | null;
+}
+
+interface SessionActions {
+  /** 从后端加载会话列表 */
+  loadSessions: () => Promise<void>;
+  /** 创建新会话 */
+  createSession: () => Promise<ChatSession | null>;
+  /** 切换当前会话 */
+  switchSession: (id: string) => void;
+  /** 删除会话 */
+  deleteSession: (id: string) => Promise<void>;
+  /** 重命名会话 */
+  renameSession: (id: string, title: string) => Promise<void>;
+}
+
+export const useSessionStore = create<SessionState & SessionActions>((set, get) => ({
+  // State
   sessions: [],
   currentSessionId: null,
-  currentMessages: [],
-  isLoading: false,
 
+  // Actions
   loadSessions: async () => {
-    const invoke = getInvoke();
-    const result = await invoke(IPC_CHANNELS.SESSION_LIST) as ApiResponse<Session[]>;
-    if (result.success) set({ sessions: result.data ?? [] });
-  },
-
-  createSession: async () => {
-    const invoke = getInvoke();
-    const result = await invoke(IPC_CHANNELS.SESSION_CREATE) as ApiResponse<Session>;
-    if (!result.success || !result.data) return null;
-    const session = result.data;
-    const { sessions } = get();
-    set({ sessions: [session, ...sessions], currentSessionId: session.id, currentMessages: [] });
-    return session;
-  },
-
-  deleteSession: async (sessionId: string) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.SESSION_DELETE, { sessionId });
-    const { sessions, currentSessionId } = get();
-    const filtered = sessions.filter(s => s.id !== sessionId);
-    if (currentSessionId === sessionId) {
-      const next = filtered[0] || null;
-      set({ sessions: filtered, currentSessionId: next ? next.id : null, currentMessages: [] });
-      if (next) get().switchSession(next.id);
-    } else {
-      set({ sessions: filtered });
+    try {
+      const invoke = getInvoke();
+      const res = await invoke(IPC_CHANNELS.SESSION_LIST) as { success: boolean; data?: ChatSession[] };
+      if (res.success && res.data) {
+        set({ sessions: res.data });
+        // 自动激活第一个会话
+        if (res.data.length > 0 && !get().currentSessionId) {
+          set({ currentSessionId: res.data[0].id });
+        }
+      }
+    } catch (err) {
+      console.error('[session.store] loadSessions failed:', err);
     }
   },
 
-  renameSession: async (sessionId: string, title: string) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.SESSION_RENAME, { sessionId, title });
-    const { sessions } = get();
-    set({
-      sessions: sessions.map(s => s.id === sessionId ? { ...s, title } : s),
-    });
+  createSession: async () => {
+    try {
+      const invoke = getInvoke();
+      const res = await invoke(IPC_CHANNELS.SESSION_CREATE) as { success: boolean; data?: ChatSession };
+      if (res.success && res.data) {
+        set((state) => ({
+          sessions: [...state.sessions, res.data!],
+          currentSessionId: res.data!.id,
+        }));
+        return res.data;
+      }
+      return null;
+    } catch (err) {
+      console.error('[session.store] createSession failed:', err);
+      return null;
+    }
   },
 
-  switchSession: async (sessionId: string) => {
-    const invoke = getInvoke();
-    set({ isLoading: true });
-    const result = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES, { sessionId }) as ApiResponse<MessageRow[]>;
-    set({ currentSessionId: sessionId, currentMessages: result.data ?? [], isLoading: false });
+  switchSession: (id) => set({ currentSessionId: id }),
+
+  deleteSession: async (id) => {
+    try {
+      const invoke = getInvoke();
+      await invoke(IPC_CHANNELS.SESSION_DELETE, { sessionId: id });
+      set((state) => ({
+        sessions: state.sessions.filter(s => s.id !== id),
+        currentSessionId: state.currentSessionId === id ? null : state.currentSessionId,
+      }));
+    } catch (err) {
+      console.error('[session.store] deleteSession failed:', err);
+    }
   },
 
-  setCurrentSessionId: (id: string | null) => set({ currentSessionId: id }),
+  renameSession: async (id, title) => {
+    try {
+      const invoke = getInvoke();
+      await invoke(IPC_CHANNELS.SESSION_RENAME, { sessionId: id, title });
+      set((state) => ({
+        sessions: state.sessions.map(s => s.id === id ? { ...s, title } : s),
+      }));
+    } catch (err) {
+      console.error('[session.store] renameSession failed:', err);
+    }
+  },
 }));

@@ -28,8 +28,9 @@ describe('teaching-state-machine', () => {
   });
 
   describe('getNextPhase', () => {
-    it('INIT → WORLD', () => {
-      expect(getNextPhase(TeachingPhase.INIT)).toBe(TeachingPhase.WORLD);
+    it('INIT → ENGAGE → WORLD', () => {
+      expect(getNextPhase(TeachingPhase.INIT)).toBe(TeachingPhase.ENGAGE);
+      expect(getNextPhase(TeachingPhase.ENGAGE)).toBe(TeachingPhase.WORLD);
     });
 
     it('WORLD → PRACTICE_LOOP', () => {
@@ -85,8 +86,8 @@ describe('teaching-state-machine', () => {
       expect(calculatePhaseProgress(TeachingPhase.WORLD, TeachingSubphase.WORLD_DAILY_DETAIL)).toBe(1);
     });
 
-    it('PRACTICE_LOOP 第一阶段进度为 0.25', () => {
-      expect(calculatePhaseProgress(TeachingPhase.PRACTICE_LOOP, TeachingSubphase.PRACTICE_IDENTIFY)).toBe(0.25);
+    it('PRACTICE_LOOP 第一阶段进度为 0.2', () => {
+      expect(calculatePhaseProgress(TeachingPhase.PRACTICE_LOOP, TeachingSubphase.PRACTICE_IDENTIFY)).toBe(0.2);
     });
 
     it('不存在的子阶段返回 0', () => {

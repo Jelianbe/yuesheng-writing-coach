@@ -89,13 +89,28 @@ export const ConfigPage: React.FC<ConfigPageProps> = ({
   };
 
   return (
-    <div className="flex-1 bg-bg-primary overflow-y-auto">
+    <div style={{
+      flex: 1,
+      minHeight: 0,
+      backgroundColor: 'var(--bg-primary)',
+      overflowY: 'auto',
+      /* 确保滚动条可见 */
+      scrollbarWidth: 'thin',
+      scrollbarColor: 'var(--border-color) transparent',
+    }}
+    className="config-scroll-container"
+    >
       <div className="max-w-2xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="sm" onClick={onBack} leftIcon={<ArrowLeft className="w-4 h-4" />}>
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary rounded-md transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
             返回
-          </Button>
+          </button>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-bg-tertiary flex items-center justify-center">
               <Settings className="w-5 h-5 text-text-secondary" />

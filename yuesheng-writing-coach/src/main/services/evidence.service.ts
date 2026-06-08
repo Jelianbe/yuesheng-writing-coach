@@ -55,6 +55,23 @@ export class EvidenceService {
     return rows.map(r => this.rowToRecord(r));
   }
 
+  /**
+   * 按症候 ID + 会话 ID 查询证据
+   * 通过 diagnosis_evidence 关联表获取该会话中该症候的原文证据
+   */
+  getBySyndrome(syndromeId: string, sessionId: string): EvidenceRecord[] {
+    const sql = `
+      SELECT e.*
+      FROM evidence e
+      JOIN diagnosis_evidence de ON e.evidence_id = de.evidence_id
+      JOIN diagnosis_results dr ON de.diagnosis_id = dr.id
+      WHERE e.related_disease = ? AND dr.session_id = ?
+      ORDER BY e.level DESC, e.created_at ASC
+    `;
+    const rows = this.db.prepare(sql).all(syndromeId, sessionId) as EvidenceRow[];
+    return rows.map(r => this.rowToRecord(r));
+  }
+
   getByAbility(abilityId: string, authorId: string, fromDate?: string, toDate?: string): EvidenceRecord[] {
     let sql = 'SELECT * FROM evidence WHERE related_ability = ? AND novel_id = ?';
     const params: (string | number)[] = [abilityId, authorId];

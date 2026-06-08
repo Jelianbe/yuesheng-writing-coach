@@ -1,0 +1,871 @@
+<div class="sr-only">
+  <h2>月笙写作教练融合UI演示 V2 — 修复侧栏滚动+底部输入区分离</h2>
+</div>
+
+<style>
+  .ys-app {
+    --ys-bg-page: #F8F6F1;
+    --ys-bg-sidebar: #F1EDE6;
+    --ys-bg-card: #FFFFFF;
+    --ys-bg-hover: #EDE8DF;
+    --ys-bg-active: #E8E2D6;
+    --ys-amber: #BA7517;
+    --ys-amber-light: #FAEEDA;
+    --ys-amber-text: #854F0B;
+    --ys-text: #2C2C2A;
+    --ys-text-secondary: #5F5E5A;
+    --ys-text-tertiary: #888780;
+    --ys-border: rgba(0,0,0,0.08);
+    --ys-border-hover: rgba(0,0,0,0.15);
+    --ys-radius: 10px;
+    --ys-radius-sm: 6px;
+    --ys-header-h: 52px;
+    --ys-sidebar-w: 240px;
+    --ys-rightpanel-w: 300px;
+    --ys-tabbar-h: 40px;
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ys-text);
+    background: var(--ys-bg-page);
+    height: 720px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 0.5px solid var(--ys-border);
+  }
+  .ys-header {
+    height: var(--ys-header-h);
+    background: var(--ys-bg-card);
+    border-bottom: 0.5px solid var(--ys-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+  }
+  .ys-header-left { display: flex; align-items: center; gap: 10px; }
+  .ys-logo {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--ys-amber);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 13px; font-weight: 500;
+  }
+  .ys-brand { font-size: 15px; font-weight: 500; }
+  .ys-header-right { display: flex; align-items: center; gap: 8px; }
+  .ys-btn-icon {
+    width: 32px; height: 32px; border-radius: var(--ys-radius-sm);
+    border: 0.5px solid var(--ys-border);
+    background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ys-text-secondary); font-size: 13px;
+    transition: all 0.15s;
+  }
+  .ys-btn-icon:hover { background: var(--ys-bg-hover); border-color: var(--ys-border-hover); }
+
+  .ys-body {
+    display: flex; flex: 1; overflow: hidden;
+  }
+
+  /* ===== Sidebar: Tab切换 ===== */
+  .ys-sidebar {
+    width: var(--ys-sidebar-w);
+    background: var(--ys-bg-sidebar);
+    border-right: 0.5px solid var(--ys-border);
+    display: flex; flex-direction: column;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .ys-sidebar-tabs {
+    display: flex; border-bottom: 0.5px solid var(--ys-border);
+    flex-shrink: 0;
+  }
+  .ys-sidebar-tab {
+    flex: 1; padding: 10px 0; text-align: center;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    color: var(--ys-text-tertiary);
+    border: none; background: transparent;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .ys-sidebar-tab:hover { color: var(--ys-text-secondary); }
+  .ys-sidebar-tab.active {
+    color: var(--ys-amber-text);
+    border-bottom-color: var(--ys-amber);
+  }
+  .ys-sidebar-panel {
+    flex: 1; overflow-y: auto; display: none; padding: 12px 14px;
+  }
+  .ys-sidebar-panel.active { display: block; }
+  .ys-sidebar-title {
+    font-size: 11px; font-weight: 500;
+    color: var(--ys-text-tertiary);
+    letter-spacing: 0.5px; margin-bottom: 10px;
+    padding: 0 6px; text-transform: uppercase;
+  }
+  .ys-new-btn {
+    width: 100%; padding: 7px 0; border-radius: var(--ys-radius-sm);
+    border: 0.5px dashed var(--ys-border); background: transparent;
+    font-size: 12px; color: var(--ys-text-tertiary); cursor: pointer;
+    margin-bottom: 10px; transition: all 0.15s;
+  }
+  .ys-new-btn:hover { border-color: var(--ys-amber); color: var(--ys-amber-text); background: var(--ys-amber-light); }
+  .ys-tree-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: var(--ys-radius-sm);
+    cursor: pointer; font-size: 13px;
+    transition: background 0.15s; margin-bottom: 2px;
+  }
+  .ys-tree-item:hover { background: var(--ys-bg-hover); }
+  .ys-tree-item.active { background: var(--ys-bg-active); }
+  .ys-tree-icon { width: 16px; text-align: center; color: var(--ys-text-tertiary); font-size: 11px; }
+  .ys-tree-leaf { padding-left: 22px; }
+  .ys-tree-badge {
+    margin-left: auto; font-size: 11px; padding: 1px 6px;
+    border-radius: 10px; background: var(--ys-amber-light);
+    color: var(--ys-amber-text); font-weight: 500;
+  }
+  .ys-task-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px; border-radius: var(--ys-radius-sm);
+    background: var(--ys-bg-card); margin-bottom: 6px;
+    border: 0.5px solid var(--ys-border); cursor: pointer;
+  }
+  .ys-task-item:hover { border-color: var(--ys-border-hover); }
+  .ys-task-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ys-amber); flex-shrink: 0;
+  }
+  .ys-task-dot.done { background: #5DCAA5; }
+  .ys-task-text { font-size: 12px; line-height: 1.4; }
+  .ys-task-meta { font-size: 11px; color: var(--ys-text-tertiary); margin-top: 2px; }
+
+  /* Main Content */
+  .ys-main {
+    flex: 1; display: flex; flex-direction: column;
+    min-width: 0; background: var(--ys-bg-page);
+  }
+
+  /* TabBar */
+  .ys-tabbar {
+    height: var(--ys-tabbar-h);
+    background: var(--ys-bg-card);
+    border-bottom: 0.5px solid var(--ys-border);
+    display: flex; align-items: center; padding: 0 16px; gap: 4px;
+    flex-shrink: 0;
+  }
+  .ys-tab {
+    padding: 0 14px; height: 32px;
+    display: flex; align-items: center; gap: 6px;
+    border-radius: var(--ys-radius-sm); cursor: pointer;
+    font-size: 13px; color: var(--ys-text-secondary);
+    border: none; background: transparent;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .ys-tab:hover { background: var(--ys-bg-hover); color: var(--ys-text); }
+  .ys-tab.active {
+    background: var(--ys-amber-light); color: var(--ys-amber-text);
+    font-weight: 500;
+  }
+  .ys-tab-icon { font-size: 14px; }
+
+  /* Tab Content */
+  .ys-tabcontent {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+    display: none;
+  }
+  .ys-tabcontent.active { display: block; }
+
+  /* Chat View */
+  .ys-chat-messages { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+  .ys-msg { display: flex; gap: 10px; }
+  .ys-msg.ys-user { flex-direction: row-reverse; }
+  .ys-msg-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--ys-bg-hover); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--ys-text-secondary);
+  }
+  .ys-msg.ys-user .ys-msg-avatar { background: var(--ys-amber-light); color: var(--ys-amber-text); }
+  .ys-msg-body {
+    max-width: 70%; padding: 10px 14px; border-radius: var(--ys-radius);
+    background: var(--ys-bg-card); border: 0.5px solid var(--ys-border);
+    font-size: 13px; line-height: 1.7;
+  }
+  .ys-msg.ys-user .ys-msg-body { background: var(--ys-amber-light); border-color: rgba(186,117,23,0.15); }
+  .ys-card-bridge {
+    background: var(--ys-bg-card); border: 0.5px solid var(--ys-border);
+    border-radius: var(--ys-radius); padding: 14px 16px; margin: 8px 0;
+  }
+  .ys-card-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .ys-card-desc { font-size: 12px; color: var(--ys-text-secondary); line-height: 1.6; }
+  .ys-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .ys-btn-sm {
+    padding: 5px 12px; border-radius: var(--ys-radius-sm);
+    border: 0.5px solid var(--ys-border); background: var(--ys-bg-page);
+    font-size: 12px; cursor: pointer; color: var(--ys-text-secondary);
+    transition: all 0.15s;
+  }
+  .ys-btn-sm:hover { border-color: var(--ys-border-hover); color: var(--ys-text); }
+  .ys-btn-sm.primary { background: var(--ys-amber); color: white; border-color: var(--ys-amber); }
+  .ys-btn-sm.primary:hover { background: #A86815; }
+
+  /* Training View */
+  .ys-train-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .ys-train-card {
+    background: var(--ys-bg-card); border: 0.5px solid var(--ys-border);
+    border-radius: var(--ys-radius); padding: 16px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ys-train-card:hover { border-color: var(--ys-border-hover); background: var(--ys-bg-hover); }
+  .ys-train-tag {
+    display: inline-block; font-size: 11px; padding: 2px 8px;
+    border-radius: 10px; background: var(--ys-amber-light);
+    color: var(--ys-amber-text); margin-bottom: 8px; font-weight: 500;
+  }
+  .ys-train-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .ys-train-desc { font-size: 12px; color: var(--ys-text-secondary); line-height: 1.5; }
+  .ys-train-meta { display: flex; gap: 12px; margin-top: 10px; font-size: 11px; color: var(--ys-text-tertiary); }
+
+  /* Achievement View */
+  .ys-ach-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .ys-ach-card {
+    background: var(--ys-bg-card); border: 0.5px solid var(--ys-border);
+    border-radius: var(--ys-radius); padding: 20px 14px;
+    text-align: center; cursor: pointer; transition: all 0.15s;
+  }
+  .ys-ach-card:hover { border-color: var(--ys-border-hover); }
+  .ys-ach-card.locked { opacity: 0.5; }
+  .ys-ach-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--ys-amber-light); margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ys-amber); font-size: 18px;
+  }
+  .ys-ach-card.locked .ys-ach-icon { background: var(--ys-bg-hover); color: var(--ys-text-tertiary); }
+  .ys-ach-name { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .ys-ach-desc { font-size: 11px; color: var(--ys-text-tertiary); }
+  .ys-ach-progress {
+    height: 4px; background: var(--ys-bg-hover); border-radius: 2px;
+    margin-top: 10px; overflow: hidden;
+  }
+  .ys-ach-progress-bar { height: 100%; background: var(--ys-amber); border-radius: 2px; }
+
+  /* Map View */
+  .ys-map-timeline { display: flex; flex-direction: column; gap: 0; position: relative; padding-left: 24px; }
+  .ys-map-timeline::before {
+    content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--ys-border); border-radius: 1px;
+  }
+  .ys-map-node {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0;
+    position: relative;
+  }
+  .ys-map-dot {
+    position: absolute; left: -20px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--ys-bg-card);
+    border: 2px solid var(--ys-amber); z-index: 1;
+  }
+  .ys-map-dot.done { background: var(--ys-amber); }
+  .ys-map-dot.current { box-shadow: 0 0 0 3px var(--ys-amber-light); }
+  .ys-map-info { flex: 1; }
+  .ys-map-title { font-size: 13px; font-weight: 500; }
+  .ys-map-desc { font-size: 12px; color: var(--ys-text-secondary); margin-top: 2px; }
+  .ys-map-progress { width: 80px; text-align: right; }
+  .ys-map-pct { font-size: 13px; font-weight: 500; color: var(--ys-amber-text); }
+  .ys-map-bar { height: 4px; background: var(--ys-bg-hover); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .ys-map-bar-fill { height: 100%; background: var(--ys-amber); border-radius: 2px; }
+
+  /* Tools View */
+  .ys-tool-card {
+    background: var(--ys-bg-card); border: 0.5px solid var(--ys-border);
+    border-radius: var(--ys-radius); padding: 20px; margin-bottom: 12px;
+    display: flex; gap: 16px; align-items: flex-start; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .ys-tool-card:hover { border-color: var(--ys-border-hover); background: var(--ys-bg-hover); }
+  .ys-tool-icon {
+    width: 40px; height: 40px; border-radius: var(--ys-radius-sm);
+    background: var(--ys-amber-light); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ys-amber); font-size: 16px;
+  }
+  .ys-tool-info { flex: 1; }
+  .ys-tool-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .ys-tool-desc { font-size: 12px; color: var(--ys-text-secondary); line-height: 1.5; }
+
+  /* ===== Bottom Area: 分两行 ===== */
+  .ys-bottom-area {
+    background: var(--ys-bg-card);
+    border-top: 0.5px solid var(--ys-border);
+    flex-shrink: 0;
+    padding: 8px 16px 10px;
+  }
+  .ys-shortcuts {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 8px;
+  }
+  .ys-pill {
+    padding: 4px 10px; border-radius: 12px;
+    border: 0.5px solid var(--ys-border); background: var(--ys-bg-page);
+    font-size: 11px; cursor: pointer; color: var(--ys-text-secondary);
+    display: flex; align-items: center; gap: 4px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .ys-pill:hover { border-color: var(--ys-border-hover); color: var(--ys-text); background: var(--ys-bg-hover); }
+  .ys-pill.active { background: var(--ys-amber-light); border-color: rgba(186,117,23,0.25); color: var(--ys-amber-text); }
+  .ys-shortcuts-sep {
+    width: 0.5px; height: 16px; background: var(--ys-border); margin: 0 2px;
+  }
+  .ys-attitude {
+    margin-left: auto; font-size: 11px; color: var(--ys-text-tertiary);
+    display: flex; align-items: center; gap: 4px; cursor: pointer;
+    padding: 4px 8px; border-radius: 12px;
+    border: 0.5px solid var(--ys-border); background: transparent;
+    transition: all 0.15s;
+  }
+  .ys-attitude:hover { background: var(--ys-bg-hover); color: var(--ys-text-secondary); }
+  .ys-input-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ys-bottom-input {
+    flex: 1; height: 36px; border-radius: 18px;
+    border: 0.5px solid var(--ys-border); background: var(--ys-bg-page);
+    padding: 0 16px; font-size: 13px; outline: none;
+  }
+  .ys-bottom-input:focus { border-color: var(--ys-amber); }
+  .ys-input-addon {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .ys-addon-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: none; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ys-text-tertiary); font-size: 13px;
+    transition: all 0.15s;
+  }
+  .ys-addon-btn:hover { background: var(--ys-bg-hover); color: var(--ys-text-secondary); }
+  .ys-send-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--ys-amber); color: white; border: none;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* Right Panel */
+  .ys-rightpanel {
+    width: var(--ys-rightpanel-w);
+    background: var(--ys-bg-sidebar);
+    border-left: 0.5px solid var(--ys-border);
+    display: flex; flex-direction: column;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .ys-rp-section { padding: 14px; border-bottom: 0.5px solid var(--ys-border); }
+  .ys-rp-title {
+    font-size: 12px; font-weight: 500; color: var(--ys-text-secondary);
+    margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .ys-rp-count {
+    font-size: 11px; padding: 1px 6px; border-radius: 10px;
+    background: var(--ys-amber-light); color: var(--ys-amber-text);
+  }
+  .ys-symptom-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px; border-radius: var(--ys-radius-sm);
+    background: var(--ys-bg-card); margin-bottom: 6px;
+    border: 0.5px solid var(--ys-border); cursor: pointer;
+  }
+  .ys-symptom-item:hover { border-color: var(--ys-border-hover); }
+  .ys-sev { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
+  .ys-sev-high { background: #D85A30; }
+  .ys-sev-mid { background: #EF9F27; }
+  .ys-sev-low { background: #5DCAA5; }
+  .ys-symptom-text { font-size: 12px; line-height: 1.5; }
+  .ys-symptom-tag {
+    font-size: 10px; color: var(--ys-text-tertiary); margin-top: 4px;
+  }
+  .ys-mini-chart {
+    height: 60px; background: var(--ys-bg-card); border-radius: var(--ys-radius-sm);
+    border: 0.5px solid var(--ys-border); display: flex; align-items: flex-end;
+    padding: 8px; gap: 4px;
+  }
+  .ys-bar { flex: 1; background: var(--ys-amber); border-radius: 2px 2px 0 0; opacity: 0.7; }
+  .ys-bar:hover { opacity: 1; }
+
+  /* Scrollbar */
+  .ys-tabcontent::-webkit-scrollbar, .ys-sidebar-panel::-webkit-scrollbar, .ys-rightpanel::-webkit-scrollbar { width: 4px; }
+  .ys-tabcontent::-webkit-scrollbar-thumb, .ys-sidebar-panel::-webkit-scrollbar-thumb, .ys-rightpanel::-webkit-scrollbar-thumb { background: var(--ys-border); border-radius: 2px; }
+</style>
+
+<div class="ys-app" id="ysApp">
+  <!-- Header -->
+  <div class="ys-header">
+    <div class="ys-header-left">
+      <div class="ys-logo">月</div>
+      <div class="ys-brand">月笙写作教练</div>
+    </div>
+    <div class="ys-header-right">
+      <button class="ys-btn-icon" title="设置">S</button>
+      <button class="ys-btn-icon" title="主题">T</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="ys-body">
+    <!-- Sidebar -->
+    <div class="ys-sidebar">
+      <div class="ys-sidebar-tabs">
+        <button class="ys-sidebar-tab active" data-panel="works" onclick="switchSidebar('works')">作品</button>
+        <button class="ys-sidebar-tab" data-panel="tasks" onclick="switchSidebar('tasks')">任务</button>
+      </div>
+
+      <!-- 作品面板 -->
+      <div class="ys-sidebar-panel active" id="panel-works">
+        <button class="ys-new-btn">+ 新建作品</button>
+        <div class="ys-tree-item">
+          <span class="ys-tree-icon">v</span>
+          <span>《星河之外》</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf active">
+          <span class="ys-tree-icon">#</span>
+          <span>第一章：启程</span>
+          <span class="ys-tree-badge">3</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>第二章：迷雾</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>第三章：暗流</span>
+          <span class="ys-tree-badge">1</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>第四章：抉择</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>第五章：归途</span>
+        </div>
+        <div class="ys-tree-item">
+          <span class="ys-tree-icon">v</span>
+          <span>《长安夜雨》</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>开篇试写</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>人物初设讨论</span>
+        </div>
+        <div class="ys-tree-item">
+          <span class="ys-tree-icon">v</span>
+          <span>《深海回声》</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>序章：沉没</span>
+          <span class="ys-tree-badge">5</span>
+        </div>
+        <div class="ys-tree-item ys-tree-leaf">
+          <span class="ys-tree-icon">#</span>
+          <span>世界观设定</span>
+        </div>
+      </div>
+
+      <!-- 任务面板 -->
+      <div class="ys-sidebar-panel" id="panel-tasks">
+        <div class="ys-sidebar-title">进行中</div>
+        <div class="ys-task-item">
+          <div class="ys-task-dot"></div>
+          <div>
+            <div class="ys-task-text">完成「展示而非告知」训练</div>
+            <div class="ys-task-meta">训练工坊 · 剩余 2 题</div>
+          </div>
+        </div>
+        <div class="ys-task-item">
+          <div class="ys-task-dot"></div>
+          <div>
+            <div class="ys-task-text">修改第三章对话节奏</div>
+            <div class="ys-task-meta">诊断反馈 · 待改写</div>
+          </div>
+        </div>
+        <div class="ys-task-item">
+          <div class="ys-task-dot"></div>
+          <div>
+            <div class="ys-task-text">《深海回声》序章重写</div>
+            <div class="ys-task-meta">自我标记 · 下周截止</div>
+          </div>
+        </div>
+        <div class="ys-sidebar-title" style="margin-top: 16px;">已完成</div>
+        <div class="ys-task-item">
+          <div class="ys-task-dot done"></div>
+          <div>
+            <div class="ys-task-text">修正第三章对话枯燥问题</div>
+            <div class="ys-task-meta">诊断反馈 · 已完成改写</div>
+          </div>
+        </div>
+        <div class="ys-task-item">
+          <div class="ys-task-dot done"></div>
+          <div>
+            <div class="ys-task-text">POV一致性检查训练</div>
+            <div class="ys-task-meta">训练工坊 · 得分 85</div>
+          </div>
+        </div>
+        <div class="ys-task-item">
+          <div class="ys-task-dot done"></div>
+          <div>
+            <div class="ys-task-text">《长安夜雨》开篇试写</div>
+            <div class="ys-task-meta">已完成 · 昨天提交</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ys-main">
+      <!-- TabBar -->
+      <div class="ys-tabbar">
+        <button class="ys-tab active" data-tab="chat" onclick="switchTab('chat')">
+          <span class="ys-tab-icon">c</span> 对话
+        </button>
+        <button class="ys-tab" data-tab="train" onclick="switchTab('train')">
+          <span class="ys-tab-icon">t</span> 训练
+        </button>
+        <button class="ys-tab" data-tab="achieve" onclick="switchTab('achieve')">
+          <span class="ys-tab-icon">a</span> 成就
+        </button>
+        <button class="ys-tab" data-tab="map" onclick="switchTab('map')">
+          <span class="ys-tab-icon">m</span> 地图
+        </button>
+        <button class="ys-tab" data-tab="tools" onclick="switchTab('tools')">
+          <span class="ys-tab-icon">x</span> 工具
+        </button>
+      </div>
+
+      <!-- Chat Tab -->
+      <div class="ys-tabcontent active" id="tab-chat">
+        <div class="ys-chat-messages">
+          <div class="ys-msg">
+            <div class="ys-msg-avatar">月</div>
+            <div class="ys-msg-body">
+              这段对话描写的问题在于「他告诉读者角色很愤怒」，而不是「展示愤怒」。试着描写握紧的拳头、颤抖的声音，让读者自己感受到情绪。
+            </div>
+          </div>
+          <div class="ys-msg ys-user">
+            <div class="ys-msg-avatar">我</div>
+            <div class="ys-msg-body">
+              我改了一下：他的指节因用力而发白，茶杯在手中微微颤抖。
+            </div>
+          </div>
+          <div class="ys-msg">
+            <div class="ys-msg-avatar">月</div>
+            <div class="ys-msg-body">
+              好多了。但还可以更进一步——茶杯颤抖暗示了情绪，如果能加入一个具体的细节（比如茶水溅出、杯沿留下牙印），会更生动。
+              <div class="ys-card-bridge">
+                <div class="ys-card-title">针对这个问题推荐训练</div>
+                <div class="ys-card-desc">「展示而非告知」专项微练习——3组对比改写，帮你建立「用细节传递情绪」的肌肉记忆。</div>
+                <div class="ys-card-actions">
+                  <button class="ys-btn-sm primary">开始训练</button>
+                  <button class="ys-btn-sm">稍后再说</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Training Tab -->
+      <div class="ys-tabcontent" id="tab-train">
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 12px;">推荐训练</div>
+        <div class="ys-train-grid">
+          <div class="ys-train-card">
+            <div class="ys-train-tag">高频问题</div>
+            <div class="ys-train-title">展示而非告知</div>
+            <div class="ys-train-desc">用动作、神态、环境细节替代直白情绪陈述</div>
+            <div class="ys-train-meta">
+              <span>3 组练习</span>
+              <span>预计 10 分钟</span>
+            </div>
+          </div>
+          <div class="ys-train-card">
+            <div class="ys-train-tag">角色塑造</div>
+            <div class="ys-train-title">对话标签多样化</div>
+            <div class="ys-train-desc">避免反复使用「他说」「她说」，学习动作替代</div>
+            <div class="ys-train-meta">
+              <span>5 组练习</span>
+              <span>预计 15 分钟</span>
+            </div>
+          </div>
+          <div class="ys-train-card">
+            <div class="ys-train-tag">节奏控制</div>
+            <div class="ys-train-title">段落长度变化</div>
+            <div class="ys-train-desc">通过长短句交替制造呼吸感和紧张感</div>
+            <div class="ys-train-meta">
+              <span>4 组练习</span>
+              <span>预计 12 分钟</span>
+            </div>
+          </div>
+          <div class="ys-train-card">
+            <div class="ys-train-tag">世界观</div>
+            <div class="ys-train-title">五感铺陈练习</div>
+            <div class="ys-train-desc">调动视觉、听觉、嗅觉、味觉、触觉描写场景</div>
+            <div class="ys-train-meta">
+              <span>5 组练习</span>
+              <span>预计 20 分钟</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 12px;">训练历史</div>
+        <div class="ys-card-bridge">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-size: 13px; font-weight: 500;">POV一致性检查</div>
+              <div style="font-size: 12px; color: var(--ys-text-secondary); margin-top: 2px;">完成 3/3 题 · 得分 85</div>
+            </div>
+            <div style="font-size: 12px; color: var(--ys-text-tertiary);">昨天</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Achievement Tab -->
+      <div class="ys-tabcontent" id="tab-achieve">
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 12px;">最近获得</div>
+        <div class="ys-ach-grid" style="margin-bottom: 20px;">
+          <div class="ys-ach-card">
+            <div class="ys-ach-icon">P</div>
+            <div class="ys-ach-name">初窥门径</div>
+            <div class="ys-ach-desc">完成首次诊断</div>
+          </div>
+          <div class="ys-ach-card">
+            <div class="ys-ach-icon">R</div>
+            <div class="ys-ach-name">炼字匠人</div>
+            <div class="ys-ach-desc">完成 10 次改写</div>
+          </div>
+          <div class="ys-ach-card">
+            <div class="ys-ach-icon">D</div>
+            <div class="ys-ach-name">持之以恒</div>
+            <div class="ys-ach-desc">连续 7 天写作</div>
+          </div>
+          <div class="ys-ach-card">
+            <div class="ys-ach-icon">E</div>
+            <div class="ys-ach-name">展示大师</div>
+            <div class="ys-ach-desc">「展示而非告知」满分</div>
+          </div>
+        </div>
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 12px;">待解锁</div>
+        <div class="ys-ach-grid">
+          <div class="ys-ach-card locked">
+            <div class="ys-ach-icon">?</div>
+            <div class="ys-ach-name">十万字</div>
+            <div class="ys-ach-desc">累计写作 10 万字</div>
+            <div class="ys-ach-progress"><div class="ys-ach-progress-bar" style="width: 65%;"></div></div>
+          </div>
+          <div class="ys-ach-card locked">
+            <div class="ys-ach-icon">?</div>
+            <div class="ys-ach-name">完本达人</div>
+            <div class="ys-ach-desc">完成第一部作品</div>
+            <div class="ys-ach-progress"><div class="ys-ach-progress-bar" style="width: 30%;"></div></div>
+          </div>
+          <div class="ys-ach-card locked">
+            <div class="ys-ach-icon">?</div>
+            <div class="ys-ach-name">角色之父</div>
+            <div class="ys-ach-desc">塑造 10 个立体角色</div>
+            <div class="ys-ach-progress"><div class="ys-ach-progress-bar" style="width: 20%;"></div></div>
+          </div>
+          <div class="ys-ach-card locked">
+            <div class="ys-ach-icon">?</div>
+            <div class="ys-ach-name">伏笔猎手</div>
+            <div class="ys-ach-desc">成功回收 5 个伏笔</div>
+            <div class="ys-ach-progress"><div class="ys-ach-progress-bar" style="width: 0%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Tab -->
+      <div class="ys-tabcontent" id="tab-map">
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 16px;">《星河之外》创作地图</div>
+        <div class="ys-map-timeline">
+          <div class="ys-map-node">
+            <div class="ys-map-dot done"></div>
+            <div class="ys-map-info">
+              <div class="ys-map-title">角色初设</div>
+              <div class="ys-map-desc">主角、反派、配角基础设定</div>
+            </div>
+            <div class="ys-map-progress">
+              <div class="ys-map-pct">100%</div>
+              <div class="ys-map-bar"><div class="ys-map-bar-fill" style="width: 100%;"></div></div>
+            </div>
+          </div>
+          <div class="ys-map-node">
+            <div class="ys-map-dot done"></div>
+            <div class="ys-map-info">
+              <div class="ys-map-title">世界观搭建</div>
+              <div class="ys-map-desc">星际联盟、科技水平、社会结构</div>
+            </div>
+            <div class="ys-map-progress">
+              <div class="ys-map-pct">100%</div>
+              <div class="ys-map-bar"><div class="ys-map-bar-fill" style="width: 100%;"></div></div>
+            </div>
+          </div>
+          <div class="ys-map-node">
+            <div class="ys-map-dot current"></div>
+            <div class="ys-map-info">
+              <div class="ys-map-title">第一章：启程</div>
+              <div class="ys-map-desc">主角离开母星，踏上旅程</div>
+            </div>
+            <div class="ys-map-progress">
+              <div class="ys-map-pct">65%</div>
+              <div class="ys-map-bar"><div class="ys-map-bar-fill" style="width: 65%;"></div></div>
+            </div>
+          </div>
+          <div class="ys-map-node">
+            <div class="ys-map-dot"></div>
+            <div class="ys-map-info">
+              <div class="ys-map-title">第二章：迷雾</div>
+              <div class="ys-map-desc">遭遇未知势力，真相初现</div>
+            </div>
+            <div class="ys-map-progress">
+              <div class="ys-map-pct">0%</div>
+              <div class="ys-map-bar"><div class="ys-map-bar-fill" style="width: 0%;"></div></div>
+            </div>
+          </div>
+          <div class="ys-map-node">
+            <div class="ys-map-dot"></div>
+            <div class="ys-map-info">
+              <div class="ys-map-title">高潮：星际对决</div>
+              <div class="ys-map-desc">最终战役，决定命运</div>
+            </div>
+            <div class="ys-map-progress">
+              <div class="ys-map-pct">0%</div>
+              <div class="ys-map-bar"><div class="ys-map-bar-fill" style="width: 0%;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tools Tab -->
+      <div class="ys-tabcontent" id="tab-tools">
+        <div style="font-size: 13px; font-weight: 500; margin-bottom: 12px;">创作脚手架</div>
+        <div class="ys-tool-card">
+          <div class="ys-tool-icon">W</div>
+          <div class="ys-tool-info">
+            <div class="ys-tool-title">世界观生成器</div>
+            <div class="ys-tool-desc">回答 5 个关键问题，AI 帮你生成完整的世界观设定文档，包含地理、政治、文化、科技四个维度。</div>
+          </div>
+        </div>
+        <div class="ys-tool-card">
+          <div class="ys-tool-icon">O</div>
+          <div class="ys-tool-info">
+            <div class="ys-tool-title">开篇生成器</div>
+            <div class="ys-tool-desc">选择题材风格、目标读者、核心冲突，生成 3 个不同风格的开篇段落供你选择。</div>
+          </div>
+        </div>
+        <div class="ys-tool-card">
+          <div class="ys-tool-icon">C</div>
+          <div class="ys-tool-info">
+            <div class="ys-tool-title">角色推导器</div>
+            <div class="ys-tool-desc">输入角色的核心欲望和恐惧，推导其可能的行为模式、口头禅、人际冲突点。</div>
+          </div>
+        </div>
+        <div class="ys-tool-card">
+          <div class="ys-tool-icon">P</div>
+          <div class="ys-tool-info">
+            <div class="ys-tool-title">情节压力测试</div>
+            <div class="ys-tool-desc">输入你的情节大纲，AI 从逻辑性、节奏感、冲突强度三个维度评估并给出改进建议。</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Area: 快捷指令行 + 输入行 -->
+      <div class="ys-bottom-area">
+        <div class="ys-shortcuts">
+          <button class="ys-pill active">诊断</button>
+          <button class="ys-pill">训练</button>
+          <button class="ys-pill">灵感</button>
+          <button class="ys-pill">续写</button>
+          <div class="ys-shortcuts-sep"></div>
+          <button class="ys-pill">/ 指令</button>
+          <div class="ys-attitude">
+            态度: 直接
+          </div>
+        </div>
+        <div class="ys-input-row">
+          <div class="ys-input-addon">
+            <button class="ys-addon-btn" title="粘贴文本">@</button>
+            <button class="ys-addon-btn" title="上传文件">+</button>
+          </div>
+          <input class="ys-bottom-input" placeholder="写点什么，或粘贴你的文字..." />
+          <button class="ys-send-btn">></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="ys-rightpanel">
+      <div class="ys-rp-section">
+        <div class="ys-rp-title">
+          需要处理
+          <span class="ys-rp-count">2</span>
+        </div>
+        <div class="ys-symptom-item">
+          <div class="ys-sev ys-sev-high"></div>
+          <div>
+            <div class="ys-symptom-text">对话标签单一，反复使用「他说」「她说」</div>
+            <div class="ys-symptom-tag">P003 对话机械</div>
+          </div>
+        </div>
+        <div class="ys-symptom-item">
+          <div class="ys-sev ys-sev-mid"></div>
+          <div>
+            <div class="ys-symptom-text">情绪描写直白，缺乏细节支撑</div>
+            <div class="ys-symptom-tag">P009 展示不足</div>
+          </div>
+        </div>
+      </div>
+      <div class="ys-rp-section">
+        <div class="ys-rp-title">
+          仅供参考
+          <span class="ys-rp-count">1</span>
+        </div>
+        <div class="ys-symptom-item">
+          <div class="ys-sev ys-sev-low"></div>
+          <div>
+            <div class="ys-symptom-text">段落长度较均匀，可尝试长短交替</div>
+            <div class="ys-symptom-tag">P015 节奏单一</div>
+          </div>
+        </div>
+      </div>
+      <div class="ys-rp-section">
+        <div class="ys-rp-title">成长趋势</div>
+        <div class="ys-mini-chart">
+          <div class="ys-bar" style="height: 30%;"></div>
+          <div class="ys-bar" style="height: 45%;"></div>
+          <div class="ys-bar" style="height: 40%;"></div>
+          <div class="ys-bar" style="height: 60%;"></div>
+          <div class="ys-bar" style="height: 55%;"></div>
+          <div class="ys-bar" style="height: 70%;"></div>
+          <div class="ys-bar" style="height: 65%;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--ys-text-tertiary);">
+          <span>5.25</span><span>6.1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(tabId) {
+    document.querySelectorAll('.ys-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.ys-tabcontent').forEach(function(c) { c.classList.remove('active'); });
+    document.querySelector('.ys-tab[data-tab="' + tabId + '"]').classList.add('active');
+    document.getElementById('tab-' + tabId).classList.add('active');
+  }
+  function switchSidebar(panelId) {
+    document.querySelectorAll('.ys-sidebar-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.ys-sidebar-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('.ys-sidebar-tab[data-panel="' + panelId + '"]').classList.add('active');
+    document.getElementById('panel-' + panelId).classList.add('active');
+  }
+</script>

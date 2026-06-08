@@ -1,0 +1,14 @@
+{
+  "version": 3,
+  "skills": {
+    "react-component-generator": {
+      "source": "smallnest/langgraphgo",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/smallnest/langgraphgo.git",
+      "skillFolderHash": "",
+      "installedAt": "2026-06-08T09:18:06.648Z",
+      "updatedAt": "2026-06-08T09:23:31.088Z"
+    }
+  },
+  "dismissed": {}
+}

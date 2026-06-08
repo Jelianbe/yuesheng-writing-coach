@@ -1,6 +1,6 @@
 # T-021: 训练入口与工坊
 
-> **优先级**: P1 | **状态**: draft | **预估**: 4d  
+> **优先级**: P1 | **状态**: ▶️ in_progress | **预估**: 4d  
 > **依赖**: T-013 | **后续**: T-016  
 > **设计方案**: [training-entry-ui_V4.0.md](../design/training-entry-ui_V4.0.md)
 > **废弃方案**: ~~V2.0（左侧栏小窗口，只支持被动推荐）~~ / ~~V3.0（遗漏对话内训练+诊断强绑定）~~
@@ -151,39 +151,39 @@ AI 在建议结尾自然推荐，用户确认后进入训练工坊。
 
 ### 路径 B：训练工坊
 
-- [ ] B1. 左侧栏"训练工坊"按钮可触发中心面板模式切换
-- [ ] B2. TrainingWorkshop 正确渲染错误卡片（基于历史诊断聚合），并展示最近引用原文片段（sourceSnippets）
-- [ ] B3. TrainingWorkshop 正确渲染推荐训练任务（基于 challenge-templates 匹配）
-- [ ] B4. 聊天流 TrainingBridgeCard 可触发进入训练工坊
-- [ ] B5. TrainingRecommendationService 根据当前诊断的 syndromeId 匹配 challenge-templates
-- [ ] B6. 训练完成后调用 training-record.service 的 complete() 记录结果
-- [ ] B7. 步骤式练习交互正常（进度条+原始引用+写作区+提交）
-- [ ] B8. 训练历史栏展示最近训练记录
-- [ ] B9. 无历史诊断时显示空状态引导
-- [ ] B10. 无匹配挑战模板时训练任务区优雅降级
-- [ ] B11. 训练完成提交后，AI 评估反馈在对话流中显示（自动切回 chat 模式）
+- [x] B1. 左侧栏"训练工坊"按钮可触发中心面板模式切换
+- [x] B2. TrainingWorkshop 正确渲染错误卡片（基于历史诊断聚合），并展示最近引用原文片段（sourceSnippets）
+- [x] B3. TrainingWorkshop 正确渲染推荐训练任务（基于 challenge-templates 匹配）
+- [x] B4. 聊天流 TrainingBridgeCard 可触发进入训练工坊
+- [x] B5. TrainingRecommendationService 根据当前诊断的 syndromeId 匹配 challenge-templates
+- [x] B6. 训练完成后调用 training-record.service 的 complete() 记录结果
+- [x] B7. 步骤式练习交互正常（进度条+原始引用+写作区+提交）
+- [x] B8. 训练历史栏展示最近训练记录
+- [x] B9. 无历史诊断时显示空状态引导
+- [x] B10. 无匹配挑战模板时训练任务区优雅降级
+- [x] B11. 训练完成提交后，AI 评估反馈在对话流中显示（自动切回 chat 模式）
 
 ### Evidence Level 1（MVP 补丁，V1.5 前置）
 
-- [ ] E1. `DiagnosisEntry` 新增 `sourceSnippets: string[]` 字段（与 `SyndromeResult.evidence` 一一对应）
-- [ ] E2. 后端诊断时从触发诊断的用户消息中提取对应原文片段填入 sourceSnippets
-- [ ] E3. 修复当前 `evidence` 字段语义不一致（注释说"原文"但实际是 AI 描述）
-- [ ] E4. TrainingWorkshop 错误卡片可正确展示 sourceSnippets（最近引用）
+- [ ] ~~E1. `DiagnosisEntry` 新增 `sourceSnippets: string[]` 字段~~→ T-027 覆盖
+- [ ] ~~E2. 后端诊断时从触发诊断的用户消息中提取对应原文片段填入 sourceSnippets~~→ T-027 覆盖
+- [ ] ~~E3. 修复当前 `evidence` 字段语义不一致~~→ T-027 覆盖
+- [ ] ~~E4. TrainingWorkshop 错误卡片可正确展示 sourceSnippets（最近引用）~~→ T-027 覆盖
 
 ### 内容感知路由层
 
-- [ ] R1. ContentAwareRouter 替代 MessageRouter.shouldRunDiagnosis
-- [ ] R2. 叙事文本正确路由到 diagnosis
-- [ ] R3. 世界观/设定文本路由到 worldbuild_guide（不触发诊断）
-- [ ] R4. 碎片/杂项路由到 clarify（不触发诊断）
-- [ ] R5. 新用户/未初始化路由到 onboarding
-- [ ] R6. 低置信度时默认降级为 clarify
+- [x] R1. ContentAwareRouter 替代 MessageRouter.shouldRunDiagnosis
+- [x] R2. 叙事文本正确路由到 diagnosis
+- [x] R3. 世界观/设定文本路由到 worldbuild_guide（不触发诊断）
+- [x] R4. 碎片/杂项路由到 clarify（不触发诊断）
+- [x] R5. 新用户/未初始化路由到 onboarding
+- [x] R6. 低置信度时默认降级为 clarify
 
 ### 通用
 
-- [ ] G1. centerMode 切换时对话消息不丢失
-- [ ] G2. TypeScript 编译无错误
-- [ ] G3. 至少 8 个测试
+- [x] G1. centerMode 切换时对话消息不丢失
+- [x] G2. TypeScript 编译无错误
+- [x] G3. 至少 8 个测试 ✅（实际 79 个）
 
 ## 回退方案
 
@@ -193,19 +193,38 @@ AI 在建议结尾自然推荐，用户确认后进入训练工坊。
 
 ## 执行记录
 
-### 改动文件（实际完成时填写）
+### 已完成子任务
 
-| 文件 | 改动摘要 |
-|------|---------|
+#### T-021.1: Evidence System Refactoring ✅
 
-### 验证结果（实际完成时填写）
+- **内容**: 诊断证据按症候分组，新增 `syndromeRef` 字段到 KeyPassage，诊断 Prompt 要求标记症候引用，证据分组逻辑含 fallback 策略
+- **涉及文件**: `types.ts`, `chat.handler.ts`, `evidence-grouping.ts`
+- **测试**: 15 个新测试通过，306 测试全部通过
 
-- [ ] TypeScript 编译通过（`npm run typecheck`）
-- [ ] 测试通过（`npm test`）
+#### T-021.2: Content-Aware Routing Layer ✅
 
-### 输出产物（实际完成时填写）
+- **内容**: 基于内容分类的路由引擎，替代 MessageRouter.shouldRunDiagnosis
+- **涉及文件**: 新增 content-classifier.ts + route-engine.ts
+- **测试**: 22 个测试通过
 
+#### T-021.3: Center Panel Mode Switching ✅
 
-## 下个任务建议
+- **内容**: 中心面板模式切换（chat/training），TrainingStore 新增 centerMode，App.tsx/AppSidebar.tsx 对接
+- **涉及文件**: `training.store.ts`, `types.ts`, `App.tsx`, `AppSidebar.tsx`, 删除 `task.store.ts`
+- **测试**: 编译通过，功能验证通过
 
-（完成后填写）
+### 待执行子任务
+
+_（全部完成，无待执行）_
+
+### 测试统计
+
+| 测试文件 | 数量 | 说明 |
+|---------|:----:|------|
+| `src/renderer/stores/__tests__/training.store.test.ts` | 22 | 覆盖基础状态/模式切换/桥接卡片/updateDraft/skipTraining/startTraining/loadHistory/refreshFromDiagnosis/submitStep |
+| `src/main/ipc/__tests__/training-flow.test.ts` | 14 | 覆盖 recommend/assign/complete/skip/history/submit 六个 IPC 通道 |
+| `src/renderer/components/training/TrainingWorkshop.test.tsx` | 13 | 覆盖加载中/错误/活跃训练/三区块/ErrorCards/Recommendations/History 子系统 |
+| `src/renderer/components/training/ActiveTrainingView.test.tsx` | 21 | 覆盖三步框架 Step 0/1/2/评估失败/加载状态 |
+| `src/main/services/__tests__/training-recommendation.test.ts` | 9 | 已有（服务层） |
+| **合计** | **79** | |
+

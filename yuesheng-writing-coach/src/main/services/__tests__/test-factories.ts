@@ -35,22 +35,6 @@ const SYNDROME_NAMES: Record<string, string> = {
   [SyndromeId.OCPlanarization]: 'OC平面化',
 };
 
-/** 动作 ID → 动作名称映射（仅用于测试可读性） */
-const ACTION_NAMES: Record<string, string> = {
-  [ActionId.NarrowScope]: '缩小切入点',
-  [ActionId.ReturnToProtagonist]: '回到主角',
-  [ActionId.FiveQuestions]: '五问法',
-  [ActionId.GroundInReality]: '现实锚点',
-  [ActionId.StageSplit]: '阶段拆分',
-  [ActionId.ContrastShow]: '对比展示',
-  [ActionId.FlipPerspective]: '翻转拆解',
-  [ActionId.ReadingAssignment]: '阅读作业',
-  [ActionId.ConfidenceConfirm]: '信心确认',
-  [ActionId.BoundaryCalibration]: '边界校准',
-  [ActionId.CrossContextTransfer]: '跨语境迁移',
-  [ActionId.IntentCalibration]: '意图校准',
-};
-
 /** 随机选取数组中的一个元素 */
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
