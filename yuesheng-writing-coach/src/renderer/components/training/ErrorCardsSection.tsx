@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import type { ErrorCard } from '../../shared/types';
+import type { ErrorCard, TrainingRecommendation } from '../../shared/types';
 import {
   sectionStyle,
   sectionTitleStyle,
@@ -11,13 +11,29 @@ import {
   cardStyle,
   startBtnStyle,
   severityStyles,
+  recCardStyle,
   MAX_QUOTE_LENGTH,
 } from './training-styles';
 
 const ErrorCardsSection: React.FC<{
   cards: ErrorCard[];
+  recommendations: TrainingRecommendation[];
   onStartTraining: (challengeId: string) => void;
-}> = ({ cards, onStartTraining }) => {
+}> = ({ cards, recommendations, onStartTraining }) => {
+  // B2: 每个 card 独立展开/收起推荐列表
+  const [expandedCards, setExpandedCards] = React.useState<Set<string>>(new Set());
+
+  const toggleExpand = (syndromeId: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(syndromeId)) {
+        next.delete(syndromeId);
+      } else {
+        next.add(syndromeId);
+      }
+      return next;
+    });
+  };
   if (cards.length === 0) {
     return (
       <div style={sectionStyle}>
@@ -83,12 +99,55 @@ const ErrorCardsSection: React.FC<{
                 </div>
               )}
               {card.matchedChallengeId && (
-                <button
-                  style={startBtnStyle}
-                  onClick={() => onStartTraining(card.matchedChallengeId!)}
-                >
-                  开始练习
-                </button>
+                <div>
+                  <button
+                    style={startBtnStyle}
+                    onClick={() => toggleExpand(card.syndromeId)}
+                  >
+                    {expandedCards.has(card.syndromeId) ? '收起推荐' : '相关训练'}
+                  </button>
+
+                  {/* B2: 展开显示与该 card 症候相关的推荐任务 */}
+                  {expandedCards.has(card.syndromeId) && (
+                    <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {recommendations
+                        .filter(r => r.syndromeId === card.syndromeId)
+                        .map(rec => (
+                          <div
+                            key={rec.challengeId}
+                            style={{
+                              ...recCardStyle,
+                              border: '1px solid var(--border)',
+                              margin: 0,
+                              padding: '8px 10px',
+                            }}
+                          >
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 500, fontSize: '0.8rem', color: 'var(--text-primary)' }}>
+                                {rec.challengeName}
+                              </div>
+                              {rec.description && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                                  {rec.description}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              style={startBtnStyle}
+                              onClick={() => onStartTraining(rec.challengeId)}
+                            >
+                              开始练习
+                            </button>
+                          </div>
+                        ))}
+                      {recommendations.filter(r => r.syndromeId === card.syndromeId).length === 0 && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '4px 0' }}>
+                          暂无相关训练任务
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           );

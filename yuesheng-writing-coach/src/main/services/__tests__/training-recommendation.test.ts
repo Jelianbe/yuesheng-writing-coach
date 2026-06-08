@@ -26,6 +26,8 @@ function makeProblem(
     evidence: [],
     firstDetected: '2026-01-01',
     status: 'active',
+    detectionCount: 1,
+    missedCount: 0,
     suggestedActions: [],
   };
 }
@@ -83,7 +85,7 @@ describe('generateRecommendations', () => {
     const recommendations = generateRecommendations(problems);
 
     expect(recommendations).toHaveLength(1);
-    expect(recommendations[0].challengeId).toBe('CH-P001');
+    expect(recommendations[0].challengeId).toBe('CH-P001-001');
     expect(recommendations[0].mode).toBe('narrow_focus');
     expect(recommendations[0].tier).toBe('structural');
     expect(recommendations[0].constraint).toContain('只能保留一个具体场景');
@@ -131,7 +133,7 @@ describe('generateRecommendations', () => {
 
 describe('getChallengeTemplate', () => {
   it('should return template by challengeId', () => {
-    const template = getChallengeTemplate('CH-P001');
+    const template = getChallengeTemplate('CH-P001-001');
     expect(template).not.toBeNull();
     expect(template!.syndromeId).toBe('P001');
     expect(template!.mode).toBe('narrow_focus');

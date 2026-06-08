@@ -264,6 +264,10 @@ export interface ActiveProblem {
   firstDetected: string;
   /** 当前状态 */
   status: ProblemStatus;
+  /** P-06: 连续检测次数（跨轮次一致性追踪） */
+  detectionCount: number;
+  /** P-06: 已消失轮次数（0 = 当前轮仍存在，>0 = 已消失 n 轮） */
+  missedCount: number;
   /** 建议教学动作 */
   suggestedActions: ActionId[];
 }
@@ -676,6 +680,11 @@ export interface TrainingRecommendation {
   mode: string;
   /** 匹配的技法列表 */
   techniques?: TechniqueInfo[];
+  /** T-TRAIN-001: 结构化任务字段 */
+  scenario?: string;
+  wordCount?: number;
+  forbiddenWords?: string[];
+  evaluationCriteria?: string[];
 }
 
 /** 技法信息（来自 technique-library.json） */

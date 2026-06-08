@@ -118,8 +118,8 @@ describe('ActiveTrainingView', () => {
           {...defaultHandlers}
         />
       );
-      fireEvent.click(screen.getByText('返回'));
-      expect(defaultHandlers.onSkipTraining).toHaveBeenCalled();
+      fireEvent.click(screen.getByTitle('返回对话'));
+      expect(defaultHandlers.onBackToChat).toHaveBeenCalled();
     });
 
     it('当前为 Step 0 时跳过按钮显示"跳过"', () => {
@@ -311,7 +311,7 @@ describe('ActiveTrainingView', () => {
           {...defaultHandlers}
         />
       );
-      expect(screen.getByText('评估通过')).toBeInTheDocument();
+      expect(screen.getByText('训练完成！')).toBeInTheDocument();
     });
 
     it('显示 AI 反馈', () => {
@@ -337,7 +337,7 @@ describe('ActiveTrainingView', () => {
           {...defaultHandlers}
         />
       );
-      expect(screen.getByText('提交完成')).toBeInTheDocument();
+      expect(screen.getByText('完成训练')).toBeInTheDocument();
     });
   });
 

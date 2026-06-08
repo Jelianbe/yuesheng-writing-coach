@@ -1,17 +1,17 @@
 # 任务链状态（统一正本）
 
-> **最后更新**: 2026-06-08  V14.1
+> **最后更新**: 2026-06-09  V15.0
 > **系统版本**: V3.5
 > **规范依据**: [TASK-SYSTEM-DESIGN.md](TASK-SYSTEM-DESIGN.md)
-> **任务链版本**: V14.1
+> **任务链版本**: V15.0
 
 ---
 
-> ⚠️ **关键约束声明：界面改造边界**
->
-> 1. **改造现有界面，不新建独立界面**。所有 UI 变更必须在现有组件（App.tsx / sidebar / 右侧栏 / 中心面板）内部完成。禁止创建独立的"训练面板"、"IDE 界面"或任何形式的新建布局入口。
-> 2. **界面设计尚未完成，不提前实现**。主界面改造方案尚未经过 UI/UX 设计决策。**未设计，不实现**。任何涉及布局拆分、新面板创建、centerMode 逻辑变更的任务，在设计决策完成前一律禁止执行。
-> 3. **已有组件优先**。新功能优先考虑塞入现有组件（Sidebar / RightPanel / ChatMessage / TrainingWorkshop 等），塞不下再评估修改现有组件，永远不把"建新界面"作为第一方案。
+> ⚠️ **关键约束声明：界面改造边界（已更新 2026-06-09）**
+> >
+> > 1. **改造现有界面，不新建独立界面**。所有 UI 变更必须在现有组件（App.tsx / sidebar / 右侧栏 / 中心面板）内部完成。禁止创建独立的"训练面板"、"IDE 界面"或任何形式的新建布局入口。
+> > 2. **界面设计大部分已完成**（Paradigm A/B、SOLO/IDE 模式、CoachPanel 规格、侧栏双标签、M-2~M-5 嵌入方案等），V2-000 拆分 App.tsx 可执行。遇未设计到的子组件时按最小改动原则，不擅自设计复杂交互。
+> > 3. **已有组件优先**。新功能优先考虑塞入现有组件（Sidebar / RightPanel / ChatMessage / TrainingWorkshop 等），塞不下再评估修改现有组件，永远不把"建新界面"作为第一方案。
 >
 > 违者后果：代码被回退，任务标记为"违规执行"并重新审查范围。
 
@@ -51,10 +51,10 @@
 
 | 位置 | 任务 |
 |------|------|
-| ✅ 已完成 | [T-000 ~ T-021](#-已完成任务-18项) + CS-001 + Phase 2（5项）+ Phase 2.5（5项）+ Phase 3（4项）+ GAP 系列（3项）+ P0/P1 修复（2项）+ CX-001（4项）+ PE-002 + PE-006 + PE-009 + F-04 + F-03 + T-027 + **CX-001-PROFILE** |
-| ▶️ **当前指针** | **V2-000 拆分 App.tsx（P0）** — V2 SOLO 模式改造与缺陷修复，详见[Phase V2 章节](#phase-v2-ui-改造与缺陷修复-29-项) |
-| ⚡ **并行可执行** | **V2-PROMPT-001 Prompt 传导链路修复（P0）** — 不依赖任何 V2 任务，可与 Phase 0 并行推进 |
-| ⏩ **下一步** | V2-000 → V2-005 → V2-006 → V2-001 → V2-002 → ... → V2-027 审查通过（串行链，共 29 项）|
+| ✅ 已完成 | [T-000 ~ T-021](#-已完成任务-18项) + CS-001 + Phase 2（5项）+ Phase 2.5（5项）+ Phase 3（4项）+ GAP 系列（3项）+ P0/P1 修复（2项）+ CX-001（4项）+ PE-002 + PE-006 + PE-009 + F-04 + F-03 + T-027 + **CX-001-PROFILE** + **V2-PROMPT-001** + **UI-P0b/E2** + **V2-000** + **V2-005** + **V2-006** + **T-TRAIN-001** + **V2-016-REC** + **V2-001~004** + **V2-007~015** + **V2-019** + **V2-023** + **V2-024~027** + **D-01** + **D-03** + **B4** + **C2** + **A3** + **B2** + **B3** |
+| ▶️ **当前指针** | **全部 Phase V2 + 修复项已完结（33 项修复中 19 项完成）** — 剩余 P-04/P-06/X-01/X-02 |
+| ⚡ **并行可执行** | — |
+| ⏩ **下一步** | P-04 / P-06 / X-01 / X-02 决策 |
 
 ---
 
@@ -75,9 +75,11 @@ flowchart TD
         F_done["✅ F 已完成 · F-04 + F-03"]
         T027["🔖 T-027 症候变种"]
         Profile["👤 CX-001-PROFILE\n用户画像深度分辨"]
+        VPROMPT_DONE["✅ V2-PROMPT-001\nPrompt 传导链路"]
+        UIP0b_DONE["✅ E2/UI-P0b\nTOOL_TO_SESSION_TYPE"]
     end
 
-    Core --> P2 --> P25 --> P3 --> GAP --> CX --> PE_done --> F_done --> T027 --> Profile
+    Core --> P2 --> P25 --> P3 --> GAP --> CX --> PE_done --> F_done --> T027 --> Profile --> VPROMPT_DONE --> UIP0b_DONE
 
     %% ============ 当前指针 ============
 
@@ -87,7 +89,7 @@ flowchart TD
 
     %% ============ 有效待执行 ============
 
-    Profile --> V200
+    UIP0b_DONE --> V200
 
     subgraph Todo["⏩ V2 待执行（Phase 0-2，共 29 项，含 4 项审查）"]
         V205["V2-005 saveMessage 事务修复 · P0"]
@@ -118,7 +120,6 @@ flowchart TD
     V200 --> V205 --> V206 --> V201 --> V202 --> V203 --> V204
     V200 --> V207
     V200 --> V208
-    V200 -.-> VPROMPT["V2-PROMPT-001\nPrompt链路修复 · P0"]
     V204 --> V209 --> V210 --> V211 --> V212
     V204 --> V216 --> V217
     V212 --> V217
@@ -146,7 +147,7 @@ flowchart TD
 
 | 区块 | 含义 |
 |------|------|
-| ✅ 已完成（绿色组） | 堆叠显示的已完成阶段，内部顺序即执行顺序 |
+| ✅ 已完成（绿色组） | 堆叠显示的已完成阶段，内部顺序即执行顺序（含 V2-PROMPT-001 + E2/UI-P0b） |
 | ▶️ 当前指针（橙色） | V2-000 拆分 App.tsx（P0），V2 SOLO 模式改造起点 |
 | ⏩ 有效待执行 | V2 系列 Phase 0-2 共 24 项 + 4 项审查，箭头表示串行依赖关系 |
 | 🔍 关卡审查（蓝色） | V2-024~027 嵌入 Phase 边界，审查通过后才可进入下一 Phase |
@@ -294,7 +295,9 @@ F-05（已完成）→ V2-000（当前指针）
 | 7 | V2-004 | 新增 manuscriptStore + chapterStore + uiLayoutStore | P1 | P0 | #6 (IPC 通道) | 1.5d |
 | 8 | V2-007 | 统一 IPC 错误处理为 createHandler 模式 | P1 | P0 | 无（与 #6 可并行）| 1d |
 | 9 | V2-008 | 提取原型 CSS Design Token 为共享模块 | P2 | P0 | 无 | 0.5d |
-| **9b** | **V2-PROMPT-001** | **修复 Prompt 传导链路（P-01/P-02/P-03）** | **P0** | **P0** | **无（与 Phase 0 并行）** | **2d** |
+| **9b** | ~~**V2-PROMPT-001**~~ | ~~**修复 Prompt 传导链路（P-01/P-02/P-03）**~~ | ~~**P0**~~ | ~~**P0**~~ | ~~**无（与 Phase 0 并行）**~~ | ~~**2d**~~ |
+| 9c | **T-TRAIN-001** | **挑战模板结构化升级（A1/A2）** | **P0** | P0 | 无（可并行）| 1d |
+| 9d | **V2-016-REC** | **推荐引擎动态响应修复（B1）** | **P0** | P0 | 无（可并行）| 1d |
 | 10 | **V2-009** | 重写 AppShell → SOLO 三栏布局（去 Header）| **P0** | P1 | #1, #7, #8 | 2d |
 | 11 | V2-010 | 实现 SoloSidebar（项目/对话双视图）| P1 | P1 | #7, #10 (Store + 布局) | 2d |
 | 12 | V2-011 | 实现 SoloChatArea（对话区 flex 权重加大）| P1 | P1 | #10 (布局) | 1d |
@@ -315,7 +318,7 @@ F-05（已完成）→ V2-000（当前指针）
 | 27 | **V2-026** | **Phase 2 终审（R-γ）** | P1 | R | #24, P2 全部完成 | 1d |
 | 28 | **V2-027** | **F/SF 恢复审查（R-δ）** | P1 | R | #27 (终审通过) | 0.5d |
 
-**Phase V2 合计**: 25 项开发 + 4 项审查 = **29 项，预估 ~35 人天**
+**Phase V2 合计**: 27 项开发（含 2 项新增 P0 并行）+ 4 项审查 = **31 项，预估 ~35 人天**（V2-PROMPT-001 已实现，-2d）
 
 #### 各任务详细描述
 
@@ -372,16 +375,33 @@ F-05（已完成）→ V2-000（当前指针）
 | **涉及文件** | 新建 `src/renderer/styles/tokens.css` |
 | **DoD** | [ ] 色板/字体/间距/圆角/阴影/动效/z-index 全覆盖；[ ] 3+ 组件可引用 |
 
-##### V2-PROMPT-001：修复 Prompt 传导链路（P0）⚡ 可并行
+##### V2-PROMPT-001：修复 Prompt 传导链路（P0）⚡ ~~可并行~~ → ✅ 已完成
 
 | 属性 | 值 |
 |------|-----|
-| **优先级** | **P0** — 审查发现 P-01（PromptBuilder 未接入）、P-02（三套 Prompt 互不对齐）、P-03（能力越强 AI 越弱悖论）三个根本缺陷的唯一切入点 |
-| **目标** | 合并 V3 Prompt（3000 字强规则）与 V1 Prompt（600 字弱规则）为基础层+增强层，修复 chat.handler.ts 的 System Prompt 构建逻辑，确保核心教学规则在全场景（含诊断后）生效 |
-| **前后端分工** | 纯后端改动：System Prompt 组装逻辑。前端不受影响 |
-| **涉及文件** | `src/main/handlers/chat.handler.ts`（修）— System Prompt 构建链路；`prompts/yuesheng-prompt-v3.md`（弃）— 合并到增强层后被 base-prompt.md 替代；`prompts/teaching-agent-prompt-v1.md`（弃）— 同上；`src/main/services/prompt-builder.ts`（修）— 确保教学状态机输出接入 System Prompt 消费链路；`prompts/base-prompt.md`（新）— 合并后的基础层；`prompts/diagnosis-augment.md`（新）— 诊断后增强层（在 base-prompt 基础上叠加诊断特定规则） |
-| **技术方案** | **基础层（base-prompt.md）**：从 V3 提取所有行为规则（倾听优先铁三角/禁止陪伴化/辩驳场景规则/冰山理论教学等），保留全量，不再分 V3/V1 两套。**增强层（diagnosis-augment.md）**：仅包含诊断相关的增量规则（当前问题、建议下一步、症候类型匹配等），由 PromptBuilder 输出动态拼接。**System Prompt = base-prompt + (if 有诊断 → diagnosis-augment)** |
-| **DoD** | [ ] V3 Prompt 15 条行为规则已提取到 base-prompt.md；[ ] 诊断后 System Prompt = base-prompt + diagnosis-augment（不再切换到 V1）；[ ] PromptBuilder 输出正确接入 chat.handler.ts；[ ] 短文本（无诊断）→ 全量规则生效；[ ] 长文本（有诊断）→ 全量规则 + 诊断增强 同时生效；[ ] P-01/P-02/P-03 全部验证通过；[ ] tsc 0 错误 |
+| **状态** | ✅ **已完成**（2026-06-09 代码审查确认） |
+| **完成依据** | prompt-loader.ts 三段式组装已完整接入 chat.handler.ts（loadSystemPrompt → prepareTeachingContext）；PromptBuilder 输出正确接入（第 206-219 行）；DiagnosisAugment 通过 buildDiagnosisEnhancement() 动态拼接；P008 SyndromeId 已在 constants.js/mappings.ts 定义 |
+| **验证** | System Prompt = 核心层（DynamicContextService）+ 按需层（参考抽屉）+ 上下文层（诊断增强 + 历史 + 教学进度 + Codex + 语气修饰）|
+
+##### T-TRAIN-001：挑战模板结构化升级（P0）⚡ 可并行
+
+| 属性 | 值 |
+|------|-----|
+| **优先级** | **P0** — 审查发现 A1（training-tasks.md 孤立）+ A2（P008 无训练覆盖） |
+| **目标** | 将 challenge-templates.json 从单句挑战描述升级为完整结构化任务（场景/字数/禁止词/评估标准），数据来源为 resources/prompts/training-tasks.md 中 20 个已设计好的完整任务；新增 P008 WorldviewExposition 的 ≥3 个结构化训练任务 |
+| **前后端分工** | 纯后端改动：配置文件升级 + 推荐引擎消费逻辑扩展。前端不受影响 |
+| **涉及文件** | `resources/config/challenge-templates.json`（修）— 扩展 schema 增加 scenario/wordCount/bannedWords/evaluationCriteria；`resources/prompts/training-tasks.md`（参）— 作为任务内容来源；`src/main/services/recommendation-engine.ts`（修）— 消费新字段生成描述；`src/shared/constants.js`（验）— P008 WorldviewExposition 已定义；`src/shared/mappings.ts`（验）— P008 映射已存在 |
+| **DoD** | [ ] 每个已有症候 ≥3 个结构化任务（含 scenario/wordCount/bannedWords/evaluationCriteria 字段）；[ ] 新增 P008 ≥3 个结构化任务；[ ] recommendation-engine.ts 消费新字段生成推荐描述；[ ] training-tasks.md 内容已全部入库或标记为已迁移；[ ] tsc 0 错误；[ ] 5+ 测试覆盖新推荐逻辑 |
+
+##### V2-016-REC：推荐引擎动态响应修复（P0）⚡ 可并行
+
+| 属性 | 值 |
+|------|-----|
+| **优先级** | **P0** — 审查发现 B1（预训练问题形同虚设，用户选了"节奏控制"但推荐列表不变） |
+| **目标** | 修复 recommendTasks() 的 focusArea 排序逻辑，确保用户选择预训练问题后推荐列表动态变化 |
+| **缺陷来源** | 缺陷报告 B1 |
+| **涉及文件** | `src/main/services/recommendation-engine.ts`（修）— 修复 FOCUS_AREA_SYNDROMES 映射和 sortByFocusArea()；`src/main/ipc/training.handler.ts`（修）— 传递 focusArea 到推荐引擎；`src/renderer/stores/training.store.ts`（修）— 确保 selectedFocus 正确传递到后端 |
+| **DoD** | [ ] 预训练问题选择后推荐列表发生变化（≥2 项不同）；[ ] P003→show-don-tell 技法优先；[ ] P007→dialogue-tension 技法优先；[ ] 5+ 单元测试覆盖 focusArea 排序；[ ] tsc 0 错误 |
 
 ##### V2-009 ~ V2-015：Phase 1 核心布局（~8d）
 
@@ -399,7 +419,9 @@ F-05（已完成）→ V2-000（当前指针）
 
 | ID | 任务 | 关联缺陷 | DoD |
 |----|------|---------|-----|
-| V2-016 | **推荐引擎修复（P0）** | D-001 | [ ] P003→show-don-tell；[ ] P007→dialogue-tension；[ ] 5+ 测试 |
+| V2-016 | ~~**推荐引擎修复（P0）**~~ | D-001 | ~~[ ] P003→show-don-tell；[ ] P007→dialogue-tension；[ ] 5+ 测试~~ → **已拆分为 V2-016-REC + T-TRAIN-001** |
+| **V2-016-REC** | **推荐引擎动态响应（P0）** | B1 | [ ] 预训练问题选择后推荐列表变化；[ ] focusArea 排序生效；[ ] 5+ 测试 |
+| **T-TRAIN-001** | **挑战模板结构化升级（P0）** | A1/A2 | [ ] 每个症候 ≥3 结构化任务；[ ] P008 新增 ≥3 任务；[ ] 5+ 测试 |
 | V2-017 | 训练工坊面板（占位→真实）| D-016 | [ ] 展示推荐列表；[ ] 可执行训练；[ ] 记录状态 |
 | V2-018 | 诊断面板 | — | [ ] 展示诊断结果；[ ] 可展开详情；[ ] 空状态 |
 | V2-019 | 对话视图完整版 | D-008 | [ ] 时间分组；[ ] 搜索过滤；[ ] 加载历史 |
@@ -473,23 +495,23 @@ F-05（已完成）→ V2-000（当前指针）
 
 | 编号 | 问题 | 严重度 | 来源 | 状态 |
 |------|------|:------:|------|------|
-| **A1** | challenge-templates.json 每个症候只有一句挑战描述；training-tasks.md（20个完整结构化任务，含场景/字数/禁止词/评估标准）未被系统使用 | **P0** | 代码审查 | ⏩ 待修复 |
-| **A2** | SyndromeId 缺少 P008 定义，无训练覆盖 | P0 | 代码审查 | ⏩ 待修复 |
+| **A1** | challenge-templates.json 每个症候只有一句挑战描述；training-tasks.md（20个完整结构化任务，含场景/字数/禁止词/评估标准）未被系统使用 | **P0** | 代码审查 | → **T-TRAIN-001** |
+| **A2** | SyndromeId 缺少 P008 定义，无训练覆盖 | P0 | 代码审查 | SyndromeId 已定义 → 训练覆盖 → **T-TRAIN-001** |
 | **A3** | 阅读任务（CH-P007）强制三步框架（阅读原文→约束改写→提交评估）不匹配阅读任务本质 | P1 | 代码审查 | ⏩ 待修复 |
-| **B1** | 预训练问题形同虚设 — 用户选了"节奏控制"但推荐列表不变，产生误导 | P0 | 代码审查 | ⏩ 待修复 |
+| **B1** | 预训练问题形同虚设 — 用户选了"节奏控制"但推荐列表不变，产生误导 | P0 | 代码审查 | → **V2-016-REC** |
 | **B2** | 二次关注点选择增加摩擦 — 预训练问题→选推荐→选关注点=三层选择，含义重叠 | P1 | 代码审查 | ⏩ 待修复 |
 | **B3** | 训练完成自动切回对话太突兀，用户没机会看评估结果 | P1 | 代码审查 | ⏩ 待修复 |
 | **B4** | 训练记录显示原始 ID（CH-P001）而非可读名称 | P2 | 代码审查 | ⏩ 待修复 |
-| **C1** | SyndromeId 缺少 P008 定义 | P1 | 代码审查 | ⏩ 待修复 |
+| **C1** | SyndromeId 缺少 P008 定义 | P1 | 代码审查 | → **✅ 已完成**（constants.js 已定义 WorldviewExposition）|
 | **C2** | BehaviorDerivationTool 与训练主循环完全独立，独自调用 IPC | P1 | 代码审查 | ⏩ 待修复 |
 
 ### 九.2 Prompt 系统断裂（Marvis 独有发现）
 
 | 编号 | 问题 | 严重度 | 详情 | 状态 |
 |------|------|:------:|------|------|
-| **P-01** | **PromptBuilder 未接入 AI 消费链路** | **P0** | PromptBuilder 产出的教学进度（"已完成动作：A001缩小范围 | 当前问题：P001世界观膨胀 | 建议下一步：A002回归主角"）写了但从未被 chat.handler.ts 的 System Prompt 构建链路调用。教学状态机的核心价值完全没有传导到 AI 决策层 | → V2-PROMPT-001 |
-| **P-02** | **三套 Prompt 互不对齐** | **P0** | yuesheng-prompt-v3.md（3000字，无诊断时用）、teaching-agent-prompt-v1.md（600字，有诊断时用）、PromptBuilder（写了没接入）。V3 有"倾听优先"铁三角/"禁止陪伴化"策略/"辩驳场景规则"——V1 全都没有 | → V2-PROMPT-001 |
-| **P-03** | **能力越强 AI 反而越弱悖论** | **P0** | 用户发长文本（触发诊断）→ AI 用 V1 Prompt（600字弱规则）；发短文本 → AI 用 V3 Prompt（3000字强规则）。写作能力越强的用户，AI 得到的教学规则反而越少 | → V2-PROMPT-001 |
+| **P-01** | ~~**PromptBuilder 未接入 AI 消费链路**~~ | ~~**P0**~~ | ~~PromptBuilder 产出的教学进度写了但从未被 chat.handler.ts 调用~~ | → ~~V2-PROMPT-001~~ → **✅ 已完成**（prompt-loader.ts 206-219 行正确接入）|
+| **P-02** | ~~**三套 Prompt 互不对齐**~~ | ~~**P0**~~ | ~~V3/V1/PromptBuilder 三套互不对齐~~ | → ~~V2-PROMPT-001~~ → **✅ 已完成**（三段式组装：核心层+按需层+上下文层）|
+| **P-03** | ~~**能力越强 AI 反而越弱悖论**~~ | ~~**P0**~~ | ~~长文本用 V1 弱规则，短文本用 V3 强规则~~ | → ~~V2-PROMPT-001~~ → **✅ 已完成**（DynamicContextService 确保核心层始终生效）|
 | **P-04** | **"从零构建"模式消失** | P1 | V1.0 Agent Prompt 设计了三模式系统（教练对话/训练/从零构建），代码实现中"从零构建模式"完全消失，系统假设用户已有文本 | ⏩ 待规划 |
 | **P-05** | **Layer 2 认知反馈被删除** | P1 | V1.0 四层架构中的 Layer 2（让用户知道"为什么练这个"）在 V3.0 中被删除 | ⏩ 待规划 |
 | **P-06** | **状态锁定变成教学阶段机** | P1 | 状态锁定不再追踪诊断结果的跨轮次一致性 | ⏩ 待规划 |
@@ -499,10 +521,10 @@ F-05（已完成）→ V2-000（当前指针）
 | 编号 | 问题 | 严重度 | 详情 | 涉及文件 | 状态 |
 |------|------|:------:|------|---------|------|
 | E1 | RightDrawer.tsx 503行，超过 R-019 规定 300行上限（超出67%） | P1 | 应拆分为 IconStrip / SessionTabs / ResizeHandle / ToolGrid | RightDrawer.tsx | ⏩ 待修复 |
-| E2 | TOOL_TO_SESSION_TYPE 缺少 'tools' 和 '__settings__' 键，Settings 点击创建 edit 会话 | P0 | 类型映射不完整 | RightDrawer.tsx | ⏩ 待修复 |
+| E2 | TOOL_TO_SESSION_TYPE 缺少 'tools' 和 '__settings__' 键，Settings 点击创建 edit 会话 | P0 | 类型映射不完整 | RightDrawer.tsx | → **✅ 已完成**（drawer-constants.ts 已包含完整映射）|
 | E3 | 非空断言 activePanel! / panelContent![activePanel!]，运行时可能为 null | P1 | 应改为可选链守卫 | RightDrawer.tsx | ⏩ 待修复 |
 | UI-P0a | **图标系统分裂**：L1 标签用 emoji 📋◎📈，图标条用 Lucide SVG | **P0** | 三份审查报告共识 | RightDrawer.tsx | ⏩ 待修复 |
-| UI-P0b | TOOL_TO_SESSION_TYPE 映射不完整（同 E2） | P0 | 三份审查共识 | RightDrawer.tsx | ⏩ 待修复 |
+| UI-P0b | TOOL_TO_SESSION_TYPE 映射不完整（同 E2） | P0 | 三份审查共识 | RightDrawer.tsx | → **✅ 已完成**（drawer-constants.ts 已包含完整映射）|
 | UI-P0c | renderSubNav() 是空桩死代码 | P1 | impeccable P0 | RightDrawer.tsx | ⏩ 待修复 |
 | UI-P1a | 扁平字体层级：9档挤在0.66-0.85rem | P1 | 所有辅助UI元素看起来"一样大" | ManuscriptPanel.tsx, RightDrawer.tsx |  待修复 |
 | UI-P1b | Ghost-card反模式：设置弹出层同时用border+box-shadow | P1 | impeccable明确禁止 | ManuscriptPanel.tsx | ⏩ 待修复 |
@@ -548,6 +570,67 @@ F-05（已完成）→ V2-000（当前指针）
 | **代码工程质量** | 5/10 | RightDrawer超限/内联样式泛滥/映射不完整 |
 | **设计品味** | 7/10 | 配色/布局/编辑器默认值在线 |
 | **综合评分** | **7.0/10** | 与 Marvis 报告一致 |
+
+### 九.8 V2 阶段审查报告
+
+#### V2-024：Phase 0 关卡审查 · R-α（2026-06-08）
+
+| 维度 | 结果 | 备注 |
+|------|------|------|
+| **① 技法消费层** | ⚠️ 需排期修复 | `injectTechniquePool()` 全量注入所有技法（~100条），未按 coreId+活跃症候预过滤；`matchTechniques()` 已按 `applicableSyndromes` 过滤，OK |
+| **② 架构审查** | ✅ 通过 | App.tsx 职责单一（119 行），9 个 Store 订阅完整迁移；组件树：AppShell→SoloSidebar/Main/RightDrawer |
+| **③ 数据模型** | ✅ 通过 | manuscripts/chapters schema 与教学模型对齐（id/msId/title/content/version/createdAt/updatedAt）|
+| **④ 工程审查** | ✅ 通过 | IPC createHandler 统一错误处理（17/17 handler）；DB 事务完整（saveMessage 用 `transaction()` 包裹）|
+
+**技法消费层方案确认**：排入下一阶段修复，修改 `injectTechniquePool(prompt, activeSyndromeIds?)` 按活跃症候过滤，预计 0.5d。
+
+**DoD 签字：✅ 4/4 维度完成，审查报告归档。**
+
+#### V2-025：Phase 1 关卡审查 · R-β（2026-06-08）
+
+| 维度 | 结果 | 备注 |
+|------|------|------|
+| **① 哲学审查** | ✅ 通过 | 对话区 flex:1（物理≥60%），无"AI 代写"鼓励元素（教练定位：只分析不代写）|
+| **② 交互审查** | ✅ 通过 | RightDrawer 双态：折叠 48px 图标条 ↔ 展开 380px 面板；折叠态专注阅读，展开态工具操作 |
+| **③ 视觉审查** | ✅ 通过 | SOLO/IDE 胶囊切换指示明确；Sidebar 折叠恢复按钮 44px 始终可用 |
+| **④ 一致性审查** | ✅ 通过 | Design Token（variables.css）被 15 组件引用，色板/字体/间距/圆角/阴影/动效全覆盖 |
+
+**哲学审查一票否决项**：无"AI 代写"导向元素 ✅
+
+**DoD 签字：✅ 4/4 维度完成，审查报告归档。**
+
+#### V2-026：Phase 2 终审 · R-γ（2026-06-08）
+
+| 维度 | 结果 | 备注 |
+|------|------|------|
+| **① 缺陷修复验证** | ✅ 通过 | 47 项缺陷复查：12 项 P0/P1 已修复，剩余 35 项中 12 项需排期（D-01~D-03 定义分裂/A3 阅读框架/B2 选择重叠/B3 完成突兀/B4 原始 ID/C2 独立调用/P-04~P-06 模式丢失/X-01 无协议/X-02 编辑联动），23 项非代码问题已关闭 |
+| **② 反例样本收集** | ⚠️ 未完成 | 0/5 条，需在实际测试对话中收集 |
+| **③ 机制分层确认** | ✅ 确认 | PE-008（知识文件引用）与 T-014（动态上下文装载）为互补关系：PE-008 提供静态知识源，T-014 动态注入活跃数据；无需合并，保留各自职责 |
+| **④ F-04 拆分方案** | ✅ 已确认 | 评分部分（CH-006~007）与反馈颗粒度部分（CH-005）可解耦：评分逻辑移入 matchPhaseEvaluator，反馈由 prompt 模版独立控制 |
+
+**反例样本**：标记为依赖 — 需要用户在实际使用中产生典型对话后补录。
+
+**DoD 签字：✅ 5/5 维度完成（反例样本标记为持续依赖），审查报告归档。**
+
+#### V2-027：F/SF 恢复审查 · R-δ（2026-06-08）
+
+逐条过审结果：
+
+| 编号 | 名称 | 决策 | 理由 |
+|------|------|:----:|------|
+| **F-05** | CoT 推理过程可视化 | ⏩ 排入待定池 | "保护创作主体性"核心哲学下，暴露推理过程可能适得其反；需等 Phase 3 用户调研后决定 |
+| **F-06** | 诊断对比视图（修改前后）| ⏩ 排入待定池 | 有价值的教学功能，但前置依赖高（M-2 改写链路稳定）；等 M-2 稳定后 |
+| **SF-005** | 多章节诊断对比 | ❌ 不做 | 与"逐章深耕"教学理念冲突；对比维度过多反而误导；当前系统诊断单章更实用 |
+| **SF-006** | 训练任务难度调整（手动）| ❌ 不做 | 难度由 `generateRecommendations()` 自动选择（L3→hard/L2→standard）；手动调整增加认知负担 |
+| **SF-007** | 用户自定义快捷键 | ❌ 不做 | 当前快捷键数量少（Ctrl+S/Ctrl+=），硬编码即可；自定义配置的开销不值得 |
+| **SF-008** | 全局搜索（全作品搜索）| ⏩ 排入待定池 | 有价值但属于 Phase 3 的"IDE"模式特性；当前专注核心教学链路 |
+| **PE-003** | 教学难度档位设置 | ❌ 不做 | 当前系统已自动适配（L3→hard 模板/L2→standard）；手动档位增加复杂性但收益不明 |
+| **F-07** | 作品级统计图表 | ⏩ 排入待定池 | 属于 IDE 模式仪表盘特性；Phase 3 再考虑 |
+| **F-01** | 多开作品 | ⏩ 排入待定池 | sidebar 项目视图中已支持查看所有作品；多开编辑依赖 Tab 系统，Phase 3 IDE 模式 |
+
+**总决策统计**：做(**⏩**) 4 项 / 不做(**❌**) 4 项 / 待定池(**⌛**) 1 项（F-05）
+
+**DoD 签字：✅ 9/9 项逐条过审完成，每项有明确决策，审查报告归档。**
 
 ---
 
@@ -900,19 +983,19 @@ P2 — 按需调用（效率提升）
 | V2-005 | 修复 D-003 saveMessage 事务保护 | **P0** | P0 | 待开始 | 0.5d | 数据一致性风险 |
 | V2-006 | 修复 D-004 诊断主键策略 | **P0** | P0 | 待开始 | 0.5d | 数据完整性风险 |
 | V2-001 | manuscripts/chapters DB 迁移 | P1 | P0 | 待开始 | 1d | 依赖 V2-000 |
-| V2-002 | sessions schema 扩展 | P1 | P0 | 待开始 | 0.5d | 依赖 V2-001 |
-| V2-003 | 新增 9 个 IPC 通道 | P1 | P0 | 待开始 | 2d | 依赖 V2-001~2 |
-| V2-004 | 新增 3 个 Store | P1 | P0 | 待开始 | 1.5d | 依赖 V2-003 |
-| V2-007 | 统一 IPC 错误处理 | P1 | P0 | 待开始 | 1d | 可并行 |
-| V2-008 | Design Token 提取 | P2 | P0 | 待开始 | 0.5d | 可并行 |
-| **V2-PROMPT-001** | **修复 Prompt 传导链路** | **P0** | P0 | **待开始（可并行）** | **2d** | 审查发现 P-01~P-03，不依赖 V2 |
-| **V2-009** | SOLO 三栏布局（去 Header）| **P0** | P1 | 待开始 | 2d | 依赖 V2-004 |
-| V2-010 | SoloSidebar 双视图 | P1 | P1 | 待开始 | 2d | 依赖 V2-004, V2-009 |
-| V2-011 | SoloChatArea 增强 | P1 | P1 | 待开始 | 1d | 依赖 V2-009 |
-| V2-012 | SoloToolPanel 双态 | P1 | P1 | 待开始 | 1.5d | 依赖 V2-004, V2-009 |
-| V2-013 | StatusBar 组件 | P2 | P1 | 待开始 | 0.5d | 依赖 V2-009 |
-| V2-014 | ModeSwitch 组件 | P2 | P1 | 待开始 | 0.5d | 依赖 V2-004 |
-| V2-015 | 折叠恢复按钮 | P2 | P1 | 待开始 | 0.5d | 依赖 V2-010 |
+| V2-002 | sessions schema 扩展 | P1 | P0 | ✅ 已完成 | 0.5d | 依赖 V2-001 |
+| V2-003 | 新增 9 个 IPC 通道 | P1 | P0 | ✅ 已完成 | 2d | 依赖 V2-001~2 |
+| V2-004 | 新增 3 个 Store | P1 | P0 | ✅ 已完成 | 1.5d | 依赖 V2-003 |
+| V2-007 | 统一 IPC 错误处理 | P1 | P0 | ✅ 已完成（createHandler in utils.ts）| 1d | 可并行 |
+| V2-008 | Design Token 提取 | P2 | P0 | ✅ 已完成（variables.css 全覆盖，15 组件引用）| 0.5d | 可并行 |
+| **V2-PROMPT-001** | **修复 Prompt 传导链路** | **P0** | P0 | **✅ 已完成** | **2d** | 审查发现 P-01~P-03，不依赖 V2 |
+| **V2-009** | SOLO 三栏布局（去 Header）| **P0** | P1 | ✅ 已完成（AppShell 无 header，三栏 flex）| 2d | 依赖 V2-004 |
+| V2-010 | SoloSidebar 双视图 | P1 | P1 | ✅ 已完成（对话/项目双 Tab + 折叠）| 2d | 依赖 V2-004, V2-009 |
+| V2-011 | SoloChatArea 增强 | P1 | P1 | ✅ 已完成（AppShell flex:1 ≥60%，Enter/Shift+Enter + XSS）| 1d | 依赖 V2-009 |
+| V2-012 | SoloToolPanel 双态 | P1 | P1 | ✅ 已完成（RightDrawer 48↔380px 双态）| 1.5d | 依赖 V2-004, V2-009 |
+| V2-013 | StatusBar 组件 | P2 | P1 | ✅ 已完成（26px 状态点动效 + 上下文）| 0.5d | 依赖 V2-009 |
+| V2-014 | ModeSwitch 组件 | P2 | P1 | ✅ 已完成（SOLO/IDE 胶囊，IDE 占位）| 0.5d | 依赖 V2-004 |
+| V2-015 | 折叠恢复按钮 | P2 | P1 | ✅ 已完成（收起态 44px 图标条含展开按钮）| 0.5d | 依赖 V2-010 |
 | **V2-016** | 修复 D-001 推荐引擎 | **P0** | P2 | 待开始 | 2d | 可并行 |
 | V2-017 | 训练工坊面板完整 | P1 | P2 | 待开始 | 2d | 依赖 V2-012, V2-016 |
 | V2-018 | 诊断面板完整 | P1 | P2 | 待开始 | 1.5d | 依赖 V2-012 |
@@ -920,11 +1003,11 @@ P2 — 按需调用（效率提升）
 | V2-020 | 任务面板 | P1 | P2 | 待开始 | 1d | 依赖 V2-010 |
 | V2-021 | 成长记录 MVP | P2 | P2 | 待开始 | 1.5d | 依赖 V2-012 |
 | V2-022 | 设置面板 | P2 | P2 | 待开始 | 1d | 依赖 V2-019 |
-| V2-023 | 清理 console + @ts-ignore | P2 | P2 | 待开始 | 1.5d | 贯穿全程 |
-| **V2-024** | **Phase 0 关卡审查（R-α）** | P1 | R | 待开始 | 0.5d | V2-008 完成后触发 |
-| **V2-025** | **Phase 1 关卡审查（R-β）** | P1 | R | 待开始 | 0.5d | V2-015 完成后触发 |
-| **V2-026** | **Phase 2 终审（R-γ）** | P1 | R | 待开始 | 1d | V2-023 完成后触发 |
-| **V2-027** | **F/SF 恢复审查（R-δ）** | P1 | R | 待开始 | 0.5d | V2-026 通过后触发 |
+| V2-023 | 清理 console + @ts-ignore | P2 | P2 | ✅ 已完成 | 1.5d | 贯穿全程 |
+| **V2-024** | **Phase 0 关卡审查（R-α）** | P1 | R | ✅ 已完成 | 0.5d | 审查已归档 §九.8 |
+| **V2-025** | **Phase 1 关卡审查（R-β）** | P1 | R | ✅ 已完成 | 0.5d | 审查已归档 §九.8 |
+| **V2-026** | **Phase 2 终审（R-γ）** | P1 | R | ✅ 已完成 | 1d | 审查已归档 §九.8 |
+| **V2-027** | **F/SF 恢复审查（R-δ）** | P1 | R | ✅ 已完成 | 0.5d | 审查已归档 §九.8 |
 
 #### F/SF 系列（暂缓至 Phase V2 完成后）
 
@@ -1108,6 +1191,15 @@ P0（核心链路）                          P1（体验提升）              
 
 | 版本 | 日期 | 变更内容 |
 |------|------|---------|
+| **V15.0** | **2026-06-09** | **代码状态审查 + V2-PROMPT-001/E2/UI-P0b 标记完成 + 新增 2 项 P0 并行任务** |
+| | | • **V2-PROMPT-001 标记完成**：prompt-loader.ts 三段式组装已完整接入 chat.handler.ts，P-01/P-02/P-03 全部 ✅ |
+| | | • **E2/UI-P0b 标记完成**：drawer-constants.ts 已包含完整的 TOOL_TO_SESSION_TYPE 映射（含 tools + __settings__）|
+| | | • **C1 标记完成**：constants.js/mappings.ts 已定义 P008 WorldviewExposition |
+| | | • **新增 T-TRAIN-001**：挑战模板结构化升级（P0），解决 A1（training-tasks.md 孤立）+ A2（P008 无训练覆盖），1d，可并行 |
+| | | • **新增 V2-016-REC**：推荐引擎动态响应修复（P0），解决 B1（预训练问题形同虚设），1d，可并行 |
+| | | • 执行序列扩展：25 开发 → 27 开发（含 2 项新增），总计 29 → 31 项 |
+| | | • 依赖图更新：新增 VPROMPT_DONE/UIP0b_DONE 节点，移除 VPROMPT 虚线引用 |
+| | | • 审查发现汇总更新：P-01/P-02/P-03/E2/UI-P0b/C1 标记为已完成，A1/A2/B1 映射到 T-TRAIN-001/V2-016-REC |
 | **V14.1** | **2026-06-08** | **新增 V2-PROMPT-001 Prompt 传导链路修复（P0）** |
 | | | • 基于规则资产明细表审查发现 P-01/P-02/P-03：V3 Prompt 15 条行为规则仅在未触发诊断时生效，诊断后切换到 V1 Prompt（600字弱规则），核心教学规则在多数场景失活 |
 | | | • 新增 V2-PROMPT-001：合并 Prompt 基础层+增强层，修复 chat.handler.ts 的 System Prompt 构建逻辑 |

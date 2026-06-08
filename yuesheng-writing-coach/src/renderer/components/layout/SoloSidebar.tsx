@@ -139,8 +139,22 @@ const SoloSidebar: React.FC = () => {
   useEffect(() => { fetchManuscripts(); }, [fetchManuscripts]);
   useEffect(() => { if (showWorkPopup) workInputRef.current?.focus(); }, [showWorkPopup]);
   useEffect(() => { if (showChapterPopup) chapterInputRef.current?.focus(); }, [showChapterPopup]);
+  // V2-019: 搜索过滤 + 加载更多
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sessionMaxCount, setSessionMaxCount] = useState(30);
 
-  const groupedSessions = groupSessions(sessions);
+  // 过滤 + 限制对话数
+  const filteredSessions = sessions.filter(s => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const title = (s.title || '').toLowerCase();
+    const msg = (s.lastMessage || '').toLowerCase();
+    return title.includes(q) || msg.includes(q);
+  });
+  const visibleSessions = filteredSessions.slice(0, sessionMaxCount);
+  const hasMore = filteredSessions.length > sessionMaxCount;
+  const groupedSessions = groupSessions(visibleSessions);
+
 
   /* ── 样式 ── */
   const SIDEBAR_TAB_WIDTH = 44;
@@ -401,7 +415,7 @@ const SoloSidebar: React.FC = () => {
                       }
                       selectChapter(ch.id);
                       openTab(ch.id, ms.title);
-                      useDrawerStore.setState({ activePanel: 'works', collapsed: false });
+                      useDrawerStore.getState().openPanel('works');
                     }}
                   >
                     <span style={{
@@ -591,6 +605,31 @@ const SoloSidebar: React.FC = () => {
                   <Plus size={14} strokeWidth={2} />
                   <span>新对话</span>
                 </button>
+                {/* V2-019: 搜索框 */}
+                <div style={{ padding: '0 12px 8px' }}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="搜索对话..."
+                    aria-label="搜索对话"
+                    style={{
+                      width: '100%',
+                      padding: '4px 8px',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-input)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: 'var(--text-xs)',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      transition: 'border-color 150ms ease',
+                    }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+                  />
+                </div>
                 {groupedSessions.map(group => (
                   <div key={group.group}>
                     <div style={{
@@ -605,6 +644,22 @@ const SoloSidebar: React.FC = () => {
                     {group.items.map(renderSessionItem)}
                   </div>
                 ))}
+                {/* V2-019: 显示更多 */}
+                {hasMore && (
+                  <button
+                    onClick={() => setSessionMaxCount(prev => prev + 30)}
+                    style={{
+                      ...listItemStyle,
+                      justifyContent: 'center',
+                      gap: 4,
+                      color: 'var(--accent)',
+                      fontSize: 'var(--text-xs)',
+                      opacity: 0.7,
+                    }}
+                  >
+                    显示更多对话
+                  </button>
+                )}
                 {sessions.length === 0 && (
                   <div style={{
                     padding: '24px 16px',

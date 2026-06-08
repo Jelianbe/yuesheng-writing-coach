@@ -4,7 +4,6 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { TrainingWorkshop } from './TrainingWorkshop';
 import type { ErrorCard, TrainingRecommendation, ActiveTrainingSession, TrainingRecord } from '../../shared/types';
 
@@ -45,18 +44,15 @@ const mockActiveSession: ActiveTrainingSession = {
 describe('TrainingWorkshop', () => {
   // ===== 状态视图 =====
 
-  // ===== 状态视图 =====
-
   describe('状态视图', () => {
     it('加载中显示 loading 状态', () => {
       render(<TrainingWorkshop {...defaultProps} isLoading={true} />);
       expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
 
-    it('错误时显示错误信息和返回按钮', () => {
+    it('错误时显示错误信息', () => {
       render(<TrainingWorkshop {...defaultProps} error="获取数据失败" />);
       expect(screen.getByText('获取数据失败')).toBeInTheDocument();
-      expect(screen.getByText('返回对话')).toBeInTheDocument();
     });
 
     it('有 activeTraining 时渲染 ActiveTrainingView', () => {
@@ -72,42 +68,27 @@ describe('TrainingWorkshop', () => {
       expect(screen.getByText('阅读原文')).toBeInTheDocument();
     });
 
-    it('默认显示预训练引导问题（PE-004 五步引导链）', () => {
+    it('默认显示训练工坊主面板（三区块布局）', () => {
       render(<TrainingWorkshop {...defaultProps} />);
-      // 欢迎画面：引导问题 + 选项
-      expect(screen.getByText(/训练工坊/)).toBeInTheDocument();
-      expect(screen.getByText('开始训练前，先告诉我：')).toBeInTheDocument();
-      expect(screen.getByText('你想优先练什么？')).toBeInTheDocument();
-      // 聚焦选项
-      expect(screen.getByText('节奏控制')).toBeInTheDocument();
-      expect(screen.getByText('角色塑造')).toBeInTheDocument();
-      expect(screen.getByText('返回对话')).toBeInTheDocument();
-      // 底部提示
-      expect(screen.getByText('选择后即可查看推荐训练任务')).toBeInTheDocument();
+      // 主面板：工坊标题 + 三个区块标题
+      expect(screen.getByText('训练工坊')).toBeInTheDocument();
+      expect(screen.getByText('你的常见问题')).toBeInTheDocument();
+      expect(screen.getByText('推荐训练任务')).toBeInTheDocument();
+      expect(screen.getByText('近期训练记录')).toBeInTheDocument();
     });
   });
-
-  // ===== 辅助：导航到主面板 =====
-
-  /** 在欢迎画面点击聚焦和卡点选项，到达三区块主面板 */
-  async function navigateToMainPanel() {
-    const user = userEvent.setup();
-    await user.click(screen.getByText('节奏控制'));
-    await user.click(screen.getByText('不知道怎么开始'));
-  }
 
   // ===== ErrorCardsSection =====
 
   describe('ErrorCardsSection', () => {
-    it('空错误卡显示空状态提示', async () => {
+    it('空错误卡显示空状态提示', () => {
       render(<TrainingWorkshop {...defaultProps} />);
-      await navigateToMainPanel();
       expect(
         screen.getByText(/发送写作内容后，AI 会自动分析/)
       ).toBeInTheDocument();
     });
 
-    it('有错误卡时显示症候名称和开始练习按钮', async () => {
+    it('有错误卡时显示症候名称和相关训练按钮', () => {
       const errorCards: ErrorCard[] = [
         {
           syndromeId: 'P004',
@@ -119,17 +100,16 @@ describe('TrainingWorkshop', () => {
           matchedChallengeId: 'CH-001',
         },
         {
-          syndromeId: 'P002',
+          syndromeId: 'P003',
           syndromeName: '角色工具化',
           severity: 'L3',
           diagnosisCount: 2,
-          lastQuote: '散修是最底层的存在。',
+          lastQuote: '少年冷笑一声，眼中闪过一丝寒芒，淡淡道……',
           lastDiagnosedAt: new Date().toISOString(),
           matchedChallengeId: 'CH-002',
         },
       ];
       render(<TrainingWorkshop {...defaultProps} errorCards={errorCards} />);
-      await navigateToMainPanel();
       expect(screen.getByText('信息硬塞')).toBeInTheDocument();
       expect(screen.getByText('角色工具化')).toBeInTheDocument();
       // 严重度标签
@@ -140,12 +120,12 @@ describe('TrainingWorkshop', () => {
       expect(screen.getByText('2 次诊断')).toBeInTheDocument();
       // 引用原文
       expect(screen.getByText(/他资质平平/)).toBeInTheDocument();
-      // 按钮
-      const buttons = screen.getAllByText('开始练习');
+      // B2: 按钮文本改为'相关训练'
+      const buttons = screen.getAllByText('相关训练');
       expect(buttons).toHaveLength(2);
     });
 
-    it('无 matchedChallengeId 时不显示开始练习按钮', async () => {
+    it('无 matchedChallengeId 时不显示开始练习按钮', () => {
       const cards: ErrorCard[] = [{
         syndromeId: 'P001',
         syndromeName: '世界观膨胀',
@@ -155,7 +135,6 @@ describe('TrainingWorkshop', () => {
         lastDiagnosedAt: new Date().toISOString(),
       }];
       render(<TrainingWorkshop {...defaultProps} errorCards={cards} />);
-      await navigateToMainPanel();
       expect(screen.queryByText('开始练习')).toBeNull();
     });
   });
@@ -163,15 +142,14 @@ describe('TrainingWorkshop', () => {
   // ===== RecommendationsSection =====
 
   describe('RecommendationsSection', () => {
-    it('空推荐显示空状态提示', async () => {
+    it('空推荐显示空状态提示', () => {
       render(<TrainingWorkshop {...defaultProps} />);
-      await navigateToMainPanel();
       expect(
         screen.getByText(/暂无推荐/)
       ).toBeInTheDocument();
     });
 
-    it('有推荐时显示任务列表和层级标签', async () => {
+    it('有推荐时显示任务列表和层级标签', () => {
       const recommendations: TrainingRecommendation[] = [{
         challengeId: 'CH-001',
         challengeName: '信息硬塞',
@@ -184,13 +162,12 @@ describe('TrainingWorkshop', () => {
         mode: 'generic',
       }];
       render(<TrainingWorkshop {...defaultProps} recommendations={recommendations} />);
-      await navigateToMainPanel();
       expect(screen.getByText('信息硬塞')).toBeInTheDocument();
       expect(screen.getByText(/结构性问题/)).toBeInTheDocument();
       expect(screen.getByText(/约束：不直接交代信息/)).toBeInTheDocument();
     });
 
-    it('无约束条件时不显示约束标签', async () => {
+    it('无约束条件时不显示约束标签', () => {
       const recommendations: TrainingRecommendation[] = [{
         challengeId: 'CH-002',
         challengeName: '角色工具化',
@@ -203,7 +180,6 @@ describe('TrainingWorkshop', () => {
         mode: 'generic',
       }];
       render(<TrainingWorkshop {...defaultProps} recommendations={recommendations} />);
-      await navigateToMainPanel();
       expect(screen.queryByText(/约束：/)).toBeNull();
     });
   });
@@ -211,9 +187,8 @@ describe('TrainingWorkshop', () => {
   // ===== HistorySection =====
 
   describe('HistorySection', () => {
-    it('空历史显示空状态提示', async () => {
+    it('空历史显示空状态提示', () => {
       render(<TrainingWorkshop {...defaultProps} />);
-      await navigateToMainPanel();
       expect(
         screen.getByText(/暂无训练记录/)
       ).toBeInTheDocument();
@@ -224,7 +199,7 @@ describe('TrainingWorkshop', () => {
       expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
 
-    it('有历史记录时显示记录列表', async () => {
+    it('有历史记录时显示记录列表', () => {
       const history: TrainingRecord[] = [
         {
           id: 'r1',
@@ -251,7 +226,6 @@ describe('TrainingWorkshop', () => {
         },
       ];
       render(<TrainingWorkshop {...defaultProps} history={history} />);
-      await navigateToMainPanel();
       expect(screen.getByText('CH-001')).toBeInTheDocument();
       expect(screen.getByText('CH-002')).toBeInTheDocument();
       // 有效率标签

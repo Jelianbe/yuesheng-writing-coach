@@ -15,7 +15,7 @@ import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { ActiveProblem, apiSuccess, apiError } from '../../renderer/shared/types';
 import { SYNDROME_NAMES } from '../../shared/mappings';
-import { validatePayload } from './utils/validate-payload';
+import { validatePayload, ValidationError } from './utils/validate-payload';
 import { generateRecommendations, getChallengeTemplate } from '../services/training-recommendation.service';
 import { TrainingRecordService } from '../services/training-record.service';
 import { StudentModelService } from '../services/student-model.service';
@@ -45,7 +45,7 @@ export function initTrainingHandlers(d: TrainingHandlerDeps): void {
 export function registerTrainingHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.TRAINING_RECOMMEND, async (_event, args) => {
     const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
-    if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+    if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${(validation as { error: ValidationError }).error.message}`);
     try {
       if (!deps) return apiError('TrainingHandler deps not initialized');
 
@@ -67,11 +67,20 @@ export function registerTrainingHandlers(): void {
               : agg.trend === 'worsening'
                 ? 'active'
                 : 'active',
+          detectionCount: 1,
+          missedCount: 0,
           suggestedActions: [],
         }),
       );
 
-      const recommendations = generateRecommendations(activeProblems);
+      // 获取已完成训练记录，排除已完成的挑战
+      const historyRecords = deps.trainingRecordService.getBySession(validation.data.sessionId);
+      const completedChallengeIds = historyRecords
+        .filter(r => r.status === 'completed' && (r.score ?? 0) >= 7)
+        .map(r => r.taskId)
+        .filter(Boolean) as string[];
+
+      const recommendations = generateRecommendations(activeProblems, completedChallengeIds);
 
       return apiSuccess({ recommendations });
     } catch (error) {
@@ -245,5 +254,4 @@ export function registerTrainingHandlers(): void {
     }
   });
 
-  console.log('[TrainingHandler] All training IPC handlers registered');
 }

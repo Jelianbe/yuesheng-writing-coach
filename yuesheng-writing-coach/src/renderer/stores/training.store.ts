@@ -15,6 +15,7 @@
 import { create } from 'zustand';
 import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
+import { useChapterStore } from './chapter.store';
 import { getInvoke } from '../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { severityToNumber } from '../../shared/severity-utils';
@@ -66,8 +67,23 @@ interface TrainingState {
   /** 加载错误 */
   error: string | null;
 
-  /** 对话流桥接卡片推荐（null = 无推荐或已关闭） */
+  /** 桥接卡片推荐（null = 无推荐或已关闭） */
   bridgeRecommendation: TrainingRecommendation | null;
+
+  // ===== C2: BehaviorDerivationTool 状态 =====
+
+  /** 推导加载中 */
+  derivationLoading: boolean;
+
+  /** 推导结果 */
+  derivationResult: {
+    derivedBehavior: string;
+    analysis: string;
+    consistencyCheck: string;
+  } | null;
+
+  /** 推导错误 */
+  derivationError: string | null;
 
   // ===== 模式切换 =====
 
@@ -105,6 +121,21 @@ interface TrainingState {
 
   /** 评估训练（调用 Evaluator Agent 获取评分） */
   evaluateTraining: () => Promise<void>;
+
+  /** C2: 推导角色行为 */
+  deriveBehavior: (params: {
+    characterName: string;
+    sceneDescription: string;
+    question1: string;
+    question2: string;
+    question3: string;
+  }) => Promise<void>;
+
+  /** 重置推导状态 */
+  resetDerivation: () => void;
+
+  /** X-02: 将训练稿写入编辑器（当前章节） */
+  sendToEditor: () => void;
 }
 
 // ===== 通用三步框架 =====
@@ -113,6 +144,13 @@ const DEFAULT_STEPS: Omit<TrainingStep, 'status'>[] = [
   { id: 'review', title: '阅读你的原始文本', description: '回顾你这段写作中暴露的问题' },
   { id: 'rewrite', title: '约束改写', description: '在给定的约束条件下改写这段内容' },
   { id: 'submit', title: '提交评估', description: '提交修改稿并接收 AI 评估反馈' },
+];
+
+/** A3: 阅读任务的三步框架 — 分析观察而非约束改写 */
+const READING_STEPS: Omit<TrainingStep, 'status'>[] = [
+  { id: 'read_guide', title: '阅读指导', description: '了解本次需要关注的阅读分析方向' },
+  { id: 'analyze', title: '写下分析', description: '根据指导写下你的阅读分析或观察' },
+  { id: 'submit', title: '提交评估', description: '提交分析结果并接收 AI 评估反馈' },
 ];
 
 // ===== Store =====
@@ -128,6 +166,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   isLoading: false,
   error: null,
   bridgeRecommendation: null,
+  derivationLoading: false,
+  derivationResult: null,
+  derivationError: null,
 
   enterWorkshop: async () => {
     set({ centerMode: 'training' });
@@ -140,8 +181,14 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   },
 
   backToChat: () => {
-    set({ centerMode: 'chat' });
-    // 注意：不重置 activeTraining，草稿保留
+    const state = get();
+    if (state.evaluationResult || state.submissionResult) {
+      // B3: 训练完成后返回 → 清理全部状态
+      set({ centerMode: 'chat', activeTraining: null, submissionResult: null, evaluationResult: null });
+    } else {
+      // 训练过程中返回 → 保留 activeTraining，草稿不丢失
+      set({ centerMode: 'chat' });
+    }
   },
 
   startTraining: async (challengeId: string) => {
@@ -177,7 +224,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
         challengeName: match?.challengeName ?? challengeId,
         challengeDescription: match?.description ?? '',
         mode: match?.mode ?? 'generic',
-        steps: DEFAULT_STEPS.map((s, i) => ({
+        steps: (match?.mode === 'reading_task' ? READING_STEPS : DEFAULT_STEPS).map((s, i) => ({
           ...s,
           status: i === 0 ? 'active' as const : 'pending' as const,
         })),
@@ -274,7 +321,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
           isLoading: false,
         });
       } else {
-        // 所有步骤完成 → 调用 training:complete 保存记录 + 切回对话
+        // 所有步骤完成 → 调用 training:complete 保存记录
+        // B3: 不切回对话，用户可通过 onBackToChat 手动返回；评估结果保持可见
         if (active.recordId) {
           try {
             await getInvoke()(IPC_CHANNELS.TRAINING_COMPLETE, {
@@ -303,9 +351,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
           });
         }
 
-        set({ activeTraining: null, isLoading: false, submissionResult: null, evaluationResult: null });
-        // 自动切回对话模式
-        set({ centerMode: 'chat' });
+        // B3: 不主动清除 activeTraining，保留评估视图供用户回顾
+        // 用户通过 onBackToChat（返回按钮）手动退出
+        set({ isLoading: false });
       }
     } catch (error) {
       console.error('[TrainingStore] submitStep failed:', error);
@@ -440,6 +488,40 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
       console.error('[TrainingStore] evaluateTraining failed:', error);
       set({ error: String(error), isLoading: false });
     }
+  },
+
+  /** C2: 推导角色行为 */
+  deriveBehavior: async (params) => {
+    set({ derivationLoading: true, derivationError: null, derivationResult: null });
+    try {
+      const res = await getInvoke()(IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR, params) as {
+        success: boolean;
+        data?: { derivedBehavior: string; analysis: string; consistencyCheck: string };
+        error?: string;
+      };
+      if (res?.success && res.data) {
+        set({ derivationResult: res.data, derivationLoading: false });
+      } else {
+        set({ derivationError: res?.error ?? '推导失败', derivationLoading: false });
+      }
+    } catch (e) {
+      set({ derivationError: String(e), derivationLoading: false });
+    }
+  },
+
+  /** 重置推导状态 */
+  resetDerivation: () => {
+    set({ derivationResult: null, derivationError: null, derivationLoading: false });
+  },
+
+  /** X-02: 将训练稿写入编辑器（当前章节） */
+  sendToEditor: () => {
+    const { activeTraining } = get();
+    if (!activeTraining?.userDraft) return;
+    const chapterStore = useChapterStore.getState();
+    const { currentChapter, updateContent } = chapterStore;
+    if (!currentChapter) return;
+    void updateContent(currentChapter.id, activeTraining.userDraft);
   },
 }));
 

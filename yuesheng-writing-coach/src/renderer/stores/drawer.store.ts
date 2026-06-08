@@ -1,3 +1,25 @@
+/**
+ * 右侧抽屉状态管理
+ *
+ * 职责：控制右侧栏的展开/收起状态和当前激活的面板
+ *
+ * == 协作协议（X-01）==
+ * 与其他右侧栏 store 的协作规则：
+ * 1. drawer.store 仅管理"抽屉开关 + 面板类型"
+ * 2. panel-session.store 管理 "L1 标签会话"
+ * 3. chapter.store 管理 "章节内容展示"
+ *
+ * 所有外部代码必须通过 action（openPanel/closePanel）操作 drawer，
+ * 禁止直接调用 setState()。如需同时操作 drawer + session，请按以下顺序：
+ *
+ *   useDrawerStore.getState().openPanel(panelId);
+ *   usePanelSessionStore.getState().upsertSession(type, title, icon, data);
+ *
+ * === 映射关系 ===
+ * 使用 drawer-constants.ts 中的 TOOL_TO_SESSION_TYPE / SESSION_TYPE_TO_TOOL_ID
+ * 在 panelId 和 sessionType 之间双向转换。
+ */
+
 import { create } from 'zustand';
 
 /** 右侧抽屉可展示的面板类型 */

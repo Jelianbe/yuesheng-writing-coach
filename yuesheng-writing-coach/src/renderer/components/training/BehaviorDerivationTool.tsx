@@ -6,15 +6,7 @@
  */
 
 import React from 'react';
-import { IPC_CHANNELS } from '../../../shared/constants';
-
-// ===== 类型定义 =====
-
-interface DerivationResult {
-  derivedBehavior: string;
-  analysis: string;
-  consistencyCheck: string;
-}
+import { useTrainingStore } from '../../stores/training.store';
 
 // ===== 样式 =====
 
@@ -114,47 +106,35 @@ const QuestionField: React.FC<{
 
 const BehaviorDerivationTool: React.FC = () => {
   const [expanded, setExpanded] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const derivationLoading = useTrainingStore(s => s.derivationLoading);
+  const derivationError = useTrainingStore(s => s.derivationError);
+  const derivationResult = useTrainingStore(s => s.derivationResult);
+  const deriveBehavior = useTrainingStore(s => s.deriveBehavior);
+  const resetDerivation = useTrainingStore(s => s.resetDerivation);
 
-  // 表单状态
+  // 表单状态（本地管理，不写入 Store）
   const [characterName, setCharacterName] = React.useState('');
   const [sceneDescription, setSceneDescription] = React.useState('');
   const [question1, setQuestion1] = React.useState('');
   const [question2, setQuestion2] = React.useState('');
   const [question3, setQuestion3] = React.useState('');
 
-  // 推导结果
-  const [result, setResult] = React.useState<DerivationResult | null>(null);
-
   const isFormValid = characterName.trim() && sceneDescription.trim()
     && question1.trim() && question2.trim() && question3.trim();
 
+  // 使用 Store 的推导错误作为结果卡片 key（每次推导时重置）
+  const deriveKey = React.useRef(0);
+
   const handleDerive = async () => {
     if (!isFormValid) return;
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const res = await window.electronAPI?.invoke(IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR, {
-        characterName: characterName.trim(),
-        sceneDescription: sceneDescription.trim(),
-        question1: question1.trim(),
-        question2: question2.trim(),
-        question3: question3.trim(),
-      }) as { success: boolean; data?: DerivationResult; error?: string };
-
-      if (res?.success && res.data) {
-        setResult(res.data);
-      } else {
-        setError(res?.error ?? '推导失败，请稍后重试');
-      }
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setLoading(false);
-    }
+    deriveKey.current += 1;
+    await deriveBehavior({
+      characterName: characterName.trim(),
+      sceneDescription: sceneDescription.trim(),
+      question1: question1.trim(),
+      question2: question2.trim(),
+      question3: question3.trim(),
+    });
   };
 
   const handleReset = () => {
@@ -163,8 +143,7 @@ const BehaviorDerivationTool: React.FC = () => {
     setQuestion1('');
     setQuestion2('');
     setQuestion3('');
-    setResult(null);
-    setError(null);
+    resetDerivation();
   };
 
   return (
@@ -240,15 +219,15 @@ const BehaviorDerivationTool: React.FC = () => {
           <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
             <button
               onClick={handleDerive}
-              disabled={!isFormValid || loading}
+              disabled={!isFormValid || derivationLoading}
               style={{
                 ...primaryBtnStyle,
-                opacity: (!isFormValid || loading) ? 0.5 : 1,
+                opacity: (!isFormValid || derivationLoading) ? 0.5 : 1,
               }}
             >
-              {loading ? '推导中...' : '开始推导'}
+              {derivationLoading ? '推导中...' : '开始推导'}
             </button>
-            {result && (
+            {derivationResult && (
               <button
                 onClick={handleReset}
                 style={{
@@ -267,7 +246,7 @@ const BehaviorDerivationTool: React.FC = () => {
           </div>
 
           {/* 错误提示 */}
-          {error && (
+          {derivationError && (
             <div style={{
               marginTop: 12,
               padding: 10,
@@ -277,13 +256,13 @@ const BehaviorDerivationTool: React.FC = () => {
               fontSize: '0.8rem',
               color: '#c0392b',
             }}>
-              {error}
+              {derivationError}
             </div>
           )}
 
           {/* 推导结果 */}
-          {result && (
-            <div style={resultCardStyle}>
+          {derivationResult && (
+            <div key={deriveKey.current} style={resultCardStyle}>
               <div style={{ fontWeight: 600, color: '#27ae60', marginBottom: 8 }}>
                 推导结果
               </div>
@@ -292,14 +271,14 @@ const BehaviorDerivationTool: React.FC = () => {
                 合理行为预期
               </div>
               <div style={{ marginBottom: 12, color: 'var(--text-secondary)' }}>
-                {result.derivedBehavior}
+                {derivationResult.derivedBehavior}
               </div>
 
               <div style={{ fontWeight: 500, color: 'var(--text-primary)', marginBottom: 4 }}>
                 推导依据
               </div>
               <div style={{ marginBottom: 12, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                {result.analysis}
+                {derivationResult.analysis}
               </div>
 
               <div style={{
@@ -313,7 +292,7 @@ const BehaviorDerivationTool: React.FC = () => {
                   一致性自省
                 </div>
                 <div style={{ color: 'var(--text-secondary)' }}>
-                  {result.consistencyCheck}
+                  {derivationResult.consistencyCheck}
                 </div>
               </div>
             </div>
