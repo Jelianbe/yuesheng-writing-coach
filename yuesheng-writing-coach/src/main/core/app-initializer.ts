@@ -90,6 +90,8 @@ export class AppInitializer {
       '015_fix_diagnosis_results.sql',
       '016_check_constraints.sql',
       '017_fts5_messages.sql',
+      '018_db_p1a_time_format.sql',
+      '019_db_p1b_pk_unify.sql',
     ];
 
     for (const file of migrationFiles) {

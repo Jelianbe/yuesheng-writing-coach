@@ -6,6 +6,14 @@
  */
 
 import React from 'react';
+import type { LucideIcon } from 'lucide-react';
+import {
+  MessageCircle,
+  Target,
+  ClipboardList,
+  TrendingUp,
+  Wrench,
+} from 'lucide-react';
 
 /** 范式 A 可用的 tab 标识 */
 export type ParadigmATabId =
@@ -18,17 +26,26 @@ export type ParadigmATabId =
 export interface TabItem {
   id: ParadigmATabId;
   label: string;
-  /** Lucide 图标名或 emoji */
-  icon: string;
+  /** Lucide 图标组件 */
+  icon: LucideIcon;
 }
+
+/** tab → Lucide 图标映射 */
+const TAB_ICONS: Record<ParadigmATabId, LucideIcon> = {
+  chat: MessageCircle,
+  training: Target,
+  diagnosis: ClipboardList,
+  growth: TrendingUp,
+  tools: Wrench,
+};
 
 /** 默认 tab 定义（对齐 fusion-demo V2） */
 export const PARADIGM_A_TABS: TabItem[] = [
-  { id: 'chat', label: '对话', icon: 'MessageCircle' },
-  { id: 'training', label: '训练', icon: 'Target' },
-  { id: 'diagnosis', label: '成就', icon: 'ClipboardList' },
-  { id: 'growth', label: '地图', icon: 'TrendingUp' },
-  { id: 'tools', label: '工具', icon: 'Wrench' },
+  { id: 'chat', label: '对话', icon: TAB_ICONS.chat },
+  { id: 'training', label: '训练', icon: TAB_ICONS.training },
+  { id: 'diagnosis', label: '成就', icon: TAB_ICONS.diagnosis },
+  { id: 'growth', label: '地图', icon: TAB_ICONS.growth },
+  { id: 'tools', label: '工具', icon: TAB_ICONS.tools },
 ];
 
 export interface TabBarProps {
@@ -38,11 +55,6 @@ export interface TabBarProps {
   onTabChange: (tabId: ParadigmATabId) => void;
   /** 自定义 tab 列表（默认使用 PARADIGM_A_TABS） */
   tabs?: TabItem[];
-}
-
-/** 占位图标渲染（已迁移至 Lucide SVG，保留占位以避免 TS 类型错误） */
-function TabIcon({ name }: { name: string }) {
-  return <span>{name}</span>;
 }
 
 export const TabBar: React.FC<TabBarProps> = React.memo(({
@@ -108,7 +120,7 @@ export const TabBar: React.FC<TabBarProps> = React.memo(({
             }}
           >
             <span style={{ fontSize: '1rem', lineHeight: 1 }}>
-              <TabIcon name={tab.icon} />
+              <tab.icon size={16} />
             </span>
             <span>{tab.label}</span>
           </button>
