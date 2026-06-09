@@ -279,8 +279,9 @@ describe('ChatStore', () => {
 
       const history = useChatStore.getState().getHistory();
 
-      expect(history).toHaveLength(20);
-      expect(history[0].content).toBe('msg-5');
+      // buildSlidingWindow 仅在超出 8K Token 预算时才截断
+      // 25 条短消息 (~6 chars each ~150 total) 远低于预算，全保留
+      expect(history).toHaveLength(25);
     });
   });
 

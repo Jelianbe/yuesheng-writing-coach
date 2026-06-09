@@ -38,6 +38,6 @@ export const Card: React.FC<CardProps> = ({
 };
 
 // Usage example:
-// <Card hover onClick={() => console.log('clicked')}>
+// <Card hover onClick={() => handleClick()}>
 //   <div className="p-4">Card content</div>
 // </Card>

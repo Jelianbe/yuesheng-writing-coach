@@ -20,6 +20,7 @@ import TrainingBridgeCard from './TrainingBridgeCard';
 import type { TrainingRecommendation } from '../../shared/types';
 import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
+import { useChatStore } from '../../stores/chat.store';
 
 interface ChatViewProps {
   messages: ChatMessage[];
@@ -93,11 +94,11 @@ const ChatView: React.FC<ChatViewProps> = ({
       const invoke = getInvoke();
       const offset = loadedMessages.length;
       const limit = 20;
-      const result = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, {
+      const result: { success: boolean; data?: { messages: ChatMessage[]; total: number; hasMore: boolean }; error?: string } = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, {
         sessionId: currentSessionId,
         offset,
         limit,
-      }) as { success: boolean; data?: { messages: ChatMessage[]; total: number; hasMore: boolean }; error?: string };
+      });
 
       if (result.success && result.data) {
         const existingIds = new Set(loadedMessages.map(m => m.id));
@@ -107,8 +108,8 @@ const ChatView: React.FC<ChatViewProps> = ({
         }
         setHasMoreHistory(result.data.hasMore);
       }
-    } catch {
-      // 静默失败
+    } catch (err) {
+      console.warn('[ChatView] loadMore failed:', err);
     } finally {
       setIsLoadingMore(false);
     }
@@ -136,6 +137,9 @@ const ChatView: React.FC<ChatViewProps> = ({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [isStreaming, showSearch]);
+
+  // P-04: 新用户引导状态
+  const { onboardingActive, onboardingStep, completeOnboarding, skipOnboarding, setOnboardingStep } = useChatStore();
 
   return (
     <>
@@ -195,15 +199,88 @@ const ChatView: React.FC<ChatViewProps> = ({
         </div>
       )}
 
-      <MessageList
-        messages={searchQuery.trim() ? loadedMessages : loadedMessages}
-        isStreaming={isStreaming}
-        hasSession={!!currentSessionId}
-        searchQuery={searchQuery}
-        hasMore={hasMoreHistory && !searchQuery.trim()}
-        isLoadingMore={isLoadingMore}
-        onLoadMore={handleLoadMore}
-      />
+      {/* ── P-04: 新用户引导流程 ── */}
+      {onboardingActive && onboardingStep === 1 && (
+        <div style={{ padding: '24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 16 }}>
+            你好！我是月笙，你的写作教练。
+          </div>
+          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 20 }}>
+            我不是帮你写作文的工具，而是帮你成为更好的写作者。
+            我会读你的文字，指出可以提升的地方，但不会替你改写——因为成长属于你。
+          </div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 500, marginBottom: 16 }}>
+            先认识一下：你主要写什么类型？
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+            {['玄幻', '都市', '科幻', '现实', '历史', '其他'].map(type => (
+              <button key={type}
+                onClick={() => { setOnboardingStep(2); }}
+                style={{ padding: '8px 20px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+                {type}
+              </button>
+            ))}
+            <button onClick={() => setOnboardingStep(2)}
+              style={{ padding: '8px 20px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+              说不清
+            </button>
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <button onClick={skipOnboarding}
+              style={{ padding: '6px 16px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>
+              跳过引导，直接开始
+            </button>
+          </div>
+        </div>
+      )}
+
+      {onboardingActive && onboardingStep === 2 && (
+        <div style={{ padding: '24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
+          <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 12 }}>
+            好的，玄幻小说！
+          </div>
+          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            为了更好帮你，能不能发一段你最近写的文字？
+            不用很长，三五句话也行。
+          </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', marginBottom: 16 }}>
+            （在下方输入框发送你的文字，或者）
+          </div>
+          <button onClick={() => { setOnboardingStep(3); }}
+            style={{ padding: '8px 20px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+            跳过，直接开始
+          </button>
+        </div>
+      )}
+
+      {onboardingActive && onboardingStep === 3 && (
+        <div style={{ padding: '24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
+          <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 12, color: 'var(--accent)' }}>
+            引导完成！🎉
+          </div>
+          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 20 }}>
+            你现在可以开始和月笙对话了。
+            月笙会读你的文字，指出可以提升的地方。
+          </div>
+          <button onClick={completeOnboarding}
+            style={{ padding: '10px 24px', borderRadius: 'var(--radius-full)', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 500, fontFamily: 'var(--font-body)' }}>
+            开始对话
+          </button>
+        </div>
+      )}
+
+      {/* ── 消息列表（引导完成后显示） ── */}
+      {!onboardingActive && (
+        <MessageList
+          messages={loadedMessages}
+          isStreaming={isStreaming}
+          hasSession={!!currentSessionId}
+          searchQuery={searchQuery}
+          hasMore={hasMoreHistory && !searchQuery.trim()}
+          isLoadingMore={isLoadingMore}
+          onLoadMore={handleLoadMore}
+        />
+      )}
 
       {currentDiagnosis && !isStreaming && (
         <div style={{ padding: '0 20px 8px' }}>

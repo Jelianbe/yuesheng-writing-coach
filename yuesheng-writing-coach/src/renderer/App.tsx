@@ -26,6 +26,7 @@ import { useStudentContextStore } from './stores/student-context.store';
 import { useTrainingStore } from './stores/training.store';
 import { useDrawerStore } from './stores/drawer.store';
 import type { ApiConfig, ConnectionTestResult, OnboardingBaseline } from './shared/types';
+import { IPC_CHANNELS } from '../shared/constants';
 
 function App(): React.ReactElement {
   // Store state
@@ -54,6 +55,19 @@ function App(): React.ReactElement {
   useEffect(() => { const init = async () => { try { await loadSessions(); const st = useSessionStore.getState(); if (st.sessions.length === 0) setShowOnboarding(true); else if (!st.currentSessionId) await switchSession(st.sessions[0].id); } catch (err) { console.error('[App] init:', err); } }; init(); }, [loadSessions, switchSession]);
   useEffect(() => { useStudentContextStore.getState().load(); }, []);
 
+  // P-04: 检测新用户，自动触发引导
+  useEffect(() => {
+    if (window.electronAPI && !currentSessionId) {
+      window.electronAPI.invoke(IPC_CHANNELS.SESSION_IS_NEW_USER)
+        .then((res: { success: boolean; data?: boolean }) => {
+          if (res.success && res.data) {
+            useChatStore.getState().startOnboarding();
+          }
+        })
+        .catch((err: unknown) => { console.warn('[App] isNewUser 调用失败:', err); });
+    }
+  }, [currentSessionId]);
+
   // 会话切换同步：当 session.store.currentSessionId 变化时，清空并加载对应聊天消息
   const currentSessionIdRef = useRef(currentSessionId);
   useEffect(() => {
@@ -65,14 +79,14 @@ function App(): React.ReactElement {
     setLoading(false);
     // 加载新会话消息
     if (currentSessionId && window.electronAPI) {
-      window.electronAPI.invoke('session:getMessages', { sessionId: currentSessionId })
-        .then((res: unknown) => {
-          const r = res as { success: boolean; data?: Array<{ id: string; role: string; content: string; timestamp: number }> };
-          if (r.success && r.data) {
-            setMessages(r.data.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })));
+      // DB-M1: 分页加载，初始只取最近 30 条
+      window.electronAPI.invoke('session:getMessagesPaged', { sessionId: currentSessionId, offset: 0, limit: 30 })
+        .then((res: { success: boolean; data?: { messages: Array<{ id: string; role: string; content: string; timestamp: number }>; hasMore: boolean } }) => {
+          if (res.success && res.data) {
+            setMessages(res.data.messages.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })));
           }
         })
-        .catch(() => { /* 新会话无消息是正常的 */ });
+        .catch((err: unknown) => { console.warn('[App] getMessagesPaged:', err); });
     }
   }, [currentSessionId]);
 
@@ -81,7 +95,7 @@ function App(): React.ReactElement {
   const handleStop = useCallback(() => { try { void window.electronAPI?.invoke('chat:stop', {}); } catch { /* ignore */ } setError('已停止生成'); }, [setError]);
   const handleSaveConfig = useCallback(async (cfg: ApiConfig) => { await setApiKey(cfg.apiKey); await setBaseUrl(cfg.baseUrl); await setModelName(cfg.modelName); await setTemperature(cfg.temperature); }, [setApiKey, setBaseUrl, setModelName, setTemperature]);
   const handleTestConnection = useCallback(async (ak: string, bu: string): Promise<ConnectionTestResult> => { try { return await window.electronAPI?.invoke('config:testConnection', { apiKey: ak, baseUrl: bu }) as ConnectionTestResult; } catch (err) { return { success: false, error: err instanceof Error ? err.message : '连接异常' }; } }, []);
-  const handleOnboardingComplete = useCallback(async (baseline: OnboardingBaseline) => { setShowOnboarding(false); const s = await createSession(); if (s) { await switchSession(s.id); try { await window.electronAPI?.invoke('profile:updateBaseline', baseline); } catch { localStorage.setItem('onboarding_baseline', JSON.stringify(baseline)); } } }, [createSession, switchSession]);
+  const handleOnboardingComplete = useCallback(async (baseline: OnboardingBaseline) => { setShowOnboarding(false); localStorage.setItem('onboarding_baseline', JSON.stringify(baseline)); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
   const handleOnboardingSkip = useCallback(async () => { setShowOnboarding(false); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
 
   // Computed

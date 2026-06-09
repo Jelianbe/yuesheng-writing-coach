@@ -145,6 +145,8 @@ export const IPC_CHANNELS = {
   SESSION_LIST_WITH_META: 'session:listWithMeta',
   SESSION_UPDATE_TITLE: 'session:updateTitle',
   SESSION_SEARCH_MESSAGES: 'session:searchMessages',
+  // === 新用户引导 ===
+  SESSION_IS_NEW_USER: 'session:isNewUser',
   // === 作品管理 ===
   MANUSCRIPT_LIST: 'manuscript:list',
   MANUSCRIPT_GET: 'manuscript:get',

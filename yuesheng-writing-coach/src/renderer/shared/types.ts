@@ -361,7 +361,7 @@ export type IPCChannel =
   | 'evidence:getByDisease' | 'evidence:getByAbility' | 'evidence:getChain' | 'evidence:create'
   | 'chat:send' | 'chat:stream:data' | 'chat:stream:end'
   | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages'
-  | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle'
+  | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle' | 'session:isNewUser'
   | 'manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update'
   | 'chapter:list' | 'chapter:get' | 'chapter:updateContent';
 
@@ -392,6 +392,7 @@ export interface IPCRequestMap {
   'session:getMessagesPaged': { sessionId: string; offset: number; limit: number };
   'session:listWithMeta': { limit?: number; offset?: number };
   'session:updateTitle': { id: string; title: string };
+  'session:isNewUser': Record<string, never>;
   'manuscript:list': Record<string, never>;
   'manuscript:get': { id: string };
   'manuscript:create': { title: string; description?: string; genre?: string };
@@ -428,6 +429,7 @@ export interface IPCResponseMap {
   'session:getMessagesPaged': ApiResponse<{ messages: MessageRow[]; total: number; hasMore: boolean }>;
   'session:listWithMeta': ApiResponse<SessionMeta[]>;
   'session:updateTitle': ApiResponse<void>;
+  'session:isNewUser': ApiResponse<boolean>;
   'manuscript:list': ApiResponse<Manuscript[]>;
   'manuscript:get': ApiResponse<Manuscript | null>;
   'manuscript:create': ApiResponse<Manuscript>;

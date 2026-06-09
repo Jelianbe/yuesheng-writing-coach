@@ -311,7 +311,7 @@ export interface MessageRow {
     timestamp: number;
 }
 /** IPC 通道字符串字面量类型 */
-export type IPCChannel = 'config:get' | 'config:set' | 'config:testConnection' | 'diagnosis:update' | 'diagnosis:query' | 'diagnosis:submitRewrite' | 'diagnosis:getComparison' | 'teachingState:get' | 'teachingState:update' | 'teachingState:confirm' | 'teachingState:getPrompt' | 'teachingState:updateSummary' | 'teachingState:updated' | 'ability:getProfile' | 'evidence:getByDisease' | 'evidence:getByAbility' | 'evidence:getChain' | 'evidence:create' | 'chat:send' | 'chat:stream:data' | 'chat:stream:end' | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages' | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle' | 'manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update' | 'chapter:list' | 'chapter:get' | 'chapter:updateContent';
+export type IPCChannel = 'config:get' | 'config:set' | 'config:testConnection' | 'diagnosis:update' | 'diagnosis:query' | 'diagnosis:submitRewrite' | 'diagnosis:getComparison' | 'teachingState:get' | 'teachingState:update' | 'teachingState:confirm' | 'teachingState:getPrompt' | 'teachingState:updateSummary' | 'teachingState:updated' | 'ability:getProfile' | 'evidence:getByDisease' | 'evidence:getByAbility' | 'evidence:getChain' | 'evidence:create' | 'chat:send' | 'chat:stream:data' | 'chat:stream:end' | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages' | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle' | 'session:isNewUser' | 'manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update' | 'chapter:list' | 'chapter:get' | 'chapter:updateContent';
 /** IPC 请求类型映射 */
 export interface IPCRequestMap {
     'config:get': {
@@ -411,6 +411,7 @@ export interface IPCRequestMap {
         id: string;
         title: string;
     };
+    'session:isNewUser': Record<string, never>;
     'manuscript:list': Record<string, never>;
     'manuscript:get': {
         id: string;
@@ -485,6 +486,7 @@ export interface IPCResponseMap {
     }>;
     'session:listWithMeta': ApiResponse<SessionMeta[]>;
     'session:updateTitle': ApiResponse<void>;
+    'session:isNewUser': ApiResponse<boolean>;
     'manuscript:list': ApiResponse<Manuscript[]>;
     'manuscript:get': ApiResponse<Manuscript | null>;
     'manuscript:create': ApiResponse<Manuscript>;
