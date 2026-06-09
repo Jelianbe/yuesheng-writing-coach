@@ -49,6 +49,8 @@ export class AppInitializer {
     const db = new Database(dbPath);
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('cache_size = -64000');
     return db;
   }
 
@@ -85,6 +87,9 @@ export class AppInitializer {
       '012_add_training_score.sql',
       '013_manuscripts.sql',
       '014_sessions_extend.sql',
+      '015_fix_diagnosis_results.sql',
+      '016_check_constraints.sql',
+      '017_fts5_messages.sql',
     ];
 
     for (const file of migrationFiles) {

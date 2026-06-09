@@ -100,6 +100,13 @@ export class SessionService {
     }
   }
 
+  /** 检查用户是否为新用户（无任何历史会话）*/
+  isNewUser(): boolean {
+    const stmt = this.db.prepare('SELECT COUNT(*) as count FROM sessions');
+    const row = stmt.get() as { count: number };
+    return row.count === 0;
+  }
+
   getOrCreateDefaultSession(): SessionRow {
     const sessions = this.listSessions();
     if (sessions.length > 0) return sessions[0];

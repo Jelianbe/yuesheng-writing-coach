@@ -8,14 +8,14 @@
  *   AI 回复 → diagnosis-parser 解析 → 转换为 ActiveProblem → 通过 DiagnosisMerger 合并到 TeachingState → IPC 推送
  */
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
 import { parseDiagnosisFromAIResponse } from '../services/diagnosis-parser';
 import { DiagnosisService } from '../services/diagnosis.service';
 import { EvidenceService } from '../services/evidence.service';
 import { getAbilitiesForSyndrome } from '../../shared/mappings';
 import { IPC_CHANNELS, IMPROVEMENT_THRESHOLD } from '../../shared/constants';
-import { apiSuccess, apiError } from '../../renderer/shared/types';
 import { validatePayload } from './utils/validate-payload';
+import { createHandler } from './utils/create-handler';
 import { ApiProxy } from '../api-proxy';
 import { ConfigService } from '../services/config.service';
 import { SessionService } from '../services/session.service';
@@ -52,149 +52,123 @@ export function registerDiagnosisHandlers(): void {
   /**
    * 查询诊断结果
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.DIAGNOSIS_QUERY,
     (_event, args) => {
       const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
-      if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
-      try {
-        const state = deps!.getTeachingStateBySession(validation.data.sessionId);
-        return apiSuccess(state?.activeProblems ?? null);
-      } catch (error) {
-        console.error('[DiagnosisHandler] 查询诊断结果失败:', error);
-        return apiError(String(error));
-      }
+      if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+      const state = deps!.getTeachingStateBySession(validation.data.sessionId);
+      return state?.activeProblems ?? null;
     },
   );
 
   /**
    * 获取历史诊断对比
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.DIAGNOSIS_GET_COMPARISON,
     (_event, args) => {
       const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
-      if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
-      try {
-        const recent = deps!.diagnosisService.getRecentBySession(validation.data.sessionId, 2);
-        if (recent.length < 2) return apiSuccess({ hasHistory: false });
+      if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+      const recent = deps!.diagnosisService.getRecentBySession(validation.data.sessionId, 2);
+      if (recent.length < 2) return { hasHistory: false };
 
-        const prev = recent[0];
-        const curr = recent[1];
+      const prev = recent[0];
+      const curr = recent[1];
 
-        const parts: string[] = [];
+      const parts: string[] = [];
 
-        for (const currSyndrome of curr.syndromes) {
-          const prevSyndrome = prev.syndromes.find(s => s.id === currSyndrome.id);
-          if (!prevSyndrome) {
-            parts.push(`${currSyndrome.name}是新出现的症候`);
-            continue;
-          }
-
-          const prevScore = prevSyndrome.score ?? 0;
-          const currScore = currSyndrome.score ?? 0;
-          const diff = prevScore - currScore;
-
-          if (diff > IMPROVEMENT_THRESHOLD) {
-            parts.push(`${currSyndrome.name}从 ${prevScore.toFixed(0)} 分降到 ${currScore.toFixed(0)} 分，改善明显`);
-          } else if (diff > 0) {
-            parts.push(`${currSyndrome.name}略有改善（${prevScore.toFixed(0)}→${currScore.toFixed(0)}分）`);
-          } else if (diff < -IMPROVEMENT_THRESHOLD) {
-            parts.push(`${currSyndrome.name}加重了（${prevScore.toFixed(0)}→${currScore.toFixed(0)}分），建议加强练习`);
-          } else if (diff < 0) {
-            parts.push(`${currSyndrome.name}略有加重（${prevScore.toFixed(0)}→${currScore.toFixed(0)}分）`);
-          } else {
-            parts.push(`${currSyndrome.name}保持稳定`);
-          }
+      for (const currSyndrome of curr.syndromes) {
+        const prevSyndrome = prev.syndromes.find(s => s.id === currSyndrome.id);
+        if (!prevSyndrome) {
+          parts.push(`${currSyndrome.name}是新出现的症候`);
+          continue;
         }
 
-        for (const prevSyndrome of prev.syndromes) {
-          const stillPresent = curr.syndromes.find(s => s.id === prevSyndrome.id);
-          if (!stillPresent) {
-            parts.push(`${prevSyndrome.name}已不在本次诊断中出现`);
-          }
-        }
+        const prevScore = prevSyndrome.score ?? 0;
+        const currScore = currSyndrome.score ?? 0;
+        const diff = prevScore - currScore;
 
-        const comparison = parts.join('；');
-        return apiSuccess({ hasHistory: true, comparison });
-      } catch (error) {
-        console.error('[DiagnosisHandler] 生成对比失败:', error);
-        return apiError(String(error));
+        if (diff > IMPROVEMENT_THRESHOLD) {
+          parts.push(`${currSyndrome.name}从 ${prevScore.toFixed(0)} 分降到 ${currScore.toFixed(0)} 分，改善明显`);
+        } else if (diff > 0) {
+          parts.push(`${currSyndrome.name}略有改善（${prevScore.toFixed(0)}→${currScore.toFixed(0)}分）`);
+        } else if (diff < -IMPROVEMENT_THRESHOLD) {
+          parts.push(`${currSyndrome.name}加重了（${prevScore.toFixed(0)}→${currScore.toFixed(0)}分），建议加强练习`);
+        } else if (diff < 0) {
+          parts.push(`${currSyndrome.name}略有加重（${prevScore.toFixed(0)}→${currScore.toFixed(0)}分）`);
+        } else {
+          parts.push(`${currSyndrome.name}保持稳定`);
+        }
       }
+
+      for (const prevSyndrome of prev.syndromes) {
+        const stillPresent = curr.syndromes.find(s => s.id === prevSyndrome.id);
+        if (!stillPresent) {
+          parts.push(`${prevSyndrome.name}已不在本次诊断中出现`);
+        }
+      }
+
+      const comparison = parts.join('；');
+      return { hasHistory: true, comparison };
     },
   );
 
   /**
    * 获取成长趋势数据
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.GROWTH_GET_TRENDS,
     (_event, args: { sessionId: string }) => {
-      try {
-        const summary = deps!.growthTrendService.getGrowthSummary(
-          args.sessionId,
-          (id) => SYNDROME_NAMES[id] || id,
-        );
-        return apiSuccess(summary);
-      } catch (error) {
-        console.error('[GrowthTrend] 获取成长趋势失败:', error);
-        return apiError(String(error));
-      }
+      const summary = deps!.growthTrendService.getGrowthSummary(
+        args.sessionId,
+        (id) => SYNDROME_NAMES[id] || id,
+      );
+      return summary;
     },
   );
 
   /**
    * 获取全局成长趋势
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.GROWTH_GET_GLOBAL_TRENDS,
     () => {
-      try {
-        const summary = deps!.growthTrendService.getGrowthSummary(
-          undefined,
-          (id) => SYNDROME_NAMES[id] || id,
-        );
-        return apiSuccess(summary);
-      } catch (error) {
-        console.error('[GrowthTrend] 获取全局成长趋势失败:', error);
-        return apiError(String(error));
-      }
+      const summary = deps!.growthTrendService.getGrowthSummary(
+        undefined,
+        (id) => SYNDROME_NAMES[id] || id,
+      );
+      return summary;
     },
   );
 
   /**
    * 提交修改原文
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.DIAGNOSIS_SUBMIT_REWRITE,
     async (_event, args: { sessionId: string; messageId: string; syndromeId: string; originalText: string; rewrittenText: string; syndromeName?: string; syndromeDesc?: string }) => {
-      try {
-        const { sessionId, syndromeId, originalText, rewrittenText, syndromeName, syndromeDesc } = args;
-        console.log(`[Rewrite] 用户修改原文: session=${sessionId}, syndrome=${syndromeId}`);
+      const { sessionId, syndromeId, originalText, rewrittenText, syndromeName, syndromeDesc } = args;
+      console.log(`[Rewrite] 用户修改原文: session=${sessionId}, syndrome=${syndromeId}`);
 
-        deps!.sessionService.saveMessage(sessionId, 'system',
-          `[修改原文] 症候: ${syndromeId}\n原文: "${originalText}"\n修改后: "${rewrittenText}"`);
+      deps!.sessionService.saveMessage(sessionId, 'system',
+        `[修改原文] 症候: ${syndromeId}\n原文: "${originalText}"\n修改后: "${rewrittenText}"`);
 
-        const config = deps!.configService.getConfig();
-        if (config.apiKey) {
-          const apiProxy = new ApiProxy(config);
-          const evaluation = await apiProxy.evaluateRewrite({
-            originalText,
-            rewrittenText,
-            syndromeName: syndromeName || syndromeId,
-            syndromeDesc: syndromeDesc || '',
-          });
+      const config = deps!.configService.getConfig();
+      if (config.apiKey) {
+        const apiProxy = new ApiProxy(config);
+        const evaluation = await apiProxy.evaluateRewrite({
+          originalText,
+          rewrittenText,
+          syndromeName: syndromeName || syndromeId,
+          syndromeDesc: syndromeDesc || '',
+        });
 
-          console.log(`[Rewrite] 评估结果: ${evaluation.improvement}`);
-          return apiSuccess({ evaluation });
-        }
-
-        return apiSuccess(undefined);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '未知错误';
-        console.error('[Rewrite] 提交修改失败:', errorMessage);
-        return apiError(errorMessage);
+        console.log(`[Rewrite] 评估结果: ${evaluation.improvement}`);
+        return { evaluation };
       }
+
+      return undefined;
     },
   );
 }
