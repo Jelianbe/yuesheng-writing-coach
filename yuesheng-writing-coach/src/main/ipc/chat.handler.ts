@@ -560,7 +560,7 @@ export function registerChatHandlers(): void {
     return result.success ? apiSuccess({ messageId: result.messageId! }) : apiError(result.error || 'Chat send failed');
   });
 
-  // T-019: 引导分析（轻量级，不调用诊断引擎）
+  // P-04 Phase 3: 引导分析（调用 AI API，带超时 + 降级）
   ipcMain.handle('onboarding:analyze', async (_event, args) => {
     const validation = validatePayload<{ text: string }>(args, {
       required: ['text'],
@@ -569,13 +569,53 @@ export function registerChatHandlers(): void {
     if (!validation.valid) {
       return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
     }
-    const text = validation.data.text ?? '';
-    if (!text.trim()) {
-      return apiError('文本为空');
+    const text = validation.data.text?.trim() ?? '';
+    if (!text) {
+      return apiSuccess({
+        summary: '没关系，你可以后面再发文字给我看。你现在最想提升哪方面？',
+      });
     }
-    return apiSuccess({
-      summary: `我看了你的这段文字，有几个感觉：\n\n✅ 有具体的场景和角色\n✅ 文字有自己的风格\n⚠️ 有些地方可以再精炼一些\n\n你现在最想提升哪方面？`,
-    });
+
+    try {
+      const proxy = getApiProxy();
+      const timeoutSignal = AbortSignal.timeout(20_000); // 20s 超时
+
+      const onboardingPrompt = `你是一个专业的写作教练月笙，正在认识一位新用户。
+
+用户发来了一段自己的文字，请你分析：
+
+1. 指出 2 个具体的优点（要具体、有说服力，结合原文举例）
+2. 指出 1-2 个温和的可提升点（不说教，不打击）
+3. 最后问用户最想提升哪个方面
+
+要求：
+- 用温暖、鼓励但真实的教练口吻
+- 分析要具体，不要泛泛而谈说"文笔不错"这种没信息量的话
+- 不要用格式化列表（不要用 ✅ ⚠️），用自然语言
+- 控制在 100-200 字`;
+
+      const messages = [
+        { role: 'system' as const, content: onboardingPrompt },
+        { role: 'user' as const, content: `这是我写的一段文字：\n\n${text}` },
+      ];
+
+      let fullResponse = '';
+      for await (const chunk of proxy.chatStream(messages, timeoutSignal)) {
+        fullResponse += chunk;
+      }
+
+      const summary = fullResponse.trim();
+      if (!summary) {
+        throw new Error('AI returned empty response');
+      }
+      return apiSuccess({ summary });
+    } catch (err) {
+      console.warn('[onboarding:analyze] AI 分析失败，降级:', err);
+      // 降级：返回通用但不敷衍的回复
+      return apiSuccess({
+        summary: '我看了你的这段文字，有具体的场景和对话，能看出你在认真写。写作的提升是一个持续的过程，你现在最想提升哪方面？我可以在后面的对话中给你针对性的建议。',
+      });
+    }
   });
 }
 

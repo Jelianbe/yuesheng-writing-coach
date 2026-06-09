@@ -74,30 +74,27 @@ flowchart TD
         DBMEMDONE["DB-MEM-DONE\nDB-M1 分页, DB-M2 滑动窗口\nDB-P0 FK, DB-P2d+M3 PRAGMA\nDB-P1c CHECK, DB-P2c+M4 FTS5"]
         CDONE["C-DONE\nP-04 Phase 1~2, P-06, X-01, X-02"]
         P3DONE["Phase 3\nT-033~T-036 自适应教学层"]
+        DBP1ab["DB-P1a/b\n时间格式, 主键类型"]
+        FB240609["FB240609-001\n代码审查残留 4 项\n定义分裂 3 项\nTabBar 清理"]
     end
 
     Core --> P2 --> P25 --> V2DONE
     P2 --> P3DONE
+    DBMEMDONE --> DBP1ab
+    V2DONE --> FB240609
 
     %% ============ 当前指针区块（橙色） ============
 
     subgraph Current["▶️ 当前指针"]
-        CRFIX["代码审查残留修复\nE1 RightDrawer 超限\nE3 非空断言\nUI-P0a 图标分裂\nUI-P0c 死代码"]
-        DDEFIX["D-01~D-03 定义分裂\nP009/P010/A004 术语统一"]
+        P04PH3["P-04 Phase 3\nAI 分析失败降级 + 边缘 case"]
     end
 
-    V2DONE --> CRFIX
-    CRFIX -.-> DDEFIX
+    CDONE --> P04PH3
 
     %% ============ 待执行区块（蓝色） ============
 
     subgraph Todo["⏩ 待执行"]
-        DBP1ab["DB-P1a/b\n时间格式, 主键类型"]
-        P04PH3["P-04 Phase 3\nAI 分析失败降级 + 边缘 case"]
     end
-
-    DBMEMDONE --> DBP1ab
-    CDONE --> P04PH3
 
     %% ============ 已移除（灰色虚线） ============
 
@@ -115,9 +112,9 @@ flowchart TD
 
 | 区块 | 含义 |
 |------|------|
-| ✅ 已完成（绿色组） | Core Pipeline + Phase 2（含 T-027）+ Phase 2.5（T-028~T-032）+ V2-DONE（全部 29 项 + 4 项审查）+ DB-MEM-DONE（7 项）+ C-DONE（4 项）+ Phase 3（4 项自适应教学）|
-| ▶️ 当前指针（橙色） | 代码审查残留修复（E1/E3/UI-P0a/UI-P0c）+ 定义分裂修复（D-01~D-03）|
-| ⏩ 待执行（蓝色） | DB-P1a/b（时间格式/主键类型）+ P-04 Phase 3（AI 分析失败降级 + 边缘 case）|
+| ✅ 已完成（绿色组） | Core Pipeline + Phase 2（含 T-027）+ Phase 2.5（T-028~T-032）+ V2-DONE（全部 29 项 + 4 项审查）+ DB-MEM-DONE（7 项）+ C-DONE（4 项）+ DB-P1a/b + FB240609-001 + Phase 3（4 项自适应教学）|
+| ▶️ 当前指针（橙色） | P-04 Phase 3（AI 分析失败降级 + 边缘 case）|
+| ⏩ 待执行（蓝色） | （无）|
 | ❌ 已移除（灰色虚线） | PE-008/010/011 已被 PE-002（CodexService）+ T-014（DynamicContextService）覆盖；F-02 过度工厂化与创作认知定位冲突 |
 | ❓ 待定（灰色虚线） | PE-003 定义不成熟（最小版本仅为一处 TODO），F-07 报告标注为"条件接受"未经验证；F-01 面向中高级用户，新手阶段暂缓 |
 
@@ -835,9 +832,49 @@ flowchart LR
 
 ## SKILLS：技术引用与能力矩阵
 
-> **最后更新**: 2026-06-08
->
-> **目的**: 统一管理项目可用 AI Agent Skills，按类别索引、标注关联任务、记录安装状态。后续所有开发任务应优先引用本章节中的 Skill，确保方法论一致性和代码质量。
+> **最后更新**: 2026-06-09
+
+---
+
+## #problems_and_diagnostics：问题验证与追踪
+
+> **用途**: 记录 R-030 反馈处理工作流中 Step -1~Step 0 的问题验证结果。每个 Issue 经过"存在性验证"后更新状态。
+
+### 当前活跃 Issue
+
+| ID | 标题 | 来源 | 验证结果 | 状态 | 修复提交 |
+|----|------|------|---------|:----:|---------|
+| I-001 | TabBar 使用旧 TabIcon 未更新为 Lucide 组件 | 代码扫描 | ✅ **问题存在** — TabIcon() 返回 `<span>{name}</span>` 导致显示文字而非图标 | **✅ 已修复** | `6179865` |
+| I-002 | evidence 表重建后缺少索引 | 代码扫描（Diff 误判） | ❌ **不存在** — `018_db_p1a_time_format.sql` lines 197-200 已正确重建 4 个原始索引 | **❌ 关闭-误判** | — |
+
+### 验证方法
+
+```
+I-001 验证过程：
+  1. 读取 TabBar.tsx lines 43-46 → 确认 TabIcon 返回 <span>{name}</span>
+  2. 读取其他布局组件（SessionTabBar, drawer-constants）→ 确认标准模式是 LucideIcon
+  3. 修复：替换为真实 lucide-react 组件，移除 TabIcon
+  4. tsc --noEmit → 仅 3 个预存错误（非 TabBar 引起）
+
+I-002 验证过程：
+  1. 读取 008_evidence.sql lines 25-28 → 原始 4 个索引
+  2. 读取 018_db_p1a_time_format.sql lines 194-200 → DROP + RENAME + 4 个 CREATE INDEX
+  3. 对比确认：idx_evidence_disease/ability/novel/level 全部一致
+  4. 同时检查其他重建表（teaching_state/diagnosis_results/training_records）→ 索引均完整
+```
+
+### 新增 Issue 流程
+
+1. 从 Feedback 或代码扫描收到 Issue
+2. 在表中占位（状态: ⏳ 验证中）
+3. 执行存在性验证（读源码、跑 diff、对比原始定义）
+4. 更新验证结果（✅ 存在 / ❌ 不存在）
+5. 修复后更新状态（✅ 已修复 / ❌ 关闭-误判）
+6. 记录修复提交 hash
+
+---
+
+## SKILLS：技术引用与能力矩阵
 
 ### 总览
 

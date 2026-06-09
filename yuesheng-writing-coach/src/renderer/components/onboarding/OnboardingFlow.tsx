@@ -51,10 +51,11 @@ export function OnboardingFlow({ onComplete, onSkip }: OnboardingFlowProps) {
 
     setIsAnalyzing(true);
     try {
-      // 调用 AI 分析（复用 sendMessage）
-      const result = await window.electronAPI?.invoke('onboarding:analyze', { text: sampleText }) as { summary: string } | null;
-      if (result?.summary) {
-        setAnalysisSummary(result.summary);
+      // P-04 Phase 3: 调用 AI 分析（返回格式为 apiSuccess 的 data.summary）
+      const raw = await window.electronAPI?.invoke('onboarding:analyze', { text: sampleText.trim() });
+      const result = raw as { success: boolean; data?: { summary: string } } | null;
+      if (result?.success && result?.data?.summary) {
+        setAnalysisSummary(result.data.summary);
       } else {
         setAnalysisSummary('你的文字挺有潜力的，我们继续吧！');
       }
