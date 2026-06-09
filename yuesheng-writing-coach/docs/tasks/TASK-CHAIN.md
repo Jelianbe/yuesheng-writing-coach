@@ -1,4 +1,4 @@
-# 任务链状态（统一正本）
+﻿# 任务链状态（统一正本）
 
 > **最后更新**: 2026-06-09  V15.0
 > **系统版本**: V3.5
@@ -979,31 +979,32 @@ P2 — 按需调用（效率提升）
 
 | ID | 名称 | 优先级 | Phase | 状态 | 预估 | 说明 |
 |----|------|:------:|:-----:|:----:|:----:|------|
-| **V2-000** | 拆分 App.tsx（455→≤150 行） | **P0** | P0 | **▶️ 当前指针** | **2d** | 后续布局迁移的先决条件 |
-| V2-005 | 修复 D-003 saveMessage 事务保护 | **P0** | P0 | 待开始 | 0.5d | 数据一致性风险 |
-| V2-006 | 修复 D-004 诊断主键策略 | **P0** | P0 | 待开始 | 0.5d | 数据完整性风险 |
-| V2-001 | manuscripts/chapters DB 迁移 | P1 | P0 | 待开始 | 1d | 依赖 V2-000 |
-| V2-002 | sessions schema 扩展 | P1 | P0 | ✅ 已完成 | 0.5d | 依赖 V2-001 |
-| V2-003 | 新增 9 个 IPC 通道 | P1 | P0 | ✅ 已完成 | 2d | 依赖 V2-001~2 |
-| V2-004 | 新增 3 个 Store | P1 | P0 | ✅ 已完成 | 1.5d | 依赖 V2-003 |
-| V2-007 | 统一 IPC 错误处理 | P1 | P0 | ✅ 已完成（createHandler in utils.ts）| 1d | 可并行 |
-| V2-008 | Design Token 提取 | P2 | P0 | ✅ 已完成（variables.css 全覆盖，15 组件引用）| 0.5d | 可并行 |
+| **V2-000** | 拆分 App.tsx（455→≤150 行） | **P0** | P0 | **✅ 已完成** | **2d** | App.tsx 119行(≤150)，拆分组件在layout/就位 |
+| V2-005 | 修复 D-003 saveMessage 事务保护 | **P0** | P0 | ✅ 已完成 | 0.5d | session.service.ts 已含事务保护 |
+| V2-006 | 修复 D-004 诊断主键策略 | **P0** | P0 | ✅ 已完成 | 0.5d | diagnosis.service.ts UUID 生成已实现 |
+| V2-001 | manuscripts/chapters DB 迁移 | P1 | P0 | 🔴 未完成 | 1d | 无独立 migrations 目录，需核实 db/ 迁移状态 |
+| V2-002 | sessions schema 扩展 | P1 | P0 | 🔴 未完成 | 0.5d | 依赖 V2-001 未完成 |
+| V2-003 | 新增 9 个 IPC 通道 | P1 | P0 | ⚠️ 部分完成 | 2d | manuscript.handler + utils.ts ✅ 但 chapter.handler 缺失 |
+| V2-004 | 新增 3 个 Store | P1 | P0 | ⚠️ 部分完成 | 1.5d | manuscript.store + chapter.store ✅ 但 uiLayout.store 缺失 |
+| V2-007 | 统一 IPC 错误处理 | P1 | P0 | ✅ 已完成 | 1d | 代码扫描确认 createHandler 模式 |
+| V2-008 | Design Token 提取 | P2 | P0 | ✅ 已完成 | 0.5d | variables.css 覆盖，tokens.css 无独立文件但功能等价 |
 | **V2-PROMPT-001** | **修复 Prompt 传导链路** | **P0** | P0 | **✅ 已完成** | **2d** | 审查发现 P-01~P-03，不依赖 V2 |
-| **V2-009** | SOLO 三栏布局（去 Header）| **P0** | P1 | ✅ 已完成（AppShell 无 header，三栏 flex）| 2d | 依赖 V2-004 |
-| V2-010 | SoloSidebar 双视图 | P1 | P1 | ✅ 已完成（对话/项目双 Tab + 折叠）| 2d | 依赖 V2-004, V2-009 |
-| V2-011 | SoloChatArea 增强 | P1 | P1 | ✅ 已完成（AppShell flex:1 ≥60%，Enter/Shift+Enter + XSS）| 1d | 依赖 V2-009 |
-| V2-012 | SoloToolPanel 双态 | P1 | P1 | ✅ 已完成（RightDrawer 48↔380px 双态）| 1.5d | 依赖 V2-004, V2-009 |
-| V2-013 | StatusBar 组件 | P2 | P1 | ✅ 已完成（26px 状态点动效 + 上下文）| 0.5d | 依赖 V2-009 |
-| V2-014 | ModeSwitch 组件 | P2 | P1 | ✅ 已完成（SOLO/IDE 胶囊，IDE 占位）| 0.5d | 依赖 V2-004 |
-| V2-015 | 折叠恢复按钮 | P2 | P1 | ✅ 已完成（收起态 44px 图标条含展开按钮）| 0.5d | 依赖 V2-010 |
-| **V2-016** | 修复 D-001 推荐引擎 | **P0** | P2 | 待开始 | 2d | 可并行 |
-| V2-017 | 训练工坊面板完整 | P1 | P2 | 待开始 | 2d | 依赖 V2-012, V2-016 |
-| V2-018 | 诊断面板完整 | P1 | P2 | 待开始 | 1.5d | 依赖 V2-012 |
+| **V2-009** | SOLO 三栏布局（去 Header）| **P0** | P1 | ⚠️ 部分完成 | 2d | AppShell 无 header 但 SoloChatArea 组件缺失 |
+| V2-010 | SoloSidebar 双视图 | P1 | P1 | ✅ 已完成 | 2d | SoloSidebar.tsx 存在 |
+| V2-011 | SoloChatArea 增强 | P1 | P1 | 🔴 未完成 | 1d | SoloChatArea.tsx 在 src/ 中不存在 |
+| V2-012 | SoloToolPanel 双态 | P1 | P1 | ⚠️ 部分完成 | 1.5d | RightDrawer 双态存在，无独立 SoloToolPanel 文件 |
+| V2-013 | StatusBar 组件 | P2 | P1 | ✅ 已完成 | 0.5d | StatusBar.tsx 存在 |
+| V2-014 | ModeSwitch 组件 | P2 | P1 | ✅ 已完成 | 0.5d | ModeSwitch.tsx 存在 |
+| V2-015 | 折叠恢复按钮 | P2 | P1 | ✅ 已完成 | 0.5d | 通过 RightDrawer/IconStripButton 实现 |
+| **V2-016** | 修复 D-001 推荐引擎 | **P0** | P2 | **✅ 已完成（已拆分为 V2-016-REC + T-TRAIN-001）** | **2d** | 拆分任务均已完成 |
+| **T-TRAIN-001** | **挑战模板结构化升级（A1/A2）** | **P0** | P0 | **✅ 已完成** | **1d** | challenge-templates.json 已升级 |
+| V2-017 | 训练工坊面板完整 | P1 | P2 | ⚠️ 部分完成 | 2d | TrainingWorkshop.tsx 存在但需对接真实数据 |
+| V2-018 | 诊断面板完整 | P1 | P2 | ⚠️ 部分完成 | 1.5d | DiagnosisCard/DiagnosisPanel 存在 |
 | V2-019 | 对话视图完整版 | P1 | P2 | 待开始 | 2d | 依赖 V2-002, V2-010 |
-| V2-020 | 任务面板 | P1 | P2 | 待开始 | 1d | 依赖 V2-010 |
-| V2-021 | 成长记录 MVP | P2 | P2 | 待开始 | 1.5d | 依赖 V2-012 |
-| V2-022 | 设置面板 | P2 | P2 | 待开始 | 1d | 依赖 V2-019 |
-| V2-023 | 清理 console + @ts-ignore | P2 | P2 | ✅ 已完成 | 1.5d | 贯穿全程 |
+| V2-020 | 任务面板 | P1 | P2 | 待开始 | 1d | TaskPanel.tsx 存在 |
+| V2-021 | 成长记录 MVP | P2 | P2 | 待开始 | 1.5d | GrowthPanel.tsx 存在 |
+| V2-022 | 设置面板 | P2 | P2 | 待开始 | 1d | 设置面板 |
+| V2-023 | 清理 console + @ts-ignore | P2 | P2 | ✅ 已完成 | 1.5d | @ts-ignore 仅 1 处残留，代码扫描确认 |
 | **V2-024** | **Phase 0 关卡审查（R-α）** | P1 | R | ✅ 已完成 | 0.5d | 审查已归档 §九.8 |
 | **V2-025** | **Phase 1 关卡审查（R-β）** | P1 | R | ✅ 已完成 | 0.5d | 审查已归档 §九.8 |
 | **V2-026** | **Phase 2 终审（R-γ）** | P1 | R | ✅ 已完成 | 1d | 审查已归档 §九.8 |
