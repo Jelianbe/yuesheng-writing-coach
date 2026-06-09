@@ -40,19 +40,9 @@ export interface TabBarProps {
   tabs?: TabItem[];
 }
 
-/**
- * 简易图标渲染（V1 用 emoji/Lucide 字符，后续可替换为 lucide-react 组件）
- */
+/** 占位图标渲染（已迁移至 Lucide SVG，保留占位以避免 TS 类型错误） */
 function TabIcon({ name }: { name: string }) {
-  // 映射常见图标名为 unicode 符号或 emoji
-  const iconMap: Record<string, string> = {
-    MessageCircle: '💬',
-    Target: '◎',
-    ClipboardList: '📋',
-    TrendingUp: '📈',
-    Wrench: '🔧',
-  };
-  return <span>{iconMap[name] ?? name}</span>;
+  return <span>{name}</span>;
 }
 
 export const TabBar: React.FC<TabBarProps> = React.memo(({
