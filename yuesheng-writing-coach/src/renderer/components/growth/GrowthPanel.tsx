@@ -82,7 +82,7 @@ const TrendChart: React.FC<{ data: SyndromeTrendData[] }> = ({ data }) => {
   );
 };
 
-const GrowthPanel: React.FC = () => {
+export const GrowthPanel: React.FC = () => {
   const [trends, setTrends] = useState<SyndromeTrendData[]>([]);
   const [summary, setSummary] = useState({ masteredCount: 0, improvingCount: 0, stableCount: 0, needsAttentionCount: 0 });
   const [loading, setLoading] = useState(true);
@@ -245,4 +245,4 @@ const GrowthPanel: React.FC = () => {
   );
 };
 
-export default GrowthPanel;
+

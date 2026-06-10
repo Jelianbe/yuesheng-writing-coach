@@ -16,7 +16,7 @@ import {
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { ApiConfig, ConnectionTestResult } from '../../shared/types';
-import StudentContextSection from './StudentContextSection';
+import { StudentContextSection } from './StudentContextSection';
 
 interface ConfigPageProps {
   config: ApiConfig;

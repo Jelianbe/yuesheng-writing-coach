@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Settings, PanelRightClose, Plus, ListChecks } from 'lucide-react';
-import { useDrawerStore } from '../../stores/drawer.store';
+import { useDrawerStore, type DrawerPanelId } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
 import { IconStripButton } from './IconStripButton';
 import { SessionTabBar } from './SessionTabBar';
@@ -13,6 +13,7 @@ import {
   SESSION_TYPE_TO_TOOL_ID,
 } from './drawer-constants';
 import type { ToolItem } from './drawer-constants';
+import styles from './RightDrawer.module.css';
 
 export interface RightDrawerProps {
   tools?: ToolItem[];
@@ -82,7 +83,7 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     const sessionType = TOOL_TO_SESSION_TYPE[toolId] ?? 'edit';
     upsertSession(sessionType, SESSION_DEFAULT_TITLE[sessionType] ?? toolId, '');
     // FIX-02 核心：同步展开 drawer 面板
-    openPanel(toolId as any);
+    openPanel(toolId as DrawerPanelId);
   }, [collapsed, activePanel, toggleCollapsed, upsertSession, openPanel]);
 
   const handleToolClick = useCallback((tool: ToolItem) => {
@@ -129,69 +130,56 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
 
   return (
     <>
-      <div style={{
-        width: drawerWidth, height: '100%', background: 'var(--bg-sidebar)',
-        display: 'flex', flexDirection: 'row', overflow: 'hidden',
-        transition: containerTransition, flexShrink: 0,
-        zIndex: Z_LAYER.modal, position: 'relative',
+      <div className={styles.container} style={{
+        width: drawerWidth, transition: containerTransition, zIndex: Z_LAYER.modal,
       }} role="complementary" aria-label="工具面板" aria-hidden={!isExpanded && collapsed}>
         <ResizeHandle onMouseDown={handleResizeMouseDown} isExpanded={isExpanded} />
 
         {/* 图标条 */}
-        <nav aria-label="工具导航" style={{
-          width: ICON_STRIP_WIDTH, height: '100%', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', padding: '8px 0', gap: 2, flexShrink: 0,
-          overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'none', msOverflowStyle: 'none',
-          borderRight: isExpanded ? '1px solid var(--border-light)' : '1px solid var(--border)',
-        }}>
+        <nav aria-label="工具导航" className={`${styles.navBar} ${isExpanded ? styles.navBarBorderExpanded : styles.navBarBorderCollapsed}`}
+          style={{ width: ICON_STRIP_WIDTH }}>
           {tools.map(tool => (
             <IconStripButton key={tool.id} toolId={tool.id} IconComponent={tool.icon}
               isActive={activePanel === tool.id} isDisabled={tool.disabled}
               onClick={handleIconClick} label={findLabel(tool.id)} />
           ))}
-          <div style={{ marginTop: 'auto', paddingTop: 4 }}>
+          <div className={styles.navSettingsArea}>
             <IconStripButton toolId="__settings__" IconComponent={Settings}
               isActive={false} onClick={handleIconClick} label="设置" />
           </div>
         </nav>
 
         {/* 工作区 */}
-        {isExpanded && (<div style={{
-          display: 'flex', flexDirection: 'column', flex: 1,
-          minWidth: 0, width: panelWidth, overflow: 'hidden',
-        }}>
+        {isExpanded && (<div className={styles.workspace} style={{ width: panelWidth }}>
           {/* Header 行：标签栏 + 操作按钮 + 收起按钮 */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '0 8px', flexShrink: 0, minHeight: 38,
-          }}>
+          <div className={styles.headerRow}>
             <SessionTabBar sessions={sessions} activeSessionId={activeSessionId}
               onSwitch={handleSessionSwitch} onRemove={handleSessionRemove} sessionIcons={SESSION_LUCIDE_ICON} />
 
             {/* Issue5: 按面板类型显示不同操作按钮 */}
             {activePanel === 'works' && (
               <button onClick={() => { /* 新建章节 — 由 ManuscriptPanel 内部处理或 IPC 触发 */ }}
-                style={{ ...actionBtnStyle, color: 'var(--accent)' }} title="新建章节">
+                className={styles.actionBtn} style={{ color: 'var(--accent)' }} title="新建章节">
                 <Plus size={14} strokeWidth={1.8} />
               </button>
             )}
             {activePanel === 'tasks' && (
               <button onClick={() => { /* 新建任务 — 由 TaskPanel 内部处理 */ }}
-                style={{ ...actionBtnStyle, color: 'var(--accent)' }} title="新建任务">
+                className={styles.actionBtn} style={{ color: 'var(--accent)' }} title="新建任务">
                 <ListChecks size={14} strokeWidth={1.8} />
               </button>
             )}
 
             {/* Issue4: 收起按钮 */}
             <button onClick={toggleCollapsed}
-              style={{ ...actionBtnStyle, color: 'var(--text-tertiary)', marginLeft: 'auto' }}
+              className={`${styles.actionBtn} ${styles.actionBtnAuto}`} style={{ color: 'var(--text-tertiary)' }}
               title="收起面板">
               <PanelRightClose size={15} strokeWidth={1.6} />
             </button>
           </div>
 
           {hasCustomContent && activePanel ? (
-            <div key={activePanel} style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div key={activePanel} className={styles.contentArea}>
               {panelContent?.[activePanel] ?? null}
             </div>
           ) : (
@@ -202,15 +190,5 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     </>
   );
 });
-
-/** Header 操作按钮基础样式 */
-const actionBtnStyle: React.CSSProperties = {
-  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  width: 28, height: 28, borderRadius: 'var(--radius-sm)',
-  border: 'none', background: 'transparent', cursor: 'pointer',
-  color: 'var(--text-secondary)', flexShrink: 0,
-  transition: 'all 120ms ease',
-  outline: 'none',
-};
 
 RightDrawer.displayName = 'RightDrawer';

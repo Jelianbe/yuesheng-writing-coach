@@ -76,7 +76,7 @@ const secondaryBtnStyle: React.CSSProperties = {
 
 // ===== 主组件 =====
 
-const TrainingBridgeCard: React.FC<TrainingBridgeCardProps> = ({
+export const TrainingBridgeCard: React.FC<TrainingBridgeCardProps> = ({
   recommendation,
   onEnterWorkshop,
   onDismiss,
@@ -107,4 +107,4 @@ const TrainingBridgeCard: React.FC<TrainingBridgeCardProps> = ({
   </div>
 );
 
-export default TrainingBridgeCard;
+

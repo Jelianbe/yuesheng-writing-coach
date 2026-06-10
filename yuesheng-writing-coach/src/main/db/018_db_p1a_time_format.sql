@@ -7,8 +7,12 @@
 -- Created: 2026-06-09
 -- ============================================
 
+PRAGMA foreign_keys = OFF;
+
 -- ===== 1. teaching_state =====
 -- updated_at: TEXT → INTEGER NOT NULL DEFAULT (unixepoch())
+
+DROP TABLE IF EXISTS teaching_state_p1a;
 
 CREATE TABLE IF NOT EXISTS teaching_state_p1a (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +46,7 @@ SELECT
     next_suggested_actions, current_task_id, diagnosis_summary,
     last_user_confirmation, focus_area, transition_offered,
     locked_syndromes,
-    CAST(strftime('%s', REPLACE(updated_at, 'T', ' ')) AS INTEGER)
+    COALESCE(CAST(strftime('%s', REPLACE(REPLACE(updated_at, 'T', ' '), 'Z', '')) AS INTEGER), unixepoch())
 FROM teaching_state;
 
 DROP TABLE IF EXISTS teaching_state;
@@ -57,6 +61,8 @@ CREATE INDEX IF NOT EXISTS idx_teaching_state_focus_area ON teaching_state(focus
 -- created_at: TEXT → INTEGER NOT NULL DEFAULT (unixepoch())
 -- updated_at: TEXT → INTEGER NOT NULL DEFAULT (unixepoch())
 
+DROP TABLE IF EXISTS sessions_p1a;
+
 CREATE TABLE IF NOT EXISTS sessions_p1a (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL DEFAULT '新建会话',
@@ -70,8 +76,8 @@ CREATE TABLE IF NOT EXISTS sessions_p1a (
 INSERT INTO sessions_p1a (id, title, preview, manuscript_id, chapter_id, created_at, updated_at)
 SELECT
     id, title, preview, manuscript_id, chapter_id,
-    CAST(strftime('%s', REPLACE(created_at, 'T', ' ')) AS INTEGER),
-    CAST(strftime('%s', REPLACE(updated_at, 'T', ' ')) AS INTEGER)
+    COALESCE(CAST(strftime('%s', REPLACE(REPLACE(created_at, 'T', ' '), 'Z', '')) AS INTEGER), unixepoch()),
+    COALESCE(CAST(strftime('%s', REPLACE(REPLACE(updated_at, 'T', ' '), 'Z', '')) AS INTEGER), unixepoch())
 FROM sessions;
 
 DROP TABLE IF EXISTS sessions;
@@ -81,6 +87,9 @@ ALTER TABLE sessions_p1a RENAME TO sessions;
 -- ===== 3. diagnosis_results =====
 -- timestamp: TEXT → INTEGER NOT NULL
 -- created_at: TEXT DEFAULT (datetime('now')) → INTEGER NOT NULL DEFAULT (unixepoch())
+-- 注意：015 迁移重建表时可能丢失 root_cause_analysis 列，此处做防御性处理
+
+DROP TABLE IF EXISTS diagnosis_results_p1a;
 
 CREATE TABLE IF NOT EXISTS diagnosis_results_p1a (
     id TEXT PRIMARY KEY,
@@ -96,6 +105,8 @@ CREATE TABLE IF NOT EXISTS diagnosis_results_p1a (
     UNIQUE(session_id, message_id)
 );
 
+-- 防御性 INSERT：root_cause_analysis 可能不存在于旧表中（015 重建时丢失）
+-- 015 迁移重建表时遗漏了此列，此处统一填 NULL，后续由诊断 Agent 重新生成
 INSERT INTO diagnosis_results_p1a (
     id, session_id, message_id, syndromes, suggested_actions,
     confidence, timestamp, next_focus, created_at, root_cause_analysis
@@ -103,10 +114,10 @@ INSERT INTO diagnosis_results_p1a (
 SELECT
     id, session_id, message_id, syndromes, suggested_actions,
     confidence,
-    CAST(strftime('%s', REPLACE(REPLACE(timestamp, 'T', ' '), 'Z', '')) AS INTEGER),
+    COALESCE(CAST(strftime('%s', REPLACE(REPLACE(timestamp, 'T', ' '), 'Z', '')) AS INTEGER), unixepoch()),
     next_focus,
-    CAST(strftime('%s', REPLACE(REPLACE(created_at, 'T', ' '), 'Z', '')) AS INTEGER),
-    root_cause_analysis
+    COALESCE(CAST(strftime('%s', REPLACE(REPLACE(created_at, 'T', ' '), 'Z', '')) AS INTEGER), unixepoch()),
+    NULL
 FROM diagnosis_results;
 
 DROP TABLE IF EXISTS diagnosis_results;
@@ -119,6 +130,8 @@ CREATE INDEX IF NOT EXISTS idx_diagnosis_message ON diagnosis_results(message_id
 -- ===== 4. user_training_records =====
 -- assigned_at: TEXT NOT NULL → INTEGER NOT NULL
 -- completed_at: TEXT → INTEGER (nullable)
+
+DROP TABLE IF EXISTS user_training_records_p1a;
 
 CREATE TABLE IF NOT EXISTS user_training_records_p1a (
     id TEXT PRIMARY KEY,
@@ -160,6 +173,8 @@ CREATE INDEX IF NOT EXISTS idx_training_status ON user_training_records(session_
 -- ===== 5. evidence =====
 -- created_at: TEXT NOT NULL → INTEGER NOT NULL DEFAULT (unixepoch())
 
+DROP TABLE IF EXISTS evidence_p1a;
+
 CREATE TABLE IF NOT EXISTS evidence_p1a (
     evidence_id TEXT PRIMARY KEY,
     type TEXT NOT NULL CHECK(type IN ('text', 'pattern', 'statistical', 'comparison')),
@@ -198,3 +213,5 @@ CREATE INDEX IF NOT EXISTS idx_evidence_disease ON evidence(related_disease);
 CREATE INDEX IF NOT EXISTS idx_evidence_ability ON evidence(related_ability);
 CREATE INDEX IF NOT EXISTS idx_evidence_novel ON evidence(novel_id);
 CREATE INDEX IF NOT EXISTS idx_evidence_level ON evidence(level);
+
+PRAGMA foreign_keys = ON;

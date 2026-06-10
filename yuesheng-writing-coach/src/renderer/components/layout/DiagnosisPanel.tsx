@@ -115,7 +115,7 @@ const SyndromeCard: React.FC<{ syndrome: SyndromeResult }> = ({ syndrome }) => {
 };
 
 /** 诊断面板主体 */
-const DiagnosisPanel: React.FC = () => {
+export const DiagnosisPanel: React.FC = () => {
   const syndromes = useDiagStore(selectCurrentSyndromes);
   const actions = useDiagStore(selectCurrentActions);
   const confidence = useDiagStore(selectCurrentConfidence);
@@ -220,4 +220,4 @@ const DiagnosisPanel: React.FC = () => {
   );
 };
 
-export default DiagnosisPanel;
+

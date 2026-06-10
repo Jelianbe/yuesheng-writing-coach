@@ -6,7 +6,7 @@ import React from 'react';
 import { Button } from '../common/Button';
 import { useStudentContextStore, UserType, ThinkingStyle } from '../../stores/student-context.store';
 
-const StudentContextSection: React.FC = () => {
+export const StudentContextSection: React.FC = () => {
   const {
     userType,
     confidenceLevel,

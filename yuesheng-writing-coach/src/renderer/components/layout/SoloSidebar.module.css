@@ -1,0 +1,73 @@
+/* SoloSidebar.module.css — 侧边栏组合器布局样式 */
+
+/* ── 顶部栏（模式切换 + 折叠按钮）── */
+
+.soloHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  height: 32px;
+}
+
+/* ── Tab 切换栏 ── */
+
+.soloTabs {
+  padding: 0 10px 8px;
+  flex-shrink: 0;
+}
+
+.soloTabsInner {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+/* ── 内容滚动区 ── */
+
+.soloContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ── 收起状态图标条 ── */
+
+.soloCollapsed {
+  width: 44px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.soloCollapsedDivider {
+  width: 20px;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+/* ── 拖拽调节手柄 ── */
+
+.soloResizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  border-right: 1px solid var(--border-light);
+  border-left: 1px solid transparent;
+  transition: border-color 150ms ease, background 150ms ease;
+}

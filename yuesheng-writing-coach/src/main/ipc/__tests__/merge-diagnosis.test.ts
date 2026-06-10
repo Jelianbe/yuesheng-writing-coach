@@ -262,4 +262,56 @@ describe('mergeSyndromesIntoState - TeachingState 合并逻辑', () => {
       expect(result.nextSuggestedActions).toContain(ActionId.ReturnToProtagonist);
     });
   });
+
+  describe('lockedSyndromes 合并', () => {
+    it('新诊断自动锁定', () => {
+      const state = makeBaseState({ lockedSyndromes: [] });
+      const diagnosis = buildDiagnosisEntry({
+        syndromes: [
+          { id: SyndromeId.WorldviewBloat, name: '世界观膨胀', severity: 'L2', evidence: [], suggestedActions: [] },
+        ],
+        suggestedActions: [],
+      });
+
+      const result = mergeSyndromesIntoState(state, diagnosis);
+      expect(result.lockedSyndromes).toEqual([SyndromeId.WorldviewBloat]);
+    });
+
+    it('已有锁定与新诊断合并去重', () => {
+      const state = makeBaseState({ lockedSyndromes: [SyndromeId.WorldviewBloat] });
+      const diagnosis = buildDiagnosisEntry({
+        syndromes: [
+          { id: SyndromeId.WorldviewBloat, name: '世界观膨胀', severity: 'L2', evidence: [], suggestedActions: [] },
+          { id: SyndromeId.CharacterTool, name: '人物工具化', severity: 'L1', evidence: [], suggestedActions: [] },
+        ],
+        suggestedActions: [],
+      });
+
+      const result = mergeSyndromesIntoState(state, diagnosis);
+      expect(result.lockedSyndromes).toHaveLength(2);
+      expect(result.lockedSyndromes).toContain(SyndromeId.WorldviewBloat);
+      expect(result.lockedSyndromes).toContain(SyndromeId.CharacterTool);
+    });
+
+    it('无新诊断时保留现有锁定', () => {
+      const state = makeBaseState({ lockedSyndromes: [SyndromeId.WorldviewBloat, SyndromeId.CharacterTool] });
+      const diagnosis = buildDiagnosisEntry({ syndromes: [], suggestedActions: [] });
+
+      const result = mergeSyndromesIntoState(state, diagnosis);
+      expect(result.lockedSyndromes).toEqual([SyndromeId.WorldviewBloat, SyndromeId.CharacterTool]);
+    });
+
+    it('空锁定接受新诊断', () => {
+      const state = makeBaseState({ lockedSyndromes: undefined as unknown as [] });
+      const diagnosis = buildDiagnosisEntry({
+        syndromes: [
+          { id: SyndromeId.InfoDumping, name: '信息倾泻', severity: 'L2', evidence: [], suggestedActions: [] },
+        ],
+        suggestedActions: [],
+      });
+
+      const result = mergeSyndromesIntoState(state, diagnosis);
+      expect(result.lockedSyndromes).toEqual([SyndromeId.InfoDumping]);
+    });
+  });
 });

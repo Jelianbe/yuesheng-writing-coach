@@ -13,7 +13,7 @@ import { useParadigmStore } from '../../stores/paradigm.store';
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 const SAVE_DEBOUNCE_MS = 1500;
 
-const ChapterEditor: React.FC = () => {
+export const ChapterEditor: React.FC = () => {
   const { currentChapter, loadContent } = useChapterStore();
   const { currentManuscript, manuscripts } = useManuscriptStore();
   const setParadigm = useParadigmStore(s => s.setParadigm);

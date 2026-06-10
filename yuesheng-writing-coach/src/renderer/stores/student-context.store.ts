@@ -1,4 +1,6 @@
 // 学生模型上下文管理 (Phase 1: Prompt 注入版)
+// ⚠️ 本文件 catch 块中的 console.error / console.warn 仅用于开发调试，
+//    生产环境应通过构建工具（如 terser drop_console）自动移除。
 // 负责：维护轻量级学生状态，用于注入 System Prompt
 // 依赖：zustand, localStorage
 // 设计原则：

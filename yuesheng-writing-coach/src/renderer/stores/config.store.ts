@@ -1,4 +1,6 @@
 // 配置状态管理（Zustand）
+// ⚠️ 本文件 catch 块中的 console.error / console.warn 仅用于开发调试，
+//    生产环境应通过构建工具（如 terser drop_console）自动移除。
 // 负责：管理 API 配置的前端状态，通过 IPC 与主进程同步
 // 依赖：zustand, electron IPC (通过 preload 暴露)
 

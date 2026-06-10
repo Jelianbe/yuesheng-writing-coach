@@ -16,11 +16,12 @@ import { DiagnosisCard } from '../diagnosis/DiagnosisCard';
 import { EditPanel } from '../diagnosis/EditPanel';
 import { EvaluationCard } from '../diagnosis/EvaluationCard';
 import { GrowthCard } from '../diagnosis/GrowthCard';
-import TrainingBridgeCard from './TrainingBridgeCard';
+import { TrainingBridgeCard } from './TrainingBridgeCard';
 import type { TrainingRecommendation } from '../../shared/types';
 import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { useChatStore } from '../../stores/chat.store';
+import styles from './ChatView.module.css';
 
 interface ChatViewProps {
   messages: ChatMessage[];
@@ -48,7 +49,7 @@ interface ChatViewProps {
   onDismissBridge: () => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({
+export const ChatView: React.FC<ChatViewProps> = ({
   messages,
   isStreaming,
   currentSessionId,
@@ -94,11 +95,11 @@ const ChatView: React.FC<ChatViewProps> = ({
       const invoke = getInvoke();
       const offset = loadedMessages.length;
       const limit = 20;
-      const result: { success: boolean; data?: { messages: ChatMessage[]; total: number; hasMore: boolean }; error?: string } = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, {
+      const result = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, {
         sessionId: currentSessionId,
         offset,
         limit,
-      });
+      }) as { success: boolean; data?: { messages: ChatMessage[]; total: number; hasMore: boolean }; error?: string };
 
       if (result.success && result.data) {
         const existingIds = new Set(loadedMessages.map(m => m.id));
@@ -145,42 +146,21 @@ const ChatView: React.FC<ChatViewProps> = ({
     <>
       {/* ── 搜索栏 ── */}
       {showSearch && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '8px 20px',
-            borderBottom: '1px solid var(--border)',
-            background: 'var(--bg-sidebar)',
-            flexShrink: 0,
-          }}
-        >
-          <Search size={14} strokeWidth={1.6} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+        <div className={styles.searchBar}>
+          <Search size={14} strokeWidth={1.6} className={styles.searchIcon} />
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             placeholder="搜索消息内容..."
             autoFocus
-            style={{
-              flex: 1,
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.82rem',
-            }}
+            className={styles.searchInput}
             onKeyDown={e => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(''); } }}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              style={{
-                border: 'none', background: 'transparent', cursor: 'pointer',
-                color: 'var(--text-tertiary)', padding: 2, display: 'flex',
-              }}
+              className={styles.searchBtn}
               aria-label="清除搜索"
             >
               <X size={14} strokeWidth={1.6} />
@@ -188,10 +168,7 @@ const ChatView: React.FC<ChatViewProps> = ({
           )}
           <button
             onClick={toggleSearch}
-            style={{
-              border: 'none', background: 'transparent', cursor: 'pointer',
-              color: 'var(--text-tertiary)', padding: 2, display: 'flex',
-            }}
+            className={styles.searchBtn}
             aria-label="关闭搜索"
           >
             <X size={14} strokeWidth={1.6} />
@@ -201,33 +178,36 @@ const ChatView: React.FC<ChatViewProps> = ({
 
       {/* ── P-04: 新用户引导流程 ── */}
       {onboardingActive && onboardingStep === 1 && (
-        <div style={{ padding: '24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
-          <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: 16 }}>
+        <div className={styles.onboarding}>
+          <div className={styles.onboardingTitle}>
             你好！我是月笙，你的写作教练。
           </div>
-          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 20 }}>
+          <div className={styles.onboardingDesc}>
             我不是帮你写作文的工具，而是帮你成为更好的写作者。
             我会读你的文字，指出可以提升的地方，但不会替你改写——因为成长属于你。
           </div>
-          <div style={{ fontSize: '0.85rem', fontWeight: 500, marginBottom: 16 }}>
+          <div className={styles.onboardingQuestion}>
             先认识一下：你主要写什么类型？
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+          <div className={styles.typeButtons}>
             {['玄幻', '都市', '科幻', '现实', '历史', '其他'].map(type => (
               <button key={type}
                 onClick={() => { setOnboardingStep(2); }}
-                style={{ padding: '8px 20px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'var(--bg-card)', cursor: 'pointer', color: 'var(--text-primary)', fontFamily: 'var(--font-body)' }}>
+                className={styles.typeBtn}
+              >
                 {type}
               </button>
             ))}
             <button onClick={() => setOnboardingStep(2)}
-              style={{ padding: '8px 20px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+              className={styles.typeBtnGhost}
+            >
               说不清
             </button>
           </div>
-          <div style={{ marginTop: 16 }}>
+          <div className={styles.skipLinkWrapper}>
             <button onClick={skipOnboarding}
-              style={{ padding: '6px 16px', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: '0.78rem', fontFamily: 'var(--font-body)' }}>
+              className={styles.skipLink}
+            >
               跳过引导，直接开始
             </button>
           </div>
@@ -235,35 +215,37 @@ const ChatView: React.FC<ChatViewProps> = ({
       )}
 
       {onboardingActive && onboardingStep === 2 && (
-        <div style={{ padding: '24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
-          <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 12 }}>
+        <div className={styles.onboarding}>
+          <div className={styles.onboardingTitle}>
             好的，玄幻小说！
           </div>
-          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 16 }}>
+          <div className={styles.onboardingDesc}>
             为了更好帮你，能不能发一段你最近写的文字？
             不用很长，三五句话也行。
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-tertiary)', marginBottom: 16 }}>
+          <div className={styles.onboardingHint}>
             （在下方输入框发送你的文字，或者）
           </div>
           <button onClick={() => { setOnboardingStep(3); }}
-            style={{ padding: '8px 20px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border)', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
+            className={styles.typeBtnGhost}
+          >
             跳过，直接开始
           </button>
         </div>
       )}
 
       {onboardingActive && onboardingStep === 3 && (
-        <div style={{ padding: '24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
-          <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 12, color: 'var(--accent)' }}>
+        <div className={styles.onboarding}>
+          <div className={styles.onboardingTitleAccent}>
             引导完成！🎉
           </div>
-          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 20 }}>
+          <div className={styles.onboardingDesc}>
             你现在可以开始和月笙对话了。
             月笙会读你的文字，指出可以提升的地方。
           </div>
           <button onClick={completeOnboarding}
-            style={{ padding: '10px 24px', borderRadius: 'var(--radius-full)', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontWeight: 500, fontFamily: 'var(--font-body)' }}>
+            className={styles.primaryBtn}
+          >
             开始对话
           </button>
         </div>
@@ -283,8 +265,8 @@ const ChatView: React.FC<ChatViewProps> = ({
       )}
 
       {currentDiagnosis && !isStreaming && (
-        <div style={{ padding: '0 20px 8px' }}>
-          <div style={{ maxWidth: '48rem', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className={styles.diagnosisArea}>
+          <div className={styles.diagnosisInner}>
             <DiagnosisCard
               diagnosis={currentDiagnosis}
               onStartEditing={onStartEditing}
@@ -327,14 +309,15 @@ const ChatView: React.FC<ChatViewProps> = ({
         </div>
       )}
 
-      <MessageInput
-        onSend={onSend}
-        onStop={onStop}
-        isStreaming={isStreaming}
-        disabled={false}
-      />
+      {/* 引导期间隐藏输入框 */}
+      {!onboardingActive && (
+        <MessageInput
+          onSend={onSend}
+          onStop={onStop}
+          isStreaming={isStreaming}
+          disabled={false}
+        />
+      )}
     </>
   );
 };
-
-export default ChatView;

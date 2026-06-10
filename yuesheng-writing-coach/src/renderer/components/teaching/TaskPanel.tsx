@@ -83,7 +83,7 @@ const TaskItem: React.FC<{
 );
 
 /** 任务面板主体 */
-const TaskPanel: React.FC = () => {
+export const TaskPanel: React.FC = () => {
   const currentState = useTeachingStateStore(s => s.currentState);
   const setCurrentState = useTeachingStateStore(s => s.setCurrentState);
 
@@ -264,4 +264,4 @@ const TaskPanel: React.FC = () => {
   );
 };
 
-export default TaskPanel;
+

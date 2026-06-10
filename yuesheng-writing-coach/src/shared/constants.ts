@@ -10,6 +10,7 @@ export const SyndromeId = {
   PerspectiveDrift: 'P005',
   PacingStagnation: 'P006',
   ReadingStructureSingle: 'P007',
+  WorldviewExposition: 'P008',
   MotivationDeficit: 'P009',
   OCPlanarization: 'P010',
   // 诊断维度标记（由 DiagnosisAgent 产出，非教学症候）

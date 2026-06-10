@@ -89,4 +89,4 @@ export const BeatCheckChart: React.FC<BeatCheckChartProps> = ({ beatCheck }) => 
   );
 };
 
-export default BeatCheckChart;
+

@@ -1,0 +1,147 @@
+/* ChatView.module.css — 聊天视图样式（搜索栏 + 引导区 + 诊断区） */
+
+/* ── 搜索栏 ── */
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  flex-shrink: 0;
+}
+
+.searchIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+}
+
+.searchBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 2px;
+  display: flex;
+}
+
+/* ── 引导区容器 ── */
+
+.onboarding {
+  padding: 24px;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.onboardingTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.onboardingDesc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.onboardingQuestion {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.onboardingHint {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+/* ── 引导按钮组 ── */
+
+.typeButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.typeBtn {
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.typeBtnGhost {
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+}
+
+.skipLink {
+  margin-top: 16px;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+}
+
+.skipLinkWrapper {
+  margin-top: 16px;
+}
+
+.onboardingTitleAccent {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.primaryBtn {
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: var(--font-body);
+}
+
+/* ── 诊断卡片区域 ── */
+
+.diagnosisArea {
+  padding: 0 20px 8px;
+}
+
+.diagnosisInner {
+  max-width: 48rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

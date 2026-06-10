@@ -9,7 +9,7 @@ import { useParadigmStore } from '../../stores/paradigm.store';
  * - IDE 侧不实现界面，仅占位提示
  * - 切换时无需二次确认
  */
-const ModeSwitch: React.FC = () => {
+export const ModeSwitch: React.FC = () => {
   const activeParadigm = useParadigmStore(s => s.activeParadigm);
   const setParadigm = useParadigmStore(s => s.setParadigm);
 
@@ -79,4 +79,4 @@ const ModeSwitch: React.FC = () => {
   );
 };
 
-export default ModeSwitch;
+

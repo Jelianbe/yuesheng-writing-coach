@@ -6,41 +6,44 @@ contextBridge.exposeInMainWorld('electronAPI', {
       'config:get',
       'config:set',
       'config:testConnection',
-      'diagnosis:query',
+      // diagnosis:query — handler 已注册，但 renderer 当前未直接调用（预留）
       'diagnosis:submitRewrite',
       'diagnosis:getComparison',
       'growth:getTrends',
-      'growth:getGlobalTrends',
+      // growth:getGlobalTrends — 预留，renderer 未使用
       'teachingState:get',
       'teachingState:update',
       'teachingState:confirm',
-      'teachingState:getPrompt',
-      'teachingState:updateSummary',
+      // teachingState:getPrompt — 预留，renderer 未使用
+      // teachingState:updateSummary — 预留，renderer 未使用
       'ability:getProfile',
       'chat:send',
       'onboarding:analyze',
       'session:list',
-      'session:listWithMeta',
+      // session:listWithMeta — 预留，renderer 未使用
       'session:searchMessages',
       'session:create',
       'session:delete',
       'session:rename',
-      'session:getMessages',
+      // session:getMessages — renderer 使用分页版 session:getMessagesPaged
       'session:getMessagesPaged',
-      'evidence:getByDisease',
-      'evidence:getByAbility',
-      'evidence:getChain',
-      'evidence:create',
+      'session:isNewUser',
+      // session:updateTitle — 预留，renderer 未使用
+      // evidence:* — 以下 4 个通道均为预留，handler 已注册但 renderer 未调用
+      // 'evidence:getByDisease',
+      // 'evidence:getByAbility',
+      // 'evidence:getChain',
+      // 'evidence:create',
       'training:recommend',
       'training:assign',
       'training:complete',
-      'training:skip',
+      // training:skip — store 内部直接设 null，未通过 IPC 调用
       'training:history',
       'training:submit',
       'training:evaluate',
       'training:derive-behavior',
       'manuscript:list',
-      'manuscript:get',
+      // manuscript:get — renderer 未使用（仅 manuscript:list/create/update）
       'manuscript:create',
       'manuscript:update',
       'chapter:list',

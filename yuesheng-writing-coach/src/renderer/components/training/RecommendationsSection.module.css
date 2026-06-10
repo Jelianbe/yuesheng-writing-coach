@@ -1,0 +1,140 @@
+/* RecommendationsSection.module.css */
+
+.emptyText {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.recList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recCard {
+  border-left: 4px solid var(--accent);
+}
+
+.cardBody {
+  flex: 1;
+}
+
+.challengeNameRow {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.tierBadge {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  background-color: var(--accent-subtle);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.structuredTaskBadge {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #27ae60;
+  background-color: #eafaf1;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.structuredInfoPanel {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+}
+
+.taskContentPreview {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.taskLabel {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.metaInfoRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.forbiddenMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #e74c3c;
+}
+
+.readingMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #3498db;
+}
+
+.forbiddenWordsContainer {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.forbiddenWordTag {
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: #fdf0ef;
+  color: #c0392b;
+  border: 1px solid #fadbd8;
+}
+
+.constraintBox {
+  font-size: 0.75rem;
+  color: #d35400;
+  background-color: #fef5e7;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.techniquesSection {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.techniquesLabel {
+  font-weight: 500;
+}

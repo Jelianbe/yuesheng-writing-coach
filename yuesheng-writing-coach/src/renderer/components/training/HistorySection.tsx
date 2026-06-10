@@ -5,23 +5,21 @@
 import React from 'react';
 import type { TrainingRecord } from '../../shared/types';
 import {
-  sectionStyle,
-  sectionTitleStyle,
-  emptyStyle,
   statusIcons,
   statusColors,
 } from './training-styles';
+import sharedStyles from './TrainingShared.module.css';
 
-const HistorySection: React.FC<{
+export const HistorySection: React.FC<{
   history: TrainingRecord[];
   isLoading: boolean;
   getTaskName?: (taskId: string) => string | undefined;
 }> = ({ history, isLoading, getTaskName }) => {
   if (isLoading) {
     return (
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>近期训练记录</div>
-        <div style={emptyStyle}>
+      <div className={sharedStyles.trainingSection}>
+        <div className={sharedStyles.trainingSectionTitle}>近期训练记录</div>
+        <div className={sharedStyles.trainingEmpty}>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
             加载中...
           </p>
@@ -32,9 +30,9 @@ const HistorySection: React.FC<{
 
   if (history.length === 0) {
     return (
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>近期训练记录</div>
-        <div style={emptyStyle}>
+      <div className={sharedStyles.trainingSection}>
+        <div className={sharedStyles.trainingSectionTitle}>近期训练记录</div>
+        <div className={sharedStyles.trainingEmpty}>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
             暂无训练记录。完成练习后，记录会显示在此处。
           </p>
@@ -44,8 +42,8 @@ const HistorySection: React.FC<{
   }
 
   return (
-    <div style={sectionStyle}>
-      <div style={sectionTitleStyle}>近期训练记录</div>
+    <div className={sharedStyles.trainingSection}>
+      <div className={sharedStyles.trainingSectionTitle}>近期训练记录</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {history.map((record) => (
           <div
@@ -79,4 +77,4 @@ const HistorySection: React.FC<{
   );
 };
 
-export default HistorySection;
+
