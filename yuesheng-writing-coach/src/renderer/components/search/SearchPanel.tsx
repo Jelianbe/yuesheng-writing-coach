@@ -25,7 +25,7 @@ interface SearchResultGroup {
 
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 
-const SearchPanel: React.FC = () => {
+export const SearchPanel: React.FC = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResultGroup[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,4 +166,4 @@ const SearchPanel: React.FC = () => {
   );
 };
 
-export default SearchPanel;
+

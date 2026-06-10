@@ -75,7 +75,7 @@ const WeakPointBadge: React.FC<{ weak: WeakPoint }> = ({ weak }) => {
   );
 };
 
-const AbilityProfilePanel: React.FC = () => {
+export const AbilityProfilePanel: React.FC = () => {
   const [profile, setProfile] = useState<AbilityProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -200,4 +200,4 @@ const AbilityProfilePanel: React.FC = () => {
   );
 };
 
-export default AbilityProfilePanel;
+

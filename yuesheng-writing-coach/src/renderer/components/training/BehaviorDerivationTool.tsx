@@ -104,7 +104,7 @@ const QuestionField: React.FC<{
 
 // ===== 主组件 =====
 
-const BehaviorDerivationTool: React.FC = () => {
+export const BehaviorDerivationTool: React.FC = () => {
   const [expanded, setExpanded] = React.useState(false);
   const derivationLoading = useTrainingStore(s => s.derivationLoading);
   const derivationError = useTrainingStore(s => s.derivationError);
@@ -303,4 +303,4 @@ const BehaviorDerivationTool: React.FC = () => {
   );
 };
 
-export default BehaviorDerivationTool;
+

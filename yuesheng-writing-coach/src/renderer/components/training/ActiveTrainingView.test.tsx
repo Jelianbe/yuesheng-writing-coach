@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import ActiveTrainingView from './ActiveTrainingView';
+import { ActiveTrainingView } from './ActiveTrainingView';
 import type { ActiveTrainingSession } from '../../shared/types';
 
 // ===== 工厂数据 =====

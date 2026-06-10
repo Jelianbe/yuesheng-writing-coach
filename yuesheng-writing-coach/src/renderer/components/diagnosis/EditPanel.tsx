@@ -36,7 +36,7 @@ export const EditPanel: React.FC<EditPanelProps> = ({
   };
 
   return (
-    <div className="border border-border rounded-[var(--radius-md)] bg-surface shadow-sm animate-expand">
+    <div className="border border-border rounded-[var(--radius-md)] bg-surface animate-expand">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <span className="text-sm font-medium text-text-primary">

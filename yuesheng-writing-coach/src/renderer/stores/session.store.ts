@@ -1,6 +1,9 @@
 /**
  * session.store.ts — 聊天会话管理（主会话，非面板会话）
  *
+ * ⚠️ 本文件 catch 块中的 console.error / console.warn 仅用于开发调试，
+ *    生产环境应通过构建工具（如 terser drop_console）自动移除。
+ *
  * 职责：
  * - 管理聊天会话列表（创建/切换/删除）
  * - 通过 IPC 与主进程 SessionService 交互

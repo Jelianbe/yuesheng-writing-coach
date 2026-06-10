@@ -10,7 +10,7 @@ interface ElectronAPI {
    * 调用主进程 IPC handler
    * 通道名在 preload 中经过白名单校验
    */
-  invoke(channel: string, args: unknown): Promise<unknown>;
+  invoke(channel: string, args?: unknown): Promise<unknown>;
 
   /**
    * 监听主进程事件推送

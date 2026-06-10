@@ -1,20 +1,20 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { AppShell } from './components/layout/AppShell';
-import SoloSidebar from './components/layout/SoloSidebar';
+import { SoloSidebar } from './components/layout/SoloSidebar';
 import { RightDrawer } from './components/layout/RightDrawer';
 import { AppErrorBoundary } from './components/layout/AppErrorBoundary';
 import { AppConfigGate } from './components/layout/AppConfigGate';
 import { ConfigPage } from './components/pages/ConfigPage';
-import ChatView from './components/chat/ChatView';
+import { ChatView } from './components/chat/ChatView';
 import { TrainingWorkshop } from './components/training/TrainingWorkshop';
-import DiagnosisPanel from './components/layout/DiagnosisPanel';
-import TaskPanel from './components/teaching/TaskPanel';
-import AbilityProfilePanel from './components/profile/AbilityProfilePanel';
-import GrowthPanel from './components/growth/GrowthPanel';
-import SettingsPanel from './components/settings/SettingsPanel';
-import SearchPanel from './components/search/SearchPanel';
-import ToolsPanel from './components/tools/ToolsPanel';
-import ManuscriptPanel from './components/manuscript/ManuscriptPanel';
+import { DiagnosisPanel } from './components/layout/DiagnosisPanel';
+import { TaskPanel } from './components/teaching/TaskPanel';
+import { AbilityProfilePanel } from './components/profile/AbilityProfilePanel';
+import { GrowthPanel } from './components/growth/GrowthPanel';
+import { SettingsPanel } from './components/settings/SettingsPanel';
+import { SearchPanel } from './components/search/SearchPanel';
+import { ToolsPanel } from './components/tools/ToolsPanel';
+import { ManuscriptPanel } from './components/manuscript/ManuscriptPanel';
 import { Search, ClipboardCheck, Target, TrendingUp, User, Wrench, ListChecks, BookOpen } from 'lucide-react';
 import { useDiagnosisFlow } from './hooks/useDiagnosisFlow';
 import { useAppIpcListener } from './hooks/useAppIpcListener';
@@ -24,15 +24,15 @@ import { useChatStore } from './stores/chat.store';
 import { useSessionStore } from './stores/session.store';
 import { useStudentContextStore } from './stores/student-context.store';
 import { useTrainingStore } from './stores/training.store';
-import { useDrawerStore } from './stores/drawer.store';
+import { useDrawerStore, type DrawerPanelId } from './stores/drawer.store';
 import type { ApiConfig, ConnectionTestResult, OnboardingBaseline } from './shared/types';
-import { IPC_CHANNELS } from '../shared/constants';
 
-function App(): React.ReactElement {
+
+export function App(): React.ReactElement {
   // Store state
   const { apiKey, baseUrl, modelName, temperature, attitudeLevel, isConfigured, isLoading: isConfigLoading, loadConfig, setApiKey, setBaseUrl, setModelName, setTemperature } = useConfigStore();
   const { currentDiagnosis } = useDiagStore();
-  const { messages, isLoading: isStreaming, sendMessage, setError } = useChatStore();
+  const { messages, isLoading: isStreaming, sendMessage } = useChatStore();
   const { currentSessionId, loadSessions, createSession, switchSession } = useSessionStore();
   const { errorCards, recommendations, activeTraining, history, submissionResult, evaluationResult, isLoading, error, bridgeRecommendation, startTraining, submitStep, skipTraining, updateDraft, dismissBridge, backToChat, sendToEditor } = useTrainingStore();
   const openDrawerPanel = useDrawerStore(s => s.openPanel);
@@ -55,13 +55,17 @@ function App(): React.ReactElement {
   useEffect(() => { const init = async () => { try { await loadSessions(); const st = useSessionStore.getState(); if (st.sessions.length === 0) setShowOnboarding(true); else if (!st.currentSessionId) await switchSession(st.sessions[0].id); } catch (err) { console.error('[App] init:', err); } }; init(); }, [loadSessions, switchSession]);
   useEffect(() => { useStudentContextStore.getState().load(); }, []);
 
-  // P-04: 检测新用户，自动触发引导
+  // P-04: 检测新用户，自动触发引导（仅通过 AppConfigGate 展示，不再重复触发 ChatView 内部引导）
   useEffect(() => {
     if (window.electronAPI && !currentSessionId) {
-      window.electronAPI.invoke(IPC_CHANNELS.SESSION_IS_NEW_USER)
-        .then((res: { success: boolean; data?: boolean }) => {
-          if (res.success && res.data) {
-            useChatStore.getState().startOnboarding();
+      const channel = 'session:isNewUser';
+      window.electronAPI.invoke(channel)
+        .then((res: unknown) => {
+          const r = res as { success: boolean; data?: boolean };
+          if (r.success && r.data) {
+            // 仅设置 showOnboarding 触发 AppConfigGate 全屏引导
+            // 不再调用 startOnboarding()，避免与 ChatView 内部引导重复
+            setShowOnboarding(true);
           }
         })
         .catch((err: unknown) => { console.warn('[App] isNewUser 调用失败:', err); });
@@ -81,9 +85,10 @@ function App(): React.ReactElement {
     if (currentSessionId && window.electronAPI) {
       // DB-M1: 分页加载，初始只取最近 30 条
       window.electronAPI.invoke('session:getMessagesPaged', { sessionId: currentSessionId, offset: 0, limit: 30 })
-        .then((res: { success: boolean; data?: { messages: Array<{ id: string; role: string; content: string; timestamp: number }>; hasMore: boolean } }) => {
-          if (res.success && res.data) {
-            setMessages(res.data.messages.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })));
+        .then((res: unknown) => {
+          const r = res as { success: boolean; data?: { messages: Array<{ id: string; role: string; content: string; timestamp: number }>; hasMore: boolean } };
+          if (r.success && r.data) {
+            setMessages(r.data.messages.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })));
           }
         })
         .catch((err: unknown) => { console.warn('[App] getMessagesPaged:', err); });
@@ -92,7 +97,13 @@ function App(): React.ReactElement {
 
   // Event handlers
   const handleSendMessage = useCallback(async (text: string) => { let sid = currentSessionId; if (!sid) { const s = await createSession(); if (!s) return; sid = s.id; } resetDiagnosisFlow(); sendMessage(text); }, [currentSessionId, createSession, sendMessage, resetDiagnosisFlow]);
-  const handleStop = useCallback(() => { try { void window.electronAPI?.invoke('chat:stop', {}); } catch { /* ignore */ } setError('已停止生成'); }, [setError]);
+  // FS-P0-1: 停止生成 — 当前仅做 UI 状态重置（无 AbortController 链路）
+  // TODO: 实现 AbortController 中断链：chat.handler.ts fetch → AbortSignal → preload 暴露 chat:stop
+  const handleStop = useCallback(() => {
+    const { setLoading: setLoadingStore, setError: setErrorStore } = useChatStore.getState();
+    setLoadingStore(false);
+    setErrorStore('已停止生成');
+  }, []);
   const handleSaveConfig = useCallback(async (cfg: ApiConfig) => { await setApiKey(cfg.apiKey); await setBaseUrl(cfg.baseUrl); await setModelName(cfg.modelName); await setTemperature(cfg.temperature); }, [setApiKey, setBaseUrl, setModelName, setTemperature]);
   const handleTestConnection = useCallback(async (ak: string, bu: string): Promise<ConnectionTestResult> => { try { return await window.electronAPI?.invoke('config:testConnection', { apiKey: ak, baseUrl: bu }) as ConnectionTestResult; } catch (err) { return { success: false, error: err instanceof Error ? err.message : '连接异常' }; } }, []);
   const handleOnboardingComplete = useCallback(async (baseline: OnboardingBaseline) => { setShowOnboarding(false); localStorage.setItem('onboarding_baseline', JSON.stringify(baseline)); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
@@ -121,7 +132,7 @@ function App(): React.ReactElement {
             <ConfigPage config={fullConfig} onSave={handleSaveConfig} onBack={() => setView('main')} onTestConnection={handleTestConnection} />
           </div>
         ) : (
-          <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { useDrawerStore.getState().togglePanel(t as any); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { useDrawerStore.getState().closePanel(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
+          <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { useDrawerStore.getState().togglePanel(t as DrawerPanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { useDrawerStore.getState().closePanel(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
               <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { void useTrainingStore.getState().startTraining(cid); openDrawerPanel('training'); }} onDismissBridge={dismissBridge} />
           </AppShell>
         )}
@@ -130,4 +141,4 @@ function App(): React.ReactElement {
   );
 }
 
-export default App;
+

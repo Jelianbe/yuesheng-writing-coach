@@ -54,7 +54,7 @@ const ConfigField: React.FC<{
   </div>
 );
 
-const SettingsPanel: React.FC = () => {
+export const SettingsPanel: React.FC = () => {
   const apiKey = useConfigStore(s => s.apiKey);
   const baseUrl = useConfigStore(s => s.baseUrl);
   const modelName = useConfigStore(s => s.modelName);
@@ -284,4 +284,4 @@ const SettingsPanel: React.FC = () => {
   );
 };
 
-export default SettingsPanel;
+

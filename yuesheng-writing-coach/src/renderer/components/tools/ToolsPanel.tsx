@@ -121,7 +121,7 @@ const WritingTips: React.FC = () => {
   );
 };
 
-const ToolsPanel: React.FC = () => {
+export const ToolsPanel: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <TextAnalyzer />
@@ -130,4 +130,4 @@ const ToolsPanel: React.FC = () => {
   );
 };
 
-export default ToolsPanel;
+

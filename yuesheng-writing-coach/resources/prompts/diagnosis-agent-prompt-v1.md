@@ -6,7 +6,8 @@
 
 ## 输入
 
-用户文本（小说章节/段落）
+- 用户文本（小说章节/段落）
+- lockedSyndromes（可选，当前已锁定的症候 ID 列表，如 ["P003", "P005"]）
 
 ## 输出格式（JSON）
 
@@ -25,6 +26,7 @@
       "syndromeRef": "P001"
     }
   ],
+  "lockedSyndromes": ["P003", "P005"],
   "confidence": 0.8
 }
 ```
@@ -66,6 +68,17 @@
 如果是 **narrative**，在输出 JSON 中标注 `"contentType": "narrative"`，并按后续流程完整分析。
 
 > 降级规则：如果无法确定内容类型，默认按 narrative 处理。
+
+---
+
+### 第零步A：锁定过滤
+
+如果输入中提供了 lockedSyndromes 且非空：
+- 在第二步症候检测中，**跳过** lockedSyndromes 中包含的症候
+- 不对已锁定症候重新检测或追加证据
+- 仅检测**未锁定**的症候
+
+> 设计意图：已锁定症候由主 Prompt 跨轮次追踪，诊断 Agent 只负责"新的发现"。
 
 ---
 

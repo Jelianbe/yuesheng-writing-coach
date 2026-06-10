@@ -7,6 +7,10 @@
 -- Created: 2026-06-09
 -- ============================================
 
+PRAGMA foreign_keys = OFF;
+
+DROP TABLE IF EXISTS teaching_state_p1b;
+
 CREATE TABLE IF NOT EXISTS teaching_state_p1b (
     id TEXT PRIMARY KEY,
     session_id TEXT NOT NULL UNIQUE,
@@ -48,3 +52,5 @@ ALTER TABLE teaching_state_p1b RENAME TO teaching_state;
 CREATE INDEX IF NOT EXISTS idx_teaching_state_session ON teaching_state(session_id);
 CREATE INDEX IF NOT EXISTS idx_teaching_state_phase ON teaching_state(current_phase);
 CREATE INDEX IF NOT EXISTS idx_teaching_state_focus_area ON teaching_state(focus_area);
+
+PRAGMA foreign_keys = ON;

@@ -13,15 +13,12 @@
 
 import React from 'react';
 import type { ErrorCard, TrainingRecommendation, ActiveTrainingSession, TrainingRecord, EvaluationResult } from '../../shared/types';
-import ErrorCardsSection from './ErrorCardsSection';
-import RecommendationsSection from './RecommendationsSection';
-import HistorySection from './HistorySection';
-import ActiveTrainingView from './ActiveTrainingView';
-import BehaviorDerivationTool from './BehaviorDerivationTool';
-import {
-  containerStyle,
-  loadingStyle,
-} from './training-styles';
+import { ErrorCardsSection } from './ErrorCardsSection';
+import { RecommendationsSection } from './RecommendationsSection';
+import { HistorySection } from './HistorySection';
+import { ActiveTrainingView } from './ActiveTrainingView';
+import { BehaviorDerivationTool } from './BehaviorDerivationTool';
+import sharedStyles from './TrainingShared.module.css';
 
 // ===== 类型定义 =====
 
@@ -77,8 +74,8 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   // 加载中（仅首次加载时显示）
   if (isLoading && !activeTraining) {
     return (
-      <div style={containerStyle}>
-        <div style={loadingStyle} className="animate-fade-in">
+      <div className={sharedStyles.trainingContainer}>
+        <div className={`${sharedStyles.trainingLoading} animate-fade-in`}>
           <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>加载中...</div>
         </div>
       </div>
@@ -88,8 +85,8 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   // 错误状态
   if (error && !activeTraining) {
     return (
-      <div style={containerStyle}>
-        <div style={loadingStyle} className="animate-fade-in">
+      <div className={sharedStyles.trainingContainer}>
+        <div className={`${sharedStyles.trainingLoading} animate-fade-in`}>
           <div style={{ fontSize: '0.875rem', color: '#e74c3c' }}>{error}</div>
         </div>
       </div>
@@ -117,7 +114,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
 
   // 训练工坊主面板（三区块布局）
   return (
-    <div style={containerStyle} className="animate-fade-in">
+    <div className={`${sharedStyles.trainingContainer} animate-fade-in`}>
       {/* 工坊头部 */}
       <div style={{
         display: 'flex',

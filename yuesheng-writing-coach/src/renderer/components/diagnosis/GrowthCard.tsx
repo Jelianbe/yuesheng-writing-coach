@@ -23,7 +23,7 @@ export const GrowthCard: React.FC<GrowthCardProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="border border-border rounded-[var(--radius-md)] bg-surface shadow-sm px-4 py-3 animate-fade-in">
+      <div className="border border-border rounded-[var(--radius-md)] bg-surface px-4 py-3 animate-fade-in">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-full bg-surface-secondary animate-pulse-custom" />
           <div className="h-4 bg-surface-secondary rounded-[var(--radius-sm)] flex-1 animate-pulse-custom" />
@@ -33,7 +33,7 @@ export const GrowthCard: React.FC<GrowthCardProps> = ({
   }
 
   return (
-    <div className="border border-border rounded-[var(--radius-md)] bg-surface shadow-sm animate-slide-up">
+    <div className="border border-border rounded-[var(--radius-md)] bg-surface animate-slide-up">
       <div className="flex items-start gap-3 px-4 py-3">
         <div className="w-8 h-8 rounded-full bg-accent-primary-light flex items-center justify-center flex-shrink-0">
           <TrendingUp className="w-4 h-4 text-accent-primary" />

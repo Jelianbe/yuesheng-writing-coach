@@ -5,17 +5,12 @@
 import React from 'react';
 import type { ErrorCard, TrainingRecommendation } from '../../shared/types';
 import {
-  sectionStyle,
-  sectionTitleStyle,
-  emptyStyle,
-  cardStyle,
-  startBtnStyle,
   severityStyles,
-  recCardStyle,
   MAX_QUOTE_LENGTH,
 } from './training-styles';
+import sharedStyles from './TrainingShared.module.css';
 
-const ErrorCardsSection: React.FC<{
+export const ErrorCardsSection: React.FC<{
   cards: ErrorCard[];
   recommendations: TrainingRecommendation[];
   onStartTraining: (challengeId: string) => void;
@@ -36,9 +31,9 @@ const ErrorCardsSection: React.FC<{
   };
   if (cards.length === 0) {
     return (
-      <div style={sectionStyle}>
-        <div style={sectionTitleStyle}>你的常见问题</div>
-        <div style={emptyStyle}>
+      <div className={sharedStyles.trainingSection}>
+        <div className={sharedStyles.trainingSectionTitle}>你的常见问题</div>
+        <div className={sharedStyles.trainingEmpty}>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
             暂无诊断记录。发送写作内容后，AI 会自动分析并显示在此处。
           </p>
@@ -48,18 +43,16 @@ const ErrorCardsSection: React.FC<{
   }
 
   return (
-    <div style={sectionStyle}>
-      <div style={sectionTitleStyle}>你的常见问题</div>
+    <div className={sharedStyles.trainingSection}>
+      <div className={sharedStyles.trainingSectionTitle}>你的常见问题</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {cards.map((card) => {
           const sevStyle = severityStyles[card.severity] ?? severityStyles.L1;
           return (
             <div
               key={card.syndromeId}
-              style={{
-                ...cardStyle,
-                borderLeft: `4px solid ${sevStyle.color}`,
-              }}
+              className={sharedStyles.trainingCard}
+              style={{ borderLeft: `4px solid ${sevStyle.color}` }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                 <div>
@@ -101,7 +94,7 @@ const ErrorCardsSection: React.FC<{
               {card.matchedChallengeId && (
                 <div>
                   <button
-                    style={startBtnStyle}
+                    className={sharedStyles.trainingStartBtn}
                     onClick={() => toggleExpand(card.syndromeId)}
                   >
                     {expandedCards.has(card.syndromeId) ? '收起推荐' : '相关训练'}
@@ -115,12 +108,8 @@ const ErrorCardsSection: React.FC<{
                         .map(rec => (
                           <div
                             key={rec.challengeId}
-                            style={{
-                              ...recCardStyle,
-                              border: '1px solid var(--border)',
-                              margin: 0,
-                              padding: '8px 10px',
-                            }}
+                            className={sharedStyles.trainingRecCard}
+                            style={{ margin: 0, padding: '8px 10px' }}
                           >
                             <div style={{ flex: 1 }}>
                               <div style={{ fontWeight: 500, fontSize: '0.8rem', color: 'var(--text-primary)' }}>
@@ -133,7 +122,7 @@ const ErrorCardsSection: React.FC<{
                               )}
                             </div>
                             <button
-                              style={startBtnStyle}
+                              className={sharedStyles.trainingStartBtn}
                               onClick={() => onStartTraining(rec.challengeId)}
                             >
                               开始练习
@@ -157,4 +146,4 @@ const ErrorCardsSection: React.FC<{
   );
 };
 
-export default ErrorCardsSection;
+

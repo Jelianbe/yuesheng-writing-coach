@@ -1,4 +1,6 @@
 // 诊断状态管理
+// ⚠️ 本文件 catch 块中的 console.error / console.warn 仅用于开发调试，
+//    生产环境应通过构建工具（如 terser drop_console）自动移除。
 // 负责：管理诊断数据的接收、存储和查询
 // 依赖：zustand, DiagnosisEntry 类型
 // 设计原则：

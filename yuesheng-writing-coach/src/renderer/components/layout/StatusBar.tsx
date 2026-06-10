@@ -23,7 +23,7 @@ if (typeof document !== 'undefined' && !document.getElementById(keyframesStyleId
  * - 上下文：当前作品名 | 章节名（或"未选择作品"）
  * - SOLO 模式标识
  */
-const StatusBar: React.FC = () => {
+export const StatusBar: React.FC = () => {
   const currentManuscript = useManuscriptStore(s => s.currentManuscript);
   const currentChapter = useChapterStore(s => s.currentChapter);
   const currentSessionId = useSessionStore(s => s.currentSessionId);
@@ -96,4 +96,4 @@ const StatusBar: React.FC = () => {
   );
 };
 
-export default StatusBar;
+

@@ -173,7 +173,6 @@ export function cjsToEsmFix(): Plugin {
       }
 
       const transformed = cjsToEsm(code);
-      console.log(`[cjs-to-esm-fix] 已转换 CJS → ESM: ${relativePath}`);
 
       return { code: transformed };
     },
