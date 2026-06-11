@@ -9,11 +9,13 @@
  */
 
 import { create } from 'zustand';
-import type { ParadigmATabId } from '../components/layout/TabBar';
 
 // ===== 类型 =====
 
 export type ParadigmMode = 'chat' | 'editor';
+
+/** 范式 A 中的 Tab 标识 */
+export type ParadigmATabId = 'chat' | 'training' | 'diagnosis' | 'growth' | 'tools';
 
 export type SidebarTab = 'works' | 'tasks';
 
