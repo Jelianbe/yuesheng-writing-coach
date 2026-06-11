@@ -8,15 +8,15 @@
  *   - chat.handler 只负责流程编排
  */
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
 import { ApiProxy } from '../api-proxy';
 import type { ConfigService } from '../services/config.service';
 import { SessionService } from '../services/session.service';
 import { IPC_CHANNELS, MAX_DIAGNOSIS_HISTORY } from '../../shared/constants';
 import type { AttitudeLevel, DiagnosisAnalysis, SyndromeResult, DiagnosisEntry, SeverityLevel } from '../../renderer/shared/types';
-import { apiSuccess, apiError } from '../../renderer/shared/types';
 import type { SyndromeId } from '../../shared/constants';
 import { validatePayload } from './utils/validate-payload';
+import { createHandler } from './utils/create-handler';
 import { processDiagnosisFromAI } from './diagnosis.handler';
 import { DiagnosisService } from '../services/diagnosis.service';
 import { getMemoryCapsuleService } from '../services/memory-capsule.service';
@@ -530,7 +530,7 @@ async function handleStreamResponse(
 export function registerChatHandlers(): void {
   if (!deps) throw new Error('ChatHandler deps not injected');
 
-  ipcMain.handle(IPC_CHANNELS.CHAT_SEND, async (_event, args) => {
+  createHandler(IPC_CHANNELS.CHAT_SEND, async (_event, args) => {
     const validation = validatePayload<{
       message: string;
       sessionId: string;
@@ -542,7 +542,7 @@ export function registerChatHandlers(): void {
       types: { message: 'string', sessionId: 'string' },
     });
     if (!validation.valid) {
-      return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     }
 
     if (!deps!.mainWindow) throw new Error('Main window not available');
@@ -566,33 +566,34 @@ export function registerChatHandlers(): void {
     const messages = buildMessageArray(finalPrompt, history, message);
 
     const result = await handleStreamResponse(messages, activeSessionId, diagnosisAnalysis, isNarrative);
-    return result.success ? apiSuccess({ messageId: result.messageId! }) : apiError(result.error || 'Chat send failed');
+    if (!result.success) throw new Error(result.error || 'Chat send failed');
+    return { messageId: result.messageId! };
   });
 
   // CHAT_STOP: 中断当前流式响应
-  ipcMain.handle(IPC_CHANNELS.CHAT_STOP, () => {
+  createHandler(IPC_CHANNELS.CHAT_STOP, () => {
     if (currentAbortController) {
       currentAbortController.abort();
       currentAbortController = null;
-      return apiSuccess({ stopped: true });
+      return { stopped: true };
     }
-    return apiSuccess({ stopped: false });
+    return { stopped: false };
   });
 
   // P-04 Phase 3: 引导分析（调用 AI API，带超时 + 降级）
-  ipcMain.handle(IPC_CHANNELS.ONBOARDING_ANALYZE, async (_event, args) => {
+  createHandler(IPC_CHANNELS.ONBOARDING_ANALYZE, async (_event, args) => {
     const validation = validatePayload<{ text: string }>(args, {
       required: ['text'],
       types: { text: 'string' },
     });
     if (!validation.valid) {
-      return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     }
     const text = validation.data.text?.trim() ?? '';
     if (!text) {
-      return apiSuccess({
+      return {
         summary: '没关系，你可以后面再发文字给我看。你现在最想提升哪方面？',
-      });
+      };
     }
 
     try {
@@ -627,13 +628,13 @@ export function registerChatHandlers(): void {
       if (!summary) {
         throw new Error('AI returned empty response');
       }
-      return apiSuccess({ summary });
+      return { summary };
     } catch (err) {
       console.warn('[onboarding:analyze] AI 分析失败，降级:', err);
       // 降级：返回通用但不敷衍的回复
-      return apiSuccess({
+      return {
         summary: '我看了你的这段文字，有具体的场景和对话，能看出你在认真写。写作的提升是一个持续的过程，你现在最想提升哪方面？我可以在后面的对话中给你针对性的建议。',
-      });
+      };
     }
   });
 }

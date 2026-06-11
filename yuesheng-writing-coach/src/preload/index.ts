@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   on: (channel: string, callback: (...args: unknown[]) => void): (() => void) => {
     if (!ALLOWED_EVENT_CHANNELS.includes(channel)) {
-      return Promise.reject(new Error(`Disallowed event channel: ${channel}`));
+      throw new Error(`Disallowed event channel: ${channel}`);
     }
     const handler = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => {
       callback(...args);
