@@ -316,3 +316,30 @@
 .manuscriptItem:hover .deleteBtn {
   visibility: visible;
 }
+
+/* ── 删除按钮（章节项） ── */
+
+.chapterDeleteBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: all 100ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.chapterItem:hover .chapterDeleteBtn {
+  opacity: 0.45;
+}
+
+.chapterDeleteBtn:hover {
+  opacity: 1 !important;
+  color: var(--error) !important;
+}

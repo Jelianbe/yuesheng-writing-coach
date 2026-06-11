@@ -89,7 +89,7 @@ export const SessionTabBar: React.FC<SessionTabBarProps> = React.memo(({
               cursor: 'pointer',
               color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
               border: isActive ? '1px solid var(--border)' : '1px solid transparent',
-              background: isActive ? 'white' : 'transparent',
+              background: isActive ? 'var(--bg-card)' : 'transparent',
               fontWeight: isActive ? 600 : 400,
               boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.04)' : 'none',
               transition: `all 130ms ${EASE_OUT_QUART}`,
