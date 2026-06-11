@@ -15,6 +15,7 @@ const mockDb = vi.hoisted(() => ({
   prepare: vi.fn(() => mockStmt),
   exec: vi.fn(),
   close: vi.fn(),
+  transaction: vi.fn((fn: () => void) => fn),
 }));
 
 vi.mock('better-sqlite3', () => ({
