@@ -220,6 +220,13 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                     }}
                   >
                     <span className={styles.chapterTitle}>{ch.title}</span>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleDeleteChapter(ch); }}
+                      className={styles.chapterDeleteBtn}
+                      title="删除章节"
+                    >
+                      <Trash2 size={11} strokeWidth={1.6} />
+                    </button>
                   </div>
                 );
               })
