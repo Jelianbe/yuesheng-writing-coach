@@ -64,6 +64,8 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
 
   // 右键上下文菜单
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; chapter: Chapter } | null>(null);
+  // 菜单实际显示位置（溢出修正后）
+  const [ctxMenuPos, setCtxMenuPos] = useState<{ x: number; y: number } | null>(null);
   const ctxMenuRef = useRef<HTMLDivElement>(null);
 
   // 展开状态
@@ -72,9 +74,33 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
   useEffect(() => { if (showWorkPopup) workInputRef.current?.focus(); }, [showWorkPopup]);
   useEffect(() => { if (showChapterPopup) chapterInputRef.current?.focus(); }, [showChapterPopup]);
 
-  // 右键菜单：点击外部关闭（使用 ref.contains 模式）
+  // 右键菜单：防止溢出屏幕 + 点击外部关闭
   useEffect(() => {
-    if (!ctxMenu) return;
+    if (!ctxMenu) {
+      setCtxMenuPos(null);
+      return;
+    }
+
+    // 先设置初始位置（鼠标点击处）
+    setCtxMenuPos({ x: ctxMenu.x, y: ctxMenu.y });
+
+    // 在浏览器完成布局后，测量实际尺寸，溢出则纠正
+    const rafId = requestAnimationFrame(() => {
+      if (ctxMenuRef.current) {
+        const menu = ctxMenuRef.current;
+        const rect = menu.getBoundingClientRect();
+        let x = ctxMenu.x;
+        let y = ctxMenu.y;
+        if (rect.right > window.innerWidth) {
+          x = Math.max(4, window.innerWidth - rect.width - 4);
+        }
+        if (rect.bottom > window.innerHeight) {
+          y = Math.max(4, window.innerHeight - rect.height - 4);
+        }
+        setCtxMenuPos({ x, y });
+      }
+    });
+
     const close = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (ctxMenuRef.current?.contains(target)) return;
@@ -82,7 +108,11 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
     };
     window.addEventListener('click', close);
     window.addEventListener('contextmenu', close);
-    return () => { window.removeEventListener('click', close); window.removeEventListener('contextmenu', close); };
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('click', close);
+      window.removeEventListener('contextmenu', close);
+    };
   }, [ctxMenu]);
 
   // 复制章节引用（/chapters/{id} 格式，后端按主键精确定位）
@@ -95,7 +125,9 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
   // 删除章节
   const handleDeleteChapter = useCallback(async (chapter: Chapter) => {
     setCtxMenu(null);
-    await useChapterStore.getState().deleteChapter(chapter.id);
+    if (window.confirm(`确定要删除章节「${chapter.title}」吗？此操作不可撤销。`)) {
+      await useChapterStore.getState().deleteChapter(chapter.id, chapter.manuscript_id);
+    }
   }, []);
 
   // 删除作品
@@ -336,7 +368,10 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
         <div
           ref={ctxMenuRef}
           className={styles.ctxMenu}
-          style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          style={{
+            left: ctxMenuPos?.x ?? ctxMenu.x,
+            top: ctxMenuPos?.y ?? ctxMenu.y,
+          }}
         >
           <button
             className={styles.ctxMenuItem}

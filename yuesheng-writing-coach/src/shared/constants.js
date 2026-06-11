@@ -118,6 +118,7 @@ export const IPC_CHANNELS = {
     TRAINING_DERIVE_BEHAVIOR: 'training:derive-behavior',
     // === 聊天 ===
     CHAT_SEND: 'chat:send',
+    CHAT_STOP: 'chat:stop',
     CHAT_STREAM_DATA: 'chat:stream:data',
     CHAT_STREAM_END: 'chat:stream:end',
     // === 会话管理 ===
@@ -130,6 +131,8 @@ export const IPC_CHANNELS = {
     SESSION_LIST_WITH_META: 'session:listWithMeta',
     SESSION_UPDATE_TITLE: 'session:updateTitle',
     SESSION_SEARCH_MESSAGES: 'session:searchMessages',
+    // === 新用户引导 ===
+    SESSION_IS_NEW_USER: 'session:isNewUser',
     // === 作品管理 ===
     MANUSCRIPT_LIST: 'manuscript:list',
     MANUSCRIPT_GET: 'manuscript:get',
@@ -138,5 +141,7 @@ export const IPC_CHANNELS = {
     CHAPTER_LIST: 'chapter:list',
     CHAPTER_GET: 'chapter:get',
     CHAPTER_CREATE: 'chapter:create',
+    CHAPTER_DELETE: 'chapter:delete',
     CHAPTER_UPDATE_CONTENT: 'chapter:updateContent',
+    MANUSCRIPT_DELETE: 'manuscript:delete',
 };

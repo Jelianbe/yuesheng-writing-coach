@@ -126,5 +126,7 @@ export declare const IPC_CHANNELS: {
     readonly CHAPTER_LIST: "chapter:list";
     readonly CHAPTER_GET: "chapter:get";
     readonly CHAPTER_CREATE: "chapter:create";
+    readonly CHAPTER_DELETE: "chapter:delete";
     readonly CHAPTER_UPDATE_CONTENT: "chapter:updateContent";
+    readonly MANUSCRIPT_DELETE: "manuscript:delete";
 };
