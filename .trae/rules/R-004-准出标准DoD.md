@@ -1,7 +1,7 @@
 ---
 name: "R-004-准出标准DoD"
 description: "每个阶段开始前都必须定义完成标准。没有标准，不得开发。每个阶段的 DoD 必须包含至少 3 条可验证标准，DoD 未定义或不完整时阻止阶段启动。"
-alwaysApply: true
+alwaysApply: false
 priority: "medium"
 trigger:
   - "阶段开始前"
