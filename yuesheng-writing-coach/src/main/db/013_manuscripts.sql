@@ -1,6 +1,8 @@
 -- 013_manuscripts.sql
 -- 作品与章节表
 
+BEGIN TRANSACTION;
+
 CREATE TABLE IF NOT EXISTS manuscripts (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL DEFAULT '',
@@ -26,3 +28,5 @@ CREATE TABLE IF NOT EXISTS chapters (
 
 CREATE INDEX IF NOT EXISTS idx_chapters_manuscript_id ON chapters(manuscript_id);
 CREATE INDEX IF NOT EXISTS idx_chapters_sort_order ON chapters(manuscript_id, sort_order);
+
+COMMIT;
