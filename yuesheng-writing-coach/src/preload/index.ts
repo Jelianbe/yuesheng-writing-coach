@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       // teachingState:updateSummary — 预留，renderer 未使用
       'ability:getProfile',
       'chat:send',
+      'chat:stop',
       'onboarding:analyze',
       'session:list',
       // session:listWithMeta — 预留，renderer 未使用
@@ -46,9 +47,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       // manuscript:get — renderer 未使用（仅 manuscript:list/create/update）
       'manuscript:create',
       'manuscript:update',
+      'manuscript:delete',
       'chapter:list',
       'chapter:get',
       'chapter:create',
+      'chapter:delete',
       'chapter:updateContent',
     ];
     if (!allowedChannels.includes(channel)) {
