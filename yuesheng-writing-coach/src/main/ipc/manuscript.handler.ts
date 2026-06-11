@@ -131,6 +131,44 @@ export function registerManuscriptHandlers(): void {
     }
   });
 
+  // manuscript:delete — 删除作品及其所有章节
+  ipcMain.handle(IPC_CHANNELS.MANUSCRIPT_DELETE, (_event, args) => {
+    const validation = validatePayload<{ id: string }>(args, {
+      required: ['id'],
+      types: { id: 'string' },
+    });
+    if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+    try {
+      const transaction = deps!.db.transaction(() => {
+        // 先删除该作品下所有章节
+        deps!.db.prepare('DELETE FROM chapters WHERE manuscript_id = ?').run(validation.data.id);
+        // 再删除作品本身
+        deps!.db.prepare('DELETE FROM manuscripts WHERE id = ?').run(validation.data.id);
+      });
+      transaction();
+      return apiSuccess({ deleted: true });
+    } catch (error) {
+      console.error('[ManuscriptHandler] MANUSCRIPT_DELETE Error:', error);
+      return apiError(String(error));
+    }
+  });
+
+  // chapter:delete — 删除单个章节
+  ipcMain.handle(IPC_CHANNELS.CHAPTER_DELETE, (_event, args) => {
+    const validation = validatePayload<{ id: string }>(args, {
+      required: ['id'],
+      types: { id: 'string' },
+    });
+    if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+    try {
+      deps!.db.prepare('DELETE FROM chapters WHERE id = ?').run(validation.data.id);
+      return apiSuccess({ deleted: true });
+    } catch (error) {
+      console.error('[ManuscriptHandler] CHAPTER_DELETE Error:', error);
+      return apiError(String(error));
+    }
+  });
+
   // chapter:updateContent — 更新章节正文
   ipcMain.handle(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, (_event, args: { id: string; content: string }) => {
     try {

@@ -258,3 +258,61 @@
   font-size: var(--text-xs);
   opacity: 0.6;
 }
+
+/* ── 右键上下文菜单 ── */
+
+.ctxMenu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.ctxMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-family: var(--font-body);
+}
+
+.ctxMenuItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.ctxMenuItemDanger {
+  color: var(--error);
+}
+
+.ctxMenuItemDanger:hover {
+  background: var(--error-faint, rgba(239, 68, 68, 0.1));
+}
+
+.ctxMenuDivider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--border);
+}
+
+/* ── 删除按钮（作品项） ── */
+
+.deleteBtn {
+  visibility: hidden;
+}
+
+.manuscriptItem:hover .deleteBtn {
+  visibility: visible;
+}

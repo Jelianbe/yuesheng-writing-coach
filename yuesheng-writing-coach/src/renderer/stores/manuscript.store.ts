@@ -27,6 +27,8 @@ interface ManuscriptActions {
   create: (title: string, description?: string, genre?: string) => Promise<Manuscript | null>;
   /** 更新作品信息 */
   update: (id: string, data: Partial<Pick<Manuscript, 'title' | 'description' | 'genre' | 'status'>>) => Promise<void>;
+  /** 删除作品 */
+  remove: (id: string) => Promise<boolean>;
   /** 清除错误 */
   clearError: () => void;
 }
@@ -95,6 +97,25 @@ export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((s
       }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : '更新作品异常' });
+    }
+  },
+
+  remove: async (id: string) => {
+    try {
+      const invoke = getInvoke();
+      const res = await invoke(IPC_CHANNELS.MANUSCRIPT_DELETE, { id }) as { success: boolean; error?: string };
+      if (res.success) {
+        await get().fetchList();
+        if (get().currentManuscript?.id === id) {
+          set({ currentManuscript: null });
+        }
+        return true;
+      }
+      set({ error: res.error || '删除作品失败' });
+      return false;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : '删除作品异常' });
+      return false;
     }
   },
 

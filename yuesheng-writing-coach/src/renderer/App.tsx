@@ -19,6 +19,7 @@ import { Search, ClipboardCheck, Target, TrendingUp, User, Wrench, ListChecks, B
 import { useDiagnosisFlow } from './hooks/useDiagnosisFlow';
 import { useAppIpcListener } from './hooks/useAppIpcListener';
 import { useConfigStore } from './stores/config.store';
+import { IPC_CHANNELS } from '../shared/constants';
 import { useDiagStore } from './stores/diag.store';
 import { useChatStore } from './stores/chat.store';
 import { useSessionStore } from './stores/session.store';
@@ -43,8 +44,8 @@ export function App(): React.ReactElement {
   const { editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, startEditing, cancelEditing, submitRewrite, reset: resetDiagnosisFlow } = useDiagnosisFlow(currentSessionId);
 
   // Data fetching callbacks
-  const fetchAbilityProfile = useCallback(async () => { if (currentSessionId && window.electronAPI) await window.electronAPI.invoke('ability:getProfile', { sessionId: currentSessionId }); }, [currentSessionId]);
-  const fetchGrowthTrends = useCallback(async () => { if (!currentSessionId || !window.electronAPI) return; try { await window.electronAPI.invoke('growth:getTrends', { sessionId: currentSessionId }); } catch { /* ignore */ } }, [currentSessionId]);
+  const fetchAbilityProfile = useCallback(async () => { if (currentSessionId && window.electronAPI) await window.electronAPI.invoke(IPC_CHANNELS.ABILITY_GET_PROFILE, { sessionId: currentSessionId }); }, [currentSessionId]);
+  const fetchGrowthTrends = useCallback(async () => { if (!currentSessionId || !window.electronAPI) return; try { await window.electronAPI.invoke(IPC_CHANNELS.GROWTH_GET_TRENDS, { sessionId: currentSessionId }); } catch { /* ignore */ } }, [currentSessionId]);
   const fetchGrowthSummary = useCallback(async () => { /* used by IPC listener */ }, []);
 
   // IPC event listeners
@@ -52,13 +53,13 @@ export function App(): React.ReactElement {
 
   // Init effects
   useEffect(() => { loadConfig(); }, [loadConfig]);
-  useEffect(() => { const init = async () => { try { await loadSessions(); const st = useSessionStore.getState(); if (st.sessions.length === 0) setShowOnboarding(true); else if (!st.currentSessionId) await switchSession(st.sessions[0].id); } catch (err) { console.error('[App] init:', err); } }; init(); }, [loadSessions, switchSession]);
+  useEffect(() => { const init = async () => { try { await loadSessions(); const st = useSessionStore.getState(); if (st.sessions.length === 0) setShowOnboarding(true); else if (!st.currentSessionId) await switchSession(st.sessions[0].id); } catch (err) { /* init failed */ } }; init(); }, [loadSessions, switchSession]);
   useEffect(() => { useStudentContextStore.getState().load(); }, []);
 
   // P-04: 检测新用户，自动触发引导（仅通过 AppConfigGate 展示，不再重复触发 ChatView 内部引导）
   useEffect(() => {
     if (window.electronAPI && !currentSessionId) {
-      const channel = 'session:isNewUser';
+      const channel = IPC_CHANNELS.SESSION_IS_NEW_USER;
       window.electronAPI.invoke(channel)
         .then((res: unknown) => {
           const r = res as { success: boolean; data?: boolean };
@@ -68,7 +69,7 @@ export function App(): React.ReactElement {
             setShowOnboarding(true);
           }
         })
-        .catch((err: unknown) => { console.warn('[App] isNewUser 调用失败:', err); });
+        .catch(() => { /* isNewUser failed */ });
     }
   }, [currentSessionId]);
 
@@ -84,28 +85,44 @@ export function App(): React.ReactElement {
     // 加载新会话消息
     if (currentSessionId && window.electronAPI) {
       // DB-M1: 分页加载，初始只取最近 30 条
-      window.electronAPI.invoke('session:getMessagesPaged', { sessionId: currentSessionId, offset: 0, limit: 30 })
+      window.electronAPI.invoke(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, { sessionId: currentSessionId, offset: 0, limit: 30 })
         .then((res: unknown) => {
           const r = res as { success: boolean; data?: { messages: Array<{ id: string; role: string; content: string; timestamp: number }>; hasMore: boolean } };
           if (r.success && r.data) {
             setMessages(r.data.messages.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })));
           }
         })
-        .catch((err: unknown) => { console.warn('[App] getMessagesPaged:', err); });
+        .catch(() => { /* getMessagesPaged failed */ });
     }
   }, [currentSessionId]);
 
   // Event handlers
   const handleSendMessage = useCallback(async (text: string) => { let sid = currentSessionId; if (!sid) { const s = await createSession(); if (!s) return; sid = s.id; } resetDiagnosisFlow(); sendMessage(text); }, [currentSessionId, createSession, sendMessage, resetDiagnosisFlow]);
-  // FS-P0-1: 停止生成 — 当前仅做 UI 状态重置（无 AbortController 链路）
-  // TODO: 实现 AbortController 中断链：chat.handler.ts fetch → AbortSignal → preload 暴露 chat:stop
-  const handleStop = useCallback(() => {
-    const { setLoading: setLoadingStore, setError: setErrorStore } = useChatStore.getState();
-    setLoadingStore(false);
-    setErrorStore('已停止生成');
+  // 停止生成 — 通过 IPC 中断主进程的流式请求
+  const handleStop = useCallback(async () => {
+    // 1. 先通知主进程中断 fetch
+    let stopped = false;
+    if (window.electronAPI) {
+      try {
+        const result = await window.electronAPI.invoke(IPC_CHANNELS.CHAT_STOP) as { success: boolean; data?: { stopped: boolean } };
+        stopped = result?.data?.stopped ?? false;
+      } catch { /* IPC 失败时静默 */ }
+    }
+    // 2. 只有实际中断了流，才清除本地 pending 气泡
+    if (stopped) {
+      useChatStore.getState().abortStream();
+    } else {
+      // 流已结束，仅重置加载状态
+      useChatStore.getState().setLoading(false);
+    }
   }, []);
   const handleSaveConfig = useCallback(async (cfg: ApiConfig) => { await setApiKey(cfg.apiKey); await setBaseUrl(cfg.baseUrl); await setModelName(cfg.modelName); await setTemperature(cfg.temperature); }, [setApiKey, setBaseUrl, setModelName, setTemperature]);
-  const handleTestConnection = useCallback(async (ak: string, bu: string): Promise<ConnectionTestResult> => { try { return await window.electronAPI?.invoke('config:testConnection', { apiKey: ak, baseUrl: bu }) as ConnectionTestResult; } catch (err) { return { success: false, error: err instanceof Error ? err.message : '连接异常' }; } }, []);
+  const handleTestConnection = useCallback(async (ak: string, bu: string): Promise<ConnectionTestResult> => {
+    // 先同步 apiKey/baseUrl 到 store，再走 store 的 testConnection（含完整状态管理）
+    await setApiKey(ak);
+    await setBaseUrl(bu);
+    return useConfigStore.getState().testConnection();
+  }, [setApiKey, setBaseUrl]);
   const handleOnboardingComplete = useCallback(async (baseline: OnboardingBaseline) => { setShowOnboarding(false); localStorage.setItem('onboarding_baseline', JSON.stringify(baseline)); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
   const handleOnboardingSkip = useCallback(async () => { setShowOnboarding(false); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
 
