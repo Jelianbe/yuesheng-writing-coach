@@ -32,6 +32,7 @@ import { DisputeTrackerService } from '../services/dispute-tracker.service';
 import { ReflectionGateService } from '../services/reflection-gate.service';
 import * as path from 'path';
 import * as fs from 'fs';
+import { promises as fsPromises } from 'fs';
 
 export interface ChatHandlerDeps {
   configService: ConfigService;
@@ -76,7 +77,7 @@ async function callDiagnosisAgent(
     const promptPath = path.join(__dirname, '../../resources/prompts/diagnosis-agent-prompt-v1.md');
     let diagnosisPrompt: string;
     try {
-      diagnosisPrompt = fs.readFileSync(promptPath, 'utf-8');
+      diagnosisPrompt = await fsPromises.readFile(promptPath, 'utf-8');
       // 注入技法库：替换 {{technique_pool}} 占位符
       diagnosisPrompt = injectTechniquePool(diagnosisPrompt);
     } catch {

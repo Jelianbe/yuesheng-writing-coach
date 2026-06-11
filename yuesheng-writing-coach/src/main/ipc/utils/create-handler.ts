@@ -41,8 +41,13 @@ export function createHandler<TReq = unknown, TRes = unknown>(
       const data = await handler(event, request);
       return { success: true, data };
     } catch (error) {
+      const isDev = process.env.NODE_ENV === 'development';
       const message = error instanceof Error ? error.message : String(error);
-      console.error(`[IPC] ${channel} error:`, error);
+      if (isDev) {
+        console.error(`[IPC] ${channel} error:`, error);
+      } else {
+        console.error(`[IPC] ${channel} error: ${message}`);
+      }
       return { success: false, error: message };
     }
   });
