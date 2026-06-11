@@ -1,9 +1,9 @@
 # 任务链状态（统一正本）
 
-> **最后更新**: 2026-06-09  V16.4
+> **最后更新**: 2026-06-11  V16.6
 > **系统版本**: V3.6
 > **规范依据**: [TASK-SYSTEM-DESIGN.md](TASK-SYSTEM-DESIGN.md)
-> **任务链版本**: V16.4
+> **任务链版本**: V16.6
 
 ---
 
@@ -56,7 +56,8 @@
 | ✅ 已完成 | **Phase 2.5 全部 5 项完成**（T-028 技法核心化 / T-029 症候分类 / T-030 AI 工具提取 / T-031 教育学接入 / T-032 剩余蒸馏入库）|
 | ✅ 已完成 | **C-Phase 全部 4 项完成**（P-04 Phase 1~2 / P-06 / X-01 / X-02）|
 | ✅ 已完成 | **FB240609-001 全部 8 项完成**（代码审查残留 4 项 + 定义分裂 3 项 + TabBar 清理）+ **DB-P1a/b 时间格式/主键统一**|
-| ▶️ **当前指针** | **P-04 Phase 3** AI 分析失败降级 + 边缘 case（P2）|
+| ✅ 已完成 | **FB240611-003 数据流链路整合审计**：修复 6 个 P0 断裂点（迁移文件缺失/白名单缺失/sessionId 空值/chat:stop 无 handler/onboarding 被拦截/面板不自知刷新）|
+| ▶️ **当前指针** | **P-04 Phase 3** AI 分析失败降级 + 边缘 case（P2）+ 审计遗留 P2 项（I-017~I-025）|
 
 ---
 
@@ -846,6 +847,29 @@ flowchart LR
 |----|------|------|---------|:----:|---------|
 | I-001 | TabBar 使用旧 TabIcon 未更新为 Lucide 组件 | 代码扫描 | ✅ **问题存在** — TabIcon() 返回 `<span>{name}</span>` 导致显示文字而非图标 | **✅ 已修复** | `6179865` |
 | I-002 | evidence 表重建后缺少索引 | 代码扫描（Diff 误判） | ❌ **不存在** — `018_db_p1a_time_format.sql` lines 197-200 已正确重建 4 个原始索引 | **❌ 关闭-误判** | — |
+| I-003 | AbilityProfilePanel sessionId 传空值 | 数据流审计 | ✅ **问题存在** — `invoke('ability:getProfile', { sessionId: '' })` 导致始终"暂无能力画像数据" | **✅ 已修复** | FB240611-003 |
+| I-004 | GrowthPanel sessionId 传空值 | 数据流审计 | ✅ **问题存在** — `invoke('growth:getTrends', { sessionId: '' })` 导致始终"暂无成长记录" | **✅ 已修复** | FB240611-003 |
+| I-005 | CHAT_STREAM_END 刷新结果被丢弃 | 数据流审计 | ✅ **问题存在** — `fetchAbilityProfile()` / `fetchGrowthTrends()` 调用 IPC 后未将结果写入 Store | **✅ 已修复** | FB240611-003 |
+| I-006 | 诊断合并后 TeachingState 子阶段变更未推送到前端 | 数据流审计 | ✅ **问题存在** — `processDiagnosisFromAI` 中 merger 调用后缺 `pushTeachingStateUpdate` | **✅ 已修复** | FB240611-002 |
+| I-007 | 安全词降级后无前端状态同步 | 数据流审计 | ✅ **问题存在** — `training:evaluate` 中 `downgradeSyndromeSeverity` 后未推送 | **✅ 已修复** | FB240611-002 |
+| I-008 | 切换作品时旧章节标签页未关闭 | 数据流审计 | ✅ **问题存在** — `fetchByWork` 不清空 `openFiles`/`openTabMeta` | **✅ 已修复** | FB240611-002 |
+| I-009 | 证据 ID 同一批次内冲突风险 | 数据流审计 | ✅ **问题存在** — `Date.now().toString(36)` 同一毫秒内碰撞 | **✅ 已修复** | FB240611-002 |
+| I-010 | 6 个 IPC handler 缺失 validatePayload | 数据流审计 | ✅ **问题存在** — chapter(4)+evidence(5) handler 无入参校验 | **✅ 已修复** | FB240611-002 |
+| I-011 | diag.store.loadEvidence 不检查 success:false | 数据流审计 | ✅ **问题存在** — 静默吞错误，用户无感知 | **✅ 已修复** | FB240611-002 |
+| I-012 | TeachingState store 无 TEACHING_STATE_UPDATED 自动事件订阅 | 数据流审计 | ❌ **实际已存在** — `useAppIpcListener.ts:60-65` 已注册监听器 | **❌ 关闭-误判** | — |
+| I-013 | 013_manuscripts.sql 迁移文件缺失 | 数据流审计(FB240611-003) | ✅ **问题存在** — app-initializer.ts:93 引用但文件不存在 | **✅ 已修复** | FB240611-003 |
+| I-014 | MANUSCRIPT_GET 未加入 ALLOWED_INVOKE_CHANNELS | 数据流审计(FB240611-003) | ✅ **问题存在** — 有 handler + IPC_CHANNELS 定义但不在白名单 | **✅ 已修复** | FB240611-003 |
+| I-015 | onboarding:analyze 被 preload 白名单阻挡 | 数据流审计(FB240611-003) | ✅ **问题存在** — handler 存在但白名单无条目 | **✅ 已修复** | FB240611-003 |
+| I-016 | chat:stop 有白名单但无 handler | 数据流审计(FB240611-003) | ✅ **问题存在** — 白名单有 CHAT_STOP 但 ipcMain.handle 未注册 | **✅ 已修复** | FB240611-003 |
+| I-017 | training.handler.ts 使用动态 require() | 数据流审计(FB240611-003) | ✅ **问题存在** — 第 186 行 `require('./teaching-state.handler')` | **⏳ 待修复** | — |
+| I-018 | diagnosis.handler.ts TeachingState 推送缺装饰字段 | 数据流审计(FB240611-003) | ✅ **问题存在** — 推送裸 TeachingState 而非带 phaseName 的装饰对象 | **⏳ 待修复** | — |
+| I-019 | TEACHING_STATE_UPDATED 双重监听 | 数据流审计(FB240611-003) | ✅ **问题存在** — useAppIpcListener + TeachingProgressPanel 同时监听 | **⏳ 待修复** | — |
+| I-020 | 无 profile.store.ts / growth.store.ts | 数据流审计(FB240611-003) | ✅ **问题存在** — 面板各维护本地 useState | **⏳ 待修复** | — |
+| I-021 | src/main/ipc/utils.ts 死代码 | 数据流审计(FB240611-003) | ✅ **问题存在** — 无任何文件导入 | **⏳ 待修复** | — |
+| I-022 | training:derive-behavior 命名不统一 | 数据流审计(FB240611-003) | ✅ **问题存在** — 唯一使用 kebab-case | **⏳ 待修复** | — |
+| I-023 | chapter:create/delete/manuscript:delete 类型映射缺失 | 数据流审计(FB240611-003) | ✅ **问题存在** — types-ipc.ts 缺少 3 个通道类型映射 | **⏳ 待修复** | — |
+| I-024 | WorkTreePanel 不展示 loading/error 状态 | 数据流审计(FB240611-003) | ✅ **问题存在** — 不读取 loading/error | **⏳ 待修复** | — |
+| I-025 | 缺少 chapter:update 通用通道 | 数据流审计(FB240611-003) | ✅ **问题存在** — 只有 updateContent | **⏳ 待修复** | — |
 
 ### 验证方法
 
@@ -1423,7 +1447,8 @@ P0（核心链路）                          P1（体验提升）              
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
-| **V16.4** | 2026-06-09 | 指针同步真实状态：Phase 2.5（T-028~T-032）+ T-027 标记✅完成；当前指针更新为代码审查残留修复 + 定义分裂修复；依赖图更新（Phase 2.5 移入绿色，新增 Phase 3 已完成）|
+| **V16.6** | 2026-06-11 | FB240611-003 整合审计修复：013_manuscripts.sql 创建、MANUSCRIPT_GET 白名单补充、AbilityProfilePanel/GrowthPanel sessionId 从 useSessionStore 获取、CHAT_STOP handler 注册、onboarding:analyze 白名单补充；App.tsx/useAppIpcListener 无用 IPC 回调清理；新增 13 个审计 Issue(I-013~I-025) |
+| **V16.5** | 2026-06-09 | FB240611-002 数据流审计：TeachingState 推送修复、validatePayload 补充、证据 ID 冲突修复、diag.store 错误处理 |
 | **V16.3** | 2026-06-09 | V2 最终收尾：V2-007 IPC 统一 + V2-008/009~015 审计确认 + V2-016 推荐引擎确认 + V2-023 清理 + 关卡审查全部完成 |
 | **V16.2** | 2026-06-09 | A→B→C 三轮执行：DB-P1c CHECK + P2c+M4 FTS5 + P-04 Phase 1~2 + C 测试修复 |
 | **V16.1** | 2026-06-09 | 任务链结构性重构：目录导航 + §四压缩 + 统一待执行总表 + ARCHIVE 版本修复 |

@@ -63,7 +63,7 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
 
   // Actions
   fetchByWork: async (manuscriptId: string) => {
-    set({ loading: true, error: null });
+    set({ loading: true, error: null, openFiles: [], openTabMeta: {} });
     try {
       const invoke = getInvoke();
       const res = await invoke(IPC_CHANNELS.CHAPTER_LIST, { manuscriptId }) as { success: boolean; data?: Chapter[]; error?: string };

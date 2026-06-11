@@ -181,6 +181,13 @@ export function registerTrainingHandlers(): void {
         if (state) {
           const { activeProblems } = downgradeSyndromeSeverity(state, validation.data.syndromeId, result.score);
           teachingStateStore.update(validation.data.sessionId, { activeProblems });
+          // 推送教学状态更新到前端
+          try {
+            const { pushTeachingStateUpdate } = require('./teaching-state.handler');
+            pushTeachingStateUpdate(validation.data.sessionId);
+          } catch (e) {
+            console.warn('[training:evaluate] failed to push TeachingState update:', e);
+          }
         }
       } catch (e) {
         console.warn('[training:evaluate] severity downgrade failed:', e);

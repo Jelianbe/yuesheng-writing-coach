@@ -89,6 +89,11 @@ export const useDiagStore = create<DiagState>((set, get) => ({
         sessionId,
       }) as { success: boolean; data?: EvidenceRecord[]; error?: string };
 
+      if (!result.success) {
+        console.warn('[DiagStore] loadEvidence failed:', result.error || 'Unknown error');
+        return [];
+      }
+
       const records = result.data ?? [];
       set((state) => ({
         evidenceMap: { ...state.evidenceMap, [syndromeId]: records },

@@ -92,9 +92,11 @@ export function registerManuscriptHandlers(): void {
   });
 
   // chapter:list — 获取某作品的所有章节
-  ipcMain.handle(IPC_CHANNELS.CHAPTER_LIST, (_event, args: { manuscriptId: string }) => {
+  ipcMain.handle(IPC_CHANNELS.CHAPTER_LIST, (_event, args) => {
     try {
-      const rows = deps!.db.prepare('SELECT * FROM chapters WHERE manuscript_id = ? ORDER BY sort_order ASC').all(args.manuscriptId);
+      const validation = validatePayload<{ manuscriptId: string }>(args, { required: ['manuscriptId'], types: { manuscriptId: 'string' } });
+      if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+      const rows = deps!.db.prepare('SELECT * FROM chapters WHERE manuscript_id = ? ORDER BY sort_order ASC').all(validation.data.manuscriptId);
       return apiSuccess(rows);
     } catch (error) {
       console.error('[ManuscriptHandler] CHAPTER_LIST Error:', error);
@@ -103,9 +105,11 @@ export function registerManuscriptHandlers(): void {
   });
 
   // chapter:get — 获取单个章节（含内容）
-  ipcMain.handle(IPC_CHANNELS.CHAPTER_GET, (_event, args: { id: string }) => {
+  ipcMain.handle(IPC_CHANNELS.CHAPTER_GET, (_event, args) => {
     try {
-      const row = deps!.db.prepare('SELECT * FROM chapters WHERE id = ?').get(args.id);
+      const validation = validatePayload<{ id: string }>(args, { required: ['id'], types: { id: 'string' } });
+      if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+      const row = deps!.db.prepare('SELECT * FROM chapters WHERE id = ?').get(validation.data.id);
       return apiSuccess(row || null);
     } catch (error) {
       console.error('[ManuscriptHandler] CHAPTER_GET Error:', error);
@@ -114,15 +118,17 @@ export function registerManuscriptHandlers(): void {
   });
 
   // chapter:create — 创建新章节
-  ipcMain.handle(IPC_CHANNELS.CHAPTER_CREATE, (_event, args: { manuscriptId: string; title: string }) => {
+  ipcMain.handle(IPC_CHANNELS.CHAPTER_CREATE, (_event, args) => {
     try {
+      const validation = validatePayload<{ manuscriptId: string; title: string }>(args, { required: ['manuscriptId', 'title'], types: { manuscriptId: 'string', title: 'string' } });
+      if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
       const id = crypto.randomUUID();
       const now = Math.floor(Date.now() / 1000);
-      const maxSort = deps!.db.prepare('SELECT MAX(sort_order) as max FROM chapters WHERE manuscript_id = ?').get(args.manuscriptId) as { max: number | null } | undefined;
+      const maxSort = deps!.db.prepare('SELECT MAX(sort_order) as max FROM chapters WHERE manuscript_id = ?').get(validation.data.manuscriptId) as { max: number | null } | undefined;
       const sortOrder = (maxSort?.max ?? -1) + 1;
       deps!.db.prepare(
         'INSERT INTO chapters (id, manuscript_id, title, content, word_count, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-      ).run(id, args.manuscriptId, args.title, '', 0, sortOrder, now, now);
+      ).run(id, validation.data.manuscriptId, validation.data.title, '', 0, sortOrder, now, now);
       const row = deps!.db.prepare('SELECT * FROM chapters WHERE id = ?').get(id);
       return apiSuccess(row);
     } catch (error) {
@@ -167,12 +173,14 @@ export function registerManuscriptHandlers(): void {
   });
 
   // chapter:updateContent — 更新章节正文
-  ipcMain.handle(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, (_event, args: { id: string; content: string }) => {
+  ipcMain.handle(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, (_event, args) => {
     try {
-      const wordCount = args.content.replace(/[\s\n\r]+/g, '').length;
+      const validation = validatePayload<{ id: string; content: string }>(args, { required: ['id', 'content'], types: { id: 'string', content: 'string' } });
+      if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
+      const wordCount = validation.data.content.replace(/[\s\n\r]+/g, '').length;
       const now = Math.floor(Date.now() / 1000);
       deps!.db.prepare('UPDATE chapters SET content = ?, word_count = ?, updated_at = ? WHERE id = ?')
-        .run(args.content, wordCount, now, args.id);
+        .run(validation.data.content, wordCount, now, validation.data.id);
       return apiSuccess({ wordCount });
     } catch (error) {
       console.error('[ManuscriptHandler] CHAPTER_UPDATE_CONTENT Error:', error);

@@ -54,6 +54,7 @@ export function initChatHandlers(d: ChatHandlerDeps): void {
 }
 
 let _apiProxy: ApiProxy | null = null;
+let currentAbortController: AbortController | null = null;
 
 export function getApiProxy(): ApiProxy {
   if (!_apiProxy) {
@@ -472,6 +473,10 @@ async function handleStreamResponse(
   const messageId = generateId();
   let fullResponse = '';
 
+  // 创建新的 AbortController 用于 CHAT_STOP
+  currentAbortController?.abort(); // 取消上一次残留
+  currentAbortController = new AbortController();
+
   try {
     if (diagnosisAnalysis && isNarrative) {
       deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
@@ -480,13 +485,16 @@ async function handleStreamResponse(
       });
     }
 
-    for await (const chunk of proxy.chatStream(messages)) {
+    for await (const chunk of proxy.chatStream(messages, currentAbortController.signal)) {
       fullResponse += chunk;
       deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
         sessionId: activeSessionId,
         chunk,
       });
     }
+
+    // 正常完成，清除 abort controller
+    currentAbortController = null;
 
     deps!.sessionService.saveMessage(activeSessionId, 'assistant', fullResponse);
     deps!.sessionService.autoGenerateTitle(activeSessionId);
@@ -560,8 +568,18 @@ export function registerChatHandlers(): void {
     return result.success ? apiSuccess({ messageId: result.messageId! }) : apiError(result.error || 'Chat send failed');
   });
 
+  // CHAT_STOP: 中断当前流式响应
+  ipcMain.handle(IPC_CHANNELS.CHAT_STOP, () => {
+    if (currentAbortController) {
+      currentAbortController.abort();
+      currentAbortController = null;
+      return apiSuccess({ stopped: true });
+    }
+    return apiSuccess({ stopped: false });
+  });
+
   // P-04 Phase 3: 引导分析（调用 AI API，带超时 + 降级）
-  ipcMain.handle('onboarding:analyze', async (_event, args) => {
+  ipcMain.handle(IPC_CHANNELS.ONBOARDING_ANALYZE, async (_event, args) => {
     const validation = validatePayload<{ text: string }>(args, {
       required: ['text'],
       types: { text: 'string' },
