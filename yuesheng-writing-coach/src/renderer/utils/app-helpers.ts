@@ -5,10 +5,13 @@
  */
 
 import type { AttitudeLevel, TeachingState, DiagnosisEntry } from '../shared/types';
-import type { RightPanelProps } from '../components/panels/RightPanel';
 import { diagnosisToUserFacing } from '../../shared/diagnosis-translations';
 
 // ===== 右侧面板辅助 =====
+
+interface StepsItem { id: string; title: string; desc: string; status: 'completed' | 'active' | 'pending'; }
+interface DiagnoseItem { id: string; name: string; description: string; severity: 'high' | 'mid' | 'low'; }
+interface GrowthItem { name: string; value: string; trend: 'improving' | 'stable'; percent: number; desc: string; }
 
 export function getPanelSubphasesForPhase(phase: string): string[] {
   switch (phase) {
@@ -26,7 +29,7 @@ export function getPanelSubphasesForPhase(phase: string): string[] {
 export function buildRightPanelSteps(
   teachingState: TeachingState | null,
   subphaseNameMap: Record<string, string>,
-): RightPanelProps['steps'] {
+): StepsItem[] {
   if (!teachingState) return [];
   const subphases = getPanelSubphasesForPhase(teachingState.currentPhase);
   const currentIdx = subphases.indexOf(teachingState.currentSubphase);
@@ -55,7 +58,7 @@ export function buildRightPanelNextStep(
 
 export function buildRightPanelDiagnoses(
   currentDiagnosis: DiagnosisEntry | null,
-): RightPanelProps['diagnoses'] {
+): DiagnoseItem[] {
   if (!currentDiagnosis?.syndromes?.length) return [];
   return currentDiagnosis.syndromes.map((s) => {
     const translated = diagnosisToUserFacing(s.id, s.severity);
@@ -106,7 +109,7 @@ export interface GrowthTrendItem {
 export function buildGrowthItems(
   trends: GrowthTrendItem[],
   maxDisplay: number,
-): RightPanelProps['growthItems'] {
+): GrowthItem[] {
   if (!trends || trends.length === 0) return [];
   return trends.slice(0, maxDisplay).map((t) => ({
     name: t.name,
