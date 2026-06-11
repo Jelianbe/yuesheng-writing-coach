@@ -139,13 +139,10 @@ export function registerManuscriptHandlers(): void {
     });
     if (!validation.valid) return apiError(`INVALID_PAYLOAD: ${validation.error.message}`);
     try {
-      const transaction = deps!.db.transaction(() => {
-        // 先删除该作品下所有章节
+      deps!.db.transaction(() => {
         deps!.db.prepare('DELETE FROM chapters WHERE manuscript_id = ?').run(validation.data.id);
-        // 再删除作品本身
         deps!.db.prepare('DELETE FROM manuscripts WHERE id = ?').run(validation.data.id);
-      });
-      transaction();
+      })();
       return apiSuccess({ deleted: true });
     } catch (error) {
       console.error('[ManuscriptHandler] MANUSCRIPT_DELETE Error:', error);

@@ -26,6 +26,10 @@ interface ChatState {
   clearMessages: () => void;
   setMessages: (messages: ChatMessage[]) => void;
 
+  // P0-1: chat:stop — 中断流式响应
+  streamAborted: boolean;
+  abortStream: () => void;
+
   // P-04: 新用户引导 actions
   /** P-04 新增 actions */
   resumeOnboarding: () => void;
@@ -109,6 +113,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   error: null,
   onboardingActive: false,
   onboardingStep: 0,
+  streamAborted: false,
 
   addMessage: (msg: ChatMessage) => {
     set((state) => ({ messages: [...state.messages, msg] }));
@@ -133,6 +138,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
   setError: (error: string | null) => set({ error }),
+  abortStream: () => set({ streamAborted: true, isLoading: false }),
 
   getHistory: () => {
     const msgs = get().messages.filter((m) => m.role === 'user' || m.role === 'assistant');

@@ -39,6 +39,7 @@ export const DEFAULT_TOOLS: ToolItem[] = [
 /** toolId → SessionType 映射 */
 export const TOOL_TO_SESSION_TYPE: Record<string, PanelSessionType> = {
   works: 'edit',
+  tasks: 'tasks',
   training: 'training',
   diagnosis: 'diagnosis',
   growth: 'growth',
@@ -51,6 +52,7 @@ export const TOOL_TO_SESSION_TYPE: Record<string, PanelSessionType> = {
 /** SessionType → toolId 反向映射（用于标签切换时同步 activePanel） */
 export const SESSION_TYPE_TO_TOOL_ID: Record<PanelSessionType, string> = {
   edit: 'works',
+  tasks: 'tasks',
   training: 'training',
   diagnosis: 'diagnosis',
   growth: 'growth',
@@ -62,7 +64,8 @@ export const SESSION_TYPE_TO_TOOL_ID: Record<PanelSessionType, string> = {
 
 /** SessionType → 标签默认标题 */
 export const SESSION_DEFAULT_TITLE: Record<PanelSessionType, string> = {
-  edit: '编辑',
+  edit: '作品',
+  tasks: '教学任务',
   training: '训练',
   diagnosis: '诊断',
   growth: '成长记录',
@@ -75,6 +78,7 @@ export const SESSION_DEFAULT_TITLE: Record<PanelSessionType, string> = {
 /** SessionType → 标签图标（Lucide SVG，禁止 emoji） */
 export const SESSION_LUCIDE_ICON: Record<PanelSessionType, LucideIcon> = {
   edit: FileText,
+  tasks: Target,
   training: Target,
   diagnosis: ClipboardCheck,
   growth: TrendingUp,

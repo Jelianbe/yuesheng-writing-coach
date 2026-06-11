@@ -25,7 +25,7 @@ import { useChatStore } from './stores/chat.store';
 import { useSessionStore } from './stores/session.store';
 import { useStudentContextStore } from './stores/student-context.store';
 import { useTrainingStore } from './stores/training.store';
-import { useDrawerStore, type DrawerPanelId } from './stores/drawer.store';
+import { rightPanelActions } from './stores/right-panel.actions';
 import type { ApiConfig, ConnectionTestResult, OnboardingBaseline } from './shared/types';
 
 
@@ -36,7 +36,7 @@ export function App(): React.ReactElement {
   const { messages, isLoading: isStreaming, sendMessage } = useChatStore();
   const { currentSessionId, loadSessions, createSession, switchSession } = useSessionStore();
   const { errorCards, recommendations, activeTraining, history, submissionResult, evaluationResult, isLoading, error, bridgeRecommendation, startTraining, submitStep, skipTraining, updateDraft, dismissBridge, backToChat, sendToEditor } = useTrainingStore();
-  const openDrawerPanel = useDrawerStore(s => s.openPanel);
+  // X-01 协议：通过 rightPanelActions 统一管理，不再直接调用 drawStore
 
   // Local state & hooks
   const [view, setView] = useState<'main' | 'config'>('main');
@@ -149,8 +149,8 @@ export function App(): React.ReactElement {
             <ConfigPage config={fullConfig} onSave={handleSaveConfig} onBack={() => setView('main')} onTestConnection={handleTestConnection} />
           </div>
         ) : (
-          <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { useDrawerStore.getState().togglePanel(t as DrawerPanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { useDrawerStore.getState().closePanel(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
-              <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { void useTrainingStore.getState().startTraining(cid); openDrawerPanel('training'); }} onDismissBridge={dismissBridge} />
+          <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelActions.togglePanel(t); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { rightPanelActions.closePanel(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
+              <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { void rightPanelActions.openTraining(cid); void useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
           </AppShell>
         )}
       </AppConfigGate>

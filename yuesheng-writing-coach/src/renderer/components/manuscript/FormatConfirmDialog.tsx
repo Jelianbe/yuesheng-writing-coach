@@ -1,7 +1,4 @@
 import React from 'react';
-import { useEditorStore } from '../../stores/editor.store';
-import { Z_INDEX } from '../layout/layout.constants';
-import styles from './ManuscriptPanel.module.css';
 
 interface FormatConfirmDialogProps {
   open: boolean;
@@ -9,50 +6,84 @@ interface FormatConfirmDialogProps {
   onCancel: () => void;
 }
 
-export const FormatConfirmDialog: React.FC<FormatConfirmDialogProps> = ({ open, onConfirm, onCancel }) => {
-  const formatConfig = useEditorStore(s => s.format);
-
+export const FormatConfirmDialog: React.FC<FormatConfirmDialogProps> = ({
+  open,
+  onConfirm,
+  onCancel,
+}) => {
   if (!open) return null;
 
   return (
     <div
-      className={styles.dialogOverlay}
-      style={{ zIndex: Z_INDEX.formatConfirm }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.4)',
+      }}
       onClick={onCancel}
     >
       <div
-        onClick={e => e.stopPropagation()}
-        className={styles.dialogCard}
+        style={{
+          background: 'var(--bg-primary, #fff)',
+          borderRadius: 12,
+          padding: 28,
+          minWidth: 320,
+          maxWidth: 420,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+        }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className={styles.dialogTitle}>
+        <h3
+          style={{
+            margin: '0 0 12px 0',
+            fontSize: 16,
+            fontWeight: 600,
+            color: 'var(--text-primary, #333)',
+          }}
+        >
           确认自动排版
-        </div>
-        <div className={styles.dialogDesc}>
-          将对全文执行以下操作：
-          {formatConfig.firstLineIndent > 0 && (
-            <div className={styles.detailIndent}>
-              · 首行缩进 {formatConfig.firstLineIndent} 格全角空格
-            </div>
-          )}
-          {formatConfig.paragraphSpacing && (
-            <div className={styles.detailIndent}>· 段落间插入空行</div>
-          )}
-          {!formatConfig.firstLineIndent && !formatConfig.paragraphSpacing && (
-            <div className={styles.detailEmptyHint}>
-              （当前无缩进和间距设置，操作不会产生可见变化）
-            </div>
-          )}
-        </div>
-        <div className={styles.dialogActions}>
+        </h3>
+        <p
+          style={{
+            margin: '0 0 24px 0',
+            fontSize: 13,
+            color: 'var(--text-secondary, #666)',
+            lineHeight: 1.6,
+          }}
+        >
+          自动排版将调整文稿的缩进和间距格式。此操作可撤销，是否继续？
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
           <button
             onClick={onCancel}
-            className={styles.btnSecondary}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 6,
+              border: '1px solid var(--border, #ddd)',
+              background: 'var(--bg-primary, #fff)',
+              color: 'var(--text-primary, #333)',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
           >
             取消
           </button>
           <button
             onClick={onConfirm}
-            className={styles.btnPrimary}
+            style={{
+              padding: '8px 20px',
+              borderRadius: 6,
+              border: 'none',
+              background: 'var(--accent, #3b82f6)',
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
           >
             确认排版
           </button>

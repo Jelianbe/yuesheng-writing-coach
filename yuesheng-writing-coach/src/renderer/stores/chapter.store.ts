@@ -46,7 +46,7 @@ interface ChapterActions {
   /** 创建新章节 */
   createChapter: (manuscriptId: string, title: string) => Promise<Chapter | null>;
   /** 删除章节 */
-  deleteChapter: (id: string) => Promise<boolean>;
+  deleteChapter: (id: string, manuscriptId: string) => Promise<boolean>;
   /** 清除错误 */
   clearError: () => void;
 }
@@ -179,19 +179,13 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
     }
   },
 
-  deleteChapter: async (id: string) => {
+  deleteChapter: async (id: string, manuscriptId: string) => {
     try {
       const invoke = getInvoke();
       const res = await invoke(IPC_CHANNELS.CHAPTER_DELETE, { id }) as { success: boolean; error?: string };
       if (res.success) {
-        const { currentChapter } = get();
-        // 刷新当前作品的章节列表
-        const mid = currentChapter?.manuscript_id;
-        if (mid) {
-          await get().fetchByWork(mid);
-        }
-        // 如果删除的是当前章节，清除选中
-        if (currentChapter?.id === id) {
+        await get().fetchByWork(manuscriptId);
+        if (get().currentChapter?.id === id) {
           set({ currentChapter: null });
         }
         return true;

@@ -1,12 +1,79 @@
-import type { EditorTheme } from '../../stores/editor.store';
+export interface ThemePalette {
+  bg: string;
+  text: string;
+  border: string;
+  toolbarBg: string;
+  statusBarBg: string;
+  caret: string;
+}
 
-/**
- * 字体层级系统（4 档，每级差 ≥2px，解决扁平化问题）
- * - DISPLAY: 标题/主标题（14px）
- * - BODY:    正文/标签名（13px）
- * - CAPTION: 辅助说明/提示（11px）
- * - MICRO:   状态栏/微型标注（10px）
- */
+export const THEME_PALETTES: Record<string, ThemePalette> = {
+  'warm-paper': {
+    bg: '#f5e6c8',
+    text: '#3e2c1a',
+    border: '#c9a96e',
+    toolbarBg: '#ede0c8',
+    statusBarBg: '#e6d5b8',
+    caret: '#8b5e3c',
+  },
+  'cool-slate': {
+    bg: '#e8edf2',
+    text: '#1e2a3a',
+    border: '#8a9bb5',
+    toolbarBg: '#dce3ec',
+    statusBarBg: '#d0d9e4',
+    caret: '#3a5a8c',
+  },
+  'dark-charcoal': {
+    bg: '#2a2a2e',
+    text: '#d4d4dc',
+    border: '#4a4a50',
+    toolbarBg: '#222226',
+    statusBarBg: '#1a1a1e',
+    caret: '#e0e0e0',
+  },
+  'cream-ivory': {
+    bg: '#faf8f0',
+    text: '#3a3028',
+    border: '#d4c8a8',
+    toolbarBg: '#f2efe4',
+    statusBarBg: '#ece8da',
+    caret: '#7a6a50',
+  },
+  'sepia-tone': {
+    bg: '#f2e3c6',
+    text: '#4a3728',
+    border: '#b8956a',
+    toolbarBg: '#e8d8b8',
+    statusBarBg: '#e0cea8',
+    caret: '#8b5e3c',
+  },
+  'forest-mist': {
+    bg: '#e6efe0',
+    text: '#1e2e1a',
+    border: '#8aaa7a',
+    toolbarBg: '#d8e4ce',
+    statusBarBg: '#cadebc',
+    caret: '#3a6a2a',
+  },
+  'ocean-breeze': {
+    bg: '#dceaf0',
+    text: '#1a2e3a',
+    border: '#6a9ab5',
+    toolbarBg: '#cedee8',
+    statusBarBg: '#bcd2de',
+    caret: '#2a6a8c',
+  },
+  'custom': {
+    bg: '#ffffff',
+    text: '#000000',
+    border: '#cccccc',
+    toolbarBg: '#f5f5f5',
+    statusBarBg: '#e8e8e8',
+    caret: '#000000',
+  },
+};
+
 export const FONT = {
   display: '14px',
   body: '13px',
@@ -14,79 +81,19 @@ export const FONT = {
   micro: '10px',
 } as const;
 
-/** 各主题的完整配色方案 */
-export const THEME_PALETTES: Record<EditorTheme, { bg: string; text: string; border: string; toolbarBg: string; statusBarBg: string; caret: string }> = {
-  paper: {
-    bg: '#FEFCF8',
-    text: '#2C2416',
-    border: '#EDE7DD',
-    toolbarBg: '#FAF7F2',
-    statusBarBg: '#F8F4EE',
-    caret: '#C4883A',
-  },
-  sepia: {
-    bg: '#F5ECD7',
-    text: '#3E3224',
-    border: '#E0D5C0',
-    toolbarBg: '#F0E6D0',
-    statusBarBg: '#EBDFC8',
-    caret: '#B07830',
-  },
-  dark: {
-    bg: '#1A1816',
-    text: '#D4CCC2',
-    border: '#2E2A26',
-    toolbarBg: '#201E1B',
-    statusBarBg: '#1C1A18',
-    caret: '#D4A56A',
-  },
-  custom: {
-    bg: '#FEFCF8',
-    text: '#2C2416',
-    border: '#EDE7DD',
-    toolbarBg: '#FAF7F2',
-    statusBarBg: '#F8F4EE',
-    caret: '#C4883A',
-  },
-};
+export function applyAutoFormat(text: string, opts: { indent: number; spacing: boolean }): string {
+  const paragraphs = text.split(/\n\s*\n/);
 
-/**
- * 对文本执行自动排版：
- * 0. 清理已有全角空格缩进（防止重复排版导致累积）
- * 1. 合并连续空行为段落分隔符
- * 2. 每个段落首行插入指定数量的全角空格缩进
- * 3. 段落间按配置决定是否加空行
- */
-export function applyAutoFormat(text: string, config: { indent: number; spacing: boolean }): string {
-  if (!text.trim()) return text;
-
-  const cleaned = text.replace(/^\u3000+/gm, '');
-  const rawLines = cleaned.split('\n');
-  const paragraphs: string[] = [];
-  let currentParagraph: string[] = [];
-
-  for (const line of rawLines) {
-    if (line.trim() === '') {
-      if (currentParagraph.length > 0) {
-        paragraphs.push(currentParagraph.join('\n'));
-        currentParagraph = [];
-      }
-    } else {
-      currentParagraph.push(line);
+  const formatted = paragraphs.map((p) => {
+    const trimmed = p.trim();
+    if (!trimmed) return '';
+    let result = trimmed;
+    if (opts.indent > 0) {
+      result = ' '.repeat(opts.indent) + result;
     }
-  }
-  if (currentParagraph.length > 0) {
-    paragraphs.push(currentParagraph.join('\n'));
-  }
+    return result;
+  });
 
-  const indentStr = '\u3000'.repeat(config.indent);
-
-  return paragraphs.map((para) => {
-    if (config.indent > 0) {
-      const lines = para.split('\n');
-      lines[0] = indentStr + lines[0];
-      return lines.join('\n');
-    }
-    return para;
-  }).join(config.spacing ? '\n\n' : '\n');
+  const separator = opts.spacing ? '\n\n\n' : '\n\n';
+  return formatted.filter(Boolean).join(separator);
 }

@@ -1,36 +1,49 @@
-import React from 'react';
-import styles from './ManuscriptPanel.module.css';
+import React, { useState } from 'react';
 
 interface ToolbarBtnProps {
-  children: React.ReactNode;
   onClick: () => void;
-  title?: string;
+  title: string;
   disabled?: boolean;
-  palette: { text: string };
+  palette: { text: string; border: string };
+  children: React.ReactNode;
 }
 
-export const ToolbarBtn: React.FC<ToolbarBtnProps> = ({ children, onClick, title, disabled, palette }) => (
-  <button
-    onClick={disabled ? undefined : onClick}
-    title={title}
-    className={`${styles.toolbarBtn}${disabled ? ` ${styles.toolbarBtnDisabled}` : ''}`}
-    style={{
-      color: disabled ? `${palette.text}22` : palette.text,
-      opacity: disabled ? 0.3 : 0.7,
-    }}
-    onMouseEnter={e => {
-      if (!disabled) {
-        e.currentTarget.style.background = `${palette.text}0a`;
-        e.currentTarget.style.opacity = '1';
-      }
-    }}
-    onMouseLeave={e => {
-      if (!disabled) {
-        e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.opacity = '0.7';
-      }
-    }}
-  >
-    {children}
-  </button>
-);
+export const ToolbarBtn: React.FC<ToolbarBtnProps> = ({
+  onClick,
+  title,
+  disabled = false,
+  palette,
+  children,
+}) => {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 30,
+        height: 30,
+        border: `1px solid ${hovered ? palette.text : 'transparent'}`,
+        borderRadius: 6,
+        background: hovered ? 'var(--bg-hover, rgba(0,0,0,0.05))' : 'transparent',
+        color: palette.text,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.35 : 1,
+        fontSize: 14,
+        lineHeight: 1,
+        transition: 'all 0.15s ease',
+        outline: 'none',
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+};
