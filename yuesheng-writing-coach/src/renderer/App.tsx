@@ -43,13 +43,11 @@ export function App(): React.ReactElement {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, startEditing, cancelEditing, submitRewrite, reset: resetDiagnosisFlow } = useDiagnosisFlow(currentSessionId);
 
-  // Data fetching callbacks
-  const fetchAbilityProfile = useCallback(async () => { if (currentSessionId && window.electronAPI) await window.electronAPI.invoke(IPC_CHANNELS.ABILITY_GET_PROFILE, { sessionId: currentSessionId }); }, [currentSessionId]);
-  const fetchGrowthTrends = useCallback(async () => { if (!currentSessionId || !window.electronAPI) return; try { await window.electronAPI.invoke(IPC_CHANNELS.GROWTH_GET_TRENDS, { sessionId: currentSessionId }); } catch { /* ignore */ } }, [currentSessionId]);
+  // Data fetching callbacks — panels now fetch independently via useSessionStore
   const fetchGrowthSummary = useCallback(async () => { /* used by IPC listener */ }, []);
 
   // IPC event listeners
-  useAppIpcListener(fetchGrowthSummary, fetchAbilityProfile, fetchGrowthTrends);
+  useAppIpcListener(fetchGrowthSummary);
 
   // Init effects
   useEffect(() => { loadConfig(); }, [loadConfig]);

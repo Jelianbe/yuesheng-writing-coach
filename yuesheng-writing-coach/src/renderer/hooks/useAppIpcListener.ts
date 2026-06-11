@@ -21,8 +21,6 @@ import type { TeachingState } from '../shared/types';
  */
 export function useAppIpcListener(
   fetchGrowthSummary: () => void,
-  fetchAbilityProfile: () => void,
-  fetchGrowthTrends: () => void,
 ): void {
   useEffect(() => {
     if (!window.electronAPI) return;
@@ -53,8 +51,8 @@ export function useAppIpcListener(
           useStudentContextStore.getState().updateFromInteraction('partial');
         }
         fetchGrowthSummary();
-        fetchAbilityProfile();
-        fetchGrowthTrends();
+        // 面板组件（AbilityProfilePanel / GrowthPanel）通过 useSessionStore 自动获取 sessionId
+        // 组件重新挂载时（如切换标签后重新打开面板）会自动刷新数据
       }),
 
       window.electronAPI.on(IPC_CHANNELS.TEACHING_STATE_UPDATED, (_data: unknown) => {
@@ -66,5 +64,5 @@ export function useAppIpcListener(
     ];
 
     return () => { cleanups.forEach((fn) => fn()); };
-  }, [fetchGrowthSummary, fetchAbilityProfile, fetchGrowthTrends]);
+  }, [fetchGrowthSummary]);
 }

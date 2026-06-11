@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { getInvoke } from '../../utils/ipc';
+import { useSessionStore } from '../../stores/session.store';
 
 interface SyndromeTrendData {
   name: string;
@@ -86,20 +87,22 @@ export const GrowthPanel: React.FC = () => {
   const [trends, setTrends] = useState<SyndromeTrendData[]>([]);
   const [summary, setSummary] = useState({ masteredCount: 0, improvingCount: 0, stableCount: 0, needsAttentionCount: 0 });
   const [loading, setLoading] = useState(true);
+  const sessionId = useSessionStore(s => s.currentSessionId);
 
   useEffect(() => {
+    if (!sessionId) return;
     let mounted = true;
     const fetchData = async () => {
+      setLoading(true);
       try {
         const invoke = getInvoke();
-        const result = await invoke('growth:getTrends', { sessionId: '' }) as {
+        const result = await invoke('growth:getTrends', { sessionId }) as {
           success: boolean;
           data?: { trends: SyndromeTrendData[]; masteredCount: number; improvingCount: number; stableCount?: number; needsAttentionCount: number };
         };
         if (mounted && result.success && result.data) {
           const trendList = result.data.trends || [];
           setTrends(trendList);
-          // 从 trends 自行计算 stableCount（后端可能未返回）
           const stableCount = result.data.stableCount ?? trendList.filter(t => t.status === 'stable').length;
           setSummary({
             masteredCount: result.data.masteredCount || 0,
@@ -116,7 +119,7 @@ export const GrowthPanel: React.FC = () => {
     };
     fetchData();
     return () => { mounted = false; };
-  }, []);
+  }, [sessionId]);
 
   if (loading) {
     return (

@@ -20,6 +20,7 @@ import { ApiProxy } from '../api-proxy';
 import { ConfigService } from '../services/config.service';
 import { SessionService } from '../services/session.service';
 import { DiagnosisMerger } from '../services/diagnosis-merger';
+import { getTeachingStateStore } from './teaching-state.handler';
 import { GrowthTrendService } from '../services/growth-trend.service';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 
@@ -205,12 +206,13 @@ export function processDiagnosisFromAI(
   // 3. 创建 Evidence 记录并关联到诊断
   try {
     const now = new Date().toISOString();
+    let evidenceIdx = 0;
 
     for (const syndrome of diagnosis.syndromes) {
       const abilities = getAbilitiesForSyndrome(syndrome.id);
 
       for (const [idx, evText] of syndrome.evidence.entries()) {
-        const evidenceId = `EVD-${Date.now().toString(36)}${idx}`;
+        const evidenceId = `EVD-${Date.now().toString(36)}-${evidenceIdx++}`;
         const record = {
           evidenceId,
           type: 'text' as const,
@@ -232,6 +234,19 @@ export function processDiagnosisFromAI(
 
   // 4. 将诊断结果合并到 TeachingState
   deps!.diagnosisMerger.merge(diagnosis);
+
+  // 4.5 推送 TeachingState 更新到前端（诊断合并可能推进子阶段）
+  if (deps!.mainWindow) {
+    try {
+      const store = getTeachingStateStore();
+      const updatedState = store.getBySession(sessionId);
+      if (updatedState) {
+        deps!.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, updatedState);
+      }
+    } catch (e) {
+      console.warn('[DiagnosisHandler] Failed to push TeachingState update:', e);
+    }
+  }
 
   // 5. 推送到渲染进程
   if (deps!.mainWindow) {

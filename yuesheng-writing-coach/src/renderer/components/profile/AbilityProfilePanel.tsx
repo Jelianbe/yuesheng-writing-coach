@@ -12,6 +12,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { User, TrendingUp, TrendingDown, Minus, Target, ClipboardCheck, AlertTriangle } from 'lucide-react';
 import type { AbilityProfile, AbilityScore, WeakPoint } from '../../shared/types';
 import { getInvoke } from '../../utils/ipc';
+import { useSessionStore } from '../../stores/session.store';
 
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 
@@ -79,13 +80,15 @@ export const AbilityProfilePanel: React.FC = () => {
   const [profile, setProfile] = useState<AbilityProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const sessionId = useSessionStore(s => s.currentSessionId);
 
   const fetchProfile = useCallback(async () => {
+    if (!sessionId) return;
     setLoading(true);
     setError(null);
     try {
       const invoke = getInvoke();
-      const result = await invoke('ability:getProfile', { sessionId: '' }) as {
+      const result = await invoke('ability:getProfile', { sessionId }) as {
         success: boolean; data?: AbilityProfile | null; error?: string;
       };
       if (result.success && result.data) {
@@ -100,7 +103,7 @@ export const AbilityProfilePanel: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
