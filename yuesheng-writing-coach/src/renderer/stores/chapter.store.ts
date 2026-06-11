@@ -168,7 +168,8 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
       const invoke = getInvoke();
       const res = await invoke(IPC_CHANNELS.CHAPTER_CREATE, { manuscriptId, title }) as { success: boolean; data?: Chapter; error?: string };
       if (res.success && res.data) {
-        await get().fetchByWork(manuscriptId);
+        // 列表刷新为 best-effort，不阻塞返回路径
+        get().fetchByWork(manuscriptId).catch(() => {});
         return res.data;
       }
       set({ error: res.error || '创建章节失败' });
@@ -184,7 +185,8 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
       const invoke = getInvoke();
       const res = await invoke(IPC_CHANNELS.CHAPTER_DELETE, { id }) as { success: boolean; error?: string };
       if (res.success) {
-        await get().fetchByWork(manuscriptId);
+        // 列表刷新为 best-effort，不阻塞返回路径
+        get().fetchByWork(manuscriptId).catch(() => {});
         if (get().currentChapter?.id === id) {
           set({ currentChapter: null });
         }
