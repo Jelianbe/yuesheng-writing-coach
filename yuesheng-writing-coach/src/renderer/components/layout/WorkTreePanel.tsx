@@ -4,11 +4,14 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Trash2,
 } from 'lucide-react';
 import type { Manuscript, Chapter } from '../../shared/types-manuscript';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
-import { useDrawerStore } from '../../stores/drawer.store';
+import { rightPanelActions } from '../../stores/right-panel.actions';
+import { copyToClipboard } from '../../utils/clipboard';
 import styles from './WorkTreePanel.module.css';
 
 const EASE = 'cubic-bezier(0.25, 1, 0.5, 1)';
@@ -59,11 +62,49 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
   const [chapterError, setChapterError] = useState<string | null>(null);
   const chapterInputRef = useRef<HTMLInputElement>(null);
 
+  // 右键上下文菜单
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; chapter: Chapter } | null>(null);
+  const ctxMenuRef = useRef<HTMLDivElement>(null);
+
   // 展开状态
   const [expandedManuscripts, setExpandedManuscripts] = useState<Set<string>>(new Set());
 
   useEffect(() => { if (showWorkPopup) workInputRef.current?.focus(); }, [showWorkPopup]);
   useEffect(() => { if (showChapterPopup) chapterInputRef.current?.focus(); }, [showChapterPopup]);
+
+  // 右键菜单：点击外部关闭（使用 ref.contains 模式）
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const close = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (ctxMenuRef.current?.contains(target)) return;
+      setCtxMenu(null);
+    };
+    window.addEventListener('click', close);
+    window.addEventListener('contextmenu', close);
+    return () => { window.removeEventListener('click', close); window.removeEventListener('contextmenu', close); };
+  }, [ctxMenu]);
+
+  // 复制章节引用（/chapters/{id} 格式，后端按主键精确定位）
+  const handleCopyRef = useCallback(async (chapter: Chapter) => {
+    await copyToClipboard(`/chapters/${chapter.id}`);
+    setCtxMenu(null);
+    // TODO: 可加 toast 提示"已复制"
+  }, []);
+
+  // 删除章节
+  const handleDeleteChapter = useCallback(async (chapter: Chapter) => {
+    setCtxMenu(null);
+    await useChapterStore.getState().deleteChapter(chapter.id);
+  }, []);
+
+  // 删除作品
+  const handleDeleteManuscript = useCallback(async (msId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('确定要删除该作品及其所有章节吗？此操作不可撤销。')) {
+      await useManuscriptStore.getState().remove(msId);
+    }
+  }, []);
 
   /* ── 渲染：作品树节点 ── */
   const renderManuscriptItem = useCallback((ms: Manuscript) => {
@@ -109,6 +150,16 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
           </button>
           <FileText size={14} strokeWidth={1.6} className={styles.icon} />
           <span className={styles.manuscriptTitle}>{ms.title}</span>
+          <button
+            onClick={(e) => handleDeleteManuscript(ms.id, e)}
+            style={{ ...iconBtnStyle, width: 24, height: 24, opacity: 0.4, flexShrink: 0 }}
+            className={styles.deleteBtn}
+            title="删除作品"
+            onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--error)'; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = ''; }}
+          >
+            <Trash2 size={13} strokeWidth={1.6} />
+          </button>
         </div>
 
         {isExpanded && (
@@ -128,7 +179,12 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       }
                       onSelectChapter(ch.id);
                       onOpenTab(ch.id, ms.title);
-                      useDrawerStore.getState().openPanel('works');
+                      rightPanelActions.openTool('works', { type: 'edit', chapterId: ch.id });
+                    }}
+                    onContextMenu={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCtxMenu({ x: e.clientX, y: e.clientY, chapter: ch });
                     }}
                   >
                     <span className={styles.chapterTitle}>{ch.title}</span>
@@ -148,8 +204,13 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                   onKeyDown={async e => {
                     if (e.key === 'Enter' && chapterTitle.trim()) {
                       const r = await useChapterStore.getState().createChapter(ms.id, chapterTitle.trim());
-                      if (r) { setChapterTitle(''); setShowChapterPopup(null); }
-                      else { setChapterError(useChapterStore.getState().error || '创建失败'); }
+                      if (r) {
+                        // 自动选中并打开新章节
+                        onSelectChapter(r.id);
+                        rightPanelActions.openEditor(r.id, ms.title);
+                        setChapterTitle('');
+                        setShowChapterPopup(null);
+                      } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
                     }
                     if (e.key === 'Escape') { setChapterTitle(''); setShowChapterPopup(null); }
                   }}
@@ -168,8 +229,13 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                     onClick={async () => {
                       if (chapterTitle.trim()) {
                         const r = await useChapterStore.getState().createChapter(ms.id, chapterTitle.trim());
-                        if (r) { setChapterTitle(''); setShowChapterPopup(null); }
-                        else { setChapterError(useChapterStore.getState().error || '创建失败'); }
+                        if (r) {
+                          // 自动选中并打开新章节
+                          onSelectChapter(r.id);
+                          rightPanelActions.openEditor(r.id, ms.title);
+                          setChapterTitle('');
+                          setShowChapterPopup(null);
+                        } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
                       }
                     }}
                     className={styles.popupConfirm}
@@ -186,6 +252,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                   setShowChapterPopup(prev => prev === ms.id ? null : ms.id);
                 }}
                 className={styles.newChapterBtn}
+                title="新建章节"
               >
                 <Plus size={11} strokeWidth={2} />
                 <span>新建章节</span>
@@ -195,7 +262,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
         )}
       </div>
     );
-  }, [chapters, currentManuscriptId, currentChapterId, expandedManuscripts, fetchChapters, onSelectManuscript, onSelectChapter, onOpenTab]);
+  }, [chapters, currentManuscriptId, currentChapterId, expandedManuscripts, fetchChapters, onSelectManuscript, onSelectChapter, onOpenTab, showChapterPopup, chapterTitle, chapterError, handleDeleteManuscript]);
 
   return (
     <div className={styles.container}>
@@ -262,6 +329,31 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
       {/* 空状态 */}
       {manuscripts.length === 0 && (
         <div className={styles.emptyState}>暂无作品</div>
+      )}
+
+      {/* 右键上下文菜单 */}
+      {ctxMenu && (
+        <div
+          ref={ctxMenuRef}
+          className={styles.ctxMenu}
+          style={{ left: ctxMenu.x, top: ctxMenu.y }}
+        >
+          <button
+            className={styles.ctxMenuItem}
+            onClick={() => handleCopyRef(ctxMenu.chapter)}
+          >
+            <Copy size={13} strokeWidth={1.6} />
+            <span>复制章节引用</span>
+          </button>
+          <div className={styles.ctxMenuDivider} />
+          <button
+            className={`${styles.ctxMenuItem} ${styles.ctxMenuItemDanger}`}
+            onClick={() => handleDeleteChapter(ctxMenu.chapter)}
+          >
+            <Trash2 size={13} strokeWidth={1.6} />
+            <span>删除章节</span>
+          </button>
+        </div>
       )}
     </div>
   );

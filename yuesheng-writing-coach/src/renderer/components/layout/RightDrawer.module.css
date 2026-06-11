@@ -1,7 +1,6 @@
 /* RightDrawer.module.css — 右侧工具抽屉面板 */
 
 /* ── 主容器 ── */
-
 .container {
   height: 100%;
   background: var(--bg-sidebar);
@@ -9,17 +8,15 @@
   flex-direction: row;
   overflow: hidden;
   flex-shrink: 0;
-  z-index: 100;
   position: relative;
 }
 
 /* ── 图标导航条 ── */
-
 .navBar {
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100%;
   padding: 8px 0;
   gap: 2px;
   flex-shrink: 0;
@@ -38,12 +35,14 @@
 }
 
 .navSettingsArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   margin-top: auto;
   padding-top: 4px;
 }
 
 /* ── 工作区 ── */
-
 .workspace {
   display: flex;
   flex-direction: column;
@@ -52,8 +51,7 @@
   overflow: hidden;
 }
 
-/* ── Headers ── */
-
+/* ── 表头行 ── */
 .headerRow {
   display: flex;
   align-items: center;
@@ -63,6 +61,7 @@
   min-height: 38px;
 }
 
+/* ── 操作按钮（紧凑型图标按钮）── */
 .actionBtn {
   display: inline-flex;
   align-items: center;
@@ -76,14 +75,25 @@
   flex-shrink: 0;
   transition: all 120ms ease;
   outline: none;
+  color: var(--text-tertiary);
+}
+
+.actionBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
 }
 
 .actionBtnAuto {
   margin-left: auto;
+  color: var(--text-tertiary);
+}
+
+.actionBtnAuto:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
 }
 
 /* ── 内容区 ── */
-
 .contentArea {
   flex: 1;
   overflow: hidden;

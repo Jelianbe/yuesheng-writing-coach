@@ -134,6 +134,7 @@ export const IPC_CHANNELS = {
   TRAINING_DERIVE_BEHAVIOR: 'training:derive-behavior',
   // === 聊天 ===
   CHAT_SEND: 'chat:send',
+  CHAT_STOP: 'chat:stop',
   CHAT_STREAM_DATA: 'chat:stream:data',
   CHAT_STREAM_END: 'chat:stream:end',
   // === 会话管理 ===
@@ -156,5 +157,7 @@ export const IPC_CHANNELS = {
   CHAPTER_LIST: 'chapter:list',
   CHAPTER_GET: 'chapter:get',
   CHAPTER_CREATE: 'chapter:create',
+  CHAPTER_DELETE: 'chapter:delete',
   CHAPTER_UPDATE_CONTENT: 'chapter:updateContent',
+  MANUSCRIPT_DELETE: 'manuscript:delete',
 } as const;

@@ -1,16 +1,15 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Settings, PanelRightClose, Plus, ListChecks } from 'lucide-react';
-import { useDrawerStore, type DrawerPanelId } from '../../stores/drawer.store';
+import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
+import { rightPanelActions } from '../../stores/right-panel.actions';
 import { IconStripButton } from './IconStripButton';
 import { SessionTabBar } from './SessionTabBar';
 import { ToolGrid } from './ToolGrid';
 import { ResizeHandle } from './ResizeHandle';
 import {
-  DEFAULT_TOOLS, TOOL_TO_SESSION_TYPE, SESSION_DEFAULT_TITLE,
-  SESSION_LUCIDE_ICON, EASE_OUT_QUART, ICON_STRIP_WIDTH,
+  DEFAULT_TOOLS, SESSION_LUCIDE_ICON, EASE_OUT_QUART, ICON_STRIP_WIDTH,
   DEFAULT_PANEL_WIDTH, RESIZE_MIN, RESIZE_MAX, STORAGE_KEY, Z_LAYER,
-  SESSION_TYPE_TO_TOOL_ID,
 } from './drawer-constants';
 import type { ToolItem } from './drawer-constants';
 import styles from './RightDrawer.module.css';
@@ -27,14 +26,10 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
 }) => {
   const activePanel = useDrawerStore(s => s.activePanel);
   const collapsed = useDrawerStore(s => s.collapsed);
-  const openPanel = useDrawerStore(s => s.openPanel);
   const closePanel = useDrawerStore(s => s.closePanel);
   const toggleCollapsed = useDrawerStore(s => s.toggleCollapsed);
   const sessions = usePanelSessionStore(s => s.sessions);
   const activeSessionId = usePanelSessionStore(s => s.activeSessionId);
-  const upsertSession = usePanelSessionStore(s => s.upsertSession);
-  const switchSession = usePanelSessionStore(s => s.switchSession);
-  const removeSession = usePanelSessionStore(s => s.removeSession);
 
   // ── 可拖拽宽度（localStorage 持久化）──
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -76,45 +71,26 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [isResizing]);
 
-  /* 图标点击 → 打开面板 + 创建/激活会话（FIX-02: 补充 openPanel 调用） */
+  /* 图标点击 → 通过 rightPanelActions 统一管理（X-01 协议） */
   const handleIconClick = useCallback((toolId: string) => {
-    // 已展开且点击同一图标 → 收起
     if (!collapsed && activePanel === toolId) { toggleCollapsed(); return; }
-    const sessionType = TOOL_TO_SESSION_TYPE[toolId] ?? 'edit';
-    upsertSession(sessionType, SESSION_DEFAULT_TITLE[sessionType] ?? toolId, '');
-    // FIX-02 核心：同步展开 drawer 面板
-    openPanel(toolId as DrawerPanelId);
-  }, [collapsed, activePanel, toggleCollapsed, upsertSession, openPanel]);
+    rightPanelActions.openTool(toolId);
+  }, [collapsed, activePanel, toggleCollapsed]);
 
   const handleToolClick = useCallback((tool: ToolItem) => {
     if (tool.disabled) return;
     tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : handleIconClick(tool.id);
   }, [onToolClick, handleIconClick]);
 
-  /* 标签切换 → 联动 panel-session + drawer activePanel（FIX-03 核心） */
+  /* 标签切换 → 通过 rightPanelActions 统一管理（X-01 协议） */
   const handleSessionSwitch = useCallback((sessionId: string) => {
-    switchSession(sessionId);
-    // 根据会话类型反推 toolId，同步 drawer 的 activePanel
-    const session = sessions.find(s => s.id === sessionId);
-    if (session) {
-      const toolId = SESSION_TYPE_TO_TOOL_ID[session.type];
-      if (toolId) openPanel(toolId as any);
-    }
-  }, [switchSession, sessions, openPanel]);
+    rightPanelActions.switchSession(sessionId);
+  }, [rightPanelActions]);
 
-  /* Issue2: 移除会话时自动联动 — 若移除的是当前激活会话，切到最后一个剩余会话 */
+  /* 移除会话 → 通过 rightPanelActions 统一管理（X-01 协议） */
   const handleSessionRemove = useCallback((sessionId: string) => {
-    const wasActive = sessionId === activeSessionId;
-    removeSession(sessionId);
-    // 移除后若已无会话 → 收起面板
-    const remaining = usePanelSessionStore.getState().sessions;
-    if (remaining.length === 0) { closePanel(); return; }
-    // 若被移除的是激活会话 → 自动切到最后一个
-    if (wasActive) {
-      const last = remaining[remaining.length - 1];
-      handleSessionSwitch(last.id);
-    }
-  }, [activeSessionId, removeSession, closePanel, handleSessionSwitch]);
+    rightPanelActions.removeSession(sessionId);
+  }, [rightPanelActions]);
 
   // Esc 关闭面板
   useEffect(() => {

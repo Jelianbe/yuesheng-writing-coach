@@ -56,7 +56,7 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
   if (!topSyndrome) return null;
 
   return (
-    <div className="border border-border rounded-[var(--radius-md)] bg-surface overflow-hidden">
+    <div className="border border-border rounded-[var(--radius-md)] bg-surface shadow-sm overflow-hidden">
       {/* Summary row (always visible) */}
       <button
         onClick={() => setExpanded(!expanded)}
