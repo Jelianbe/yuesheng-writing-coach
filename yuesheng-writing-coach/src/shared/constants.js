@@ -145,3 +145,50 @@ export const IPC_CHANNELS = {
     CHAPTER_UPDATE_CONTENT: 'chapter:updateContent',
     MANUSCRIPT_DELETE: 'manuscript:delete',
 };
+
+/** @type {readonly string[]} 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
+export const ALLOWED_INVOKE_CHANNELS = [
+    'config:get',
+    'config:set',
+    'config:testConnection',
+    'diagnosis:submitRewrite',
+    'diagnosis:getComparison',
+    'growth:getTrends',
+    'teachingState:get',
+    'teachingState:update',
+    'teachingState:confirm',
+    'ability:getProfile',
+    'chat:send',
+    'chat:stop',
+    'session:list',
+    'session:create',
+    'session:delete',
+    'session:rename',
+    'session:getMessagesPaged',
+    'session:searchMessages',
+    'session:isNewUser',
+    'training:recommend',
+    'training:assign',
+    'training:complete',
+    'training:history',
+    'training:submit',
+    'training:evaluate',
+    'training:derive-behavior',
+    'manuscript:list',
+    'manuscript:create',
+    'manuscript:update',
+    'manuscript:delete',
+    'chapter:list',
+    'chapter:get',
+    'chapter:create',
+    'chapter:delete',
+    'chapter:updateContent',
+];
+
+/** @type {readonly string[]} 允许渲染进程通过 on() 订阅的 IPC 事件通道白名单 */
+export const ALLOWED_EVENT_CHANNELS = [
+    'diagnosis:update',
+    'teachingState:updated',
+    'chat:stream:data',
+    'chat:stream:end',
+];
