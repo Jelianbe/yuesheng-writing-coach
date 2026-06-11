@@ -9,6 +9,8 @@
 
 PRAGMA foreign_keys = OFF;
 
+BEGIN TRANSACTION;
+
 -- ===== 1. teaching_state =====
 -- updated_at: TEXT → INTEGER NOT NULL DEFAULT (unixepoch())
 
@@ -220,5 +222,7 @@ CREATE INDEX IF NOT EXISTS idx_evidence_disease ON evidence(related_disease);
 CREATE INDEX IF NOT EXISTS idx_evidence_ability ON evidence(related_ability);
 CREATE INDEX IF NOT EXISTS idx_evidence_novel ON evidence(novel_id);
 CREATE INDEX IF NOT EXISTS idx_evidence_level ON evidence(level);
+
+COMMIT;
 
 PRAGMA foreign_keys = ON;
