@@ -130,3 +130,5 @@ export declare const IPC_CHANNELS: {
     readonly CHAPTER_UPDATE_CONTENT: "chapter:updateContent";
     readonly MANUSCRIPT_DELETE: "manuscript:delete";
 };
+export const ALLOWED_INVOKE_CHANNELS: readonly string[];
+export const ALLOWED_EVENT_CHANNELS: readonly string[];
