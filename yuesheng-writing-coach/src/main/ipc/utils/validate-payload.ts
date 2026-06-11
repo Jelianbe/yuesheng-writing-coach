@@ -24,14 +24,9 @@ export interface PayloadSchema {
   ranges?: Record<string, { min?: number; max?: number }>;
 }
 
-export type ValidationResult<T = unknown> = {
-  valid: true;
-  data: T;
-} | {
-  valid: false;
-  error: ValidationError;
-  data: null;
-};
+export type ValidationResult<T = unknown> =
+  | { valid: true; data: T }
+  | { valid: false; error: ValidationError; data: null };
 
 /**
  * 校验 IPC handler 入参

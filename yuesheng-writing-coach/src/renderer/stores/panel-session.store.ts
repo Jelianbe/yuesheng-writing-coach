@@ -15,7 +15,7 @@
 import { create } from 'zustand';
 
 /** 会话类型，对应图标条的各个工具 */
-export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings';
+export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings' | 'tasks';
 
 /** 各类型会话的关联数据形状（discriminated union） */
 export type PanelSessionData =
@@ -26,7 +26,8 @@ export type PanelSessionData =
   | { type: 'profile' }
   | { type: 'search'; query?: string }
   | { type: 'tools' }
-  | { type: 'settings' };
+  | { type: 'settings' }
+  | { type: 'tasks' };
 
 /** 单个工具会话 */
 export interface PanelSession {
@@ -58,8 +59,6 @@ interface PanelSessionActions {
   switchSession: (id: string) => void;
   /** 移除指定会话（若移除的是当前激活的，自动切换到上一个） */
   removeSession: (id: string) => void;
-  /** 清除所有会话 */
-  clearAll: () => void;
 }
 
 /** 使用 crypto.randomUUID 生成唯一 ID（无模块级可变变量） */
@@ -111,6 +110,4 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
     }
     set({ sessions: filtered, activeSessionId: newActive });
   },
-
-  clearAll: () => set({ sessions: [], activeSessionId: null }),
 }));

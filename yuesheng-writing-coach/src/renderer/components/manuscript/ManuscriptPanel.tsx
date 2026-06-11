@@ -178,9 +178,12 @@ export const ManuscriptPanel: React.FC = () => {
   const themeId = useEditorStore(s => s.theme);
   const customBgColor = useEditorStore(s => s.customBgColor);
   const customTextColor = useEditorStore(s => s.customTextColor);
-  const palette = themeId === 'custom'
+  // EditorTheme ('paper'|'sepia'|'dark') → THEME_PALETTES key 映射
+  const THEME_KEY_MAP: Record<string, string> = { paper: 'warm-paper', sepia: 'sepia-tone', dark: 'dark-charcoal' };
+  const paletteKey = THEME_KEY_MAP[themeId] ?? themeId;
+  const palette = paletteKey === 'custom'
     ? { ...THEME_PALETTES.custom, bg: customBgColor, text: customTextColor }
-    : THEME_PALETTES[themeId];
+    : THEME_PALETTES[paletteKey];
 
   // ── 空状态 ──
   if (openFiles.length === 0) {

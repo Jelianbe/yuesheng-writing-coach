@@ -155,3 +155,16 @@
   2. 47 个 IPC handler 仅 1 个有入参校验
   3. 规则平均 7.38/10 分但实际生效率极低
 - **依据**: docs/reports/rule-system-audit_V1.0.md + R-018 变更溯源规范
+
+---
+
+## 2026-06-11
+
+### D-022: 教学任务独立 session 类型
+- **类型**: 功能修复
+- **决策**: 在 `PanelSessionType` 中新增 `'tasks'` 类型，补齐所有映射表条目
+- **原因**:
+  1. 教学任务面板打开时因 `TOOL_TO_SESSION_TYPE` 缺少 `tasks` 映射，回退为 `'edit'` 类型
+  2. 导致 header 始终显示"编辑"，作品和教学任务共用同一标签
+- **修改文件**: `panel-session.store.ts` / `drawer-constants.ts`
+- **效果**: 作品 header 显示"作品"，教学任务 header 显示"教学任务"
