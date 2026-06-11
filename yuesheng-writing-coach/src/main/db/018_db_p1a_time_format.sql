@@ -15,7 +15,7 @@ PRAGMA foreign_keys = OFF;
 DROP TABLE IF EXISTS teaching_state_p1a;
 
 CREATE TABLE IF NOT EXISTS teaching_state_p1a (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     session_id TEXT NOT NULL UNIQUE,
     current_phase TEXT NOT NULL DEFAULT 'P0_INIT',
     current_subphase TEXT,
@@ -41,7 +41,14 @@ INSERT INTO teaching_state_p1a (
     locked_syndromes, updated_at
 )
 SELECT
-    id, session_id, current_phase, current_subphase,
+    lower(
+        hex(randomblob(4)) || '-' ||
+        hex(randomblob(2)) || '-4' ||
+        substr(hex(randomblob(3)), 2) || '-a' ||
+        substr(hex(randomblob(3)), 2) || '-' ||
+        hex(randomblob(6))
+    ),
+    session_id, current_phase, current_subphase,
     completed_actions, completed_tasks, active_problems,
     next_suggested_actions, current_task_id, diagnosis_summary,
     last_user_confirmation, focus_area, transition_offered,
