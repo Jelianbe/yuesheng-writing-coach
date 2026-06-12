@@ -106,7 +106,7 @@ export declare const IPC_CHANNELS: {
     readonly TRAINING_HISTORY: "training:history";
     readonly TRAINING_SUBMIT: "training:submit";
     readonly TRAINING_EVALUATE: "training:evaluate";
-    readonly TRAINING_DERIVE_BEHAVIOR: "training:derive-behavior";
+    readonly TRAINING_DERIVE_BEHAVIOR: "training:deriveBehavior";
     readonly CHAT_SEND: "chat:send";
     readonly CHAT_STREAM_DATA: "chat:stream:data";
     readonly CHAT_STREAM_END: "chat:stream:end";
