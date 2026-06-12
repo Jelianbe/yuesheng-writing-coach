@@ -30,10 +30,12 @@ import {
   EDITOR_FONT_SIZE_MIN,
   EDITOR_FONT_SIZE_MAX,
 } from '../layout/layout.constants';
-import { FONT, THEME_PALETTES, applyAutoFormat } from './manuscript.constants';
+import { FONT, applyAutoFormat } from './manuscript.constants';
 import { SettingsPopover } from './SettingsPopover';
 import { FormatConfirmDialog } from './FormatConfirmDialog';
 import { ToolbarBtn } from './ToolbarBtn';
+import { EmptyEditorState } from './EmptyEditorState';
+import { useEditorPalette } from './useEditorPalette';
 import styles from './ManuscriptPanel.module.css';
 
 // ===== 主组件 =====
@@ -43,6 +45,7 @@ export const ManuscriptPanel: React.FC = () => {
     openFiles,
     openTabMeta,
     currentChapter,
+    pendingRewrite,
     select,
     closeTab,
     loadContent,
@@ -71,6 +74,9 @@ export const ManuscriptPanel: React.FC = () => {
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [formatConfirmOpen, setFormatConfirmOpen] = useState(false);
+
+  // 主题色板
+  const palette = useEditorPalette();
 
   // 当 currentChapter 变化时加载内容
   useEffect(() => {
@@ -174,36 +180,26 @@ export const ManuscriptPanel: React.FC = () => {
     ? openTabMeta[currentChapter.id]
     : null;
 
-  // 计算当前主题完整色板
-  const themeId = useEditorStore(s => s.theme);
-  const customBgColor = useEditorStore(s => s.customBgColor);
-  const customTextColor = useEditorStore(s => s.customTextColor);
-  // EditorTheme ('paper'|'sepia'|'dark') → THEME_PALETTES key 映射
-  const THEME_KEY_MAP: Record<string, string> = { paper: 'warm-paper', sepia: 'sepia-tone', dark: 'dark-charcoal' };
-  const paletteKey = THEME_KEY_MAP[themeId] ?? themeId;
-  const palette = paletteKey === 'custom'
-    ? { ...THEME_PALETTES.custom, bg: customBgColor, text: customTextColor }
-    : THEME_PALETTES[paletteKey];
-
   // ── 空状态 ──
   if (openFiles.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <div className={styles.emptyIconWrap}>
-          <BookOpen size={24} strokeWidth={1.4} opacity={0.35} />
-        </div>
-        <div className={styles.emptyTitle}>
-          暂无打开的章节
-        </div>
-        <div className={styles.emptyHint}>
-          在左侧栏点击章节，将在右侧打开编辑器
-        </div>
-      </div>
-    );
+    return <EmptyEditorState />;
   }
 
   return (
     <div className={styles.panel} style={{ background: palette.bg }}>
+      {/* ══════════ 训练改写待应用横幅 ══════════ */}
+      {currentChapter && pendingRewrite && (
+        <div className={styles.rewriteBanner} style={{ borderBottom: `1px solid ${palette.border}` }}>
+          <span>训练改写结果待应用</span>
+          <button onClick={() => { void useChapterStore.getState().applyRewrite(currentChapter.id, pendingRewrite); }}>
+            应用
+          </button>
+          <button onClick={() => useChapterStore.getState().clearRewrite()}>
+            忽略
+          </button>
+        </div>
+      )}
+
       {/* ══════════ 标签栏 ══════════ */}
       <div className={styles.tabBar} style={{
         borderBottom: `1px solid ${palette.border}`,

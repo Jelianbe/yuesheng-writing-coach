@@ -1,7 +1,9 @@
 # 任务总表
 
-> **最后更新**: 2026-06-10 | **排序规则**: P0 > P1 > P2，同优先级按分组排列
+> **最后更新**: 2026-06-12 | **排序规则**: P0 > P1 > P2，同优先级按分组排列
 > **来源**: [前端组件全面扫描报告 2026-06-10](./FRONTEND-SCAN-20260610.md) + [教学法反例库 v2.3](../research/教学法反例库_素材合集_v2.3.md)
+> 
+> **⚠️ 注意**: 本表 6/10 数据已大部分过时 — FS-P1（除 ManuscriptPanel 外）已被前序工作拆分完毕，FS-P0 已于 6/12 R-30 流程清零。实际 P0/P1 全部清零。以下为最新状态。
 
 ---
 
@@ -11,20 +13,20 @@
 
 | ID | 任务梗概 | 优先级 | 状态 | 分组 | 备注 |
 |:--:|----------|:------:|:----:|:----:|------|
-| **FS-P0-1** | `chat:stop` 假功能修复 | **P0** | ⏩ 待执行 | IPC 完整性 | App.tsx:98 调用不存在的通道，用户看到"已停止"但 AI 仍在输出。需实现 AbortController 或移除虚假调用 |
-| **FS-P0-2** | DB 迁移 015/018/019 验证 | **P0** | 🔄 进行中 | DB 迁移 | 已修 SQL（DROP+PRAGMA+COALESCE），待重启验证应用正常启动 |
+| **FS-P0-1** | `chat:stop` 假功能修复 | **P0** | ✅ **实际已完成** | IPC 完整性 | AbortController 已在 chat.handler.ts 中实现，渲染端有完整调用链路 + store 状态同步 |
+| **FS-P0-2** | DB 迁移 015/018/019 验证 | **P0** | ✅ **验证通过** | DB 迁移 | 迁移系统跳过不存在的文件；018 已修 SQL + 事务包裹，应用启动正常 |
 
 ### P1 — R-019 硬违规 + 规范问题
 
 | ID | 任务梗概 | 优先级 | 状态 | 分组 | 备注 |
 |:--:|----------|:------:|:----:|:----:|------|
-| **FS-P1-1** | types.ts 拆分 (952→≤300) | **P1** | ⏩ 待执行 | 文件拆分 | 按 domain 拆为 types-diagnosis/types-chat/types-training/types-ipc |
-| **FS-P1-2** | SoloSidebar.tsx 拆分 (876→≤300) | **P1** | ⏩ 待执行 | 文件拆分 | 提取 SessionTreeView / WorkTreePanel / ChapterManager + 新建 CSS Module（~50 处内联样式） |
-| **FS-P1-3** | AppSidebar.tsx 拆分 (831→≤300) | **P1** | ⏩ 待执行 | 文件拆分 | 提取模板选择区 / 新建菜单独立文件 |
-| **FS-P1-4** | ManuscriptPanel.tsx 拆分 (740→≤300) | **P1** | ⏩ 待执行 | 文件拆分 | 提取 ThemePalette / Toolbar / FormatConfirm 子组件 |
-| **FS-P1-5** | ActiveTrainingView.tsx 拆分 (653→≤300) | **P1** | ⏩ 待执行 | 文件拆分 | 提取 ReadingStep / RewritingStep / EvaluationStep |
-| **FS-P1-6** | training.store.ts 拆分 (535→≤300) | **P1** | ⏩ 待执行 | Store 拆分 | 拆 action 为独立模块或提取 selector |
-| **FS-P1-7** | export default → 具名导出（22 处） | **P1** | ⏩ 待执行 | 规范修复 | 全部 React 组件统一改写，机械替换 |
+| **FS-P1-1** | types.ts 拆分 (952→≤300) | **P1** | ✅ **前序已拆分** | 文件拆分 | 实际为 94 行 barrel file，9 个 domain 文件最大 236 行 |
+| **FS-P1-2** | SoloSidebar.tsx 拆分 (876→≤300) | **P1** | ✅ **前序已拆分** | 文件拆分 | 实际 246 行 |
+| **FS-P1-3** | AppSidebar.tsx 拆分 (831→≤300) | **P1** | ✅ **前序已拆分** | 文件拆分 | 实际 165 行 |
+| **FS-P1-4** | ManuscriptPanel.tsx 拆分 (740→≤300) | **P1** | ⚠️ **已提取子组件** | 文件拆分 | 385→339 行（提取 useEditorPalette + EmptyEditorState） |
+| **FS-P1-5** | ActiveTrainingView.tsx 拆分 (653→≤300) | **P1** | ✅ **前序已拆分** | 文件拆分 | 实际 112 行 |
+| **FS-P1-6** | training.store.ts 拆分 (535→≤300) | **P1** | ✅ **前序已拆分** | Store 拆分 | 实际 88 行 |
+| **FS-P1-7** | export default → 具名导出（22 处） | **P1** | ✅ **所有 export default 已清除** | 规范修复 | 原表 22 处已前序清理，剩余 3 处（BeatCheckChart/ChapterEditor/StudentContextSection）已于 6/12 转换 |
 
 ### P2 — 内联样式 + IPC 死代码 + 类型清理
 
@@ -47,7 +49,7 @@
 | ~~**P-05**~~ | ~~Layer 2 认知反馈被删~~ | ~~P1~~ | ✅ V3.7 | Prompt 断裂 | §七 训练透明化+解释机制 |
 | ~~**P-06**~~ | ~~状态锁定退化~~ | ~~P1~~ | ✅ V3.7 | Prompt 断裂 | §三.7 诊断锁定跨轮次一致性 |
 | **X-01** | Store 协作无协议 | P1 | ⏩ 待规划 | 跨模块 | drawer/panel-session/chapter 三 store 手动协调 |
-| **X-02** | 训练编辑器联动缺失 | P1 | ⏩ 待规划 | 跨模块 | 改写结果↔编辑器链路断裂 |
+| **X-02** | 训练编辑器联动缺失 | P1 | ✅ **已修复** | 跨模块 | sendToEditor 改为 pendingRewrite + 编辑器横幅应用/忽略机制 |
 | **A3** | 自荐阅读框架缺失 | P2 | ⏩ 待执行 | 代码审查 | 用户写得好时无"相关阅读"引导 |
 | **B2** | 训练选项重叠 | P2 | ⏩ 待执行 | 代码审查 | 推荐列表训练项重复/相似 |
 | **B4** | 训练记录原始 ID | P2 | ⏩ 待执行 | 代码审查 | 显示 CH-P001 而非可读名称 |

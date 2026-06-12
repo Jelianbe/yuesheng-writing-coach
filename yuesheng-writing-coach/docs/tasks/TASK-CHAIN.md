@@ -59,7 +59,7 @@
 | ✅ 已完成 | **FB240611-003 数据流链路整合审计**：修复 6 个 P0 断裂点（迁移文件缺失/白名单缺失/sessionId 空值/chat:stop 无 handler/onboarding 被拦截/面板不自知刷新）|
 | ✅ 已完成 | **每日体检 broken import 修复**：tsc 从 2→0，修复 paradigm.store.ts TabBar 引用 + app-helpers.ts RightPanel 引用 |
 | ✅ 已完成 | **每日体检 V2.1 深度扫描修复（R-30 流程）**：F-02 createHandler 迁移（chat.handler + ability-profile）、F-03 AUTOINCREMENT→UUID、F-04 迁移文件事务包裹、F-07 chapter.store fetchByWork guard；session.service.test.ts transaction mock 修复 |
-| ▶️ **当前指针** | **I-017~I-025 审计遗留 P2 项** |
+| ▶️ **当前指针** | **全部分解** — P0/P1 已清零（6/12 清理） |
 
 ---
 
@@ -871,7 +871,7 @@ flowchart LR
 | I-022 | training:derive-behavior 命名不统一 | 数据流审计(FB240611-003) | ✅ **问题存在** — 唯一使用 kebab-case | **✅ 已修复** | V16.8 |
 | I-023 | chapter:create/delete/manuscript:delete 类型映射缺失 | 数据流审计(FB240611-003) | ✅ **问题存在** — types-ipc.ts 缺少 3 个通道类型映射 | **✅ 已修复** | V16.8 |
 | I-024 | WorkTreePanel 不展示 loading/error 状态 | 数据流审计(FB240611-003) | ✅ **实际已展示** — 已有 workError/chapterError 显示 | **❌ 关闭-误判** | — |
-| I-025 | 缺少 chapter:update 通用通道 | 数据流审计(FB240611-003) | ✅ **问题存在** — 只有 updateContent | **⏳ 待评估** | — |
+| I-025 | 缺少 chapter:update 通用通道 | 数据流审计(FB240611-003) | ✅ **问题存在** — 只有 updateContent | **❌ 关闭-无消费者** | V16.8 |
 
 ### 验证方法
 

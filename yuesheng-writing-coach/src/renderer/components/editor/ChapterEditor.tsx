@@ -139,5 +139,3 @@ export const ChapterEditor: React.FC = () => {
     </div>
   );
 };
-
-export default ChapterEditor;
