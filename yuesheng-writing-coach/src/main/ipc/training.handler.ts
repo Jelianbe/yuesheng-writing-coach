@@ -22,7 +22,7 @@ import { StudentModelService } from '../services/student-model.service';
 import { evaluateTraining } from '../services/training-evaluator.service';
 import { deriveBehavior, type DerivationInput } from '../services/behavior-derivation.service';
 import { downgradeSyndromeSeverity } from '../services/teaching-state-machine';
-import { getTeachingStateStore } from './teaching-state.handler';
+import { getTeachingStateStore, pushTeachingStateUpdate } from './teaching-state.handler';
 import { ConfigService } from '../services/config.service';
 
 export interface TrainingHandlerDeps {
@@ -183,7 +183,6 @@ export function registerTrainingHandlers(): void {
           teachingStateStore.update(validation.data.sessionId, { activeProblems });
           // 推送教学状态更新到前端
           try {
-            const { pushTeachingStateUpdate } = require('./teaching-state.handler');
             pushTeachingStateUpdate(validation.data.sessionId);
           } catch (e) {
             console.warn('[training:evaluate] failed to push TeachingState update:', e);
@@ -198,7 +197,7 @@ export function registerTrainingHandlers(): void {
   });
 
   /**
-   * training:derive-behavior - F-03 角色行为推导
+   * training:deriveBehavior - F-03 角色行为推导
    */
   createHandler(IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR, async (_event, input: DerivationInput) => {
     if (!deps) throw new Error('TrainingHandler deps not initialized');

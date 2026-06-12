@@ -115,7 +115,7 @@ export const IPC_CHANNELS = {
     TRAINING_HISTORY: 'training:history',
     TRAINING_SUBMIT: 'training:submit',
     TRAINING_EVALUATE: 'training:evaluate',
-    TRAINING_DERIVE_BEHAVIOR: 'training:derive-behavior',
+    TRAINING_DERIVE_BEHAVIOR: 'training:deriveBehavior',
     // === 聊天 ===
     CHAT_SEND: 'chat:send',
     CHAT_STOP: 'chat:stop',
@@ -173,7 +173,7 @@ export const ALLOWED_INVOKE_CHANNELS = [
     'training:history',
     'training:submit',
     'training:evaluate',
-    'training:derive-behavior',
+    'training:deriveBehavior',
     'manuscript:list',
     'manuscript:create',
     'manuscript:update',

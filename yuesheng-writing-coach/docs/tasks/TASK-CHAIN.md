@@ -57,7 +57,9 @@
 | ✅ 已完成 | **C-Phase 全部 4 项完成**（P-04 Phase 1~2 / P-06 / X-01 / X-02）|
 | ✅ 已完成 | **FB240609-001 全部 8 项完成**（代码审查残留 4 项 + 定义分裂 3 项 + TabBar 清理）+ **DB-P1a/b 时间格式/主键统一**|
 | ✅ 已完成 | **FB240611-003 数据流链路整合审计**：修复 6 个 P0 断裂点（迁移文件缺失/白名单缺失/sessionId 空值/chat:stop 无 handler/onboarding 被拦截/面板不自知刷新）|
-| ▶️ **当前指针** | **P-04 Phase 3** AI 分析失败降级 + 边缘 case（P2）+ 审计遗留 P2 项（I-017~I-025）|
+| ✅ 已完成 | **每日体检 broken import 修复**：tsc 从 2→0，修复 paradigm.store.ts TabBar 引用 + app-helpers.ts RightPanel 引用 |
+| ✅ 已完成 | **每日体检 V2.1 深度扫描修复（R-30 流程）**：F-02 createHandler 迁移（chat.handler + ability-profile）、F-03 AUTOINCREMENT→UUID、F-04 迁移文件事务包裹、F-07 chapter.store fetchByWork guard；session.service.test.ts transaction mock 修复 |
+| ▶️ **当前指针** | **I-017~I-025 审计遗留 P2 项** |
 
 ---
 
@@ -1447,6 +1449,7 @@ P0（核心链路）                          P1（体验提升）              
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
+| **V16.7** | 2026-06-11 | 每日体检 broken import 修复：tsc 清零（paradigm.store.ts TabBar 残留 + app-helpers.ts RightPanel 残留）|
 | **V16.6** | 2026-06-11 | FB240611-003 整合审计修复：013_manuscripts.sql 创建、MANUSCRIPT_GET 白名单补充、AbilityProfilePanel/GrowthPanel sessionId 从 useSessionStore 获取、CHAT_STOP handler 注册、onboarding:analyze 白名单补充；App.tsx/useAppIpcListener 无用 IPC 回调清理；新增 13 个审计 Issue(I-013~I-025) |
 | **V16.5** | 2026-06-09 | FB240611-002 数据流审计：TeachingState 推送修复、validatePayload 补充、证据 ID 冲突修复、diag.store 错误处理 |
 | **V16.3** | 2026-06-09 | V2 最终收尾：V2-007 IPC 统一 + V2-008/009~015 审计确认 + V2-016 推荐引擎确认 + V2-023 清理 + 关卡审查全部完成 |

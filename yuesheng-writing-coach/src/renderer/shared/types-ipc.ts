@@ -18,7 +18,8 @@ export type IPCChannel =
   | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages'
   | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle' | 'session:isNewUser'
   | 'manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update'
-  | 'chapter:list' | 'chapter:get' | 'chapter:updateContent';
+  | 'chapter:list' | 'chapter:get' | 'chapter:create' | 'chapter:delete' | 'chapter:updateContent'
+  | 'manuscript:delete';
 
 /** IPC 请求类型映射 */
 export interface IPCRequestMap {
@@ -54,7 +55,10 @@ export interface IPCRequestMap {
   'manuscript:update': { id: string; title?: string; description?: string; genre?: string; status?: 'active' | 'archived' };
   'chapter:list': { manuscriptId: string };
   'chapter:get': { id: string };
+  'chapter:create': { manuscriptId: string; title: string };
+  'chapter:delete': { id: string };
   'chapter:updateContent': { id: string; content: string };
+  'manuscript:delete': { id: string };
 }
 
 /** IPC 响应类型映射（ER5：全部统一为 ApiResponse<T>） */
@@ -91,7 +95,10 @@ export interface IPCResponseMap {
   'manuscript:update': ApiResponse<Manuscript>;
   'chapter:list': ApiResponse<Chapter[]>;
   'chapter:get': ApiResponse<Chapter | null>;
+  'chapter:create': ApiResponse<Chapter>;
+  'chapter:delete': ApiResponse<{ deleted: boolean }>;
   'chapter:updateContent': ApiResponse<{ wordCount: number }>;
+  'manuscript:delete': ApiResponse<{ deleted: boolean }>;
 }
 
 /** IPC 事件推送类型映射 */
