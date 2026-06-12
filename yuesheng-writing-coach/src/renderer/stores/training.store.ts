@@ -100,11 +100,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   sendToEditor: () => {
     const { activeTraining } = get();
     if (!activeTraining?.userDraft) return;
+    // 将改写结果暂存到 chapter store 的 pendingRewrite，由编辑器横幅消费
     void import('./chapter.store').then(({ useChapterStore }) => {
-      const chapterStore = useChapterStore.getState();
-      const { currentChapter, updateContent } = chapterStore;
-      if (!currentChapter) return;
-      void updateContent(currentChapter.id, activeTraining.userDraft);
+      useChapterStore.setState({ pendingRewrite: activeTraining.userDraft });
     });
   },
 }));

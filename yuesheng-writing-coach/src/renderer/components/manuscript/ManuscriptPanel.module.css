@@ -45,6 +45,28 @@
   line-height: 1.6;
 }
 
+.rewriteBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  font-size: 13px;
+  background: var(--accent-bg, #e8f5e9);
+  color: var(--accent-text, #1b5e20);
+}
+.rewriteBanner button {
+  padding: 2px 12px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 12px;
+  cursor: pointer;
+  color: inherit;
+}
+.rewriteBanner button:hover {
+  background: rgba(0,0,0,0.06);
+}
+
 /* Tab bar */
 .tabBar {
   display: flex;

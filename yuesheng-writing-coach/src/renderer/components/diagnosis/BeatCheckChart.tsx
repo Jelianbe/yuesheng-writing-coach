@@ -87,6 +87,4 @@ export const BeatCheckChart: React.FC<BeatCheckChartProps> = ({ beatCheck }) => 
       </div>
     </div>
   );
-};
-
-export default BeatCheckChart;
+}

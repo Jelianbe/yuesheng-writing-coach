@@ -97,6 +97,4 @@ export const StudentContextSection: React.FC = () => {
       </Button>
     </div>
   );
-};
-
-export default StudentContextSection;
+}
