@@ -95,12 +95,8 @@ export function TeachingProgressPanel({ sessionId }: { sessionId: string }): Rea
         setLoading(false);
       });
 
-    /** 监听主进程推送的状态更新 */
-    const cleanup = electronAPI.on(IPC_CHANNELS.TEACHING_STATE_UPDATED, (data: unknown) => {
-      setCurrentState(data as TeachingState);
-    });
-
-    return cleanup;
+    // 状态推送由 useAppIpcListener 统一处理并写入 store，面板通过 store 订阅消费
+    return undefined;
   }, [sessionId, setCurrentState, setLoading]);
 
   /** 处理确认推进 */
