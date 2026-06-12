@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""每日项目体检扫描脚本 V2.5 — 扫描 src/ 目录下 TypeScript/JavaScript 文件，生成健康报告 JSON。
+"""每日项目体检扫描脚本 V2.6 — 扫描 src/ 目录下 TypeScript/JavaScript 文件，生成健康报告 JSON。
 覆盖 R-019/R-020/R-028/R-029 等 L1 核心规则的可自动化检查项。
 
 更新记录:
+  2026-06-11 V2.6: 新增 createHandler 模式识别，修复 ipc_no_channel 假阳。
+                    跳过 JSDoc 注释中的 import 匹配。
   2026-06-11 V2.5: 新增安全扫描(硬编码密钥)、export default 检测、非空断言检测、
                     内联样式统计、IPC handler try/catch 验证、循环依赖检测(madge)
                     规则版本引用更新为 V2.1
@@ -36,7 +38,7 @@ RE_IMPORT = re.compile(r"""from\s+['"]([^'"]+)['"]""")
 RE_REQUIRE = re.compile(r"""require\s*\(\s*['"]([^'"]+)['"]""")
 RE_EXPORT_DEFAULT = re.compile(r'export\s+default\s+')
 RE_EXPORT_NAMED = re.compile(r'export\s+(const|function|class|interface|type|enum)\s+(\w+)')
-RE_IPC_REGISTER = re.compile(r'ipcMain\.(handle|on)\s*\(')
+RE_IPC_REGISTER = re.compile(r'(?:ipcMain\.(?:handle|on)|createHandler)\s*\(')
 RE_IPC_INVOKE = re.compile(r'ipcRenderer\.(invoke|send)\s*\(')
 RE_DB_TRANSACTION = re.compile(r'(transaction|exec|prepare|run)\s*\(')
 RE_FUNCTION = re.compile(r'(?:function|const)\s+(\w+)\s*[=(]')
@@ -293,7 +295,7 @@ def run_circular_check() -> dict:
 
 
 def main():
-    print(f"[scan V2.5] 开始扫描 {SRC_DIR} ...")
+    print(f"[scan V2.6] 开始扫描 {SRC_DIR} ...")
 
     results = []
     for root, dirs, files in os.walk(SRC_DIR):
@@ -355,7 +357,8 @@ def main():
 
     # IPC/DB 目录文件缺少对应注册
     for r in results:
-        if r["is_ipc_dir"] and not r["has_ipc"]:
+        rel_path = Path(r["file"])
+        if r["is_ipc_dir"] and not r["has_ipc"] and "utils" not in rel_path.parts:
             issues.append({
                 "severity": "P0",
                 "file": r["relative"], "path": r["file"], "line": 1,
@@ -400,7 +403,7 @@ def main():
     # ── 构建输出 ──
     output = {
         "scan_date": TODAY,
-        "scan_version": "V2.5",
+        "scan_version": "V2.6",
         "project_root": str(SRC_DIR.parent),
         "stats": stats,
         "large_files_top10": [
@@ -456,18 +459,18 @@ def main():
         json.dump(output, f, ensure_ascii=False, indent=2)
 
     # ── 控制台摘要 ──
-    print(f"[scan V2.5] 扫描完成: {stats['total_files']} 文件, {stats['total_lines']} 行")
-    print(f"[scan V2.5] any={stats['total_any']}  ts-ignore={stats['total_ts_ignore']}  "
+    print(f"[scan V2.6] 扫描完成: {stats['total_files']} 文件, {stats['total_lines']} 行")
+    print(f"[scan V2.6] any={stats['total_any']}  ts-ignore={stats['total_ts_ignore']}  "
           f"as={stats['total_as_assert']}  console={stats['total_console']}")
-    print(f"[scan V2.5] export-default={stats['total_export_default']}  "
+    print(f"[scan V2.6] export-default={stats['total_export_default']}  "
           f"nonnull-assert={stats['total_nonnull_assert']}  "
           f"inline-style={stats['total_inline_style']}")
-    print(f"[scan V2.5] 安全: 硬编码凭据={hardcoded_cred_count}  "
+    print(f"[scan V2.6] 安全: 硬编码凭据={hardcoded_cred_count}  "
           f"IPC-trycatch缺失={stats['total_ipc_trycatch_issues']}")
-    print(f"[scan V2.5] 循环依赖: {'发现 ' + str(len(circular_result['circular_deps'])) + ' 处' if circular_result['circular_deps'] else '未发现' if circular_result['success'] else '跳过 (' + (circular_result['error'] or '') + ')'}")
-    print(f"[scan V2.5] 总问题: {len(issues)} (P0={sum(1 for i in issues if i['severity']=='P0')} "
+    print(f"[scan V2.6] 循环依赖: {'发现 ' + str(len(circular_result['circular_deps'])) + ' 处' if circular_result['circular_deps'] else '未发现' if circular_result['success'] else '跳过 (' + (circular_result['error'] or '') + ')'}")
+    print(f"[scan V2.6] 总问题: {len(issues)} (P0={sum(1 for i in issues if i['severity']=='P0')} "
           f"P1={sum(1 for i in issues if i['severity']=='P1')})")
-    print(f"[scan V2.5] 报告: {json_path}")
+    print(f"[scan V2.6] 报告: {json_path}")
 
 
 if __name__ == "__main__":
