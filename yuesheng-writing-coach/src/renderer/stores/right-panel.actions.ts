@@ -11,7 +11,6 @@
  * 4. 不删除会话：closePanel() 仅收起面板，不清除会话（方便重新打开时恢复）。
  *
  * == 使用示例 ==
- *   import { rightPanelActions } from '../../stores/right-panel.actions';
  *   rightPanelActions.openEditor(chapterId, msTitle);
  *   rightPanelActions.openTool('training');
  *   rightPanelActions.removeSession(sessionId);

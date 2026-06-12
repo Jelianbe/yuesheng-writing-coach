@@ -1,9 +1,9 @@
 # 任务链状态（统一正本）
 
-> **最后更新**: 2026-06-11  V16.7
+> **最后更新**: 2026-06-11  V16.8
 > **系统版本**: V3.6
 > **规范依据**: [TASK-SYSTEM-DESIGN.md](TASK-SYSTEM-DESIGN.md)
-> **任务链版本**: V16.7
+> **任务链版本**: V16.8
 
 ---
 
@@ -863,15 +863,15 @@ flowchart LR
 | I-014 | MANUSCRIPT_GET 未加入 ALLOWED_INVOKE_CHANNELS | 数据流审计(FB240611-003) | ✅ **问题存在** — 有 handler + IPC_CHANNELS 定义但不在白名单 | **✅ 已修复** | FB240611-003 |
 | I-015 | onboarding:analyze 被 preload 白名单阻挡 | 数据流审计(FB240611-003) | ✅ **问题存在** — handler 存在但白名单无条目 | **✅ 已修复** | FB240611-003 |
 | I-016 | chat:stop 有白名单但无 handler | 数据流审计(FB240611-003) | ✅ **问题存在** — 白名单有 CHAT_STOP 但 ipcMain.handle 未注册 | **✅ 已修复** | FB240611-003 |
-| I-017 | training.handler.ts 使用动态 require() | 数据流审计(FB240611-003) | ✅ **问题存在** — 第 186 行 `require('./teaching-state.handler')` | **⏳ 待修复** | — |
-| I-018 | diagnosis.handler.ts TeachingState 推送缺装饰字段 | 数据流审计(FB240611-003) | ✅ **问题存在** — 推送裸 TeachingState 而非带 phaseName 的装饰对象 | **⏳ 待修复** | — |
-| I-019 | TEACHING_STATE_UPDATED 双重监听 | 数据流审计(FB240611-003) | ✅ **问题存在** — useAppIpcListener + TeachingProgressPanel 同时监听 | **⏳ 待修复** | — |
-| I-020 | 无 profile.store.ts / growth.store.ts | 数据流审计(FB240611-003) | ✅ **问题存在** — 面板各维护本地 useState | **⏳ 待修复** | — |
-| I-021 | src/main/ipc/utils.ts 死代码 | 数据流审计(FB240611-003) | ✅ **问题存在** — 无任何文件导入 | **⏳ 待修复** | — |
-| I-022 | training:derive-behavior 命名不统一 | 数据流审计(FB240611-003) | ✅ **问题存在** — 唯一使用 kebab-case | **⏳ 待修复** | — |
-| I-023 | chapter:create/delete/manuscript:delete 类型映射缺失 | 数据流审计(FB240611-003) | ✅ **问题存在** — types-ipc.ts 缺少 3 个通道类型映射 | **⏳ 待修复** | — |
-| I-024 | WorkTreePanel 不展示 loading/error 状态 | 数据流审计(FB240611-003) | ✅ **问题存在** — 不读取 loading/error | **⏳ 待修复** | — |
-| I-025 | 缺少 chapter:update 通用通道 | 数据流审计(FB240611-003) | ✅ **问题存在** — 只有 updateContent | **⏳ 待修复** | — |
+| I-017 | training.handler.ts 使用动态 require() | 数据流审计(FB240611-003) | ✅ **问题存在** — 第 186 行 `require('./teaching-state.handler')` | **✅ 已修复** | V16.8 |
+| I-018 | diagnosis.handler.ts TeachingState 推送缺装饰字段 | 数据流审计(FB240611-003) | ❌ **实际已装饰** — `pushTeachingStateUpdate` 已带 phaseName/subphaseName/phaseProgress | **❌ 关闭-误判** | — |
+| I-019 | TEACHING_STATE_UPDATED 双重监听 | 数据流审计(FB240611-003) | ✅ **问题存在** — useAppIpcListener + TeachingProgressPanel 同时监听 | **⏳ 待评估** | — |
+| I-020 | 无 profile.store.ts / growth.store.ts | 数据流审计(FB240611-003) | ✅ **问题存在** — 面板各维护本地 useState | **⏳ 待评估** | — |
+| I-021 | src/main/ipc/utils.ts 死代码 | 数据流审计(FB240611-003) | ✅ **问题存在** — 无任何文件导入 | **✅ 已修复** | V16.8 |
+| I-022 | training:derive-behavior 命名不统一 | 数据流审计(FB240611-003) | ✅ **问题存在** — 唯一使用 kebab-case | **✅ 已修复** | V16.8 |
+| I-023 | chapter:create/delete/manuscript:delete 类型映射缺失 | 数据流审计(FB240611-003) | ✅ **问题存在** — types-ipc.ts 缺少 3 个通道类型映射 | **✅ 已修复** | V16.8 |
+| I-024 | WorkTreePanel 不展示 loading/error 状态 | 数据流审计(FB240611-003) | ✅ **实际已展示** — 已有 workError/chapterError 显示 | **❌ 关闭-误判** | — |
+| I-025 | 缺少 chapter:update 通用通道 | 数据流审计(FB240611-003) | ✅ **问题存在** — 只有 updateContent | **⏳ 待评估** | — |
 
 ### 验证方法
 
@@ -1449,7 +1449,7 @@ P0（核心链路）                          P1（体验提升）              
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
-| **V16.7** | 2026-06-11 | 每日体检 broken import 修复：tsc 清零（paradigm.store.ts TabBar 残留 + app-helpers.ts RightPanel 残留）|
+| **V16.8** | 2026-06-11 | 每日体检 V2.1 深度扫描修复（R-30）：F-02 createHandler 迁移、F-03 AUTOINCREMENT→UUID、F-04 迁移事务包裹、F-07 chapter.store guard；session.service.test.ts mock 修复 |
 | **V16.6** | 2026-06-11 | FB240611-003 整合审计修复：013_manuscripts.sql 创建、MANUSCRIPT_GET 白名单补充、AbilityProfilePanel/GrowthPanel sessionId 从 useSessionStore 获取、CHAT_STOP handler 注册、onboarding:analyze 白名单补充；App.tsx/useAppIpcListener 无用 IPC 回调清理；新增 13 个审计 Issue(I-013~I-025) |
 | **V16.5** | 2026-06-09 | FB240611-002 数据流审计：TeachingState 推送修复、validatePayload 补充、证据 ID 冲突修复、diag.store 错误处理 |
 | **V16.3** | 2026-06-09 | V2 最终收尾：V2-007 IPC 统一 + V2-008/009~015 审计确认 + V2-016 推荐引擎确认 + V2-023 清理 + 关卡审查全部完成 |
