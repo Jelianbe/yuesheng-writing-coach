@@ -865,8 +865,8 @@ flowchart LR
 | I-016 | chat:stop 有白名单但无 handler | 数据流审计(FB240611-003) | ✅ **问题存在** — 白名单有 CHAT_STOP 但 ipcMain.handle 未注册 | **✅ 已修复** | FB240611-003 |
 | I-017 | training.handler.ts 使用动态 require() | 数据流审计(FB240611-003) | ✅ **问题存在** — 第 186 行 `require('./teaching-state.handler')` | **✅ 已修复** | V16.8 |
 | I-018 | diagnosis.handler.ts TeachingState 推送缺装饰字段 | 数据流审计(FB240611-003) | ❌ **实际已装饰** — `pushTeachingStateUpdate` 已带 phaseName/subphaseName/phaseProgress | **❌ 关闭-误判** | — |
-| I-019 | TEACHING_STATE_UPDATED 双重监听 | 数据流审计(FB240611-003) | ✅ **问题存在** — useAppIpcListener + TeachingProgressPanel 同时监听 | **⏳ 待评估** | — |
-| I-020 | 无 profile.store.ts / growth.store.ts | 数据流审计(FB240611-003) | ✅ **问题存在** — 面板各维护本地 useState | **⏳ 待评估** | — |
+| I-019 | TEACHING_STATE_UPDATED 双重监听 | 数据流审计(FB240611-003) | ✅ **问题存在** — useAppIpcListener + TeachingProgressPanel 同时监听 | **✅ 已修复** | V16.8 |
+| I-020 | 无 profile.store.ts / growth.store.ts | 数据流审计(FB240611-003) | ✅ **问题存在** — 面板各维护本地 useState | **❌ 关闭-无需 store** | V16.8 |
 | I-021 | src/main/ipc/utils.ts 死代码 | 数据流审计(FB240611-003) | ✅ **问题存在** — 无任何文件导入 | **✅ 已修复** | V16.8 |
 | I-022 | training:derive-behavior 命名不统一 | 数据流审计(FB240611-003) | ✅ **问题存在** — 唯一使用 kebab-case | **✅ 已修复** | V16.8 |
 | I-023 | chapter:create/delete/manuscript:delete 类型映射缺失 | 数据流审计(FB240611-003) | ✅ **问题存在** — types-ipc.ts 缺少 3 个通道类型映射 | **✅ 已修复** | V16.8 |
