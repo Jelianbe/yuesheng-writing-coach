@@ -24,7 +24,7 @@ import { SYNDROME_META, getActionsForSyndrome } from '../../shared/mappings';
 import { PromptLoader } from './prompt-loader';
 import type { CodexEntry } from './codex.service';
 import { MessageRouter } from './message-router';
-import { StudentModelService } from './student-model.service';
+import { StudentModelService } from './student-model-service';
 import { TeachingStrategyService } from './teaching-strategy.service';
 import { ProblemPrioritizer } from './problem-prioritizer.service';
 import { groupPassagesBySyndrome, getEvidenceForSyndrome } from './evidence-grouping';
@@ -156,7 +156,6 @@ export class ChatOrchestratorService {
     const resolvedMessage = this.resolveChapterReference(message);
     if (resolvedMessage !== message) {
       message = resolvedMessage;
-      console.log('[ChatSend] Message resolved from chapter reference');
     }
 
     if (!sessionId) {
@@ -424,13 +423,6 @@ export class ChatOrchestratorService {
     const isNarrative = analysis?.contentType !== 'non-narrative';
 
     if (analysis && isNarrative) {
-      console.log('[DEBUG] DiagnosisAgent analysis:', JSON.stringify({
-        rootCause: analysis.rootCause,
-        syndromeRef: analysis.syndromeRef,
-        keyPassagesCount: analysis.keyPassages?.length ?? 0,
-        confidence: analysis.confidence,
-      }));
-
       const tempMessageId = this.generateId();
       const diagId = deps.diagnosisService.save({
         sessionId: activeSessionId,
@@ -442,12 +434,6 @@ export class ChatOrchestratorService {
       });
       deps.diagnosisService.saveAnalysis(analysis, diagId);
       const entry = this.analysisToDiagnosisEntry(analysis, activeSessionId, tempMessageId);
-      console.log('[DEBUG] DiagnosisEntry:', JSON.stringify({
-        sessionId: entry.sessionId,
-        syndromesCount: entry.syndromes.length,
-        syndromes: entry.syndromes.map(s => s.id),
-        actionsCount: entry.suggestedActions.length,
-      }));
       deps.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, entry);
       markDiagnosisPushed(activeSessionId);
     }
@@ -678,7 +664,6 @@ export class ChatOrchestratorService {
           messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) } as any);
         }
 
-        console.log(`[ToolCall] Round ${round + 1}: ${toolCallsInRound.length} tool(s) executed, continuing stream...`);
       }
 
       this.currentAbortController = null;
@@ -748,16 +733,12 @@ export class ChatOrchestratorService {
           continue;
         }
 
-        console.log(`[ChapterResolve] Resolved chapter "${row.title}" (${chapterContent.length} chars)`);
         resolved = resolved.replace(fullMatch, chapterContent);
       } catch (err) {
         console.error('[ChapterResolve] Failed to load chapter:', err);
       }
     }
 
-    if (resolved !== message) {
-      console.log(`[ChapterResolve] Total resolved length: ${resolved.length} chars`);
-    }
     return resolved;
   }
 

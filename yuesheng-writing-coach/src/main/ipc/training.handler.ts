@@ -18,7 +18,7 @@ import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 import { generateRecommendations, getChallengeTemplate } from '../services/training-recommendation.service';
 import { TrainingRecordService } from '../services/training-record.service';
-import { StudentModelService } from '../services/student-model.service';
+import { StudentModelService } from '../services/student-model-service';
 import { evaluateTraining } from '../services/training-evaluator.service';
 import { deriveBehavior, type DerivationInput } from '../services/behavior-derivation.service';
 import { downgradeSyndromeSeverity } from '../services/teaching-state-machine';

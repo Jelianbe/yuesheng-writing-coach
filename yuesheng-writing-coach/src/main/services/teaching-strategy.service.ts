@@ -15,7 +15,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { ProficiencyLevel, CognitiveStyle } from './student-model.service';
+import { ProficiencyLevel, CognitiveStyle } from './student-model-service';
 import { TeachingStrategyRouter } from './teaching-strategy-router';
 import type { RouterInput, TeachingMode as RouterTeachingMode, FocusDecision, ModeDecision, ParameterDecision } from '../../renderer/shared/types';
 
