@@ -38,6 +38,8 @@ interface ChatViewProps {
   growthSummary: string | null;
   /** 桥接卡片推荐（null = 无推荐或已关闭） */
   bridgeRecommendation: TrainingRecommendation | null;
+  /** 是否已配置 API Key（控制欢迎卡片和发送按钮禁用） */
+  isConfigured?: boolean;
   onSend: (text: string) => void;
   onStop: () => void;
   onStartEditing: (syndromeId: string, evidence: string[], name: string, severity: string) => void;
@@ -63,6 +65,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
   hasHistory,
   growthSummary,
   bridgeRecommendation,
+  isConfigured = true,
   onSend,
   onStop,
   onStartEditing,
@@ -142,8 +145,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // P-04: 新用户引导状态
   const { onboardingActive, onboardingStep, completeOnboarding, skipOnboarding, setOnboardingStep } = useChatStore();
 
+  // ── 无消息时的欢迎卡片（未配置 API Key 时显示）──
+  const showWelcomeCard = !isConfigured && !onboardingActive && messages.length === 0;
+
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* ── 搜索栏 ── */}
       {showSearch && (
         <div className={styles.searchBar}>
@@ -251,18 +257,72 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       )}
 
-      {/* ── 消息列表（引导完成后显示） ── */}
-      {!onboardingActive && (
-        <MessageList
-          messages={loadedMessages}
-          isStreaming={isStreaming}
-          hasSession={!!currentSessionId}
-          searchQuery={searchQuery}
-          hasMore={hasMoreHistory && !searchQuery.trim()}
-          isLoadingMore={isLoadingMore}
-          onLoadMore={handleLoadMore}
-        />
-      )}
+      {/* ── 主要内容区（flex:1 填充剩余空间）── */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        {!onboardingActive && (
+          <>
+            {showWelcomeCard ? (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                padding: '40px 20px',
+                textAlign: 'center',
+              }}>
+                <div style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 16,
+                  background: 'var(--bg-card)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 24,
+                  fontSize: 28,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                }}>
+                  ⚙️
+                </div>
+                <div style={{
+                  fontSize: '1.25rem',
+                  fontWeight: 600,
+                  color: 'var(--text-primary)',
+                  marginBottom: 12,
+                }}>
+                  欢迎使用月笙
+                </div>
+                <div style={{
+                  fontSize: '0.9rem',
+                  color: 'var(--text-secondary)',
+                  marginBottom: 8,
+                  maxWidth: 320,
+                  lineHeight: 1.6,
+                }}>
+                  请先配置 API Key 开始写作旅程
+                </div>
+                <div style={{
+                  fontSize: '0.8rem',
+                  color: 'var(--text-tertiary)',
+                }}>
+                  点击右下角齿轮图标打开设置
+                </div>
+              </div>
+            ) : (
+              <MessageList
+                messages={loadedMessages}
+                isStreaming={isStreaming}
+                hasSession={!!currentSessionId}
+                searchQuery={searchQuery}
+                hasMore={hasMoreHistory && !searchQuery.trim()}
+                isLoadingMore={isLoadingMore}
+                onLoadMore={handleLoadMore}
+              />
+            )}
+          </>
+        )}
+      </div>
 
       {currentDiagnosis && !isStreaming && (
         <div className={styles.diagnosisArea}>
@@ -315,9 +375,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
           onSend={onSend}
           onStop={onStop}
           isStreaming={isStreaming}
-          disabled={false}
+          disabled={!isConfigured}
         />
       )}
-    </>
+    </div>
   );
 };

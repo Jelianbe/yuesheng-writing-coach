@@ -2,6 +2,7 @@ import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Settings, PanelRightClose, Plus, ListChecks } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
+import { useConfigStore } from '../../stores/config.store';
 import { rightPanelService } from '../../services/right-panel.service';
 import { IconStripButton } from './IconStripButton';
 import { SessionTabBar } from './SessionTabBar';
@@ -30,6 +31,7 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
   const toggleCollapsed = useDrawerStore(s => s.toggleCollapsed);
   const sessions = usePanelSessionStore(s => s.sessions);
   const activeSessionId = usePanelSessionStore(s => s.activeSessionId);
+  const isConfigured = useConfigStore(s => s.isConfigured);
 
   // ── 可拖拽宽度（localStorage 持久化）──
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -120,8 +122,23 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
               onClick={handleIconClick} label={findLabel(tool.id)} />
           ))}
           <div className={styles.navSettingsArea}>
-            <IconStripButton toolId="__settings__" IconComponent={Settings}
-              isActive={false} onClick={handleIconClick} label="设置" />
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <IconStripButton toolId="__settings__" IconComponent={Settings}
+                isActive={false} onClick={handleIconClick} label="设置" />
+              {!isConfigured && (
+                <span style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--error, #ef4444)',
+                  border: '2px solid var(--bg-main, #fff)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+            </div>
           </div>
         </nav>
 
