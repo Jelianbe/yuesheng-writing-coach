@@ -9,6 +9,7 @@ import { Save, ArrowLeft, FileText, BookOpen, Loader } from 'lucide-react';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
 import { useParadigmStore } from '../../stores/paradigm.store';
+import { IPC_CHANNELS } from '../../shared/constants';
 
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 const SAVE_DEBOUNCE_MS = 1500;
@@ -43,7 +44,7 @@ export const ChapterEditor: React.FC = () => {
     setSaving(true);
     try {
       const invoke = (await import('../../utils/ipc')).getInvoke();
-      const result = await invoke('chapter:updateContent', { id: currentChapter.id, content: text }) as { success: boolean };
+      const result = await invoke(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, { id: currentChapter.id, content: text }) as { success: boolean };
       if (result.success) setLastSaved(new Date());
     } catch {
       // 保存失败，静默处理

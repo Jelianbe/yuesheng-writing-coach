@@ -16,7 +16,7 @@ import type { IPCRequestMap, IPCResponseMap, IPCEventMap } from '../shared/types
  *   const result = await invoke('config:get', { key: 'apiKey' });
  *   // result 类型为 ApiConfig[keyof ApiConfig]
  */
-export async function invoke<C extends keyof IPCRequestMap & string>(
+export async function invoke<C extends keyof IPCRequestMap & keyof IPCResponseMap & string>(
   channel: C,
   args?: IPCRequestMap[C],
 ): Promise<IPCResponseMap[C]> {

@@ -1,8 +1,7 @@
 import crypto from 'node:crypto';
-import { ipcMain } from 'electron';
 import { IPC_CHANNELS } from '../../shared/constants';
-import { apiSuccess, apiError } from '../../renderer/shared/types';
 import { validatePayload } from './utils/validate-payload';
+import { createHandler } from './utils/create-handler';
 import Database from 'better-sqlite3';
 
 export interface ManuscriptHandlerDeps {

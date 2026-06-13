@@ -103,6 +103,7 @@ export class IpcRegistry {
       disputeTracker,
       reflectionGate,
       mainWindow: this.mainWindow,
+      db: this.container.get<any>('db'),
     });
     registerChatHandlers();
 

@@ -6,9 +6,11 @@ import { cjsToEsmFix } from './src/renderer/plugins/cjs-to-esm-fix';
 export default defineConfig({
   plugins: [cjsToEsmFix(), react()],
   root: 'src/renderer',
+  base: './',  // Electron file:// 协议必须使用相对路径
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: true,
+    target: 'chrome120',
   },
   resolve: {
     alias: {

@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { getInvoke } from '../../utils/ipc';
+import { IPC_CHANNELS } from '../../shared/constants';
 import { useSessionStore } from '../../stores/session.store';
 
 interface SyndromeTrendData {
@@ -83,33 +84,74 @@ const TrendChart: React.FC<{ data: SyndromeTrendData[] }> = ({ data }) => {
   );
 };
 
+/** 全局趋势切换按钮（RP-03） */
+const ToggleButton: React.FC<{ showGlobal: boolean; onToggle: () => void }> = ({ showGlobal, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    style={{
+      padding: '3px 10px',
+      borderRadius: 'var(--radius-full)',
+      border: '1px solid var(--border-light)',
+      background: showGlobal ? 'var(--accent)' : 'transparent',
+      color: showGlobal ? '#fff' : 'var(--text-tertiary)',
+      fontSize: '0.65rem',
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    {showGlobal ? '全部历史' : '当前会话'}
+  </button>
+);
+
 export const GrowthPanel: React.FC = () => {
   const [trends, setTrends] = useState<SyndromeTrendData[]>([]);
   const [summary, setSummary] = useState({ masteredCount: 0, improvingCount: 0, stableCount: 0, needsAttentionCount: 0 });
   const [loading, setLoading] = useState(true);
+  const [showGlobal, setShowGlobal] = useState(false);
   const sessionId = useSessionStore(s => s.currentSessionId);
 
   useEffect(() => {
-    if (!sessionId) return;
     let mounted = true;
     const fetchData = async () => {
       setLoading(true);
       try {
         const invoke = getInvoke();
-        const result = await invoke('growth:getTrends', { sessionId }) as {
-          success: boolean;
-          data?: { trends: SyndromeTrendData[]; masteredCount: number; improvingCount: number; stableCount?: number; needsAttentionCount: number };
-        };
-        if (mounted && result.success && result.data) {
-          const trendList = result.data.trends || [];
-          setTrends(trendList);
-          const stableCount = result.data.stableCount ?? trendList.filter(t => t.status === 'stable').length;
-          setSummary({
-            masteredCount: result.data.masteredCount || 0,
-            improvingCount: result.data.improvingCount || 0,
-            stableCount,
-            needsAttentionCount: result.data.needsAttentionCount || 0,
-          });
+        if (showGlobal) {
+          // 全部历史：调用 growth:getGlobalTrends（无需 sessionId）
+          const result = await invoke(IPC_CHANNELS.GROWTH_GET_GLOBAL_TRENDS) as {
+            success: boolean;
+            data?: { trends: SyndromeTrendData[]; masteredCount: number; improvingCount: number; stableCount?: number; needsAttentionCount: number };
+          };
+          if (mounted && result.success && result.data) {
+            const trendList = result.data.trends || [];
+            setTrends(trendList);
+            const stableCount = result.data.stableCount ?? trendList.filter(t => t.status === 'stable').length;
+            setSummary({
+              masteredCount: result.data.masteredCount || 0,
+              improvingCount: result.data.improvingCount || 0,
+              stableCount,
+              needsAttentionCount: result.data.needsAttentionCount || 0,
+            });
+          }
+        } else {
+          if (!sessionId) return;
+          const result = await invoke(IPC_CHANNELS.GROWTH_GET_TRENDS, { sessionId }) as {
+            success: boolean;
+            data?: { trends: SyndromeTrendData[]; masteredCount: number; improvingCount: number; stableCount?: number; needsAttentionCount: number };
+          };
+          if (mounted && result.success && result.data) {
+            const trendList = result.data.trends || [];
+            setTrends(trendList);
+            const stableCount = result.data.stableCount ?? trendList.filter(t => t.status === 'stable').length;
+            setSummary({
+              masteredCount: result.data.masteredCount || 0,
+              improvingCount: result.data.improvingCount || 0,
+              stableCount,
+              needsAttentionCount: result.data.needsAttentionCount || 0,
+            });
+          }
         }
       } catch {
         // 静默
@@ -119,12 +161,17 @@ export const GrowthPanel: React.FC = () => {
     };
     fetchData();
     return () => { mounted = false; };
-  }, [sessionId]);
+  }, [sessionId, showGlobal]);
 
   if (loading) {
     return (
-      <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
-        加载中...
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px' }}>
+          <ToggleButton showGlobal={showGlobal} onToggle={() => setShowGlobal(v => !v)} />
+        </div>
+        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+          加载中...
+        </div>
       </div>
     );
   }
@@ -135,27 +182,36 @@ export const GrowthPanel: React.FC = () => {
 
   if (hasNoRealData) {
     return (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px 20px',
-          color: 'var(--text-tertiary)',
-          gap: 12,
-          textAlign: 'center',
-        }}
-      >
-        <TrendingUp size={36} strokeWidth={1.4} opacity={0.3} />
-        <span style={{ fontSize: '0.85rem' }}>暂无成长记录</span>
-        <span style={{ fontSize: '0.72rem' }}>完成训练后，成长数据将在此展示</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px' }}>
+          <ToggleButton showGlobal={showGlobal} onToggle={() => setShowGlobal(v => !v)} />
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px 20px',
+            color: 'var(--text-tertiary)',
+            gap: 12,
+            textAlign: 'center',
+          }}
+        >
+          <TrendingUp size={36} strokeWidth={1.4} opacity={0.3} />
+          <span style={{ fontSize: '0.85rem' }}>暂无成长记录</span>
+          <span style={{ fontSize: '0.72rem' }}>完成训练后，成长数据将在此展示</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* RP-03: 全局趋势切换 */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 4px' }}>
+        <ToggleButton showGlobal={showGlobal} onToggle={() => setShowGlobal(v => !v)} />
+      </div>
       {/* 统计卡片 */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {

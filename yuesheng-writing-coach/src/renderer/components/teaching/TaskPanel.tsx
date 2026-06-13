@@ -12,6 +12,7 @@ import { CheckCircle, Circle, ClipboardList, Target } from 'lucide-react';
 import { useTeachingStateStore } from '../../stores/teaching-state.store';
 import { ACTION_NAMES } from '../../../shared/mappings';
 import { getInvoke } from '../../utils/ipc';
+import { IPC_CHANNELS } from '../../../shared/constants';
 
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 
@@ -113,7 +114,7 @@ export const TaskPanel: React.FC = () => {
     // 同步到后端
     try {
       const invoke = getInvoke();
-      await invoke('teachingState:update', {
+      await invoke(IPC_CHANNELS.TEACHING_STATE_UPDATE, {
         sessionId: currentState.sessionId,
         updates: { completedActions: updatedCompletedActions },
       });

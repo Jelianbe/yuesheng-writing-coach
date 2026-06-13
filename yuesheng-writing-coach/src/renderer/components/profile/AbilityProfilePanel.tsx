@@ -12,6 +12,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { User, TrendingUp, TrendingDown, Minus, Target, ClipboardCheck, AlertTriangle } from 'lucide-react';
 import type { AbilityProfile, AbilityScore, WeakPoint } from '../../shared/types';
 import { getInvoke } from '../../utils/ipc';
+import { IPC_CHANNELS } from '../../shared/constants';
 import { useSessionStore } from '../../stores/session.store';
 
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
@@ -88,7 +89,7 @@ export const AbilityProfilePanel: React.FC = () => {
     setError(null);
     try {
       const invoke = getInvoke();
-      const result = await invoke('ability:getProfile', { sessionId }) as {
+      const result = await invoke(IPC_CHANNELS.ABILITY_GET_PROFILE, { sessionId }) as {
         success: boolean; data?: AbilityProfile | null; error?: string;
       };
       if (result.success && result.data) {
