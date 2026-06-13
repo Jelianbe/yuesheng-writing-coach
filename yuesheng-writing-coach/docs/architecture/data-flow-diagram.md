@@ -24,12 +24,12 @@
                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
 │ [Layer 1.5] preload 安全桥接 (contextBridge)                         │
-│  白名单 API: invoke(41 channels) + on(5 channels)                     │
+│  白名单 API: invoke(50 channels) + on(5 channels)                     │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │
                                 ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│ [Layer 2] IPC 通信通道 (ALLOWED_INVOKE 41 + ALLOWED_EVENT 5)         │
+│ [Layer 2] IPC 通信通道 (ALLOWED_INVOKE 50 + ALLOWED_EVENT 5)         │
 │                                                                      │
 │  ┌─ 聊天 ──────────────────────────────────────────────────┐         │
 │  │ chat:send  chat:stop  chat:stream:data*  chat:stream:end*│         │
@@ -65,6 +65,14 @@
 │  │ config:get  set       │   └──────────────────────────────┘        │
 │  │ config:testConnection │                                            │
 │  └───────────────────────┘                                            │
+│                                                                      │
+│  ┌─ 事件推送路径 (L5→L2, webContents.send) ─────────────────────┐    │
+│  │ chat:stream:data      ← ChatOrchestratorService (SSE chunk)   │    │
+│  │ chat:stream:end        ← ChatOrchestratorService (流结束)      │    │
+│  │ chat:tool:executing    ← ChatOrchestratorService (tool call)   │    │
+│  │ diagnosis:update       ← ChatOrchestratorService (诊断写出)    │    │
+│  │ teachingState:updated  ← TeachingStateMachine (阶段推进)       │    │
+│  └────────────────────────────────────────────────────────────────┘    │
 │  * = 事件通道（ALLOWED_EVENT_CHANNELS，非 invoke）                    │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │ ipcMain.handle / webContents.send
@@ -362,63 +370,64 @@ ChatOrchestratorService.sendMessage()
 
 ### IPC 通道 → Handler → Service → 数据表 可追溯矩阵
 
-| IPC 通道 | Handler 文件 | 注入的 Service | 读/写 | 数据表/存储 |
-|---|---|---|---|---|
-| `chat:send` | chat.handler → ChatOrchestrator | SessionService, DiagnosisService, PromptLoader, MessageRouter, StudentModelService, TeachingStrategyService, ProblemPrioritizer, DisputeTracker, ReflectionGate, StrategyInstructionBuilder, ApiProxy | W/R | messages, diagnosis_results, teaching_state |
-| `chat:stop` | chat.handler → ChatOrchestrator | (AbortController) | — | — |
-| `chat:stream:data`* | ChatOrchestrator → mainWindow | — | 事件 | — |
-| `chat:stream:end`* | ChatOrchestrator → mainWindow | — | 事件 | — |
-| `chat:tool:executing`* | ChatOrchestrator → mainWindow | — | 事件 | — |
-| `onboarding:analyze` | chat.handler → ChatOrchestrator | ApiProxy, ConfigService | — | — |
-| `session:list` | session.handler | SessionService | R | sessions, messages |
-| `session:create` | session.handler | SessionService | W | sessions |
-| `session:delete` | session.handler | SessionService | W | sessions, messages |
-| `session:rename` | session.handler | SessionService | W | sessions |
-| `session:getMessages` | session.handler | SessionService | R | messages |
-| `session:getMessagesPaged` | session.handler | SessionService | R | messages |
-| `session:listWithMeta` | session.handler | SessionService | R | sessions, messages |
-| `session:updateTitle` | session.handler | SessionService | W | sessions |
-| `session:searchMessages` | session.handler | SessionService | R | messages |
-| `session:isNewUser` | session.handler | SessionService | R | sessions |
-| `diagnosis:query` | diagnosis.handler | TeachingStateService | R | teaching_state |
-| `diagnosis:submitRewrite` | diagnosis.handler | SessionService, ConfigService, ApiProxy | W/R | messages |
-| `diagnosis:getComparison` | diagnosis.handler | DiagnosisService | R | diagnosis_results |
-| `diagnosis:update`* | diagnosis.handler → mainWindow | — | 事件 | — |
-| `growth:getTrends` | diagnosis.handler | GrowthTrendService → StudentModelService | R | diagnosis_results |
-| `growth:getGlobalTrends` | diagnosis.handler | GrowthTrendService → StudentModelService | R | diagnosis_results (全局) |
-| `teachingState:get` | teaching-state.handler | TeachingStateStore | R | teaching_state |
-| `teachingState:update` | teaching-state.handler | TeachingStateStore | W | teaching_state |
-| `teachingState:confirm` | teaching-state.handler | TeachingStateStore, TeachingStateMachine | W/R | teaching_state |
-| `teachingState:getPrompt` | teaching-state.handler | TeachingStateStore, PromptBuilder | R | teaching_state |
-| `teachingState:updateSummary` | teaching-state.handler | TeachingStateStore, PromptBuilder | W/R | teaching_state |
-| `teachingState:updated`* | teaching-state.handler → mainWindow | — | 事件 | — |
-| `ability:getProfile` | ability-profile.handler | AbilityProfileService | R | diagnosis_results + training_records (聚合) |
-| `evidence:getByDisease` | evidence.handler | EvidenceService | R | evidence |
-| `evidence:getByAbility` | evidence.handler | EvidenceService | R | evidence |
-| `evidence:getChain` | evidence.handler | EvidenceService | R | evidence + evidence_diagnosis_link |
-| `evidence:create` | evidence.handler | EvidenceService | W | evidence |
-| `evidence:getBySyndrome` | evidence.handler | EvidenceService | R | evidence |
-| `training:recommend` | training.handler | StudentModelService, generateRecommendations | R | diagnosis_results |
-| `training:assign` | training.handler | TrainingRecordService, getChallengeTemplate | W | user_training_records |
-| `training:complete` | training.handler | TrainingRecordService | W | user_training_records |
-| `training:skip` | training.handler | TrainingRecordService | W | user_training_records |
-| `training:history` | training.handler | TrainingRecordService | R | user_training_records |
-| `training:submit` | training.handler | evaluateTraining, ConfigService | — | LLM API |
-| `training:evaluate` | training.handler | evaluateTraining, TrainingRecordService, TeachingStateService, downgradeSyndromeSeverity | W | user_training_records, teaching_state |
-| `training:deriveBehavior` | training.handler | deriveBehavior, ConfigService | — | LLM API |
-| `config:get` | config.handler | ConfigService | R | api-config.json |
-| `config:set` | config.handler | ConfigService | W | api-config.json |
-| `config:testConnection` | config.handler | ConfigService | — | LLM API |
-| `manuscript:list` | manuscript.handler | DB (直接) | R | manuscripts |
-| `manuscript:get` | manuscript.handler | DB (直接) | R | manuscripts |
-| `manuscript:create` | manuscript.handler | DB (直接) | W | manuscripts |
-| `manuscript:update` | manuscript.handler | DB (直接) | W | manuscripts |
-| `manuscript:delete` | manuscript.handler | DB (直接) | W | manuscripts |
-| `chapter:list` | manuscript.handler | DB (直接) | R | chapters |
-| `chapter:get` | manuscript.handler | DB (直接) | R | chapters |
-| `chapter:create` | manuscript.handler | DB (直接) | W | chapters |
-| `chapter:delete` | manuscript.handler | DB (直接) | W | chapters |
-| `chapter:updateContent` | manuscript.handler | DB (直接) | W | chapters |
+| IPC 通道 | Handler 文件 | 注入的 Service | 读/写 | 数据表/存储 | 请求 Payload 类型 | 响应 Payload 类型 |
+|---|---|---|---|---|---|---|
+| `chat:send` | chat.handler → ChatOrchestrator | SessionService, DiagnosisService, PromptLoader, MessageRouter, StudentModelService, TeachingStrategyService, ProblemPrioritizer, DisputeTracker, ReflectionGate, StrategyInstructionBuilder, ApiProxy | W/R | messages, diagnosis_results, teaching_state | `ChatSendRequest` | `ChatSendResponse` |
+| `chat:stop` | chat.handler → ChatOrchestrator | (AbortController) | — | — | `ChatStopRequest` | `ChatStopResponse` |
+| `chat:stream:data`* | ChatOrchestrator → mainWindow | — | 事件 | — | — | `ChatStreamDataEvent` |
+| `chat:stream:end`* | ChatOrchestrator → mainWindow | — | 事件 | — | — | `ChatStreamEndEvent` |
+| `chat:tool:executing`* | ChatOrchestrator → mainWindow | — | 事件 | — | — | `ChatToolExecutingEvent` |
+| `onboarding:analyze` | chat.handler → ChatOrchestrator | ApiProxy, ConfigService | — | — | `OnboardingAnalyzeRequest` | `ApiResponse<OnboardingAnalyzeResponse>` |
+| `session:list` | session.handler | SessionService | R | sessions, messages | `SessionListRequest` | `ApiResponse<SessionListResponse>` |
+| `session:create` | session.handler | SessionService | W | sessions | `SessionCreateRequest` | `ApiResponse<SessionCreateResponse>` |
+| `session:delete` | session.handler | SessionService | W | sessions, messages | `SessionDeleteRequest` | `ApiResponse<{ success: true }>` |
+| `session:rename` | session.handler | SessionService | W | sessions | `SessionRenameRequest` | `ApiResponse<{ success: true }>` |
+| `session:getMessages` | session.handler | SessionService | R | messages | `SessionGetMessagesRequest` | `ApiResponse<SessionGetMessagesResponse>` |
+| `session:getMessagesPaged` | session.handler | SessionService | R | messages | `SessionGetMessagesPagedRequest` | `ApiResponse<SessionGetMessagesPagedResponse>` |
+| `session:listWithMeta` | session.handler | SessionService | R | sessions, messages | `SessionListWithMetaRequest` | `ApiResponse<SessionListWithMetaResponse>` |
+| `session:updateTitle` | session.handler | SessionService | W | sessions | `SessionUpdateTitleRequest` | `ApiResponse<SessionUpdateTitleResponse>` |
+| `session:searchMessages` | session.handler | SessionService | R | messages | `SessionSearchMessagesRequest` | `ApiResponse<SessionSearchMessagesResponse>` |
+| `session:isNewUser` | session.handler | SessionService | R | sessions | `SessionIsNewUserRequest` | `ApiResponse<SessionIsNewUserResponse>` |
+| `diagnosis:query` | diagnosis.handler | TeachingStateService | R | teaching_state | `DiagnosisQueryRequest` | `ApiResponse<DiagnosisQueryResponse>` |
+| `diagnosis:submitRewrite` | diagnosis.handler | SessionService, ConfigService, ApiProxy | W/R | messages | `DiagnosisSubmitRewriteRequest` | `ApiResponse<DiagnosisRewriteEvaluation>` |
+| `diagnosis:getComparison` | diagnosis.handler | DiagnosisService | R | diagnosis_results | `DiagnosisGetComparisonRequest` | `DiagnosisComparisonResult` |
+| `diagnosis:update`* | diagnosis.handler → mainWindow | — | 事件 | — | — | `DiagnosisUpdateEvent` |
+| `growth:getTrends` | diagnosis.handler | GrowthTrendService → StudentModelService | R | diagnosis_results | `GrowthGetTrendsRequest` | `ApiResponse<GrowthGetTrendsResponse>` |
+| `growth:getGlobalTrends` | diagnosis.handler | GrowthTrendService → StudentModelService | R | diagnosis_results (全局) | `GrowthGetGlobalTrendsRequest` | `ApiResponse<GrowthGetGlobalTrendsResponse>` |
+| `teachingState:get` | teaching-state.handler | TeachingStateStore | R | teaching_state | `TeachingStateGetRequest` | `ApiResponse<TeachingStateGetResponse>` |
+| `teachingState:update` | teaching-state.handler | TeachingStateStore | W | teaching_state | `TeachingStateUpdateRequest` | `ApiResponse<TeachingState>` |
+| `teachingState:confirm` | teaching-state.handler | TeachingStateStore, TeachingStateMachine | W/R | teaching_state | `TeachingStateConfirmRequest` | `ApiResponse<TeachingStateConfirmResponse>` |
+| `teachingState:getPrompt` | teaching-state.handler | TeachingStateStore, PromptBuilder | R | teaching_state | `TeachingStateGetPromptRequest` | `ApiResponse<TeachingStateGetPromptResponse>` |
+| `teachingState:updateSummary` | teaching-state.handler | TeachingStateStore, PromptBuilder | W/R | teaching_state | `TeachingStateUpdateSummaryRequest` | `ApiResponse<TeachingState>` |
+| `teachingState:updated`* | teaching-state.handler → mainWindow | — | 事件 | — | — | `TeachingStateUpdatedEvent` |
+| `ability:getProfile` | ability-profile.handler | AbilityProfileService | R | diagnosis_results + training_records (聚合) | `AbilityGetProfileRequest` | `ApiResponse<AbilityGetProfileResponse>` |
+| `evidence:getByDisease` | evidence.handler | EvidenceService | R | evidence | `EvidenceGetByDiseaseRequest` | `ApiResponse<EvidenceGetResponse>` |
+| `evidence:getByAbility` | evidence.handler | EvidenceService | R | evidence | `EvidenceGetByAbilityRequest` | `ApiResponse<EvidenceGetResponse>` |
+| `evidence:getChain` | evidence.handler | EvidenceService | R | evidence + evidence_diagnosis_link | `EvidenceGetChainRequest` | `ApiResponse<EvidenceGetChainResponse>` |
+| `evidence:create` | evidence.handler | EvidenceService | W | evidence | `EvidenceCreateRequest` | `ApiResponse<EvidenceCreateResponse>` |
+| `evidence:getBySyndrome` | evidence.handler | EvidenceService | R | evidence | `EvidenceGetBySyndromeRequest` | `ApiResponse<EvidenceGetResponse>` |
+| `training:recommend` | training.handler | StudentModelService, generateRecommendations | R | diagnosis_results | `TrainingRecommendRequest` | `ApiResponse<TrainingRecommendResponse>` |
+| `training:assign` | training.handler | TrainingRecordService, getChallengeTemplate | W | user_training_records | `TrainingAssignRequest` | `ApiResponse<TrainingAssignResponse>` |
+| `training:complete` | training.handler | TrainingRecordService | W | user_training_records | `TrainingCompleteRequest` | `ApiResponse<TrainingCompleteResponse>` |
+| `training:skip` | training.handler | TrainingRecordService | W | user_training_records | `TrainingSkipRequest` | `ApiResponse<TrainingCompleteResponse>` |
+| `training:history` | training.handler | TrainingRecordService | R | user_training_records | `TrainingHistoryRequest` | `ApiResponse<TrainingHistoryResponse>` |
+| `training:submit` | training.handler | evaluateTraining, ConfigService | — | LLM API | `TrainingSubmitRequest` | `ApiResponse<TrainingSubmitResponse>` |
+| `training:evaluate` | training.handler | evaluateTraining, TrainingRecordService, TeachingStateService, downgradeSyndromeSeverity | W | user_training_records, teaching_state | `TrainingEvaluateRequest` | `ApiResponse<TrainingEvaluateResponse>` |
+| `training:deriveBehavior` | training.handler | deriveBehavior, ConfigService | — | LLM API | `TrainingDeriveBehaviorRequest` | `ApiResponse<TrainingDeriveBehaviorResponse>` |
+| `config:get` | config.handler | ConfigService | R | api-config.json | `ConfigGetRequest` | `ApiResponse<ConfigGetResponse>` |
+| `config:set` | config.handler | ConfigService | W | api-config.json | `ConfigSetRequest` | `ApiResponse<ConfigSetResponse>` |
+| `config:testConnection` | config.handler | ConfigService | — | LLM API | `ConfigTestConnectionRequest` | `ApiResponse<ConfigTestConnectionResponse>` |
+| `manuscript:list` | manuscript.handler | DB (直接) | R | manuscripts | `ManuscriptListRequest` | `ApiResponse<ManuscriptListResponse>` |
+| `manuscript:get` | manuscript.handler | DB (直接) | R | manuscripts | `ManuscriptGetRequest` | `ApiResponse<ManuscriptGetResponse>` |
+| `manuscript:create` | manuscript.handler | DB (直接) | W | manuscripts | `ManuscriptCreateRequest` | `ApiResponse<ManuscriptCreateResponse>` |
+| `manuscript:update` | manuscript.handler | DB (直接) | W | manuscripts | `ManuscriptUpdateRequest` | `ApiResponse<ManuscriptCreateResponse>` |
+| `manuscript:delete` | manuscript.handler | DB (直接) | W | manuscripts | `ManuscriptDeleteRequest` | `ApiResponse<{ success: true }>` |
+| `chapter:list` | manuscript.handler | DB (直接) | R | chapters | `ChapterListRequest` | `ApiResponse<ChapterListResponse>` |
+| `chapter:get` | manuscript.handler | DB (直接) | R | chapters | `ChapterGetRequest` | `ApiResponse<ChapterGetResponse>` |
+| `chapter:create` | manuscript.handler | DB (直接) | W | chapters | `ChapterCreateRequest` | `ApiResponse<ChapterCreateResponse>` |
+| `chapter:delete` | manuscript.handler | DB (直接) | W | chapters | `ChapterDeleteRequest` | `ApiResponse<{ success: true }>` |
+| `chapter:updateContent` | manuscript.handler | DB (直接) | W | chapters | `ChapterUpdateContentRequest` | `ApiResponse<ChapterUpdateContentResponse>` |
 
 > `*` = 事件通道（webContents.send，非 ipcMain.handle）
-> 总计: 28 个 invoke 通道 + 5 个 event 通道 = 33 个有效 IPC 通道
+> 总计: 50 个 invoke 通道 + 5 个 event 通道 = 55 个有效 IPC 通道
+> Payload 类型引用自 `src/shared/api-contracts/`，`ApiResponse<T>` 定义于 `base.ts`

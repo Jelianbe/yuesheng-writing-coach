@@ -39,12 +39,8 @@ export interface DiagState {
   loadEvidence: (syndromeId: string, sessionId: string) => Promise<EvidenceRecord[]>;
   /** 获取缓存的证据数据 */
   getEvidence: (syndromeId: string) => EvidenceRecord[];
-  /** 清除所有诊断数据 */
-  clear: () => void;
   /** 设置错误状态 */
   setError: (error: string | null) => void;
-  /** 设置加载状态 */
-  setLoading: (loading: boolean) => void;
 }
 
 /**

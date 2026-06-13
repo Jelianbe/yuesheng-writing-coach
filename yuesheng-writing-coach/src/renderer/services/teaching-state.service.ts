@@ -16,6 +16,7 @@ import type {
   TeachingStateGetPromptResponse,
   TeachingStateUpdateSummaryRequest,
   TeachingStateUpdatedEvent,
+  TeachingState,
 } from '../../shared/api-contracts/teaching-state.contract';
 
 export const teachingStateService = {
@@ -32,15 +33,15 @@ export const teachingStateService = {
   },
 
   /** 更新教学状态 */
-  async update(params: TeachingStateUpdateRequest): Promise<unknown> {
-    const result = await typedInvoke<TeachingStateUpdateRequest, unknown>(
+  async update(params: TeachingStateUpdateRequest): Promise<TeachingState> {
+    const result = await typedInvoke<TeachingStateUpdateRequest, TeachingState>(
       TeachingStateApi.update.channel,
       params,
     );
     if (!result.success) {
       throw new Error(result.error);
     }
-    return result.data;
+    return result.data!;
   },
 
   /** 确认阶段完成 */
@@ -68,15 +69,15 @@ export const teachingStateService = {
   },
 
   /** 更新诊断摘要 */
-  async updateSummary(params: TeachingStateUpdateSummaryRequest): Promise<unknown> {
-    const result = await typedInvoke<TeachingStateUpdateSummaryRequest, unknown>(
+  async updateSummary(params: TeachingStateUpdateSummaryRequest): Promise<TeachingState> {
+    const result = await typedInvoke<TeachingStateUpdateSummaryRequest, TeachingState>(
       TeachingStateApi.updateSummary.channel,
       params,
     );
     if (!result.success) {
       throw new Error(result.error);
     }
-    return result.data;
+    return result.data!;
   },
 
   /** 监听教学状态更新推送 — 返回 cleanup 函数 */

@@ -5,10 +5,9 @@
  *
  * 类型安全：
  * - invoke 使用 IPCRequestMap + IPCResponseMap 编译时校验通道/参数/返回类型
- * - subscribe 使用 IPCEventMap 编译时校验通道和数据负载类型
  */
 
-import type { IPCRequestMap, IPCResponseMap, IPCEventMap } from '../shared/types';
+import type { IPCRequestMap, IPCResponseMap } from '../shared/types';
 
 /**
  * 类型安全的 IPC invoke
@@ -38,24 +37,4 @@ export function getInvoke(): (channel: string, args?: unknown) => Promise<unknow
   return window.electronAPI.invoke.bind(window.electronAPI);
 }
 
-/**
- * 类型安全的 IPC 事件监听
- * 自动处理 cleanup
- *
- * @example
- *   const cleanup = subscribe('chat:stream:data', (data) => {
- *     // data 类型为 { sessionId: string; chunk: string }
- *   });
- */
-export function subscribe<C extends keyof IPCEventMap & string>(
-  channel: C,
-  callback: (data: IPCEventMap[C]) => void,
-): () => void {
-  if (!window.electronAPI?.on) {
-    // 非 Electron 环境返回空 cleanup（HMR / 浏览器预览）
-    return () => {};
-  }
-  return window.electronAPI.on(channel, (...args: unknown[]) => {
-    callback(args[0] as IPCEventMap[C]);
-  });
-}
+// subscribe 函数已移除（零引用）— 若需事件监听，请使用 window.electronAPI.on 直接绑定

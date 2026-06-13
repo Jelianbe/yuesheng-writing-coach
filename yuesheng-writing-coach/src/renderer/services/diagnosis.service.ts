@@ -10,6 +10,7 @@ import type {
   DiagnosisQueryRequest,
   DiagnosisQueryResponse,
   DiagnosisSubmitRewriteRequest,
+  DiagnosisRewriteEvaluation,
   DiagnosisGetComparisonRequest,
   DiagnosisUpdateEvent,
 } from '../../shared/api-contracts/diagnosis.contract';
@@ -28,8 +29,8 @@ export const diagnosisService = {
   },
 
   /** 提交改写评估 */
-  async submitRewrite(params: DiagnosisSubmitRewriteRequest): Promise<unknown> {
-    const result = await typedInvoke<DiagnosisSubmitRewriteRequest, unknown>(
+  async submitRewrite(params: DiagnosisSubmitRewriteRequest): Promise<{ evaluation: DiagnosisRewriteEvaluation } | undefined> {
+    const result = await typedInvoke<DiagnosisSubmitRewriteRequest, { evaluation: DiagnosisRewriteEvaluation }>(
       DiagnosisApi.submitRewrite.channel,
       params,
     );
@@ -40,15 +41,15 @@ export const diagnosisService = {
   },
 
   /** 获取诊断对比 */
-  async getComparison(params: DiagnosisGetComparisonRequest): Promise<unknown> {
-    const result = await typedInvoke<DiagnosisGetComparisonRequest, unknown>(
+  async getComparison(params: DiagnosisGetComparisonRequest): Promise<{ hasHistory: boolean; comparison?: string }> {
+    const result = await typedInvoke<DiagnosisGetComparisonRequest, { hasHistory: boolean; comparison?: string }>(
       DiagnosisApi.getComparison.channel,
       params,
     );
     if (!result.success) {
       throw new Error(result.error);
     }
-    return result.data;
+    return result.data!;
   },
 
   /** 监听诊断更新推送 — 返回 cleanup 函数 */

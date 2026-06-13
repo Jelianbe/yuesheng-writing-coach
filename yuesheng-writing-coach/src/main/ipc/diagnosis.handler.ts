@@ -9,24 +9,23 @@
  */
 
 import { BrowserWindow } from 'electron';
-import { parseDiagnosisFromAIResponse } from '../services/diagnosis-parser';
-import { DiagnosisService } from '../services/diagnosis.service';
-import { EvidenceService } from '../services/evidence.service';
-import { getAbilitiesForSyndrome } from '../../shared/mappings';
+import { DiagnosisService } from '../domains/diagnosis/diagnosis.service';
+import { EvidenceService } from '../domains/diagnosis/evidence/evidence.service';
 import { IPC_CHANNELS, IMPROVEMENT_THRESHOLD } from '../../shared/constants';
 import { wasDiagnosisPushed } from './utils/diagnosis-dedup';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 import { ApiProxy } from '../api-proxy';
-import { ConfigService } from '../services/config.service';
-import { SessionService } from '../services/session.service';
-import { DiagnosisMerger } from '../services/diagnosis-merger';
-import { TeachingStateService } from '../services/teaching-state.service';
-import { GrowthTrendService } from '../services/growth-trend.service';
+import { ConfigService } from '../shared/services/config.service';
+import { SessionService } from '../shared/services/session.service';
+import { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
+import { TeachingStateService } from '../domains/teaching/teaching-state.service';
+import { GrowthTrendService } from '../domains/student/growth-trend.service';
+import { processAIResponse } from '../domains/diagnosis/diagnosis-processor';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 
 // Re-export merge functions for use by diagnosis-merger service
-export { severityToNumber, mergeSyndromesIntoState } from '../services/diagnosis-merger-utils';
+export { severityToNumber, mergeSyndromesIntoState } from '../domains/diagnosis/diagnosis-merger-utils';
 
 export interface DiagnosisHandlerDeps {
   configService: ConfigService;
@@ -176,69 +175,35 @@ export function registerDiagnosisHandlers(): void {
  * 解析 AI 回复中的诊断表，合并到 TeachingState，推送到渲染进程
  *
  * 在 AI 回复流结束后调用
+ * 核心领域逻辑委托给 processAIResponse，本层只负责 IPC 推送
  */
 export function processDiagnosisFromAI(
   fullResponse: string,
   sessionId: string,
   messageId: string,
 ): void {
-  const { cleanResponse: _cleanResponse, diagnosis } = parseDiagnosisFromAIResponse(
-    fullResponse,
-    sessionId,
-    messageId,
-  );
+  const result = processAIResponse(fullResponse, sessionId, messageId, {
+    diagnosisService: deps!.diagnosisService,
+    evidenceService: deps!.evidenceService,
+    diagnosisMerger: deps!.diagnosisMerger,
+  });
 
-  if (!diagnosis) {
+  if (!result) {
     console.warn('[DiagnosisHandler] No diagnosis table in AI response');
     return;
   }
-
-  // 2. 持久化诊断结果（返回新生成的 UUID 主键）
-  let diagnosisId = '';
-  try {
-    diagnosisId = deps!.diagnosisService.save(diagnosis);
-  } catch (err) {
-    console.error('[DiagnosisHandler] Failed to persist diagnosis:', err);
-  }
-
-  // 3. 创建 Evidence 记录并关联到诊断
-  try {
-    const now = new Date().toISOString();
-    let evidenceIdx = 0;
-
-    for (const syndrome of diagnosis.syndromes) {
-      const abilities = getAbilitiesForSyndrome(syndrome.id);
-
-      for (const [idx, evText] of syndrome.evidence.entries()) {
-        const evidenceId = `EVD-${Date.now().toString(36)}-${evidenceIdx++}`;
-        const record = {
-          evidenceId,
-          type: 'text' as const,
-          level: 1 as const,
-          novelId: diagnosis.sessionId,
-          contentJson: JSON.stringify({ text: evText }),
-          relatedDisease: syndrome.id,
-          relatedAbility: abilities[0] ?? '',
-          extractedBy: 'diagnosis-parser',
-          createdAt: now,
-        };
-        deps!.evidenceService.save(record);
-        deps!.evidenceService.linkToDiagnosis(diagnosisId, evidenceId, idx === 0 ? 'primary' : 'supporting');
-      }
-    }
-  } catch (err) {
-    console.error('[DiagnosisHandler] Failed to create evidence:', err);
-  }
-
-  // 4. 将诊断结果合并到 TeachingState
-  deps!.diagnosisMerger.merge(diagnosis);
 
   // 4.5 推送 TeachingState 更新到前端（诊断合并可能推进子阶段）
   if (deps!.mainWindow) {
     try {
       const updatedState = deps!.teachingStateService.getBySession(sessionId);
       if (updatedState) {
-        deps!.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, updatedState);
+        deps!.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
+          ...updatedState,
+          phaseName: deps!.teachingStateService.getPhaseName(updatedState.currentPhase ?? ''),
+          subphaseName: deps!.teachingStateService.getSubphaseName(updatedState.currentSubphase ?? ''),
+          phaseProgress: deps!.teachingStateService.calculatePhaseProgress(updatedState.currentPhase ?? '', updatedState.currentSubphase ?? ''),
+        });
       }
     } catch (e) {
       console.warn('[DiagnosisHandler] Failed to push TeachingState update:', e);
@@ -247,6 +212,6 @@ export function processDiagnosisFromAI(
 
   // 5. 推送到渲染进程（RP-02: 若 Pipe 1 已推送则跳过）
   if (deps!.mainWindow && !wasDiagnosisPushed(sessionId)) {
-    deps!.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, diagnosis);
+    deps!.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, result.diagnosis);
   }
 }

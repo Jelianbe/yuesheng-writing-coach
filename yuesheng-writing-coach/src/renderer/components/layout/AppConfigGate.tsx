@@ -24,7 +24,7 @@ export interface AppConfigGateProps {
  * 2. 新用户引导 → 显示引导流程
  * 3. 全部通过 → 渲染 children（主应用）
  *
- * 配置页（ConfigPage）由 App.tsx 通过 view 状态统一控制，
+ * 配置由 App.tsx 通过 view 状态统一控制，
  * 不在本守卫内部渲染，避免与 view 状态产生冲突。
  */
 export const AppConfigGate: React.FC<AppConfigGateProps> = ({

@@ -152,6 +152,7 @@ export const SessionList: React.FC<SessionListProps> = ({
       <button
         onClick={e => { e.stopPropagation(); onCreateSession(); }}
         className={styles.newBtn}
+        aria-label="新对话"
       >
         <Plus size={14} strokeWidth={2} />
         <span>新对话</span>
@@ -184,6 +185,7 @@ export const SessionList: React.FC<SessionListProps> = ({
         <button
           onClick={() => setSessionMaxCount(prev => prev + 30)}
           className={styles.moreBtn}
+          aria-label="显示更多对话"
         >
           显示更多对话
         </button>

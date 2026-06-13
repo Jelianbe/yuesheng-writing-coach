@@ -32,12 +32,6 @@ interface ParadigmState {
   // === Actions ===
   /** 切换范式 */
   setParadigm: (mode: ParadigmMode) => void;
-
-  /** 切换范式 A 的 tab */
-  setActiveTab: (tabId: ParadigmATabId) => void;
-
-  /** 切换 Sidebar tab */
-  setSidebarTab: (tab: SidebarTab) => void;
 }
 
 // ===== 默认值 =====
@@ -72,8 +66,4 @@ export const useParadigmStore = create<ParadigmState>((set) => ({
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...prev, activeParadigm: mode }));
     } catch { /* ignore */ }
   },
-
-  setActiveTab: (tabId) => set({ activeTab: tabId }),
-
-  setSidebarTab: (tab) => set({ sidebarTab: tab }),
 }));

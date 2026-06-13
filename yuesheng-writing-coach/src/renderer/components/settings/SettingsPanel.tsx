@@ -169,6 +169,8 @@ export const SettingsPanel: React.FC = () => {
                   key={level}
                   type="button"
                   onClick={() => setAttitudeLevel(level)}
+                  aria-pressed={attitudeLevel === level}
+                  aria-label={`态度模式：${level === 'doubao' ? '温和' : '严格'}`}
                   style={{
                     flex: 1,
                     padding: '5px 10px',
@@ -195,6 +197,7 @@ export const SettingsPanel: React.FC = () => {
           {hasChanges && (
             <button
               onClick={handleSave}
+              aria-label="保存配置"
               style={{
                 flex: 1,
                 padding: '6px 12px',
@@ -215,6 +218,7 @@ export const SettingsPanel: React.FC = () => {
           <button
             onClick={testConnection}
             disabled={testStatus === 'testing'}
+            aria-label={testStatus === 'testing' ? '测试连接中' : '测试连接'}
             style={{
               flex: hasChanges ? 1 : undefined,
               padding: '6px 12px',
@@ -267,6 +271,7 @@ export const SettingsPanel: React.FC = () => {
         </div>
         <button
           onClick={toggleTheme}
+          aria-label={isDark ? '切换到亮色模式' : '切换到暗色模式'}
           style={{
             display: 'flex',
             alignItems: 'center',

@@ -63,7 +63,7 @@ const mockSessionService = {
 };
 
 // ===== 被测试模块导入 =====
-import { ChatOrchestratorService } from '../../services/chat-orchestrator.service';
+import { ChatOrchestratorService } from '../../domains/chat/chat-orchestrator.service';
 import { initChatHandlers, registerChatHandlers } from '../chat.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../diagnosis.handler';
 
@@ -124,55 +124,35 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
     const mockDiagnosisMerger = { merge: vi.fn() } as any;
 
     // === 设置 PromptLoader 和 MessageRouter mock ===
-    const mockPromptLoader = {
-      loadSystemPrompt: vi.fn((_attitude, diagnosisAnalysis, _diagnosisHistory, _studentContext, _sessionId) => {
-        if (diagnosisAnalysis) return 'Teaching Agent Prompt';
-        return 'Yuesheng Prompt';
-      }),
-    } as any;
     const mockMessageRouter = {
       shouldRunDiagnosis: () => true,
     } as any;
-
-    // === 初始化 Chat Handlers ===
-    const mockDisputeTracker = {
-      checkMessage: vi.fn().mockReturnValue({ hasDispute: false }),
-      getEffectiveAttitude: vi.fn().mockReturnValue('gentle'),
-    };
-    const mockReflectionGate = {
-      shouldEnterReflection: vi.fn().mockReturnValue(false),
-      shouldTriggerReflection: vi.fn().mockReturnValue(false),
-    };
-
-    const mockStudentModelService = {
-      toPromptText: vi.fn().mockReturnValue(''),
-      inferProficiency: vi.fn().mockReturnValue(0.5),
-      inferCognitiveStyle: vi.fn().mockReturnValue('unknown'),
-    };
-    const mockTeachingStrategyService = {
-      decide: vi.fn().mockReturnValue({ strategy: 'diagnosis', rationale: 'test' }),
-    };
-    const mockProblemPrioritizer = {
-      prioritize: vi.fn().mockReturnValue([]),
-    };
-
-    const mockStrategyInstructionBuilder = {
-      build: vi.fn().mockReturnValue(null),
-    };
 
     // === 创建 ChatOrchestratorService ===
     const orchestrator = new ChatOrchestratorService({
       configService: mockConfigService as any,
       sessionService: mockSessionService as any,
-      diagnosisService: mockDiagService as any,
-      promptLoader: mockPromptLoader,
+      diagnosisDomain: {
+        save: vi.fn().mockReturnValue('diag_123'),
+        saveAnalysis: vi.fn(),
+        getRecentBySession: vi.fn().mockReturnValue([]),
+        processAIResponse: vi.fn().mockReturnValue(undefined),
+      },
+      promptDomain: {
+        loadSystemPrompt: vi.fn().mockReturnValue('mock system prompt'),
+        buildCapsule: vi.fn().mockReturnValue('mock capsule'),
+      },
       messageRouter: mockMessageRouter,
-      studentModelService: mockStudentModelService as any,
-      teachingStrategyService: mockTeachingStrategyService as any,
-      problemPrioritizer: mockProblemPrioritizer as any,
-      disputeTracker: mockDisputeTracker as any,
-      reflectionGate: mockReflectionGate as any,
-      strategyInstructionBuilder: mockStrategyInstructionBuilder as any,
+      studentDomain: {
+        toPromptText: vi.fn().mockReturnValue('mock student context'),
+      },
+      teachingDomain: {
+        checkMessage: vi.fn(),
+        getEffectiveAttitude: vi.fn().mockReturnValue('friendly'),
+        shouldTriggerReflection: vi.fn().mockReturnValue({ shouldReflect: false }),
+        buildReflectionPrompt: vi.fn().mockReturnValue(''),
+        buildStrategyInstruction: vi.fn().mockReturnValue(null),
+      },
       mainWindow: mockWindow,
       db: { prepare: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue(null) }) } as any,
     });
@@ -266,11 +246,14 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
       const onlyUpdate = updateCalls[0];
       expect(onlyUpdate[1]).toMatchObject({
         sessionId: 'wiremock-session-1',
-        syndromes: expect.arrayContaining([
-          expect.objectContaining({ id: 'P004', name: '信息硬塞' }),
-          expect.objectContaining({ id: 'P003', name: '情绪标签化' }),
-          expect.objectContaining({ id: 'P002' }),
-        ]),
+        entry: {
+          sessionId: 'wiremock-session-1',
+          syndromes: expect.arrayContaining([
+            expect.objectContaining({ id: 'P004', name: '信息硬塞' }),
+            expect.objectContaining({ id: 'P003', name: '情绪标签化' }),
+            expect.objectContaining({ id: 'P002' }),
+          ]),
+        },
       });
 
     });
@@ -295,7 +278,8 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
       );
       expect(updateCall).toBeDefined();
 
-      const [entry] = (updateCall || []).slice(1);
+      const [payload] = (updateCall || []).slice(1);
+      const entry = (payload as { entry: any }).entry;
       expect(entry.syndromes).toHaveLength(3);
 
       // 验证严重程度排序 L3 > L2 > L1
@@ -394,8 +378,9 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
 
       // 验证这唯一的推送来自 Pipe1，包含正确的诊断数据
       const onlyUpdate = updateCalls[0];
-      expect(onlyUpdate[1].syndromes).toBeDefined();
-      expect(onlyUpdate[1].syndromes.length).toBeGreaterThan(0);
+      const payload = onlyUpdate[1];
+      expect((payload as any).entry?.syndromes).toBeDefined();
+      expect((payload as any).entry.syndromes.length).toBeGreaterThan(0);
     });
   });
 

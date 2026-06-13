@@ -16,15 +16,13 @@ import { ActiveProblem } from '../../renderer/shared/types';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
-import { generateRecommendations, getChallengeTemplate } from '../services/training-recommendation.service';
-import { TrainingRecordService } from '../services/training-record.service';
-import { StudentModelService } from '../services/student-model-service';
-import { evaluateTraining } from '../services/training-evaluator.service';
-import { deriveBehavior, type DerivationInput } from '../services/behavior-derivation.service';
-import { downgradeSyndromeSeverity } from '../services/teaching-state-machine';
-import { pushTeachingStateUpdate } from './teaching-state.handler';
-import { ConfigService } from '../services/config.service';
-import { TeachingStateService } from '../services/teaching-state.service';
+import { generateRecommendations, getChallengeTemplate } from '../domains/training/training-recommendation.service';
+import { TrainingRecordService } from '../domains/training/training-record.service';
+import { StudentModelService } from '../domains/student/student-model-service';
+import { evaluateTraining } from '../domains/training/training-evaluator.service';
+import { deriveBehavior, type DerivationInput } from '../domains/training/behavior-derivation.service';
+import { ConfigService } from '../shared/services/config.service';
+import { TeachingStateService } from '../domains/teaching/teaching-state.service';
 
 export interface TrainingHandlerDeps {
   configService: ConfigService;
@@ -178,17 +176,7 @@ export function registerTrainingHandlers(): void {
     // 评分 >= 7 时降低症候严重度
     if (result.score >= 7 && validation.data.sessionId && validation.data.syndromeId) {
       try {
-        const state = deps!.teachingStateService.getBySession(validation.data.sessionId);
-        if (state) {
-          const { activeProblems } = downgradeSyndromeSeverity(state, validation.data.syndromeId, result.score);
-          deps!.teachingStateService.update(validation.data.sessionId, { activeProblems });
-          // 推送教学状态更新到前端
-          try {
-            pushTeachingStateUpdate(validation.data.sessionId);
-          } catch (e) {
-            console.warn('[training:evaluate] failed to push TeachingState update:', e);
-          }
-        }
+        deps!.teachingStateService.downgradeSeverity(validation.data.sessionId, validation.data.syndromeId, result.score);
       } catch (e) {
         console.warn('[training:evaluate] severity downgrade failed:', e);
       }

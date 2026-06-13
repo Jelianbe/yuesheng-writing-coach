@@ -49,8 +49,6 @@ interface ChapterActions {
   createChapter: (manuscriptId: string, title: string) => Promise<Chapter | null>;
   /** 删除章节 */
   deleteChapter: (id: string, manuscriptId: string) => Promise<boolean>;
-  /** 清除错误 */
-  clearError: () => void;
   /** X-02: 应用训练改写结果到当前章节 */
   applyRewrite: (id: string, content: string) => Promise<boolean>;
   /** X-02: 清除待应用的改写结果 */
@@ -206,8 +204,6 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
       return false;
     }
   },
-
-  clearError: () => set({ error: null }),
 
   // ===== X-02: 训练改写结果 =====
 

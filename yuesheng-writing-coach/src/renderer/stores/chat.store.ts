@@ -37,7 +37,6 @@ interface ChatState {
 
   // P-04: 新用户引导 actions
   /** P-04 新增 actions */
-  resumeOnboarding: () => void;
   startOnboarding: () => void;
   completeOnboarding: () => void;
   skipOnboarding: () => void;
@@ -155,12 +154,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setMessages: (messages: ChatMessage[]) => set({ messages }),
 
   // P-04: 新用户引导
-  resumeOnboarding: () => {
-    const saved = loadOnboardingState();
-    if (saved && saved.step >= 1 && saved.step <= 3) {
-      set({ onboardingActive: true, onboardingStep: saved.step as 0 | 1 | 2 | 3 });
-    }
-  },
   startOnboarding: () => {
     // 先尝试恢复已保存的引导状态
     const saved = loadOnboardingState();

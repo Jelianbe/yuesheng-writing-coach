@@ -220,6 +220,7 @@ export const BehaviorDerivationTool: React.FC = () => {
             <button
               onClick={handleDerive}
               disabled={!isFormValid || derivationLoading}
+              aria-label={derivationLoading ? '推导中' : '开始推导'}
               style={{
                 ...primaryBtnStyle,
                 opacity: (!isFormValid || derivationLoading) ? 0.5 : 1,
@@ -230,6 +231,7 @@ export const BehaviorDerivationTool: React.FC = () => {
             {derivationResult && (
               <button
                 onClick={handleReset}
+                aria-label="清空重试"
                 style={{
                   padding: '8px 16px',
                   borderRadius: 6,

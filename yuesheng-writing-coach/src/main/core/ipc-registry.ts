@@ -8,18 +8,19 @@ import { initTrainingHandlers, registerTrainingHandlers } from '../ipc/training.
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../ipc/diagnosis.handler';
 import { initChatHandlers, registerChatHandlers } from '../ipc/chat.handler';
 import { registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
+import { initTeachingStateHandler } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
-import type { ConfigService } from '../services/config.service';
-import type { SessionService } from '../services/session.service';
-import type { DiagnosisService } from '../services/diagnosis.service';
-import type { EvidenceService } from '../services/evidence.service';
-import type { TrainingRecordService } from '../services/training-record.service';
-import type { StudentModelService } from '../services/student-model-service';
-import type { AbilityProfileService } from '../services/ability-profile.service';
-import type { GrowthTrendService } from '../services/growth-trend.service';
-import type { ChatOrchestratorService } from '../services/chat-orchestrator.service';
-import type { DiagnosisMerger } from '../services/diagnosis-merger';
-import type { TeachingStateService } from '../services/teaching-state.service';
+import type { ConfigService } from '../shared/services/config.service';
+import type { SessionService } from '../shared/services/session.service';
+import type { DiagnosisService } from '../domains/diagnosis/diagnosis.service';
+import type { EvidenceService } from '../domains/diagnosis/evidence/evidence.service';
+import type { TrainingRecordService } from '../domains/training/training-record.service';
+import type { StudentModelService } from '../domains/student/student-model-service';
+import type { AbilityProfileService } from '../domains/student/ability-profile.service';
+import type { GrowthTrendService } from '../domains/student/growth-trend.service';
+import type { ChatOrchestratorService } from '../domains/chat/chat-orchestrator.service';
+import type { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
+import type { TeachingStateService } from '../domains/teaching/teaching-state.service';
 
 export class IpcRegistry {
   constructor(
@@ -64,7 +65,8 @@ export class IpcRegistry {
     });
     registerTrainingHandlers();
 
-    // Teaching State (uses internal setters, no deps interface)
+    // Teaching State — 通过 DI 注入 TeachingStateService
+    initTeachingStateHandler(teachingStateService);
     registerTeachingStateHandlers();
 
     // Diagnosis — DI managed, no callback bridge needed

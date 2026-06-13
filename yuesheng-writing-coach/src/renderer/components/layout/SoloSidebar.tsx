@@ -94,6 +94,7 @@ export const SoloSidebar: React.FC = () => {
 
   // 初始化加载
   useEffect(() => { fetchManuscripts(); }, [fetchManuscripts]);
+  useEffect(() => { useSessionStore.getState().loadSessions(); }, []);
 
   /* ── 样式对象（保留动态样式）── */
   const sidebarStyle: React.CSSProperties = {
