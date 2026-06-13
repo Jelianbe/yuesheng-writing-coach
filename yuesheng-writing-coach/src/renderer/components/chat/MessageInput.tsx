@@ -215,6 +215,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               flexShrink: 0,
               transition: 'all 0.15s ease',
             }}
+            title={disabled ? '请先配置 API Key' : '发送'}
             aria-label="Send message"
           >
             <Send className="w-4 h-4" />
