@@ -149,6 +149,8 @@ export interface StreamEnd {
     sessionId: string;
     fullResponse: string;
     messageId: string;
+    error?: string;
+    aborted?: boolean;
 }
 /** 能力评分 */
 export interface AbilityScore {

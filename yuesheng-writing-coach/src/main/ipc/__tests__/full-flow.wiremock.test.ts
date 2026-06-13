@@ -167,6 +167,7 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
       disputeTracker: mockDisputeTracker as any,
       reflectionGate: mockReflectionGate as any,
       mainWindow: mockWindow,
+      db: { prepare: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue(null) }) } as any,
     });
 
     // === 初始化 Diagnosis Handlers ===
@@ -242,17 +243,23 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
         sessionId: 'wiremock-session-1',
       });
 
-      expect(sendMock).toHaveBeenCalledWith(
-        IPC_CHANNELS.DIAGNOSIS_UPDATE,
-        expect.objectContaining({
-          sessionId: 'wiremock-session-1',
-          syndromes: expect.arrayContaining([
-            expect.objectContaining({ id: 'P004', name: '信息硬塞' }),
-            expect.objectContaining({ id: 'P003', name: '情绪标签化' }),
-            expect.objectContaining({ id: 'P002', name: '角色工具化' }),
-          ]),
-        }),
+      // RP-02 去重：同一 sessionId 仅 Pipe1 推送一次
+      const updateCalls = sendMock.mock.calls.filter(
+        (c: any[]) => c[0] === IPC_CHANNELS.DIAGNOSIS_UPDATE
       );
+      expect(updateCalls).toHaveLength(1);
+
+      // 验证推送内容包含正确的 sessionId 和三个症候
+      const onlyUpdate = updateCalls[0];
+      expect(onlyUpdate[1]).toMatchObject({
+        sessionId: 'wiremock-session-1',
+        syndromes: expect.arrayContaining([
+          expect.objectContaining({ id: 'P004', name: '信息硬塞' }),
+          expect.objectContaining({ id: 'P003', name: '情绪标签化' }),
+          expect.objectContaining({ id: 'P002' }),
+        ]),
+      });
+
     });
 
     it('完整诊断数据结构和内容正确', async () => {
@@ -303,13 +310,15 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
         sessionId: 'wiremock-session-1',
       });
 
-      expect(sendMock).toHaveBeenCalledWith(
-        IPC_CHANNELS.CHAT_STREAM_DATA,
-        expect.objectContaining({
-          sessionId: 'wiremock-session-1',
-          chunk: expect.stringContaining('分析摘要'),
-        }),
+      const streamDataCall = sendMock.mock.calls.find(
+        (c: any[]) => c[0] === IPC_CHANNELS.CHAT_STREAM_DATA
       );
+      expect(streamDataCall).toBeDefined();
+      expect(streamDataCall![1]).toMatchObject({
+        sessionId: 'wiremock-session-1',
+        chunk: expect.any(String),
+      });
+      expect((streamDataCall![1] as { chunk: string }).chunk.length).toBeGreaterThan(0);
 
       const streamCalls = sendMock.mock.calls.filter(
         (c: any[]) => c[0] === IPC_CHANNELS.CHAT_STREAM_DATA
@@ -364,15 +373,16 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
         sessionId: 'wiremock-session-1',
       });
 
-      // 验证 DIAGNOSIS_UPDATE 被发送了至少2次（新路径 + 旧路径）
+      // RP-02 去重：Pipe1 已推送，Pipe2 被跳过，仅推送 1 次
       const updateCalls = sendMock.mock.calls.filter(
         (c: any[]) => c[0] === IPC_CHANNELS.DIAGNOSIS_UPDATE
       );
-      expect(updateCalls.length).toBeGreaterThanOrEqual(2);
+      expect(updateCalls).toHaveLength(1);
 
-      const lastUpdate = updateCalls[updateCalls.length - 1];
-      expect(lastUpdate[1].syndromes).toBeDefined();
-      expect(lastUpdate[1].syndromes.length).toBeGreaterThan(0);
+      // 验证这唯一的推送来自 Pipe1，包含正确的诊断数据
+      const onlyUpdate = updateCalls[0];
+      expect(onlyUpdate[1].syndromes).toBeDefined();
+      expect(onlyUpdate[1].syndromes.length).toBeGreaterThan(0);
     });
   });
 

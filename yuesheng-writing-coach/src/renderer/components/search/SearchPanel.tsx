@@ -8,6 +8,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Search, X, MessageSquare, ArrowRight } from 'lucide-react';
 import { getInvoke } from '../../utils/ipc';
+import { IPC_CHANNELS } from '../../shared/constants';
 
 interface SearchResultItem {
   sessionId: string;
@@ -39,7 +40,7 @@ export const SearchPanel: React.FC = () => {
     setSearched(true);
     try {
       const invoke = getInvoke();
-      const result = await invoke('session:searchMessages', { query: q }) as {
+      const result = await invoke(IPC_CHANNELS.SESSION_SEARCH_MESSAGES, { query: q }) as {
         success: boolean; data?: SearchResultGroup[];
       };
       if (result.success && result.data) {
