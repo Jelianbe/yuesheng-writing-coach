@@ -7,7 +7,6 @@ import { ConfigService } from '../services/config.service';
 import { IPC_CHANNELS } from '../../shared/constants';
 import {
   ApiConfig,
-  ConnectionTestResult,
 } from '../../renderer/shared/types';
 import { createHandler } from './utils/create-handler';
 

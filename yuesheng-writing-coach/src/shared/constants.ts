@@ -94,7 +94,12 @@ export const MAX_DIAGNOSIS_HISTORY = 3;
 /** 改善判定阈值（分数差大于此值视为明显改善/加重） */
 export const IMPROVEMENT_THRESHOLD = 1;
 
-/** IPC 通道常量 */
+/**
+ * IPC 通道常量
+ * @deprecated 请使用 src/shared/api-contracts/ 下的类型化 API 合约替代。
+ *             新代码应通过 API 合约的 invoke() 进行类型安全的 IPC 调用，
+ *             不再直接引用 IPC_CHANNELS 的字符串通道名。
+ */
 export const IPC_CHANNELS = {
   // === 配置 ===
   CONFIG_GET: 'config:get',

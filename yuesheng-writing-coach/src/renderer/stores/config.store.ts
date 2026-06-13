@@ -32,7 +32,7 @@ interface ConfigState {
   maxTokens: number;
   /** 是否已配置 */
   isConfigured: boolean;
-  /** 是否正在加载 */
+  /** 是否正在加载（初始为 true，loadConfig 完成后设为 false） */
   isLoading: boolean;
   /** 连接测试状态 */
   testStatus: 'idle' | 'testing' | 'success' | 'error';
@@ -54,6 +54,8 @@ interface ConfigState {
   setTemperature: (temp: number) => Promise<void>;
   /** 设置态度档位 */
   setAttitudeLevel: (level: AttitudeLevel) => Promise<void>;
+  /** 设置最大 token 数 */
+  setMaxTokens: (tokens: number) => Promise<void>;
   /** 测试连接 */
   testConnection: () => Promise<ConnectionTestResult>;
   /** 从主进程加载配置 */
@@ -116,7 +118,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   attitudeLevel: DEFAULT_CONFIG.attitudeLevel,
   maxTokens: DEFAULT_CONFIG.maxTokens,
   isConfigured: false,
-  isLoading: false,
+  isLoading: true,
   testStatus: 'idle',
   testError: undefined,
   testResponseTime: undefined,
@@ -163,6 +165,13 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const invoke = getInvoke();
     await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'attitudeLevel', value: level });
     set({ attitudeLevel: level });
+  },
+
+  /** 设置最大 token 数 */
+  setMaxTokens: async (tokens: number) => {
+    const invoke = getInvoke();
+    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'maxTokens', value: tokens });
+    set({ maxTokens: tokens });
   },
 
   /** 测试连接 */

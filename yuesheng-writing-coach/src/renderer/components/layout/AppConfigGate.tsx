@@ -1,7 +1,5 @@
 import React from 'react';
-import { ConfigPage } from '../pages/ConfigPage';
 import { OnboardingFlow } from '../onboarding/OnboardingFlow';
-import type { ApiConfig, ConnectionTestResult, OnboardingBaseline } from '../../shared/types';
 
 export interface AppConfigGateProps {
   /** 是否正在加载配置 */
@@ -10,14 +8,8 @@ export interface AppConfigGateProps {
   isConfigured: boolean;
   /** 是否显示引导流程 */
   showOnboarding: boolean;
-  /** API 配置 */
-  config: ApiConfig & { attitudeLevel: string; maxTokens: number };
-  /** 保存配置回调 */
-  onSaveConfig: (config: ApiConfig) => Promise<void>;
-  /** 测试连接回调 */
-  onTestConnection: (apiKey: string, baseUrl: string) => Promise<ConnectionTestResult>;
   /** 引导完成回调 */
-  onOnboardingComplete: (baseline: OnboardingBaseline) => Promise<void>;
+  onOnboardingComplete: (baseline: any) => Promise<void>;
   /** 引导跳过回调 */
   onOnboardingSkip: () => Promise<void>;
   /** 通过守卫后的子节点（主应用内容） */
@@ -29,18 +21,15 @@ export interface AppConfigGateProps {
  *
  * 在渲染主应用内容前，处理以下前置条件：
  * 1. 配置加载中 → 显示加载动画
- * 2. 配置页 → 显示完整配置页面
- * 3. 未配置 → 显示居中配置页面
- * 4. 新用户引导 → 显示引导流程
- * 5. 全部通过 → 渲染 children（主应用）
+ * 2. 新用户引导 → 显示引导流程
+ * 3. 全部通过 → 渲染 children（主应用）
+ *
+ * 配置页（ConfigPage）由 App.tsx 通过 view 状态统一控制，
+ * 不在本守卫内部渲染，避免与 view 状态产生冲突。
  */
 export const AppConfigGate: React.FC<AppConfigGateProps> = ({
   isConfigLoading,
-  isConfigured,
   showOnboarding,
-  config,
-  onSaveConfig,
-  onTestConnection,
   onOnboardingComplete,
   onOnboardingSkip,
   children,
@@ -56,26 +45,6 @@ export const AppConfigGate: React.FC<AppConfigGateProps> = ({
             </svg>
           </div>
           <p className="text-sm text-text-secondary">加载中...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // === 配置页（按钮触发）===
-  // 由外部通过 onBackToMain 控制返回
-  // 直接通过 props 传入 view 状态
-
-  // === 未配置 ===
-  if (!isConfigured) {
-    return (
-      <div style={{ height: '100vh', width: '100vw', backgroundColor: 'var(--color-bg)', overflowY: 'auto' }}>
-        <div style={{ maxWidth: '512px', margin: '0 auto', padding: '24px 16px' }}>
-          <ConfigPage
-            config={config}
-            onSave={onSaveConfig}
-            onBack={() => {}}
-            onTestConnection={onTestConnection}
-          />
         </div>
       </div>
     );

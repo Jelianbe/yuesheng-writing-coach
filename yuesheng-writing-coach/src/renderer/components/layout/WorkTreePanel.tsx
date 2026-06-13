@@ -10,7 +10,7 @@ import {
 import type { Manuscript, Chapter } from '../../shared/types-manuscript';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
-import { rightPanelActions } from '../../stores/right-panel.actions';
+import { rightPanelService } from '../../services/right-panel.service';
 import { copyToClipboard } from '../../utils/clipboard';
 import styles from './WorkTreePanel.module.css';
 
@@ -211,7 +211,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       }
                       onSelectChapter(ch.id);
                       onOpenTab(ch.id, ms.title);
-                      rightPanelActions.openTool('works', { type: 'edit', chapterId: ch.id });
+                      rightPanelService.openTool('works', { type: 'edit', chapterId: ch.id });
                     }}
                     onContextMenu={e => {
                       e.preventDefault();
@@ -246,7 +246,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       if (r) {
                         // 自动选中并打开新章节
                         onSelectChapter(r.id);
-                        rightPanelActions.openEditor(r.id, ms.title);
+                        rightPanelService.openEditor(r.id, ms.title);
                         setChapterTitle('');
                         setShowChapterPopup(null);
                       } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
@@ -271,7 +271,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                         if (r) {
                           // 自动选中并打开新章节
                           onSelectChapter(r.id);
-                          rightPanelActions.openEditor(r.id, ms.title);
+                          rightPanelService.openEditor(r.id, ms.title);
                           setChapterTitle('');
                           setShowChapterPopup(null);
                         } else { setChapterError(useChapterStore.getState().error || '创建失败'); }

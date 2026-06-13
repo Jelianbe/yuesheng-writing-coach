@@ -2,9 +2,11 @@
  * 诊断合并服务
  * 负责：将诊断结果合并到教学状态 + 反思门控判定
  * 解耦：diagnosis.handler 不再直接依赖 TeachingStateStore
+ *
+ * DI 注册名：'diagnosisMerger'
  */
 
-import { TeachingStateStore } from './teaching-state.store';
+import { TeachingStateService } from './teaching-state.service';
 import { DiagnosisEntry } from '../../renderer/shared/types';
 import { mergeSyndromesIntoState } from './diagnosis-merger-utils';
 import { enterReflectionIfTriggered } from './teaching-state-machine';
@@ -13,10 +15,10 @@ import { enterReflectionIfTriggered } from './teaching-state-machine';
  * 诊断合并服务
  */
 export class DiagnosisMerger {
-  private getStore: () => TeachingStateStore;
+  private teachingStateService: TeachingStateService;
 
-  constructor(getStore: () => TeachingStateStore) {
-    this.getStore = getStore;
+  constructor(teachingStateService: TeachingStateService) {
+    this.teachingStateService = teachingStateService;
   }
 
   /**
@@ -29,23 +31,21 @@ export class DiagnosisMerger {
    * @param diagnosis - 诊断结果
    */
   merge(diagnosis: DiagnosisEntry): void {
-    const store = this.getStore();
-    const state = store.getBySession(diagnosis.sessionId);
+    const state = this.teachingStateService.getBySession(diagnosis.sessionId);
     if (!state) return;
 
     // 1. 合并症候
     const updates = mergeSyndromesIntoState(state, diagnosis);
-    store.update(diagnosis.sessionId, updates);
+    this.teachingStateService.update(diagnosis.sessionId, updates);
 
     // 2. 反思门控判定：合并后重新读取状态，检查是否需要进入反思
-    const updatedState = store.getBySession(diagnosis.sessionId);
+    const updatedState = this.teachingStateService.getBySession(diagnosis.sessionId);
     if (updatedState) {
       const reflectedState = enterReflectionIfTriggered(updatedState);
       if (reflectedState !== updatedState) {
-        store.update(diagnosis.sessionId, {
+        this.teachingStateService.update(diagnosis.sessionId, {
           currentSubphase: reflectedState.currentSubphase,
           nextSuggestedActions: reflectedState.nextSuggestedActions,
-          updatedAt: reflectedState.updatedAt,
         });
       }
     }

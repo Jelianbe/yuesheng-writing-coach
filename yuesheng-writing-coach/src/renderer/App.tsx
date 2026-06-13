@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { SoloSidebar } from './components/layout/SoloSidebar';
 import { RightDrawer } from './components/layout/RightDrawer';
@@ -16,140 +16,104 @@ import { SearchPanel } from './components/search/SearchPanel';
 import { ToolsPanel } from './components/tools/ToolsPanel';
 import { ManuscriptPanel } from './components/manuscript/ManuscriptPanel';
 import { Search, ClipboardCheck, Target, TrendingUp, User, Wrench, ListChecks, BookOpen } from 'lucide-react';
+import { useAppController } from './services/useAppController';
 import { useDiagnosisFlow } from './hooks/useDiagnosisFlow';
-import { useAppIpcListener } from './hooks/useAppIpcListener';
 import { useConfigStore } from './stores/config.store';
-import { IPC_CHANNELS } from '../shared/constants';
-import { useDiagStore } from './stores/diag.store';
 import { useChatStore } from './stores/chat.store';
+import { useDiagStore } from './stores/diag.store';
 import { useSessionStore } from './stores/session.store';
 import { useStudentContextStore } from './stores/student-context.store';
 import { useTrainingStore } from './stores/training.store';
-import { rightPanelActions } from './stores/right-panel.actions';
+import { rightPanelService } from './services/right-panel.service';
+import type { PanelId } from './services/right-panel.service';
+import { chatService } from './services/chat.service';
 import type { ApiConfig, ConnectionTestResult, OnboardingBaseline } from './shared/types';
 
-
 export function App(): React.ReactElement {
-  // Store state
-  const { apiKey, baseUrl, modelName, temperature, attitudeLevel, isConfigured, isLoading: isConfigLoading, loadConfig, setApiKey, setBaseUrl, setModelName, setTemperature } = useConfigStore();
-  const { currentDiagnosis } = useDiagStore();
-  const { messages, isLoading: isStreaming, sendMessage } = useChatStore();
-  const { currentSessionId, loadSessions, createSession, switchSession } = useSessionStore();
-  const { errorCards, recommendations, activeTraining, history, submissionResult, evaluationResult, isLoading, error, bridgeRecommendation, startTraining, submitStep, skipTraining, updateDraft, dismissBridge, backToChat, sendToEditor } = useTrainingStore();
-  // X-01 协议：通过 rightPanelActions 统一管理，不再直接调用 drawStore
-
-  // Local state & hooks
   const [view, setView] = useState<'main' | 'config'>('main');
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [toolStatus, setToolStatus] = useState<string>('');
-  const { editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, startEditing, cancelEditing, submitRewrite, fetchGrowthSummary, reset: resetDiagnosisFlow } = useDiagnosisFlow(currentSessionId);
 
-  // IPC event listeners — fetchGrowthSummary 在 CHAT_STREAM_END 时自动刷新成长面板
-  useAppIpcListener(fetchGrowthSummary);
+  // 唯一跨模块编排钩子（替代 useAppIpcListener + 6 store 的跨模块 getState）
+  const { fetchGrowthSummary, startEditing, cancelEditing, submitRewrite, editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, reset: resetDiagnosisFlow } = useDiagnosisFlow(useSessionStore.getState().currentSessionId);
+  const { ready } = useAppController({
+    setShowOnboarding,
+    onStreamEnd: fetchGrowthSummary,
+  });
 
-  // Init effects
-  useEffect(() => { loadConfig(); }, [loadConfig]);
-  useEffect(() => { const init = async () => { try { await loadSessions(); const st = useSessionStore.getState(); if (st.sessions.length === 0) setShowOnboarding(true); else if (!st.currentSessionId) await switchSession(st.sessions[0].id); } catch (err) { /* init failed */ } }; init(); }, [loadSessions, switchSession]);
-  useEffect(() => { useStudentContextStore.getState().load(); }, []);
-
-  // P-04: 检测新用户，自动触发引导（仅通过 AppConfigGate 展示，不再重复触发 ChatView 内部引导）
-  useEffect(() => {
-    if (window.electronAPI && !currentSessionId) {
-      const channel = IPC_CHANNELS.SESSION_IS_NEW_USER;
-      window.electronAPI.invoke(channel)
-        .then((res: unknown) => {
-          const r = res as { success: boolean; data?: boolean };
-          if (r.success && r.data) {
-            // 仅设置 showOnboarding 触发 AppConfigGate 全屏引导
-            // 不再调用 startOnboarding()，避免与 ChatView 内部引导重复
-            setShowOnboarding(true);
-          }
-        })
-        .catch(() => { /* isNewUser failed */ });
-    }
-  }, [currentSessionId]);
-
-  // 会话切换同步：当 session.store.currentSessionId 变化时，清空并加载对应聊天消息
-  // 使用 initRef 确保首次挂载时也能加载（而非仅依赖 ref 值变化检测）
-  const currentSessionIdRef = useRef<string | null>(null);
-  const initDoneRef = useRef(false);
-  useEffect(() => {
-    // 首次挂载：currentSessionIdRef 为 null，但 currentSessionId 可能是有效值（来自 session.store 的初始同步）
-    // 或后续 loadSessions 完成后会触发变化
-    if (!initDoneRef.current) {
-      initDoneRef.current = true;
-      // 首次渲染不加载，让 loadSessions 流程完成后触发重新加载
-      if (!currentSessionId) return;
-    }
-    if (currentSessionId === currentSessionIdRef.current) return;
-    currentSessionIdRef.current = currentSessionId;
-    // 清空当前消息
-    const { clearMessages, setMessages, setLoading } = useChatStore.getState();
-    clearMessages();
-    setLoading(false);
-    // 加载新会话消息
-    if (currentSessionId && window.electronAPI) {
-      // DB-M1: 分页加载，初始只取最近 30 条
-      window.electronAPI.invoke(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, { sessionId: currentSessionId, offset: 0, limit: 30 })
-        .then((res: unknown) => {
-          const r = res as { success: boolean; data?: { messages: Array<{ id: string; role: string; content: string; timestamp: number }>; hasMore: boolean } };
-          if (r.success && r.data) {
-            setMessages(r.data.messages.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant', content: m.content, timestamp: m.timestamp })));
-          }
-        })
-        .catch(() => { /* getMessagesPaged failed */ });
-    }
-  }, [currentSessionId]);
-
-  // 工具调用状态提示
-  useEffect(() => {
-    if (!window.electronAPI) return;
-    const cleanup = window.electronAPI.on(IPC_CHANNELS.CHAT_TOOL_EXECUTING, (data: unknown) => {
-      const { toolName } = data as { toolName: string; args: string };
-      if (toolName === 'readChapter') {
-        setToolStatus('📖 正在读取章节…');
-      } else {
-        setToolStatus('🔍 正在搜索…');
-      }
-      // 3 秒后自动清除
-      const timer = setTimeout(() => setToolStatus(''), 3000);
-      // 收到新的执行事件时清除上一个定时器
-      return () => clearTimeout(timer);
-    });
-    return cleanup;
-  }, []);
+  // Config state（AppConfigGate 必需）
+  const { apiKey, baseUrl, modelName, temperature, attitudeLevel, isConfigured, isLoading: isConfigLoading, setApiKey, setBaseUrl, setModelName, setTemperature, setAttitudeLevel, setMaxTokens, loadConfig } = useConfigStore();
+  const { messages, isLoading: isStreaming } = useChatStore();
+  const { currentDiagnosis } = useDiagStore();
+  const { currentSessionId, createSession, switchSession } = useSessionStore();
+  const { errorCards, recommendations, activeTraining, history, submissionResult, evaluationResult, isLoading, error, bridgeRecommendation, startTraining, submitStep, skipTraining, updateDraft, dismissBridge, backToChat, sendToEditor } = useTrainingStore();
 
   // Event handlers
-  const handleSendMessage = useCallback(async (text: string) => { let sid = currentSessionId; if (!sid) { const s = await createSession(); if (!s) return; sid = s.id; } resetDiagnosisFlow(); sendMessage(text); }, [currentSessionId, createSession, sendMessage, resetDiagnosisFlow]);
-  // 停止生成 — 通过 IPC 中断主进程的流式请求
-  const handleStop = useCallback(async () => {
-    // 1. 先通知主进程中断 fetch
-    let stopped = false;
-    if (window.electronAPI) {
-      try {
-        const result = await window.electronAPI.invoke(IPC_CHANNELS.CHAT_STOP) as { success: boolean; data?: { stopped: boolean } };
-        stopped = result?.data?.stopped ?? false;
-      } catch { /* IPC 失败时静默 */ }
+
+  // 启动时从主进程加载已持久化的配置
+  useEffect(() => {
+    loadConfig();
+  }, [loadConfig]);
+
+  // 配置加载完成后，若仍未配置则自动导航到配置页
+  useEffect(() => {
+    if (!isConfigLoading && !isConfigured && ready) {
+      setView('config');
     }
-    // 2. 只有实际中断了流，才清除本地 pending 气泡
+  }, [isConfigLoading, isConfigured, ready]);
+
+  const handleSendMessage = useCallback(async (text: string) => {
+    let sid = useSessionStore.getState().currentSessionId;
+    if (!sid) {
+      const s = await useSessionStore.getState().createSession();
+      if (!s) return;
+      sid = s.id;
+    }
+    resetDiagnosisFlow();
+    const attitudeLevel = useConfigStore.getState().attitudeLevel;
+    const studentContext = useStudentContextStore.getState().toJSON();
+    useChatStore.getState().sendMessage(text, { sessionId: sid, attitudeLevel, studentContext });
+  }, [resetDiagnosisFlow]);
+
+  const handleStop = useCallback(async () => {
+    let stopped = false;
+    try {
+      const result = await chatService.stop();
+      stopped = result?.stopped ?? false;
+    } catch { /* IPC 失败时静默 */ }
     if (stopped) {
       useChatStore.getState().abortStream();
     } else {
-      // 流已结束，仅重置加载状态
       useChatStore.getState().setLoading(false);
     }
   }, []);
-  const handleSaveConfig = useCallback(async (cfg: ApiConfig) => { await setApiKey(cfg.apiKey); await setBaseUrl(cfg.baseUrl); await setModelName(cfg.modelName); await setTemperature(cfg.temperature); }, [setApiKey, setBaseUrl, setModelName, setTemperature]);
+
+  const handleSaveConfig = useCallback(async (cfg: ApiConfig) => {
+    await setApiKey(cfg.apiKey);
+    await setBaseUrl(cfg.baseUrl);
+    await setModelName(cfg.modelName);
+    await setTemperature(cfg.temperature);
+    await setAttitudeLevel(cfg.attitudeLevel);
+    await setMaxTokens(cfg.maxTokens);
+  }, [setApiKey, setBaseUrl, setModelName, setTemperature, setAttitudeLevel, setMaxTokens]);
+
   const handleTestConnection = useCallback(async (ak: string, bu: string): Promise<ConnectionTestResult> => {
-    // 先同步 apiKey/baseUrl 到 store，再走 store 的 testConnection（含完整状态管理）
     await setApiKey(ak);
     await setBaseUrl(bu);
     return useConfigStore.getState().testConnection();
   }, [setApiKey, setBaseUrl]);
-  const handleOnboardingComplete = useCallback(async (baseline: OnboardingBaseline) => { setShowOnboarding(false); localStorage.setItem('onboarding_baseline', JSON.stringify(baseline)); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
-  const handleOnboardingSkip = useCallback(async () => { setShowOnboarding(false); const s = await createSession(); if (s) await switchSession(s.id); }, [createSession, switchSession]);
 
-  // Computed
+  const handleOnboardingComplete = useCallback(async (_baseline: OnboardingBaseline) => {
+    setShowOnboarding(false);
+    const s = await createSession();
+    if (s) await switchSession(s.id);
+  }, [createSession, switchSession]);
+
+  const handleOnboardingSkip = useCallback(async () => {
+    setShowOnboarding(false);
+    const s = await createSession();
+    if (s) await switchSession(s.id);
+  }, [createSession, switchSession]);
+
   const drawerTools = [
     { id: 'search', icon: Search, label: '全局搜索' },
     { id: 'works', icon: BookOpen, label: '作品' },
@@ -160,46 +124,29 @@ export function App(): React.ReactElement {
     { id: 'profile', icon: User, label: '能力画像' },
     { id: 'tools', icon: Wrench, label: '创作工具' },
   ];
-
-  // Build config obj
   const fullConfig = { apiKey: apiKey ?? '', baseUrl: baseUrl ?? '', modelName: modelName ?? '', temperature: temperature ?? 0.7, attitudeLevel: attitudeLevel ?? 'standard', maxTokens: 8192 };
+
+  if (!ready) {
+    return <div className="app-loading">正在启动...</div>;
+  }
+
+  if (view === 'config') {
+    return (
+      <div style={{ height: '100vh', width: '100vw', backgroundColor: 'var(--color-bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <ConfigPage config={fullConfig} onSave={handleSaveConfig} onBack={() => setView('main')} onTestConnection={handleTestConnection} />
+      </div>
+    );
+  }
 
   return (
     <AppErrorBoundary>
-      <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} config={fullConfig} onSaveConfig={handleSaveConfig} onTestConnection={handleTestConnection} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
-        {view === 'config' ? (
-          <div style={{ height: '100vh', width: '100vw', backgroundColor: 'var(--color-bg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <ConfigPage config={fullConfig} onSave={handleSaveConfig} onBack={() => setView('main')} onTestConnection={handleTestConnection} />
+      <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
+        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
+          <div style={{ position: 'relative', height: '100%' }}>
+            <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { rightPanelService.openTraining(cid); useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
           </div>
-        ) : (
-          <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelActions.togglePanel(t); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { rightPanelActions.closePanel(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
-              <div style={{ position: 'relative', height: '100%' }}>
-                <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { void rightPanelActions.openTraining(cid); void useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
-                {toolStatus && (
-                  <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    padding: '6px 16px',
-                    background: 'var(--color-bg-subtle, #f5f5f5)',
-                    borderTop: '1px solid var(--color-border, #e0e0e0)',
-                    fontSize: '13px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    zIndex: 10,
-                  }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-accent, #4f46e5)', animation: 'pulse 1.5s infinite' }} />
-                    {toolStatus}
-                  </div>
-                )}
-              </div>
-          </AppShell>
-        )}
+        </AppShell>
       </AppConfigGate>
     </AppErrorBoundary>
   );
 }
-
-

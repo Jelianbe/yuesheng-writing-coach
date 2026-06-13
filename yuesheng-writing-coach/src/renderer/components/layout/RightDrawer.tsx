@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Settings, PanelRightClose, Plus, ListChecks } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
-import { rightPanelActions } from '../../stores/right-panel.actions';
+import { rightPanelService } from '../../services/right-panel.service';
 import { IconStripButton } from './IconStripButton';
 import { SessionTabBar } from './SessionTabBar';
 import { ToolGrid } from './ToolGrid';
@@ -71,10 +71,10 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [isResizing]);
 
-  /* 图标点击 → 通过 rightPanelActions 统一管理（X-01 协议） */
+  /* 图标点击 → 通过 rightPanelService 统一管理（X-01 协议） */
   const handleIconClick = useCallback((toolId: string) => {
     if (!collapsed && activePanel === toolId) { toggleCollapsed(); return; }
-    rightPanelActions.openTool(toolId);
+    rightPanelService.openTool(toolId);
   }, [collapsed, activePanel, toggleCollapsed]);
 
   const handleToolClick = useCallback((tool: ToolItem) => {
@@ -82,15 +82,15 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : handleIconClick(tool.id);
   }, [onToolClick, handleIconClick]);
 
-  /* 标签切换 → 通过 rightPanelActions 统一管理（X-01 协议） */
+  /* 标签切换 → 通过 rightPanelService 统一管理（X-01 协议） */
   const handleSessionSwitch = useCallback((sessionId: string) => {
-    rightPanelActions.switchSession(sessionId);
-  }, [rightPanelActions]);
+    rightPanelService.switchSession(sessionId);
+  }, []);
 
-  /* 移除会话 → 通过 rightPanelActions 统一管理（X-01 协议） */
+  /* 移除会话 → 通过 rightPanelService 统一管理（X-01 协议） */
   const handleSessionRemove = useCallback((sessionId: string) => {
-    rightPanelActions.removeSession(sessionId);
-  }, [rightPanelActions]);
+    rightPanelService.removeSession(sessionId);
+  }, []);
 
   // Esc 关闭面板
   useEffect(() => {
