@@ -2,7 +2,8 @@ import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Settings, PanelRightClose, Plus, ListChecks } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
-import { rightPanelActions } from '../../stores/right-panel.actions';
+import { useConfigStore } from '../../stores/config.store';
+import { rightPanelService } from '../../services/right-panel.service';
 import { IconStripButton } from './IconStripButton';
 import { SessionTabBar } from './SessionTabBar';
 import { ToolGrid } from './ToolGrid';
@@ -30,6 +31,7 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
   const toggleCollapsed = useDrawerStore(s => s.toggleCollapsed);
   const sessions = usePanelSessionStore(s => s.sessions);
   const activeSessionId = usePanelSessionStore(s => s.activeSessionId);
+  const isConfigured = useConfigStore(s => s.isConfigured);
 
   // ── 可拖拽宽度（localStorage 持久化）──
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -71,10 +73,10 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [isResizing]);
 
-  /* 图标点击 → 通过 rightPanelActions 统一管理（X-01 协议） */
+  /* 图标点击 → 通过 rightPanelService 统一管理（X-01 协议） */
   const handleIconClick = useCallback((toolId: string) => {
     if (!collapsed && activePanel === toolId) { toggleCollapsed(); return; }
-    rightPanelActions.openTool(toolId);
+    rightPanelService.openTool(toolId);
   }, [collapsed, activePanel, toggleCollapsed]);
 
   const handleToolClick = useCallback((tool: ToolItem) => {
@@ -82,15 +84,15 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : handleIconClick(tool.id);
   }, [onToolClick, handleIconClick]);
 
-  /* 标签切换 → 通过 rightPanelActions 统一管理（X-01 协议） */
+  /* 标签切换 → 通过 rightPanelService 统一管理（X-01 协议） */
   const handleSessionSwitch = useCallback((sessionId: string) => {
-    rightPanelActions.switchSession(sessionId);
-  }, [rightPanelActions]);
+    rightPanelService.switchSession(sessionId);
+  }, []);
 
-  /* 移除会话 → 通过 rightPanelActions 统一管理（X-01 协议） */
+  /* 移除会话 → 通过 rightPanelService 统一管理（X-01 协议） */
   const handleSessionRemove = useCallback((sessionId: string) => {
-    rightPanelActions.removeSession(sessionId);
-  }, [rightPanelActions]);
+    rightPanelService.removeSession(sessionId);
+  }, []);
 
   // Esc 关闭面板
   useEffect(() => {
@@ -120,8 +122,23 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
               onClick={handleIconClick} label={findLabel(tool.id)} />
           ))}
           <div className={styles.navSettingsArea}>
-            <IconStripButton toolId="__settings__" IconComponent={Settings}
-              isActive={false} onClick={handleIconClick} label="设置" />
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <IconStripButton toolId="__settings__" IconComponent={Settings}
+                isActive={false} onClick={handleIconClick} label="设置" />
+              {!isConfigured && (
+                <span style={{
+                  position: 'absolute',
+                  top: 2,
+                  right: 2,
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: 'var(--error, #ef4444)',
+                  border: '2px solid var(--bg-main, #fff)',
+                  pointerEvents: 'none',
+                }} />
+              )}
+            </div>
           </div>
         </nav>
 

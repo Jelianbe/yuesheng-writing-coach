@@ -7,7 +7,7 @@ import { initAbilityProfileHandlers, registerAbilityProfileHandlers } from '../i
 import { initTrainingHandlers, registerTrainingHandlers } from '../ipc/training.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../ipc/diagnosis.handler';
 import { initChatHandlers, registerChatHandlers } from '../ipc/chat.handler';
-import { registerTeachingStateHandlers, registerDiagnosisMerger, getTeachingStateContext } from '../ipc/teaching-state.handler';
+import { registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
 import type { ConfigService } from '../services/config.service';
 import type { SessionService } from '../services/session.service';
@@ -17,13 +17,9 @@ import type { TrainingRecordService } from '../services/training-record.service'
 import type { StudentModelService } from '../services/student-model.service';
 import type { AbilityProfileService } from '../services/ability-profile.service';
 import type { GrowthTrendService } from '../services/growth-trend.service';
-import type { PromptLoader } from '../services/prompt-loader';
-import type { MessageRouter } from '../services/message-router';
-import type { TeachingStrategyService } from '../services/teaching-strategy.service';
-import type { ProblemPrioritizer } from '../services/problem-prioritizer.service';
-import type { DisputeTrackerService } from '../services/dispute-tracker.service';
-import type { ReflectionGateService } from '../services/reflection-gate.service';
+import type { ChatOrchestratorService } from '../services/chat-orchestrator.service';
 import type { DiagnosisMerger } from '../services/diagnosis-merger';
+import type { TeachingStateService } from '../services/teaching-state.service';
 
 export class IpcRegistry {
   constructor(
@@ -40,12 +36,8 @@ export class IpcRegistry {
     const studentModelService = this.container.get<StudentModelService>('studentModelService');
     const abilityProfileService = this.container.get<AbilityProfileService>('abilityProfileService');
     const growthTrendService = this.container.get<GrowthTrendService>('growthTrendService');
-    const teachingStrategyService = this.container.get<TeachingStrategyService>('teachingStrategyService');
-    const problemPrioritizer = this.container.get<ProblemPrioritizer>('problemPrioritizer');
-    const disputeTracker = this.container.get<DisputeTrackerService>('disputeTracker');
-    const reflectionGate = this.container.get<ReflectionGateService>('reflectionGate');
-    const promptLoader = this.container.get<PromptLoader>('promptLoader');
-    const messageRouter = this.container.get<MessageRouter>('messageRouter');
+    const diagnosisMerger = this.container.get<DiagnosisMerger>('diagnosisMerger');
+    const teachingStateService = this.container.get<TeachingStateService>('teachingStateService');
 
     // Config
     initConfigHandlers({ configService });
@@ -63,48 +55,35 @@ export class IpcRegistry {
     initAbilityProfileHandlers({ abilityProfileService });
     registerAbilityProfileHandlers();
 
-    // Training
-    initTrainingHandlers({ configService, trainingRecordService, studentModelService });
+    // Training (inject teachingStateService for severity downgrade)
+    initTrainingHandlers({
+      configService,
+      trainingRecordService,
+      studentModelService,
+      teachingStateService,
+    });
     registerTrainingHandlers();
 
     // Teaching State (uses internal setters, no deps interface)
     registerTeachingStateHandlers();
 
-    // Diagnosis - create merger via teaching-state.handler
-    let diagnosisMerger!: DiagnosisMerger;
-    registerDiagnosisMerger((m) => { diagnosisMerger = m; });
-
+    // Diagnosis — DI managed, no callback bridge needed
     initDiagnosisHandlers({
       configService,
       diagnosisService,
       evidenceService,
       sessionService,
       growthTrendService,
-      getTeachingStateBySession: (sessionId: string) => {
-        const context = getTeachingStateContext(sessionId);
-        if (!context) return null;
-        return { activeProblems: context.activeProblems };
-      },
+      teachingStateService,
       diagnosisMerger,
       mainWindow: this.mainWindow,
     });
     registerDiagnosisHandlers();
 
     // Chat
-    initChatHandlers({
-      configService,
-      sessionService,
-      diagnosisService,
-      promptLoader,
-      messageRouter,
-      studentModelService,
-      teachingStrategyService,
-      problemPrioritizer,
-      disputeTracker,
-      reflectionGate,
-      mainWindow: this.mainWindow,
-      db: this.container.get<any>('db'),
-    });
+    const chatOrchestrator = this.container.get<ChatOrchestratorService>('chatOrchestratorService');
+    chatOrchestrator.setMainWindow(this.mainWindow);
+    initChatHandlers(chatOrchestrator);
     registerChatHandlers();
 
     // Manuscript (V2 SOLO — 直接使用 db 实例)

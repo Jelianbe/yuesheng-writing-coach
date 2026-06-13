@@ -1,10 +1,15 @@
 import { create } from 'zustand';
-import { IPC_CHANNELS } from '../shared/constants';
 import type { ChatMessage } from '../shared/types';
-import { useConfigStore } from './config.store';
-import { useSessionStore } from './session.store';
-import { useStudentContextStore } from './student-context.store';
-import { getInvoke } from '../utils/ipc';
+import { chatService } from '../services/chat.service';
+
+export interface SendMessageDeps {
+  /** 当前会话 ID（由 appController/ChatView 传入） */
+  sessionId: string;
+  /** AI 态度档位（由 appController/ChatView 传入） */
+  attitudeLevel: string;
+  /** 学生上下文 JSON（由 appController/ChatView 传入） */
+  studentContext: string;
+}
 
 interface ChatState {
   messages: ChatMessage[];
@@ -21,7 +26,7 @@ interface ChatState {
   finalizeLastMessage: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, deps: SendMessageDeps) => Promise<void>;
   getHistory: () => { role: string; content: string }[];
   clearMessages: () => void;
   setMessages: (messages: ChatMessage[]) => void;
@@ -180,38 +185,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   /** 发送消息 */
-  sendMessage: async (text: string) => {
+  sendMessage: async (text: string, deps: SendMessageDeps) => {
     const { isLoading } = get();
     if (isLoading || !text.trim()) return;
 
-    // 获取当前会话 ID，如果无效则尝试创建新会话
-    let sessionId = useSessionStore.getState().currentSessionId;
-    if (!sessionId) {
-      // 如果会话未就绪，尝试通过 createSession 创建
-      const sessionStore = useSessionStore.getState();
-      if (sessionStore.sessions.length > 0 && !sessionId) {
-        // sessions 已加载但 currentSessionId 异常——尝试激活第一个
-        sessionStore.switchSession(sessionStore.sessions[0].id);
-        sessionId = useSessionStore.getState().currentSessionId;
-      }
-      if (!sessionId) {
-        // 完全无会话，创建新会话
-        const newSession = await sessionStore.createSession();
-        if (!newSession) {
-          set({ error: '无法创建会话', isLoading: false });
-          return;
-        }
-        sessionId = newSession.id;
-      }
-    }
-    // 同步真实会话 ID 到 chat store，确保后续 refreshFromDiagnosis 能找到对应诊断历史
-    if (sessionId && sessionId !== get().currentSessionId) {
+    const { sessionId, attitudeLevel, studentContext } = deps;
+
+    // 同步会话 ID（确保后续 refreshFromDiagnosis 能找到对应诊断历史）
+    if (sessionId !== get().currentSessionId) {
       set({ currentSessionId: sessionId });
     }
-    const currentSessionId = sessionId;
 
     const allMessages = get().messages.filter((m) => m.role === 'user' || m.role === 'assistant');
-    const history = buildSlidingWindow(allMessages.map((m) => ({ role: m.role, content: m.content })));
+    const history = buildSlidingWindow(allMessages.map((m) => ({ role: m.role, content: m.content }))) as Array<{ role: 'user' | 'assistant'; content: string }>;
 
     const userMsg: ChatMessage = {
       id: generateId(),
@@ -234,22 +220,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
 
     try {
-      const invoke = getInvoke();
-      const attitudeLevel = useConfigStore.getState().attitudeLevel;
-      const studentContext = useStudentContextStore.getState().toJSON();
-
-      const result = await invoke(IPC_CHANNELS.CHAT_SEND, {
+      const result = await chatService.send({
         message: text.trim(),
-        sessionId: currentSessionId,
+        sessionId,
         history,
         attitudeLevel,
         studentContext,
-      }) as { success: boolean; error?: string };
+      });
 
-      if (!result.success) {
+      if (!result) {
         set((state) => {
           const msgs = state.messages.filter((m) => m.id !== assistantMsg.id);
-          return { messages: msgs, isLoading: false, error: result.error || '发送失败' };
+          return { messages: msgs, isLoading: false, error: '发送失败' };
         });
       }
     } catch (error) {
