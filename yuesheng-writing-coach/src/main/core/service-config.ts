@@ -5,7 +5,7 @@ import { SessionService } from '../services/session.service';
 import { DiagnosisService } from '../services/diagnosis.service';
 import { EvidenceService } from '../services/evidence.service';
 import { TrainingRecordService } from '../services/training-record.service';
-import { StudentModelService } from '../services/student-model.service';
+import { StudentModelService } from '../services/student-model-service';
 import { AbilityProfileService } from '../services/ability-profile.service';
 import { GrowthTrendService } from '../services/growth-trend.service';
 import { TeachingStrategyService } from '../services/teaching-strategy.service';

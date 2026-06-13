@@ -14,7 +14,7 @@ import type { SessionService } from '../services/session.service';
 import type { DiagnosisService } from '../services/diagnosis.service';
 import type { EvidenceService } from '../services/evidence.service';
 import type { TrainingRecordService } from '../services/training-record.service';
-import type { StudentModelService } from '../services/student-model.service';
+import type { StudentModelService } from '../services/student-model-service';
 import type { AbilityProfileService } from '../services/ability-profile.service';
 import type { GrowthTrendService } from '../services/growth-trend.service';
 import type { ChatOrchestratorService } from '../services/chat-orchestrator.service';

@@ -17,7 +17,7 @@
  *   - needsAttention (需关注): 严重度从 L1→L2 或 L2→L3 或分数增加 >1
  */
 
-import { StudentModelService } from './student-model.service';
+import { StudentModelService } from './student-model-service';
 
 /** 成长趋势状态 */
 export type GrowthTrendStatus = 'mastered' | 'improving' | 'stable' | 'needsAttention';
