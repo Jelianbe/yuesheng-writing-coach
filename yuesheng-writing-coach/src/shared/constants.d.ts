@@ -7,6 +7,7 @@ export declare const SyndromeId: {
     readonly PerspectiveDrift: "P005";
     readonly PacingStagnation: "P006";
     readonly ReadingStructureSingle: "P007";
+    readonly WorldviewExposition: "P008";
     readonly MotivationDeficit: "P009";
     readonly OCPlanarization: "P010";
     readonly HooklessOpening: "H001";
@@ -86,7 +87,6 @@ export declare const IPC_CHANNELS: {
     readonly DIAGNOSIS_GET_COMPARISON: "diagnosis:getComparison";
     readonly GROWTH_GET_TRENDS: "growth:getTrends";
     readonly GROWTH_GET_GLOBAL_TRENDS: "growth:getGlobalTrends";
-    readonly TEACHING_STATE_GET_CONTEXT: "teachingState:getContext";
     readonly TEACHING_STATE_GET: "teachingState:get";
     readonly TEACHING_STATE_UPDATE: "teachingState:update";
     readonly TEACHING_STATE_CONFIRM: "teachingState:confirm";
@@ -108,6 +108,7 @@ export declare const IPC_CHANNELS: {
     readonly TRAINING_EVALUATE: "training:evaluate";
     readonly TRAINING_DERIVE_BEHAVIOR: "training:deriveBehavior";
     readonly CHAT_SEND: "chat:send";
+    readonly CHAT_STOP: "chat:stop";
     readonly CHAT_STREAM_DATA: "chat:stream:data";
     readonly CHAT_STREAM_END: "chat:stream:end";
     readonly SESSION_LIST: "session:list";
@@ -119,6 +120,8 @@ export declare const IPC_CHANNELS: {
     readonly SESSION_LIST_WITH_META: "session:listWithMeta";
     readonly SESSION_UPDATE_TITLE: "session:updateTitle";
     readonly SESSION_SEARCH_MESSAGES: "session:searchMessages";
+    readonly SESSION_IS_NEW_USER: "session:isNewUser";
+    readonly ONBOARDING_ANALYZE: "onboarding:analyze";
     readonly MANUSCRIPT_LIST: "manuscript:list";
     readonly MANUSCRIPT_GET: "manuscript:get";
     readonly MANUSCRIPT_CREATE: "manuscript:create";
@@ -129,6 +132,9 @@ export declare const IPC_CHANNELS: {
     readonly CHAPTER_DELETE: "chapter:delete";
     readonly CHAPTER_UPDATE_CONTENT: "chapter:updateContent";
     readonly MANUSCRIPT_DELETE: "manuscript:delete";
+    readonly CHAT_TOOL_EXECUTING: "chat:tool:executing";
 };
-export const ALLOWED_INVOKE_CHANNELS: readonly string[];
-export const ALLOWED_EVENT_CHANNELS: readonly string[];
+/** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
+export declare const ALLOWED_INVOKE_CHANNELS: readonly string[];
+/** 允许渲染进程通过 on() 订阅的 IPC 事件通道白名单 */
+export declare const ALLOWED_EVENT_CHANNELS: readonly string[];

@@ -14,8 +14,8 @@ import { KeyPassage } from '../../renderer/shared/types';
  * 使用动态导入避免循环依赖
  */
 function isValidSyndromeRef(ref: string): boolean {
-  // 症候 ID 格式：P + 三位数字（P001 ~ P999）
-  return /^P\d{3}$/.test(ref);
+  // 症候 ID 格式：P/H/E + 三位数字（P001 ~ P999, H001 ~ H003, E001 ~ E003）
+  return /^[PHE]\d{3}$/.test(ref);
 }
 
 /**

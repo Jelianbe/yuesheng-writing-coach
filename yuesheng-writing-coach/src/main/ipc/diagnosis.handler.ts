@@ -14,6 +14,7 @@ import { DiagnosisService } from '../services/diagnosis.service';
 import { EvidenceService } from '../services/evidence.service';
 import { getAbilitiesForSyndrome } from '../../shared/mappings';
 import { IPC_CHANNELS, IMPROVEMENT_THRESHOLD } from '../../shared/constants';
+import { wasDiagnosisPushed } from './utils/diagnosis-dedup';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 import { ApiProxy } from '../api-proxy';
@@ -150,8 +151,6 @@ export function registerDiagnosisHandlers(): void {
     IPC_CHANNELS.DIAGNOSIS_SUBMIT_REWRITE,
     async (_event, args: { sessionId: string; messageId: string; syndromeId: string; originalText: string; rewrittenText: string; syndromeName?: string; syndromeDesc?: string }) => {
       const { sessionId, syndromeId, originalText, rewrittenText, syndromeName, syndromeDesc } = args;
-      console.log(`[Rewrite] 用户修改原文: session=${sessionId}, syndrome=${syndromeId}`);
-
       deps!.sessionService.saveMessage(sessionId, 'system',
         `[修改原文] 症候: ${syndromeId}\n原文: "${originalText}"\n修改后: "${rewrittenText}"`);
 
@@ -165,7 +164,6 @@ export function registerDiagnosisHandlers(): void {
           syndromeDesc: syndromeDesc || '',
         });
 
-        console.log(`[Rewrite] 评估结果: ${evaluation.improvement}`);
         return { evaluation };
       }
 
@@ -191,7 +189,7 @@ export function processDiagnosisFromAI(
   );
 
   if (!diagnosis) {
-    console.log('[DiagnosisHandler] No diagnosis table in AI response');
+    console.warn('[DiagnosisHandler] No diagnosis table in AI response');
     return;
   }
 
@@ -248,8 +246,8 @@ export function processDiagnosisFromAI(
     }
   }
 
-  // 5. 推送到渲染进程
-  if (deps!.mainWindow) {
+  // 5. 推送到渲染进程（RP-02: 若 Pipe 1 已推送则跳过）
+  if (deps!.mainWindow && !wasDiagnosisPushed(sessionId)) {
     deps!.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, diagnosis);
   }
 }

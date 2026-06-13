@@ -41,12 +41,10 @@ export function App(): React.ReactElement {
   // Local state & hooks
   const [view, setView] = useState<'main' | 'config'>('main');
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const { editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, startEditing, cancelEditing, submitRewrite, reset: resetDiagnosisFlow } = useDiagnosisFlow(currentSessionId);
+  const [toolStatus, setToolStatus] = useState<string>('');
+  const { editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, startEditing, cancelEditing, submitRewrite, fetchGrowthSummary, reset: resetDiagnosisFlow } = useDiagnosisFlow(currentSessionId);
 
-  // Data fetching callbacks — panels now fetch independently via useSessionStore
-  const fetchGrowthSummary = useCallback(async () => { /* used by IPC listener */ }, []);
-
-  // IPC event listeners
+  // IPC event listeners — fetchGrowthSummary 在 CHAT_STREAM_END 时自动刷新成长面板
   useAppIpcListener(fetchGrowthSummary);
 
   // Init effects
@@ -72,8 +70,17 @@ export function App(): React.ReactElement {
   }, [currentSessionId]);
 
   // 会话切换同步：当 session.store.currentSessionId 变化时，清空并加载对应聊天消息
-  const currentSessionIdRef = useRef(currentSessionId);
+  // 使用 initRef 确保首次挂载时也能加载（而非仅依赖 ref 值变化检测）
+  const currentSessionIdRef = useRef<string | null>(null);
+  const initDoneRef = useRef(false);
   useEffect(() => {
+    // 首次挂载：currentSessionIdRef 为 null，但 currentSessionId 可能是有效值（来自 session.store 的初始同步）
+    // 或后续 loadSessions 完成后会触发变化
+    if (!initDoneRef.current) {
+      initDoneRef.current = true;
+      // 首次渲染不加载，让 loadSessions 流程完成后触发重新加载
+      if (!currentSessionId) return;
+    }
     if (currentSessionId === currentSessionIdRef.current) return;
     currentSessionIdRef.current = currentSessionId;
     // 清空当前消息
@@ -93,6 +100,24 @@ export function App(): React.ReactElement {
         .catch(() => { /* getMessagesPaged failed */ });
     }
   }, [currentSessionId]);
+
+  // 工具调用状态提示
+  useEffect(() => {
+    if (!window.electronAPI) return;
+    const cleanup = window.electronAPI.on(IPC_CHANNELS.CHAT_TOOL_EXECUTING, (data: unknown) => {
+      const { toolName } = data as { toolName: string; args: string };
+      if (toolName === 'readChapter') {
+        setToolStatus('📖 正在读取章节…');
+      } else {
+        setToolStatus('🔍 正在搜索…');
+      }
+      // 3 秒后自动清除
+      const timer = setTimeout(() => setToolStatus(''), 3000);
+      // 收到新的执行事件时清除上一个定时器
+      return () => clearTimeout(timer);
+    });
+    return cleanup;
+  }, []);
 
   // Event handlers
   const handleSendMessage = useCallback(async (text: string) => { let sid = currentSessionId; if (!sid) { const s = await createSession(); if (!s) return; sid = s.id; } resetDiagnosisFlow(); sendMessage(text); }, [currentSessionId, createSession, sendMessage, resetDiagnosisFlow]);
@@ -148,7 +173,28 @@ export function App(): React.ReactElement {
           </div>
         ) : (
           <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelActions.togglePanel(t); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { rightPanelActions.closePanel(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
-              <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { void rightPanelActions.openTraining(cid); void useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
+              <div style={{ position: 'relative', height: '100%' }}>
+                <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { void rightPanelActions.openTraining(cid); void useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
+                {toolStatus && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    padding: '6px 16px',
+                    background: 'var(--color-bg-subtle, #f5f5f5)',
+                    borderTop: '1px solid var(--color-border, #e0e0e0)',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    zIndex: 10,
+                  }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-accent, #4f46e5)', animation: 'pulse 1.5s infinite' }} />
+                    {toolStatus}
+                  </div>
+                )}
+              </div>
           </AppShell>
         )}
       </AppConfigGate>

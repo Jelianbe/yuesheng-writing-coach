@@ -28,6 +28,11 @@ export function useAppIpcListener(
     const cleanups = [
       window.electronAPI.on(IPC_CHANNELS.DIAGNOSIS_UPDATE, (_data: unknown) => {
         const entry = _data as import('../shared/types').DiagnosisEntry;
+        console.log('[DEBUG] DIAGNOSIS_UPDATE received:', JSON.stringify({
+          sessionId: entry.sessionId,
+          syndromesCount: entry.syndromes.length,
+          syndromes: entry.syndromes.map(s => s.id),
+        }));
         const { setCurrentDiagnosis, addToHistory } = useDiagStore.getState();
         setCurrentDiagnosis(entry);
         addToHistory(entry.sessionId, entry);
@@ -43,9 +48,14 @@ export function useAppIpcListener(
       }),
 
       window.electronAPI.on(IPC_CHANNELS.CHAT_STREAM_END, (_data: unknown) => {
-        const result = _data as { sessionId: string; fullResponse: string; messageId: string; error?: string };
-        const { setLoading, setError: setChatError } = useChatStore.getState();
-        if (result.error) setChatError(result.error);
+        const result = _data as { sessionId: string; fullResponse: string; messageId: string; error?: string; aborted?: boolean };
+        const { setLoading, setError: setChatError, abortStream } = useChatStore.getState();
+        if (result.aborted) {
+          // 用户主动中断 — 不显示错误，确保 streamAborted = true
+          abortStream();
+        } else if (result.error) {
+          setChatError(result.error);
+        }
         setLoading(false);
         if (result.fullResponse && result.fullResponse.length > 0) {
           useStudentContextStore.getState().updateFromInteraction('partial');

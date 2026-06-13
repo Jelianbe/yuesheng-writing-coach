@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { OnboardingBaseline } from '../../shared/types';
+import { IPC_CHANNELS } from '../../shared/constants';
 
 // === 常量 ===
 
@@ -52,7 +53,7 @@ export function OnboardingFlow({ onComplete, onSkip }: OnboardingFlowProps) {
     setIsAnalyzing(true);
     try {
       // P-04 Phase 3: 调用 AI 分析（返回格式为 apiSuccess 的 data.summary）
-      const raw = await window.electronAPI?.invoke('onboarding:analyze', { text: sampleText.trim() });
+      const raw = await window.electronAPI?.invoke(IPC_CHANNELS.ONBOARDING_ANALYZE, { text: sampleText.trim() });
       const result = raw as { success: boolean; data?: { summary: string } } | null;
       if (result?.success && result?.data?.summary) {
         setAnalysisSummary(result.data.summary);

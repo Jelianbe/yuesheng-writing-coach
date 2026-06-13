@@ -1,8 +1,5 @@
-// 运行时常量定义（ESM 格式）
-// 与 src/shared/constants.ts 保持值一致
-// 此文件作为 Vite 8 OxC 编译器的 workaround（避免 as const 对象被转为 CJS）
-// v2: 修复 ESM 导出格式
-
+// 运行时常量定义（TypeScript 版本，供主进程编译使用）
+// 与 src/renderer/shared/constants.js 保持值一致
 /** 病症 ID 常量 */
 export const SyndromeId = {
     WorldviewBloat: 'P001',
@@ -69,8 +66,8 @@ export const TeachingSubphase = {
     PRACTICE_IDENTIFY: 'S2_IDENTIFY',
     PRACTICE_REFLECTION: 'S2_REFLECTION',
     PRACTICE_TEACHING: 'S2_TEACHING',
-    PRACTICE_ASSIGN_TASK: 'S2_ASSIGN_TASK',
-    PRACTICE_REVIEW_TASK: 'S2_REVIEW_TASK',
+    PRACTICE_ASSIGN: 'S2_ASSIGN_TASK',
+    PRACTICE_REVIEW: 'S2_REVIEW_TASK',
     // P4_REVIEW 子阶段
     REVIEW_SUMMARY: 'S4_SUMMARY',
 };
@@ -92,7 +89,6 @@ export const IPC_CHANNELS = {
     GROWTH_GET_TRENDS: 'growth:getTrends',
     GROWTH_GET_GLOBAL_TRENDS: 'growth:getGlobalTrends',
     // === 教学状态 ===
-    TEACHING_STATE_GET_CONTEXT: 'teachingState:getContext',
     TEACHING_STATE_GET: 'teachingState:get',
     TEACHING_STATE_UPDATE: 'teachingState:update',
     TEACHING_STATE_CONFIRM: 'teachingState:confirm',
@@ -133,6 +129,7 @@ export const IPC_CHANNELS = {
     SESSION_SEARCH_MESSAGES: 'session:searchMessages',
     // === 新用户引导 ===
     SESSION_IS_NEW_USER: 'session:isNewUser',
+    ONBOARDING_ANALYZE: 'onboarding:analyze',
     // === 作品管理 ===
     MANUSCRIPT_LIST: 'manuscript:list',
     MANUSCRIPT_GET: 'manuscript:get',
@@ -144,51 +141,55 @@ export const IPC_CHANNELS = {
     CHAPTER_DELETE: 'chapter:delete',
     CHAPTER_UPDATE_CONTENT: 'chapter:updateContent',
     MANUSCRIPT_DELETE: 'manuscript:delete',
+    // === 工具调用 ===
+    CHAT_TOOL_EXECUTING: 'chat:tool:executing',
 };
-
-/** @type {readonly string[]} 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
+/** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
 export const ALLOWED_INVOKE_CHANNELS = [
-    'config:get',
-    'config:set',
-    'config:testConnection',
-    'diagnosis:submitRewrite',
-    'diagnosis:getComparison',
-    'growth:getTrends',
-    'teachingState:get',
-    'teachingState:update',
-    'teachingState:confirm',
-    'ability:getProfile',
-    'chat:send',
-    'chat:stop',
-    'session:list',
-    'session:create',
-    'session:delete',
-    'session:rename',
-    'session:getMessagesPaged',
-    'session:searchMessages',
-    'session:isNewUser',
-    'training:recommend',
-    'training:assign',
-    'training:complete',
-    'training:history',
-    'training:submit',
-    'training:evaluate',
-    'training:deriveBehavior',
-    'manuscript:list',
-    'manuscript:create',
-    'manuscript:update',
-    'manuscript:delete',
-    'chapter:list',
-    'chapter:get',
-    'chapter:create',
-    'chapter:delete',
-    'chapter:updateContent',
+    IPC_CHANNELS.CONFIG_GET,
+    IPC_CHANNELS.CONFIG_SET,
+    IPC_CHANNELS.CONFIG_TEST_CONNECTION,
+    IPC_CHANNELS.DIAGNOSIS_SUBMIT_REWRITE,
+    IPC_CHANNELS.DIAGNOSIS_GET_COMPARISON,
+    IPC_CHANNELS.GROWTH_GET_TRENDS,
+    IPC_CHANNELS.TEACHING_STATE_GET,
+    IPC_CHANNELS.TEACHING_STATE_UPDATE,
+    IPC_CHANNELS.TEACHING_STATE_CONFIRM,
+    IPC_CHANNELS.ABILITY_GET_PROFILE,
+    IPC_CHANNELS.EVIDENCE_GET_BY_SYNDROME,
+    IPC_CHANNELS.CHAT_SEND,
+    IPC_CHANNELS.CHAT_STOP,
+    IPC_CHANNELS.SESSION_LIST,
+    IPC_CHANNELS.SESSION_CREATE,
+    IPC_CHANNELS.SESSION_DELETE,
+    IPC_CHANNELS.SESSION_RENAME,
+    IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED,
+    IPC_CHANNELS.SESSION_SEARCH_MESSAGES,
+    IPC_CHANNELS.SESSION_IS_NEW_USER,
+    IPC_CHANNELS.ONBOARDING_ANALYZE,
+    IPC_CHANNELS.TRAINING_RECOMMEND,
+    IPC_CHANNELS.TRAINING_ASSIGN,
+    IPC_CHANNELS.TRAINING_COMPLETE,
+    IPC_CHANNELS.TRAINING_HISTORY,
+    IPC_CHANNELS.TRAINING_SUBMIT,
+    IPC_CHANNELS.TRAINING_EVALUATE,
+    IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR,
+    IPC_CHANNELS.MANUSCRIPT_LIST,
+    IPC_CHANNELS.MANUSCRIPT_GET,
+    IPC_CHANNELS.MANUSCRIPT_CREATE,
+    IPC_CHANNELS.MANUSCRIPT_UPDATE,
+    IPC_CHANNELS.MANUSCRIPT_DELETE,
+    IPC_CHANNELS.CHAPTER_LIST,
+    IPC_CHANNELS.CHAPTER_GET,
+    IPC_CHANNELS.CHAPTER_CREATE,
+    IPC_CHANNELS.CHAPTER_DELETE,
+    IPC_CHANNELS.CHAPTER_UPDATE_CONTENT,
 ];
-
-/** @type {readonly string[]} 允许渲染进程通过 on() 订阅的 IPC 事件通道白名单 */
+/** 允许渲染进程通过 on() 订阅的 IPC 事件通道白名单 */
 export const ALLOWED_EVENT_CHANNELS = [
-    'diagnosis:update',
-    'teachingState:updated',
-    'chat:stream:data',
-    'chat:stream:end',
+    IPC_CHANNELS.DIAGNOSIS_UPDATE,
+    IPC_CHANNELS.TEACHING_STATE_UPDATED,
+    IPC_CHANNELS.CHAT_STREAM_DATA,
+    IPC_CHANNELS.CHAT_STREAM_END,
+    IPC_CHANNELS.CHAT_TOOL_EXECUTING,
 ];

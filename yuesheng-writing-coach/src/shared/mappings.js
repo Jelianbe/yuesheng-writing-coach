@@ -1,10 +1,8 @@
 /**
- * 共享映射中心（ESM 格式）
+ * 共享映射中心
  * 依据：E-03 消除多文件重复映射定义
  * 使用方式：所有模块从此文件导入，禁止在本地重复定义
- * 此文件作为 Vite 8 OxC 编译器的 workaround（避免 as const 对象被转为 CJS）
  */
-
 /** 症候名称映射（兼容 P008 遗留引用，保持宽松键类型） */
 export const SYNDROME_NAMES = {
     P001: '世界观膨胀',
@@ -140,21 +138,25 @@ export const SYNDROME_TO_ABILITIES = {
 };
 /**
  * 获取病症对应的能力列表
+ * @param syndromeId - 病症 ID
+ * @returns 能力代码数组
  */
-function getAbilitiesForSyndrome(syndromeId) {
+export function getAbilitiesForSyndrome(syndromeId) {
     return SYNDROME_TO_ABILITIES[syndromeId] ?? [];
 }
 /**
  * 获取子阶段对应的动作列表
+ * @param subphase - 子阶段 ID
+ * @returns 动作 ID 数组
  */
-function getActionsForSubphase(subphase) {
+export function getActionsForSubphase(subphase) {
     return SUBPHASE_TO_ACTIONS[subphase] ?? [];
 }
 /**
  * 获取病症对应的动作列表
+ * @param syndromeId - 病症 ID
+ * @returns 动作 ID 数组
  */
-function getActionsForSyndrome(syndromeId) {
+export function getActionsForSyndrome(syndromeId) {
     return SYNDROME_TO_ACTIONS[syndromeId] ?? [];
 }
-
-export { getAbilitiesForSyndrome, getActionsForSubphase, getActionsForSyndrome };

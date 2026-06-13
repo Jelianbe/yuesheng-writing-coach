@@ -5,12 +5,11 @@
  * 安全：仅允许白名单中的通道
  */
 
-import { ipcMain, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
 import Database from 'better-sqlite3';
 import { TeachingStateStore } from '../services/teaching-state.store';
 import { TeachingState } from '../services/teaching-state.types';
 import { DiagnosisMerger } from '../services/diagnosis-merger';
-import { apiSuccess, apiError } from '../../renderer/shared/types';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES } from '../../shared/mappings';
 import { PromptBuilder } from '../services/prompt-builder';
@@ -20,6 +19,7 @@ import {
   getSubphaseName,
   calculatePhaseProgress,
 } from '../services/teaching-state-machine';
+import { createHandler } from './utils/create-handler';
 
 /** 教学状态存储实例 */
 let store: TeachingStateStore | null = null;
@@ -130,130 +130,105 @@ export function registerTeachingStateHandlers(): void {
   /**
    * 获取教学状态
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.TEACHING_STATE_GET,
     (_event, args: { sessionId: string }) => {
-      try {
-        const teachingStore = getStore();
-        const state = teachingStore.getOrCreate(args.sessionId);
-        return apiSuccess({
-          ...state,
-          phaseName: getPhaseName(state.currentPhase),
-          subphaseName: getSubphaseName(state.currentSubphase),
-          phaseProgress: calculatePhaseProgress(state.currentPhase, state.currentSubphase),
-        });
-      } catch (error) {
-        console.error('[TeachingStateIPC] TEACHING_STATE_GET error:', error);
-        return apiError('Failed to get teaching state');
-      }
+      const teachingStore = getStore();
+      const state = teachingStore.getOrCreate(args.sessionId);
+      return {
+        ...state,
+        phaseName: getPhaseName(state.currentPhase),
+        subphaseName: getSubphaseName(state.currentSubphase),
+        phaseProgress: calculatePhaseProgress(state.currentPhase, state.currentSubphase),
+      };
     },
   );
 
   /**
    * 更新教学状态
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.TEACHING_STATE_UPDATE,
     (_event, args: { sessionId: string; updates: Partial<Omit<TeachingState, 'sessionId' | 'updatedAt'>> }) => {
-      try {
-        const teachingStore = getStore();
-        const updatedState = teachingStore.update(args.sessionId, args.updates);
-        if (!updatedState) {
-          return apiError('Teaching state not found');
-        }
-        return apiSuccess(updatedState);
-      } catch (error) {
-        console.error('[TeachingStateIPC] TEACHING_STATE_UPDATE error:', error);
-        return apiError(String(error));
+      const teachingStore = getStore();
+      const updatedState = teachingStore.update(args.sessionId, args.updates);
+      if (!updatedState) {
+        throw new Error('Teaching state not found');
       }
+      return updatedState;
     },
   );
 
   /**
    * 用户确认完成当前阶段，推进状态
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.TEACHING_STATE_CONFIRM,
     (_event, args: { sessionId: string }) => {
-      try {
-        const teachingStore = getStore();
-        const oldState = teachingStore.getBySession(args.sessionId);
+      const teachingStore = getStore();
+      const oldState = teachingStore.getBySession(args.sessionId);
 
-        if (!oldState) return apiError('Teaching state not found');
+      if (!oldState) throw new Error('Teaching state not found');
 
-        const newState = confirmPhaseComplete(oldState);
-        const updated = teachingStore.update(args.sessionId, {
-          currentPhase: newState.currentPhase,
-          currentSubphase: newState.currentSubphase,
-          completedActions: newState.completedActions,
-          nextSuggestedActions: newState.nextSuggestedActions,
-          lastUserConfirmation: newState.lastUserConfirmation,
+      const newState = confirmPhaseComplete(oldState);
+      const updated = teachingStore.update(args.sessionId, {
+        currentPhase: newState.currentPhase,
+        currentSubphase: newState.currentSubphase,
+        completedActions: newState.completedActions,
+        nextSuggestedActions: newState.nextSuggestedActions,
+        lastUserConfirmation: newState.lastUserConfirmation,
+      });
+
+      if (!updated) throw new Error('Teaching state not found');
+
+      if (mainWindow) {
+        mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
+          oldState,
+          newState: updated,
+          phaseName: getPhaseName(updated.currentPhase),
+          subphaseName: getSubphaseName(updated.currentSubphase),
+          phaseProgress: calculatePhaseProgress(updated.currentPhase, updated.currentSubphase),
         });
-
-        if (!updated) return apiError('Teaching state not found');
-
-        if (mainWindow) {
-          mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
-            oldState,
-            newState: updated,
-            phaseName: getPhaseName(updated.currentPhase),
-            subphaseName: getSubphaseName(updated.currentSubphase),
-            phaseProgress: calculatePhaseProgress(updated.currentPhase, updated.currentSubphase),
-          });
-        }
-
-        return apiSuccess({ oldState, newState: updated });
-      } catch (error) {
-        console.error('[TeachingStateIPC] TEACHING_STATE_CONFIRM error:', error);
-        return apiError(String(error));
       }
+
+      return { oldState, newState: updated };
     },
   );
 
   /**
    * 获取 System Prompt 注入内容
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.TEACHING_STATE_GET_PROMPT,
     (_event, args: { sessionId: string }) => {
-      try {
-        const teachingStore = getStore();
-        const state = teachingStore.getOrCreate(args.sessionId);
-        const builder = getPromptBuilder();
-        const promptContent = builder.buildSystemPrompt(
-          state,
-          (id: string) => (ACTION_NAMES as Record<string, string>)[id] || id,
-          (id: string) => (ACTION_GOALS as Record<string, string>)[id] || '',
-          (id: string) => SYNDROME_NAMES[id] || id,
-        );
-        return apiSuccess(promptContent);
-      } catch (error) {
-        console.error('[TeachingStateIPC] TEACHING_STATE_GET_PROMPT error:', error);
-        return apiError('Failed to get prompt');
-      }
+      const teachingStore = getStore();
+      const state = teachingStore.getOrCreate(args.sessionId);
+      const builder = getPromptBuilder();
+      const promptContent = builder.buildSystemPrompt(
+        state,
+        (id: string) => (ACTION_NAMES as Record<string, string>)[id] || id,
+        (id: string) => (ACTION_GOALS as Record<string, string>)[id] || '',
+        (id: string) => SYNDROME_NAMES[id] || id,
+      );
+      return promptContent;
     },
   );
 
   /**
    * 更新诊断摘要
    */
-  ipcMain.handle(
+  createHandler(
     IPC_CHANNELS.TEACHING_STATE_UPDATE_SUMMARY,
     (_event, args: { sessionId: string; newContent: string }) => {
-      try {
-        const teachingStore = getStore();
-        const state = teachingStore.getBySession(args.sessionId);
+      const teachingStore = getStore();
+      const state = teachingStore.getBySession(args.sessionId);
 
-        if (!state) return apiError('Teaching state not found');
+      if (!state) throw new Error('Teaching state not found');
 
-        const builder = getPromptBuilder();
-        const newSummary = builder.updateDiagnosisSummary(state.diagnosisSummary, args.newContent);
-        const updatedState = teachingStore.update(args.sessionId, { diagnosisSummary: newSummary });
-        return apiSuccess(updatedState);
-      } catch (error) {
-        console.error('[TeachingStateIPC] TEACHING_STATE_UPDATE_SUMMARY error:', error);
-        return apiError(String(error));
-      }
+      const builder = getPromptBuilder();
+      const newSummary = builder.updateDiagnosisSummary(state.diagnosisSummary, args.newContent);
+      const updatedState = teachingStore.update(args.sessionId, { diagnosisSummary: newSummary });
+      return updatedState;
     },
   );
 }
