@@ -63,6 +63,7 @@ const mockSessionService = {
 };
 
 // ===== 被测试模块导入 =====
+import { ChatOrchestratorService } from '../../services/chat-orchestrator.service';
 import { initChatHandlers, registerChatHandlers } from '../chat.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../diagnosis.handler';
 
@@ -155,7 +156,12 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
       prioritize: vi.fn().mockReturnValue([]),
     };
 
-    initChatHandlers({
+    const mockStrategyInstructionBuilder = {
+      build: vi.fn().mockReturnValue(null),
+    };
+
+    // === 创建 ChatOrchestratorService ===
+    const orchestrator = new ChatOrchestratorService({
       configService: mockConfigService as any,
       sessionService: mockSessionService as any,
       diagnosisService: mockDiagService as any,
@@ -166,18 +172,25 @@ describe('全链路 Wire Mock 测试（基于《修仙传》）', () => {
       problemPrioritizer: mockProblemPrioritizer as any,
       disputeTracker: mockDisputeTracker as any,
       reflectionGate: mockReflectionGate as any,
+      strategyInstructionBuilder: mockStrategyInstructionBuilder as any,
       mainWindow: mockWindow,
       db: { prepare: vi.fn().mockReturnValue({ get: vi.fn().mockReturnValue(null) }) } as any,
     });
 
+    initChatHandlers(orchestrator);
+
     // === 初始化 Diagnosis Handlers ===
+    const mockTeachingStateService = {
+      getBySession: vi.fn().mockReturnValue({ activeProblems: [] }),
+    };
+
     initDiagnosisHandlers({
       configService: mockConfigService as any,
       diagnosisService: mockDiagService as any,
       evidenceService: mockEvidService as any,
       sessionService: mockSessionService as any,
       growthTrendService: {} as any,
-      getTeachingStateBySession: () => null,
+      teachingStateService: mockTeachingStateService as any,
       diagnosisMerger: mockDiagnosisMerger,
       mainWindow: mockWindow,
     });

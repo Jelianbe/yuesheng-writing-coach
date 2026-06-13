@@ -21,7 +21,7 @@ import { ApiProxy } from '../api-proxy';
 import { ConfigService } from '../services/config.service';
 import { SessionService } from '../services/session.service';
 import { DiagnosisMerger } from '../services/diagnosis-merger';
-import { getTeachingStateStore } from './teaching-state.handler';
+import { TeachingStateService } from '../services/teaching-state.service';
 import { GrowthTrendService } from '../services/growth-trend.service';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 
@@ -34,7 +34,7 @@ export interface DiagnosisHandlerDeps {
   evidenceService: EvidenceService;
   sessionService: SessionService;
   growthTrendService: GrowthTrendService;
-  getTeachingStateBySession: (sessionId: string) => { activeProblems: unknown[] } | null;
+  teachingStateService: TeachingStateService;
   diagnosisMerger: DiagnosisMerger;
   mainWindow: BrowserWindow | null;
 }
@@ -59,7 +59,7 @@ export function registerDiagnosisHandlers(): void {
     (_event, args) => {
       const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
       if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-      const state = deps!.getTeachingStateBySession(validation.data.sessionId);
+      const state = deps!.teachingStateService.getBySession(validation.data.sessionId);
       return state?.activeProblems ?? null;
     },
   );
@@ -236,8 +236,7 @@ export function processDiagnosisFromAI(
   // 4.5 推送 TeachingState 更新到前端（诊断合并可能推进子阶段）
   if (deps!.mainWindow) {
     try {
-      const store = getTeachingStateStore();
-      const updatedState = store.getBySession(sessionId);
+      const updatedState = deps!.teachingStateService.getBySession(sessionId);
       if (updatedState) {
         deps!.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, updatedState);
       }

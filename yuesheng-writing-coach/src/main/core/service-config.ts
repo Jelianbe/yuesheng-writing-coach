@@ -19,6 +19,11 @@ import { DynamicContextService } from '../services/dynamic-context.service';
 import { ReflectionGateService } from '../services/reflection-gate.service';
 import { CodexService } from '../services/codex.service';
 import { initStore, getTeachingStateContext, getStoreForPromptLoader } from '../ipc/teaching-state.handler';
+import { TeachingStateService } from '../services/teaching-state.service';
+import { ApiProxyService } from '../services/api-proxy.service';
+import { StrategyInstructionBuilder } from '../services/strategy-instruction-builder';
+import { ChatOrchestratorService } from '../services/chat-orchestrator.service';
+import { DiagnosisMerger } from '../services/diagnosis-merger';
 import { injectMockDiagnosisData } from '../services/mock-data-injector';
 
 export function configureServices(
@@ -106,6 +111,53 @@ export function configureServices(
   });
 
   container.register<MessageRouter>('messageRouter', () => new MessageRouter());
+
+  // ApiProxy Service (DI managed)
+  container.register<ApiProxyService>('apiProxyService', (c) =>
+    new ApiProxyService(c.get<ConfigService>('configService')),
+  );
+
+  // Strategy Instruction Builder (DI managed)
+  container.register<StrategyInstructionBuilder>('strategyInstructionBuilder', (c) =>
+    new StrategyInstructionBuilder(
+      c.get<StudentModelService>('studentModelService'),
+      c.get<TeachingStrategyService>('teachingStrategyService'),
+      c.get<ProblemPrioritizer>('problemPrioritizer'),
+    ),
+  );
+
+  // TeachingState Service (DI managed)
+  container.register<TeachingStateService>('teachingStateService', () => {
+    const service = new TeachingStateService();
+    service.initStore(db);
+    return service;
+  });
+
+  // ChatOrchestrator Service (DI managed)
+  container.register<ChatOrchestratorService>('chatOrchestratorService', (c) => {
+    const deps = {
+      configService: c.get<ConfigService>('configService'),
+      sessionService: c.get<SessionService>('sessionService'),
+      diagnosisService: c.get<DiagnosisService>('diagnosisService'),
+      promptLoader: c.get<PromptLoader>('promptLoader'),
+      messageRouter: c.get<MessageRouter>('messageRouter'),
+      studentModelService: c.get<StudentModelService>('studentModelService'),
+      teachingStrategyService: c.get<TeachingStrategyService>('teachingStrategyService'),
+      problemPrioritizer: c.get<ProblemPrioritizer>('problemPrioritizer'),
+      disputeTracker: c.get<DisputeTrackerService>('disputeTracker'),
+      reflectionGate: c.get<ReflectionGateService>('reflectionGate'),
+      strategyInstructionBuilder: c.get<StrategyInstructionBuilder>('strategyInstructionBuilder'),
+      mainWindow: null,
+      db,
+    };
+    return new ChatOrchestratorService(deps);
+  });
+
+  // DiagnosisMerger (DI managed, injects TeachingStateService)
+  container.register<DiagnosisMerger>('diagnosisMerger', (c) => {
+    const teachingStateService = c.get<TeachingStateService>('teachingStateService');
+    return new DiagnosisMerger(teachingStateService);
+  });
 
   // Initialize teaching store
   initStore(db);
