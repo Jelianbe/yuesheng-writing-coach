@@ -3,7 +3,7 @@
 > **最后更新**: 2026-06-12 | **排序规则**: P0 > P1 > P2，同优先级按分组排列
 > **来源**: [前端组件全面扫描报告 2026-06-10](./FRONTEND-SCAN-20260610.md) + [教学法反例库 v2.3](../research/教学法反例库_素材合集_v2.3.md)
 > 
-> **⚠️ 注意**: 本表 6/10 数据已大部分过时 — FS-P1（除 ManuscriptPanel 外）已被前序工作拆分完毕，FS-P0 已于 6/12 R-30 流程清零。实际 P0/P1 全部清零。以下为最新状态。
+> **⚠️ 注意**: 本表 6/10 数据已大部分过时 — FS-P1（除 ManuscriptPanel 外）已被前序工作拆分完毕，FS-P0 已于 6/12 R-30 流程清零。**实际 P0/P1/P2 全部清零**（FS-P2 已于 6/12 清理完毕）。以下为最新状态。
 
 ---
 
@@ -28,17 +28,17 @@
 | **FS-P1-6** | training.store.ts 拆分 (535→≤300) | **P1** | ✅ **前序已拆分** | Store 拆分 | 实际 88 行 |
 | **FS-P1-7** | export default → 具名导出（22 处） | **P1** | ✅ **所有 export default 已清除** | 规范修复 | 原表 22 处已前序清理，剩余 3 处（BeatCheckChart/ChapterEditor/StudentContextSection）已于 6/12 转换 |
 
-### P2 — 内联样式 + IPC 死代码 + 类型清理
+### P2 — 内联样式 + IPC 死代码 + 类型清理（✅ 已于 6/12 全部清零）
 
 | ID | 任务梗概 | 优先级 | 状态 | 分组 | 备注 |
 |:--:|----------|:------:|:----:|:----:|------|
 | **FS-P2-1** | SoloSidebar 内联样式提取 (~50 处) | **P2** | ⏩ 待执行 | 样式提取 | 配合 FS-P1-2 拆分同步进行，新建 SoloSidebar.module.css |
 | **FS-P2-2** | ChatView 空状态/引导区内联样式 (~25 处) | **P2** | ⏩ 待执行 | 样式提取 | 静态部分提取到 CSS Module，动态颜色保留 inline |
-| **FS-P2-3** | IPC 死代码通道清理（13 个） | **P2** | ⏩ 待执行 | IPC 清理 | session:getMessages / diagnosis:query / evidence:* 等，逐一确认预留 or 移除 |
-| **FS-P2-4** | electron.d.ts 合并（去重） | **P2** | ⏩ 待执行 | 类型清理 | electron.d.ts vs types/electron.d.ts 功能重复，合并为一 |
-| **FS-P2-5** | constants.ts 同步修复 | **P2** | ⏩ 待执行 | 类型清理 | .js/.d.ts 比 .ts 多 WorldviewExposition + SESSION_SEARCH_MESSAGES |
-| **FS-P2-6** | console 残留清理（23 处） | **P2** | ⏩ 待执行 | 日志清理 | error/warn 降级 debug，cjs-to-esm-fix console.log 移除 |
-| **FS-P2-7** | as any 清理（非测试 4 处） | **P2** | ⏩ 待执行 | 类型安全 | RightDrawer:86,101 / App.tsx:127 |
+| **FS-P2-3** | IPC 死代码通道清理（13 个） | **P2** | ✅ **已完成** | IPC 清理 | 交叉分析55通道：EVIDENCE_GET_BY_SYNDROME加白名单，TEACHING_STATE_GET_CONTEXT删除，6处硬编码→IPC_CHANNELS常量 |
+| **FS-P2-4** | electron.d.ts 合并（去重） | **P2** | ✅ **已完成** | 类型清理 | 仅1个文件在 src/renderer/types/，无重复，天然满足 |
+| **FS-P2-5** | constants.ts 同步修复 | **P2** | ✅ **已完成** | 类型清理 | 删除过时 constants.d.ts，constants.js补充onboarding:analyze白名单 |
+| **FS-P2-6** | console 残留清理（23 处） | **P2** | ✅ **已完成** | 日志清理 | 删2处debug log，转2处log→warn，保留mock/migration/upgrade审计log |
+| **FS-P2-7** | as any 清理（非测试 4 处） | **P2** | ✅ **已完成** | 类型安全 | prompt-loader.ts:211 state as any → state as TeachingState |
 
 ### 原有任务
 

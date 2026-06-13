@@ -182,8 +182,33 @@ export const useChatStore = create<ChatState>((set, get) => ({
   /** 发送消息 */
   sendMessage: async (text: string) => {
     const { isLoading } = get();
-    const currentSessionId = useSessionStore.getState().currentSessionId || '';
     if (isLoading || !text.trim()) return;
+
+    // 获取当前会话 ID，如果无效则尝试创建新会话
+    let sessionId = useSessionStore.getState().currentSessionId;
+    if (!sessionId) {
+      // 如果会话未就绪，尝试通过 createSession 创建
+      const sessionStore = useSessionStore.getState();
+      if (sessionStore.sessions.length > 0 && !sessionId) {
+        // sessions 已加载但 currentSessionId 异常——尝试激活第一个
+        sessionStore.switchSession(sessionStore.sessions[0].id);
+        sessionId = useSessionStore.getState().currentSessionId;
+      }
+      if (!sessionId) {
+        // 完全无会话，创建新会话
+        const newSession = await sessionStore.createSession();
+        if (!newSession) {
+          set({ error: '无法创建会话', isLoading: false });
+          return;
+        }
+        sessionId = newSession.id;
+      }
+    }
+    // 同步真实会话 ID 到 chat store，确保后续 refreshFromDiagnosis 能找到对应诊断历史
+    if (sessionId && sessionId !== get().currentSessionId) {
+      set({ currentSessionId: sessionId });
+    }
+    const currentSessionId = sessionId;
 
     const allMessages = get().messages.filter((m) => m.role === 'user' || m.role === 'assistant');
     const history = buildSlidingWindow(allMessages.map((m) => ({ role: m.role, content: m.content })));

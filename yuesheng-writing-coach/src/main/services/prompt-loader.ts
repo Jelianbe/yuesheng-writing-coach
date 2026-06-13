@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import { AttitudeLevel, DiagnosisAnalysis } from '../../renderer/shared/types';
 import type { SyndromeId } from '../../shared/constants';
 import { PromptBuilder } from './prompt-builder';
+import { TeachingState } from './teaching-state.types';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES, SYNDROME_META } from '../../shared/mappings';
 import { DynamicContextService } from './dynamic-context.service';
 import { CodexService, CodexEntry, CodexContext } from './codex.service';
@@ -208,7 +209,7 @@ export class PromptLoader {
         const state = store.getBySession(sessionId);
         if (state && typeof state === 'object' && 'currentPhase' in state) {
           const progressText = this.promptBuilder.buildSystemPrompt(
-            state as any,
+            state as TeachingState,
             (id: string) => (ACTION_NAMES as Record<string, string>)[id] ?? id,
             (id: string) => (ACTION_GOALS as Record<string, string>)[id] ?? '',
             (id: string) => SYNDROME_NAMES[id] ?? id,

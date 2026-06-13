@@ -1,0 +1,266 @@
+{
+  "scan_date": "2026-06-13",
+  "scan_version": "V2.6",
+  "project_root": "D:\\ai-teacher\\yuesheng-writing-coach",
+  "stats": {
+    "date": "2026-06-13",
+    "total_files": 179,
+    "total_lines": 28749,
+    "total_any": 11,
+    "total_ts_ignore": 1,
+    "total_as_assert": 244,
+    "total_console": 116,
+    "total_todo": 5,
+    "total_fixme": 0,
+    "total_export_default": 0,
+    "total_nonnull_assert": 80,
+    "total_inline_style": 350,
+    "total_broken_imports": 0,
+    "total_security_issues": 0,
+    "total_ipc_trycatch_issues": 0,
+    "large_files_count": 19,
+    "ts_ignore_files_count": 1,
+    "ipc_files_count": 13,
+    "db_files_count": 10
+  },
+  "large_files_top10": [
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "lines": 964
+    },
+    {
+      "file": "src\\renderer\\shared\\types.d.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\shared\\types.d.ts",
+      "lines": 957
+    },
+    {
+      "file": "src\\main\\services\\teaching-strategy-router.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\teaching-strategy-router.ts",
+      "lines": 909
+    },
+    {
+      "file": "src\\main\\services\\student-model.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\student-model.service.ts",
+      "lines": 708
+    },
+    {
+      "file": "src\\main\\services\\teaching-state-machine.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\teaching-state-machine.ts",
+      "lines": 553
+    },
+    {
+      "file": "src\\renderer\\components\\layout\\WorkTreePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\layout\\WorkTreePanel.tsx",
+      "lines": 403
+    },
+    {
+      "file": "src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "lines": 382
+    },
+    {
+      "file": "src\\main\\services\\teaching-strategy.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\teaching-strategy.service.ts",
+      "lines": 379
+    },
+    {
+      "file": "src\\main\\services\\dynamic-context.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\dynamic-context.service.ts",
+      "lines": 363
+    },
+    {
+      "file": "src\\main\\services\\prompt-loader.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\prompt-loader.ts",
+      "lines": 357
+    }
+  ],
+  "any_heavy_top10": [],
+  "ts_ignore_files": [
+    {
+      "file": "src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "count": 1
+    }
+  ],
+  "export_default_files": [],
+  "nonnull_assert_top10": [
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "count": 19
+    },
+    {
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "count": 16
+    },
+    {
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "count": 14
+    },
+    {
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "count": 12
+    },
+    {
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "count": 5
+    },
+    {
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "count": 3
+    },
+    {
+      "file": "src\\renderer\\hooks\\useDiagnosisFlow.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\hooks\\useDiagnosisFlow.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\renderer\\stores\\session.store.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\session.store.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\main\\core\\app-initializer.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\core\\app-initializer.ts",
+      "count": 1
+    },
+    {
+      "file": "src\\main\\core\\ipc-registry.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\core\\ipc-registry.ts",
+      "count": 1
+    }
+  ],
+  "inline_style_top10": [
+    {
+      "file": "src\\renderer\\components\\profile\\AbilityProfilePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\profile\\AbilityProfilePanel.tsx",
+      "count": 39
+    },
+    {
+      "file": "src\\renderer\\components\\growth\\GrowthPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\growth\\GrowthPanel.tsx",
+      "count": 26
+    },
+    {
+      "file": "src\\renderer\\components\\layout\\DiagnosisPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\layout\\DiagnosisPanel.tsx",
+      "count": 26
+    },
+    {
+      "file": "src\\renderer\\components\\settings\\SettingsPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\settings\\SettingsPanel.tsx",
+      "count": 23
+    },
+    {
+      "file": "src\\renderer\\components\\editor\\ChapterEditor.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\editor\\ChapterEditor.tsx",
+      "count": 16
+    },
+    {
+      "file": "src\\renderer\\components\\training\\BehaviorDerivationTool.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\training\\BehaviorDerivationTool.tsx",
+      "count": 16
+    },
+    {
+      "file": "src\\renderer\\components\\search\\SearchPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\search\\SearchPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components\\teaching\\TaskPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\teaching\\TaskPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components\\tools\\ToolsPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\tools\\ToolsPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "count": 14
+    }
+  ],
+  "ipc_files": [
+    {
+      "file": "src\\main\\ipc\\ability-profile.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\ability-profile.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\teaching-state.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-state.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\training.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\create-handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\create-handler.ts",
+      "channels": [
+        "channel:name"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\validate-payload.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\validate-payload.ts",
+      "channels": []
+    }
+  ],
+  "db_files": [],
+  "circular_deps": {
+    "checked": false,
+    "error": "madge 未安装，跳过循环依赖检测 (npm install -D madge)",
+    "dependencies": []
+  },
+  "security": {
+    "hardcoded_credentials": 0,
+    "total_issues": 0
+  },
+  "issues": []
+}

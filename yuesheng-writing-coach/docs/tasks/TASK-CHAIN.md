@@ -1449,7 +1449,7 @@ P0（核心链路）                          P1（体验提升）              
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
-| **V16.8** | 2026-06-11 | 每日体检 V2.1 深度扫描修复（R-30）：F-02 createHandler 迁移、F-03 AUTOINCREMENT→UUID、F-04 迁移事务包裹、F-07 chapter.store guard；session.service.test.ts mock 修复 |
+| **V16.9** | 2026-06-12 | FB20260612-001 Function Calling 集成：api-proxy.ts 新增 `chatStreamWithTools` + `accumulateToolCalls`；chat.handler.ts 新增 `handleStreamResponseWithTools` + `probeToolSupport` + `toolHandlers`(readChapter)；App.tsx 新增 tool 调用状态提示。tsc 0，136 测试通过 |
 | **V16.6** | 2026-06-11 | FB240611-003 整合审计修复：013_manuscripts.sql 创建、MANUSCRIPT_GET 白名单补充、AbilityProfilePanel/GrowthPanel sessionId 从 useSessionStore 获取、CHAT_STOP handler 注册、onboarding:analyze 白名单补充；App.tsx/useAppIpcListener 无用 IPC 回调清理；新增 13 个审计 Issue(I-013~I-025) |
 | **V16.5** | 2026-06-09 | FB240611-002 数据流审计：TeachingState 推送修复、validatePayload 补充、证据 ID 冲突修复、diag.store 错误处理 |
 | **V16.3** | 2026-06-09 | V2 最终收尾：V2-007 IPC 统一 + V2-008/009~015 审计确认 + V2-016 推荐引擎确认 + V2-023 清理 + 关卡审查全部完成 |

@@ -23,11 +23,71 @@ export interface RewriteEvalResult {
 /** 修改评估输出最大 token 数（只需简短评价） */
 const EVAL_MAX_TOKENS = 1024;
 
+// ============ Tool Calling 类型定义 ============
+
+export interface ToolFunction {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface ChatCompletionTool {
+  type: 'function';
+  function: ToolFunction;
+}
+
+export interface AccumulatedToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export type StreamEvent =
+  | { type: 'text'; content: string }
+  | { type: 'tool_calls'; toolCalls: AccumulatedToolCall[] };
+
+/**
+ * 累积 SSE 流中分 chunk 到达的 tool_calls delta
+ *
+ * SSE 中 tool_calls 会分多个 chunk:
+ *   delta.tool_calls[0].function.name="readChapter"
+ *   delta.tool_calls[0].function.arguments="{\"chap"
+ *   delta.tool_calls[0].function.arguments="terId\":\"..."
+ *   delta.tool_calls[1].function.name="searchKnowledge"
+ *   ...
+ */
+export function accumulateToolCalls(
+  toolCalls: AccumulatedToolCall[],
+  delta: { index: number; id?: string; function?: { name?: string; arguments?: string } }
+): AccumulatedToolCall[] {
+  while (toolCalls.length <= delta.index) {
+    toolCalls.push({ id: '', type: 'function', function: { name: '', arguments: '' } });
+  }
+  const current = toolCalls[delta.index];
+  if (delta.id) current.id = delta.id;
+  if (delta.function?.name) current.function.name += delta.function.name;
+  if (delta.function?.arguments) current.function.arguments += delta.function.arguments;
+  return toolCalls;
+}
+
 export class ApiProxy {
   private config: ApiConfig;
 
   constructor(config: ApiConfig) {
     this.config = config;
+  }
+
+  /** 暴露基础 URL 给 probeToolSupport */
+  getBaseUrl(): string {
+    return this.config.baseUrl.replace(/\/+$/, '');
+  }
+
+  /** 暴露 API Key 给 probeToolSupport */
+  getApiKey(): string {
+    return this.config.apiKey;
   }
 
   updateConfig(config: ApiConfig): void {
@@ -88,6 +148,98 @@ export class ApiProxy {
           // skip malformed chunks
         }
       }
+    }
+  }
+
+  /**
+   * 带工具调用的流式聊天
+   *
+   * 与 chatStream 的区别：
+   * - 请求体中附加 tools 参数
+   * - 流式解析时检测 tool_calls delta 并累积
+   * - yield 两种事件：text（文本块）或 tool_calls（完整工具调用集合）
+   */
+  async *chatStreamWithTools(
+    messages: ApiChatMessage[],
+    tools: ChatCompletionTool[],
+    abortSignal?: AbortSignal,
+  ): AsyncGenerator<StreamEvent> {
+    const response = await fetch(`${this.getBaseUrl()}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: this.config.modelName,
+        messages,
+        tools,
+        temperature: this.config.temperature,
+        max_tokens: this.config.maxTokens,
+        stream: true,
+      }),
+      signal: abortSignal,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`API Error: ${response.status} ${errorText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('No response body');
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let accumulated: AccumulatedToolCall[] = [];
+    let hasToolCalls = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
+        const data = trimmed.slice(6);
+        if (data === '[DONE]') break;
+
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed.choices?.[0]?.delta;
+          if (!delta) continue;
+
+          // 文本内容：如果有累积的 tool_calls 先发出去，再发文本
+          if (delta.content) {
+            if (hasToolCalls) {
+              yield { type: 'tool_calls', toolCalls: accumulated };
+              accumulated = [];
+              hasToolCalls = false;
+            }
+            yield { type: 'text', content: delta.content };
+          }
+
+          // tool_calls delta：逐 chunk 累积
+          if (delta.tool_calls) {
+            for (const tcDelta of delta.tool_calls) {
+              accumulated = accumulateToolCalls(accumulated, tcDelta);
+              hasToolCalls = true;
+            }
+          }
+        } catch {
+          // skip malformed chunks
+        }
+      }
+    }
+
+    // 流结束时如有未发出的 tool_calls
+    if (hasToolCalls) {
+      yield { type: 'tool_calls', toolCalls: accumulated };
     }
   }
 

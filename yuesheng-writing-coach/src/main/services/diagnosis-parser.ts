@@ -59,7 +59,7 @@ export function parseDiagnosisFromAIResponse(
 
   // 未找到完整标记，返回原始回复
   if (startIndex === -1 || endIndex === -1) {
-    console.log('[DiagnosisParser] No diagnosis markers found, returning original response');
+    console.warn('[DiagnosisParser] No diagnosis markers found, returning original response');
     return { cleanResponse: fullResponse, diagnosis: null };
   }
 

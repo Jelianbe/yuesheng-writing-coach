@@ -10,13 +10,18 @@ import type { Manuscript, Chapter } from './types-manuscript';
 export type IPCChannel =
   | 'config:get' | 'config:set' | 'config:testConnection'
   | 'diagnosis:update' | 'diagnosis:query' | 'diagnosis:submitRewrite' | 'diagnosis:getComparison'
+  | 'growth:getTrends' | 'growth:getGlobalTrends'
   | 'teachingState:get' | 'teachingState:update' | 'teachingState:confirm'
   | 'teachingState:getPrompt' | 'teachingState:updateSummary' | 'teachingState:updated'
   | 'ability:getProfile'
   | 'evidence:getByDisease' | 'evidence:getByAbility' | 'evidence:getChain' | 'evidence:create'
-  | 'chat:send' | 'chat:stream:data' | 'chat:stream:end'
+  | 'evidence:getBySyndrome'
+  | 'training:recommend' | 'training:assign' | 'training:complete' | 'training:skip'
+  | 'training:history' | 'training:submit' | 'training:evaluate' | 'training:deriveBehavior'
+  | 'chat:send' | 'chat:stop' | 'chat:stream:data' | 'chat:stream:end'
   | 'session:list' | 'session:create' | 'session:delete' | 'session:rename' | 'session:getMessages'
-  | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle' | 'session:isNewUser'
+  | 'session:getMessagesPaged' | 'session:listWithMeta' | 'session:updateTitle' | 'session:searchMessages' | 'session:isNewUser'
+  | 'onboarding:analyze'
   | 'manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update'
   | 'chapter:list' | 'chapter:get' | 'chapter:create' | 'chapter:delete' | 'chapter:updateContent'
   | 'manuscript:delete';
@@ -29,6 +34,8 @@ export interface IPCRequestMap {
   'diagnosis:query': { sessionId: string };
   'diagnosis:submitRewrite': { sessionId: string; messageId: string; syndromeId: SyndromeId; originalText: string; rewrittenText: string; syndromeName?: string; syndromeDesc?: string };
   'diagnosis:getComparison': { sessionId: string };
+  'growth:getTrends': { sessionId: string };
+  'growth:getGlobalTrends': Record<string, never>;
   'teachingState:get': { sessionId: string };
   'teachingState:update': { sessionId: string; updates: Partial<Omit<TeachingState, 'sessionId' | 'updatedAt'>> };
   'teachingState:confirm': { sessionId: string };
@@ -39,7 +46,9 @@ export interface IPCRequestMap {
   'evidence:getByAbility': { abilityId: string; authorId: string; fromDate?: string; toDate?: string };
   'evidence:getChain': { diagnosisId: string };
   'evidence:create': { evidence: EvidenceRecord };
+  'evidence:getBySyndrome': { syndromeId: string; sessionId: string };
   'chat:send': { message: string; sessionId: string; history?: { role: string; content: string }[]; attitudeLevel?: AttitudeLevel };
+  'chat:stop': { sessionId: string };
   'session:list': Record<string, never>;
   'session:create': Record<string, never>;
   'session:delete': { sessionId: string };
@@ -79,7 +88,9 @@ export interface IPCResponseMap {
   'evidence:getByAbility': ApiResponse<EvidenceRecord[]>;
   'evidence:getChain': ApiResponse<EvidenceChain | null>;
   'evidence:create': ApiResponse<{ evidenceId: string }>;
+  'evidence:getBySyndrome': ApiResponse<EvidenceRecord[]>;
   'chat:send': ApiResponse<{ messageId: string }>;
+  'chat:stop': ApiResponse<void>;
   'session:list': ApiResponse<Session[]>;
   'session:create': ApiResponse<Session>;
   'session:delete': ApiResponse<void>;
@@ -89,6 +100,16 @@ export interface IPCResponseMap {
   'session:listWithMeta': ApiResponse<SessionMeta[]>;
   'session:updateTitle': ApiResponse<void>;
   'session:isNewUser': ApiResponse<boolean>;
+  'session:searchMessages': ApiResponse<{ messages: MessageRow[]; total: number }>;
+  'onboarding:analyze': ApiResponse<{ summary: string }>;
+  'training:recommend': ApiResponse<unknown>;
+  'training:assign': ApiResponse<unknown>;
+  'training:complete': ApiResponse<unknown>;
+  'training:skip': ApiResponse<unknown>;
+  'training:history': ApiResponse<unknown>;
+  'training:submit': ApiResponse<unknown>;
+  'training:evaluate': ApiResponse<unknown>;
+  'training:deriveBehavior': ApiResponse<unknown>;
   'manuscript:list': ApiResponse<Manuscript[]>;
   'manuscript:get': ApiResponse<Manuscript | null>;
   'manuscript:create': ApiResponse<Manuscript>;
