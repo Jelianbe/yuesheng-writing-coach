@@ -689,7 +689,7 @@ h3 {
 .input-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
 /* ========================================
-   设置页面（ConfigPage）滚动条
+   设置页面滚动条
    ======================================== */
 
 .config-scroll-container::-webkit-scrollbar {

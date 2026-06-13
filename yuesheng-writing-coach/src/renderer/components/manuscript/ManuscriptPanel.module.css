@@ -149,6 +149,7 @@
   margin-left: auto;
   padding: 0 4px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .settingsBtn {

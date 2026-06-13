@@ -5,7 +5,7 @@
  */
 
 import { IPC_CHANNELS } from '../../shared/constants';
-import { AbilityProfileService } from '../services/ability-profile.service';
+import { AbilityProfileService } from '../domains/student/ability-profile.service';
 import { createHandler } from './utils/create-handler';
 
 export interface AbilityProfileHandlerDeps {

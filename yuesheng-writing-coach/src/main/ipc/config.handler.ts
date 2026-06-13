@@ -3,7 +3,7 @@
 // 依赖：electron.ipcMain, ConfigService
 // 安全：不在日志中打印 API Key
 
-import { ConfigService } from '../services/config.service';
+import { ConfigService } from '../shared/services/config.service';
 import { IPC_CHANNELS } from '../../shared/constants';
 import {
   ApiConfig,

@@ -57,23 +57,11 @@ interface EditorActions {
   setFontSize: (size: number) => void;
   /** 切换主题 */
   setTheme: (theme: EditorTheme) => void;
-  /** 设置自定义背景色 */
-  setCustomBgColor: (color: string) => void;
-  /** 设置自定义文字色 */
-  setCustomTextColor: (color: string) => void;
-  /** 更新排版配置 */
-  updateFormat: (partial: Partial<FormatConfig>) => void;
+
   /** 切换设置面板 */
   toggleSettings: () => void;
   /** 关闭设置面板 */
   closeSettings: () => void;
-
-  // ===== 派生值 =====
-
-  /** 根据当前主题计算实际背景色 */
-  getBackgroundColor: () => string;
-  /** 根据当前主题计算实际文字色 */
-  getTextColor: () => string;
 }
 
 // ===== 主题预设 =====
@@ -105,7 +93,7 @@ const DEFAULT_SETTINGS: EditorSettings = {
 
 export const useEditorStore = create<EditorSettings & EditorActions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...DEFAULT_SETTINGS,
 
       adjustFontSize: (delta: number) => {
@@ -122,34 +110,12 @@ export const useEditorStore = create<EditorSettings & EditorActions>()(
         set({ theme });
       },
 
-      setCustomBgColor: (color: string) => {
-        set({ customBgColor: color });
-      },
-
-      setCustomTextColor: (color: string) => {
-        set({ customTextColor: color });
-      },
-
-      updateFormat: (partial: Partial<FormatConfig>) => {
-        set((s) => ({ format: { ...s.format, ...partial } }));
-      },
-
       toggleSettings: () => {
         set((s) => ({ settingsOpen: !s.settingsOpen }));
       },
 
       closeSettings: () => {
         set({ settingsOpen: false });
-      },
-
-      getBackgroundColor: () => {
-        const { theme, customBgColor } = get();
-        return theme === 'custom' ? customBgColor : THEME_PRESETS[theme].bg;
-      },
-
-      getTextColor: () => {
-        const { theme, customTextColor } = get();
-        return theme === 'custom' ? customTextColor : THEME_PRESETS[theme].text;
       },
     }),
     {

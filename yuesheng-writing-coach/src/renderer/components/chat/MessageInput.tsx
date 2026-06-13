@@ -87,6 +87,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   /** 处理 pill 点击：有 prefix 则注入输入框，否则触发回调 */
   const handlePillClick = useCallback((pill: QuickPill) => {
+    if (disabled || isStreaming) return;
     if (onQuickPillClick) {
       onQuickPillClick(pill.id);
       return;
@@ -95,7 +96,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       setInput((prev) => (prev ? `${prev} ${pill.prefix}` : pill.prefix) ?? '');
       textareaRef.current?.focus();
     }
-  }, [onQuickPillClick]);
+  }, [onQuickPillClick, disabled, isStreaming]);
 
   return (
     <div className="input-area" role="form" aria-label="Message input" style={{
@@ -115,6 +116,8 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           <button
             key={pill.id}
             onClick={() => handlePillClick(pill)}
+            disabled={disabled || isStreaming}
+            aria-label={pill.label}
             style={{
               padding: '4px 12px',
               border: '1px solid var(--border)',
@@ -124,15 +127,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               fontFamily: 'var(--font-body)',
               fontSize: '0.75rem',
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: (disabled || isStreaming) ? 'not-allowed' : 'pointer',
+              opacity: (disabled || isStreaming) ? 0.4 : 1,
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap',
             }}
             onMouseEnter={(e) => {
+              if (disabled || isStreaming) return;
               (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)';
               (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)';
             }}
             onMouseLeave={(e) => {
+              if (disabled || isStreaming) return;
               (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)';
               (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)';
             }}

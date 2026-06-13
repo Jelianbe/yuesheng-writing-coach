@@ -119,7 +119,6 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
   const handleCopyRef = useCallback(async (chapter: Chapter) => {
     await copyToClipboard(`/chapters/${chapter.id}`);
     setCtxMenu(null);
-    // TODO: 可加 toast 提示"已复制"
   }, []);
 
   // 删除章节
@@ -261,6 +260,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                   <button
                     onClick={() => { setChapterTitle(''); setShowChapterPopup(null); }}
                     className={styles.popupCancel}
+                    aria-label="取消创建章节"
                   >
                     取消
                   </button>
@@ -278,6 +278,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       }
                     }}
                     className={styles.popupConfirm}
+                    aria-label="确认创建章节"
                   >
                     创建
                   </button>
@@ -343,6 +344,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
             <button
               onClick={() => { setWorkTitle(''); setShowWorkPopup(false); }}
               className={styles.popupCancel}
+              aria-label="取消创建作品"
             >
               取消
             </button>
@@ -355,6 +357,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                 }
               }}
               className={styles.popupConfirm}
+              aria-label="确认创建作品"
             >
               创建
             </button>
@@ -383,6 +386,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
           <button
             className={styles.ctxMenuItem}
             onClick={() => handleCopyRef(ctxMenu.chapter)}
+            aria-label="复制章节引用"
           >
             <Copy size={13} strokeWidth={1.6} />
             <span>复制章节引用</span>
@@ -391,6 +395,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
           <button
             className={`${styles.ctxMenuItem} ${styles.ctxMenuItemDanger}`}
             onClick={() => handleDeleteChapter(ctxMenu.chapter)}
+            aria-label="删除章节"
           >
             <Trash2 size={13} strokeWidth={1.6} />
             <span>删除章节</span>

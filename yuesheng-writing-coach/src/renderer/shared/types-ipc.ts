@@ -1,10 +1,11 @@
 // IPC 类型系统
 import type { ApiConfig, ConnectionTestResult, AttitudeLevel, ApiResponse } from './types-config';
-import type { SyndromeId, DiagnosisEntry, RewriteEvaluation, EvidenceRecord, EvidenceChain } from './types-diagnosis';
+import type { SyndromeId, RewriteEvaluation, EvidenceRecord, EvidenceChain } from './types-diagnosis';
 import type { TeachingState, ActiveProblem } from './types-teaching';
 import type { AbilityProfile } from './types-growth';
 import type { Session, MessageRow, SessionMeta } from './types-chat';
 import type { Manuscript, Chapter } from './types-manuscript';
+import type { DiagnosisUpdateEvent } from '../../shared/api-contracts/diagnosis.contract';
 
 /** IPC 通道字符串字面量类型 */
 export type IPCChannel =
@@ -124,7 +125,7 @@ export interface IPCResponseMap {
 
 /** IPC 事件推送类型映射 */
 export interface IPCEventMap {
-  'diagnosis:update': DiagnosisEntry;
+  'diagnosis:update': DiagnosisUpdateEvent;
   'teachingState:updated': TeachingState & { phaseName: string; subphaseName: string; phaseProgress: number };
   'chat:stream:data': { sessionId: string; chunk: string };
   'chat:stream:end': { sessionId: string; fullResponse: string; messageId: string; error?: string };

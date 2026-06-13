@@ -11,7 +11,7 @@
 import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
 import { getInvoke } from '../utils/ipc';
-import { IPC_CHANNELS } from '../../shared/constants';
+import { TrainingApi } from '../../shared/api-contracts/training.contract';
 import { severityToNumber } from '../../shared/severity-utils';
 import type {
   ErrorCard,
@@ -38,7 +38,7 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
       const sessionId = useChatStore.getState().currentSessionId;
       if (!sessionId) throw new Error('No active session');
 
-      const result = await getInvoke()(IPC_CHANNELS.TRAINING_ASSIGN, {
+      const result = await getInvoke()(TrainingApi.assign.channel, {
         sessionId,
         challengeId,
       }) as { error?: string; record?: TrainingRecord };
@@ -96,7 +96,7 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
 
       // Step 2 → 提交给 AI 评估
       if (active.currentStepIndex === 1) {
-        const result = await getInvoke()(IPC_CHANNELS.TRAINING_SUBMIT, {
+        const result = await getInvoke()(TrainingApi.submit.channel, {
           challengeDescription: active.challengeDescription,
           constraint: active.constraint,
           originalQuote: active.originalQuote,
@@ -159,7 +159,7 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
         // B3: 不切回对话，用户可通过 onBackToChat 手动返回；评估结果保持可见
         if (active.recordId) {
           try {
-            await getInvoke()(IPC_CHANNELS.TRAINING_COMPLETE, {
+            await getInvoke()(TrainingApi.complete.channel, {
               recordId: active.recordId,
               userResponse: active.userDraft,
               aiFeedback: get().submissionResult?.feedback ?? '',
@@ -202,7 +202,7 @@ export function createLoadHistoryAction(set: SetStateFn, _get: GetStateFn) {
   return async (sessionId: string): Promise<void> => {
     set({ isLoading: true, error: null });
     try {
-      const result = await getInvoke()(IPC_CHANNELS.TRAINING_HISTORY, { sessionId }) as { error?: string; records?: TrainingRecord[] };
+      const result = await getInvoke()(TrainingApi.history.channel, { sessionId }) as { error?: string; records?: TrainingRecord[] };
       if (result.error) throw new Error(result.error);
       set({ history: result.records ?? [], isLoading: false });
     } catch (error) {
@@ -266,7 +266,7 @@ export function createRefreshFromDiagnosisAction(set: SetStateFn, _get: GetState
         }));
 
       // 2. 调用 training:recommend 获取推荐
-      const recResult = await getInvoke()(IPC_CHANNELS.TRAINING_RECOMMEND, { sessionId }) as { recommendations?: TrainingRecommendation[] };
+      const recResult = await getInvoke()(TrainingApi.recommend.channel, { sessionId }) as { recommendations?: TrainingRecommendation[] };
       const recommendations = recResult.recommendations ?? [];
 
       // 3. 关联匹配的 challengeId 到 errorCards
@@ -305,7 +305,7 @@ export function createEvaluateTrainingAction(set: SetStateFn, get: GetStateFn) {
 
       const sessionId = useChatStore.getState().currentSessionId;
 
-      const result = await getInvoke()(IPC_CHANNELS.TRAINING_EVALUATE, {
+      const result = await getInvoke()(TrainingApi.evaluate.channel, {
         recordId: active.recordId,
         sessionId,
         syndromeId: active.syndromeId,
@@ -335,7 +335,7 @@ export function createDeriveBehaviorAction(set: SetStateFn, _get: GetStateFn) {
   }): Promise<void> => {
     set({ derivationLoading: true, derivationError: null, derivationResult: null });
     try {
-      const res = await getInvoke()(IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR, params) as {
+      const res = await getInvoke()(TrainingApi.deriveBehavior.channel, params) as {
         success: boolean;
         data?: { derivedBehavior: string; analysis: string; consistencyCheck: string };
         error?: string;

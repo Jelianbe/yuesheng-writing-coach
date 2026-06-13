@@ -1,68 +1,38 @@
 /**
  * 教学状态 IPC 处理器
  * 负责：注册教学状态相关的 IPC 通道，处理主进程与渲染进程之间的通信
- * 依赖：electron.ipcMain, TeachingStateStore, TeachingStateMachine
- * 安全：仅允许白名单中的通道
+ * 依赖：electron.ipcMain, TeachingStateService (DI 注入)
+ *
+ * 设计说明：
+ * - 依赖通过 initTeachingStateHandler() 注入，消除模块级变量（store/promptBuilder/mainWindow）
+ * - 内部实现全部委托给 TeachingStateService（DI 容器管理）
+ * - 此文件仅负责 IPC 通道注册，不持有业务状态
  */
 
-import { BrowserWindow } from 'electron';
-import Database from 'better-sqlite3';
-import { TeachingStateStore } from '../services/teaching-state.store';
-import { TeachingState } from '../services/teaching-state.types';
+import { TeachingStateService } from '../domains/teaching/teaching-state.service';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES } from '../../shared/mappings';
-import { PromptBuilder } from '../services/prompt-builder';
-import {
-  confirmPhaseComplete,
-  getPhaseName,
-  getSubphaseName,
-  calculatePhaseProgress,
-} from '../services/teaching-state-machine';
 import { createHandler } from './utils/create-handler';
 
-/** 教学状态存储实例 */
-let store: TeachingStateStore | null = null;
-
-/** PromptBuilder 实例 */
-let promptBuilder: PromptBuilder | null = null;
-
-/** 主窗口引用 */
-let mainWindow: BrowserWindow | null = null;
+/** DI 注入的教学状态服务 */
+let teachingStateService: TeachingStateService | null = null;
 
 /**
- * 设置 PromptBuilder 实例
+ * 初始化教学状态处理器（DI 注入入口）
+ * 必须在 registerTeachingStateHandlers 之前调用
  */
-export function setPromptBuilder(builder: PromptBuilder): void {
-  promptBuilder = builder;
+export function initTeachingStateHandler(service: TeachingStateService): void {
+  teachingStateService = service;
 }
 
 /**
- * 获取 PromptBuilder 实例
+ * 获取教学状态服务实例
  */
-export function getPromptBuilder(): PromptBuilder {
-  if (!promptBuilder) {
-    throw new Error('[TeachingStateIPC] PromptBuilder not initialized. Call setPromptBuilder() first.');
+function getService(): TeachingStateService {
+  if (!teachingStateService) {
+    throw new Error('[TeachingStateIPC] TeachingStateService not initialized. Call initTeachingStateHandler() first.');
   }
-  return promptBuilder;
-}
-
-/**
- * 获取教学状态存储实例
- * 需要在 registerTeachingStateHandlers 之前调用 initStore
- */
-function getStore(): TeachingStateStore {
-  if (!store) {
-    throw new Error('[TeachingStateIPC] Store not initialized. Call initStore() first.');
-  }
-  return store;
-}
-
-/**
- * 初始化教学状态存储
- * @param db - better-sqlite3 数据库实例
- */
-export function initStore(db: Database.Database): void {
-  store = new TeachingStateStore(db);
+  return teachingStateService;
 }
 
 /**
@@ -70,14 +40,14 @@ export function initStore(db: Database.Database): void {
  * （不暴露 Store 实例本身，只提供 getBySession 方法）
  */
 export function getStoreForPromptLoader(): { getBySession: (sessionId: string) => unknown } {
-  return { getBySession: (sessionId: string) => store?.getBySession(sessionId) };
+  const service = getService();
+  return { getBySession: (sessionId: string) => service.getBySession(sessionId) };
 }
 
 /**
  * 获取教学状态的上下文信息（只读）
  * 用于替代 getStoreInstance 暴露，仅返回需要的字段
- * @deprecated 应通过 DI 容器（ServiceContainer）中 TeachingStateService 的对应方法获取。
- *             此函数将在后续版本中移除。
+ * @deprecated 应通过 TeachingStateService.getContext() 获取
  */
 export function getTeachingStateContext(sessionId: string): {
   currentPhase: string | null;
@@ -85,24 +55,10 @@ export function getTeachingStateContext(sessionId: string): {
   activeProblems: unknown[];
 } | null {
   try {
-    const teachingStore = getStore();
-    const state = teachingStore.getBySession(sessionId);
-    if (!state) return null;
-    return {
-      currentPhase: state.currentPhase,
-      currentSubphase: state.currentSubphase,
-      activeProblems: state.activeProblems,
-    };
+    return getService().getContext(sessionId);
   } catch {
     return null;
   }
-}
-
-/**
- * 设置主窗口引用
- */
-export function setMainWindow(win: BrowserWindow): void {
-  mainWindow = win;
 }
 
 /**
@@ -116,14 +72,9 @@ export function registerTeachingStateHandlers(): void {
   createHandler(
     IPC_CHANNELS.TEACHING_STATE_GET,
     (_event, args: { sessionId: string }) => {
-      const teachingStore = getStore();
-      const state = teachingStore.getOrCreate(args.sessionId);
-      return {
-        ...state,
-        phaseName: getPhaseName(state.currentPhase),
-        subphaseName: getSubphaseName(state.currentSubphase),
-        phaseProgress: calculatePhaseProgress(state.currentPhase, state.currentSubphase),
-      };
+      const fullState = getService().getFullState(args.sessionId);
+      if (!fullState) throw new Error('Teaching state not found');
+      return fullState;
     },
   );
 
@@ -132,13 +83,10 @@ export function registerTeachingStateHandlers(): void {
    */
   createHandler(
     IPC_CHANNELS.TEACHING_STATE_UPDATE,
-    (_event, args: { sessionId: string; updates: Partial<Omit<TeachingState, 'sessionId' | 'updatedAt'>> }) => {
-      const teachingStore = getStore();
-      const updatedState = teachingStore.update(args.sessionId, args.updates);
-      if (!updatedState) {
-        throw new Error('Teaching state not found');
-      }
-      return updatedState;
+    (_event, args: { sessionId: string; updates: Record<string, unknown> }) => {
+      const updated = getService().update(args.sessionId, args.updates as any);
+      if (!updated) throw new Error('Teaching state not found');
+      return updated;
     },
   );
 
@@ -148,33 +96,19 @@ export function registerTeachingStateHandlers(): void {
   createHandler(
     IPC_CHANNELS.TEACHING_STATE_CONFIRM,
     (_event, args: { sessionId: string }) => {
-      const teachingStore = getStore();
-      const oldState = teachingStore.getBySession(args.sessionId);
-
-      if (!oldState) throw new Error('Teaching state not found');
-
-      const newState = confirmPhaseComplete(oldState);
-      const updated = teachingStore.update(args.sessionId, {
-        currentPhase: newState.currentPhase,
-        currentSubphase: newState.currentSubphase,
-        completedActions: newState.completedActions,
-        nextSuggestedActions: newState.nextSuggestedActions,
-        lastUserConfirmation: newState.lastUserConfirmation,
-      });
-
-      if (!updated) throw new Error('Teaching state not found');
-
+      const service = getService();
+      const result = service.confirmPhase(args.sessionId);
+      const mainWindow = service.getMainWindow();
       if (mainWindow) {
+        const { newState } = result;
         mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
-          oldState,
-          newState: updated,
-          phaseName: getPhaseName(updated.currentPhase),
-          subphaseName: getSubphaseName(updated.currentSubphase),
-          phaseProgress: calculatePhaseProgress(updated.currentPhase, updated.currentSubphase),
+          ...newState,
+          phaseName: service.getPhaseName(newState.currentPhase),
+          subphaseName: service.getSubphaseName(newState.currentSubphase),
+          phaseProgress: service.calculatePhaseProgress(newState.currentPhase, newState.currentSubphase),
         });
       }
-
-      return { oldState, newState: updated };
+      return result;
     },
   );
 
@@ -184,9 +118,9 @@ export function registerTeachingStateHandlers(): void {
   createHandler(
     IPC_CHANNELS.TEACHING_STATE_GET_PROMPT,
     (_event, args: { sessionId: string }) => {
-      const teachingStore = getStore();
-      const state = teachingStore.getOrCreate(args.sessionId);
-      const builder = getPromptBuilder();
+      const service = getService();
+      const state = service.getOrCreate(args.sessionId);
+      const builder = service.getPromptBuilder();
       const promptContent = builder.buildSystemPrompt(
         state,
         (id: string) => (ACTION_NAMES as Record<string, string>)[id] || id,
@@ -203,39 +137,39 @@ export function registerTeachingStateHandlers(): void {
   createHandler(
     IPC_CHANNELS.TEACHING_STATE_UPDATE_SUMMARY,
     (_event, args: { sessionId: string; newContent: string }) => {
-      const teachingStore = getStore();
-      const state = teachingStore.getBySession(args.sessionId);
-
+      const service = getService();
+      const state = service.getBySession(args.sessionId);
       if (!state) throw new Error('Teaching state not found');
 
-      const builder = getPromptBuilder();
+      const builder = service.getPromptBuilder();
       const newSummary = builder.updateDiagnosisSummary(state.diagnosisSummary, args.newContent);
-      const updatedState = teachingStore.update(args.sessionId, { diagnosisSummary: newSummary });
-      return updatedState;
+      service.update(args.sessionId, { diagnosisSummary: newSummary });
+      return service.getBySession(args.sessionId);
     },
   );
 }
 
 /**
  * 推送教学状态更新到渲染进程
- * @deprecated 应通过 DI 容器（ServiceContainer）中 TeachingStateService 的对应方法推送。
- *             此函数将在后续版本中移除。
+ * @deprecated 应直接通过 TeachingStateService 推送
  */
 export function pushTeachingStateUpdate(sessionId: string): void {
-  if (!mainWindow) return;
-
   try {
-    const teachingStore = getStore();
-    const state = teachingStore.getBySession(sessionId);
+    const service = getService();
+    const mainWindow = service.getMainWindow();
+    if (!mainWindow) return;
+
+    const state = service.getBySession(sessionId);
     if (!state) return;
 
     mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
       ...state,
-      phaseName: getPhaseName(state.currentPhase),
-      subphaseName: getSubphaseName(state.currentSubphase),
-      phaseProgress: calculatePhaseProgress(state.currentPhase, state.currentSubphase),
+      phaseName: service.getPhaseName(state.currentPhase),
+      subphaseName: service.getSubphaseName(state.currentSubphase),
+      phaseProgress: service.calculatePhaseProgress(state.currentPhase, state.currentSubphase),
     });
   } catch (error) {
     console.error('[TeachingStateIPC] pushTeachingStateUpdate error:', error);
   }
 }
+

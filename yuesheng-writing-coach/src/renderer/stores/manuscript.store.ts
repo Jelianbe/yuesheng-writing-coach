@@ -29,8 +29,6 @@ interface ManuscriptActions {
   update: (id: string, data: Partial<Pick<Manuscript, 'title' | 'description' | 'genre' | 'status'>>) => Promise<void>;
   /** 删除作品 */
   remove: (id: string) => Promise<boolean>;
-  /** 清除错误 */
-  clearError: () => void;
 }
 
 export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((set, get) => ({

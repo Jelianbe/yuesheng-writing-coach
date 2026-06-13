@@ -6,7 +6,7 @@ import { ServiceContainer } from './service-container';
 import { configureServices } from './service-config';
 import { IpcRegistry } from './ipc-registry';
 import { WindowManager } from './window-manager';
-import { setResourcesRoot } from '../services/transition-prompt-loader';
+import { setResourcesRoot } from '../domains/teaching/transition-prompt-loader';
 
 export class AppInitializer {
   private container: ServiceContainer;
