@@ -22,13 +22,15 @@ import { StudentModelService } from '../services/student-model.service';
 import { evaluateTraining } from '../services/training-evaluator.service';
 import { deriveBehavior, type DerivationInput } from '../services/behavior-derivation.service';
 import { downgradeSyndromeSeverity } from '../services/teaching-state-machine';
-import { getTeachingStateStore, pushTeachingStateUpdate } from './teaching-state.handler';
+import { pushTeachingStateUpdate } from './teaching-state.handler';
 import { ConfigService } from '../services/config.service';
+import { TeachingStateService } from '../services/teaching-state.service';
 
 export interface TrainingHandlerDeps {
   configService: ConfigService;
   trainingRecordService: TrainingRecordService;
   studentModelService: StudentModelService;
+  teachingStateService: TeachingStateService;
 }
 
 let deps: TrainingHandlerDeps | null = null;
@@ -176,11 +178,10 @@ export function registerTrainingHandlers(): void {
     // 评分 >= 7 时降低症候严重度
     if (result.score >= 7 && validation.data.sessionId && validation.data.syndromeId) {
       try {
-        const teachingStateStore = getTeachingStateStore();
-        const state = teachingStateStore.getBySession(validation.data.sessionId);
+        const state = deps!.teachingStateService.getBySession(validation.data.sessionId);
         if (state) {
           const { activeProblems } = downgradeSyndromeSeverity(state, validation.data.syndromeId, result.score);
-          teachingStateStore.update(validation.data.sessionId, { activeProblems });
+          deps!.teachingStateService.update(validation.data.sessionId, { activeProblems });
           // 推送教学状态更新到前端
           try {
             pushTeachingStateUpdate(validation.data.sessionId);

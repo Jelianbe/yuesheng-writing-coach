@@ -9,7 +9,6 @@ import { BrowserWindow } from 'electron';
 import Database from 'better-sqlite3';
 import { TeachingStateStore } from '../services/teaching-state.store';
 import { TeachingState } from '../services/teaching-state.types';
-import { DiagnosisMerger } from '../services/diagnosis-merger';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES } from '../../shared/mappings';
 import { PromptBuilder } from '../services/prompt-builder';
@@ -59,29 +58,11 @@ function getStore(): TeachingStateStore {
 }
 
 /**
- * 公开获取教学状态存储实例（供其他 handler 使用）
- */
-export function getTeachingStateStore(): TeachingStateStore {
-  return getStore();
-}
-
-/**
  * 初始化教学状态存储
  * @param db - better-sqlite3 数据库实例
  */
 export function initStore(db: Database.Database): void {
   store = new TeachingStateStore(db);
-}
-
-/**
- * 注册 DiagnosisMerger，由 teaching-state.handler 内部提供 getStore 给 DiagnosisMerger
- * 避免将 Store 暴露给外部模块
- */
-export function registerDiagnosisMerger(
-  setDiagnosisMerger: (merger: DiagnosisMerger) => void,
-): void {
-  const merger = new DiagnosisMerger(getStore);
-  setDiagnosisMerger(merger);
 }
 
 /**
@@ -95,6 +76,8 @@ export function getStoreForPromptLoader(): { getBySession: (sessionId: string) =
 /**
  * 获取教学状态的上下文信息（只读）
  * 用于替代 getStoreInstance 暴露，仅返回需要的字段
+ * @deprecated 应通过 DI 容器（ServiceContainer）中 TeachingStateService 的对应方法获取。
+ *             此函数将在后续版本中移除。
  */
 export function getTeachingStateContext(sessionId: string): {
   currentPhase: string | null;
@@ -235,6 +218,8 @@ export function registerTeachingStateHandlers(): void {
 
 /**
  * 推送教学状态更新到渲染进程
+ * @deprecated 应通过 DI 容器（ServiceContainer）中 TeachingStateService 的对应方法推送。
+ *             此函数将在后续版本中移除。
  */
 export function pushTeachingStateUpdate(sessionId: string): void {
   if (!mainWindow) return;

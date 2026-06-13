@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Key, Globe, Thermometer, Cpu, CheckCircle, XCircle, Sun, Moon, Loader } from 'lucide-react';
+import { Key, Globe, Thermometer, Cpu, CheckCircle, XCircle, Sun, Moon, Loader, Brain } from 'lucide-react';
 import { useConfigStore } from '../../stores/config.store';
 
 const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
@@ -67,6 +67,8 @@ export const SettingsPanel: React.FC = () => {
   const setModelName = useConfigStore(s => s.setModelName);
   const setTemperature = useConfigStore(s => s.setTemperature);
   const testConnection = useConfigStore(s => s.testConnection);
+  const attitudeLevel = useConfigStore(s => s.attitudeLevel);
+  const setAttitudeLevel = useConfigStore(s => s.setAttitudeLevel);
 
   // 本地编辑状态（避免每次按键都触发 IPC 持久化）
   const [localKey, setLocalKey] = useState(apiKey);
@@ -153,6 +155,38 @@ export const SettingsPanel: React.FC = () => {
                 accentColor: 'var(--accent)',
               }}
             />
+          </div>
+
+          {/* 态度模式 */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Brain size={12} strokeWidth={1.6} />
+              态度模式
+            </label>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(['doubao', 'yuesheng'] as const).map((level) => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setAttitudeLevel(level)}
+                  style={{
+                    flex: 1,
+                    padding: '5px 10px',
+                    border: `1px solid ${attitudeLevel === level ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    background: attitudeLevel === level ? 'var(--accent)' : 'transparent',
+                    color: attitudeLevel === level ? 'var(--text-on-accent)' : 'var(--text-secondary)',
+                    fontSize: '0.75rem',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: attitudeLevel === level ? 600 : 400,
+                    transition: `all 150ms ${EASE_OUT_QUART}`,
+                  }}
+                >
+                  {level === 'doubao' ? '温和' : '严格'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
