@@ -35,6 +35,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   error: null,
   bridgeRecommendation: null,
   readingDecision: null,
+  readingComplete: false,
   derivationLoading: false,
   derivationResult: null,
   derivationError: null,
@@ -66,6 +67,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
 
   /** B-02: 阅读前置任务 */
   startReading: createStartReadingAction(set, get),
+
+  /** M4: 关闭阅读完成横幅 */
+  dismissReadingComplete: () => set({ readingComplete: false }),
 
   updateDraft: (content: string) => {
     set((state) => {

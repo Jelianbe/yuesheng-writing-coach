@@ -242,6 +242,14 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
 
         // B3: 不主动清除 activeTraining，保留评估视图供用户回顾
         // 用户通过 onBackToChat（返回按钮）手动退出
+
+        // M3+M4: reading_task 完成后自动刷新推荐并回到工坊
+        if (active.mode === 'reading_task') {
+          await get().refreshFromDiagnosis();
+          set({ activeTraining: null, readingComplete: true, isLoading: false });
+          return;
+        }
+
         set({ isLoading: false });
       }
     } catch (error) {
