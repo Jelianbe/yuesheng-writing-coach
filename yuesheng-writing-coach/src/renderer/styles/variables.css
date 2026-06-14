@@ -7,7 +7,7 @@
   /* ── 品牌色（金棕体系）
        注意：accent 主要用于装饰性 UI 元素（按钮/图标），
        不作为小号文字色使用，已通过 WCAG AA 3:1 UI 组件标准。
-       如需在白色背景上显示文字，使用 --text-accent 或 --warning。── */
+       如需在白色背景上显示文字，使用 --text-on-accent 或 --warning。── */
   --accent: #A07030;
   --accent-hover: #8A5E28;
   --accent-light: #C4A060;
@@ -123,4 +123,47 @@
   --toolpanel-width: 380px;
   --icon-strip-width: 48px;
   --statusbar-min-h: 26px;
+
+  /* ════════════════════════════════════════════
+     兼容别名 — 对接 tailwind.config.js / globals.css 旧命名
+     注：这些变量在 variables.css 中无定义但被其他文件引用，
+     通过别名统一解析到现行变量名。
+     ════════════════════════════════════════════ */
+
+  /* 旧 font 名 → 现行 font */
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
+
+  /* 旧字号名 → 现行字号 */
+  --text-body: var(--text-base);
+  --text-h1: var(--text-2xl);
+  --text-h2: var(--text-xl);
+  --text-h3: var(--text-lg);
+  --text-small: var(--text-sm);
+  --text-tiny: var(--text-xs);
+
+  /* 旧文字色名 → 现行文字色 */
+  --text-muted: var(--text-tertiary);
+  --text-inverse: var(--text-on-accent);
+
+  /* 旧背景色名 → 现行背景色 */
+  --bg-tertiary: var(--bg-card);
+
+  /* 旧边框名 → 现行边框 */
+  --border-color: var(--border);
+
+  /* 旧 accent 名 → 现行 accent */
+  --accent-primary: var(--accent);
+  --accent-primary-hover: var(--accent-hover);
+  --accent-primary-light: var(--accent-light);
+  --accent-secondary: var(--warning);
+  --accent-warning: var(--warning);
+  --accent-danger: var(--error);
+  --accent-info: var(--info);
+
+  /* 旧动效名 → 现行动效 */
+  --transition-slide: var(--transition-normal);
+
+  /* 旧布局名 → 现行布局 */
+  --panel-width: var(--toolpanel-width);
 }
