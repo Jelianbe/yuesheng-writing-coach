@@ -1,0 +1,35 @@
+{
+  "$source": "teaching-knowledge-bridge_V1.0.md §3.4 — A3 阅读分析模式数据源",
+  "description": "阅读库 Schema — 供教学 Agent 在 S2_GUIDE / S2_REFLECTION 阶段推送阅读分析材料使用。MODE=reading_task 时训练流程使用 READING_STEPS 三步框架。",
+  "version": "1.0",
+  "updatedAt": "2026-06-14",
+  "readingSteps": {
+    "source": "training.types.ts :: READING_STEPS",
+    "steps": [
+      { "id": "read_guide", "title": "阅读指导", "description": "了解本次需要关注的阅读分析方向" },
+      { "id": "analyze", "title": "写下分析", "description": "根据指导写下你的阅读分析或观察" },
+      { "id": "submit", "title": "提交评估", "description": "提交分析结果并接收 AI 评估反馈" }
+    ]
+  },
+  "categories": [
+    {
+      "id": "technique_demo",
+      "name": "技法示范",
+      "description": "优秀范文展示特定写作技法",
+      "tags": ["动词运用", "感官描写", "节奏控制"]
+    },
+    {
+      "id": "problem_case",
+      "name": "问题案例",
+      "description": "典型症候案例供学生诊断分析",
+      "tags": ["世界观膨胀", "角色扁平", "动词匮乏"]
+    },
+    {
+      "id": "comparative",
+      "name": "对比阅读",
+      "description": "同一题材的优秀/普通版本对比",
+      "tags": ["修改对比", "版本迭代"]
+    }
+  ],
+  "entries": []
+}

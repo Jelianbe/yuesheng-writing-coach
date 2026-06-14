@@ -1,6 +1,12 @@
 /**
  * 教学状态机 — 导航函数
  * 负责：阶段/子阶段推进、进度计算、过渡判定
+ *
+ * S2_GUIDE 自动适配说明：
+ * S2_GUIDE（PRACTICE_GUIDE）已插入 PHASE_SUBPHASES.PRACTICE_LOOP 序列的
+ * IDENTIFY 与 REFLECTION 之间。导航函数使用 indexOf 动态计算当前索引，
+ * 因此 getNextSubphase / calculatePhaseProgress / confirmPhaseComplete 等
+ * 无需额外改动即可自动适配 S2_GUIDE 在序列中的位置。
  */
 
 import { TeachingPhase, TeachingSubphase, ActionId } from '../../../../shared/constants';
@@ -116,11 +122,16 @@ export function calculatePhaseProgress(
  * 根据阶段和子阶段计算建议动作
  *
  * 使用统一映射中心，而非硬编码
+ * S2_GUIDE 子阶段返回引导发现相关动作
  */
 export function calculateNextActions(
   _phase: string,
   subphase: string,
 ): ActionId[] {
+  // S2_GUIDE: 引导发现阶段，返回引导相关问题模板
+  if (subphase === TeachingSubphase.PRACTICE_GUIDE) {
+    return [ActionId.ConfidenceConfirm] as ActionId[];
+  }
   return getActionsForSubphase(subphase) as ActionId[];
 }
 

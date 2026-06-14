@@ -30,6 +30,7 @@ export {
   calculatePhaseProgress,
   confirmPhaseComplete,
   shouldOfferTransition,
+  calculateNextActions,
 } from './teaching-state-machine.navigation';
 
 // Locking
@@ -47,3 +48,30 @@ export {
   enterReflectionIfTriggered,
   downgradeSyndromeSeverity,
 } from './teaching-state-machine.reflection';
+
+// Guide
+export {
+  enterGuide,
+  handleGuideAction,
+  shouldExitGuide,
+  transitionToGuide,
+  exitGuide,
+} from './teaching-state-machine.guide';
+
+export type {
+  GuideSubState,
+  GuideContext,
+  GuideResult,
+  ExitReason,
+  GuideUserAction,
+} from './teaching-state-machine.guide';
+
+// MasteryGate
+export {
+  evaluateMastery,
+} from './mastery-gate';
+
+export type {
+  MasteryDecision,
+  MasteryContext,
+} from './mastery-gate';
