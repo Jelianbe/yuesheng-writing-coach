@@ -1,0 +1,201 @@
+{
+  "version": "1.0",
+  "description": "症候→经典原则映射表。每个症候的诊断逻辑锚定至经典作者原则，而非话术模板",
+  "updatedAt": "2026-06-14",
+  "mappings": [
+    {
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "classicalDimensions": ["structural_economy", "observation_material"],
+      "corePrinciples": [
+        {
+          "principleId": "CHEKHOV_GUN",
+          "author": "契诃夫",
+          "quote": "如果第一幕墙上挂着一把枪，必须在第三幕打响。如果不打响，这把枪就不该挂在那里。",
+          "usageHint": "检查开篇的每一个世界设定元素是否在当前场景中被触发或使用"
+        },
+        {
+          "principleId": "LAO_SHE_EVERYTHING_MATTERS",
+          "author": "老舍",
+          "quote": "小说中一草一木一虫一鸟都须有它的存在的意义。",
+          "usageHint": "逐项检查描写内容是否与当前场景中的人物发生关系"
+        }
+      ],
+      "diagnosisLogic": "世界观膨胀的本质是：作者把大量设定堆在开篇，但这些设定尚未与当前场景中的人物行动产生任何关联。不是不能写世界观，而是写出来的每一个设定都必须在这个场景里被使用、被触发或制造冲突。",
+      "questionDirection": "这些设定中被触发了几条？如果一条都没触发，删到只剩第一条被触发的为止。"
+    },
+    {
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "classicalDimensions": ["character_portrayal"],
+      "corePrinciples": [
+        {
+          "principleId": "LAO_SHE_ACTION",
+          "author": "老舍",
+          "quote": "人没动作，就是纸剪的。",
+          "usageHint": "角色的'动作'不是情节推着他走，而是他基于自己的性格和处境主动做出的选择"
+        },
+        {
+          "principleId": "FORSTER_ROUND",
+          "author": "E.M. Forster",
+          "quote": "圆形人物以令人信服的方式让人吃惊。",
+          "usageHint": "角色的所有行为是否都是读者完全预料到的？如果是，考虑设计一个'令人信服的意外'"
+        }
+      ],
+      "diagnosisLogic": "角色工具化的本质是：角色只在剧情需要时才出现特定行为，行为与角色自身的内在逻辑脱节。老舍说人物必须有动作——这个'动作'是角色基于自己的性格和处境主动做出的选择，不是情节推着他走的。",
+      "questionDirection": "这个行为如果换一个完全不同的角色来做，会有什么不同？如果没不同，这个角色就是工具人。"
+    },
+    {
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "classicalDimensions": ["language_concision"],
+      "corePrinciples": [
+        {
+          "principleId": "WANG_ZENG_QI_ACCURACY",
+          "author": "汪曾祺",
+          "quote": "语言的唯一标准，是准确。",
+          "usageHint": "检查每个情绪词是否精确对应要传达的感受——'伤心''难过''痛苦'什么都没告诉读者"
+        },
+        {
+          "principleId": "CHEKHOV_EMOTION",
+          "author": "契诃夫",
+          "quote": "不要写'她哭了'，写她颤抖的手和变调的声音。",
+          "usageHint": "把每个情绪词替换为具体身体反应——她做了什么无意识的动作？她身边发生了什么变化？"
+        }
+      ],
+      "diagnosisLogic": "'他很伤心'是命名情绪，'他把她的杯子拿起来，指腹反复摩挲杯沿'是展示情绪。汪曾祺说的'准确'不是指词汇量，而是指每一个句子是否精确对应你要传达的感受。",
+      "questionDirection": "去掉这个情绪标签后，读者还能从上下文感受到同样的情绪吗？如果不能，这个句子是在命名而非展示。"
+    },
+    {
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "classicalDimensions": ["structural_economy", "narrative_control", "language_concision"],
+      "corePrinciples": [
+        {
+          "principleId": "CHEKHOV_GUN",
+          "author": "契诃夫",
+          "quote": "如果第一幕挂了枪，第三幕必须打响。",
+          "usageHint": "检查每段信息是否在当前场景中被使用：大量旁白交代设定/背景，但这些信息没有在当前场景中被使用"
+        },
+        {
+          "principleId": "STRUNK_WHITE_CONCISE",
+          "author": "Strunk & White",
+          "quote": "Vigorous writing is concise. Omit needless words.",
+          "usageHint": "检查无效细节——这些词句是否精准？还是多了出来？"
+        }
+      ],
+      "diagnosisLogic": "信息硬塞有两种形式：①大量旁白交代设定/背景（违反契诃夫之枪——这些信息没有在当前场景中被使用）；②用无效细节填充篇幅（违反Strunk & White——这些词不是精准的，是'多出来的'）。P004比P001（世界观膨胀）更广泛——包括描写冗余、无关信息、为凑字数而写的段落。",
+      "questionDirection": "删掉这一段，读者会漏掉什么必要信息？如果什么都漏不掉，这段就是硬塞的。"
+    },
+    {
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "classicalDimensions": ["narrative_control"],
+      "corePrinciples": [
+        {
+          "principleId": "GARDNER_PSYCHIC_DISTANCE",
+          "author": "John Gardner",
+          "quote": "Psychic distance五级量表——从'冰河世纪结束'（极远）到'他感到一阵刺痛'（极近），同一段落内不得跨越超过两级。",
+          "usageHint": "逐段标注psychic distance等级，检查是否存在无意图的跳跃"
+        },
+        {
+          "principleId": "SHEN_CONGWEN_CLING",
+          "author": "沈从文",
+          "quote": "要贴到人物来写。",
+          "usageHint": "选定一个角色就粘在ta身上，不闯入其他角色的内心"
+        }
+      ],
+      "diagnosisLogic": "视角漂移的本质是：作者在人物视角和全知视角之间无规则跳跃。Gardner的五级量表提供了客观的判断工具——'苏然心里一紧'是近距（psychic distance≈1-2级），'周围的客人开始注意到'是中距（≈3-4级），这两句放在同一个段落里就是越级跳跃。",
+      "questionDirection": "这个信息当前视角的角色是怎么知道的？如果答案只能是'作者告诉他的'，就是视角越界。"
+    },
+    {
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "classicalDimensions": ["structural_economy"],
+      "corePrinciples": [
+        {
+          "principleId": "CHEKHOV_GUN",
+          "author": "契诃夫",
+          "quote": "如果第一幕挂了枪，第三幕必须打响。",
+          "usageHint": "反向应用——如果场景里在描写很多'发生的事'但没有一个在推动冲突升级或揭示新信息，那就是停滞"
+        },
+        {
+          "principleId": "LAO_SHE_ONE_THING",
+          "author": "老舍",
+          "quote": "先练一人一事。",
+          "usageHint": "如果一个场景里不推进核心事件，那这个场景就是停滞的"
+        }
+      ],
+      "diagnosisLogic": "节奏停滞与P004（信息硬塞）的区别：信息硬塞是'写了不该写的东西'，节奏停滞是'该推进的东西没推进'。契诃夫的原则反向应用——如果场景里在描写很多'发生的事'但没有一个在推动冲突升级或揭示新信息，那就是停滞。",
+      "questionDirection": "这个场景里，冲突升级了吗？新信息揭示了吗？角色的处境改变了吗？如果三项全否，就是节奏停滞。"
+    },
+    {
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "classicalDimensions": ["language_concision", "structural_economy"],
+      "corePrinciples": [
+        {
+          "principleId": "STRUNK_WHITE_CONCISE",
+          "author": "Strunk & White",
+          "quote": "Vigorous writing is concise. A sentence should contain no unnecessary words, a paragraph no unnecessary sentences.",
+          "usageHint": "不是'短'，而是'每一句都在做不同的事'——连续多句同样长度同样开头，都在做同样的事"
+        },
+        {
+          "principleId": "LU_XUN_DELETE",
+          "author": "鲁迅",
+          "quote": "竭力将可有可无的字、句、段删去，毫不可惜。",
+          "usageHint": "删掉那些不带来任何变化的句子之后，剩下的自然就有变化"
+        }
+      ],
+      "diagnosisLogic": "结构单一有两种：①句式单一——连续多句同样长度、同样开头；②叙事模式单一——全是描写或全是对话。鲁迅的'删可有可无'不只是删词——删掉那些不带来任何变化的句子之后，剩下的自然就有变化。",
+      "questionDirection": "如果我把这段文字读出声，我的呼吸节奏有变化吗？如果没有，句子结构单一。"
+    },
+    {
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "classicalDimensions": ["character_portrayal"],
+      "corePrinciples": [
+        {
+          "principleId": "FORSTER_ROUND",
+          "author": "E.M. Forster",
+          "quote": "圆形人物以令人信服的方式让读者吃惊——读者吃惊但回头一想发现早有伏笔，这就是动机充足的标志。",
+          "usageHint": "检验标准——如果让另一个读者来读，ta能不能在接受这个行为的同时感到'原来如此'？"
+        },
+        {
+          "principleId": "LAO_SHE_MOTIVATION",
+          "author": "老舍",
+          "quote": "人物的一举一动都要有'起因'——不是作者安排的起因，是从人物性格里长出来的起因。",
+          "usageHint": "作者脑中有完整的心理活动但落在纸上的只有行动——读者读不出来，这就是动机缺失"
+        }
+      ],
+      "diagnosisLogic": "动机缺失有两种：①作者没想过动机——角色做了某事但作者说不出为什么；②作者知道动机但没写进文本——作者脑中有完整的心理活动但落在纸上的只有行动。Forster的检验标准最实用——如果让另一个读者来读，ta能不能在接受这个行为的同时感到'原来如此'？",
+      "questionDirection": "如果换个读者来读，他能不能在接受这个行为的同时感到'原来如此'？如果不能，动机缺失。"
+    },
+    {
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "classicalDimensions": ["character_portrayal"],
+      "corePrinciples": [
+        {
+          "principleId": "BOOTH_SHOWING",
+          "author": "Wayne C. Booth",
+          "quote": "Showing vs telling 的真正分野——平面角色是作者'告诉'读者的角色，立体角色是读者通过角色的言行自己'看到'的角色。",
+          "usageHint": "'她是个温柔的女人'是telling，她蹲下来用袖子擦掉路边小孩脸上的泥是showing"
+        },
+        {
+          "principleId": "LAO_SHE_LIVING",
+          "author": "老舍",
+          "quote": "你要写的不是'他是什么样的人'，是'他是怎么活的'。",
+          "usageHint": "别写'他是什么样的人'，写'他在早上醒来做的第一件事'"
+        }
+      ],
+      "diagnosisLogic": "平面化的本质是作者用标签（勇敢/温柔/聪明）来定义角色，而不是通过角色的言行让读者自己推导。老舍的分法很实用——别写'他是什么样的人'，写'他在早上醒来做的第一件事'。",
+      "questionDirection": "去掉'他是个XX的人'这句话，读者还能从角色的言行中推导出'XX'吗？如果不能，这个角色是平面标签而非立体人物。"
+    }
+  ],
+  "metadata": {
+    "totalMappings": 9,
+    "syndromeIds": ["P001", "P002", "P003", "P004", "P005", "P006", "P007", "P009", "P010"],
+    "note": "与 syndrome-action-map.json 互补使用：classical-map 提供诊断推理依据（为什么是这个症候），action-map 提供教学动作选择（诊断后该做什么）。"
+  }
+}
