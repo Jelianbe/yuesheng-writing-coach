@@ -164,11 +164,11 @@
           "questionDirection": "这段描写里的每一个事物，都跟当前场景中的人物发生了关系吗？如果有东西只是'在那里'而没有被使用/触发/制造冲突，它就是多余的。"
         },
         {
-          "id": "STRUNK_EVERY_WORD_TELLS",
-          "author": "Strunk & White",
-          "quote": "A sentence should contain no unnecessary words, a paragraph no unnecessary sentences. Every word must tell.",
-          "diagnosticMeaning": "每一级结构单元都应有存在的理由，无理由即冗余。结构力度与其经济性成正比。",
-          "questionDirection": "这不是'不够长'的问题，是'每一句没有做不同的事'的问题。每一句都应该给读者新的信息或新的感受。"
+          "id": "CHEKHOV_IRRELEVANT",
+          "author": "契诃夫",
+          "quote": "删去一切与主题无关的东西。",
+          "diagnosticMeaning": "判断标准不是'它本身是否精彩'，而是'去掉它文章是否受损'。精彩但无关的内容比平庸的冗余更危险——因为它更难被割舍。",
+          "questionDirection": "这段描写本身很精彩，但去掉它后故事会受损吗？如果不会，它就是结构冗余——精彩但多余比平庸但多余更隐蔽。"
         }
       ]
     },
