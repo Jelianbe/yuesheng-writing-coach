@@ -14,14 +14,14 @@
     "start": "electron .",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/ --ext .ts,.tsx --max-warnings 300",
-    "scan:hardcode": "echo 'scan-hardcode.ts not yet created - create scripts/scan-hardcode.ts to enable'",
+    "scan:hardcode": "npx tsx scripts/check-a11y-colors.ts",
     "check:size": "npx tsx scripts/check-file-size.ts",
     "check:circular": "madge --circular --extensions ts,tsx src/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "precommit": "npm run typecheck && npm run test",
-    "ci": "npm run typecheck && npm run test && npm run build"
+    "ci": "npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
   },
   "dependencies": {
     "better-sqlite3": "^12.10.0",

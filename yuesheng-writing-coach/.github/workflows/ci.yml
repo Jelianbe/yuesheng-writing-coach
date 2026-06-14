@@ -18,6 +18,8 @@ jobs:
       - run: npm ci
       - name: Type check
         run: npm run typecheck
+      - name: Color contrast check
+        run: npm run scan:hardcode
       - name: Run tests
         run: npm run test
 

@@ -329,7 +329,7 @@
 
 .actionBtnAuto:hover {
   background: var(--accent, #3b82f6);
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
 @keyframes pulse {

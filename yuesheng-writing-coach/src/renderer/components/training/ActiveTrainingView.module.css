@@ -25,7 +25,7 @@
   height: 30px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: white;
+  background: var(--bg-card);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 120ms ease;
@@ -99,20 +99,20 @@
 
 .goalBarFillShort {
   height: 100%;
-  background-color: #27ae60;
+  background-color: var(--success);
   border-radius: 3px;
   transition: width 320ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .goalBarFillMid {
   height: 100%;
-  background-color: #3498db;
+  background-color: var(--info);
   border-radius: 3px;
 }
 
 .goalBarFillLong {
   height: 100%;
-  background-color: #8e44ad;
+  background-color: var(--accent);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -153,11 +153,11 @@
   justify-content: center;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-on-accent);
 }
 
 .stepBadgeCompleted {
-  background-color: #27ae60;
+  background-color: var(--success);
 }
 
 .stepBadgeActive {
@@ -186,9 +186,9 @@
 
 .readingGuide {
   padding: 12px;
-  background-color: #eafaf1;
+  background-color: var(--success-light);
   border-radius: 8px;
-  border-left: 3px solid #27ae60;
+  border-left: 3px solid var(--success);
   margin-bottom: 16px;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -197,9 +197,9 @@
 
 .originalQuote {
   padding: 12px;
-  background-color: #fdf0ef;
+  background-color: var(--error-light);
   border-radius: 8px;
-  border-left: 3px solid #e74c3c;
+  border-left: 3px solid var(--error);
   margin-bottom: 16px;
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -217,7 +217,7 @@
 .challengeDesc {
   padding: 12px;
   border-radius: 8px;
-  border-left: 3px solid #3498db;
+  border-left: 3px solid var(--info);
   margin-bottom: 12px;
   font-size: 0.85rem;
   line-height: 1.6;
@@ -225,23 +225,23 @@
 }
 
 .challengeDescReading {
-  background-color: #eafaf1;
-  border-left-color: #27ae60;
+  background-color: var(--success-light);
+  border-left-color: var(--success);
 }
 
 .challengeDescWriting {
-  background-color: #eaf7fd;
-  border-left-color: #3498db;
+  background-color: var(--info-light);
+  border-left-color: var(--info);
 }
 
 .constraintBox {
   padding: 10px;
-  background-color: #fef5e7;
+  background-color: var(--warning-light);
   border-radius: 8px;
-  border-left: 3px solid #f39c12;
+  border-left: 3px solid var(--warning);
   margin-bottom: 12px;
   font-size: 0.85rem;
-  color: #c0392b;
+  color: var(--error);
 }
 
 .forbiddenWordsSection {
@@ -251,7 +251,7 @@
 .forbiddenWordsLabel {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #c0392b;
+  color: var(--error);
   margin-bottom: 6px;
 }
 
@@ -265,9 +265,9 @@
   font-size: 0.75rem;
   padding: 3px 8px;
   border-radius: 4px;
-  background-color: #fdf0ef;
-  color: #c0392b;
-  border: 1px solid #fadbd8;
+  background-color: var(--error-light);
+  color: var(--error);
+  border: 1px solid var(--error-light);
   font-weight: 500;
 }
 
@@ -290,35 +290,35 @@
 }
 
 .metaWordCount {
-  background-color: #eaf7fd;
-  border: 1px solid #d6eaf8;
-  color: #2980b9;
+  background-color: var(--info-light);
+  border: 1px solid var(--info-light);
+  color: var(--info);
 }
 
 .metaScene {
-  background-color: #fef9e7;
-  border: 1px solid #f9e79f;
-  color: #b7950b;
+  background-color: var(--warning-light);
+  border: 1px solid var(--warning-light);
+  color: var(--warning);
 }
 
 .metaReadingMode {
-  background-color: #ebf5fb;
-  border: 1px solid #d4e6f1;
-  color: #2874a6;
+  background-color: var(--info-light);
+  border: 1px solid var(--info-light);
+  color: var(--info);
 }
 
 .criteriaPreview {
   margin-bottom: 12px;
   padding: 10px 12px;
-  background-color: #eafaf1;
+  background-color: var(--success-light);
   border-radius: 6px;
-  border-left: 3px solid #27ae60;
+  border-left: 3px solid var(--success);
 }
 
 .criteriaTitle {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #1e8449;
+  color: var(--success);
   margin-bottom: 6px;
 }
 
@@ -366,17 +366,17 @@
 }
 
 .draftTextareaError {
-  border-color: #e74c3c;
+  border-color: var(--error);
 }
 
 .submissionError {
   margin-top: 8px;
   padding: 10px;
-  background-color: #fdf0ef;
+  background-color: var(--error-light);
   border-radius: 8px;
-  border: 1px solid #e74c3c;
+  border: 1px solid var(--error);
   font-size: 0.8rem;
-  color: #c0392b;
+  color: var(--error);
   line-height: 1.5;
 }
 
@@ -384,9 +384,9 @@
 
 .evaluationPanel {
   padding: 16px;
-  background-color: #eafaf1;
+  background-color: var(--success-light);
   border-radius: 8px;
-  border-left: 3px solid #27ae60;
+  border-left: 3px solid var(--success);
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.6;
@@ -398,9 +398,9 @@
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px;
-  background-color: #fff;
+  background-color: var(--bg-card);
   border-radius: 8px;
-  border: 1px solid #d5f5e3;
+  border: 1px solid var(--success-light);
 }
 
 .scoreCircle {
@@ -410,22 +410,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--text-on-accent);
   font-size: 1.4rem;
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .scoreExcellent {
-  background-color: #27ae60;
+  background-color: var(--success);
 }
 
 .scorePassable {
-  background-color: #f39c12;
+  background-color: var(--warning);
 }
 
 .scoreNeedsWork {
-  background-color: #e74c3c;
+  background-color: var(--error);
 }
 
 .scoreLabel {
@@ -435,7 +435,7 @@
 }
 
 .scoreImproved {
-  color: #27ae60;
+  color: var(--success);
   margin-left: 6px;
 }
 
@@ -446,16 +446,16 @@
 
 .completionTitle {
   font-weight: 600;
-  color: #27ae60;
+  color: var(--success);
   margin-bottom: 6px;
 }
 
 .nextStepBox {
   margin-top: 8px;
   padding: 10px;
-  background-color: #eaf7fd;
+  background-color: var(--info-light);
   border-radius: 6px;
-  border-left: 3px solid #3498db;
+  border-left: 3px solid var(--info);
   font-size: 0.8rem;
 }
 
@@ -464,7 +464,7 @@
   gap: 10px;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px dashed #a9dfbf;
+  border-top: 1px dashed var(--success-light);
 }
 
 .sendToEditorBtn {
@@ -486,7 +486,7 @@
   border-radius: 8px;
   border: none;
   background: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 500;
