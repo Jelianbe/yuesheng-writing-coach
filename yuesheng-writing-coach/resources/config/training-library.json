@@ -8,19 +8,19 @@
       "id": "motivation_deficit",
       "name": "动机缺失型",
       "description": "学生缺乏写作动力或目标模糊",
-      "syndromeIds": ["P001", "P002", "P009"]
+      "syndromeIds": ["P001", "P009"]
     },
     {
       "id": "expressive_deficit",
       "name": "表达不足型",
       "description": "学生有想法但无法有效表达",
-      "syndromeIds": ["P003", "P004", "P005", "P006", "P007", "P008", "P010", "P011"]
+      "syndromeIds": ["P003", "P010", "P002"]
     },
     {
-      "id": "structural_deficit",
-      "name": "结构混乱型",
+      "id": "structural_disorder",
+      "name": "结构/视角失控型",
       "description": "文章结构松散或逻辑不清",
-      "syndromeIds": []
+      "syndromeIds": ["P004", "P005", "P006", "P007"]
     }
   ],
   "entries": [
@@ -66,7 +66,7 @@
     {
       "id": "TRAIN-P003-001",
       "syndromeId": "P003",
-      "syndromeName": "动词匮乏",
+      "syndromeName": "情绪标签化",
       "title": "精准动词替换",
       "difficulty": "easy",
       "mode": "word_refine",
@@ -75,6 +75,277 @@
       "expectedOutcome": "用户积累精准动词库",
       "techniques": [],
       "exercises": []
+    },
+    {
+      "id": "TRAIN-P002-002",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "title": "角色行为追溯",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "structural",
+      "constraint": "选择你笔下一个配角，列出ta的5个关键行为。在每个行为后面写出驱使ta这样做的内在原因（恐惧/渴望/创伤）。要求每个原因不能重复，且不能使用'因为剧情需要'。",
+      "expectedOutcome": "用户学会从动机而非功能来理解角色行为，减少角色沦为剧情工具人的情况",
+      "techniques": ["T042"],
+      "exercises": [
+        {"step": 1, "instruction": "选出你作品中一个行为驱动力最模糊的配角", "duration": "3min"},
+        {"step": 2, "instruction": "为该角色写出5个关键行为（从作品中提取或重新设计）", "duration": "8min"},
+        {"step": 3, "instruction": "在每个行为后写一段50字的内心动机说明，格式：'她这样做是因为...'", "duration": "10min"},
+        {"step": 4, "instruction": "检查5个动机是否有逻辑矛盾，修正后选择1条最深刻的，在原文中埋一个暗示", "duration": "7min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P002-003",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "title": "一致性压力测试",
+      "difficulty": "hard",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "选择你的主角，写出3个ta绝对不可能做的事。然后设计一个极端场景，迫使ta必须做其中一件。写出ta最终做了或没做的完整心理过程（200字）。不能使用'他想了想就做了'。",
+      "expectedOutcome": "用户通过'压力测试'深入理解角色的一致性边界，知道角色何时会打破原则以及代价",
+      "techniques": ["T042", "T118"],
+      "exercises": [
+        {"step": 1, "instruction": "总结主角的核心人格标签（3个词），写出3件ta绝对不会做的事", "duration": "5min"},
+        {"step": 2, "instruction": "设计一个两难场景：不做=失去最重要的东西，做=违背核心人格", "duration": "8min"},
+        {"step": 3, "instruction": "写出ta的心理天平摇摆过程——每个念头都要有来源（童年/经历/价值观）", "duration": "12min"},
+        {"step": 4, "instruction": "决定结局：ta做了还是没做？写出这一选择带来的永久改变", "duration": "5min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P003-002",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "title": "五感情绪锚",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "surface",
+      "constraint": "选择一种情绪（愤怒/悲伤/恐惧/喜悦），用一段200字的场景描写展示它。规则：全文禁止出现该情绪词本身及其近义词（如写'愤怒'则禁止出现'生气''恼火''愤怒''怒'等），只能通过动作、环境、身体反应和对话节奏来传达。",
+      "expectedOutcome": "用户学会用感官细节替代情绪标签词，建立'展示而非告知'的写作习惯",
+      "techniques": ["T063", "T016", "T026"],
+      "exercises": [
+        {"step": 1, "instruction": "选定一个情绪词，写出它的5个身体反应（如愤怒→紧握拳头/呼吸变浅/耳鸣/下颚收紧/视野变窄）", "duration": "5min"},
+        {"step": 2, "instruction": "设计一个日常场景（等公交/做饭/接电话），让角色在这个场景中体验你选的情绪", "duration": "5min"},
+        {"step": 3, "instruction": "写出200字段落，只用动作+环境+身体反应+对话节奏来表达，逐句检查是否出现了情绪词", "duration": "15min"},
+        {"step": 4, "instruction": "找一个人读你的文字，问他感受到什么情绪。如果不对，调整细节直到匹配", "duration": "5min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P003-003",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "title": "情感颗粒度训练",
+      "difficulty": "medium",
+      "mode": "word_refine",
+      "tier": "structural",
+      "constraint": "给定一段充满情绪标签的原文（100字），将其改写为无情绪标签版本。进一步要求：将原文中的单一情绪拆分为至少3个不同的情感层次（如'伤心'→挫折+不甘+隐约的解脱），并为每个层次找到不同的身体表现。",
+      "expectedOutcome": "用户提升情感描写的颗粒度，从粗糙的情绪标签进化为多层次的情绪光谱",
+      "techniques": ["T063", "T016"],
+      "exercises": [
+        {"step": 1, "instruction": "读提供的原文，标记所有情绪词（标签词）", "duration": "3min"},
+        {"step": 2, "instruction": "对每个标签词，问自己'这个情绪下面还有什么？'拆出至少2个子情绪", "duration": "7min"},
+        {"step": 3, "instruction": "为每个子情绪匹配1个独特的身体/行为表现，要求不能雷同", "duration": "8min"},
+        {"step": 4, "instruction": "用新发现的细节重写原文，形成有情感层次的新版本", "duration": "10min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P004-001",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "title": "冰山叙事法",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "你有一段需要向读者交代的背景设定（世界观/人物前史）。规则：只准写10%，其余90%只能通过一个日常物品在被使用时无意间透露。例如：角色从不解释魔法世界的历史，但他在翻一本边角磨损的《咒语基础（修订第3版）》时，看到扉页上手写的'献给我的师傅，火刑柱上最后一个老派法师'。",
+      "expectedOutcome": "用户学会将信息从'旁白交代'转化为'日常嵌入'，让读者在剧情中自然吸收设定",
+      "techniques": ["T105", "T096"],
+      "exercises": [
+        {"step": 1, "instruction": "列出3段你想告诉读者的关键设定信息（每段一句话）", "duration": "3min"},
+        {"step": 2, "instruction": "为每段信息设计一个日常物品，该物品的外观/使用方式能暗含这条信息", "duration": "8min"},
+        {"step": 3, "instruction": "写一个角色使用该物品的200字场景——让信息在动作中被'顺便'透露", "duration": "12min"},
+        {"step": 4, "instruction": "删掉所有旁白解释句，只保留物品触发的场景信息。检查读者是否不需要额外说明就能理解", "duration": "5min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P005-001",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "title": "单视角强制锁定",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "surface",
+      "constraint": "重写一段你写过的双视角场景。规则：全程锁定在一个角色的视角内，只写他能看到、听到、闻到、触摸到、想到的东西。禁止出现'他没有注意到''他不知道的是'等全知视角词。另外角色无法看到自己的脸（除非有镜子），无法知道别人的心理活动。",
+      "expectedOutcome": "用户通过强制单视角练习建立视角边界意识，能区分'角色所知'和'作者所知'",
+      "techniques": [],
+      "exercises": [
+        {"step": 1, "instruction": "选择一个你之前写过的双视角场景，标记所有视角切换点", "duration": "5min"},
+        {"step": 2, "instruction": "选择其中一个角色的视角，列出该角色此刻能感知到的所有信息（五官+思维）", "duration": "5min"},
+        {"step": 3, "instruction": "仅用该角色的感知信息重写场景，删除所有越界内容", "duration": "12min"},
+        {"step": 4, "instruction": "逐句自检：'这句话里的信息，这个角色是怎么知道的？'如果答案是'作者告诉他的'→删除或改写", "duration": "5min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P005-002",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "title": "双视角分界设计",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "如果一定要写双视角场景，请设计清晰的视角分界。使用小节分隔符（***或空行+数字标记），每节锁定一个视角。在分界处安排一个'视角交接点'——上节角色做了什么引起下节角色的注意，形成自然的视角过渡。完成一个300字的双人场景。",
+      "expectedOutcome": "用户学会用结构手段（而非随意跳跃）管理多视角叙事",
+      "techniques": ["T035"],
+      "exercises": [
+        {"step": 1, "instruction": "设计一个对话场景，两个角色各怀心事", "duration": "3min"},
+        {"step": 2, "instruction": "先用角色A视角写150字（锁定A的感知）", "duration": "8min"},
+        {"step": 3, "instruction": "设计一个'视角交接点'：A说/做了某件事让B产生反应，然后切到B视角", "duration": "3min"},
+        {"step": 4, "instruction": "用角色B视角写150字，从B对交接点的反应开始", "duration": "8min"},
+        {"step": 5, "instruction": "检查两节之间的信息泄漏：B视角不能知道A视角中的心理活动", "duration": "3min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P006-001",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "title": "冲突心电图",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "给你自己最近一章小说画一张'冲突心电图'：在10个章节位置上标记冲突强度（1-10分），要求至少出现3个波峰（强度≥7）和3个波谷（强度≤3），相邻两点之间变化幅度不得小于2分。对每个低分段写出'这里读者在等什么'，并为每个低分段设计一个微型悬念或伏笔。",
+      "expectedOutcome": "用户建立'冲突曲线'意识，能用数据分析而非感觉来判断节奏是否停滞",
+      "techniques": ["T010"],
+      "exercises": [
+        {"step": 1, "instruction": "取你最近一章，按情节节点分为10段，对每段冲突强度打分1-10", "duration": "5min"},
+        {"step": 2, "instruction": "画出折线图，标记波峰和波谷，检查是否有超过3段连续的强度≤4", "duration": "3min"},
+        {"step": 3, "instruction": "对每个低分段回答：如果读者在这里停下来，ta在期待什么？", "duration": "5min"},
+        {"step": 4, "instruction": "为每个低分段插入一个微型钩子——一个未回答的问题、一个反常细节、一个即将到来的威胁", "duration": "10min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P006-002",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "title": "倒计时压迫法",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "surface",
+      "constraint": "给你一个停滞的场景加一个倒计时。规则：你必须在场景开头设置一个明确的时限（'太阳下山之前''在门被撞开之前''在咖啡变冷之前'），并在后续300字中至少3次提及时间的流逝或逼近。这个时限必须有真实的后果——错过时限会发生不可逆的变化。",
+      "expectedOutcome": "用户学会用'时间压力'作为最有效的节奏驱动器，让静态场景产生内在紧张感",
+      "techniques": ["T001", "T058"],
+      "exercises": [
+        {"step": 1, "instruction": "选择一个你感觉'写不动了'的静态场景", "duration": "2min"},
+        {"step": 2, "instruction": "问自己：什么即将到来？什么正在逼近？什么在倒计时？选定一个真实时限", "duration": "3min"},
+        {"step": 3, "instruction": "在场景开头加一句话，宣告时限。在场景中段加一次'时间提醒'，在结尾前加最后一次", "duration": "10min"},
+        {"step": 4, "instruction": "写出错过时限的后果，确保后果不可逆且对角色有真实伤害", "duration": "5min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P007-001",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "title": "句式呼吸训练",
+      "difficulty": "easy",
+      "mode": "word_refine",
+      "tier": "surface",
+      "constraint": "取一段300字的文字。统计所有句子的字数：长句（>25字）、中句（10-25字）、短句（<10字）。理想比例为长:中:短 = 1:3:2。如果不达标，重新编排句子长度，强制将最长句拆成至少2句，并为每个长句后面紧跟一个短句制造呼吸节奏。",
+      "expectedOutcome": "用户获得对句式节奏的量化控制能力，从无意识写作变为有意识的节奏设计",
+      "techniques": ["T096"],
+      "exercises": [
+        {"step": 1, "instruction": "取300字原文，逐句标注字数，统计长中短分布", "duration": "5min"},
+        {"step": 2, "instruction": "找出最长句尝试拆分为2-3句中短句", "duration": "5min"},
+        {"step": 3, "instruction": "在每段长描述后插入一个短句——'他停了下来。'级别", "duration": "8min"},
+        {"step": 4, "instruction": "朗读修改后的文字，用呼吸节奏感受：读到长句时自然的停顿是否舒适", "duration": "3min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P007-002",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "title": "叙事模式翻转",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "取一段200字的文字。识别其当前的叙事模式（描写/对话/心理/动作/旁白）。将其中30%的内容翻转为另一种模式——如果原文全是描写，插入一段急促对话；如果全是对话，插入一段内心独白。最终输出必须包含至少2种叙事模式的交错。",
+      "expectedOutcome": "用户学会在叙事中主动切换模式，打破单一结构的阅读疲劳",
+      "techniques": ["T058", "T035"],
+      "exercises": [
+        {"step": 1, "instruction": "取200字原文，标注每句话的叙事模式", "duration": "3min"},
+        {"step": 2, "instruction": "观察模式单一程度——如果超过80%是一种模式，标记为需要翻转", "duration": "2min"},
+        {"step": 3, "instruction": "选择最少的模式（如果原文没有对话，插入对话；没有心理，插入心理），改写30%内容", "duration": "10min"},
+        {"step": 4, "instruction": "朗读原版和修改版，感受节奏差异", "duration": "3min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P009-001",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "title": "动机冰山模型",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "为你的主角画一棵'动机树'。树干：ta现在最想要什么。3根主枝：为什么想要（表层/中层/深层各一）。每根主枝上的叶子：这个动机在童年/青春期/最近的某个事件中是如何形成的。最终选择一层动机，在200字的场景中只埋一个暗示——一个物品、一个习惯、一句口误——让读者隐约感觉到但不确定。",
+      "expectedOutcome": "用户建立角色的多层动机体系，学会在文本中'埋'动机而非'讲'动机",
+      "techniques": ["T042", "T118"],
+      "exercises": [
+        {"step": 1, "instruction": "写下主角当前最想要的一个东西（具体、有形的目标）", "duration": "2min"},
+        {"step": 2, "instruction": "问3次'为什么'，每次深挖一层：表层→价值观层面→童年创伤层面", "duration": "8min"},
+        {"step": 3, "instruction": "为每层动机找一个'触发物'——一个能唤起该层记忆的具体物品/地点/气味", "duration": "5min"},
+        {"step": 4, "instruction": "写200字段落，在推进当前剧情的同时让主角无意间接触到这个触发物，不解释", "duration": "10min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P009-002",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "title": "转折点的代价",
+      "difficulty": "hard",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "选择一个角色做出的重大决定（背叛/离开/选择/放弃）。写出3个不同的动机版本：A) 高尚的动机、B) 自私的动机、C) 连角色自己都没意识到的动机。然后选择C版本作为'真实版本'，但只在角色独处的一个瞬间给它一个0.5秒的闪现——一个ta立刻压下去的念头。",
+      "expectedOutcome": "用户学会为角色重大行为设计深层且不自知的动机，增加人物的真实性和复杂度",
+      "techniques": ["T118"],
+      "exercises": [
+        {"step": 1, "instruction": "选定角色的一次重大选择，写出ta自己认为的原因（A版本，公开版本）", "duration": "3min"},
+        {"step": 2, "instruction": "写出真正的原因但ta不愿承认的版本（B版本）", "duration": "5min"},
+        {"step": 3, "instruction": "写出ta自己都没意识到的版本（C版本）——这种动机通常来自童年/未处理的情感/恐惧", "duration": "8min"},
+        {"step": 4, "instruction": "在原文中插入一个0.5秒的C版本闪现：ta在独处时突然想到什么→立刻压下去→继续按A版本行动。只写1-2句话", "duration": "7min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P010-001",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "title": "人物内在矛盾设计",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "structural",
+      "constraint": "给你的OC设计一对内在矛盾：ta嘴上说的 vs ta实际做的、ta以为自己要的 vs ta真正需要的、ta在公开场合的样子 vs ta独处时的样子。选择其中一对，在一个200字的场景中同时展示两面——让读者看到裂缝。",
+      "expectedOutcome": "用户通过制造内在矛盾为OC注入立体感，从'标签集合'变为'矛盾的活人'",
+      "techniques": ["T118", "T042"],
+      "exercises": [
+        {"step": 1, "instruction": "写下你的OC的三个'标签'（如'勇敢''温柔''聪明'），为每个标签写一个反例场景", "duration": "5min"},
+        {"step": 2, "instruction": "选择最有张力的一对矛盾（如'公开说不在乎别人的看法，但每天翻3遍社交平台的评论'）", "duration": "3min"},
+        {"step": 3, "instruction": "写一个场景：前半段展示公开面，后半段展示私下自相矛盾的行为/想法", "duration": "12min"},
+        {"step": 4, "instruction": "确保场景中不出现任何解释性旁白（如'其实他不是真的不在乎'），让矛盾自己说话", "duration": "5min"}
+      ]
+    },
+    {
+      "id": "TRAIN-P010-002",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "title": "陌生化视角重塑",
+      "difficulty": "hard",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "让另一个角色（非主角）用200字描述你的OC。要求：这个描述者必须带着自己的偏见和认知局限，说出的话不客观但真实。然后你再写200字——OC眼中的自己，形成双重视角的立体拼图。",
+      "expectedOutcome": "用户学会通过'他者视角'为OC制造立体感，理解'人物在别人眼中的样子'和'人物真实的样子'之间的空间就是立体感",
+      "techniques": ["T042"],
+      "exercises": [
+        {"step": 1, "instruction": "选一个与你OC有利益冲突或情感纠葛的配角，列出ta对OC的3个偏见", "duration": "5min"},
+        {"step": 2, "instruction": "以该配角的视角写200字对OC的描述（刻意带着偏见写）", "duration": "10min"},
+        {"step": 3, "instruction": "以OC的第一视角写200字自述——OC自己怎么看待同样的话题", "duration": "10min"},
+        {"step": 4, "instruction": "对比两个版本，找到'误解中的真实'和'自述中的盲区'——这个差异就是OC的立体空间", "duration": "5min"}
+      ]
     }
   ]
 }
