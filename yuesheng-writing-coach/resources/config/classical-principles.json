@@ -1,0 +1,203 @@
+{
+  "version": "1.0",
+  "description": "经典写作原则库 — 12位中外经典作家×8维度的诊断推理依据",
+  "updatedAt": "2026-06-14",
+  "note": "首批20条。每条含四元组：quote（原文/核心表述）+ diagnosticMeaning（诊断意义）+ questionDirection（追问方向）+ dimension（所属维度）",
+  "dimensions": [
+    {
+      "dimensionId": "observation_material",
+      "dimensionName": "观察与素材",
+      "dimensionOrder": 1,
+      "principles": [
+        {
+          "id": "LAO_SHE_LIFE",
+          "author": "老舍",
+          "quote": "写东西非有生活不可。不管文字多么好，技巧多么高，也写不出自己不知道的事情。",
+          "diagnosticMeaning": "素材匮乏常源于观察缺位而非技巧不足，诊断时应首先追问作者的生活经验储备。",
+          "questionDirection": "这段文字里有多少是作者亲眼见过、亲身感受过的东西？如果大部分是'想当然'的描写，就是素材不足的信号。"
+        },
+        {
+          "id": "YE_SHENGTAO_THINK_FIRST",
+          "author": "叶圣陶",
+          "quote": "想清楚了再写——为什么要写，该怎么写，哪些必要写，哪些用不着写……",
+          "diagnosticMeaning": "文章逻辑混乱的第一诊断点是：落笔前思维是否已理清。写作问题根往往不在笔头而在日常习惯。",
+          "questionDirection": "这段文字让我感觉混乱，是因为写的人还没想清楚，还是想清楚但写不清楚？如果是前者，问题不在修辞在思维。"
+        },
+        {
+          "id": "SHEN_CONGWEN_PARTS",
+          "author": "沈从文",
+          "quote": "先得学会车零件，然后才能学组装。",
+          "diagnosticMeaning": "急于写长作品而读来不吸引人，往往是'零件'（细节描写基本功）没车够。",
+          "questionDirection": "当面对一个复杂的人物问题时，可以拆成几个独立的小问题吗？先逐个解决小问题（车零件），再回来看整体（组装）。"
+        }
+      ]
+    },
+    {
+      "dimensionId": "language_concision",
+      "dimensionName": "语言与简洁",
+      "dimensionOrder": 2,
+      "principles": [
+        {
+          "id": "WANG_ZENG_QI_ACCURACY",
+          "author": "汪曾祺",
+          "quote": "语言的唯一标准，是准确。",
+          "diagnosticMeaning": "语言诊断的核心问题不是'是否优美'，而是'是否找到了最合适的那个词'。小说差即语言差。",
+          "questionDirection": "这句话在描述感受，还是在给感受贴标签？如果是贴标签，试着去掉标签，看看读者还能不能感受到同样的情绪。"
+        },
+        {
+          "id": "CHEKHOV_CONCISE",
+          "author": "契诃夫",
+          "quote": "简洁是天才的姐妹。",
+          "diagnosticMeaning": "啰嗦往往是思维不清晰的外化，不是修辞问题而是思考问题。",
+          "questionDirection": "如果删掉这个情绪词，用具体动作、神态、呼吸来替代——读者感受到的情绪会更强还是更弱？"
+        },
+        {
+          "id": "LU_XUN_DELETE",
+          "author": "鲁迅",
+          "quote": "写完后至少看两遍，竭力将可有可无的字、句、段删去，毫不可惜。",
+          "diagnosticMeaning": "初稿必有冗余，诊断时应关注作者的'删除意愿'与'删除标准'，而非是否存在冗余。",
+          "questionDirection": "如果逐句删——删词、删句、删段——删到不能再删，这段文字的核心信息还在吗？如果在，那些被删掉的就是可有可无。"
+        },
+        {
+          "id": "STRUNK_WHITE_CONCISE",
+          "author": "Strunk & White",
+          "quote": "Vigorous writing is concise. A sentence should contain no unnecessary words, a paragraph no unnecessary sentences. Every word should tell.",
+          "diagnosticMeaning": "有力写作与简洁成正比。诊断时应从字→句→段逐级追问'是否每一个单元都在承担功能'。",
+          "questionDirection": "这句里的 every word 都在做独立的工作吗？有没有两个词在说同一件事？有没有词删掉后意思不变？"
+        }
+      ]
+    },
+    {
+      "dimensionId": "character_portrayal",
+      "dimensionName": "人物塑造",
+      "dimensionOrder": 3,
+      "principles": [
+        {
+          "id": "LAO_SHE_ACTION",
+          "author": "老舍",
+          "quote": "人没动作，就是纸剪的；人没声音，就是哑巴；人没物件陪着，就是孤魂野鬼。",
+          "diagnosticMeaning": "人物扁平化的诊断可循三个维度：是否有标志性动作？是否有独特声音？是否有附着情感的物件？",
+          "questionDirection": "这个角色做了任何基于自身意愿的选择吗？如果ta的所有行为都是被情节推着走的，ta就是纸片人。"
+        },
+        {
+          "id": "SHEN_CONGWEN_CLING",
+          "author": "沈从文",
+          "quote": "要贴着人物写——作者的心要随时紧贴着人物。什么时候作者的心贴不住人物，笔下就会浮、泛、飘、滑。",
+          "diagnosticMeaning": "'浮泛飘滑'是'贴不住'的直接症状，诊断时发现此类问题即检查作者与人物距离。",
+          "questionDirection": "这句话里的信息，当前视角的角色是怎么感知到的？如果感知不到，就是作者在越界发言。"
+        },
+        {
+          "id": "FORSTER_ROUND",
+          "author": "E.M. Forster",
+          "quote": "圆形人物能'以令人信服的方式让人吃惊'。",
+          "diagnosticMeaning": "圆扁判断不靠复杂度，而靠两个条件：①让人吃惊（有意外）②令人信服（意外合理）。从不让人吃惊→扁；让人吃惊但不信服→假圆。",
+          "questionDirection": "这个行为是读者完全预料到的吗？如果是，这不是角色在行动，是作者在按剧本推木偶。圆形人物的行为应该让读者惊讶，但回头一想又觉得'这才对'。"
+        }
+      ]
+    },
+    {
+      "dimensionId": "revision_refinement",
+      "dimensionName": "修改与提炼",
+      "dimensionOrder": 4,
+      "principles": [
+        {
+          "id": "YE_SHENGTAO_REVISE_THINKING",
+          "author": "叶圣陶",
+          "quote": "修改文章不是什么雕虫小技，其实就是修改思想，要它想得更正确，更完美。",
+          "diagnosticMeaning": "字面上的问题本质上是思想上的问题，修改的深度反映思考的深度。",
+          "questionDirection": "如果我不直接给答案，而是问一个能引导学员自己找到答案的问题——这个问题应该怎么问？"
+        },
+        {
+          "id": "CHEKHOV_DELETE_SKILL",
+          "author": "契诃夫",
+          "quote": "写作的技巧，其实不是写的技巧，而是把写得差的地方删去的技巧。",
+          "diagnosticMeaning": "写作能力≈删除能力，诊断时应评估作者删改的意愿和眼光。",
+          "questionDirection": "删去开头和结尾各两段后，文章是否更紧凑有力？开头和结尾最易出现套话/空话。"
+        }
+      ]
+    },
+    {
+      "dimensionId": "taste_aesthetic",
+      "dimensionName": "趣味与品位",
+      "dimensionOrder": 5,
+      "principles": [
+        {
+          "id": "ZHU_GUANGQIAN_TASTE",
+          "author": "朱光潜",
+          "quote": "辨别一种作品的趣味就是评判，玩索一种作品的趣味就是欣赏，把自己在人生自然或艺术中所领略的趣味表现出来就是创造。",
+          "diagnosticMeaning": "趣味贯穿评判、欣赏、创造全流程，诊断写作应先诊断趣味。",
+          "questionDirection": "先问学员'你觉得哪里不好'，再告诉他'我觉得哪里好'。从反例建立本能判断，比从正面讲'什么是好'更有效。"
+        },
+        {
+          "id": "ZHU_GUANGQIAN_COMPARISON",
+          "author": "朱光潜",
+          "quote": "优劣都由比较得来，一生都在喝坏酒，不会觉得酒的坏，喝过一些好酒以后，坏酒一进口就不对味。",
+          "diagnosticMeaning": "趣味低下的根源往往是参照系不足——读的好作品太少。诊断时应追问作者的阅读广度与深度。",
+          "questionDirection": "这句话的情感强度是从哪儿来的？如果没有任何对比（得到vs失去、过去vs现在、此人vs彼人），情感的'优劣感'就无从建立。"
+        },
+        {
+          "id": "WANG_ZENG_QI_PINGDAN",
+          "author": "汪曾祺",
+          "quote": "平淡是第二次的平淡——渐老渐熟，乃造平淡。",
+          "diagnosticMeaning": "需区分'寡淡无味'（没有内容）与'平淡有味'（消化后的自然流出），后者是功力深厚的标志。",
+          "questionDirection": "这是'淘洗过后的干净'还是'本来就没东西'？平淡是写了又删的结果，寡淡是压根没写。"
+        }
+      ]
+    },
+    {
+      "dimensionId": "structural_economy",
+      "dimensionName": "结构经济性",
+      "dimensionOrder": 6,
+      "principles": [
+        {
+          "id": "CHEKHOV_GUN",
+          "author": "契诃夫",
+          "quote": "如果在第一章里墙上挂了一把枪，那么在后面的故事里这把枪必须开火。如果它不开火，它就不该出现在那里。",
+          "diagnosticMeaning": "任何在文中出现但未'开火'的元素都是结构冗余，应逐项标记并追问其不可替代的叙事功能。",
+          "questionDirection": "这些'挂出来的枪'在后续场景中打响了吗？如果挂了三把枪只打响了一把，另两把就是多余的。"
+        },
+        {
+          "id": "LAO_SHE_EVERYTHING_MATTERS",
+          "author": "老舍",
+          "quote": "小说中一草一木一虫一鸟都须有它的存在的意义。",
+          "diagnosticMeaning": "每一处描写都需经'经济性检验'：删去后故事是否依然完整？若是，即为冗余。",
+          "questionDirection": "这段描写里的每一个事物，都跟当前场景中的人物发生了关系吗？如果有东西只是'在那里'而没有被使用/触发/制造冲突，它就是多余的。"
+        },
+        {
+          "id": "STRUNK_EVERY_WORD_TELLS",
+          "author": "Strunk & White",
+          "quote": "A sentence should contain no unnecessary words, a paragraph no unnecessary sentences. Every word must tell.",
+          "diagnosticMeaning": "每一级结构单元都应有存在的理由，无理由即冗余。结构力度与其经济性成正比。",
+          "questionDirection": "这不是'不够长'的问题，是'每一句没有做不同的事'的问题。每一句都应该给读者新的信息或新的感受。"
+        }
+      ]
+    },
+    {
+      "dimensionId": "narrative_control",
+      "dimensionName": "叙事控制",
+      "dimensionOrder": 7,
+      "principles": [
+        {
+          "id": "GARDNER_PSYCHIC_DISTANCE",
+          "author": "John Gardner",
+          "quote": "Psychic distance（心理距离）五级：鸟瞰→远景→中景→近景→内部独白。有意图的拉近/拉远是技巧，无意识的跳跃是缺陷。",
+          "diagnosticMeaning": "叙事视角飘忽时，逐段标注psychic distance等级，检查是否存在无意图的跳跃。",
+          "questionDirection": "标示出每一句的 psychic distance（1-5 级），相邻两句的差距是否超过 2 级？如果是，就是越级跳跃。"
+        },
+        {
+          "id": "BOOTH_IMPLIED_AUTHOR",
+          "author": "Wayne C. Booth",
+          "quote": "Showing vs telling 并非简单二元——'展示'和'讲述'各有用处，关键在何时用何种方式。",
+          "diagnosticMeaning": "不应笼统地说'要多show少tell'，应具体分析该处telling是否高效传达了必要信息，该处showing是否真比telling更有力。",
+          "questionDirection": "当你准备说'你应该多展示少告知'时，问自己：自己到底是什么意思？不是'多写动作少写心理'，是'让读者通过角色的言行自行判断，而不是直接告诉读者该怎么判断'。"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "totalPrinciples": 20,
+    "totalDimensions": 7,
+    "status": "initial_batch",
+    "nextBatch": "待0-A4追加21世纪原则（Sanderson/McKee/Truby/Cron/邵燕君/起点体系）"
+  }
+}
