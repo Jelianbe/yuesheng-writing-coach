@@ -14,6 +14,9 @@
 
 import { create } from 'zustand';
 
+/** 右边栏展示阶段 — 控制教学流程中的渐进式披露粒度 */
+export type SidebarPhase = 'guide' | 'reading' | 'training' | 'complete';
+
 /** 会话类型，对应图标条的各个工具 */
 export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings';
 
@@ -49,6 +52,8 @@ interface PanelSessionState {
   sessions: PanelSession[];
   /** 当前激活的会话 ID */
   activeSessionId: string | null;
+  /** 右边栏展示阶段（控制渐进式披露） */
+  sidebarPhase: SidebarPhase;
 }
 
 interface PanelSessionActions {
@@ -58,6 +63,8 @@ interface PanelSessionActions {
   switchSession: (id: string) => void;
   /** 移除指定会话（若移除的是当前激活的，自动切换到上一个） */
   removeSession: (id: string) => void;
+  /** 设置右边栏展示阶段（由 teachingState:updated 事件消费方调用） */
+  setSidebarPhase: (phase: SidebarPhase) => void;
 }
 
 /** 使用 crypto.randomUUID 生成唯一 ID（无模块级可变变量） */
@@ -67,6 +74,7 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
   // State
   sessions: [],
   activeSessionId: null,
+  sidebarPhase: 'guide',
 
   // Actions
   upsertSession: (type, title, icon, data) => {
@@ -108,5 +116,9 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
       newActive = filtered.length > 0 ? filtered[filtered.length - 1].id : null;
     }
     set({ sessions: filtered, activeSessionId: newActive });
+  },
+
+  setSidebarPhase: (phase) => {
+    set({ sidebarPhase: phase });
   },
 }));

@@ -32,6 +32,37 @@ import { selectFocusSyndrome } from './router.layer1';
 import { selectTeachingMode } from './router.layer2';
 import { refineParameters, buildLegacyBridge } from './router.layer3';
 
+// ==============================
+// 类型定义
+// ==============================
+
+/** 阅读前置决策类型 */
+export interface ReadingDecision {
+  /** 是否需要阅读 */
+  required: boolean;
+  /** 是否推荐阅读 */
+  recommended: boolean;
+  /** 决策标签 */
+  label: 'must_read' | 'recommend_read' | 'skip_read';
+  /** 决策理由 */
+  reason: string;
+}
+
+/** 阅读策略配置形状 */
+interface ReadingStrategyConfig {
+  description: string;
+  decisionByAttitude: Record<string, {
+    required: boolean;
+    recommended: boolean;
+    label: string;
+    reason: string;
+  }>;
+}
+
+// ==============================
+// 主类
+// ==============================
+
 export class TeachingStrategyRouter {
   private resourcesRoot: string;
 
@@ -136,6 +167,33 @@ export class TeachingStrategyRouter {
     this._coachingTemplates = null;
     this._userTypeMap = null;
     this._syndromeTypeMap = null;
+  }
+
+  /**
+   * 阅读前置决策 — B-02
+   *
+   * 在 assign 训练前判断是否需要先执行阅读分析步骤。
+   * 判断依据：态度档位（doubao→must read, yuesheng→recommend, sensei→skip）
+   *
+   * @param attitude - 当前教学态度档位
+   * @returns 阅读决策
+   */
+  decideReading(attitude: string): ReadingDecision {
+    const config = this.loadJson<ReadingStrategyConfig>('teaching-strategies.json', {
+      description: '',
+      decisionByAttitude: {},
+    });
+    const rule = config.decisionByAttitude[attitude];
+    if (!rule) {
+      // 未知档位默认不阅读
+      return { required: false, recommended: false, label: 'skip_read', reason: `未知档位 ${attitude}，跳过阅读` };
+    }
+    return {
+      required: rule.required,
+      recommended: rule.recommended,
+      label: rule.label as ReadingDecision['label'],
+      reason: rule.reason,
+    };
   }
 
   // ==============================

@@ -65,5 +65,27 @@
     }
   ],
   "defaultMode": "guiding",
-  "principle": "一次只说一个问题 — design-philosophy_V1.0.md"
+  "principle": "一次只说一个问题 — design-philosophy_V1.0.md",
+  "readingStrategy": {
+    "description": "阅读前置决策 — 在 assign 训练前判断是否需要阅读分析步骤",
+    "decisionByAttitude": {
+      "doubao": {
+        "required": true,
+        "label": "must_read",
+        "reason": "豆包档位需先阅读示范再训练"
+      },
+      "yuesheng": {
+        "required": false,
+        "recommended": true,
+        "label": "recommend_read",
+        "reason": "月笙档位推荐阅读分析"
+      },
+      "sensei": {
+        "required": false,
+        "recommended": false,
+        "label": "skip_read",
+        "reason": "sensei 档位跳过阅读直接训练"
+      }
+    }
+  }
 }
