@@ -52,6 +52,9 @@
   --info-light: #E4EDF5;
 
   /* ── 阴影（暖调）── */
+
+  /* 目标档位条 — 长档专用色 */
+  --goal-tier-long: #8E44AD;
   --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.06);
   --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08);
   --shadow-lg: 0 12px 32px rgba(44, 36, 22, 0.10);
