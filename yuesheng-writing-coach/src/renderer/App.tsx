@@ -7,14 +7,13 @@ import { AppConfigGate } from './components/layout/AppConfigGate';
 import { ChatView } from './components/chat/ChatView';
 import { TrainingWorkshop } from './components/training/TrainingWorkshop';
 import { DiagnosisPanel } from './components/layout/DiagnosisPanel';
-import { TaskPanel } from './components/teaching/TaskPanel';
 import { AbilityProfilePanel } from './components/profile/AbilityProfilePanel';
 import { GrowthPanel } from './components/growth/GrowthPanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { SearchPanel } from './components/search/SearchPanel';
 import { ToolsPanel } from './components/tools/ToolsPanel';
 import { ManuscriptPanel } from './components/manuscript/ManuscriptPanel';
-import { Search, ClipboardCheck, Target, TrendingUp, User, Wrench, ListChecks, BookOpen } from 'lucide-react';
+import { Search, ClipboardCheck, Target, TrendingUp, User, Wrench, BookOpen } from 'lucide-react';
 import { useAppController } from './services/useAppController';
 import { useDiagnosisFlow } from './hooks/useDiagnosisFlow';
 import { useConfigStore } from './stores/config.store';
@@ -95,7 +94,6 @@ export function App(): React.ReactElement {
     { id: 'works', icon: BookOpen, label: '作品' },
     { id: 'diagnosis', icon: ClipboardCheck, label: '作品诊断' },
     { id: 'training', icon: Target, label: '训练工坊' },
-    { id: 'tasks', icon: ListChecks, label: '教学任务' },
     { id: 'growth', icon: TrendingUp, label: '成长记录' },
     { id: 'profile', icon: User, label: '能力画像' },
     { id: 'tools', icon: Wrench, label: '创作工具' },
@@ -108,7 +106,7 @@ export function App(): React.ReactElement {
   return (
     <AppErrorBoundary>
       <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
-        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, tasks: <TaskPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
+        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} />, diagnosis: <DiagnosisPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
           <div style={{ position: 'relative', height: '100%' }}>
             <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} isConfigured={isConfigured ?? false} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { rightPanelService.openTraining(cid); useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
           </div>

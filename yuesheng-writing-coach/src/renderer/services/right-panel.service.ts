@@ -20,7 +20,6 @@ export type PanelId =
   | 'works'
   | 'diagnosis'
   | 'training'
-  | 'tasks'
   | 'growth'
   | 'profile'
   | 'tools'

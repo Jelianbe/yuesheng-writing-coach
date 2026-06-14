@@ -6,6 +6,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -25,6 +26,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P001"
     ],
@@ -47,6 +49,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P004"
     ],
@@ -69,6 +72,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -93,6 +97,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -114,6 +119,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -133,6 +139,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -152,6 +159,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -173,6 +181,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -197,6 +206,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -221,6 +231,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -243,6 +254,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -263,6 +275,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -282,6 +295,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -301,6 +315,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -320,6 +335,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -339,6 +355,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -361,6 +378,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -383,6 +401,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -405,6 +424,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -427,6 +447,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -451,6 +472,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -470,6 +492,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -489,6 +512,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -513,6 +537,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": true,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -536,6 +561,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -559,6 +585,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -582,6 +609,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -604,6 +632,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -626,6 +655,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -648,6 +678,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": false,
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -671,6 +702,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -690,6 +722,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -713,6 +746,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -735,6 +769,7 @@
     "sourceAuthor": "狐尾的笔",
     "difficulty": "intermediate",
     "category": "情绪",
+    "discoverable": false,
     "applicableSyndromes": [
       "P003"
     ],
@@ -757,6 +792,7 @@
     "sourceAuthor": "辰东",
     "difficulty": "intermediate",
     "category": "情绪",
+    "discoverable": false,
     "applicableSyndromes": [
       "P003"
     ],
@@ -779,6 +815,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "情绪",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003"
     ],
@@ -798,6 +835,7 @@
     "sourceAuthor": "狐尾的笔",
     "difficulty": "intermediate",
     "category": "情绪",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003"
     ],
@@ -820,6 +858,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "advanced",
     "category": "情绪",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003"
     ],
@@ -842,6 +881,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "场景",
+    "discoverable": false,
     "applicableSyndromes": [
       "P005"
     ],
@@ -863,6 +903,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "intermediate",
     "category": "场景",
+    "discoverable": false,
     "applicableSyndromes": [
       "P005"
     ],
@@ -886,6 +927,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "beginner",
     "category": "场景",
+    "discoverable": false,
     "applicableSyndromes": [
       "P005"
     ],
@@ -907,6 +949,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "advanced",
     "category": "场景",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P005"
     ],
@@ -930,6 +973,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "intermediate",
     "category": "场景",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P007"
     ],
@@ -954,6 +998,7 @@
     "sourceAuthor": "烽火戏诸侯",
     "difficulty": "intermediate",
     "category": "场景",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P007"
     ],
@@ -978,6 +1023,7 @@
     "sourceAuthor": "烽火戏诸侯",
     "difficulty": "advanced",
     "category": "场景",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P007"
     ],
@@ -1003,6 +1049,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "intermediate",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P010"
     ],
@@ -1027,6 +1074,7 @@
     "sourceAuthor": "蝴蝶蓝",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P010"
     ],
@@ -1049,6 +1097,7 @@
     "sourceAuthor": "蝴蝶蓝",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": true,
     "applicableSyndromes": [
       "P010"
     ],
@@ -1072,6 +1121,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "advanced",
     "category": "人物",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P010"
     ],
@@ -1096,6 +1146,7 @@
     "sourceAuthor": "杀虫队队长",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P007"
     ],
@@ -1117,6 +1168,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "世界观",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P001"
     ],
@@ -1141,6 +1193,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": false,
     "applicableSyndromes": [
       "P004"
     ],
@@ -1165,6 +1218,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "世界观",
+    "discoverable": true,
     "applicableSyndromes": [
       "P004"
     ],
@@ -1189,6 +1243,7 @@
     "sourceAuthor": "蝴蝶蓝",
     "difficulty": "beginner",
     "category": "人物",
+    "discoverable": false,
     "applicableSyndromes": [
       "P009"
     ],
@@ -1211,6 +1266,7 @@
     "sourceAuthor": "卖报小郎君",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P002",
       "P003"
@@ -1235,6 +1291,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "advanced",
     "category": "情绪",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003"
     ],
@@ -1257,6 +1314,7 @@
     "sourceAuthor": "—",
     "difficulty": "intermediate",
     "category": "场景",
+    "discoverable": false,
     "applicableSyndromes": [
       "P005"
     ],
@@ -1280,6 +1338,7 @@
     "sourceAuthor": "—",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P007"
     ],
@@ -1302,6 +1361,7 @@
     "sourceAuthor": "—",
     "difficulty": "intermediate",
     "category": "人物",
+    "discoverable": false,
     "applicableSyndromes": [
       "P010"
     ],
@@ -1326,6 +1386,7 @@
     "sourceAuthor": "—",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001"
     ],
@@ -1348,6 +1409,7 @@
     "sourceAuthor": "—",
     "difficulty": "intermediate",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P009"
     ],
@@ -1372,6 +1434,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -1396,6 +1459,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -1421,6 +1485,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -1445,6 +1510,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -1468,6 +1534,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -1492,6 +1559,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": false,
     "applicableSyndromes": [
       "P004"
     ],
@@ -1516,6 +1584,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": true,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -1539,6 +1608,7 @@
     "sourceAuthor": "爱潜水的乌贼",
     "difficulty": "advanced",
     "category": "对话",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003",
       "P009"
@@ -1563,6 +1633,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -1588,6 +1659,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -1612,6 +1684,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -1633,6 +1706,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -1657,6 +1731,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": false,
     "applicableSyndromes": [
       "P004",
       "P007"
@@ -1682,6 +1757,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "advanced",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -1707,6 +1783,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "对话",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -1728,6 +1805,7 @@
     "sourceAuthor": "会说话的肘子",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006",
       "P009"
@@ -1750,6 +1828,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -1772,6 +1851,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006",
       "P009"
@@ -1796,6 +1876,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "对话",
+    "discoverable": false,
     "applicableSyndromes": [
       "P002",
       "P009"
@@ -1818,6 +1899,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": false,
     "applicableSyndromes": [
       "P004",
       "P009"
@@ -1842,6 +1924,7 @@
     "sourceAuthor": "忘语",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -1864,6 +1947,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P004",
       "P006"
@@ -1886,6 +1970,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "对话",
+    "discoverable": false,
     "applicableSyndromes": [
       "P004"
     ],
@@ -1908,6 +1993,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "intermediate",
     "category": "对话",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003",
       "P009"
@@ -1932,6 +2018,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "对话",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002"
     ],
@@ -1953,6 +2040,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006"
     ],
@@ -1976,6 +2064,7 @@
     "sourceAuthor": "三九音域",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -1998,6 +2087,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2026,6 +2116,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -2052,6 +2143,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "人物",
+    "discoverable": true,
     "applicableSyndromes": [
       "P002",
       "P010"
@@ -2080,6 +2172,7 @@
     "sourceType": "public_teaching",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P001",
       "P006"
@@ -2103,6 +2196,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "人物",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P009",
       "P010"
@@ -2131,6 +2225,7 @@
     "sourceType": "public_teaching",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": true,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -2154,6 +2249,7 @@
     "sourceType": "public_teaching",
     "difficulty": "advanced",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -2182,6 +2278,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2210,6 +2307,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "情绪",
+    "discoverable": false,
     "applicableSyndromes": [
       "P003",
       "P009"
@@ -2236,6 +2334,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2264,6 +2363,7 @@
     "sourceType": "public_teaching",
     "difficulty": "advanced",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2292,6 +2392,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "人物",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P002",
       "P010"
@@ -2320,6 +2421,7 @@
     "sourceType": "public_teaching",
     "difficulty": "beginner",
     "category": "情绪",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003",
       "P002"
@@ -2343,6 +2445,7 @@
     "sourceType": "public_teaching",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006",
       "P002"
@@ -2366,6 +2469,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2394,6 +2498,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2421,6 +2526,7 @@
     "sourceType": "public_teaching",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006",
       "P009"
@@ -2449,6 +2555,7 @@
     "sourceType": "public_teaching",
     "difficulty": "beginner",
     "category": "开篇",
+    "discoverable": false,
     "applicableSyndromes": [
       "P007"
     ],
@@ -2475,6 +2582,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -2503,6 +2611,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": true,
     "applicableSyndromes": [
       "P001"
     ],
@@ -2528,6 +2637,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "角色",
+    "discoverable": false,
     "applicableSyndromes": [
       "P002",
       "P010"
@@ -2554,6 +2664,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2581,6 +2692,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -2606,6 +2718,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "场景",
+    "discoverable": false,
     "applicableSyndromes": [
       "P004",
       "P001"
@@ -2634,6 +2747,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P004"
@@ -2660,6 +2774,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "表达",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P005"
@@ -2685,6 +2800,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "剧情",
+    "discoverable": false,
     "applicableSyndromes": [
       "P005",
       "P007"
@@ -2712,6 +2828,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "表达",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P007",
       "P004"
@@ -2740,6 +2857,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "世界观",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P002"
@@ -2766,6 +2884,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "剧情",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2794,6 +2913,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "表达",
+    "discoverable": true,
     "applicableSyndromes": [
       "P003",
       "P004"
@@ -2820,6 +2940,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "角色",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P002",
       "P009",
@@ -2849,6 +2970,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "节奏",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2876,6 +2998,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": true,
     "applicableSyndromes": [
       "P006"
     ],
@@ -2901,6 +3024,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "节奏",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],
@@ -2925,6 +3049,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "角色",
+    "discoverable": "partial",
     "applicableSyndromes": [
       "P002",
       "P009",
@@ -2954,6 +3079,7 @@
     "sourceType": "ai_tool",
     "difficulty": "intermediate",
     "category": "剧情",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006",
       "P007"
@@ -2982,6 +3108,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "表达",
+    "discoverable": false,
     "applicableSyndromes": [
       "P001",
       "P005"
@@ -3008,6 +3135,7 @@
     "sourceType": "ai_tool",
     "difficulty": "beginner",
     "category": "剧情",
+    "discoverable": false,
     "applicableSyndromes": [
       "P006"
     ],

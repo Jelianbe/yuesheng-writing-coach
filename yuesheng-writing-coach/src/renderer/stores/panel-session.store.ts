@@ -15,7 +15,7 @@
 import { create } from 'zustand';
 
 /** 会话类型，对应图标条的各个工具 */
-export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings' | 'tasks';
+export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings';
 
 /** 各类型会话的关联数据形状（discriminated union） */
 export type PanelSessionData =
@@ -26,8 +26,7 @@ export type PanelSessionData =
   | { type: 'profile' }
   | { type: 'search'; query?: string }
   | { type: 'tools' }
-  | { type: 'settings' }
-  | { type: 'tasks' };
+  | { type: 'settings' };
 
 /** 单个工具会话 */
 export interface PanelSession {

@@ -92,3 +92,9 @@ export type { ExecutionPattern } from './types-execution';
 export type { ConsistencyGap } from './types-execution';
 export type { IntentPhase } from './types-execution';
 export type { AuthorStage } from './types-execution';
+
+// --- types-prompt: Prompt / Role-Skill 类型 ---
+export type { TeachingRole } from './types-prompt';
+export type { RoleSkillConfig } from './types-prompt';
+export type { RoleSchedule } from './types-prompt';
+export type { RoleSchedulesConfig } from './types-prompt';
