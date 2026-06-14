@@ -33,6 +33,7 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   isLoading: false,
   error: null,
   bridgeRecommendation: null,
+  readingDecision: null,
   derivationLoading: false,
   derivationResult: null,
   derivationError: null,

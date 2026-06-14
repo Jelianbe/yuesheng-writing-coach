@@ -10,6 +10,7 @@
 
 import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
+import { useConfigStore } from './config.store';
 import { getInvoke } from '../utils/ipc';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
 import { severityToNumber } from '../../shared/severity-utils';
@@ -264,6 +265,17 @@ export function createRefreshFromDiagnosisAction(set: SetStateFn, _get: GetState
           lastQuote: c.lastQuote,
           lastDiagnosedAt: c.lastDiagnosedAt,
         }));
+
+      // 1.5 B-02：阅读前置决策
+      const attitude = useConfigStore.getState().attitudeLevel;
+      let readingDecision = null;
+      try {
+        const result = await getInvoke()(TrainingApi.decideReading.channel, { attitude }) as { required: boolean; recommended: boolean; label: string; reason?: string };
+        readingDecision = result;
+      } catch {
+        // B-02 不可用时静默降级
+      }
+      set({ readingDecision: readingDecision ?? null });
 
       // 2. 调用 training:recommend 获取推荐
       const recResult = await getInvoke()(TrainingApi.recommend.channel, { sessionId }) as { recommendations?: TrainingRecommendation[] };

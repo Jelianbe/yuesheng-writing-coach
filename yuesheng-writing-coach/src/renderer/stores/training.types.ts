@@ -32,6 +32,14 @@ export interface TrainingState {
   /** 推荐训练任务 */
   recommendations: TrainingRecommendation[];
 
+  /** B-02 阅读前置决策（null = 未评估或无需阅读） */
+  readingDecision: {
+    required: boolean;
+    recommended: boolean;
+    label: string;
+    reason?: string;
+  } | null;
+
   /** 当前活跃的训练会话（null = 未在进行训练） */
   activeTraining: ActiveTrainingSession | null;
 
