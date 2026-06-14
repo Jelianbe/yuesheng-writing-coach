@@ -196,6 +196,7 @@
   "metadata": {
     "totalMappings": 9,
     "syndromeIds": ["P001", "P002", "P003", "P004", "P005", "P006", "P007", "P009", "P010"],
+    "excluded": { "syndromeId": "P008", "reason": "已合并到 P004（见 problem-tiering.json），映射由 P004 覆盖" },
     "note": "与 syndrome-action-map.json 互补使用：classical-map 提供诊断推理依据（为什么是这个症候），action-map 提供教学动作选择（诊断后该做什么）。"
   }
 }
