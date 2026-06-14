@@ -438,7 +438,8 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
-    ]
+    ],
+    "mergedInto": "AIP-005"
   },
   {
     "id": "TQ-021",
@@ -2682,7 +2683,8 @@
       "AIP-017",
       "TQ-005",
       "TC-008"
-    ]
+    ],
+    "mergedInto": "TE-016"
   },
   {
     "id": "AIP-005",
@@ -3014,7 +3016,8 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
-    ]
+    ],
+    "mergedInto": "AIP-005"
   },
   {
     "id": "AIP-017",
@@ -3151,6 +3154,7 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
-    ]
+    ],
+    "mergedInto": "AIP-019"
   }
 ]
