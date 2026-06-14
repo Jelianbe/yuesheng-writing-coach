@@ -46,7 +46,7 @@
   flex: 1 1 280px;
   max-width: calc(50% - 6px);
   padding: 12px;
-  background-color: #fff;
+  background-color: var(--bg-card);
   border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -58,7 +58,7 @@
   align-items: flex-start;
   gap: 12px;
   padding: 12px;
-  background-color: #fff;
+  background-color: var(--bg-card);
   border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -69,7 +69,7 @@
 .trainingStartBtn {
   padding: 5px 14px;
   background-color: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -93,7 +93,7 @@
 .trainingPrimaryBtn {
   padding: 8px 20px;
   background-color: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   border: none;
   border-radius: 6px;
   font-size: 0.85rem;

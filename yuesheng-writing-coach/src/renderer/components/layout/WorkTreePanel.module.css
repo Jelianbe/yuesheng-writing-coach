@@ -235,7 +235,7 @@
   border: 1px solid var(--accent);
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: #fff;
+  color: var(--text-on-accent);
   cursor: pointer;
   font-size: 0.68rem;
   font-family: var(--font-body);
