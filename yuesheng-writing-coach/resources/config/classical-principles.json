@@ -17,6 +17,13 @@
           "questionDirection": "这段文字里有多少是作者亲眼见过、亲身感受过的东西？如果大部分是'想当然'的描写，就是素材不足的信号。"
         },
         {
+          "id": "YE_SHENGTAO_PRECISE",
+          "author": "叶圣陶",
+          "quote": "精密观察——不但是用眼睛看，还要用耳朵听，用鼻子闻，用手去触摸，用心去想。",
+          "diagnosticMeaning": "观察不只是'看到了'，而是五感同时运作。学员写'没有细节'，根因往往是只用'看'而忘了其他感官。指定视角阅读的本质就是锁定一个感官维度去观察。",
+          "questionDirection": "如果只允许我写一个感官（听觉/嗅觉/触觉），这段文字还能写出来吗？限制一个感官后反而更容易写出独特细节。"
+        },
+        {
           "id": "YE_SHENGTAO_THINK_FIRST",
           "author": "叶圣陶",
           "quote": "想清楚了再写——为什么要写，该怎么写，哪些必要写，哪些用不着写……",
@@ -157,6 +164,13 @@
           "questionDirection": "这句话的情感强度是从哪儿来的？如果没有任何对比（得到vs失去、过去vs现在、此人vs彼人），情感的'优劣感'就无从建立。"
         },
         {
+          "id": "ZHU_GUANG_QIAN_DISCRIMINATION",
+          "author": "朱光潜",
+          "quote": "辨别一种作品的趣味就是评判——先辨劣，后赏优。辨劣是审美的人口，审美教育应从识别'差'开始。",
+          "diagnosticMeaning": "趣味教育应从反例切入而非正例。学员无法识别'差'的时候，他们对'好'的理解也是空洞的。'看烂书·找茬'练习就是这个原理的实践——先建立对差的本能反感。",
+          "questionDirection": "你没办法直接说'什么是好的'时，可以问'什么让你读不下去'。对差的敏感度建立起来后，对好的判断自然形成。"
+        },
+        {
           "id": "WANG_ZENG_QI_PINGDAN",
           "author": "汪曾祺",
           "quote": "平淡是第二次的平淡——渐老渐熟，乃造平淡。",
@@ -288,7 +302,7 @@
     }
   ],
   "metadata": {
-    "totalPrinciples": 32,
+    "totalPrinciples": 34,
     "totalDimensions": 8,
     "status": "post_0-A4_injection",
     "injectionNote": "首批20条（维度1-7，经典12作家）+ 0-A4追加7条（维度8）+ 5条孤引用补全（CHEKHOV_EMOTION/LAO_SHE_MOTIVATION/LAO_SHE_LIVING/LAO_SHE_ONE_THING/BOOTH_SHOWING）。野路子25条为目标库/训练库条目，不纳入原则库"
