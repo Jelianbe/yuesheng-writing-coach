@@ -35,8 +35,8 @@ export const RewriteStepContent: React.FC<RewriteStepContentProps> = ({
 
   return (
     <>
-      {/* 挑战描述 */}
-      {session.challengeDescription && (
+      {/* 挑战描述（阅读任务已在 Step 0 展示，跳过重复渲染） */}
+      {session.challengeDescription && session.mode !== 'reading_task' && (
         <div
           className={`${styles.challengeDesc} ${
             session.mode === 'reading_task'
