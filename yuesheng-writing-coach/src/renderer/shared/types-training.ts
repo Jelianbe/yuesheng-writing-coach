@@ -151,6 +151,8 @@ export interface TrainingRecord {
   taskId: string;
   /** 症候 ID */
   syndromeId: string;
+  /** 训练类型（writing/reading/reflection/technique） */
+  taskType?: 'writing' | 'reading' | 'reflection' | 'technique';
   /** 用户响应 */
   userResponse: string;
   /** 状态（assigned/in_progress/completed/skipped） */

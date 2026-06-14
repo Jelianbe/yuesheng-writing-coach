@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { Settings, PanelRightClose, Plus, ListChecks } from 'lucide-react';
+import { Settings, PanelRightClose, Plus } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
 import { useConfigStore } from '../../stores/config.store';
@@ -154,12 +154,6 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
               <button onClick={() => { /* 新建章节 — 由 ManuscriptPanel 内部处理或 IPC 触发 */ }}
                 className={styles.actionBtn} style={{ color: 'var(--accent)' }} title="新建章节">
                 <Plus size={14} strokeWidth={1.8} />
-              </button>
-            )}
-            {activePanel === 'tasks' && (
-              <button onClick={() => { /* 新建任务 — 由 TaskPanel 内部处理 */ }}
-                className={styles.actionBtn} style={{ color: 'var(--accent)' }} title="新建任务">
-                <ListChecks size={14} strokeWidth={1.8} />
               </button>
             )}
 

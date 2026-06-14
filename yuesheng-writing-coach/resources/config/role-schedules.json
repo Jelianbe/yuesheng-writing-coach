@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "schedules": [
+    { "phase": "P0_INIT", "subphase": null, "roleId": "teacher" },
+    { "phase": "P0_ENGAGE", "subphase": null, "roleId": "assistant" },
+    { "phase": "P1_WORLD", "subphase": null, "roleId": "teacher" },
+    { "phase": "P2_PRACTICE_LOOP", "subphase": "S2_IDENTIFY", "roleId": "teacher" },
+    { "phase": "P2_PRACTICE_LOOP", "subphase": "S2_REFLECTION", "roleId": "teacher" },
+    { "phase": "P2_PRACTICE_LOOP", "subphase": "S2_TEACHING", "roleId": "teacher" },
+    { "phase": "P2_PRACTICE_LOOP", "subphase": "S2_ASSIGN_TASK", "roleId": "assistant" },
+    { "phase": "P2_PRACTICE_LOOP", "subphase": "S2_REVIEW_TASK", "roleId": "clown" },
+    { "phase": "P4_REVIEW", "subphase": null, "roleId": "teacher" }
+  ],
+  "contextPruningRules": {
+    "onRoleSwitch": true,
+    "pruneStrategy": "keep_only_target_role_history",
+    "knowledgeCleanup": "remove_outdated_knowledge"
+  }
+}

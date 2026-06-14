@@ -8,6 +8,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { AttitudeLevel, DiagnosisAnalysis } from '../../../renderer/shared/types';
+import type { RoleSkillConfig, RoleSchedulesConfig } from '../../../renderer/shared/types';
 import type { SyndromeId } from '../../../shared/constants';
 import { PromptBuilder } from './prompt-builder';
 import { TeachingState } from '../teaching/teaching-state/teaching-state.types';
@@ -87,9 +88,10 @@ const DEFAULT_TONE_MODIFIERS: Record<string, string> = {
  */
 export class PromptLoader {
   private resourcesRoot: string;
-  // @ts-expect-error: Dependency injection placeholder for future use
   private stateContextGetter: StateContextGetter | null = null;
   private cachedToneModifiers: ToneModifiersConfig | null = null;
+  private cachedRoleSchedules: RoleSchedulesConfig | null = null;
+  private cachedRoleSkills: Map<string, RoleSkillConfig> | null = null;
   private promptBuilder: PromptBuilder | null = null;
   private getStore: (() => { getBySession: (sessionId: string) => unknown }) | null = null;
   private dynamicContextService: DynamicContextService | null = null;
@@ -352,5 +354,157 @@ export class PromptLoader {
     if (attitude === 'yuesheng') return config.yuesheng ?? '';
     if (attitude === 'direct') return config.direct ?? '';
     return '';
+  }
+
+  /**
+   * 获取角色排期配置文件路径
+   */
+  private getRoleSchedulesConfigPath(): string {
+    return path.join(this.resourcesRoot, 'config/role-schedules.json');
+  }
+
+  /**
+   * 获取角色 Skill 配置文件路径
+   */
+  private getSkillConfigPath(roleId: string): string {
+    return path.join(this.resourcesRoot, `config/role-skills/${roleId}.skill.json`);
+  }
+
+  /**
+   * 加载角色排期配置（带缓存）
+   * 首次调用时读取并缓存，文件不存在时降级返回 null
+   */
+  private loadRoleSchedules(): RoleSchedulesConfig | null {
+    if (this.cachedRoleSchedules) {
+      return this.cachedRoleSchedules;
+    }
+
+    const configPath = this.getRoleSchedulesConfigPath();
+    try {
+      if (fs.existsSync(configPath)) {
+        const raw = fs.readFileSync(configPath, 'utf-8');
+        this.cachedRoleSchedules = JSON.parse(raw) as RoleSchedulesConfig;
+        return this.cachedRoleSchedules;
+      }
+    } catch (e) {
+      console.warn('[PromptLoader] role-schedules.json 读取失败:', e);
+    }
+
+    return null;
+  }
+
+  /**
+   * 加载指定角色的 Skill 配置（带缓存）
+   * 首次调用时读取并缓存，文件不存在时降级返回 null
+   */
+  private loadSkillConfig(roleId: string): RoleSkillConfig | null {
+    if (this.cachedRoleSkills?.has(roleId)) {
+      return this.cachedRoleSkills.get(roleId) ?? null;
+    }
+
+    const configPath = this.getSkillConfigPath(roleId);
+    try {
+      if (fs.existsSync(configPath)) {
+        const raw = fs.readFileSync(configPath, 'utf-8');
+        const config = JSON.parse(raw) as RoleSkillConfig;
+
+        if (!this.cachedRoleSkills) {
+          this.cachedRoleSkills = new Map();
+        }
+        this.cachedRoleSkills.set(roleId, config);
+        return config;
+      }
+    } catch (e) {
+      console.warn(`[PromptLoader] ${roleId}.skill.json 读取失败:`, e);
+    }
+
+    return null;
+  }
+
+  /**
+   * 根据会话的教学阶段选择对应的角色 Skill
+   *
+   * 流程：
+   * 1. 读取 role-schedules.json 获取阶段→角色映射
+   * 2. 根据当前 phase/subphase 匹配角色
+   * 3. 读取对应角色的 skill.json 配置
+   * 4. 返回 RoleSkillConfig（后续用于只注入该角色允许的知识）
+   *
+   * 降级策略：
+   * - role-schedules.json 不存在或读取失败 → 返回 teacher skill
+   * - 指定阶段的角色未定义 → 返回 teacher skill
+   * - teacher.skill.json 也不存在 → 返回默认 teacher 配置
+   */
+  selectRoleSkill(sessionId: string): RoleSkillConfig {
+    // 尝试从 StateContextGetter 获取当前阶段
+    let currentPhase = 'P0_INIT';
+    let currentSubphase: string | null = null;
+
+    if (this.stateContextGetter) {
+      const ctx = this.stateContextGetter(sessionId);
+      if (ctx) {
+        currentPhase = ctx.currentPhase;
+        currentSubphase = ctx.currentSubphase;
+      }
+    }
+
+    // 加载角色排期配置
+    const schedules = this.loadRoleSchedules();
+    if (!schedules) {
+      // 降级：返回 teacher skill
+      return this.loadSkillConfig('teacher') ?? {
+        roleId: 'teacher',
+        name: 'Teacher',
+        description: '降级默认配置',
+        knowledgeBoundary: {
+          allowedSources: [],
+          tokenBudget: { contextRounds: 6, maxTokens: 4000 },
+          contextRetention: {},
+        },
+        style: { tone: 'serious_accurate', personality: '' },
+      };
+    }
+
+    // 按 subphase 优先匹配，再按 phase 匹配
+    let matchedRoleId = 'teacher';
+    for (const schedule of schedules.schedules) {
+      if (schedule.phase === currentPhase) {
+        if (schedule.subphase === null && currentSubphase === null) {
+          matchedRoleId = schedule.roleId;
+          break;
+        }
+        if (schedule.subphase !== null && schedule.subphase === currentSubphase) {
+          matchedRoleId = schedule.roleId;
+          break;
+        }
+      }
+    }
+
+    // 加载对应角色的 Skill 配置
+    const config = this.loadSkillConfig(matchedRoleId);
+    if (config) {
+      return config;
+    }
+
+    // 降级：返回 teacher skill
+    return this.loadSkillConfig('teacher') ?? {
+      roleId: 'teacher',
+      name: 'Teacher',
+      description: '降级默认配置',
+      knowledgeBoundary: {
+        allowedSources: [],
+        tokenBudget: { contextRounds: 6, maxTokens: 4000 },
+        contextRetention: {},
+      },
+      style: { tone: 'serious_accurate', personality: '' },
+    };
+  }
+
+  /**
+   * 清除角色 Skill 缓存（用于测试或热重载）
+   */
+  clearRoleSkillsCache(): void {
+    this.cachedRoleSchedules = null;
+    this.cachedRoleSkills = null;
   }
 }

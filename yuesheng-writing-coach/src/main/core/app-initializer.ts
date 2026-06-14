@@ -205,6 +205,7 @@ export class AppInitializer {
     const migrationFiles = [
       '013_manuscripts.sql',
       '018_db_p1a_time_format.sql',
+      '020_db_add_task_type.sql',
     ];
 
     for (const file of migrationFiles) {
