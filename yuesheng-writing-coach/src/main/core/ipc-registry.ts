@@ -21,6 +21,7 @@ import type { GrowthTrendService } from '../domains/student/growth-trend.service
 import type { ChatOrchestratorService } from '../domains/chat/chat-orchestrator.service';
 import type { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/teaching/teaching-state.service';
+import type { TeachingStrategyService } from '../domains/teaching/strategy/service';
 
 export class IpcRegistry {
   constructor(
@@ -39,6 +40,7 @@ export class IpcRegistry {
     const growthTrendService = this.container.get<GrowthTrendService>('growthTrendService');
     const diagnosisMerger = this.container.get<DiagnosisMerger>('diagnosisMerger');
     const teachingStateService = this.container.get<TeachingStateService>('teachingStateService');
+    const teachingStrategyService = this.container.get<TeachingStrategyService>('teachingStrategyService');
 
     // Config
     initConfigHandlers({ configService });
@@ -56,12 +58,13 @@ export class IpcRegistry {
     initAbilityProfileHandlers({ abilityProfileService });
     registerAbilityProfileHandlers();
 
-    // Training (inject teachingStateService for severity downgrade)
+    // Training (inject teachingStateService for severity downgrade, teachingStrategyService for B-02)
     initTrainingHandlers({
       configService,
       trainingRecordService,
       studentModelService,
       teachingStateService,
+      teachingStrategyService,
     });
     registerTrainingHandlers();
 

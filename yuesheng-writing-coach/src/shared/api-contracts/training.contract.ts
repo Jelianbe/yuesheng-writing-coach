@@ -94,6 +94,17 @@ export interface TrainingEvaluateResponse {
   downgraded: boolean;
 }
 
+export interface TrainingDecideReadingRequest {
+  attitude: string;
+}
+
+export interface TrainingDecideReadingResponse {
+  required: boolean;
+  recommended: boolean;
+  label: string;
+  reason?: string;
+}
+
 export interface TrainingDeriveBehaviorResponse {
   behaviors: string[];
 }
@@ -143,6 +154,12 @@ export const TrainingApi = {
     response: {} as ApiResponse<TrainingEvaluateResponse>,
   },
 
+  decideReading: {
+    channel: 'training:decideReading' as const,
+    request: {} as TrainingDecideReadingRequest,
+    response: {} as ApiResponse<TrainingDecideReadingResponse>,
+  },
+
   deriveBehavior: {
     channel: 'training:deriveBehavior' as const,
     request: {} as TrainingDeriveBehaviorRequest,
@@ -158,4 +175,5 @@ export type TrainingInvokeChannels =
   | typeof TrainingApi.history.channel
   | typeof TrainingApi.submit.channel
   | typeof TrainingApi.evaluate.channel
+  | typeof TrainingApi.decideReading.channel
   | typeof TrainingApi.deriveBehavior.channel;

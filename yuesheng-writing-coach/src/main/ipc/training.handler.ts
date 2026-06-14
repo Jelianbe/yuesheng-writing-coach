@@ -23,12 +23,14 @@ import { evaluateTraining } from '../domains/training/training-evaluator.service
 import { deriveBehavior, type DerivationInput } from '../domains/training/behavior-derivation.service';
 import { ConfigService } from '../shared/services/config.service';
 import { TeachingStateService } from '../domains/teaching/teaching-state.service';
+import { TeachingStrategyService } from '../domains/teaching/strategy/service';
 
 export interface TrainingHandlerDeps {
   configService: ConfigService;
   trainingRecordService: TrainingRecordService;
   studentModelService: StudentModelService;
   teachingStateService: TeachingStateService;
+  teachingStrategyService: TeachingStrategyService;
 }
 
 let deps: TrainingHandlerDeps | null = null;
@@ -183,6 +185,23 @@ export function registerTrainingHandlers(): void {
     }
 
     return result;
+  });
+
+  /**
+   * training:decideReading — B-02 阅读前置决策
+   *
+   * 判断在分配训练前是否需要先执行阅读分析步骤。
+   * 依据：教学态度档位（doubao→must read, yuesheng→recommend, sensei→skip）
+   */
+  createHandler(IPC_CHANNELS.TRAINING_DECIDE_READING, async (_event, args) => {
+    const validation = validatePayload<{ attitude: string }>(args, { required: ['attitude'], types: { attitude: 'string' } });
+    if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    if (!deps) throw new Error('TrainingHandler deps not initialized');
+    if (!deps.teachingStrategyService.router) throw new Error('TeachingStrategyRouter not initialized');
+
+    const readingDecision = deps.teachingStrategyService.router.decideReading(validation.data.attitude);
+
+    return readingDecision;
   });
 
   /**
