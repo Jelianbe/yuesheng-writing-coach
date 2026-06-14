@@ -32,13 +32,16 @@ export interface TrainingState {
   /** 推荐训练任务 */
   recommendations: TrainingRecommendation[];
 
-  /** B-02 阅读前置决策（null = 未评估或无需阅读） */
+  /** 阅读前置决策结果（B-02） */
   readingDecision: {
     required: boolean;
     recommended: boolean;
     label: string;
     reason?: string;
   } | null;
+
+  /** M4: 阅读已完成标记（用于展示过渡横幅） */
+  readingComplete: boolean;
 
   /** 当前活跃的训练会话（null = 未在进行训练） */
   activeTraining: ActiveTrainingSession | null;
@@ -98,8 +101,11 @@ export interface TrainingState {
   /** 提交练习步骤 */
   submitStep: () => Promise<void>;
 
-  /** 跳过训练 */
+  /** 跳过/放弃训练 */
   skipTraining: () => Promise<void>;
+
+  /** M4: 关闭阅读完成横幅 */
+  dismissReadingComplete: () => void;
 
   /** 加载训练历史 */
   loadHistory: (sessionId: string) => Promise<void>;

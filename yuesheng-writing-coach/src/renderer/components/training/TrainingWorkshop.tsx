@@ -26,6 +26,8 @@ export interface TrainingWorkshopProps {
   errorCards: ErrorCard[];
   recommendations: TrainingRecommendation[];
   readingDecision: { required: boolean; recommended: boolean; label: string; reason?: string } | null;
+  /** M4: 阅读完成横幅标记 */
+  readingComplete: boolean;
   activeTraining: ActiveTrainingSession | null;
   history: TrainingRecord[];
   /** AI 提交评估结果（null = 未提交或已清除） */
@@ -37,6 +39,8 @@ export interface TrainingWorkshopProps {
   onStartTraining: (challengeId: string) => void;
   /** B-02: 阅读前置任务 */
   onStartReading: (challengeId: string) => void;
+  /** M4: 关闭阅读完成横幅 */
+  onDismissReadingComplete: () => void;
   onBackToChat: () => void;
   onSubmitStep: () => void;
   onSkipTraining: () => void;
@@ -51,6 +55,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   errorCards,
   recommendations,
   readingDecision,
+  readingComplete,
   activeTraining,
   history,
   submissionResult,
@@ -59,6 +64,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   error,
   onStartTraining,
   onStartReading,
+  onDismissReadingComplete,
   onBackToChat,
   onSubmitStep,
   onSkipTraining,
@@ -139,6 +145,27 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
           训练工坊
         </div>
       </div>
+
+      {/* M4: 阅读完成横幅 */}
+      {readingComplete && (
+        <div style={{
+          margin: '0 20px', padding: '12px 20px', borderRadius: 8,
+          backgroundColor: 'var(--success-light)', color: 'var(--success)',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          marginTop: 12,
+        }}>
+          <span style={{ fontWeight: 500 }}>阅读分析已完成。下面是根据诊断结果调整后的推荐训练任务。</span>
+          <button
+            onClick={onDismissReadingComplete}
+            style={{
+              background: 'none', border: '1px solid var(--success)', borderRadius: 4,
+              padding: '4px 12px', cursor: 'pointer', color: 'var(--success)', fontSize: '0.85rem',
+            }}
+          >
+            知道了
+          </button>
+        </div>
+      )}
 
       {/* 三区块内容 */}
       <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
