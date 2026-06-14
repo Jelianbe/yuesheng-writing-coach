@@ -25,6 +25,7 @@ import sharedStyles from './TrainingShared.module.css';
 export interface TrainingWorkshopProps {
   errorCards: ErrorCard[];
   recommendations: TrainingRecommendation[];
+  readingDecision: { required: boolean; recommended: boolean; label: string; reason?: string } | null;
   activeTraining: ActiveTrainingSession | null;
   history: TrainingRecord[];
   /** AI 提交评估结果（null = 未提交或已清除） */
@@ -34,6 +35,8 @@ export interface TrainingWorkshopProps {
   isLoading: boolean;
   error: string | null;
   onStartTraining: (challengeId: string) => void;
+  /** B-02: 阅读前置任务 */
+  onStartReading: (challengeId: string) => void;
   onBackToChat: () => void;
   onSubmitStep: () => void;
   onSkipTraining: () => void;
@@ -47,6 +50,7 @@ export interface TrainingWorkshopProps {
 export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   errorCards,
   recommendations,
+  readingDecision,
   activeTraining,
   history,
   submissionResult,
@@ -54,16 +58,23 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   isLoading,
   error,
   onStartTraining,
+  onStartReading,
   onBackToChat,
   onSubmitStep,
   onSkipTraining,
   onUpdateDraft,
   onSendToEditor,
 }) => {
-  /** 点击"开始练习"直接进入训练 */
+  /** 点击"开始练习"— 拦截 B-02 阅读决策 */
   const handleStartTrainingClick = React.useCallback((challengeId: string) => {
+    if (readingDecision?.required) {
+      // B-02 要求必须先阅读
+      onStartReading(challengeId);
+      return;
+    }
+    // B-02 推荐阅读或无需阅读 → 直接进入训练
     onStartTraining(challengeId);
-  }, [onStartTraining]);
+  }, [readingDecision, onStartTraining, onStartReading]);
 
   /** B4: 根据任务 ID 获取可读名称 */
   const getTaskName = React.useCallback((taskId: string): string | undefined => {

@@ -9,6 +9,9 @@ import {
   ApiConfig,
 } from '../../renderer/shared/types';
 import { createHandler } from './utils/create-handler';
+import { app } from 'electron';
+import * as path from 'path';
+import * as fs from 'fs';
 
 export interface ConfigHandlerDeps {
   configService: ConfigService;
@@ -53,6 +56,31 @@ export function registerConfigHandlers(): void {
     IPC_CHANNELS.CONFIG_TEST_CONNECTION,
     async (_event, args: { apiKey: string; baseUrl: string }) => {
       return await deps!.configService.testConnection(args.apiKey, args.baseUrl);
+    }
+  );
+
+  // 获取阅读库条目（按症候 ID 筛选）
+  createHandler(
+    IPC_CHANNELS.CONFIG_GET_READING_ENTRY,
+    async (_event, args: { syndromeId: string }) => {
+      const resourcesRoot = app.isPackaged
+        ? path.join(process.resourcesPath, 'config')
+        : path.join(app.getAppPath(), 'resources', 'config');
+      const filePath = path.join(resourcesRoot, 'reading-library.json');
+      try {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const library = JSON.parse(raw);
+        if (!library.entries || !Array.isArray(library.entries)) {
+          return { entries: [] };
+        }
+        // 按 syndromeId 筛选：精确匹配或包含
+        const matches = library.entries.filter(
+          (e: { syndromeId: string }) => e.syndromeId === args.syndromeId
+        );
+        return { entries: matches };
+      } catch {
+        return { entries: [] };
+      }
     }
   );
 }
