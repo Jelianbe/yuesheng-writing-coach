@@ -48,6 +48,7 @@ export const SUBPHASE_NAMES: Record<string, string> = {
   [TeachingSubphase.WORLD_FIRST_SCENE]: '缩小到第一个场景',
   [TeachingSubphase.WORLD_DAILY_DETAIL]: '日常细节',
   [TeachingSubphase.PRACTICE_IDENTIFY]: '识别问题',
+  [TeachingSubphase.PRACTICE_GUIDE]: '引导发现',
   [TeachingSubphase.PRACTICE_REFLECTION]: '反思引导',
   [TeachingSubphase.PRACTICE_TEACHING]: '教学建议',
   [TeachingSubphase.PRACTICE_ASSIGN]: '布置任务',
@@ -70,6 +71,7 @@ export const PHASE_SUBPHASES: Record<string, string[]> = {
   ],
   [TeachingPhase.PRACTICE_LOOP]: [
     TeachingSubphase.PRACTICE_IDENTIFY,
+    TeachingSubphase.PRACTICE_GUIDE,
     TeachingSubphase.PRACTICE_REFLECTION,
     TeachingSubphase.PRACTICE_TEACHING,
     TeachingSubphase.PRACTICE_ASSIGN,
