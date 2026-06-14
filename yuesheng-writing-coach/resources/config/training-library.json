@@ -1,9 +1,9 @@
 {
   "$source": "teaching-knowledge-bridge_V1.0.md §3.4",
-  "description": "训练工坊 Schema — 症候→技法→练习的唯一数据源。供 TrainingRecommendation 取数 + 教学状态机 S2_ASSIGN_TASK 阶段选挑战用。包含17条症候训练条目和8条能力底层训练条目。",
+  "description": "训练工坊 Schema — 症候→技法→练习的唯一数据源。包含21条症候训练条目和8条能力底层训练条目，总计29条。",
   "version": "1.1",
   "updatedAt": "2026-06-14",
-  "totalEntries": 25,
+  "totalEntries": 29,
   "categories": [
     {
       "id": "motivation_deficit",
