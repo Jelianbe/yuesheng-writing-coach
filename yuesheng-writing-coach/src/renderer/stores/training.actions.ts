@@ -35,6 +35,12 @@ type GetStateFn = () => TrainingState;
 
 export function createStartAction(set: SetStateFn, get: GetStateFn) {
   return async (challengeId: string): Promise<void> => {
+    // P0-1: B-02 守卫 — readingDecision.required 时重定向到阅读前置
+    const decision = get().readingDecision;
+    if (decision?.required) {
+      return get().startReading(challengeId);
+    }
+
     set({ isLoading: true, error: null });
     try {
       const sessionId = useChatStore.getState().currentSessionId;
@@ -105,7 +111,9 @@ export function createStartReadingAction(set: SetStateFn, get: GetStateFn) {
 
       // 从 recommendations 查找匹配症候
       const match = get().recommendations.find(r => r.challengeId === challengeId);
-      const syndromeId = match?.syndromeId ?? 'P003';
+      // P1-1: fallback 优先使用首个 error card 的症候，而非硬编码 P003
+      const fallbackSyndromeId = get().errorCards[0]?.syndromeId ?? 'unknown';
+      const syndromeId = match?.syndromeId ?? fallbackSyndromeId;
 
       // 加载阅读库条目
       const readingResult = await getInvoke()(IPC_CHANNELS.CONFIG_GET_READING_ENTRY, { syndromeId }) as { entries: Array<{ id: string; title: string; excerpt: string; analysisPrompt: string }> };
@@ -151,6 +159,29 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
 
       // Step 2 → 提交给 AI 评估
       if (active.currentStepIndex === 1) {
+        // P0-2: reading_task 跳过通用训练评估管道
+        if (active.mode === 'reading_task') {
+          // 阅读分析直接标记通过，推进到 Step 3（提交确认）
+          const updatedSteps = active.steps.map((s, i) => ({
+            ...s,
+            status: i === active.currentStepIndex ? 'completed' as const : s.status,
+          })) as TrainingStep[];
+          const step3Index = active.currentStepIndex + 1;
+          updatedSteps[step3Index] = { ...updatedSteps[step3Index], status: 'active' as const };
+
+          set({
+            activeTraining: {
+              ...active,
+              currentStepIndex: step3Index,
+              steps: updatedSteps,
+            },
+            submissionResult: { passed: true, feedback: '阅读分析已记录。请在下一步确认完成。' },
+            evaluationResult: null,
+            isLoading: false,
+          });
+          return;
+        }
+
         const result = await getInvoke()(TrainingApi.submit.channel, {
           challengeDescription: active.challengeDescription,
           constraint: active.constraint,
