@@ -1,0 +1,80 @@
+{
+  "$source": "teaching-knowledge-bridge_V1.0.md §3.4",
+  "description": "训练工坊 Schema — 症候→技法→练习的唯一数据源。供 TrainingRecommendation 取数 + 教学状态机 S2_ASSIGN_TASK 阶段选挑战用。",
+  "version": "1.0",
+  "updatedAt": "2026-06-14",
+  "categories": [
+    {
+      "id": "motivation_deficit",
+      "name": "动机缺失型",
+      "description": "学生缺乏写作动力或目标模糊",
+      "syndromeIds": ["P001", "P002", "P009"]
+    },
+    {
+      "id": "expressive_deficit",
+      "name": "表达不足型",
+      "description": "学生有想法但无法有效表达",
+      "syndromeIds": ["P003", "P004", "P005", "P006", "P007", "P008", "P010", "P011"]
+    },
+    {
+      "id": "structural_deficit",
+      "name": "结构混乱型",
+      "description": "文章结构松散或逻辑不清",
+      "syndromeIds": []
+    }
+  ],
+  "entries": [
+    {
+      "id": "TRAIN-P001-001",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "title": "聚焦一个场景",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "只能保留一个具体场景，其余全部删除",
+      "expectedOutcome": "用户学会聚焦核心场景",
+      "techniques": [],
+      "exercises": []
+    },
+    {
+      "id": "TRAIN-P001-002",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "title": "主角优先叙事",
+      "difficulty": "medium",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "主角信息必须先于世界观信息",
+      "expectedOutcome": "用户学会以人物驱动叙事",
+      "techniques": [],
+      "exercises": []
+    },
+    {
+      "id": "TRAIN-P002-001",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "title": "赋予角色矛盾动机",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "structural",
+      "constraint": "角色必须有至少两个相互矛盾的愿望",
+      "expectedOutcome": "用户学会塑造立体角色",
+      "techniques": [],
+      "exercises": []
+    },
+    {
+      "id": "TRAIN-P003-001",
+      "syndromeId": "P003",
+      "syndromeName": "动词匮乏",
+      "title": "精准动词替换",
+      "difficulty": "easy",
+      "mode": "word_refine",
+      "tier": "surface",
+      "constraint": "每句话至少使用一个具体动词替代'是''有''做'",
+      "expectedOutcome": "用户积累精准动词库",
+      "techniques": [],
+      "exercises": []
+    }
+  ]
+}

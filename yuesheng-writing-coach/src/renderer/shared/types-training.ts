@@ -109,74 +109,84 @@ export interface TechniqueInfo {
   id: string;
   /** 技法名称 */
   name: string;
-  /** 来源（小说名/公开资源） */
-  source: string;
-  /** 来源作者 */
-  sourceAuthor?: string;
-  /** 来源类型（V6.0新增：public_teaching=公开教学资源） */
-  sourceType?: string;
-  /** 难度 */
-  difficulty: string;
-  /** 分类 */
-  category: string;
-  /** 适用症候 */
-  applicableSyndromes?: string[];
-  /** 核心一句话（V6.0新增，TE系列专用） */
-  coreIdea?: string;
-  /** 简述 */
+  /** 技法说明 */
   description: string;
-  /** 教学逻辑（V6.0新增，TE系列的核心附加值——原作者是怎么教的） */
-  teachingLogic?: string;
-  /** 原文示例 */
-  example: string;
-  /** 练习建议 */
-  exercise?: string;
-  /** 核心模式标识（V6.0新增） */
-  coreId?: string;
-  /** 核心模式名称（V6.0新增） */
-  coreName?: string;
-  /** 难度顺序：1=beginner, 2=intermediate, 3=advanced（V6.0新增） */
-  difficultyOrder?: number;
-  /** 适用范围：通用/奇幻玄幻/推理悬疑等（V6.0新增） */
-  genreScope?: string | string[];
+  /** 技法来源 */
+  source: string;
 }
 
-/** 训练记录（数据库行格式） */
+/** 训练记录 */
 export interface TrainingRecord {
   /** 记录 ID */
   id: string;
+  /** 任务 ID */
+  taskId?: string;
   /** 会话 ID */
   sessionId: string;
-  /** 挑战 ID（challengeId） */
-  taskId: string;
-  /** 症候 ID */
-  syndromeId: string;
-  /** 训练类型（writing/reading/reflection/technique） */
-  taskType?: 'writing' | 'reading' | 'reflection' | 'technique';
-  /** 用户响应 */
-  userResponse: string;
-  /** 状态（assigned/in_progress/completed/skipped） */
-  status: string;
-  /** 有效性评分（0-1） */
-  effectiveness: number;
-  /** AI 评估反馈 */
-  aiFeedback: string;
+  /** 挑战 ID */
+  challengeId: string;
+  /** 挑战名称 */
+  challengeName: string;
+  /** 状态 */
+  status: 'assigned' | 'in_progress' | 'completed' | 'skipped';
+  /** 分数（0-10，仅 completed） */
+  score?: number;
+  /** 任务类型 */
+  taskType?: string;
+  /** 有效率（0-1） */
+  effectiveness?: number;
   /** 分配时间 */
   assignedAt: string;
   /** 完成时间 */
   completedAt?: string;
-  /** Evaluator Agent 评分（1-10） */
-  score?: number | null;
 }
 
-/** 评估结果（Evaluator Agent 输出） */
+/** 评估结果 */
 export interface EvaluationResult {
-  /** 评分 1-10 */
+  /** 评分（0-10） */
   score: number;
-  /** 文字反馈 */
+  /** 评语 */
   feedback: string;
-  /** 是否相比原文有改善 */
+  /** 是否改善 */
   improved: boolean;
   /** 下一步建议 */
   nextStep: string;
+}
+
+// ======================== C-01a: 训练库类型 ========================
+
+/** 训练库条目 */
+export interface TrainingTask {
+  /** 训练条目 ID（如 TRAIN-P001-001） */
+  id: string;
+  /** 对应症候 ID */
+  syndromeId: string;
+  /** 症候名称 */
+  syndromeName: string;
+  /** 任务标题 */
+  title: string;
+  /** 难度等级 */
+  difficulty: 'easy' | 'medium' | 'hard';
+  /** 交互模式 */
+  mode: string;
+  /** 层级（structural/surface） */
+  tier: string;
+  /** 约束条件 */
+  constraint: string;
+  /** 预期结果 */
+  expectedOutcome: string;
+  /** 关联技法 ID 列表 */
+  techniques: string[];
+}
+
+/** 训练库分类 */
+export interface TrainingCategory {
+  /** 分类 ID */
+  id: string;
+  /** 分类名称 */
+  name: string;
+  /** 分类描述 */
+  description: string;
+  /** 包含的症候 ID 列表 */
+  syndromeIds: string[];
 }

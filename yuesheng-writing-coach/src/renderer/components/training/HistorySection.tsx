@@ -61,8 +61,8 @@ export const HistorySection: React.FC<{
             <span style={{ color: statusColors[record.status] ?? '#95a5a6', fontWeight: 600, width: 20, textAlign: 'center' }}>
               {statusIcons[record.status] ?? '○'}
             </span>
-            <span style={{ flex: 1 }}>{getTaskName?.(record.taskId) ?? record.taskId}</span>
-            {record.effectiveness !== null && (
+            <span style={{ flex: 1 }}>{record.taskId ? (getTaskName?.(record.taskId) ?? record.taskId) : ''}</span>
+            {record.effectiveness != null && (
               <span style={{ fontSize: '0.75rem', color: record.effectiveness >= 0.6 ? '#27ae60' : '#e67e22' }}>
                 {Math.round(record.effectiveness * 100)}% 有效
               </span>
