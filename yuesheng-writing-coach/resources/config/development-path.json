@@ -1,0 +1,126 @@
+{
+  "version": "1.0",
+  "description": "写作能力7阶段发展路径 — 跨阶段解锁路标，MasteryGate 控制阶段内难度",
+  "updatedAt": "2026-06-14",
+  "stages": [
+    {
+      "stageId": "eye",
+      "name": "练眼",
+      "order": 1,
+      "coreQuestion": "写什么？（素材从哪来）",
+      "prerequisites": [],
+      "classicalBasis": [
+        { "author": "老舍", "principle": "写东西非有生活不可" },
+        { "author": "叶圣陶", "principle": "精密观察——处处留意" },
+        { "author": "沈从文", "principle": "把一件件车零件看清楚再下笔" }
+      ],
+      "entryPractices": ["指定视角阅读协议", "看烂书·找茬", "看烂书·归类"],
+      "passCriteria": "能随手写出一个有细节的生活片段，读的人能'看到/听到/闻到'至少两样",
+      "associatedSyndromes": [],
+      "teachingFocus": "素材积累与观察习惯养成"
+    },
+    {
+      "stageId": "pen",
+      "name": "练笔",
+      "order": 2,
+      "coreQuestion": "怎么写完整？（思维如何清晰）",
+      "prerequisites": ["eye"],
+      "classicalBasis": [
+        { "author": "老舍", "principle": "先练一人一事" },
+        { "author": "叶圣陶", "principle": "每一句话都要有分量" }
+      ],
+      "entryPractices": ["一人一事", "段落基石练习"],
+      "passCriteria": "能完成一篇逻辑连贯的千字短文，没有明显断裂感",
+      "associatedSyndromes": ["P001"],
+      "teachingFocus": "完成度与条理性训练"
+    },
+    {
+      "stageId": "word",
+      "name": "练字",
+      "order": 3,
+      "coreQuestion": "怎么写准确？（语言怎么精炼）",
+      "prerequisites": ["pen"],
+      "classicalBasis": [
+        { "author": "汪曾祺", "principle": "语言的唯一标准是准确" },
+        { "author": "契诃夫", "principle": "不直接命名情绪，写具体反应" },
+        { "author": "鲁迅", "principle": "竭力删去可有可无的字句" },
+        { "author": "Strunk & White", "principle": "删掉所有不必要的词" }
+      ],
+      "entryPractices": ["删可有可无", "情绪标签替换训练"],
+      "passCriteria": "能识别并替换文中的冗余词和情绪标签词，500字内多余词不超过5个",
+      "associatedSyndromes": ["P002", "P003"],
+      "teachingFocus": "语言精准度与情绪展示训练"
+    },
+    {
+      "stageId": "person",
+      "name": "练人",
+      "order": 4,
+      "coreQuestion": "怎么写活人？（人物怎么立起来）",
+      "prerequisites": ["word"],
+      "classicalBasis": [
+        { "author": "老舍", "principle": "人物不是观念的传声筒" },
+        { "author": "沈从文", "principle": "贴着人物写" },
+        { "author": "E.M. Forster", "principle": "圆形人物与扁平人物的区分" }
+      ],
+      "entryPractices": ["动机冰山模型训练", "人物动作先于对话练习"],
+      "passCriteria": "能写出有内在动机、非工具化的角色，读者能感知到角色的独立意志",
+      "associatedSyndromes": ["P009", "P010"],
+      "teachingFocus": "人物塑造与动机挖掘"
+    },
+    {
+      "stageId": "structure",
+      "name": "练局",
+      "order": 5,
+      "coreQuestion": "怎么写紧凑？（结构怎么经济）",
+      "prerequisites": ["person"],
+      "classicalBasis": [
+        { "author": "契诃夫", "principle": "如果第一幕挂了枪，第三幕必须打响" },
+        { "author": "老舍", "principle": "有话则长，无话则短" },
+        { "author": "Strunk & White", "principle": "一段话只说一个意思" }
+      ],
+      "entryPractices": ["得与失框架应用", "冰山叙事法", "信息分层释放训练"],
+      "passCriteria": "能识别段落中的信息冗余，能判断一段话是否同时做了两件事",
+      "associatedSyndromes": ["P004", "P005", "P006"],
+      "teachingFocus": "结构经济性与叙事节奏控制"
+    },
+    {
+      "stageId": "control",
+      "name": "练控",
+      "order": 6,
+      "coreQuestion": "怎么控制读者感受？（叙事怎么引导）",
+      "prerequisites": ["structure"],
+      "classicalBasis": [
+        { "author": "John Gardner", "principle": "好小说创造一个持续的梦境" },
+        { "author": "Wayne Booth", "principle": "隐含作者对读者的修辞控制" },
+        { "author": "布兰登·桑德森", "principle": "承诺→进展→回报的叙事契约" }
+      ],
+      "entryPractices": ["读者视角互换练习", "悬念设置训练"],
+      "passCriteria": "能写出一个让读者产生预期情绪反应的段落——让读者紧张时紧张、松口气时松口气",
+      "associatedSyndromes": ["P007"],
+      "teachingFocus": "读者预期管理与叙事控制"
+    },
+    {
+      "stageId": "taste",
+      "name": "练味",
+      "order": 7,
+      "coreQuestion": "怎么写诚实而有味？（品位怎么提升）",
+      "prerequisites": ["control"],
+      "classicalBasis": [
+        { "author": "朱光潜", "principle": "趣味是写作的终极门槛" },
+        { "author": "汪曾祺", "principle": "第二次平淡——绚烂之极归于平淡" },
+        { "author": "朱光潜", "principle": "十病辨劣——写作之前先能辨好坏" }
+      ],
+      "entryPractices": ["高阶平淡练习", "趣味自检（朱光潜十病）"],
+      "passCriteria": "能自觉识别自己文章中的俗套和滥调，写出有个人风格而非模板化的段落",
+      "associatedSyndromes": [],
+      "teachingFocus": "品位判断与个人风格建立"
+    }
+  ],
+  "metadata": {
+    "totalStages": 7,
+    "progressionType": "linear_with_gate",
+    "gateType": "MasteryGate",
+    "gateRule": "当前阶段所有关联症候的 MasteryGate 评分 > 80% 才允许解锁下一阶段",
+    "flexibilityNote": "七阶段为跨阶段路标（宏观）。阶段内难度由 MasteryGate 按学员表现动态调参（微观）。两条轴分工不冲突。"
+  }
+}
