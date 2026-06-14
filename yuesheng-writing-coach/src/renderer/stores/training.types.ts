@@ -86,8 +86,11 @@ export interface TrainingState {
 
   // ===== 训练操作 =====
 
-  /** 开始训练（选择挑战模板） */
+  /** 开始训练任务 */
   startTraining: (challengeId: string) => Promise<void>;
+
+  /** B-02: 开始阅读前置任务（加载 reading-library 条目，创建 mode: reading_task 会话） */
+  startReading: (challengeId: string) => Promise<void>;
 
   /** 更新草稿 */
   updateDraft: (content: string) => void;

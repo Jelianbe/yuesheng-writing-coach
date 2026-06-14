@@ -12,6 +12,7 @@ import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
 import { useConfigStore } from './config.store';
 import { getInvoke } from '../utils/ipc';
+import { IPC_CHANNELS } from '../../shared/constants';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
 import { severityToNumber } from '../../shared/severity-utils';
 import type {
@@ -83,6 +84,59 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
       set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
     } catch (error) {
       console.error('[TrainingStore] startTraining failed:', error);
+      set({ error: String(error), isLoading: false });
+    }
+  };
+}
+
+/**
+ * startReading — M2: B-02 决策触发的阅读前置任务
+ *
+ * 当 readingDecision.required 时调用，加载 reading-library 条目
+ * 并创建 mode: 'reading_task' 的活跃会话。
+ * 完成分析步骤后关闭阅读会话，训练流程继续。
+ */
+export function createStartReadingAction(set: SetStateFn, get: GetStateFn) {
+  return async (challengeId: string): Promise<void> => {
+    set({ isLoading: true, error: null });
+    try {
+      const sessionId = useChatStore.getState().currentSessionId;
+      if (!sessionId) throw new Error('No active session');
+
+      // 从 recommendations 查找匹配症候
+      const match = get().recommendations.find(r => r.challengeId === challengeId);
+      const syndromeId = match?.syndromeId ?? 'P003';
+
+      // 加载阅读库条目
+      const readingResult = await getInvoke()(IPC_CHANNELS.CONFIG_GET_READING_ENTRY, { syndromeId }) as { entries: Array<{ id: string; title: string; excerpt: string; analysisPrompt: string }> };
+      const entry = readingResult.entries[0];
+
+      // 构建阅读内容
+      const readingContent = entry
+        ? `${entry.excerpt}\n\n【分析引导】\n${entry.analysisPrompt}`
+        : `请仔细阅读你的文本，关注本次训练涉及的写作问题（${syndromeId}）。在下一步中写下你的分析和观察。`;
+
+      // 构建阅读会话
+      const session: ActiveTrainingSession = {
+        challengeId: `reading-${syndromeId}`,
+        challengeName: entry?.title ?? `阅读分析 · ${syndromeId}`,
+        challengeDescription: readingContent,
+        mode: 'reading_task',
+        steps: READING_STEPS.map((s, i) => ({
+          ...s,
+          status: i === 0 ? 'active' as const : 'pending' as const,
+        })),
+        currentStepIndex: 0,
+        originalQuote: '',
+        constraint: '',
+        userDraft: '',
+        syndromeId,
+        targetSyndrome: match?.syndromeName,
+      };
+
+      set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
+    } catch (error) {
+      console.error('[TrainingStore] startReading failed:', error);
       set({ error: String(error), isLoading: false });
     }
   };

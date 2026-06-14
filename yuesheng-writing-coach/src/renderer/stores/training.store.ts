@@ -10,6 +10,7 @@ import { create } from 'zustand';
 import type { TrainingState } from './training.types';
 import {
   createStartAction,
+  createStartReadingAction,
   createSubmitStepAction,
   createLoadHistoryAction,
   createRefreshFromDiagnosisAction,
@@ -62,6 +63,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   // ===== 训练操作（大型 action 从 training.actions.ts 引入） =====
 
   startTraining: createStartAction(set, get),
+
+  /** B-02: 阅读前置任务 */
+  startReading: createStartReadingAction(set, get),
 
   updateDraft: (content: string) => {
     set((state) => {
