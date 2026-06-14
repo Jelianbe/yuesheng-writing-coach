@@ -91,8 +91,7 @@
       "prerequisites": ["structure"],
       "classicalBasis": [
         { "author": "John Gardner", "principle": "好小说创造一个持续的梦境" },
-        { "author": "Wayne Booth", "principle": "隐含作者对读者的修辞控制" },
-        { "author": "布兰登·桑德森", "principle": "承诺→进展→回报的叙事契约" }
+        { "author": "Wayne Booth", "principle": "隐含作者对读者的修辞控制" }
       ],
       "entryPractices": ["读者视角互换练习", "悬念设置训练"],
       "passCriteria": "能写出一个让读者产生预期情绪反应的段落——让读者紧张时紧张、松口气时松口气",

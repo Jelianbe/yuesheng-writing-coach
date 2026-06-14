@@ -1,6 +1,7 @@
 {
   "version": "1.0",
   "description": "教学方式盘点与补全清单 — 轨道B基础设施。记录现有+缺失的教学资源，供后续阶段增量补全",
+  "deprecated": "⚠️ 快照文件。existing 数组中的摘要为手动复制，不会随原文件自动同步。后续可考虑改为脚本自动生成。以原文件（coaching-templates.json / teaching-rules.json 等）为准。",
   "updatedAt": "2026-06-14",
   "inventoryDate": "2026-06-14",
   "note": "基于 coaching-templates.json + 蒸馏丢失内容清单.md + 代码环境审计生成",
