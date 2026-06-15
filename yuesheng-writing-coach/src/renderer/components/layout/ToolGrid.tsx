@@ -71,7 +71,7 @@ export const ToolGrid: React.FC<ToolGridProps> = React.memo(({
                   ...cardBaseStyle,
                   borderColor: 'var(--border-light)',
                   color: 'var(--text-tertiary)',
-                  opacity: 0.45,
+                  opacity: 0.5,
                   pointerEvents: 'none',
                 }}
                 title={tool.description || tool.label}

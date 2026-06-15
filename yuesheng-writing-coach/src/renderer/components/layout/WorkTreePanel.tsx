@@ -183,11 +183,11 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
           <span className={styles.manuscriptTitle}>{ms.title}</span>
           <button
             onClick={(e) => handleDeleteManuscript(ms.id, e)}
-            style={{ ...iconBtnStyle, width: 24, height: 24, opacity: 0.4, flexShrink: 0 }}
+            style={{ ...iconBtnStyle, width: 24, height: 24, opacity: 0.5, flexShrink: 0 }}
             className={styles.deleteBtn}
             title="删除作品"
             onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--error)'; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = ''; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = ''; }}
           >
             <Trash2 size={13} strokeWidth={1.6} />
           </button>

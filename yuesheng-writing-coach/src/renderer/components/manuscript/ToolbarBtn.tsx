@@ -35,7 +35,7 @@ export const ToolbarBtn: React.FC<ToolbarBtnProps> = ({
         background: hovered ? 'var(--bg-hover, rgba(0,0,0,0.05))' : 'transparent',
         color: palette.text,
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.35 : 1,
+        opacity: disabled ? 0.5 : 1,
         fontSize: 14,
         lineHeight: 1,
         transition: 'all 0.15s ease',

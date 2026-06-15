@@ -47,6 +47,10 @@ export interface TrainingWorkshopProps {
   onUpdateDraft: (content: string) => void;
   /** X-02: 将训练稿写入编辑器 */
   onSendToEditor?: () => void;
+  /** A3: 最近一次训练的评估分数（用于自荐阅读框架） */
+  lastEvaluationScore?: number | null;
+  /** A3: 最近训练对应的症候 ID（用于匹配阅读材料） */
+  lastSyndromeId?: string | null;
 }
 
 // ===== 主组件 =====
@@ -70,6 +74,8 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   onSkipTraining,
   onUpdateDraft,
   onSendToEditor,
+  lastEvaluationScore,
+  lastSyndromeId,
 }) => {
   /** 点击"开始练习"— 拦截 B-02 阅读决策 */
   const handleStartTrainingClick = React.useCallback((challengeId: string) => {
@@ -81,12 +87,6 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
     // B-02 推荐阅读或无需阅读 → 直接进入训练
     onStartTraining(challengeId);
   }, [readingDecision, onStartTraining, onStartReading]);
-
-  /** B4: 根据任务 ID 获取可读名称 */
-  const getTaskName = React.useCallback((taskId: string): string | undefined => {
-    const match = recommendations.find(r => r.challengeId === taskId);
-    return match?.challengeName;
-  }, [recommendations]);
 
   // 加载中（仅首次加载时显示）
   if (isLoading && !activeTraining) {
@@ -178,12 +178,14 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
           <RecommendationsSection
             recommendations={recommendations}
             onStartTraining={handleStartTrainingClick}
+            lastEvaluationScore={lastEvaluationScore ?? undefined}
+            lastSyndromeId={lastSyndromeId ?? undefined}
+            onStartReading={onStartReading}
           />
           <BehaviorDerivationTool />
           <HistorySection
             history={history}
             isLoading={isLoading}
-            getTaskName={getTaskName}
           />
         </div>
       </div>

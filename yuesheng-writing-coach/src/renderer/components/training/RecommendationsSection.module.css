@@ -138,3 +138,134 @@
 .techniquesLabel {
   font-weight: 500;
 }
+
+/* ===== A3 自荐阅读区域 ===== */
+
+.readingSection {
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.readingHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.readingIcon {
+  font-size: 1.25rem;
+}
+
+.readingTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.readingBadge {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.readingDescription {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.readingLoading,
+.readingEmpty {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  text-align: center;
+  padding: 12px;
+}
+
+.readingList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.readingCard {
+  padding: 12px;
+  background-color: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.readingCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.readingCardTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.readingDifficulty {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.readingExcerpt {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.readingTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.readingTag {
+  font-size: 0.65rem;
+  color: #6366f1;
+  background-color: rgba(99, 102, 241, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.readingStartBtn {
+  width: 100%;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.readingStartBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.readingStartBtn:active {
+  transform: translateY(0);
+}

@@ -8,12 +8,17 @@
  * 2. 按严重度排序（L3 > L2），同严重度按症候 ID 排序
  * 3. 每个活跃症候匹配一个挑战模板（syndromeId 一对一映射）
  * 4. 无匹配模板的症候使用 fallbackChallenge
+ *
+ * A3 阅读推荐策略：
+ * - 当用户训练表现好（评估分数 >= 阈值）时，推荐相关阅读材料
+ * - 从 reading-library.json 中选择与当前症候相关的阅读任务
  */
 
 import { ActiveProblem, TrainingRecommendation, TechniqueInfo, SyndromeType } from '../../../shared/types/index';
 import challengeTemplates from '../../../../resources/config/challenge-templates.json';
 import techniqueLibrary from '../../../../resources/config/technique-library.json';
 import syndromeTypeMap from '../../../../resources/config/syndrome-type-map.json';
+import readingLibrary from '../../../../resources/config/reading-library.json';
 
 // 类型定义：challenge-templates.json 的结构
 interface ChallengeTemplate {
@@ -131,7 +136,7 @@ export function generateRecommendations(
   });
 
   // 为每个症候生成推荐
-  return sorted.map((problem) => {
+  const raw = sorted.map((problem) => {
     const matchedTemplate = templates.templates.find(
       (t) => t.syndromeId === problem.id,
     );
@@ -167,6 +172,22 @@ export function generateRecommendations(
       techniques: matchTechniques(problem.id),
     };
   });
+
+  // 去重：基于 challengeId 去重；fallback 项挑战内容相同，只保留首个
+  const seen = new Set<string>();
+  const deduped = raw.filter((rec) => {
+    const key = rec.challengeId;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // 确保至少 3 个推荐：去重后不足时回退到原始列表
+  if (deduped.length < 3 && raw.length >= 3) {
+    return raw.slice(0, Math.max(3, deduped.length));
+  }
+
+  return deduped;
 }
 
 /**
@@ -182,4 +203,108 @@ export function getChallengeTemplate(challengeId: string): ChallengeTemplate | n
  */
 export function getAllChallengeTemplates(): ChallengeTemplate[] {
   return [...templates.templates];
+}
+
+// ======================== A3 阅读推荐 ========================
+
+/** 阅读库条目类型（来自 reading-library.json） */
+interface ReadingEntry {
+  id: string;
+  source: string;
+  createdAt: string;
+  syndromeId: string;
+  principleAnchor: string;
+  title: string;
+  excerpt: string;
+  analysisPrompt: string;
+  referenceExcerpt?: string | null;
+  difficulty: string;
+  tags: string[];
+  categoryId: string;
+}
+
+/** 阅读库 JSON 结构 */
+interface ReadingLibraryJson {
+  $source: string;
+  description: string;
+  version: string;
+  updatedAt: string;
+  readingSteps: {
+    source: string;
+    steps: Array<{ id: string; title: string; description: string }>;
+  };
+  categories: Array<{
+    id: string;
+    name: string;
+    description: string;
+    tags: string[];
+  }>;
+  entries: ReadingEntry[];
+}
+
+/** A3 阅读推荐阈值：评估分数 >= 此值时触发阅读推荐 */
+export const READING_RECOMMENDATION_THRESHOLD = 7;
+
+/** A3 阅读推荐条目（供前端消费） */
+export interface ReadingRecommendation {
+  /** 阅读条目 ID */
+  id: string;
+  /** 标题 */
+  title: string;
+  /** 症候 ID */
+  syndromeId: string;
+  /** 难度 */
+  difficulty: string;
+  /** 分类 ID */
+  categoryId: string;
+  /** 标签 */
+  tags: string[];
+  /** 选段 */
+  excerpt: string;
+  /** 分析引导 */
+  analysisPrompt: string;
+  /** 参考引言（可选） */
+  referenceExcerpt?: string | null;
+}
+
+const library = readingLibrary as unknown as ReadingLibraryJson;
+
+/**
+ * A3: 根据症候 ID 获取阅读推荐
+ *
+ * @param syndromeId - 当前训练的症候 ID
+ * @returns 匹配的阅读推荐列表（最多 3 条）
+ */
+export function getReadingRecommendations(syndromeId: string): ReadingRecommendation[] {
+  if (!library.entries || !Array.isArray(library.entries)) {
+    return [];
+  }
+
+  const matched = library.entries
+    .filter((e) => e.syndromeId === syndromeId)
+    .slice(0, 3)
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      syndromeId: e.syndromeId,
+      difficulty: e.difficulty,
+      categoryId: e.categoryId,
+      tags: e.tags,
+      excerpt: e.excerpt,
+      analysisPrompt: e.analysisPrompt,
+      referenceExcerpt: e.referenceExcerpt,
+    }));
+
+  return matched;
+}
+
+/**
+ * A3: 判断是否应该推荐阅读
+ *
+ * @param evaluationScore - 用户训练评估分数（0-10）
+ * @returns 是否达到阅读推荐阈值
+ */
+export function shouldRecommendReading(evaluationScore: number | undefined): boolean {
+  if (evaluationScore == null) return false;
+  return evaluationScore >= READING_RECOMMENDATION_THRESHOLD;
 }

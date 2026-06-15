@@ -178,7 +178,7 @@ export function registerTrainingHandlers(): void {
     // 评分 >= 7 时降低症候严重度
     if (result.score >= 7 && validation.data.sessionId && validation.data.syndromeId) {
       try {
-        deps!.teachingStateService.downgradeSeverity(validation.data.sessionId, validation.data.syndromeId, result.score);
+        deps.teachingStateService.downgradeSeverity(validation.data.sessionId, validation.data.syndromeId, result.score);
       } catch (e) {
         console.warn('[training:evaluate] severity downgrade failed:', e);
       }

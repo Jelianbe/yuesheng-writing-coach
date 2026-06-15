@@ -22,6 +22,7 @@ import {
   Plus,
   Minus,
   AlignLeft,
+  Undo2,
 } from 'lucide-react';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useEditorStore } from '../../stores/editor.store';
@@ -74,6 +75,11 @@ export const ManuscriptPanel: React.FC = () => {
   const settingsBtnRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [formatConfirmOpen, setFormatConfirmOpen] = useState(false);
+
+  // 撤销历史栈（最多保存 10 个版本）
+  const undoStackRef = useRef<string[]>([]);
+  const MAX_UNDO_HISTORY = 10;
+  const [canUndo, setCanUndo] = useState(false);
 
   // 主题色板
   const palette = useEditorPalette();
@@ -133,8 +139,14 @@ export const ManuscriptPanel: React.FC = () => {
     setFormatConfirmOpen(true);
   }, []);
 
-  // 确认执行排版
+  // 确认执行排版 — 排版前保存当前文本到撤销栈
   const confirmAutoFormat = useCallback(() => {
+    // 保存当前文本到撤销历史栈
+    undoStackRef.current = [
+      ...undoStackRef.current.slice(-(MAX_UNDO_HISTORY - 1)),
+      localContent,
+    ];
+    setCanUndo(true);
     const formatted = applyAutoFormat(localContent, {
       indent: formatConfig.firstLineIndent,
       spacing: formatConfig.paragraphSpacing,
@@ -144,6 +156,17 @@ export const ManuscriptPanel: React.FC = () => {
     setFormatConfirmOpen(false);
     if (editorRef.current) editorRef.current.focus();
   }, [localContent, formatConfig]);
+
+  // 撤销 — 从历史栈恢复文本
+  const handleUndo = useCallback(() => {
+    const stack = undoStackRef.current;
+    if (stack.length === 0) return;
+    const previous = stack[stack.length - 1];
+    undoStackRef.current = stack.slice(0, -1);
+    setCanUndo(undoStackRef.current.length > 0);
+    setLocalContent(previous);
+    setWordCount(previous.length);
+  }, []);
 
   // 点击外部关闭设置面板 — 使用 ref 直接检测
   useEffect(() => {
@@ -160,7 +183,7 @@ export const ManuscriptPanel: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [settingsOpen, closeSettings]);
 
-  // ── 键盘快捷键（Ctrl+S 保存 / Ctrl+=/- 字号） ──
+  // ── 键盘快捷键（Ctrl+S 保存 / Ctrl+=/- 字号 / Ctrl+Z 撤销） ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -171,11 +194,16 @@ export const ManuscriptPanel: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '-')) {
         e.preventDefault();
         adjustFontSize(e.key === '=' ? 1 : -1);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        handleUndo();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [localContent, doSave, adjustFontSize]);
+  }, [localContent, doSave, adjustFontSize, handleUndo]);
 
   const activeTabMeta = currentChapter
     ? openTabMeta[currentChapter.id]
@@ -238,9 +266,9 @@ export const ManuscriptPanel: React.FC = () => {
               <button
                 onClick={e => { e.stopPropagation(); closeTab(chId); }}
                 className={styles.closeBtnTab}
-                style={{ color: 'inherit', opacity: 0.45 }}
+                style={{ color: 'inherit', opacity: 0.5 }}
                 onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = 'var(--error)'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '0.45'; e.currentTarget.style.color = 'inherit'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '0.5'; e.currentTarget.style.color = 'inherit'; }}
               >
                 <X size={10} strokeWidth={2.5} />
               </button>
@@ -314,6 +342,16 @@ export const ManuscriptPanel: React.FC = () => {
             <span style={{ marginLeft: 4, fontSize: FONT.caption, fontWeight: 500 }}>排版</span>
           </ToolbarBtn>
 
+          {/* 撤销 */}
+          <ToolbarBtn
+            onClick={handleUndo}
+            title="撤销排版（Ctrl+Z）"
+            disabled={!canUndo}
+            palette={palette}
+          >
+            <Undo2 size={14} strokeWidth={1.8} />
+          </ToolbarBtn>
+
           {/* 右侧：保存状态 */}
           <div className={styles.toolbarRight}>
             <span className={styles.toolbarManuscriptTitle} style={{ color: palette.text }}>
@@ -349,7 +387,7 @@ export const ManuscriptPanel: React.FC = () => {
         />
       ) : (
         <div className={styles.editorEmpty}>
-          <BookOpen size={28} strokeWidth={1.2} opacity={0.18} />
+          <BookOpen size={28} strokeWidth={1.2} opacity={0.5} />
           <span className={styles.editorEmptyLabel}>选择一个标签页开始编辑</span>
         </div>
       )}

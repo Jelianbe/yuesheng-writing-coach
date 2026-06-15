@@ -122,7 +122,7 @@ export const SessionTabBar: React.FC<SessionTabBarProps> = React.memo(({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: 0.3,
+                opacity: 0.5,
                 transition: 'opacity 80ms',
                 flexShrink: 0,
                 fontSize: FONT.micro,
@@ -133,7 +133,7 @@ export const SessionTabBar: React.FC<SessionTabBarProps> = React.memo(({
                 (e.target as HTMLElement).style.color = '#C05040';
               }}
               onMouseLeave={e => {
-                (e.target as HTMLElement).style.opacity = '0.3';
+                (e.target as HTMLElement).style.opacity = '0.5';
                 (e.target as HTMLElement).style.color = '';
               }}
             >

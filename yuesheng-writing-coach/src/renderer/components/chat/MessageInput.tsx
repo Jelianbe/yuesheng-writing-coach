@@ -128,7 +128,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
               fontSize: '0.75rem',
               fontWeight: 500,
               cursor: (disabled || isStreaming) ? 'not-allowed' : 'pointer',
-              opacity: (disabled || isStreaming) ? 0.4 : 1,
+              opacity: (disabled || isStreaming) ? 0.5 : 1,
               transition: 'all 0.15s ease',
               whiteSpace: 'nowrap',
             }}

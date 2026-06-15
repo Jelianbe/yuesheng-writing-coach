@@ -49,6 +49,7 @@ export function initDiagnosisHandlers(d: DiagnosisHandlerDeps): void {
  */
 export function registerDiagnosisHandlers(): void {
   if (!deps) throw new Error('DiagnosisHandler deps not injected');
+  const d = deps;
 
   /**
    * 查询诊断结果
@@ -58,7 +59,7 @@ export function registerDiagnosisHandlers(): void {
     (_event, args) => {
       const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
       if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-      const state = deps!.teachingStateService.getBySession(validation.data.sessionId);
+      const state = d.teachingStateService.getBySession(validation.data.sessionId);
       return state?.activeProblems ?? null;
     },
   );
@@ -71,7 +72,7 @@ export function registerDiagnosisHandlers(): void {
     (_event, args) => {
       const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
       if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-      const recent = deps!.diagnosisService.getRecentBySession(validation.data.sessionId, 2);
+      const recent = d.diagnosisService.getRecentBySession(validation.data.sessionId, 2);
       if (recent.length < 2) return { hasHistory: false };
 
       const prev = recent[0];
@@ -121,7 +122,7 @@ export function registerDiagnosisHandlers(): void {
   createHandler(
     IPC_CHANNELS.GROWTH_GET_TRENDS,
     (_event, args: { sessionId: string }) => {
-      const summary = deps!.growthTrendService.getGrowthSummary(
+      const summary = d.growthTrendService.getGrowthSummary(
         args.sessionId,
         (id) => SYNDROME_NAMES[id] || id,
       );
@@ -135,7 +136,7 @@ export function registerDiagnosisHandlers(): void {
   createHandler(
     IPC_CHANNELS.GROWTH_GET_GLOBAL_TRENDS,
     () => {
-      const summary = deps!.growthTrendService.getGrowthSummary(
+      const summary = d.growthTrendService.getGrowthSummary(
         undefined,
         (id) => SYNDROME_NAMES[id] || id,
       );
@@ -150,10 +151,10 @@ export function registerDiagnosisHandlers(): void {
     IPC_CHANNELS.DIAGNOSIS_SUBMIT_REWRITE,
     async (_event, args: { sessionId: string; messageId: string; syndromeId: string; originalText: string; rewrittenText: string; syndromeName?: string; syndromeDesc?: string }) => {
       const { sessionId, syndromeId, originalText, rewrittenText, syndromeName, syndromeDesc } = args;
-      deps!.sessionService.saveMessage(sessionId, 'system',
+      d.sessionService.saveMessage(sessionId, 'system',
         `[修改原文] 症候: ${syndromeId}\n原文: "${originalText}"\n修改后: "${rewrittenText}"`);
 
-      const config = deps!.configService.getConfig();
+      const config = d.configService.getConfig();
       if (config.apiKey) {
         const apiProxy = new ApiProxy(config);
         const evaluation = await apiProxy.evaluateRewrite({
@@ -182,10 +183,16 @@ export function processDiagnosisFromAI(
   sessionId: string,
   messageId: string,
 ): void {
+  if (!deps) {
+    console.error('[DiagnosisHandler] deps not initialized in processDiagnosisFromAI');
+    return;
+  }
+  const d = deps;
+
   const result = processAIResponse(fullResponse, sessionId, messageId, {
-    diagnosisService: deps!.diagnosisService,
-    evidenceService: deps!.evidenceService,
-    diagnosisMerger: deps!.diagnosisMerger,
+    diagnosisService: d.diagnosisService,
+    evidenceService: d.evidenceService,
+    diagnosisMerger: d.diagnosisMerger,
   });
 
   if (!result) {
@@ -194,15 +201,15 @@ export function processDiagnosisFromAI(
   }
 
   // 4.5 推送 TeachingState 更新到前端（诊断合并可能推进子阶段）
-  if (deps!.mainWindow) {
+  if (d.mainWindow) {
     try {
-      const updatedState = deps!.teachingStateService.getBySession(sessionId);
+      const updatedState = d.teachingStateService.getBySession(sessionId);
       if (updatedState) {
-        deps!.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
+        d.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_UPDATED, {
           ...updatedState,
-          phaseName: deps!.teachingStateService.getPhaseName(updatedState.currentPhase ?? ''),
-          subphaseName: deps!.teachingStateService.getSubphaseName(updatedState.currentSubphase ?? ''),
-          phaseProgress: deps!.teachingStateService.calculatePhaseProgress(updatedState.currentPhase ?? '', updatedState.currentSubphase ?? ''),
+          phaseName: d.teachingStateService.getPhaseName(updatedState.currentPhase ?? ''),
+          subphaseName: d.teachingStateService.getSubphaseName(updatedState.currentSubphase ?? ''),
+          phaseProgress: d.teachingStateService.calculatePhaseProgress(updatedState.currentPhase ?? '', updatedState.currentSubphase ?? ''),
         });
       }
     } catch (e) {
@@ -211,7 +218,7 @@ export function processDiagnosisFromAI(
   }
 
   // 5. 推送到渲染进程（RP-02: 若 Pipe 1 已推送则跳过）
-  if (deps!.mainWindow && !wasDiagnosisPushed(sessionId)) {
-    deps!.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, result.diagnosis);
+  if (d.mainWindow && !wasDiagnosisPushed(sessionId)) {
+    d.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, result.diagnosis);
   }
 }

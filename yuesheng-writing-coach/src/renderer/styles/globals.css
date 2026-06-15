@@ -686,7 +686,7 @@ h3 {
 }
 .input-send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
 .input-send-btn:active { transform: scale(0.95); }
-.input-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.input-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* ========================================
    设置页面滚动条

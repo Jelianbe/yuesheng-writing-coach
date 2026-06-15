@@ -36,6 +36,9 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   bridgeRecommendation: null,
   readingDecision: null,
   readingComplete: false,
+  // A3: 自荐阅读框架
+  lastEvaluationScore: null,
+  lastSyndromeId: null,
   derivationLoading: false,
   derivationResult: null,
   derivationError: null,
