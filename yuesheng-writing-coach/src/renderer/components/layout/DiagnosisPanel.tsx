@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, AlertTriangle, ClipboardList, HelpCircle, Ey
 import { useDiagStore, selectCurrentSyndromes, selectCurrentActions, selectCurrentConfidence } from '../../stores/diag.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
 import { HintPanel } from './HintPanel';
+import { TemplateFormView } from './TemplateFormView';
 import type { SyndromeResult, EvidenceRecord } from '../../shared/types';
 
 const severityLabel: Record<string, string> = { L3: '严重', L2: '中度', L1: '轻度' };
@@ -283,6 +284,7 @@ export const DiagnosisPanel: React.FC = () => {
   const confidence = useDiagStore(selectCurrentConfidence);
   const currentDiagnosis = useDiagStore(s => s.currentDiagnosis);
   const sidebarPhase = usePanelSessionStore(s => s.sidebarPhase);
+  const sidebarMode = usePanelSessionStore(s => s.sidebarMode);
 
   if (!currentDiagnosis || syndromes.length === 0) {
     return (
@@ -305,6 +307,9 @@ export const DiagnosisPanel: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {sidebarMode === 'template' && (
+        <TemplateFormView onSubmit={(_text) => { /* 发送到 ChatView — 通过 IPC 或 store 传递 */ }} />
+      )}
       {confidence > 0 && (
         <div style={{
           display: 'flex',

@@ -93,6 +93,7 @@ export function registerTrainingHandlers(): void {
       sessionId: validation.data.sessionId,
       taskId: validation.data.challengeId,
       syndromeId: template.syndromeId,
+      taskType: template.mode,
       userResponse: null,
       aiFeedback: null,
       effectiveness: null,

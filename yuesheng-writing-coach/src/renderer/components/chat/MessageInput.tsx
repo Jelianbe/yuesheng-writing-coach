@@ -16,13 +16,9 @@ interface QuickPill {
   prefix?: string;
 }
 
-/** 默认快捷 pills（与 SPEC V1.3 §三、范式 A InputArea 一致） */
+/** 默认快捷 pills — I-01: 仅保留模板辅助 */
 const DEFAULT_QUICK_PILLS: QuickPill[] = [
-  { id: 'ask', label: '🤔 提问', prefix: '' },
-  { id: 'upload', label: '📎 上传片段' },
-  { id: 'template', label: '📝 话题模板' },
-  { id: 'practice', label: '可立即练习' },
-  { id: 'progress', label: '⬆️ 持续进步' },
+  { id: 'template', label: '📝 模板辅助' },
 ];
 
 interface MessageInputProps {

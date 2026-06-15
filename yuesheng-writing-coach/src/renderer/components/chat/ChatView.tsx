@@ -11,6 +11,7 @@ import React, { useState, useCallback } from 'react';
 import type { ChatMessage, DiagnosisEntry, RewriteEvaluation } from '../../shared/types';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
+import { TemplateSelector } from './TemplateSelector';
 import { OnboardingFlow } from './OnboardingFlow';
 import { ChatSearchBar } from './ChatSearchBar';
 import { WelcomeCard } from './WelcomeCard';
@@ -79,6 +80,20 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // ── 搜索状态 ──
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+
+  // ── I-02: 模板辅助状态 ──
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+
+  const handleQuickPillClick = useCallback((pillId: string) => {
+    if (pillId === 'template') {
+      setShowTemplatePicker(true);
+    }
+  }, []);
+
+  const handleTemplateSelect = useCallback((template: string) => {
+    setShowTemplatePicker(false);
+    onSend(template);
+  }, [onSend]);
 
   // ── 历史消息加载状态 ──
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>(messages);
@@ -239,12 +254,18 @@ export const ChatView: React.FC<ChatViewProps> = ({
 
       {/* 引导期间隐藏输入框 */}
       {!onboardingActive && (
-        <MessageInput
-          onSend={onSend}
-          onStop={onStop}
-          isStreaming={isStreaming}
-          disabled={!isConfigured}
-        />
+        <div style={{ position: 'relative' }}>
+          {showTemplatePicker && (
+            <TemplateSelector onSelect={handleTemplateSelect} onClose={() => setShowTemplatePicker(false)} />
+          )}
+          <MessageInput
+            onSend={onSend}
+            onStop={onStop}
+            isStreaming={isStreaming}
+            disabled={!isConfigured}
+            onQuickPillClick={handleQuickPillClick}
+          />
+        </div>
       )}
     </div>
   );

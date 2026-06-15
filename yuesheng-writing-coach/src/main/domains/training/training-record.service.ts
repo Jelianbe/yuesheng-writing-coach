@@ -19,6 +19,8 @@ export interface TrainingRecord {
   effectiveness: number | null;
   /** Evaluator Agent 评分（1-10） */
   score: number | null;
+  /** 任务类型：writing | reading | reflection | technique */
+  taskType: string;
 }
 
 export interface TrainingRecordRow {
@@ -33,6 +35,7 @@ export interface TrainingRecordRow {
   ai_feedback: string | null;
   effectiveness: number | null;
   score: number | null;
+  task_type: string;
 }
 
 function rowToRecord(row: TrainingRecordRow): TrainingRecord {
@@ -48,6 +51,7 @@ function rowToRecord(row: TrainingRecordRow): TrainingRecord {
     aiFeedback: row.ai_feedback,
     effectiveness: row.effectiveness,
     score: row.score,
+    taskType: row.task_type,
   };
 }
 
@@ -64,6 +68,7 @@ function recordToRow(record: Omit<TrainingRecord, 'id'> & { id?: string }): Omit
     ai_feedback: record.aiFeedback,
     effectiveness: record.effectiveness,
     score: record.score,
+    task_type: record.taskType,
   };
 }
 
@@ -90,8 +95,8 @@ export class TrainingRecordService {
 
     const stmt = this.db.prepare(`
       INSERT INTO user_training_records
-      (id, session_id, task_id, syndrome_id, status, assigned_at, completed_at, user_response, ai_feedback, effectiveness, score)
-      VALUES (@id, @session_id, @task_id, @syndrome_id, @status, @assigned_at, @completed_at, @user_response, @ai_feedback, @effectiveness, @score)
+      (id, session_id, task_id, syndrome_id, status, assigned_at, completed_at, user_response, ai_feedback, effectiveness, score, task_type)
+      VALUES (@id, @session_id, @task_id, @syndrome_id, @status, @assigned_at, @completed_at, @user_response, @ai_feedback, @effectiveness, @score, @task_type)
     `);
     stmt.run(recordToRow(fullRecord));
     return fullRecord;

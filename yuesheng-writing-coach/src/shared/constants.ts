@@ -89,6 +89,16 @@ export const TeachingSubphase = {
 /** 教学子阶段类型 */
 export type TeachingSubphase = (typeof TeachingSubphase)[keyof typeof TeachingSubphase];
 
+/** S2 训练循环子阶段有序序列（B-01 状态机遍历用） */
+export const S2_SUBPHASES: TeachingSubphase[] = [
+  TeachingSubphase.PRACTICE_IDENTIFY,
+  TeachingSubphase.PRACTICE_GUIDE,
+  TeachingSubphase.PRACTICE_REFLECTION,
+  TeachingSubphase.PRACTICE_TEACHING,
+  TeachingSubphase.PRACTICE_ASSIGN,
+  TeachingSubphase.PRACTICE_REVIEW,
+];
+
 /** 默认显示/查询的最大诊断历史条数 */
 export const MAX_DIAGNOSIS_HISTORY = 3;
 

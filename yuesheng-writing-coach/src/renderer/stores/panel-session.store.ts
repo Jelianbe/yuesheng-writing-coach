@@ -17,6 +17,9 @@ import { create } from 'zustand';
 /** 右边栏展示阶段 — 控制教学流程中的渐进式披露粒度 */
 export type SidebarPhase = 'guide' | 'reading' | 'training' | 'complete';
 
+/** I-03: 右边栏模式 — 控制模板辅助/对比视图等特殊模式，正交于 sidebarPhase */
+export type SidebarMode = 'default' | 'template' | 'comparison';
+
 /** 会话类型，对应图标条的各个工具 */
 export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings';
 
@@ -58,6 +61,8 @@ interface PanelSessionState {
   trainingUnlocked: boolean;
   /** F-03: 训练卡是否自动展开（ASSIGN_TASK 时展开） */
   trainingExpanded: boolean;
+  /** I-03: 右边栏模式 — 与 sidebarPhase 正交 */
+  sidebarMode: SidebarMode;
 }
 
 interface PanelSessionActions {
@@ -73,6 +78,8 @@ interface PanelSessionActions {
   setTrainingUnlocked: (unlocked: boolean) => void;
   /** F-03: 设置训练卡展开状态（ASSIGN_TASK 时调用） */
   setTrainingExpanded: (expanded: boolean) => void;
+  /** I-03: 设置右边栏模式 */
+  setSidebarMode: (mode: SidebarMode) => void;
 }
 
 /** 使用 crypto.randomUUID 生成唯一 ID（无模块级可变变量） */
@@ -85,6 +92,7 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
   sidebarPhase: 'guide',
   trainingUnlocked: false,
   trainingExpanded: false,
+  sidebarMode: 'default',
 
   // Actions
   upsertSession: (type, title, icon, data) => {
@@ -138,5 +146,9 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
 
   setTrainingExpanded: (expanded) => {
     set({ trainingExpanded: expanded });
+  },
+
+  setSidebarMode: (mode) => {
+    set({ sidebarMode: mode });
   },
 }));
