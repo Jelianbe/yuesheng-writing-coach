@@ -11,7 +11,7 @@
  */
 
 import { severityToNumber } from '../../../shared/severity-utils';
-import type { DiagnosisEntry, SeverityLevel, TeachingProgressDisplay } from '../../../renderer/shared/types';
+import type { DiagnosisEntry, SeverityLevel, TeachingProgressDisplay } from '../../../shared/types/index';
 
 // ===== 接口定义 =====
 

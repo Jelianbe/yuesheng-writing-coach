@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import Database from 'better-sqlite3';
-import { DiagnosisEntry, SyndromeResult, ActionId, SyndromeId, DiagnosisAnalysis } from '../../../renderer/shared/types';
+import { DiagnosisEntry, SyndromeResult, ActionId, SyndromeId, DiagnosisAnalysis } from '../../../shared/types/index';
 
 export interface DiagnosisRow {
   id: string;

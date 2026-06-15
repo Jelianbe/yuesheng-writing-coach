@@ -7,7 +7,7 @@
  */
 
 import { TeachingStateService } from '../teaching/teaching-state.service';
-import { DiagnosisEntry } from '../../../renderer/shared/types';
+import { DiagnosisEntry } from '../../../shared/types/index';
 import { mergeSyndromesIntoState } from './diagnosis-merger-utils';
 import { enterReflectionIfTriggered } from '../teaching/teaching-state/teaching-state-machine';
 

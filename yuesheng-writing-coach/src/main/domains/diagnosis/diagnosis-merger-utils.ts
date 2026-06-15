@@ -4,7 +4,7 @@
  * 解耦：提取为独立模块，避免 diagnosis.handler 和 diagnosis-merger 之间的循环依赖
  */
 
-import { DiagnosisEntry, TeachingState, ActiveProblem, SyndromeId } from '../../../renderer/shared/types';
+import { DiagnosisEntry, TeachingState, ActiveProblem, SyndromeId } from '../../../shared/types/index';
 import { severityToNumber } from '../../../shared/severity-utils';
 export { severityToNumber };
 

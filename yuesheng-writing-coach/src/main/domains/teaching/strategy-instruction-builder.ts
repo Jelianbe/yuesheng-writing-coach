@@ -8,7 +8,7 @@
  * DI 注册名：'strategyInstructionBuilder'
  */
 
-import type { AttitudeLevel, DiagnosisAnalysis } from '../../../renderer/shared/types';
+import type { AttitudeLevel, DiagnosisAnalysis } from '../../../shared/types/index';
 import type { StudentModelService } from '../student/student-model-service';
 import type { TeachingStrategyService } from './strategy/service';
 import type { ProblemPrioritizer } from './problem-prioritizer.service';

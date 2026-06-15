@@ -373,8 +373,9 @@ export function createRefreshFromDiagnosisAction(set: SetStateFn, _get: GetState
       try {
         const result = await getInvoke()(TrainingApi.decideReading.channel, { attitude }) as { required: boolean; recommended: boolean; label: string; reason?: string };
         readingDecision = result;
-      } catch {
+      } catch (e) {
         // B-02 不可用时静默降级
+        console.warn('[training.actions] decideReading failed, falling back to null:', e);
       }
       set({ readingDecision: readingDecision ?? null });
 

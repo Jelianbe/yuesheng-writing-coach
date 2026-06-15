@@ -6,7 +6,7 @@
  * 核心原则：不向用户输出 Layer 1 的诊断结果（评分、病症编号、诊断报告）
  */
 
-import type { SeverityLevel } from '../renderer/shared/types';
+import type { SeverityLevel } from './types/index';
 
 /** 用户可见的症候诊断 */
 export interface UserFacingDiagnosis {

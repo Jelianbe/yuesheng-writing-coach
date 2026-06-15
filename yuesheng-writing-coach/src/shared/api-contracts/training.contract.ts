@@ -94,7 +94,7 @@ export interface TrainingEvaluateResponse {
   downgraded: boolean;
 }
 
-import type { AttitudeLevel } from '../../renderer/shared/types-config';
+import type { AttitudeLevel } from '../types/types-config';
 
 export interface TrainingDecideReadingRequest {
   attitude: AttitudeLevel;

@@ -25,7 +25,7 @@
  *   4. 反思阶段排除：S2_REFLECTION 阶段的用户回答不纳入辩驳计数
  */
 
-import { AttitudeLevel } from '../../../renderer/shared/types';
+import { AttitudeLevel } from '../../../shared/types/index';
 
 // ===== 类型定义 =====
 

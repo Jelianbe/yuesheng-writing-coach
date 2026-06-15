@@ -25,7 +25,7 @@ import * as path from 'path';
 import type {
   RouterInput,
   RouterOutput,
-} from '../../../../renderer/shared/types';
+} from '../../../../shared/types/index';
 
 import type { RouterConfigs, LearningPathConfig } from './router.types';
 import { selectFocusSyndrome } from './router.layer1';

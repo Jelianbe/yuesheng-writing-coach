@@ -13,7 +13,7 @@ import {
   AbilityScore,
   WeakPoint,
   SeverityLevel,
-} from '../../../renderer/shared/types';
+} from '../../../shared/types/index';
 import { ProfileDataAggregator } from './profile-data-aggregator';
 import { calcTrend as calcTrendDir, mapTrendLabel } from '../../../shared/trend-utils';
 import { SEVERITY_TO_SCORE, SEVERITY_TO_NUM } from '../../../shared/severity-utils';

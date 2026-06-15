@@ -4,7 +4,7 @@
  * 统一全项目的严重度←→数值转换，消除重复实现。
  * 规则：L1=1, L2=2, L3=3（数值越大越严重）
  */
-import type { SeverityLevel } from '../renderer/shared/types';
+import type { SeverityLevel } from './types/index';
 /**
  * 严重度转为数值
  * L1=1, L2=2, L3=3

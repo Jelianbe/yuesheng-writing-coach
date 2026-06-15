@@ -17,7 +17,7 @@ import * as path from 'path';
 
 import { ProficiencyLevel, CognitiveStyle } from '../../student/student-model-service';
 import { TeachingStrategyRouter } from './router';
-import type { RouterInput, TeachingMode as RouterTeachingMode, FocusDecision, ModeDecision, ParameterDecision } from '../../../../renderer/shared/types';
+import type { RouterInput, TeachingMode as RouterTeachingMode, FocusDecision, ModeDecision, ParameterDecision } from '../../../../shared/types/index';
 
 /** 教学模式 */
 export type TeachingMode = RouterTeachingMode;

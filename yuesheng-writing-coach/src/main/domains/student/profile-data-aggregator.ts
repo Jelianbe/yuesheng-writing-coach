@@ -11,7 +11,7 @@
 
 import type { DiagnosisService } from '../diagnosis/diagnosis.service';
 import type { TrainingRecordService } from '../training/training-record.service';
-import type { DiagnosisEntry } from '../../../renderer/shared/types';
+import type { DiagnosisEntry } from '../../../shared/types/index';
 import type { TrainingRecord } from '../training/training-record.service';
 
 export interface ProfileData {

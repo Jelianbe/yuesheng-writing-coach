@@ -6,7 +6,7 @@
  *           DisputeTrackerService, ReflectionGateService, StrategyInstructionBuilder
  */
 
-import type { AttitudeLevel, DiagnosisAnalysis } from '../../../renderer/shared/types';
+import type { AttitudeLevel, DiagnosisAnalysis } from '../../../shared/types/index';
 
 /** 反思问题结构 */
 export interface TeachingReflectionQuestion {

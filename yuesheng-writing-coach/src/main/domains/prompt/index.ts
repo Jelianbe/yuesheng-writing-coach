@@ -5,7 +5,7 @@
  * 内部实现：PromptLoader, PromptBuilder, CodexService, MemoryCapsuleService
  */
 
-import type { AttitudeLevel, DiagnosisAnalysis } from '../../../renderer/shared/types';
+import type { AttitudeLevel, DiagnosisAnalysis } from '../../../shared/types/index';
 import type { CodexEntry } from './codex.service';
 
 export interface IPromptDomain {

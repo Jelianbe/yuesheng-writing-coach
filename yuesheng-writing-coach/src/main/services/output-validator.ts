@@ -100,8 +100,11 @@ function detectRegex(text: string, patterns: string[]): string[] {
       if (regex.test(text)) {
         matched.push(pattern);
       }
-    } catch {
+    } catch (e) {
       // 忽略无效的正则表达式
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[output-validator] Invalid regex pattern:', pattern, e);
+      }
     }
   }
   return matched;

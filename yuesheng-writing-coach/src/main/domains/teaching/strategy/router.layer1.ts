@@ -2,7 +2,7 @@
  * 教学策略路由 — Layer 1：聚焦症候选择
  */
 
-import type { RouterInput, FocusDecision } from '../../../../renderer/shared/types';
+import type { RouterInput, FocusDecision } from '../../../../shared/types/index';
 import type { RouterConfigs } from './router.types';
 import { findTheoryRule, getPrioritySyndromeIds, computeAvgTrainingScores, collectTheoryRefForSyndrome } from './router.conditions';
 

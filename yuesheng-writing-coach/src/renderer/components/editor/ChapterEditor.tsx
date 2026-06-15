@@ -46,8 +46,9 @@ export const ChapterEditor: React.FC = () => {
       const invoke = (await import('../../utils/ipc')).getInvoke();
       const result = await invoke(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, { id: currentChapter.id, content: text }) as { success: boolean };
       if (result.success) setLastSaved(new Date());
-    } catch {
-      // 保存失败，静默处理
+    } catch (e) {
+      // 保存失败，记录警告
+      console.warn('[ChapterEditor] Failed to save chapter:', e);
     } finally {
       setSaving(false);
     }

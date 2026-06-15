@@ -31,8 +31,8 @@ import { processAIResponse } from '../domains/diagnosis/diagnosis-processor';
 import type { ITeachingDomain } from '../domains/teaching';
 import type { IStudentDomain } from '../domains/student';
 import type { IPromptDomain } from '../domains/prompt';
-import type { AttitudeLevel, DiagnosisAnalysis } from '../../renderer/shared/types';
-import type { DiagnosisEntry } from '../../renderer/shared/types-diagnosis';
+import type { AttitudeLevel, DiagnosisAnalysis } from '../../shared/types/index';
+import type { DiagnosisEntry } from '../../shared/types/types-diagnosis';
 import { getMemoryCapsuleService } from '../domains/prompt/memory-capsule.service';
 
 export function configureServices(

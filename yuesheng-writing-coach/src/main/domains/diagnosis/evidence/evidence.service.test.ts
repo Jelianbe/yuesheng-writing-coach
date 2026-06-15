@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EvidenceService } from './evidence.service';
-import type { EvidenceRecord } from '../../../../renderer/shared/types';
+import type { EvidenceRecord } from '../../../../shared/types/index';
 
 // ---------------------------------------------------------------------------
 // Mock better-sqlite3 — native module is not needed at runtime for tests

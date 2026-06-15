@@ -12,7 +12,7 @@
 import { TeachingPhase, TeachingSubphase, ActionId } from '../../../../shared/constants';
 import { getActionsForSubphase } from '../../../../shared/mappings';
 import { TeachingState } from './teaching-state.types';
-import type { FocusArea, FocusAreaValue } from '../../../../renderer/shared/types';
+import type { FocusArea, FocusAreaValue } from '../../../../shared/types/index';
 import {
   FOCUS_AREA_WORLD_SUBPHASES,
   PHASE_NAMES,

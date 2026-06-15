@@ -38,10 +38,20 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) { const w = parseInt(saved, 10); if (!isNaN(w) && w >= RESIZE_MIN && w <= RESIZE_MAX) return w; }
-    } catch { /* ignore */ }
+    } catch (e) {
+      // localStorage 读取失败，使用默认值
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[RightDrawer] Failed to read localStorage:', e);
+      }
+    }
     return DEFAULT_PANEL_WIDTH;
   });
-  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, String(panelWidth)); } catch {} }, [panelWidth]);
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, String(panelWidth)); } catch (e) {
+    // localStorage 写入失败，静默处理
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[RightDrawer] Failed to write localStorage:', e);
+    }
+  } }, [panelWidth]);
 
   // ── 拖拽状态 ──
   const [isResizing, setIsResizing] = useState(false);
