@@ -54,6 +54,10 @@ interface PanelSessionState {
   activeSessionId: string | null;
   /** 右边栏展示阶段（控制渐进式披露） */
   sidebarPhase: SidebarPhase;
+  /** F-03: 训练卡是否已解锁（TEACHING 完成后解锁） */
+  trainingUnlocked: boolean;
+  /** F-03: 训练卡是否自动展开（ASSIGN_TASK 时展开） */
+  trainingExpanded: boolean;
 }
 
 interface PanelSessionActions {
@@ -65,6 +69,10 @@ interface PanelSessionActions {
   removeSession: (id: string) => void;
   /** 设置右边栏展示阶段（由 teachingState:updated 事件消费方调用） */
   setSidebarPhase: (phase: SidebarPhase) => void;
+  /** F-03: 设置训练卡解锁状态（TEACHING 完成后调用） */
+  setTrainingUnlocked: (unlocked: boolean) => void;
+  /** F-03: 设置训练卡展开状态（ASSIGN_TASK 时调用） */
+  setTrainingExpanded: (expanded: boolean) => void;
 }
 
 /** 使用 crypto.randomUUID 生成唯一 ID（无模块级可变变量） */
@@ -75,6 +83,8 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
   sessions: [],
   activeSessionId: null,
   sidebarPhase: 'guide',
+  trainingUnlocked: false,
+  trainingExpanded: false,
 
   // Actions
   upsertSession: (type, title, icon, data) => {
@@ -120,5 +130,13 @@ export const usePanelSessionStore = create<PanelSessionState & PanelSessionActio
 
   setSidebarPhase: (phase) => {
     set({ sidebarPhase: phase });
+  },
+
+  setTrainingUnlocked: (unlocked) => {
+    set({ trainingUnlocked: unlocked });
+  },
+
+  setTrainingExpanded: (expanded) => {
+    set({ trainingExpanded: expanded });
   },
 }));

@@ -89,6 +89,12 @@ export function App(): React.ReactElement {
     if (s) await switchSession(s.id);
   }, [createSession, switchSession]);
 
+  // P2-fix: 提取为 useCallback，避免内联函数重复渲染
+  const handleEnterWorkshopFromBridge = useCallback((challengeId: string) => {
+    rightPanelService.openTraining(challengeId);
+    useTrainingStore.getState().startTraining(challengeId);
+  }, []);
+
   const drawerTools = [
     { id: 'search', icon: Search, label: '全局搜索' },
     { id: 'works', icon: BookOpen, label: '作品' },
@@ -108,7 +114,7 @@ export function App(): React.ReactElement {
       <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
         <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} readingDecision={readingDecision} readingComplete={readingComplete} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onStartReading={startReading} onDismissReadingComplete={dismissReadingComplete} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} lastEvaluationScore={lastEvaluationScore} lastSyndromeId={lastSyndromeId} />, diagnosis: <DiagnosisPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
           <div style={{ position: 'relative', height: '100%' }}>
-            <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} isConfigured={isConfigured ?? false} onSend={handleSendMessage} onStop={handleStop} onStartEditing={(id, ev, n, s) => startEditing(id, ev, n, s)} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={cid => { rightPanelService.openTraining(cid); useTrainingStore.getState().startTraining(cid); }} onDismissBridge={dismissBridge} />
+            <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} isConfigured={isConfigured ?? false} onSend={handleSendMessage} onStop={handleStop} onStartEditing={startEditing} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={handleEnterWorkshopFromBridge} onDismissBridge={dismissBridge} />
           </div>
         </AppShell>
       </AppConfigGate>

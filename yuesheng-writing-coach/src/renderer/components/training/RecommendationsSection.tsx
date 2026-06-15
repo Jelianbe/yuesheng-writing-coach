@@ -13,6 +13,7 @@ import type { TrainingRecommendation } from '../../shared/types';
 import { getStructuredTasksForChallenge } from '../../shared/structured-tasks';
 import { getInvoke } from '../../utils/ipc';
 import { ConfigApi } from '../../../shared/api-contracts/config.contract';
+import { usePanelSessionStore } from '../../stores/panel-session.store';
 import sharedStyles from './TrainingShared.module.css';
 import styles from './RecommendationsSection.module.css';
 
@@ -45,6 +46,9 @@ export const RecommendationsSection: React.FC<{
   // A3: 阅读推荐状态
   const [readingRecommendations, setReadingRecommendations] = useState<ReadingRecommendation[]>([]);
   const [readingLoading, setReadingLoading] = useState(false);
+
+  // F-03: 训练卡解锁状态
+  const trainingUnlocked = usePanelSessionStore(s => s.trainingUnlocked);
 
   // A3: 判断是否应该推荐阅读
   const shouldShowReading = lastEvaluationScore != null && lastEvaluationScore >= READING_RECOMMENDATION_THRESHOLD;
@@ -187,9 +191,15 @@ export const RecommendationsSection: React.FC<{
             </div>
             <button
               className={sharedStyles.trainingStartBtn}
-              onClick={() => onStartTraining(rec.challengeId)}
+              onClick={() => trainingUnlocked && onStartTraining(rec.challengeId)}
+              disabled={!trainingUnlocked}
+              style={{
+                opacity: trainingUnlocked ? 1 : 0.5,
+                cursor: trainingUnlocked ? 'pointer' : 'not-allowed',
+              }}
+              title={trainingUnlocked ? '开始练习' : '完成教学建议后解锁'}
             >
-              开始练习
+              {trainingUnlocked ? '开始练习' : '🔒 未解锁'}
             </button>
           </div>
           );
