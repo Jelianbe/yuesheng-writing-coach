@@ -8,10 +8,12 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Search, X } from 'lucide-react';
 import type { ChatMessage, DiagnosisEntry, RewriteEvaluation } from '../../shared/types';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
+import { OnboardingFlow } from './OnboardingFlow';
+import { ChatSearchBar } from './ChatSearchBar';
+import { WelcomeCard } from './WelcomeCard';
 import { DiagnosisCard } from '../diagnosis/DiagnosisCard';
 import { EditPanel } from '../diagnosis/EditPanel';
 import { EvaluationCard } from '../diagnosis/EvaluationCard';
@@ -152,109 +154,21 @@ export const ChatView: React.FC<ChatViewProps> = ({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* ── 搜索栏 ── */}
       {showSearch && (
-        <div className={styles.searchBar}>
-          <Search size={14} strokeWidth={1.6} className={styles.searchIcon} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="搜索消息内容..."
-            autoFocus
-            className={styles.searchInput}
-            onKeyDown={e => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(''); } }}
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className={styles.searchBtn}
-              aria-label="清除搜索"
-            >
-              <X size={14} strokeWidth={1.6} />
-            </button>
-          )}
-          <button
-            onClick={toggleSearch}
-            className={styles.searchBtn}
-            aria-label="关闭搜索"
-          >
-            <X size={14} strokeWidth={1.6} />
-          </button>
-        </div>
+        <ChatSearchBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onClose={toggleSearch}
+        />
       )}
 
       {/* ── P-04: 新用户引导流程 ── */}
-      {onboardingActive && onboardingStep === 1 && (
-        <div className={styles.onboarding}>
-          <div className={styles.onboardingTitle}>
-            你好！我是月笙，你的写作教练。
-          </div>
-          <div className={styles.onboardingDesc}>
-            我不是帮你写作文的工具，而是帮你成为更好的写作者。
-            我会读你的文字，指出可以提升的地方，但不会替你改写——因为成长属于你。
-          </div>
-          <div className={styles.onboardingQuestion}>
-            先认识一下：你主要写什么类型？
-          </div>
-          <div className={styles.typeButtons}>
-            {['玄幻', '都市', '科幻', '现实', '历史', '其他'].map(type => (
-              <button key={type}
-                onClick={() => { setOnboardingStep(2); }}
-                className={styles.typeBtn}
-              >
-                {type}
-              </button>
-            ))}
-            <button onClick={() => setOnboardingStep(2)}
-              className={styles.typeBtnGhost}
-            >
-              说不清
-            </button>
-          </div>
-          <div className={styles.skipLinkWrapper}>
-            <button onClick={skipOnboarding}
-              className={styles.skipLink}
-            >
-              跳过引导，直接开始
-            </button>
-          </div>
-        </div>
-      )}
-
-      {onboardingActive && onboardingStep === 2 && (
-        <div className={styles.onboarding}>
-          <div className={styles.onboardingTitle}>
-            好的，玄幻小说！
-          </div>
-          <div className={styles.onboardingDesc}>
-            为了更好帮你，能不能发一段你最近写的文字？
-            不用很长，三五句话也行。
-          </div>
-          <div className={styles.onboardingHint}>
-            （在下方输入框发送你的文字，或者）
-          </div>
-          <button onClick={() => { setOnboardingStep(3); }}
-            className={styles.typeBtnGhost}
-          >
-            跳过，直接开始
-          </button>
-        </div>
-      )}
-
-      {onboardingActive && onboardingStep === 3 && (
-        <div className={styles.onboarding}>
-          <div className={styles.onboardingTitleAccent}>
-            引导完成！🎉
-          </div>
-          <div className={styles.onboardingDesc}>
-            你现在可以开始和月笙对话了。
-            月笙会读你的文字，指出可以提升的地方。
-          </div>
-          <button onClick={completeOnboarding}
-            className={styles.primaryBtn}
-          >
-            开始对话
-          </button>
-        </div>
+      {onboardingActive && (
+        <OnboardingFlow
+          onboardingStep={onboardingStep}
+          skipOnboarding={skipOnboarding}
+          setOnboardingStep={setOnboardingStep}
+          completeOnboarding={completeOnboarding}
+        />
       )}
 
       {/* ── 主要内容区（flex:1 填充剩余空间）── */}
@@ -262,53 +176,7 @@ export const ChatView: React.FC<ChatViewProps> = ({
         {!onboardingActive && (
           <>
             {showWelcomeCard ? (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                padding: '40px 20px',
-                textAlign: 'center',
-              }}>
-                <div style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: 16,
-                  background: 'var(--bg-card)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 24,
-                  fontSize: 28,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                }}>
-                  ⚙️
-                </div>
-                <div style={{
-                  fontSize: '1.25rem',
-                  fontWeight: 600,
-                  color: 'var(--text-primary)',
-                  marginBottom: 12,
-                }}>
-                  欢迎使用月笙
-                </div>
-                <div style={{
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)',
-                  marginBottom: 8,
-                  maxWidth: 320,
-                  lineHeight: 1.6,
-                }}>
-                  请先配置 API Key 开始写作旅程
-                </div>
-                <div style={{
-                  fontSize: '0.8rem',
-                  color: 'var(--text-tertiary)',
-                }}>
-                  点击右下角齿轮图标打开设置
-                </div>
-              </div>
+              <WelcomeCard />
             ) : (
               <MessageList
                 messages={loadedMessages}

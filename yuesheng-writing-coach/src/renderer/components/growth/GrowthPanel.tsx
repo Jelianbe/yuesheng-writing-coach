@@ -12,6 +12,8 @@ import { TrendingUp } from 'lucide-react';
 import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { useSessionStore } from '../../stores/session.store';
+import { TrendChart } from './TrendChart';
+import { ToggleButton } from './ToggleButton';
 
 interface SyndromeTrendData {
   name: string;
@@ -26,84 +28,6 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: str
   stable: { label: '稳定', color: '#6B8FA3', bgColor: '#6B8FA318' },
   needsAttention: { label: '需关注', color: '#C0392B', bgColor: '#C0392B18' },
 };
-
-/** 简化趋势线 - svg 柱状/折线图 */
-const TrendChart: React.FC<{ data: SyndromeTrendData[] }> = ({ data }) => {
-  if (data.length === 0) return null;
-
-  const sorted = [...data].sort((a, b) => b.occurrenceCount - a.occurrenceCount).slice(0, 8);
-  const maxOcc = Math.max(...sorted.map(d => d.occurrenceCount), 1);
-  const barWidth = Math.max(20, Math.min(36, 280 / sorted.length));
-
-  return (
-    <div style={{ width: '100%', overflow: 'hidden' }}>
-      <svg
-        width="100%"
-        height="100"
-        viewBox={`0 0 ${sorted.length * (barWidth + 8) + 20} 100`}
-        style={{ display: 'block' }}
-      >
-        {/* 网格线 */}
-        <line x1="10" y1="90" x2={sorted.length * (barWidth + 8) + 10} y2="90" stroke="var(--border-light)" strokeWidth="1" />
-        <line x1="10" y1="50" x2={sorted.length * (barWidth + 8) + 10} y2="50" stroke="var(--border-light)" strokeWidth="0.5" strokeDasharray="3,3" />
-
-        {/* 柱状条 */}
-        {sorted.map((item, i) => {
-          const x = 10 + i * (barWidth + 8);
-          const h = (item.occurrenceCount / maxOcc) * 60;
-          const y = 90 - h;
-          const color = STATUS_CONFIG[item.status]?.color || 'var(--text-tertiary)';
-          return (
-            <g key={item.name}>
-              <rect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={h}
-                rx={3}
-                fill={color}
-                opacity={0.75}
-              >
-                <title>{item.name}: {item.occurrenceCount} 次 ({STATUS_CONFIG[item.status]?.label || item.status})</title>
-              </rect>
-              <text
-                x={x + barWidth / 2}
-                y={98}
-                textAnchor="middle"
-                fill="var(--text-tertiary)"
-                fontSize="8"
-                fontFamily="var(--font-body)"
-              >
-                {item.name.length > 4 ? item.name.slice(0, 3) + '..' : item.name}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-};
-
-/** 全局趋势切换按钮（RP-03） */
-const ToggleButton: React.FC<{ showGlobal: boolean; onToggle: () => void }> = ({ showGlobal, onToggle }) => (
-  <button
-    type="button"
-    onClick={onToggle}
-    style={{
-      padding: '3px 10px',
-      borderRadius: 'var(--radius-full)',
-      border: '1px solid var(--border-light)',
-      background: showGlobal ? 'var(--accent)' : 'transparent',
-      color: showGlobal ? '#fff' : 'var(--text-tertiary)',
-      fontSize: '0.65rem',
-      cursor: 'pointer',
-      transition: 'all 0.15s ease',
-      whiteSpace: 'nowrap',
-    }}
-  >
-    {showGlobal ? '全部历史' : '当前会话'}
-  </button>
-);
 
 export const GrowthPanel: React.FC = () => {
   const [trends, setTrends] = useState<SyndromeTrendData[]>([]);
@@ -199,7 +123,7 @@ export const GrowthPanel: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          <TrendingUp size={36} strokeWidth={1.4} opacity={0.3} />
+          <TrendingUp size={36} strokeWidth={1.4} opacity={0.5} />
           <span style={{ fontSize: '0.85rem' }}>暂无成长记录</span>
           <span style={{ fontSize: '0.72rem' }}>完成训练后，成长数据将在此展示</span>
         </div>
@@ -304,5 +228,3 @@ export const GrowthPanel: React.FC = () => {
     </div>
   );
 };
-
-

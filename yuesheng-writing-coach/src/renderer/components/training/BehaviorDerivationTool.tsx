@@ -3,104 +3,25 @@
  *
  * 三问推导法：用户围绕角色回答三个问题，AI 推演合理行为预期。
  * 用户自行对比"自己的写法"与"推导结果"的一致性。
+ *
+ * 已拆分子文件：
+ * - BehaviorDerivation.styles.ts: 样式常量
+ * - QuestionField.tsx: 三问输入框子组件
  */
 
 import React from 'react';
 import { useTrainingStore } from '../../stores/training.store';
-
-// ===== 样式 =====
-
-const sectionStyle: React.CSSProperties = {
-  backgroundColor: 'var(--bg-secondary)',
-  borderRadius: 10,
-  border: '1px solid var(--border)',
-  overflow: 'hidden',
-};
-
-const sectionTitleStyle: React.CSSProperties = {
-  fontSize: '0.875rem',
-  fontWeight: 600,
-  color: 'var(--text-primary)',
-  padding: '10px 16px',
-  cursor: 'pointer',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  userSelect: 'none',
-};
-
-const expandIconStyle: React.CSSProperties = {
-  fontSize: '0.75rem',
-  color: 'var(--text-tertiary)',
-  transition: 'transform 0.2s',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: 8,
-  borderRadius: 6,
-  border: '1px solid var(--border)',
-  backgroundColor: 'var(--bg-input)',
-  color: 'var(--text-primary)',
-  fontSize: '0.8rem',
-  fontFamily: 'inherit',
-  boxSizing: 'border-box',
-  resize: 'vertical',
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '0.8rem',
-  fontWeight: 500,
-  color: 'var(--text-secondary)',
-  marginBottom: 4,
-  display: 'block',
-};
-
-const fieldRowStyle: React.CSSProperties = {
-  marginBottom: 12,
-};
-
-const primaryBtnStyle: React.CSSProperties = {
-  padding: '8px 24px',
-  borderRadius: 6,
-  border: 'none',
-  backgroundColor: 'var(--accent)',
-  color: 'var(--text-on-accent)',
-  cursor: 'pointer',
-  fontSize: '0.85rem',
-  fontWeight: 500,
-};
-
-const resultCardStyle: React.CSSProperties = {
-  padding: 12,
-  borderRadius: 8,
-  backgroundColor: '#eafaf1',
-  border: '1px solid #d5f5e3',
-  marginTop: 16,
-  fontSize: '0.85rem',
-  lineHeight: 1.6,
-  color: 'var(--text-primary)',
-};
-
-// ===== 子组件：三问输入框 =====
-
-const QuestionField: React.FC<{
-  number: number;
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}> = ({ number, label, value, onChange }) => (
-  <div style={fieldRowStyle}>
-    <label style={labelStyle}>问题{number}：{label}</label>
-    <textarea
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={`输入"${label}"的回答...`}
-      rows={2}
-      style={inputStyle}
-    />
-  </div>
-);
+import {
+  sectionStyle,
+  sectionTitleStyle,
+  expandIconStyle,
+  inputStyle,
+  labelStyle,
+  fieldRowStyle,
+  primaryBtnStyle,
+  resultCardStyle,
+} from './BehaviorDerivation.styles';
+import { QuestionField } from './QuestionField';
 
 // ===== 主组件 =====
 
@@ -304,5 +225,3 @@ export const BehaviorDerivationTool: React.FC = () => {
     </div>
   );
 };
-
-

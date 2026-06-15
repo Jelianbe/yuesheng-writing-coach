@@ -32,7 +32,7 @@ const BASE_STYLE: React.CSSProperties = {
 
 /** 禁用态覆盖样式 */
 const DISABLED_STYLE: React.CSSProperties = {
-  opacity: 0.45,
+  opacity: 0.5,
   pointerEvents: 'none',
 };
 

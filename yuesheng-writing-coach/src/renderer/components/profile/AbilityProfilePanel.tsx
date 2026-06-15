@@ -44,7 +44,7 @@ const ScoreBar: React.FC<{ score: AbilityScore }> = ({ score }) => {
           width: score.dataInsufficient ? 0 : `${Math.min(score.score, 100)}%`,
           borderRadius: 2,
           background: score.score >= 70 ? 'var(--success)' : score.score >= 40 ? 'var(--accent)' : 'var(--error)',
-          opacity: score.dataInsufficient ? 0.3 : 0.8,
+          opacity: score.dataInsufficient ? 0.5 : 0.8,
           transition: `width 600ms ${EASE_OUT_QUART}`,
         }} />
       </div>

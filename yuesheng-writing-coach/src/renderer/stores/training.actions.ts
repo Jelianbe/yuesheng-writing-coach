@@ -15,6 +15,7 @@ import { getInvoke } from '../utils/ipc';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
 import { ConfigApi } from '../../shared/api-contracts/config.contract';
 import { severityToNumber } from '../../shared/severity-utils';
+import { SYNDROME_NAMES } from '../../shared/mappings';
 import type {
   ErrorCard,
   TrainingRecord,
@@ -282,6 +283,14 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
         // B3: 不主动清除 activeTraining，保留评估视图供用户回顾
         // 用户通过 onBackToChat（返回按钮）手动退出
 
+        // A3: 保存评估分数和症候ID，用于自荐阅读框架
+        if (evalResult?.score != null && active.syndromeId) {
+          set({
+            lastEvaluationScore: evalResult.score,
+            lastSyndromeId: active.syndromeId,
+          });
+        }
+
         // M3+M4: reading_task 完成后自动刷新推荐并回到工坊
         if (active.mode === 'reading_task') {
           await get().refreshFromDiagnosis();
@@ -304,9 +313,17 @@ export function createLoadHistoryAction(set: SetStateFn, _get: GetStateFn) {
   return async (sessionId: string): Promise<void> => {
     set({ isLoading: true, error: null });
     try {
-      const result = await getInvoke()(TrainingApi.history.channel, { sessionId }) as { error?: string; records?: TrainingRecord[] };
+      const result = await getInvoke()(TrainingApi.history.channel, { sessionId }) as { error?: string; records?: any[] };
       if (result.error) throw new Error(result.error);
-      set({ history: result.records ?? [], isLoading: false });
+
+      // B4: 将 main process 的 taskId/syndromeId 转换为 challengeId/challengeName
+      const records: TrainingRecord[] = (result.records ?? []).map((r: any) => ({
+        ...r,
+        challengeId: r.taskId ?? r.challengeId,
+        challengeName: SYNDROME_NAMES[r.syndromeId] ?? r.taskId ?? r.challengeId ?? '未知训练',
+      }));
+
+      set({ history: records, isLoading: false });
     } catch (error) {
       console.error('[TrainingStore] loadHistory failed:', error);
       set({ error: String(error), isLoading: false });

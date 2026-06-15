@@ -74,7 +74,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, className
         color: 'var(--text-tertiary)',
         fontSize: '0.8rem',
       }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-tertiary)', opacity: 0.3 }} />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-tertiary)', opacity: 0.5 }} />
         <span>{message.content}</span>
       </div>
     );

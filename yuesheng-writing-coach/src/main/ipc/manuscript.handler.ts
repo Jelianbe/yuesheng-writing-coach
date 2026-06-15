@@ -16,10 +16,11 @@ export function initManuscriptHandlers(d: ManuscriptHandlerDeps): void {
 
 export function registerManuscriptHandlers(): void {
   if (!deps) throw new Error('ManuscriptHandler deps not injected');
+  const d = deps;
 
   // manuscript:list — 获取作品列表
   createHandler(IPC_CHANNELS.MANUSCRIPT_LIST, () => {
-    const rows = deps!.db.prepare('SELECT * FROM manuscripts ORDER BY sort_order ASC, created_at DESC').all();
+    const rows = d.db.prepare('SELECT * FROM manuscripts ORDER BY sort_order ASC, created_at DESC').all();
     return rows;
   });
 
@@ -30,7 +31,7 @@ export function registerManuscriptHandlers(): void {
       types: { id: 'string' },
     });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    const row = deps!.db.prepare('SELECT * FROM manuscripts WHERE id = ?').get(validation.data.id);
+    const row = d.db.prepare('SELECT * FROM manuscripts WHERE id = ?').get(validation.data.id);
     return row || null;
   });
 
@@ -43,10 +44,10 @@ export function registerManuscriptHandlers(): void {
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const id = crypto.randomUUID();
     const now = Math.floor(Date.now() / 1000);
-    deps!.db.prepare(
+    d.db.prepare(
       'INSERT INTO manuscripts (id, title, description, genre, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(id, validation.data.title, validation.data.description || '', validation.data.genre || '', now, now);
-    const row = deps!.db.prepare('SELECT * FROM manuscripts WHERE id = ?').get(id);
+    const row = d.db.prepare('SELECT * FROM manuscripts WHERE id = ?').get(id);
     return row;
   });
 
@@ -65,8 +66,8 @@ export function registerManuscriptHandlers(): void {
     if (validation.data.genre !== undefined) { sets.push('genre = ?'); values.push(validation.data.genre); }
     if (validation.data.status !== undefined) { sets.push('status = ?'); values.push(validation.data.status); }
     values.push(validation.data.id);
-    deps!.db.prepare(`UPDATE manuscripts SET ${sets.join(', ')} WHERE id = ?`).run(...values);
-    const row = deps!.db.prepare('SELECT * FROM manuscripts WHERE id = ?').get(validation.data.id);
+    d.db.prepare(`UPDATE manuscripts SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+    const row = d.db.prepare('SELECT * FROM manuscripts WHERE id = ?').get(validation.data.id);
     return row;
   });
 
@@ -74,7 +75,7 @@ export function registerManuscriptHandlers(): void {
   createHandler(IPC_CHANNELS.CHAPTER_LIST, (_event, args) => {
     const validation = validatePayload<{ manuscriptId: string }>(args, { required: ['manuscriptId'], types: { manuscriptId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    const rows = deps!.db.prepare('SELECT * FROM chapters WHERE manuscript_id = ? ORDER BY sort_order ASC').all(validation.data.manuscriptId);
+    const rows = d.db.prepare('SELECT * FROM chapters WHERE manuscript_id = ? ORDER BY sort_order ASC').all(validation.data.manuscriptId);
     return rows;
   });
 
@@ -82,7 +83,7 @@ export function registerManuscriptHandlers(): void {
   createHandler(IPC_CHANNELS.CHAPTER_GET, (_event, args) => {
     const validation = validatePayload<{ id: string }>(args, { required: ['id'], types: { id: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    const row = deps!.db.prepare('SELECT * FROM chapters WHERE id = ?').get(validation.data.id);
+    const row = d.db.prepare('SELECT * FROM chapters WHERE id = ?').get(validation.data.id);
     return row || null;
   });
 
@@ -92,12 +93,12 @@ export function registerManuscriptHandlers(): void {
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const id = crypto.randomUUID();
     const now = Math.floor(Date.now() / 1000);
-    const maxSort = deps!.db.prepare('SELECT MAX(sort_order) as max FROM chapters WHERE manuscript_id = ?').get(validation.data.manuscriptId) as { max: number | null } | undefined;
+    const maxSort = d.db.prepare('SELECT MAX(sort_order) as max FROM chapters WHERE manuscript_id = ?').get(validation.data.manuscriptId) as { max: number | null } | undefined;
     const sortOrder = (maxSort?.max ?? -1) + 1;
-    deps!.db.prepare(
+    d.db.prepare(
       'INSERT INTO chapters (id, manuscript_id, title, content, word_count, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(id, validation.data.manuscriptId, validation.data.title, '', 0, sortOrder, now, now);
-    const row = deps!.db.prepare('SELECT * FROM chapters WHERE id = ?').get(id);
+    const row = d.db.prepare('SELECT * FROM chapters WHERE id = ?').get(id);
     return row;
   });
 
@@ -108,9 +109,9 @@ export function registerManuscriptHandlers(): void {
       types: { id: 'string' },
     });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    deps!.db.transaction(() => {
-      deps!.db.prepare('DELETE FROM chapters WHERE manuscript_id = ?').run(validation.data.id);
-      deps!.db.prepare('DELETE FROM manuscripts WHERE id = ?').run(validation.data.id);
+    d.db.transaction(() => {
+      d.db.prepare('DELETE FROM chapters WHERE manuscript_id = ?').run(validation.data.id);
+      d.db.prepare('DELETE FROM manuscripts WHERE id = ?').run(validation.data.id);
     })();
     return { deleted: true };
   });
@@ -122,7 +123,7 @@ export function registerManuscriptHandlers(): void {
       types: { id: 'string' },
     });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    deps!.db.prepare('DELETE FROM chapters WHERE id = ?').run(validation.data.id);
+    d.db.prepare('DELETE FROM chapters WHERE id = ?').run(validation.data.id);
     return { deleted: true };
   });
 
@@ -132,7 +133,7 @@ export function registerManuscriptHandlers(): void {
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const wordCount = validation.data.content.replace(/[\s\n\r]+/g, '').length;
     const now = Math.floor(Date.now() / 1000);
-    deps!.db.prepare('UPDATE chapters SET content = ?, word_count = ?, updated_at = ? WHERE id = ?')
+    d.db.prepare('UPDATE chapters SET content = ?, word_count = ?, updated_at = ? WHERE id = ?')
       .run(validation.data.content, wordCount, now, validation.data.id);
     return { wordCount };
   });

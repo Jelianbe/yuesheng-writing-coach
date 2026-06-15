@@ -48,7 +48,16 @@ export class ChatOrchestratorService {
   private deps: ChatOrchestratorDeps;
   private apiProxy: ApiProxy | null = null;
   private currentAbortController: AbortController | null = null;
-  private techniquePoolCache: string | null = null;
+  private techniquePoolData: Array<{
+    id: string;
+    name: string;
+    source: string;
+    difficulty: string;
+    category: string;
+    applicableSyndromes: string[];
+    description: string;
+    coreId?: string;
+  }> | null = null;
   private toolSupportCache: boolean | null = null;
 
   constructor(deps: ChatOrchestratorDeps) {
@@ -195,6 +204,7 @@ export class ChatOrchestratorService {
 
   private async callDiagnosisAgent(
     userText: string,
+    filter?: { coreId?: string; syndromeIds?: string[] },
     onChunk?: (chunk: string) => void,
   ): Promise<DiagnosisAnalysis | null> {
     const proxy = this.getApiProxy();
@@ -203,7 +213,7 @@ export class ChatOrchestratorService {
       let diagnosisPrompt: string;
       try {
         diagnosisPrompt = await fsPromises.readFile(promptPath, 'utf-8');
-        diagnosisPrompt = this.injectTechniquePool(diagnosisPrompt);
+        diagnosisPrompt = this.injectTechniquePool(diagnosisPrompt, filter);
       } catch {
         console.warn('[DiagnosisAgent] Prompt file not found, using fallback');
         diagnosisPrompt = '分析以下文本的写作问题，以JSON格式输出结构化的诊断结果。';
@@ -233,14 +243,18 @@ export class ChatOrchestratorService {
     }
   }
 
-  private injectTechniquePool(prompt: string): string {
+  private injectTechniquePool(
+    prompt: string,
+    filter?: { coreId?: string; syndromeIds?: string[] }
+  ): string {
     if (!prompt.includes('{{technique_pool}}')) return prompt;
 
-    if (!this.techniquePoolCache) {
+    // 加载技法数据（只加载一次）
+    if (!this.techniquePoolData) {
       try {
         const techniquePath = path.join(__dirname, '../../../resources/config/technique-library.json');
         const raw = fs.readFileSync(techniquePath, 'utf-8');
-        const techniques = JSON.parse(raw) as Array<{
+        this.techniquePoolData = JSON.parse(raw) as Array<{
           id: string;
           name: string;
           source: string;
@@ -248,19 +262,31 @@ export class ChatOrchestratorService {
           category: string;
           applicableSyndromes: string[];
           description: string;
+          coreId?: string;
         }>;
-
-        const lines = techniques.map(t =>
-          `- ${t.id} ${t.name}（来源：${t.source}，难度：${t.difficulty}，适用症候：${t.applicableSyndromes.join('/')}）：${t.description}`,
-        );
-        this.techniquePoolCache = lines.join('\n');
       } catch (err) {
         console.warn('[TechniquePool] Failed to load technique-library.json:', err);
-        this.techniquePoolCache = '（技法库加载失败，请根据症候自行匹配技法）';
+        return prompt.replace('{{technique_pool}}', '（技法库加载失败，请根据症候自行匹配技法）');
       }
     }
 
-    return prompt.replace('{{technique_pool}}', this.techniquePoolCache);
+    // 过滤技法
+    let filtered = this.techniquePoolData;
+    if (filter?.coreId) {
+      filtered = filtered.filter(t => t.coreId === filter.coreId);
+    }
+    if (filter?.syndromeIds && filter.syndromeIds.length > 0) {
+      filtered = filtered.filter(t =>
+        t.applicableSyndromes.some(s => filter.syndromeIds!.includes(s))
+      );
+    }
+
+    const lines = filtered.map(t =>
+      `- ${t.id} ${t.name}（来源：${t.source}，难度：${t.difficulty}，适用症候：${t.applicableSyndromes.join('/')}）：${t.description}`,
+    );
+    const poolText = lines.join('\n') || '（无匹配技法）';
+
+    return prompt.replace('{{technique_pool}}', poolText);
   }
 
   private analysisToDiagnosisEntry(
@@ -320,17 +346,28 @@ export class ChatOrchestratorService {
     message: string,
     activeSessionId: string,
   ): Promise<{ analysis: DiagnosisAnalysis | null; isNarrative: boolean }> {
-    return this._runDiagnosis(message, activeSessionId);
+    // 从历史诊断中提取活跃的 syndromeIds 用于技法过滤
+    const recentDiagnoses = this.deps.diagnosisDomain.getRecentBySession(activeSessionId, 3);
+    const syndromeIdsSet = new Set<string>();
+    for (const diag of recentDiagnoses) {
+      for (const syndrome of diag.syndromes) {
+        syndromeIdsSet.add(syndrome.id);
+      }
+    }
+    const syndromeIds = syndromeIdsSet.size > 0 ? Array.from(syndromeIdsSet) : undefined;
+
+    return this._runDiagnosis(message, activeSessionId, { syndromeIds });
   }
 
   private async _runDiagnosis(
     message: string,
     activeSessionId: string,
+    options?: { syndromeIds?: string[] },
   ): Promise<{ analysis: DiagnosisAnalysis | null; isNarrative: boolean }> {
     const { deps } = this;
     if (!deps || !deps.mainWindow) return { analysis: null, isNarrative: true };
 
-    const analysis = await this.callDiagnosisAgent(message);
+    const analysis = await this.callDiagnosisAgent(message, options);
     const isNarrative = analysis?.contentType !== 'non-narrative';
 
     if (analysis && isNarrative) {

@@ -64,6 +64,14 @@ export interface TrainingState {
   /** 桥接卡片推荐（null = 无推荐或已关闭） */
   bridgeRecommendation: TrainingRecommendation | null;
 
+  // ===== A3: 自荐阅读框架 =====
+
+  /** A3: 最近一次训练的评估分数（用于判断是否推荐阅读） */
+  lastEvaluationScore: number | null;
+
+  /** A3: 最近训练对应的症候 ID（用于匹配阅读材料） */
+  lastSyndromeId: string | null;
+
   // ===== C2: BehaviorDerivationTool 状态 =====
 
   /** 推导加载中 */

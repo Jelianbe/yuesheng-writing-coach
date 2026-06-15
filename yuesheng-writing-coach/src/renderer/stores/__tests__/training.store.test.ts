@@ -228,8 +228,8 @@ describe('TrainingStore', () => {
   describe('loadHistory', () => {
     it('设置加载状态后加载历史记录', async () => {
       const records = [
-        { id: 'r1', taskId: 'CH-001', status: 'completed', syndromeId: 'P004' },
-        { id: 'r2', taskId: 'CH-002', status: 'skipped', syndromeId: 'P002' },
+        { id: 'r1', taskId: 'CH-001', status: 'completed', syndromeId: 'P004', challengeId: 'CH-001', challengeName: '信息硬塞' },
+        { id: 'r2', taskId: 'CH-002', status: 'skipped', syndromeId: 'P002', challengeId: 'CH-002', challengeName: '角色工具人化' },
       ];
       const invoke = vi.fn().mockResolvedValue({ records });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };

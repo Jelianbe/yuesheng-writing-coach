@@ -31,12 +31,13 @@ export function registerConfigHandlers(): void {
   if (!deps) {
     throw new Error('ConfigHandler deps not injected');
   }
+  const d = deps;
 
   // 获取配置值
   createHandler(
     IPC_CHANNELS.CONFIG_GET,
     (_event, args: { key: keyof ApiConfig }) => {
-      return deps!.configService.getConfig()[args.key];
+      return d.configService.getConfig()[args.key];
     }
   );
 
@@ -47,7 +48,7 @@ export function registerConfigHandlers(): void {
       _event,
       args: { key: keyof ApiConfig; value: ApiConfig[keyof ApiConfig] }
     ) => {
-      deps!.configService.setConfigKey(args.key, args.value);
+      d.configService.setConfigKey(args.key, args.value);
     }
   );
 
@@ -55,7 +56,7 @@ export function registerConfigHandlers(): void {
   createHandler(
     IPC_CHANNELS.CONFIG_TEST_CONNECTION,
     async (_event, args: { apiKey: string; baseUrl: string }) => {
-      return await deps!.configService.testConnection(args.apiKey, args.baseUrl);
+      return await d.configService.testConnection(args.apiKey, args.baseUrl);
     }
   );
 

@@ -5,7 +5,7 @@ import styles from './ManuscriptPanel.module.css';
 export const EmptyEditorState: React.FC = () => (
   <div className={styles.emptyState}>
     <div className={styles.emptyIconWrap}>
-      <BookOpen size={24} strokeWidth={1.4} opacity={0.35} />
+      <BookOpen size={24} strokeWidth={1.4} opacity={0.5} />
     </div>
     <div className={styles.emptyTitle}>
       暂无打开的章节
