@@ -17,7 +17,17 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "递进开篇的每个词都应是‘枪’——为后续情绪积累势能"
+      },
+      {
+        "principleId": "STRUNK_WHITE_CONCISE",
+        "relevance": "三词递进是极致简洁的典范，每个词都承载不可削减的重量"
+      }
+    ]
   },
   {
     "id": "TQ-002",
@@ -40,6 +50,16 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "反常物件就是‘枪’——不解释但必然有意义，读者会一直惦记"
+      },
+      {
+        "principleId": "SHEN_CONGWEN_CLING",
+        "relevance": "让读者的注意力‘粘’在反常物件上，用日常与异常的对比制造张力"
+      }
     ]
   },
   {
@@ -63,6 +83,16 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "视觉奇观是打响的第一枪——用画面代替讲解启动叙事"
+      },
+      {
+        "principleId": "LAO_SHE_EVERYTHING_MATTERS",
+        "relevance": "每一个视觉细节都有份量，代替冗长的世界观说明"
+      }
     ]
   },
   {
@@ -88,6 +118,16 @@
       "AIP-016",
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "每个证据都是‘枪’，读者知道它们终将指向某个真相"
+      },
+      {
+        "principleId": "GARDNER_PSYCHIC_DISTANCE",
+        "relevance": "让读者站在侦探视角推理，缩短心理距离增强参与感"
+      }
     ]
   },
   {
@@ -110,6 +150,12 @@
     "genreScope": "通用",
     "prerequisites": [
       "TC-008"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CRON_BRAIN_SIMULATION",
+        "relevance": "三段式情绪设计符合读者大脑对情绪弧线的预期，优化阅读体验"
+      }
     ]
   },
   {
@@ -130,7 +176,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "主角的决定就是‘枪’——读者期待这把枪在下一章打响"
+      }
+    ]
   },
   {
     "id": "TQ-007",
@@ -150,7 +202,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_ONE_THING",
+        "relevance": "绝境开局聚焦于‘一件事’——让主角的求生成为第一章唯一主线"
+      }
+    ]
   },
   {
     "id": "TQ-008",
@@ -172,6 +230,16 @@
     "genreScope": "通用",
     "prerequisites": [
       "TE-013"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_ACTION",
+        "relevance": "内心吐槽是角色的内在动作——让性格通过内心动作而非旁白建立"
+      },
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "吐槽揭示角色复杂面，使扁平角色快速获得圆形维度"
+      }
     ]
   },
   {
@@ -197,6 +265,16 @@
       "AIP-016",
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "每条叙事线都是‘枪’——两条线交错产生更大的叙事势能"
+      },
+      {
+        "principleId": "GARDNER_PSYCHIC_DISTANCE",
+        "relevance": "信息差让读者拥有比角色更多的视角，缩短与作者的同盟距离"
+      }
     ]
   },
   {
@@ -222,6 +300,12 @@
       "AIP-016",
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "STRUNK_WHITE_CONCISE",
+        "relevance": "反常识推理的核心是‘用最简单的常识推翻复杂的共识’——简洁即力量"
+      }
     ]
   },
   {
@@ -245,6 +329,12 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CRON_BRAIN_SIMULATION",
+        "relevance": "倒计时触发读者大脑的紧迫感模拟，生理性地驱动翻页"
+      }
     ]
   },
   {
@@ -266,7 +356,17 @@
     "coreName": "展示而非告知",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "BOOTH_SHOWING",
+        "relevance": "用‘转身离开’替代‘悲伤’——展示情绪而非告知情绪的最佳范本"
+      },
+      {
+        "principleId": "LAO_SHE_ACTION",
+        "relevance": "动作本身就是情感——转身/沉默/关上门都是‘不说话’的精准动作"
+      }
+    ]
   },
   {
     "id": "TQ-013",
@@ -286,7 +386,17 @@
     "coreName": "展示而非告知",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "BOOTH_SHOWING",
+        "relevance": "用3个准备行动展示恐惧——不写情绪只写动作是最强的‘展示’"
+      },
+      {
+        "principleId": "LAO_SHE_ACTION",
+        "relevance": "通过具体行动序列呈现心理状态，让动作本身说话"
+      }
+    ]
   },
   {
     "id": "TQ-014",
@@ -306,7 +416,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "世界碎裂的视觉画面是穿越的‘枪’——读者第一眼就知道发生了什么"
+      }
+    ]
   },
   {
     "id": "TQ-015",
@@ -326,7 +442,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "奇幻/科幻",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "远期预告是挂在第一章末尾的‘枪’——读者会一直等待它打响"
+      }
+    ]
   },
   {
     "id": "TQ-016",
@@ -346,7 +468,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_EVERYTHING_MATTERS",
+        "relevance": "贫困的每个细节都有份量——两个窝头比一百字‘很穷’更有力"
+      }
+    ]
   },
   {
     "id": "TQ-017",
@@ -369,6 +497,12 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "密闭空间+未知威胁是组合‘枪’——读者知道它们必须被解决"
+      }
     ]
   },
   {
@@ -392,6 +526,12 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "STRUNK_WHITE_CONCISE",
+        "relevance": "用一个数字矛盾替代整段说明——最简洁的悬念制造方式"
+      }
     ]
   },
   {
@@ -415,6 +555,12 @@
     "prerequisites": [
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "CRON_BRAIN_SIMULATION",
+        "relevance": "暴力事件瞬间建立读者对世界规则的认知——大脑对威胁的敏感度最高"
+      }
     ]
   },
   {
@@ -439,7 +585,13 @@
       "AIP-017",
       "AIP-002"
     ],
-    "mergedInto": "AIP-005"
+    "mergedInto": "AIP-005",
+    "classicalBasis": [
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "身份反转揭示角色的隐藏维度——让读者重新审视对人物的理解"
+      }
+    ]
   },
   {
     "id": "TQ-021",
@@ -464,6 +616,12 @@
       "AIP-016",
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "STRUNK_WHITE_CONCISE",
+        "relevance": "规则漏洞往往是规则中最简洁的地方——用最少文字制造最大破绽"
+      }
     ]
   },
   {
@@ -484,7 +642,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "身份与行为的反差是视觉化的‘枪’——读者立刻好奇这矛盾意味着什么"
+      }
+    ]
   },
   {
     "id": "TQ-023",
@@ -504,7 +668,13 @@
     "coreName": "开篇钩子",
     "difficultyOrder": 1,
     "genreScope": "通用",
-    "prerequisites": []
+    "prerequisites": [],
+    "classicalBasis": [
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "双重身份是角色复杂性的起点——读者不知道哪个身份是‘真’的"
+      }
+    ]
   },
   {
     "id": "TQ-024",
@@ -529,6 +699,12 @@
       "AIP-016",
       "AIP-017",
       "AIP-002"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "SHEN_CONGWEN_CLING",
+        "relevance": "反复出现的梦境像‘粘’在读者心头的线索——每次出现都加深印象"
+      }
     ]
   },
   {
@@ -553,6 +729,16 @@
     "prerequisites": [
       "TE-013",
       "AIP-017"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_EVERYTHING_MATTERS",
+        "relevance": "日常行为的每个细节都有份量——投一枚铜便士带出货币体系和能源系统"
+      },
+      {
+        "principleId": "CHEKHOV_GUN",
+        "relevance": "日常物品也是‘枪’——煤气灯计费器不仅照亮街道，也照亮世界观"
+      }
     ]
   },
   {
@@ -577,6 +763,16 @@
     "prerequisites": [
       "TE-013",
       "TQ-008"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_ACTION",
+        "relevance": "重复台词是角色的语言动作——每次重复都在强化人物印记"
+      },
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "同一句台词在不同语境中的微妙变化，揭示角色的多面性"
+      }
     ]
   },
   {
@@ -601,6 +797,16 @@
     "prerequisites": [
       "TE-013",
       "TQ-008"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_ACTION",
+        "relevance": "‘活下去’是最高密度的语言动作——三个字承载整场告别的重量"
+      },
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "极简台词为角色留下想象空间——读者用自己的情感填充"
+      }
     ]
   },
   {
@@ -624,6 +830,16 @@
     "prerequisites": [
       "TE-013",
       "TQ-008"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_ACTION",
+        "relevance": "日常场景中的动作序列是角色性格最自然的展示窗口"
+      },
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "一个场景同时展现3个特征——让角色在读者心中迅速立体化"
+      }
     ]
   },
   {
@@ -647,6 +863,12 @@
     "prerequisites": [
       "TE-013",
       "TQ-008"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "LAO_SHE_EVERYTHING_MATTERS",
+        "relevance": "贫困的具体细节（两个窝头）比抽象标签更有份量——细节即真实"
+      }
     ]
   },
   {
@@ -670,6 +892,12 @@
     "prerequisites": [
       "TE-013",
       "TQ-008"
+    ],
+    "classicalBasis": [
+      {
+        "principleId": "FORSTER_ROUND",
+        "relevance": "绰号与能力的反差本身就是角色复杂性的开端——读者自然好奇"
+      }
     ]
   },
   {

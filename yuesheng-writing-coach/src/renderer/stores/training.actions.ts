@@ -12,8 +12,8 @@ import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
 import { useConfigStore } from './config.store';
 import { getInvoke } from '../utils/ipc';
-import { IPC_CHANNELS } from '../../shared/constants';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
+import { ConfigApi } from '../../shared/api-contracts/config.contract';
 import { severityToNumber } from '../../shared/severity-utils';
 import type {
   ErrorCard,
@@ -96,8 +96,7 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
 }
 
 /**
- * startReading — M2: B-02 决策触发的阅读前置任务
- *
+ * startReading — 开始阅读前置任务
  * 当 readingDecision.required 时调用，加载 reading-library 条目
  * 并创建 mode: 'reading_task' 的活跃会话。
  * 完成分析步骤后关闭阅读会话，训练流程继续。
@@ -115,8 +114,16 @@ export function createStartReadingAction(set: SetStateFn, get: GetStateFn) {
       const fallbackSyndromeId = get().errorCards[0]?.syndromeId ?? 'unknown';
       const syndromeId = match?.syndromeId ?? fallbackSyndromeId;
 
-      // 加载阅读库条目
-      const readingResult = await getInvoke()(IPC_CHANNELS.CONFIG_GET_READING_ENTRY, { syndromeId }) as { entries: Array<{ id: string; title: string; excerpt: string; analysisPrompt: string }> };
+      // P1-2: 创建训练记录，用于追踪阅读任务完成情况
+      const assignResult = await getInvoke()(TrainingApi.assign.channel, {
+        sessionId,
+        challengeId: `reading-${syndromeId}`,
+      }) as { error?: string; record?: TrainingRecord };
+
+      if (assignResult.error) throw new Error(assignResult.error);
+
+      // P1-4: 使用 ConfigApi 契约加载阅读库条目
+      const readingResult = await getInvoke()(ConfigApi.getReadingEntry.channel, { syndromeId }) as { entries: Array<{ id: string; title: string; excerpt: string; analysisPrompt: string }> };
       const entry = readingResult.entries[0];
 
       // 构建阅读内容
@@ -138,6 +145,7 @@ export function createStartReadingAction(set: SetStateFn, get: GetStateFn) {
         originalQuote: '',
         constraint: '',
         userDraft: '',
+        recordId: assignResult.record?.id,
         syndromeId,
         targetSyndrome: match?.syndromeName,
       };
