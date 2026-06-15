@@ -6,7 +6,7 @@
 //   3. 可调试：详细日志记录解析过程
 
 import { SyndromeId, ActionId } from '../../../shared/constants';
-import { DiagnosisEntry, SyndromeResult, SeverityLevel } from '../../../renderer/shared/types';
+import { DiagnosisEntry, SyndromeResult, SeverityLevel } from '../../../shared/types/index';
 
 /** 诊断表标记 */
 const DIAGNOSIS_START = '---DIAGNOSIS_START---';

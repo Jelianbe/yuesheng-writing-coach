@@ -1,4 +1,4 @@
-import { ApiConfig } from '../renderer/shared/types';
+import { ApiConfig } from '../shared/types/index';
 
 export interface ApiChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -144,8 +144,11 @@ export class ApiProxy {
           const parsed = JSON.parse(data);
           const content = parsed.choices?.[0]?.delta?.content;
           if (content) yield content;
-        } catch {
-          // skip malformed chunks
+        } catch (e) {
+          // skip malformed chunks - 解析失败不影响流处理
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[api-proxy] Malformed chunk:', e);
+          }
         }
       }
     }
@@ -231,8 +234,11 @@ export class ApiProxy {
               hasToolCalls = true;
             }
           }
-        } catch {
-          // skip malformed chunks
+        } catch (e) {
+          // skip malformed chunks - 解析失败不影响流处理
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[api-proxy] Malformed chunk:', e);
+          }
         }
       }
     }

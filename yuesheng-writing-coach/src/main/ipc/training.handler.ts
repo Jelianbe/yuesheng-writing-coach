@@ -12,7 +12,7 @@
  */
 
 import { IPC_CHANNELS } from '../../shared/constants';
-import { ActiveProblem } from '../../renderer/shared/types';
+import { ActiveProblem } from '../../shared/types/index';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';

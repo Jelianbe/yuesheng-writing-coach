@@ -8,7 +8,7 @@
  * 所有编排逻辑已迁移至 ChatOrchestratorService。
  */
 
-import type { AttitudeLevel } from '../../renderer/shared/types';
+import type { AttitudeLevel } from '../../shared/types/index';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';

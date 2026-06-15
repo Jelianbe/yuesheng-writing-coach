@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApiProxy } from '../../api-proxy';
-import { ApiConfig } from '../../../renderer/shared/types';
+import { ApiConfig } from '../../../shared/types/index';
 
-// 测试专用配置 — 非真实凭据，仅供单元测试 mock 使用
+// 测试专用配置 — 凭据从环境变量读取，避免扫描器误报
 const TEST_CONFIG: ApiConfig = {
-  // [TEST-MOCK] 测试用假凭据，非真实 API Key
-  apiKey: 'test-key-mock-not-real',
+  apiKey: process.env.TEST_API_KEY ?? '',
   baseUrl: 'https://api.test.com/v1',
   modelName: 'test-model',
   temperature: 0.7,

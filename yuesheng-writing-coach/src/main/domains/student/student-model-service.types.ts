@@ -6,7 +6,7 @@
  *   - SPEC_adaptive-teaching_V1.0.md §3 学生模型
  */
 
-import type { SeverityLevel } from '../../../renderer/shared/types';
+import type { SeverityLevel } from '../../../shared/types/index';
 
 export type { SeverityLevel };
 

@@ -153,8 +153,9 @@ export const GrowthPanel: React.FC = () => {
             });
           }
         }
-      } catch {
-        // 静默
+      } catch (e) {
+        // 加载失败时保持静默，避免阻塞UI
+        console.warn('[GrowthPanel] Failed to load data:', e);
       } finally {
         if (mounted) setLoading(false);
       }

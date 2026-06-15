@@ -2,8 +2,8 @@
  * 教学策略路由 — Layer 3：参数细化 + 后向兼容桥接
  */
 
-import type { RouterInput, FocusDecision, ModeDecision, ParameterDecision, TeachingMode } from '../../../../renderer/shared/types';
-import { RouterOutput, PERSONA_PRESETS } from '../../../../renderer/shared/types';
+import type { RouterInput, FocusDecision, ModeDecision, ParameterDecision, TeachingMode } from '../../../../shared/types/index';
+import { RouterOutput, PERSONA_PRESETS } from '../../../../shared/types/index';
 import type { RouterConfigs, CoachingTemplatesConfig, UserTypeMapConfig, CoachingTemplate } from './router.types';
 import type { PhaseConfig } from './router.types';
 import { SYNDROME_TYPE_TO_PRACTICE, MODE_TO_PRACTICE } from './router.constants';

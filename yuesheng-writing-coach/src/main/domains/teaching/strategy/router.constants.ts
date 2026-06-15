@@ -2,7 +2,7 @@
  * 教学策略路由 — 常量映射
  */
 
-import type { TeachingStrategy, TeachingMode } from '../../../../renderer/shared/types';
+import type { TeachingStrategy, TeachingMode } from '../../../../shared/types/index';
 
 /** syndrome-type-map.json 的 recommendedEntry → TeachingStrategy 映射 */
 export const ENTRY_TO_STRATEGY: Record<string, TeachingStrategy> = {

@@ -4,7 +4,7 @@
  */
 
 import { TeachingPhase, TeachingSubphase } from '../../../../shared/constants';
-import type { FocusAreaValue } from '../../../../renderer/shared/types';
+import type { FocusAreaValue } from '../../../../shared/types/index';
 
 /**
  * 聚焦方向对应的世界观子阶段序列

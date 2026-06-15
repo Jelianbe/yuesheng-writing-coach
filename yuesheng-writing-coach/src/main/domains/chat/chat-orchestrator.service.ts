@@ -10,11 +10,11 @@
 
 import { BrowserWindow } from 'electron';
 import Database from 'better-sqlite3';
-import { ApiProxy, type ChatCompletionTool, type AccumulatedToolCall } from '../../api-proxy';
+import { ApiProxy } from '../../api-proxy';
 import type { ConfigService } from '../../shared/services/config.service';
 import { SessionService } from '../../shared/services/session.service';
 import { IPC_CHANNELS, MAX_DIAGNOSIS_HISTORY } from '../../../shared/constants';
-import type { AttitudeLevel, DiagnosisAnalysis, SyndromeResult, DiagnosisEntry, SeverityLevel } from '../../../renderer/shared/types';
+import type { AttitudeLevel, DiagnosisAnalysis, SyndromeResult, DiagnosisEntry, SeverityLevel } from '../../../shared/types/index';
 import type { SyndromeId } from '../../../shared/constants';
 import { markDiagnosisPushed } from '../../ipc/utils/diagnosis-dedup';
 import { SYNDROME_META, getActionsForSyndrome } from '../../../shared/mappings';
@@ -28,6 +28,9 @@ import { groupPassagesBySyndrome, getEvidenceForSyndrome } from '../diagnosis/ev
 import * as path from 'path';
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
+import { probeToolSupport } from './chat-tools';
+import { handleStreamResponse, handleStreamResponseWithTools } from './stream-handler';
+import type { StreamHandlerDeps } from './stream-handler';
 
 export interface ChatOrchestratorDeps {
   configService: ConfigService;
@@ -40,57 +43,6 @@ export interface ChatOrchestratorDeps {
   mainWindow: BrowserWindow | null;
   db: Database.Database;
 }
-
-// ============ Tool Calling 类型 ============
-
-/** 工具处理函数映射表 */
-const toolHandlers: Record<string, (args: unknown, db: Database.Database) => Promise<unknown>> = {
-  readChapter: async (args, db) => {
-    const { chapterId, titleHint } = args as { chapterId?: string; titleHint?: string };
-
-    if (chapterId) {
-      const row = db.prepare('SELECT id, title, content FROM chapters WHERE id = ?').get(chapterId) as
-        { id: string; title: string; content: string } | undefined;
-      if (!row) return { found: false, error: '章节不存在' };
-      return { found: true, title: row.title, content: row.content, wordCount: row.content?.length ?? 0 };
-    }
-
-    if (titleHint) {
-      const row = db.prepare('SELECT id, title, content FROM chapters WHERE title LIKE ? ORDER BY updated_at DESC LIMIT 1').get(`%${titleHint}%`) as
-        { id: string; title: string; content: string } | undefined;
-      if (!row) return { found: false, error: '未找到匹配章节', titleHint };
-      return { found: true, title: row.title, content: row.content, wordCount: row.content?.length ?? 0 };
-    }
-
-    const recent = db.prepare('SELECT id, title, length(content) as wordCount FROM chapters ORDER BY updated_at DESC LIMIT 5').all();
-    return { found: false, recentChapters: recent, message: '未指定章节，以下是最近的 5 个章节' };
-  },
-};
-
-/** 工具定义列表 */
-const TOOLS_DEFINITIONS: ChatCompletionTool[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'readChapter',
-      description: '读取用户已保存的章节内容。当用户提到某个章节、作品、或要求看看/分析/读某段文字时调用。如果用户直接给出 /chapters/{uuid} 格式的引用，提取 chapterId；如果是自然语言描述（如"第六章""昨天写的"），用 titleHint 模糊匹配。',
-      parameters: {
-        type: 'object',
-        properties: {
-          chapterId: { type: 'string', description: '章节 UUID' },
-          titleHint: { type: 'string', description: '章节标题关键词，用于模糊匹配' },
-        },
-      },
-    },
-  },
-];
-
-/** 白名单模型 — 确定支持 tool calling */
-const TOOL_WHITELIST = ['deepseek', 'gpt-', 'claude-'];
-/** 黑名单模型 — 确定不支持 tool calling */
-const TOOL_BLACKLIST = ['llama-2', 'mixtral-8x7b'];
-
-const MAX_TOOL_ROUNDS = 3;
 
 export class ChatOrchestratorService {
   private deps: ChatOrchestratorDeps;
@@ -358,38 +310,7 @@ export class ChatOrchestratorService {
 
   private async probeToolSupport(modelName: string): Promise<boolean> {
     if (this.toolSupportCache !== null) return this.toolSupportCache;
-
-    const lower = modelName.toLowerCase();
-    if (TOOL_BLACKLIST.some(b => lower.includes(b))) {
-      this.toolSupportCache = false;
-      return false;
-    }
-    if (TOOL_WHITELIST.some(w => lower.includes(w))) {
-      this.toolSupportCache = true;
-      return true;
-    }
-
-    try {
-      const proxy = this.getApiProxy();
-      const response = await fetch(`${proxy.getBaseUrl()}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${proxy.getApiKey()}`,
-        },
-        body: JSON.stringify({
-          model: modelName,
-          messages: [{ role: 'user', content: 'hi' }],
-          tools: [{ type: 'function', function: { name: 'ping', description: 'ping', parameters: { type: 'object', properties: {} } } }],
-          max_tokens: 10,
-          stream: false,
-        }),
-      });
-      const data = await response.json();
-      this.toolSupportCache = !!data.choices?.[0]?.message?.tool_calls;
-    } catch {
-      this.toolSupportCache = false;
-    }
+    this.toolSupportCache = await probeToolSupport(modelName, () => this.getApiProxy(), { value: null });
     return this.toolSupportCache;
   }
 
@@ -547,60 +468,34 @@ export class ChatOrchestratorService {
   ): Promise<{ success: boolean; messageId?: string; sessionId?: string; error?: string }> {
     const proxy = this.getApiProxy();
     const { deps } = this;
-    const messageId = this.generateId();
-    let fullResponse = '';
 
     this.currentAbortController?.abort();
     this.currentAbortController = new AbortController();
 
+    const streamDeps: StreamHandlerDeps = {
+      mainWindow: deps.mainWindow,
+      sessionId: activeSessionId,
+      db: deps.db,
+      saveMessage: (sessionId, role, content) => deps.sessionService.saveMessage(sessionId, role, content),
+      autoGenerateTitle: (sessionId) => deps.sessionService.autoGenerateTitle(sessionId),
+      processAIResponse: (response, sessionId, messageId) => deps.diagnosisDomain.processAIResponse(response, sessionId, messageId),
+    };
+
     try {
-      if (diagnosisAnalysis && isNarrative) {
-        deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
-          sessionId: activeSessionId,
-          chunk: `\u{1F4CB} 分析摘要：${diagnosisAnalysis.rootCause}\n\n---\n\n`,
-        });
-      }
-
-      for await (const chunk of proxy.chatStream(messages, this.currentAbortController.signal)) {
-        fullResponse += chunk;
-        deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
-          sessionId: activeSessionId, chunk,
-        });
-      }
-
+      const result = await handleStreamResponse(
+        proxy,
+        messages,
+        streamDeps,
+        diagnosisAnalysis,
+        isNarrative,
+        this.currentAbortController,
+        () => this.generateId(),
+      );
       this.currentAbortController = null;
-
-      deps!.sessionService.saveMessage(activeSessionId, 'assistant', fullResponse);
-      deps!.sessionService.autoGenerateTitle(activeSessionId);
-
-      try { deps!.diagnosisDomain.processAIResponse(fullResponse, activeSessionId, messageId); } catch (err) {
-        console.error('[Chat] Diagnosis processing failed:', err);
-      }
-
-      deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
-        sessionId: activeSessionId, fullResponse, messageId,
-      });
-
-      return { success: true, messageId, sessionId: activeSessionId };
+      return result;
     } catch (error) {
-      const isAbort = error instanceof Error && error.name === 'AbortError';
-      if (isAbort) {
-        console.log(`[Chat] Stream aborted by user, partial=${fullResponse.length}chars`);
-        this.currentAbortController = null;
-        if (fullResponse) {
-          deps!.sessionService.saveMessage(activeSessionId, 'assistant', fullResponse);
-        }
-        deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
-          sessionId: activeSessionId, fullResponse, messageId, aborted: true,
-        });
-        return { success: true, messageId, sessionId: activeSessionId };
-      }
-
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
-        sessionId: activeSessionId, fullResponse, messageId, error: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      this.currentAbortController = null;
+      throw error;
     }
   }
 
@@ -610,84 +505,32 @@ export class ChatOrchestratorService {
   ): Promise<{ success: boolean; messageId?: string; sessionId?: string; error?: string }> {
     const proxy = this.getApiProxy();
     const { deps } = this;
-    const messageId = this.generateId();
-    let fullResponse = '';
 
     this.currentAbortController?.abort();
     this.currentAbortController = new AbortController();
 
+    const streamDeps: StreamHandlerDeps = {
+      mainWindow: deps.mainWindow,
+      sessionId: activeSessionId,
+      db: deps.db,
+      saveMessage: (sessionId, role, content) => deps.sessionService.saveMessage(sessionId, role, content),
+      autoGenerateTitle: (sessionId) => deps.sessionService.autoGenerateTitle(sessionId),
+      processAIResponse: (response, sessionId, messageId) => deps.diagnosisDomain.processAIResponse(response, sessionId, messageId),
+    };
+
     try {
-      for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-        let currentRoundText = '';
-        const toolCallsInRound: AccumulatedToolCall[] = [];
-
-        for await (const event of proxy.chatStreamWithTools(messages, TOOLS_DEFINITIONS, this.currentAbortController!.signal)) {
-          if (event.type === 'text') {
-            currentRoundText += event.content;
-            fullResponse += event.content;
-            deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
-              sessionId: activeSessionId, chunk: event.content,
-            });
-          } else if (event.type === 'tool_calls') {
-            toolCallsInRound.push(...event.toolCalls);
-          }
-        }
-
-        if (toolCallsInRound.length === 0) break;
-
-        for (const tc of toolCallsInRound) {
-          deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_TOOL_EXECUTING, {
-            toolName: tc.function.name, args: tc.function.arguments,
-          });
-        }
-
-        for (const tc of toolCallsInRound) {
-          const fnName = tc.function.name;
-          let args: unknown = {};
-          try { args = JSON.parse(tc.function.arguments); } catch { /* 空对象 */ }
-
-          const handler = toolHandlers[fnName];
-          const result = handler ? await handler(args, deps!.db) : { error: `Unknown tool: ${fnName}` };
-
-          messages.push({ role: 'assistant', content: null, tool_calls: [{ id: tc.id, type: 'function', function: { name: tc.function.name, arguments: tc.function.arguments } }] } as any);
-          messages.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) } as any);
-        }
-
-      }
-
+      const result = await handleStreamResponseWithTools(
+        proxy,
+        messages,
+        streamDeps,
+        this.currentAbortController,
+        () => this.generateId(),
+      );
       this.currentAbortController = null;
-
-      deps!.sessionService.saveMessage(activeSessionId, 'assistant', fullResponse);
-      deps!.sessionService.autoGenerateTitle(activeSessionId);
-
-      try { deps!.diagnosisDomain.processAIResponse(fullResponse, activeSessionId, messageId); } catch (err) {
-        console.error('[Chat] Diagnosis processing failed:', err);
-      }
-
-      deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
-        sessionId: activeSessionId, fullResponse, messageId,
-      });
-
-      return { success: true, messageId, sessionId: activeSessionId };
+      return result;
     } catch (error) {
-      const isAbort = error instanceof Error && error.name === 'AbortError';
-      if (isAbort) {
-        console.log(`[ToolCall] Stream aborted by user, partial=${fullResponse.length}chars`);
-        this.currentAbortController = null;
-        if (fullResponse) {
-          deps!.sessionService.saveMessage(activeSessionId, 'assistant', fullResponse);
-        }
-        deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
-          sessionId: activeSessionId, fullResponse, messageId, aborted: true,
-        });
-        return { success: true, messageId, sessionId: activeSessionId };
-      }
-
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      deps?.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
-        sessionId: activeSessionId, fullResponse, messageId, error: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      this.currentAbortController = null;
+      throw error;
     }
   }
 

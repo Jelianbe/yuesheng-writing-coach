@@ -3,7 +3,7 @@
  * 提供各种预定义的诊断测试数据
  */
 
-import type { DiagnosisEntry, SyndromeResult, DiagnosisAnalysis } from '../../renderer/shared/types';
+import type { DiagnosisEntry, SyndromeResult, DiagnosisAnalysis } from '../../shared/types/index';
 
 /** 单个症候工厂 */
 export function createSyndrome(overrides: Partial<SyndromeResult> = {}): SyndromeResult {

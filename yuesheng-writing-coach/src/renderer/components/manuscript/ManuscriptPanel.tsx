@@ -104,8 +104,9 @@ export const ManuscriptPanel: React.FC = () => {
     try {
       const result = await updateContent(currentChapter.id, text);
       if (result) setLastSaved(new Date());
-    } catch {
-      // 静默处理
+    } catch (e) {
+      // 静默处理，避免阻塞UI
+      console.warn('[ManuscriptPanel] Failed to update content:', e);
     } finally {
       setSaving(false);
     }

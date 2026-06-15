@@ -12,7 +12,7 @@ import {
   autoLockConsistentSyndromes,
 } from './teaching-state-machine';
 import { TeachingState } from './teaching-state.types';
-import type { ActiveProblem } from '../../../../renderer/shared/types';
+import type { ActiveProblem } from '../../../../shared/types/index';
 
 function makeBaseState(overrides: Partial<TeachingState> = {}): TeachingState {
   return {

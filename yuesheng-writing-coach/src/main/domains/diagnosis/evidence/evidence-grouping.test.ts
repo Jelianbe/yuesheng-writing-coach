@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { groupPassagesBySyndrome, getEvidenceForSyndrome } from './evidence-grouping';
-import { KeyPassage } from '../../../../renderer/shared/types';
+import { KeyPassage } from '../../../../shared/types/index';
 
 // === 测试数据构造 ===
 

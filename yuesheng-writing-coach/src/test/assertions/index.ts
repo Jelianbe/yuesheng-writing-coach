@@ -3,7 +3,7 @@
  */
 
 import { expect } from 'vitest';
-import type { DiagnosisEntry, TeachingState, ActiveProblem } from '../../renderer/shared/types';
+import type { DiagnosisEntry, TeachingState, ActiveProblem } from '../../shared/types/index';
 
 /** 诊断结果断言 */
 export function assertValidDiagnosisEntry(entry: DiagnosisEntry) {

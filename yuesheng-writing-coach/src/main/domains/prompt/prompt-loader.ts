@@ -7,8 +7,8 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import { AttitudeLevel, DiagnosisAnalysis } from '../../../renderer/shared/types';
-import type { RoleSkillConfig, RoleSchedulesConfig } from '../../../renderer/shared/types';
+import { AttitudeLevel, DiagnosisAnalysis } from '../../../shared/types/index';
+import type { RoleSkillConfig, RoleSchedulesConfig } from '../../../shared/types/index';
 import type { SyndromeId } from '../../../shared/constants';
 import { PromptBuilder } from './prompt-builder';
 import { TeachingState } from '../teaching/teaching-state/teaching-state.types';

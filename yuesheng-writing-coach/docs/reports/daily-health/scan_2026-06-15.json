@@ -1,0 +1,294 @@
+{
+  "scan_date": "2026-06-15",
+  "scan_version": "V2.7",
+  "project_root": "D:\\ai-teacher\\yuesheng-writing-coach",
+  "stats": {
+    "date": "2026-06-15",
+    "total_files": 233,
+    "total_lines": 32557,
+    "total_any": 25,
+    "total_ts_ignore": 1,
+    "total_as_assert": 464,
+    "total_console": 96,
+    "total_todo": 3,
+    "total_fixme": 0,
+    "total_export_default": 0,
+    "total_nonnull_assert": 93,
+    "total_inline_style": 337,
+    "total_broken_imports": 0,
+    "total_security_issues": 0,
+    "total_ipc_trycatch_issues": 0,
+    "total_empty_catch": 0,
+    "large_files_count": 18,
+    "ts_ignore_files_count": 1,
+    "ipc_files_count": 13,
+    "db_files_count": 11
+  },
+  "large_files_top10": [
+    {
+      "file": "src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "lines": 654
+    },
+    {
+      "file": "src\\main\\domains\\chat\\chat-orchestrator.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\chat\\chat-orchestrator.service.ts",
+      "lines": 581
+    },
+    {
+      "file": "src\\main\\domains\\teaching\\teaching-state\\state-locking.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\teaching\\teaching-state\\state-locking.test.ts",
+      "lines": 529
+    },
+    {
+      "file": "src\\main\\domains\\prompt\\prompt-loader.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\prompt\\prompt-loader.ts",
+      "lines": 511
+    },
+    {
+      "file": "src\\main\\domains\\student\\student-model-service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\student\\student-model-service.ts",
+      "lines": 477
+    },
+    {
+      "file": "src\\renderer\\stores\\training.actions.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\training.actions.ts",
+      "lines": 467
+    },
+    {
+      "file": "src\\renderer\\components\\layout\\WorkTreePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\layout\\WorkTreePanel.tsx",
+      "lines": 408
+    },
+    {
+      "file": "src\\renderer\\components\\chat\\ChatView.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\chat\\ChatView.tsx",
+      "lines": 384
+    },
+    {
+      "file": "src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "lines": 383
+    },
+    {
+      "file": "src\\main\\domains\\teaching\\strategy\\service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\teaching\\strategy\\service.ts",
+      "lines": 379
+    }
+  ],
+  "any_heavy_top10": [
+    {
+      "file": "src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "any_count": 8
+    }
+  ],
+  "ts_ignore_files": [
+    {
+      "file": "src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "count": 1
+    }
+  ],
+  "export_default_files": [],
+  "nonnull_assert_top10": [
+    {
+      "file": "src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "count": 18
+    },
+    {
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "count": 17
+    },
+    {
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "count": 16
+    },
+    {
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "count": 12
+    },
+    {
+      "file": "src\\main\\services\\output-validator.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\output-validator.test.ts",
+      "count": 6
+    },
+    {
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "count": 5
+    },
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "count": 3
+    },
+    {
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "count": 3
+    },
+    {
+      "file": "src\\renderer\\hooks\\useDiagnosisFlow.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\hooks\\useDiagnosisFlow.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\renderer\\services\\teaching-state.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\services\\teaching-state.service.ts",
+      "count": 2
+    }
+  ],
+  "inline_style_top10": [
+    {
+      "file": "src\\renderer\\components\\profile\\AbilityProfilePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\profile\\AbilityProfilePanel.tsx",
+      "count": 39
+    },
+    {
+      "file": "src\\renderer\\components\\settings\\SettingsPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\settings\\SettingsPanel.tsx",
+      "count": 27
+    },
+    {
+      "file": "src\\renderer\\components\\growth\\GrowthPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\growth\\GrowthPanel.tsx",
+      "count": 26
+    },
+    {
+      "file": "src\\renderer\\components\\layout\\DiagnosisPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\layout\\DiagnosisPanel.tsx",
+      "count": 26
+    },
+    {
+      "file": "src\\renderer\\components\\editor\\ChapterEditor.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\editor\\ChapterEditor.tsx",
+      "count": 16
+    },
+    {
+      "file": "src\\renderer\\components\\training\\BehaviorDerivationTool.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\training\\BehaviorDerivationTool.tsx",
+      "count": 16
+    },
+    {
+      "file": "src\\renderer\\components\\search\\SearchPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\search\\SearchPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components\\tools\\ToolsPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\tools\\ToolsPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\manuscript\\ManuscriptPanel.tsx",
+      "count": 14
+    },
+    {
+      "file": "src\\renderer\\components\\training\\ErrorCardsSection.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components\\training\\ErrorCardsSection.tsx",
+      "count": 14
+    }
+  ],
+  "ipc_files": [
+    {
+      "file": "src\\main\\ipc\\ability-profile.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\ability-profile.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\teaching-state.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-state.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\training.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\create-handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\create-handler.ts",
+      "channels": [
+        "channel:name"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\validate-payload.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\validate-payload.ts",
+      "channels": []
+    }
+  ],
+  "db_files": [],
+  "circular_deps": {
+    "checked": false,
+    "error": "madge 未安装，跳过循环依赖检测 (npm install -D madge)",
+    "dependencies": []
+  },
+  "security": {
+    "hardcoded_credentials": 0,
+    "total_issues": 0
+  },
+  "ipc_channel_pairing": {
+    "uncovered_channels": 0,
+    "details": []
+  },
+  "store_action_registration": {
+    "unregistered_actions": 0,
+    "details": []
+  },
+  "empty_catch_blocks": {
+    "total": 0,
+    "files": []
+  },
+  "import_boundary": {
+    "violations": 0,
+    "details": []
+  },
+  "di_injection": {
+    "unregistered": 0,
+    "unused": 0,
+    "details": []
+  },
+  "issues": []
+}

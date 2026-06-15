@@ -17,7 +17,7 @@ export type {
   TeachingState,
   TeachingProgressDisplay,
   SeverityLevel,
-} from '../../../../renderer/shared/types';
+} from '../../../../shared/types/index';
 
 import { TeachingPhase, TeachingSubphase } from '../../../../shared/constants';
 

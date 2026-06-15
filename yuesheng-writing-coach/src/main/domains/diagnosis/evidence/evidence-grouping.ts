@@ -7,7 +7,7 @@
  * 降级策略：如果 AI 未输出 syndromeRef（向后兼容），所有症候共享前 3 个 keyPassages。
  */
 
-import { KeyPassage } from '../../../../renderer/shared/types';
+import { KeyPassage } from '../../../../shared/types/index';
 
 /**
  * 检查 syndromeRef 是否有效（存在于症候元数据中）

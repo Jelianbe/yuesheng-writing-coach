@@ -7,7 +7,7 @@
  * 目标：在"诊断"和"给出建议"之间插入反思关卡，让用户先思考再接受建议
  */
 
-import type { DiagnosisAnalysis, AttitudeLevel } from '../../../renderer/shared/types';
+import type { DiagnosisAnalysis, AttitudeLevel } from '../../../shared/types/index';
 import type { SyndromeId } from '../../../shared/constants';
 import { SYNDROME_META } from '../../../shared/mappings';
 import { severityToNumber } from '../../../shared/severity-utils';

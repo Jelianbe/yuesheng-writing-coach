@@ -5,7 +5,7 @@
  * 内部实现：DiagnosisService, EvidenceService 等
  */
 
-import type { DiagnosisAnalysis, DiagnosisEntry } from '../../../renderer/shared/types';
+import type { DiagnosisAnalysis, DiagnosisEntry } from '../../../shared/types/index';
 
 export interface IDiagnosisDomain {
   save(data: {

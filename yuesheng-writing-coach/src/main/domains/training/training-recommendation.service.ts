@@ -10,7 +10,7 @@
  * 4. 无匹配模板的症候使用 fallbackChallenge
  */
 
-import { ActiveProblem, TrainingRecommendation, TechniqueInfo, SyndromeType } from '../../../renderer/shared/types';
+import { ActiveProblem, TrainingRecommendation, TechniqueInfo, SyndromeType } from '../../../shared/types/index';
 import challengeTemplates from '../../../../resources/config/challenge-templates.json';
 import techniqueLibrary from '../../../../resources/config/technique-library.json';
 import syndromeTypeMap from '../../../../resources/config/syndrome-type-map.json';

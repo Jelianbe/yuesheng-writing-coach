@@ -3,7 +3,7 @@
  * 负责：教育理论规则的条件匹配、工具函数
  */
 
-import type { RouterInput } from '../../../../renderer/shared/types';
+import type { RouterInput } from '../../../../shared/types/index';
 import type { EducationTheoryFragment, RouterConfigs, SyndromeTypeMapConfig } from './router.types';
 import { LAYER1_THEORY_RULE_IDS } from './router.constants';
 

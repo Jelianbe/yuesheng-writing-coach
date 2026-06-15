@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { EvidenceRecord, EvidenceChain } from '../../../../renderer/shared/types';
+import { EvidenceRecord, EvidenceChain } from '../../../../shared/types/index';
 
 interface EvidenceRow {
   evidence_id: string;

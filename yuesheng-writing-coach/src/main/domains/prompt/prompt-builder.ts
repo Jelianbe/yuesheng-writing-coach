@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getPhaseName, getSubphaseName } from '../teaching/teaching-state/teaching-state-machine';
 import { TeachingState } from '../teaching/teaching-state/teaching-state.types';
-import type { FocusArea } from '../../../renderer/shared/types';
+import type { FocusArea } from '../../../shared/types/index';
 import type { TeachingMode, ToneType, TeachingStrategyDecision } from '../teaching/strategy/service';
 import type { PrioritizedProblem } from '../teaching/problem-prioritizer.service';
 
@@ -269,8 +269,11 @@ export class PromptBuilder {
           }
           lines.push('');
         }
-      } catch {
+      } catch (e) {
         // 文件不存在或解析失败时不注入模板内容（降级）
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[prompt-builder] Failed to load template:', e);
+        }
       }
     }
 

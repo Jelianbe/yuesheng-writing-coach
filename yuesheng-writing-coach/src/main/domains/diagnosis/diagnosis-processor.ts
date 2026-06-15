@@ -9,7 +9,7 @@ import { parseDiagnosisFromAIResponse } from './diagnosis-parser';
 import type { DiagnosisService } from './diagnosis.service';
 import type { EvidenceService } from './evidence/evidence.service';
 import type { DiagnosisMerger } from './diagnosis-merger';
-import type { DiagnosisEntry } from '../../../renderer/shared/types-diagnosis';
+import type { DiagnosisEntry } from '../../../shared/types/types-diagnosis';
 import { getAbilitiesForSyndrome } from '../../../shared/mappings';
 
 export interface DiagnosisProcessorDeps {

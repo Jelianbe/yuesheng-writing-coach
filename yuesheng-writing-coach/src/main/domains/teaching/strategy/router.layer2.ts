@@ -2,7 +2,7 @@
  * 教学策略路由 — Layer 2：教学方式选择
  */
 
-import type { RouterInput, FocusDecision, ModeDecision, TeachingMode } from '../../../../renderer/shared/types';
+import type { RouterInput, FocusDecision, ModeDecision, TeachingMode } from '../../../../shared/types/index';
 import type { RouterConfigs, UserTypeMapConfig } from './router.types';
 import { ENTRY_TO_STRATEGY, USER_TYPE_MODE_TO_TEACHING_MODE, LAYER2_THEORY_RULE_IDS } from './router.constants';
 import { matchesCondition, getDominantSyndromeType } from './router.conditions';

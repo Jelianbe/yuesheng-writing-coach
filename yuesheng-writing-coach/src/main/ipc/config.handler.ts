@@ -7,7 +7,7 @@ import { ConfigService } from '../shared/services/config.service';
 import { IPC_CHANNELS } from '../../shared/constants';
 import {
   ApiConfig,
-} from '../../renderer/shared/types';
+} from '../../shared/types/index';
 import { createHandler } from './utils/create-handler';
 import { app } from 'electron';
 import * as path from 'path';
