@@ -15,6 +15,10 @@ export interface ConfigTestConnectionRequest {
   endpoint?: string;
 }
 
+export interface ConfigGetReadingEntryRequest {
+  syndromeId: string;
+}
+
 // ─── 响应类型 ───
 
 export interface ConfigGetResponse {
@@ -28,6 +32,17 @@ export interface ConfigSetResponse {
 export interface ConfigTestConnectionResponse {
   ok: boolean;
   message: string;
+}
+
+export interface ReadingEntry {
+  id: string;
+  title: string;
+  excerpt: string;
+  analysisPrompt: string;
+}
+
+export interface ConfigGetReadingEntryResponse {
+  entries: ReadingEntry[];
 }
 
 // ─── API 接口定义 ───
@@ -50,9 +65,16 @@ export const ConfigApi = {
     request: {} as ConfigTestConnectionRequest,
     response: {} as ApiResponse<ConfigTestConnectionResponse>,
   },
+
+  getReadingEntry: {
+    channel: 'config:getReadingEntry' as const,
+    request: {} as ConfigGetReadingEntryRequest,
+    response: {} as ApiResponse<ConfigGetReadingEntryResponse>,
+  },
 } as const;
 
 export type ConfigInvokeChannels =
   | typeof ConfigApi.get.channel
   | typeof ConfigApi.set.channel
-  | typeof ConfigApi.testConnection.channel;
+  | typeof ConfigApi.testConnection.channel
+  | typeof ConfigApi.getReadingEntry.channel;
