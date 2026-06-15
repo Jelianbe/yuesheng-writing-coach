@@ -61,6 +61,7 @@ const techniques = techniqueLibrary as unknown as TechniqueEntry[];
 interface SyndromeTypeEntry {
   name: string;
   syndromes: string[];
+  discoverable?: boolean | string;
   coreIssue: string;
   recommendedEntry: string;
   rationale: string;

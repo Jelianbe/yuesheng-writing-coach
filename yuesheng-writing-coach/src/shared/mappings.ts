@@ -137,6 +137,23 @@ export const SUBPHASE_TO_ACTIONS: Partial<Record<TeachingSubphase, string[]>> = 
   S4_SUMMARY: [],
 };
 
+/** 子阶段中文标签映射 */
+export const SUBPHASE_NAMES: Record<TeachingSubphase, string> = {
+  S0_CONFIRM: '确认参与',
+  S1_NATURAL_LAW: '世界观自然法则',
+  S1_PROTAGONIST: '主角人设',
+  S1_SOCIAL_STRUCT: '社会结构',
+  S1_FIRST_SCENE: '开篇画面',
+  S1_DAILY_DETAIL: '日常细节',
+  S2_IDENTIFY: '识别问题',
+  S2_GUIDE: '引导发现',
+  S2_REFLECTION: '反思总结',
+  S2_TEACHING: '教学讲解',
+  S2_ASSIGN_TASK: '分配练习',
+  S2_REVIEW_TASK: '回顾批改',
+  S4_SUMMARY: '综合总结',
+};
+
 /**
  * 病症→能力映射
  * 依据：syndrome-ability-map.ts 迁移

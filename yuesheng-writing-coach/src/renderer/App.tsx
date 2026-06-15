@@ -8,7 +8,7 @@ import { ChatView } from './components/chat/ChatView';
 import { TrainingWorkshop } from './components/training/TrainingWorkshop';
 import { DiagnosisPanel } from './components/layout/DiagnosisPanel';
 import { AbilityProfilePanel } from './components/profile/AbilityProfilePanel';
-import { GrowthPanel } from './components/growth/GrowthPanel';
+import { DiagnosisComparisonView } from './components/growth/DiagnosisComparisonView';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { SearchPanel } from './components/search/SearchPanel';
 import { ToolsPanel } from './components/tools/ToolsPanel';
@@ -100,7 +100,7 @@ export function App(): React.ReactElement {
     { id: 'works', icon: BookOpen, label: '作品' },
     { id: 'diagnosis', icon: ClipboardCheck, label: '作品诊断' },
     { id: 'training', icon: Target, label: '训练工坊' },
-    { id: 'growth', icon: TrendingUp, label: '成长记录' },
+    { id: 'growth', icon: TrendingUp, label: '诊断对比' },
     { id: 'profile', icon: User, label: '能力画像' },
     { id: 'tools', icon: Wrench, label: '创作工具' },
   ];
@@ -112,7 +112,7 @@ export function App(): React.ReactElement {
   return (
     <AppErrorBoundary>
       <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
-        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} readingDecision={readingDecision} readingComplete={readingComplete} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onStartReading={startReading} onDismissReadingComplete={dismissReadingComplete} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} lastEvaluationScore={lastEvaluationScore} lastSyndromeId={lastSyndromeId} />, diagnosis: <DiagnosisPanel />, growth: <GrowthPanel />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
+        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} readingDecision={readingDecision} readingComplete={readingComplete} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onStartReading={startReading} onDismissReadingComplete={dismissReadingComplete} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} lastEvaluationScore={lastEvaluationScore} lastSyndromeId={lastSyndromeId} />, diagnosis: <DiagnosisPanel />, growth: <DiagnosisComparisonView />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
           <div style={{ position: 'relative', height: '100%' }}>
             <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} isConfigured={isConfigured ?? false} onSend={handleSendMessage} onStop={handleStop} onStartEditing={startEditing} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={handleEnterWorkshopFromBridge} onDismissBridge={dismissBridge} />
           </div>

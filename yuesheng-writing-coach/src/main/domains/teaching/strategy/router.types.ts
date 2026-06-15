@@ -71,6 +71,7 @@ export interface SyndromeTypeMapConfig {
   types: Record<string, {
     label: string;
     syndromes: string[];
+    discoverable?: boolean | string;
     recommendedEntry: string;
   }>;
 }

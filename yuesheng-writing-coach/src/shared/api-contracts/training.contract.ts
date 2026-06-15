@@ -1,4 +1,5 @@
 import type { ApiResponse } from './base';
+import type { TrainingRecord } from '../types/types-training';
 
 // ─── 请求类型 ───
 
@@ -10,15 +11,14 @@ export interface TrainingRecommendRequest {
 
 export interface TrainingAssignRequest {
   sessionId: string;
-  templateId: string;
-  syndromeId: string;
+  challengeId: string;
 }
 
 export interface TrainingCompleteRequest {
-  sessionId: string;
   recordId: string;
-  result: string;
-  score?: number;
+  userResponse: string;
+  aiFeedback?: string;
+  effectiveness?: number;
 }
 
 export interface TrainingSkipRequest {
@@ -64,14 +64,11 @@ export interface TrainingRecommendResponse {
 }
 
 export interface TrainingAssignResponse {
-  recordId: string;
-  sessionId: string;
-  templateId: string;
-  assignedAt: number;
+  record: TrainingRecord;
 }
 
 export interface TrainingCompleteResponse {
-  success: true;
+  record: TrainingRecord;
 }
 
 export interface TrainingHistoryResponse {
