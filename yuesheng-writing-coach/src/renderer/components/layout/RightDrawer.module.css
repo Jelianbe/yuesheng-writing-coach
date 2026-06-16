@@ -1,57 +1,35 @@
-/* RightDrawer.module.css — 右侧工具抽屉面板 */
+/* RightDrawer.module.css — 右侧工具抽屉面板 V5 */
 
 /* ── 主容器 ── */
 .container {
   height: 100%;
   background: var(--bg-sidebar);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
   position: relative;
+  border-left: 1px solid var(--border);
 }
 
-/* ── 图标导航条 ── */
-.navBar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* ── 拖拽调节手柄 — 左边缘（设计文档 §4.4）── */
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
   height: 100%;
-  padding: 8px 0;
-  gap: 2px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 150ms ease;
 }
 
-.navBarBorderExpanded {
-  border-right: 1px solid var(--border-light);
+.resizeHandle:hover {
+  background: var(--accent-subtle);
 }
 
-.navBarBorderCollapsed {
-  border-right: 1px solid var(--border);
-}
-
-.navSettingsArea {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 4px;
-}
-
-/* ── 工作区 ── */
-.workspace {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-}
-
-/* ── 表头行 ── */
+/* ── 表头行（设计文档 §4.3）── */
 .headerRow {
   display: flex;
   align-items: center;
@@ -59,6 +37,8 @@
   padding: 0 8px;
   flex-shrink: 0;
   min-height: 38px;
+  background: var(--bg-header, var(--bg-sidebar));
+  border-bottom: 1px solid var(--border);
 }
 
 /* ── 操作按钮（紧凑型图标按钮）── */
@@ -83,14 +63,9 @@
   color: var(--text-secondary);
 }
 
-.actionBtnAuto {
+/* [⤢] 按钮 — 右对齐（设计文档 §4.3） */
+.collapseBtn {
   margin-left: auto;
-  color: var(--text-tertiary);
-}
-
-.actionBtnAuto:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
 }
 
 /* ── 内容区 ── */

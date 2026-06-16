@@ -1,9 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import {
-  Plus,
-  PanelLeftClose,
-  PanelLeftOpen,
-} from 'lucide-react';
+import { PanelLeftClose } from 'lucide-react';
 import { useUiLayoutStore } from '../../stores/ui-layout.store';
 import { useSessionStore } from '../../stores/session.store';
 import { useChapterStore } from '../../stores/chapter.store';
@@ -98,17 +94,16 @@ export const SoloSidebar: React.FC = () => {
 
   /* ── 样式对象（保留动态样式）── */
   const sidebarStyle: React.CSSProperties = {
-    width: sidebarCollapsed ? 44 : sidebarWidth,
+    width: sidebarCollapsed ? 0 : sidebarWidth,
     overflow: 'hidden',
     flexShrink: 0,
     display: 'flex',
     flexDirection: 'column',
     background: 'var(--bg-sidebar)',
-    borderRight: '1px solid var(--border)',
+    borderRight: sidebarCollapsed ? 'none' : '1px solid var(--border)',
     transition: isResizing ? 'none' : `width 280ms ${EASE}`,
     position: 'relative',
     zIndex: 50,
-    cursor: sidebarCollapsed ? 'pointer' : undefined,
   };
 
   const tabBase: React.CSSProperties = {
@@ -145,22 +140,11 @@ export const SoloSidebar: React.FC = () => {
     outline: 'none',
   };
 
-  const collapsedIconBtnStyle: React.CSSProperties = {
-    ...iconBtnStyle,
-    width: 32,
-    height: 32,
-    borderRadius: 'var(--radius-sm)',
-    color: 'var(--text-tertiary)',
-  };
-
   return (
     <div
       style={sidebarStyle}
       role="navigation"
       aria-label="侧边栏"
-      onClick={sidebarCollapsed ? toggleSidebar : undefined}
-      onMouseEnter={e => { if (sidebarCollapsed) { e.currentTarget.style.background = 'var(--accent-subtle)'; e.currentTarget.style.color = 'var(--accent)'; } }}
-      onMouseLeave={e => { if (sidebarCollapsed) { e.currentTarget.style.background = 'var(--bg-sidebar)'; e.currentTarget.style.color = 'var(--text-tertiary)'; } }}
     >
       {/* ── 展开状态：完整侧栏 ── */}
       {!sidebarCollapsed && (
@@ -224,28 +208,8 @@ export const SoloSidebar: React.FC = () => {
         </>
       )}
 
-      {/* ── 收起状态：44px 图标条 ── */}
-      {sidebarCollapsed && (
-        <div className={styles.soloCollapsed}>
-          <button
-            onClick={e => { e.stopPropagation(); toggleSidebar(); }}
-            style={collapsedIconBtnStyle}
-            title="展开侧边栏"
-          >
-            <PanelLeftOpen size={16} strokeWidth={1.6} />
-          </button>
-
-          <div className={styles.soloCollapsedDivider} />
-
-          <button
-            onClick={e => { e.stopPropagation(); createSession(); }}
-            style={collapsedIconBtnStyle}
-            title="新对话"
-          >
-            <Plus size={16} strokeWidth={1.6} />
-          </button>
-        </div>
-      )}
+      {/* ── 收起状态：完全隐藏（设计文档 §3.1）── */}
+      {/* 品牌标识和展开按钮由 AppShell 独立渲染 */}
 
       {/* ── 拖拽调节手柄 ── */}
       {!sidebarCollapsed && (

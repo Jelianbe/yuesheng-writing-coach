@@ -1,15 +1,12 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
-import { Settings, PanelRightClose, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
-import { useConfigStore } from '../../stores/config.store';
 import { rightPanelService } from '../../services/right-panel.service';
-import { IconStripButton } from './IconStripButton';
 import { SessionTabBar } from './SessionTabBar';
 import { ToolGrid } from './ToolGrid';
-import { ResizeHandle } from './ResizeHandle';
 import {
-  DEFAULT_TOOLS, SESSION_LUCIDE_ICON, EASE_OUT_QUART, ICON_STRIP_WIDTH,
+  DEFAULT_TOOLS, SESSION_LUCIDE_ICON, EASE_OUT_QUART,
   DEFAULT_PANEL_WIDTH, RESIZE_MIN, RESIZE_MAX, STORAGE_KEY, Z_LAYER,
 } from './drawer-constants';
 import type { ToolItem } from './drawer-constants';
@@ -21,17 +18,23 @@ export interface RightDrawerProps {
   onToolClick?: (toolId: string) => void;
 }
 
-/** RightDrawer V4 — 工具会话标签 + 两层导航：[拖拽][图标条][L1会话标签][内容区] */
+/**
+ * RightDrawer V5 — 设计文档 2026-06-15 对齐
+ *
+ * 结构：[拖拽handle][标签header][内容区]
+ * - 移除 navBar（图标条），功能由标签层取代
+ * - 收起态：header 保留（约 160px），显示 [标签][＋] [⤢]
+ * - 展开态：完整显示 header + 内容区
+ * - 拖拽 handle 在左边缘
+ */
 export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
   tools = DEFAULT_TOOLS, panelContent, onToolClick,
 }) => {
   const activePanel = useDrawerStore(s => s.activePanel);
   const collapsed = useDrawerStore(s => s.collapsed);
   const closePanel = useDrawerStore(s => s.closePanel);
-  const toggleCollapsed = useDrawerStore(s => s.toggleCollapsed);
   const sessions = usePanelSessionStore(s => s.sessions);
   const activeSessionId = usePanelSessionStore(s => s.activeSessionId);
-  const isConfigured = useConfigStore(s => s.isConfigured);
 
   // ── 可拖拽宽度（localStorage 持久化）──
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -39,7 +42,6 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) { const w = parseInt(saved, 10); if (!isNaN(w) && w >= RESIZE_MIN && w <= RESIZE_MAX) return w; }
     } catch (e) {
-      // localStorage 读取失败，使用默认值
       if (process.env.NODE_ENV === 'development') {
         console.warn('[RightDrawer] Failed to read localStorage:', e);
       }
@@ -47,7 +49,6 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     return DEFAULT_PANEL_WIDTH;
   });
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, String(panelWidth)); } catch (e) {
-    // localStorage 写入失败，静默处理
     if (process.env.NODE_ENV === 'development') {
       console.warn('[RightDrawer] Failed to write localStorage:', e);
     }
@@ -59,10 +60,12 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
   const resizeStartWidth = useRef(0);
 
   const isExpanded = !collapsed && activePanel !== null;
-  const drawerWidth = isExpanded ? ICON_STRIP_WIDTH + panelWidth : ICON_STRIP_WIDTH;
+  // 收起态：仅 header 宽度（约 160px）；展开态：完整宽度
+  const COLLAPSED_WIDTH = 160;
+  const drawerWidth = isExpanded ? panelWidth : (activePanel !== null ? COLLAPSED_WIDTH : 0);
   const hasCustomContent = isExpanded && activePanel !== null && panelContent?.[activePanel] !== undefined;
 
-  /* 拖拽 mousedown → 记录起始位置 */
+  /* 拖拽 mousedown — handle 在左边缘 */
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -83,23 +86,17 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
     return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
   }, [isResizing]);
 
-  /* 图标点击 → 通过 rightPanelService 统一管理（X-01 协议） */
-  const handleIconClick = useCallback((toolId: string) => {
-    if (!collapsed && activePanel === toolId) { toggleCollapsed(); return; }
-    rightPanelService.openTool(toolId);
-  }, [collapsed, activePanel, toggleCollapsed]);
-
   const handleToolClick = useCallback((tool: ToolItem) => {
     if (tool.disabled) return;
-    tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : handleIconClick(tool.id);
-  }, [onToolClick, handleIconClick]);
+    tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : rightPanelService.openTool(tool.id);
+  }, [onToolClick]);
 
-  /* 标签切换 → 通过 rightPanelService 统一管理（X-01 协议） */
+  /* 标签切换 */
   const handleSessionSwitch = useCallback((sessionId: string) => {
     rightPanelService.switchSession(sessionId);
   }, []);
 
-  /* 移除会话 → 通过 rightPanelService 统一管理（X-01 协议） */
+  /* 移除会话 */
   const handleSessionRemove = useCallback((sessionId: string) => {
     rightPanelService.removeSession(sessionId);
   }, []);
@@ -113,78 +110,66 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
   }, [isExpanded, closePanel]);
 
   // ── 渲染 ──
-  const containerTransition = isResizing ? 'none' : `width 200ms ${EASE_OUT_QUART}, opacity 200ms ${EASE_OUT_QUART}`;
-  const findLabel = (id: string): string => tools.find(t => t.id === id)?.label || id;
+  const containerTransition = isResizing ? 'none' : `width 200ms ${EASE_OUT_QUART}`;
+
+  // 不显示任何面板（activePanel === null 且 collapsed）
+  if (activePanel === null && collapsed) {
+    return null;
+  }
 
   return (
-    <>
-      <div className={styles.container} style={{
-        width: drawerWidth, transition: containerTransition, zIndex: Z_LAYER.modal,
-      }} role="complementary" aria-label="工具面板" aria-hidden={!isExpanded && collapsed}>
-        <ResizeHandle onMouseDown={handleResizeMouseDown} isExpanded={isExpanded} />
+    <div
+      className={styles.container}
+      style={{
+        width: drawerWidth,
+        transition: containerTransition,
+        zIndex: Z_LAYER.modal,
+      }}
+      role="complementary"
+      aria-label="工具面板"
+    >
+      {/* 拖拽 handle — 左边缘（仅展开态） */}
+      {isExpanded && (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className={styles.resizeHandle}
+          title="拖拽调节宽度"
+        />
+      )}
 
-        {/* 图标条 */}
-        <nav aria-label="工具导航" className={`${styles.navBar} ${isExpanded ? styles.navBarBorderExpanded : styles.navBarBorderCollapsed}`}
-          style={{ width: ICON_STRIP_WIDTH }}>
-          {tools.map(tool => (
-            <IconStripButton key={tool.id} toolId={tool.id} IconComponent={tool.icon}
-              isActive={activePanel === tool.id} isDisabled={tool.disabled}
-              onClick={handleIconClick} label={findLabel(tool.id)} />
-          ))}
-          <div className={styles.navSettingsArea}>
-            <div style={{ position: 'relative', display: 'inline-flex' }}>
-              <IconStripButton toolId="__settings__" IconComponent={Settings}
-                isActive={false} onClick={handleIconClick} label="设置" />
-              {!isConfigured && (
-                <span style={{
-                  position: 'absolute',
-                  top: 2,
-                  right: 2,
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: 'var(--error, #ef4444)',
-                  border: '2px solid var(--bg-main, #fff)',
-                  pointerEvents: 'none',
-                }} />
-              )}
-            </div>
-          </div>
-        </nav>
+      {/* Header 区 — 始终存在（设计文档 §4.1） */}
+      <div className={styles.headerRow}>
+        <SessionTabBar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onSwitch={handleSessionSwitch}
+          onRemove={handleSessionRemove}
+          sessionIcons={SESSION_LUCIDE_ICON}
+        />
 
-        {/* 工作区 */}
-        {isExpanded && (<div className={styles.workspace} style={{ width: panelWidth }}>
-          {/* Header 行：标签栏 + 操作按钮 + 收起按钮 */}
-          <div className={styles.headerRow}>
-            <SessionTabBar sessions={sessions} activeSessionId={activeSessionId}
-              onSwitch={handleSessionSwitch} onRemove={handleSessionRemove} sessionIcons={SESSION_LUCIDE_ICON} />
+        {/* [＋] 新建标签按钮 */}
+        <button
+          onClick={() => { /* 新建标签 — 后续实现 */ }}
+          className={styles.actionBtn}
+          title="新建标签"
+        >
+          <Plus size={14} strokeWidth={1.8} />
+        </button>
+      </div>
 
-            {/* Issue5: 按面板类型显示不同操作按钮 */}
-            {activePanel === 'works' && (
-              <button onClick={() => { /* 新建章节 — 由 ManuscriptPanel 内部处理或 IPC 触发 */ }}
-                className={styles.actionBtn} style={{ color: 'var(--accent)' }} title="新建章节">
-                <Plus size={14} strokeWidth={1.8} />
-              </button>
-            )}
-
-            {/* Issue4: 收起按钮 */}
-            <button onClick={toggleCollapsed}
-              className={`${styles.actionBtn} ${styles.actionBtnAuto}`} style={{ color: 'var(--text-tertiary)' }}
-              title="收起面板">
-              <PanelRightClose size={15} strokeWidth={1.6} />
-            </button>
-          </div>
-
+      {/* 内容区 — 仅展开态显示 */}
+      {isExpanded && (
+        <div className={styles.contentArea}>
           {hasCustomContent && activePanel ? (
-            <div key={activePanel} className={styles.contentArea}>
+            <div key={activePanel}>
               {panelContent?.[activePanel] ?? null}
             </div>
           ) : (
             <ToolGrid tools={tools} activePanel={activePanel} onToolClick={handleToolClick} />
           )}
-        </div>)}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 });
 

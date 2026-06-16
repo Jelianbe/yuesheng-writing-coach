@@ -183,7 +183,7 @@ describe('TrainingStore', () => {
 
     it('IPC 返回 error 时设置错误', async () => {
       const invoke = vi.fn().mockResolvedValue({ error: 'assign failed' });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       useTrainingStore.setState({
         recommendations: [{ challengeId: 'CH-001', syndromeId: 'P004', description: 'desc', mode: 'generic' } as any],
         errorCards: [{ syndromeId: 'P004', lastQuote: '原文引用' } as any],
@@ -195,7 +195,7 @@ describe('TrainingStore', () => {
 
     it('IPC 返回记录时创建活跃训练', async () => {
       const invoke = vi.fn().mockResolvedValue({ record: { id: 'rec-001' } });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       useTrainingStore.setState({
         recommendations: [{
           challengeId: 'CH-001',
@@ -232,7 +232,7 @@ describe('TrainingStore', () => {
         { id: 'r2', taskId: 'CH-002', status: 'skipped', syndromeId: 'P002', challengeId: 'CH-002', challengeName: '角色工具人化' },
       ];
       const invoke = vi.fn().mockResolvedValue({ records });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
       expect(useTrainingStore.getState().history).toEqual(records as any);
       expect(useTrainingStore.getState().isLoading).toBe(false);
@@ -244,7 +244,7 @@ describe('TrainingStore', () => {
 
     it('IPC 错误时设置 error', async () => {
       const invoke = vi.fn().mockResolvedValue({ error: 'load failed' });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
       expect(useTrainingStore.getState().error).toBe('Error: load failed');
       expect(useTrainingStore.getState().isLoading).toBe(false);
@@ -294,7 +294,7 @@ describe('TrainingStore', () => {
         { challengeId: 'CH-002', challengeName: '角色工具化', syndromeId: 'P002', severity: 'L3', tier: 'structural', mode: 'generic' },
       ];
       const invoke = vi.fn().mockResolvedValue({ recommendations: mockRecs });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
 
       await useTrainingStore.getState().refreshFromDiagnosis();
       await flushPromises();
@@ -309,7 +309,7 @@ describe('TrainingStore', () => {
 
     it('无诊断历史时清空 errorCards', async () => {
       const invoke = vi.fn().mockResolvedValue({ recommendations: [] });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().refreshFromDiagnosis();
       expect(useTrainingStore.getState().errorCards).toEqual([]);
     });
@@ -368,7 +368,7 @@ describe('TrainingStore', () => {
         } as any,
       });
       const invoke = vi.fn().mockResolvedValue({ passed: false, feedback: '改写还不够，缺少具体动作。' });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().submitStep();
       const state = useTrainingStore.getState();
       expect(state.activeTraining!.currentStepIndex).toBe(1);
@@ -395,7 +395,7 @@ describe('TrainingStore', () => {
         } as any,
       });
       const invoke = vi.fn().mockResolvedValue({ passed: true, feedback: '改得很好！' });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().submitStep();
       const state = useTrainingStore.getState();
       expect(state.activeTraining!.currentStepIndex).toBe(2);
@@ -425,7 +425,7 @@ describe('TrainingStore', () => {
         submissionResult: { passed: true, feedback: '做得好！' },
       });
       const invoke = vi.fn().mockResolvedValue({ record: { id: 'rec-001' } });
-      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any };
+      window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().submitStep();
       const state = useTrainingStore.getState();
       expect(invoke).toHaveBeenCalledWith(

@@ -13,6 +13,12 @@ interface ElectronAPI {
   invoke(channel: string, args?: unknown): Promise<unknown>;
 
   /**
+   * 单向发送消息到主进程（无需响应）
+   * 用于窗口控制等 fire-and-forget 场景
+   */
+  send(channel: string, args?: unknown): void;
+
+  /**
    * 监听主进程事件推送
    * @returns cleanup 函数，调用后移除监听器
    */
