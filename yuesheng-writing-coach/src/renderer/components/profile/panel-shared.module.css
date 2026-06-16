@@ -1,0 +1,199 @@
+/* ===== 面板共享样式 — panel-shared.module.css ===== */
+/* 用于替代高频 inline style 模式 */
+/* 命名约定：camelCase 对应 ⚛ 组件内 className 引用 */
+
+/* ── 布局 ── */
+
+.flexRow {
+  display: flex;
+  flex-direction: row;
+}
+
+.flexCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.flexCenter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flexBetween {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flexAlignCenter {
+  display: flex;
+  align-items: center;
+}
+
+.flexGap4 { gap: 4px; }
+.flexGap6 { gap: 6px; }
+.flexGap8 { gap: 8px; }
+.flexGap10 { gap: 10px; }
+.flexGap12 { gap: 12px; }
+.flexGap16 { gap: 16px; }
+
+.grid3Col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+/* ── 排版 ── */
+
+.textXs { font-size: 0.62rem; }
+.textSm { font-size: 0.72rem; }
+.textMd { font-size: 0.78rem; }
+.textBase { font-size: 0.82rem; }
+.textLg { font-size: 0.85rem; }
+.textXl { font-size: 1rem; }
+
+.fontMedium { font-weight: 500; }
+.fontSemiBold { font-weight: 600; }
+.fontBold { font-weight: 700; }
+
+.textPrimary { color: var(--text-primary); }
+.textSecondary { color: var(--text-secondary); }
+.textTertiary { color: var(--text-tertiary); }
+.textAccent { color: var(--accent); }
+.textSuccess { color: var(--success); }
+.textError { color: var(--error); }
+
+.textCenter { text-align: center; }
+.letterSpacing { letter-spacing: 0.03em; }
+
+.truncate {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 容器/卡片 ── */
+
+.panelContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionHeader {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+  padding: 0 2px 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.cardPaddingSm { padding: 4px 10px; }
+.cardPaddingMd { padding: 10px; }
+
+.statBox {
+  padding: 10px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  text-align: center;
+}
+
+.loadingContainer {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--text-tertiary);
+  gap: 12px;
+  text-align: center;
+}
+
+.footerNote {
+  padding: 4px 2px 0;
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+  opacity: 0.6;
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── 交互元素 ── */
+
+.clickable {
+  cursor: pointer;
+  transition: background 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.clickable:hover {
+  background: var(--bg-hover);
+}
+
+.retryBtn {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-family: var(--font-body);
+}
+
+/* ── 评分条 ── */
+
+.barTrack {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+  position: relative;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 2px;
+  opacity: 0.8;
+  transition: width 600ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.barFillHigh { background: var(--success); }
+.barFillMid { background: var(--accent); }
+.barFillLow { background: var(--error); }
+
+/* ── 弱点列表项 ── */
+
+.weakPointRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  transition: background 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.weakPointRow:hover {
+  background: var(--bg-hover);
+}
+
+.weakCountBadge {
+  font-size: 0.65rem;
+  font-weight: 500;
+}

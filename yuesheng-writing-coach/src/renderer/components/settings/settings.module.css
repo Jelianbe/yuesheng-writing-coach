@@ -1,0 +1,186 @@
+/* ===== 设置面板专用样式 — settings.module.css ===== */
+
+.scrollContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  min-height: 0;
+  scrollbar-width: thin;
+}
+
+.configField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldRow {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.input:focus {
+  border-color: var(--accent);
+}
+
+.rangeInput {
+  width: 100%;
+}
+
+.segmentedBtn {
+  flex: 1;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 400;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.segmentedBtnActive {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+}
+
+.saveBtn {
+  flex: 1;
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-size: 0.78rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.testBtn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.testBtnDisabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.testResult {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--success);
+  margin-top: 6px;
+}
+
+.testResultError {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: var(--error);
+  margin-top: 6px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-light);
+}
+
+.themeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.themeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggleTrack {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  position: relative;
+  transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  transition: left 200ms cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.hintText {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-top: 8px;
+  padding: 0 2px;
+}
+
+.btnGroup {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}

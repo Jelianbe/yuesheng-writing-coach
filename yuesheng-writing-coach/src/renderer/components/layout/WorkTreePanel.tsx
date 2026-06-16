@@ -8,8 +8,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import type { Manuscript, Chapter } from '../../shared/types-manuscript';
-import { useChapterStore } from '../../stores/chapter.store';
-import { useManuscriptStore } from '../../stores/manuscript.store';
 import { rightPanelService } from '../../services/right-panel.service';
 import { copyToClipboard } from '../../utils/clipboard';
 import styles from './WorkTreePanel.module.css';
@@ -38,6 +36,12 @@ export interface WorkTreePanelProps {
   onSelectChapter: (id: string) => void;
   onOpenTab: (chapterId: string, manuscriptTitle: string) => void;
   fetchChapters: (manuscriptId: string) => void;
+  onDeleteChapter: (chapterId: string, manuscriptId: string) => Promise<void>;
+  onDeleteManuscript: (msId: string) => Promise<void>;
+  onCreateChapter: (manuscriptId: string, title: string) => Promise<Chapter | null>;
+  onCreateManuscript: (title: string) => Promise<Manuscript | null>;
+  chapterError: string | null;
+  manuscriptError: string | null;
 }
 
 export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
@@ -49,17 +53,21 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
   onSelectChapter,
   onOpenTab,
   fetchChapters,
+  onDeleteChapter,
+  onDeleteManuscript,
+  onCreateChapter,
+  onCreateManuscript,
+  chapterError,
+  manuscriptError,
 }) => {
   // 新建作品弹出卡
   const [showWorkPopup, setShowWorkPopup] = useState(false);
   const [workTitle, setWorkTitle] = useState('');
-  const [workError, setWorkError] = useState<string | null>(null);
   const workInputRef = useRef<HTMLInputElement>(null);
 
   // 新建章节弹出卡
   const [showChapterPopup, setShowChapterPopup] = useState<string | null>(null);
   const [chapterTitle, setChapterTitle] = useState('');
-  const [chapterError, setChapterError] = useState<string | null>(null);
   const chapterInputRef = useRef<HTMLInputElement>(null);
 
   // 右键上下文菜单
@@ -125,17 +133,17 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
   const handleDeleteChapter = useCallback(async (chapter: Chapter) => {
     setCtxMenu(null);
     if (window.confirm(`确定要删除章节「${chapter.title}」吗？此操作不可撤销。`)) {
-      await useChapterStore.getState().deleteChapter(chapter.id, chapter.manuscript_id);
+      await onDeleteChapter(chapter.id, chapter.manuscript_id);
     }
-  }, []);
+  }, [onDeleteChapter]);
 
   // 删除作品
   const handleDeleteManuscript = useCallback(async (msId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('确定要删除该作品及其所有章节吗？此操作不可撤销。')) {
-      await useManuscriptStore.getState().remove(msId);
+      await onDeleteManuscript(msId);
     }
-  }, []);
+  }, [onDeleteManuscript]);
 
   /* ── 渲染：作品树节点 ── */
   const renderManuscriptItem = useCallback((ms: Manuscript) => {
@@ -238,17 +246,17 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                   ref={chapterInputRef}
                   type="text"
                   value={chapterTitle}
-                  onChange={e => { setChapterTitle(e.target.value); setChapterError(null); }}
+                  onChange={e => { setChapterTitle(e.target.value); }}
                   onKeyDown={async e => {
                     if (e.key === 'Enter' && chapterTitle.trim()) {
-                      const r = await useChapterStore.getState().createChapter(ms.id, chapterTitle.trim());
+                      const r = await onCreateChapter(ms.id, chapterTitle.trim());
                       if (r) {
                         // 自动选中并打开新章节
                         onSelectChapter(r.id);
                         rightPanelService.openEditor(r.id, ms.title);
                         setChapterTitle('');
                         setShowChapterPopup(null);
-                      } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
+                      }
                     }
                     if (e.key === 'Escape') { setChapterTitle(''); setShowChapterPopup(null); }
                   }}
@@ -267,14 +275,14 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                   <button
                     onClick={async () => {
                       if (chapterTitle.trim()) {
-                        const r = await useChapterStore.getState().createChapter(ms.id, chapterTitle.trim());
+                        const r = await onCreateChapter(ms.id, chapterTitle.trim());
                         if (r) {
                           // 自动选中并打开新章节
                           onSelectChapter(r.id);
                           rightPanelService.openEditor(r.id, ms.title);
                           setChapterTitle('');
                           setShowChapterPopup(null);
-                        } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
+                        }
                       }
                     }}
                     className={styles.popupConfirm}
@@ -302,7 +310,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
         )}
       </div>
     );
-  }, [chapters, currentManuscriptId, currentChapterId, expandedManuscripts, fetchChapters, onSelectManuscript, onSelectChapter, onOpenTab, showChapterPopup, chapterTitle, chapterError, handleDeleteManuscript]);
+  }, [chapters, currentManuscriptId, currentChapterId, expandedManuscripts, fetchChapters, onSelectManuscript, onSelectChapter, onOpenTab, showChapterPopup, chapterTitle, chapterError, handleDeleteManuscript, onCreateChapter]);
 
   return (
     <div className={styles.container}>
@@ -327,19 +335,18 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
             ref={workInputRef}
             type="text"
             value={workTitle}
-            onChange={e => { setWorkTitle(e.target.value); setWorkError(null); }}
+            onChange={e => { setWorkTitle(e.target.value); }}
             onKeyDown={async e => {
               if (e.key === 'Enter' && workTitle.trim()) {
-                const r = await useManuscriptStore.getState().create(workTitle.trim());
+                const r = await onCreateManuscript(workTitle.trim());
                 if (r) { setWorkTitle(''); setShowWorkPopup(false); }
-                else { setWorkError(useManuscriptStore.getState().error || '创建失败'); }
               }
               if (e.key === 'Escape') { setWorkTitle(''); setShowWorkPopup(false); }
             }}
             placeholder="输入作品名称..."
             className={styles.workInput}
           />
-          {workError && <div className={styles.workError}>{workError}</div>}
+          {manuscriptError && <div className={styles.workError}>{manuscriptError}</div>}
           <div className={styles.workActions}>
             <button
               onClick={() => { setWorkTitle(''); setShowWorkPopup(false); }}
@@ -351,9 +358,8 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
             <button
               onClick={async () => {
                 if (workTitle.trim()) {
-                  const r = await useManuscriptStore.getState().create(workTitle.trim());
+                  const r = await onCreateManuscript(workTitle.trim());
                   if (r) { setWorkTitle(''); setShowWorkPopup(false); }
-                  else { setWorkError(useManuscriptStore.getState().error || '创建失败'); }
                 }
               }}
               className={styles.popupConfirm}

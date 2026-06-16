@@ -1,0 +1,74 @@
+/* ===== GrowthPanel 专用样式 — growth.module.css ===== */
+
+/* ── 布局 ── */
+
+.toggleRow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 4px;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.statCard {
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.statValue {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.statLabel {
+  font-size: 0.65rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+.trendSection {
+  /* 包装块 */
+}
+
+.listSection {
+  /* 包装块 */
+}
+
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease;
+}
+
+.listRow:hover {
+  background: var(--bg-hover);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusBadge {
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+  padding: 1px 5px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}

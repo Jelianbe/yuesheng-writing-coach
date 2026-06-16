@@ -4,10 +4,10 @@ description: "每个阶段开始前都必须定义完成标准。没有标准，
 alwaysApply: false
 priority: "medium"
 trigger:
-  - "阶段开始前"
-  - "开始新的开发阶段"
-  - "定义阶段目标"
-  - "制定阶段计划"
+  - "创建 TASK-CHAIN 新阶段时"
+  - "接受新的功能/重构/优化需求时"
+  - "用户提出需求但未明确验收标准时"
+  - "R-027 门禁检查发现缺少 DoD 时"
 checkLogic:
   - "DoD 是否已定义"
   - "DoD 是否包含至少 3 条可验证标准"

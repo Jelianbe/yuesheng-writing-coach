@@ -1,0 +1,201 @@
+/* ===== 诊断面板样式 — diagnosis-panel.module.css ===== */
+
+/* ── 卡片容器 ── */
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.cardHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+  text-align: left;
+  gap: 8px;
+  transition: background 150ms ease;
+}
+
+.cardHeader:hover {
+  background: var(--bg-hover);
+}
+
+/* ── 严重度标签 ── */
+
+.severityBadge {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 500;
+}
+
+/* ── 展开内容区 ── */
+
+.contentArea {
+  padding: 0 12px 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* F-04: 战争迷雾 ── */
+
+.fogOverlay {
+  position: relative;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+}
+
+.reflectionTextarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-family: var(--font-body);
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* ── 查看报告按钮 ── */
+
+.revealBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.72rem;
+  transition: all 200ms ease;
+}
+
+.revealBtnActive {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+}
+
+.revealBtnDisabled {
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+/* F-02: 常见问题 ├── */
+
+.faqBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--accent);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 200ms ease;
+  width: 100%;
+}
+
+.faqBtn:hover {
+  background: var(--bg-hover);
+}
+
+.faqBtnExpanded {
+  background: var(--bg-hover);
+}
+
+.faqList {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  line-height: 1.7;
+}
+
+/* ── 原文证据 ── */
+
+.evidenceBlock {
+  margin: 4px 0;
+  padding: 4px 8px;
+  border-left: 2px solid var(--accent);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ── 置信度条 ── */
+
+.confidenceBarTrack {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-hover);
+  overflow: hidden;
+}
+
+.confidenceBarFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 400ms ease;
+}
+
+/* ── 分组标签 ── */
+
+.sectionLabel {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+  padding: 0 2px;
+}
+
+.sectionLabelWithMargin {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  letter-spacing: 0.03em;
+  padding: 0 2px 4px;
+  display: block;
+}
+
+/* ── 建议动作 ── */
+
+.actionItem {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+}
+
+/* ── 外层容器 ── */
+
+.mainContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

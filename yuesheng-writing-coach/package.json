@@ -21,6 +21,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "precommit": "npm run typecheck && npm run test",
+    "gate": "npm run typecheck && npm run test && npm run lint && npm run scan:hardcode",
     "ci": "npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
   },
   "dependencies": {
@@ -48,6 +49,7 @@
     "cross-env": "^10.1.0",
     "electron": "^28.0.0",
     "eslint": "^8.57.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
     "madge": "^8.0.0",
     "node-gyp": "^12.3.0",

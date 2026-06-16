@@ -1,0 +1,69 @@
+/* WindowControls.module.css — 窗口级 [─][□][✕] 控件样式 */
+
+.container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 40px;
+  padding: 0 2px;
+  z-index: 9999;
+  /* 通过 data-expanded 切换配色 */
+  transition: background 150ms ease;
+  /* 窗口拖拽区域 — header 区可拖拽 */
+  -webkit-app-region: no-drag;
+}
+
+/* 右侧栏展开态：浅色背景 + 深色图标 */
+.container[data-expanded="true"] {
+  background: transparent;
+}
+
+/* 右侧栏收起态：深色背景 + 浅色图标 */
+.container[data-expanded="false"] {
+  background: transparent;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0;
+  transition: color 150ms ease, background 150ms ease;
+  outline: none;
+  padding: 0;
+  /* 窗口拖拽不应干扰按钮点击 */
+  -webkit-app-region: no-drag;
+}
+
+/* 右侧栏展开态：深色图标 */
+.container[data-expanded="true"] .btn {
+  color: var(--text-secondary);
+}
+
+.container[data-expanded="true"] .btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 右侧栏收起态：浅色图标 */
+.container[data-expanded="false"] .btn {
+  color: var(--text-tertiary);
+}
+
+.container[data-expanded="false"] .btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-on-accent);
+}
+
+.closeBtn:hover {
+  background: var(--error) !important;
+  color: var(--text-on-accent) !important;
+}

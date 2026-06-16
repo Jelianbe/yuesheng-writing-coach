@@ -1,20 +1,93 @@
-/* SoloSidebar.module.css — 侧边栏组合器布局样式 */
+/* SoloSidebar.module.css — 侧边栏组合器布局样式（V3） */
 
-/* ── 顶部栏（模式切换 + 折叠按钮）── */
+/* ── 收起态悬浮品牌（月笙[▶]）── */
+.floatingBrand {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 12px;
+  z-index: 500;
+  -webkit-app-region: drag;
+  cursor: default;
+}
 
+.brandText {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+.toggleBtnCollapsed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  transition: color 120ms ease, background 120ms ease, transform 120ms ease;
+  outline: none;
+  padding: 0;
+  -webkit-app-region: no-drag;
+}
+
+.toggleBtnCollapsed:hover {
+  color: var(--accent-hover);
+  background: var(--accent-subtle);
+}
+
+/* ── 顶部 header（展开态）── */
 .soloHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
+  padding: 0 8px;
+  height: 40px;
   flex-shrink: 0;
-  height: 32px;
+  border-bottom: 1px solid var(--border);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggleBtnExpanded {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  transition: color 120ms ease, background 120ms ease;
+  outline: none;
+  padding: 0;
+}
+
+.toggleBtnExpanded:hover {
+  color: var(--accent);
+  background: var(--bg-hover);
 }
 
 /* ── Tab 切换栏 ── */
-
 .soloTabs {
-  padding: 0 10px 8px;
+  padding: 8px 10px 6px;
   flex-shrink: 0;
 }
 
@@ -27,7 +100,6 @@
 }
 
 /* ── 内容滚动区 ── */
-
 .soloContent {
   flex: 1;
   overflow-y: auto;
@@ -36,28 +108,7 @@
   scrollbar-color: var(--border) transparent;
 }
 
-/* ── 收起状态图标条 ── */
-
-.soloCollapsed {
-  width: 44px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 8px 0;
-}
-
-.soloCollapsedDivider {
-  width: 20px;
-  height: 1px;
-  background: var(--border);
-  opacity: 0.5;
-}
-
 /* ── 拖拽调节手柄 ── */
-
 .soloResizeHandle {
   position: absolute;
   top: 0;

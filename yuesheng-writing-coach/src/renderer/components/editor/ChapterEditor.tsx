@@ -10,8 +10,9 @@ import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
 import { useParadigmStore } from '../../stores/paradigm.store';
 import { IPC_CHANNELS } from '../../shared/constants';
+import styles from './chapter-editor.module.css';
+import shared from '../profile/panel-shared.module.css';
 
-const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 const SAVE_DEBOUNCE_MS = 1500;
 
 export const ChapterEditor: React.FC = () => {
@@ -69,12 +70,11 @@ export const ChapterEditor: React.FC = () => {
 
   if (!currentChapter) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: 16, color: 'var(--text-tertiary)' }}>
+      <div className={`${shared.flexCol} ${shared.flexCenter} ${shared.flexGap16} ${styles.emptyState}`}>
         <BookOpen size={48} strokeWidth={1.2} opacity={0.2} />
-        <span style={{ fontSize: '0.95rem' }}>未选择章节</span>
-        <span style={{ fontSize: '0.78rem' }}>点击左侧栏或右侧面板中的章节开始编辑</span>
-        <button onClick={() => setParadigm('chat')}
-          style={{ padding: '6px 16px', border: '1px solid var(--accent)', borderRadius: 'var(--radius-full)', background: 'transparent', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.82rem', fontFamily: 'var(--font-body)' }}>
+        <span className={styles.emptyTitle}>未选择章节</span>
+        <span className={styles.emptyHint}>点击左侧栏或右侧面板中的章节开始编辑</span>
+        <button onClick={() => setParadigm('chat')} className={styles.backToChatBtn}>
           返回对话模式
         </button>
       </div>
@@ -82,23 +82,16 @@ export const ChapterEditor: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%' }}>
+    <div className={styles.editorContainer}>
       {/* 编辑器顶栏 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
-        <button onClick={() => setParadigm('chat')}
-          style={{ padding: '4px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', borderRadius: 'var(--radius-sm)', transition: `all 150ms ${EASE_OUT_QUART}` }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
+      <div className={`${shared.flexAlignCenter} ${shared.flexGap8} ${styles.toolbar}`}>
+        <button onClick={() => setParadigm('chat')} className={styles.backBtn}>
           <ArrowLeft size={16} strokeWidth={1.6} />
         </button>
-        <FileText size={15} strokeWidth={1.6} style={{ color: 'var(--accent)' }} />
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 500, flex: 1 }}>
-          {chapterTitle}
-        </div>
-        <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
-          {workTitle}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.68rem', color: saving ? 'var(--accent)' : 'var(--text-tertiary)' }}>
+        <FileText size={15} strokeWidth={1.6} className={styles.fileIcon} />
+        <div className={styles.toolbarTitle}>{chapterTitle}</div>
+        <div className={styles.workName}>{workTitle}</div>
+        <div className={`${shared.flexAlignCenter} ${shared.flexGap4} ${styles.saveStatus} ${saving ? styles.savingColor : styles.idleColor}`}>
           {saving ? <Loader size={12} strokeWidth={1.6} className="animate-spin" /> : <Save size={12} strokeWidth={1.6} />}
           {saving ? '保存中...' : lastSaved ? `已保存 ${lastSaved.toLocaleTimeString()}` : ''}
         </div>
@@ -106,36 +99,23 @@ export const ChapterEditor: React.FC = () => {
 
       {/* 编辑器主体 */}
       {loading ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, padding: 24 }}>
-          <div style={{ color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>加载中...</div>
+        <div className={`${shared.flexCenter} ${styles.loadingArea}`}>
+          <div className={styles.loadingText}>加载中...</div>
         </div>
       ) : (
         <textarea
           value={content}
           onChange={e => setContent(e.target.value)}
           placeholder="开始编写你的章节..."
-          style={{
-            flex: 1,
-            padding: '20px 24px',
-            border: 'none',
-            outline: 'none',
-            resize: 'none',
-            background: 'var(--bg-page)',
-            color: 'var(--text-primary)',
-            fontFamily: 'Georgia, "Noto Serif SC", serif',
-            fontSize: '1rem',
-            lineHeight: 1.8,
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
+          className={styles.textarea}
         />
       )}
 
       {/* 底部状态 */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 16px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)', fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+      <div className={`${shared.flexAlignCenter} ${shared.flexGap12} ${styles.statusBar}`}>
         <span>字数: {content.length}</span>
         <span>字符(去空格): {content.replace(/\s/g, '').length}</span>
-        <span style={{ flex: 1 }} />
+        <span className={styles.spacer} />
         <span>{currentChapter.status === 'draft' ? '草稿' : currentChapter.status === 'revising' ? '修改中' : '已完成'}</span>
       </div>
     </div>

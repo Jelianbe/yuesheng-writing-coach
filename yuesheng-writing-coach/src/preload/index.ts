@@ -66,6 +66,13 @@ const allowedInvokeChannels: readonly string[] = [
   'chapter:updateContent',
 ];
 
+/** 允许渲染进程通过 send() 发送的 IPC 通道白名单（fire-and-forget） */
+const allowedSendChannels: readonly string[] = [
+  'window:minimize',
+  'window:maximize',
+  'window:close',
+];
+
 /** 允许渲染进程通过 on() 订阅的 IPC 事件通道白名单 */
 const allowedEventChannels: readonly string[] = [
   'diagnosis:update',
@@ -76,6 +83,13 @@ const allowedEventChannels: readonly string[] = [
 ];
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  send: (channel: string, args?: unknown): void => {
+    if (!allowedSendChannels.includes(channel)) {
+      throw new Error(`Disallowed send channel: ${channel}`);
+    }
+    ipcRenderer.send(channel, args);
+  },
+
   invoke: (channel: string, args: unknown): Promise<unknown> => {
     if (!allowedInvokeChannels.includes(channel)) {
       return Promise.reject(new Error(`Disallowed IPC channel: ${channel}`));

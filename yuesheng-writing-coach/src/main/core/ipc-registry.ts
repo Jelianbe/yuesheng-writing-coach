@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { ServiceContainer } from './service-container';
+import { initWindowHandlers } from '../ipc/window.ipc';
 import { initConfigHandlers, registerConfigHandlers } from '../ipc/config.handler';
 import { initSessionHandlers, registerSessionHandlers } from '../ipc/session.handler';
 import { initEvidenceHandlers, registerEvidenceHandlers } from '../ipc/evidence.handler';
@@ -30,6 +31,11 @@ export class IpcRegistry {
   ) {}
 
   registerAll(): void {
+    // Window controls — 需要 mainWindow 引用
+    if (this.mainWindow) {
+      initWindowHandlers(this.mainWindow);
+    }
+
     const configService = this.container.get<ConfigService>('configService');
     const sessionService = this.container.get<SessionService>('sessionService');
     const diagnosisService = this.container.get<DiagnosisService>('diagnosisService');

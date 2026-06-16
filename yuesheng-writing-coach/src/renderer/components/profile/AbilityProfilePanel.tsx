@@ -14,8 +14,7 @@ import type { AbilityProfile, AbilityScore, WeakPoint } from '../../shared/types
 import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { useSessionStore } from '../../stores/session.store';
-
-const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
+import styles from './panel-shared.module.css';
 
 /** 能力评分条 */
 const ScoreBar: React.FC<{ score: AbilityScore }> = ({ score }) => {
@@ -25,28 +24,34 @@ const ScoreBar: React.FC<{ score: AbilityScore }> = ({ score }) => {
       ? <TrendingDown size={12} strokeWidth={1.8} color="var(--error)" />
       : <Minus size={12} strokeWidth={1.8} color="var(--text-tertiary)" />;
 
+  const barColorClass = score.score >= 70 ? styles.barFillHigh
+    : score.score >= 40 ? styles.barFillMid
+    : styles.barFillLow;
+
   return (
     <div style={{ padding: '6px 0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+      <div className={`${styles.flexBetween}`} style={{ marginBottom: 3 }}>
+        <span className={`${styles.textMd} ${styles.textPrimary} ${styles.fontMedium}`}>
           {score.abilityName}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: score.dataInsufficient ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>
+        <div className={`${styles.flexAlignCenter} ${styles.flexGap4}`}>
+          <span
+            className={`${styles.textMd} ${styles.fontSemiBold}`}
+            style={{ color: score.dataInsufficient ? 'var(--text-tertiary)' : 'var(--text-primary)' }}
+          >
             {score.dataInsufficient ? '--' : score.score.toFixed(0)}
           </span>
           {trendIcon}
         </div>
       </div>
-      <div style={{ height: 4, borderRadius: 2, background: 'var(--bg-hover)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{
-          height: '100%',
-          width: score.dataInsufficient ? 0 : `${Math.min(score.score, 100)}%`,
-          borderRadius: 2,
-          background: score.score >= 70 ? 'var(--success)' : score.score >= 40 ? 'var(--accent)' : 'var(--error)',
-          opacity: score.dataInsufficient ? 0.5 : 0.8,
-          transition: `width 600ms ${EASE_OUT_QUART}`,
-        }} />
+      <div className={styles.barTrack}>
+        <div
+          className={`${styles.barFill} ${barColorClass}`}
+          style={{
+            width: score.dataInsufficient ? 0 : `${Math.min(score.score, 100)}%`,
+            opacity: score.dataInsufficient ? 0.5 : undefined,
+          }}
+        />
       </div>
     </div>
   );
@@ -57,20 +62,12 @@ const WeakPointBadge: React.FC<{ weak: WeakPoint }> = ({ weak }) => {
   const trendColor = weak.trend === 'improving' ? 'var(--success)' : weak.trend === 'worsening' ? 'var(--error)' : 'var(--text-tertiary)';
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 6,
-      padding: '6px 8px', borderRadius: 'var(--radius-sm)',
-      fontSize: '0.78rem',
-      transition: `background 150ms ${EASE_OUT_QUART}`,
-    }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-    >
+    <div className={styles.weakPointRow}>
       <AlertTriangle size={12} strokeWidth={1.8} color={trendColor} />
-      <span style={{ flex: 1, color: 'var(--text-primary)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span className={`${styles.textPrimary} ${styles.truncate}`} style={{ flex: 1 }}>
         {weak.syndromeName}
       </span>
-      <span style={{ fontSize: '0.65rem', color: trendColor, fontWeight: 500 }}>
+      <span className={styles.weakCountBadge} style={{ color: trendColor }}>
         {weak.occurrenceCount}次 · L{Math.round(weak.avgSeverity)}
       </span>
     </div>
@@ -110,7 +107,7 @@ export const AbilityProfilePanel: React.FC = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+      <div className={styles.loadingContainer}>
         加载中...
       </div>
     );
@@ -118,12 +115,11 @@ export const AbilityProfilePanel: React.FC = () => {
 
   if (error) {
     return (
-      <div style={{ padding: '24px', textAlign: 'center', color: 'var(--error)', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className={`${styles.flexCol} ${styles.flexGap8} ${styles.textCenter} ${styles.textBase} ${styles.textError}`} style={{ padding: '24px' }}>
         <AlertTriangle size={24} strokeWidth={1.4} style={{ margin: '0 auto', opacity: 0.5 }} />
         <span>加载失败</span>
-        <span style={{ fontSize: '0.72rem', opacity: 0.7 }}>{error}</span>
-        <button onClick={fetchProfile}
-          style={{ padding: '4px 12px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.72rem', fontFamily: 'var(--font-body)' }}>
+        <span className={styles.textSm} style={{ opacity: 0.7 }}>{error}</span>
+        <button onClick={fetchProfile} className={styles.retryBtn}>
           重试
         </button>
       </div>
@@ -132,22 +128,22 @@ export const AbilityProfilePanel: React.FC = () => {
 
   if (!profile || profile.abilities.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', color: 'var(--text-tertiary)', gap: 12, textAlign: 'center' }}>
+      <div className={styles.emptyState}>
         <User size={36} strokeWidth={1.4} opacity={0.3} />
-        <span style={{ fontSize: '0.85rem' }}>暂无能力画像数据</span>
-        <span style={{ fontSize: '0.72rem' }}>进行诊断后，能力画像将自动生成</span>
+        <span className={styles.textLg}>暂无能力画像数据</span>
+        <span className={styles.textSm}>进行诊断后，能力画像将自动生成</span>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className={styles.panelContainer}>
       {/* 能力评分 */}
       <div>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', padding: '0 2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className={styles.sectionHeader}>
           <Target size={13} strokeWidth={1.6} /> 能力评分
         </div>
-        <div style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '4px 10px' }}>
+        <div className={`${styles.card} ${styles.cardPaddingSm}`}>
           {profile.abilities.map(a => <ScoreBar key={a.abilityId} score={a} />)}
         </div>
       </div>
@@ -155,10 +151,10 @@ export const AbilityProfilePanel: React.FC = () => {
       {/* 弱点标签 */}
       {profile.weakPoints.length > 0 && (
         <div>
-          <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', padding: '0 2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className={styles.sectionHeader}>
             <AlertTriangle size={13} strokeWidth={1.6} /> 薄弱环节
           </div>
-          <div style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column' }}>
+          <div className={`${styles.card} ${styles.flexCol}`}>
             {profile.weakPoints.map(w => <WeakPointBadge key={w.syndromeId} weak={w} />)}
           </div>
         </div>
@@ -166,42 +162,40 @@ export const AbilityProfilePanel: React.FC = () => {
 
       {/* 统计摘要 */}
       <div>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', padding: '0 2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className={styles.sectionHeader}>
           <ClipboardCheck size={13} strokeWidth={1.6} /> 训练概况
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-          <div style={{ padding: '10px 4px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-hover)', textAlign: 'center' }}>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--accent)' }}>{profile.trainingStats.totalAssigned}</div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)', marginTop: 2 }}>总任务数</div>
+        <div className={styles.grid3Col}>
+          <div className={styles.statBox}>
+            <div className={`${styles.textXl} ${styles.fontSemiBold} ${styles.textAccent}`}>{profile.trainingStats.totalAssigned}</div>
+            <div className={`${styles.textXs} ${styles.textTertiary}`} style={{ marginTop: 2 }}>总任务数</div>
           </div>
-          <div style={{ padding: '10px 4px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-hover)', textAlign: 'center' }}>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--success)' }}>{profile.trainingStats.totalCompleted}</div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)', marginTop: 2 }}>已完成</div>
+          <div className={styles.statBox}>
+            <div className={`${styles.textXl} ${styles.fontSemiBold} ${styles.textSuccess}`}>{profile.trainingStats.totalCompleted}</div>
+            <div className={`${styles.textXs} ${styles.textTertiary}`} style={{ marginTop: 2 }}>已完成</div>
           </div>
-          <div style={{ padding: '10px 4px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-hover)', textAlign: 'center' }}>
-            <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>{(profile.trainingStats.completionRate * 100).toFixed(0)}%</div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)', marginTop: 2 }}>完成率</div>
+          <div className={styles.statBox}>
+            <div className={`${styles.textXl} ${styles.fontSemiBold} ${styles.textPrimary}`}>{(profile.trainingStats.completionRate * 100).toFixed(0)}%</div>
+            <div className={`${styles.textXs} ${styles.textTertiary}`} style={{ marginTop: 2 }}>完成率</div>
           </div>
         </div>
       </div>
 
       {/* 诊断趋势 */}
       <div>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', padding: '0 2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className={styles.sectionHeader}>
           <ClipboardCheck size={13} strokeWidth={1.6} /> 诊断数据
         </div>
-        <div style={{ display: 'flex', gap: 8, fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+        <div className={`${styles.flexRow} ${styles.flexGap8} ${styles.textSm} ${styles.textTertiary}`}>
           <span>诊断次数: <strong style={{ color: 'var(--text-primary)' }}>{profile.diagnosisTrend.totalDiagnoses}</strong></span>
           <span>平均置信度: <strong style={{ color: 'var(--text-primary)' }}>{(profile.diagnosisTrend.avgConfidence * 100).toFixed(0)}%</strong></span>
         </div>
       </div>
 
       {/* 底部时间戳 */}
-      <div style={{ padding: '4px 2px 0', fontSize: '0.62rem', color: 'var(--text-tertiary)', opacity: 0.6, borderTop: '1px solid var(--border-light)' }}>
+      <div className={styles.footerNote}>
         更新于 {new Date(profile.computedAt).toLocaleString()}
       </div>
     </div>
   );
 };
-
-

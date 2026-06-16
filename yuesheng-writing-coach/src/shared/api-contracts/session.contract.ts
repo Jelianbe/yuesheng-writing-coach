@@ -2,9 +2,8 @@ import type { ApiResponse } from './base';
 
 // ─── 请求类型 ───
 
-export interface SessionListRequest {
-  /** empty — 无参数 */
-}
+/** empty — 无参数 */
+export type SessionListRequest = Record<string, never>;
 
 export interface SessionCreateRequest {
   title?: string;
@@ -29,9 +28,8 @@ export interface SessionGetMessagesPagedRequest {
   offset: number;
 }
 
-export interface SessionListWithMetaRequest {
-  /** empty — 无参数 */
-}
+/** empty — 无参数 */
+export type SessionListWithMetaRequest = Record<string, never>;
 
 export interface SessionUpdateTitleRequest {
   sessionId: string;
@@ -44,9 +42,8 @@ export interface SessionSearchMessagesRequest {
   limit?: number;
 }
 
-export interface SessionIsNewUserRequest {
-  /** empty — 无参数 */
-}
+/** empty — 无参数 */
+export type SessionIsNewUserRequest = Record<string, never>;
 
 // ─── 响应类型 ───
 

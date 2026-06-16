@@ -1,0 +1,115 @@
+/* ===== 搜索面板样式 — search-panel.module.css ===== */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.searchRow {
+  display: flex;
+  gap: 6px;
+}
+
+.inputContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  transition: border-color 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.searchIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.textInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+}
+
+.clearBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 2px;
+  display: flex;
+}
+
+.searchBtn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.emptyResults {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+}
+
+.resultsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sessionHeader {
+  padding: 0 2px 6px;
+}
+
+.messageList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.resultItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.resultItem:hover {
+  border-color: var(--border);
+  background: var(--bg-hover);
+}
+
+.messageText {
+  flex: 1;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.arrowIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  margin-top: 4px;
+}

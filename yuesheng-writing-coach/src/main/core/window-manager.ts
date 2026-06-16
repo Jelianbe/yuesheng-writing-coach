@@ -12,6 +12,7 @@ export class WindowManager {
       height: 800,
       minWidth: 1024,
       minHeight: 640,
+      frame: false,
       webPreferences: {
         preload: preloadPath,
         contextIsolation: true,

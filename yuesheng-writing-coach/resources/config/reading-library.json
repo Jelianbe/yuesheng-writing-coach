@@ -2,7 +2,12 @@
   "$source": "teaching-knowledge-bridge_V1.0.md §3.4 — A3 阅读分析模式数据源",
   "description": "阅读库 Schema — 供教学 Agent 在 S2_GUIDE / S2_REFLECTION 阶段推送阅读分析材料使用。MODE=reading_task 时训练流程使用 READING_STEPS 三步框架。",
   "version": "1.0",
-  "updatedAt": "2026-06-14",
+  "updatedAt": "2026-06-15",
+  "contentStatus": {
+    "presetEntries": 5,
+    "emptySlotsAvailable": true,
+    "readiness": "C-02a 骨架完成：categories + readingSteps + 5 条 preset 示例条目。C-02b 内容增强等待 D 阶段蒸馏产出。"
+  },
   "readingSteps": {
     "source": "training.types.ts :: READING_STEPS",
     "steps": [

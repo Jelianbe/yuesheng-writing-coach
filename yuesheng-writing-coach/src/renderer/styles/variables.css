@@ -55,6 +55,12 @@
 
   /* 目标档位条 — 长档专用色 */
   --goal-tier-long: #8E44AD;
+
+  /* ── 训练阅读色（RecommendationsSection）── */
+  --color-reading-badge: #10b981;
+  --color-reading-tag: #6366f1;
+  --color-reading-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+
   --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.06);
   --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08);
   --shadow-lg: 0 12px 32px rgba(44, 36, 22, 0.10);

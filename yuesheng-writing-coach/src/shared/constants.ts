@@ -112,6 +112,10 @@ export const IMPROVEMENT_THRESHOLD = 1;
  *             不再直接引用 IPC_CHANNELS 的字符串通道名。
  */
 export const IPC_CHANNELS = {
+  // === 窗口控制 ===
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE: 'window:maximize',
+  WINDOW_CLOSE: 'window:close',
   // === 配置 ===
   CONFIG_GET: 'config:get',
   CONFIG_SET: 'config:set',

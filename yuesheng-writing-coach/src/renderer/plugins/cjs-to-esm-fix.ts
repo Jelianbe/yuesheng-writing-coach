@@ -21,8 +21,9 @@
  *   - types.js             (apiSuccess/apiError, PERSONA_PRESETS)
  */
 
-// @ts-ignore — Vite 插件运行在 Node.js 上下文，tsc 无法解析 vite 模块类型
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// Vite 插件运行在 Node.js 上下文，tsc 无法解析 vite 模块类型
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/ban-ts-comment
+// @ts-ignore
 import type { Plugin } from 'vite';
 
 // ===== 受保护的文件路径（相对于项目根目录）=====
@@ -107,7 +108,7 @@ function cjsToEsm(source: string): string {
 
       // 判断值类型
       const trimmedValue = value.trim();
-      if (/^[\{['"`]/.test(trimmedValue) || /^\d/.test(trimmedValue)) {
+      if (/^[[{'"`]/.test(trimmedValue) || /^\d/.test(trimmedValue)) {
         // 对象/数组/字符串/数字字面量 → export const（保留原始行格式）
         output.push(line.replace(/^exports\./, 'export const '));
         declaredVars.add(name);

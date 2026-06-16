@@ -7,9 +7,8 @@ export interface GrowthGetTrendsRequest {
   syndromeIds?: string[];
 }
 
-export interface GrowthGetGlobalTrendsRequest {
-  /** empty — 获取全局趋势 */
-}
+/** empty — 获取全局趋势 */
+export type GrowthGetGlobalTrendsRequest = Record<string, never>;
 
 // ─── 响应类型 ───
 

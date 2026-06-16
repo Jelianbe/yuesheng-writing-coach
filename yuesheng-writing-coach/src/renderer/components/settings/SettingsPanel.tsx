@@ -11,8 +11,8 @@
 import React, { useState, useCallback } from 'react';
 import { Key, Globe, Thermometer, Cpu, CheckCircle, XCircle, Sun, Moon, Loader, Brain } from 'lucide-react';
 import { useConfigStore } from '../../stores/config.store';
-
-const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
+import styles from './settings.module.css';
+import shared from '../profile/panel-shared.module.css';
 
 /** 输入行组件 */
 const ConfigField: React.FC<{
@@ -24,31 +24,18 @@ const ConfigField: React.FC<{
   icon?: React.ReactNode;
   secret?: boolean;
 }> = ({ label, value, onChange, placeholder, type = 'text', icon, secret }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-    <label style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+  <div className={styles.configField}>
+    <label className={styles.fieldRow}>
       {icon}
       {label}
     </label>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className={`${shared.flexAlignCenter} ${shared.flexGap6}`}>
       <input
         type={secret ? 'password' : type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        style={{
-          flex: 1,
-          padding: '6px 10px',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-sm)',
-          background: 'var(--bg-input)',
-          color: 'var(--text-primary)',
-          fontFamily: 'var(--font-body)',
-          fontSize: '0.82rem',
-          outline: 'none',
-          transition: `border-color 200ms ${EASE_OUT_QUART}`,
-        }}
-        onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-        onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+        className={styles.input}
       />
     </div>
   </div>
@@ -98,22 +85,13 @@ export const SettingsPanel: React.FC = () => {
   const hasChanges = localKey !== apiKey || localUrl !== baseUrl || localModel !== modelName;
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 20,
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      padding: '4px 0',
-      minHeight: 0,
-      scrollbarWidth: 'thin',
-    }}>
+    <div className={styles.scrollContainer}>
       {/* API 配置 */}
       <div>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', padding: '0 2px 10px' }}>
+        <div className={`${shared.sectionHeader} ${shared.flexAlignCenter}`} style={{ paddingBottom: 10 }}>
           API 配置
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className={styles.fieldGroup}>
           <ConfigField
             label="API Key"
             value={localKey}
@@ -137,11 +115,11 @@ export const SettingsPanel: React.FC = () => {
             icon={<Cpu size={12} strokeWidth={1.6} />}
           />
           {/* Temperature */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className={shared.flexCol} style={{ gap: 4 }}>
+            <label className={styles.fieldRow}>
               <Thermometer size={12} strokeWidth={1.6} />
               Temperature
-              <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>({temperature.toFixed(1)})</span>
+              <span className={shared.textTertiary}>({temperature.toFixed(1)})</span>
             </label>
             <input
               type="range"
@@ -150,20 +128,18 @@ export const SettingsPanel: React.FC = () => {
               step="0.1"
               value={temperature}
               onChange={e => setTemperature(parseFloat(e.target.value))}
-              style={{
-                width: '100%',
-                accentColor: 'var(--accent)',
-              }}
+              className={styles.rangeInput}
+              style={{ accentColor: 'var(--accent)' }}
             />
           </div>
 
           {/* 态度模式 */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className={shared.flexCol} style={{ gap: 4 }}>
+            <label className={styles.fieldRow}>
               <Brain size={12} strokeWidth={1.6} />
               态度模式
             </label>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div className={`${shared.flexRow} ${shared.flexGap6}`}>
               {(['doubao', 'yuesheng'] as const).map((level) => (
                 <button
                   key={level}
@@ -171,19 +147,7 @@ export const SettingsPanel: React.FC = () => {
                   onClick={() => setAttitudeLevel(level)}
                   aria-pressed={attitudeLevel === level}
                   aria-label={`态度模式：${level === 'doubao' ? '温和' : '严格'}`}
-                  style={{
-                    flex: 1,
-                    padding: '5px 10px',
-                    border: `1px solid ${attitudeLevel === level ? 'var(--accent)' : 'var(--border)'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    background: attitudeLevel === level ? 'var(--accent)' : 'transparent',
-                    color: attitudeLevel === level ? 'var(--text-on-accent)' : 'var(--text-secondary)',
-                    fontSize: '0.75rem',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-body)',
-                    fontWeight: attitudeLevel === level ? 600 : 400,
-                    transition: `all 150ms ${EASE_OUT_QUART}`,
-                  }}
+                  className={`${styles.segmentedBtn} ${attitudeLevel === level ? styles.segmentedBtnActive : ''}`}
                 >
                   {level === 'doubao' ? '温和' : '严格'}
                 </button>
@@ -193,24 +157,12 @@ export const SettingsPanel: React.FC = () => {
         </div>
 
         {/* 操作按钮组 */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <div className={styles.btnGroup}>
           {hasChanges && (
             <button
               onClick={handleSave}
               aria-label="保存配置"
-              style={{
-                flex: 1,
-                padding: '6px 12px',
-                border: '1px solid var(--accent)',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--accent)',
-                color: 'var(--text-on-accent)',
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
-                fontWeight: 500,
-                transition: `all 150ms ${EASE_OUT_QUART}`,
-              }}
+              className={styles.saveBtn}
             >
               保存配置
             </button>
@@ -219,22 +171,8 @@ export const SettingsPanel: React.FC = () => {
             onClick={testConnection}
             disabled={testStatus === 'testing'}
             aria-label={testStatus === 'testing' ? '测试连接中' : '测试连接'}
-            style={{
-              flex: hasChanges ? 1 : undefined,
-              padding: '6px 12px',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              fontSize: '0.78rem',
-              cursor: testStatus === 'testing' ? 'not-allowed' : 'pointer',
-              fontFamily: 'var(--font-body)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              transition: `all 150ms ${EASE_OUT_QUART}`,
-              opacity: testStatus === 'testing' ? 0.6 : 1,
-            }}
+            className={`${styles.testBtn} ${testStatus === 'testing' ? styles.testBtnDisabled : ''}`}
+            style={{ flex: hasChanges ? 1 : undefined }}
             onMouseEnter={e => { if (testStatus !== 'testing') e.currentTarget.style.borderColor = 'var(--accent)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
           >
@@ -248,13 +186,13 @@ export const SettingsPanel: React.FC = () => {
 
         {/* 测试结果 */}
         {testStatus === 'success' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--success)', marginTop: 6 }}>
+          <div className={styles.testResult}>
             <CheckCircle size={12} strokeWidth={1.6} />
             连接成功 {testResponseTime ? `(${testResponseTime}ms)` : ''}
           </div>
         )}
         {testStatus === 'error' && testError && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--error)', marginTop: 6 }}>
+          <div className={styles.testResultError}>
             <XCircle size={12} strokeWidth={1.6} />
             {testError}
           </div>
@@ -262,65 +200,38 @@ export const SettingsPanel: React.FC = () => {
       </div>
 
       {/* 分隔线 */}
-      <div style={{ height: '1px', background: 'var(--border-light)' }} />
+      <div className={styles.divider} />
 
       {/* 主题切换 */}
       <div>
-        <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.03em', padding: '0 2px 10px' }}>
+        <div className={`${shared.sectionHeader} ${shared.flexAlignCenter}`} style={{ paddingBottom: 10 }}>
           显示设置
         </div>
         <button
           onClick={toggleTheme}
           aria-label={isDark ? '切换到亮色模式' : '切换到暗色模式'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            padding: '10px 12px',
-            border: '1px solid var(--border-light)',
-            borderRadius: 'var(--radius-md)',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: 'var(--text-primary)',
-            fontFamily: 'var(--font-body)',
-            fontSize: '0.82rem',
-            transition: `all 150ms ${EASE_OUT_QUART}`,
-          }}
+          className={styles.themeBtn}
           onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.background = 'transparent'; }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className={styles.themeRow}>
             {isDark ? <Moon size={14} strokeWidth={1.6} /> : <Sun size={14} strokeWidth={1.6} />}
             {isDark ? '暗色模式' : '亮色模式'}
           </span>
-          <span style={{
-            width: 36,
-            height: 20,
-            borderRadius: 10,
-            background: isDark ? 'var(--accent)' : 'var(--border)',
-            position: 'relative',
-            transition: `background 200ms ${EASE_OUT_QUART}`,
-          }}>
-            <span style={{
-              position: 'absolute',
-              top: 2,
-              left: isDark ? 18 : 2,
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              background: '#fff',
-              transition: `left 200ms ${EASE_OUT_QUART}`,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-            }} />
+          <span
+            className={styles.toggleTrack}
+            style={{ background: isDark ? 'var(--accent)' : 'var(--border)' }}
+          >
+            <span
+              className={styles.toggleThumb}
+              style={{ left: isDark ? 18 : 2 }}
+            />
           </span>
         </button>
-        <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)', marginTop: 8, padding: '0 2px' }}>
+        <div className={styles.hintText}>
           配置自动保存到本地存储
         </div>
       </div>
     </div>
   );
 };
-
-

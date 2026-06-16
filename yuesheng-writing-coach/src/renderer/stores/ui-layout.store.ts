@@ -12,6 +12,8 @@ interface UiLayoutState {
   sidebarCollapsed: boolean;
   /** 左侧栏当前视图（项目/对话） */
   sidebarView: SidebarView;
+  /** 右侧栏是否收起到图标条模式 */
+  rightSidebarCollapsed: boolean;
 }
 
 interface UiLayoutActions {
@@ -19,15 +21,20 @@ interface UiLayoutActions {
   toggleSidebar: () => void;
   /** 切换侧栏视图 */
   setSidebarView: (view: SidebarView) => void;
+  /** 设置右侧栏收起状态 */
+  setRightSidebarCollapsed: (v: boolean) => void;
 }
 
 export const useUiLayoutStore = create<UiLayoutState & UiLayoutActions>((set) => ({
   // State
   sidebarCollapsed: false,
   sidebarView: 'sessions',
+  rightSidebarCollapsed: true,
 
   // Actions
   toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 
   setSidebarView: (view) => set({ sidebarView: view }),
+
+  setRightSidebarCollapsed: (v) => set({ rightSidebarCollapsed: v }),
 }));

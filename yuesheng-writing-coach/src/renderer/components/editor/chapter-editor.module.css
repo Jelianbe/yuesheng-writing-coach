@@ -1,0 +1,128 @@
+/* ===== 章节编辑器 — chapter-editor.module.css ===== */
+
+/* ── 空状态 ── */
+.emptyState {
+  flex: 1;
+  color: var(--text-tertiary);
+}
+
+.emptyTitle {
+  font-size: 0.95rem;
+}
+
+.emptyHint {
+  font-size: 0.78rem;
+}
+
+.backToChatBtn {
+  padding: 6px 16px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+}
+
+.backToChatBtn:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* ── 主容器 ── */
+.editorContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+}
+
+/* ── 顶栏 ── */
+.toolbar {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.backBtn {
+  padding: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  border-radius: var(--radius-sm);
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.backBtn:hover {
+  background: var(--bg-hover);
+}
+
+.fileIcon {
+  color: var(--accent);
+}
+
+.toolbarTitle {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  flex: 1;
+}
+
+.workName {
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.saveStatus {
+  font-size: 0.68rem;
+}
+
+.savingColor {
+  color: var(--accent);
+}
+
+.idleColor {
+  color: var(--text-tertiary);
+}
+
+/* ── 加载状态 ── */
+.loadingArea {
+  flex: 1;
+  padding: 24px;
+}
+
+.loadingText {
+  color: var(--text-tertiary);
+  font-size: 0.82rem;
+}
+
+/* ── 文本编辑器 ── */
+.textarea {
+  flex: 1;
+  padding: 20px 24px;
+  border: none;
+  outline: none;
+  resize: none;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: Georgia, "Noto Serif SC", serif;
+  font-size: 1rem;
+  line-height: 1.8;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── 底部状态栏 ── */
+.statusBar {
+  padding: 6px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
+  font-size: 0.68rem;
+  color: var(--text-tertiary);
+}
+
+.spacer {
+  flex: 1;
+}

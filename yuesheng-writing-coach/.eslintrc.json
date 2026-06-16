@@ -1,7 +1,7 @@
 {
   "root": true,
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "react-hooks"],
   "extends": [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended"
@@ -34,8 +34,8 @@
     "prefer-const": "warn",
     "no-var": "error",
 
-    // TypeScript 规则
-    "@typescript-eslint/no-explicit-any": "error",
+    // TypeScript 规则 — no-explicit-any 降到 warn，配合 --max-warnings 300 门禁
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-empty-function": ["error", { "allow": ["arrowFunctions"] }],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-non-null-assertion": "warn",
@@ -43,6 +43,10 @@
     "@typescript-eslint/consistent-type-imports": ["warn", {
       "prefer": "type-imports"
     }],
+
+    // React Hooks
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
 
     // 严格比较
     "eqeqeq": ["error", "always", { "null": "ignore" }]

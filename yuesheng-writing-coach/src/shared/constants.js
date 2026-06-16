@@ -77,6 +77,10 @@ export const MAX_DIAGNOSIS_HISTORY = 3;
 export const IMPROVEMENT_THRESHOLD = 1;
 /** IPC 通道常量 */
 export const IPC_CHANNELS = {
+    // === 窗口控制 ===
+    WINDOW_MINIMIZE: 'window:minimize',
+    WINDOW_MAXIMIZE: 'window:maximize',
+    WINDOW_CLOSE: 'window:close',
     // === 配置 ===
     CONFIG_GET: 'config:get',
     CONFIG_SET: 'config:set',

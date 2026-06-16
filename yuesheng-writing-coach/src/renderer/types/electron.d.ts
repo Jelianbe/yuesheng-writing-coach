@@ -7,6 +7,12 @@
 
 interface ElectronAPI {
   /**
+   * 发送 fire-and-forget IPC 消息（窗口控制等）
+   * 通道名在 preload 中经过白名单校验
+   */
+  send(channel: string, args?: unknown): void;
+
+  /**
    * 调用主进程 IPC handler
    * 通道名在 preload 中经过白名单校验
    */

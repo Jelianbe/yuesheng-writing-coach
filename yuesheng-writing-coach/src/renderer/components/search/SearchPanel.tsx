@@ -9,6 +9,8 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Search, X, MessageSquare, ArrowRight } from 'lucide-react';
 import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
+import styles from './search-panel.module.css';
+import shared from '../profile/panel-shared.module.css';
 
 interface SearchResultItem {
   sessionId: string;
@@ -23,8 +25,6 @@ interface SearchResultGroup {
   sessionTitle: string;
   messages: SearchResultItem[];
 }
-
-const EASE_OUT_QUART = 'cubic-bezier(0.25, 1, 0.5, 1)';
 
 export const SearchPanel: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -66,12 +66,11 @@ export const SearchPanel: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className={styles.panel}>
       {/* 搜索框 */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', background: 'var(--bg-input)', transition: `border-color 200ms ${EASE_OUT_QUART}` }}
-          onFocusCapture={() => { }}>
-          <Search size={14} strokeWidth={1.6} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+      <div className={styles.searchRow}>
+        <div className={styles.inputContainer}>
+          <Search size={14} strokeWidth={1.6} className={styles.searchIcon} />
           <input
             ref={inputRef}
             type="text"
@@ -80,34 +79,22 @@ export const SearchPanel: React.FC = () => {
             onKeyDown={handleKeyDown}
             placeholder="搜索所有会话消息..."
             autoFocus
-            style={{
-              flex: 1,
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
-              color: 'var(--text-primary)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.82rem',
-            }}
+            className={styles.textInput}
           />
           {query && (
             <button onClick={() => { setQuery(''); setResults([]); setSearched(false); inputRef.current?.focus(); }}
-              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-tertiary)', padding: 2, display: 'flex' }}>
+              className={styles.clearBtn}>
               <X size={14} strokeWidth={1.6} />
             </button>
           )}
         </div>
         <button onClick={handleSearch} disabled={!query.trim() || loading}
+          className={styles.searchBtn}
           style={{
-            padding: '6px 14px',
             border: `1px solid ${!query.trim() ? 'var(--border-light)' : 'var(--accent)'}`,
-            borderRadius: 'var(--radius-sm)',
             background: !query.trim() ? 'transparent' : 'var(--accent)',
             color: !query.trim() ? 'var(--text-tertiary)' : 'var(--text-on-accent)',
-            fontSize: '0.78rem',
             cursor: !query.trim() ? 'not-allowed' : 'pointer',
-            fontFamily: 'var(--font-body)',
-            transition: `all 150ms ${EASE_OUT_QUART}`,
             opacity: loading ? 0.7 : 1,
           }}>
           {loading ? '搜索中...' : '搜索'}
@@ -116,46 +103,34 @@ export const SearchPanel: React.FC = () => {
 
       {/* 搜索结果 */}
       {searched && !loading && results.length === 0 && (
-        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '0.82rem' }}>
+        <div className={styles.emptyResults}>
           没有找到匹配的结果
         </div>
       )}
 
       {results.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)' }}>
+        <div className={styles.resultsContainer}>
+          <div className={`${shared.textSm} ${shared.textTertiary}`}>
             找到 {results.reduce((s, g) => s + g.messages.length, 0)} 条结果
           </div>
 
           {results.map(group => (
             <div key={group.sessionId}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)', padding: '0 2px 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <div className={`${shared.flexAlignCenter} ${shared.flexGap4} ${shared.textSm} ${shared.fontSemiBold} ${shared.textSecondary} ${styles.sessionHeader}`}>
                 <MessageSquare size={12} strokeWidth={1.6} />
                 {group.sessionTitle || '未命名会话'}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div className={styles.messageList}>
                 {group.messages.map(msg => (
                   <button
                     key={msg.messageId}
                     onClick={() => switchToSession(msg.sessionId)}
-                    style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 8,
-                      padding: '8px 10px',
-                      border: '1px solid var(--border-light)',
-                      borderRadius: 'var(--radius-sm)',
-                      background: 'transparent',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontFamily: 'var(--font-body)',
-                      transition: `all 150ms ${EASE_OUT_QUART}`,
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.background = 'transparent'; }}
+                    className={styles.resultItem}
                   >
-                    <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    <span className={styles.messageText}>
                       {msg.content.length > 120 ? msg.content.slice(0, 120) + '...' : msg.content}
                     </span>
-                    <ArrowRight size={12} strokeWidth={1.6} style={{ color: 'var(--text-tertiary)', flexShrink: 0, marginTop: 4 }} />
+                    <ArrowRight size={12} strokeWidth={1.6} className={styles.arrowIcon} />
                   </button>
                 ))}
               </div>
@@ -166,5 +141,3 @@ export const SearchPanel: React.FC = () => {
     </div>
   );
 };
-
-
