@@ -1,0 +1,53 @@
+/* WindowControls.module.css — 窗口控制按钮样式（设计文档 2026-06-15 对齐） */
+
+.container {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 40px;
+  padding: 0 8px;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+/* 右侧栏展开态：浅色背景 + 深色图标 */
+.container[data-expanded="true"] {
+  background: var(--bg-header, var(--bg-sidebar));
+  color: var(--text-primary, #2C2416);
+}
+
+/* 右侧栏收起态：深色背景 + 浅色图标 */
+.container[data-expanded="false"] {
+  background: var(--bg-inverse, #1a1a1a);
+  color: var(--text-on-inverse, #F5F1EB);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-sm, 6px);
+  color: inherit;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.btn:hover {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.05));
+}
+
+.btn:active {
+  background: var(--bg-active, rgba(0, 0, 0, 0.1));
+}
+
+.closeBtn:hover {
+  background: var(--error, #ef4444);
+  color: var(--text-on-error, #fff);
+}
