@@ -2,6 +2,7 @@
  * 诊断处理器 — 领域层
  *
  * 负责：解析 AI 回复中的诊断表 → 持久化 → 创建证据 → 合并到 TeachingState
+ *       → 写教学决策记录(RWR-P1-6 / B-2)
  * 不包含 IPC 推送逻辑（由调用方负责）
  */
 
@@ -9,6 +10,7 @@ import { parseDiagnosisFromAIResponse } from './diagnosis-parser';
 import type { DiagnosisService } from './diagnosis.service';
 import type { EvidenceService } from './evidence/evidence.service';
 import type { DiagnosisMerger } from './diagnosis-merger';
+import type { TeachingDecisionService } from '../teaching/decision/decision.service';
 import type { DiagnosisEntry } from '../../../shared/types/types-diagnosis';
 import { getAbilitiesForSyndrome } from '../../../shared/mappings';
 
@@ -16,11 +18,13 @@ export interface DiagnosisProcessorDeps {
   diagnosisService: DiagnosisService;
   evidenceService: EvidenceService;
   diagnosisMerger: DiagnosisMerger;
+  /** RWR-P1-6 (B-2): 教学决策记录层(可选,无注入时跳过 record 步骤) */
+  teachingDecisionService?: TeachingDecisionService;
 }
 
 /**
  * 处理 AI 回复中的诊断数据
- * 核心领域逻辑：解析 → 持久化 → 创建证据 → 合并到教学状态
+ * 核心领域逻辑：解析 → 持久化 → 创建证据 → 合并到教学状态 → 写决策记录
  * 不包含 IPC 推送，由调用方按需添加
  *
  * @returns 包含诊断 ID 和诊断对象的对象（持久化成功后），失败时返回 undefined
@@ -89,6 +93,31 @@ export function processAIResponse(
     deps.diagnosisMerger.merge(diagnosis);
   } catch (err) {
     console.error('[DiagnosisProcessor] Failed to merge diagnosis:', err);
+  }
+
+  // 4. RWR-P1-6 (B-2): 写教学决策记录(spec §8.3 Phase 1 = "写不读")
+  // 简化方案:每条 syndrome 默认 GUIDE 策略 + 模板 reason
+  // studentState 暂用默认值(无完整教学状态上下文),Phase 4+ 接入 Router 时回填
+  if (deps.teachingDecisionService) {
+    try {
+      for (const syndrome of diagnosis.syndromes) {
+        deps.teachingDecisionService.record({
+          sessionId: diagnosis.sessionId,
+          syndromeId: syndrome.id,
+          strategyChosen: 'GUIDE',
+          reason: `新诊断症候 ${syndrome.name},启用引导式教学`,
+          studentState: {
+            confidence: 'neutral',
+            relapseCount: 0,
+            currentStage: 'UNKNOWN',
+            attitudeLevel: 'balanced',
+          },
+        });
+      }
+    } catch (err) {
+      // 决策记录失败不阻塞诊断主流程(spec §8.3 写不读,允许丢失)
+      console.error('[DiagnosisProcessor] Failed to record teaching decision:', err);
+    }
   }
 
   return { diagnosisId, diagnosis };

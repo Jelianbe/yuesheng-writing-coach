@@ -15,6 +15,7 @@ import { useTeachingStateStore } from '../stores/teaching-state.store';
 import { useStudentContextStore } from '../stores/student-context.store';
 import { useTrainingStore } from '../stores/training.store';
 import { usePanelSessionStore } from '../stores/panel-session.store';
+import { useProgressStore } from '../stores/progress.store';
 import { chatService } from './chat.service';
 import { diagnosisService } from './diagnosis.service';
 import { teachingStateService } from './teaching-state.service';
@@ -47,7 +48,7 @@ export function createAppController(): AppController {
       // 0. 初始化 store 数据（替代 App.tsx 中分散的 init useEffect）
       useStudentContextStore.getState().load();
 
-      // 1. 诊断更新 → diag.store + studentContext + training
+      // 1. 诊断更新 → diag.store + studentContext + training + progress (B-2)
       // 注: contract 类型较瘦，renderer 类型有额外字段，做类型断言桥接。
       cleanups.push(
         diagnosisService.onDiagnosisUpdate((data) => {
@@ -61,6 +62,15 @@ export function createAppController(): AppController {
           if (rendererEntry.syndromes && rendererEntry.syndromes.length > 0) {
             useStudentContextStore.getState().updateFromDiagnosis(rendererEntry.syndromes);
             useTrainingStore.getState().refreshFromDiagnosis();
+            // RWR-P1-6 (B-2): 诊断产生后自动更新 progress.store
+            // contract 的 SyndromeResult.syndromeId 是真实 ID,description 作为 label
+            useProgressStore.getState().appendIssues(
+              sessionId,
+              entry.syndromes.map((s) => ({
+                syndromeId: s.syndromeId,
+                label: s.description,
+              })),
+            );
           }
         }),
       );
