@@ -14,6 +14,13 @@ import { ACTION_NAMES } from '../../shared/mappings';
 
 /**
  * 教学状态接口
+ *
+ * RWR-P1-10 / C-4 增加 masteredSyndromeIds:
+ *   当前 session 中已精通的症候 ID 列表。
+ *   数据源:teachingState:mastery 事件触发后,consume 端查
+ *   progress.store 全量 mastered 症候写入。
+ *
+ * R-021 隐性诊断:只存 ID 列表,不存症候 details。
  */
 export interface TeachingStateState {
   /** 当前会话的教学状态 */
@@ -22,6 +29,8 @@ export interface TeachingStateState {
   isLoading: boolean;
   /** 错误信息 */
   error: string | null;
+  /** 当前 session 已精通症候 ID 列表 */
+  masteredSyndromeIds: string[];
 
   /** 设置当前教学状态 */
   setCurrentState: (state: TeachingState | null) => void;
@@ -29,6 +38,8 @@ export interface TeachingStateState {
   setLoading: (loading: boolean) => void;
   /** 设置错误信息 */
   setError: (error: string | null) => void;
+  /** 写入已精通症候 ID 列表(由 onMastery consume 端调用) */
+  setMasteredSyndromeIds: (ids: string[]) => void;
 }
 
 /**
@@ -38,6 +49,7 @@ export const useTeachingStateStore = create<TeachingStateState>((set) => ({
   currentState: null,
   isLoading: false,
   error: null,
+  masteredSyndromeIds: [],
 
   setCurrentState: (state: TeachingState | null) => {
     set({ currentState: state, error: null });
@@ -49,6 +61,10 @@ export const useTeachingStateStore = create<TeachingStateState>((set) => ({
 
   setError: (error: string | null) => {
     set({ error });
+  },
+
+  setMasteredSyndromeIds: (ids: string[]) => {
+    set({ masteredSyndromeIds: ids });
   },
 }));
 

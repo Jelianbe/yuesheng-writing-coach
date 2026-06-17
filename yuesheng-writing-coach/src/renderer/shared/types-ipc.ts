@@ -6,6 +6,7 @@ import type { AbilityProfile } from './types-growth';
 import type { Session, MessageRow, SessionMeta } from './types-chat';
 import type { Manuscript, Chapter } from './types-manuscript';
 import type { DiagnosisUpdateEvent } from '../../shared/api-contracts/diagnosis.contract';
+import type { TeachingStateMasteryEvent } from '../../shared/api-contracts/teaching-state.contract';
 
 /** IPC 通道字符串字面量类型 */
 export type IPCChannel =
@@ -127,6 +128,7 @@ export interface IPCResponseMap {
 export interface IPCEventMap {
   'diagnosis:update': DiagnosisUpdateEvent;
   'teachingState:updated': TeachingState & { phaseName: string; subphaseName: string; phaseProgress: number };
+  'teachingState:mastery': TeachingStateMasteryEvent;
   'chat:stream:data': { sessionId: string; chunk: string };
   'chat:stream:end': { sessionId: string; fullResponse: string; messageId: string; error?: string };
 }
