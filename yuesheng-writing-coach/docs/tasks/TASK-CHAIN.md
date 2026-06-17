@@ -1,9 +1,9 @@
 # 任务链状态（统一正本）
 
-> **最后更新**: 2026-06-11  V16.8
+> **最后更新**: 2026-06-17  V17.2
 > **系统版本**: V3.6
 > **规范依据**: [TASK-SYSTEM-DESIGN.md](TASK-SYSTEM-DESIGN.md)
-> **任务链版本**: V16.8
+> **任务链版本**: V17.2
 
 ---
 
@@ -57,9 +57,10 @@
 | ✅ 已完成 | **C-Phase 全部 4 项完成**（P-04 Phase 1~2 / P-06 / X-01 / X-02）|
 | ✅ 已完成 | **FB240609-001 全部 8 项完成**（代码审查残留 4 项 + 定义分裂 3 项 + TabBar 清理）+ **DB-P1a/b 时间格式/主键统一**|
 | ✅ 已完成 | **FB240611-003 数据流链路整合审计**：修复 6 个 P0 断裂点（迁移文件缺失/白名单缺失/sessionId 空值/chat:stop 无 handler/onboarding 被拦截/面板不自知刷新）|
+| ✅ 已完成 | **FB20260617-002 RWR-P0-2 progress.store 新增**：SessionProgress 类型 + useProgressStore(7 actions + 3 selectors + persist localStorage) + 21 单测。tsc 0 新墝，vitest 167/167，eslint 0/0。阻塞解除 P1-5 / P1-6 |
 | ✅ 已完成 | **每日体检 broken import 修复**：tsc 从 2→0，修复 paradigm.store.ts TabBar 引用 + app-helpers.ts RightPanel 引用 |
 | ✅ 已完成 | **每日体检 V2.1 深度扫描修复（R-30 流程）**：F-02 createHandler 迁移（chat.handler + ability-profile）、F-03 AUTOINCREMENT→UUID、F-04 迁移文件事务包裹、F-07 chapter.store fetchByWork guard；session.service.test.ts transaction mock 修复 |
-| ▶️ **当前指针** | **全部分解** — P0/P1 已清零（6/12 清理） |
+| ▶️ **当前指针** | **RWR-P0-3** — Store 导出统一 + 删除 rightPanelService（V4-UI-1 合并解决）|
 
 ---
 
