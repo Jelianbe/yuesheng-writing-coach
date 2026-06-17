@@ -48,6 +48,13 @@
   --warning-light: #F5EDE0;
   --error: #A94444;
   --error-light: #F5E8E6;
+
+  /* ── 态度档位色（RWR-P1-3 三灯互斥）
+       doubao(温柔) = 绿  / yuesheng(月笙) = 黄  / direct(尖锐) = 红
+       颜色与品牌色 (#A07030) 协调, 避免与 warning(#7B5121) 混淆。── */
+  --color-attitude-doubao: #5BA868;
+  --color-attitude-yuesheng: #D4A24C;
+  --color-attitude-direct: #C45A5A;
   --info: #3D5E94;
   --info-light: #E4EDF5;
 

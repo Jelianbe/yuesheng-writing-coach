@@ -1,0 +1,82 @@
+/* AttitudeIndicator.module.css — 态度档位三灯 (RWR-P1-3) */
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+/* ── 三灯容器 ── */
+
+.lights {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── 单灯 ── */
+
+.light {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  cursor: not-allowed;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.light:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.lightActive {
+  /* 颜色由 inline style 注入 (var(--color-attitude-{level})) */
+  opacity: 1;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.light:not(:disabled):hover {
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
+/* ── 锁按钮 ── */
+
+.lockBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.lockBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.lockBtnLocked {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.lockBtnLocked:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--text-on-accent);
+}
