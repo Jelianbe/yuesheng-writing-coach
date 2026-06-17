@@ -2,7 +2,7 @@ import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { Plus } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
-import { rightPanelService } from '../../services/right-panel.service';
+import { useRightPanelStore } from '../../stores';
 import { SessionTabBar } from './SessionTabBar';
 import { ToolGrid } from './ToolGrid';
 import {
@@ -88,17 +88,17 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
 
   const handleToolClick = useCallback((tool: ToolItem) => {
     if (tool.disabled) return;
-    tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : rightPanelService.openTool(tool.id);
+    tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : useRightPanelStore.getState().openTool(tool.id);
   }, [onToolClick]);
 
   /* 标签切换 */
   const handleSessionSwitch = useCallback((sessionId: string) => {
-    rightPanelService.switchSession(sessionId);
+    useRightPanelStore.getState().switchSession(sessionId);
   }, []);
 
   /* 移除会话 */
   const handleSessionRemove = useCallback((sessionId: string) => {
-    rightPanelService.removeSession(sessionId);
+    useRightPanelStore.getState().removeSession(sessionId);
   }, []);
 
   // Esc 关闭面板

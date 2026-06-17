@@ -2,7 +2,7 @@ import React from 'react';
 import { Minus, Square, X, PanelRightClose, PanelRightOpen, Plus, Settings } from 'lucide-react';
 import { useDrawerStore } from '../../stores/drawer.store';
 import { useSessionStore } from '../../stores/session.store';
-import { rightPanelService } from '../../services/right-panel.service';
+import { useRightPanelStore } from '../../stores';
 import styles from './WindowControls.module.css';
 
 /**
@@ -29,7 +29,7 @@ export const WindowControls: React.FC = React.memo(() => {
   };
 
   const handleOpenSettings = () => {
-    rightPanelService.switchTo('__settings__');
+    useRightPanelStore.getState().switchTo('__settings__');
   };
 
   const handleMinimize = () => {
