@@ -1,5 +1,20 @@
 // 成长与能力画像类型
 
+/** 教学历史条目(RWR-P0-1 新增,持久化到 student_model.teaching_history)
+ *  - R-021 隐性诊断: 该字段是系统内部数据,不渲染到前端 UI
+ *  - 仅供 P1-7 student-model service 读取聚合
+ */
+export interface TeachingHistoryItem {
+  /** 教学动作(动作 ID 或自由描述,如 'mastery_confirmed') */
+  action: string;
+  /** 关联症候 ID */
+  syndromeId: string;
+  /** 教学结果('resolved' | 'in_progress' | 'skipped' | 'failed') */
+  outcome: string;
+  /** 时间戳(ISO 8601 格式) */
+  timestamp: string;
+}
+
 /** 能力评分 */
 export interface AbilityScore {
   abilityId: string;
