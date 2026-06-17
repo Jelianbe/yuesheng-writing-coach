@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { PanelLeftClose } from 'lucide-react';
+import { PanelLeftClose, Crosshair, Sparkles } from 'lucide-react';
 import { useUiLayoutStore } from '../../stores/ui-layout.store';
 import { useSessionStore } from '../../stores/session.store';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
+import { useRightPanelStore } from '../../stores/right-panel.store';
 import { ModeSwitch } from './ModeSwitch';
 import { SessionList } from './SessionList';
 import { WorkTreePanel } from './WorkTreePanel';
@@ -50,6 +51,9 @@ export const SoloSidebar: React.FC = () => {
   const fetchChapters = useChapterStore(s => s.fetchByWork);
   const selectChapter = useChapterStore(s => s.select);
   const openTab = useChapterStore(s => s.openTab);
+
+  // ── 右栏动作(§6.1: 训练按钮打开右侧栏训练面板)──
+  const openRightTool = useRightPanelStore(s => s.openTool);
 
   // ── 拖拽调节宽度 ──
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -161,6 +165,28 @@ export const SoloSidebar: React.FC = () => {
             </button>
           </div>
 
+          {/* 训练独立按钮（顶部全宽，RWR-A-1 新增）
+              - 点击切换 sidebarView = 'training'
+              - §6.1 真实行为是触发右侧栏技法列表; A-1 阶段先做占位视图
+              - C-3 阶段（训练反馈回路）会接入技法分类列表 */}
+          <button
+            type="button"
+            className={
+              sidebarView === 'training'
+                ? `${styles.soloTrainingBtn} ${styles.soloTrainingBtnActive}`
+                : styles.soloTrainingBtn
+            }
+            onClick={e => {
+              e.stopPropagation();
+              setSidebarView('training');
+              openRightTool('training');
+            }}
+            title="打开训练面板（C-3 阶段接入技法列表）"
+          >
+            <Crosshair size={14} strokeWidth={1.6} />
+            训练
+          </button>
+
           {/* Tab 切换栏 */}
           <div className={styles.soloTabs}>
             <div className={styles.soloTabsInner}>
@@ -203,6 +229,25 @@ export const SoloSidebar: React.FC = () => {
                 onOpenTab={openTab}
                 fetchChapters={fetchChapters}
               />
+            )}
+
+            {sidebarView === 'training' && (
+              /* 训练视图（指引文案，RWR-A-1 占位）
+                 - §6.1 行为: 训练面板已在右侧栏展开, 左侧栏只做导航指引
+                 - 实际技法列表由 C-3 阶段（训练反馈回路）实现 */
+              <div className={styles.soloTrainingEmpty}>
+                <Sparkles
+                  size={32}
+                  strokeWidth={1.4}
+                  className={styles.soloTrainingEmptyIcon}
+                />
+                <p className={styles.soloTrainingEmptyTitle}>
+                  请在右侧栏选择技法任务
+                </p>
+                <p className={styles.soloTrainingEmptyDesc}>
+                  训练面板已在右侧展开，挑选匹配的技法后开始训练。
+                </p>
+              </div>
             )}
           </div>
         </>

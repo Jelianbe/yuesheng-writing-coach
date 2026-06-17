@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 
 /** SOLO 侧栏视图 */
-export type SidebarView = 'projects' | 'sessions';
+export type SidebarView = 'projects' | 'sessions' | 'training';
 
 /** 拖拽目标（当前正在调整哪一栏） */
 export type ResizeTarget = 'sidebar' | 'rightPanel' | null;

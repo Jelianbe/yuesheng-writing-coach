@@ -23,12 +23,12 @@ ALTER TABLE diagnosis_results
 -- R-021 隐性诊断: teaching_history 是系统内部字段,不渲染到前端 UI
 CREATE TABLE IF NOT EXISTS student_model (
   id TEXT PRIMARY KEY,
-  session_id TEXT NOT NULL UNIQUE,
+  session_id TEXT NOT NULL,
   attitude_preference TEXT DEFAULT NULL,
   teaching_history TEXT NOT NULL DEFAULT '[]',
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),
   updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
-  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_student_model_session ON student_model(session_id);
