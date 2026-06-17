@@ -1,20 +1,57 @@
 # 任务总表
 
-> **最后更新**: 2026-06-12 | **排序规则**: P0 > P1 > P2，同优先级按分组排列
-> **来源**: [前端组件全面扫描报告 2026-06-10](./FRONTEND-SCAN-20260610.md) + [教学法反例库 v2.3](../research/教学法反例库_素材合集_v2.3.md)
-> 
-> **⚠️ 注意**: 本表 6/10 数据已大部分过时 — FS-P1（除 ManuscriptPanel 外）已被前序工作拆分完毕，FS-P0 已于 6/12 R-30 流程清零。**实际 P0/P1/P2 全部清零**（FS-P2 已于 6/12 清理完毕）。以下为最新状态。
+> **最后更新**: 2026-06-17 | **活跃执行链**: [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)
+> **所有 RWR 任务详情**: [REWRITE-TASK-DETAILS.md](./REWRITE-TASK-DETAILS.md)
+> **设计权威来源**: [系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 
 ---
 
-## 一、待执行
+## 一、RWR 系统重构（活跃任务链）
 
-### P0 — 运行时必崩/必错（必须立即修复）
+### 已完成（a5ec9d9 终态）
 
-| ID | 任务梗概 | 优先级 | 状态 | 分组 | 备注 |
-|:--:|----------|:------:|:----:|:----:|------|
-| **FS-P0-1** | `chat:stop` 假功能修复 | **P0** | ✅ **实际已完成** | IPC 完整性 | AbortController 已在 chat.handler.ts 中实现，渲染端有完整调用链路 + store 状态同步 |
-| **FS-P0-2** | DB 迁移 015/018/019 验证 | **P0** | ✅ **验证通过** | DB 迁移 | 迁移系统跳过不存在的文件；018 已修 SQL + 事务包裹，应用启动正常 |
+| ID | 任务梗概 | 状态 | 涉及文件 |
+|:--:|----------|:----:|:---------|
+| RWR-P0-1 | DB 数据模型扩展 | ✅ | `021_teaching_progress.sql`（diagnosis.teachingProgress + student_model） |
+| RWR-P0-2 | progress.store | ✅ | `stores/progress.store.ts` |
+| RWR-P0-3 | Store 导出路径统一 | ✅ | `stores/index.ts`（barrel export）+ 删除旧 rightPanelService |
+| RWR-P0-4 | 项目 IPC + 项目表 migration | ✅ | `022_projects.sql` + `ipc/project.ipc.ts` |
+| RWR-P0-5 | 数据迁移脚本 | ✅ | `023_data_migration.sql` |
+| RWR-P0-6 | useRightPanel hook + SettingsPanel | ✅ | `hooks/useRightPanel.ts` + 设置面板 |
+| RWR-P1-1 | AppShell 三栏独立布局 | ✅ | `components/layout/AppShell.tsx` + `.module.css` |
+| RWR-P1-3 | ProjectSelector + InputToolbar + AttitudeIndicator | ✅ | `components/layout/ProjectSelector.tsx`、`components/chat/InputToolbar.tsx`、`components/chat/AttitudeIndicator.tsx` |
+
+### 待执行（按序）
+
+| Phase | ID | 任务梗概 | 前置 | 状态 |
+|:-----:|:--:|----------|:----:|:----:|
+| **A** | RWR-P1-2 | SoloSidebar 三标签 [对话][项目][训练] | P1-1 ✅ | **⏩ 当前指针** |
+| A | RWR-P1-4 | 输入区 1/6 屏高重构 | A-1 | PENDING |
+| **B** | RWR-P1-5 | TeachingProgressBar + ProgressTimeline | A-1 + P0-2 ✅ | PENDING |
+| B | RWR-P1-6 | 诊断表与进度联动 + 教学决策记录 | B-1 + P0-1 ✅ | PENDING |
+| **C** | RWR-P1-7 | 画像增强 | P0-1 ✅ | PENDING |
+| C | RWR-P1-8 | 右侧栏进步摘要卡片 | B-2 + P0-6 ✅ | PENDING |
+| C | RWR-P2-2 | 训练反馈回路（提级） | A-1 + P0-2 ✅ | PENDING |
+| **D** | RWR-P2-1 | LearningLogPanel | B-2 + P0-6 ✅ | PENDING |
+| D | RWR-P2-3 | IPC 错误处理 + 骨架屏 | 无 | PENDING |
+| D | RWR-P2-4 | 空状态全覆盖 + placeholder | 无 | PENDING |
+| **E** | RWR-P3-5 | 外部项目代码研究（7 项目） | 无 | PENDING |
+| E | RWR-P3-1 | 文件上传 + 分章 | P0-4 ✅ | PENDING |
+| E | RWR-P3-2~4 | 全局清理与遗留评估 | A~D 完成 | PENDING |
+| E | RWR-P3-6 | 全链路验收测试 | E-1~E-3 | PENDING |
+
+详情 → [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)
+
+---
+
+## 二、FS（前端扫描）历史任务（已完成/已归档）
+
+### P0 — 运行时必崩/必错
+
+| ID | 任务梗概 | 优先级 | 状态 | 备注 |
+|:--:|----------|:------:|:----:|------|
+| FS-P0-1 | `chat:stop` 假功能修复 | P0 | ✅ 已完成 | AbortController 已在 chat.handler.ts 中实现 |
+| FS-P0-2 | DB 迁移 015/018/019 验证 | P0 | ✅ 验证通过 | 迁移系统跳过不存在的文件；018 已修 |
 
 ### P1 — R-019 硬违规 + 规范问题
 
