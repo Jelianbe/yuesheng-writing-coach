@@ -1446,10 +1446,11 @@ P0（核心链路）                          P1（体验提升）              
 
 ## 十一、变更记录（走马灯）
 
-> 32 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
+> 33 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
+| **V17.0** | 2026-06-17 | FB20260617-002~007 反馈处理集中归档：**FB-002** progress.store 新增（SessionProgress 类型 + 7 action + 21 测试）；**FB-003** Store 导出统一 + rightPanelService 删除（useRightPanelStore zustand 接管 + 5 消费者改用 hook）；**FB-004** 修脚本缺 try-except；**FB-005** HoloGram 接入基础设施（v0.2.0 msi + 接入指南 + 24 工具适配）；**FB-007** HoloGram 接入回退（engine 源码编译成功 48s 但沙箱限制无法安装, 文档标 DEPRECATED, nul 保留）。当前指针维持 RWR-P0-4 |
 | **V16.9** | 2026-06-12 | FB20260612-001 Function Calling 集成：api-proxy.ts 新增 `chatStreamWithTools` + `accumulateToolCalls`；chat.handler.ts 新增 `handleStreamResponseWithTools` + `probeToolSupport` + `toolHandlers`(readChapter)；App.tsx 新增 tool 调用状态提示。tsc 0，136 测试通过 |
 | **V16.6** | 2026-06-11 | FB240611-003 整合审计修复：013_manuscripts.sql 创建、MANUSCRIPT_GET 白名单补充、AbilityProfilePanel/GrowthPanel sessionId 从 useSessionStore 获取、CHAT_STOP handler 注册、onboarding:analyze 白名单补充；App.tsx/useAppIpcListener 无用 IPC 回调清理；新增 13 个审计 Issue(I-013~I-025) |
 | **V16.5** | 2026-06-09 | FB240611-002 数据流审计：TeachingState 推送修复、validatePayload 补充、证据 ID 冲突修复、diag.store 错误处理 |
