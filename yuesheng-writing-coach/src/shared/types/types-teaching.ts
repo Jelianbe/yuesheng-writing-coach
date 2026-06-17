@@ -351,3 +351,27 @@ export interface TeachingDecisionLog {
   /** 决策时间(unix epoch ms) */
   decidedAt: number;
 }
+
+// ======================== 画像增强(RWR-P1-7 / C-1) ========================
+// 依据 spec §4.4:teachingHistory[] + attitudePreference 跨 session 持久化
+// 约束:
+//   - R-021 隐性诊断:teaching_history 系统内部字段,前端 UI 永不渲染
+//   - R-014 配置外置:attitude 枚举在此处定义,与 DisputeTracker 保持一致
+
+/** 用户态度档位(跨 session 持久化用,与 DisputeTrackerService.AttitudeLevel 对齐) */
+export type AttitudePreferenceLevel = 'doubao' | 'yuesheng' | 'direct';
+
+/** 教学回合结果(用于 teachingHistory 记录) */
+export type TeachingOutcome = 'success' | 'partial' | 'frustrated' | 'unknown';
+
+/** 单条教学历史记录(spec §4.4) */
+export interface TeachingHistoryEntry {
+  /** 教学动作标识 */
+  action: string;
+  /** 关联症候 ID(无症候时为空字符串) */
+  syndromeId: string;
+  /** 回合结果 */
+  outcome: TeachingOutcome;
+  /** 发生时间(unix epoch ms) */
+  timestamp: number;
+}
