@@ -3,7 +3,7 @@
 > **权威依据**：[系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 > **所有设计决策以此为准，禁止偏离。如有疑问，先查规格文档，再查 TASK-CHAIN.md，最后问用户。**
 >
-> **当前基点**：`6a39e86`（FB-030 终态，RWR-P1-11 ✅）
+> **当前基点**：`ac60ded`（FB-032 终态，RWR-P1-12 ✅）
 > **创建日期**：2026-06-17
 
 ---
@@ -29,6 +29,7 @@
 | P1-9 | 训练反馈回路 + 精通门控 | `teaching-history.contract.ts`（新）+ `training.handler.ts`（+1 handler + emit `teachingState:mastery`）+ `training.actions.ts`（line 266+ 反馈链）+ `constants.ts`（+2 通道） |
 | P1-10 | 教学状态机消费 mastery 事件 | `teaching-state.contract.ts`（+MasteryEvent + api.mastery）+ `types-ipc.ts`（+channel）+ `teaching-state.service.ts`（+onMastery）+ `teaching-state.store.ts`（+masteredSyndromeIds）+ `app-controller.ts`（+step 6） |
 | P1-11 | 精通信息注入 Prompt | `App.tsx`（handleSendMessage 追加 masterySuffix，空列表不追加） |
+| P1-12 | AI 收到 mastery 后的回应对齐 | `yuesheng-prompt-v3.md`（+精通技法处理规则段）+ RWR-MASTER-CHAIN.md（+RWR-DEBT-1 段）|
 
 ---
 
@@ -114,7 +115,7 @@
 | 决策 | 数据驱动（resolvedIssues 变化）/ 不接 BeatCheckChart / 不写报告 |
 | 依据 | 规格 §4.8（不主动打开）+ §4.9（精通确认时刻）+ §十五.4.2（1 文件 UI） |
 
-**当前指针 → C-5 [P1-11] 精通信息注入 Prompt（学生画像对接 AI）**
+**当前指针 → D-1 [P2-1] LearningLogPanel（Phase C 整体完成）**
 
 #### C-3 [训练反馈回路]（原 P2-2 提级）
 
