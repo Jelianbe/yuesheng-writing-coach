@@ -127,6 +127,17 @@ export type {
 export { OnboardingApi } from './onboarding.contract';
 export type { OnboardingInvokeChannels } from './onboarding.contract';
 
+// 项目域(RWR-P0-4)
+export type {
+  ProjectInfo,
+  ProjectListRequest, ProjectGetRequest,
+  ProjectCreateRequest, ProjectUpdateRequest, ProjectDeleteRequest,
+  ProjectListResponse, ProjectGetResponse,
+  ProjectCreateResponse, ProjectUpdateResponse, ProjectDeleteResponse,
+} from './project.contract';
+export { ProjectApi } from './project.contract';
+export type { ProjectInvokeChannels } from './project.contract';
+
 // 事件通道映射
 export type {
   EventChannelMap, EventChannel, EventPayload,

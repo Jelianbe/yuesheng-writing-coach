@@ -10,6 +10,7 @@ import { initChatHandlers, registerChatHandlers } from '../ipc/chat.handler';
 import { registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
 import { initTeachingStateHandler } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
+import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
 import type { ConfigService } from '../shared/services/config.service';
 import type { SessionService } from '../shared/services/session.service';
@@ -95,6 +96,10 @@ export class IpcRegistry {
     // Manuscript (V2 SOLO — 直接使用 db 实例)
     initManuscriptHandlers({ db: this.container.get<any>('db') });
     registerManuscriptHandlers();
+
+    // Project (RWR-P0-4 — 直接使用 db 实例)
+    initProjectHandlers({ db: this.container.get<any>('db') });
+    registerProjectHandlers();
 
     // Window Controls (最小化/最大化/关闭)
     initWindowHandlers();
