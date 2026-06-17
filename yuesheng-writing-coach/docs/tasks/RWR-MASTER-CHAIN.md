@@ -28,6 +28,7 @@
 | P1-8 | 右侧栏"进步摘要"卡片（精通确认高亮） | `training/ProgressSummary.tsx` + `ProgressSummary.module.css` + `App.tsx` 接入 |
 | P1-9 | 训练反馈回路 + 精通门控 | `teaching-history.contract.ts`（新）+ `training.handler.ts`（+1 handler + emit `teachingState:mastery`）+ `training.actions.ts`（line 266+ 反馈链）+ `constants.ts`（+2 通道） |
 | P1-10 | 教学状态机消费 mastery 事件 | `teaching-state.contract.ts`（+MasteryEvent + api.mastery）+ `types-ipc.ts`（+channel）+ `teaching-state.service.ts`（+onMastery）+ `teaching-state.store.ts`（+masteredSyndromeIds）+ `app-controller.ts`（+step 6） |
+| P1-11 | 精通信息注入 Prompt | `App.tsx`（handleSendMessage 追加 masterySuffix，空列表不追加） |
 
 ---
 
