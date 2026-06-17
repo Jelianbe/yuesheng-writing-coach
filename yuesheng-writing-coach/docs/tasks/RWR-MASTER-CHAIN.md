@@ -3,7 +3,7 @@
 > **权威依据**：[系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 > **所有设计决策以此为准，禁止偏离。如有疑问，先查规格文档，再查 TASK-CHAIN.md，最后问用户。**
 >
-> **当前基点**：`bd3761d`（FB-026 终态，RWR-P1-9 ✅）
+> **当前基点**：`6a39e86`（FB-030 终态，RWR-P1-11 ✅）
 > **创建日期**：2026-06-17
 
 ---
@@ -242,3 +242,19 @@ Phase A ─── Phase B ─── Phase C ─── Phase D ─── Phase E
 | `docs/tasks/REWRITE-TASK-DETAILS.md` | 每个任务的详细目标/DoD/涉及文件 |
 | `docs/decision-log.md` | 关键决策历史 |
 | `AGENTS.md` | 项目规则入口 |
+
+
+## 三、待处理（债务记录）
+
+记录 B/C 阶段发现但不在当前任务范围、需要后续阶段处理的问题。
+
+### RWR-DEBT-1: V4.0 Skill 拆分未在代码中集成
+
+- **发现阶段**: C-6 (P1-12)
+- **现象**:
+  - `resources/prompts/skills/` 下 5 个 Skill 文件已存在 (SKILL-IDENTITY/TEACHING/VALIDATION/FEEDBACK/SCENARIO)
+  - `yuesheng-prompt-v3.md` 是 V4.0 装配说明 (105 行),不是行为约束 Prompt
+  - `prompt-loader.ts` 和 `dynamic-context.service.ts` 不读 Skill 文件
+  - 实际行为约束真源 (`teacher-prompt.md` / `teaching-agent-prompt-v1.md` / `core-principles.md`) 代码不读
+- **当前绕过**: C-6 行为约束直接追加到 v3.md 末尾 (文档语义不干净,但即时生效)
+- **后续处理**: 后续阶段重接 prompt 加载逻辑,让 Skill 文件生效
