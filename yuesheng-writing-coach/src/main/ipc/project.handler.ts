@@ -125,6 +125,6 @@ export function registerProjectHandlers(): void {
     if (result.changes === 0) {
       throw new Error(`PROJECT_NOT_FOUND: ${validation.data.projectId}`);
     }
-    return { deleted: true };
+    // 响应: void(与 ProjectDeleteResponse = void 一致, R-007 双向绑定)
   });
 }
