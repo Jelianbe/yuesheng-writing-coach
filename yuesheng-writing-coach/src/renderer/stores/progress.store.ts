@@ -21,7 +21,7 @@ import type {
   SessionProgress,
   ProgressIssue,
   DisplayStatus,
-} from '../shared/types';
+} from '../../shared/types';
 
 // ===== 常量 =====
 
