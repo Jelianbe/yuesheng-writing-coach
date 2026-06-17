@@ -175,7 +175,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             lineHeight: 1.5,
             resize: 'none',
             minHeight: 24,
-            maxHeight: 200,
+            maxHeight: 180, /* A-2: 与输入区 clamp 上限一致 */
           }}
         />
         {isStreaming ? (
