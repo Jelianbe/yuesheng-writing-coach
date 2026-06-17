@@ -255,3 +255,54 @@ export interface RouterOutput {
     format?: string;
   };
 }
+
+// ======================== 会话进度（RWR-P0-2 新增） ========================
+
+/** 单个问题的教学状态(spec §9.1 + TASK-DETAILS RWR-P0-2 融合) */
+export type ProgressIssueStatus = 'identified' | 'teaching' | 'mastered' | 'relapsed';
+
+/** 教学进度展示状态(右侧栏状态指示器,spec §9.1) */
+export type DisplayStatus = 'idle' | 'diagnosing' | 'teaching' | 'reflecting' | 'completed';
+
+/** 单个问题的进度明细 */
+export interface ProgressIssue {
+  /** 症候 ID(与 diagnosis 的 SyndromeId 对齐) */
+  syndromeId: string;
+  /** 当前状态 */
+  status: ProgressIssueStatus;
+  /** 人类可读简短描述(UI 展示用) */
+  label: string;
+}
+
+/**
+ * 会话进度(0/N 显性反馈)
+ *
+ * 设计依据:TASK-DETAILS RWR-P0-2 DoD + spec §9.1 融合
+ * - 分子 resolvedIssues:只增不减(spec §4.2 "问题解决跳一次")
+ * - 分母 totalIssues:只增不减(spec §4.2 "分母只增不减")
+ * - phaseGroup:分阶段分组(spec §4.2 "第一批 3/3 ✓ → 第二批 0/4")
+ * - issues[]:各问题明细状态(spec §9.1,复发分析输入源)
+ *
+ * 持久化:progress.store 的 persist middleware 写入 localStorage
+ * 真源:教学状态机(teaching-state.store)的诊断结果
+ */
+export interface SessionProgress {
+  /** 所属会话 ID */
+  sessionId: string;
+  /** 当前聚焦的问题 ID(教学状态机当前处理对象) */
+  currentIssue?: string;
+  /** 当前会话累计识别的症候总数(分母,只增不减) */
+  totalIssues: number;
+  /** 已掌握/精通的问题数(分子) */
+  resolvedIssues: number;
+  /** 当前教学阶段(如 'P2_PRACTICE_LOOP') */
+  stage: string;
+  /** 阶段分组标识(spec §4.2 分阶段展示,如 'batch-1' / 'batch-2') */
+  phaseGroup?: string;
+  /** 各问题明细(含 status 追踪) */
+  issues: ProgressIssue[];
+  /** 当前系统展示状态(右侧栏状态指示器) */
+  displayStatus: DisplayStatus;
+  /** 最后更新时间(ISO 8601) */
+  updatedAt: string;
+}

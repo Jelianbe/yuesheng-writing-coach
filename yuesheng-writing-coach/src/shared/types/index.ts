@@ -55,6 +55,10 @@ export type { PersonaConfig } from './types-teaching';
 export { PERSONA_PRESETS } from './types-teaching';
 export type { RouterInput } from './types-teaching';
 export type { RouterOutput } from './types-teaching';
+// RWR-P0-2: 会话进度
+export type { ProgressIssueStatus, DisplayStatus } from './types-teaching';
+export type { ProgressIssue } from './types-teaching';
+export type { SessionProgress } from './types-teaching';
 
 // --- types-training: 训练工坊 ---
 export type { CenterMode } from './types-training';
