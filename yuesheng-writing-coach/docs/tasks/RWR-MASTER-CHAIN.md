@@ -3,7 +3,7 @@
 > **权威依据**：[系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 > **所有设计决策以此为准，禁止偏离。如有疑问，先查规格文档，再查 TASK-CHAIN.md，最后问用户。**
 >
-> **当前基点**：`0a6937e`（FB-022 终态，RWR-P1-7 ✅）
+> **当前基点**：`b051f56`（FB-024 终态，RWR-P1-8 ✅）
 > **创建日期**：2026-06-17
 
 ---
@@ -80,15 +80,19 @@
 
 ### Phase C：反馈增强
 
-#### C-1 [P1-7] 画像增强
+#### C-1 [P1-7] 画像增强（teachingHistory + attitudePreference 持久化）✅ (0a6937e)
 
 | 属性 | 值 |
 |:-----|:-----|
 | 前置 | P0-1 ✅（student_model 表已存在） |
-| 目标 | studentModel 中新增 `teachingHistory[]`，每项含 action/syndromeId/outcome/timestamp |
-| 涉及文件 | `student-model.service.ts`（改）、`types-teaching.ts`（改） |
-| DoD | □ 每次教学回合后写入一条 teachingHistory<br>□ 历史画像支持按 sessionId 查询<br>□ attitudePreference 持久化 |
+| 目标 | studentModel 持久化层：teachingHistory[] 追加写入 + attitudePreference 跨 session 复用 |
+| 涉及文件 | `student-model-service.ts`（+4 方法：ensureSessionRow / appendTeachingHistory / setAttitudePreference / getAttitudePreference）+ `types-teaching.ts`（+3 类型）+ 1 个新测试文件 |
+| DoD | ✅ appendTeachingHistory 自动创建行 + 200 条 FIFO 截断<br>✅ setAttitudePreference 写当前 session<br>✅ getAttitudePreference 跨 session 取最近一条非空<br>✅ C-1 不接触发点（C-3 训练反馈回路再敲钉子）<br>✅ 不重构现有方法（R-010 最小化） |
+| 决策 | teachingHistory 上限 200 条 / attitudePreference 跨 session = 最近一条非空 / 不写报告 |
 | 依据 | 规格 §4.4（画像增强） |
+| 债务 | service 突破 500 行，RWR-P3-2 全局清理时拆 RowManager |
+
+**当前指针 → C-2 [P1-8]**
 
 #### C-2 [P1-8] 右侧栏"进步摘要"卡片
 
