@@ -1446,10 +1446,11 @@ P0（核心链路）                          P1（体验提升）              
 
 ## 十一、变更记录（走马灯）
 
-> 38 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
+> 39 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
+| **V17.6** | 2026-06-17 | FB20260617-013 RWR-P1-1 AppShell 三栏独立布局：ui-layout.store.ts 扩展 (+4 字段 +4 action, 77行)；AppShell.module.css 新建 (160行) 含拖拽手柄 + overlay + 过渡；AppShell.tsx 重写 (237行) 集成 dragStateRef 性能优化 + matchMedia 响应式。3 文件 / +474 行 / tsc 0 / vitest 174。DoD 6 项全过 |
 | **V17.5** | 2026-06-17 | FB20260617-012 RWR Phase 0 总结 + 6 维度复查 + 2 项修复：6 维度评分 92/100(接口/状态/错误/类型/命名/测试)。修复 2 项:P-1(中)project:delete handler 返回 {deleted:true} 与 ProjectDeleteResponse=void 不一致→return; P-2(低)L116-117 注释过期(RWR-P0-5 已完成)→更新为 023 ON DELETE SET NULL |
 | **V17.4** | 2026-06-17 | FB20260617-011 RWR-P0-6 useRightPanel hook + 重写 SettingsPanel：useRightPanel.ts(77行)封装 RWR-P0-3 store 8 action 为 React hook，X-01 协议从 drawer.store 派生 isOpen/activeViewId；SettingsPanel.tsx(253行)重写符合规格 DoD，attitude 3 态（温柔/月笙/尖锐），内联样式→CSS Module，集成 useConfigStore + useRightPanel；SettingsPanel.module.css(170行)新增表单布局。3 文件 / 500 行 / tsc 0 / vitest 174 |
 | **V17.3** | 2026-06-17 | FB20260617-010 修复 021 编号重复反模式：git mv 021_projects.sql→022_projects.sql + 022_data_migration.sql→023_data_migration.sql（顺延 1 位），app-initializer.ts migrationFiles 列表 + 测试 MIGRATION_FILES 数组同步更新。迁移链现在按数字严格升序 013/018/020/021/022/023。tsc 0, vitest 174 passed。Refs: 修复 FB-008/009 引入的命名反模式 |
