@@ -15,6 +15,8 @@ import { TemplateSelector } from './TemplateSelector';
 import { OnboardingFlow } from './OnboardingFlow';
 import { ChatSearchBar } from './ChatSearchBar';
 import { WelcomeCard } from './WelcomeCard';
+import { InputToolbar } from './InputToolbar';
+import { AttitudeIndicator } from './AttitudeIndicator';
 import { DiagnosisCard } from '../diagnosis/DiagnosisCard';
 import { EditPanel } from '../diagnosis/EditPanel';
 import { EvaluationCard } from '../diagnosis/EvaluationCard';
@@ -89,6 +91,12 @@ export const ChatView: React.FC<ChatViewProps> = ({
       setShowTemplatePicker(true);
     }
   }, []);
+
+  // A-2: InputToolbar 的"模板"按钮复用 QuickPill 逻辑
+  const handleInputTemplate = useCallback(
+    () => handleQuickPillClick('template'),
+    [handleQuickPillClick]
+  );
 
   const handleTemplateSelect = useCallback((template: string) => {
     setShowTemplatePicker(false);
@@ -252,19 +260,29 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       )}
 
-      {/* 引导期间隐藏输入框 */}
+      {/* A-2: 输入区(顶部 InputToolbar + 主体 AttitudeIndicator/MessageInput) */}
       {!onboardingActive && (
-        <div style={{ position: 'relative' }}>
-          {showTemplatePicker && (
-            <TemplateSelector onSelect={handleTemplateSelect} onClose={() => setShowTemplatePicker(false)} />
-          )}
-          <MessageInput
-            onSend={onSend}
-            onStop={onStop}
-            isStreaming={isStreaming}
-            disabled={!isConfigured}
-            onQuickPillClick={handleQuickPillClick}
-          />
+        <div className={styles.inputArea}>
+          <div className={styles.inputAreaToolbarRow}>
+            <InputToolbar onTemplate={handleInputTemplate} />
+          </div>
+          <div className={styles.inputAreaBody}>
+            <div className={styles.inputAreaAttitude}>
+              <AttitudeIndicator />
+            </div>
+            <div className={styles.inputAreaTextCol}>
+              {showTemplatePicker && (
+                <TemplateSelector onSelect={handleTemplateSelect} onClose={() => setShowTemplatePicker(false)} />
+              )}
+              <MessageInput
+                onSend={onSend}
+                onStop={onStop}
+                isStreaming={isStreaming}
+                disabled={!isConfigured}
+                onQuickPillClick={handleQuickPillClick}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>
