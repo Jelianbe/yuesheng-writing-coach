@@ -11,9 +11,11 @@
 import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
 import { useConfigStore } from './config.store';
+import { useProgressStore } from './progress.store';
 import { getInvoke } from '../utils/ipc';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
 import { ConfigApi } from '../../shared/api-contracts/config.contract';
+import { TeachingHistoryApi } from '../../shared/api-contracts/teaching-history.contract';
 import { severityToNumber } from '../../shared/severity-utils';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 import type {
@@ -262,6 +264,35 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
             });
           } catch (e) {
             console.warn('[TrainingStore] complete IPC failed:', e);
+          }
+        }
+
+        // RWR-P1-9 / C-3 训练反馈回路:
+        //   1. progress.store 分子+1(触发 ProgressSummary 高亮)
+        //   2. IPC teachingHistory:add → StudentModelService.appendTeachingHistory
+        //   3. 主进程 handler 算精通门控,达成时 emit teachingState:mastery
+        const sessionId = useChatStore.getState().currentSessionId;
+        const syndromeId = active.syndromeId;
+        if (sessionId && syndromeId) {
+          // 步骤 1:分子+1(同步,zustand setter 立即生效)
+          useProgressStore.getState().updateResolved(sessionId, syndromeId);
+          // 步骤 2-3:钉 C-1 钉子 + 门控判断
+          try {
+            const progress = useProgressStore.getState().progressMap[sessionId];
+            const consumed = progress?.resolvedIssues ?? 0;
+            const total = progress?.totalIssues ?? 0;
+            await getInvoke()(TeachingHistoryApi.add.channel, {
+              sessionId,
+              entry: {
+                action: 'training:complete',
+                syndromeId,
+                outcome: 'success',
+              },
+              consumed,
+              total,
+            });
+          } catch (e) {
+            console.warn('[TrainingStore] teachingHistory:add IPC failed:', e);
           }
         }
 
