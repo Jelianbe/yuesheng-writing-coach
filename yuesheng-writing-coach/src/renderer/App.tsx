@@ -22,6 +22,7 @@ import { useChatStore } from './stores/chat.store';
 import { useDiagStore } from './stores/diag.store';
 import { useSessionStore } from './stores/session.store';
 import { useStudentContextStore } from './stores/student-context.store';
+import { useTeachingStateStore } from './stores/teaching-state.store';
 import { useTrainingStore } from './stores/training.store';
 import { useRightPanelStore, type RightPanelToolId as PanelId } from './stores';
 import { chatService } from './services/chat.service';
@@ -61,7 +62,12 @@ export function App(): React.ReactElement {
     resetDiagnosisFlow();
     const attitudeLevel = useConfigStore.getState().attitudeLevel;
     const studentContext = useStudentContextStore.getState().toJSON();
-    useChatStore.getState().sendMessage(text, { sessionId: sid, attitudeLevel, studentContext });
+    // RWR-P1-11 / C-5 精通信息注入 Prompt(R-021:只传 ID 不传 description)
+    const masteredIds = useTeachingStateStore.getState().masteredSyndromeIds;
+    const masterySuffix = masteredIds.length > 0
+      ? `\n\n[已精通技法] ${masteredIds.join(', ')}`
+      : '';
+    useChatStore.getState().sendMessage(text, { sessionId: sid, attitudeLevel, studentContext: studentContext + masterySuffix });
   }, [resetDiagnosisFlow]);
 
   const handleStop = useCallback(async () => {
