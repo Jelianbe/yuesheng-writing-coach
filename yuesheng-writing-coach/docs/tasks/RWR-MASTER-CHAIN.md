@@ -3,7 +3,7 @@
 > **权威依据**：[系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 > **所有设计决策以此为准，禁止偏离。如有疑问，先查规格文档，再查 TASK-CHAIN.md，最后问用户。**
 >
-> **当前基点**：`b051f56`（FB-024 终态，RWR-P1-8 ✅）
+> **当前基点**：`bd3761d`（FB-026 终态，RWR-P1-9 ✅）
 > **创建日期**：2026-06-17
 
 ---
@@ -94,15 +94,18 @@
 
 **当前指针 → C-2 [P1-8]**
 
-#### C-2 [P1-8] 右侧栏"进步摘要"卡片
+#### C-2 [P1-8] 右侧栏"进步摘要"卡片 ✅ (b051f56)
 
 | 属性 | 值 |
 |:-----|:-----|
-| 前置 | B-2（进度数据就绪）、P0-6 ✅（useRightPanel 就绪） |
-| 目标 | 右侧栏新增"进步摘要"工具，展示节拍图表、弱项对比、时序点击展开 |
-| 涉及文件 | `ProgressSummary.tsx`（新）、`ProgressSummary.module.css`（新） |
-| DoD | □ 节拍图表（复用 SF-004 BeatCheckChart）<br>□ 弱项对比卡片<br>□ 点击展开详细时间线<br>□ 不暴露诊断原始数据 |
-| 依据 | 规格 §4.5（右侧栏用户角） |
+| 前置 | B-2 ✅ + C-1 ✅ + P0-6 ✅ + P1-5 ✅ |
+| 目标 | 右侧栏新增"进步摘要"工具,在精通确认时刻展示教学进展（短暂高亮） |
+| 涉及文件 | `training/ProgressSummary.tsx`（新 89 行）+ `ProgressSummary.module.css`（新 47 行）+ `App.tsx`（panelContent 接入 + 删 unused import） |
+| DoD | ✅ 包装 TeachingProgressBar（不重复 0/N 显示）<br>✅ 监听 progress.store resolvedIssues 增长触发高亮（200ms 激活 + 3s 窗口）<br>✅ session 切换清空高亮（spec §4.9 跨 session 行为）<br>✅ 不主动打开右侧栏（spec §4.8）<br>✅ 不暴露症候 name/description（R-021）<br>✅ 不造 IPC（消费 progress.store）<br>✅ 不接 BeatCheckChart / 不实现弱项对比（spec 范围不要求） |
+| 决策 | 数据驱动（resolvedIssues 变化）/ 不接 BeatCheckChart / 不写报告 |
+| 依据 | 规格 §4.8（不主动打开）+ §4.9（精通确认时刻）+ §十五.4.2（1 文件 UI） |
+
+**当前指针 → C-3 [P1-9] 训练反馈回路**
 
 #### C-3 [训练反馈回路]（原 P2-2 提级）
 
