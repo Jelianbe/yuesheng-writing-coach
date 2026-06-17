@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import Database from 'better-sqlite3';
-import { DiagnosisEntry, SyndromeResult, ActionId, SyndromeId, DiagnosisAnalysis } from '../../../shared/types/index';
+import { DiagnosisEntry, SyndromeResult, ActionId, SyndromeId, DiagnosisAnalysis, TeachingProgress } from '../../../shared/types/index';
 
 export interface DiagnosisRow {
   id: string;
@@ -13,6 +13,7 @@ export interface DiagnosisRow {
   next_focus: string | null;
   created_at: string;
   root_cause_analysis: string | null;
+  teaching_progress: string | null;
 }
 
 export class DiagnosisService {
@@ -25,9 +26,16 @@ export class DiagnosisService {
   save(diagnosis: DiagnosisEntry): string {
     const id = `diag_${crypto.randomUUID()}`;
     const safeMessageId = diagnosis.messageId || 'unknown';
+    // RWR-P0-1: 教学进度可选,旧诊断条目无此字段,NULL 入库保持向后兼容
+    const teachingProgressJson = diagnosis.teachingProgress
+      ? JSON.stringify(diagnosis.teachingProgress)
+      : null;
     const stmt = this.db.prepare(`
-      INSERT INTO diagnosis_results (id, session_id, message_id, syndromes, suggested_actions, confidence, timestamp, next_focus)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO diagnosis_results (
+        id, session_id, message_id, syndromes, suggested_actions,
+        confidence, timestamp, next_focus, teaching_progress
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -39,6 +47,7 @@ export class DiagnosisService {
       diagnosis.confidence,
       diagnosis.timestamp,
       diagnosis.nextFocus ?? null,
+      teachingProgressJson,
     );
     return id;
   }
@@ -95,6 +104,10 @@ export class DiagnosisService {
   private rowToEntry(row: DiagnosisRow): DiagnosisEntry {
     const syndromes = JSON.parse(row.syndromes) as SyndromeResult[];
     const suggestedActions = JSON.parse(row.suggested_actions) as ActionId[];
+    // RWR-P0-1: 教学进度从 JSON 字符串解析,NULL 保持 undefined 兼容性
+    const teachingProgress = row.teaching_progress
+      ? (JSON.parse(row.teaching_progress) as TeachingProgress)
+      : undefined;
 
     return {
       sessionId: row.session_id,
@@ -104,6 +117,7 @@ export class DiagnosisService {
       confidence: row.confidence,
       timestamp: row.timestamp,
       nextFocus: (row.next_focus as SyndromeId) ?? undefined,
+      teachingProgress,
     };
   }
 }

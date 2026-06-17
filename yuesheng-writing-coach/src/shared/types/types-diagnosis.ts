@@ -56,15 +56,28 @@ export interface RewriteEvaluation {
   suggestion: string;
 }
 
-/** 完整诊断条目（AI 输出格式） */
+/** 教学进度(RWR-P0-1 新增,按会话分组持久化)
+ *  - R-021 隐性诊断: 进度不暴露症候细节,只显示分子分母
+ *  - R-014 配置外置: 该结构仅持久化不参与诊断决策
+ */
+export interface TeachingProgress {
+  /** 当前教学阶段(教学状态机枚举值,见 types-teaching.TeachingPhase) */
+  currentStage: string;
+  /** 已解决问题数(分子,只增不减) */
+  resolvedIssues: number;
+  /** 总问题数(分母,只增不减) */
+  totalIssues: number;
+}
+
+/** 完整诊断条目(AI 输出格式) */
 export interface DiagnosisEntry {
   /** 所属会话 ID */
   sessionId: string;
   /** 所属消息 ID */
   messageId: string;
-  /** 识别到的病症列表（按严重度排序） */
+  /** 识别到的病症列表(按严重度排序) */
   syndromes: SyndromeResult[];
-  /** 合并后的建议动作列表（去重） */
+  /** 合并后的建议动作列表(去重） */
   suggestedActions: ActionId[];
   /** 整体置信度（0-1） */
   confidence: number;
@@ -74,6 +87,8 @@ export interface DiagnosisEntry {
   nextFocus?: SyndromeId;
   /** SF-004: 节拍完整性检测结果（叙事节奏诊断用） */
   beatCheck?: Record<string, boolean>;
+  /** RWR-P0-1: 教学进度(可选,旧诊断条目无此字段) */
+  teachingProgress?: TeachingProgress;
 }
 
 /** 单条证据记录 */
