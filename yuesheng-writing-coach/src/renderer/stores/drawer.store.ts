@@ -31,7 +31,7 @@
 import { create } from 'zustand';
 
 /** 右侧抽屉可展示的面板类型 */
-export type DrawerPanelId = 'diagnosis' | 'growth' | 'profile' | 'tools' | 'training' | 'search' | 'works' | '__settings__';
+export type DrawerPanelId = 'diagnosis' | 'growth' | 'profile' | 'tools' | 'training' | 'search' | 'works' | 'progress' | '__settings__';
 
 interface DrawerState {
   /** 当前打开的面板 ID，null = 关闭 */

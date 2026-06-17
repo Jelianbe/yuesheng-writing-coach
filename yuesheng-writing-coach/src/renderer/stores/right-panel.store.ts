@@ -48,6 +48,7 @@ export type RightPanelToolId =
   | 'growth'
   | 'profile'
   | 'tools'
+  | 'progress' /* B-1 教学进度 */
   | '__settings__';
 
 interface RightPanelActions {

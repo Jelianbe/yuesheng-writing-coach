@@ -8,6 +8,7 @@ import {
   Wrench,
   Settings,
   FileText,
+  BarChart3,
 } from 'lucide-react';
 import type { PanelSessionType } from '../../stores/panel-session.store';
 
@@ -45,6 +46,7 @@ export const TOOL_TO_SESSION_TYPE: Record<string, PanelSessionType> = {
   profile: 'profile',
   search: 'search',
   tools: 'tools',
+  progress: 'progress' /* B-1 */,
   __settings__: 'settings',
 };
 
@@ -57,6 +59,7 @@ export const SESSION_TYPE_TO_TOOL_ID: Record<PanelSessionType, string> = {
   profile: 'profile',
   search: 'search',
   tools: 'tools',
+  progress: 'progress' /* B-1 */,
   settings: '__settings__',
 };
 
@@ -69,6 +72,7 @@ export const SESSION_DEFAULT_TITLE: Record<PanelSessionType, string> = {
   profile: '能力画像',
   search: '搜索',
   tools: '工具箱',
+  progress: '教学进度' /* B-1 */,
   settings: '设置',
 };
 
@@ -81,6 +85,7 @@ export const SESSION_LUCIDE_ICON: Record<PanelSessionType, LucideIcon> = {
   profile: User,
   search: Search,
   tools: Wrench,
+  progress: BarChart3 /* B-1 */,
   settings: Settings,
 };
 
