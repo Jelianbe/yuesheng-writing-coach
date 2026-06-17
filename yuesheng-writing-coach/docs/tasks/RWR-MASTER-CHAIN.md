@@ -3,7 +3,7 @@
 > **权威依据**：[系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 > **所有设计决策以此为准，禁止偏离。如有疑问，先查规格文档，再查 TASK-CHAIN.md，最后问用户。**
 >
-> **当前基点**：`56208ff`（FB-021 终态，RWR-P1-6 ✅）
+> **当前基点**：`0a6937e`（FB-022 终态，RWR-P1-7 ✅）
 > **创建日期**：2026-06-17
 
 ---
@@ -63,15 +63,18 @@
 
 **当前指针 → B-2 [P1-6]**
 
-#### B-2 [P1-6] 诊断表与进度联动 + 教学决策记录
+#### B-2 [P1-6] 诊断表与进度联动 + 教学决策记录 ✅ (56208ff)
 
 | 属性 | 值 |
 |:-----|:-----|
 | 前置 | B-1、P0-1 ✅ |
 | 目标 | 诊断完成后自动更新 progress.store；TeachingDecisionLog 写入 DB（先写不读） |
-| 涉及文件 | `diagnosis.service.ts`（改）、`progress.store.ts`（改）、`teaching-state-machine/`（改） |
-| DoD | □ 诊断产生后自动更新 progressMap<br>□ TeachingDecisionLog 数据结构落地（不涉及前端渲染）<br>□ 不暴露症候细节给用户 |
+| 涉及文件 | `024_teaching_decision_log.sql`（新）+ `decision.service.ts`（新）+ `diagnosis-processor.ts`（改）+ `service-config.ts`（改）+ `app-controller.ts`（改）+ `types-teaching.ts`（扩）+ `teaching-decision.contract.ts`（新） |
+| DoD | ✅ 诊断产生后自动更新 progressMap（app-controller onDiagnosisUpdate 调 appendIssues）<br>✅ TeachingDecisionLog 数据结构落地（024 migration + 6 个测试通过）<br>✅ 不暴露症候细节给用户（decision log 系统内部，contract 无读通道） |
+| 简化决策 | strategyChosen 暂固定 'GUIDE'，studentState 暂默认值；spec §8.3 Phase 1 = 写不读，C 阶段再提级策略路由 |
 | 依据 | 规格 §8（教学决策记录层）、§4.2 进度条"不暴露症候" |
+
+**当前指针 → C-1 [P1-7]**
 
 ---
 
