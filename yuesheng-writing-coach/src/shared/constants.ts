@@ -131,6 +131,9 @@ export const IPC_CHANNELS = {
   TEACHING_STATE_GET_PROMPT: 'teachingState:getPrompt',
   TEACHING_STATE_UPDATE_SUMMARY: 'teachingState:updateSummary',
   TEACHING_STATE_UPDATED: 'teachingState:updated',
+  TEACHING_STATE_MASTERY: 'teachingState:mastery', // C-3 训练反馈回路:精通门控达成事件
+  // === 教学历史(RWR-P1-9 / C-3 训练反馈回路) ===
+  TEACHING_HISTORY_ADD: 'teachingHistory:add',
   // === 能力画像 ===
   ABILITY_GET_PROFILE: 'ability:getProfile',
   // === 证据 ===

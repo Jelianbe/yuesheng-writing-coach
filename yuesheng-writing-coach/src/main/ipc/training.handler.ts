@@ -216,4 +216,61 @@ export function registerTrainingHandlers(): void {
     return result;
   });
 
+  /**
+   * teachingHistory:add — RWR-P1-9 / C-3 训练反馈回路
+   *
+   * 训练完成后由渲染端发起,流程:
+   *   1. 调 deps.studentModelService.appendTeachingHistory 写入
+   *   2. 计算精通门控(consumed/total ≥ MASTERY_THRESHOLD)
+   *   3. 达成门控时 emit teachingState:mastery 事件
+   *
+   * 约束:
+   *   - R-020 循环依赖:此处是渲染端→主进程唯一调用入口
+   *   - R-010 最小化:不扩 StudentModelService(consumed/total 由调用方传)
+   *   - TODO R-014:0.8 门控值后续外置到配置文件
+   *
+   * 注意:事件通过 event.sender.send 发送(当前调用窗口的 webContents),
+   * 避免引入 mainWindow 依赖注入。
+   */
+  createHandler(IPC_CHANNELS.TEACHING_HISTORY_ADD, async (event, args) => {
+    const validation = validatePayload<{
+      sessionId: string;
+      entry: {
+        action: string;
+        syndromeId: string;
+        outcome: 'success' | 'partial' | 'frustrated' | 'unknown';
+      };
+      consumed: number;
+      total: number;
+    }>(args, {
+      required: ['sessionId', 'entry', 'consumed', 'total'],
+      types: {
+        sessionId: 'string',
+        entry: 'object',
+        consumed: 'number',
+        total: 'number',
+      },
+    });
+    if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    if (!deps) throw new Error('TrainingHandler deps not initialized');
+
+    const { sessionId, entry, consumed, total } = validation.data;
+    deps.studentModelService.appendTeachingHistory(sessionId, entry);
+
+    // 精通门控(0.8 阈值,TODO R-014 外置)
+    const MASTERY_THRESHOLD = 0.8;
+    const masteryReached = total > 0 && consumed / total >= MASTERY_THRESHOLD;
+
+    if (masteryReached) {
+      event.sender.send(IPC_CHANNELS.TEACHING_STATE_MASTERY, {
+        sessionId,
+        consumed,
+        total,
+        threshold: MASTERY_THRESHOLD,
+      });
+    }
+
+    return { added: true, masteryReached, consumed, total };
+  });
+
 }
