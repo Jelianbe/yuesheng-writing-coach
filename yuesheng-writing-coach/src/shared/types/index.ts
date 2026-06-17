@@ -17,6 +17,7 @@ export type { ActionId } from './types-diagnosis';
 export type { SyndromeSignal } from './types-diagnosis';
 export type { SyndromeResult } from './types-diagnosis';
 export type { RewriteEvaluation } from './types-diagnosis';
+export type { TeachingProgress } from './types-diagnosis';
 export type { DiagnosisEntry } from './types-diagnosis';
 export type { EvidenceRecord } from './types-diagnosis';
 export type { EvidenceChain } from './types-diagnosis';
@@ -66,6 +67,7 @@ export type { TrainingRecord } from './types-training';
 export type { EvaluationResult } from './types-training';
 
 // --- types-growth: 成长与能力画像 ---
+export type { TeachingHistoryItem } from './types-growth';
 export type { AbilityScore } from './types-growth';
 export type { WeakPoint } from './types-growth';
 export type { TrainingStats } from './types-growth';
