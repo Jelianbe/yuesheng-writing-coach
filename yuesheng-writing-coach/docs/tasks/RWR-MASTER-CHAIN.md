@@ -19,7 +19,15 @@
 | P0-5 | 数据迁移脚本 | `023_data_migration.sql` |
 | P0-6 | useRightPanel hook + SettingsPanel | `hooks/useRightPanel.ts` + 设置面板 |
 | P1-1 | AppShell 三栏独立布局 | `components/layout/AppShell.tsx` + `.module.css` |
+| P1-2 | SoloSidebar 三标签 + 训练按钮联动右栏 | `SoloSidebar.tsx`（[对话][项目] + [训练] 全宽按钮） |
 | P1-3 | ProjectSelector + InputToolbar + AttitudeIndicator | `components/layout/ProjectSelector.tsx`、`components/chat/InputToolbar.tsx`、`components/chat/AttitudeIndicator.tsx` |
+| P1-4 | 输入区 1/6 屏高重构 | `ChatView.tsx`、`MessageInput.tsx`（maxHeight=180px） |
+| P1-5 | TeachingProgressBar + ProgressTimeline | `training/TeachingProgressBar.tsx` + `ProgressTimeline.tsx` + 4 store 扩展 |
+| P1-6 | 教学决策记录层 + 诊断联动 progress | `024_teaching_decision_log.sql` + `decision.service.ts` + `diagnosis-processor.ts` + `app-controller.ts` |
+| P1-7 | studentModel 持久化层（teachingHistory + attitudePreference） | `student-model-service.ts`（+4 方法）+ `types-teaching.ts`（+3 类型） |
+| P1-8 | 右侧栏"进步摘要"卡片（精通确认高亮） | `training/ProgressSummary.tsx` + `ProgressSummary.module.css` + `App.tsx` 接入 |
+| P1-9 | 训练反馈回路 + 精通门控 | `teaching-history.contract.ts`（新）+ `training.handler.ts`（+1 handler + emit `teachingState:mastery`）+ `training.actions.ts`（line 266+ 反馈链）+ `constants.ts`（+2 通道） |
+| P1-10 | 教学状态机消费 mastery 事件 | `teaching-state.contract.ts`（+MasteryEvent + api.mastery）+ `types-ipc.ts`（+channel）+ `teaching-state.service.ts`（+onMastery）+ `teaching-state.store.ts`（+masteredSyndromeIds）+ `app-controller.ts`（+step 6） |
 
 ---
 
@@ -105,7 +113,7 @@
 | 决策 | 数据驱动（resolvedIssues 变化）/ 不接 BeatCheckChart / 不写报告 |
 | 依据 | 规格 §4.8（不主动打开）+ §4.9（精通确认时刻）+ §十五.4.2（1 文件 UI） |
 
-**当前指针 → C-3 [P1-9] 训练反馈回路**
+**当前指针 → C-5 [P1-11] 精通信息注入 Prompt（学生画像对接 AI）**
 
 #### C-3 [训练反馈回路]（原 P2-2 提级）
 
