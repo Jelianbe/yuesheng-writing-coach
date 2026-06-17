@@ -178,6 +178,12 @@ export const IPC_CHANNELS = {
   CHAPTER_DELETE: 'chapter:delete',
   CHAPTER_UPDATE_CONTENT: 'chapter:updateContent',
   MANUSCRIPT_DELETE: 'manuscript:delete',
+  // === 项目管理(RWR-P0-4)===
+  PROJECT_LIST: 'project:list',
+  PROJECT_GET: 'project:get',
+  PROJECT_CREATE: 'project:create',
+  PROJECT_UPDATE: 'project:update',
+  PROJECT_DELETE: 'project:delete',
   // === 工具调用 ===
   CHAT_TOOL_EXECUTING: 'chat:tool:executing',
 } as const;
@@ -231,6 +237,11 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
   IPC_CHANNELS.MANUSCRIPT_CREATE,
   IPC_CHANNELS.MANUSCRIPT_UPDATE,
   IPC_CHANNELS.MANUSCRIPT_DELETE,
+  IPC_CHANNELS.PROJECT_LIST,
+  IPC_CHANNELS.PROJECT_GET,
+  IPC_CHANNELS.PROJECT_CREATE,
+  IPC_CHANNELS.PROJECT_UPDATE,
+  IPC_CHANNELS.PROJECT_DELETE,
   IPC_CHANNELS.CHAPTER_LIST,
   IPC_CHANNELS.CHAPTER_GET,
   IPC_CHANNELS.CHAPTER_CREATE,
