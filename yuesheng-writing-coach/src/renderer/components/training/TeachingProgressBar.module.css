@@ -1,0 +1,156 @@
+/* TeachingProgressBar.module.css — 教学进度条样式 (RWR-P1-5 / B-1) */
+
+/* ── 容器 ── */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-card, #fff);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  font-family: var(--font-body, sans-serif);
+}
+
+/* ── 顶部头部 (0/N 数字 + 折叠按钮) ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.header:hover {
+  background: var(--bg-hover, rgba(0, 0, 0, 0.03));
+  border-color: var(--accent, #3b82f6);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary, #111);
+}
+
+.headerIcon {
+  color: var(--accent, #3b82f6);
+}
+
+.headerTitle {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary, #555);
+}
+
+.counter {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent, #3b82f6);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 阶段分组 (认知→工具→技能) ── */
+.phases {
+  display: flex;
+  gap: 6px;
+  padding: 0 4px;
+}
+
+.phaseGroup {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-sm, 4px);
+  background: var(--bg-card, #fff);
+  font-size: 0.7rem;
+  color: var(--text-secondary, #555);
+  transition: all 0.15s ease;
+}
+
+.phaseGroupActive {
+  background: var(--accent, #3b82f6);
+  color: var(--text-on-accent, #fff);
+  border-color: var(--accent, #3b82f6);
+  font-weight: 500;
+}
+
+.phaseName {
+  font-family: var(--font-body, sans-serif);
+}
+
+.phaseCount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* ── 展开时间线 (ProgressTimeline) ── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 4px 0;
+  border-top: 1px dashed var(--border, #e5e7eb);
+  margin-top: 4px;
+}
+
+.timelineEmpty {
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--text-tertiary, #888);
+  font-size: 0.78rem;
+}
+
+.timelineStage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.timelineStageTitle {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, #555);
+  margin: 0;
+}
+
+.timelineList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.timelineItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  color: var(--text-primary, #111);
+  background: var(--bg-hover, rgba(0, 0, 0, 0.03));
+  border-radius: var(--radius-sm, 3px);
+}
+
+.timelineLabel {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

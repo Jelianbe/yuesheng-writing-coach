@@ -21,7 +21,7 @@ export type SidebarPhase = 'guide' | 'reading' | 'training' | 'complete';
 export type SidebarMode = 'default' | 'template' | 'comparison';
 
 /** 会话类型，对应图标条的各个工具 */
-export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'settings';
+export type PanelSessionType = 'edit' | 'training' | 'diagnosis' | 'growth' | 'profile' | 'search' | 'tools' | 'progress' | 'settings';
 
 /** 各类型会话的关联数据形状（discriminated union） */
 export type PanelSessionData =
@@ -32,6 +32,7 @@ export type PanelSessionData =
   | { type: 'profile' }
   | { type: 'search'; query?: string }
   | { type: 'tools' }
+  | { type: 'progress' /* B-1 教学进度 */ }
   | { type: 'settings' };
 
 /** 单个工具会话 */
