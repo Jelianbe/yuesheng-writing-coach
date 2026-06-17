@@ -16,6 +16,7 @@ import type {
   TeachingStateGetPromptResponse,
   TeachingStateUpdateSummaryRequest,
   TeachingStateUpdatedEvent,
+  TeachingStateMasteryEvent,
   TeachingState,
 } from '../../shared/api-contracts/teaching-state.contract';
 
@@ -83,5 +84,16 @@ export const teachingStateService = {
   /** 监听教学状态更新推送 — 返回 cleanup 函数 */
   onUpdated(handler: (data: TeachingStateUpdatedEvent) => void): () => void {
     return typedOn<TeachingStateUpdatedEvent>(TeachingStateApi.updated.channel, handler);
+  },
+
+  /**
+   * 监听精通门控达成事件(RWR-P1-10 / C-4)
+   *
+   * 主进程 training.handler.ts 在 resolvedIssues / totalIssues >= 0.8
+   * 时 emit,渲染端消费后写入 store。
+   * payload 不含 syndromeId,消费方需查 progress.store 拿全量 mastered 症候。
+   */
+  onMastery(handler: (data: TeachingStateMasteryEvent) => void): () => void {
+    return typedOn<TeachingStateMasteryEvent>(TeachingStateApi.mastery.channel, handler);
   },
 };

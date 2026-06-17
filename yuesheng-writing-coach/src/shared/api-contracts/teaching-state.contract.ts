@@ -72,6 +72,26 @@ export interface TeachingStateUpdatedEvent extends TeachingState {
   phaseProgress: number;
 }
 
+/**
+ * 精通门控达成事件(RWR-P1-10 / C-4)
+ *
+ * 主进程 training.handler.ts 在 resolvedIssues / totalIssues >= MASTERY_THRESHOLD
+ * (0.8) 时 emit,渲染端 onMastery 消费后将 masteredSyndromeIds 写入 store。
+ *
+ * 注意:payload 不含 syndromeId,消费方需查 progress.store 拿全量 mastered
+ * 症候列表。
+ */
+export interface TeachingStateMasteryEvent {
+  /** 达成精通的会话 ID */
+  sessionId: string;
+  /** 已解决症候数 */
+  consumed: number;
+  /** 症候总数 */
+  total: number;
+  /** 门控阈值(0.8) */
+  threshold: number;
+}
+
 // ─── API 接口定义 ───
 
 export const TeachingStateApi = {
@@ -108,6 +128,15 @@ export const TeachingStateApi = {
   updated: {
     channel: 'teachingState:updated' as const,
     event: {} as TeachingStateUpdatedEvent,
+  },
+
+  /**
+   * teachingState:mastery 事件推送(RWR-P1-10 / C-4)
+   * 主进程→渲染端,精通门控达成通知
+   */
+  mastery: {
+    channel: 'teachingState:mastery' as const,
+    event: {} as TeachingStateMasteryEvent,
   },
 } as const;
 

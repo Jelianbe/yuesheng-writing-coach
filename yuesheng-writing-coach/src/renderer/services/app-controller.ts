@@ -140,6 +140,22 @@ export function createAppController(): AppController {
           }
         }),
       );
+
+      // 6. 精通门控达成推送(RWR-P1-10 / C-4)
+      // 消费 teachingState:mastery 事件:查 progress.store 当前 session
+      // 全量 mastered 症候 ID 写入 teaching-state.store。
+      // R-021:session 切换时若查不到对应 progress,写空数组。
+      // R-021:不主动打开右侧栏,不发聊天消息(精通由 AI 在对话中自然处理)。
+      cleanups.push(
+        teachingStateService.onMastery((event) => {
+          const progress = useProgressStore.getState().progressMap[event.sessionId];
+          const masteredIds =
+            progress?.issues
+              .filter((i) => i.status === 'mastered')
+              .map((i) => i.syndromeId) ?? [];
+          useTeachingStateStore.getState().setMasteredSyndromeIds(masteredIds);
+        }),
+      );
     },
 
     destroy(): void {
