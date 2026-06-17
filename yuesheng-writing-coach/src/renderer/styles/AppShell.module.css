@@ -1,0 +1,163 @@
+/* AppShell.module.css — 三栏独立布局 (RWR-P1-1)
+ *
+ * 布局: sidebar (左) | 主区 (中) | rightPanel (右)
+ * - 三栏独立宽度,通过 CSS 变量传递
+ * - 拖拽手柄: 4px, hover 显示, active 时高亮
+ * - 过渡: 默认 300ms, 拖拽时禁用
+ * - < 1280px: 右栏 overlay 模式
+ */
+
+.shell {
+  display: flex;
+  height: 100vh;
+  background: var(--bg-page);
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── 品牌标识悬浮(侧栏折叠态) ── */
+
+.brandFloat {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
+
+.brandText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.brandBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.brandBtn:hover {
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+/* ── 左侧栏 ── */
+
+.sidebar {
+  flex-shrink: 0;
+  width: var(--sidebar-width, 240px);
+  height: 100%;
+  background: var(--bg-page);
+  border-right: 1px solid var(--border);
+  transition: width 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  overflow: hidden;
+}
+
+.sidebarCollapsed {
+  width: 0;
+  border-right: none;
+}
+
+/* ── 主区 ── */
+
+.main {
+  flex: 1;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-main);
+  overflow: hidden;
+  position: relative;
+  border-right: 1px solid var(--border);
+}
+
+/* ── 右侧栏 ── */
+
+.rightPanel {
+  flex-shrink: 0;
+  width: var(--right-panel-width, 420px);
+  height: 100%;
+  background: var(--bg-page);
+  overflow: hidden;
+  transition: width 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.rightPanelCollapsed {
+  width: 0;
+  border-left: none;
+}
+
+/* ── 拖拽手柄 ── */
+
+.handle {
+  flex-shrink: 0;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  transition: background 150ms ease;
+}
+
+.handle::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 100%;
+  background: var(--border);
+  transition: background 150ms ease, width 150ms ease;
+}
+
+.handle:hover::before {
+  width: 3px;
+  background: var(--accent);
+}
+
+.handleActive::before {
+  width: 3px;
+  background: var(--accent);
+}
+
+/* ── < 1280px Overlay 模式 ── */
+
+@media (max-width: 1279px) {
+  .rightPanel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .rightPanelCollapsed {
+    transform: translateX(100%);
+    width: var(--right-panel-width, 420px);
+    /* 折叠态: 移到屏幕外, 但保留宽度用于 transform */
+  }
+}
+
+/* ── 拖拽时禁用过渡(避免卡顿) ── */
+
+.shellDragging .sidebar,
+.shellDragging .rightPanel {
+  transition: none;
+}
