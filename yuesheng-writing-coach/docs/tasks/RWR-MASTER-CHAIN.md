@@ -3,7 +3,7 @@
 > **权威依据**：[系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
 > **所有设计决策以此为准，禁止偏离。如有疑问，先查规格文档，再查 TASK-CHAIN.md，最后问用户。**
 >
-> **当前基点**：`c6f0e64`（FB-020 终态，RWR-P1-5 ✅）
+> **当前基点**：`56208ff`（FB-021 终态，RWR-P1-6 ✅）
 > **创建日期**：2026-06-17
 
 ---
@@ -51,15 +51,17 @@
 
 ### Phase B：教学进度（核心反馈层）
 
-#### B-1 [P1-5] TeachingProgressBar + ProgressTimeline
+#### B-1 [P1-5] TeachingProgressBar + ProgressTimeline ✅ (c6f0e64)
 
 | 属性 | 值 |
 |:-----|:-----|
 | 前置 | A-1（左侧栏）、P0-2 ✅（progress.store） |
-| 目标 | 中间栏头部展示教学进度 0/N，按阶段分组（认知→工具→技能），点击展开详情 |
-| 涉及文件 | `TeachingProgressBar.tsx`（新）、`ProgressTimeline.tsx`（新）、`ChatView.tsx`（改） |
-| DoD | □ 进度条显示 resolvedIssues / totalIssues<br>□ 分母只增不减，按 teachingStage 分组<br>□ 点击展开 ProgressTimeline（概览，不暴露诊断细节）<br>□ 当前指针标记 |
+| 目标 | 右侧栏教学进度面板 0/N，按阶段分组（认知→工具→技能），点击展开详情 |
+| 涉及文件 | `TeachingProgressBar.tsx`（新）、`ProgressTimeline.tsx`（新）+ drawer-constants / drawer.store / panel-session.store / right-panel.store 扩展 |
+| DoD | ✅ 进度条显示 resolvedIssues / totalIssues<br>✅ 分母只增不减，按 status 分组<br>✅ 点击展开 ProgressTimeline（概览，不暴露诊断细节）<br>✅ 当前指针标记（第一个非 mastered issue） |
 | 依据 | 规格 §4.2（教学进度追踪） |
+
+**当前指针 → B-2 [P1-6]**
 
 #### B-2 [P1-6] 诊断表与进度联动 + 教学决策记录
 
