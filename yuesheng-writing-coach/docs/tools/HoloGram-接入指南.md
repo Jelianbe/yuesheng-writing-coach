@@ -1,7 +1,13 @@
 # HoloGram 接入指南
 
-> 用于 RWR Phase 1 全项目代码质量审计  
-> 创建于 2026-06-17 | 反馈编号 FB20260617-005  
+> **⚠️ DEPRECATED · 2026-06-17 · FB20260617-007**
+> **状态**：已回退，不推荐使用
+> **原因**：v0.2.0 msi 不含 `hologram-engine.exe`，需源码编译（48s 完成）但 trae 沙箱限制导致桌面应用无法安装到 D:\code cheak\ 以外目录
+> **残留**：`docs/tools/releases/HoloGram-0.2.0-x64_zh-CN.msi`（12.3 MB,保留以备重试）
+> **后续路径**：若需重启,先解决沙箱目录限制,再 cargo build + 手动复制 engine
+
+> 用于 RWR Phase 1 全项目代码质量审计
+> 创建于 2026-06-17 | 反馈编号 FB20260617-005
 > 仓库: https://github.com/834063245-creator/HoloGram | 版本: v0.2.0 | 许可: MIT
 
 ---
