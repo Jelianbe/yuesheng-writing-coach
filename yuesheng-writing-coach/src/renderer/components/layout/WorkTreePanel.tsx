@@ -10,7 +10,7 @@ import {
 import type { Manuscript, Chapter } from '../../shared/types-manuscript';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
-import { rightPanelService } from '../../services/right-panel.service';
+import { useRightPanelStore } from '../../stores';
 import { copyToClipboard } from '../../utils/clipboard';
 import styles from './WorkTreePanel.module.css';
 
@@ -210,7 +210,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       }
                       onSelectChapter(ch.id);
                       onOpenTab(ch.id, ms.title);
-                      rightPanelService.openTool('works', { type: 'edit', chapterId: ch.id });
+                      useRightPanelStore.getState().openTool('works', { type: 'edit', chapterId: ch.id });
                     }}
                     onContextMenu={e => {
                       e.preventDefault();
@@ -245,7 +245,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       if (r) {
                         // 自动选中并打开新章节
                         onSelectChapter(r.id);
-                        rightPanelService.openEditor(r.id, ms.title);
+                        useRightPanelStore.getState().openEditor(r.id, ms.title);
                         setChapterTitle('');
                         setShowChapterPopup(null);
                       } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
@@ -271,7 +271,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                         if (r) {
                           // 自动选中并打开新章节
                           onSelectChapter(r.id);
-                          rightPanelService.openEditor(r.id, ms.title);
+                          useRightPanelStore.getState().openEditor(r.id, ms.title);
                           setChapterTitle('');
                           setShowChapterPopup(null);
                         } else { setChapterError(useChapterStore.getState().error || '创建失败'); }
