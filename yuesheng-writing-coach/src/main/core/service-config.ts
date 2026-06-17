@@ -28,6 +28,7 @@ import { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
 import { injectMockDiagnosisData } from '../services/mock-data-injector';
 import type { IDiagnosisDomain } from '../domains/diagnosis';
 import { processAIResponse } from '../domains/diagnosis/diagnosis-processor';
+import { TeachingDecisionService } from '../domains/teaching/decision/decision.service';
 import type { ITeachingDomain } from '../domains/teaching';
 import type { IStudentDomain } from '../domains/student';
 import type { IPromptDomain } from '../domains/prompt';
@@ -61,6 +62,11 @@ export function configureServices(
     const teachingStateService = c.get<TeachingStateService>('teachingStateService');
     return new DiagnosisMerger(teachingStateService);
   });
+
+  // RWR-P1-6 (B-2): 教学决策记录层
+  container.register<TeachingDecisionService>('teachingDecisionService', () =>
+    new TeachingDecisionService(db),
+  );
 
   // ============================================================
   // Training Domain
@@ -173,6 +179,7 @@ export function configureServices(
             diagnosisService: c.get<DiagnosisService>('diagnosisService'),
             evidenceService: c.get<EvidenceService>('evidenceService'),
             diagnosisMerger: c.get<DiagnosisMerger>('diagnosisMerger'),
+            teachingDecisionService: c.get<TeachingDecisionService>('teachingDecisionService'),
           }),
       } as IDiagnosisDomain,
       promptDomain: {

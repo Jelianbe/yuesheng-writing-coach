@@ -306,3 +306,48 @@ export interface SessionProgress {
   /** 最后更新时间(ISO 8601) */
   updatedAt: string;
 }
+
+// ======================== 教学决策记录层(RWR-P1-6 / B-2) ========================
+// 依据 spec §8.2:教学策略选择的不透明链路需要可回溯
+// 阶段:Phase 1 = "写不读"(spec §8.3),只积累数据,Phase 4+ 回流优化 Router
+// 约束:
+//   - R-021 隐性诊断:本模块是系统内部字段,前端 UI 永不渲染
+//   - R-014 配置外置:strategyChosen 枚举在此处定义,不在代码中散落 string
+
+/** 教学策略枚举(spec §8.2 写死的 5 种) */
+export type TeachingStrategyType =
+  | 'GUIDE'
+  | 'DIRECT_TEACHING'
+  | 'GUIDE_DISCOVERY'
+  | 'REFLECTION'
+  | 'READING';
+
+/** 决策时学生状态快照(spec §8.2 studentState) */
+export interface TeachingDecisionStudentState {
+  /** 信心水平 */
+  confidence: 'high' | 'neutral' | 'low';
+  /** 历史复发次数 */
+  relapseCount: number;
+  /** 当前教学阶段(从 TeachingState.currentPhase + currentSubphase 派生) */
+  currentStage: string;
+  /** 用户态度档位(从 config.attitudeLevel 派生) */
+  attitudeLevel: 'gentle' | 'balanced' | 'direct';
+}
+
+/** 单条教学决策记录(spec §8.2) */
+export interface TeachingDecisionLog {
+  /** 决策唯一 ID(PK) */
+  decisionId: string;
+  /** 所属会话 */
+  sessionId: string;
+  /** 针对的症候(关联 DiagnosisEntry.syndromes[].id) */
+  syndromeId: string;
+  /** 选择的策略类型 */
+  strategyChosen: TeachingStrategyType;
+  /** 选择原因(模板或自然语言) */
+  reason: string;
+  /** 决策时的学生状态快照 */
+  studentState: TeachingDecisionStudentState;
+  /** 决策时间(unix epoch ms) */
+  decidedAt: number;
+}
