@@ -206,6 +206,7 @@ export class AppInitializer {
       '013_manuscripts.sql',
       '018_db_p1a_time_format.sql',
       '020_db_add_task_type.sql',
+      '021_teaching_progress.sql',
     ];
 
     for (const file of migrationFiles) {
