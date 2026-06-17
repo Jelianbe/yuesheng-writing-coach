@@ -1446,10 +1446,11 @@ P0（核心链路）                          P1（体验提升）              
 
 ## 十一、变更记录（走马灯）
 
-> 39 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
+> 40 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
+| **V17.7** | 2026-06-17 | FB20260617-014 RWR-P1-3 ProjectSelector + InputToolbar + AttitudeIndicator：3 组件 (ProjectSelector 144行 / InputToolbar 92行 / AttitudeIndicator 122行) + 3 CSS Module + variables.css 加 3 个 --color-attitude-{level} 变量。7 文件 / +625 行 / tsc 0 / vitest 174。集成留作 P1-2 / P1-5 |
 | **V17.6** | 2026-06-17 | FB20260617-013 RWR-P1-1 AppShell 三栏独立布局：ui-layout.store.ts 扩展 (+4 字段 +4 action, 77行)；AppShell.module.css 新建 (160行) 含拖拽手柄 + overlay + 过渡；AppShell.tsx 重写 (237行) 集成 dragStateRef 性能优化 + matchMedia 响应式。3 文件 / +474 行 / tsc 0 / vitest 174。DoD 6 项全过 |
 | **V17.5** | 2026-06-17 | FB20260617-012 RWR Phase 0 总结 + 6 维度复查 + 2 项修复：6 维度评分 92/100(接口/状态/错误/类型/命名/测试)。修复 2 项:P-1(中)project:delete handler 返回 {deleted:true} 与 ProjectDeleteResponse=void 不一致→return; P-2(低)L116-117 注释过期(RWR-P0-5 已完成)→更新为 023 ON DELETE SET NULL |
 | **V17.4** | 2026-06-17 | FB20260617-011 RWR-P0-6 useRightPanel hook + 重写 SettingsPanel：useRightPanel.ts(77行)封装 RWR-P0-3 store 8 action 为 React hook，X-01 协议从 drawer.store 派生 isOpen/activeViewId；SettingsPanel.tsx(253行)重写符合规格 DoD，attitude 3 态（温柔/月笙/尖锐），内联样式→CSS Module，集成 useConfigStore + useRightPanel；SettingsPanel.module.css(170行)新增表单布局。3 文件 / 500 行 / tsc 0 / vitest 174 |
