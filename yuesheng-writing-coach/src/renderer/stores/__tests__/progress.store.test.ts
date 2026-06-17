@@ -13,7 +13,7 @@ import {
   selectProgressMap,
   selectResolvedRatio,
 } from '../progress.store';
-import type { SessionProgress } from '../../shared/types';
+import type { SessionProgress } from '../../../shared/types';
 
 // ===== 工具 =====
 

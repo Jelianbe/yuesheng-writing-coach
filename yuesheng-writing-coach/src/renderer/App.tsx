@@ -22,8 +22,7 @@ import { useDiagStore } from './stores/diag.store';
 import { useSessionStore } from './stores/session.store';
 import { useStudentContextStore } from './stores/student-context.store';
 import { useTrainingStore } from './stores/training.store';
-import { rightPanelService } from './services/right-panel.service';
-import type { PanelId } from './services/right-panel.service';
+import { useRightPanelStore, type RightPanelToolId as PanelId } from './stores';
 import { chatService } from './services/chat.service';
 import type { OnboardingBaseline } from './shared/types';
 
@@ -91,7 +90,7 @@ export function App(): React.ReactElement {
 
   // P2-fix: 提取为 useCallback，避免内联函数重复渲染
   const handleEnterWorkshopFromBridge = useCallback((challengeId: string) => {
-    rightPanelService.openTraining(challengeId);
+    useRightPanelStore.getState().openTraining(challengeId);
     useTrainingStore.getState().startTraining(challengeId);
   }, []);
 
@@ -112,7 +111,7 @@ export function App(): React.ReactElement {
   return (
     <AppErrorBoundary>
       <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
-        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { rightPanelService.switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} readingDecision={readingDecision} readingComplete={readingComplete} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onStartReading={startReading} onDismissReadingComplete={dismissReadingComplete} onBackToChat={() => { rightPanelService.close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} lastEvaluationScore={lastEvaluationScore} lastSyndromeId={lastSyndromeId} />, diagnosis: <DiagnosisPanel />, growth: <DiagnosisComparisonView />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
+        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { useRightPanelStore.getState().switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} readingDecision={readingDecision} readingComplete={readingComplete} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onStartReading={startReading} onDismissReadingComplete={dismissReadingComplete} onBackToChat={() => { useRightPanelStore.getState().close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} lastEvaluationScore={lastEvaluationScore} lastSyndromeId={lastSyndromeId} />, diagnosis: <DiagnosisPanel />, growth: <DiagnosisComparisonView />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
           <div style={{ position: 'relative', height: '100%' }}>
             <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} isConfigured={isConfigured ?? false} onSend={handleSendMessage} onStop={handleStop} onStartEditing={startEditing} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={handleEnterWorkshopFromBridge} onDismissBridge={dismissBridge} />
           </div>
