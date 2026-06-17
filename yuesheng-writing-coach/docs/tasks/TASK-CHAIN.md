@@ -1446,10 +1446,11 @@ P0（核心链路）                          P1（体验提升）              
 
 ## 十一、变更记录（走马灯）
 
-> 36 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
+> 37 个版本严格降序。完整详情见 [TASK-CHAIN-ARCHIVE.md](TASK-CHAIN-ARCHIVE.md)。
 
 | 版本 | 日期 | 核心变更 |
 |------|------|---------|
+| **V17.4** | 2026-06-17 | FB20260617-011 RWR-P0-6 useRightPanel hook + 重写 SettingsPanel：useRightPanel.ts(77行)封装 RWR-P0-3 store 8 action 为 React hook，X-01 协议从 drawer.store 派生 isOpen/activeViewId；SettingsPanel.tsx(253行)重写符合规格 DoD，attitude 3 态（温柔/月笙/尖锐），内联样式→CSS Module，集成 useConfigStore + useRightPanel；SettingsPanel.module.css(170行)新增表单布局。3 文件 / 500 行 / tsc 0 / vitest 174 |
 | **V17.3** | 2026-06-17 | FB20260617-010 修复 021 编号重复反模式：git mv 021_projects.sql→022_projects.sql + 022_data_migration.sql→023_data_migration.sql（顺延 1 位），app-initializer.ts migrationFiles 列表 + 测试 MIGRATION_FILES 数组同步更新。迁移链现在按数字严格升序 013/018/020/021/022/023。tsc 0, vitest 174 passed。Refs: 修复 FB-008/009 引入的命名反模式 |
 | **V17.2** | 2026-06-17 | FB20260617-009 RWR-P0-5 数据迁移脚本：022_data_migration.sql（60 行, 4 步幂等迁移：sessions/manuscripts 加 project_id + 默认项目 default-project 创建 + 历史数据归入 + teaching_progress 默认值 + 索引）+ 单测 7 个（Stub 5 张前置表 + FK ON DELETE SET NULL 验证）+ npm rebuild better-sqlite3 (ABI 137)。tsc 0, vitest 174 passed (10 files, +7)。阻塞链 P0-5 ✅ → P0-6。commit pending |
 | **V17.1** | 2026-06-17 | FB20260617-008 RWR-P0-4 项目 IPC + 项目表 migration：projects 表（id/name/description/settingTree/settingTreeType/created_at/updated_at）+ 5 个 IPC 通道（project:list/get/create/update/delete）+ ProjectInfo 类型 + project.handler.ts（137 行, 5 handler, 动态 SET 拼接, 防御性 try-catch + validatePayload）。tsc 0, vitest 167 passed。阻塞链 P0-4 → P0-5（数据迁移脚本, sessions/manuscripts.project_id 外键）。commit 942dd05 |
