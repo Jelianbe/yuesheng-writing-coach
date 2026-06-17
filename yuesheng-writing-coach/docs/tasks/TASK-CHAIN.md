@@ -1,9 +1,9 @@
 # 任务链状态（统一正本）
 
-> **最后更新**: 2026-06-17  V17.2
+> **最后更新**: 2026-06-17  V17.3
 > **系统版本**: V3.6
 > **规范依据**: [TASK-SYSTEM-DESIGN.md](TASK-SYSTEM-DESIGN.md)
-> **任务链版本**: V17.2
+> **任务链版本**: V17.3
 
 ---
 
@@ -60,7 +60,7 @@
 | ✅ 已完成 | **FB20260617-002 RWR-P0-2 progress.store 新增**：SessionProgress 类型 + useProgressStore(7 actions + 3 selectors + persist localStorage) + 21 单测。tsc 0 新墝，vitest 167/167，eslint 0/0。阻塞解除 P1-5 / P1-6 |
 | ✅ 已完成 | **每日体检 broken import 修复**：tsc 从 2→0，修复 paradigm.store.ts TabBar 引用 + app-helpers.ts RightPanel 引用 |
 | ✅ 已完成 | **每日体检 V2.1 深度扫描修复（R-30 流程）**：F-02 createHandler 迁移（chat.handler + ability-profile）、F-03 AUTOINCREMENT→UUID、F-04 迁移文件事务包裹、F-07 chapter.store fetchByWork guard；session.service.test.ts transaction mock 修复 |
-| ▶️ **当前指针** | **RWR-P0-3** — Store 导出统一 + 删除 rightPanelService（V4-UI-1 合并解决）|
+| ▶️ **当前指针** | **RWR-P0-4** — 项目 IPC + 项目表 migration(021_projects.sql + project.handler.ts + project.contracts.ts + IPC_CHANNELS)|
 
 ---
 
