@@ -112,7 +112,8 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
   // ── 渲染 ──
   const containerTransition = isResizing ? 'none' : `width 200ms ${EASE_OUT_QUART}`;
 
-  // 不显示任何面板（activePanel === null 且 collapsed）
+  // 完全关闭(默认态 collapsed === true 且 activePanel === null)不渲染
+  // 显式展开后(!collapsed 且 activePanel === null)显示工具网格
   if (activePanel === null && collapsed) {
     return null;
   }
