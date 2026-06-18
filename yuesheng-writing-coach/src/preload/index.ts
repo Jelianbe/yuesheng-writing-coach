@@ -64,6 +64,7 @@ const allowedInvokeChannels: readonly string[] = [
   'chapter:create',
   'chapter:delete',
   'chapter:updateContent',
+  'teachingHistory:add',
 ];
 
 /** 允许渲染进程通过 send() 单向发送的 IPC 通道白名单 */
@@ -77,6 +78,7 @@ const allowedSendChannels: readonly string[] = [
 const allowedEventChannels: readonly string[] = [
   'diagnosis:update',
   'teachingState:updated',
+  'teachingState:mastery',
   'chat:stream:data',
   'chat:stream:end',
   'chat:tool:executing',
