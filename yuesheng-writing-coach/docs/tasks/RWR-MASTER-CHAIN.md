@@ -163,6 +163,87 @@
 
 ---
 
+### Phase F：前端二次重写（一栏一状态打磨）
+
+> **背景**：C 阶段完成后验收前端，发现当前 `components/` 目录 59 个文件与 spec 偏差累积。组件位置、布局细节、状态切换多处与 spec 不一致。
+> **策略**：旧前端不删，移到 `src/renderer/components/_archived/` 作参考。严格按 spec §2.1 布局 + §13.2 目录规范（每组件一目录）逐栏重建。
+> **驱动**：调用前端 skill（`design-taste-frontend` + `impeccable` + `frontend-design`）对 spec 做专业评审，输出《二次重写设计评审报告》作为 P5-A~E 的执行依据。
+> **节奏**：一栏一状态，每任务独立可验收，可中断可恢复。
+
+#### F-0 [P5-0] 隔离旧前端 + spec 设计评审
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | 无（独立任务） |
+| 目标 | (1) 把 `src/renderer/components/` 全部移到 `src/renderer/components/_archived/`（不删留参考）<br>(2) 调 `design-taste-frontend` + `impeccable` 对 spec §2~§6 做专业评审<br>(3) 输出 `docs/designs/2026-06-18-frontend-rewrite-design-review.md`：每栏每状态的可视化 + 组件清单 + 状态机 + 动画规范 |
+| 涉及文件 | `components/_archived/`（移动） + `docs/designs/2026-06-18-frontend-rewrite-design-review.md`（新建） |
+| DoD | □ 旧 components 移到 `_archived/`<br>□ 评审报告含 §2.1 布局图的每像素解读<br>□ 报告含左/中/右三栏每个状态的可视化示意<br>□ 报告含动画缓动规范<br>□ 报告含 F-1~F-5 任务依据 |
+| 依据 | spec §2~§6（布局+输入+左侧栏） + §13.2（目录规范） |
+
+#### F-1 [P5-A] 左侧栏一栏三态打磨
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | F-0 |
+| 目标 | 严格按 spec §6.1 重建左侧栏：header（[☰]+[⚙]） + 三行布局（[训练]单行 / [对话][项目]双 tab / 搜索栏） + 列表区 |
+| 子状态 | 1) 展开态（min=180px）<br>2) 收起态（width=0，中间栏自动扩展）<br>3) [对话] 标签下显示会话列表<br>4) [项目] 标签下显示项目树<br>5) [训练] 点击后**只**触发右侧栏展开（不切换 sidebarView）<br>6) 搜索 + 筛选 ([全部][对话][训练]) |
+| 涉及目录 | `components/layout/Sidebar/`（新）+ `Sidebar/index.tsx` + `Sidebar.module.css` + 4 个子组件 `SidebarHeader/ SidebarTabs/ SidebarSearch/ SidebarList/` |
+| DoD | □ header 左 [☰] / 右 [⚙]<br>□ [训练] 单独在上方行（占满宽）<br>□ [对话][项目] 并列下方行<br>□ 分隔线视觉区分按键区与列表区（无独立 UI）<br>□ 收起态 width=0 + 200ms ease 动画（spec §2.5）<br>□ [训练] 点击后仅调 `useRightPanelStore.openTool('training')`（不再 `setSidebarView('training')`）<br>□ 拖拽调整宽度边界 180~480<br>□ 不破坏 F-2 中间栏的 column 布局 |
+| 依据 | spec §6.1（结构） + §2.5（动画） + §2.3（状态表） + §6.2（按键布局） |
+
+#### F-2 [P5-B] 中间栏 header 与三态切换
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | F-0 |
+| 目标 | 严格按 spec §2.1 重建中间栏：header 视觉隐形（无背景色 / 无分割线）+ 左 [▼ 当前项目 ▾] + 右 [＋][⚙] + 三岔路口/聊天中/Header 三态 |
+| 子状态 | 1) 三岔路口态（首次进入：📝 我有作品 / 🌱 从头学习 / 💬 先聊聊）<br>2) 聊天中态（消息列表）<br>3) header 左上角有"状态指示器"小标签（教学中/诊断中/梳理中）<br>4) 项目下拉打开后展示项目列表 + 切换行为 |
+| 涉及目录 | `components/layout/ChatHeader/`（新）+ `components/chat/ChatView/`（重建）+ `components/chat/ThreeWayPath/`（新） + `components/chat/MessageList/` + `components/chat/MessageBubble/` |
+| DoD | □ header 视觉隐形（无 bg / 无 border-bottom）<br>□ [▼ 项目名 ▾] 点击下拉<br>□ [＋] 新建会话归入当前项目<br>□ [⚙] 打开 SettingsPanel<br>□ 三岔路口态：3 个按钮（我有作品/从头学习/先聊聊）<br>□ 状态指示器小标签：教学/诊断/梳理 三态<br>□ 项目切换 → 自动切到该项目最后活跃会话 |
+| 依据 | spec §2.1（ASCII 布局图） + §4.1（三岔路口） + §2.4（按钮表） + §3.3（项目-会话关系） |
+
+#### F-3 [P5-C] 右侧栏一栏四态打磨
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | F-0 |
+| 目标 | 严格按 spec §2.1 + §2.4 重建右侧栏：header [⤢][─][□][✕] **不用 fixed** + 动态工具标签 + 工具网格空态 + 多工具切换 |
+| 子状态 | 1) 完全收起态（width=0）<br>2) 工具网格态（无 activePanel：展示 6 个工具卡 2 列）<br>3) 单工具态（activePanel 有 1 个，标签 1 个）<br>4) 多工具态（activePanel 有 N 个，标签 N 个 + 标签 [＋]）<br>5) 工具网格态的 [⤢] 行为：点击展开到工具网格（不切到具体工具）<br>6) 标签 [×] 关闭单工具<br>7) 标签 [＋] 打开工具网格（不主动选工具） |
+| 涉及目录 | `components/layout/RightPanel/`（新）+ `RightPanel/index.tsx` + `RightPanel.module.css` + 5 个子组件：`RightPanelHeader/ ToolGrid/ ToolTabs/ ToolContent/ WindowControls/` |
+| DoD | □ [⤢][─][□][✕] 在 RightPanel 内 `position: relative`（不是 fixed）<br>□ 工具网格态：2 列 6 个工具卡<br>□ 单工具态：标签层 + 内容层<br>□ 多工具态：标签层 N 个 + 标签 [＋]<br>□ 标签 [＋] 打开工具网格（与 F-3-2 一致）<br>□ 标签 [×] 移除单工具<br>□ 收起态 width=0 + 200ms ease 动画<br>□ 不主动打开右侧栏（spec §4.8 跨 F-1/F-2/F-3/F-4/F-5 通用）<br>□ 工具网格卡片点击 → `useRightPanelStore.openTool(id)` |
+| 依据 | spec §2.1 + §2.2 + §2.4 + §4.8（不主动打开） + §13.1（不封装基础 UI 库） |
+
+#### F-4 [P5-D] 输入区一区四态打磨
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | F-0 |
+| 目标 | 严格按 spec §5 重建输入区：工具栏一行（[模板] + 🟢🟡🔴 + 🔒）+ 输入框 + 发送按钮；总高 = 屏幕 1/6 |
+| 子状态 | 1) 工具栏态：左 [模板] / 右 🟢🟡🔴 + 🔒<br>2) 输入框态：focus 高亮 + placeholder 随机轮换（4 条 prompt）<br>3) 发送按钮态：空时 disabled / 有内容时 enabled<br>4) 态度灯态：🟢 默认 / 点击切换 / 🔒 锁定后 AI 不自动切换<br>5) 教学笔记预览态：[模板] 触发后聊天中弹出预览卡片 + [记录到教学笔记] 按钮 |
+| 涉及目录 | `components/chat/InputArea/`（新）+ 5 个子组件：`InputToolbar/ AttitudeIndicator/ MessageInput/ SendButton/ TeachingTip/ TemplatePreview/` |
+| DoD | □ 工具栏高度 32px（`--toolbar-height`）<br>□ 输入区总高 = `clamp(60px, 100vh/6, 180px)`<br>□ AttitudeIndicator 3 灯 + 1 锁（spec §5.2）<br>□ 态度灯点击切换：当前亮，其余灭<br>□ 🔒 锁定后锁图标变实心 + 颜色加深<br>□ placeholder 4 条随机轮换（spec §5.3）<br>□ 输入框不随教学阶段改变 UI（spec §5.4）<br>□ [模板] 触发 → 聊天末尾插入 TemplatePreview 卡片<br>□ TemplatePreview 卡片 [记录到教学笔记] 按钮 → 右侧栏展开"教学笔记"工具（spec §4.11） |
+| 依据 | spec §5 + §4.11（教学笔记） + §12.2（输入区 token） |
+
+#### F-5 [P5-E] 动画与过渡打磨
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | F-1、F-2、F-3、F-4 完成（依赖具体组件） |
+| 目标 | 严格按 spec §2.5 动画规范统一所有过渡 |
+| 涉及文件 | `styles/variables.css`（动画 token 统一）+ 上述 4 个组件微调 |
+| DoD | □ 左侧栏宽度 200ms `cubic-bezier(0.25, 1, 0.5, 1)`<br>□ 右侧栏宽度 200ms 同缓动<br>□ 工具标签切换 150ms ease<br>□ 态度灯切换 150ms ease（opacity + transform）<br>□ 卡片高亮（C-2 ProgressSummary）3s 窗口 + 弹性脉冲<br>□ `prefers-reduced-motion` 支持：减弱所有过渡<br>□ CSS 变量统一在 variables.css 定义缓动 |
+| 依据 | spec §2.5 + §12.2（缓动统一 token） |
+
+#### F-6 [P5-F] 二次重写全局验收
+
+| 属性 | 值 |
+|:-----|:-----|
+| 前置 | F-1~F-5 全部完成 |
+| 目标 | 跨栏全状态验证 + E2E 闭环 |
+| DoD | □ `npm run typecheck` 0 error<br>□ `npm run test` 全绿<br>□ `npm run lint` 0 error<br>□ 跨栏所有状态（每栏 × 8 种状态）目视 + 截图核对<br>□ 与 spec §2.1 ASCII 布局图逐像素对齐<br>□ 用户手动验收签字 |
+
+---
+
 ### Phase E：调研与收尾
 
 #### E-1 [P3-5] 外部项目代码研究
@@ -245,7 +326,7 @@ Phase A ─── Phase B ─── Phase C ─── Phase D ─── Phase E
 | `AGENTS.md` | 项目规则入口 |
 
 
-## 三、待处理（债务记录）
+## 四、待处理（债务记录）
 
 记录 B/C 阶段发现但不在当前任务范围、需要后续阶段处理的问题。
 
