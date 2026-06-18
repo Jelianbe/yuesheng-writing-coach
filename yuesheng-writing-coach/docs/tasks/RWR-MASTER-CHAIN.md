@@ -339,4 +339,65 @@ Phase A ─── Phase B ─── Phase C ─── Phase D ─── Phase E
   - `prompt-loader.ts` 和 `dynamic-context.service.ts` 不读 Skill 文件
   - 实际行为约束真源 (`teacher-prompt.md` / `teaching-agent-prompt-v1.md` / `core-principles.md`) 代码不读
 - **当前绕过**: C-6 行为约束直接追加到 v3.md 末尾 (文档语义不干净,但即时生效)
-- **后续处理**: 后续阶段重接 prompt 加载逻辑,让 Skill 文件生效
+- **后续处理**: F-0 + F-1~F-5 重构 Prompt 加载链路,让 Skill 文件生效
+
+### RWR-DEBT-2: 前端实现与 spec 偏差累积
+
+- **发现阶段**: Phase F 启动评估 — 2026-06-18
+- **现象**:
+  - `components/` 59 个文件位置与 spec §2.1 布局图有 7+ 处偏差
+  - 偏差清单:RightDrawer 默认态不显示工具网格 / WindowControls 用 `position: fixed`(违反 spec 归属) / 中间栏 header 缺失 / 输入区态度灯位置错 / 三栏 store 分散 / DEFAULT_TOOLS 缺 search/progress / 训练按钮多调 `setSidebarView`
+  - 目录错位:`chat/` 混杂 `AttitudeIndicator` 等非聊天组件 / `layout/` 混杂 `DiagnosisPanel` 等非布局组件
+- **当前绕过**: Phase F 启动,将旧 components 移到 `_archived/` 后逐栏重建
+- **后续处理**: Phase F 全程;F-0 隔离 + F-1~F-5 重建 + F-6 全局验收
+
+#### 19 个已完成任务的影响分类
+
+| 分类 | 数量 | 任务 ID |
+|:-----|:----:|:--------|
+| **完全保留**(后端 / 数据 / 类型) | 12 | P0-1 / P0-2 / P0-3 / P0-4 / P0-5 / B-2 / C-1 / C-4 / C-6 / P1-7 types-teaching / C-3 服务层部分 / C-1 服务层部分 |
+| **保留 + 验证接口**(状态机/服务/hook) | 4 | P0-6 useRightPanel / C-3 training.actions 反馈链 / P1-10 mastery IPC+store / P1-7 types |
+| **移植位置**(代码搬到新位置) | 2 | P1-11 mastery 注入(App.tsx line 64-69 → 新 ChatView) / P1-5 TeachingProgressBar(移到新 RightPanel) |
+| **推平重写**(UI 组件层) | 5 | P1-1 AppShell / P1-2 SoloSidebar / P1-3 ProjectSelector+InputToolbar+AttitudeIndicator / P1-4 输入区 / P1-8 ProgressSummary |
+
+#### 已实现功能保留清单(Phase F 重建时必须保留)
+
+| 功能 | 保留位置 | 来源任务 |
+|:-----|:---------|:---------|
+| 教学决策记录 | `decision.service.ts`(不变) | B-2 |
+| 训练反馈链 | `training.actions.ts` line 266+(不变) | C-3 |
+| mastery 事件 emit | `training.handler.ts`(不变) | C-3 |
+| mastery 事件消费 | `teaching-state.service.ts` + `teaching-state.store.ts`(不变) | C-4 |
+| mastery 注入 Prompt | 新 ChatView 的 `handleSendMessage`(**移植自** `App.tsx` line 64-69) | C-5 |
+| 精通技法处理规则 | `yuesheng-prompt-v3.md` 末尾段(不变) | C-6 |
+| 教学进度条逻辑 | `TeachingProgressBar`(**移入**新 RightPanel 子目录) | P1-5 |
+| 画像持久化 | `student-model-service.ts`(不变) | C-1 |
+| 决策记录 DB | `024_teaching_decision_log.sql`(不变) | B-2 |
+| 教学进度 DB | `021_teaching_progress.sql`(不变) | P0-1 |
+| 项目 IPC + DB | `022_projects.sql` + `project.ipc.ts`(不变) | P0-4 |
+| 数据迁移 | `023_data_migration.sql`(不变) | P0-5 |
+| `useRightPanel` hook | **重写**以对接新 `useRightPanelStore` + 新 `RightPanel` 组件树 | P0-6 |
+
+#### 推平重写清单(Phase F 重建时直接重写)
+
+| 任务 | 旧实现 | 新实现 | 重写阶段 |
+|:-----|:-------|:-------|:---------|
+| P1-1 AppShell | `components/layout/AppShell.tsx`(22 文件含 Panel/View) | `components/layout/AppShell/index.tsx`(新目录) | F-2/F-3 整合 |
+| P1-2 SoloSidebar | `components/layout/SoloSidebar.tsx` | `components/layout/Sidebar/index.tsx` + 4 子组件 | F-1 |
+| P1-3 ProjectSelector | `components/layout/ProjectSelector.tsx` | 并入 `components/layout/ChatHeader/` | F-2 |
+| P1-3 InputToolbar | `components/chat/InputToolbar.tsx` | 并入 `components/chat/InputArea/InputToolbar/` | F-4 |
+| P1-3 AttitudeIndicator | `components/chat/AttitudeIndicator.tsx` | 并入 `components/chat/InputArea/AttitudeIndicator/` | F-4 |
+| P1-4 ChatView 输入区 | `components/chat/ChatView.tsx` | 重写为 `components/chat/InputArea/index.tsx` | F-4 |
+| P1-8 ProgressSummary | `components/training/ProgressSummary.tsx` | 并入 `components/layout/RightPanel/ProgressSummary/` | F-3 |
+
+#### D/E 剩余任务调整
+
+| 原任务 | 调整 | 原因 |
+|:-------|:-----|:-----|
+| D-1 LearningLogPanel | **并入 F-3** | spec §4.10 学习日志,RightPanel 重建时一起建 |
+| D-2 IPC 错误 + 骨架屏 | **并入 F-0 / F-1 / F-3** | 评审报告要求 skeleton,各栏重建时一起做 |
+| D-3 空状态 + placeholder | **并入 F-4** | placeholder 4 条轮换,InputArea 重建时一起做 |
+| E-2 文件上传 + 分章 | **并入 F-2** | [＋] 按钮触发,ChatHeader 重建时一起建 |
+| E-4 全链路验收 | **并入 F-6** | F-6 全局验收已含教学闭环 E2E |
+| E-1 外部项目研究 | **保留独立** | 调研独立,与 F 系列无依赖 |
+| E-3 全局清理 (lint + V4) | **保留独立** | 债务清理,RWR-DEBT-1/2 关联 |
