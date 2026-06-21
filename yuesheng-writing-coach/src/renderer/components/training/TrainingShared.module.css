@@ -113,3 +113,63 @@
   cursor: pointer;
   transition: all 250ms cubic-bezier(0.25, 1, 0.5, 1);
 }
+
+/* ===== F-03: 验证与复盘 ===== */
+
+.retroContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.retroHeader {
+  padding: 16px 24px;
+  background-color: var(--accent-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.retroBody {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.retroCard {
+  padding: 20px;
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.retroFooter {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.primaryBtn {
+  padding: 8px 20px;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 250ms cubic-bezier(0.25, 1, 0.5, 1),
+    transform 250ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.secondaryBtn {
+  padding: 8px 20px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 250ms cubic-bezier(0.25, 1, 0.5, 1);
+}

@@ -15,6 +15,7 @@ import { initTeachingStateHandler } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
 import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
+import { registerRetroHandlers } from '../ipc/retro.handler';
 import type { ConfigService } from '../shared/services/config.service';
 import type { SessionService } from '../shared/services/session.service';
 import type { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
@@ -28,6 +29,7 @@ import type { DiagnosisOrchestratorService } from '../domains/01-diagnosis/orche
 import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
+import type { RetroService } from '../domains/05-retro/retro.service';
 
 export class IpcRegistry {
   constructor(
@@ -115,6 +117,11 @@ export class IpcRegistry {
     // Project (RWR-P0-4 — 直接使用 db 实例)
     initProjectHandlers({ db: this.container.get<Database.Database>('db') });
     registerProjectHandlers();
+
+    // Retro (F-03 复盘总结)
+    registerRetroHandlers({
+      retroService: this.container.get<RetroService>('retroService'),
+    });
 
     // Window Controls (最小化/最大化/关闭)
     initWindowHandlers();

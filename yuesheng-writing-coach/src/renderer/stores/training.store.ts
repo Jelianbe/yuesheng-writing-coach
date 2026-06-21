@@ -16,6 +16,8 @@ import {
 } from './training.actions';
 import { createStartReadingAction } from './training-reading.actions';
 import { createLoadHistoryAction, createRefreshFromDiagnosisAction } from './training-data.actions';
+import { RetroApi } from '../../shared/api-contracts/retro.contract';
+import { getInvoke } from '../utils/ipc';
 export { selectCenterMode, selectActiveTraining, selectErrorCards, selectRecommendations, selectTrainingHistory, selectIsLoading } from './training.selectors';
 export type { TrainingState, TrainingSubmissionResult } from './training.types';
 export { DEFAULT_STEPS, READING_STEPS } from './training.types';
@@ -41,6 +43,8 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   derivationLoading: false,
   derivationResult: null,
   derivationError: null,
+  retroSummary: null,
+  retroLoading: false,
 
   // ===== 模式切换 =====
 
@@ -115,5 +119,21 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     void import('./chapter.store').then(({ useChapterStore }) => {
       useChapterStore.setState({ pendingRewrite: activeTraining.userDraft });
     });
+  },
+
+  // F-03: 进入复盘总结
+  enterRetro: async (sessionId: string) => {
+    set({ retroLoading: true });
+    try {
+      const result = await getInvoke()(RetroApi.generate.channel, { sessionId }) as { success: boolean; data: TrainingState['retroSummary'] };
+      if (result.success && result.data) {
+        set({ retroSummary: result.data, centerMode: 'retro', retroLoading: false });
+      } else {
+        set({ retroLoading: false });
+      }
+    } catch (err) {
+      console.error('[TrainingStore] enterRetro failed:', err);
+      set({ retroLoading: false });
+    }
   },
 }));

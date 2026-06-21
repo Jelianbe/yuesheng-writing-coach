@@ -11,6 +11,7 @@ import { ChatView } from '../../chat/ChatView';
 import { TrainingWorkshop } from '../../training/TrainingWorkshop';
 import { Footer } from '../Footer';
 import { useDiagnosisFlow } from '../../../hooks/useDiagnosisFlow';
+import { RetroSummaryView } from '../../retro/RetroSummaryView';
 import styles from './index.module.css';
 
 interface CenterPanelProps {
@@ -79,6 +80,8 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     bridgeRecommendation: s.bridgeRecommendation,
     lastEvaluationScore: s.lastEvaluationScore,
     lastSyndromeId: s.lastSyndromeId,
+    retroSummary: s.retroSummary,
+    retroLoading: s.retroLoading,
   }));
   const myCurrentDiagnosis = useDiagStore((s) => s.currentDiagnosis);
   const isConfigured = useConfigStore((s) => s.isConfigured);
@@ -141,6 +144,7 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   const handleBackToChat = useCallback(() => {
     useTrainingStore.getState().backToChat();
   }, []);
+
   const handleSubmitStep = useCallback(() => {
     useTrainingStore.getState().submitStep();
   }, []);
@@ -256,7 +260,19 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
 
       {/* Content */}
       <div className={styles.chatArea}>
-        {centerMode === 'training' ? (
+        {centerMode === 'retro' ? (
+          <RetroSummaryView
+            totalTrainingCount={trainingState.retroSummary?.totalTrainingCount ?? 0}
+            syndromeCount={trainingState.retroSummary?.syndromeCount ?? 0}
+            syndromeSummaries={trainingState.retroSummary?.syndromeSummaries ?? []}
+            overallImprovement={trainingState.retroSummary?.overallImprovement ?? 0}
+            masteredTechniques={trainingState.retroSummary?.masteredTechniques ?? []}
+            recommendedFocus={trainingState.retroSummary?.recommendedFocus ?? []}
+            summary={trainingState.retroSummary?.summary ?? ''}
+            onBackToChat={handleBackToChat}
+            onStartNewTraining={handleBackToChat}
+          />
+        ) : centerMode === 'training' ? (
           <TrainingWorkshop
             errorCards={trainingState.errorCards}
             recommendations={trainingState.recommendations}
@@ -311,7 +327,7 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
         )}
       </div>
 
-      {/* Footer（仅在对话模式下显示） */}
+      {/* Footer（仅在对话/复盘模式下显示） */}
       {centerMode !== 'training' && (
         <Footer chatSessionId={currentSessionId} onToggleTemplate={handleToggleTemplate} />
       )}
