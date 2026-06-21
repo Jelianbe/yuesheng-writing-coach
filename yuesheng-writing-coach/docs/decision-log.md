@@ -186,3 +186,20 @@
   7. BL-05: `RecommendationsSection.module.css` 硬编码 `white` → `var(--text-on-accent)`
 - **门禁**: typecheck zero errors / 201 tests all green / lint 0 errors 126 warnings
 - **提交**: `16c2391` (typecheck), `0f4ca6b` (拆分), `6781727` (lint import fixes)
+
+---
+
+## 2026-06-21
+
+### D-024: 五阶段架构确认定版
+- **类型**: 架构决策
+- **决策**: Sprint 2 完成 01-diagnosis → 05-retro 全部五阶段架构贯通，确认该架构为项目正式架构
+- **原因**:
+  1. 三个 Sprint 的实践证明五阶段架构稳定、可测试、可扩展
+  2. 每个阶段都有独立的 domain service + IPC handler + UI 视图
+  3. 错误处理（Q-02）为各阶段提供了统一的错误码基座
+- **门禁标准**:
+  - 五阶段任一阶段的新增功能必须有对应的单元/集成测试
+  - 跨阶段流转必须使用 IPC handler，不得直接调用其他阶段的 domain service
+  - 错误信息使用 ErrorCode + ERROR_MESSAGES 中文体系
+- **Sprint 2 交付**: 5 commits / 47 files / +3332 -490 lines / 319 tests (from 201) / typecheck zero / lint zero errors
