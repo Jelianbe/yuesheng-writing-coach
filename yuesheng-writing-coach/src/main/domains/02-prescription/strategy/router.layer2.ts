@@ -53,7 +53,7 @@ export function selectTeachingMode(input: RouterInput, _focus: FocusDecision, co
   }
 
   // Step 5: 态度覆盖
-  if (input.attitude === 'sensei') {
+  if (input.attitude === 'sensei' || input.attitude === 'direct') {
     coarseMode = 'challenging';
   } else if (input.attitude === 'doubao') {
     coarseMode = coarseMode === 'challenging' ? 'guiding' : coarseMode;

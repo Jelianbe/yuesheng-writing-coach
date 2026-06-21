@@ -34,6 +34,7 @@ const ATTITUDE_ORDER: Record<AttitudeLevel, number> = {
   doubao: 0,
   yuesheng: 1,
   sensei: 2,
+  direct: 3,
 };
 
 /** 辩驳升级阈值 */

@@ -21,7 +21,7 @@
 import { create } from 'zustand';
 
 /** 态度档位 */
-export type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei';
+export type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei' | 'direct';
 
 /** 左侧栏 tab */
 export type LeftTab = 'chat' | 'proj';

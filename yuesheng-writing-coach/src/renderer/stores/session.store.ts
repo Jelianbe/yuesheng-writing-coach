@@ -13,6 +13,7 @@
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
 import { getInvoke } from '../utils/ipc';
+import type { ChatMessage } from '../shared/types';
 
 /** 聊天会话 */
 export interface ChatSession {
@@ -40,7 +41,7 @@ interface SessionActions {
   /** 切换当前会话 */
   switchSession: (id: string) => void;
   /** 加载指定会话的消息列表 */
-  loadMessages: (sessionId: string) => Promise<unknown[]>;
+  loadMessages: (sessionId: string) => Promise<ChatMessage[]>;
   /** 删除会话 */
   deleteSession: (id: string) => Promise<void>;
   /** 重命名会话 */
@@ -92,7 +93,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   loadMessages: async (sessionId) => {
     try {
       const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES, { sessionId }) as { success: boolean; data?: unknown[] };
+      const res = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES, { sessionId }) as { success: boolean; data?: ChatMessage[] };
       if (res.success && res.data) {
         return res.data;
       }

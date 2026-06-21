@@ -9,7 +9,7 @@ import { BrowserWindow } from 'electron';
 import Database from 'better-sqlite3';
 import { TeachingStateStore } from './teaching-state/teaching-state.store';
 import type { TeachingState } from './teaching-state/teaching-state.types';
-import { PromptBuilder } from '../prompt/prompt-builder';
+import { PromptBuilder } from '../../domains/03-teaching/prompt/prompt-builder';
 import {
   confirmPhaseComplete,
   getPhaseName,
