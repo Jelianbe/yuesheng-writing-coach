@@ -122,6 +122,9 @@ export interface TrainingState {
   /** 返回对话流（切换 centerMode 为 chat） */
   backToChat: () => void;
 
+  /** 进入编辑器（切换 centerMode 为 editor） */
+  enterEditor: () => void;
+
   // ===== 训练操作 =====
 
   /** 开始训练任务 */

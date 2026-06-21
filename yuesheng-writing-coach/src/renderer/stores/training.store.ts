@@ -67,6 +67,11 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
     }
   },
 
+  // Sprint 3: 进入编辑器
+  enterEditor: () => {
+    set({ centerMode: 'editor' });
+  },
+
   // ===== 训练操作（大型 action 从 training.actions.ts 引入） =====
 
   startTraining: createStartAction(set, get),
