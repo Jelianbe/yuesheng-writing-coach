@@ -198,3 +198,52 @@
   flex-direction: column;
   gap: 12px;
 }
+
+/* ── Q-02: 错误展示横幅 ── */
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  margin: 8px 20px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--bg-error, #fef2f2);
+  border: 1px solid var(--border-error, #fecaca);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.errorMessage {
+  flex: 1;
+  font-size: 0.82rem;
+  color: var(--text-error, #b91c1c);
+  line-height: 1.4;
+}
+
+.retryBtn {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border-radius: var(--radius-full, 20px);
+  border: 1px solid var(--border-error, #fecaca);
+  background: var(--bg-card);
+  color: var(--text-error, #b91c1c);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+
+.retryBtn:hover {
+  background: var(--bg-error-hover, #fee2e2);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ChatMessage } from '../shared/types';
 import { chatService } from '../services/chat.service';
+import { getUserFacingErrorMessage, isRetryable } from '../../shared/error-codes';
 
 export interface SendMessageDeps {
   /** 当前会话 ID（由 appController/ChatView 传入） */
@@ -34,6 +35,14 @@ interface ChatState {
   // P0-1: chat:stop — 中断流式响应
   streamAborted: boolean;
   abortStream: () => void;
+
+  // Q-02: 重试机制
+  /** 上次发送失败的消息文本 */
+  lastFailedMessage: string | null;
+  /** 是否可重试（根据错误类型判断） */
+  retryable: boolean;
+  /** 重试上次失败的消息 */
+  retryLastMessage: (deps: SendMessageDeps) => Promise<void>;
 
   // P-04: 新用户引导 actions
   /** P-04 新增 actions */
@@ -80,6 +89,9 @@ function clearOnboardingState(): void {
 
 // ===== 常量 =====
 
+/** Q-02: 消息发送超时(毫秒) */
+const MESSAGE_TIMEOUT_MS = 120_000;
+
 /** 滑动窗口最大 Token 预算（约 8000 tokens，中文约 4 字符/token）*/
 const MAX_HISTORY_TOKENS = 8000;
 /** 每条消息的固定开销（角色标签 + 元数据）*/
@@ -118,6 +130,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
   onboardingActive: false,
   onboardingStep: 0,
   streamAborted: false,
+  lastFailedMessage: null,
+  retryable: false,
 
   addMessage: (msg: ChatMessage) => {
     set((state) => ({ messages: [...state.messages, msg] }));
@@ -177,6 +191,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     saveOnboardingState(step);
   },
 
+  /** Q-02: 重试上次失败的消息 */
+  retryLastMessage: async (deps: SendMessageDeps) => {
+    const { lastFailedMessage } = get();
+    if (!lastFailedMessage) return;
+    // 清除错误并重新发送
+    set({ error: null, lastFailedMessage: null, retryable: false });
+    await get().sendMessage(lastFailedMessage, deps);
+  },
+
   /** 发送消息 */
   sendMessage: async (text: string, deps: SendMessageDeps) => {
     const { isLoading } = get();
@@ -210,30 +233,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
       messages: [...state.messages, userMsg, assistantMsg],
       isLoading: true,
       error: null,
+      lastFailedMessage: null,
+      retryable: false,
     }));
 
     try {
-      const result = await chatService.send({
-        message: text.trim(),
-        sessionId,
-        history,
-        attitudeLevel,
-        studentContext,
+      // Q-02: 超时保护 — 120 秒超时自动中断
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new DOMException('timeout', 'AbortError')), MESSAGE_TIMEOUT_MS);
       });
+
+      const result = await Promise.race([
+        chatService.send({
+          message: text.trim(),
+          sessionId,
+          history,
+          attitudeLevel,
+          studentContext,
+        }),
+        timeoutPromise,
+      ]);
 
       if (!result) {
         set((state) => {
           const msgs = state.messages.filter((m) => m.id !== assistantMsg.id);
-          return { messages: msgs, isLoading: false, error: '发送失败' };
+          return { messages: msgs, isLoading: false, error: getUserFacingErrorMessage('ERR_REQUEST_TIMEOUT'), lastFailedMessage: text, retryable: true };
         });
       }
     } catch (error) {
+      // Q-02: 使用中文错误消息 + 保存失败消息供重试
+      const errorMessage = getUserFacingErrorMessage(error);
+      const canRetry = isRetryable(error);
       set((state) => {
         const msgs = state.messages.filter((m) => m.id !== assistantMsg.id);
         return {
           messages: msgs,
           isLoading: false,
-          error: error instanceof Error ? error.message : '发送失败',
+          error: errorMessage,
+          lastFailedMessage: text,
+          retryable: canRetry,
         };
       });
     }

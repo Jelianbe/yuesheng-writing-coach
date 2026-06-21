@@ -3,6 +3,10 @@
  *
  * 职责：处理 AI 流式响应，包括普通流和工具调用流
  * 从 chat-orchestrator.service.ts 提取，减少主文件行数
+ *
+ * Q-02 增强：
+ * - 超时检测（STREAM_TIMEOUT）
+ * - 超时时发送中文错误消息
  */
 
 import type { BrowserWindow } from 'electron';
@@ -15,7 +19,11 @@ import { toolHandlers, TOOLS_DEFINITIONS } from './chat-tools';
 
 const MAX_TOOL_ROUNDS = 3;
 
+/** Q-02: 流式响应超时阈值（毫秒） */
+const STREAM_TIMEOUT_MS = 60_000;
+
 import type { MessageRole } from '../../../../shared/types';
+import { getUserFacingErrorMessage } from '../../../../shared/error-codes';
 
 export interface StreamHandlerDeps {
   mainWindow: BrowserWindow | null;
@@ -48,7 +56,14 @@ export async function handleStreamResponse(
   const messageId = generateId();
   let fullResponse = '';
 
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   try {
+    // Q-02: 超时检测 — STREAM_TIMEOUT_MS 后自动中断
+    timeoutId = setTimeout(() => {
+      abortController.abort(new DOMException('timeout', 'AbortError'));
+    }, STREAM_TIMEOUT_MS);
+
     if (diagnosisAnalysis && isNarrative) {
       deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
         sessionId: deps.sessionId,
@@ -64,6 +79,7 @@ export async function handleStreamResponse(
       });
     }
 
+    if (timeoutId) clearTimeout(timeoutId);
     deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
     deps.autoGenerateTitle(deps.sessionId);
 
@@ -81,8 +97,21 @@ export async function handleStreamResponse(
 
     return { success: true, messageId, sessionId: deps.sessionId };
   } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
     const isAbort = error instanceof Error && error.name === 'AbortError';
     if (isAbort) {
+      const isTimeout = error instanceof DOMException && error.message === 'timeout';
+      if (isTimeout) {
+        console.warn(`[Chat] Stream timeout after ${STREAM_TIMEOUT_MS}ms`);
+        const errorMessage = getUserFacingErrorMessage('ERR_STREAM_TIMEOUT');
+        deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
+          sessionId: deps.sessionId,
+          fullResponse,
+          messageId,
+          error: errorMessage,
+        });
+        return { success: false, error: errorMessage };
+      }
       console.log(`[Chat] Stream aborted by user, partial=${fullResponse.length}chars`);
       if (fullResponse) {
         deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
@@ -96,7 +125,7 @@ export async function handleStreamResponse(
       return { success: true, messageId, sessionId: deps.sessionId };
     }
 
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    const errorMessage = getUserFacingErrorMessage(error);
     deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
       sessionId: deps.sessionId,
       fullResponse,
@@ -120,7 +149,14 @@ export async function handleStreamResponseWithTools(
   const messageId = generateId();
   let fullResponse = '';
 
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   try {
+    // Q-02: 超时检测 — STREAM_TIMEOUT_MS 后自动中断
+    timeoutId = setTimeout(() => {
+      abortController.abort(new DOMException('timeout', 'AbortError'));
+    }, STREAM_TIMEOUT_MS);
+
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
       let currentRoundText = '';
       const toolCallsInRound: AccumulatedToolCall[] = [];
@@ -174,6 +210,7 @@ export async function handleStreamResponseWithTools(
       }
     }
 
+    if (timeoutId) clearTimeout(timeoutId);
     deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
     deps.autoGenerateTitle(deps.sessionId);
 
@@ -191,8 +228,21 @@ export async function handleStreamResponseWithTools(
 
     return { success: true, messageId, sessionId: deps.sessionId };
   } catch (error) {
+    if (timeoutId) clearTimeout(timeoutId);
     const isAbort = error instanceof Error && error.name === 'AbortError';
     if (isAbort) {
+      const isTimeout = error instanceof DOMException && error.message === 'timeout';
+      if (isTimeout) {
+        console.warn(`[ToolCall] Stream timeout after ${STREAM_TIMEOUT_MS}ms`);
+        const errorMessage = getUserFacingErrorMessage('ERR_STREAM_TIMEOUT');
+        deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
+          sessionId: deps.sessionId,
+          fullResponse,
+          messageId,
+          error: errorMessage,
+        });
+        return { success: false, error: errorMessage };
+      }
       console.log(`[ToolCall] Stream aborted by user, partial=${fullResponse.length}chars`);
       if (fullResponse) {
         deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
@@ -206,7 +256,7 @@ export async function handleStreamResponseWithTools(
       return { success: true, messageId, sessionId: deps.sessionId };
     }
 
-    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    const errorMessage = getUserFacingErrorMessage(error);
     deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_END, {
       sessionId: deps.sessionId,
       fullResponse,

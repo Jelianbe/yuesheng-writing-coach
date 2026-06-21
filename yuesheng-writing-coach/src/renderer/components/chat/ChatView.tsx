@@ -45,6 +45,10 @@ interface ChatViewProps {
   bridgeRecommendation: TrainingRecommendation | null;
   /** 是否已配置 API Key（控制欢迎卡片和发送按钮禁用） */
   isConfigured?: boolean;
+  // Q-02: 错误展示 + 重试
+  error?: string | null;
+  retryable?: boolean;
+  onRetry?: () => void;
   onSend: (text: string) => void;
   onStop: () => void;
   onStartEditing: (syndromeId: string, evidence: string[], name: string, severity: string) => void;
@@ -71,6 +75,9 @@ export const ChatView: React.FC<ChatViewProps> = ({
   growthSummary,
   bridgeRecommendation,
   isConfigured = true,
+  error,
+  retryable,
+  onRetry,
   onSend,
   onStop,
   onStartEditing,
@@ -210,6 +217,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 isLoadingMore={isLoadingMore}
                 onLoadMore={handleLoadMore}
               />
+            )}
+
+            {/* Q-02: 错误展示横幅 + 重试按钮 */}
+            {error && !isStreaming && (
+              <div className={styles.errorBanner}>
+                <span className={styles.errorIcon}>⚠</span>
+                <span className={styles.errorMessage}>{error}</span>
+                {retryable && onRetry && (
+                  <button className={styles.retryBtn} onClick={onRetry}>
+                    重试
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}

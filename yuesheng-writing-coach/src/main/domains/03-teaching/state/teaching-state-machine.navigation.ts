@@ -21,6 +21,41 @@ import {
 } from './teaching-state-machine.constants';
 
 /**
+ * Q-02: 合法转换映射表
+ * 定义所有允许的阶段转换规则
+ */
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  [TeachingPhase.INIT]: [TeachingPhase.ENGAGE],
+  [TeachingPhase.ENGAGE]: [TeachingPhase.WORLD],
+  [TeachingPhase.WORLD]: [TeachingPhase.PRACTICE_LOOP],
+  [TeachingPhase.PRACTICE_LOOP]: [TeachingPhase.PRACTICE_LOOP, TeachingPhase.REVIEW],
+  [TeachingPhase.REVIEW]: [TeachingPhase.PRACTICE_LOOP],
+};
+
+/**
+ * Q-02: 验证阶段转换是否合法
+ * 非法转换时返回 false，调用方应降级到当前安全状态
+ */
+export function validateTransition(current: string, next: string): boolean {
+  const allowed = VALID_TRANSITIONS[current];
+  if (!allowed) {
+    console.error(`[StateMachine] 未知阶段 ${current}，无法验证转换`);
+    return false;
+  }
+  return allowed.includes(next);
+}
+
+/**
+ * Q-02: 安全获取下一阶段（含验证日志）
+ * 比 getNextPhase 增加日志输出，便于追踪异常转换
+ */
+export function safeGetNextPhase(current: string): TeachingPhase {
+  const next = getNextPhase(current);
+  console.info(`[StateMachine] 阶段推进: ${current} → ${next}`);
+  return next as TeachingPhase;
+}
+
+/**
  * 获取阶段名称
  */
 export function getPhaseName(phase: string): string {
