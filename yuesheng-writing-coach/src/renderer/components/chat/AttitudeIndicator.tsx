@@ -25,6 +25,7 @@ const LEVEL_TO_VAR: Record<AttitudeLevel, string> = {
   doubao: 'doubao',
   yuesheng: 'yuesheng',
   direct: 'direct',
+  sensei: 'sensei',
 };
 
 /** 档位顺序(从左到右) */

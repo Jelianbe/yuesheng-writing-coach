@@ -227,7 +227,7 @@ export interface RouterInput {
   /** 当前教学阶段（来自状态机） */
   currentPhase?: string;
   /** 用户态度档位 */
-  attitude?: 'doubao' | 'yuesheng' | 'sensei';
+  attitude?: 'doubao' | 'yuesheng' | 'sensei' | 'direct';
   /** Persona 配置（PE-001，若提供则优先使用） */
   persona?: PersonaConfig;
   /** 训练动机水平（用于 R-007 规则匹配） */

@@ -10,7 +10,7 @@ import { useStudentContextStore } from '../../../stores/student-context.store';
 import { ChatView } from '../../chat/ChatView';
 import { TrainingWorkshop } from '../../training/TrainingWorkshop';
 import { Footer } from '../Footer';
-import type { ChatMessage, DiagnosisEntry, TrainingRecommendation, RewriteEvaluation } from '../../../shared/types';
+import { useDiagnosisFlow } from '../../../hooks/useDiagnosisFlow';
 import styles from './index.module.css';
 
 interface CenterPanelProps {
@@ -25,7 +25,7 @@ function useSessionMessages(currentSessionId: string | null): void {
     if (currentSessionId) {
       (async () => {
         const msgs = await useSessionStore.getState().loadMessages(currentSessionId);
-        useChatStore.getState().setMessages(msgs as ChatMessage[]);
+        useChatStore.getState().setMessages(msgs);
       })();
     } else {
       useChatStore.getState().setMessages([]);
@@ -83,7 +83,8 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   const myCurrentDiagnosis = useDiagStore((s) => s.currentDiagnosis);
   const isConfigured = useConfigStore((s) => s.isConfigured);
 
-  const [templatePreviewVisible, setTemplatePreviewVisible] = React.useState(false);
+  // F-02: 诊断→修改→评估 流程状态
+  const flow = useDiagnosisFlow(currentSessionId);
 
   // F-01: 会话消息加载
   useSessionMessages(currentSessionId);
@@ -107,16 +108,10 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     if (s) switchSession(s.id);
   };
 
-  // [模板] 按钮
+  // [模板] 按钮（由 Footer 触发，功能在 F-02 后续完善）
   const handleToggleTemplate = useCallback(() => {
-    setTemplatePreviewVisible(prev => !prev);
+    // F-02: wire template panel
   }, []);
-
-  // 记录到教学笔记
-  const handleRecordToTeachingNotes = useCallback(() => {
-    setTemplatePreviewVisible(false);
-    openTool('training');
-  }, [openTool]);
 
   // 桥接卡片 → 进入训练工坊
   const handleEnterWorkshopFromBridge = useCallback((_challengeId: string) => {
@@ -159,22 +154,22 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     useTrainingStore.getState().sendToEditor();
   }, []);
 
-  // ChatView editing callbacks (stubs — filled in F-02)
+  // F-02: 诊断编辑 callbacks → useDiagnosisFlow
   const handleStartEditing = useCallback(
-    (_syndromeId: string, _evidence: string[], _name: string, _severity: string) => {
-      // F-02: wire EditPanel
+    (syndromeId: string, evidence: string[], name: string, severity: string) => {
+      flow.startEditing(syndromeId, evidence, name, severity);
     },
-    [],
+    [flow],
   );
   const handleSubmitRewrite = useCallback(
-    (_text: string) => {
-      // F-02: wire rewrite flow
+    (text: string) => {
+      flow.submitRewrite(text);
     },
-    [],
+    [flow],
   );
   const handleCancelEditing = useCallback(() => {
-    // F-02: close edit panel
-  }, []);
+    flow.cancelEditing();
+  }, [flow]);
 
   // 教学状态标签
   const statusText = React.useMemo(() => {
@@ -187,20 +182,21 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   }, [currentState]);
 
   // ChatView props — 用 useMemo 避免无关更新
+  const isStreaming = useChatStore((s) => s.isLoading);
   const chatViewProps = useMemo(() => ({
-    messages: messages as ChatMessage[],
-    isStreaming: useChatStore.getState().isLoading,
+    messages,
+    isStreaming,
     currentSessionId,
-    currentDiagnosis: myCurrentDiagnosis as DiagnosisEntry | null,
-    editingSyndrome: null as { id: string; name: string; evidence: string[] } | null,
-    isSubmitting: false,
-    lastEvaluation: null as RewriteEvaluation | null,
-    lastOriginalText: null as string | null,
-    lastRewrittenText: null as string | null,
-    growthLoading: false,
-    hasHistory: false,
-    growthSummary: null as string | null,
-    bridgeRecommendation: trainingState.bridgeRecommendation as TrainingRecommendation | null,
+    currentDiagnosis: myCurrentDiagnosis,
+    editingSyndrome: flow.editingSyndrome,
+    isSubmitting: flow.isSubmitting,
+    lastEvaluation: flow.lastEvaluation,
+    lastOriginalText: flow.lastOriginalText,
+    lastRewrittenText: flow.lastRewrittenText,
+    growthLoading: flow.growthLoading,
+    hasHistory: flow.hasHistory,
+    growthSummary: flow.growthSummary,
+    bridgeRecommendation: trainingState.bridgeRecommendation,
     isConfigured,
     onSend: handleSendMessage,
     onStop: handleStop,
@@ -210,7 +206,10 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     onEnterWorkshopFromBridge: handleEnterWorkshopFromBridge,
     onDismissBridge: handleDismissBridge,
   }), [
-    messages, myCurrentDiagnosis, currentSessionId,
+    messages, isStreaming, myCurrentDiagnosis, currentSessionId,
+    flow.editingSyndrome, flow.isSubmitting, flow.lastEvaluation,
+    flow.lastOriginalText, flow.lastRewrittenText,
+    flow.growthLoading, flow.hasHistory, flow.growthSummary,
     trainingState.bridgeRecommendation, isConfigured,
     handleStop, handleStartEditing, handleSubmitRewrite,
     handleCancelEditing, handleEnterWorkshopFromBridge, handleDismissBridge,

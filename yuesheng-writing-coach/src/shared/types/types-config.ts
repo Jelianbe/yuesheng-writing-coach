@@ -1,7 +1,7 @@
 // 配置与 API 基础类型
 
 /** 态度档位类型（三态：温柔/月笙/尖锐） */
-export type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei';
+export type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei' | 'direct';
 
 /** API 配置数据 */
 export interface ApiConfig {

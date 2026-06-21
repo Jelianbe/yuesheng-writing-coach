@@ -9,7 +9,7 @@
  */
 
 import type { AttitudeLevel, DiagnosisAnalysis } from '../../../shared/types/index';
-import type { StudentModelService } from '../student/student-model-service';
+import type { StudentModelService } from '../../domains/02-prescription/student/student-model-service';
 import type { TeachingStrategyService } from './strategy/service';
 import type { ProblemPrioritizer } from './problem-prioritizer.service';
 import { SYNDROME_META, SYNDROME_NAMES } from '../../../shared/mappings';

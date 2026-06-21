@@ -17,7 +17,7 @@ import * as path from 'path';
 
 import type { ProficiencyLevel, CognitiveStyle } from '../student/student-model-service';
 import type { TeachingStrategyRouter } from './router';
-import type { RouterInput, TeachingMode as RouterTeachingMode, FocusDecision, ModeDecision, ParameterDecision } from '../../../../shared/types/index';
+import type { RouterInput, TeachingMode as RouterTeachingMode, FocusDecision, ModeDecision, ParameterDecision, AttitudeLevel } from '../../../../shared/types/index';
 
 /** 教学模式 */
 export type TeachingMode = RouterTeachingMode;
@@ -89,7 +89,7 @@ export interface StrategyInput {
   /** 挫折指标（0-1） */
   frustrationIndex: number;
   /** 当前态度档位（T-017 新增，用于语气联动） */
-  attitude?: 'doubao' | 'yuesheng' | 'sensei';
+  attitude?: AttitudeLevel;
 }
 
 /**
@@ -314,10 +314,10 @@ export class TeachingStrategyService {
   private decideTone(
     matrix: UserTypeMatrixConfig,
     input: StrategyInput,
-    attitude?: 'doubao' | 'yuesheng' | 'sensei',
+    attitude?: AttitudeLevel,
   ): ToneType {
     // 态度优先：如果用户指定了态度档位，覆盖教学策略的语气
-    if (attitude === 'sensei') return 'challenging';
+    if (attitude === 'sensei' || attitude === 'direct') return 'challenging';
     if (attitude === 'yuesheng') return 'direct';
     if (attitude === 'doubao') return 'encouraging';
 
