@@ -9,6 +9,7 @@ const TEST_CONFIG: ApiConfig = {
   modelName: 'test-model',
   temperature: 0.7,
   attitudeLevel: 'yuesheng',
+  attitudeLocked: false,
   maxTokens: 8192,
 };
 

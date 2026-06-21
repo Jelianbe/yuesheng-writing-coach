@@ -28,6 +28,8 @@ interface ConfigState {
   temperature: number;
   /** 态度档位 */
   attitudeLevel: AttitudeLevel;
+  /** 态度是否锁定 */
+  attitudeLocked: boolean;
   /** 聊天流输出最大 token 数 */
   maxTokens: number;
   /** 是否已配置 */
@@ -54,6 +56,8 @@ interface ConfigState {
   setTemperature: (temp: number) => Promise<void>;
   /** 设置态度档位 */
   setAttitudeLevel: (level: AttitudeLevel) => Promise<void>;
+  /** 设置态度锁定 */
+  setAttitudeLocked: (locked: boolean) => Promise<void>;
   /** 设置最大 token 数 */
   setMaxTokens: (tokens: number) => Promise<void>;
   /** 测试连接 */
@@ -105,6 +109,7 @@ const DEFAULT_CONFIG: ApiConfig = {
   modelName: 'deepseek-v4-flash',
   temperature: 0.7,
   attitudeLevel: 'yuesheng',
+  attitudeLocked: false,
   maxTokens: 8192,
 };
 
@@ -116,6 +121,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   modelName: DEFAULT_CONFIG.modelName,
   temperature: DEFAULT_CONFIG.temperature,
   attitudeLevel: DEFAULT_CONFIG.attitudeLevel,
+  attitudeLocked: DEFAULT_CONFIG.attitudeLocked,
   maxTokens: DEFAULT_CONFIG.maxTokens,
   isConfigured: false,
   isLoading: true,
@@ -162,9 +168,19 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   /** 设置态度档位 */
   setAttitudeLevel: async (level: AttitudeLevel) => {
+    const { attitudeLocked } = get();
+    // 锁定状态下不切换
+    if (attitudeLocked) return;
     const invoke = getInvoke();
     await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'attitudeLevel', value: level });
     set({ attitudeLevel: level });
+  },
+
+  /** 设置态度锁定 */
+  setAttitudeLocked: async (locked: boolean) => {
+    const invoke = getInvoke();
+    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'attitudeLocked', value: locked });
+    set({ attitudeLocked: locked });
   },
 
   /** 设置最大 token 数 */
@@ -215,6 +231,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         invoke(IPC_CHANNELS.CONFIG_GET, { key: 'modelName' }),
         invoke(IPC_CHANNELS.CONFIG_GET, { key: 'temperature' }),
         invoke(IPC_CHANNELS.CONFIG_GET, { key: 'attitudeLevel' }),
+        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'attitudeLocked' }),
         invoke(IPC_CHANNELS.CONFIG_GET, { key: 'maxTokens' }),
       ]) as ApiResponse<unknown>[];
 
@@ -226,7 +243,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
       const modelName = extractValue<string>(results[2], DEFAULT_CONFIG.modelName);
       const temperature = extractValue<number>(results[3], DEFAULT_CONFIG.temperature);
       const attitudeLevel = extractValue<AttitudeLevel>(results[4], DEFAULT_CONFIG.attitudeLevel);
-      const maxTokens = extractValue<number>(results[5], DEFAULT_CONFIG.maxTokens);
+      const attitudeLocked = extractValue<boolean>(results[5], DEFAULT_CONFIG.attitudeLocked);
+      const maxTokens = extractValue<number>(results[6], DEFAULT_CONFIG.maxTokens);
 
       const config: ApiConfig = {
         apiKey,
@@ -234,6 +252,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         modelName,
         temperature,
         attitudeLevel,
+        attitudeLocked,
         maxTokens,
       };
 
