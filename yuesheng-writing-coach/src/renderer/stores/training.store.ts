@@ -10,13 +10,12 @@ import { create } from 'zustand';
 import type { TrainingState } from './training.types';
 import {
   createStartAction,
-  createStartReadingAction,
   createSubmitStepAction,
-  createLoadHistoryAction,
-  createRefreshFromDiagnosisAction,
   createEvaluateTrainingAction,
   createDeriveBehaviorAction,
 } from './training.actions';
+import { createStartReadingAction } from './training-reading.actions';
+import { createLoadHistoryAction, createRefreshFromDiagnosisAction } from './training-data.actions';
 export { selectCenterMode, selectActiveTraining, selectErrorCards, selectRecommendations, selectTrainingHistory, selectIsLoading } from './training.selectors';
 export type { TrainingState, TrainingSubmissionResult } from './training.types';
 export { DEFAULT_STEPS, READING_STEPS } from './training.types';

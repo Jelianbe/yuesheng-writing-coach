@@ -1,0 +1,183 @@
+/**
+ * DiagnosisWorkspace — 诊断工作区样式
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── 标题区 ── */
+
+.header {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+  flex-shrink: 0;
+  background: var(--bg-primary);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+/* ── 内容区 ── */
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── 信息卡片 ── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+
+.cardLabel {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  line-height: var(--leading-tight);
+}
+
+.cardValue {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: var(--font-medium);
+  line-height: var(--leading-tight);
+}
+
+/* ── 症候列表 ── */
+
+.syndromeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.syndromeItem {
+  padding: var(--space-2) var(--space-2);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.syndromeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.syndromeId {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  line-height: var(--leading-tight);
+}
+
+.syndromeDesc {
+  margin: 0;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  line-height: var(--leading-normal);
+}
+
+.severityTag {
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.severityL1 {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.severityL2 {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.severityL3 {
+  background: var(--error-light);
+  color: var(--error);
+}
+
+/* ── 空列表项 ── */
+
+.noItems {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  text-align: center;
+  padding: var(--space-2);
+}
+
+/* ── 空状态 ── */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+  flex: 1;
+}
+
+.emptyIcon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.emptyText {
+  margin: 0;
+  font-size: var(--text-md);
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+}
+
+/* ── 加载/错误 ── */
+
+.centerMessage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+}
+
+.errorText {
+  color: var(--error);
+}

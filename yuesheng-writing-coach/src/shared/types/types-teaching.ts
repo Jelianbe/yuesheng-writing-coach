@@ -227,7 +227,7 @@ export interface RouterInput {
   /** 当前教学阶段（来自状态机） */
   currentPhase?: string;
   /** 用户态度档位 */
-  attitude?: 'doubao' | 'yuesheng' | 'direct';
+  attitude?: 'doubao' | 'yuesheng' | 'sensei';
   /** Persona 配置（PE-001，若提供则优先使用） */
   persona?: PersonaConfig;
   /** 训练动机水平（用于 R-007 规则匹配） */
@@ -359,7 +359,7 @@ export interface TeachingDecisionLog {
 //   - R-014 配置外置:attitude 枚举在此处定义,与 DisputeTracker 保持一致
 
 /** 用户态度档位(跨 session 持久化用,与 DisputeTrackerService.AttitudeLevel 对齐) */
-export type AttitudePreferenceLevel = 'doubao' | 'yuesheng' | 'direct';
+export type AttitudePreferenceLevel = 'doubao' | 'yuesheng' | 'sensei';
 
 /** 教学回合结果(用于 teachingHistory 记录) */
 export type TeachingOutcome = 'success' | 'partial' | 'frustrated' | 'unknown';

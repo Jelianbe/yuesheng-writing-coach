@@ -1,0 +1,28 @@
+.container { display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0; }
+.header { padding:var(--space-3) var(--space-3) var(--space-2);border-bottom:1px solid var(--border-light);flex-shrink:0;background:var(--bg-primary); }
+.title { margin:0;font-family:var(--font-display);font-size:var(--text-md);font-weight:var(--font-semibold);color:var(--text-primary); }
+.statCards { display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-2);padding:var(--space-3) var(--space-3) 0;flex-shrink:0; }
+.statCard { display:flex;flex-direction:column;align-items:center;gap:var(--space-1);padding:var(--space-3) var(--space-2);border:1px solid var(--border-light);background:var(--bg-card);border-radius:var(--radius-sm);text-align:center;box-shadow:var(--shadow-sm); }
+.statCardValue { font-size:var(--text-lg);font-weight:var(--font-bold);color:var(--accent);font-family:var(--font-display);line-height:1; }
+.statCardLabel { font-size:var(--text-xs);color:var(--text-tertiary);font-family:var(--font-body);line-height:var(--leading-tight);white-space:nowrap; }
+.scrollArea { flex:1;overflow-y:auto;padding:var(--space-3);display:flex;flex-direction:column;gap:var(--space-3); }
+.sectionTitle { margin:0 0 var(--space-2);font-family:var(--font-display);font-size:var(--text-sm);font-weight:var(--font-semibold);color:var(--text-secondary);line-height:var(--leading-tight); }
+.syndromeList { list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--space-1); }
+.card { padding:var(--space-2) var(--space-3);border:1px solid var(--border-light);background:var(--bg-card);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm); }
+.syndromeItem { display:flex;align-items:center;gap:var(--space-2); }
+.progressItem { display:flex;flex-direction:column;gap:var(--space-1); }
+.syndromeDot { width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0; }
+.syndromeName { font-size:var(--text-sm);color:var(--text-primary);font-family:var(--font-body);line-height:var(--leading-tight); }
+.progressItemHeader { display:flex;align-items:center;justify-content:space-between;gap:var(--space-2); }
+.progressSessionLabel { font-size:var(--text-sm);font-weight:var(--font-medium);color:var(--text-primary);font-family:var(--font-body);line-height:var(--leading-tight);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.progressTotal { font-size:var(--text-xs);font-weight:var(--font-medium);color:var(--text-secondary);font-family:var(--font-body);line-height:var(--leading-tight);flex-shrink:0; }
+.progressStatusRow { display:flex;flex-wrap:wrap;gap:var(--space-1) var(--space-2); }
+.statusChip { display:inline-flex;align-items:center;gap:3px;padding:1px var(--space-2);font-size:var(--text-xs);font-weight:var(--font-medium);border-radius:var(--radius-full);font-family:var(--font-body);line-height:var(--leading-tight); }
+.statusMastered { background:var(--success-light);color:var(--success); }
+.statusTeaching { background:var(--info-light);color:var(--info); }
+.statusIdentified { background:var(--accent-faint);color:var(--text-tertiary); }
+.statusRelapsed { background:var(--error-light);color:var(--error); }
+.emptyState { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-2);padding:var(--space-8) var(--space-4);text-align:center;flex:1; }
+.emptyIcon { font-size:2.5rem;line-height:1; }
+.emptyText { margin:0;font-size:var(--text-md);color:var(--text-tertiary);font-family:var(--font-body); }
+.centerMessage { display:flex;align-items:center;justify-content:center;flex:1;font-size:var(--text-sm);color:var(--text-tertiary);font-family:var(--font-body);padding:var(--space-8) 0; }

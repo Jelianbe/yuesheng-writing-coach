@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApiProxy } from '../../api-proxy';
-import { ApiConfig } from '../../../shared/types/index';
+import type { ApiConfig } from '../../../shared/types/index';
 
 // 测试专用配置 — 凭据从环境变量读取，避免扫描器误报
 const TEST_CONFIG: ApiConfig = {

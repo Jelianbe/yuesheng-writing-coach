@@ -1,57 +1,99 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { AppShell } from './components/layout/AppShell';
-import { SoloSidebar } from './components/layout/SoloSidebar';
-import { RightDrawer } from './components/layout/RightDrawer';
-import { AppErrorBoundary } from './components/layout/AppErrorBoundary';
-import { AppConfigGate } from './components/layout/AppConfigGate';
-import { ChatView } from './components/chat/ChatView';
-import { TrainingWorkshop } from './components/training/TrainingWorkshop';
-import { ProgressSummary } from './components/training/ProgressSummary';
-import { DiagnosisPanel } from './components/layout/DiagnosisPanel';
-import { AbilityProfilePanel } from './components/profile/AbilityProfilePanel';
-import { DiagnosisComparisonView } from './components/growth/DiagnosisComparisonView';
-import { SettingsPanel } from './components/settings/SettingsPanel';
-import { SearchPanel } from './components/search/SearchPanel';
-import { ToolsPanel } from './components/tools/ToolsPanel';
-import { ManuscriptPanel } from './components/manuscript/ManuscriptPanel';
-import { Search, ClipboardCheck, Target, TrendingUp, User, Wrench, BookOpen, BarChart3 } from 'lucide-react';
+/**
+ * Phase F 占位 App —— 仅保留 store 调用与 handleSendMessage（C-5 mastery 注入）。
+ * 真实 UI 将在 F-1~F-5 中按 spec §2.1 三栏布局重建。
+ *
+ * 旧版 import 列表备份在 __PHASE_F_LEGACY_IMPORTS__ 字符串中,供后续恢复参考:
+ *   { AppShell as LegacyAppShell, SoloSidebar, RightDrawer, AppErrorBoundary, AppConfigGate,
+ *     ChatView, TrainingWorkshop, ProgressSummary, DiagnosisPanel, AbilityProfilePanel,
+ *     DiagnosisComparisonView, SettingsPanel, SearchPanel, ToolsPanel, ManuscriptPanel,
+ *     Search, ClipboardCheck, Target, TrendingUp, User, Wrench, BookOpen, BarChart3,
+ *     useAppController, useDiagnosisFlow, useConfigStore, useChatStore, useDiagStore,
+ *     useSessionStore, useStudentContextStore, useTeachingStateStore, useTrainingStore,
+ *     useRightPanelStore, type RightPanelToolId as PanelId, chatService, OnboardingBaseline }
+ */
+import React, { useEffect, useCallback, useState } from 'react';
+import { AppShell } from './components/AppShell';
 import { useAppController } from './services/useAppController';
-import { useDiagnosisFlow } from './hooks/useDiagnosisFlow';
 import { useConfigStore } from './stores/config.store';
 import { useChatStore } from './stores/chat.store';
-import { useDiagStore } from './stores/diag.store';
 import { useSessionStore } from './stores/session.store';
 import { useStudentContextStore } from './stores/student-context.store';
 import { useTeachingStateStore } from './stores/teaching-state.store';
-import { useTrainingStore } from './stores/training.store';
-import { useRightPanelStore, type RightPanelToolId as PanelId } from './stores';
-import { chatService } from './services/chat.service';
-import type { OnboardingBaseline } from './shared/types';
+import type { TeachingState } from './shared/types';
+
+const TOOL_LABELS: Record<string, string> = {
+  readChapter: '正在读取章节内容…',
+  writeChapter: '正在写入章节内容…',
+};
 
 export function App(): React.ReactElement {
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [executingTool, setExecutingTool] = useState<{ name: string } | null>(null);
+  const { ready } = useAppController({ setShowOnboarding });
+  const { loadConfig } = useConfigStore();
 
-  // 唯一跨模块编排钩子（替代 useAppIpcListener + 6 store 的跨模块 getState）
-  const { fetchGrowthSummary, startEditing, cancelEditing, submitRewrite, editingSyndrome, isSubmitting, lastEvaluation, lastRewrittenText, lastOriginalText, growthLoading, growthSummary, hasHistory, reset: resetDiagnosisFlow } = useDiagnosisFlow(useSessionStore.getState().currentSessionId);
-  const { ready } = useAppController({
-    setShowOnboarding,
-    onStreamEnd: fetchGrowthSummary,
-  });
-
-  // Config store — loadConfig 用于启动时加载已持久化的配置
-  const { isLoading: isConfigLoading, isConfigured, loadConfig } = useConfigStore();
-  const { messages, isLoading: isStreaming } = useChatStore();
-  const { currentDiagnosis } = useDiagStore();
-  const { currentSessionId, createSession, switchSession } = useSessionStore();
-  const { errorCards, recommendations, readingDecision, readingComplete, activeTraining, history, submissionResult, evaluationResult, isLoading, error, bridgeRecommendation, lastEvaluationScore, lastSyndromeId, startTraining, startReading, submitStep, skipTraining, updateDraft, dismissBridge, backToChat, sendToEditor, dismissReadingComplete } = useTrainingStore();
-
-  // Event handlers
-
-  // 启动时从主进程加载已持久化的配置
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
 
+  // I-04: 订阅后端事件推送
+  useEffect(() => {
+    const cleanups: (() => void)[] = [];
+
+    // teachingState:updated → 更新 store
+    if (window.electronAPI?.on) {
+      const unsubState = window.electronAPI.on('teachingState:updated', (data: unknown) => {
+        useTeachingStateStore.getState().setCurrentState(data as TeachingState);
+      });
+      cleanups.push(unsubState);
+
+      // teachingState:mastery → 更新精通症候
+      const unsubMastery = window.electronAPI.on('teachingState:mastery', (data: unknown) => {
+        const evt = data as { syndromeId?: string };
+        if (evt?.syndromeId) {
+          const store = useTeachingStateStore.getState();
+          const updated = [...store.masteredSyndromeIds, evt.syndromeId];
+          store.setMasteredSyndromeIds(updated);
+        }
+      });
+      cleanups.push(unsubMastery);
+
+      // chat:tool:executing → AI 工具调用状态
+      const unsubTool = window.electronAPI.on('chat:tool:executing', (data: unknown) => {
+        const evt = data as { toolName: string; status?: string };
+        if (evt.status === 'end') {
+          setExecutingTool(null);
+        } else {
+          setExecutingTool({ name: evt.toolName });
+        }
+      });
+      cleanups.push(unsubTool);
+
+      // chat:stream:data → 追加流式响应片段
+      const unsubStream = window.electronAPI.on('chat:stream:data', (data: unknown) => {
+        const chunk = data as { content?: string };
+        if (chunk?.content) {
+          useChatStore.getState().appendToLastAssistant(chunk.content);
+        }
+      });
+      cleanups.push(unsubStream);
+
+      // chat:stream:end → 完成最后一条消息
+      const unsubStreamEnd = window.electronAPI.on('chat:stream:end', (data: unknown) => {
+        const end = data as { finalContent?: string; error?: string };
+        if (end?.finalContent) {
+          useChatStore.getState().finalizeLastMessage();
+        } else if (end?.error) {
+          useChatStore.getState().setError(end.error);
+        }
+      });
+      cleanups.push(unsubStreamEnd);
+    }
+
+    return () => { cleanups.forEach(fn => fn()); };
+  }, []);
+
+  // 保留 C-5 mastery 注入:F-2 重建 ChatView 时,本段代码移植到 handleSendMessage
   const handleSendMessage = useCallback(async (text: string) => {
     let sid = useSessionStore.getState().currentSessionId;
     if (!sid) {
@@ -59,72 +101,39 @@ export function App(): React.ReactElement {
       if (!s) return;
       sid = s.id;
     }
-    resetDiagnosisFlow();
     const attitudeLevel = useConfigStore.getState().attitudeLevel;
     const studentContext = useStudentContextStore.getState().toJSON();
-    // RWR-P1-11 / C-5 精通信息注入 Prompt(R-021:只传 ID 不传 description)
+    // RWR-P1-11 / C-5 精通信息注入 Prompt(R-021: 只传 ID 不传 description)
     const masteredIds = useTeachingStateStore.getState().masteredSyndromeIds;
     const masterySuffix = masteredIds.length > 0
       ? `\n\n[已精通技法] ${masteredIds.join(', ')}`
       : '';
     useChatStore.getState().sendMessage(text, { sessionId: sid, attitudeLevel, studentContext: studentContext + masterySuffix });
-  }, [resetDiagnosisFlow]);
-
-  const handleStop = useCallback(async () => {
-    let stopped = false;
-    try {
-      const result = await chatService.stop();
-      stopped = result?.stopped ?? false;
-    } catch { /* IPC 失败时静默 */ }
-    if (stopped) {
-      useChatStore.getState().abortStream();
-    } else {
-      useChatStore.getState().setLoading(false);
-    }
   }, []);
-
-  const handleOnboardingComplete = useCallback(async (_baseline: OnboardingBaseline) => {
-    setShowOnboarding(false);
-    const s = await createSession();
-    if (s) await switchSession(s.id);
-  }, [createSession, switchSession]);
-
-  const handleOnboardingSkip = useCallback(async () => {
-    setShowOnboarding(false);
-    const s = await createSession();
-    if (s) await switchSession(s.id);
-  }, [createSession, switchSession]);
-
-  // P2-fix: 提取为 useCallback，避免内联函数重复渲染
-  const handleEnterWorkshopFromBridge = useCallback((challengeId: string) => {
-    useRightPanelStore.getState().openTraining(challengeId);
-    useTrainingStore.getState().startTraining(challengeId);
-  }, []);
-
-  const drawerTools = [
-    { id: 'search', icon: Search, label: '全局搜索' },
-    { id: 'works', icon: BookOpen, label: '作品' },
-    { id: 'diagnosis', icon: ClipboardCheck, label: '作品诊断' },
-    { id: 'training', icon: Target, label: '训练工坊' },
-    { id: 'progress', icon: BarChart3, label: '教学进度' /* B-1 */ },
-    { id: 'growth', icon: TrendingUp, label: '诊断对比' },
-    { id: 'profile', icon: User, label: '能力画像' },
-    { id: 'tools', icon: Wrench, label: '创作工具' },
-  ];
 
   if (!ready) {
     return <div className="app-loading">正在启动...</div>;
   }
 
+  // showOnboarding / handleSendMessage 保留供 C-5 迁移使用
+  void showOnboarding;
+  void handleSendMessage;
+
   return (
-    <AppErrorBoundary>
-      <AppConfigGate isConfigLoading={isConfigLoading} isConfigured={isConfigured ?? false} showOnboarding={showOnboarding} onOnboardingComplete={handleOnboardingComplete} onOnboardingSkip={handleOnboardingSkip}>
-        <AppShell sidebar={<SoloSidebar />} rightPanel={<RightDrawer tools={drawerTools} onToolClick={t => { useRightPanelStore.getState().switchTo(t as PanelId); }} panelContent={{ search: <SearchPanel />, works: <ManuscriptPanel />, training: <TrainingWorkshop errorCards={errorCards} recommendations={recommendations} readingDecision={readingDecision} readingComplete={readingComplete} activeTraining={activeTraining} history={history} submissionResult={submissionResult} evaluationResult={evaluationResult} isLoading={isLoading} error={error} onStartTraining={startTraining} onStartReading={startReading} onDismissReadingComplete={dismissReadingComplete} onBackToChat={() => { useRightPanelStore.getState().close(); backToChat(); }} onSubmitStep={submitStep} onSkipTraining={skipTraining} onUpdateDraft={updateDraft} onSendToEditor={sendToEditor} lastEvaluationScore={lastEvaluationScore} lastSyndromeId={lastSyndromeId} />, diagnosis: <DiagnosisPanel />, progress: <ProgressSummary /> /* C-2 进步摘要卡片(包装 TeachingProgressBar) */, growth: <DiagnosisComparisonView />, profile: <AbilityProfilePanel />, tools: <ToolsPanel />, __settings__: <SettingsPanel /> }} />}>
-          <div style={{ position: 'relative', height: '100%' }}>
-            <ChatView messages={messages} isStreaming={isStreaming} currentSessionId={currentSessionId} currentDiagnosis={currentDiagnosis} editingSyndrome={editingSyndrome} isSubmitting={isSubmitting} lastEvaluation={lastEvaluation} lastOriginalText={lastOriginalText} lastRewrittenText={lastRewrittenText} growthLoading={growthLoading} hasHistory={hasHistory} growthSummary={growthSummary} bridgeRecommendation={bridgeRecommendation} isConfigured={isConfigured ?? false} onSend={handleSendMessage} onStop={handleStop} onStartEditing={startEditing} onSubmitRewrite={submitRewrite} onCancelEditing={cancelEditing} onEnterWorkshopFromBridge={handleEnterWorkshopFromBridge} onDismissBridge={dismissBridge} />
-          </div>
-        </AppShell>
-      </AppConfigGate>
-    </AppErrorBoundary>
+    <>
+      <AppShell />
+      {executingTool && (
+        <div style={{
+          position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+          background: '#2C2A28', color: '#E8DCC8', padding: '6px 16px',
+          borderRadius: 20, fontSize: 12, zIndex: 9999,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span className="tool-executing-dot" />
+          {TOOL_LABELS[executingTool.name] || `正在调用工具: ${executingTool.name}…`}
+        </div>
+      )}
+    </>
   );
 }

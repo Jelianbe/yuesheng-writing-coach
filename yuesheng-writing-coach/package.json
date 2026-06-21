@@ -27,6 +27,7 @@
     "better-sqlite3": "^12.10.0",
     "electron-store": "^8.1.0",
     "lucide-react": "^1.17.0",
+    "react-arborist": "^3.10.5",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "zustand": "^4.4.0"

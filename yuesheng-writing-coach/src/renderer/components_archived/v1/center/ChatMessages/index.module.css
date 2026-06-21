@@ -1,0 +1,192 @@
+/**
+ * ChatMessages — 消息列表样式
+ *
+ * 月笙风格：暖纸质背景，serif 头像，角色区分明显。
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── 单条消息 ── */
+
+.message {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 85%;
+  animation: fadeIn var(--transition-normal);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.messageAssistant {
+  align-self: flex-start;
+}
+
+.messageUser {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+/* ── 头像 ── */
+
+.avatar {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  line-height: 1;
+  user-select: none;
+  margin-top: 2px;
+}
+
+.avatarAssistant {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.avatarUser {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* ── 气泡 ── */
+
+.bubble {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
+  min-width: 0;
+}
+
+.bubbleAssistant {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-top-left-radius: 2px;
+  color: var(--text-primary);
+}
+
+.bubbleUser {
+  background: var(--bg-secondary);
+  border-top-right-radius: 2px;
+  color: var(--text-primary);
+}
+
+/* ── 内容段落（\n → <p>） ── */
+
+.paragraph {
+  margin: 0;
+}
+
+.paragraph + .paragraph {
+  margin-top: var(--space-2);
+}
+
+/* ── 时间戳 ── */
+
+.timestamp {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+  padding-left: 34px;
+  user-select: none;
+}
+
+.timestampAssistant {
+  text-align: left;
+}
+
+.timestampUser {
+  text-align: right;
+  padding-left: 0;
+  padding-right: 34px;
+}
+
+/* ── 错误消息 ── */
+
+.errorMsg {
+  align-self: center;
+  color: var(--error);
+  font-size: var(--text-sm);
+  background: var(--error-light);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  max-width: 80%;
+  text-align: center;
+}
+
+/* ── 空状态 ── */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: var(--space-2);
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  user-select: none;
+  padding: var(--space-8);
+}
+
+.emptyIcon {
+  font-size: 2rem;
+  opacity: 0.4;
+  line-height: 1;
+}
+
+/* ── 加载骨架 ── */
+
+.loadingDots {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  border-top-left-radius: 2px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--text-tertiary);
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotPulse {
+  0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+  30%           { opacity: 1;   transform: scale(1);   }
+}

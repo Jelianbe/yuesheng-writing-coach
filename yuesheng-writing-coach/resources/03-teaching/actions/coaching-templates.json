@@ -1,0 +1,183 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "strategies": [
+    {
+      "id": "focus-recall",
+      "name": "焦点回拉",
+      "source": "case-ayuan-rebirth-ch1.md 第2/6轮",
+      "triggerConditions": {
+        "signals": ["blurred-attribution", "wrong-framework-patching", "cognitive-level-stuck"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["P005", "P006"]
+      },
+      "steps": [
+        {"order": 1, "action": "接纳当前视角", "template": "你说的{issueA}确实存在。但你看，更准确地说，它其实是{issueB}。"},
+        {"order": 2, "action": "重定向焦点", "template": "{issueB}的一个表现是{example}。"},
+        {"order": 3, "action": "提供替代框架", "template": "你不是{surfaceAttribution}，你是{coreReason}。"}
+      ],
+      "expectedEffect": "学员从模糊焦虑转向明确定位",
+      "contraindications": ["学员情绪崩溃状态", "beginner无基础"]
+    },
+    {
+      "id": "mirror-feedback",
+      "name": "镜像反馈",
+      "source": "case-ayuan-rebirth-ch1.md 第2/3轮",
+      "triggerConditions": {
+        "signals": ["abstract-emotion-word", "mismatched-self-assessment", "correct-intent-suppressed"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["P002", "P003", "P009"]
+      },
+      "steps": [
+        {"order": 1, "action": "捕捉信号", "template": "{signal}——当你说{originalWords}时，"},
+        {"order": 2, "action": "镜像映射", "template": "你实际上是在{mirrorInterpretation}。"},
+        {"order": 3, "action": "提供对比", "template": "你想{goal}，但你正在{actualBehavior}。它们之间的差异是{gap}。"},
+        {"order": 4, "action": "归还选择", "template": "你想继续这样，还是试试另一种方式？"}
+      ],
+      "expectedEffect": "学员看到自己行为与意图之间的差距，产生恍然大悟效果",
+      "contraindications": ["敏感型学员需先给铺垫", "beginner"]
+    },
+    {
+      "id": "contrast-anchor",
+      "name": "对比锚定",
+      "source": "case-ayuan-rebirth-ch1.md 第2/4轮（+ A010 边界校准）",
+      "triggerConditions": {
+        "signals": ["direction-offset-but-not-wrong", "post-epiphany-overcorrection", "understands-direction-but-not-precision"],
+        "applicableLevels": ["beginner", "intermediate", "advanced"],
+        "applicableSyndromes": ["P002", "P003", "P010", "P004"]
+      },
+      "steps": [
+        {"order": 1, "action": "给出极端边界", "template": "或者{extremeVersion}。"},
+        {"order": 2, "action": "精准回撤", "template": "不过不太适合你/你这个场景，你的角色/场景是{targetPosition}，不是{extremeVersion}。"},
+        {"order": 3, "action": "开放保留", "template": "不过也是思路，看你具体怎么来。"}
+      ],
+      "expectedEffect": "学员在A-B对比中精准定位到目标位置",
+      "contraindications": ["极端边界不能离目标太远", "不能同时给多个对比"]
+    },
+    {
+      "id": "confidence-confirm",
+      "name": "信心确认",
+      "source": "case-ayuan-rebirth-ch1.md 第3轮（A009）",
+      "triggerConditions": {
+        "signals": ["self-censorship", "correct-intent-suppressed", "over-correction"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["P003", "P010"]
+      },
+      "steps": [
+        {"order": 1, "action": "确认直觉", "template": "{designElement}是你设计的，它/它的作用是{functionDescription}，这个设计/判断是对的。"},
+        {"order": 2, "action": "翻转判断", "template": "你觉得{problem}，是担心{surfaceWorry}，还是它本身{realIssue}？"},
+        {"order": 3, "action": "功能验证", "template": "{designElement}在{positionA}和{positionB}有双重功能/价值，不是冗余/多余。"},
+        {"order": 4, "action": "信心交付", "template": "你直觉是对的，只需要找到位置/时机/方式。"}
+      ],
+      "expectedEffect": "学员顿悟（我去，感觉来了），从不敢到敢",
+      "contraindications": ["设计元素本身有问题时不能用（先用S-003）", "beginner无设计基础不适用"]
+    },
+    {
+      "id": "downgrade-safety",
+      "name": "降级兜底",
+      "source": "case-ayuan-rebirth-ch1.md 第4/6/7轮",
+      "triggerConditions": {
+        "signals": ["post-epiphany-extremism", "cognitive-level-stuck", "coach-dependency", "surface-acceptance"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["P003", "P006", "P010"]
+      },
+      "steps": [
+        {"order": 1, "action": "感知降级", "template": "{cognitiveIssue}。但你看，更基础的层面是{bodyLevelIssue}。"},
+        {"order": 2, "action": "基层加固", "template": "{detail1}，{detail2}，{detail3}。"},
+        {"order": 3, "action": "渐进升级", "template": "先确认基础层面的{specificAction}，再做下一步判断。"}
+      ],
+      "expectedEffect": "学员从卡在认知层到在身体层找到了抓手",
+      "contraindications": ["不要过早降级打断认知过程", "降级后必须在1-2轮内重新升级"]
+    },
+    {
+      "id": "autonomy-return",
+      "name": "自主权归还",
+      "source": "case-ayuan-rebirth-ch1.md 第7轮",
+      "triggerConditions": {
+        "signals": ["unquestioning-acceptance", "coach-language-imitation", "no-followup-questions"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["*"]
+      },
+      "steps": [
+        {"order": 1, "action": "降权", "template": "当然允许有自己的想法，我只是说方法论/看法。"},
+        {"order": 2, "action": "强调选择性", "template": "写作是文科的东西，每个人都被允许有这样那样的看法。我只是根据我的经验去说我的看法，不一定对。"},
+        {"order": 3, "action": "禁止全收", "template": "你应该辩证地、选择性地，挑选你认可的去改。而不是照单全收。"},
+        {"order": 4, "action": "预留后路", "template": "后面觉得不对，我们再调整。"}
+      ],
+      "expectedEffect": "用户从被动接受到主动选择，防止隐性抵触",
+      "contraindications": ["beginner需要明确指引", "S-004信心确认前不宜使用"]
+    },
+    {
+      "id": "mentor-feedback",
+      "name": "导师式反馈",
+      "source": "case-webnovel-chat-2026-06-03.md 第1轮（数尽长风）",
+      "triggerConditions": {
+        "signals": ["explicit-straight-talk-request", "experienced-user", "group-chat-scenario"],
+        "applicableLevels": ["advanced"],
+        "applicableSyndromes": ["*"]
+      },
+      "steps": [
+        {"order": 1, "action": "一针见血定位", "template": "{oneSentenceDiagnosis}。"},
+        {"order": 2, "action": "对比参照系", "template": "你写的是{claimedGenre}，但你的操作是{actualPattern}。"},
+        {"order": 3, "action": "给出方向", "template": "{genre}应该{correctApproach}，但你在{wrongApproach}。你的方向/起点/设定错了：{correctionDirection}。"},
+        {"order": 4, "action": "追问根因", "template": "你觉得为什么会有这个差距？"}
+      ],
+      "expectedEffect": "有经验的用户快速定位核心问题，从防御转向根因归因",
+      "contraindications": ["不适用于beginner", "不适用于emotional用户", "反馈后必须留有消化空间"]
+    },
+    {
+      "id": "beginner-warmup",
+      "name": "零基础破冰",
+      "source": "public-writing-teachers-distillation_V1.0.md（踏歌爱写作+狂更猫）",
+      "triggerConditions": {
+        "signals": ["userLevel-beginner", "how-to-start-question", "perfectionism-delay"],
+        "applicableLevels": ["beginner"],
+        "applicableSyndromes": ["*"]
+      },
+      "steps": [
+        {"order": 1, "action": "破冰微任务", "template": "不要想整章，写300字——一个瞬间，一个画面，一个动作，一段对话。"},
+        {"order": 2, "action": "扩展结构", "template": "好的，现在把这个瞬间扩展为三级大纲：开头{opening} → 冲突{conflict} → 转折{twist}。"},
+        {"order": 3, "action": "完成不完美", "template": "现在写完整章节初稿。注意：不要回头修改，写完后我们再一起看。"},
+        {"order": 4, "action": "修改出口", "template": "很好，你已经有一章了。这里有3个可选的修改方向：{optionA} / {optionB} / {optionC}，你选哪个？"},
+        {"order": 5, "action": "技法接入", "template": "现在你有了自己的作品，我们来学一个有用的技法：{techniqueName}——在你新写的这段里试试。"}
+      ],
+      "expectedEffect": "用户从永远在准备写到已经写了一章，建立初步信心",
+      "contraindications": ["不要在第一课讲技法", "不要用你的问题是什么开场", "不要给太多选择（2-3个选项）"]
+    },
+    {
+      "id": "insight-routing",
+      "name": "跨语境迁移（桥接类比）",
+      "source": "case-ayuan-rebirth-ch1.md 第5轮（A011 跨语境迁移）",
+      "triggerConditions": {
+        "signals": ["abstract-description", "cognitive-understanding-but-no-execution", "genre-specific-obstacle"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["P004", "P009", "P010"]
+      },
+      "steps": [
+        {"order": 1, "action": "识别核心关系", "template": "你看，这里的核心关系是{coreRelation}。"},
+        {"order": 2, "action": "寻找现代等价物", "template": "这就好比你{modernEquivalence}。"},
+        {"order": 3, "action": "具体化现代场景", "template": "你{modernDetails}——这样大家才有画面感才有共情。"},
+        {"order": 4, "action": "映射回原始设定", "template": "同样的道理，在你文本里就可以{originalApplication}。"}
+      ],
+      "expectedEffect": "学员通过现代类比理解古代/奇幻设定中的抽象概念，认知升级完成",
+      "contraindications": ["类比必须精准对应核心关系", "映射回原文时不能换场景（用学员自己的元素）"]
+    },
+    {
+      "id": "tone-calibration",
+      "name": "边界校准",
+      "source": "case-ayuan-rebirth-ch1.md 第4轮（A010 边界校准）",
+      "triggerConditions": {
+        "signals": ["direction-offset", "post-epiphany-overcorrection"],
+        "applicableLevels": ["intermediate", "advanced"],
+        "applicableSyndromes": ["P003", "P010"]
+      },
+      "steps": [
+        {"order": 1, "action": "识别真实定位", "template": "你的角色/场景的核心定位是{corePosition}。"},
+        {"order": 2, "action": "排除错误方向", "template": "它不是{wrongDirectionA}，也不是{wrongDirectionB}。它是{nuance}"},
+        {"order": 3, "action": "给出精准定义", "template": "它是{ThreePartDefinition}。有{qualityA}但不是{qualityA_extreme}，有{qualityB}但不是{qualityB_extreme}。"}
+      ],
+      "expectedEffect": "学员从模糊理解到精准定位，防止走形",
+      "contraindications": ["过度分析会破坏灵感", "不适合beginner（他们需要简单对错而非细微定位）"]
+    }
+  ]
+}

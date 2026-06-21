@@ -1,0 +1,59 @@
+{
+  "version": "1.0",
+  "description": "特性灰度开关 — 经典原则注入方案验证门禁基础设施",
+  "updatedAt": "2026-06-14",
+  "flags": {
+    "classical_principles_injection": {
+      "enabled": false,
+      "description": "轨道A — 经典原则注入：使AI以经典原则为推理依据生成诊断",
+      "rolloutPercentage": 0,
+      "dependencies": ["feature-flags"],
+      "rollbackTriggers": [
+        "诊断质量不升反降",
+        "维度匹配正确率 < 85%",
+        "AI 选择困难导致回复质量下降"
+      ]
+    },
+    "teaching_method_inventory": {
+      "enabled": false,
+      "description": "轨道B — 教学方式体系化：补全信号权重/严重度分级/真实案例/进阶用法",
+      "rolloutPercentage": 0,
+      "dependencies": ["feature-flags"],
+      "rollbackTriggers": [
+        "教学策略与经典原则在Prompt中冲突",
+        "策略选择合理率 < 80%"
+      ]
+    },
+    "dual_track_prompt": {
+      "enabled": false,
+      "description": "双段Prompt（诊断段+策略段）：融合轨道A和轨道B到teacher-prompt",
+      "rolloutPercentage": 0,
+      "dependencies": ["classical_principles_injection", "teaching_method_inventory"],
+      "rollbackTriggers": [
+        "Prompt 过长导致 token 超限",
+        "双段指令 AI 无法正确解析"
+      ]
+    },
+    "training_library_restructure": {
+      "enabled": false,
+      "description": "训练库按7阶段重排 + 新增A类能力底层+B类症候专项训练",
+      "rolloutPercentage": 0,
+      "dependencies": ["feature-flags"],
+      "rollbackTriggers": [
+        "developmentStage 索引异常",
+        "训练条目与症候匹配错误"
+      ]
+    }
+  },
+  "rolloutPolicy": {
+    "strategy": "gradual",
+    "stages": [
+      { "percentage": 5, "duration": "1d", "description": "内部测试" },
+      { "percentage": 25, "duration": "3d", "description": "小范围灰度" },
+      { "percentage": 50, "duration": "5d", "description": "半量" },
+      { "percentage": 100, "duration": "7d", "description": "全量" }
+    ],
+    "approvalRequired": true,
+    "approvalSource": "验证1通过 && 验证2通过"
+  }
+}

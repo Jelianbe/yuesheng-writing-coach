@@ -1,0 +1,128 @@
+/* ═══ ChatMessages — 从 CenterPanel 拆出 ═══ */
+
+.messagesContainer {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.messageRow {
+  display: flex;
+  gap: 8px;
+}
+
+.messageUser {
+  flex-direction: row-reverse;
+}
+
+.messageAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(122, 96, 64, 0.09);
+  color: #7A6040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.messageContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.messageBubble {
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary);
+}
+
+.messageBubbleUser {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.messageBubbleAssistant {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.messageTime {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* ── Training context banner ── */
+.trainBanner {
+  max-width: 560px;
+  margin: 0 auto 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.trainBannerHdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.trainBannerName {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.trainBannerDiff {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.trainBannerCat {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--accent-faint);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.trainBannerDesc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.trainBannerCore {
+  font-size: 10px;
+  color: var(--accent);
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+.trainBannerCoreLabel {
+  font-weight: 500;
+}

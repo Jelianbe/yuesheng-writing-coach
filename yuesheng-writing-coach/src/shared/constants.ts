@@ -119,6 +119,7 @@ export const IPC_CHANNELS = {
   CONFIG_GET_READING_ENTRY: 'config:getReadingEntry',
   // === 诊断 ===
   DIAGNOSIS_UPDATE: 'diagnosis:update',
+  DIAGNOSIS_UPDATED: 'diagnosis:updated',
   DIAGNOSIS_QUERY: 'diagnosis:query',
   DIAGNOSIS_SUBMIT_REWRITE: 'diagnosis:submitRewrite',
   DIAGNOSIS_GET_COMPARISON: 'diagnosis:getComparison',
@@ -132,6 +133,11 @@ export const IPC_CHANNELS = {
   TEACHING_STATE_UPDATE_SUMMARY: 'teachingState:updateSummary',
   TEACHING_STATE_UPDATED: 'teachingState:updated',
   TEACHING_STATE_MASTERY: 'teachingState:mastery', // C-3 训练反馈回路:精通门控达成事件
+  // === 教学笔记(I-08) ===
+  TEACHING_NOTE_RECORD: 'teachingNote:record',
+  TEACHING_NOTE_GET_TREE: 'teachingNote:getTree',
+  TEACHING_NOTE_DELETE: 'teachingNote:delete',
+  TEACHING_NOTE_UPDATE: 'teachingNote:update',
   // === 教学历史(RWR-P1-9 / C-3 训练反馈回路) ===
   TEACHING_HISTORY_ADD: 'teachingHistory:add',
   // === 能力画像 ===
@@ -152,6 +158,7 @@ export const IPC_CHANNELS = {
   TRAINING_EVALUATE: 'training:evaluate',
   TRAINING_DECIDE_READING: 'training:decideReading',
   TRAINING_DERIVE_BEHAVIOR: 'training:deriveBehavior',
+  TRAINING_CATALOG: 'training:catalog',
   // === 聊天 ===
   CHAT_SEND: 'chat:send',
   CHAT_STOP: 'chat:stop',
@@ -235,6 +242,7 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
   IPC_CHANNELS.TRAINING_EVALUATE,
   IPC_CHANNELS.TRAINING_DECIDE_READING,
   IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR,
+  IPC_CHANNELS.TRAINING_CATALOG,
   IPC_CHANNELS.MANUSCRIPT_LIST,
   IPC_CHANNELS.MANUSCRIPT_GET,
   IPC_CHANNELS.MANUSCRIPT_CREATE,
@@ -256,6 +264,7 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
 export const ALLOWED_EVENT_CHANNELS: readonly string[] = [
   IPC_CHANNELS.DIAGNOSIS_UPDATE,
   IPC_CHANNELS.TEACHING_STATE_UPDATED,
+  IPC_CHANNELS.TEACHING_STATE_MASTERY,
   IPC_CHANNELS.CHAT_STREAM_DATA,
   IPC_CHANNELS.CHAT_STREAM_END,
   IPC_CHANNELS.CHAT_TOOL_EXECUTING,

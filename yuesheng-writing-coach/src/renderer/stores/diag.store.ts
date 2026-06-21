@@ -9,7 +9,8 @@
 //   3. 提供便捷的选择器方法
 
 import { create } from 'zustand';
-import { DiagnosisEntry, EvidenceRecord, SeverityLevel, SyndromeId } from '../shared/types';
+import type { DiagnosisEntry, EvidenceRecord, SeverityLevel, SyndromeId } from '../shared/types';
+import type { ActiveProblem } from '../../shared/types/types-teaching';
 import { getInvoke } from '../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 
@@ -35,6 +36,8 @@ export interface DiagState {
   addToHistory: (sessionId: string, entry: DiagnosisEntry) => void;
   /** 查询指定会话的诊断历史 */
   getHistoryBySession: (sessionId: string) => DiagnosisEntry[];
+  /** 从后端拉取最新诊断并转换 */
+  fetchLatestDiagnosis: (sessionId: string) => Promise<void>;
   /** 加载症候的原文证据（从 IPC 获取并缓存） */
   loadEvidence: (syndromeId: string, sessionId: string) => Promise<EvidenceRecord[]>;
   /** 获取缓存的证据数据 */
@@ -72,6 +75,46 @@ export const useDiagStore = create<DiagState>((set, get) => ({
 
   getHistoryBySession: (sessionId: string) => {
     return get().history[sessionId] || [];
+  },
+
+  fetchLatestDiagnosis: async (sessionId: string) => {
+    if (!sessionId) return;
+    set({ isLoading: true, error: null });
+    try {
+      const result = await getInvoke()(IPC_CHANNELS.DIAGNOSIS_QUERY, { sessionId }) as {
+        success: boolean; data?: unknown; error?: string;
+      };
+      if (!result.success) {
+        set({ error: result.error ?? '诊断查询失败', isLoading: false });
+        return;
+      }
+      // Transform ActiveProblem[] → DiagnosisEntry
+      const raw = result.data;
+      if (!raw || !Array.isArray(raw) || raw.length === 0) {
+        set({ isLoading: false });
+        return;
+      }
+      const problems = raw as ActiveProblem[];
+      const syndromes = problems.map((p) => ({
+        id: p.id,
+        name: p.name,
+        severity: p.severity as SeverityLevel,
+        evidence: p.evidence ?? [],
+        score: p.score,
+        suggestedActions: p.suggestedActions ?? [],
+      }));
+      const diagnosis: DiagnosisEntry = {
+        sessionId,
+        messageId: '',
+        syndromes,
+        suggestedActions: Array.from(new Set(syndromes.flatMap((s) => s.suggestedActions))),
+        confidence: 1,
+        timestamp: new Date().toISOString(),
+      };
+      set({ currentDiagnosis: diagnosis, isLoading: false });
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : '诊断查询失败', isLoading: false });
+    }
   },
 
   loadEvidence: async (syndromeId: string, sessionId: string) => {

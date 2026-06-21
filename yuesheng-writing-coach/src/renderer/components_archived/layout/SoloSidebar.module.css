@@ -1,0 +1,139 @@
+/* SoloSidebar.module.css — 侧边栏组合器布局样式 */
+
+/* ── 顶部栏（模式切换 + 折叠按钮）── */
+
+.soloHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  flex-shrink: 0;
+  height: 32px;
+}
+
+/* ── Tab 切换栏 ── */
+
+.soloTabs {
+  padding: 0 10px 8px;
+  flex-shrink: 0;
+}
+
+.soloTabsInner {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+/* ── 训练独立按钮（顶部全宽，RWR-A-1 新增）── */
+
+.soloTrainingBtn {
+  margin: 0 10px 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.25, 1, 0.5, 1);
+  flex-shrink: 0;
+}
+
+.soloTrainingBtn:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  color: var(--accent);
+}
+
+.soloTrainingBtnActive {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── 训练视图（空状态引导文案，RWR-A-1 占位）── */
+
+.soloTrainingEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.soloTrainingEmptyIcon {
+  color: var(--text-tertiary);
+  opacity: 0.6;
+}
+
+.soloTrainingEmptyTitle {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.soloTrainingEmptyDesc {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── 内容滚动区 ── */
+
+.soloContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ── 收起状态图标条 ── */
+
+.soloCollapsed {
+  width: 44px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.soloCollapsedDivider {
+  width: 20px;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+/* ── 拖拽调节手柄 ── */
+
+.soloResizeHandle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  border-right: 1px solid var(--border-light);
+  border-left: 1px solid transparent;
+  transition: border-color 150ms ease, background 150ms ease;
+}

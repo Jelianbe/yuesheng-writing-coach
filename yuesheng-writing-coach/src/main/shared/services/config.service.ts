@@ -4,7 +4,7 @@
 // 安全：API Key 存储于用户数据目录，不打印到 console
 
 import Store from 'electron-store';
-import { ApiConfig, ApiConfigValidation, ConnectionTestResult } from '../../../shared/types/index';
+import type { ApiConfig, ApiConfigValidation, ConnectionTestResult } from '../../../shared/types/index';
 
 /** 配置存储键名常量 */
 const CONFIG_KEYS = {

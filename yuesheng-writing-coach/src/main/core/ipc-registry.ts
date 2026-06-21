@@ -1,10 +1,13 @@
-import { BrowserWindow } from 'electron';
-import { ServiceContainer } from './service-container';
+import type { BrowserWindow } from 'electron';
+import type Database from 'better-sqlite3';
+import type { ServiceContainer } from './service-container';
 import { initConfigHandlers, registerConfigHandlers } from '../ipc/config.handler';
 import { initSessionHandlers, registerSessionHandlers } from '../ipc/session.handler';
 import { initEvidenceHandlers, registerEvidenceHandlers } from '../ipc/evidence.handler';
 import { initAbilityProfileHandlers, registerAbilityProfileHandlers } from '../ipc/ability-profile.handler';
 import { initTrainingHandlers, registerTrainingHandlers } from '../ipc/training.handler';
+import { initGrowthHandlers, registerGrowthHandlers } from '../ipc/growth.handler';
+import { initTeachingNoteHandlers, registerTeachingNoteHandlers } from '../ipc/teaching-note.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../ipc/diagnosis.handler';
 import { initChatHandlers, registerChatHandlers } from '../ipc/chat.handler';
 import { registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
@@ -14,16 +17,17 @@ import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.han
 import { initWindowHandlers } from '../ipc/window.handler';
 import type { ConfigService } from '../shared/services/config.service';
 import type { SessionService } from '../shared/services/session.service';
-import type { DiagnosisService } from '../domains/diagnosis/diagnosis.service';
-import type { EvidenceService } from '../domains/diagnosis/evidence/evidence.service';
-import type { TrainingRecordService } from '../domains/training/training-record.service';
-import type { StudentModelService } from '../domains/student/student-model-service';
-import type { AbilityProfileService } from '../domains/student/ability-profile.service';
-import type { GrowthTrendService } from '../domains/student/growth-trend.service';
-import type { ChatOrchestratorService } from '../domains/chat/chat-orchestrator.service';
-import type { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
-import type { TeachingStateService } from '../domains/teaching/teaching-state.service';
-import type { TeachingStrategyService } from '../domains/teaching/strategy/service';
+import type { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
+import type { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
+import type { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
+import type { StudentModelService } from '../domains/02-prescription/student/student-model-service';
+import type { AbilityProfileService } from '../domains/02-prescription/student/ability-profile.service';
+import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
+import type { ChatOrchestratorService } from '../domains/03-teaching/chat/chat-orchestrator.service';
+import type { DiagnosisOrchestratorService } from '../domains/01-diagnosis/orchestrator/diagnosis-orchestrator.service';
+import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
+import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
+import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
 
 export class IpcRegistry {
   constructor(
@@ -70,6 +74,15 @@ export class IpcRegistry {
     });
     registerTrainingHandlers();
 
+    // Growth Trends (学习日志工具)
+    initGrowthHandlers({ growthTrendService });
+    registerGrowthHandlers();
+
+    // Teaching Note (教学笔记工具 I-08)
+    const teachingNoteService = this.container.get<import('../domains/03-teaching/teaching-note.service').TeachingNoteService>('teachingNoteService');
+    initTeachingNoteHandlers({ teachingNoteService });
+    registerTeachingNoteHandlers();
+
     // Teaching State — 通过 DI 注入 TeachingStateService
     initTeachingStateHandler(teachingStateService);
     registerTeachingStateHandlers();
@@ -89,16 +102,18 @@ export class IpcRegistry {
 
     // Chat
     const chatOrchestrator = this.container.get<ChatOrchestratorService>('chatOrchestratorService');
+    const diagnosisOrchestrator = this.container.get<DiagnosisOrchestratorService>('diagnosisOrchestratorService');
     chatOrchestrator.setMainWindow(this.mainWindow);
+    diagnosisOrchestrator.setMainWindow(this.mainWindow);
     initChatHandlers(chatOrchestrator);
     registerChatHandlers();
 
     // Manuscript (V2 SOLO — 直接使用 db 实例)
-    initManuscriptHandlers({ db: this.container.get<any>('db') });
+    initManuscriptHandlers({ db: this.container.get<Database.Database>('db') });
     registerManuscriptHandlers();
 
     // Project (RWR-P0-4 — 直接使用 db 实例)
-    initProjectHandlers({ db: this.container.get<any>('db') });
+    initProjectHandlers({ db: this.container.get<Database.Database>('db') });
     registerProjectHandlers();
 
     // Window Controls (最小化/最大化/关闭)

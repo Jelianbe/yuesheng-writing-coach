@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "description": "月笙教学能力节点原型 — 从真实教学案例提取的原子教学能力单元",
+  "updatedAt": "2026-06-20",
+  "note": "每个能力节点是'学员需要发展的一个写作能力'。professionalLabel 字段关联 classical-principles.json 中的经典原则，打通教学翻译层与专业寄存器层。",
+  "nodes": [
+    {
+      "id": "AB-001",
+      "name": "角色人味感知能力",
+      "professionalLabel": "角色自主性 / Character Agency",
+      "definition": "将角色视为有独立意志的'人'而非推动情节的'棋子'的能力。学生能感知到角色何时只是剧情需求的傀儡，何时是活生生的人。",
+      "teachingTranslation": "把他当人。你的好朋友会突然对你说七大洲八大洋吗？",
+      "sourceCases": ["这维来特 NPC 工具化", "琴玥无双配角无自主行为"],
+      "manifestations": {
+        "positive": "角色行为让读者感到'这才对'——行为来自角色自身性格，不是作者安排。每个配角有自己的生活，不为主角存在",
+        "negative": "角色只在剧情需要时才出现特定行为；换一个角色也能完成同样的对话和动作；配角出场只是为了告诉主角信息",
+        "syndrome": ["P002 角色工具化", "P009 角色动机缺失"]
+      },
+      "teachingApproach": {
+        "primary": "角色独立测试 — '把这个角色的行为换到另一个角色身上，效果一样吗？如果一样，这个角色就是工具人'",
+        "alternative": "人格化假设 — '假设你现在是你的主角，你会怎么回应？你会对一个刚认识的人说这些吗？'",
+        "fromCases": "这维来特觉得'还好不是吗' -> '你的好朋友会突然对你说七大洲八大洋吗？' —— 用日常人际关系经验打破'这只是小说'的认知隔阂"
+      },
+      "relatedPrinciples": ["LAO_SHE_ACTION", "LAO_SHE_LIVING", "FORSTER_ROUND", "LAO_SHE_MOTIVATION"],
+      "principleRef": "classical-principles.json → character_portrayal 维度4条。核心：老舍'人没动作就是纸剪的'→月笙译'把他当人'"
+    },
+    {
+      "id": "AB-002",
+      "name": "自然语言听觉化能力",
+      "professionalLabel": "对话自然度 / Dialogue Authenticity",
+      "definition": "写作时能'听'到文字在现实中读出声来的感觉，判断对话是否像真实人类会说的话而非书面文字。",
+      "teachingTranslation": "念出来像人话吗？不是书面文字，而是通过声带震动的人声。",
+      "sourceCases": ["琴玥无双书面化对话", "琴玥无双信息型对话（角色对话像作者在科普）"],
+      "manifestations": {
+        "positive": "对话读出来像真实对话——有断句、有情绪、有潜台词；信息通过角色之间的交流自然展现，不像是作者在解释给读者听",
+        "negative": "对话读出来像书面语；角色之间的信息交流像'作者在给读者讲课'；所有角色说话方式相同",
+        "syndrome": ["P010 OC平面化（对话无法区分角色）"]
+      },
+      "teachingApproach": {
+        "primary": "朗读测试 — '把这段对话念出来。感觉像人说话吗？不念出来你永远不会发现'",
+        "alternative": "信息剥离 — '如果把你藏起来的设定信息画掉，这句对话还剩什么？如果什么都剩不下，它不是对话，是说明书'",
+        "fromCases": "琴玥无双对话修改 -> 从'窗边的月光洒在你的脸上'到更自然的对话节奏 -> '念出来像人话'成为核心判断标准"
+      },
+      "relatedPrinciples": ["LAO_SHE_ACTION", "CHEKHOV_CONCISE", "WANG_ZENG_QI_ACCURACY"],
+      "principleRef": "classical-principles.json → 老舍'人没声音就是哑巴'→月笙译'念出来像人话吗？'"
+    },
+    {
+      "id": "AB-003",
+      "name": "具象化替代抽象化能力",
+      "professionalLabel": "情感具象化 / Emotional Concretization",
+      "definition": "将抽象的情绪/状态替换为具体的感官细节、动作、场景的能力。让读者通过角色的行为'感受到'而非被告知。",
+      "teachingTranslation": "删掉情绪词，用动作让读者感受到。没对比就没伤害——空间/时间/情感三重对比。",
+      "sourceCases": ["第三辑苦难写作", "琴玥无双情绪标签化"],
+      "manifestations": {
+        "positive": "读者从字里行间感受到情绪；动作、环境、对话共同传达情感；情绪是'读者推导出来的'而非'作者写上去的'",
+        "negative": "直接命名情绪（伤心/难过/痛苦）；使用空洞的情绪副词（深情地/绝望地）；用'好像/仿佛/无尽的'等无效修辞填充",
+        "syndrome": ["P003 情绪标签化"]
+      },
+      "teachingApproach": {
+        "primary": "感官替代法 — '删掉这个情绪词，用具体动作/环境/对话来替代。读者需要自己发现情绪，不要替他们命名'",
+        "alternative": "三重对比法 — '空间对比（这里 vs 那里）+ 时间对比（过去 vs 现在）+ 情感对比（幸福 vs 痛苦）——没有对比就没有伤害'",
+        "fromCases": "第三辑秀春苦难写作 -> '可惜，就。是，。没。看。到。' -> '可惜，没等到孙子' -> '先去找几段写苦难的，再去找几段写幸福的'"
+      },
+      "relatedPrinciples": ["CHEKHOV_EMOTION", "WANG_ZENG_QI_ACCURACY", "ZHU_GUANGQIAN_COMPARISON"],
+      "principleRef": "classical-principles.json → 契诃夫'别写她哭了，写她颤抖的手'→月笙译'删掉情绪词，用动作替代'"
+    },
+    {
+      "id": "AB-004",
+      "name": "读者视角切换能力",
+      "professionalLabel": "读者认知模拟 / Reader Cognition Simulation",
+      "definition": "脱离作者'全知'视角，切换到读者'有限的、线性的'认知视角的能力。能判断'读者现在需要知道什么'与'作者想告诉读者什么'之间的差距。",
+      "teachingTranslation": "世界观藏在日常对话里——读者现在需要知道什么？不是'作者想说的所有东西'。",
+      "sourceCases": ["琴玥无双世界观偏置（一万字全局设定被打散）", "这维来特开篇信息过载"],
+      "manifestations": {
+        "positive": "控制信息释放节奏；只给读者当前场景需要的信息；通过角色互动自然引出背景设定；预判读者会困惑的地方",
+        "negative": "开篇堆设定；信息一股脑全部给读者；所有设定都由作者旁白说明而非通过场景展示",
+        "syndrome": ["P001 世界观膨胀", "P005 视角漂移"]
+      },
+      "teachingApproach": {
+        "primary": "信息排雷法 — '删掉这段，读者还能看懂吗？如果还能，这段信息不需要现在给；如果不能，想想怎么让它自然出现在故事里'",
+        "alternative": "视角锁定测试 — '当前这个信息，你的主角知道吗？如果主角不知道，读者也不该知道'",
+        "fromCases": "琴玥无双世界观教学 -> '世界观藏在对白中，信息要跟着人物走，而不是把世界观写出来再放人物'"
+      },
+      "relatedPrinciples": ["CRON_BRAIN_SIMULATION", "CRON_CONSEQUENCE", "GARDNER_PSYCHIC_DISTANCE", "BOOTH_SHOWING"],
+      "principleRef": "classical-principles.json → Lisa Cron'读者大脑模拟体验'→月笙译'读者现在需要知道什么？不是你想说的所有东西'"
+    },
+    {
+      "id": "AB-005",
+      "name": "结构连贯感知能力",
+      "professionalLabel": "叙事结构意识 / Narrative Structure Awareness",
+      "definition": "感知文本的宏观节奏、主题一致性、转折点的能力。能判断一个场景/章节/作品是否'该有的都有，不该有的没有'。",
+      "teachingTranslation": "第一轮只说方向，二轮给框架，三轮让自评。作为散文没有主题，作为记叙文又太散了。",
+      "sourceCases": ["第二辑开篇节奏（100字内解决问题）", "第三辑秀春随笔散（无主题无结构）"],
+      "manifestations": {
+        "positive": "开篇有钩子、场景有转折、章节有承诺-进展-回报闭环；读者知道'为什么在读这一段'",
+        "negative": "开篇拖沓（100字后才进入核心）；场景结束与开场无变化；全篇读下来不知道主线是什么",
+        "syndrome": ["P006 节奏停滞", "P007 阅读结构单一"]
+      },
+      "teachingApproach": {
+        "primary": "转折检测 — '这个场景开始和结束，主角的处境/情绪/关系有什么变化？如果没有任何变化，这个场景是多余的'",
+        "alternative": "三帧定位 — '从开头、中间、结尾各取一段，让不读全文的人猜：这是关于什么的故事？如果猜不对，结构有问题'",
+        "fromCases": "这维来特开篇节奏 -> '前100个字还没解决问题' -> '一个完整的交代=5分钟，实际就是500-600个字，开篇需要快速进入'"
+      },
+      "relatedPrinciples": ["MCKEE_HIERARCHY", "LAO_SHE_ONE_THING", "SANDERSON_PPP", "CHEKHOV_GUN"],
+      "principleRef": "classical-principles.json → McKee'结构层级必须有转折'+ Sanderson'承诺-进展-回报'→月笙译'第一轮只说方向，二轮给框架'"
+    }
+  ],
+  "metadata": {
+    "totalNodes": 5,
+    "status": "prototype",
+    "nextStep": "用更多教学案例验证、补充和修正这5个节点，再决定是否需要新增能力节点",
+    "note": "每个节点的 teachingApproach.fromCases 直接来自月笙真实教学记录，不是理论推导。'教学翻译层'生效的前提是：AI 能看到这些案例，能理解其中的模式，但不能复制话术。"
+  }
+}

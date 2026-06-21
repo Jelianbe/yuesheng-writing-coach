@@ -22,9 +22,8 @@ export interface ProjectInfo {
 
 // ─── 请求类型 ───
 
-export interface ProjectListRequest {
-  /** empty — 列出所有项目(按 updatedAt DESC) */
-}
+/** empty — 列出所有项目(按 updatedAt DESC) */
+export type ProjectListRequest = Record<string, never>;
 
 export interface ProjectGetRequest {
   projectId: string;

@@ -1,67 +1,79 @@
 /* ========================================
-   月笙写作教练 — CSS Variables V2.0 / 金棕暖灰体系
-   基于 prototype-v2-workspace.html 提取
+   月笙写作教练 — CSS Variables V2.1 / 金棕暖灰体系
+   对齐 phase-f-shell-v6.2.html 精确色值
    ======================================== */
 
 :root {
   /* ── 品牌色（金棕体系）
+       对齐 v6.2 HTML: #7A6040 / #6A5030
        注意：accent 主要用于装饰性 UI 元素（按钮/图标），
        不作为小号文字色使用，已通过 WCAG AA 3:1 UI 组件标准。
        如需在白色背景上显示文字，使用 --text-on-accent 或 --warning。── */
-  --accent: #A07030;
-  --accent-hover: #8A5E28;
+  --accent: #7A6040;
+  --accent-hover: #6A5030;
   --accent-light: #C4A060;
-  --accent-subtle: rgba(160, 112, 48, 0.10);
-  --accent-faint: rgba(160, 112, 48, 0.06);
+  --accent-subtle: rgba(122, 96, 64, 0.10);
+  --accent-faint: rgba(122, 96, 64, 0.06);
   --text-on-accent: #FFFFFF;
 
-  /* ── 背景色（暖纸质美学）── */
+  /* ── 背景色（暖纸质美学）
+       对齐 v6.2 HTML:
+         main bg     = #F0EDE6
+         panel/side  = #E8E3DA
+         card/surface= #FAF8F5
+         input       = #FAF8F5 ── */
   --bg-primary: #FAF8F5;
-  --bg-secondary: #F3EDE4;
-  --bg-card: #FFFFFF;
-  --bg-hover: rgba(180, 140, 90, 0.08);
-  --bg-active: rgba(180, 120, 60, 0.12);
-  --bg-input: #FFFFFF;
+  --bg-secondary: #E8E3DA;
+  --bg-main: #F0EDE6;
+  --bg-card: #FAF8F5;
+  --bg-hover: rgba(122, 96, 64, 0.09);
+  --bg-active: rgba(122, 96, 64, 0.12);
+  --bg-input: #FAF8F5;
 
   /* 兼容旧变量名 */
   --bg-page: var(--bg-primary);
   --bg-sidebar: var(--bg-secondary);
-  --bg-main: var(--bg-primary);
 
-  /* ── 边框（WCAG AA 3:1 UI 组件标准）── */
-  --border: #9A8878;
-  --border-light: #B8A898;
+  /* ── 边框
+       对齐 v6.2 HTML: #D6CEC0 / #C8BFB0 ── */
+  --border: #D6CEC0;
+  --border-light: #C8BFB0;
   --border-focus: var(--accent);
 
   /* ── 文字色（深褐黑减少刺眼）
-       WCAG AA 4.5:1 标准：--text-tertiary 在 bg-primary/bg-secondary 上通过 4.5:1。── */
-  --text-primary: #2C2416;
-  --text-secondary: #5C4D3A;
-  --text-tertiary: #736452;
+       对齐 v6.2 HTML:
+         primary   = #1E1A14
+         secondary = #5C5242
+         tertiary  = #8A7F6E ── */
+  --text-primary: #1E1A14;
+  --text-secondary: #5C5242;
+  --text-tertiary: #8A7F6E;
   --text-on-accent: #FFFFFF;
 
-  /* ── 语义色（WCAG AA 4.5:1 通过）
-       标准：各色在对应的 -light 背景上不低于 4.5:1。── */
-  --success: #3D6B48;
+  /* ── 语义色（对齐 v6.2 HTML）
+       对齐 v6.2 HTML:
+         success = #5A8F68
+         warning = #C8943C
+         error   = #B84A4A ── */
+  --success: #5A8F68;
   --success-light: #E8F0E9;
-  --warning: #7B5121;
+  --warning: #C8943C;
   --warning-light: #F5EDE0;
-  --error: #A94444;
+  --error: #B84A4A;
   --error-light: #F5E8E6;
 
-  /* ── 态度档位色（RWR-P1-3 三灯互斥）
-       doubao(温柔) = 绿  / yuesheng(月笙) = 黄  / direct(尖锐) = 红
-       颜色与品牌色 (#A07030) 协调, 避免与 warning(#7B5121) 混淆。── */
-  --color-attitude-doubao: #5BA868;
-  --color-attitude-yuesheng: #D4A24C;
-  --color-attitude-direct: #C45A5A;
+  /* ── 态度档位色（三灯互斥）
+       对齐 v6.2 HTML:
+         doubao (绿) = #5A8F68
+         yuesheng(黄)= #C8943C
+         sensei (红) = #B84A4A ── */
+  --color-attitude-doubao: #5A8F68;
+  --color-attitude-yuesheng: #C8943C;
+  --color-attitude-sensei: #B84A4A;
   --info: #3D5E94;
   --info-light: #E4EDF5;
 
-  /* ── 阴影（暖调）── */
-
-  /* 目标档位条 — 长档专用色 */
-  --goal-tier-long: #8E44AD;
+  /* ── 阴影（暖调，基于 v6.2 纸质风格）── */
   --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.06);
   --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08);
   --shadow-lg: 0 12px 32px rgba(44, 36, 22, 0.10);
@@ -126,18 +138,18 @@
   --z-overlay: 40;
   --z-sticky: 30;
 
-  /* ── 布局尺寸（V2 SOLO 模式）── */
-  --header-height: 0px;           /* V2: 无 Header */
+  /* ── 布局尺寸（V6.2 Shell）── */
+  --header-height: 0px;
   --sidebar-width: 240px;
   --sidebar-collapsed-w: 0px;
   --toolpanel-width: 380px;
   --icon-strip-width: 48px;
   --statusbar-min-h: 26px;
+  --left-panel-min-w: 200px;
+  --input-area-height: clamp(80px, calc(100dvh / 6), 160px);
 
   /* ════════════════════════════════════════════
      兼容别名 — 对接 tailwind.config.js / globals.css 旧命名
-     注：这些变量在 variables.css 中无定义但被其他文件引用，
-     通过别名统一解析到现行变量名。
      ════════════════════════════════════════════ */
 
   /* 旧 font 名 → 现行 font */

@@ -9,7 +9,7 @@
  */
 
 import { create } from 'zustand';
-import { TeachingState, TeachingProgressDisplay } from '../shared/types';
+import type { TeachingState, TeachingProgressDisplay } from '../shared/types';
 import { ACTION_NAMES } from '../../shared/mappings';
 
 /**

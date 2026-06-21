@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 import type { ProjectInfo } from '../../shared/api-contracts/project.contract';
 
 export interface ProjectHandlerDeps {

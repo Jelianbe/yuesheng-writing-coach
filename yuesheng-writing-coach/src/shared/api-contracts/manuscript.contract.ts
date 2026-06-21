@@ -2,9 +2,8 @@ import type { ApiResponse } from './base';
 
 // ─── 请求类型 ───
 
-export interface ManuscriptListRequest {
-  /** empty — 列出所有作品 */
-}
+/** empty — 列出所有作品 */
+export type ManuscriptListRequest = Record<string, never>;
 
 export interface ManuscriptGetRequest {
   manuscriptId: string;

@@ -46,12 +46,12 @@ export function assertValidActiveProblem(problem: ActiveProblem) {
 }
 
 /** IPC 调用结果断言 */
-export function assertIpcSuccess(result: any) {
+export function assertIpcSuccess(result: Record<string, unknown>) {
   expect(result).toBeDefined();
   expect(result.success).toBe(true);
 }
 
-export function assertIpcError(result: any) {
+export function assertIpcError(result: Record<string, unknown>) {
   expect(result).toBeDefined();
   expect(result.success).toBe(false);
   expect(result.error).toBeTruthy();

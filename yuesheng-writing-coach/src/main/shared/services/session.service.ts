@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 
 export interface SessionRow {
   id: string;

@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-14",
+  "description": "态度档位↔教学节奏映射配置，从 yuesheng-prompt-v3.md §五 提取",
+  "attitudes": {
+    "doubao": {
+      "label": "豆包 🟢",
+      "color": "green",
+      "applicableScenarios": ["新手", "不自信", "首次对话"],
+      "toneDescription": "温和、鼓励、先肯定",
+      "rhythm": {
+        "teachingPace": "slow",
+        "guidanceIntensity": 0.85,
+        "readingPrerequisite": "must",
+        "maxQuestionsPerRound": 3,
+        "reflectionGateMaxRounds": 4,
+        "discoveryGuideLevel": "high"
+      }
+    },
+    "yuesheng": {
+      "label": "月笙如歌 🟡",
+      "color": "yellow",
+      "applicableScenarios": ["有基础", "能接受批评"],
+      "toneDescription": "直接、精准、理性",
+      "rhythm": {
+        "teachingPace": "medium",
+        "guidanceIntensity": 0.55,
+        "readingPrerequisite": "recommend",
+        "maxQuestionsPerRound": 2,
+        "reflectionGateMaxRounds": 3,
+        "discoveryGuideLevel": "medium"
+      }
+    },
+    "sensei": {
+      "label": "sensei 🔴",
+      "color": "red",
+      "applicableScenarios": ["陷入幻觉", "反复辩解"],
+      "toneDescription": "一针见血、刺痛但不侮辱",
+      "rhythm": {
+        "teachingPace": "fast",
+        "guidanceIntensity": 0.25,
+        "readingPrerequisite": "skip",
+        "maxQuestionsPerRound": 1,
+        "reflectionGateMaxRounds": 2,
+        "discoveryGuideLevel": "low"
+      }
+    }
+  },
+  "switchRules": {
+    "defaultAttitude": "doubao",
+    "downgradeTrigger": "user_frustration",
+    "downgradeSafetyWord": "轻一点",
+    "upgradeSignal": "user_shows_100plus_text_with_self_critique"
+  }
+}

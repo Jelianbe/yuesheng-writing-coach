@@ -1,4 +1,5 @@
 import type { ApiResponse } from './base';
+import type { ActiveProblem } from '../types/types-teaching';
 
 // ─── 诊断域共享类型 ───
 
@@ -57,10 +58,7 @@ export interface DiagnosisUpdateResponse {
   mergedToTeaching: boolean;
 }
 
-export interface DiagnosisQueryResponse {
-  entries: DiagnosisEntry[];
-  total: number;
-}
+export type DiagnosisQueryResponse = ActiveProblem[];
 
 export interface DiagnosisRewriteEvaluation {
   score: number;
@@ -114,7 +112,7 @@ export const DiagnosisApi = {
   },
 
   updated: {
-    channel: 'diagnosis:update' as const,
+    channel: 'diagnosis:updated' as const,
     event: {} as DiagnosisUpdateEvent,
   },
 } as const;

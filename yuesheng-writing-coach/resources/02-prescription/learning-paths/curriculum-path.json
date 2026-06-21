@@ -1,0 +1,182 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "三条创作领域独立学习路径，按 DAG 依赖关系组织 L0→L1/L2→L2/L3 阶段",
+  "paths": [
+    {
+      "id": "character-craft",
+      "name": "角色塑造",
+      "nameEn": "Character Craft",
+      "description": "从「展示而非告知」的基础表达开始，逐步掌握对话设计、视角控制，最终实现角色立体化",
+      "stages": [
+        {
+          "level": "L0",
+          "name": "基础表达",
+          "focus": "学习用动作、环境、细节来展示角色的状态和情绪，而非直接告诉读者",
+          "coreIds": [
+            "show-dont-tell"
+          ],
+          "techniques": [
+            "TE-013",
+            "TQ-012",
+            "TQ-013",
+            "TQ-027"
+          ],
+          "prerequisites": []
+        },
+        {
+          "level": "L1",
+          "name": "对话与视角",
+          "focus": "掌握对话层次设计和视角管理技巧，让角色之间的互动更加真实有力",
+          "coreIds": [
+            "dialogue-depth",
+            "pov-control"
+          ],
+          "techniques": [
+            "AIP-008",
+            "TQ-008",
+            "TQ-030",
+            "TQ-032"
+          ],
+          "prerequisites": [
+            "show-dont-tell"
+          ]
+        },
+        {
+          "level": "L2",
+          "name": "角色立体化",
+          "focus": "综合运用表达、对话和视角技巧，塑造有深度、有弧光的立体角色",
+          "coreIds": [
+            "character-depth"
+          ],
+          "techniques": [
+            "AIP-003",
+            "TC-002",
+            "TC-003",
+            "TC-004"
+          ],
+          "prerequisites": [
+            "dialogue-depth",
+            "pov-control",
+            "show-dont-tell"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "world-building",
+      "name": "世界观构建",
+      "nameEn": "World Building",
+      "description": "从通过细节展示世界开始，逐步掌握设定融入和悬念制造，构建令人沉浸的世界观",
+      "stages": [
+        {
+          "level": "L0",
+          "name": "展示式传递",
+          "focus": "学习通过细节和场景展示世界观设定，而非直接铺陈说明",
+          "coreIds": [
+            "show-dont-tell"
+          ],
+          "techniques": [
+            "TE-013",
+            "TQ-012",
+            "TQ-013"
+          ],
+          "prerequisites": []
+        },
+        {
+          "level": "L2",
+          "name": "设定融入",
+          "focus": "将世界观设定自然地融入日常行为、对话和物品描述中",
+          "coreIds": [
+            "worldbuilding-embed"
+          ],
+          "techniques": [
+            "AIP-002",
+            "AIP-007",
+            "AIP-011",
+            "AIP-020"
+          ],
+          "prerequisites": [
+            "rhythm-control",
+            "show-dont-tell"
+          ]
+        },
+        {
+          "level": "L3",
+          "name": "悬念驱动",
+          "focus": "利用世界观设定制造悬念和期待感，让读者沉浸其中",
+          "coreIds": [
+            "suspense-engine"
+          ],
+          "techniques": [
+            "AIP-005",
+            "AIP-016",
+            "AIP-021",
+            "TC-012"
+          ],
+          "prerequisites": [
+            "rhythm-control",
+            "show-dont-tell",
+            "worldbuilding-embed"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "outline-planning",
+      "name": "大纲规划",
+      "nameEn": "Outline Planning",
+      "description": "从写出抓人的开篇开始，逐步掌握节奏控制，最终学会设计创新的故事结构",
+      "stages": [
+        {
+          "level": "L0",
+          "name": "开篇技巧",
+          "focus": "学习写出吸引读者的开篇，用最短的时间抓住读者的注意力",
+          "coreIds": [
+            "opening-hook"
+          ],
+          "techniques": [
+            "TC-008",
+            "TE-004",
+            "TE-006",
+            "TE-014"
+          ],
+          "prerequisites": []
+        },
+        {
+          "level": "L1",
+          "name": "节奏呼吸",
+          "focus": "掌握叙事节奏的控制技巧，让故事张弛有度、高潮迭起",
+          "coreIds": [
+            "rhythm-control"
+          ],
+          "techniques": [
+            "AIP-017",
+            "TQ-005",
+            "TQ-041",
+            "TQ-057"
+          ],
+          "prerequisites": [
+            "opening-hook"
+          ]
+        },
+        {
+          "level": "L2",
+          "name": "结构创新",
+          "focus": "学习双线叙事、规则嵌套等结构技巧，突破传统叙事框架",
+          "coreIds": [
+            "structure-innovation"
+          ],
+          "techniques": [
+            "TE-018"
+          ],
+          "prerequisites": [
+            "character-depth",
+            "opening-hook",
+            "rhythm-control"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -148,9 +148,10 @@ function generateJsonReport(reports: ModuleReport[], startTime: number): TestSum
       module: t.module,
     }));
 
-  const modules: Record<string, any> = {};
+  const modules: Record<string, Omit<ModuleReport, 'tests'>> = {};
   for (const report of reports) {
     modules[report.moduleId] = {
+      moduleId: report.moduleId,
       moduleName: report.moduleName,
       total: report.total,
       passed: report.passed,
@@ -322,12 +323,13 @@ export async function runAndReport(): Promise<void> {
         console.log(`  [${f.module}] ${f.name}: ${f.error}`);
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // vitest 返回非零退出码时，输出仍在 stdout 中
-    if (error.stdout) {
-      console.log(error.stdout.toString());
+    const execError = error as { stdout?: Buffer | string; message?: string };
+    if (execError.stdout) {
+      console.log(execError.stdout.toString());
     }
-    console.error('\n❌ 测试执行失败:', error.message);
+    console.error('\n❌ 测试执行失败:', execError.message);
     process.exit(1);
   }
 }

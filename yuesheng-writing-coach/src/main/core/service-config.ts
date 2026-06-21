@@ -1,40 +1,44 @@
 import type Database from 'better-sqlite3';
-import { ServiceContainer } from './service-container';
+import type { ServiceContainer } from './service-container';
 import { ConfigService } from '../shared/services/config.service';
 import { SessionService } from '../shared/services/session.service';
-import { DiagnosisService } from '../domains/diagnosis/diagnosis.service';
-import { EvidenceService } from '../domains/diagnosis/evidence/evidence.service';
-import { TrainingRecordService } from '../domains/training/training-record.service';
-import { StudentModelService } from '../domains/student/student-model-service';
-import { AbilityProfileService } from '../domains/student/ability-profile.service';
-import { ProfileDataAggregator } from '../domains/student/profile-data-aggregator';
-import { GrowthTrendService } from '../domains/student/growth-trend.service';
-import { TeachingStrategyService } from '../domains/teaching/strategy/service';
-import { TeachingStrategyRouter } from '../domains/teaching/strategy/router';
-import { ProblemPrioritizer } from '../domains/teaching/problem-prioritizer.service';
-import { DisputeTrackerService } from '../domains/teaching/dispute-tracker.service';
-import { PromptBuilder } from '../domains/prompt/prompt-builder';
-import { PromptLoader } from '../domains/prompt/prompt-loader';
-import { MessageRouter } from '../domains/chat/message-router';
-import { DynamicContextService } from '../domains/prompt/dynamic-context.service';
-import { ReflectionGateService } from '../domains/teaching/reflection-gate.service';
-import { CodexService } from '../domains/prompt/codex.service';
+import { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
+import { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
+import { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
+import { StudentModelService } from '../domains/02-prescription/student/student-model-service';
+import { AbilityProfileService } from '../domains/02-prescription/student/ability-profile.service';
+import { ProfileDataAggregator } from '../domains/02-prescription/student/profile-data-aggregator';
+import { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
+import { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
+import { TeachingStrategyRouter } from '../domains/02-prescription/strategy/router';
+import { ProblemPrioritizer } from '../domains/02-prescription/problem-prioritizer.service';
+import { DisputeTrackerService } from '../domains/03-teaching/dispute-tracker.service';
+import { PromptBuilder } from '../domains/03-teaching/prompt/prompt-builder';
+import { PromptLoader } from '../domains/03-teaching/prompt/prompt-loader';
+import { MessageRouter } from '../domains/03-teaching/chat/message-router';
+import { DynamicContextService } from '../domains/03-teaching/prompt/dynamic-context.service';
+import { ReflectionGateService } from '../domains/03-teaching/reflection-gate.service';
+import { CodexService } from '../domains/03-teaching/prompt/codex.service';
 import { getTeachingStateContext, getStoreForPromptLoader } from '../ipc/teaching-state.handler';
-import { TeachingStateService } from '../domains/teaching/teaching-state.service';
+import { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
+import { TeachingNoteService } from '../domains/03-teaching/teaching-note.service';
 import { ApiProxyService } from '../shared/services/api-proxy.service';
-import { StrategyInstructionBuilder } from '../domains/teaching/strategy-instruction-builder';
-import { ChatOrchestratorService } from '../domains/chat/chat-orchestrator.service';
-import { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
+import { StrategyInstructionBuilder } from '../domains/03-teaching/strategy-instruction-builder';
+import { ChatOrchestratorService, TechniquePoolService, DiagnosisOrchestratorService, TeachingContextService, StreamHandlerService } from '../domains/03-teaching/chat';
+import { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import { injectMockDiagnosisData } from '../services/mock-data-injector';
-import type { IDiagnosisDomain } from '../domains/diagnosis';
-import { processAIResponse } from '../domains/diagnosis/diagnosis-processor';
-import { TeachingDecisionService } from '../domains/teaching/decision/decision.service';
-import type { ITeachingDomain } from '../domains/teaching';
-import type { IStudentDomain } from '../domains/student';
-import type { IPromptDomain } from '../domains/prompt';
+import type { IDiagnosisDomain } from '../domains/01-diagnosis';
+import { processAIResponse } from '../domains/01-diagnosis/diagnosis-processor';
+import { TeachingDecisionService } from '../domains/02-prescription/decision/decision.service';
+import type { ITeachingDomain } from '../domains/03-teaching';
+import type { IStudentDomain } from '../domains/02-prescription/student';
+import type { IPromptDomain } from '../domains/03-teaching/prompt';
 import type { AttitudeLevel, DiagnosisAnalysis } from '../../shared/types/index';
 import type { DiagnosisEntry } from '../../shared/types/types-diagnosis';
-import { getMemoryCapsuleService } from '../domains/prompt/memory-capsule.service';
+import { getMemoryCapsuleService } from '../domains/03-teaching/prompt/memory-capsule.service';
+import type { CodexEntry } from '../domains/03-teaching/prompt/codex.service';
+import type { CapsuleOptions } from '../domains/03-teaching/prompt/memory-capsule.service';
+import type { ReflectionQuestion } from '../domains/03-teaching/reflection-gate.service';
 
 export function configureServices(
   container: ServiceContainer,
@@ -133,6 +137,9 @@ export function configureServices(
     return service;
   });
 
+  // 教学笔记服务 (I-08)
+  container.register<TeachingNoteService>('teachingNoteService', () => new TeachingNoteService());
+
   // ============================================================
   // Prompt Domain
   // ============================================================
@@ -164,6 +171,55 @@ export function configureServices(
   // Chat Domain
   // ============================================================
   container.register<MessageRouter>('messageRouter', () => new MessageRouter());
+  container.register<StreamHandlerService>('streamHandlerService', () => new StreamHandlerService());
+  container.register<TechniquePoolService>('techniquePoolService', () => new TechniquePoolService(resourcesRoot));
+
+  container.register<DiagnosisOrchestratorService>('diagnosisOrchestratorService', (c) =>
+    new DiagnosisOrchestratorService(
+      c.get<TechniquePoolService>('techniquePoolService'),
+      {
+        save: (data) => c.get<DiagnosisService>('diagnosisService').save(data as DiagnosisEntry),
+        saveAnalysis: (analysis, diagId) => c.get<DiagnosisService>('diagnosisService').saveAnalysis(analysis, diagId),
+        getRecentBySession: (sessionId, limit) => c.get<DiagnosisService>('diagnosisService').getRecentBySession(sessionId, limit),
+        processAIResponse: (fullResponse, sessionId, messageId) =>
+          processAIResponse(fullResponse, sessionId, messageId, {
+            diagnosisService: c.get<DiagnosisService>('diagnosisService'),
+            evidenceService: c.get<EvidenceService>('evidenceService'),
+            diagnosisMerger: c.get<DiagnosisMerger>('diagnosisMerger'),
+            teachingDecisionService: c.get<TeachingDecisionService>('teachingDecisionService'),
+          }),
+      } as IDiagnosisDomain,
+      null,
+    ),
+  );
+
+  container.register<TeachingContextService>('teachingContextService', (c) =>
+    new TeachingContextService(
+      {
+        getRecentBySession: (sessionId, limit) => c.get<DiagnosisService>('diagnosisService').getRecentBySession(sessionId, limit),
+        save: () => '',
+        saveAnalysis: () => {},
+        processAIResponse: () => {},
+      } as IDiagnosisDomain,
+      {
+        loadSystemPrompt: (attitude: AttitudeLevel, diagnosisAnalysis: DiagnosisAnalysis | null, diagnosisHistory?: string, studentContext?: string, sessionId?: string, _transitionPrompt?: string, _codexEntries?: unknown[], _flags?: { hasSession?: boolean; hasDiagnosis?: boolean }) =>
+          c.get<PromptLoader>('promptLoader').loadSystemPrompt(attitude, diagnosisAnalysis, diagnosisHistory, studentContext, sessionId, undefined, _codexEntries as CodexEntry[], undefined),
+        buildCapsule: (params: { diagnoses: unknown[]; recentCount: number }) =>
+          getMemoryCapsuleService().buildCapsule(params as unknown as CapsuleOptions),
+      } as IPromptDomain,
+      c.get<StudentModelService>('studentModelService') as IStudentDomain,
+      {
+        checkMessage: () => {},
+        getEffectiveAttitude: () => 'yuesheng' as AttitudeLevel,
+        shouldTriggerReflection: (diagnosis: DiagnosisAnalysis) =>
+          c.get<ReflectionGateService>('reflectionGate').shouldTriggerReflection(diagnosis),
+        buildReflectionPrompt: (question: { question: string; syndromeId: string; syndromeName: string }, attitude: AttitudeLevel) =>
+          c.get<ReflectionGateService>('reflectionGate').buildReflectionPrompt(question as ReflectionQuestion, attitude),
+        buildStrategyInstruction: (diagnosis: DiagnosisAnalysis | null, attitude: AttitudeLevel) =>
+          c.get<StrategyInstructionBuilder>('strategyInstructionBuilder').build(diagnosis, attitude),
+      } as ITeachingDomain,
+    ),
+  );
 
   container.register<ChatOrchestratorService>('chatOrchestratorService', (c) => {
     const deps = {
@@ -184,9 +240,9 @@ export function configureServices(
       } as IDiagnosisDomain,
       promptDomain: {
         loadSystemPrompt: (attitude: AttitudeLevel, diagnosisAnalysis: DiagnosisAnalysis | null, diagnosisHistory?: string, studentContext?: string, sessionId?: string, _transitionPrompt?: string, _codexEntries?: unknown[], _flags?: { hasSession?: boolean; hasDiagnosis?: boolean }) =>
-          c.get<PromptLoader>('promptLoader').loadSystemPrompt(attitude, diagnosisAnalysis, diagnosisHistory, studentContext, sessionId, undefined, _codexEntries as any, undefined),
+          c.get<PromptLoader>('promptLoader').loadSystemPrompt(attitude, diagnosisAnalysis, diagnosisHistory, studentContext, sessionId, undefined, _codexEntries as CodexEntry[], undefined),
         buildCapsule: (params: { diagnoses: unknown[]; recentCount: number }) =>
-          getMemoryCapsuleService().buildCapsule(params as any),
+          getMemoryCapsuleService().buildCapsule(params as unknown as CapsuleOptions),
       } as IPromptDomain,
       studentDomain: c.get<StudentModelService>('studentModelService') as IStudentDomain,
       teachingDomain: {
@@ -198,10 +254,13 @@ export function configureServices(
         shouldTriggerReflection: (diagnosis: DiagnosisAnalysis) =>
           c.get<ReflectionGateService>('reflectionGate').shouldTriggerReflection(diagnosis),
         buildReflectionPrompt: (question: { question: string; syndromeId: string; syndromeName: string }, attitude: AttitudeLevel) =>
-          c.get<ReflectionGateService>('reflectionGate').buildReflectionPrompt(question as any, attitude),
+          c.get<ReflectionGateService>('reflectionGate').buildReflectionPrompt(question as ReflectionQuestion, attitude),
         buildStrategyInstruction: (diagnosis: DiagnosisAnalysis | null, attitude: AttitudeLevel) =>
           c.get<StrategyInstructionBuilder>('strategyInstructionBuilder').build(diagnosis, attitude),
       } as ITeachingDomain,
+      diagnosisOrchestrator: c.get<DiagnosisOrchestratorService>('diagnosisOrchestratorService'),
+      teachingContext: c.get<TeachingContextService>('teachingContextService'),
+      streamHandler: c.get<StreamHandlerService>('streamHandlerService'),
       mainWindow: null,
       db,
     };

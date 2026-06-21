@@ -1,0 +1,106 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "症候→教学动作映射配置，供 TeachingStrategyRouter 和 Teaching Agent 消费",
+  "mappings": [
+    {
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "type": "motivation_deficit",
+      "discoverable": "partial",
+      "primaryAction": "A001",
+      "actionName": "缩小范围",
+      "triggerSignal": "大量世界观设定但主角模糊",
+      "triggerTemplate": "先别考虑那么多。{scene}发生什么？",
+      "coachingQuestion": "先别考虑那么多。第一章发生什么？"
+    },
+    {
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "type": "expressive_deficit",
+      "discoverable": true,
+      "primaryAction": "A004",
+      "actionName": "现实锚点",
+      "triggerSignal": "角色行为缺乏动机或前后不一致",
+      "triggerTemplate": "如果是真人，{character}的第一反应会是什么？",
+      "coachingQuestion": "如果是真人，第一反应会是什么？"
+    },
+    {
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "type": "expressive_deficit",
+      "discoverable": true,
+      "primaryAction": "A004",
+      "actionName": "现实锚点",
+      "triggerSignal": "直接用情绪词概括，无具体描写",
+      "triggerTemplate": "如果是真人，{character}会怎么表现{emotion}？",
+      "coachingQuestion": "如果是真人，会怎么表现这种情绪？"
+    },
+    {
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "type": "structural_disorder",
+      "discoverable": false,
+      "primaryAction": "A002",
+      "actionName": "回归主角",
+      "triggerSignal": "设定通过旁白交代而非角色日常",
+      "triggerTemplate": "{character}是怎么知道{information}的？",
+      "coachingQuestion": "主角是怎么知道这些的？"
+    },
+    {
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "type": "structural_disorder",
+      "discoverable": "partial",
+      "primaryAction": "A002",
+      "actionName": "回归主角",
+      "triggerSignal": "写了主角看不到/听不到的信息",
+      "triggerTemplate": "{character}知道{detail}吗？{character}能看到{object}吗？",
+      "coachingQuestion": "主角知道吗？主角能看到吗？"
+    },
+    {
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "type": "structural_disorder",
+      "discoverable": false,
+      "primaryAction": "A003",
+      "actionName": "五问法",
+      "triggerSignal": "叙事推进停滞，连续多段缺乏事件进展或冲突升级，场景处于静止状态",
+      "triggerTemplate": "这段最核心的{conflict}是什么？为什么会在这里卡住？读者在期待什么？",
+      "coachingQuestion": "这段最核心的冲突是什么？读者在等什么？"
+    },
+    {
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "type": "structural_disorder",
+      "discoverable": false,
+      "primaryAction": "A003",
+      "actionName": "五问法",
+      "triggerSignal": "句式结构和叙事模式缺乏变化，通篇以同一段落节奏推进，造成阅读疲劳",
+      "triggerTemplate": "如果把这个{paragraph}换成{structureType}，读者会有什么感觉？",
+      "coachingQuestion": "如果换一种结构写，读者会有什么感觉？"
+    },
+    {
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "type": "motivation_deficit",
+      "discoverable": true,
+      "primaryAction": "A003",
+      "actionName": "五问法",
+      "triggerSignal": "角色行为缺乏内在驱动力的表现",
+      "triggerTemplate": "{character}为什么要{action}？他/她想要什么？如果不这样做会怎样？",
+      "coachingQuestion": "他为什么要这么做？他想要什么？如果不做会怎样？"
+    },
+    {
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "type": "expressive_deficit",
+      "discoverable": true,
+      "primaryAction": "A003",
+      "actionName": "五问法",
+      "triggerSignal": "原创角色缺乏立体感和独特性",
+      "triggerTemplate": "如果{character}遇到{situation}，ta会做出什么别人不会做的选择？",
+      "coachingQuestion": "如果这个角色遇到意外，ta会做出什么别人不会做的选择？"
+    }
+  ]
+}

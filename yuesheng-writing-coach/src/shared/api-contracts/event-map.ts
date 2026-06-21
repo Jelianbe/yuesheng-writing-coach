@@ -3,15 +3,16 @@
 
 import type { ChatStreamDataEvent, ChatStreamEndEvent, ChatToolExecutingEvent } from './chat.contract';
 import type { DiagnosisUpdateEvent } from './diagnosis.contract';
-import type { TeachingStateUpdatedEvent } from './teaching-state.contract';
+import type { TeachingStateUpdatedEvent, TeachingStateMasteryEvent } from './teaching-state.contract';
 
 /** 事件通道 → 事件负载类型的映射 */
 export interface EventChannelMap {
   'chat:stream:data': ChatStreamDataEvent;
   'chat:stream:end': ChatStreamEndEvent;
   'chat:tool:executing': ChatToolExecutingEvent;
-  'diagnosis:update': DiagnosisUpdateEvent;
+  'diagnosis:updated': DiagnosisUpdateEvent;
   'teachingState:updated': TeachingStateUpdatedEvent;
+  'teachingState:mastery': TeachingStateMasteryEvent;
 }
 
 /** 所有事件通道的联合类型 */

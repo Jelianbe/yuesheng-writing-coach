@@ -26,6 +26,30 @@ export async function invoke<C extends keyof IPCRequestMap & keyof IPCResponseMa
 }
 
 /**
+ * 为 IPC 请求添加幂等键（IDEM-1）
+ *
+ * 自动生成一个唯一 idempotencyKey 注入到请求参数中。
+ * 后端 createHandler 在 TTL（5 秒）内遇到同一 key 的请求会自动返回缓存结果。
+ * 适用于 WRITE-risk 通道（training:evaluate, chat:send, diagnosis:submitRewrite 等）。
+ *
+ * @param args  请求参数对象
+ * @param key   可选的自定义 key（未提供时自动生成 UUID）
+ * @returns     注入 idempotencyKey 后的请求参数
+ *
+ * @example
+ *   await invoke('training:evaluate', withIdempotency({ trainingId, answer }));
+ */
+export function withIdempotency<T extends Record<string, unknown>>(
+  args: T,
+  key?: string,
+): T & { idempotencyKey: string } {
+  return {
+    ...args,
+    idempotencyKey: key ?? crypto.randomUUID(),
+  };
+}
+
+/**
  * 获取安全的 IPC invoke 函数（无类型校验，用于无法使用类型化版本的场景）
  * 在非 Electron 环境（HMR / 浏览器预览）中返回空操作函数，不抛异常
  */

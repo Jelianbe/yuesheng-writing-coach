@@ -1,0 +1,104 @@
+/* ═══ 工具标签栏 — 从 RightPanel 拆出 ═══ */
+
+.rightHdr {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  min-height: 32px;
+  border-bottom: 1px solid #D6CEC0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.toolTabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  margin: 0 4px;
+}
+.toolTabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: #FAF8F5;
+  color: #5C5242;
+  cursor: pointer;
+  transition: all 150ms;
+}
+.tab:hover { background: rgba(122, 96, 64, 0.09); }
+
+.tabActive {
+  background: #7A6040;
+  color: #fff;
+  font-weight: 500;
+}
+
+.tabLabel {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabCloseBtn {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 7px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.tabCloseBtn:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+
+.emptyHint {
+  font-size: 10px;
+  color: #8A7F6E;
+  padding: 0 4px;
+}
+
+/* ── Right actions — 5 buttons ── */
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #8A7F6E;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 150ms;
+  flex-shrink: 0;
+}
+.actionBtn:hover {
+  color: #7A6040;
+  background: rgba(122, 96, 64, 0.09);
+}
+.actionBtnDanger:hover {
+  background: #B84A4A;
+  color: #fff;
+}

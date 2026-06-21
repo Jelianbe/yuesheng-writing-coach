@@ -1,0 +1,45 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.item:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.item:active {
+  transform: scale(0.94);
+}
+
+.icon {
+  font-size: 16px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.name {
+  font-size: 13px;
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+}
+
+.desc {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}

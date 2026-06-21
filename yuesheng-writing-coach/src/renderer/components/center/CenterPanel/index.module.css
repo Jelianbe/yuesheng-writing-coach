@@ -1,0 +1,469 @@
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8A7F6E;
+  font-size: 14px;
+  gap: 8px;
+  padding-top: 40px;
+}
+
+.emptyIcon {
+  font-size: 36px;
+  opacity: 0.3;
+}
+
+.emptyHint {
+  color: #A89F90;
+  font-size: 12px;
+}
+
+/* Empty state with 3 options (对照 HTML) */
+.emptyTitle {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1E1A14;
+  margin-bottom: 18px;
+}
+
+.emptyOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.emptyOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 150ms;
+}
+.emptyOption:hover {
+  border-color: #7A6040;
+  transform: translateY(-1px);
+}
+
+.emptyOptionIcon {
+  font-size: 17px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.emptyOptionLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1E1A14;
+}
+
+.emptyOptionHint {
+  font-size: 11px;
+  color: #8A7F6E;
+  margin-top: 1px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px 4px;
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.collapsedBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+}
+
+.expandBtn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #8A7F6E;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.expandBtn:hover {
+  color: #7A6040;
+  background: rgba(122, 96, 64, 0.09);
+}
+
+.projectBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1E1A14;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.projectBtn:hover {
+  background: rgba(122, 96, 64, 0.09);
+}
+
+.projectBtnArrow {
+  font-size: 7px;
+  color: #8A7F6E;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  border: 1px solid;
+  color: #C8943C;
+  border-color: rgba(200, 148, 60, 0.3);
+  background: rgba(200, 148, 60, 0.07);
+}
+
+.statusDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #C8943C;
+}
+
+.sessionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #5C5242;
+  background: #E8E3DA;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  border: 1px solid rgba(200, 148, 60, 0.3);
+  color: #C8943C;
+  background: rgba(200, 148, 60, 0.07);
+}
+
+.trainBadgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C8943C;
+}
+
+.headerActions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.headerBtn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #8A7F6E;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.headerBtn:hover {
+  color: #7A6040;
+  background: rgba(122, 96, 64, 0.09);
+}
+
+.chatArea {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px 12px;
+}
+
+.chatArea::-webkit-scrollbar { width: 4px; }
+.chatArea::-webkit-scrollbar-track { background: transparent; }
+.chatArea::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 999px; }
+
+/* Messages container: centering */
+.messagesContainer {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+/* Message row: 头像 + 气泡 + 时间 */
+.messageRow {
+  display: flex;
+  gap: 8px;
+}
+
+.messageUser {
+  flex-direction: row-reverse;
+}
+
+.messageAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(122, 96, 64, 0.09);
+  color: #7A6040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.messageContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.messageBubble {
+  padding: 0;
+  border-radius: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary);
+}
+
+.messageBubbleUser {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.messageBubbleAssistant {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.messageTime {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* ── Training context banner ── */
+.trainBanner {
+  max-width: 560px;
+  margin: 0 auto 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.trainBannerHdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.trainBannerName {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.trainBannerDiff {
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.trainBannerCat {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--accent-faint);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.trainBannerDesc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.trainBannerCore {
+  font-size: 10px;
+  color: var(--accent);
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+.trainBannerCoreLabel {
+  font-weight: 500;
+}
+
+/* ── Template preview panel ([模板] 讨论要点) ── */
+.templatePreview {
+  border-top: 1px solid #D6CEC0;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.templatePreviewInner {
+  max-width: 560px;
+  margin: 0 auto;
+  background: #FAF8F5;
+  border: 1px solid rgba(122, 96, 64, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.templatePreviewHdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.templatePreviewDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7A6040;
+}
+
+.templatePreviewTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1E1A14;
+}
+
+.templatePreviewTag {
+  font-size: 9px;
+  color: #8A7F6E;
+  background: #E8E3DA;
+  padding: 0 4px;
+  border-radius: 999px;
+}
+
+.templateItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.templateItem:hover {
+  background: rgba(122, 96, 64, 0.04);
+}
+
+.templateItemArrow {
+  color: #7A6040;
+  font-size: 10px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.templateItemLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1E1A14;
+}
+
+.templateItemContent {
+  font-size: 11px;
+  color: #5C5242;
+  line-height: 1.5;
+}
+
+.templatePreviewActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #D6CEC0;
+}
+
+.templateCancelBtn {
+  padding: 2px 6px;
+  font-size: 10px;
+  color: #8A7F6E;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: color 150ms;
+}
+.templateCancelBtn:hover { color: #5C5242; }
+
+.templateRecordBtn {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #7A6040;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.templateRecordBtn:hover { background: #6A5030; }

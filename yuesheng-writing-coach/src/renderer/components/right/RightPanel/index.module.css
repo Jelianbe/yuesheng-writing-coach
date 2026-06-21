@@ -1,0 +1,296 @@
+.panel {
+  height: 100%;
+  background: #E8E3DA;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ═══ #rightHdr — header: toolTabs + 5 buttons ═══ */
+.rightHdr {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  min-height: 32px;
+  border-bottom: 1px solid #D6CEC0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.toolTabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  margin: 0 4px;
+}
+.toolTabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: #FAF8F5;
+  color: #5C5242;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.tab:hover { background: rgba(122, 96, 64, 0.09); }
+
+.tabActive {
+  background: #7A6040;
+  color: #fff;
+  font-weight: 500;
+}
+
+.tabLabel {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabCloseBtn {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 7px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.tabCloseBtn:hover { opacity: 1; background: rgba(0,0,0,0.06); }
+
+.emptyHint {
+  font-size: 10px;
+  color: #8A7F6E;
+  padding: 0 4px;
+}
+
+/* ── Right actions — 5 buttons ── */
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.actionBtn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #8A7F6E;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 120ms;
+  flex-shrink: 0;
+}
+.actionBtn:hover {
+  color: #7A6040;
+  background: rgba(122, 96, 64, 0.09);
+}
+.actionBtnDanger:hover {
+  background: #B84A4A;
+  color: #fff;
+}
+
+/* ═══ #rightSubHdr — 子顶栏 ═══ */
+.rightSubHdr {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border-bottom: 1px solid #D6CEC0;
+  flex-shrink: 0;
+  min-height: 32px;
+}
+.rightSubHdr::-webkit-scrollbar { height: 2px; }
+.rightSubHdr::-webkit-scrollbar-track { background: transparent; }
+.rightSubHdr::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 999px; }
+
+.subTabs {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow-x: auto;
+}
+.subTabs::-webkit-scrollbar { height: 2px; }
+.subTabs::-webkit-scrollbar-track { background: transparent; }
+.subTabs::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 999px; }
+
+.subTab {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.subTab:hover {
+  border-color: var(--accent);
+}
+
+.subTabActive {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: 500;
+  border-color: var(--accent);
+}
+
+.subTabClose {
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-size: 7px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.subTabClose:hover {
+  opacity: 1;
+  background: rgba(122, 96, 64, 0.15);
+}
+
+.subTabLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60px;
+}
+
+.subEmptyHint {
+  font-size: 10px;
+  color: #8A7F6E;
+  padding: 0 4px;
+}
+
+.subAddBtn {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #8A7F6E;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.subAddBtn:hover {
+  color: #7A6040;
+  background: rgba(122, 96, 64, 0.09);
+}
+
+/* ═══ #rightBody — 内容体 ═══ */
+.rightBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+.rightBody::-webkit-scrollbar { width: 4px; }
+.rightBody::-webkit-scrollbar-track { background: transparent; }
+.rightBody::-webkit-scrollbar-thumb { background: #C8BFB0; border-radius: 999px; }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #8A7F6E;
+  font-size: 13px;
+  gap: 8px;
+  height: 100%;
+}
+
+.emptyIcon {
+  font-size: 32px;
+  opacity: 0.3;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: #8A7F6E;
+}
+
+.emptySub {
+  font-size: 11px;
+  color: #8A7F6E;
+}
+
+/* ═══ Add-tool popup ═══ */
+.popup {
+  position: fixed;
+  top: 34px;
+  right: 6px;
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 4px;
+  min-width: 130px;
+  z-index: 999;
+}
+
+.popupBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1E1A14;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 120ms;
+}
+.popupBtn:hover { background: rgba(122, 96, 64, 0.09); }
+
+.popupIcon {
+  color: #7A6040;
+  font-size: 11px;
+  width: 13px;
+  text-align: center;
+}
+
+.popupEmpty {
+  padding: 6px;
+  font-size: 11px;
+  color: #8A7F6E;
+  text-align: center;
+}

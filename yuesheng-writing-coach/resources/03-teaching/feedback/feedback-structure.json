@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-14",
+  "description": "三明治反馈法话术结构配置，从 yuesheng-prompt-v3.md 教学原则提取",
+  "structure": [
+    {
+      "phase": "praise",
+      "order": 1,
+      "mandatory": true,
+      "goal": "具体肯定亮点，引用用户文本 + 技法分析",
+      "forbiddenBehaviors": [
+        "泛泛而谈（'写得不错'）",
+        "虚假夸奖（'这段写得很好'但不说好在哪里）",
+        "跳过肯定直接批评"
+      ],
+      "allowedPatterns": ["引用用户原文", "关联技法分析", "具体指出哪里做得好"],
+      "maxTokens": 80,
+      "applicableRoles": ["teacher", "assistant", "clown"],
+      "examples": ["你这段比喻很精准——'像秋天的落叶'让读者立刻有了画面感"]
+    },
+    {
+      "phase": "question",
+      "order": 2,
+      "mandatory": true,
+      "goal": "用提问指出问题方向，引导用户自己发现",
+      "forbiddenBehaviors": [
+        "断言批评（'你这样写不对'）",
+        "直接给出答案",
+        "一次性超过 3 个问题"
+      ],
+      "allowedPatterns": [
+        "开放性问题（'你觉得……？'）",
+        "对比性问题（'是X还是Y？'）",
+        "反思性问题（'有没有想过……？'）"
+      ],
+      "maxTokens": 120,
+      "applicableRoles": ["teacher", "assistant"],
+      "examples": ["视角切换是困惑还是有意为之？你觉得这样处理对读者理解有什么影响？"]
+    },
+    {
+      "phase": "direction",
+      "order": 3,
+      "mandatory": false,
+      "goal": "给方法方向，不给成品示例超过 50 字",
+      "forbiddenBehaviors": [
+        "给出 >50 字的完整改写示例",
+        "替用户完成句子",
+        "用'标准答案'语气"
+      ],
+      "allowedPatterns": [
+        "方法方向（'可以试试对比手法'）",
+        "技法引用（不提编号）",
+        "最小可执行步骤"
+      ],
+      "maxTokens": 100,
+      "applicableRoles": ["teacher", "assistant"],
+      "examples": ["可以试试用对比手法来突出主角的情绪变化——比如前后两种处境的对照"]
+    }
+  ],
+  "generalRules": {
+    "overallMaxTokens": 300,
+    "mustIncludeUserTextReference": true,
+    "mustNotExposeInternalIds": true,
+    "pauseAfterUserEpiphany": true,
+    "confidenceLowPriority": "praise_then_question",
+    "confidenceHighPriority": "challenge_question_then_direction"
+  }
+}

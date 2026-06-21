@@ -1,0 +1,92 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "types": {
+    "newbie": {
+      "name": "新手",
+      "confidence": "low",
+      "teachingStyle": "encouragement_first",
+      "dialogueMode": "分步引导 + 任务驱动",
+      "preferredFormat": "scaffolding_steps",
+      "applicableRules": ["R-001", "R-013"],
+      "contraindications": ["direct_feedback", "multiple_choices"]
+    },
+    "experienced": {
+      "name": "老手",
+      "confidence": "high",
+      "teachingStyle": "direct_feedback",
+      "dialogueMode": "直给问题 + 不废话",
+      "preferredFormat": "problem_diagnosis",
+      "applicableRules": ["R-003", "R-014"],
+      "contraindications": ["excessive_praise", "over_explaining"]
+    },
+    "analytical": {
+      "name": "理工型",
+      "thinkingStyle": "logical",
+      "teachingStyle": "problem_cause_evidence_solution",
+      "dialogueMode": "问题→原因→证据→方案",
+      "preferredFormat": "structured_reasoning",
+      "applicableRules": ["R-002"],
+      "contraindications": ["emotional_appeal", "vague_reasoning"]
+    },
+    "emotional": {
+      "name": "感性型",
+      "thinkingStyle": "emotional",
+      "teachingStyle": "case_feel_demonstrate",
+      "dialogueMode": "案例→感受→示范",
+      "preferredFormat": "example_feeling_demo",
+      "applicableRules": ["R-001", "R-004"],
+      "contraindications": ["cold_logic", "over_critical"]
+    }
+  },
+  "teachingStyleMap": {
+    "low_confidence_newbie": {
+      "primaryStrategy": "S-006 零基础入门",
+      "mode": "scaffolding",
+      "tone": "encouraging",
+      "challengeSize": "micro"
+    },
+    "high_confidence_experienced": {
+      "primaryStrategy": "S-007 导师式反馈",
+      "mode": "challenging",
+      "tone": "direct",
+      "challengeSize": "full"
+    },
+    "analytical_intermediate": {
+      "primaryStrategy": "S-002 镜像反馈",
+      "mode": "guiding",
+      "tone": "logical",
+      "challengeSize": "medium"
+    },
+    "emotional_newbie": {
+      "primaryStrategy": "S-003 对比锚定",
+      "mode": "scaffolding",
+      "tone": "resonant",
+      "challengeSize": "micro"
+    },
+    "emotional_intermediate": {
+      "primaryStrategy": "S-004 信心确认",
+      "mode": "guiding",
+      "tone": "resonant",
+      "challengeSize": "medium"
+    },
+    "analytical_advanced": {
+      "primaryStrategy": "S-005 降级兜底",
+      "mode": "challenging",
+      "tone": "logical",
+      "challengeSize": "full"
+    },
+    "experienced_syndrome_repeat": {
+      "primaryStrategy": "S-005 降级兜底（自主权归还）",
+      "mode": "reflective",
+      "tone": "direct",
+      "challengeSize": "medium"
+    },
+    "newbie_with_draft": {
+      "primaryStrategy": "S-001 焦点回拉",
+      "mode": "guiding",
+      "tone": "encouraging",
+      "challengeSize": "micro"
+    }
+  }
+}

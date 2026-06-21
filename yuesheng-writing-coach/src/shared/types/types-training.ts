@@ -113,6 +113,16 @@ export interface TechniqueInfo {
   description: string;
   /** 技法来源 */
   source: string;
+  /** 核心技法 ID（如 suspense-engine） */
+  coreId?: string;
+  /** 核心技法名称（如 悬念驱动） */
+  coreName?: string;
+  /** 分类（如 开篇、节奏、人物） */
+  category?: string;
+  /** 难度（beginner / intermediate / advanced） */
+  difficulty?: string;
+  /** 难度排序（1/2/3） */
+  difficultyOrder?: number;
 }
 
 /** 训练记录 */

@@ -1,0 +1,103 @@
+{
+  "$source": "teaching-strategy-notes.md + SPEC_adaptive-teaching_V1.0.md §3",
+  "userTypes": {
+    "beginner": {
+      "label": "新手",
+      "description": "初学者，缺乏自信，需要更多引导和鼓励",
+      "characteristics": ["缺自信", "写作经验少", "面对任务易瘫痪"],
+      "confidenceBoost": true,
+      "challengeFrequency": "low",
+      "praiseFrequency": "high",
+      "toneProfile": "encouraging"
+    },
+    "intermediate": {
+      "label": "进阶",
+      "description": "有一定经验，需要直接反馈",
+      "characteristics": ["有一定写作经验", "能理解基本概念", "需要针对性指导"],
+      "confidenceBoost": false,
+      "challengeFrequency": "medium",
+      "praiseFrequency": "medium",
+      "toneProfile": "direct"
+    },
+    "advanced": {
+      "label": "成熟",
+      "description": "经验丰富，需要挑战性反馈",
+      "characteristics": ["写作经验丰富", "能自我批评", "需要边界校准"],
+      "confidenceBoost": false,
+      "challengeFrequency": "high",
+      "praiseFrequency": "low",
+      "toneProfile": "direct"
+    },
+    "analytical": {
+      "label": "理工型",
+      "description": "偏好逻辑和结构化分析",
+      "characteristics": ["喜欢逻辑推理", "需要因果链", "偏好结构化信息"],
+      "preferredFormat": "problem→cause→evidence→solution",
+      "toneProfile": "logical"
+    },
+    "emotional": {
+      "label": "感性型",
+      "description": "偏好案例和情感共鸣",
+      "characteristics": ["感性创作者", "需要画面感", "通过感受理解"],
+      "preferredFormat": "example→feeling→demonstration",
+      "toneProfile": "resonant"
+    }
+  },
+  "teachingStyleMap": {
+    "low_confidence_newbie": {
+      "mode": "scaffolding",
+      "tone": "encouraging",
+      "description": "低置信度新手：支架模式 + 鼓励语气"
+    },
+    "high_confidence_experienced": {
+      "mode": "challenging",
+      "tone": "direct",
+      "description": "高置信度老手：挑战模式 + 直接语气"
+    },
+    "analytical_medium": {
+      "mode": "guiding",
+      "tone": "logical",
+      "description": "理工型中等水平：引导模式 + 逻辑语气"
+    },
+    "emotional_low": {
+      "mode": "scaffolding",
+      "tone": "resonant",
+      "description": "感性型低水平：支架模式 + 共鸣语气"
+    }
+  },
+  "confidenceLevels": {
+    "low": {
+      "label": "低置信度",
+      "signals": ["自我否定句式", "反复确认", "过度自我审查"],
+      "response": "信心确认，先肯定再引导"
+    },
+    "medium": {
+      "label": "中置信度",
+      "signals": ["有一定判断但不确定", "偶尔自我怀疑"],
+      "response": "引导确认，帮助建立判断标准"
+    },
+    "high": {
+      "label": "高置信度",
+      "signals": ["有明确判断", "能自我批评", "可能走向极端"],
+      "response": "边界校准，防止走形"
+    }
+  },
+  "learningStyles": {
+    "case_study": {
+      "label": "案例学习型",
+      "description": "通过对比案例学习最佳",
+      "preferredStrategies": ["STR-CONTRAST-DEMO", "STR-ERROR-DEMO"]
+    },
+    "guided_discovery": {
+      "label": "引导发现型",
+      "description": "通过提问引导自己发现答案",
+      "preferredStrategies": ["STR-QUESTION-GUIDE", "STR-FILL-IN"]
+    },
+    "free_exploration": {
+      "label": "自由探索型",
+      "description": "需要在约束下自主创作",
+      "preferredStrategies": ["STR-RANDOM-VAR", "STR-BODY-READ"]
+    }
+  },
+  "principle": "教学策略层不是决定'说什么'，而是决定'怎么说' — teaching-strategy-notes.md"
+}

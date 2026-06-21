@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '../../shared/constants';
-import { SessionService } from '../shared/services/session.service';
+import type { SessionService } from '../shared/services/session.service';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 

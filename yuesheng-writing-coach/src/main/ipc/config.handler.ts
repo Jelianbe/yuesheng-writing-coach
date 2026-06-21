@@ -3,9 +3,9 @@
 // 依赖：electron.ipcMain, ConfigService
 // 安全：不在日志中打印 API Key
 
-import { ConfigService } from '../shared/services/config.service';
+import type { ConfigService } from '../shared/services/config.service';
 import { IPC_CHANNELS } from '../../shared/constants';
-import {
+import type {
   ApiConfig,
 } from '../../shared/types/index';
 import { createHandler } from './utils/create-handler';
@@ -22,6 +22,31 @@ let deps: ConfigHandlerDeps | null = null;
 export function initConfigHandlers(d: ConfigHandlerDeps): void {
   deps = d;
 }
+
+/**
+ * 可修改配置键白名单 — SEC-DEBT-1
+ *
+ * 运行时白名单，防止 renderer 注入任意 key 覆盖敏感配置。
+ * 所有值类型在运行时再次校验。
+ */
+const CONFIG_SET_ALLOWED_KEYS = new Set<keyof ApiConfig>([
+  'apiKey',
+  'baseUrl',
+  'modelName',
+  'temperature',
+  'attitudeLevel',
+  'maxTokens',
+]);
+
+/** 每个 key 对应的预期运行时类型 */
+const CONFIG_VALUE_VALIDATORS: Record<string, (v: unknown) => boolean> = {
+  apiKey: (v): v is string => typeof v === 'string',
+  baseUrl: (v): v is string => typeof v === 'string',
+  modelName: (v): v is string => typeof v === 'string',
+  temperature: (v): v is number => typeof v === 'number' && v >= 0 && v <= 2,
+  attitudeLevel: (v): v is string => typeof v === 'string' && ['yuesheng', 'doubao', 'sensei'].includes(v),
+  maxTokens: (v): v is number => typeof v === 'number' && v >= 256 && v <= 128000,
+};
 
 /**
  * 注册配置相关的 IPC 处理器
@@ -41,14 +66,23 @@ export function registerConfigHandlers(): void {
     }
   );
 
-  // 设置配置值
+  // 设置配置值（SEC-DEBT-1：白名单 + 值类型校验）
   createHandler(
     IPC_CHANNELS.CONFIG_SET,
     async (
       _event,
-      args: { key: keyof ApiConfig; value: ApiConfig[keyof ApiConfig] }
+      args: { key: string; value: unknown }
     ) => {
-      d.configService.setConfigKey(args.key, args.value);
+      // 1. 白名单检查
+      if (!CONFIG_SET_ALLOWED_KEYS.has(args.key as keyof ApiConfig)) {
+        throw new Error(`INVALID_PAYLOAD: config key '${args.key}' is not writable`);
+      }
+      // 2. 值类型校验（白名单 key 必须存在对应校验器）
+      const validator = CONFIG_VALUE_VALIDATORS[args.key];
+      if (!validator || !validator(args.value)) {
+        throw new Error(`INVALID_PAYLOAD: invalid value type for config key '${args.key}'`);
+      }
+      d.configService.setConfigKey(args.key as keyof ApiConfig, args.value as ApiConfig[keyof ApiConfig]);
     }
   );
 

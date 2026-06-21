@@ -1,0 +1,309 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "三条学习路径的渐进分层评审规则，包含完成标准、跳级判定和阶段间复习",
+  "globalRules": {
+    "passThreshold": 0.7,
+    "skipThreshold": 0.85,
+    "maxSkipsPerPath": 1,
+    "minTechniquesRatio": 0.75,
+    "reviewRetryLimit": 2
+  },
+  "pathReviews": [
+    {
+      "pathId": "character-craft",
+      "pathName": "角色塑造",
+      "stages": [
+        {
+          "level": "L0",
+          "name": "基础表达",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "TE-013",
+              "TQ-012",
+              "TQ-013",
+              "TQ-027"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": false,
+            "pretestTechniques": [
+              "TE-013",
+              "TQ-012"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "single",
+            "fromPreviousStage": [],
+            "fromCurrentStage": [
+              "TE-013"
+            ]
+          }
+        },
+        {
+          "level": "L1",
+          "name": "对话与视角",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "AIP-008",
+              "TQ-008",
+              "TQ-030",
+              "TQ-032"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": true,
+            "pretestTechniques": [
+              "AIP-008",
+              "TQ-008"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "mixed",
+            "fromPreviousStage": [
+              "TE-013"
+            ],
+            "fromCurrentStage": [
+              "AIP-008"
+            ]
+          }
+        },
+        {
+          "level": "L2",
+          "name": "角色立体化",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "AIP-003",
+              "TC-002",
+              "TC-003",
+              "TC-004"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": true,
+            "pretestTechniques": [
+              "AIP-003",
+              "TC-002"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "mixed",
+            "fromPreviousStage": [
+              "AIP-008"
+            ],
+            "fromCurrentStage": [
+              "AIP-003"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "pathId": "world-building",
+      "pathName": "世界观构建",
+      "stages": [
+        {
+          "level": "L0",
+          "name": "展示式传递",
+          "totalTechniques": 3,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "TE-013",
+              "TQ-012",
+              "TQ-013"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": false,
+            "pretestTechniques": [
+              "TE-013",
+              "TQ-012"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "single",
+            "fromPreviousStage": [],
+            "fromCurrentStage": [
+              "TE-013"
+            ]
+          }
+        },
+        {
+          "level": "L2",
+          "name": "设定融入",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "AIP-002",
+              "AIP-007",
+              "AIP-011",
+              "AIP-020"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": true,
+            "pretestTechniques": [
+              "AIP-002",
+              "AIP-007"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "mixed",
+            "fromPreviousStage": [
+              "TE-013"
+            ],
+            "fromCurrentStage": [
+              "AIP-002"
+            ]
+          }
+        },
+        {
+          "level": "L3",
+          "name": "悬念驱动",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "AIP-005",
+              "AIP-016",
+              "AIP-021",
+              "TC-012"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": true,
+            "pretestTechniques": [
+              "AIP-005",
+              "AIP-016"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "mixed",
+            "fromPreviousStage": [
+              "AIP-002"
+            ],
+            "fromCurrentStage": [
+              "AIP-005"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "pathId": "outline-planning",
+      "pathName": "大纲规划",
+      "stages": [
+        {
+          "level": "L0",
+          "name": "开篇技巧",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "TC-008",
+              "TE-004",
+              "TE-006",
+              "TE-014"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": false,
+            "pretestTechniques": [
+              "TC-008",
+              "TE-004"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "single",
+            "fromPreviousStage": [],
+            "fromCurrentStage": [
+              "TC-008"
+            ]
+          }
+        },
+        {
+          "level": "L1",
+          "name": "节奏呼吸",
+          "totalTechniques": 4,
+          "completionCriteria": {
+            "requiredTechniques": 3,
+            "requiredTechniqueIds": [
+              "AIP-017",
+              "TQ-005",
+              "TQ-041",
+              "TQ-057"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": true,
+            "pretestTechniques": [
+              "AIP-017",
+              "TQ-005"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "mixed",
+            "fromPreviousStage": [
+              "TC-008"
+            ],
+            "fromCurrentStage": [
+              "AIP-017"
+            ]
+          }
+        },
+        {
+          "level": "L2",
+          "name": "结构创新",
+          "totalTechniques": 1,
+          "completionCriteria": {
+            "requiredTechniques": 1,
+            "requiredTechniqueIds": [
+              "TE-018"
+            ],
+            "requiredAssessments": 1
+          },
+          "skipCriteria": {
+            "enabled": true,
+            "pretestTechniques": [
+              "TE-018"
+            ],
+            "pretestThreshold": 0.85
+          },
+          "nextStageReview": {
+            "reviewType": "mixed",
+            "fromPreviousStage": [
+              "AIP-017"
+            ],
+            "fromCurrentStage": [
+              "TE-018"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

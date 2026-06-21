@@ -9,10 +9,22 @@
  * - 此文件仅负责 IPC 通道注册，不持有业务状态
  */
 
-import { TeachingStateService } from '../domains/teaching/teaching-state.service';
+import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES } from '../../shared/mappings';
 import { createHandler } from './utils/create-handler';
+import type { TeachingStateUpdateRequest } from '../../shared/api-contracts/teaching-state.contract';
+
+/** 教学状态可更新字段白名单 — SEC-DEBT-2 */
+const TEACHING_STATE_UPDATABLE_FIELDS = new Set<string>([
+  'currentPhase',
+  'currentSubphase',
+  'activeProblems',
+  'completedActions',
+  'nextSuggestedActions',
+  'diagnosisSummary',
+  'lockedSyndromes',
+]);
 
 /** DI 注入的教学状态服务 */
 let teachingStateService: TeachingStateService | null = null;
@@ -79,12 +91,19 @@ export function registerTeachingStateHandlers(): void {
   );
 
   /**
-   * 更新教学状态
+   * 更新教学状态（SEC-DEBT-2：白名单字段校验，移除 as any）
    */
   createHandler(
     IPC_CHANNELS.TEACHING_STATE_UPDATE,
-    (_event, args: { sessionId: string; updates: Record<string, unknown> }) => {
-      const updated = getService().update(args.sessionId, args.updates as any);
+    (_event, args: TeachingStateUpdateRequest) => {
+      // 白名单过滤：移除不在白名单中的字段
+      const filtered: Record<string, unknown> = {};
+      for (const key of Object.keys(args.updates)) {
+        if (TEACHING_STATE_UPDATABLE_FIELDS.has(key)) {
+          filtered[key] = (args.updates as Record<string, unknown>)[key];
+        }
+      }
+      const updated = getService().update(args.sessionId, filtered);
       if (!updated) throw new Error('Teaching state not found');
       return updated;
     },

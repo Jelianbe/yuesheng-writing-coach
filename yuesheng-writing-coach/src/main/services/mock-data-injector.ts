@@ -8,7 +8,7 @@
  * 注意：仅在开发模式下运行（NODE_ENV=development），且仅在数据库为空时注入
  */
 
-import Database from 'better-sqlite3';
+import type Database from 'better-sqlite3';
 
 /** 模拟诊断条目 */
 interface MockDiagnosis {

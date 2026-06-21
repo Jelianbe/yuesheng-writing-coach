@@ -28,6 +28,10 @@ const allowedInvokeChannels: readonly string[] = [
   'teachingState:getPrompt',
   'teachingState:updateSummary',
   'ability:getProfile',
+  'teachingNote:record',
+  'teachingNote:getTree',
+  'teachingNote:delete',
+  'teachingNote:update',
   'evidence:getByDisease',
   'evidence:getByAbility',
   'evidence:getChain',
@@ -65,6 +69,14 @@ const allowedInvokeChannels: readonly string[] = [
   'chapter:delete',
   'chapter:updateContent',
   'teachingHistory:add',
+  'training:catalog',
+  'training:decideReading',
+  'config:getReadingEntry',
+  'project:list',
+  'project:get',
+  'project:create',
+  'project:update',
+  'project:delete',
 ];
 
 /** 允许渲染进程通过 send() 单向发送的 IPC 通道白名单 */
@@ -76,7 +88,7 @@ const allowedSendChannels: readonly string[] = [
 
 /** 允许渲染进程通过 on() 订阅的 IPC 事件通道白名单 */
 const allowedEventChannels: readonly string[] = [
-  'diagnosis:update',
+  'diagnosis:updated',
   'teachingState:updated',
   'teachingState:mastery',
   'chat:stream:data',
