@@ -87,6 +87,33 @@ export interface TrainingState {
   /** 推导错误 */
   derivationError: string | null;
 
+  // ===== F-03: 复盘总结 =====
+
+  /** 复盘总结数据（null = 未加载） */
+  retroSummary: {
+    totalTrainingCount: number;
+    syndromeCount: number;
+    syndromeSummaries: Array<{
+      syndromeId: string;
+      syndromeName: string;
+      trainingCount: number;
+      initialScore: number | null;
+      currentScore: number | null;
+      improvement: number | null;
+      mastered: boolean;
+    }>;
+    overallImprovement: number;
+    masteredTechniques: string[];
+    recommendedFocus: string[];
+    summary: string;
+  } | null;
+
+  /** 复盘加载中 */
+  retroLoading: boolean;
+
+  /** 进入复盘阶段（通过 IPC 生成复盘总结，切换 centerMode 为 retro） */
+  enterRetro: (sessionId: string) => Promise<void>;
+
   // ===== 模式切换 =====
 
   /** 进入训练工坊（切换 centerMode 为 training） */

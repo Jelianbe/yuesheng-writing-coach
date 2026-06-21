@@ -194,6 +194,9 @@ export const IPC_CHANNELS = {
   PROJECT_CREATE: 'project:create',
   PROJECT_UPDATE: 'project:update',
   PROJECT_DELETE: 'project:delete',
+  // === 复盘总结 (F-03) ===
+  RETRO_GENERATE: 'retro:generate',
+  RETRO_SAVE: 'retro:save',
   // === 工具调用 ===
   CHAT_TOOL_EXECUTING: 'chat:tool:executing',
 } as const;
@@ -243,6 +246,8 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
   IPC_CHANNELS.TRAINING_DECIDE_READING,
   IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR,
   IPC_CHANNELS.TRAINING_CATALOG,
+  IPC_CHANNELS.RETRO_GENERATE,
+  IPC_CHANNELS.RETRO_SAVE,
   IPC_CHANNELS.MANUSCRIPT_LIST,
   IPC_CHANNELS.MANUSCRIPT_GET,
   IPC_CHANNELS.MANUSCRIPT_CREATE,

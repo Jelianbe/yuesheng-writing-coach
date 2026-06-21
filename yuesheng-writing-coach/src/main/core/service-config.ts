@@ -30,6 +30,7 @@ import { injectMockDiagnosisData } from '../services/mock-data-injector';
 import type { IDiagnosisDomain } from '../domains/01-diagnosis';
 import { processAIResponse } from '../domains/01-diagnosis/diagnosis-processor';
 import { TeachingDecisionService } from '../domains/02-prescription/decision/decision.service';
+import { RetroService } from '../domains/05-retro/retro.service';
 import type { ITeachingDomain } from '../domains/03-teaching';
 import type { IStudentDomain } from '../domains/02-prescription/student';
 import type { IPromptDomain } from '../domains/03-teaching/prompt';
@@ -76,6 +77,13 @@ export function configureServices(
   // Training Domain
   // ============================================================
   container.register<TrainingRecordService>('trainingRecordService', () => new TrainingRecordService(db));
+
+  // ============================================================
+  // Retro Domain (F-03)
+  // ============================================================
+  container.register<RetroService>('retroService', (c) =>
+    new RetroService(c.get<TrainingRecordService>('trainingRecordService')),
+  );
 
   // ============================================================
   // Student Domain
