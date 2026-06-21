@@ -9,7 +9,7 @@ export interface AppConfigGateProps {
   /** 是否显示引导流程 */
   showOnboarding: boolean;
   /** 引导完成回调 */
-  onOnboardingComplete: (baseline: any) => Promise<void>;
+  onOnboardingComplete: (baseline: Record<string, unknown>) => Promise<void>;
   /** 引导跳过回调 */
   onOnboardingSkip: () => Promise<void>;
   /** 通过守卫后的子节点（主应用内容） */
