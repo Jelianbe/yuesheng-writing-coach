@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>月笙 — 写作教练 V7</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #7A6040;
+  --accent-hover: #6A5030;
+  --accent-light: #C8B088;
+  --success: #5A8F68;
+  --warn: #C8943C;
+  --danger: #B84A4A;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+*{box-sizing:border-box}
+body{font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased}
+.font-serif{font-family:'Noto Serif SC','Songti SC',serif}
+.cscroll::-webkit-scrollbar{width:4px}
+.cscroll::-webkit-scrollbar-track{background:transparent}
+.cscroll::-webkit-scrollbar-thumb{background:#C8BFB0;border-radius:999px}
+.scrollbar-none::-webkit-scrollbar{display:none}
+.scrollbar-none{-ms-overflow-style:none;scrollbar-width:none}
+
+/* Panel transitions */
+.panel-trans{transition:width 220ms var(--ease)}
+
+/* Floating bar */
+#appRoot.rc #rCollBar{display:flex}
+#appRoot:not(.rc) #rCollBar{display:none}
+#appRoot.rc #cHdrActions{display:none}
+#appRoot.lc #leftPanel{width:0;min-width:0;overflow:hidden;border-right-color:transparent}
+#appRoot.rc #rightPanel{width:0;min-width:0;overflow:hidden;border-left-color:transparent}
+.lc-collapsed-left{display:none}
+#appRoot.lc .lc-collapsed-left{display:flex;align-items:center;gap:6px;margin-right:6px;animation:fadeSlideIn 180ms var(--ease) both}
+
+/* Animations */
+@keyframes swapIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toolTabIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+@keyframes popIn{from{opacity:0;transform:translateY(-6px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.content-swap{animation:swapIn 280ms var(--ease) both}
+.tool-tab-new{animation:toolTabIn 180ms var(--ease) both}
+.popup-enter{animation:popIn 150ms var(--ease) both}
+.btn-press:active{transform:scale(0.94)}
+.ts:not(:last-child)::after{content:'';position:absolute;left:8px;top:23px;bottom:0;width:1px;background:#D6CEC0}
+
+/* Stagger */
+.c-stagger{animation:swapIn 300ms var(--ease) both}
+.c-stagger:nth-child(1){animation-delay:40ms}
+.c-stagger:nth-child(2){animation-delay:90ms}
+.c-stagger:nth-child(3){animation-delay:140ms}
+
+/* Status badge */
+.st-badge{transition:all 150ms var(--ease)}
+.st-badge.idle{color:#8A7F6E;border-color:#D6CEC0;background:#FAF8F5}
+.st-badge.idle .dot{background:#8A7F6E}
+.st-badge.teach{color:#C8943C;border-color:rgba(200,148,60,.3);background:rgba(200,148,60,.07)}
+.st-badge.teach .dot{background:#C8943C}
+.st-badge.diag{color:#B84A4A;border-color:rgba(184,74,74,.2);background:rgba(184,74,74,.06)}
+.st-badge.diag .dot{background:#B84A4A}
+.st-badge.done{color:#5A8F68;border-color:rgba(90,143,104,.25);background:rgba(90,143,104,.07)}
+.st-badge.done .dot{background:#5A8F68}
+
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;transition-duration:.01ms!important}
+  .content-swap,.tool-tab-new,.popup-enter,.lc-collapsed-left,.c-stagger{animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- Right collapsed floating bar -->
+<div id="rCollBar" class="fixed right-0 top-0 h-10 z-50 items-center gap-0.5 px-1.5">
+  <button id="rBarAdd" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">＋</button>
+  <button id="rBarSet" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">⚙</button>
+  <div class="w-px h-3 bg-[#C8BFB0] mx-1"></div>
+  <button id="rBarExp" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">⤢</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">─</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">□</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:bg-[#B84A4A] hover:text-white text-[11px] transition-colors">✕</button>
+</div>
+
+<div class="h-dvh w-screen flex overflow-hidden bg-[#F0EDE6]" id="appRoot">
+
+  <!-- ===== LEFT ===== -->
+  <aside id="leftPanel" class="panel-trans w-[220px] min-w-0 flex-shrink-0 bg-[#E8E3DA] border-r border-[#D6CEC0] flex flex-col overflow-hidden">
+    <div class="flex items-center justify-between px-3.5 py-2 flex-shrink-0">
+      <div class="flex items-center gap-1.5">
+        <div class="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+        <span class="font-serif text-[15px] font-semibold text-[#1E1A14]">月笙</span>
+      </div>
+      <button id="collapseLeftBtn" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press" title="收起">☰</button>
+    </div>
+    <div class="px-2.5 pb-2 flex-shrink-0">
+      <button class="tab-btn w-full py-[6px] rounded text-[13px] text-center mb-1 transition-all" data-tab="train" onclick="switchTab(this)">训练</button>
+      <div class="grid grid-cols-2 gap-1">
+        <button class="tab-btn py-[6px] rounded text-[13px] text-center transition-all active" data-tab="chat" onclick="switchTab(this)">对话</button>
+        <button class="tab-btn py-[6px] rounded text-[13px] text-center transition-all" data-tab="proj" onclick="switchTab(this)">项目</button>
+      </div>
+    </div>
+    <div class="h-px bg-[#D6CEC0] mx-3 flex-shrink-0"></div>
+    <div class="px-2.5 py-2 flex-shrink-0">
+      <div class="flex items-center bg-[#FAF8F5] border border-[#D6CEC0] rounded px-2 py-1 transition-colors focus-within:border-[#7A6040]">
+        <span class="text-[#8A7F6E] text-[10px] mr-1">⌕</span>
+        <input type="text" placeholder="搜索..." class="flex-1 min-w-0 bg-transparent text-[13px] text-[#1E1A14] outline-none placeholder:text-[#8A7F6E]" />
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto cscroll px-2.5 pb-2" id="leftList"></div>
+  </aside>
+
+  <!-- ===== CENTER ===== -->
+  <main class="flex-1 flex flex-col min-w-0 bg-[#F0EDE6]">
+    <header class="flex items-center justify-between px-5 pt-2.5 pb-1 flex-shrink-0" id="centerHdr">
+      <div class="flex items-center gap-1.5 min-w-0 flex-1">
+        <div class="lc-collapsed-left">
+          <div class="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+          <button id="expandLeftBtn" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">☰</button>
+        </div>
+        <button class="flex items-center gap-1 px-1.5 py-1 rounded text-[13px] text-[#1E1A14] font-medium hover:bg-[rgba(122,96,64,0.09)] transition-colors">
+          <span class="text-[7px] text-[#8A7F6E]">▼</span>
+          <span>我的第一本小说</span>
+          <span class="text-[7px] text-[#8A7F6E]">▾</span>
+        </button>
+        <span class="st-badge teach inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border">
+          <span class="dot w-1 h-1 rounded-full"></span>
+          <span id="stText">教学中</span>
+        </span>
+      </div>
+      <div id="cHdrActions" class="flex gap-0.5 flex-shrink-0">
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">＋</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">⚙</button>
+      </div>
+    </header>
+    <div class="flex-1 overflow-y-auto cscroll px-5 pb-3" id="centerBody"></div>
+    <footer class="border-t border-[#D6CEC0] bg-[#F0EDE6] px-5 pb-2 pt-1 h-[calc(100dvh/6)] flex flex-col gap-1 flex-shrink-0">
+      <div class="flex items-center justify-between h-5 flex-shrink-0">
+        <div class="flex items-center gap-1">
+          <button class="px-1 py-0.5 rounded text-[10px] text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)] transition-colors">[模板]</button>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="flex items-center gap-0.5" id="attLights">
+            <button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#5A8F68] bg-[#5A8F68] scale-110 transition-transform" data-lv="g"></button>
+            <button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#C8943C] bg-transparent transition-transform" data-lv="y"></button>
+            <button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#B84A4A] bg-transparent transition-transform" data-lv="r"></button>
+          </div>
+          <button id="lockBtn" class="text-[10px] text-[#8A7F6E] px-0.5 py-0.5 rounded hover:text-[#5C5242] transition-colors" title="锁定">🔓</button>
+        </div>
+      </div>
+      <div class="flex-1 relative bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg px-2.5 pt-1.5 pb-1 transition-colors focus-within:border-[#7A6040]">
+        <textarea class="w-full h-full resize-none bg-transparent text-[14px] leading-relaxed text-[#1E1A14] outline-none pr-12" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button class="absolute bottom-1.5 right-1.5 px-2.5 py-0.5 rounded bg-[#7A6040] text-white text-[13px] font-medium hover:bg-[#6A5030] transition-colors disabled:bg-[#C8BFB0] btn-press" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ===== RIGHT ===== -->
+  <aside id="rightPanel" class="panel-trans w-[360px] min-w-0 flex-shrink-0 bg-[#E8E3DA] border-l border-[#D6CEC0] flex flex-col overflow-hidden">
+    <div class="flex items-center gap-0.5 px-1.5 py-0.5 min-h-[32px] border-b border-[#D6CEC0] flex-shrink-0 overflow-hidden" id="rightHdr">
+      <div class="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto mx-1 scrollbar-none" id="toolTabs"></div>
+      <div class="flex items-center gap-0.5 flex-shrink-0">
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors flex-shrink-0 btn-press" id="addToolBtn" title="添加工具">＋</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press" id="collapseRightBtn">⤢</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">─</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">□</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:bg-[#B84A4A] hover:text-white text-[11px] transition-colors btn-press">✕</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto cscroll p-3" id="rightBody"></div>
+  </aside>
+</div>
+
+<div id="toolPopup" class="hidden fixed bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg shadow-lg p-1 min-w-[130px] z-50" style="top:34px;right:6px"></div>
+
+<script>
+const body = document.getElementById('appRoot');
+
+// ===== Data =====
+const sessions = [
+  { id:1, title:'初稿诊断', type:'chat', time:'今天' },
+  { id:2, title:'第一章节奏讨论', type:'chat', time:'昨天' },
+  { id:3, title:'训练: 动作替代情绪词', type:'train', time:'3天前' },
+  { id:4, title:'配角动机梳理', type:'chat', time:'5天前' },
+  { id:5, title:'训练: 对话节奏', type:'train', time:'上周' }
+];
+const projects = [
+  { id:'p1', title:'第一章: 山门', type:'ch' },
+  { id:'p2', title:'第二章: 试炼', type:'ch' },
+  { id:'p3', title:'第三章: 初遇', type:'ch' },
+  { id:'p4', title:'第四章: 暗流', type:'ch' },
+  { id:'p5', title:'大纲', type:'nt' }
+];
+const trainCats = [
+  { name:'推荐技法', rec:true, items:[{ n:'动作替代情绪词', l:'入门' },{ n:'对话节奏控制', l:'入门' }] },
+  { name:'结构技法', items:[{ n:'三幕剧结构', l:'进阶' },{ n:'伏笔回收', l:'进阶' }] },
+  { name:'人物技法', items:[{ n:'动机层次', l:'入门' },{ n:'视角切换', l:'高阶' }] }
+];
+const toolsList = [
+  { id:'prog', name:'教学进度', icon:'◐', hint:'纵向时序' },
+  { id:'log', name:'学习日志', icon:'✎', hint:'每日记录' },
+  { id:'ms', name:'作品', icon:'☰', hint:'章节编辑器' },
+  { id:'nt', name:'教学笔记', icon:'✤', hint:'设定树' },
+  { id:'set', name:'设置', icon:'⚙', hint:'API Key' }
+];
+let openTools = [], activeToolId = null, status = 'teach', chatSessionId = null;
+
+// ===== Tab =====
+function switchTab(el) {
+  const group = el.closest('.grid') || el.parentElement;
+  group.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.remove('bg-[#7A6040]','text-white','font-medium');
+    b.classList.add('text-[#5C5242]','hover:bg-[rgba(122,96,64,0.09)]');
+  });
+  el.classList.remove('text-[#5C5242]','hover:bg-[rgba(122,96,64,0.09)]');
+  el.classList.add('bg-[#7A6040]','text-white','font-medium');
+  renderAll();
+}
+function renderAll() { renderList(); renderCenter(); renderRight(); }
+
+// ===== Left list =====
+function renderList() {
+  const list = document.getElementById('leftList');
+  const at = document.querySelector('.tab-btn.active');
+  const t = at?.dataset?.tab || 'chat';
+  if (t === 'train') {
+    list.innerHTML = sessions.filter(s=>s.type==='train').map(s =>
+      `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] transition-all hover:translate-x-[1px]">
+        <span class="text-[12px] text-[#8A7F6E] w-[14px] text-center flex-shrink-0">◎</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${s.title}</span>
+        <span class="text-[10px] text-[#8A7F6E] bg-[#FAF8F5] px-1 rounded-full flex-shrink-0">${s.time}</span>
+      </div>`).join('');
+  } else if (t === 'proj') {
+    list.innerHTML = projects.map(p =>
+      `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] transition-all hover:translate-x-[1px]">
+        <span class="text-[12px] text-[#8A7F6E] w-[14px] text-center flex-shrink-0">${p.type==='ch'?'☰':'✎'}</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${p.title}</span>
+      </div>`).join('');
+  } else {
+    list.innerHTML = sessions.filter(s=>s.type==='chat').map(s =>
+      `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] transition-all hover:translate-x-[1px]${chatSessionId===s.id?' bg-[rgba(122,96,64,0.12)]':''}" data-id="${s.id}" onclick="selectChat(${s.id})">
+        <span class="text-[12px] text-[#8A7F6E] w-[14px] text-center flex-shrink-0">◌</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${s.title}</span>
+        <span class="text-[10px] text-[#8A7F6E] bg-[#FAF8F5] px-1 rounded-full flex-shrink-0">${s.time}</span>
+      </div>`).join('');
+  }
+}
+function selectChat(id){chatSessionId=id;renderList();renderCenter();}
+
+// ===== Center =====
+function renderCenter() {
+  const el = document.getElementById('centerBody');
+  if (chatSessionId) {
+    el.innerHTML = `<div class="content-swap max-w-[560px] mx-auto flex flex-col gap-3 pt-2">
+      <div class="msg flex gap-2">
+        <div class="msg-av w-6 h-6 rounded-full bg-[rgba(122,96,64,0.09)] text-[#7A6040] flex items-center justify-center font-serif text-[11px] font-semibold flex-shrink-0">月</div>
+        <div class="flex-1 text-[14px] leading-relaxed text-[#1E1A14]">
+          <p>早上好。你昨天发的开头整体氛围不错。</p>
+          <p>节奏稍慢了一些，主要集中在第一段环境描写。你方便聊聊为什么用这么长一段开始吗？</p>
+          <div class="text-[11px] text-[#8A7F6E] mt-1">10:32</div>
+        </div>
+      </div>
+      <div class="msg flex gap-2">
+        <div class="msg-av w-6 h-6 rounded-full bg-[rgba(122,96,64,0.09)] text-[#7A6040] flex items-center justify-center font-serif text-[11px] font-semibold flex-shrink-0">我</div>
+        <div class="flex-1 text-[14px] leading-relaxed text-[#1E1A14]">
+          <p>我怕读者不了解世界观会看不懂后面的剧情。</p>
+          <div class="text-[11px] text-[#8A7F6E] mt-1">10:33</div>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="content-swap max-w-[420px] mx-auto mt-[70px] text-center">
+      <h2 class="font-serif text-[20px] font-semibold text-[#1E1A14] mb-[18px]">开始你的写作之旅</h2>
+      <div class="flex flex-col gap-[7px]">
+        ${[
+          {e:'📝',l:'我有作品',h:'直接进入聊天，我会帮你分析'},
+          {e:'🌱',l:'从头学习',h:'我引导你搭建世界观和人物'},
+          {e:'💬',l:'先聊聊',h:'正常聊天，我在对话中自然引导'}
+        ].map((c,i)=>`<button class="c-stagger flex items-center gap-3 px-4 py-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg hover:border-[#7A6040] hover:-translate-y-[1px] transition-all text-left w-full btn-press">
+          <span class="text-[17px] w-[24px] text-center flex-shrink-0">${c.e}</span>
+          <div>
+            <div class="text-[14px] font-medium text-[#1E1A14]">${c.l}</div>
+            <div class="text-[11px] text-[#8A7F6E] mt-[1px]">${c.h}</div>
+          </div>
+        </button>`).join('')}
+      </div>
+    </div>`;
+  }
+}
+
+// ===== Right (NEVER touches #rightHdr, only #toolTabs and #rightBody) =====
+function renderRight() {
+  const tabs = document.getElementById('toolTabs');
+  const rb = document.getElementById('rightBody');
+  const t = document.querySelector('.tab-btn.active')?.dataset?.tab;
+
+  if (t === 'train' && !openTools.length) {
+    tabs.innerHTML = `<div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap flex-shrink-0 tool-tab-new" style="background:#7A6040;color:white;font-weight:500">
+      <span class="truncate max-w-[60px]">训练技法</span>
+      <span class="cl w-3 h-3 flex items-center justify-center rounded-full text-[7px] opacity-70 hover:opacity-100 hover:bg-[rgba(255,255,255,0.15)] flex-shrink-0" id="closeTrain">✕</span>
+    </div>`;
+    document.getElementById('closeTrain').addEventListener('click', () => { openTools=[]; activeToolId=null; renderRight(); }, {once:true});
+
+    rb.innerHTML = trainCats.map(c =>
+      `<div class="text-[11px] text-[#8A7F6E] tracking-[0.04em] mt-2 mb-1 px-0.5 font-medium content-swap">${c.name}${c.rec?'  👍':''}</div>` +
+      `<div>${c.items.map(i=>`<button class="flex items-center gap-1.5 px-2 py-1.5 bg-[#FAF8F5] border border-[#D6CEC0] rounded w-full text-left mb-0.5 hover:border-[#7A6040] hover:translate-x-[2px] transition-all btn-press">
+        <span class="flex-1 text-[13px] text-[#1E1A14]">${i.n}</span>
+        <span class="text-[9px] text-[#8A7F6E] bg-[#E8E3DA] px-1 rounded-full">${i.l}</span>
+      </button>`).join('')}</div>`
+    ).join('');
+
+  } else if (openTools.length) {
+    tabs.innerHTML = openTools.map((tId,i) => {
+      const tool = toolsList.find(x=>x.id===tId);
+      const ac = tId === activeToolId;
+      return `<div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap flex-shrink-0 ${ac?'bg-[#7A6040] text-white font-medium':'bg-[#FAF8F5] text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)]'} transition-colors cursor-pointer ${i===openTools.length-1?'tool-tab-new':''}" data-t="${tId}">
+        <span class="truncate max-w-[60px]">${tool?tool.name:tId}</span>
+        <span class="cl w-3 h-3 flex items-center justify-center rounded-full text-[7px] opacity-60 hover:opacity-100 hover:bg-[rgba(0,0,0,0.06)] flex-shrink-0" data-c="${tId}">✕</span>
+      </div>`;
+    }).join('');
+
+    tabs.querySelectorAll('[data-t]').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.classList.contains('cl')) { closeTool(e.target.dataset.c); return; }
+        activeToolId = el.dataset.t; renderRight();
+      });
+    });
+
+    const tool = toolsList.find(x=>x.id===activeToolId);
+    if (tool) rb.innerHTML = toolContent(tool); else rb.innerHTML = '';
+
+  } else {
+    rb.innerHTML = `<div class="grid grid-cols-2 gap-[7px]">${toolsList.map(t =>
+      `<button class="flex flex-col items-center gap-1 p-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg text-center hover:border-[#7A6040] hover:-translate-y-[1px] transition-all btn-press content-swap" onclick="openTool('${t.id}')">
+        <span class="text-[16px] text-[#7A6040] leading-none">${t.icon}</span>
+        <span class="text-[13px] font-medium text-[#1E1A14]">${t.name}</span>
+        <span class="text-[11px] text-[#8A7F6E]">${t.hint}</span>
+      </button>`).join('')}</div>`;
+  }
+}
+function openTool(id){if(!openTools.includes(id))openTools.push(id);activeToolId=id;renderRight();}
+function closeTool(id){openTools=openTools.filter(t=>t!==id);if(activeToolId===id)activeToolId=openTools[openTools.length-1]||null;renderRight();}
+
+function toolContent(tool) {
+  if (tool.id==='prog') return `<div class="content-swap"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">教学进度</h3>
+    <div class="flex items-center justify-center gap-1 p-2 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg mb-2.5">
+      <span class="font-serif text-[20px] font-semibold text-[#7A6040] leading-none">3</span>
+      <span class="text-[#8A7F6E]">/</span>
+      <span class="text-[16px] text-[#5C5242]">7</span>
+      <span class="text-[11px] text-[#8A7F6E] ml-0.5">已解决</span>
+    </div>
+    ${['提交作品','诊断分析','教学中','已收尾','等待修改'].map((n,i)=>`<div class="ts flex items-start gap-2 py-1.5 relative">
+      <div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 ${i<2?'bg-[#7A6040] border-2 border-[#7A6040] text-white':i===2?'bg-[#FAF8F5] border-2 border-[#7A6040] text-[#7A6040]':'bg-[#FAF8F5] border-2 border-[#D6CEC0] text-[#8A7F6E]'}">
+        ${i<2?'✓':i===2?'●':'○'}
+      </div>
+      <div class="flex-1 pt-[1px]">
+        <div class="text-[13px] text-[#1E1A14] font-medium">${n}</div>
+        ${i<3?'<div class="text-[11px] text-[#8A7F6E] mt-[1px]">'+(i===0?'2026-06-15':i===1?'发现7个问题':'当前: 对话节奏')+'</div>':''}
+      </div>
+    </div>`).join('')}</div>`;
+  if (tool.id==='log') return `<div class="content-swap"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">学习日志</h3>
+    ${[{d:'6月17日',items:[{t:'n',v:'铺垫过多'},{t:'r',v:'动作替代情绪词'}]},{d:'6月15日',items:[{t:'n',v:'信息硬塞'},{t:'r',v:'对话节奏'}]}].map(d=>`<div class="py-1.5 border-b border-[#D6CEC0] last:border-0">
+      <div class="font-serif text-[14px] font-medium text-[#1E1A14] mb-1">${d.d}</div>
+      ${d.items.map(i=>`<div class="text-[13px] leading-relaxed text-[#5C5242] mb-0.5">
+        <span class="${i.t==='n'?'text-[#B84A4A]':'text-[#5A8F68]'}">${i.t==='n'?'新发现:':'已攻克:'}</span> ${i.v}
+      </div>`).join('')}</div>`).join('')}</div>`;
+  if (tool.id==='set') return `<div class="content-swap"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">设置</h3>
+    <div class="mb-2.5"><div class="text-[13px] text-[#5C5242] mb-1">API Key</div>
+    <input type="password" placeholder="sk-..." class="w-full px-2 py-1 bg-[#FAF8F5] border border-[#D6CEC0] rounded text-[13px] outline-none focus:border-[#7A6040] transition-colors"></div>
+    <div><div class="text-[13px] text-[#5C5242] mb-1">默认态度</div>
+    <div class="flex items-center gap-0.5"><button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#5A8F68] bg-[#5A8F68] scale-110 transition-transform"></button><button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#C8943C] bg-transparent transition-transform"></button><button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#B84A4A] bg-transparent transition-transform"></button></div></div>
+    <button class="mt-3 px-3 py-1 rounded-lg bg-[#7A6040] text-white text-[13px] hover:bg-[#6A5030] transition-colors btn-press">保存</button></div>`;
+  return `<div class="content-swap"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">${tool.name}</h3><p class="text-[13px] leading-relaxed text-[#8A7F6E]">后续阶段实施。</p></div>`;
+}
+
+// ===== Init tabs =====
+document.querySelectorAll('.tab-btn').forEach(b => {
+  if (b.classList.contains('active')) { b.classList.add('bg-[#7A6040]','text-white','font-medium'); b.classList.remove('text-[#5C5242]'); }
+  else b.classList.add('text-[#5C5242]','hover:bg-[rgba(122,96,64,0.09)]');
+});
+
+// ===== Panel toggles =====
+function toggleL(){body.classList.toggle('lc')}
+document.getElementById('collapseLeftBtn').onclick=toggleL;
+document.getElementById('expandLeftBtn').onclick=toggleL;
+function toggleR(){body.classList.toggle('rc')}
+document.getElementById('collapseRightBtn').onclick=toggleR;
+document.getElementById('rBarExp').onclick=()=>body.classList.remove('rc');
+
+// ===== Add tool button (static element, direct binding OK) =====
+document.getElementById('addToolBtn').onclick = e => {
+  e.stopPropagation();
+  const popup = document.getElementById('toolPopup');
+  popup.classList.toggle('hidden');
+  popup.classList.toggle('popup-enter', !popup.classList.contains('hidden'));
+  const avail = toolsList.filter(t => !openTools.includes(t.id));
+  if (!avail.length) { popup.innerHTML = '<div class="p-1.5 text-[11px] text-[#8A7F6E] text-center">全部已打开</div>'; return; }
+  popup.innerHTML = avail.map(t => `<button class="pop-item flex items-center gap-1 px-1.5 py-1 rounded text-[13px] text-[#1E1A14] hover:bg-[rgba(122,96,64,0.09)] w-full text-left transition-colors" data-t="${t.id}">
+    <span class="text-[#7A6040] text-[11px] w-[13px] text-center">${t.icon}</span><span>${t.name}</span>
+  </button>`).join('');
+  popup.querySelectorAll('.pop-item').forEach(el => { el.onclick = () => {
+    const id = el.dataset.t;
+    if (!openTools.includes(id)) openTools.push(id);
+    activeToolId = id; renderRight();
+    document.getElementById('toolPopup').classList.add('hidden');
+  };});
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest('#addToolBtn') && !e.target.closest('#toolPopup'))
+    document.getElementById('toolPopup').classList.add('hidden');
+});
+document.getElementById('rBarAdd').onclick = e => {
+  e.stopPropagation();
+  body.classList.remove('rc');
+  setTimeout(() => document.getElementById('addToolBtn')?.click(), 280);
+};
+
+// ===== Attitude =====
+document.getElementById('attLights').addEventListener('click', e => {
+  if (!e.target.classList.contains('att-l')) return;
+  if (document.getElementById('lockBtn').classList.contains('locked')) return;
+  document.querySelectorAll('.att-l').forEach(l => { l.style.background='transparent'; l.className=l.className.replace(/\bbg-\[#\w+\]/g,'').replace(/scale-110/g,''); });
+  const c = e.target.dataset.lv==='g'?'#5A8F68':e.target.dataset.lv==='y'?'#C8943C':'#B84A4A';
+  e.target.style.background=c; e.target.classList.add('scale-110');
+});
+let lkd=false;
+document.getElementById('lockBtn').onclick=()=>{lkd=!lkd;const b=document.getElementById('lockBtn');b.textContent=lkd?'🔒':'🔓';b.classList.toggle('locked',lkd);b.classList.toggle('text-[#7A6040]',lkd);b.classList.toggle('bg-[rgba(122,96,64,0.09)]',lkd);document.getElementById('attLights').style.opacity=lkd?'.4':'1';document.getElementById('attLights').style.pointerEvents=lkd?'none':'auto';};
+
+// ===== Init =====
+renderAll();
+</script>
+</body>
+</html>

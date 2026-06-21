@@ -1,0 +1,44 @@
+{
+  "name": "@openwrite/server",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "wrangler deploy --dry-run",
+    "check-types": "tsc --noEmit",
+    "lint": "biome check src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "biome format --write .",
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server",
+    "dev": "bunx wrangler types --env-interface CloudflareBindings; wrangler dev --port=3000 --local",
+    "dev:types": "bunx wrangler types --env-interface CloudflareBindings",
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:local": "wrangler d1 migrations apply openwrite-us-east-1 --local"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "^1.4.0",
+    "@libsql/client": "^0.17.3",
+    "@radix-ui/react-select": "^2.3.0",
+    "@scalar/hono-api-reference": "^0.11.1",
+    "@uidotdev/usehooks": "^2.4.1",
+    "better-auth": "^1.6.15",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.12.25",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "drizzle-kit": "^0.31.10",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8",
+    "wrangler": "^4.99.0"
+  }
+}

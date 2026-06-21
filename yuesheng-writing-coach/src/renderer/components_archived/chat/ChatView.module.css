@@ -1,0 +1,200 @@
+/* ChatView.module.css — 聊天视图样式（搜索栏 + 引导区 + 诊断区 + 输入区） */
+
+/* ── 输入区设计 token(RWR-P1-4 / A-2, 依据 spec §5) ── */
+
+/* ── 输入区容器(A-2)── */
+.inputArea {
+  /* clamp(60px, 1/6 屏高, 180px) — 下限保护 + 1/6 屏高 + 上限保护 */
+  --input-area-height: clamp(60px, calc(100vh / 6), 180px);
+  --input-toolbar-height: 32px;
+  --input-attitude-height: 22px;
+
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--input-area-height);
+  max-height: var(--input-area-height);
+  border-top: 1px solid var(--border);
+  background: var(--bg-main);
+  padding: 6px 20px 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.inputAreaToolbarRow {
+  height: var(--input-toolbar-height);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.inputAreaBody {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-height: 0;
+}
+
+.inputAreaTextCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.inputAreaAttitude {
+  flex-shrink: 0;
+  align-self: flex-end;
+  padding-bottom: 4px;
+  min-height: var(--input-attitude-height);
+}
+
+/* ── 搜索栏 ── */
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  flex-shrink: 0;
+}
+
+.searchIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+}
+
+.searchBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  padding: 2px;
+  display: flex;
+}
+
+/* ── 引导区容器 ── */
+
+.onboarding {
+  padding: 24px;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.onboardingTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.onboardingDesc {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.onboardingQuestion {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.onboardingHint {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
+}
+
+/* ── 引导按钮组 ── */
+
+.typeButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.typeBtn {
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.typeBtnGhost {
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-family: var(--font-body);
+}
+
+.skipLink {
+  margin-top: 16px;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+}
+
+.skipLinkWrapper {
+  margin-top: 16px;
+}
+
+.onboardingTitleAccent {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.primaryBtn {
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  cursor: pointer;
+  font-weight: 500;
+  font-family: var(--font-body);
+}
+
+/* ── 诊断卡片区域 ── */
+
+.diagnosisArea {
+  padding: 0 20px 8px;
+}
+
+.diagnosisInner {
+  max-width: 48rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

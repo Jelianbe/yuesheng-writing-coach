@@ -2,7 +2,7 @@
  * diagnosis-dedup.ts — RP-02 双诊断管道去重
  *
  * Pipe 1 (chat.handler.runDiagnosis) 和 Pipe 2 (diagnosis.handler.processDiagnosisFromAI)
- * 都可能发送 diagnosis:update，用 Set 记录已推送的 sessionId，避免重复推送。
+ * 都可能发送 diagnosis:updated，用 Set 记录已推送的 sessionId，避免重复推送。
  *
  * 清理策略：Set 上限 100 条，超过时清理最旧的一半 (FIFO)。
  * 会话删除时主动调用 clearSession() 释放条目。

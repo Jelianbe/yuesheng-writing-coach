@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    // baseUrl is deprecated in TS 6.0 but still backs the "@/*" path mapping.
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "outDir": "./dist",
+    "types": ["./worker-configuration", "node"],
+    "composite": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx"
+  },
+  "exclude": [
+    "wrangler.jsonc",
+    "*.config.js",
+    "*.config.ts",
+    "dist",
+    "node_modules"
+  ]
+}

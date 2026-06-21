@@ -1,0 +1,119 @@
+import { createFileRoute } from "@tanstack/react-router"
+import { FileText, MapPin, Plus, Scroll, Users } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+
+// Helper functions for singular forms
+const typeToSingular: Record<string, string> = {
+  characters: "character",
+  locations: "location",
+  lore: "lore item",
+  plot: "plot thread",
+}
+
+const getSingularForm = (type: string): string => typeToSingular[type] || type
+
+export const Route = createFileRoute("/projects/$projectId/codex/$type")({
+  component: CodexTypeInterface,
+})
+
+function CodexTypeInterface() {
+  const { type } = Route.useParams()
+
+  const getTypeConfig = (typeParam: string) => {
+    switch (typeParam) {
+      case "characters":
+        return {
+          title: "Characters",
+          description: "Manage your story's characters",
+          icon: Users,
+          entries: [] as Array<{ id: string; name: string; role: string; description: string }>,
+        }
+      case "locations":
+        return {
+          title: "Locations",
+          description: "Track your story's places and settings",
+          icon: MapPin,
+          entries: [] as Array<{ id: string; name: string; role: string; description: string }>,
+        }
+      case "lore":
+        return {
+          title: "Lore & World-building",
+          description: "Document your world's history and rules",
+          icon: Scroll,
+          entries: [] as Array<{ id: string; name: string; role: string; description: string }>,
+        }
+      case "plot":
+        return {
+          title: "Plot Threads",
+          description: "Track your story's narrative threads and arcs",
+          icon: FileText,
+          entries: [] as Array<{ id: string; name: string; role: string; description: string }>,
+        }
+      default:
+        return {
+          title: "Codex",
+          description: "Manage your story elements",
+          icon: FileText,
+          entries: [],
+        }
+    }
+  }
+
+  const config = getTypeConfig(type)
+  const IconComponent = config.icon
+
+  return (
+    <div className="p-8">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="flex items-center gap-3 font-bold text-3xl">
+              <IconComponent className="h-8 w-8" />
+              {config.title}
+            </h1>
+            <p className="mt-2 text-muted-foreground">{config.description}</p>
+          </div>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Add {typeToSingular[type] || type}
+          </Button>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {config.entries.map((entry) => (
+            <Card className="cursor-pointer transition-shadow hover:shadow-lg" key={entry.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>{entry.name}</CardTitle>
+                    <CardDescription>{entry.role}</CardDescription>
+                  </div>
+                  <Badge variant="outline">Active</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">{entry.description}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {config.entries.length === 0 && (
+          <div className="py-12 text-center">
+            <IconComponent className="mx-auto mb-4 h-16 w-16 opacity-50" />
+            <h3 className="mb-2 font-medium text-xl">No {config.title.toLowerCase()} yet</h3>
+            <p className="mb-6 text-muted-foreground">
+              Create your first {getSingularForm(type)} to start building your story world.
+            </p>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add {getSingularForm(type)}
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

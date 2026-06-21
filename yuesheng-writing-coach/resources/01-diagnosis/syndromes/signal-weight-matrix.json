@@ -1,0 +1,164 @@
+{
+  "version": "1.0",
+  "description": "信号权重矩阵与严重度分级 — 轨道B补全。每个症候的检测信号类型、权重和严重度判定规则",
+  "updatedAt": "2026-06-14",
+  "note": "当前 syndrome-action-map 无权重系统，诊断只能做二元判断（有/无）。本文件为 1-3 阶段的从零创建产物",
+  "signalTypes": {
+    "vocabulary": "词汇信号 — 特定词汇/短语的出现作为症候标记",
+    "absence": "缺失信号 — 该出现的东西没出现",
+    "quantity": "数量信号 — 特定模式的出现频率",
+    "expression": "表达信号 — 句式/结构/表现方式的特征"
+  },
+  "severityLevels": {
+    "L1": { "name": "轻度", "description": "偶发，不影响整体阅读体验", "actionHint": "指出但不需要立即纠正" },
+    "L2": { "name": "中度", "description": "反复出现，开始影响阅读流畅性", "actionHint": "重点处理，一次一个问题" },
+    "L3": { "name": "重度", "description": "持续/系统性，严重影响读者理解", "actionHint": "优先处理，可能需要元诊断" }
+  },
+  "syndromes": [
+    {
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "signals": [
+        { "type": "vocabulary", "signal": "专有名词密度（专有名词数/总字数）", "weight": 3, "threshold": ">5%", "severity": "L2" },
+        { "type": "expression", "signal": "连续旁白交代设定（>3句无人物行动）", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "开篇第一段不写人物写背景", "weight": 5, "threshold": "出现即标记", "severity": "L3" },
+        { "type": "absence", "signal": "场景中人物行动占比<30%", "weight": 3, "threshold": "<30%", "severity": "L2" }
+      ],
+      "severityMapping": {
+        "L1": "1种低权重信号（weight≤3）",
+        "L2": "1种高权重信号（weight≥4）或2种低权重信号",
+        "L3": "≥2种高权重信号或专有名词密度>10%"
+      }
+    },
+    {
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "signals": [
+        { "type": "vocabulary", "signal": "角色出现时只有功能描述而没有特征动作", "weight": 4, "threshold": "首次出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "角色行为与上文建立的特质无关联", "weight": 5, "threshold": "出现即标记", "severity": "L3" },
+        { "type": "absence", "signal": "角色在对话/动作中缺乏个性化声音", "weight": 3, "threshold": "连续3处无个性", "severity": "L2" },
+        { "type": "quantity", "signal": "角色行为可被一句话概括的比例", "weight": 3, "threshold": ">70%", "severity": "L2" }
+      ],
+      "severityMapping": {
+        "L1": "仅程序性角色行为，尚不影响主线",
+        "L2": "2个以上角色只有功能没有特质",
+        "L3": "主角工具化（主角行为由情节推动而非自身意志）"
+      }
+    },
+    {
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "signals": [
+        { "type": "vocabulary", "signal": "直接情绪词（伤心/愤怒/开心/难过/痛苦等）", "weight": 2, "threshold": "每500字出现≥3次", "severity": "L1" },
+        { "type": "vocabulary", "signal": "程度副词修饰情绪（非常/极其/无比愤怒等）", "weight": 3, "threshold": "每500字出现≥2次", "severity": "L2" },
+        { "type": "absence", "signal": "情绪词出现时无对应的身体/环境描写", "weight": 4, "threshold": "首次出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "多段连续只命名情绪不展示（>3段）", "weight": 5, "threshold": "出现即标记", "severity": "L3" }
+      ],
+      "severityMapping": {
+        "L1": "偶发情绪词，大部分有展示",
+        "L2": "情绪词密度高，大量标签替代展示",
+        "L3": "通篇以情绪词驱动读者感受，完全没有具体描写"
+      },
+      "qualitativeOverride": {
+        "condition": "情绪词覆盖率（含情绪词的句子数/总句数）> 60% 且无任何身体/环境描写",
+        "overrideSeverity": "L3",
+        "rationale": "短文本场景下权重和可能达不到L3阈值，但通篇只命名不展示本质等价于L3。信号4（多段·超过3段）因段落结构无法覆盖单段密集场景。"
+      }
+    },
+    {
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "signals": [
+        { "type": "vocabulary", "signal": "无意义的填充词/冗余修饰", "weight": 1, "threshold": "每500字出现>5处", "severity": "L1" },
+        { "type": "expression", "signal": "一段话里同时交代多个互不关联的信息", "weight": 3, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "读者已知道的信息被重复交代", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "quantity", "signal": "信息密度与叙事推进的比值（信息/进展）", "weight": 4, "threshold": "信息>推进×2", "severity": "L3" }
+      ],
+      "severityMapping": {
+        "L1": "偶发冗余修饰",
+        "L2": "多段存在信息堆砌",
+        "L3": "整篇以信息交代为主，人物行动被淹没在设定中"
+      }
+    },
+    {
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "signals": [
+        { "type": "expression", "signal": "同一段落内psychic distance跳跃超过2级", "weight": 5, "threshold": "首次出现即标记", "severity": "L3" },
+        { "type": "expression", "signal": "有限视角下插入全知信息", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "无过渡的视角切换", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "quantity", "signal": "视角切换频率", "weight": 3, "threshold": "每1000字切换>3次", "severity": "L2" }
+      ],
+      "severityMapping": {
+        "L1": "偶发视角不清晰",
+        "L2": "段落内有跳跃但间隔足够大",
+        "L3": "同一段落内密集跳跃（心理距离差≥3级），读者迷失"
+      }
+    },
+    {
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "signals": [
+        { "type": "quantity", "signal": "连续段落无冲突升级", "weight": 3, "threshold": "连续>3段", "severity": "L1" },
+        { "type": "absence", "signal": "场景没有信息增量", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "场景结束时角色处境无变化", "weight": 5, "threshold": "出现即标记", "severity": "L3" },
+        { "type": "expression", "signal": "叙事在相同情绪/能量水平上徘徊", "weight": 3, "threshold": "连续>4段", "severity": "L2" }
+      ],
+      "severityMapping": {
+        "L1": "局部段落停滞，整体叙事仍在推进",
+        "L2": "场景级别停滞——读完一个完整场景后发现什么都没变",
+        "L3": "连续多个场景停滞，读者感到'什么都没发生'"
+      }
+    },
+    {
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "signals": [
+        { "type": "expression", "signal": "连续多句同样开头的句式", "weight": 3, "threshold": "连续>5句", "severity": "L1" },
+        { "type": "expression", "signal": "句子长度标准差极小（节奏无变化）", "weight": 3, "threshold": "标准差<3个词", "severity": "L2" },
+        { "type": "expression", "signal": "通篇只用一种叙事模式（全描写/全对话/全心理）", "weight": 4, "threshold": "持续>500字", "severity": "L2" },
+        { "type": "expression", "signal": "句式结构完全重复（主+谓+宾模板）", "weight": 4, "threshold": "连续>8句", "severity": "L3" }
+      ],
+      "severityMapping": {
+        "L1": "局部句式重复",
+        "L2": "多段落句式/叙事模式单一化",
+        "L3": "通篇读起来节奏完全一样，读者疲劳"
+      }
+    },
+    {
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "signals": [
+        { "type": "expression", "signal": "角色行为无行动的因果铺垫", "weight": 5, "threshold": "出现即标记", "severity": "L3" },
+        { "type": "expression", "signal": "角色突然做出不符合已有设定的行为", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "absence", "signal": "角色内心活动/动机表达缺失", "weight": 3, "threshold": "连续2处缺乏铺垫的行为", "severity": "L2" },
+        { "type": "vocabulary", "signal": "作者直接替角色解释动机（'其实他是因为…'）", "weight": 3, "threshold": "出现即标记", "severity": "L2" }
+      ],
+      "severityMapping": {
+        "L1": "配角动机不清晰",
+        "L2": "主要角色有行为但因果关系模糊",
+        "L3": "主角核心行为缺乏动机支撑，读者无法理解"
+      }
+    },
+    {
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "signals": [
+        { "type": "vocabulary", "signal": "直接概括标签（他是个XX的人/她很温柔等）", "weight": 3, "threshold": "每500字出现>2次", "severity": "L1" },
+        { "type": "absence", "signal": "角色没有标志性动作/标志性物件", "weight": 4, "threshold": "出现即标记", "severity": "L2" },
+        { "type": "expression", "signal": "角色的言行始终符合'标签'（无矛盾/无意外）", "weight": 4, "threshold": "持续>3处", "severity": "L2" },
+        { "type": "expression", "signal": "角色的言行可被一句话完全预测", "weight": 5, "threshold": "持续>5处", "severity": "L3" }
+      ],
+      "severityMapping": {
+        "L1": "有标签但有时也有意外行为",
+        "L2": "角色被2-3个标签定义，读者能预测大部分反应",
+        "L3": "完全可预测——角色是'勇敢的程序员'这样的单一面"
+      }
+    }
+  ],
+  "diagnosisRules": {
+    "weightThreshold": { "L1": 0, "L2": 6, "L3": 12 },
+    "crossSyndromeRule": "如果 P003+P004+P005+P006 同时出现且≥L2，优先进行元诊断：'没有现实生活的经验'",
+    "conflictRule": "同一段文字同时触发两个症候的L3信号时，选择诊断倾向更综合的那个（如 P006 > P004，因为 P006 的'停滞'本质更接近元级判断）"
+  }
+}

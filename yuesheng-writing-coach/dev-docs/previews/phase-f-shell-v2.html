@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 三栏布局 V2 预览（按规范修正）</title>
+<style>
+/* ============================================================
+   Design Tokens — 从 src/renderer/styles/variables.css 提取
+   ============================================================ */
+:root {
+  --accent: #A07030;
+  --accent-hover: #8A5E28;
+  --accent-light: #C4A060;
+  --accent-subtle: rgba(160, 112, 48, 0.10);
+  --text-on-accent: #FFFFFF;
+
+  --bg-primary: #FAF8F5;
+  --bg-secondary: #F3EDE4;
+  --bg-card: #FFFFFF;
+  --bg-hover: rgba(180, 140, 90, 0.08);
+  --bg-active: rgba(180, 120, 60, 0.12);
+
+  --border: #9A8878;
+  --border-light: #B8A898;
+
+  --text-primary: #2C2416;
+  --text-secondary: #5C4D3A;
+  --text-tertiary: #736452;
+
+  --color-attitude-doubao: #5BA868;
+  --color-attitude-yuesheng: #D4A24C;
+  --color-attitude-direct: #C45A5A;
+  --color-progress-resolved: var(--accent);
+
+  --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.06);
+  --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08);
+  --shadow-input: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --font-display: 'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif;
+  --font-body: -apple-system, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', 'Noto Sans Mono', monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+  --transition-normal: 200ms var(--ease-out);
+}
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+button {
+  font-family: inherit; font-size: inherit;
+  border: none; background: none; cursor: pointer; color: inherit;
+}
+input, textarea {
+  font-family: inherit; font-size: inherit;
+  border: none; background: none; outline: none; color: inherit;
+}
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   App Shell — 修复 1: grid 仅设 min, 1:2:1 比例无 max px
+   §2.2 核心规则: 拖拽调整只设 min，不设 max 和 default
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns:
+    minmax(180px, 1fr)
+    minmax(0, 2fr)
+    minmax(320px, 1fr);
+  height: 100dvh;
+  width: 100vw;
+  background: var(--bg-primary);
+  transition: grid-template-columns var(--transition-normal);
+}
+/* 左栏收起：width 0（§2.3），中心栏自动扩展 */
+.app.left-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr) minmax(320px, 1fr);
+}
+/* 右栏收起：width 0（user memory: [⤢] floats top-right when collapsed） */
+.app.right-collapsed {
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 1fr) 0;
+}
+
+/* ============================================================
+   Left Sidebar
+   ============================================================ */
+.left {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.app.left-collapsed .left { border-right: none; }
+
+.left-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  flex-shrink: 0;
+}
+/* 修复 2: 顺序 月笙[☰] (月笙在前, [☰] 在后) */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.brand .brand-text { padding-right: 2px; }
+.icon-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.icon-btn.text { width: auto; padding: 0 8px; font-size: var(--text-sm); }
+
+.tabs-section {
+  padding: 0 12px 12px;
+  flex-shrink: 0;
+}
+.tab-row-1 { margin-bottom: 6px; }
+.tab-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.tab-btn {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: center;
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+.tab-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.tab-btn.active {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 0 12px;
+  flex-shrink: 0;
+}
+
+.search-section {
+  padding: 12px;
+  flex-shrink: 0;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 8px;
+}
+.search-box input {
+  flex: 1; min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+.search-box input::placeholder { color: var(--text-tertiary); }
+.search-box .search-icon { color: var(--text-tertiary); margin-right: 6px; font-size: 12px; }
+
+.search-filters { display: flex; gap: 4px; }
+.search-filter {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+.search-filter:hover { background: var(--bg-hover); }
+.search-filter.active {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.list-section {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background var(--transition-normal);
+}
+.list-item:hover { background: var(--bg-hover); }
+.list-item.active { background: var(--bg-active); }
+.list-item .item-icon {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+.list-item.training .item-icon { color: var(--accent); }
+.list-item .item-title {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.list-item .item-badge {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--bg-card);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Center
+   ============================================================ */
+.center {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--bg-primary);
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* 中间栏 header — 视觉隐形 (§2.2) */
+.center-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px 8px;
+  background: transparent;
+  flex-shrink: 0;
+  gap: 12px;
+}
+.center-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.project-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: background var(--transition-normal);
+}
+.project-selector:hover { background: var(--bg-hover); }
+.project-selector .caret { font-size: 10px; color: var(--text-tertiary); }
+.project-selector .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 修复 5: 状态指示器 (§4.2) */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+.status-indicator .dot {
+  width: 6px; height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--text-tertiary);
+}
+.status-indicator.teaching .dot { background: var(--color-attitude-yuesheng); }
+.status-indicator.teaching { color: var(--color-attitude-yuesheng); border-color: rgba(212, 162, 76, 0.3); background: rgba(212, 162, 76, 0.08); }
+.status-indicator.diagnosing .dot { background: var(--accent); }
+.status-indicator.diagnosing { color: var(--accent); border-color: rgba(160, 112, 48, 0.3); background: var(--accent-subtle); }
+.status-indicator.completed .dot { background: var(--color-attitude-doubao); }
+.status-indicator.completed { color: var(--color-attitude-doubao); border-color: rgba(91, 168, 104, 0.3); background: rgba(91, 168, 104, 0.08); }
+
+.center-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.header-icon-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 16px;
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+.header-icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+/* Center body */
+.center-body {
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+
+.empty-state {
+  max-width: 480px;
+  margin: 80px auto 0;
+  text-align: center;
+}
+.empty-state h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  margin-bottom: 32px;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.choice-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.choice-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+}
+.choice-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.choice-card .emoji {
+  font-size: 22px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+.choice-card .text { flex: 1; }
+.choice-card .label {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.choice-card .hint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* Sample message bubbles */
+.message-list {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 16px;
+}
+.message {
+  display: flex;
+  gap: 12px;
+}
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.bubble {
+  flex: 1;
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--text-primary);
+  padding-top: 4px;
+}
+.bubble p { margin: 0 0 8px; }
+.bubble p:last-child { margin-bottom: 0; }
+
+/* ============================================================
+   Input area — 修复 6: 工具栏 + 输入框 + 发送 在 1/6 屏高内
+   §5.1 ASCII: send 按钮在输入框内右下角
+   ============================================================ */
+.input-area {
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  padding: 8px 24px 12px;
+  height: calc(100dvh / 6);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.input-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  flex-shrink: 0;
+}
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.template-btn {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+.template-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.attitude-lights {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px;
+  transition: opacity 150ms ease;
+}
+.light {
+  width: 14px; height: 14px;
+  border-radius: var(--radius-full);
+  border: 1.5px solid currentColor;
+  background: transparent;
+  transition: transform 150ms ease;
+  cursor: pointer;
+  padding: 0;
+}
+.light.doubao { color: var(--color-attitude-doubao); }
+.light.yuesheng { color: var(--color-attitude-yuesheng); }
+.light.direct { color: var(--color-attitude-direct); }
+.light.on {
+  background: currentColor;
+  transform: scale(1.15);
+}
+.light:hover { transform: scale(1.1); }
+
+.lock-btn {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: all 150ms ease;
+}
+.lock-btn:hover { color: var(--text-secondary); }
+.lock-btn.locked {
+  color: var(--accent);
+  background: var(--accent-subtle);
+}
+
+/* 修复 6: 单一边框的输入框, send 按钮在框内右下角 */
+.input-box {
+  flex: 1;
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 8px 12px 8px 12px;
+  box-shadow: var(--shadow-input);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  transition: border-color var(--transition-normal);
+}
+.input-box:focus-within { border-color: var(--accent); }
+.input-textarea {
+  flex: 1;
+  resize: none;
+  background: transparent;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  padding: 0;
+  padding-right: 64px; /* 留出发送按钮位置 */
+  min-height: 0;
+  overflow-y: auto;
+}
+.input-textarea::placeholder { color: var(--text-tertiary); }
+.send-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 5px 14px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  transition: background var(--transition-normal);
+}
+.send-btn:hover { background: var(--accent-hover); }
+.send-btn:disabled {
+  background: var(--border-light);
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   Right Panel — 修复 3 & 4
+   ============================================================ */
+.right {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.app.right-collapsed .right { border-left: none; }
+
+.right-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  gap: 4px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-light);
+  min-height: 40px;
+  /* 修复 4: 让 [⤢] 与 [─][□][✕] 之间有视觉分隔 */
+}
+.right-header-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.right-header-left::-webkit-scrollbar { display: none; }
+.right-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  padding-left: 6px;
+  margin-left: 4px;
+  border-left: 1px solid var(--border-light); /* 修复 4: 分隔 [⤢] 与窗口控制 */
+}
+
+/* 修复 3: 工具 Tab 支持 */
+.tool-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  max-width: 140px;
+  transition: all var(--transition-normal);
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+.tool-tab.active {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: 500;
+}
+.tool-tab:not(.active):hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.tool-tab .tab-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-tab .tab-close {
+  width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-size: 11px;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+.tool-tab .tab-close:hover { opacity: 1; background: rgba(0,0,0,0.08); }
+.tool-tab.active .tab-close:hover { background: rgba(255,255,255,0.2); }
+
+/* 修复 3: [＋] 新建工具按钮 */
+.tool-add-btn {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 14px;
+  background: transparent;
+  border: 1px dashed var(--border-light);
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+.tool-add-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-style: solid;
+  border-color: var(--accent);
+}
+
+/* 修复 3: [＋] 弹出未打开工具下拉 */
+.tool-add-popup {
+  position: absolute;
+  top: 44px;
+  right: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  min-width: 160px;
+  z-index: 10;
+  display: none;
+}
+.tool-add-popup.show { display: block; }
+.tool-add-popup .popup-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.tool-add-popup .popup-item:hover { background: var(--bg-hover); }
+.tool-add-popup .popup-item .icon {
+  color: var(--accent);
+  font-size: 14px;
+  width: 18px;
+  text-align: center;
+}
+.right { position: relative; }
+
+/* 修复 4: 窗口控制按钮 — 独立色系 */
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+.window-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  transition: background var(--transition-normal), color var(--transition-normal);
+}
+.window-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.window-btn.close:hover {
+  background: var(--color-attitude-direct);
+  color: white;
+}
+/* [⤢] 单独样式 — 区别于 [─][□][✕] */
+.window-btn.toggle {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+.window-btn.toggle:hover {
+  color: var(--accent);
+}
+
+.right-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+/* Tool grid (default state) */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  text-align: center;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+.tool-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+.tool-card .icon {
+  font-size: 22px;
+  color: var(--accent);
+  line-height: 1;
+}
+.tool-card .label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.tool-card .hint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}
+
+/* Tool content */
+.tool-content { display: block; }
+.tool-content h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+/* Teaching progress */
+.progress-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+.progress-counter .number {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+}
+.progress-counter .divider { color: var(--text-tertiary); margin: 0 2px; }
+.progress-counter .total { font-size: var(--text-lg); color: var(--text-secondary); }
+.progress-counter .label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+.timeline-stage {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  position: relative;
+}
+.timeline-stage:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 32px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-light);
+}
+.timeline-marker {
+  width: 22px; height: 22px;
+  border-radius: var(--radius-full);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-light);
+  color: var(--text-tertiary);
+  line-height: 1;
+}
+.timeline-marker.done {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+.timeline-marker.current {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--bg-card);
+}
+.timeline-text { flex: 1; padding-top: 2px; }
+.timeline-text .stage-label {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+.timeline-text .stage-meta {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* Learning log */
+.log-day {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+.log-day:last-child { border-bottom: none; }
+.log-day .date {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.log-day .entry {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.log-day .entry:last-child { margin-bottom: 0; }
+.log-day .entry .tag-new { color: var(--color-attitude-direct); }
+.log-day .entry .tag-resolved { color: var(--color-attitude-doubao); }
+
+/* Training list */
+.training-category {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  padding: 0 4px;
+  font-weight: 500;
+}
+.training-category.recommended { color: var(--accent); }
+.training-category:first-child { margin-top: 0; }
+.training-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  width: 100%;
+  margin-bottom: 4px;
+}
+.training-item:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+.training-item .name {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+.training-item .level {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  background: var(--bg-secondary);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+/* ============================================================
+   Floating toggles (visible when panel collapsed)
+   §2.4: 左栏收起时用 [▶] 替代 [☰]
+   ============================================================ */
+.floating-toggle {
+  position: fixed;
+  top: 10px;
+  z-index: 100;
+  display: none;
+  width: 30px; height: 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  align-items: center; justify-content: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+.floating-toggle:hover {
+  color: var(--accent);
+  background: var(--bg-hover);
+}
+.app.left-collapsed .floating-toggle.left {
+  display: flex;
+  left: 10px;
+}
+.app.right-collapsed .floating-toggle.right {
+  display: flex;
+  right: 10px;
+}
+
+/* ============================================================
+   Preview banner
+   ============================================================ */
+.preview-banner {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  z-index: 200;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+}
+.preview-banner .label { color: var(--accent-light); font-weight: 600; }
+.preview-banner a {
+  color: var(--bg-primary);
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-normal);
+}
+.preview-banner a:hover { background: rgba(255,255,255,0.1); }
+.preview-banner .divider-v { color: rgba(255,255,255,0.3); }
+
+/* ============================================================
+   Responsive
+   §2.4: 1024-1279px 左栏自动收起; < 1024px 右栏 overlay
+   ============================================================ */
+@media (max-width: 1279px) and (min-width: 1024px) {
+  /* 修复 7: 中等窗口左栏自动收起 */
+  .app:not(.left-explicit) { grid-template-columns: 0 minmax(0, 1fr) minmax(320px, 1fr); }
+  .app:not(.left-explicit) .left { border-right: none; }
+}
+@media (max-width: 1023px) {
+  .app {
+    grid-template-columns: 0 minmax(0, 1fr) 0;
+  }
+  .left {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: min(280px, 80vw);
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    border-right: 1px solid var(--border-light);
+  }
+  .app.left-open .left { transform: translateX(0); }
+  .right {
+    position: fixed;
+    right: 0; top: 0; bottom: 0;
+    width: min(380px, 90vw);
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform var(--transition-normal);
+    border-left: 1px solid var(--border-light);
+  }
+  .app.right-open .right { transform: translateX(0); }
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 36, 22, 0.3);
+    z-index: 40;
+    display: none;
+  }
+  .app.left-open .backdrop,
+  .app.right-open .backdrop { display: block; }
+  .floating-toggle.left { left: 10px; }
+  .floating-toggle.right { right: 10px; }
+  .app.left-open .floating-toggle.left { display: none; }
+  .app.right-open .floating-toggle.right { display: none; }
+  .input-area { padding-left: 16px; padding-right: 16px; }
+  .center-header { padding: 10px 16px 8px; }
+}
+
+/* ============================================================
+   Reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+</style>
+</head>
+<body>
+
+<!-- Preview control banner -->
+<div class="preview-banner">
+  <span class="label">V2 修正版</span>
+  <a href="#" id="toggleLeft">左栏</a>
+  <a href="#" id="toggleRight">右栏</a>
+  <span class="divider-v">|</span>
+  <a href="#" id="teachingBtn">切换教学状态</a>
+  <span class="divider-v">|</span>
+  <a href="#" id="resetBtn">重置</a>
+</div>
+
+<div class="app" id="app">
+
+  <!-- ============================================================
+       Left Sidebar
+       ============================================================ -->
+  <aside class="left" data-testid="left-sidebar">
+    <div class="left-header">
+      <!-- 修复 2: 月笙[☰] 顺序 -->
+      <div class="brand">
+        <span class="brand-text">月笙</span>
+        <button class="icon-btn" id="collapseLeft" title="收起左栏">☰</button>
+      </div>
+      <button class="icon-btn text" title="设置">⚙</button>
+    </div>
+
+    <div class="tabs-section">
+      <button class="tab-btn tab-row-1 active" data-tab="training">训练</button>
+      <div class="tab-row-2">
+        <button class="tab-btn" data-tab="chat">对话</button>
+        <button class="tab-btn" data-tab="project">项目</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="search-section">
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="text" placeholder="搜索...">
+      </div>
+      <div class="search-filters">
+        <button class="search-filter active">全部</button>
+        <button class="search-filter">对话</button>
+        <button class="search-filter">训练</button>
+      </div>
+    </div>
+
+    <div class="list-section" id="listSection">
+      <!-- JS 注入 -->
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       Center
+       ============================================================ -->
+  <main class="center">
+    <header class="center-header">
+      <div class="center-header-left">
+        <button class="project-selector">
+          <span class="caret">▼</span>
+          <span class="name">我的第一本小说</span>
+          <span class="caret">▾</span>
+        </button>
+        <!-- 修复 5: 状态指示器 -->
+        <span class="status-indicator teaching" id="statusIndicator">
+          <span class="dot"></span>
+          <span class="status-text">教学中</span>
+        </span>
+      </div>
+      <div class="center-header-actions">
+        <button class="header-icon-btn" title="新建会话">＋</button>
+        <button class="header-icon-btn" title="设置">⚙</button>
+      </div>
+    </header>
+
+    <div class="center-body" id="centerBody">
+      <!-- JS 注入 -->
+    </div>
+
+    <!-- 修复 6: 输入框单一边框, send 在框内右下角 -->
+    <footer class="input-area">
+      <div class="input-toolbar">
+        <div class="toolbar-left">
+          <button class="template-btn">[模板]</button>
+        </div>
+        <div class="toolbar-right">
+          <div class="attitude-lights" id="attitudeLights">
+            <button class="light doubao on" data-level="doubao" title="豆包 (温和)"></button>
+            <button class="light yuesheng" data-level="yuesheng" title="月笙 (平衡)"></button>
+            <button class="light direct" data-level="direct" title="sensei (直接)"></button>
+          </div>
+          <button class="lock-btn" id="lockBtn" title="锁定档位">🔓</button>
+        </div>
+      </div>
+      <div class="input-box">
+        <textarea class="input-textarea" rows="2" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button class="send-btn" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ============================================================
+       Right Panel — 修复 3 & 4
+       ============================================================ -->
+  <aside class="right" data-testid="right-panel">
+    <div class="right-header" id="rightHeader">
+      <!-- JS 注入 -->
+    </div>
+    <div class="right-body" id="rightBody">
+      <!-- JS 注入 -->
+    </div>
+    <!-- 修复 3: [＋] 弹出未打开工具下拉 -->
+    <div class="tool-add-popup" id="toolAddPopup">
+      <!-- JS 注入 -->
+    </div>
+  </aside>
+
+  <div class="backdrop" id="backdrop"></div>
+</div>
+
+<!-- 浮动展开按钮 -->
+<button class="floating-toggle left" id="expandLeft" title="展开左栏">▶</button>
+<button class="floating-toggle right" id="expandRight" title="展开右栏">⤢</button>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+const app = $('#app');
+const listSection = $('#listSection');
+const centerBody = $('#centerBody');
+const rightHeader = $('#rightHeader');
+const rightBody = $('#rightBody');
+const toolAddPopup = $('#toolAddPopup');
+const statusIndicator = $('#statusIndicator');
+
+let activeTab = 'training';
+let activeSessionId = null;
+let openTools = []; // 修复 3: 多工具支持
+let activeToolId = null;
+let currentStatus = 'teaching'; // 修复 5: 教学状态
+
+/* ============================================================
+   Sample data
+   ============================================================ */
+const sessions = [
+  { id: 1, title: '初稿诊断', type: 'chat', time: '今天' },
+  { id: 2, title: '第一章节奏讨论', type: 'chat', time: '昨天' },
+  { id: 3, title: '训练：动作替代情绪词', type: 'training', time: '3天前' },
+  { id: 4, title: '配角动机梳理', type: 'chat', time: '5天前' },
+  { id: 5, title: '训练：对话节奏', type: 'training', time: '上周' },
+];
+
+const projectTree = [
+  { id: 'p1', title: '第一章：山门', type: 'chapter' },
+  { id: 'p2', title: '第二章：试炼', type: 'chapter' },
+  { id: 'p3', title: '第三章：初遇', type: 'chapter' },
+  { id: 'p4', title: '第四章：暗流', type: 'chapter' },
+  { id: 'p5', title: '大纲', type: 'note' },
+];
+
+const trainingCategories = [
+  { name: '推荐技法', recommended: true, items: [
+    { name: '动作替代情绪词', level: '入门' },
+    { name: '对话节奏控制', level: '入门' },
+  ]},
+  { name: '结构技法', items: [
+    { name: '三幕剧结构', level: '进阶' },
+    { name: '伏笔回收', level: '进阶' },
+  ]},
+  { name: '人物技法', items: [
+    { name: '动机层次', level: '入门' },
+    { name: '视角切换', level: '高阶' },
+  ]},
+];
+
+const tools = [
+  { id: 'progress', name: '教学进度', icon: '◐', hint: '纵向时序进度' },
+  { id: 'log', name: '学习日志', icon: '✎', hint: '每日进步记录' },
+  { id: 'manuscript', name: '作品', icon: '☰', hint: '章节编辑器' },
+  { id: 'note', name: '教学笔记', icon: '✤', hint: '设定树' },
+  { id: 'settings', name: '设置', icon: '⚙', hint: 'API Key & 偏好' },
+];
+
+const sampleMessages = [
+  { role: 'assistant', content: '<p>早上好，新作者。</p><p>我看了你昨天发的开头。整体氛围不错，节奏稍慢了一些，主要集中在第一段的环境描写上。</p><p>你方便聊聊为什么用这么长一段开始吗？</p>' },
+  { role: 'user', content: '<p>我担心读者不了解世界观会看不懂后面的剧情。</p>' },
+  { role: 'assistant', content: '<p>这个担心我理解。但铺垫的代价是开头吸引力下降。</p><p>试试这样：先给读者一个"钩子"（比如人物处境、悬念），世界观通过后续情节自然透露。</p>' },
+];
+
+/* ============================================================
+   Right Panel — 修复 4: [⤢] 与 [─][□][✕] 视觉分组
+   ============================================================ */
+function windowControls() {
+  // 修复 4: [⤢] 单独一个分组 (toggle), [─][□][✕] 单独一个分组
+  return `
+    <div class="right-header-right">
+      <div class="window-controls">
+        <button class="window-btn toggle" id="toggleRightBody" title="收起内容区">⤢</button>
+      </div>
+      <div class="window-controls">
+        <button class="window-btn" data-window="min" title="最小化">─</button>
+        <button class="window-btn" data-window="max" title="最大化">□</button>
+        <button class="window-btn close" data-window="close" title="关闭">✕</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderRightHeader() {
+  const left = openTools.length > 0
+    ? renderOpenToolsTabs()
+    : '<div class="right-header-left"></div>';
+  rightHeader.innerHTML = left + windowControls();
+  bindRightHeaderEvents();
+}
+
+function renderOpenToolsTabs() {
+  const tabs = openTools.map(t => {
+    const tool = tools.find(x => x.id === t);
+    return `
+      <div class="tool-tab ${t === activeToolId ? 'active' : ''}" data-tool="${t}">
+        <span class="tab-name">${tool.name}</span>
+        <span class="tab-close" data-close="${t}">✕</span>
+      </div>
+    `;
+  }).join('');
+  return `
+    <div class="right-header-left">
+      ${tabs}
+      <button class="tool-add-btn" id="toolAddBtn" title="添加工具">＋</button>
+    </div>
+  `;
+}
+
+function bindRightHeaderEvents() {
+  // Tab click → switch
+  $$('.tool-tab').forEach(tab => {
+    tab.onclick = (e) => {
+      if (e.target.classList.contains('tab-close')) {
+        e.stopPropagation();
+        closeTool(e.target.dataset.close);
+        return;
+      }
+      activeToolId = tab.dataset.tool;
+      renderRightHeader();
+      renderRightBody();
+    };
+  });
+  // Add button → toggle popup
+  const addBtn = $('#toolAddBtn');
+  if (addBtn) {
+    addBtn.onclick = (e) => {
+      e.stopPropagation();
+      toolAddPopup.classList.toggle('show');
+      renderToolAddPopup();
+    };
+  }
+  // Toggle body
+  const toggleBtn = $('#toggleRightBody');
+  if (toggleBtn) {
+    toggleBtn.onclick = () => {
+      app.classList.toggle('right-collapsed');
+    };
+  }
+}
+
+function renderToolAddPopup() {
+  const closedTools = tools.filter(t => !openTools.includes(t.id));
+  if (closedTools.length === 0) {
+    toolAddPopup.innerHTML = `<div style="padding: 12px; color: var(--text-tertiary); font-size: var(--text-xs); text-align: center;">所有工具已打开</div>`;
+    return;
+  }
+  toolAddPopup.innerHTML = closedTools.map(t => `
+    <button class="popup-item" data-tool="${t.id}">
+      <span class="icon">${t.icon}</span>
+      <span>${t.name}</span>
+    </button>
+  `).join('');
+  $$('#toolAddPopup .popup-item').forEach(item => {
+    item.onclick = () => {
+      openTool(item.dataset.tool);
+      toolAddPopup.classList.remove('show');
+    };
+  });
+}
+
+// Click outside popup to close
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#toolAddBtn') && !e.target.closest('#toolAddPopup')) {
+    toolAddPopup.classList.remove('show');
+  }
+});
+
+/* ============================================================
+   Tool content rendering
+   ============================================================ */
+function openTool(toolId) {
+  if (!openTools.includes(toolId)) {
+    openTools.push(toolId);
+  }
+  activeToolId = toolId;
+  renderRightHeader();
+  renderRightBody();
+}
+
+function closeTool(toolId) {
+  openTools = openTools.filter(t => t !== toolId);
+  if (activeToolId === toolId) {
+    activeToolId = openTools[openTools.length - 1] || null;
+  }
+  if (openTools.length === 0) {
+    // No tools open → back to tool grid
+    renderRightHeader();
+    renderToolGrid();
+  } else {
+    renderRightHeader();
+    renderRightBody();
+  }
+}
+
+function renderRightBody() {
+  if (openTools.length === 0) {
+    renderToolGrid();
+    return;
+  }
+  if (!activeToolId) {
+    activeToolId = openTools[0];
+  }
+  const content = renderToolContent(activeToolId);
+  rightBody.innerHTML = content;
+}
+
+function renderToolGrid() {
+  rightBody.innerHTML = `
+    <div class="tool-grid">
+      ${tools.map(t => `
+        <button class="tool-card" data-tool="${t.id}">
+          <span class="icon">${t.icon}</span>
+          <span class="label">${t.name}</span>
+          <span class="hint">${t.hint}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+  $$('.tool-card').forEach(card => {
+    card.onclick = () => openTool(card.dataset.tool);
+  });
+}
+
+function renderToolContent(toolId) {
+  const tool = tools.find(t => t.id === toolId);
+  const toolName = tool ? tool.name : toolId;
+  if (toolId === 'progress') {
+    return `
+      <div class="tool-content">
+        <h3>${toolName}</h3>
+        <div class="progress-counter">
+          <span class="number">3</span>
+          <span class="divider">/</span>
+          <span class="total">7</span>
+          <span class="label">已解决</span>
+        </div>
+        <div class="timeline">
+          <div class="timeline-stage">
+            <div class="timeline-marker done">✓</div>
+            <div class="timeline-text">
+              <div class="stage-label">提交作品</div>
+              <div class="stage-meta">2026-06-15</div>
+            </div>
+          </div>
+          <div class="timeline-stage">
+            <div class="timeline-marker done">✓</div>
+            <div class="timeline-text">
+              <div class="stage-label">诊断分析</div>
+              <div class="stage-meta">发现 7 个问题</div>
+            </div>
+          </div>
+          <div class="timeline-stage">
+            <div class="timeline-marker current">●</div>
+            <div class="timeline-text">
+              <div class="stage-label">教学中</div>
+              <div class="stage-meta">当前：对话节奏</div>
+            </div>
+          </div>
+          <div class="timeline-stage">
+            <div class="timeline-marker">○</div>
+            <div class="timeline-text">
+              <div class="stage-label">已收尾</div>
+            </div>
+          </div>
+          <div class="timeline-stage">
+            <div class="timeline-marker">○</div>
+            <div class="timeline-text">
+              <div class="stage-label">等待修改</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else if (toolId === 'log') {
+    return `
+      <div class="tool-content">
+        <h3>${toolName}</h3>
+        <div class="log-day">
+          <div class="date">✧ 6月17日</div>
+          <div class="entry"><span class="tag-new">新发现：</span>铺垫过多</div>
+          <div class="entry"><span class="tag-resolved">已攻克：</span>动作替代情绪词</div>
+        </div>
+        <div class="log-day">
+          <div class="date">✧ 6月15日</div>
+          <div class="entry"><span class="tag-new">新发现：</span>信息硬塞</div>
+          <div class="entry"><span class="tag-resolved">已攻克：</span>对话节奏</div>
+        </div>
+      </div>
+    `;
+  } else if (toolId === 'settings') {
+    return `
+      <div class="tool-content">
+        <h3>设置</h3>
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 6px;">API Key</div>
+          <input type="password" placeholder="sk-..." style="
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            font-size: var(--text-sm);
+          ">
+        </div>
+        <div>
+          <div style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 6px;">默认态度</div>
+          <div class="attitude-lights" style="opacity: 1; pointer-events: auto;">
+            <button class="light doubao on" data-level="doubao"></button>
+            <button class="light yuesheng" data-level="yuesheng"></button>
+            <button class="light direct" data-level="direct"></button>
+          </div>
+        </div>
+        <button style="
+          margin-top: 20px;
+          padding: 8px 18px;
+          background: var(--accent);
+          color: var(--text-on-accent);
+          border-radius: var(--radius-md);
+          font-size: var(--text-sm);
+        ">保存</button>
+      </div>
+    `;
+  } else {
+    return `
+      <div class="tool-content">
+        <h3>${toolName}</h3>
+        <p style="color: var(--text-tertiary); font-size: var(--text-sm); line-height: var(--leading-relaxed);">
+          该工具的具体内容将在 Phase 3 实施。当前为占位视图。
+        </p>
+      </div>
+    `;
+  }
+}
+
+function renderTrainingPanel() {
+  // 训练 tab → 右栏展开技法列表（无工具 tab 概念，是训练专属视图）
+  rightHeader.className = 'right-header';
+  rightHeader.innerHTML = `
+    <div class="right-header-left">
+      <div class="tool-tab active">
+        <span class="tab-name">训练技法</span>
+      </div>
+    </div>
+    ${windowControls()}
+  `;
+  const html = trainingCategories.map(cat => `
+    <div class="training-category ${cat.recommended ? 'recommended' : ''}">
+      ${cat.name}${cat.recommended ? '  👍' : ''}
+    </div>
+    <div>
+      ${cat.items.map(item => `
+        <button class="training-item">
+          <span class="name">${item.name}</span>
+          <span class="level">${item.level}</span>
+        </button>
+      `).join('')}
+    </div>
+  `).join('');
+  rightBody.innerHTML = html;
+  $$('.training-item').forEach((item, i) => {
+    item.onclick = () => {
+      // 模拟选中技法 → 创建训练会话
+      alert('将创建训练会话: ' + item.querySelector('.name').textContent);
+    };
+  });
+  bindRightHeaderEvents();
+}
+
+/* ============================================================
+   Left Sidebar — List rendering
+   ============================================================ */
+function renderList() {
+  if (activeTab === 'chat') {
+    const chats = sessions.filter(s => s.type === 'chat');
+    listSection.innerHTML = chats.map(s => `
+      <div class="list-item ${activeSessionId === s.id ? 'active' : ''}" data-id="${s.id}">
+        <span class="item-icon">◌</span>
+        <span class="item-title">${s.title}</span>
+        <span class="item-badge">${s.time}</span>
+      </div>
+    `).join('');
+  } else if (activeTab === 'project') {
+    listSection.innerHTML = projectTree.map(p => `
+      <div class="list-item" data-id="${p.id}">
+        <span class="item-icon">${p.type === 'chapter' ? '☰' : '✎'}</span>
+        <span class="item-title">${p.title}</span>
+      </div>
+    `).join('');
+  } else if (activeTab === 'training') {
+    listSection.innerHTML = sessions.filter(s => s.type === 'training').map(s => `
+      <div class="list-item training" data-id="${s.id}">
+        <span class="item-icon">◎</span>
+        <span class="item-title">${s.title}</span>
+        <span class="item-badge">${s.time}</span>
+      </div>
+    `).join('');
+  }
+  $$('.list-item').forEach(item => {
+    item.onclick = () => {
+      if (activeTab === 'project') {
+        openTool('manuscript');
+      } else if (activeTab === 'chat' || activeTab === 'training') {
+        activeSessionId = parseInt(item.dataset.id);
+        renderList();
+        renderChat();
+      }
+    };
+  });
+}
+
+function renderChat() {
+  if (!activeSessionId) {
+    centerBody.innerHTML = `
+      <div class="empty-state">
+        <h2>开始你的写作之旅</h2>
+        <div class="choice-cards">
+          <button class="choice-card">
+            <span class="emoji">📝</span>
+            <div class="text">
+              <div class="label">我有作品</div>
+              <div class="hint">直接进入聊天，我会帮你分析</div>
+            </div>
+          </button>
+          <button class="choice-card">
+            <span class="emoji">🌱</span>
+            <div class="text">
+              <div class="label">从头学习</div>
+              <div class="hint">我引导你搭建世界观和人物</div>
+            </div>
+          </button>
+          <button class="choice-card">
+            <span class="emoji">💬</span>
+            <div class="text">
+              <div class="label">先聊聊</div>
+              <div class="hint">正常聊天，我在对话中自然引导</div>
+            </div>
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+  const html = sampleMessages.map(m => `
+    <div class="message">
+      <div class="avatar">${m.role === 'assistant' ? '月' : '我'}</div>
+      <div class="bubble">${m.content}</div>
+    </div>
+  `).join('');
+  centerBody.innerHTML = `<div class="message-list">${html}</div>`;
+}
+
+/* ============================================================
+   修复 5: 状态指示器更新
+   ============================================================ */
+function setStatus(status) {
+  currentStatus = status;
+  statusIndicator.className = 'status-indicator ' + status;
+  const map = {
+    idle: '待开始',
+    diagnosing: '诊断中',
+    teaching: '教学中',
+    completed: '已收尾',
+  };
+  statusIndicator.querySelector('.status-text').textContent = map[status] || status;
+}
+
+/* ============================================================
+   Panel toggles
+   ============================================================ */
+function toggleLeft() {
+  if (window.innerWidth < 1024) {
+    app.classList.toggle('left-open');
+  } else {
+    app.classList.toggle('left-collapsed');
+    app.classList.toggle('left-explicit');
+  }
+}
+function toggleRight() {
+  if (window.innerWidth < 1024) {
+    app.classList.toggle('right-open');
+  } else {
+    app.classList.toggle('right-collapsed');
+  }
+}
+
+/* ============================================================
+   Tab switching
+   ============================================================ */
+$$('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    $$('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    if (activeTab === 'training') {
+      renderTrainingPanel();
+      activeSessionId = null;
+    } else {
+      if (openTools.length === 0) {
+        renderRightHeader();
+        renderToolGrid();
+      } else {
+        renderRightHeader();
+      }
+    }
+    renderList();
+    renderChat();
+  };
+});
+
+/* ============================================================
+   Attitude lights
+   ============================================================ */
+$('#attitudeLights').addEventListener('click', (e) => {
+  if (!e.target.classList.contains('light')) return;
+  if ($('#lockBtn').classList.contains('locked')) return;
+  $$('.light').forEach(l => l.classList.remove('on'));
+  e.target.classList.add('on');
+});
+
+/* ============================================================
+   Lock
+   ============================================================ */
+let locked = false;
+$('#lockBtn').onclick = () => {
+  locked = !locked;
+  $('#lockBtn').textContent = locked ? '🔒' : '🔓';
+  $('#lockBtn').classList.toggle('locked', locked);
+  const lights = $('#attitudeLights');
+  lights.style.opacity = locked ? '0.4' : '1';
+  lights.style.pointerEvents = locked ? 'none' : 'auto';
+};
+
+/* ============================================================
+   Preview banner controls
+   ============================================================ */
+$('#toggleLeft').onclick = (e) => { e.preventDefault(); toggleLeft(); };
+$('#toggleRight').onclick = (e) => { e.preventDefault(); toggleRight(); };
+$('#teachingBtn').onclick = (e) => {
+  e.preventDefault();
+  const cycle = ['idle', 'diagnosing', 'teaching', 'completed'];
+  const next = cycle[(cycle.indexOf(currentStatus) + 1) % cycle.length];
+  setStatus(next);
+};
+$('#resetBtn').onclick = (e) => {
+  e.preventDefault();
+  app.classList.remove('left-collapsed', 'right-collapsed', 'left-open', 'right-open', 'left-explicit');
+  $$('.tab-btn').forEach(b => b.classList.remove('active'));
+  $('.tab-btn[data-tab="training"]').classList.add('active');
+  activeTab = 'training';
+  activeSessionId = null;
+  openTools = [];
+  activeToolId = null;
+  renderList();
+  renderTrainingPanel();
+  $$('.light').forEach(l => l.classList.remove('on'));
+  $('.light.doubao').classList.add('on');
+  locked = false;
+  $('#lockBtn').textContent = '🔓';
+  $('#lockBtn').classList.remove('locked');
+  $('#attitudeLights').style.opacity = '1';
+  $('#attitudeLights').style.pointerEvents = 'auto';
+  setStatus('teaching');
+};
+
+$('#collapseLeft').onclick = toggleLeft;
+$('#expandLeft').onclick = toggleLeft;
+$('#expandRight').onclick = toggleRight;
+$('#backdrop').onclick = () => {
+  app.classList.remove('left-open', 'right-open');
+};
+
+/* ============================================================
+   Keyboard
+   ============================================================ */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    app.classList.remove('left-open', 'right-open');
+    toolAddPopup.classList.remove('show');
+  }
+});
+
+/* ============================================================
+   Init
+   ============================================================ */
+renderList();
+renderTrainingPanel();
+setStatus('teaching');
+</script>
+
+</body>
+</html>

@@ -118,6 +118,16 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
+/* ── 工具调用状态点 ── */
+.tool-executing-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #C8A06E;
+  animation: pulseDot 1.2s ease-in-out infinite;
+}
+
 /* ── 按钮微动效 ── */
 .btn-hover-effect {
   transition: transform var(--transition-fast) ease,

@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 三栏布局 V3 预览</title>
+<style>
+:root {
+  --accent: #A07030;
+  --accent-hover: #8A5E28;
+  --accent-light: #C4A060;
+  --accent-subtle: rgba(160, 112, 48, 0.10);
+  --text-on-accent: #FFFFFF;
+  --bg-primary: #FAF8F5;
+  --bg-secondary: #F3EDE4;
+  --bg-card: #FFFFFF;
+  --bg-hover: rgba(180, 140, 90, 0.08);
+  --bg-active: rgba(180, 120, 60, 0.12);
+  --border: #9A8878;
+  --border-light: #B8A898;
+  --text-primary: #2C2416;
+  --text-secondary: #5C4D3A;
+  --text-tertiary: #736452;
+  --color-attitude-doubao: #5BA868;
+  --color-attitude-yuesheng: #D4A24C;
+  --color-attitude-direct: #C45A5A;
+  --shadow-sm: 0 1px 3px rgba(44,36,22,0.06);
+  --shadow-md: 0 4px 12px rgba(44,36,22,0.08);
+  --shadow-input: 0 2px 12px rgba(0,0,0,0.06);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  --font-display: 'Noto Serif SC','Songti SC','STSong',Georgia,serif;
+  --font-body: -apple-system,'Segoe UI','PingFang SC','Noto Sans SC',sans-serif;
+  --font-mono: 'JetBrains Mono','Consolas','Noto Sans Mono',monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+  --ease-out: cubic-bezier(0.25,1,0.5,1);
+  --transition-normal: 200ms var(--ease-out);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%;overflow:hidden}
+body{
+  font-family:var(--font-body);font-size:var(--text-base);
+  color:var(--text-primary);background:var(--bg-primary);
+  -webkit-font-smoothing:antialiased
+}
+button{font-family:inherit;font-size:inherit;border:none;background:none;cursor:pointer;color:inherit;padding:0}
+input,textarea{font-family:inherit;font-size:inherit;border:none;background:none;outline:none;color:inherit}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:var(--radius-full)}
+::-webkit-scrollbar-thumb:hover{background:var(--border)}
+
+/* ===== App Shell — 三栏 grid ===== */
+.app{
+  display:grid;height:100dvh;width:100vw;
+  grid-template-columns:minmax(180px,1fr) minmax(0,1fr) minmax(320px,1fr);
+  background:var(--bg-primary);
+  transition:grid-template-columns var(--transition-normal);
+}
+/* 左栏收起 */
+.app.left-collapsed{grid-template-columns:48px minmax(0,2fr) minmax(320px,1fr)}
+.app.left-collapsed .left .left-inner{display:none}
+.app.left-collapsed .left{min-width:48px;width:48px;overflow:visible;border-right:none}
+
+/* 右栏内容收起 — body隐藏, header保留 */
+.app.right-collapsed .right .right-body{display:none}
+.app.right-collapsed .right .right-header{border-bottom:none}
+.app.right-collapsed .right{min-width:auto}
+
+/* ===== Left Sidebar ===== */
+.left{
+  background:var(--bg-secondary);border-right:1px solid var(--border-light);
+  display:flex;flex-direction:column;overflow:hidden;min-width:0;
+  transition:width var(--transition-normal);position:relative
+}
+.left-inner{
+  display:flex;flex-direction:column;height:100%;min-width:180px;overflow:hidden
+}
+.left-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;flex-shrink:0
+}
+.left-header-left{display:flex;align-items:center;gap:2px}
+.brand-name{
+  font-family:var(--font-display);font-size:var(--text-lg);
+  font-weight:600;color:var(--text-primary)
+}
+.icon-btn{
+  width:28px;height:28px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-sm);color:var(--text-secondary);
+  font-size:14px;transition:background var(--transition-normal),color var(--transition-normal)
+}
+.icon-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+
+/* 修复5: 左侧栏收起态 — 写在 .left 内部的绝对定位条 */
+.left-collapsed-bar{
+  position:absolute;left:0;top:0;height:44px;
+  display:none;align-items:center;gap:2px;padding:0 4px;
+  background:var(--bg-secondary);z-index:60;width:48px;
+  flex-direction:column;justify-content:center
+}
+.app.left-collapsed .left .left-collapsed-bar{display:flex}
+
+/* 修复5: 额外的浮动品牌条 — 在收起态于左上角额外显示项目名 */
+.collapsed-brand-row{
+  position:fixed;left:48px;top:0;height:44px;
+  display:none;align-items:center;gap:6px;padding:0 10px;
+  background:transparent;z-index:55
+}
+.app.left-collapsed .collapsed-brand-row{display:flex}
+.collapsed-brand-row .mini-project{
+  display:flex;align-items:center;gap:3px;
+  font-size:var(--text-sm);color:var(--text-primary);
+  padding:3px 8px;border-radius:var(--radius-sm);cursor:pointer
+}
+.collapsed-brand-row .mini-project:hover{background:var(--bg-hover)}
+.collapsed-brand-row .mini-project .caret{font-size:9px;color:var(--text-tertiary)}
+
+/* Tabs */
+.tabs-section{padding:0 10px 10px;flex-shrink:0}
+.tab-row-1{margin-bottom:5px}
+.tab-btn-row1{
+  width:100%;padding:7px 10px;border-radius:var(--radius-sm);
+  color:var(--text-secondary);font-size:var(--text-sm);text-align:center;
+  transition:background var(--transition-normal),color var(--transition-normal)
+}
+.tab-btn-row1:hover{background:var(--bg-hover);color:var(--text-primary)}
+.tab-btn-row1.active{background:var(--bg-active);color:var(--text-primary);font-weight:500}
+
+.tab-row-2{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.tab-btn-row2{
+  padding:7px 10px;border-radius:var(--radius-sm);
+  color:var(--text-secondary);font-size:var(--text-sm);text-align:center;
+  transition:background var(--transition-normal),color var(--transition-normal)
+}
+.tab-btn-row2:hover{background:var(--bg-hover);color:var(--text-primary)}
+.tab-btn-row2.active{background:var(--bg-active);color:var(--text-primary);font-weight:500}
+
+.divider{height:1px;background:var(--border-light);margin:0 10px;flex-shrink:0}
+
+.search-section{padding:10px;flex-shrink:0}
+.search-box{
+  display:flex;align-items:center;background:var(--bg-card);
+  border:1px solid var(--border-light);border-radius:var(--radius-sm);
+  padding:5px 8px;margin-bottom:6px
+}
+.search-box input{flex:1;min-width:0;font-size:var(--text-sm);color:var(--text-primary)}
+.search-box input::placeholder{color:var(--text-tertiary)}
+.search-box .search-icon{color:var(--text-tertiary);margin-right:5px;font-size:11px}
+.search-filters{display:flex;gap:3px}
+.search-filter{padding:2px 7px;border-radius:var(--radius-sm);font-size:var(--text-xs);color:var(--text-tertiary);transition:background var(--transition-normal),color var(--transition-normal)}
+.search-filter:hover{background:var(--bg-hover)}
+.search-filter.active{background:var(--bg-active);color:var(--text-primary)}
+
+.list-section{flex:1;overflow-y:auto;padding:0 10px 10px}
+.list-item{
+  display:flex;align-items:center;gap:8px;padding:7px 8px;
+  border-radius:var(--radius-sm);cursor:pointer;margin-bottom:2px;
+  transition:background var(--transition-normal)
+}
+.list-item:hover{background:var(--bg-hover)}
+.list-item.active{background:var(--bg-active)}
+.list-item .item-icon{font-size:13px;color:var(--text-tertiary);flex-shrink:0;width:16px;text-align:center}
+.list-item.training .item-icon{color:var(--accent)}
+.list-item .item-title{flex:1;font-size:var(--text-sm);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item .item-badge{font-size:10px;color:var(--text-tertiary);background:var(--bg-card);padding:1px 5px;border-radius:var(--radius-full);flex-shrink:0}
+
+/* ===== Center ===== */
+.center{display:grid;grid-template-rows:auto 1fr auto;background:var(--bg-primary);overflow:hidden;min-width:0}
+
+.center-header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px 6px;background:transparent;flex-shrink:0;gap:10px}
+.center-header-left{display:flex;align-items:center;gap:6px;min-width:0;flex:1}
+.project-selector{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--text-primary);font-weight:500;transition:background var(--transition-normal);white-space:nowrap}
+.project-selector:hover{background:var(--bg-hover)}
+.project-selector .caret{font-size:9px;color:var(--text-tertiary)}
+
+.status-indicator{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:var(--radius-full);font-size:11px;background:var(--bg-card);border:1px solid var(--border-light);color:var(--text-secondary)}
+.status-indicator .dot{width:5px;height:5px;border-radius:var(--radius-full);background:var(--text-tertiary)}
+.status-indicator.teaching .dot{background:var(--color-attitude-yuesheng)}
+.status-indicator.teaching{color:var(--color-attitude-yuesheng);border-color:rgba(212,162,76,0.3);background:rgba(212,162,76,0.08)}
+.status-indicator.diagnosing .dot{background:var(--accent)}
+.status-indicator.diagnosing{color:var(--accent);border-color:rgba(160,112,48,0.3);background:var(--accent-subtle)}
+.status-indicator.completed .dot{background:var(--color-attitude-doubao)}
+.status-indicator.completed{color:var(--color-attitude-doubao);border-color:rgba(91,168,104,0.3);background:rgba(91,168,104,0.08)}
+.status-indicator.idle .dot{background:var(--text-tertiary)}
+.status-indicator.idle{color:var(--text-tertiary)}
+
+.center-header-actions{display:flex;align-items:center;gap:1px;flex-shrink:0}
+.center-body{overflow-y:auto;padding:0 20px 12px}
+
+/* 三岔路口 */
+.empty-state{max-width:460px;margin:70px auto 0;text-align:center}
+.empty-state h2{font-family:var(--font-display);font-size:var(--text-2xl);font-weight:600;margin-bottom:24px;color:var(--text-primary);letter-spacing:0.02em}
+.choice-cards{display:flex;flex-direction:column;gap:8px}
+.choice-card{display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-md);text-align:left;transition:all var(--transition-normal);box-shadow:var(--shadow-sm);width:100%}
+.choice-card:hover{border-color:var(--accent);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.choice-card .emoji{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+.choice-card .text{flex:1}
+.choice-card .label{font-size:var(--text-base);font-weight:500;color:var(--text-primary);margin-bottom:1px}
+.choice-card .hint{font-size:var(--text-xs);color:var(--text-tertiary)}
+
+/* Messages */
+.message-list{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:12px}
+.message{display:flex;gap:10px}
+.avatar{width:28px;height:28px;border-radius:var(--radius-full);background:var(--accent-subtle);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:var(--text-sm);font-weight:600;flex-shrink:0}
+.bubble{flex:1;font-size:var(--text-base);line-height:var(--leading-relaxed);color:var(--text-primary);padding-top:2px}
+.bubble p{margin:0 0 5px}
+.bubble p:last-child{margin-bottom:0}
+.bubble .meta{font-size:var(--text-xs);color:var(--text-tertiary);margin-top:5px}
+
+/* ===== Input area ===== */
+.input-area{border-top:1px solid var(--border-light);background:var(--bg-primary);padding:5px 20px 10px;height:calc(100dvh/6);display:flex;flex-direction:column;gap:4px;flex-shrink:0}
+.input-toolbar{display:flex;align-items:center;justify-content:space-between;height:24px;flex-shrink:0}
+.toolbar-left,.toolbar-right{display:flex;align-items:center;gap:4px}
+.template-btn{padding:2px 7px;border-radius:var(--radius-sm);font-size:11px;color:var(--text-secondary);transition:background var(--transition-normal),color var(--transition-normal)}
+.template-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+.attitude-lights{display:flex;align-items:center;gap:4px;padding:0 2px;transition:opacity 150ms ease}
+.light{width:12px;height:12px;border-radius:var(--radius-full);border:1.5px solid currentColor;background:transparent;transition:transform 150ms ease;cursor:pointer;padding:0}
+.light.doubao{color:var(--color-attitude-doubao)}
+.light.yuesheng{color:var(--color-attitude-yuesheng)}
+.light.direct{color:var(--color-attitude-direct)}
+.light.on{background:currentColor;transform:scale(1.15)}
+.light:hover{transform:scale(1.1)}
+.lock-btn{font-size:12px;color:var(--text-tertiary);padding:2px 4px;border-radius:var(--radius-sm);transition:all 150ms ease}
+.lock-btn:hover{color:var(--text-secondary)}
+.lock-btn.locked{color:var(--accent);background:var(--accent-subtle)}
+
+.input-box{flex:1;position:relative;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-md);padding:6px 10px;box-shadow:var(--shadow-input);display:flex;flex-direction:column;min-height:0;transition:border-color var(--transition-normal)}
+.input-box:focus-within{border-color:var(--accent)}
+.input-textarea{flex:1;resize:none;background:transparent;font-size:var(--text-base);line-height:var(--leading-normal);color:var(--text-primary);padding:0;padding-right:58px;min-height:0;overflow-y:auto}
+.input-textarea::placeholder{color:var(--text-tertiary)}
+.send-btn{position:absolute;bottom:6px;right:7px;padding:4px 12px;background:var(--accent);color:var(--text-on-accent);border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:500;transition:background var(--transition-normal)}
+.send-btn:hover{background:var(--accent-hover)}
+.send-btn:disabled{background:var(--border-light);cursor:not-allowed}
+
+/* ===== Right Panel ===== */
+.right{background:var(--bg-secondary);border-left:1px solid var(--border-light);display:flex;flex-direction:column;overflow:hidden;min-width:0;transition:min-width var(--transition-normal)}
+
+.right-header{display:flex;align-items:center;padding:3px 4px;gap:2px;flex-shrink:0;min-height:34px;border-bottom:1px solid var(--border-light)}
+.right-header-left{display:flex;align-items:center;gap:2px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none}
+.right-header-left::-webkit-scrollbar{display:none}
+.right-header-right{display:flex;align-items:center;gap:1px;flex-shrink:0;padding-left:4px;margin-left:4px;border-left:1px solid var(--border-light)}
+.right-header-right .collapse-row{display:flex;align-items:center;gap:1px}
+
+.tool-tab{display:inline-flex;align-items:center;gap:2px;padding:2px 3px 2px 7px;background:var(--bg-card);border-radius:var(--radius-sm);font-size:11px;color:var(--text-secondary);white-space:nowrap;max-width:110px;transition:all var(--transition-normal);flex-shrink:0;border:1px solid transparent}
+.tool-tab.active{background:var(--accent);color:var(--text-on-accent);font-weight:500}
+.tool-tab:not(.active):hover{background:var(--bg-hover);color:var(--text-primary)}
+.tool-tab .tab-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool-tab .tab-close{width:14px;height:14px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:10px;opacity:.7;flex-shrink:0}
+.tool-tab .tab-close:hover{opacity:1;background:rgba(0,0,0,.08)}
+.tool-tab.active .tab-close:hover{background:rgba(255,255,255,.2)}
+
+.tool-add-btn{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);color:var(--text-secondary);font-size:12px;background:transparent;border:1px dashed var(--border-light);flex-shrink:0;transition:all var(--transition-normal)}
+.tool-add-btn:hover{background:var(--bg-hover);color:var(--text-primary);border-style:solid;border-color:var(--accent)}
+
+.tool-add-popup{position:absolute;top:36px;right:6px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-md);box-shadow:var(--shadow-md);padding:5px;min-width:140px;z-index:10;display:none}
+.tool-add-popup.show{display:block}
+.tool-add-popup .popup-item{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--text-primary);cursor:pointer;width:100%;text-align:left}
+.tool-add-popup .popup-item:hover{background:var(--bg-hover)}
+.tool-add-popup .popup-item .icon{color:var(--accent);font-size:13px;width:16px;text-align:center}
+.right{position:relative}
+
+.window-btn{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);color:var(--text-secondary);font-size:12px;transition:background var(--transition-normal),color var(--transition-normal)}
+.window-btn:hover{background:var(--bg-hover);color:var(--text-primary)}
+.window-btn.close:hover{background:var(--color-attitude-direct);color:white}
+.window-btn.toggle{color:var(--text-secondary)}
+.window-btn.toggle:hover{color:var(--accent)}
+.window-btn.toggled{color:var(--accent);background:var(--accent-subtle)}
+.window-btn.toggled:hover{background:var(--accent);color:var(--text-on-accent)}
+
+.right-body{flex:1;overflow-y:auto;padding:12px}
+
+/* Tool grid */
+.tool-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.tool-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-md);text-align:center;transition:all var(--transition-normal);cursor:pointer}
+.tool-card:hover{border-color:var(--accent);box-shadow:var(--shadow-sm);transform:translateY(-1px)}
+.tool-card .icon{font-size:18px;color:var(--accent);line-height:1}
+.tool-card .label{font-size:var(--text-sm);font-weight:500;color:var(--text-primary)}
+.tool-card .hint{font-size:var(--text-xs);color:var(--text-tertiary)}
+
+.tool-content h3{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;color:var(--text-primary);margin-bottom:12px}
+.progress-counter{display:flex;align-items:center;justify-content:center;gap:4px;padding:10px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:12px}
+.progress-counter .number{font-family:var(--font-display);font-size:24px;font-weight:600;color:var(--accent);line-height:1}
+.progress-counter .divider{color:var(--text-tertiary);margin:0 1px}
+.progress-counter .total{font-size:var(--text-lg);color:var(--text-secondary)}
+.progress-counter .label{font-size:var(--text-xs);color:var(--text-tertiary);margin-left:3px}
+
+.timeline-stage{display:flex;align-items:flex-start;gap:10px;padding:7px 0;position:relative}
+.timeline-stage:not(:last-child)::after{content:'';position:absolute;left:10px;top:28px;bottom:0;width:1px;background:var(--border-light)}
+.timeline-marker{width:20px;height:20px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;background:var(--bg-card);border:1.5px solid var(--border-light);color:var(--text-tertiary);line-height:1}
+.timeline-marker.done{background:var(--accent);border-color:var(--accent);color:var(--text-on-accent)}
+.timeline-marker.current{border-color:var(--accent);color:var(--accent);background:var(--bg-card)}
+.timeline-text{flex:1;padding-top:1px}
+.timeline-text .stage-label{font-size:var(--text-sm);color:var(--text-primary);font-weight:500}
+.timeline-text .stage-meta{font-size:var(--text-xs);color:var(--text-tertiary);margin-top:1px}
+
+.log-day{padding:8px 0;border-bottom:1px solid var(--border-light)}
+.log-day:last-child{border-bottom:none}
+.log-day .date{font-family:var(--font-display);font-size:var(--text-base);font-weight:500;color:var(--text-primary);margin-bottom:5px}
+.log-day .entry{font-size:var(--text-sm);line-height:var(--leading-relaxed);color:var(--text-secondary);margin-bottom:2px}
+.log-day .entry:last-child{margin-bottom:0}
+.log-day .entry .tag-new{color:var(--color-attitude-direct)}
+.log-day .entry .tag-resolved{color:var(--color-attitude-doubao)}
+
+.training-category{font-size:var(--text-xs);color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;margin-top:10px;margin-bottom:4px;padding:0 3px;font-weight:500}
+.training-category.recommended{color:var(--accent)}
+.training-category:first-child{margin-top:0}
+.training-item{display:flex;align-items:center;gap:6px;padding:7px 9px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-sm);text-align:left;cursor:pointer;transition:all var(--transition-normal);width:100%;margin-bottom:3px}
+.training-item:hover{border-color:var(--accent);transform:translateX(2px);box-shadow:var(--shadow-sm)}
+.training-item .name{flex:1;font-size:var(--text-sm);color:var(--text-primary)}
+.training-item .level{font-size:10px;color:var(--text-tertiary);background:var(--bg-secondary);padding:1px 5px;border-radius:var(--radius-full)}
+
+/* ===== Responsive ===== */
+@media(max-width:1279px)and(min-width:1024px){
+  .app:not(.left-explicit){grid-template-columns:48px minmax(0,1fr) minmax(320px,1fr)}
+  .app:not(.left-explicit) .left .left-inner{display:none}
+  .app:not(.left-explicit) .left .left-collapsed-bar{display:flex}
+  .app:not(.left-explicit) .left{width:48px;overflow:visible;min-width:48px}
+  .app:not(.left-explicit) .collapsed-brand-row{display:flex}
+}
+@media(max-width:1023px){
+  .app{grid-template-columns:0 minmax(0,1fr) 0}
+  .left{position:fixed;left:0;top:0;bottom:0;width:min(280px,80vw);z-index:50;transform:translateX(-100%);transition:transform var(--transition-normal);border-right:1px solid var(--border-light)}
+  .left .left-inner{display:flex}
+  .left .left-collapsed-bar{display:none}
+  .collapsed-brand-row{display:none!important}
+  .app.left-open .left{transform:translateX(0)}
+  .right{position:fixed;right:0;top:0;bottom:0;width:min(380px,90vw);z-index:50;transform:translateX(100%);transition:transform var(--transition-normal);border-left:1px solid var(--border-light)}
+  .app.right-open .right{transform:translateX(0)}
+  .backdrop{position:fixed;inset:0;background:rgba(44,36,22,.3);z-index:40;display:none}
+  .app.left-open .backdrop,.app.right-open .backdrop{display:block}
+  .input-area{padding-left:14px;padding-right:14px}
+  .center-header{padding:10px 14px 6px}
+}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Preview banner -->
+<div style="position:fixed;top:6px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--bg-primary);padding:3px 12px;border-radius:var(--radius-full);font-size:11px;z-index:200;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:8px;font-family:var(--font-mono);">
+  <span style="color:var(--accent-light);font-weight:600;">V3 完整修正</span>
+  <a href="#" id="toggleLeft" style="color:var(--bg-primary);text-decoration:none;padding:1px 5px;border-radius:var(--radius-sm);">左栏</a>
+  <a href="#" id="toggleRightCollapseBtn" style="color:var(--bg-primary);text-decoration:none;padding:1px 5px;border-radius:var(--radius-sm);">右栏内容</a>
+  <span style="color:rgba(255,255,255,.3);">|</span>
+  <a href="#" id="teachingBtn" style="color:var(--bg-primary);text-decoration:none;padding:1px 5px;border-radius:var(--radius-sm);">切换状态</a>
+  <span style="color:rgba(255,255,255,.3);">|</span>
+  <a href="#" id="resetBtn" style="color:var(--bg-primary);text-decoration:none;padding:1px 5px;border-radius:var(--radius-sm);">重置</a>
+</div>
+
+<div class="app" id="app">
+
+  <!-- ===== Left Sidebar ===== -->
+  <aside class="left">
+    <div class="left-inner">
+      <div class="left-header">
+        <div class="left-header-left">
+          <span class="brand-name">月笙</span>
+          <button class="icon-btn" id="collapseLeft" title="收起左栏">☰</button>
+        </div>
+        <button class="icon-btn" id="leftSettingsBtn" title="全局设置">⚙</button>
+      </div>
+      <div class="tabs-section">
+        <button class="tab-btn-row1 active" data-tab="training">训练</button>
+        <div class="tab-row-2">
+          <button class="tab-btn-row2" data-tab="chat">对话</button>
+          <button class="tab-btn-row2" data-tab="project">项目</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="search-section">
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" placeholder="搜索...">
+        </div>
+        <div class="search-filters">
+          <button class="search-filter active">全部</button>
+          <button class="search-filter">对话</button>
+          <button class="search-filter">训练</button>
+        </div>
+      </div>
+      <div class="list-section" id="listSection"></div>
+    </div>
+    <!-- 修复5: 左栏收起时内部垂直品牌条 笙[☰] -->
+    <div class="left-collapsed-bar">
+      <span class="brand-name" style="font-size:var(--text-sm)">笙</span>
+      <button class="icon-btn" id="expandLeftFromBar" title="展开左栏" style="font-size:13px">☰</button>
+    </div>
+    <!-- 修复5: 收起态左上角项目名浮动条 (在 .app 内部, CSS 选择器有效) -->
+    <div class="collapsed-brand-row" id="collapsedBrandRow">
+      <div class="mini-project">
+        <span class="caret">▼</span>
+        <span>我的第一本小说</span>
+        <span class="caret">▾</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== Center ===== -->
+  <main class="center">
+    <header class="center-header">
+      <div class="center-header-left">
+        <button class="project-selector">
+          <span class="caret">▼</span>
+          <span>我的第一本小说</span>
+          <span class="caret">▾</span>
+        </button>
+        <span class="status-indicator teaching" id="statusIndicator">
+          <span class="dot"></span>
+          <span class="status-text">教学中</span>
+        </span>
+      </div>
+      <div class="center-header-actions">
+        <button class="icon-btn" title="新建会话">＋</button>
+        <button class="icon-btn" title="设置">⚙</button>
+      </div>
+    </header>
+    <div class="center-body" id="centerBody"></div>
+    <footer class="input-area">
+      <div class="input-toolbar">
+        <div class="toolbar-left">
+          <button class="template-btn">[模板]</button>
+        </div>
+        <div class="toolbar-right">
+          <div class="attitude-lights" id="attitudeLights">
+            <button class="light doubao on" data-level="doubao" title="豆包(温和)"></button>
+            <button class="light yuesheng" data-level="yuesheng" title="月笙(平衡)"></button>
+            <button class="light direct" data-level="direct" title="sensei(直接)"></button>
+          </div>
+          <button class="lock-btn" id="lockBtn" title="锁定档位">🔓</button>
+        </div>
+      </div>
+      <div class="input-box">
+        <textarea class="input-textarea" rows="2" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button class="send-btn" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ===== Right Panel ===== -->
+  <aside class="right">
+    <div class="right-header" id="rightHeader"></div>
+    <div class="right-body" id="rightBody"></div>
+    <div class="tool-add-popup" id="toolAddPopup"></div>
+  </aside>
+
+  <div class="backdrop" id="backdrop"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const app=$('#app');
+const leftSection=document.querySelector('.left');
+const listSection=$('#listSection');
+const centerBody=$('#centerBody');
+const rightHeader=$('#rightHeader');
+const rightBody=$('#rightBody');
+const toolAddPopup=$('#toolAddPopup');
+const statusIndicator=$('#statusIndicator');
+const collapsedBrandRow=$('#collapsedBrandRow');
+
+let activeTab='training',activeSessionId=null,openTools=[],activeToolId=null,currentStatus='teaching',rightCollapsed=false;
+
+const sessions=[
+  {id:1,title:'初稿诊断',type:'chat',time:'今天'},
+  {id:2,title:'第一章节奏讨论',type:'chat',time:'昨天'},
+  {id:3,title:'训练：动作替代情绪词',type:'training',time:'3天前'},
+  {id:4,title:'配角动机梳理',type:'chat',time:'5天前'},
+  {id:5,title:'训练：对话节奏',type:'training',time:'上周'}
+];
+const projectTree=[
+  {id:'p1',title:'第一章：山门',type:'chapter'},
+  {id:'p2',title:'第二章：试炼',type:'chapter'},
+  {id:'p3',title:'第三章：初遇',type:'chapter'},
+  {id:'p4',title:'第四章：暗流',type:'chapter'},
+  {id:'p5',title:'大纲',type:'note'}
+];
+const trainingCategories=[
+  {name:'推荐技法',recommended:true,items:[{name:'动作替代情绪词',level:'入门'},{name:'对话节奏控制',level:'入门'}]},
+  {name:'结构技法',items:[{name:'三幕剧结构',level:'进阶'},{name:'伏笔回收',level:'进阶'}]},
+  {name:'人物技法',items:[{name:'动机层次',level:'入门'},{name:'视角切换',level:'高阶'}]}
+];
+const tools=[
+  {id:'progress',name:'教学进度',icon:'◐',hint:'纵向时序进度'},
+  {id:'log',name:'学习日志',icon:'✎',hint:'每日进步记录'},
+  {id:'manuscript',name:'作品',icon:'☰',hint:'章节编辑器'},
+  {id:'note',name:'教学笔记',icon:'✤',hint:'设定树'},
+  {id:'settings',name:'设置',icon:'⚙',hint:'API Key & 偏好'}
+];
+const msgs=[
+  {role:'assistant',content:'<p>早上好。看了你昨天发的开头，整体氛围不错。</p><p>节奏稍慢了一些，主要集中在第一段环境描写。你方便聊聊为什么用这么长一段开始吗？</p>',time:'10:32'},
+  {role:'user',content:'<p>我怕读者不了解世界观会看不懂后面的剧情。</p>',time:'10:33'},
+  {role:'assistant',content:'<p>这个担心我理解。但铺垫的代价是开头吸引力下降。试试先给一个"钩子"（人物处境、悬念），世界观通过后续情节自然透露。</p>',time:'10:34'}
+];
+
+/* ===== 右栏 header/body 控制 ===== */
+function renderRightHeader(){
+  if(rightCollapsed){
+    rightHeader.innerHTML=`
+      <div class="right-header-right" style="width:100%;justify-content:flex-end;">
+        <div class="collapse-row">
+          <div class="window-btn" id="toolAddCollapsed" title="添加工具">＋</div>
+          <div class="window-btn" id="settingsCollapsed" title="设置">⚙</div>
+          <div style="width:1px;height:14px;background:var(--border-light);margin:0 2px;"></div>
+          <div class="window-btn toggle" id="rightBodyToggle" title="展开内容区">⤢</div>
+          <div class="window-btn" data-window="min" title="最小化">─</div>
+          <div class="window-btn" data-window="max" title="最大化">□</div>
+          <div class="window-btn close" data-window="close" title="关闭">✕</div>
+        </div>
+      </div>`;
+
+    $('#toolAddCollapsed').onclick=e=>{e.stopPropagation();toolAddPopup.classList.toggle('show');renderToolAddPopup();};
+    $('#settingsCollapsed').onclick=()=>openTool('settings');
+    $('#rightBodyToggle').onclick=()=>{rightCollapsed=false;app.classList.remove('right-collapsed');renderRightHeader();renderRightBody();};
+    return;
+  }
+  const left=openTools.length>0?renderOpenToolsTabs():'<div class="right-header-left"></div>';
+  rightHeader.innerHTML=left+`
+    <div class="right-header-right">
+      <div class="window-btn toggle" id="rightBodyToggle" title="收起内容区">⤢</div>
+      <div class="window-btn" data-window="min" title="最小化">─</div>
+      <div class="window-btn" data-window="max" title="最大化">□</div>
+      <div class="window-btn close" data-window="close" title="关闭">✕</div>
+    </div>`;
+  bindRightHeaderEvents();
+}
+
+function renderOpenToolsTabs(){
+  const tabs=openTools.map(t=>{const tool=tools.find(x=>x.id===t);return `<div class="tool-tab ${t===activeToolId?'active':''}" data-tool="${t}"><span class="tab-name">${tool?tool.name:t}</span><span class="tab-close" data-close="${t}">✕</span></div>`;}).join('');
+  return `<div class="right-header-left">${tabs}<button class="tool-add-btn" id="toolAddBtn" title="添加工具">＋</button></div>`;
+}
+
+function bindRightHeaderEvents(){
+  $$('.tool-tab').forEach(tab=>{tab.onclick=e=>{if(e.target.classList.contains('tab-close')){e.stopPropagation();closeTool(e.target.dataset.close);return;}activeToolId=tab.dataset.tool;renderRightHeader();renderRightBody();};});
+  const addBtn=$('#toolAddBtn');
+  if(addBtn){addBtn.onclick=e=>{e.stopPropagation();toolAddPopup.classList.toggle('show');renderToolAddPopup();};}
+  const toggleBtn=$('#rightBodyToggle');
+  if(toggleBtn){toggleBtn.onclick=()=>{rightCollapsed=!rightCollapsed;app.classList.toggle('right-collapsed',rightCollapsed);renderRightHeader();};}
+}
+
+function renderToolAddPopup(){
+  const items=tools.filter(t=>!openTools.includes(t.id));
+  if(!items.length){toolAddPopup.innerHTML='<div style="padding:8px;color:var(--text-tertiary);font-size:var(--text-xs);text-align:center;">所有工具已打开</div>';return;}
+  toolAddPopup.innerHTML=items.map(t=>`<button class="popup-item" data-tool="${t.id}"><span class="icon">${t.icon}</span><span>${t.name}</span></button>`).join('');
+  $$('.popup-item').forEach(item=>{item.onclick=()=>{openTool(item.dataset.tool);toolAddPopup.classList.remove('show');};});
+}
+document.addEventListener('click',e=>{if(!e.target.closest('#toolAddBtn')&&!e.target.closest('#toolAddPopup'))toolAddPopup.classList.remove('show');});
+
+function openTool(toolId){
+  if(!openTools.includes(toolId))openTools.push(toolId);
+  activeToolId=toolId;rightCollapsed=false;app.classList.remove('right-collapsed');
+  renderRightHeader();renderRightBody();
+}
+function closeTool(toolId){
+  openTools=openTools.filter(t=>t!==toolId);
+  if(activeToolId===toolId)activeToolId=openTools[openTools.length-1]||null;
+  if(openTools.length===0){renderRightHeader();renderToolGrid();}else{renderRightHeader();renderRightBody();}
+}
+function renderRightBody(){
+  if(openTools.length===0){renderToolGrid();return;}
+  if(!activeToolId)activeToolId=openTools[0];
+  rightBody.innerHTML=renderToolContent(activeToolId);
+}
+function renderToolGrid(){
+  rightBody.innerHTML=`<div class="tool-grid">${tools.map(t=>`<button class="tool-card" data-tool="${t.id}"><span class="icon">${t.icon}</span><span class="label">${t.name}</span><span class="hint">${t.hint}</span></button>`).join('')}</div>`;
+  $$('.tool-card').forEach(c=>{c.onclick=()=>openTool(c.dataset.tool);});
+}
+function renderToolContent(toolId){
+  const tool=tools.find(t=>t.id===toolId),name=tool?tool.name:toolId;
+  if(toolId==='progress')return `<div class="tool-content"><h3>${name}</h3><div class="progress-counter"><span class="number">3</span><span class="divider">/</span><span class="total">7</span><span class="label">已解决</span></div><div class="timeline"><div class="timeline-stage"><div class="timeline-marker done">✓</div><div class="timeline-text"><div class="stage-label">提交作品</div><div class="stage-meta">2026-06-15</div></div></div><div class="timeline-stage"><div class="timeline-marker done">✓</div><div class="timeline-text"><div class="stage-label">诊断分析</div><div class="stage-meta">发现7个问题</div></div></div><div class="timeline-stage"><div class="timeline-marker current">●</div><div class="timeline-text"><div class="stage-label">教学中</div><div class="stage-meta">当前：对话节奏</div></div></div><div class="timeline-stage"><div class="timeline-marker">○</div><div class="timeline-text"><div class="stage-label">已收尾</div></div></div><div class="timeline-stage"><div class="timeline-marker">○</div><div class="timeline-text"><div class="stage-label">等待修改</div></div></div></div></div>`;
+  if(toolId==='log')return `<div class="tool-content"><h3>${name}</h3><div class="log-day"><div class="date">✧6月17日</div><div class="entry"><span class="tag-new">新发现：</span>铺垫过多</div><div class="entry"><span class="tag-resolved">已攻克：</span>动作替代情绪词</div></div><div class="log-day"><div class="date">✧6月15日</div><div class="entry"><span class="tag-new">新发现：</span>信息硬塞</div><div class="entry"><span class="tag-resolved">已攻克：</span>对话节奏</div></div></div>`;
+  if(toolId==='settings')return `<div class="tool-content"><h3>${name}</h3><div style="margin-bottom:12px;"><div style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:4px;">API Key</div><input type="password" placeholder="sk-..." style="width:100%;padding:6px 10px;background:var(--bg-card);border:1px solid var(--border-light);border-radius:var(--radius-sm);font-size:var(--text-sm);"></div><div><div style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:4px;">默认态度</div><div class="attitude-lights" style="opacity:1;pointer-events:auto;"><button class="light doubao on" data-level="doubao"></button><button class="light yuesheng" data-level="yuesheng"></button><button class="light direct" data-level="direct"></button></div></div><button style="margin-top:16px;padding:6px 14px;background:var(--accent);color:var(--text-on-accent);border-radius:var(--radius-md);font-size:var(--text-sm);">保存</button></div>`;
+  return `<div class="tool-content"><h3>${name}</h3><p style="color:var(--text-tertiary);font-size:var(--text-sm);line-height:var(--leading-relaxed);">该工具的具体内容将在Phase3实施。当前为占位视图。</p></div>`;
+}
+
+/* ===== 训练技法视图 — 可关闭 ===== */
+function renderTrainingPanel(){
+  rightHeader.innerHTML=`<div class="right-header-left"><div class="tool-tab active"><span class="tab-name">训练技法</span><span class="tab-close" id="closeTrainingBtn">✕</span></div></div><div class="right-header-right"><div class="window-btn toggle" id="rightBodyToggle" title="收起内容区">⤢</div><div class="window-btn" data-window="min" title="最小化">─</div><div class="window-btn" data-window="max" title="最大化">□</div><div class="window-btn close" data-window="close" title="关闭">✕</div></div>`;
+  rightBody.innerHTML=trainingCategories.map(cat=>`<div class="training-category ${cat.recommended?'recommended':''}">${cat.name}${cat.recommended?'  👍':''}</div><div>${cat.items.map(item=>`<button class="training-item"><span class="name">${item.name}</span><span class="level">${item.level}</span></button>`).join('')}</div>`).join('');
+  $('#closeTrainingBtn').onclick=()=>{openTools=[];activeToolId=null;renderRightHeader();renderToolGrid();$$('.tab-btn-row1,.tab-btn-row2').forEach(b=>b.classList.remove('active'));$('.tab-btn-row2[data-tab="chat"]').classList.add('active');activeTab='chat';activeSessionId=null;renderList();renderChat();};
+  $$('.training-item').forEach(item=>{item.onclick=()=>{alert('将创建训练会话: '+item.querySelector('.name').textContent);};});
+  bindRightHeaderEvents();
+}
+
+/* ===== 左侧栏列表 ===== */
+function renderList(){
+  if(activeTab==='chat'){
+    listSection.innerHTML=sessions.filter(s=>s.type==='chat').map(s=>`<div class="list-item ${activeSessionId===s.id?'active':''}" data-id="${s.id}"><span class="item-icon">◌</span><span class="item-title">${s.title}</span><span class="item-badge">${s.time}</span></div>`).join('');
+  }else if(activeTab==='project'){
+    listSection.innerHTML=projectTree.map(p=>`<div class="list-item"><span class="item-icon">${p.type==='chapter'?'☰':'✎'}</span><span class="item-title">${p.title}</span></div>`).join('');
+  }else{
+    listSection.innerHTML=sessions.filter(s=>s.type==='training').map(s=>`<div class="list-item training" data-id="${s.id}"><span class="item-icon">◎</span><span class="item-title">${s.title}</span><span class="item-badge">${s.time}</span></div>`).join('');
+  }
+  $$('.list-item').forEach(item=>{item.onclick=()=>{if(activeTab==='project'){openTool('manuscript');}else{activeSessionId=parseInt(item.dataset.id);renderList();renderChat();}};});
+}
+function renderChat(){
+  if(!activeSessionId){
+    centerBody.innerHTML=`<div class="empty-state"><h2>开始你的写作之旅</h2><div class="choice-cards"><button class="choice-card"><span class="emoji">📝</span><div class="text"><div class="label">我有作品</div><div class="hint">直接进入聊天，我会帮你分析</div></div></button><button class="choice-card"><span class="emoji">🌱</span><div class="text"><div class="label">从头学习</div><div class="hint">我引导你搭建世界观和人物</div></div></button><button class="choice-card"><span class="emoji">💬</span><div class="text"><div class="label">先聊聊</div><div class="hint">正常聊天，我在对话中自然引导</div></div></button></div></div>`;
+    return;
+  }
+  centerBody.innerHTML=`<div class="message-list">${msgs.map(m=>`<div class="message"><div class="avatar">${m.role==='assistant'?'月':'我'}</div><div class="bubble">${m.content}<div class="meta">${m.time}</div></div></div>`).join('')}</div>`;
+}
+
+/* ===== 状态指示器 ===== */
+function setStatus(s){currentStatus=s;statusIndicator.className='status-indicator '+s;const map={idle:'待开始',diagnosing:'诊断中',teaching:'教学中',completed:'已收尾'};statusIndicator.querySelector('.status-text').textContent=map[s]||s;}
+
+/* ===== Panel toggles ===== */
+function toggleLeft(){
+  if(window.innerWidth<1024)app.classList.toggle('left-open');
+  else{app.classList.toggle('left-collapsed');app.classList.toggle('left-explicit');updateCollapsedBar();}
+}
+function updateCollapsedBar(){
+  const isCollapsed=app.classList.contains('left-collapsed');
+  collapsedBrandRow.style.display=isCollapsed?'flex':'none';
+}
+function toggleRightCollapse(){
+  if(window.innerWidth<1024)app.classList.toggle('right-open');
+  else{rightCollapsed=!rightCollapsed;app.classList.toggle('right-collapsed',rightCollapsed);renderRightHeader();}
+}
+
+/* ===== Tabs ===== */
+$$('.tab-btn-row1,.tab-btn-row2').forEach(btn=>{btn.onclick=()=>{$$('.tab-btn-row1,.tab-btn-row2').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeTab=btn.dataset.tab;if(activeTab==='training'){renderTrainingPanel();activeSessionId=null;}else{if(openTools.length===0){renderRightHeader();renderToolGrid();}else renderRightHeader();}renderList();renderChat();};});
+
+/* ===== Attitude ===== */
+$('#attitudeLights').addEventListener('click',e=>{if(!e.target.classList.contains('light'))return;if($('#lockBtn').classList.contains('locked'))return;$$('.light').forEach(l=>l.classList.remove('on'));e.target.classList.add('on');});
+let locked=false;
+$('#lockBtn').onclick=()=>{locked=!locked;$('#lockBtn').textContent=locked?'🔒':'🔓';$('#lockBtn').classList.toggle('locked',locked);const l=$('#attitudeLights');l.style.opacity=locked?'.4':'1';l.style.pointerEvents=locked?'none':'auto';};
+
+/* ===== Preview buttons ===== */
+$('#toggleLeft').onclick=e=>{e.preventDefault();toggleLeft();};
+$('#toggleRightCollapseBtn').onclick=e=>{e.preventDefault();toggleRightCollapse();};
+$('#teachingBtn').onclick=e=>{e.preventDefault();const c=['idle','diagnosing','teaching','completed'];setStatus(c[(c.indexOf(currentStatus)+1)%c.length]);};
+$('#resetBtn').onclick=e=>{e.preventDefault();app.classList.remove('left-collapsed','right-collapsed','left-open','right-open','left-explicit');rightCollapsed=false;collapsedBrandRow.style.display='none';$$('.tab-btn-row1,.tab-btn-row2').forEach(b=>b.classList.remove('active'));$('.tab-btn-row1[data-tab="training"]').classList.add('active');activeTab='training';activeSessionId=null;openTools=[];activeToolId=null;renderList();renderTrainingPanel();$$('.light').forEach(l=>l.classList.remove('on'));$('.light.doubao').classList.add('on');locked=false;$('#lockBtn').textContent='🔓';$('#lockBtn').classList.remove('locked');$('#attitudeLights').style.opacity='1';$('#attitudeLights').style.pointerEvents='auto';setStatus('teaching');};
+$('#collapseLeft').onclick=toggleLeft;
+$('#expandLeftFromBar').onclick=toggleLeft;
+$('#backdrop').onclick=()=>{app.classList.remove('left-open','right-open');};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){app.classList.remove('left-open','right-open');toolAddPopup.classList.remove('show');}});
+
+/* ===== Init ===== */
+renderList();renderTrainingPanel();setStatus('teaching');
+</script>
+</body>
+</html>

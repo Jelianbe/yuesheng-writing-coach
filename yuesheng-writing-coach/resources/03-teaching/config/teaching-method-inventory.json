@@ -1,0 +1,178 @@
+{
+  "version": "1.0",
+  "description": "教学方式盘点与补全清单 — 轨道B基础设施。记录现有+缺失的教学资源，供后续阶段增量补全",
+  "deprecated": "⚠️ 快照文件。existing 数组中的摘要为手动复制，不会随原文件自动同步。后续可考虑改为脚本自动生成。以原文件（coaching-templates.json / teaching-rules.json 等）为准。",
+  "updatedAt": "2026-06-14",
+  "inventoryDate": "2026-06-14",
+  "note": "基于 coaching-templates.json + 蒸馏丢失内容清单.md + 代码环境审计生成",
+  "status": {
+    "totalItems": 19,
+    "existingItems": 11,
+    "missingItems": 8
+  },
+  "existing": [
+    {
+      "category": "教学策略模板",
+      "source": "coaching-templates.json",
+      "count": 11,
+      "status": "✅ 存在",
+      "note": "焦点回拉/镜像反馈/对比锚定/信心确认/降级兜底/自主权归还/导师式反馈/零基础破冰/跨语境迁移/边界校准 + 附件模板策略。全部有触发条件、步骤、话术模板、禁忌。缺 realCases 和 advancedUsage 字段",
+      "priority": "existing"
+    },
+    {
+      "category": "教学模式切换",
+      "source": "teaching-strategies.json",
+      "count": 3,
+      "status": "✅ 存在",
+      "note": "支架/引导/挑战三种模式 + 5条切换规则。StrategyRouter已编码",
+      "priority": "existing"
+    },
+    {
+      "category": "反馈结构",
+      "source": "feedback-structure.json",
+      "count": 1,
+      "status": "✅ 存在",
+      "note": "三明治反馈法（肯定→提问→方向）已编码",
+      "priority": "existing"
+    },
+    {
+      "category": "态度档位",
+      "source": "attitude-rhythm.json",
+      "count": 3,
+      "status": "⚠️ 存在但话术层需精简",
+      "note": "豆包/月笙如歌/Sensei 三档。整合方案讨论过话术层废弃，但态度切换逻辑保留。保持现状，验证2后评估",
+      "priority": "existing"
+    },
+    {
+      "category": "用户类型映射",
+      "source": "user-type-matrix.json",
+      "count": 5,
+      "status": "✅ 存在",
+      "note": "5用户类型×教学风格映射",
+      "priority": "existing"
+    },
+    {
+      "category": "教育学理论基础",
+      "source": "education-theory-fragments.json",
+      "count": 15,
+      "status": "✅ 存在",
+      "note": "Vygotsky/Bruner等15条理论碎片",
+      "priority": "existing"
+    },
+    {
+      "category": "输出合规校验",
+      "source": "teaching-rules.json",
+      "count": 9,
+      "status": "⚠️ 存在（V-01~V-09）",
+      "note": "整合方案曾讨论废弃，验证报告裁定保留。作为 fallback 合规约束，不作为教学依据",
+      "priority": "existing"
+    }
+  ],
+  "missing": [
+    {
+      "category": "A — 信号权重与严重度分级",
+      "priority": "P0",
+      "status": "★ 需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失A",
+      "description": "每个症候的 signalWeight 权重表 + severityLevel L1-L3 分级 + 触发->动作映射规则",
+      "action": "阶段1-3执行：新建 signal-weight-matrix.json，每症候含词汇/缺失/数量/表达4种信号类型和权重",
+      "targetPhase": "1-3",
+      "fallback": "当前 syndrome-action-map 无权重，诊断只能做二元判断（有/无），不能区分严重度"
+    },
+    {
+      "category": "B — 教学动作话术模板",
+      "priority": "P0",
+      "status": "★ 部分需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失B",
+      "description": "每个教学动作缺完整话术模板（含月笙如歌档+豆包档两套）、核心逻辑、进阶用法、铁律",
+      "action": "阶段0-B1补充：在 coaching-templates.json 现有11条基础上，补充 advancedUsage、realCases、contraindications_detail 字段",
+      "targetPhase": "0-B1",
+      "fallback": "当前 coaching-templates 有步骤模板但无两档语气切换"
+    },
+    {
+      "category": "C — 诊断语言与引导模板",
+      "priority": "P1",
+      "status": "★ 需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失C",
+      "description": "6条可复用诊断语言（元诊断/核心提问公式/苦难写作公式/文笔分级/对话口语化/进步即退步）",
+      "action": "阶段0-B1补充：新建 diagnostic-language.json，每条含 triggerCondition + template + sourceCase",
+      "targetPhase": "0-B1",
+      "fallback": "当前诊断语言依赖 AI 自由发挥，无上述经过验证的金句"
+    },
+    {
+      "category": "G — 教学流程（三阶段）",
+      "priority": "P1",
+      "status": "★ 需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失G",
+      "description": "阶段一（建立投入）→ 阶段二（暴露问题）→ 阶段三（诊断与引导）的完整流程定义",
+      "action": "阶段0-B1补充：新建 teaching-flow.json，每阶段含 entryCondition + exitCriteria + behaviorRules",
+      "targetPhase": "0-B1",
+      "fallback": "当前 S2_GUIDE 状态机能管理流程转移，但无教学阶段内的对话节奏定义"
+    },
+    {
+      "category": "D — 教学风格与态度系统",
+      "priority": "P2",
+      "status": "⚠️ 需补全",
+      "source": "蒸馏丢失内容清单 §丢失D",
+      "description": "7个教学场景的行为脚本（评价/辩驳/自我暴露/求助/展示/要求改写）",
+      "action": "阶段2验证通过后，在 attitude-rhythm.json 中补充场景行为规则",
+      "targetPhase": "2",
+      "fallback": "当前 attitude-rhythm 只有档位参数，无场景行为脚本"
+    },
+    {
+      "category": "E — 案例驱动的诊断映射",
+      "priority": "P2",
+      "status": "★ 需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失E",
+      "description": "C001-C010 真实案例，每条含 触发病症→触发动作→用户反应→结果→分析",
+      "action": "阶段3执行：若 S4（月笙真实案例库_V1.0.md）可访问则逐条录入；否则基于现有教学对话重建",
+      "targetPhase": "3",
+      "fallback": "需确认 S4 原始文件是否可访问"
+    },
+    {
+      "category": "F — 体裁敏感指导逻辑",
+      "priority": "P2",
+      "status": "★ 需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失F",
+      "description": "网文/传统文学/散文/记叙文的文笔标准区分 + 文体错位诊断",
+      "action": "阶段3执行：在 training-library.json 中加 genre_sensitivity 字段，标注入门/进阶/创作的文笔标准",
+      "targetPhase": "3",
+      "fallback": "最低优先级，不影响核心教学功能"
+    },
+    {
+      "category": "H — 禁忌与边界系统",
+      "priority": "P0",
+      "status": "⚠️ 需从零创建",
+      "source": "蒸馏丢失内容清单 §丢失H",
+      "description": "8条绝对禁止规则 + 教学边界声明。部分（不替改写/不生成内容）在 teacher-prompt 中有隐含约束，但未结构化",
+      "action": "阶段0-B1补充：新建 forbidden-rules.json，每条含 ruleId + description + consequence + exception",
+      "targetPhase": "0-B1",
+      "fallback": "当前 teacher-prompt 有部分约束，但未结构化，无法被代码校验"
+    }
+  ],
+  "executionPlan": {
+    "immediate": {
+      "phase": "0-B1（当前波次）",
+      "tasks": [
+        "创建 forbidden-rules.json（H 类 P0）",
+        "创建 diagnostic-language.json（C 类 P1）",
+        "创建 teaching-flow.json（G 类 P1）",
+        "coaching-templates.json 补充 advancedUsage/realCases 字段（B 类 P0）"
+      ]
+    },
+    "nextWave": {
+      "phase": "1-3",
+      "tasks": [
+        "创建 signal-weight-matrix.json（A 类 P0）"
+      ]
+    },
+    "future": {
+      "phase": "2 / 3",
+      "tasks": [
+        "attitude-rhythm.json 补充场景行为规则（D 类 P2）",
+        "案例库重建（E 类 P2）",
+        "体裁敏感字段补充（F 类 P2）"
+      ]
+    }
+  }
+}

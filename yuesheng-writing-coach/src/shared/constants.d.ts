@@ -82,6 +82,7 @@ export declare const IPC_CHANNELS: {
     readonly CONFIG_SET: "config:set";
     readonly CONFIG_TEST_CONNECTION: "config:testConnection";
     readonly DIAGNOSIS_UPDATE: "diagnosis:update";
+    readonly DIAGNOSIS_UPDATED: "diagnosis:updated";
     readonly DIAGNOSIS_QUERY: "diagnosis:query";
     readonly DIAGNOSIS_SUBMIT_REWRITE: "diagnosis:submitRewrite";
     readonly DIAGNOSIS_GET_COMPARISON: "diagnosis:getComparison";

@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "按用户水平过滤技法难度的矩阵。每个用户水平有默认的 maxDifficultyOrder，可对特定核心模式设置 override。",
+  "stats": {
+    "totalTechniques": 107,
+    "beginner": 53,
+    "intermediate": 45,
+    "advanced": 9,
+    "perPattern": {
+      "show-dont-tell": 10,
+      "suspense-engine": 21,
+      "pov-control": 5,
+      "structure-innovation": 9,
+      "worldbuilding-embed": 9,
+      "character-depth": 16,
+      "dialogue-depth": 12,
+      "rhythm-control": 12,
+      "opening-hook": 12,
+      "negative-example": 1
+    }
+  },
+  "defaultMaxDifficulty": {
+    "beginner": {
+      "maxDifficultyOrder": 1,
+      "description": "新手只推荐 beginner 技法（difficultyOrder=1）",
+      "override": {
+        "show-dont-tell": {
+          "maxDifficultyOrder": 2,
+          "reason": "beginner 仅 3 条（占比 30%），不够支撑教学需要。开放 intermediate 前 2 条（洋葱式情绪剥离、沉默频率递进）供选"
+        },
+        "negative-example": {
+          "skip": true,
+          "reason": "反面教材对新手可能造成误导，跳过"
+        }
+      }
+    },
+    "intermediate": {
+      "maxDifficultyOrder": 2,
+      "description": "进阶用户推荐 beginner + intermediate 技法（difficultyOrder≤2）",
+      "override": {}
+    },
+    "advanced": {
+      "maxDifficultyOrder": 3,
+      "description": "高手全量开放（difficultyOrder≤3）",
+      "override": {
+        "opening-hook": {
+          "maxDifficultyOrder": 1,
+          "reason": "opening-hook 全部是 beginner 技法（12/12），高手无需再学开篇钩子"
+        },
+        "negative-example": {
+          "skip": true,
+          "reason": "反面教材仅 1 条，对高手无教学价值"
+        }
+      }
+    }
+  },
+  "syndromePriorityMap": {
+    "description": "当用户被诊断出特定症候时，优先推荐的 coreId 列表（按优先级排序）",
+    "P001": ["worldbuilding-embed", "suspense-engine"],
+    "P002": ["character-depth", "show-dont-tell"],
+    "P003": ["show-dont-tell", "dialogue-depth"],
+    "P004": ["worldbuilding-embed", "dialogue-depth"],
+    "P005": ["pov-control"],
+    "P006": ["rhythm-control", "suspense-engine"],
+    "P007": ["structure-innovation", "suspense-engine"],
+    "P009": ["character-depth", "rhythm-control"],
+    "P010": ["character-depth", "dialogue-depth"]
+  }
+}

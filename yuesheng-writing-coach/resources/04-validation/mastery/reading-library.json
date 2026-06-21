@@ -1,0 +1,106 @@
+{
+  "$source": "teaching-knowledge-bridge_V1.0.md §3.4 — A3 阅读分析模式数据源",
+  "description": "阅读库 Schema — 供教学 Agent 在 S2_GUIDE / S2_REFLECTION 阶段推送阅读分析材料使用。MODE=reading_task 时训练流程使用 READING_STEPS 三步框架。",
+  "version": "1.0",
+  "updatedAt": "2026-06-14",
+  "readingSteps": {
+    "source": "training.types.ts :: READING_STEPS",
+    "steps": [
+      { "id": "read_guide", "title": "阅读指导", "description": "了解本次需要关注的阅读分析方向" },
+      { "id": "analyze", "title": "写下分析", "description": "根据指导写下你的阅读分析或观察" },
+      { "id": "submit", "title": "提交评估", "description": "提交分析结果并接收 AI 评估反馈" }
+    ]
+  },
+  "categories": [
+    {
+      "id": "technique_demo",
+      "name": "技法示范",
+      "description": "优秀范文展示特定写作技法",
+      "tags": ["动词运用", "感官描写", "节奏控制"]
+    },
+    {
+      "id": "problem_case",
+      "name": "问题案例",
+      "description": "典型症候案例供学生诊断分析",
+      "tags": ["世界观膨胀", "角色扁平", "动词匮乏"]
+    },
+    {
+      "id": "comparative",
+      "name": "对比阅读",
+      "description": "同一题材的优秀/普通版本对比",
+      "tags": ["修改对比", "版本迭代"]
+    }
+  ],
+  "entries": [
+    {
+      "id": "R-PRE-001",
+      "source": "preset",
+      "createdAt": "2026-06-14T12:00:00Z",
+      "syndromeId": "P003",
+      "principleAnchor": "CHEKHOV_EMOTION",
+      "title": "白描示范 · 情绪不说破",
+      "excerpt": "祥林嫂第二次回鲁镇，人们听得多了，便是最慈悲的念佛的老太太们，眼里也再不见有一点泪的痕迹。后来全镇的人们几乎都能背诵她的话，一听到就烦厌得头痛。\n\n「我真傻，真的，」她开首说。\n「是的，你是单知道雪天野兽在山坳里没有食吃，才会到村里来的。」他们立即打断她的话，走开去了。",
+      "analysisPrompt": "鲁迅在这段文字中从未直接写「祥林嫂很痛苦」或「人们厌倦了」，但读者能清晰感受到这两种情绪。请逐句分析：每一句是通过什么具体描写让读者感受到情绪的？如果去掉所有情绪词，情绪是否依然存在？",
+      "referenceExcerpt": "契诃夫：不要写「她哭了」，写她颤抖的手和变调的声音。",
+      "difficulty": "easy",
+      "tags": ["白描", "情绪展示", "克制"],
+      "categoryId": "technique_demo"
+    },
+    {
+      "id": "R-PRE-002",
+      "source": "preset",
+      "createdAt": "2026-06-14T12:05:00Z",
+      "syndromeId": "P003",
+      "principleAnchor": "WANG_ZENG_QI_ACCURACY",
+      "title": "动词精准力 · 一字不可替",
+      "excerpt": "汪曾祺写吃：「筷子头一扎下去，吱——红油就冒出来了。」\n\n一个「扎」字写出咸鸭蛋的质感和力道；一个「冒」字写出红油的动态和温度。换了任何其他动词，效果都大打折扣。\n\n对比平庸写法：「用筷子戳了一下咸鸭蛋，里面的红油流了出来。」——并不错，但淡了。",
+      "analysisPrompt": "汪曾祺说「语言的唯一标准，是准确」。请分析：两个版本的核心动词差异在哪？「扎」vs「戳」、「冒」vs「流」——每一组在画面感、力度、信息量上的损失是多少？选择一个你自己作品中平淡的动词，尝试用更准确的动词替换，并说明替换后的效果差异。",
+      "referenceExcerpt": "汪曾祺：语言的唯一标准，是准确。小说差即语言差。",
+      "difficulty": "easy",
+      "tags": ["动词", "精准", "用词"],
+      "categoryId": "technique_demo"
+    },
+    {
+      "id": "R-PRE-003",
+      "source": "preset",
+      "createdAt": "2026-06-14T12:10:00Z",
+      "syndromeId": "P002",
+      "principleAnchor": "LAO_SHE_ACTION",
+      "title": "动作即人格 · 老舍的纸剪人理论",
+      "excerpt": "老舍写骆驼祥子：\n\n「他没有什么模样，使他可爱的是脸上的精神。头不很大，圆眼，肉鼻子，两条眉很短很粗，头上永远剃得发亮。腮上没有多余的肉，脖子可是几乎与头一边儿粗；脸上永远红扑扑的。他确乎有点像一棵树，坚壮，沉默，而又有生气。」\n\n祥子的全部性格写在身体特征和动作习惯上——「永远剃得发亮」「脸上永远红扑扑的」「一棵树，坚壮，沉默，而又有生气」。读者不需要被「告诉」祥子是什么样的人，从这些细节里自己就看出来了。",
+      "analysisPrompt": "老舍说「人没动作，就是纸剪的」。请分析：这段描写中哪些是「动作/习惯」，哪些是「静态特征」？如果删掉「永远」开头的两句，人物形象损失了多少？为你自己的一个角色写一段100字的外貌+习惯描写，不使用任何评价性形容词（善良/温柔/勇敢等）。",
+      "referenceExcerpt": "老舍：人没动作，就是纸剪的；人没声音，就是哑巴；人没物件陪着，就是孤魂野鬼。",
+      "difficulty": "medium",
+      "tags": ["人物塑造", "动作", "白描"],
+      "categoryId": "technique_demo"
+    },
+    {
+      "id": "R-PRE-004",
+      "source": "preset",
+      "createdAt": "2026-06-14T12:15:00Z",
+      "syndromeId": "P003",
+      "principleAnchor": "CHEKHOV_EMOTION",
+      "title": "对比阅读 · 情绪标签 vs 情绪展示",
+      "excerpt": "【版本A · 情绪标签化】\n她很难过。她觉得自己被抛弃了。她非常伤心地走出房间，心里充满了绝望。\n\n【版本B · 情绪展示】\n她推开椅子，椅子腿在地板上刮出一声尖响。门在她身后合上时，迟疑了半秒才咔嗒一响。走廊里没有脚步声——她是踮着脚走的，像怕惊动什么似的。\n\n两段写的是同一件事：一个人伤心地离开。版本A「告诉」读者情绪，版本B「让读者自己感受到」情绪。",
+      "analysisPrompt": "请逐句对比：版本A用了几个直接的情绪词？去掉它们后还剩什么？版本B没有出现任何情绪词，读者如何知道她在难过？指出版本B中至少3个传递情绪的具体描写细节。然后选你自己作品中一段「直接写情绪」的文字，改写成只用动作和环境传递同样情绪。",
+      "referenceExcerpt": null,
+      "difficulty": "easy",
+      "tags": ["情绪", "show-don't-tell", "对比"],
+      "categoryId": "comparative"
+    },
+    {
+      "id": "R-PRE-005",
+      "source": "preset",
+      "createdAt": "2026-06-14T12:20:00Z",
+      "syndromeId": "P004",
+      "principleAnchor": "CHEKHOV_GUN",
+      "title": "对比阅读 · 信息硬塞 vs 冰山叙事",
+      "excerpt": "【版本A · 信息硬塞】\n这个世界的魔法体系分为三级：初级（学徒级）、中级（执事级）、高级（大法师级）。主角是一个天赋异禀但未受过正规训练的初级魔法师，他的父亲曾是一位著名的大法师，在十年前的一场战争中牺牲了。\n\n【版本B · 冰山叙事】\n手电筒的光扫过书架底层，照见一本《咒语基础·修订第3版》的书脊。她抽出来时，一张借阅卡掉了出来——最近一次借阅记录是十年前。扉页上有人用钢笔写着：「献给我的师傅，火刑柱上最后一个老派法师。」\n\n两个版本传递了相同的信息，但版本A是静态旁白，版本B将信息嵌入了一个日常动作（抽书）和偶然发现（借阅卡+题字）。",
+      "analysisPrompt": "两个版本传递的关键信息点分别是什么？版本B没有直接说「老师傅死了/被处决了」，但读者能推断出来——是哪些细节让读者自己完成这个推断？从你自己的作品中找一段100字以上的背景交代，尝试用「一个日常物品」作为信息载体重写它。",
+      "referenceExcerpt": null,
+      "difficulty": "medium",
+      "tags": ["信息嵌入", "展示不告知", "冰山", "对比"],
+      "categoryId": "comparative"
+    }
+  ]
+}

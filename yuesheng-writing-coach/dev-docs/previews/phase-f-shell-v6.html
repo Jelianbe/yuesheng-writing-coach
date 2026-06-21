@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>月笙 — 写作教练</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: #7A6040;
+  --accent-hover: #6A5030;
+  --accent-light: #C8B088;
+  --success: #5A8F68;
+  --warn: #C8943C;
+  --danger: #B84A4A;
+}
+*{box-sizing:border-box}
+body{font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased}
+.font-serif{font-family:'Noto Serif SC','Songti SC',serif}
+/* custom scrollbar */
+.cscroll::-webkit-scrollbar{width:4px}
+.cscroll::-webkit-scrollbar-track{background:transparent}
+.cscroll::-webkit-scrollbar-thumb{background:#C8BFB0;border-radius:999px}
+/* transitions */
+.panel-trans{transition:all 200ms cubic-bezier(0.22,1,0.36,1)}
+/* floating bar visibility */
+body:not(.rc) #rCollBar{display:none}
+body.rc #rCollBar{display:flex}
+/* hide center [+][⚙] when right collapsed */
+body.rc #cHdrActions{display:none}
+/* collapse panels */
+body.lc #leftPanel{width:0;min-width:0;overflow:hidden;border-right-color:transparent}
+body.rc #rightPanel{width:0;min-width:0;overflow:hidden;border-left-color:transparent}
+/* lc-collapsed-left: embedded in center header, only visible when left collapsed */
+.lc-collapsed-left{display:none}
+body.lc .lc-collapsed-left{display:flex;align-items:center;gap:6px;margin-right:6px}
+</style>
+</head>
+<body>
+
+<!-- ===== Floating Collapsed Bars ===== -->
+
+<!-- Right collapsed bar: [＋][⚙]│[⤢][─][□][✕] -->
+<div id="rCollBar" class="fixed right-0 top-0 h-10 z-50 items-center gap-0.5 px-1.5 bg-transparent">
+  <button id="rBarAdd" class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" title="新建">＋</button>
+  <button id="rBarSet" class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" title="设置">⚙</button>
+  <div class="w-[1px] h-3 bg-[#C8BFB0] mx-1"></div>
+  <button id="rBarExp" class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" title="展开">⤢</button>
+  <button class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" title="最小化">─</button>
+  <button class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" title="最大化">□</button>
+  <button class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:bg-[#B84A4A] hover:text-white text-[11px] transition-colors" title="关闭">✕</button>
+</div>
+
+<!-- ===== Main App ===== -->
+<div class="h-dvh w-screen flex overflow-hidden bg-[#F0EDE6]">
+
+  <!-- ===== LEFT ===== -->
+  <aside id="leftPanel" class="panel-trans w-[220px] min-w-0 flex-shrink-0 bg-[#E8E3DA] border-r border-[#D6CEC0] flex flex-col overflow-hidden">
+
+    <!-- Header: 月icon + 月笙 | [☰] -->
+    <div class="flex items-center justify-between px-3.5 py-2 flex-shrink-0">
+      <div class="flex items-center gap-1.5">
+        <div class="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+        <span class="font-serif text-[15px] font-semibold text-[#1E1A14]">月笙</span>
+      </div>
+      <button id="collapseLeftBtn" class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" title="收起">☰</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="px-2.5 pb-2 flex-shrink-0">
+      <button class="tab-btn tab-primary active w-full py-[6px] rounded text-[13px] text-center mb-1 bg-[#7A6040] text-white font-medium transition-colors">训练</button>
+      <div class="grid grid-cols-2 gap-1">
+        <button class="tab-btn tab-secondary active py-[6px] rounded text-[13px] text-center font-medium text-white bg-[#7A6040] transition-colors">对话</button>
+        <button class="tab-btn tab-secondary py-[6px] rounded text-[13px] text-center text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)] transition-colors">项目</button>
+      </div>
+    </div>
+
+    <div class="h-[1px] bg-[#D6CEC0] mx-3 flex-shrink-0"></div>
+
+    <!-- Search -->
+    <div class="px-2.5 py-2 flex-shrink-0">
+      <div class="flex items-center bg-[#FAF8F5] border border-[#D6CEC0] rounded px-2 py-1">
+        <span class="text-[#8A7F6E] text-[10px] mr-1">⌕</span>
+        <input type="text" placeholder="搜索..." class="flex-1 min-w-0 bg-transparent text-[13px] text-[#1E1A14] outline-none placeholder:text-[#8A7F6E]" />
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="flex-1 overflow-y-auto cscroll px-2.5 pb-2" id="leftList"></div>
+  </aside>
+
+  <!-- ===== CENTER ===== -->
+  <main class="flex-1 flex flex-col min-w-0 bg-[#F0EDE6]">
+
+    <!-- Header: [▼项目▾] + 状态 | [＋][⚙] -->
+    <header class="flex items-center justify-between px-5 pt-2.5 pb-1 flex-shrink-0">
+      <div id="centerHdrLeft" class="flex items-center gap-1.5 min-w-0 flex-1">
+        <div class="lc-collapsed-left">
+          <div class="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+          <button id="expandLeftBtn" class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">☰</button>
+        </div>
+        <button class="flex items-center gap-1 px-1.5 py-1 rounded text-[13px] text-[#1E1A14] font-medium hover:bg-[rgba(122,96,64,0.09)] transition-colors">
+          <span class="text-[7px] text-[#8A7F6E]">▼</span>
+          <span>我的第一本小说</span>
+          <span class="text-[7px] text-[#8A7F6E]">▾</span>
+        </button>
+        <span class="status-badge inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] bg-[#FAF8F5] border border-[#D6CEC0] text-[#5C5242]">
+          <span class="w-1 h-1 rounded-full bg-[#C8943C]"></span>
+          <span>教学中</span>
+        </span>
+      </div>
+      <div id="cHdrActions" class="flex gap-0.5 flex-shrink-0">
+        <button class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[12px] transition-colors" title="新建">＋</button>
+        <button class="w-[24px] h-[24px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[12px] transition-colors" title="设置">⚙</button>
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto cscroll px-5 pb-3" id="centerBody"></div>
+
+    <!-- Input -->
+    <footer class="border-t border-[#D6CEC0] bg-[#F0EDE6] px-5 pb-2 pt-1 h-[calc(100dvh/6)] flex flex-col gap-1 flex-shrink-0">
+      <div class="flex items-center justify-between h-5 flex-shrink-0">
+        <div class="flex items-center gap-1">
+          <button class="px-1 py-0.5 rounded text-[10px] text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)] transition-colors">[模板]</button>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="flex items-center gap-0.5" id="attLights">
+            <button class="att-light w-[10px] h-[10px] rounded-full border-2 border-[#5A8F68] bg-[#5A8F68] scale-110 transition-transform" data-lv="g" title="豆包"></button>
+            <button class="att-light w-[10px] h-[10px] rounded-full border-2 border-[#C8943C] bg-transparent transition-transform" data-lv="y" title="月笙"></button>
+            <button class="att-light w-[10px] h-[10px] rounded-full border-2 border-[#B84A4A] bg-transparent transition-transform" data-lv="r" title="sensei"></button>
+          </div>
+          <button id="lockBtn" class="text-[10px] text-[#8A7F6E] px-0.5 py-0.5 rounded hover:text-[#5C5242] transition-colors" title="锁定">🔓</button>
+        </div>
+      </div>
+      <div class="flex-1 relative bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg px-2.5 pt-1.5 pb-1 shadow-[0_1px_4px_rgba(30,26,20,0.04)] transition-colors focus-within:border-[#7A6040]">
+        <textarea class="w-full h-full resize-none bg-transparent text-[14px] leading-relaxed text-[#1E1A14] outline-none pr-12" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button class="absolute bottom-1.5 right-1.5 px-2.5 py-0.5 rounded bg-[#7A6040] text-white text-[13px] font-medium hover:bg-[#6A5030] transition-colors disabled:bg-[#C8BFB0]" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ===== RIGHT ===== -->
+  <aside id="rightPanel" class="panel-trans w-[360px] min-w-0 flex-shrink-0 bg-[#E8E3DA] border-l border-[#D6CEC0] flex flex-col overflow-hidden">
+
+    <!-- Header: 标签 | [＋][⤢][─][□][✕] -->
+      <div class="flex items-center gap-0.5 px-1.5 py-0.5 min-h-[32px] border-b border-[#D6CEC0] flex-shrink-0 overflow-hidden" id="rightHdr">
+        <div class="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto mx-1 scrollbar-none" id="toolTabs"></div>
+        <div class="flex items-center gap-0.5 flex-shrink-0">
+          <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors flex-shrink-0" id="addToolBtn" title="添加工具">＋</button>
+          <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors" id="collapseRightBtn">⤢</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">─</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">□</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:bg-[#B84A4A] hover:text-white text-[11px] transition-colors">✕</button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="flex-1 overflow-y-auto cscroll p-3" id="rightBody"></div>
+  </aside>
+
+</div>
+
+<!-- ===== Tool Add Popup ===== -->
+<div id="toolPopup" class="hidden fixed bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg shadow-lg p-1 min-w-[130px] z-50" style="top:34px;right:6px"></div>
+
+<style>
+.scrollbar-none::-webkit-scrollbar{display:none}
+.scrollbar-none{-ms-overflow-style:none;scrollbar-width:none}
+.tab-btn{transition:all 150ms}
+.tab-btn:hover:not(.active){background:rgba(122,96,64,0.09)}
+.status-badge{transition:all 150ms}
+.att-light{cursor:pointer}
+.att-light:hover{transform:scale(1.2)}
+</style>
+
+<script>
+const $$ = s => document.querySelectorAll(s);
+const body = document.body;
+
+// ===== Left toggle =====
+function toggleLeft() { body.classList.toggle('lc'); }
+document.getElementById('collapseLeftBtn').onclick = toggleLeft;
+document.getElementById('expandLeftBtn').onclick = toggleLeft;
+// on load, ensure expandLeftBtn exists (it's in center header now)
+
+// ===== Right toggle =====
+function toggleRight() { body.classList.toggle('rc'); }
+document.getElementById('collapseRightBtn').onclick = toggleRight;
+document.getElementById('rBarExp').onclick = () => { body.classList.remove('rc'); };
+document.getElementById('rBarAdd').onclick = e => {
+  e.stopPropagation();
+  if (body.classList.contains('rc')) body.classList.remove('rc');
+  setTimeout(() => document.getElementById('addToolBtn')?.click(), 250);
+};
+
+// ===== Tab switching =====
+$$('.tab-btn').forEach(btn => {
+  btn.onclick = function() {
+    const group = this.closest('.grid') || this.parentElement;
+    group.querySelectorAll('.tab-btn').forEach(b => {
+      b.className = b.className.replace(/active\s*/, '').replace(/bg-\[#7A6040\]/g, '').replace(/text-white/g, '');
+      b.classList.add(...'text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)]'.split(' '));
+    });
+    this.className = this.className.replace(/text-\[#5C5242\]/g, '').replace(/hover:bg-\[rgba\(122,96,64,0\.09\)\]/g, '');
+    this.classList.add('active', 'bg-[#7A6040]', 'text-white', 'font-medium');
+    // re-render right panel
+    renderRight();
+  };
+});
+
+// ===== Session data =====
+const sessions = [
+  { id:1, title:'初稿诊断', type:'chat', time:'今天' },
+  { id:2, title:'第一章节奏讨论', type:'chat', time:'昨天' },
+  { id:3, title:'训练: 动作替代情绪词', type:'train', time:'3天前' },
+  { id:4, title:'配角动机梳理', type:'chat', time:'5天前' },
+  { id:5, title:'训练: 对话节奏', type:'train', time:'上周' }
+];
+const projects = [
+  { id:'p1', title:'第一章: 山门', type:'ch' },
+  { id:'p2', title:'第二章: 试炼', type:'ch' },
+  { id:'p3', title:'第三章: 初遇', type:'ch' },
+  { id:'p4', title:'第四章: 暗流', type:'ch' },
+  { id:'p5', title:'大纲', type:'nt' }
+];
+const trainingCategories = [
+  { name:'推荐技法', rec:true, items:[{ n:'动作替代情绪词', l:'入门' },{ n:'对话节奏控制', l:'入门' }] },
+  { name:'结构技法', items:[{ n:'三幕剧结构', l:'进阶' },{ n:'伏笔回收', l:'进阶' }] },
+  { name:'人物技法', items:[{ n:'动机层次', l:'入门' },{ n:'视角切换', l:'高阶' }] }
+];
+const tools = [
+  { id:'prog', name:'教学进度', icon:'◐', hint:'纵向时序' },
+  { id:'log', name:'学习日志', icon:'✎', hint:'每日记录' },
+  { id:'ms', name:'作品', icon:'☰', hint:'章节编辑器' },
+  { id:'nt', name:'教学笔记', icon:'✤', hint:'设定树' },
+  { id:'set', name:'设置', icon:'⚙', hint:'API Key' }
+];
+const messages = [
+  { r:'ai', c:'早上好。你昨天发的开头整体氛围不错。<br>节奏稍慢了一些，主要集中在第一段环境描写。你方便聊聊为什么用这么长一段开始吗？', t:'10:32' },
+  { r:'me', c:'我怕读者不了解世界观会看不懂后面的剧情。', t:'10:33' },
+  { r:'ai', c:'这个担心我理解。试试先给一个"钩子"(人物处境、悬念)，世界观通过后续情节自然透露。一边看一边懂，比一次性说清更有效。', t:'10:34' }
+];
+
+// ===== State =====
+let openTools = [], activeToolId = null;
+
+// ===== Render left list =====
+function renderList() {
+  const list = document.getElementById('leftList');
+  const activeTab = document.querySelector('.tab-btn.active')?.textContent?.trim();
+  if (activeTab === '训练') {
+    list.innerHTML = sessions.filter(s => s.type === 'train')
+      .map(s => `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] transition-colors" data-id="${s.id}">
+        <span class="text-[12px] text-[#7A6040] w-[14px] text-center flex-shrink-0">◎</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${s.title}</span>
+        <span class="text-[10px] text-[#8A7F6E] bg-[#FAF8F5] px-1 rounded-full flex-shrink-0">${s.time}</span>
+      </div>`).join('');
+  } else if (activeTab === '对话') {
+    list.innerHTML = sessions.filter(s => s.type === 'chat')
+      .map(s => `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] transition-colors" data-id="${s.id}">
+        <span class="text-[12px] text-[#8A7F6E] w-[14px] text-center flex-shrink-0">◌</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${s.title}</span>
+        <span class="text-[10px] text-[#8A7F6E] bg-[#FAF8F5] px-1 rounded-full flex-shrink-0">${s.time}</span>
+      </div>`).join('');
+  } else if (activeTab === '项目') {
+    list.innerHTML = projects.map(p => `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] transition-colors">
+        <span class="text-[12px] text-[#8A7F6E] w-[14px] text-center flex-shrink-0">${p.type === 'ch' ? '☰' : '✎'}</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${p.title}</span>
+      </div>`).join('');
+  }
+}
+renderList();
+
+// ===== Render center =====
+function renderCenter() {
+  const body = document.getElementById('centerBody');
+  body.innerHTML = `<div class="max-w-[420px] mx-auto mt-[70px] text-center">
+    <h2 class="font-serif text-[20px] font-semibold text-[#1E1A14] mb-[18px]">开始你的写作之旅</h2>
+    <div class="flex flex-col gap-[7px]">
+      <button class="choice-btn flex items-center gap-3 px-4 py-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg shadow-[0_2px_8px_rgba(30,26,20,0.05)] hover:border-[#7A6040] hover:shadow-[0_4px_12px_rgba(122,96,64,0.08)] hover:-translate-y-[1px] transition-all text-left w-full">
+        <span class="text-[17px] w-[24px] text-center flex-shrink-0">📝</span>
+        <div><div class="text-[14px] font-medium text-[#1E1A14]">我有作品</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">直接进入聊天，我会帮你分析</div></div>
+      </button>
+      <button class="choice-btn flex items-center gap-3 px-4 py-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg shadow-[0_2px_8px_rgba(30,26,20,0.05)] hover:border-[#7A6040] hover:shadow-[0_4px_12px_rgba(122,96,64,0.08)] hover:-translate-y-[1px] transition-all text-left w-full">
+        <span class="text-[17px] w-[24px] text-center flex-shrink-0">🌱</span>
+        <div><div class="text-[14px] font-medium text-[#1E1A14]">从头学习</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">我引导你搭建世界观和人物</div></div>
+      </button>
+      <button class="choice-btn flex items-center gap-3 px-4 py-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg shadow-[0_2px_8px_rgba(30,26,20,0.05)] hover:border-[#7A6040] hover:shadow-[0_4px_12px_rgba(122,96,64,0.08)] hover:-translate-y-[1px] transition-all text-left w-full">
+        <span class="text-[17px] w-[24px] text-center flex-shrink-0">💬</span>
+        <div><div class="text-[14px] font-medium text-[#1E1A14]">先聊聊</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">正常聊天，我在对话中自然引导</div></div>
+      </button>
+    </div>
+  </div>`;
+}
+renderCenter();
+
+// ===== Right panel =====
+function renderRight() {
+  const hdr = document.getElementById('rightHdr');
+  const tabs = document.getElementById('toolTabs');
+  const rbody = document.getElementById('rightBody');
+  const activeTab = document.querySelector('.tab-btn.active')?.textContent?.trim();
+
+  // Reset tool tabs
+  tabs.innerHTML = '';
+
+  if (activeTab === '训练') {
+    // Training view: has a tab
+    tabs.innerHTML = `<div class="tool-tab inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#FAF8F5] text-[10px] text-[#5C5242] whitespace-nowrap border border-transparent flex-shrink-0" style="background:#7A6040;color:white;font-weight:500">
+      <span class="truncate max-w-[60px]">训练技法</span>
+      <span class="w-[12px] h-[12px] flex items-center justify-center rounded-full text-[7px] opacity-70 hover:opacity-100 hover:bg-[rgba(255,255,255,0.15)] flex-shrink-0" id="closeTrain">✕</span>
+    </div>`;
+    document.getElementById('closeTrain').onclick = () => { openTools = []; activeToolId = null; renderRight(); };
+
+    rbody.innerHTML = trainingCategories.map(c =>
+      `<div class="text-[11px] text-[#8A7F6E] tracking-[0.04em] mt-2 mb-1 px-0.5 font-medium">${c.name}${c.rec ? '  👍' : ''}</div>` +
+      `<div>${c.items.map(i => `<button class="flex items-center gap-1.5 px-2 py-1.5 bg-[#FAF8F5] border border-[#D6CEC0] rounded w-full text-left mb-0.5 hover:border-[#7A6040] hover:translate-x-[2px] hover:shadow-[0_2px_6px_rgba(122,96,64,0.06)] transition-all">
+        <span class="flex-1 text-[13px] text-[#1E1A14]">${i.n}</span>
+        <span class="text-[9px] text-[#8A7F6E] bg-[#E8E3DA] px-1 rounded-full">${i.l}</span>
+      </button>`).join('')}</div>`
+    ).join('');
+  } else {
+    // Tool grid or active tools
+    if (openTools.length > 0) {
+      tabs.innerHTML = openTools.map(t => {
+        const tool = tools.find(x => x.id === t);
+        const active = t === activeToolId;
+        return `<div class="tool-tab inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap flex-shrink-0 ${active ? 'bg-[#7A6040] text-white font-medium' : 'bg-[#FAF8F5] text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)]'} border border-transparent transition-colors cursor-pointer" data-t="${t}">
+          <span class="truncate max-w-[60px]">${tool ? tool.name : t}</span>
+          <span class="tab-close w-[12px] h-[12px] flex items-center justify-center rounded-full text-[7px] opacity-60 hover:opacity-100 hover:bg-[rgba(0,0,0,0.06)] flex-shrink-0" data-c="${t}">✕</span>
+        </div>`;
+      }).join('');
+      // bind tab clicks
+      document.querySelectorAll('.tool-tab').forEach(el => {
+        el.onclick = e => {
+          if (e.target.classList.contains('tab-close')) {
+            const id = e.target.dataset.c;
+            openTools = openTools.filter(x => x !== id);
+            if (activeToolId === id) activeToolId = openTools[openTools.length - 1] || null;
+            renderRight();
+            return;
+          }
+          activeToolId = el.dataset.t;
+          renderRight();
+        };
+      });
+    }
+
+    if (openTools.length > 0) {
+      const tool = tools.find(t => t.id === activeToolId || (!activeToolId && t.id === openTools[0]));
+      if (tool) {
+        if (tool.id === 'prog') {
+          rbody.innerHTML = `<div class="tool-content"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">教学进度</h3>
+            <div class="flex items-center justify-center gap-1 p-2 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg mb-2.5">
+              <span class="font-serif text-[20px] font-semibold text-[#7A6040] leading-none">3</span><span class="text-[#8A7F6E]">/</span><span class="text-[16px] text-[#5C5242]">7</span><span class="text-[11px] text-[#8A7F6E] ml-0.5">已解决</span>
+            </div>
+            <div class="ts flex items-start gap-2 py-1.5 relative"><div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 bg-[#7A6040] border-2 border-[#7A6040] text-white">✓</div><div class="flex-1 pt-[1px]"><div class="text-[13px] text-[#1E1A14] font-medium">提交作品</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">2026-06-15</div></div></div>
+            <div class="ts flex items-start gap-2 py-1.5 relative"><div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 bg-[#7A6040] border-2 border-[#7A6040] text-white">✓</div><div class="flex-1 pt-[1px]"><div class="text-[13px] text-[#1E1A14] font-medium">诊断分析</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">发现7个问题</div></div></div>
+            <div class="ts flex items-start gap-2 py-1.5 relative"><div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 bg-[#FAF8F5] border-2 border-[#7A6040] text-[#7A6040]">●</div><div class="flex-1 pt-[1px]"><div class="text-[13px] text-[#1E1A14] font-medium">教学中</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">当前: 对话节奏</div></div></div>
+            <div class="ts flex items-start gap-2 py-1.5 relative"><div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 bg-[#FAF8F5] border-2 border-[#D6CEC0] text-[#8A7F6E]">○</div><div class="flex-1 pt-[1px]"><div class="text-[13px] text-[#1E1A14] font-medium">已收尾</div></div></div>
+            <div class="ts flex items-start gap-2 py-1.5"><div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 bg-[#FAF8F5] border-2 border-[#D6CEC0] text-[#8A7F6E]">○</div><div class="flex-1 pt-[1px]"><div class="text-[13px] text-[#1E1A14] font-medium">等待修改</div></div></div>`;
+        } else if (tool.id === 'log') {
+          rbody.innerHTML = `<div class="tool-content"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">学习日志</h3>
+            <div class="py-1.5 border-b border-[#D6CEC0] last:border-0"><div class="font-serif text-[14px] font-medium text-[#1E1A14] mb-1">6月17日</div><div class="text-[13px] leading-relaxed text-[#5C5242] mb-0.5"><span class="text-[#B84A4A]">新发现:</span> 铺垫过多</div><div class="text-[13px] leading-relaxed text-[#5C5242]"><span class="text-[#5A8F68]">已攻克:</span> 动作替代情绪词</div></div>
+            <div class="py-1.5 border-b border-[#D6CEC0] last:border-0"><div class="font-serif text-[14px] font-medium text-[#1E1A14] mb-1">6月15日</div><div class="text-[13px] leading-relaxed text-[#5C5242] mb-0.5"><span class="text-[#B84A4A]">新发现:</span> 信息硬塞</div><div class="text-[13px] leading-relaxed text-[#5C5242]"><span class="text-[#5A8F68]">已攻克:</span> 对话节奏</div></div>`;
+        } else if (tool.id === 'set') {
+          rbody.innerHTML = `<div class="tool-content"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">设置</h3>
+            <div class="mb-2.5"><div class="text-[13px] text-[#5C5242] mb-1">API Key</div><input type="password" placeholder="sk-..." class="w-full px-2 py-1 bg-[#FAF8F5] border border-[#D6CEC0] rounded text-[13px] outline-none focus:border-[#7A6040] transition-colors"></div>
+            <div><div class="text-[13px] text-[#5C5242] mb-1">默认态度</div><div class="flex items-center gap-0.5"><button class="att-light w-[10px] h-[10px] rounded-full border-2 border-[#5A8F68] bg-[#5A8F68] scale-110 transition-transform"></button><button class="att-light w-[10px] h-[10px] rounded-full border-2 border-[#C8943C] bg-transparent transition-transform"></button><button class="att-light w-[10px] h-[10px] rounded-full border-2 border-[#B84A4A] bg-transparent transition-transform"></button></div></div>
+            <button class="mt-3 px-3 py-1 rounded-lg bg-[#7A6040] text-white text-[13px] hover:bg-[#6A5030] transition-colors">保存</button>`;
+        } else {
+          rbody.innerHTML = `<div class="tool-content"><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">${tool.name}</h3><p class="text-[13px] leading-relaxed text-[#8A7F6E]">后续阶段实施。</p></div>`;
+        }
+      }
+    } else {
+      // Tool grid
+      rbody.innerHTML = `<div class="grid grid-cols-2 gap-[7px]">${tools.map(t =>
+        `<button class="tool-card flex flex-col items-center gap-1 p-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg text-center hover:border-[#7A6040] hover:shadow-[0_2px_8px_rgba(122,96,64,0.06)] hover:-translate-y-[1px] transition-all cursor-pointer" data-t="${t.id}">
+          <span class="text-[16px] text-[#7A6040] leading-none">${t.icon}</span>
+          <span class="text-[13px] font-medium text-[#1E1A14]">${t.name}</span>
+          <span class="text-[11px] text-[#8A7F6E]">${t.hint}</span>
+        </button>`
+      ).join('')}</div>`;
+      document.querySelectorAll('.tool-card').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.t;
+          if (!openTools.includes(id)) openTools.push(id);
+          activeToolId = id;
+          renderRight();
+        };
+      });
+    }
+  }
+}
+renderRight();
+
+// ===== Right panel button bindings =====
+document.getElementById('addToolBtn').onclick = e => {
+  e.stopPropagation();
+  const popup = document.getElementById('toolPopup');
+  popup.classList.toggle('hidden');
+  const avail = tools.filter(t => !openTools.includes(t.id));
+  if (avail.length === 0) {
+    popup.innerHTML = '<div class="p-1.5 text-[11px] text-[#8A7F6E] text-center">全部已打开</div>';
+  } else {
+    popup.innerHTML = avail.map(t => `<button class="pop-item flex items-center gap-1 px-1.5 py-1 rounded text-[13px] text-[#1E1A14] hover:bg-[rgba(122,96,64,0.09)] w-full text-left transition-colors" data-t="${t.id}"><span class="text-[#7A6040] text-[11px] w-[13px] text-center">${t.icon}</span><span>${t.name}</span></button>`).join('');
+    document.querySelectorAll('.pop-item').forEach(el => { el.onclick = () => {
+      const id = el.dataset.t;
+      if (!openTools.includes(id)) openTools.push(id);
+      activeToolId = id;
+      renderRight();
+      document.getElementById('toolPopup').classList.add('hidden');
+    };});
+  }
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest('#addToolBtn') && !e.target.closest('#toolPopup')) {
+    document.getElementById('toolPopup').classList.add('hidden');
+  }
+});
+
+// ===== Attitude lights =====
+document.getElementById('attLights').addEventListener('click', e => {
+  if (!e.target.classList.contains('att-light')) return;
+  if (document.getElementById('lockBtn').classList.contains('locked')) return;
+  document.querySelectorAll('.att-light').forEach(l => { l.className = l.className.replace(/scale-110\s*/, '').replace(/bg-\[#5A8F68\]/, '').replace(/bg-\[#C8943C\]/, '').replace(/bg-\[#B84A4A\]/, ''); l.style.background = 'transparent'; });
+  e.target.style.background = e.target.style.borderColor;
+  e.target.classList.add('scale-110');
+});
+let locked = false;
+document.getElementById('lockBtn').onclick = () => {
+  locked = !locked;
+  const btn = document.getElementById('lockBtn');
+  btn.textContent = locked ? '🔒' : '🔓';
+  btn.classList.toggle('locked', locked);
+  btn.classList.toggle('text-[#7A6040]', locked);
+  btn.classList.toggle('bg-[rgba(122,96,64,0.09)]', locked);
+  document.getElementById('attLights').style.opacity = locked ? '0.4' : '1';
+  document.getElementById('attLights').style.pointerEvents = locked ? 'none' : 'auto';
+};
+</script>
+</body>
+</html>

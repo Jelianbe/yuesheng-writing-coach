@@ -1,0 +1,91 @@
+{
+  "$source": "SPEC_adaptive-teaching_V1.0.md §4.1-4.3",
+  "teachingModes": {
+    "scaffolding": {
+      "name": "支架模式",
+      "description": "给出具体示范和结构化步骤，让用户模仿",
+      "triggerConditions": {
+        "skillMasteryMax": 0.3,
+        "consecutiveFailures": 2,
+        "cognitivePhase": "imitation"
+      },
+      "applicableErrorTypes": ["fatal", "structural"],
+      "instruction": "给出具体示范和结构化步骤，让用户模仿",
+      "example": "一个强动机通常包含三个零件——深刻的创伤、直接的威胁、和道德上的正当性。你可以试着把这三个零件，分别写一句话，填进你的大纲里。"
+    },
+    "guiding": {
+      "name": "引导模式",
+      "description": "用提问引导用户自己发现答案，不给示范",
+      "triggerConditions": {
+        "skillMasteryMin": 0.3,
+        "skillMasteryMax": 0.7,
+        "cognitivePhase": "understanding"
+      },
+      "applicableErrorTypes": ["structural", "surface"],
+      "instruction": "用提问引导用户自己发现答案，不给示范",
+      "example": "你的主角决定复仇，但他内心最恐惧的是什么？是再次失败，还是害怕自己变得和仇人一样？这个恐惧，会如何阻碍他当下的行动？"
+    },
+    "challenging": {
+      "name": "挑战模式",
+      "description": "给出变形条件，要求用户在约束下创作",
+      "triggerConditions": {
+        "skillMasteryMin": 0.7,
+        "cognitivePhase": "creation"
+      },
+      "applicableErrorTypes": ["surface"],
+      "instruction": "给出变形条件，要求用户在约束下创作",
+      "example": "你的复仇故事大纲已经很完整了。现在，请把'一场暴雨'作为唯一的环境元素，重写这段对峙戏。要求：用雨势的变化来外化主角的心理，不准直接描写情绪。"
+    }
+  },
+  "modeSwitchRules": [
+    {
+      "rule": "挫折信号",
+      "condition": "frustrationIndex >= 0.6",
+      "targetMode": "scaffolding"
+    },
+    {
+      "rule": "屡犯 + 低分",
+      "condition": "occurrenceCount >= 3 && score < 40",
+      "targetMode": "scaffolding"
+    },
+    {
+      "rule": "模仿期",
+      "condition": "proficiency === 'beginner'",
+      "targetMode": "scaffolding"
+    },
+    {
+      "rule": "理解期 + 中等分",
+      "condition": "proficiency === 'intermediate'",
+      "targetMode": "guiding"
+    },
+    {
+      "rule": "创造期 + 高分",
+      "condition": "proficiency === 'advanced'",
+      "targetMode": "challenging"
+    }
+  ],
+  "defaultMode": "guiding",
+  "principle": "一次只说一个问题 — design-philosophy_V1.0.md",
+  "readingStrategy": {
+    "description": "阅读前置决策 — 在 assign 训练前判断是否需要阅读分析步骤",
+    "decisionByAttitude": {
+      "doubao": {
+        "required": true,
+        "label": "must_read",
+        "reason": "豆包档位需先阅读示范再训练"
+      },
+      "yuesheng": {
+        "required": false,
+        "recommended": true,
+        "label": "recommend_read",
+        "reason": "月笙档位推荐阅读分析"
+      },
+      "sensei": {
+        "required": false,
+        "recommended": false,
+        "label": "skip_read",
+        "reason": "sensei 档位跳过阅读直接训练"
+      }
+    }
+  }
+}

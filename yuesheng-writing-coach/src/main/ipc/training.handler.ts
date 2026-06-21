@@ -12,18 +12,39 @@
  */
 
 import { IPC_CHANNELS } from '../../shared/constants';
-import { ActiveProblem } from '../../shared/types/index';
+import type { ActiveProblem } from '../../shared/types/index';
 import { SYNDROME_NAMES } from '../../shared/mappings';
+import type { TrainingCatalogRequest } from '../../shared/api-contracts/training.contract';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
-import { generateRecommendations, getChallengeTemplate } from '../domains/training/training-recommendation.service';
-import { TrainingRecordService } from '../domains/training/training-record.service';
-import { StudentModelService } from '../domains/student/student-model-service';
-import { evaluateTraining } from '../domains/training/training-evaluator.service';
-import { deriveBehavior, type DerivationInput } from '../domains/training/behavior-derivation.service';
-import { ConfigService } from '../shared/services/config.service';
-import { TeachingStateService } from '../domains/teaching/teaching-state.service';
-import { TeachingStrategyService } from '../domains/teaching/strategy/service';
+import techniqueLibrary from '../../../resources/config/technique-library.json';
+import { generateRecommendations, getChallengeTemplate } from '../domains/04-validation/training/training-recommendation.service';
+import type { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
+import type { StudentModelService } from '../domains/02-prescription/student/student-model-service';
+import { evaluateTraining } from '../domains/04-validation/training/training-evaluator.service';
+import { deriveBehavior, type DerivationInput } from '../domains/04-validation/training/behavior-derivation.service';
+import type { ConfigService } from '../shared/services/config.service';
+import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
+import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
+
+/**
+ * 技法目录项类型
+ *
+ * 对应 resources/config/technique-library.json 中每一项的结构。
+ * 使用接口索引签名兼容 JSON 中可能存在的其他可选字段。
+ */
+interface TechniqueItem {
+  id: string;
+  name: string;
+  difficulty: string;
+  difficultyOrder: number;
+  description: string;
+  source: string;
+  category: string;
+  coreId?: string;
+  coreName?: string;
+  [key: string]: unknown;
+}
 
 export interface TrainingHandlerDeps {
   configService: ConfigService;
@@ -271,6 +292,51 @@ export function registerTrainingHandlers(): void {
     }
 
     return { added: true, masteryReached, consumed, total };
+  });
+
+  /**
+   * training:catalog — I-01 技法目录
+   *
+   * 从 technique-library.json 读取技法数据，按 coreId 分组后返回。
+   * 无输入校验需求（只读操作，过滤参数可选）。
+   */
+  createHandler(IPC_CHANNELS.TRAINING_CATALOG, async (_event, args?: TrainingCatalogRequest) => {
+    const grouped: Record<string, { coreName: string; techniques: Array<{
+      id: string; name: string; difficulty: string; difficultyOrder: number;
+      description: string; source: string; category: string;
+    }> }> = {};
+
+    for (const t of (techniqueLibrary as TechniqueItem[])) {
+      // 可选过滤
+      if (args?.difficulty && t.difficulty !== args.difficulty) continue;
+      if (args?.coreId && t.coreId !== args.coreId) continue;
+      if (!t.coreId) continue;
+
+      if (!grouped[t.coreId]) {
+        grouped[t.coreId] = { coreName: t.coreName || t.coreId, techniques: [] };
+      }
+
+      grouped[t.coreId].techniques.push({
+        id: t.id,
+        name: t.name,
+        difficulty: t.difficulty || 'beginner',
+        difficultyOrder: t.difficultyOrder || 1,
+        description: t.description || '',
+        source: t.source || '',
+        category: t.category || '',
+      });
+    }
+
+    const groups = Object.entries(grouped).map(([coreId, g]) => ({
+      coreId,
+      coreName: g.coreName,
+      count: g.techniques.length,
+      techniques: g.techniques,
+    }));
+
+    const total = groups.reduce((sum, g) => sum + g.count, 0);
+
+    return { groups, total };
   });
 
 }

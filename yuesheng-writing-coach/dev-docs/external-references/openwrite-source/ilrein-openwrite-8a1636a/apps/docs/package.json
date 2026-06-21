@@ -1,0 +1,21 @@
+{
+  "name": "@openwrite/docs",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "check-types": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.35"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

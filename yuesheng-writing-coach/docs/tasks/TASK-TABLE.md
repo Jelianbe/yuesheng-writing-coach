@@ -1,14 +1,24 @@
 # 任务总表
 
-> **最后更新**: 2026-06-17 | **活跃执行链**: [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)
+> **最后更新**: 2026-06-19（缺口修复全部闭合） | **活跃执行链**: [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)
 > **所有 RWR 任务详情**: [REWRITE-TASK-DETAILS.md](./REWRITE-TASK-DETAILS.md)
+> **前端唯一蓝图**: `.specify/phase-f-shell-v6.2-task-plan.md`
 > **设计权威来源**: [系统重构规格文档](../dev-docs/designs/2026-06-17-system-rewrite-spec.md)
+>
+> **执行体系**：
+> - **Phase BL**：基线修复（门禁阻塞清除，建立干净基线）→ 先行
+> - **主干链**：V6.2 Phases G→I→H→J→K（前端重构 + 后端集成）
+> - **独立工作流 B**：D-01~D-07 内容蒸馏（与主干链完全并行）
+> - **独立任务**：X-01a~d（外部项目与技术参考研究）、X-02（全局清理）、X-03（Skill 集成）
+>
+> **重要变更 (2026-06-19)**：RWR 前端任务已被 V6.2 Shell 计划推翻重构。所有前端工作以 V6.2 Phases G-K 为准。
+> RWR 后端/数据/类型层任务（P0-1~P0-5, P1-6, P1-7, P1-9~P1-12）完全保留。
 
 ---
 
-## 一、RWR 系统重构（活跃任务链）
+## 一、V6.2 活跃任务链（前端唯一蓝图）
 
-### 已完成（a5ec9d9 终态）
+### 已完成（RWR 后端成果 — 完全保留）
 
 | ID | 任务梗概 | 状态 | 涉及文件 |
 |:--:|----------|:----:|:---------|
@@ -17,30 +27,111 @@
 | RWR-P0-3 | Store 导出路径统一 | ✅ | `stores/index.ts`（barrel export）+ 删除旧 rightPanelService |
 | RWR-P0-4 | 项目 IPC + 项目表 migration | ✅ | `022_projects.sql` + `ipc/project.ipc.ts` |
 | RWR-P0-5 | 数据迁移脚本 | ✅ | `023_data_migration.sql` |
-| RWR-P0-6 | useRightPanel hook + SettingsPanel | ✅ | `hooks/useRightPanel.ts` + 设置面板 |
-| RWR-P1-1 | AppShell 三栏独立布局 | ✅ | `components/layout/AppShell.tsx` + `.module.css` |
-| RWR-P1-3 | ProjectSelector + InputToolbar + AttitudeIndicator | ✅ | `components/layout/ProjectSelector.tsx`、`components/chat/InputToolbar.tsx`、`components/chat/AttitudeIndicator.tsx` |
+| RWR-P1-6 | 诊断表与进度联动 + 教学决策记录 | ✅ | `024_teaching_decision_log.sql` + `decision.service.ts` |
+| RWR-P1-7 | 画像增强（teachingHistory + attitudePreference） | ✅ | `student-model-service.ts` + `types-teaching.ts` |
+| RWR-P1-9 | 训练反馈回路 + 精通门控 | ✅ | `teaching-history.contract.ts` + `training.handler.ts` |
+| RWR-P1-10 | 教学状态机消费 mastery 事件 | ✅ | `teaching-state.service.ts` + `teaching-state.store.ts` |
+| RWR-P1-11 | 精通信息注入 Prompt | ✅ | `App.tsx`（handleSendMessage） |
+| RWR-P1-12 | AI 收到 mastery 后的回应对齐 | ✅ | `yuesheng-prompt-v3.md` |
+| RWR-P1-5 | TeachingProgressBar 逻辑层 + ProgressTimeline | ✅ | 业务逻辑代码 |
 
-### 待执行（按序）
+### RWR 前端任务 — 已被 V6.2 推翻
+
+| ID | 任务梗概 | 原状态 | V6.2 替换 | 原因 |
+|:--:|----------|:------:|:----------|:-----|
+| RWR-P0-6 | useRightPanel hook + SettingsPanel | 🔄 已推翻 | J-02/J-04 | V6.2 全新 Store+集成层 |
+| RWR-P1-1 | AppShell 三栏独立布局 | 🔄 已推翻 | J-01 | V6.2 shell 布局更精确 |
+| RWR-P1-2 | SoloSidebar 三标签 | 🔄 已推翻 | J-01 | V6.2 左侧栏重新设计 |
+| RWR-P1-3 | ProjectSelector + InputToolbar + AttitudeIndicator | 🔄 已推翻 | J-01 | V6.2 组件每目录重建 |
+| RWR-P1-4 | 输入区 1/6 屏高重构 | 🔄 已推翻 | J-01 + K-01 | V6.2 完整重建 |
+| RWR-P1-5 (UI) | TeachingProgressBar + ProgressTimeline UI | 🔄 已推翻 | J-01 | UI 层在新 RightPanel |
+| RWR-P1-8 | 右侧栏进步摘要卡片 | 🔄 已推翻 | J-01 | UI 层在新 RightPanel |
+| RWR-P2-1 | LearningLogPanel | 🔄 已推翻 | H-03 | V6.2 Phase H |
+| RWR-P2-3 | IPC 错误处理 + 骨架屏 | 🔄 已推翻 | J-04 | V6.2 集成层 |
+| RWR-P2-4 | 空状态全覆盖 + placeholder | 🔄 已推翻 | J-01 + K-01 | 组件化自然覆盖 |
+| RWR-P3-1 | 文件上传 + 分章 | 🔄 已推翻 | G-03 | V6.2 Phase G |
+| RWR-P3-6 | 全链路验收测试 | 🔄 已推翻 | K-03 | V6.2 K 阶段 |
+| RWR-F-0~F-6 | 前端二次重写全部任务 | 🔄 已推翻 | Phases G-K | V6.2 是更好方案 |
+
+### 待执行（Phase BL 基线修复 → V6.2 序列）
 
 | Phase | ID | 任务梗概 | 前置 | 状态 |
 |:-----:|:--:|----------|:----:|:----:|
-| **A** | RWR-P1-2 | SoloSidebar 三标签 [对话][项目][训练] | P1-1 ✅ | **⏩ 当前指针** |
-| A | RWR-P1-4 | 输入区 1/6 屏高重构 | A-1 | PENDING |
-| **B** | RWR-P1-5 | TeachingProgressBar + ProgressTimeline | A-1 + P0-2 ✅ | PENDING |
-| B | RWR-P1-6 | 诊断表与进度联动 + 教学决策记录 | B-1 + P0-1 ✅ | PENDING |
-| **C** | RWR-P1-7 | 画像增强 | P0-1 ✅ | PENDING |
-| C | RWR-P1-8 | 右侧栏进步摘要卡片 | B-2 + P0-6 ✅ | PENDING |
-| C | RWR-P2-2 | 训练反馈回路（提级） | A-1 + P0-2 ✅ | PENDING |
-| **D** | RWR-P2-1 | LearningLogPanel | B-2 + P0-6 ✅ | PENDING |
-| D | RWR-P2-3 | IPC 错误处理 + 骨架屏 | 无 | PENDING |
-| D | RWR-P2-4 | 空状态全覆盖 + placeholder | 无 | PENDING |
-| **E** | RWR-P3-5 | 外部项目代码研究（7 项目） | 无 | PENDING |
-| E | RWR-P3-1 | 文件上传 + 分章 | P0-4 ✅ | PENDING |
-| E | RWR-P3-2~4 | 全局清理与遗留评估 | A~D 完成 | PENDING |
-| E | RWR-P3-6 | 全链路验收测试 | E-1~E-3 | PENDING |
+| **BL** | **BL-01~BL-05** | **✅ 全部完成** | **—** | **✅ 基线修复** |
+| **G** | **G-01** | **会话点击联动** | **无** | **✅ 已完成** |
+| **G** | **G-02** | **训练历史选中** | **G-01** | **✅ 已完成** |
+| **G** | **G-03** | **项目章节联动** | **G-01, G-02** | **✅ 已完成** |
+| **G** | **G-04** | **技法目录子标签展开详情** | **G-03** | **✅ 已完成** |
+| **G** | **G-05** | **右侧工具切换联动** | **G-04** | **✅ 已完成** |
+| **I** | **I-01** | **`training:catalog` IPC Handler 实现** | **无（可并行）** | **✅ 已完成** |
+| **I** | **I-02** | **会话 IPC 前端消费验证** | **无（可并行）** | **✅ 已完成** |
+| **I** | **I-03** | **诊断 IPC 决策与实现** | **需用户确认方案** | **✅ 已完成（使用已有 diagnosis:query）** |
+| **I** | **I-04** | **配置 IPC 前端消费路径确认** | **无（可并行）** | **✅ 已完成** |
+| **I** | **I-05** | **config:set 安全加固（SEC-DEBT-1）** | **无** | **✅ 已完成** |
+| **I** | **I-06** | **teachingState:update 安全加固（SEC-DEBT-2）** | **无** | **✅ 已完成** |
+| **IDEM** | **IDEM-1** | **IPC 幂等键支持** | **I** | **✅ 已完成** |
+| **H** | **H-01** | **技法目录完整流程** | **G-04, I-01** | **✅ 已完成** |
+| **H** | **H-02** | **教学进度工具** | **G-05, I-01** | **✅ 已完成** |
+| **H** | **H-03** | **学习日志工具** | **G-05** | **✅ 已完成** |
+| **H** | **H-04** | **教学笔记工具** | **G-05** | **✅ 已完成** |
+| **J** | **J-01** | **组件拆分（V6.2 Shell → React）** | **G/H/I 全部完成** | **✅ 已完成** |
+| **J** | **J-02** | **Zustand Store** | **J-01** | **✅ 已完成** |
+| **J** | **J-03** | **CSS Modules + Design Tokens** | **J-01** | **✅ 已完成** |
+| **J** | **J-04** | **IPC 集成层（useIpc hook + 错误处理）** | **I-01~I-04, J-02** | **✅ 已完成** |
+| **K** | **K-01** | **交互细节打磨（拖拽缩放 + 搜索框 + 空状态）** | **J 全部完成** | **✅ 已完成** |
+| **K** | **K-02** | **已知缺陷修复** | **K-01** | **✅ 已完成** |
+| **K** | **K-03** | **性能优化 + 全局验收** | **K-02** | **⏸ 已决策暂缓** |
+
+### 缺口修复队列 — 全部闭合 ✅
+
+| ID | 任务梗概 | 类型 | 优先级 | 状态 |
+|:--:|----------|:----:|:------:|:----:|
+| **GAP-01** | 创建 LearningLogWorkspace（H-03） | 新建组件 | P1 | **✅ 已完成** |
+| **GAP-02** | 创建 TeachingNoteWorkspace（H-04） | 新建组件 | P1 | **✅ 已完成** |
+| **GAP-03** | DiagnosisWorkspace 改用 diagnosis:query IPC | 修改组件 | P1 | **✅ 已完成** |
+| **GAP-04** | 左右栏拖拽缩放（K-01 resize handle） | 新功能 | P1 | **✅ 已完成** |
+| **GAP-05** | 左栏搜索框组件 | 新功能 | P2 | **✅ 已完成** |
+| **GAP-06** | ToolGrid 卡片修正为 spec 6 卡 | 修改组件 | P2 | **✅ 已完成** |
+| **GAP-07** | teachingState:mastery 白名单补全（SEC-DEBT-3） | 后端修复 | P2 | **✅ 已完成** |
+| **GAP-08** | 训练会话短期标记方案 | 修改组件 | P2 | **✅ 已完成** |
+| **GAP-09** | 中间栏流式渲染（架构级） | 架构改造 | P2 | **⏸ 已决策暂缓** |
+| **GAP-10** | 虚拟滚动 + 增量更新 | 性能优化 | P3 | **⏸ 已决策暂缓** |
+
+决策项：GAP-11（G-04 训练链路 ⏩ 待决策）/ GAP-12（G-05 态度档位 ✅ 已执行）/ GAP-13（G-09 项目层级 ⏭ 已跳过）/ GAP-14（G-10 训练Tab ⏭ 已跳过）/ GAP-15（G-13 事件名 ✅ 已执行）
+
+详情 → [RWR-MASTER-CHAIN.md §八](./RWR-MASTER-CHAIN.md) — 全部缺口已闭合
+
+### 独立任务（可并行/穿插执行）
+
+| ID | 任务梗概 | 前置 | 状态 |
+|:--:|----------|:----:|:----:|
+| X-01 | 外部项目与技术参考研究（覆盖附录B/C/D，含 X-01a~d 四组） | 无 | PENDING |
+| X-02 | 全局清理与遗留评估 | K-03 | PENDING |
+| X-03 | V4.0 Skill 拆分集成 | K-03 | PENDING |
+
+### 独立工作流 B：内容蒸馏（完全并行）
+
+| ID | 任务梗概 | 前置 | 优先级 | 状态 |
+|:--:|:---------|:----:|:------:|:----:|
+| D-01 | 网络写作避雷搜索（100 条素材） | 无 | P1 | PENDING |
+| D-02 | 新手错误 → 症候库映射 + 缺口分析 | D-01 | P1 | PENDING |
+| D-03 | 技法库完备性交叉验证 | D-01 | P1 | PENDING |
+| D-04 | 教学库(动作/训练) vs 学员真实卡点 | D-01 | P1 | PENDING |
+| D-05 | 蒸馏结果 → 反例库 v3.0 + 产品输入 | D-02~D-04 | P2 | PENDING |
+| D-06 | 搜索关键词扩展（签约/审稿/AI检测） | D-01 | P1 | PENDING |
+| D-07 | 缺口报告（已覆盖/部分/缺失 三档） | D-02~D-06 | P1 | PENDING |
 
 详情 → [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)
+
+### 债务记录（活跃 — 来源于 RWR-MASTER-CHAIN.md §七）
+
+| ID | 描述 | 影响 | 处理阶段 |
+|:--:|:-----|:----:|:---------|
+| Backend Gap-1 | `training:catalog` handler 缺失（合约/类型/通道常量均已定义，handler 未注册） | Phase I 后端集成 | I-01 |
+| Backend Gap-2 | `diagnosis:analyze` 通道不存在（诊断为事件推送非 invoke 模式） | 需决策方案 | I-03 |
+| RWR-DEBT-1 | V4.0 Skill 拆分未集成（5 个 Skill 文件存在但不被代码读取） | 代码债务 | X-03 |
+| RWR-DEBT-2 | RWR 前端与 spec 偏差累积 | 已被 V6.2 解决 | — |
+| 淘金条款 | J/I 阶段执行前检索 RWR 前端旧代码，提取可复用 TS 逻辑 | 避免重复造轮 | §执行纪律#9 |
 
 ---
 
@@ -137,8 +228,18 @@
 
 ## 四、当前指针
 
+> 全量执行链详情 → [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)
+
 | 阶段 | 状态 | 备注 |
 |:----:|:----:|------|
+| V6.2 主干链 G-K | ✅ 全部完成 | Shell 交互→IPC 集成→训练模块→React 迁移→打磨收尾 |
+| **缺口修复** | **▶️ 当前指针** | **GAP-01 → GAP-02 → GAP-03 → GAP-04 → GAP-05 → GAP-06 → GAP-07 → GAP-08 → GAP-09 → GAP-10** |
+| SEC-DEBT-1/2（安全加固） | ✅ 已完成 | I-05/I-06 已修复 |
+| SEC-DEBT-3（白名单对齐） | ⏩ 标记缺口 | GAP-07（teachingState:mastery 白名单） |
+| Phase D-CONTENT (蒸馏 D-01~D-07) | ⏩ 完全并行 | 内容/知识层工作，与前端 G-K 无依赖 |
+| X-01a~d (外部项目与技术参考) | ⏩ 随时可做 | 覆盖 spec 附录B/C/D 全部参考 |
+| RWR 后端任务 (11 项) | ✅ 全部保留 | 详 RWR-MASTER-CHAIN.md §一 |
+| RWR 前端任务 (15 项) | 🔄 全部推翻 | 详 RWR-MASTER-CHAIN.md §二 |
 | P-04 Phase 3 | ✅ 已完成 | AI 分析真实调用 + 20s 超时 + 降级 + 返回值 Bug 修复 |
 | DB+MEM 7 项 | ✅ 已完成 | 迁移 015-019 全注册，PRAGMA/分页/滑动窗口/FTS5 到位 |
 | V2 全部 29 项 | ✅ 已完成 | 四道关卡审查全部通过 |
@@ -146,13 +247,14 @@
 | C-Phase | ✅ 已完成 | P-04/P-06/X-01/X-02 全部完成 |
 | FB240609-001 | ✅ 已完成 | 8 项全部修复 |
 | **Prompt D→A→B→E→C** | ✅ 已完成 | D(诊断对齐)+A(结构标注)+B(版本合规)+E(审计通过)+C(推迟) |
-| **V2 残项代码审查** | ✅ 验证完毕 | UI-P0a(图标)/E2(映射)/V2-007(createHandler)/E1(<300行)/UI-P0c(空桩)/D-01~D-03(定义一致) 均实际已完成 |
-| **前端组件全面扫描** | ✅ 扫描+修复完毕 | 6 层级 30+ 问题，FS-P0~P2 全部执行，tsc 零错误 |
-| **防御点映射** | ✅ 映射+Prompt落地 | 9 防御点(A-I) → DP-H~I(P0/P1) 全部写入 V3.8，DP-A/D(P2) 待执行 |
+| **V2 残项代码审查** | ✅ 验证完毕 | 全部实际已完成 |
+| **前端组件全面扫描** | ✅ 扫描+修复完毕 | FS-P0~P2 全部执行 |
+| **防御点映射** | ✅ 映射+Prompt落地 | 9 防御点 → V3.8 |
 
 ## 五、下一阶段规划（V4 方向）
 
-> **来源**: 2026-06-10 用户指令 — 三大方向
+> **来源**: 2026-06-10 用户指令 — 三大方向  
+> **注意**：以下 V4 方向与 V6.2 前端重构独立，可并行/穿插执行
 
 ### 方向一：Prompt 工程 → Skill 工程（降低 AI 记忆负担）
 
@@ -166,25 +268,22 @@
 
 ### 方向二：前端 UI 二次优化（函数传递 + 关联断裂）
 
-| ID | 任务梗概 | 优先级 | 状态 | 备注 |
-|:--:|----------|:------:|:----:|------|
-| **V4-UI-1** | Store 协作协议落地（X-01） | P1 | ⏩ 待执行 | drawer/panel-session/chapter 三 Store → 统一事件/订阅协议 |
-| **V4-UI-2** | 训练编辑器联动修复（X-02） | P1 | ⏩ 待执行 | 改写结果↔编辑器链路断裂 → 双向绑定 |
-| **V4-UI-3** | 函数传递链路审计 | P1 | ⏩ 待启动 | App→ChatView→MessageInput/TrainingView 全链路 props/callback 审计 |
-| **V4-UI-4** | Design Token 三体系统一 | P2 | ⏩ 待规划 | CSS 变量/CSS Module/Tailwind 共存，统一为单一源 |
-| **V4-UI-5** | P2 残项收尾 | P2 | ⏩ 待执行 | 对比度/快捷键/自动排版确认 |
-
-### 方向三：第三次全面蒸馏（诊断/教学/技法库验证）
+> **V6.2 覆盖说明**：V4-UI-1（Store 协作）→ V6.2 J-02 Zustand Store 覆盖；V4-UI-4（Design Token 统一）→ V6.2 J-03 CSS Modules + Tokens 覆盖；V4-UI-2/3 与旧组件树绑定，V6.2 重建后自动解决。
+> 此方向在 V6.2 执行期间保持 ⏩ 待定评估，待 K 阶段结束后再审。
 
 | ID | 任务梗概 | 优先级 | 状态 | 备注 |
 |:--:|----------|:------:|:----:|------|
-| **V4-DIST-1** | 网络写作避雷搜索（100 条素材） | P1 | ⏩ 待启动 | 知乎/小红书 搜"写作课没用""AI写作后悔"等关键词 |
-| **V4-DIST-2** | 新手错误 → 症候库映射 + 缺口分析 | P1 | ⏩ 待启动 | 搜集到的错误按 P001-P010 分类，发现覆盖缺口则新增 |
-| **V4-DIST-3** | 技法库完备性交叉验证 | P1 | ⏩ 待启动 | 89+ 技法 vs "真正有用的技巧" 验证缺失/过剩/错位 |
-| **V4-DIST-4** | 教学库(动作/训练) vs 学员真实卡点 | P1 | ⏩ 待启动 | 训练 step 类型是否匹配学员实际需求 |
-| **V4-DIST-5** | 蒸馏结果 → 反例库 v3.0 + 产品输入 | P2 | ⏩ 待规划 | 正式产出纳入 [教学法反例库](../research/教学法反例库_素材合集_v2.3.md) |
-| **V4-DIST-6** | 搜索关键词扩展（签约/审稿/AI检测） | P1 | ⏩ 待启动 | 补充"网文签约技巧""编辑审稿标准""AI文检测方法"等关键词，喂防御点F+技法验证 |
-| **V4-DIST-7** | 缺口报告（已覆盖/部分/缺失 三档） | P1 | ⏩ 待启动 | 输出格式：三档 × 每个症候/技法/训练类型，不是"搜集到什么"而是"缺什么" |
+| **V4-UI-1** | Store 协作协议落地（X-01） | P1 | ⏩ 待定评估 | drawer/panel-session/chapter 三 Store → V6.2 J-02 覆盖 |
+| **V4-UI-2** | 训练编辑器联动修复（X-02） | P1 | ⏩ 待定评估 | 旧组件树绑定 → V6.2 重建后自动解决 |
+| **V4-UI-3** | 函数传递链路审计 | P1 | ⏩ 待定评估 | 旧组件树绑定 → V6.2 重建后自动解决 |
+| **V4-UI-4** | Design Token 三体系统一 | P2 | ⏩ 待定评估 | CSS 变量/CSS Module/Tailwind → V6.2 J-03 覆盖 |
+| **V4-UI-5** | P2 残项收尾 | P2 | ⏩ 待定评估 | 对比度/快捷键/自动排版 → V6.2 K 阶段覆盖 |
+
+### 方向三：第三次全面蒸馏（诊断/教学/技法库验证）— 🔀 已迁移
+
+> **2026-06-19**：V4-DIST-1~7 已从待定池迁出，转入 **独立工作流 B**，编号 D-01~D-07。
+> 见上方 [独立工作流 B](#独立工作流-b内容蒸馏完全并行) 及 [RWR-MASTER-CHAIN.md](./RWR-MASTER-CHAIN.md)。
+> 此区域保留仅作历史参考，不再更新。
 
 ### 方向四：数据基建（可观测性 + 监控）
 

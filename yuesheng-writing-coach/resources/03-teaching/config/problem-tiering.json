@@ -1,0 +1,62 @@
+{
+  "$source": "syndrome-manual.md §2 + SPEC_adaptive-teaching_V1.0.md §2.3",
+  "tiers": [
+    {
+      "level": "fatal",
+      "label": "致命伤",
+      "description": "必须立即解决 — 逻辑矛盾、人设崩塌、角色行为缺乏内在驱动力",
+      "syndromes": ["P009"],
+      "action": "must_fix",
+      "reasoning": "角色动机缺失会导致整个故事逻辑崩塌，是最优先级问题",
+      "examples": ["主角是盲人，但你写他'一眼就认出了对方'", "角色做决定是因为'剧情需要'而不是'角色想这么做'"]
+    },
+    {
+      "level": "structural",
+      "label": "结构病",
+      "description": "优先解决 — 影响后续所有内容的宏观问题",
+      "syndromes": ["P001", "P002", "P004", "P005", "P006", "P010"],
+      "action": "priority",
+      "reasoning": "这些是叙事骨架层面的问题，不解决会影响所有后续内容",
+      "examples": [
+        "开篇三章，主角一直被动挨打，没有主动做任何选择",
+        "世界观描述篇幅超过主角描述3倍",
+        "角色缺乏独立动机，只为衬托主角"
+      ]
+    },
+    {
+      "level": "surface",
+      "label": "皮肤症",
+      "description": "可以暂缓 — 语句、修辞、节奏等局部问题",
+      "syndromes": ["P003", "P007"],
+      "action": "deferrable",
+      "reasoning": "这些是技巧层面的问题，等骨架搭好了再慢慢润色",
+      "examples": [
+        "用'紧张''害怕'等概括词代替具体描写",
+        "只读网文，不读传统文学，导致笔力不足"
+      ]
+    }
+  ],
+  "syndromeTierMapping": {
+    "P001": { "tier": "structural", "reason": "世界观膨胀是宏观结构问题" },
+    "P002": { "tier": "structural", "reason": "角色工具人化是角色设计骨架问题" },
+    "P003": { "tier": "surface", "reason": "情绪标签化是局部描写技巧问题" },
+    "P004": { "tier": "structural", "reason": "信息硬塞是叙事结构问题" },
+    "P005": { "tier": "structural", "reason": "视角漂移是叙事视角骨架问题" },
+    "P006": { "tier": "structural", "reason": "节奏停滞是宏观结构问题" },
+    "P007": { "tier": "surface", "reason": "阅读结构单一是阅读习惯问题" },
+    "P008": { "tier": "structural", "reason": "已合并到 P004" },
+    "P009": { "tier": "fatal", "reason": "角色动机缺失是核心逻辑问题" },
+    "P010": { "tier": "structural", "reason": "OC平面化是角色设计骨架问题" }
+  },
+  "maxPerTurn": 1,
+  "prioritizationRule": "一次诊断，只反馈优先级最高的那一个",
+  "multiProblemHandling": {
+    "maxSyndromesPerTurn": 1,
+    "note": "当前与 maxPerTurn 一致（一次只说一个），未来如需一次提多个可改为大于 1",
+    "priority": "先解决结构问题，再解决技巧问题",
+    "relatedCombos": [
+      { "syndromes": ["P001", "P006"], "reason": "世界观膨胀和节奏停滞相关，可组合处理" }
+    ]
+  },
+  "principle": "一次只说一个问题 — design-philosophy_V1.0.md"
+}

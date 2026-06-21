@@ -1,8 +1,9 @@
-import { ApiConfig } from '../shared/types/index';
+import type { ApiConfig } from '../shared/types/index';
 
 export interface ApiChatMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
+  tool_call_id?: string;
 }
 
 /** 修改评估参数 */

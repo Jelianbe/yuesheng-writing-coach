@@ -21,6 +21,7 @@ export interface ChatSession {
   createdAt: number;
   updatedAt: number;
   lastMessage?: string;
+  messageCount?: number;
   messages?: unknown[];
 }
 
@@ -38,6 +39,8 @@ interface SessionActions {
   createSession: () => Promise<ChatSession | null>;
   /** 切换当前会话 */
   switchSession: (id: string) => void;
+  /** 加载指定会话的消息列表 */
+  loadMessages: (sessionId: string) => Promise<unknown[]>;
   /** 删除会话 */
   deleteSession: (id: string) => Promise<void>;
   /** 重命名会话 */
@@ -85,6 +88,20 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   },
 
   switchSession: (id) => set({ currentSessionId: id }),
+
+  loadMessages: async (sessionId) => {
+    try {
+      const invoke = getInvoke();
+      const res = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES, { sessionId }) as { success: boolean; data?: unknown[] };
+      if (res.success && res.data) {
+        return res.data;
+      }
+      return [];
+    } catch (err) {
+      console.error('[session.store] loadMessages failed:', err);
+      return [];
+    }
+  },
 
   deleteSession: async (id) => {
     try {

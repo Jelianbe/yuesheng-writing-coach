@@ -1,0 +1,846 @@
+{
+  "scan_date": "2026-06-20",
+  "scan_version": "V2.7",
+  "project_root": "D:\\ai-teacher\\yuesheng-writing-coach",
+  "stats": {
+    "date": "2026-06-20",
+    "total_files": 303,
+    "total_lines": 41052,
+    "total_any": 29,
+    "total_ts_ignore": 1,
+    "total_as_assert": 545,
+    "total_console": 102,
+    "total_todo": 5,
+    "total_fixme": 0,
+    "total_export_default": 0,
+    "total_nonnull_assert": 40,
+    "total_inline_style": 423,
+    "total_broken_imports": 64,
+    "total_security_issues": 0,
+    "total_ipc_trycatch_issues": 3,
+    "total_empty_catch": 0,
+    "large_files_count": 18,
+    "ts_ignore_files_count": 1,
+    "ipc_files_count": 15,
+    "db_files_count": 13
+  },
+  "large_files_top10": [
+    {
+      "file": "src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "lines": 654
+    },
+    {
+      "file": "src\\main\\domains\\chat\\chat-orchestrator.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\chat\\chat-orchestrator.service.ts",
+      "lines": 618
+    },
+    {
+      "file": "src\\main\\domains\\student\\student-model-service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\student\\student-model-service.ts",
+      "lines": 596
+    },
+    {
+      "file": "src\\main\\domains\\teaching\\teaching-state\\state-locking.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\teaching\\teaching-state\\state-locking.test.ts",
+      "lines": 529
+    },
+    {
+      "file": "src\\renderer\\stores\\training.actions.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\training.actions.ts",
+      "lines": 515
+    },
+    {
+      "file": "src\\main\\domains\\prompt\\prompt-loader.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\prompt\\prompt-loader.ts",
+      "lines": 511
+    },
+    {
+      "file": "src\\renderer\\components_archived\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\manuscript\\ManuscriptPanel.tsx",
+      "lines": 421
+    },
+    {
+      "file": "src\\renderer\\components_archived\\layout\\WorkTreePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\WorkTreePanel.tsx",
+      "lines": 408
+    },
+    {
+      "file": "src\\renderer\\components_archived\\layout\\DiagnosisPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\DiagnosisPanel.tsx",
+      "lines": 395
+    },
+    {
+      "file": "src\\main\\domains\\teaching\\strategy\\service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\teaching\\strategy\\service.ts",
+      "lines": 379
+    }
+  ],
+  "any_heavy_top10": [
+    {
+      "file": "src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "any_count": 8
+    }
+  ],
+  "ts_ignore_files": [
+    {
+      "file": "src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "count": 1
+    }
+  ],
+  "export_default_files": [],
+  "nonnull_assert_top10": [
+    {
+      "file": "src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\diagnosis\\evidence\\evidence.service.test.ts",
+      "count": 18
+    },
+    {
+      "file": "src\\main\\services\\output-validator.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\output-validator.test.ts",
+      "count": 6
+    },
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "count": 3
+    },
+    {
+      "file": "src\\main\\domains\\chat\\chat-orchestrator.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\chat\\chat-orchestrator.service.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\renderer\\hooks\\useDiagnosisFlow.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\hooks\\useDiagnosisFlow.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\renderer\\services\\teaching-state.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\services\\teaching-state.service.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\renderer\\stores\\session.store.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\session.store.ts",
+      "count": 2
+    },
+    {
+      "file": "src\\main\\core\\app-initializer.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\core\\app-initializer.ts",
+      "count": 1
+    },
+    {
+      "file": "src\\main\\domains\\prompt\\memory-capsule.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\prompt\\memory-capsule.service.ts",
+      "count": 1
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\validate-payload.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\validate-payload.ts",
+      "count": 1
+    }
+  ],
+  "inline_style_top10": [
+    {
+      "file": "src\\renderer\\components_archived\\layout\\DiagnosisPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\DiagnosisPanel.tsx",
+      "count": 39
+    },
+    {
+      "file": "src\\renderer\\components_archived\\profile\\AbilityProfilePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\profile\\AbilityProfilePanel.tsx",
+      "count": 39
+    },
+    {
+      "file": "src\\renderer\\components_archived\\growth\\DiagnosisComparisonView.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\growth\\DiagnosisComparisonView.tsx",
+      "count": 31
+    },
+    {
+      "file": "src\\renderer\\components_archived\\layout\\HintPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\HintPanel.tsx",
+      "count": 28
+    },
+    {
+      "file": "src\\renderer\\components_archived\\growth\\GrowthPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\growth\\GrowthPanel.tsx",
+      "count": 23
+    },
+    {
+      "file": "src\\renderer\\components_archived\\editor\\ChapterEditor.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\editor\\ChapterEditor.tsx",
+      "count": 16
+    },
+    {
+      "file": "src\\renderer\\components_archived\\training\\BehaviorDerivationTool.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\training\\BehaviorDerivationTool.tsx",
+      "count": 16
+    },
+    {
+      "file": "src\\renderer\\components_archived\\search\\SearchPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\search\\SearchPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components_archived\\tools\\ToolsPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\tools\\ToolsPanel.tsx",
+      "count": 15
+    },
+    {
+      "file": "src\\renderer\\components_archived\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\manuscript\\ManuscriptPanel.tsx",
+      "count": 14
+    }
+  ],
+  "ipc_files": [
+    {
+      "file": "src\\main\\ipc\\ability-profile.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\ability-profile.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\project.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\project.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\teaching-state.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-state.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\training.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\window.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\window.handler.ts",
+      "channels": [
+        "window:minimize",
+        "window:maximize",
+        "window:close"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\create-handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\create-handler.ts",
+      "channels": [
+        "channel:name",
+        "channel:set"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\validate-payload.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\validate-payload.ts",
+      "channels": []
+    }
+  ],
+  "db_files": [],
+  "circular_deps": {
+    "checked": false,
+    "error": "madge 未安装，跳过循环依赖检测 (npm install -D madge)",
+    "dependencies": []
+  },
+  "security": {
+    "hardcoded_credentials": 0,
+    "total_issues": 0
+  },
+  "ipc_channel_pairing": {
+    "uncovered_channels": 0,
+    "details": []
+  },
+  "store_action_registration": {
+    "unregistered_actions": 0,
+    "details": []
+  },
+  "empty_catch_blocks": {
+    "total": 0,
+    "files": []
+  },
+  "import_boundary": {
+    "violations": 0,
+    "details": []
+  },
+  "di_injection": {
+    "unregistered": 0,
+    "unused": 0,
+    "details": []
+  },
+  "issues": [
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/layout/LeftPanel"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/layout/CenterPanel"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/layout/RightPanel"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\AppShell\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/common/ResizeHandle"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\center\\AttitudeLights\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\center\\AttitudeLights\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\center\\ChatMessages\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\center\\ChatMessages\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/shared/types-chat"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\common\\ResizeHandle\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\common\\ResizeHandle\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui-layout.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/session.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/chat.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/drawer.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/center/ChatMessages"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/center/ChatInput"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\CenterPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/center/AttitudeLights"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui-layout.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/left/LeftHeader"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/left/SessionList"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\LeftPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/left/ProjectList"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui-layout.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/drawer.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/ToolTabs"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/SubTabs"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/ToolGrid"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/CatalogWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/WorksWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/ProgressWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/DiagnosisWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/TrainingWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/GrowthWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/SettingsWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/ProfileWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/LearningLogWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\layout\\RightPanel\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/components/right/TeachingNoteWorkspace"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\LeftHeader\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\LeftHeader\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui-layout.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\LeftHeader\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\LeftHeader\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/ui.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\LeftHeader\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\LeftHeader\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/manuscript.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\ProjectList\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\ProjectList\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/manuscript.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\ProjectList\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\ProjectList\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/right-panel.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\SessionList\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\SessionList\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/session.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\left\\SessionList\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\left\\SessionList\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/training.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\CatalogWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\CatalogWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/training.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\CatalogWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\CatalogWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/utils/ipc"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\DiagnosisWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\DiagnosisWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/diag.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\DiagnosisWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\DiagnosisWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/chat.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\GrowthWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\GrowthWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/teaching-state.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\GrowthWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\GrowthWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/progress.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/training.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/teaching-state.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/progress.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\LearningLogWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: ../../../../shared/mappings"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\ProfileWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\ProfileWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/student-context.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\ProgressWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\ProgressWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/progress.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\SettingsWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\SettingsWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/config.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\SubTabs\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\SubTabs\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/panel-session.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\TeachingNoteWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\TeachingNoteWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/training.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\TeachingNoteWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\TeachingNoteWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/teaching-state.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\ToolGrid\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\ToolGrid\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/drawer.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\ToolTabs\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\ToolTabs\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/drawer.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\TrainingWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\TrainingWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/training.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\v1\\right\\WorksWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\v1\\right\\WorksWorkspace\\index.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores/manuscript.store"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\stores\\index.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\index.ts",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\window.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\window.handler.ts",
+      "line": 20,
+      "type": "ipc_no_trycatch",
+      "message": "IPC handler 'window:minimize' 缺少 try/catch 保护 (R-028/R-019)"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\window.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\window.handler.ts",
+      "line": 26,
+      "type": "ipc_no_trycatch",
+      "message": "IPC handler 'window:maximize' 缺少 try/catch 保护 (R-028/R-019)"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\window.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\window.handler.ts",
+      "line": 38,
+      "type": "ipc_no_trycatch",
+      "message": "IPC handler 'window:close' 缺少 try/catch 保护 (R-028/R-019)"
+    }
+  ]
+}

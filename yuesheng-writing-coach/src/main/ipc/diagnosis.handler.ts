@@ -8,24 +8,24 @@
  *   AI 回复 → diagnosis-parser 解析 → 转换为 ActiveProblem → 通过 DiagnosisMerger 合并到 TeachingState → IPC 推送
  */
 
-import { BrowserWindow } from 'electron';
-import { DiagnosisService } from '../domains/diagnosis/diagnosis.service';
-import { EvidenceService } from '../domains/diagnosis/evidence/evidence.service';
+import type { BrowserWindow } from 'electron';
+import type { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
+import type { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
 import { IPC_CHANNELS, IMPROVEMENT_THRESHOLD } from '../../shared/constants';
 import { wasDiagnosisPushed } from './utils/diagnosis-dedup';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 import { ApiProxy } from '../api-proxy';
-import { ConfigService } from '../shared/services/config.service';
-import { SessionService } from '../shared/services/session.service';
-import { DiagnosisMerger } from '../domains/diagnosis/diagnosis-merger';
-import { TeachingStateService } from '../domains/teaching/teaching-state.service';
-import { GrowthTrendService } from '../domains/student/growth-trend.service';
-import { processAIResponse } from '../domains/diagnosis/diagnosis-processor';
+import type { ConfigService } from '../shared/services/config.service';
+import type { SessionService } from '../shared/services/session.service';
+import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
+import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
+import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
+import { processAIResponse } from '../domains/01-diagnosis/diagnosis-processor';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 
 // Re-export merge functions for use by diagnosis-merger service
-export { severityToNumber, mergeSyndromesIntoState } from '../domains/diagnosis/diagnosis-merger-utils';
+export { severityToNumber, mergeSyndromesIntoState } from '../domains/01-diagnosis/diagnosis-merger-utils';
 
 export interface DiagnosisHandlerDeps {
   configService: ConfigService;
@@ -219,6 +219,6 @@ export function processDiagnosisFromAI(
 
   // 5. 推送到渲染进程（RP-02: 若 Pipe 1 已推送则跳过）
   if (d.mainWindow && !wasDiagnosisPushed(sessionId)) {
-    d.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATE, result.diagnosis);
+    d.mainWindow.webContents.send(IPC_CHANNELS.DIAGNOSIS_UPDATED, result.diagnosis);
   }
 }

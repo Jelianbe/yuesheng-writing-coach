@@ -1,0 +1,21 @@
+procs:
+  server:
+    cwd: apps/server
+    shell: bun run dev
+  web:
+    cwd: apps/web
+    shell: bun run dev
+  test-server:
+    cwd: apps/server
+    shell: bun run test:watch
+  test-web:
+    cwd: apps/web
+    shell: bun run test
+  db-studio:
+    cwd: apps/server
+    shell: bun run db:studio
+    autostart: false
+  docs:
+    cwd: apps/docs
+    shell: bun run dev
+    autostart: false

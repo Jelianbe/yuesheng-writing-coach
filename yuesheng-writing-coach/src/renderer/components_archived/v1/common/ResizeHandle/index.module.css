@@ -1,0 +1,15 @@
+.handle {
+  position:relative;
+  flex-shrink:0;
+  z-index:10;
+  cursor:col-resize;
+  background:transparent;
+  transition:background 0.15s ease;
+}
+.handle:hover,
+.handleActive {
+  background:var(--accent);
+  opacity:0.4;
+}
+.handleLeft { width:4px;margin-right:-2px; }
+.handleRight { width:4px;margin-left:-2px; }

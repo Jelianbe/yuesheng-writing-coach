@@ -57,7 +57,6 @@ export function useAppController({
     return () => {
       controller.destroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 新用户检测（原来在 App.tsx 的 useEffect）

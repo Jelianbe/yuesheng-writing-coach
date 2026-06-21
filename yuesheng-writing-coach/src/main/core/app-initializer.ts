@@ -1,12 +1,13 @@
-import { app, BrowserWindow } from 'electron';
+import type { BrowserWindow } from 'electron';
+import { app } from 'electron';
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
-import { ServiceContainer } from './service-container';
+import type { ServiceContainer } from './service-container';
 import { configureServices } from './service-config';
 import { IpcRegistry } from './ipc-registry';
 import { WindowManager } from './window-manager';
-import { setResourcesRoot } from '../domains/teaching/transition-prompt-loader';
+import { setResourcesRoot } from '../domains/03-teaching/transition-prompt-loader';
 
 export class AppInitializer {
   private container: ServiceContainer;

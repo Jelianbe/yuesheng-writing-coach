@@ -12,7 +12,7 @@ import type { AttitudeLevel } from '../../shared/types/index';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
-import { ChatOrchestratorService } from '../domains/chat/chat-orchestrator.service';
+import type { ChatOrchestratorService } from '../domains/03-teaching/chat/chat-orchestrator.service';
 
 let orchestrator: ChatOrchestratorService | null = null;
 

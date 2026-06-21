@@ -126,7 +126,7 @@ export interface IPCResponseMap {
 
 /** IPC 事件推送类型映射 */
 export interface IPCEventMap {
-  'diagnosis:update': DiagnosisUpdateEvent;
+  'diagnosis:updated': DiagnosisUpdateEvent;
   'teachingState:updated': TeachingState & { phaseName: string; subphaseName: string; phaseProgress: number };
   'teachingState:mastery': TeachingStateMasteryEvent;
   'chat:stream:data': { sessionId: string; chunk: string };

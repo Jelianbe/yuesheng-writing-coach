@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>月笙 — 写作教练 V6.2 (后端对齐)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+:root{--accent:#7A6040;--accent-hover:#6A5030;--success:#5A8F68;--warn:#C8943C;--danger:#B84A4A}
+*{box-sizing:border-box}
+body{font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased}
+.font-serif{font-family:'Noto Serif SC','Songti SC',serif}
+.cscroll::-webkit-scrollbar{width:4px}
+.cscroll::-webkit-scrollbar-track{background:transparent}
+.cscroll::-webkit-scrollbar-thumb{background:#C8BFB0;border-radius:999px}
+.scrollbar-none::-webkit-scrollbar{display:none}
+.scrollbar-none{-ms-overflow-style:none;scrollbar-width:none}
+.panel-trans{transition:width 220ms cubic-bezier(0.22,1,0.36,1)}
+#appRoot.rc #rCollBar{display:flex}
+#appRoot:not(.rc) #rCollBar{display:none}
+#appRoot.rc #cHdrActions{display:none}
+#appRoot.lc #leftPanel{width:0!important;min-width:0!important;overflow:hidden;border-right-color:transparent}
+#appRoot.rc #rightPanel{width:0!important;min-width:0!important;overflow:hidden;border-left-color:transparent}
+.lc-collapsed-left{display:none}
+#appRoot.lc .lc-collapsed-left{display:flex;align-items:center;gap:6px;margin-right:6px}
+.ts:not(:last-child)::after{content:'';position:absolute;left:8px;top:23px;bottom:0;width:1px;background:#D6CEC0}
+.st-badge{transition:all 150ms ease}
+.st-badge{color:#C8943C;border-color:rgba(200,148,60,.3);background:rgba(200,148,60,.07)}
+.st-badge .dot{background:#C8943C}
+@keyframes popIn{from{opacity:0;transform:translateY(-6px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.popup-enter{animation:popIn 150ms cubic-bezier(0.22,1,0.36,1) both}
+.btn-press:active{transform:scale(0.94)}
+.resize-handle{width:4px;cursor:col-resize;flex-shrink:0;background:transparent;transition:background 150ms;position:relative;z-index:5}
+.resize-handle:hover,.resize-handle.dragging{background:#7A6040}
+.resize-handle[data-side=left]{margin-right:-2px}
+.resize-handle[data-side=right]{margin-left:-2px}
+#appRoot.dragging *{user-select:none!important}
+#appRoot.dragging .panel-trans{transition:none!important}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="h-dvh w-screen flex overflow-hidden bg-[#F0EDE6]" id="appRoot">
+<div id="rCollBar" class="hidden fixed right-0 top-0 h-10 z-50 items-center gap-0.5 px-1.5">
+  <button id="rBarAdd" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">＋</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">⚙</button>
+  <div class="w-px h-3 bg-[#C8BFB0] mx-1"></div>
+  <button id="rBarExp" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">⤢</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">─</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors">□</button>
+  <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:bg-[#B84A4A] hover:text-white text-[11px] transition-colors">✕</button>
+</div>
+
+  <!-- ===== LEFT PANEL ===== -->
+  <aside id="leftPanel" class="panel-trans w-[220px] flex-shrink-0 bg-[#E8E3DA] border-r border-[#D6CEC0] flex flex-col overflow-hidden" style="width:220px">
+    <div class="flex items-center justify-between px-3.5 py-2 flex-shrink-0">
+      <div class="flex items-center gap-1.5">
+        <div class="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+        <span class="font-serif text-[15px] font-semibold text-[#1E1A14]">月笙</span>
+      </div>
+      <button id="collapseLeftBtn" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press" title="收起">☰</button>
+    </div>
+    <div class="px-2.5 pb-2 flex-shrink-0">
+      <button class="tab-btn w-full py-[6px] rounded text-[13px] text-center mb-1 transition-all" data-tab="train">训练</button>
+      <div class="grid grid-cols-2 gap-1">
+        <button class="tab-btn py-[6px] rounded text-[13px] text-center transition-all active" data-tab="chat">对话</button>
+        <button class="tab-btn py-[6px] rounded text-[13px] text-center transition-all" data-tab="proj">项目</button>
+      </div>
+    </div>
+    <div class="h-px bg-[#D6CEC0] mx-3 flex-shrink-0"></div>
+    <div class="px-2.5 py-2 flex-shrink-0">
+      <div class="flex items-center bg-[#FAF8F5] border border-[#D6CEC0] rounded px-2 py-1 transition-colors focus-within:border-[#7A6040]">
+        <span class="text-[#8A7F6E] text-[10px] mr-1">⌕</span>
+        <input type="text" placeholder="搜索..." class="flex-1 min-w-0 bg-transparent text-[13px] text-[#1E1A14] outline-none placeholder:text-[#8A7F6E]" />
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto cscroll px-2.5 pb-2" id="leftList"></div>
+  </aside>
+  <div class="resize-handle" data-side="left" title="拖拽调整左栏宽度"></div>
+
+  <!-- ===== CENTER ===== -->
+  <main class="flex-1 flex flex-col min-w-0 bg-[#F0EDE6]">
+    <header class="flex items-center justify-between px-5 pt-2.5 pb-1 flex-shrink-0" id="centerHdr">
+      <div class="flex items-center gap-1.5 min-w-0 flex-1">
+        <div class="lc-collapsed-left">
+          <div class="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+          <button id="expandLeftBtn" class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">☰</button>
+        </div>
+        <button class="flex items-center gap-1 px-1.5 py-1 rounded text-[13px] text-[#1E1A14] font-medium hover:bg-[rgba(122,96,64,0.09)] transition-colors">
+          <span class="text-[7px] text-[#8A7F6E]">▼</span>
+          <span id="projectName">我的第一本小说</span>
+          <span class="text-[7px] text-[#8A7F6E]">▾</span>
+        </button>
+        <span class="st-badge inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border">
+          <span class="dot w-1 h-1 rounded-full"></span>
+          <span id="stText">教学中</span>
+        </span>
+      </div>
+      <div id="cHdrActions" class="flex gap-0.5 flex-shrink-0">
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">＋</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">⚙</button>
+      </div>
+    </header>
+    <div class="flex-1 overflow-y-auto cscroll px-5 pb-3" id="centerBody"></div>
+    <footer class="border-t border-[#D6CEC0] bg-[#F0EDE6] px-5 pb-2 pt-1 h-[calc(100dvh/6)] flex flex-col gap-1 flex-shrink-0">
+      <div class="flex items-center justify-between h-5 flex-shrink-0">
+        <div class="flex items-center gap-1">
+          <button class="px-1 py-0.5 rounded text-[10px] text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)] transition-colors">[模板]</button>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="flex items-center gap-0.5" id="attLights">
+            <button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#5A8F68] bg-[#5A8F68] scale-110 transition-transform" data-lv="doubao"></button>
+            <button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#C8943C] bg-transparent transition-transform" data-lv="yuesheng"></button>
+            <button class="att-l w-[10px] h-[10px] rounded-full border-2 border-[#B84A4A] bg-transparent transition-transform" data-lv="direct"></button>
+          </div>
+          <button id="lockBtn" class="text-[10px] text-[#8A7F6E] px-0.5 py-0.5 rounded hover:text-[#5C5242] transition-colors" title="锁定">🔓</button>
+        </div>
+      </div>
+      <div class="flex-1 relative bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg px-2.5 pt-1.5 pb-1 transition-colors focus-within:border-[#7A6040]">
+        <textarea class="w-full h-full resize-none bg-transparent text-[14px] leading-relaxed text-[#1E1A14] outline-none pr-12" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button class="absolute bottom-1.5 right-1.5 px-2.5 py-0.5 rounded bg-[#7A6040] text-white text-[13px] font-medium hover:bg-[#6A5030] transition-colors disabled:bg-[#C8BFB0] btn-press" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+  <div class="resize-handle" data-side="right" title="拖拽调整右栏宽度"></div>
+
+  <!-- ===== RIGHT PANEL ===== -->
+  <aside id="rightPanel" class="panel-trans w-[360px] min-w-0 flex-shrink-0 bg-[#E8E3DA] border-l border-[#D6CEC0] flex flex-col overflow-hidden" style="width:360px">
+    <div class="flex items-center gap-0.5 px-1.5 py-0.5 min-h-[32px] border-b border-[#D6CEC0] flex-shrink-0 overflow-hidden" id="rightHdr">
+      <div class="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto mx-1 scrollbar-none" id="toolTabs"></div>
+      <div class="flex items-center gap-0.5 flex-shrink-0">
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors flex-shrink-0 btn-press" id="addToolBtn" title="添加工具">＋</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press" id="collapseRightBtn">⤢</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">─</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:text-[#7A6040] hover:bg-[rgba(122,96,64,0.09)] text-[11px] transition-colors btn-press">□</button>
+        <button class="w-[22px] h-[22px] flex items-center justify-center rounded text-[#8A7F6E] hover:bg-[#B84A4A] hover:text-white text-[11px] transition-colors btn-press">✕</button>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto cscroll p-3" id="rightBody"></div>
+  </aside>
+</div>
+
+<div id="toolPopup" class="hidden fixed bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg shadow-lg p-1 min-w-[130px] z-50" style="top:34px;right:6px"></div>
+
+<script>
+// ===== 后端合约对齐的模拟数据 =====
+
+// ——— SessionInfo (session.contract.ts) ———
+const SESSIONS = [
+  { id:'s1', title:'初稿诊断', createdAt:Date.now()-864e5, updatedAt:Date.now()-36e5, messageCount:14 },
+  { id:'s2', title:'第一章节奏讨论', createdAt:Date.now()-1728e5, updatedAt:Date.now()-864e5, messageCount:8 },
+  { id:'s3', title:'训练: 动作替代情绪词', createdAt:Date.now()-2592e5, updatedAt:Date.now()-1728e5, messageCount:5 },
+  { id:'s4', title:'配角动机梳理', createdAt:Date.now()-4320e5, updatedAt:Date.now()-2592e5, messageCount:11 },
+  { id:'s5', title:'训练: 对话节奏', createdAt:Date.now()-6048e5, updatedAt:Date.now()-4320e5, messageCount:3 },
+  { id:'s6', title:'训练: 三幕剧结构', createdAt:Date.now()-864e5, updatedAt:Date.now()-4e4, messageCount:7 },
+  { id:'s7', title:'训练: 动机层次', createdAt:Date.now()-2592e5, updatedAt:Date.now()-864e5, messageCount:4 },
+  { id:'s8', title:'训练: 伏笔回收', createdAt:Date.now()-4320e5, updatedAt:Date.now()-2592e5, messageCount:6 },
+  { id:'s9', title:'训练: 视角切换', createdAt:Date.now()-6048e5, updatedAt:Date.now()-432e5, messageCount:9 },
+];
+
+// ——— ProjectInfo (project.contract.ts) ———
+const PROJECTS = [
+  { id:'p1', name:'第一章: 山门', description:'主角进入修仙门派', createdAt:Date.now()-864e6, updatedAt:Date.now()-432e5 },
+  { id:'p2', name:'第二章: 试炼', description:'入门考核', createdAt:Date.now()-6048e5, updatedAt:Date.now()-432e5 },
+  { id:'p3', name:'第三章: 初遇', description:'与师尊第一次对话', createdAt:Date.now()-432e5, updatedAt:Date.now()-864e4 },
+  { id:'p4', name:'第四章: 暗流', description:'门派内部矛盾', createdAt:Date.now()-1728e4, updatedAt:Date.now()-864e4 },
+  { id:'p5', name:'大纲', description:null, createdAt:Date.now()-864e6, updatedAt:Date.now()-432e5 },
+  { id:'p6', name:'第五章: 抉择', description:'主角面临关键选择', createdAt:Date.now()-864e4, updatedAt:Date.now()-432e4 },
+  { id:'p7', name:'第六章: 阴谋', description:'发现幕后黑手', createdAt:Date.now()-432e4, updatedAt:Date.now()-864e3 },
+  { id:'p8', name:'人物小传: 师尊', description:null, createdAt:Date.now()-864e6, updatedAt:Date.now()-864e5 },
+  { id:'p9', name:'人物小传: 师兄', description:null, createdAt:Date.now()-864e6, updatedAt:Date.now()-6048e5 },
+  { id:'p10', name:'世界观设定', description:'修仙体系等级与规则', createdAt:Date.now()-864e6, updatedAt:Date.now()-432e5 },
+];
+
+// ——— SyndromeId 常量 (constants.ts) ———
+const SYNDROME = {
+  P001:'世界观胀大', P002:'人物工具化', P003:'情绪标签化',
+  P004:'信息硬塞', P005:'视角漂移', P006:'节奏凝滞',
+  P007:'阅读结构单一', P008:'世界观说明书式解说', P009:'动机缺失',
+  P010:'配角扁平化',
+};
+
+// ——— 训练技法目录 (本应来自 IPC training:catalog) ———
+const TECHNIQUE_CATALOG = {
+  'P003': { name:SYNDROME.P003, category:'推荐技法', difficulty:'入门' },
+  'P006': { name:SYNDROME.P006, category:'推荐技法', difficulty:'入门' },
+  'P001': { name:SYNDROME.P001, category:'结构技法', difficulty:'进阶' },
+  'P008': { name:SYNDROME.P008, category:'结构技法', difficulty:'进阶' },
+  'P004': { name:SYNDROME.P004, category:'人物技法', difficulty:'入门' },
+  'P005': { name:SYNDROME.P005, category:'人物技法', difficulty:'高阶' },
+  'P010': { name:SYNDROME.P010, category:'人物技法', difficulty:'入门' },
+  'P007': { name:SYNDROME.P007, category:'结构技法', difficulty:'进阶' },
+};
+
+// ——— TeachingState (teaching-state.contract.ts) ———
+const TEACHING_STATE = {
+  sessionId:'s1',
+  currentPhase:'P2_PRACTICE_LOOP',
+  currentSubphase:'S2_TEACHING',
+  activeProblems:[
+    { syndromeId:'P003', severity:'high', trained:false, score:2 },
+    { syndromeId:'P006', severity:'medium', trained:true, score:4 },
+  ],
+  completedActions:['A003','A005'],
+  nextSuggestedActions:['A001','A007'],
+  diagnosisSummary:'发现7个问题，其中3个已掌握，当前聚焦动作替代情绪词',
+  phaseProgress:0.65,
+};
+
+// ——— SessionMessage (session.contract.ts) ———
+const SESSION_MESSAGES = {
+  s1:[
+    { id:'m1', sessionId:'s1', role:'assistant', content:'早上好。你昨天发的开头整体氛围不错。\n\n节奏稍慢了一些，主要集中在第一段环境描写。你方便聊聊为什么用这么长一段开始吗？', createdAt:Date.now()-1800 },
+    { id:'m2', sessionId:'s1', role:'user', content:'我怕读者不了解世界观会看不懂后面的剧情。', createdAt:Date.now()-1200 },
+    { id:'m3', sessionId:'s1', role:'assistant', content:'这是个常见的担忧。但你的世界观是修仙体系，这在读者中已经有基本认知了。\n\n我建议你试试把背景信息"揉"进对话和动作里，而不是开篇就摊开。先让故事动起来。', createdAt:Date.now()-600 },
+  ],
+  s2:[
+    { id:'m4', sessionId:'s2', role:'assistant', content:'第一章的节奏我读了一遍。整体是顺的，但有几个地方对话的密集度影响了阅读节奏。\n\n我们重点看一下打斗场景前后的部分。', createdAt:Date.now()-3600 },
+    { id:'m5', sessionId:'s2', role:'user', content:'你是说师尊出场那一段？', createdAt:Date.now()-3000 },
+    { id:'m6', sessionId:'s2', role:'assistant', content:'对，那段对话之后应该给读者一个"呼吸"的空间，再进入下一段。', createdAt:Date.now()-2400 },
+  ],
+  s3:[
+    { id:'m7', sessionId:'s3', role:'assistant', content:'来看这个句子："他感到非常愤怒。"\n\n"感到"是距离。我们不用"感到"，试试直接写动作。', createdAt:Date.now()-7200 },
+    { id:'m8', sessionId:'s3', role:'user', content:'改成"他一拳砸在桌上，指节发白。"？', createdAt:Date.now()-6600 },
+    { id:'m9', sessionId:'s3', role:'assistant', content:'对，就是这个方向。注意"砸"和"发白"两个词已经把愤怒写出来了，不需要"感到"。\n\n再练一句。', createdAt:Date.now()-6000 },
+  ],
+  s4:[
+    { id:'m10', sessionId:'s4', role:'assistant', content:'配角的动机需要和主角的目标产生关联。当前你写的师妹"关心师兄"，但这个关心没有转化成具体的行动线。', createdAt:Date.now()-14400 },
+    { id:'m11', sessionId:'s4', role:'user', content:'你觉得应该怎么改？', createdAt:Date.now()-13800 },
+    { id:'m12', sessionId:'s4', role:'assistant', content:'给她一个"想要证明自己"的内在驱动力，这样她的关心就不只是关心，而是推动剧情的力量。', createdAt:Date.now()-13200 },
+  ],
+  s5:[
+    { id:'m13', sessionId:'s5', role:'assistant', content:'对话节奏训练：你写的对话太"整齐"了，每个人说话都是完整句子。\n\n真实对话有打断、有迟疑、有省略。', createdAt:Date.now()-21600 },
+    { id:'m14', sessionId:'s5', role:'user', content:'但我怕写乱了读者看不懂。', createdAt:Date.now()-21000 },
+    { id:'m15', sessionId:'s5', role:'assistant', content:'让角色的说话方式本身成为性格标签。比如师弟说话跳跃，师尊说话简练。读者不会乱的。', createdAt:Date.now()-20400 },
+  ],
+  s6:[
+    { id:'m16', sessionId:'s6', role:'assistant', content:'三幕剧结构练习。你的大纲目前中间部分太"平"了。\n\n第二幕需要一个明确的"中点转折"。', createdAt:Date.now()-43200 },
+    { id:'m17', sessionId:'s6', role:'user', content:'你是说让测试结果在第一关就失败？', createdAt:Date.now()-42600 },
+    { id:'m18', sessionId:'s6', role:'assistant', content:'对。主角在大庭广众之下失败，比"顺利通过"更能在第二幕中点形成戏剧张力。', createdAt:Date.now()-42000 },
+  ],
+};
+
+// ——— DiagnosisEntry (diagnosis.contract.ts) ———
+const CURRENT_DIAGNOSIS = {
+  id:'d1', sessionId:'s1',
+  syndromes:[
+    { syndromeId:'P003', severity:'high', description:'过多心理描写替代动作和对话', evidence:'文中约70%的段落以"他感到/她觉得"开头' },
+    { syndromeId:'P006', severity:'medium', description:'场景过渡节奏不均匀', evidence:'第二章开篇段落长度是平均值的3倍' },
+    { syndromeId:'P004', severity:'low', description:'世界观背景通过旁白一次性抛出', evidence:'第三章第一页有3段关于世界历史的背调' },
+  ],
+  summary:'当前章节存在情绪标签化和节奏凝滞问题，建议先从动作替代情绪词入手。',
+  createdAt:Date.now()-6048e5,
+};
+
+// ——— AbilityProfile (ability.contract.ts) ———
+const ABILITY_PROFILE = {
+  sessionId:'s1',
+  syndromes:[
+    { syndromeId:'P003', score:3, trend:'up', instances:4 },
+    { syndromeId:'P006', score:2, trend:'stable', instances:3 },
+    { syndromeId:'P004', score:1, trend:'down', instances:2 },
+    { syndromeId:'P005', score:4, trend:'up', instances:1 },
+  ],
+  overallScore:2.5,
+  strengths:['人物情绪刻画'],
+  weaknesses:['信息投放节奏'],
+};
+
+// ——— LearningLog (本应来自 IPC learningLog:list) ———
+const LEARNING_LOG = [
+  { date:'2026-06-17', entries:[
+    { type:'finding', syndromeId:'P004', note:'作品中存在信息硬塞倾向', scoreBefore:2, scoreAfter:3 },
+    { type:'mastered', syndromeId:'P003', note:'已能自觉用动作替代情绪词', scoreBefore:1, scoreAfter:4 },
+  ]},
+  { date:'2026-06-15', entries:[
+    { type:'finding', syndromeId:'P006', note:'段落节奏轻重失衡', scoreBefore:3, scoreAfter:2 },
+    { type:'mastered', syndromeId:'P005', note:'视角切换练习完成', scoreBefore:2, scoreAfter:4 },
+  ]},
+];
+
+// ——— AttitudeLevel 映射 ———
+const ATTITUDE_MAP = { doubao:'豆包', yuesheng:'月笙', direct:'sensei' };
+
+// ===== UI 状态 =====
+const ALL_TOOLS = [
+  { id:'progress', name:'教学进度', icon:'◐', desc:'PhaseProgress 0.65' },
+  { id:'growth', name:'学习日志', icon:'✎', desc:'能力倾向聚合' },
+  { id:'works', name:'作品', icon:'☰', desc:'章节编辑器' },
+  { id:'training', name:'教学笔记', icon:'✤', desc:'训练记录+诊断' },
+  { id:'__settings__', name:'设置', icon:'⚙', desc:'ApiConfig' },
+];
+let openTools = [], activeToolId = null, chatSessionId = null, selectedTrainId = null, selectedProjectId = null;
+const body = document.getElementById('appRoot');
+
+// ===== 左侧 Tab =====
+document.querySelectorAll('.tab-btn').forEach(b => {
+  if (b.classList.contains('active')) {
+    b.classList.add('bg-[#7A6040]','text-white','font-medium');
+    b.classList.remove('text-[#5C5242]');
+  } else {
+    b.classList.add('text-[#5C5242]','hover:bg-[rgba(122,96,64,0.09)]');
+  }
+  b.onclick = function() {
+    const group = this.closest('.grid') || this.parentElement;
+    group.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.remove('bg-[#7A6040]','text-white','font-medium');
+      btn.classList.add('text-[#5C5242]','hover:bg-[rgba(122,96,64,0.09)]');
+    });
+    this.classList.remove('text-[#5C5242]','hover:bg-[rgba(122,96,64,0.09)]');
+    this.classList.add('bg-[#7A6040]','text-white','font-medium');
+    const tab = this.dataset.tab;
+    // 切换 tab 时清理右侧栏，[训练] 只触发右侧栏技法目录
+    selectedTrainId = null; selectedProjectId = null; chatSessionId = null;
+    if (tab === 'train') { openTools = []; activeToolId = null; }      // 训练 → 右侧栏展示技法目录（通过 renderRight 的 t==='train' 分支）
+    else if (tab === 'proj') { openTools = openTools.filter(t => t !== 'training'); activeToolId = openTools[0] || null; }
+    else { openTools = openTools.filter(t => t !== 'training' && t !== 'works'); activeToolId = openTools[0] || null; }
+    renderAll();
+  };
+});
+
+// ===== 左侧列表（基于 SessionInfo / ProjectInfo）=====
+let chatFilter = 'all'; // all | chat | train (仅用于 [对话] tab)
+function renderList() {
+  const list = document.getElementById('leftList');
+  const active = document.querySelector('.tab-btn.active');
+  const tab = active?.dataset?.tab || 'chat';
+  if (tab === 'train') {
+    // §6.2: [训练] 标签不展示列表，只触发右侧栏技法目录
+    list.innerHTML = `<div class="px-2.5 py-4 text-center text-[13px] text-[#8A7F6E] leading-relaxed">
+      <div class="text-[28px] mb-2 text-[#7A6040]">○</div>
+      <p>选择右侧栏中的技法开始训练</p>
+      <p class="text-[11px] text-[#8A7F6E] mt-2">推荐技法基于你的诊断结果自动匹配</p>
+    </div>`;
+  } else if (tab === 'proj') {
+    list.innerHTML = PROJECTS.map(p =>
+      `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] ${selectedProjectId===p.id?' bg-[rgba(122,96,64,0.12)]':''}" onclick="selectProject('${p.id}')">
+        <span class="text-[12px] text-[#8A7F6E] w-[14px] text-center flex-shrink-0">${p.description?'☰':'✎'}</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${p.name}</span>
+      </div>`).join('');
+  } else {
+    // [对话] tab: 展示当前项目下所有会话（含训练），带 [全部][对话][训练] 筛选
+    let fSessions = SESSIONS;
+    if (chatFilter === 'chat') fSessions = fSessions.filter(s => !s.title.includes('训练'));
+    else if (chatFilter === 'train') fSessions = fSessions.filter(s => s.title.includes('训练'));
+    const filterHtml = `<div class="flex gap-1 px-0.5 mb-1">
+      ${['all','chat','train'].map(f => `<button class="text-[11px] px-1.5 py-0.5 rounded ${chatFilter===f?'bg-[#7A6040] text-white':'text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)]'} transition-colors" onclick="chatFilter='${f}';renderList();">${f==='all'?'全部':f==='chat'?'对话':'训练'}</button>`).join('')}
+    </div>`;
+    list.innerHTML = filterHtml + fSessions.map(s => {
+      const isTrain = s.title.includes('训练');
+      return `<div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer mb-0.5 hover:bg-[rgba(122,96,64,0.09)] ${chatSessionId===s.id?' bg-[rgba(122,96,64,0.12)]':''}" onclick="selectChat('${s.id}')">
+        <span class="text-[12px] w-[14px] text-center flex-shrink-0 ${isTrain?'text-[#C8943C]':'text-[#8A7F6E]'}">${isTrain?'◎':'◌'}</span>
+        <span class="flex-1 text-[13px] text-[#1E1A14] truncate">${s.title}</span>
+        <span class="text-[10px] text-[#8A7F6E] bg-[#FAF8F5] px-1 rounded-full flex-shrink-0">${s.messageCount}条</span>
+      </div>`;
+    }).join('');
+  }
+}
+function relTime(ts){const d=Date.now()-ts;return d<864e5?'今天':d<1728e5?'昨天':'3天前'}
+function selectChat(id){chatSessionId=id;renderList();renderCenter();}
+function selectProject(id){selectedProjectId=id;selectedTrainId=null;chatSessionId=null;renderList();if(!openTools.includes('works'))openTools.push('works');activeToolId='works';renderCenter();renderRight();}
+function selectTrain(id){/* 在 V6.2 中废弃，改用 createTraining(techniqueName) */}
+var sessionIdCounter = 9;
+function createTraining(techName) {
+  // §6.3: 选技法 → 新建训练会话 → 自动切到 [对话] tab
+  sessionIdCounter++;
+  const newId = 's' + sessionIdCounter;
+  const title = '训练: ' + techName;
+  SESSIONS.push({ id:newId, title, createdAt:Date.now(), updatedAt:Date.now(), messageCount:1 });
+  SESSION_MESSAGES[newId] = [{ id:'m'+(sessionIdCounter*3), sessionId:newId, role:'assistant', content:'好的，我们开始"' + techName + '"的训练。\n\n你可以粘贴一段你的作品，我们一起来分析这段中的' + techName + '问题。', createdAt:Date.now() }];
+  // 切换到 [对话] tab
+  const chatTab = document.querySelector('[data-tab="chat"]');
+  if (chatTab) chatTab.click();
+  // 选中新会话
+  setTimeout(() => { selectChat(newId); }, 50);
+}
+
+// ===== 中间栏 =====
+function renderCenter() {
+  const el = document.getElementById('centerBody');
+  if (chatSessionId) {
+    const msgs = SESSION_MESSAGES[chatSessionId] || [];
+    el.innerHTML = `<div class="max-w-[560px] mx-auto flex flex-col gap-3 pt-2">
+      ${msgs.map(m => `<div class="msg flex gap-2">
+        <div class="msg-av w-6 h-6 rounded-full bg-[rgba(122,96,64,0.09)] text-[#7A6040] flex items-center justify-center font-serif text-[11px] font-semibold flex-shrink-0">${m.role==='assistant'?'月':'我'}</div>
+        <div class="flex-1 text-[14px] leading-relaxed text-[#1E1A14]">
+          ${m.content.split('\n').map(p=>`<p>${p}</p>`).join('')}
+          <div class="text-[11px] text-[#8A7F6E] mt-1">${timeStr(m.createdAt)}</div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="max-w-[420px] mx-auto mt-[70px] text-center">
+      <h2 class="font-serif text-[20px] font-semibold text-[#1E1A14] mb-[18px]">开始你的写作之旅</h2>
+      <div class="flex flex-col gap-[7px]">
+        ${[
+          {e:'📝',l:'我有作品',h:'直接进入聊天，我会帮你分析'},
+          {e:'🌱',l:'从头学习',h:'我引导你搭建世界观和人物'},
+          {e:'💬',l:'先聊聊',h:'正常聊天，我在对话中自然引导'}
+        ].map((c,i)=>`<button class="flex items-center gap-3 px-4 py-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg hover:border-[#7A6040] hover:-translate-y-[1px] transition-all text-left w-full btn-press">
+          <span class="text-[17px] w-[24px] text-center flex-shrink-0">${c.e}</span>
+          <div><div class="text-[14px] font-medium text-[#1E1A14]">${c.l}</div><div class="text-[11px] text-[#8A7F6E] mt-[1px]">${c.h}</div></div>
+        </button>`).join('')}
+      </div>
+    </div>`;
+  }
+}
+function timeStr(ts){const d=new Date(ts);return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')}
+
+// ===== 右侧栏 =====
+function renderRight() {
+  const tabs = document.getElementById('toolTabs');
+  const rb = document.getElementById('rightBody');
+  const activeTab = document.querySelector('.tab-btn.active');
+  const t = activeTab?.dataset?.tab;
+
+  if (t === 'train' && !openTools.length) {
+    // 训练技法目录（来自 TECHNIQUE_CATALOG）
+    tabs.innerHTML = `<div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap flex-shrink-0" style="background:#7A6040;color:white;font-weight:500">
+      <span class="truncate max-w-[60px]">训练技法</span>
+      <span class="w-3 h-3 flex items-center justify-center rounded-full text-[7px] opacity-70 hover:opacity-100 hover:bg-[rgba(255,255,255,0.15)] flex-shrink-0" id="closeTrain">✕</span>
+    </div>`;
+    document.getElementById('closeTrain').addEventListener('click', ()=>{openTools=[];activeToolId=null;renderRight();},{once:true});
+
+    // 按 category 分组
+    const cats = {};
+    Object.entries(TECHNIQUE_CATALOG).forEach(([id,item])=>{
+      if(!cats[item.category])cats[item.category]={items:[],rec:item.category==='推荐技法'};
+      cats[item.category].items.push({id,name:item.name,diff:item.difficulty});
+    });
+    rb.innerHTML = Object.entries(cats).map(([cat,data])=>
+      `<div class="text-[11px] text-[#8A7F6E] tracking-[0.04em] mt-2 mb-1 px-0.5 font-medium">${cat}${data.rec?'  👍':''}</div>`+
+      `<div>${data.items.map(i=>`<button class="flex items-center gap-1.5 px-2 py-1.5 bg-[#FAF8F5] border border-[#D6CEC0] rounded w-full text-left mb-0.5 hover:border-[#7A6040] hover:translate-x-[2px] transition-all btn-press" onclick="createTraining('${i.name}')">
+        <span class="flex-1 text-[13px] text-[#1E1A14]">${i.name}</span>
+        <span class="text-[9px] text-[#8A7F6E] bg-[#E8E3DA] px-1 rounded-full">${i.diff}</span>
+      </button>`).join('')}</div>`
+    ).join('');
+
+  } else if (openTools.length) {
+    tabs.innerHTML = openTools.map((tId,i) => {
+      const tool = ALL_TOOLS.find(x=>x.id===tId);
+      const ac = tId === activeToolId;
+      return `<div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap flex-shrink-0 ${ac?'bg-[#7A6040] text-white font-medium':'bg-[#FAF8F5] text-[#5C5242] hover:bg-[rgba(122,96,64,0.09)]'} transition-colors cursor-pointer" data-t="${tId}">
+        <span class="truncate max-w-[60px]">${tool?tool.name:tId}</span>
+        <span class="w-3 h-3 flex items-center justify-center rounded-full text-[7px] opacity-60 hover:opacity-100 hover:bg-[rgba(0,0,0,0.06)] flex-shrink-0" data-c="${tId}">✕</span>
+      </div>`;
+    }).join('');
+    tabs.querySelectorAll('[data-t]').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.classList.contains('w-3')) { closeTool(e.target.dataset.c); return; }
+        activeToolId = el.dataset.t; renderRight();
+      });
+    });
+    const tool = ALL_TOOLS.find(x=>x.id===activeToolId);
+    if (tool) rb.innerHTML = toolBody(tool); else rb.innerHTML = '';
+  } else {
+    rb.innerHTML = `<div class="grid grid-cols-2 gap-[7px]">${ALL_TOOLS.map(t =>
+      `<button class="flex flex-col items-center gap-1 p-3 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg text-center hover:border-[#7A6040] hover:-translate-y-[1px] transition-all btn-press" onclick="openTool('${t.id}')">
+        <span class="text-[16px] text-[#7A6040] leading-none">${t.icon}</span>
+        <span class="text-[13px] font-medium text-[#1E1A14]">${t.name}</span>
+        <span class="text-[11px] text-[#8A7F6E]">${t.desc}</span>
+      </button>`).join('')}</div>`;
+  }
+}
+function openTool(id){if(!openTools.includes(id))openTools.push(id);activeToolId=id;renderRight();}
+function closeTool(id){openTools=openTools.filter(t=>t!==id);if(activeToolId===id)activeToolId=openTools[openTools.length-1]||null;renderRight();}
+
+function toolBody(tool) {
+  if (tool.id==='progress') {
+    // TeachingState + AbilityProfile
+    const ap = TEACHING_STATE;
+    const ab = ABILITY_PROFILE;
+    return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">教学进度</h3>
+      <div class="flex items-center justify-center gap-1 p-2 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg mb-2.5">
+        <span class="font-serif text-[20px] font-semibold text-[#7A6040] leading-none">${ap.activeProblems.filter(p=>p.trained).length}</span>
+        <span class="text-[#8A7F6E]">/</span>
+        <span class="text-[16px] text-[#5C5242]">${ap.activeProblems.length}</span>
+        <span class="text-[11px] text-[#8A7F6E] ml-0.5">已掌握</span>
+      </div>
+      <div class="mb-2 px-0.5">
+        <span class="text-[11px] text-[#8A7F6E]">当前阶段: ${ap.currentPhase}</span>
+        <div class="h-1 bg-[#D6CEC0] rounded-full mt-1"><div class="h-full bg-[#7A6040] rounded-full" style="width:${Math.round(ap.phaseProgress*100)}%"></div></div>
+      </div>
+      ${['提交作品','诊断分析','教学中','已收尾','等待修改'].map((n,i)=>`<div class="ts flex items-start gap-2 py-1.5 relative">
+        <div class="w-[16px] h-[16px] rounded-full flex items-center justify-center text-[8px] flex-shrink-0 ${i<1?'bg-[#7A6040] border-2 border-[#7A6040] text-white':i===1?'bg-[#FAF8F5] border-2 border-[#7A6040] text-[#7A6040]':'bg-[#FAF8F5] border-2 border-[#D6CEC0] text-[#8A7F6E]'}">${i<1?'✓':i===1?'●':'○'}</div>
+        <div class="flex-1 pt-[1px]"><div class="text-[13px] text-[#1E1A14] font-medium">${n}</div>${i===0?'<div class="text-[11px] text-[#8A7F6E] mt-[1px]">3条诊断记录</div>':i===1?`<div class="text-[11px] text-[#8A7F6E] mt-[1px]">${CURRENT_DIAGNOSIS.syndromes.length}个问题</div>`:''}</div>
+      </div>`).join('')}</div>`;
+  }
+  if (tool.id==='growth') {
+    // LearningLog
+    return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">学习日志</h3>
+      ${LEARNING_LOG.map(d=>`<div class="py-1.5 border-b border-[#D6CEC0] last:border-0">
+        <div class="font-serif text-[14px] font-medium text-[#1E1A14] mb-1">${d.date}</div>
+        ${d.entries.map(e=>`<div class="text-[13px] leading-relaxed text-[#5C5242] mb-0.5">
+          <span class="${e.type==='finding'?'text-[#B84A4A]':'text-[#5A8F68]'}">${e.type==='finding'?'新发现:':'已攻克:'}</span>
+          ${e.note} <span class="text-[10px] text-[#8A7F6E]">${e.scoreBefore}→${e.scoreAfter}</span>
+        </div>`).join('')}
+      </div>`).join('')}</div>`;
+  }
+  if (tool.id==='__settings__') {
+    // ApiConfig
+    return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">设置</h3>
+      <div class="mb-2.5"><div class="text-[13px] text-[#5C5242] mb-1">API Key</div>
+      <input type="password" placeholder="sk-..." class="w-full px-2 py-1 bg-[#FAF8F5] border border-[#D6CEC0] rounded text-[13px] outline-none focus:border-[#7A6040] transition-colors"></div>
+      <div class="mb-2.5"><div class="text-[13px] text-[#5C5242] mb-1">Base URL</div>
+      <input value="https://api.deepseek.com" class="w-full px-2 py-1 bg-[#FAF8F5] border border-[#D6CEC0] rounded text-[13px] outline-none focus:border-[#7A6040] transition-colors"></div>
+      <div class="text-[13px] text-[#5C5242] mb-1">默认态度</div>
+      <div class="flex items-center gap-0.5 mb-2.5">
+        ${['doubao','yuesheng','direct'].map(l=>`<button class="att-l w-[10px] h-[10px] rounded-full border-2 ${l==='doubao'?'border-[#5A8F68] bg-[#5A8F68] scale-110':'border-[#C8943C] bg-transparent'} transition-transform" data-lv="${l}" title="${ATTITUDE_MAP[l]}"></button>`).join('')}
+      </div>
+      <button class="mt-3 px-3 py-1 rounded-lg bg-[#7A6040] text-white text-[13px] hover:bg-[#6A5030] transition-colors btn-press">保存</button>
+    </div>`;
+  }
+  if (tool.id==='training') {
+    const trainSessions = SESSIONS.filter(s => s.title.includes('训练'));
+    return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">教学笔记</h3>
+      <p class="text-[12px] text-[#8A7F6E] mb-2">训练记录汇总</p>
+      ${trainSessions.length ? trainSessions.map(s => `<div class="p-1.5 bg-[#FAF8F5] border border-[#D6CEC0] rounded mb-1 cursor-pointer hover:border-[#7A6040] transition-colors" onclick="selectChat('${s.id}')">
+        <div class="flex items-center gap-1"><span class="text-[#C8943C] text-[10px]">◎</span><span class="text-[13px] text-[#1E1A14]">${s.title.replace('训练: ','')}</span></div>
+        <div class="text-[11px] text-[#8A7F6E] mt-0.5">${s.messageCount} 条消息 | ${relTime(s.updatedAt)}</div>
+      </div>`).join('') : `<p class="text-[13px] text-[#8A7F6E]">还没有训练记录。</p>`}
+    </div>`;
+  }
+  if (tool.id==='works') {
+    if (!selectedProjectId) {return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">作品</h3><p class="text-[13px] text-[#8A7F6E]">可从左侧栏"项目"列表中选择章节查看内容。</p></div>`;}
+    const proj = PROJECTS.find(p=>p.id===selectedProjectId);
+    return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">${proj?.name||'作品'}</h3>
+      <textarea class="w-full h-[240px] p-2 bg-[#FAF8F5] border border-[#D6CEC0] rounded-lg text-[13px] leading-relaxed text-[#1E1A14] outline-none focus:border-[#7A6040] resize-none transition-colors" readonly>主角推开山门，迎面是一片白雾。\n\n"来者何人？"一个苍老的声音从雾中传来。\n\n"弟子名叫陈远，师尊在上，请受弟子一拜。"\n\n白雾缓缓散去，露出一个老者的轮廓。(第一段初稿，尚未经过诊断训练)</textarea>
+      <div class="text-[11px] text-[#8A7F6E] mt-1">初稿内容，点击下方可请求诊断</div>
+    </div>`;
+  }
+  return `<div><h3 class="font-serif text-[16px] font-semibold text-[#1E1A14] mb-2.5">${tool.name}</h3><p class="text-[13px] leading-relaxed text-[#8A7F6E]">通过 IPC ${tool.id} 通道读取数据。</p></div>`;
+}
+
+// ===== 左右栏拖拽 =====
+const MIN_LEFT = 160, MIN_RIGHT = 260;
+document.querySelectorAll('.resize-handle').forEach(h => {
+  h.addEventListener('mousedown', e => {
+    e.preventDefault();
+    const side = h.dataset.side;
+    const panel = document.getElementById(side === 'left' ? 'leftPanel' : 'rightPanel');
+    body.classList.add('dragging');
+    h.classList.add('dragging');
+
+    function onMove(ev) {
+      const rect = body.getBoundingClientRect();
+      let w = side === 'left'
+        ? ev.clientX - rect.left
+        : rect.right - ev.clientX;
+      const min = side === 'left' ? MIN_LEFT : MIN_RIGHT;
+      w = Math.max(min, Math.min(w, rect.width * 0.4));
+      panel.style.width = w + 'px';
+    }
+    function onUp() {
+      body.classList.remove('dragging');
+      h.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+});
+
+// ===== 左侧收起 =====
+document.getElementById('collapseLeftBtn').onclick=()=>{body.classList.toggle('lc')};
+document.getElementById('expandLeftBtn').onclick=()=>{body.classList.toggle('lc')};
+document.getElementById('collapseRightBtn').onclick=()=>{body.classList.toggle('rc')};
+document.getElementById('rBarExp').onclick=()=>body.classList.remove('rc');
+
+// ===== 添加工具 =====
+document.getElementById('addToolBtn').onclick = e => {
+  e.stopPropagation();
+  const popup = document.getElementById('toolPopup');
+  popup.classList.toggle('hidden');
+  popup.classList.toggle('popup-enter',!popup.classList.contains('hidden'));
+  const avail = ALL_TOOLS.filter(t=>!openTools.includes(t.id));
+  if(!avail.length){popup.innerHTML='<div class="p-1.5 text-[11px] text-[#8A7F6E] text-center">全部已打开</div>';return;}
+  popup.innerHTML = avail.map(t=>`<button class="flex items-center gap-1 px-1.5 py-1 rounded text-[13px] text-[#1E1A14] hover:bg-[rgba(122,96,64,0.09)] w-full text-left transition-colors" data-t="${t.id}"><span class="text-[#7A6040] text-[11px] w-[13px] text-center">${t.icon}</span><span>${t.name}</span></button>`).join('');
+  popup.querySelectorAll('[data-t]').forEach(el=>{el.onclick=()=>{openTool(el.dataset.t);document.getElementById('toolPopup').classList.add('hidden');};});
+};
+document.addEventListener('click', e => {
+  if(!e.target.closest('#addToolBtn')&&!e.target.closest('#toolPopup')) document.getElementById('toolPopup').classList.add('hidden');
+});
+document.getElementById('rBarAdd').onclick = e => {
+  e.stopPropagation();
+  body.classList.remove('rc');
+  setTimeout(()=>document.getElementById('addToolBtn')?.click(),280);
+};
+
+// ===== 态度灯 =====
+document.getElementById('attLights').addEventListener('click', e => {
+  if (!e.target.classList.contains('att-l')) return;
+  if (document.getElementById('lockBtn').classList.contains('locked')) return;
+  document.querySelectorAll('#attLights .att-l').forEach(l => { l.style.background='transparent'; l.classList.remove('scale-110'); });
+  const c = e.target.dataset.lv==='doubao'?'#5A8F68':e.target.dataset.lv==='yuesheng'?'#C8943C':'#B84A4A';
+  e.target.style.background=c; e.target.classList.add('scale-110');
+});
+document.getElementById('lockBtn').onclick=()=>{
+  const b=document.getElementById('lockBtn');
+  const lkd=b.textContent==='🔒';
+  b.textContent=lkd?'🔓':'🔒';
+  b.classList.toggle('locked',!lkd);
+  b.classList.toggle('text-[#7A6040]',!lkd);
+  document.getElementById('attLights').style.opacity=lkd?'1':'.4';
+  document.getElementById('attLights').style.pointerEvents=lkd?'auto':'none';
+};
+
+// ===== 初始化 =====
+renderAll();
+function renderAll(){renderList();renderCenter();renderRight();}
+</script>
+</body>
+</html>

@@ -168,3 +168,21 @@
   2. 导致 header 始终显示"编辑"，作品和教学任务共用同一标签
 - **修改文件**: `panel-session.store.ts` / `drawer-constants.ts`
 - **效果**: 作品 header 显示"作品"，教学任务 header 显示"教学任务"
+
+---
+
+## 2026-06-21
+
+### D-023: baseline 修复 — typecheck 11 errors + 超限文件拆分
+- **类型**: 清理/重构
+- **决策**: 修复 11 个 typecheck 错误，按 R-019 规范拆分 3 个超限文件
+- **原因**:
+  1. 新增 `'tool'` role 类型到 `ApiChatMessage` 联合类型（stream-handler + api-proxy）
+  2. 修复 `ipc-registry.ts` 中 `Database` namespace 类型引用（`get<Database>` → `get<Database.Database>`）
+  3. 修复 `reporter.ts` 中缺失的 `moduleId` 属性
+  4. `prompt-loader.ts` 421→298行：提取 `ToneModifierManager`/`RoleSkillManager` → `prompt-loader-config.ts`，提取 `formatDiagnosisEnhancement` → `prompt-diagnosis-formatter.ts`
+  5. `student-model-service.ts` 595→203行：提取 `StudentModelPersister` → `student-model-persistence.ts`，提取 `StudentModelAnalyzer` → `student-model-analyzer.ts`
+  6. `training.actions.ts` 526→282行：提取阅读/数据 actions → `training-reading.actions.ts` / `training-data.actions.ts`
+  7. BL-05: `RecommendationsSection.module.css` 硬编码 `white` → `var(--text-on-accent)`
+- **门禁**: typecheck zero errors / 201 tests all green / lint 0 errors 126 warnings
+- **提交**: `16c2391` (typecheck), `0f4ca6b` (拆分), `6781727` (lint import fixes)

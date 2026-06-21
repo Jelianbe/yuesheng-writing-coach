@@ -66,7 +66,7 @@ export function createDiagnosisAnalysis(overrides: Partial<DiagnosisAnalysis> = 
 }
 
 /** 修改评估结果工厂 */
-export function createRewriteEvaluation(overrides: any = {}) {
+export function createRewriteEvaluation(overrides: Record<string, unknown> = {}) {
   return {
     improvement: '明显改善' as const,
     analysis: '你的修改用动作替代了旁白说明，读者能自己感受到主角的处境。',
@@ -76,7 +76,7 @@ export function createRewriteEvaluation(overrides: any = {}) {
 }
 
 /** 教学状态工厂 */
-export function createTeachingState(overrides: any = {}) {
+export function createTeachingState(overrides: Record<string, unknown> = {}) {
   return {
     sessionId: 'test-session-001',
     currentPhase: 'P2_PRACTICE_LOOP',
@@ -105,7 +105,7 @@ export function createTeachingState(overrides: any = {}) {
 }
 
 /** 会话数据工厂 */
-export function createSession(overrides: any = {}) {
+export function createSession(overrides: Record<string, unknown> = {}) {
   const now = new Date().toISOString();
   return {
     id: `session-${Date.now()}`,

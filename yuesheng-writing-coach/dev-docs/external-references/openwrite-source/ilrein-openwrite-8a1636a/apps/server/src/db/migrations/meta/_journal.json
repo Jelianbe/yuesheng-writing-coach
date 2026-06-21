@@ -1,0 +1,62 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1753474831207,
+      "tag": "0000_initial_project_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1753537477308,
+      "tag": "0001_cold_thaddeus_ross",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1753627033755,
+      "tag": "0002_overconfident_living_tribunal",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1753659257689,
+      "tag": "0003_messy_nico_minoru",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1753659638275,
+      "tag": "0004_thankful_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1753715582191,
+      "tag": "0005_parched_red_ghost",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1753727380959,
+      "tag": "0006_brief_ares",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1781037955539,
+      "tag": "0007_next_warlock",
+      "breakpoints": true
+    }
+  ]
+}

@@ -52,6 +52,42 @@ export interface TrainingDeriveBehaviorRequest {
   text: string;
 }
 
+// ─── 技法目录 ───
+
+/** 技法目录中的核心模式分组 */
+export interface TechniqueCatalogGroup {
+  /** 核心模式 ID */
+  coreId: string;
+  /** 核心模式名称 */
+  coreName: string;
+  /** 该核心下的技法数量 */
+  count: number;
+  /** 该核心下的技法列表 */
+  techniques: Array<{
+    id: string;
+    name: string;
+    difficulty: string;
+    difficultyOrder: number;
+    description: string;
+    source: string;
+    category: string;
+  }>;
+}
+
+export interface TrainingCatalogRequest {
+  /** 可选难度过滤（beginner / intermediate / advanced） */
+  difficulty?: string;
+  /** 可选核心模式过滤（suspense-engine / character-depth 等） */
+  coreId?: string;
+}
+
+export interface TrainingCatalogResponse {
+  /** 按 coreId 分组的核心技法 */
+  groups: TechniqueCatalogGroup[];
+  /** 总技法数 */
+  total: number;
+}
+
 // ─── 响应类型 ───
 
 export interface TrainingRecommendResponse {
@@ -164,6 +200,12 @@ export const TrainingApi = {
     request: {} as TrainingDeriveBehaviorRequest,
     response: {} as ApiResponse<TrainingDeriveBehaviorResponse>,
   },
+
+  catalog: {
+    channel: 'training:catalog' as const,
+    request: {} as TrainingCatalogRequest,
+    response: {} as ApiResponse<TrainingCatalogResponse>,
+  },
 } as const;
 
 export type TrainingInvokeChannels =
@@ -175,4 +217,5 @@ export type TrainingInvokeChannels =
   | typeof TrainingApi.submit.channel
   | typeof TrainingApi.evaluate.channel
   | typeof TrainingApi.decideReading.channel
-  | typeof TrainingApi.deriveBehavior.channel;
+  | typeof TrainingApi.deriveBehavior.channel
+  | typeof TrainingApi.catalog.channel;

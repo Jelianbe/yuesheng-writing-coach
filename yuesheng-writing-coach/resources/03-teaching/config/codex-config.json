@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-06",
+  "description": "Codex 知识条目注入配置 — 定义条目类型、优先级、触发条件和格式",
+  "entryTypes": {
+    "diagnosis_history": {
+      "priority": 1,
+      "maxEntries": 1,
+      "trigger": { "type": "on_session" },
+      "format": "structured",
+      "label": "诊断历史（记忆胶囊）"
+    },
+    "teaching_progress": {
+      "priority": 2,
+      "maxEntries": 1,
+      "trigger": { "type": "always" },
+      "format": "structured",
+      "label": "教学进度"
+    },
+    "student_profile": {
+      "priority": 3,
+      "maxEntries": 1,
+      "trigger": { "type": "on_session" },
+      "format": "compact",
+      "label": "学生画像"
+    },
+    "focus_area": {
+      "priority": 4,
+      "maxEntries": 1,
+      "trigger": { "type": "on_diagnosis" },
+      "format": "compact",
+      "label": "聚焦方向"
+    }
+  }
+}

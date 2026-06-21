@@ -9,22 +9,16 @@
  */
 
 import { useChatStore } from './chat.store';
-import { useDiagStore } from './diag.store';
-import { useConfigStore } from './config.store';
 import { useProgressStore } from './progress.store';
 import { getInvoke } from '../utils/ipc';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
-import { ConfigApi } from '../../shared/api-contracts/config.contract';
 import { TeachingHistoryApi } from '../../shared/api-contracts/teaching-history.contract';
 import { severityToNumber } from '../../shared/severity-utils';
-import { SYNDROME_NAMES } from '../../shared/mappings';
 import type {
-  ErrorCard,
-  TrainingRecord,
-  TrainingRecommendation,
   EvaluationResult,
   ActiveTrainingSession,
   TrainingStep,
+  TrainingRecord,
 } from '../shared/types';
 import type { TrainingState } from './training.types';
 import { DEFAULT_STEPS, READING_STEPS } from './training.types';
@@ -93,69 +87,6 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
       set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
     } catch (error) {
       console.error('[TrainingStore] startTraining failed:', error);
-      set({ error: String(error), isLoading: false });
-    }
-  };
-}
-
-/**
- * startReading — 开始阅读前置任务
- * 当 readingDecision.required 时调用，加载 reading-library 条目
- * 并创建 mode: 'reading_task' 的活跃会话。
- * 完成分析步骤后关闭阅读会话，训练流程继续。
- */
-export function createStartReadingAction(set: SetStateFn, get: GetStateFn) {
-  return async (challengeId: string): Promise<void> => {
-    set({ isLoading: true, error: null });
-    try {
-      const sessionId = useChatStore.getState().currentSessionId;
-      if (!sessionId) throw new Error('No active session');
-
-      // 从 recommendations 查找匹配症候
-      const match = get().recommendations.find(r => r.challengeId === challengeId);
-      // P1-1: fallback 优先使用首个 error card 的症候，而非硬编码 P003
-      const fallbackSyndromeId = get().errorCards[0]?.syndromeId ?? 'unknown';
-      const syndromeId = match?.syndromeId ?? fallbackSyndromeId;
-
-      // P1-2: 创建训练记录，用于追踪阅读任务完成情况
-      const assignResult = await getInvoke()(TrainingApi.assign.channel, {
-        sessionId,
-        challengeId: `reading-${syndromeId}`,
-      }) as { error?: string; record?: TrainingRecord };
-
-      if (assignResult.error) throw new Error(assignResult.error);
-
-      // P1-4: 使用 ConfigApi 契约加载阅读库条目
-      const readingResult = await getInvoke()(ConfigApi.getReadingEntry.channel, { syndromeId }) as { entries: Array<{ id: string; title: string; excerpt: string; analysisPrompt: string }> };
-      const entry = readingResult.entries[0];
-
-      // 构建阅读内容
-      const readingContent = entry
-        ? `${entry.excerpt}\n\n【分析引导】\n${entry.analysisPrompt}`
-        : `请仔细阅读你的文本，关注本次训练涉及的写作问题（${syndromeId}）。在下一步中写下你的分析和观察。`;
-
-      // 构建阅读会话
-      const session: ActiveTrainingSession = {
-        challengeId: `reading-${syndromeId}`,
-        challengeName: entry?.title ?? `阅读分析 · ${syndromeId}`,
-        challengeDescription: readingContent,
-        mode: 'reading_task',
-        steps: READING_STEPS.map((s, i) => ({
-          ...s,
-          status: i === 0 ? 'active' as const : 'pending' as const,
-        })),
-        currentStepIndex: 0,
-        originalQuote: '',
-        constraint: '',
-        userDraft: '',
-        recordId: assignResult.record?.id,
-        syndromeId,
-        targetSyndrome: match?.syndromeName,
-      };
-
-      set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
-    } catch (error) {
-      console.error('[TrainingStore] startReading failed:', error);
       set({ error: String(error), isLoading: false });
     }
   };
@@ -333,124 +264,6 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
       }
     } catch (error) {
       console.error('[TrainingStore] submitStep failed:', error);
-      set({ error: String(error), isLoading: false });
-    }
-  };
-}
-
-// ===== 数据加载 Actions =====
-
-export function createLoadHistoryAction(set: SetStateFn, _get: GetStateFn) {
-  return async (sessionId: string): Promise<void> => {
-    set({ isLoading: true, error: null });
-    try {
-      const result = await getInvoke()(TrainingApi.history.channel, { sessionId }) as { error?: string; records?: any[] };
-      if (result.error) throw new Error(result.error);
-
-      // B4: 将 main process 的 taskId/syndromeId 转换为 challengeId/challengeName
-      const records: TrainingRecord[] = (result.records ?? []).map((r: any) => ({
-        ...r,
-        challengeId: r.taskId ?? r.challengeId,
-        challengeName: SYNDROME_NAMES[r.syndromeId] ?? r.taskId ?? r.challengeId ?? '未知训练',
-      }));
-
-      set({ history: records, isLoading: false });
-    } catch (error) {
-      console.error('[TrainingStore] loadHistory failed:', error);
-      set({ error: String(error), isLoading: false });
-    }
-  };
-}
-
-export function createRefreshFromDiagnosisAction(set: SetStateFn, _get: GetStateFn) {
-  return async (): Promise<void> => {
-    set({ isLoading: true, error: null });
-    try {
-      const sessionId = useChatStore.getState().currentSessionId;
-      if (!sessionId) {
-        set({ errorCards: [], recommendations: [], isLoading: false });
-        return;
-      }
-
-      // 1. 从 diag.store 聚合 ErrorCards
-      const diagHistory = useDiagStore.getState().getHistoryBySession(sessionId);
-      const syndromeMap = new Map<string, {
-        syndromeId: string;
-        syndromeName: string;
-        severity: string;
-        diagnosisCount: number;
-        lastQuote: string;
-        lastDiagnosedAt: string;
-      }>();
-
-      const severityOrder: Record<string, number> = { L3: 3, L2: 2, L1: 1 };
-
-      for (const entry of diagHistory) {
-        for (const syndrome of entry.syndromes) {
-          const existing = syndromeMap.get(syndrome.id);
-          if (!existing || new Date(entry.timestamp) > new Date(existing.lastDiagnosedAt)) {
-            syndromeMap.set(syndrome.id, {
-              syndromeId: syndrome.id,
-              syndromeName: syndrome.name,
-              severity: syndrome.severity,
-              diagnosisCount: (existing?.diagnosisCount ?? 0) + 1,
-              lastQuote: syndrome.evidence[0] ?? '',
-              lastDiagnosedAt: entry.timestamp,
-            });
-          } else if (existing) {
-            existing.diagnosisCount += 1;
-          }
-        }
-      }
-
-      // 按严重度排序
-      const errorCards: ErrorCard[] = Array.from(syndromeMap.values())
-        .sort((a, b) => (severityOrder[b.severity] ?? 0) - (severityOrder[a.severity] ?? 0))
-        .map(c => ({
-          syndromeId: c.syndromeId,
-          syndromeName: c.syndromeName,
-          severity: c.severity as ErrorCard['severity'],
-          diagnosisCount: c.diagnosisCount,
-          lastQuote: c.lastQuote,
-          lastDiagnosedAt: c.lastDiagnosedAt,
-        }));
-
-      // 1.5 B-02：阅读前置决策
-      const attitude = useConfigStore.getState().attitudeLevel;
-      let readingDecision = null;
-      try {
-        const result = await getInvoke()(TrainingApi.decideReading.channel, { attitude }) as { required: boolean; recommended: boolean; label: string; reason?: string };
-        readingDecision = result;
-      } catch (e) {
-        // B-02 不可用时静默降级
-        console.warn('[training.actions] decideReading failed, falling back to null:', e);
-      }
-      set({ readingDecision: readingDecision ?? null });
-
-      // 2. 调用 training:recommend 获取推荐
-      const recResult = await getInvoke()(TrainingApi.recommend.channel, { sessionId }) as { recommendations?: TrainingRecommendation[] };
-      const recommendations = recResult.recommendations ?? [];
-
-      // 3. 关联匹配的 challengeId 到 errorCards
-      if (recommendations.length > 0) {
-        for (const card of errorCards) {
-          const match = recommendations.find(r => r.syndromeId === card.syndromeId);
-          if (match) {
-            card.matchedChallengeId = match.challengeId;
-          }
-        }
-      }
-
-      set({ errorCards, recommendations, isLoading: false });
-
-      // 自动设置桥接卡片推荐（推荐 L2+ 的第一个症候）
-      if (recommendations.length > 0) {
-        set({ bridgeRecommendation: recommendations[0] });
-      } else {
-        set({ bridgeRecommendation: null });
-      }
-    } catch (error) {
-      console.error('[TrainingStore] refreshFromDiagnosis failed:', error);
       set({ error: String(error), isLoading: false });
     }
   };

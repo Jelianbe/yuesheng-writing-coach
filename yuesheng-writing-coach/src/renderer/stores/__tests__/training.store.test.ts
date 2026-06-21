@@ -227,14 +227,18 @@ describe('TrainingStore', () => {
 
   describe('loadHistory', () => {
     it('设置加载状态后加载历史记录', async () => {
-      const records = [
-        { id: 'r1', taskId: 'CH-001', status: 'completed', syndromeId: 'P004', challengeId: 'CH-001', challengeName: '信息硬塞' },
-        { id: 'r2', taskId: 'CH-002', status: 'skipped', syndromeId: 'P002', challengeId: 'CH-002', challengeName: '角色工具人化' },
+      const mockRecords = [
+        { recordId: 'r1', syndromeId: 'P004', title: '信息硬塞' },
+        { recordId: 'r2', syndromeId: 'P002', title: '角色工具人化' },
       ];
-      const invoke = vi.fn().mockResolvedValue({ records });
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { records: mockRecords } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
-      expect(useTrainingStore.getState().history).toEqual(records as any);
+      const expected = [
+        { id: 'r1', sessionId: 'test-session', challengeId: 'P004', challengeName: '信息硬塞', status: 'completed', score: undefined, assignedAt: '' },
+        { id: 'r2', sessionId: 'test-session', challengeId: 'P002', challengeName: '角色工具人化', status: 'completed', score: undefined, assignedAt: '' },
+      ];
+      expect(useTrainingStore.getState().history).toEqual(expected as any);
       expect(useTrainingStore.getState().isLoading).toBe(false);
       expect(invoke).toHaveBeenCalledWith(
         IPC_CHANNELS.TRAINING_HISTORY,
@@ -243,7 +247,7 @@ describe('TrainingStore', () => {
     });
 
     it('IPC 错误时设置 error', async () => {
-      const invoke = vi.fn().mockResolvedValue({ error: 'load failed' });
+      const invoke = vi.fn().mockResolvedValue({ success: false, error: 'load failed' });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
       expect(useTrainingStore.getState().error).toBe('Error: load failed');

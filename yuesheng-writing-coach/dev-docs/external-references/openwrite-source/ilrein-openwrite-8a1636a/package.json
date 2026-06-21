@@ -1,0 +1,56 @@
+{
+  "name": "openwrite",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "setup": "bun run setup-openwrite.ts",
+    "dev": "mprocs",
+    "dev:web": "bun run --cwd apps/web dev",
+    "dev:server": "bun run --cwd apps/server dev",
+    "dev:docs": "bun run --cwd apps/docs dev",
+    "build": "bun run build:web && bun run build:server",
+    "build:web": "bun run --cwd apps/web build",
+    "build:server": "bun run --cwd apps/server build",
+    "check-types": "bun run --cwd apps/web check-types && bun run --cwd apps/server check-types && bun run --cwd apps/docs check-types",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "quality": "bun run check-types && bun run lint",
+    "quality:fix": "biome check --write . && bun run check-types",
+    "test": "bun run test:web && bun run test:server",
+    "test:web": "bun run --cwd apps/web test:run",
+    "test:server": "bun run --cwd apps/server test",
+    "docs:build": "bun run --cwd apps/docs build",
+    "docs:preview": "bun run --cwd apps/docs preview",
+    "docs:deploy": "bun run --cwd apps/docs deploy",
+    "db:push": "bun run --cwd apps/server db:push",
+    "db:studio": "bun run --cwd apps/server db:studio",
+    "db:generate": "bun run --cwd apps/server db:generate",
+    "db:migrate": "bun run --cwd apps/server db:migrate",
+    "deploy": "bun run build && bun run --cwd apps/server deploy",
+    "test:e2e": "playwright test",
+    "e2e:server": "bun run build:web && (bun run --cwd apps/server db:migrate:local || true) && bun run --cwd apps/server dev",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "prosemirror-model": "^1.25.7",
+    "prosemirror-state": "^1.4.4",
+    "prosemirror-transform": "^1.12.0",
+    "prosemirror-view": "^1.41.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.16",
+    "@playwright/test": "^1.60.0",
+    "mprocs": "^0.9.6",
+    "ultracite": "^7.8.2"
+  },
+  "packageManager": "bun@1.3.14",
+  "overrides": {
+    "prosemirror-state": "1.4.4",
+    "prosemirror-model": "1.25.7",
+    "prosemirror-view": "1.41.8",
+    "prosemirror-transform": "1.12.0"
+  }
+}

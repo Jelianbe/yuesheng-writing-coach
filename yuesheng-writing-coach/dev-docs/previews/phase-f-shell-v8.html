@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>月笙写作教练 — Phase F 前端重构预览 v8（最终版）</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap');
+
+/* ===== Design Tokens (from variables.css V2.0) ===== */
+:root {
+  /* 品牌色 - 金棕暖灰体系 */
+  --accent: #A07030;
+  --accent-hover: #8A5E28;
+  --accent-light: #C4A060;
+  --accent-subtle: rgba(160, 112, 48, 0.10);
+  --accent-faint: rgba(160, 112, 48, 0.06);
+
+  /* 背景色 - 暖纸质美学 */
+  --bg-primary: #FAF8F5;
+  --bg-secondary: #F3EDE4;
+  --bg-card: #FFFFFF;
+  --bg-hover: rgba(180, 140, 90, 0.08);
+  --bg-active: rgba(180, 120, 60, 0.12);
+
+  /* 边框 */
+  --border: #D6CEC0;
+  --border-light: #E8E3DA;
+
+  /* 文字色 */
+  --text-primary: #2C2416;
+  --text-secondary: #5C4D3A;
+  --text-tertiary: #8A7F6E;
+
+  /* 态度档位色 */
+  --color-attitude-doubao: #5BA868;
+  --color-attitude-yuesheng: #D4A24C;
+  --color-attitude-direct: #C45A5A;
+
+  /* 语义色 */
+  --success: #3D6B48;
+  --warning: #7B5121;
+  --error: #A94444;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.06);
+  --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08);
+  --shadow-lg: 0 12px 32px rgba(44, 36, 22, 0.10);
+  --shadow-input: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+  /* 圆角 */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* 字体 */
+  --font-display: 'Noto Serif SC', 'Songti SC', Georgia, serif;
+  --font-body: -apple-system, 'PingFang SC', 'Noto Sans SC', sans-serif;
+
+  /* 字号 */
+  --text-xs: 0.7rem;
+  --text-sm: 0.75rem;
+  --text-base: 0.85rem;
+  --text-md: 0.95rem;
+  --text-lg: 1rem;
+  --text-xl: 1.2rem;
+  --text-2xl: 1.5rem;
+
+  /* 间距 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* 过渡动效 */
+  --transition-normal: 250ms ease;
+  --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* 布局尺寸 */
+  --left-panel-min-w: 180px;
+  --right-panel-min-w: 320px;
+  --input-area-height: calc(100vh / 6);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.font-serif { font-family: var(--font-display); }
+
+/* ===== Layout Model ===== */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Panel Transitions */
+.panel-trans {
+  transition: width 200ms var(--ease-out), min-width 200ms var(--ease-out);
+}
+
+/* Custom Scrollbar */
+.cscroll::-webkit-scrollbar { width: 4px; }
+.cscroll::-webkit-scrollbar-track { background: transparent; }
+.cscroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+.cscroll::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* Collapse States */
+body.lc #leftPanel { width: 0; min-width: 0; overflow: hidden; border-right-color: transparent; }
+body.rc #rightPanel { width: 0; min-width: 0; overflow: hidden; border-left-color: transparent; }
+
+/* Collapsed Left Bar (embedded in center header) */
+.lc-collapsed-left { display: none; }
+body.lc .lc-collapsed-left { display: flex; align-items: center; gap: 6px; margin-right: 6px; }
+
+/* Hide center [+][⚙] when right collapsed */
+body.rc #cHdrActions { display: none; }
+
+/* Floating Right Bar */
+body:not(.rc) #rCollBar { display: none; }
+body.rc #rCollBar { display: flex; }
+
+/* ===== Components ===== */
+
+/* Tab Buttons */
+.tab-btn {
+  transition: all 150ms ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+.tab-btn:hover:not(.active) {
+  background: var(--bg-hover);
+}
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+  font-weight: 500;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+}
+.status-badge-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+}
+
+/* Attitude Lights */
+.att-light {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+.att-light:hover { transform: scale(1.2); }
+.att-light.active { transform: scale(1.1); }
+
+/* Tool Cards */
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.tool-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Choice Buttons (Onboarding) */
+.choice-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.choice-btn:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* Session Items */
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-bottom: 2px;
+  transition: background 150ms ease;
+}
+.session-item:hover {
+  background: var(--bg-hover);
+}
+
+/* Training Items */
+.training-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  text-align: left;
+  margin-bottom: 2px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.training-item:hover {
+  border-color: var(--accent);
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Tool Tabs */
+.tool-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 150ms ease;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.tool-tab.active {
+  background: var(--accent);
+  color: white;
+  font-weight: 500;
+}
+.tool-tab:not(.active) {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+.tool-tab:not(.active):hover {
+  background: var(--bg-hover);
+}
+
+/* Timeline Steps */
+.timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  position: relative;
+}
+.timeline-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+}
+
+/* Progress Number Display */
+.progress-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--space-2);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+}
+
+/* Input Area Focus */
+.input-wrapper:focus-within {
+  border-color: var(--accent);
+}
+
+/* Lock Button */
+.lock-btn {
+  font-size: var(--text-xs);
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.lock-btn.locked {
+  color: var(--accent);
+  background: var(--accent-faint);
+}
+
+/* Send Button */
+.send-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: white;
+  font-size: var(--text-base);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+.send-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.send-btn:disabled {
+  background: var(--border);
+  cursor: not-allowed;
+}
+
+/* Popup */
+.popup {
+  position: fixed;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-2);
+  min-width: 130px;
+  z-index: 50;
+}
+
+/* Category Labels */
+.category-label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+  margin-top: var(--space-3);
+  margin-bottom: var(--space-1);
+  padding: 0 2px;
+  font-weight: 500;
+}
+
+/* Learning Log Entries */
+.log-entry {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+.log-entry:last-child { border-bottom: none; }
+
+/* Tool Content Container */
+.tool-content h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+/* Scrollbar None Utility */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
+</head>
+<body>
+
+<!-- ===== Floating Collapsed Right Bar ===== -->
+<div id="rCollBar" style="position:fixed;right:0;top:0;height:40px;z-index:50;display:flex;align-items:center;gap:2px;padding:0 6px;background:transparent;">
+  <button id="rBarAdd" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="新建">＋</button>
+  <button id="rBarSet" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="设置">⚙</button>
+  <div style="width:1px;height:12px;background:var(--border);margin:0 4px;"></div>
+  <button id="rBarExp" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="展开">⤢</button>
+  <button style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="最小化">─</button>
+  <button style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="最大化">□</button>
+  <button style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="关闭">✕</button>
+</div>
+
+<!-- ===== Main App Container ===== -->
+<div class="app-container">
+
+  <!-- ===== LEFT PANEL ===== -->
+  <aside id="leftPanel" class="panel-trans" style="width:220px;min-width:var(--left-panel-min-w);flex-shrink:0;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header: 月icon + 月笙 | [☰] -->
+    <div style="display:flex;align-items:center;justify-between;padding:10px 14px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:26px;height:26px;border-radius:6px;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;font-family:var(--font-display);flex-shrink:0;">月</div>
+        <span class="font-serif" style="font-size:15px;font-weight:600;color:var(--text-primary);">月笙</span>
+      </div>
+      <button id="collapseLeftBtn" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="收起">☰</button>
+    </div>
+
+    <!-- Tabs: [训练]独立行 + [对话][项目]并列行 -->
+    <div style="padding:10px;flex-shrink:0;">
+      <button class="tab-btn active" data-group="main" style="width:100%;padding:6px;border-radius:var(--radius-sm);font-size:13px;text-align:center;margin-bottom:4px;">训练</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">
+        <button class="tab-btn active" data-group="sub" style="padding:6px;border-radius:var(--radius-sm);font-size:13px;text-align:center;">对话</button>
+        <button class="tab-btn" data-group="sub" style="padding:6px;border-radius:var(--radius-sm);font-size:13px;text-align:center;color:var(--text-secondary);">项目</button>
+      </div>
+    </div>
+
+    <!-- Divider (separates button area from list area) -->
+    <div style="height:1px;background:var(--border);margin:0 12px;flex-shrink:0;"></div>
+
+    <!-- Search -->
+    <div style="padding:8px 10px;flex-shrink:0;">
+      <div style="display:flex;align-items:center;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;">
+        <span style="color:var(--text-tertiary);font-size:10px;margin-right:4px;">⌕</span>
+        <input type="text" placeholder="搜索..." style="flex:1;min-width:0;background:transparent;font-size:13px;color:var(--text-primary);outline:none;border:none;" />
+      </div>
+    </div>
+
+    <!-- List Content -->
+    <div id="leftList" style="flex:1;overflow-y:auto;padding:0 10px 8px;" class="cscroll"></div>
+  </aside>
+
+  <!-- ===== CENTER PANEL ===== -->
+  <main style="flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg-primary);">
+
+    <!-- Header: [▼项目▾] + 状态指示器 | [＋][⚙] -->
+    <header style="display:flex;align-items:center;justify-between;padding:10px 20px 4px;flex-shrink:0;">
+      <div id="centerHdrLeft" style="display:flex;align-items:center;gap:6px;min-width:0;flex:1;">
+        <!-- Collapsed Left Indicator (only visible when left panel collapsed) -->
+        <div class="lc-collapsed-left">
+          <div style="width:26px;height:26px;border-radius:6px;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;font-family:var(--font-display);flex-shrink:0;">月</div>
+          <button id="expandLeftBtn" style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;">☰</button>
+        </div>
+
+        <!-- Project Selector -->
+        <button style="display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:var(--radius-sm);font-size:13px;color:var(--text-primary);font-weight:500;cursor:pointer;border:none;background:transparent;">
+          <span style="font-size:7px;color:var(--text-tertiary);">▼</span>
+          <span>我的第一本小说</span>
+          <span style="font-size:7px;color:var(--text-tertiary);">▾</span>
+        </button>
+
+        <!-- Status Badge -->
+        <span class="status-badge">
+          <span class="status-badge-dot" style="background:var(--warning);"></span>
+          <span>教学中</span>
+        </span>
+      </div>
+
+      <!-- Center Header Actions -->
+      <div id="cHdrActions" style="display:flex;gap:2px;flex-shrink:0;">
+        <button style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:12px;cursor:pointer;" title="新建会话">＋</button>
+        <button style="width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:12px;cursor:pointer;" title="设置">⚙</button>
+      </div>
+    </header>
+
+    <!-- Body: Chat Messages or Onboarding -->
+    <div id="centerBody" style="flex:1;overflow-y:auto;padding:0 20px 12px;" class="cscroll"></div>
+
+    <!-- Input Area: Toolbar + Textarea + Send (1/6 screen height) -->
+    <footer style="border-top:1px solid var(--border);background:var(--bg-primary);padding:4px 20px 8px;height:var(--input-area-height);display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+
+      <!-- Toolbar: [模板] | 🟢🟡🔴 🔒 -->
+      <div style="display:flex;align-items:center;justify-between;height:20px;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button style="padding:2px 4px;border-radius:4px;font-size:10px;color:var(--text-secondary);cursor:pointer;border:none;background:transparent;">[模板]</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div id="attLights" style="display:flex;align-items:center;gap:4px;">
+            <button class="att-light active" data-lv="g" style="border-color:var(--color-attitude-doubao);background:var(--color-attitude-doubao);" title="豆包（温和）"></button>
+            <button class="att-light" data-lv="y" style="border-color:var(--color-attitude-yuesheng);background:transparent;" title="月笙如歌（平衡）"></button>
+            <button class="att-light" data-lv="r" style="border-color:var(--color-attitude-direct);background:transparent;" title="sensei（直接）"></button>
+          </div>
+          <button id="lockBtn" class="lock-btn" title="锁定档位">🔓</button>
+        </div>
+      </div>
+
+      <!-- Input Wrapper -->
+      <div class="input-wrapper" style="flex:1;position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 10px 4px;box-shadow:var(--shadow-input);">
+        <textarea id="chatInput" style="width:100%;height:calc(100% - 30px);resize:none;background:transparent;font-size:14px;line-height:1.6;color:var(--text-primary);outline:none;border:none;padding-right:50px;" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button id="sendBtn" class="send-btn" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ===== RIGHT PANEL ===== -->
+  <aside id="rightPanel" class="panel-trans" style="width:360px;min-width:var(--right-panel-min-w);flex-shrink:0;background:var(--bg-secondary);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">
+
+    <!-- Header: Tool Tabs | [＋][⤢][─][□][✕] -->
+    <div style="display:flex;align-items:center;gap:4px;padding:4px 6px;min-height:32px;border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;" id="rightHdr">
+      <div id="toolTabs" style="display:flex;align-items:center;gap:4px;flex:1;min-width:0;overflow-x:auto;" class="scrollbar-none"></div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+        <button id="addToolBtn" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="添加工具">＋</button>
+        <button id="collapseRightBtn" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="收起">⤢</button>
+        <button style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="最小化">─</button>
+        <button style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="最大化">□</button>
+        <button style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);font-size:11px;cursor:pointer;" title="关闭">✕</button>
+      </div>
+    </div>
+
+    <!-- Body: Tool Content or Tool Grid -->
+    <div id="rightBody" style="flex:1;overflow-y:auto;padding:12px;" class="cscroll"></div>
+  </aside>
+
+</div>
+
+<!-- ===== Tool Add Popup ===== -->
+<div id="toolPopup" class="popup" style="display:none;top:34px;right:6px;"></div>
+
+<script>
+const $$ = s => document.querySelectorAll(s);
+const body = document.body;
+
+// ===== State Management =====
+let openTools = [];
+let activeToolId = null;
+let locked = false;
+
+// ===== Mock Data =====
+const sessions = [
+  { id:1, title:'初稿诊断', type:'chat', time:'今天' },
+  { id:2, title:'第一章节奏讨论', type:'chat', time:'昨天' },
+  { id:3, title:'训练: 动作替代情绪词', type:'train', time:'3天前' },
+  { id:4, title:'配角动机梳理', type:'chat', time:'5天前' },
+  { id:5, title:'训练: 对话节奏', type:'train', time:'上周' }
+];
+
+const projects = [
+  { id:'p1', title:'第一章: 山门', type:'ch' },
+  { id:'p2', title:'第二章: 试炼', type:'ch' },
+  { id:'p3', title:'第三章: 初遇', type:'ch' },
+  { id:'p4', title:'第四章: 暗流', type:'ch' },
+  { id:'p5', title:'大纲', type:'nt' }
+];
+
+const trainingCategories = [
+  { name:'推荐技法', rec:true, items:[{ n:'动作替代情绪词', l:'入门' },{ n:'对话节奏控制', l:'入门' }] },
+  { name:'结构技法', items:[{ n:'三幕剧结构', l:'进阶' },{ n:'伏笔回收', l:'进阶' }] },
+  { name:'人物技法', items:[{ n:'动机层次', l:'入门' },{ n:'视角切换', l:'高阶' }] }
+];
+
+const tools = [
+  { id:'prog', name:'教学进度', icon:'◐', hint:'纵向时序' },
+  { id:'log', name:'学习日志', icon:'✎', hint:'每日记录' },
+  { id:'ms', name:'作品', icon:'☰', hint:'章节编辑器' },
+  { id:'nt', name:'教学笔记', icon:'✤', hint:'设定树' },
+  { id:'set', name:'设置', icon:'⚙', hint:'API Key' }
+];
+
+const messages = [
+  { r:'ai', c:'早上好。你昨天发的开头整体氛围不错。<br><br>节奏稍慢了一些，主要集中在第一段环境描写。你方便聊聊为什么用这么长一段开始吗？', t:'10:32' },
+  { r:'me', c:'我怕读者不了解世界观会看不懂后面的剧情。', t:'10:33' },
+  { r:'ai', c:'这个担心我理解。试试先给一个"钩子"(人物处境、悬念)，世界观通过后续情节自然透露。一边看一边懂，比一次性说清更有效。<br><br>要不要我们一起看看怎么调整第一段？', t:'10:34' }
+];
+
+// ===== Left Panel Toggle =====
+function toggleLeft() { body.classList.toggle('lc'); }
+document.getElementById('collapseLeftBtn').onclick = toggleLeft;
+document.getElementById('expandLeftBtn').onclick = toggleLeft;
+
+// ===== Right Panel Toggle =====
+function toggleRight() { body.classList.toggle('rc'); }
+document.getElementById('collapseRightBtn').onclick = toggleRight;
+document.getElementById('rBarExp').onclick = () => { body.classList.remove('rc'); };
+document.getElementById('rBarAdd').onclick = e => {
+  e.stopPropagation();
+  if (body.classList.contains('rc')) body.classList.remove('rc');
+  setTimeout(() => document.getElementById('addToolBtn')?.click(), 250);
+};
+
+// ===== Tab Switching =====
+$$('.tab-btn').forEach(btn => {
+  btn.onclick = function() {
+    const group = this.dataset.group;
+
+    if (group === 'main') {
+      // Main tab (训练) - only one, always active
+      this.classList.add('active');
+    } else {
+      // Sub tabs (对话/项目) - mutually exclusive
+      $$(`.tab-btn[data-group="${group}"]`).forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    }
+
+    renderLeftList();
+    renderRight();
+  };
+});
+
+// ===== Render Left List =====
+function renderLeftList() {
+  const list = document.getElementById('leftList');
+  const activeSubTab = document.querySelector('.tab-btn[data-group="sub"].active')?.textContent?.trim();
+
+  if (activeSubTab === '对话') {
+    list.innerHTML = sessions.filter(s => s.type === 'chat')
+      .map(s => `
+        <div class="session-item" data-id="${s.id}">
+          <span style="font-size:12px;color:var(--text-tertiary);width:14px;text-center;flex-shrink:0;">◌</span>
+          <span style="flex:1;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.title}</span>
+          <span style="font-size:10px;color:var(--text-tertiary);background:var(--bg-card);padding:0 4px;border-radius:999px;flex-shrink:0;">${s.time}</span>
+        </div>
+      `).join('');
+  } else if (activeSubTab === '项目') {
+    list.innerHTML = projects.map(p => `
+      <div class="session-item">
+        <span style="font-size:12px;color:var(--text-tertiary);width:14px;text-center;flex-shrink:0;">${p.type === 'ch' ? '☰' : '✎'}</span>
+        <span style="flex:1;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.title}</span>
+      </div>
+    `).join('');
+  } else if (activeSubTab === '训练') {
+    list.innerHTML = sessions.filter(s => s.type === 'train')
+      .map(s => `
+        <div class="session-item" data-id="${s.id}">
+          <span style="font-size:12px;color:var(--accent);width:14px;text-center;flex-shrink:0;">◎</span>
+          <span style="flex:1;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.title}</span>
+          <span style="font-size:10px;color:var(--text-tertiary);background:var(--bg-card);padding:0 4px;border-radius:999px;flex-shrink:0;">${s.time}</span>
+        </div>
+      `).join('');
+  }
+}
+renderLeftList();
+
+// ===== Render Center Body =====
+function renderCenter() {
+  const body = document.getElementById('centerBody');
+  body.innerHTML = `
+    <div style="max-width:420px;margin:70px auto 0;text-align:center;">
+      <h2 class="font-serif" style="font-size:20px;font-weight:600;color:var(--text-primary);margin-bottom:18px;">开始你的写作之旅</h2>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <button class="choice-btn">
+          <span style="font-size:17px;width:24px;text-center;flex-shrink:0;">📝</span>
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-primary);">我有作品</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">直接进入聊天，我会帮你分析</div>
+          </div>
+        </button>
+        <button class="choice-btn">
+          <span style="font-size:17px;width:24px;text-center;flex-shrink:0;">🌱</span>
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-primary);">从头学习</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">我引导你搭建世界观和人物</div>
+          </div>
+        </button>
+        <button class="choice-btn">
+          <span style="font-size:17px;width:24px;text-center;flex-shrink:0;">💬</span>
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text-primary);">先聊聊</div>
+            <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">正常聊天，我在对话中自然引导</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  `;
+}
+renderCenter();
+
+// ===== Render Right Panel =====
+function renderRight() {
+  const hdr = document.getElementById('rightHdr');
+  const tabs = document.getElementById('toolTabs');
+  const rbody = document.getElementById('rightBody');
+  const activeSubTab = document.querySelector('.tab-btn[data-group="sub"].active')?.textContent?.trim();
+
+  // Reset tool tabs
+  tabs.innerHTML = '';
+
+  if (activeSubTab === '训练') {
+    // Training view: has a tab
+    tabs.innerHTML = `
+      <div class="tool-tab active" style="background:var(--accent);color:white;font-weight:500;">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">训练技法</span>
+        <span id="closeTrain" style="width:12px;height:12px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:7px;opacity:0.7;cursor:pointer;">✕</span>
+      </div>
+    `;
+    document.getElementById('closeTrain').onclick = () => {
+      openTools = [];
+      activeToolId = null;
+      renderRight();
+    };
+
+    rbody.innerHTML = trainingCategories.map(c => `
+      <div class="category-label">${c.name}${c.rec ? '  👍' : ''}</div>
+      <div>${c.items.map(i => `
+        <button class="training-item">
+          <span style="flex:1;font-size:13px;color:var(--text-primary);">${i.n}</span>
+          <span style="font-size:9px;color:var(--text-tertiary);background:var(--bg-secondary);padding:0 4px;border-radius:999px;">${i.l}</span>
+        </button>
+      `).join('')}</div>
+    `).join('');
+  } else {
+    // Tool grid or active tools
+    if (openTools.length > 0) {
+      tabs.innerHTML = openTools.map(t => {
+        const tool = tools.find(x => x.id === t);
+        const active = t === activeToolId;
+        return `
+          <div class="tool-tab ${active ? 'active' : ''}" data-t="${t}">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60px;">${tool ? tool.name : t}</span>
+            <span class="tab-close" data-c="${t}" style="width:12px;height:12px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:7px;opacity:0.6;cursor:pointer;">✕</span>
+          </div>
+        `;
+      }).join('');
+
+      // Bind tab clicks
+      document.querySelectorAll('.tool-tab').forEach(el => {
+        el.onclick = e => {
+          if (e.target.classList.contains('tab-close')) {
+            const id = e.target.dataset.c;
+            openTools = openTools.filter(x => x !== id);
+            if (activeToolId === id) activeToolId = openTools[openTools.length - 1] || null;
+            renderRight();
+            return;
+          }
+          activeToolId = el.dataset.t;
+          renderRight();
+        };
+      });
+    }
+
+    if (openTools.length > 0) {
+      const tool = tools.find(t => t.id === activeToolId || (!activeToolId && t.id === openTools[0]));
+      if (tool) {
+        if (tool.id === 'prog') {
+          rbody.innerHTML = `
+            <div class="tool-content">
+              <h3>教学进度</h3>
+              <div class="progress-number">
+                <span class="font-serif" style="font-size:20px;font-weight:600;color:var(--accent);line-height:1;">3</span>
+                <span style="color:var(--text-tertiary);">/</span>
+                <span style="font-size:16px;color:var(--text-secondary);">7</span>
+                <span style="font-size:11px;color:var(--text-tertiary);margin-left:2px;">已解决</span>
+              </div>
+              <div class="timeline-step">
+                <div class="timeline-icon" style="background:var(--accent);border:2px solid var(--accent);color:white;">✓</div>
+                <div style="flex:1;padding-top:1px;">
+                  <div style="font-size:13px;font-weight:500;color:var(--text-primary);">提交作品</div>
+                  <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">2026-06-15</div>
+                </div>
+              </div>
+              <div class="timeline-step">
+                <div class="timeline-icon" style="background:var(--accent);border:2px solid var(--accent);color:white;">✓</div>
+                <div style="flex:1;padding-top:1px;">
+                  <div style="font-size:13px;font-weight:500;color:var(--text-primary);">诊断分析</div>
+                  <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">发现7个问题</div>
+                </div>
+              </div>
+              <div class="timeline-step">
+                <div class="timeline-icon" style="background:var(--bg-card);border:2px solid var(--accent);color:var(--accent);">●</div>
+                <div style="flex:1;padding-top:1px;">
+                  <div style="font-size:13px;font-weight:500;color:var(--text-primary);">教学中</div>
+                  <div style="font-size:11px;color:var(--text-tertiary);margin-top:1px;">当前: 对话节奏</div>
+                </div>
+              </div>
+              <div class="timeline-step">
+                <div class="timeline-icon" style="background:var(--bg-card);border:2px solid var(--border);color:var(--text-tertiary);">○</div>
+                <div style="flex:1;padding-top:1px;">
+                  <div style="font-size:13px;font-weight:500;color:var(--text-primary);">已收尾</div>
+                </div>
+              </div>
+              <div class="timeline-step">
+                <div class="timeline-icon" style="background:var(--bg-card);border:2px solid var(--border);color:var(--text-tertiary);">○</div>
+                <div style="flex:1;padding-top:1px;">
+                  <div style="font-size:13px;font-weight:500;color:var(--text-primary);">等待修改</div>
+                </div>
+              </div>
+            </div>
+          `;
+        } else if (tool.id === 'log') {
+          rbody.innerHTML = `
+            <div class="tool-content">
+              <h3>学习日志</h3>
+              <div class="log-entry">
+                <div class="font-serif" style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">6月17日</div>
+                <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:2px;"><span style="color:var(--error);">新发现:</span> 铺垫过多</div>
+                <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);"><span style="color:var(--success);">已攻克:</span> 动作替代情绪词</div>
+              </div>
+              <div class="log-entry">
+                <div class="font-serif" style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px;">6月15日</div>
+                <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);margin-bottom:2px;"><span style="color:var(--error);">新发现:</span> 信息硬塞</div>
+                <div style="font-size:13px;line-height:1.6;color:var(--text-secondary);"><span style="color:var(--success);">已攻克:</span> 对话节奏</div>
+              </div>
+            </div>
+          `;
+        } else if (tool.id === 'set') {
+          rbody.innerHTML = `
+            <div class="tool-content">
+              <h3>设置</h3>
+              <div style="margin-bottom:10px;">
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">API Key</div>
+                <input type="password" placeholder="sk-..." style="width:100%;padding:4px 8px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;outline:none;" />
+              </div>
+              <div>
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:4px;">默认态度</div>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <button class="att-light" style="border-color:var(--color-attitude-doubao);background:var(--color-attitude-doubao);"></button>
+                  <button class="att-light" style="border-color:var(--color-attitude-yuesheng);background:transparent;"></button>
+                  <button class="att-light" style="border-color:var(--color-attitude-direct);background:transparent;"></button>
+                </div>
+              </div>
+              <button style="margin-top:12px;padding:4px 12px;border-radius:var(--radius-md);background:var(--accent);color:white;font-size:13px;border:none;cursor:pointer;">保存</button>
+            </div>
+          `;
+        } else {
+          rbody.innerHTML = `
+            <div class="tool-content">
+              <h3>${tool.name}</h3>
+              <p style="font-size:13px;line-height:1.6;color:var(--text-tertiary);">后续阶段实施。</p>
+            </div>
+          `;
+        }
+      }
+    } else {
+      // Tool grid
+      rbody.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+          ${tools.map(t => `
+            <button class="tool-card" data-t="${t.id}">
+              <span style="font-size:16px;color:var(--accent);line-height:1;">${t.icon}</span>
+              <span style="font-size:13px;font-weight:500;color:var(--text-primary);">${t.name}</span>
+              <span style="font-size:11px;color:var(--text-tertiary);">${t.hint}</span>
+            </button>
+          `).join('')}
+        </div>
+      `;
+      document.querySelectorAll('.tool-card').forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.t;
+          if (!openTools.includes(id)) openTools.push(id);
+          activeToolId = id;
+          renderRight();
+        };
+      });
+    }
+  }
+}
+renderRight();
+
+// ===== Right Panel Button Bindings =====
+document.getElementById('addToolBtn').onclick = e => {
+  e.stopPropagation();
+  const popup = document.getElementById('toolPopup');
+  popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+  const avail = tools.filter(t => !openTools.includes(t.id));
+  if (avail.length === 0) {
+    popup.innerHTML = '<div style="padding:4px 6px;font-size:11px;color:var(--text-tertiary);text-align:center;">全部已打开</div>';
+  } else {
+    popup.innerHTML = avail.map(t => `
+      <button class="pop-item" data-t="${t.id}" style="display:flex;align-items:center;gap:4px;padding:4px 6px;border-radius:4px;font-size:13px;color:var(--text-primary);width:100%;text-align:left;cursor:pointer;border:none;background:transparent;">
+        <span style="color:var(--accent);font-size:11px;width:13px;text-center;">${t.icon}</span>
+        <span>${t.name}</span>
+      </button>
+    `).join('');
+    document.querySelectorAll('.pop-item').forEach(el => {
+      el.onclick = () => {
+        const id = el.dataset.t;
+        if (!openTools.includes(id)) openTools.push(id);
+        activeToolId = id;
+        renderRight();
+        document.getElementById('toolPopup').style.display = 'none';
+      };
+    });
+  }
+};
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#addToolBtn') && !e.target.closest('#toolPopup')) {
+    document.getElementById('toolPopup').style.display = 'none';
+  }
+});
+
+// ===== Attitude Lights =====
+document.getElementById('attLights').addEventListener('click', e => {
+  if (!e.target.classList.contains('att-light')) return;
+  if (locked) return;
+
+  document.querySelectorAll('.att-light').forEach(l => {
+    l.classList.remove('active');
+    l.style.background = 'transparent';
+  });
+  e.target.style.background = e.target.style.borderColor;
+  e.target.classList.add('active');
+});
+
+// ===== Lock Button =====
+document.getElementById('lockBtn').onclick = () => {
+  locked = !locked;
+  const btn = document.getElementById('lockBtn');
+  btn.textContent = locked ? '🔒' : '🔓';
+  btn.classList.toggle('locked', locked);
+  document.getElementById('attLights').style.opacity = locked ? '0.4' : '1';
+  document.getElementById('attLights').style.pointerEvents = locked ? 'none' : 'auto';
+};
+
+// ===== Input Enable/Disable =====
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+chatInput.addEventListener('input', () => {
+  sendBtn.disabled = chatInput.value.trim().length === 0;
+});
+</script>
+</body>
+</html>

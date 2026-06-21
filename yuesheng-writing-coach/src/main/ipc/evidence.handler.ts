@@ -1,6 +1,7 @@
 import { IPC_CHANNELS } from '../../shared/constants';
-import { EvidenceRecord, apiSuccess, apiError } from '../../shared/types/index';
-import { EvidenceService } from '../domains/diagnosis/evidence/evidence.service';
+import type { EvidenceRecord} from '../../shared/types/index';
+import { apiSuccess, apiError } from '../../shared/types/index';
+import type { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
 import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 

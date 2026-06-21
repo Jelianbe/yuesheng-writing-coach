@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙 — 写作教练 V5</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:-apple-system,'PingFang SC','Noto Sans SC','Microsoft YaHei',sans-serif;
+  font-size:14px;color:#1E1A14;background:#F0EDE6;
+  -webkit-font-smoothing:antialiased
+}
+button{cursor:pointer;font-family:inherit;font-size:inherit;border:none;background:none;color:inherit;padding:0}
+input,textarea{font-family:inherit;font-size:inherit;border:none;background:none;outline:none;color:inherit}
+*:focus-visible{outline:2px solid #7A6040;outline-offset:2px;border-radius:5px}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#C8BFB0;border-radius:999px}
+
+:root{
+  --accent:#7A6040;
+  --accent-hover:#6A5030;
+  --accent-subtle:rgba(122,96,64,0.09);
+  --bg:#F0EDE6;
+  --bg-panel:#E8E3DA;
+  --bg-elevated:#FAF8F5;
+  --bg-card:#FFFFFF;
+  --border:#C8BFB0;
+  --border-sub:#D6CEC0;
+  --text:#1E1A14;
+  --text-mid:#5C5242;
+  --text-dim:#8A7F6E;
+}
+
+/* === APP === */
+.app{
+  display:grid;
+  grid-template-columns:minmax(210px, auto) minmax(0, 1fr) minmax(350px, auto);
+  height:100dvh;width:100vw;background:var(--bg);
+  transition:grid-template-columns 200ms cubic-bezier(0.22,1,0.36,1);
+}
+.app.lc{grid-template-columns:0 minmax(0,1fr) minmax(350px,auto)}
+.app.rc{grid-template-columns:minmax(210px,auto) minmax(0,1fr) 0}
+
+/* === FLOATING COLLAPSED BARS === */
+
+/* Left collapsed bar: 月笙[☰] [▼当前项目▾] */
+.l-collapsed-bar{
+  position:fixed;left:0;top:0;height:40px;
+  display:none;align-items:center;gap:3px;padding:0 8px;
+  z-index:60;background:transparent;
+}
+.app.lc .l-collapsed-bar{display:flex}
+.l-bar-icon{
+  width:26px;height:26px;border-radius:5px;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif SC','Songti SC',serif;font-size:13px;font-weight:600;
+  flex-shrink:0;
+}
+.l-bar-expand{
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border-radius:5px;color:var(--text-dim);font-size:11px;
+  transition:background 150ms;
+}
+.l-bar-expand:hover{background:var(--accent-subtle);color:var(--accent)}
+.l-bar-proj{
+  display:flex;align-items:center;gap:3px;
+  padding:3px 6px;border-radius:5px;font-size:12px;color:var(--text-mid);
+  transition:background 150ms;white-space:nowrap;
+}
+.l-bar-proj:hover{background:var(--accent-subtle)}
+.l-bar-proj .caret{font-size:7px;color:var(--text-dim)}
+
+/* Right collapsed bar: [＋][⚙][⤢][─][□][✕] */
+.r-collapsed-bar{
+  position:fixed;right:0;top:0;height:40px;
+  display:none;align-items:center;gap:1px;padding:0 6px;
+  z-index:60;background:transparent;
+}
+.app.rc .r-collapsed-bar{display:flex}
+.r-bar-btn{
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border-radius:5px;color:var(--text-dim);font-size:11px;
+  transition:background 150ms,color 150ms;
+}
+.r-bar-btn:hover{background:var(--accent-subtle);color:var(--accent)}
+.r-bar-btn.cls:hover{background:#B84A4A;color:#fff}
+.r-bar-sep{width:1px;height:12px;background:var(--border);margin:0 2px}
+
+/* === LEFT === */
+.left{
+  background:var(--bg-panel);border-right:1px solid var(--border-sub);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:width 200ms cubic-bezier(0.22,1,0.36,1);min-width:210px;
+}
+/* Left header: 月笙icon在左边界，收起按键在右边界 */
+.l-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 10px 9px 14px;flex-shrink:0;
+}
+.l-hdr-l{display:flex;align-items:center;gap:7px}
+.l-hdr-icon{
+  width:26px;height:26px;border-radius:5px;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif SC','Songti SC',serif;font-size:13px;font-weight:600;
+  flex-shrink:0;
+}
+.l-hdr-name{font-family:'Noto Serif SC','Songti SC',serif;font-size:15px;font-weight:600;color:var(--text)}
+.l-collapse-btn{
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;
+  border-radius:5px;color:var(--text-dim);font-size:11px;
+  transition:background 150ms;
+}
+.l-collapse-btn:hover{background:var(--accent-subtle);color:var(--accent)}
+
+.l-tabs{padding:0 10px 8px;flex-shrink:0}
+.l-tab-r1{width:100%;padding:7px;border-radius:5px;color:var(--text-mid);font-size:13px;text-align:center;transition:background 150ms,color 150ms;margin-bottom:4px}
+.l-tab-r1:hover{background:var(--accent-subtle)}
+.l-tab-r1.active{background:var(--accent);color:#fff;font-weight:500}
+.l-tab-r2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.l-tab-r2 button{padding:7px;border-radius:5px;color:var(--text-mid);font-size:13px;text-align:center;transition:background 150ms,color 150ms}
+.l-tab-r2 button:hover{background:var(--accent-subtle)}
+.l-tab-r2 button.active{background:var(--accent);color:#fff;font-weight:500}
+
+.l-div{height:1px;background:var(--border-sub);margin:0 12px;flex-shrink:0}
+.l-srch{padding:8px 10px;flex-shrink:0}
+.l-srch-box{display:flex;align-items:center;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:5px;padding:4px 7px}
+.l-srch-box .ic{color:var(--text-dim);font-size:10px;margin-right:4px}
+.l-srch-box input{flex:1;min-width:0;font-size:13px;color:var(--text);background:transparent}
+.l-srch-box input::placeholder{color:var(--text-dim)}
+.l-list{flex:1;overflow-y:auto;padding:0 10px 8px}
+
+/* === CENTER === */
+.center{display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;min-width:0}
+/* Center header: [▼项目▾] + 状态指示器 on left, [＋][⚙] on right (only when right panel expanded) */
+.c-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 20px 5px;background:transparent;flex-shrink:0;gap:10px
+}
+.c-hdr-l{display:flex;align-items:center;gap:6px;min-width:0;flex:1}
+.proj-btn{display:flex;align-items:center;gap:4px;padding:4px 7px;border-radius:5px;font-size:13px;color:var(--text);font-weight:500;transition:background 150ms}
+.proj-btn:hover{background:var(--accent-subtle)}
+.proj-btn .caret{font-size:7px;color:var(--text-dim)}
+.st-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:999px;font-size:10px;background:var(--bg-elevated);border:1px solid var(--border-sub);color:var(--text-mid)}
+.st-badge .dot{width:4px;height:4px;border-radius:999px;background:var(--text-dim)}
+.st-badge.teach .dot{background:#C8943C}
+.st-badge.teach{color:#C8943C;border-color:rgba(200,148,60,.3);background:rgba(200,148,60,.07)}
+
+/* [＋][⚙] in center header — hidden when right panel collapsed */
+.c-hdr-r{display:flex;gap:1px;flex-shrink:0}
+.c-hdr-r button{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:5px;color:var(--text-dim);font-size:12px;transition:background 150ms}
+.c-hdr-r button:hover{background:var(--accent-subtle);color:var(--accent)}
+.app.rc .c-hdr-r{display:none}
+
+.c-body{overflow-y:auto;padding:0 20px 10px}
+
+/* Empty state */
+.empty-msg{max-width:420px;margin:70px auto 0;text-align:center}
+.empty-msg h2{font-family:'Noto Serif SC','Songti SC',serif;font-size:20px;font-weight:600;color:var(--text);margin-bottom:18px}
+.choices{display:flex;flex-direction:column;gap:7px}
+.choice-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:8px;box-shadow:0 2px 8px rgba(30,26,20,.05);text-align:left;transition:all 150ms;width:100%}
+.choice-btn:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(122,96,64,.08);transform:translateY(-1px)}
+.choice-btn .emoji{font-size:17px;width:24px;text-align:center;flex-shrink:0}
+.choice-btn .lb{font-size:14px;font-weight:500;color:var(--text)}
+.choice-btn .ht{font-size:11px;color:var(--text-dim);margin-top:1px}
+
+/* Messages */
+.msgs{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-top:8px}
+.msg{display:flex;gap:8px}
+.msg-av{width:24px;height:24px;border-radius:999px;background:var(--accent-subtle);color:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Noto Serif SC','Songti SC',serif;font-size:11px;font-weight:600;flex-shrink:0}
+.msg-bb{flex:1;font-size:14px;line-height:1.65;color:var(--text)}
+.msg-bb p{margin:0 0 4px}
+.msg-bb p:last-child{margin-bottom:0}
+.msg-bb .meta{font-size:11px;color:var(--text-dim);margin-top:3px}
+
+/* Input */
+.in-area{
+  border-top:1px solid var(--border-sub);background:var(--bg);
+  padding:4px 20px 8px;height:calc(100dvh/6);display:flex;flex-direction:column;gap:3px;flex-shrink:0
+}
+.in-tb{display:flex;align-items:center;justify-content:space-between;height:20px;flex-shrink:0}
+.in-tb-l,.in-tb-r{display:flex;align-items:center;gap:3px}
+.in-tmpl{padding:1px 5px;border-radius:5px;font-size:10px;color:var(--text-mid);transition:background 150ms}
+.in-tmpl:hover{background:var(--accent-subtle)}
+.att-l{display:flex;align-items:center;gap:3px}
+.att-l .l{width:10px;height:10px;border-radius:999px;border:1.5px solid currentColor;background:transparent;transition:transform 120ms;cursor:pointer}
+.att-l .l.on{background:currentColor;transform:scale(1.15)}
+.l.g{color:#5A8F68}.l.y{color:#C8943C}.l.r{color:#B84A4A}
+.att-lk{font-size:10px;color:var(--text-dim);padding:1px 3px;border-radius:5px;transition:all 120ms}
+.att-lk:hover{color:var(--text-mid)}
+.att-lk.locked{color:var(--accent);background:var(--accent-subtle)}
+
+.in-box{flex:1;position:relative;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:8px;padding:5px 10px;box-shadow:0 1px 4px rgba(30,26,20,.04);display:flex;flex-direction:column;min-height:0;transition:border-color 150ms}
+.in-box:focus-within{border-color:var(--accent)}
+.in-ta{flex:1;resize:none;background:transparent;font-size:14px;line-height:1.5;color:var(--text);padding:0;padding-right:50px;min-height:0}
+.in-ta::placeholder{color:var(--text-dim)}
+.in-send{position:absolute;bottom:5px;right:5px;padding:3px 10px;background:var(--accent);color:#fff;border-radius:5px;font-size:13px;font-weight:500;transition:background 150ms}
+.in-send:hover{background:var(--accent-hover)}
+.in-send:disabled{background:var(--border);cursor:default}
+
+/* === RIGHT === */
+.right{
+  background:var(--bg-panel);border-left:1px solid var(--border-sub);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:width 200ms cubic-bezier(0.22,1,0.36,1);min-width:350px;
+}
+/* Right header: [＋][⚙] on left, tabs in middle, [⤢][─][□][✕] on right */
+.r-hdr{
+  display:flex;align-items:center;padding:3px 6px;gap:2px;flex-shrink:0;min-height:32px;
+  border-bottom:1px solid var(--border-sub);overflow:hidden
+}
+.r-hdr-l{display:flex;align-items:center;gap:1px;flex-shrink:0}
+.r-hdr-l button{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:5px;color:var(--text-dim);font-size:11px;transition:background 150ms}
+.r-hdr-l button:hover{background:var(--accent-subtle);color:var(--accent)}
+
+.r-hdr-m{display:flex;align-items:center;gap:2px;flex:1;min-width:0;overflow-x:auto;margin:0 4px;scrollbar-width:none}
+.r-hdr-m::-webkit-scrollbar{display:none}
+
+.r-hdr-r{display:flex;align-items:center;gap:1px;flex-shrink:0}
+
+.r-body{flex:1;overflow-y:auto;padding:12px}
+
+.tool-tab{display:inline-flex;align-items:center;gap:2px;padding:2px 2px 2px 6px;background:var(--bg-elevated);border-radius:5px;font-size:10px;color:var(--text-mid);white-space:nowrap;max-width:90px;transition:all 150ms;flex-shrink:0;border:1px solid transparent}
+.tool-tab.active{background:var(--accent);color:#fff;font-weight:500}
+.tool-tab:not(.active):hover{background:var(--accent-subtle);color:var(--text)}
+.tool-tab .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tool-tab .cl{width:12px;height:12px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:7px;opacity:.6;flex-shrink:0}
+.tool-tab .cl:hover{opacity:1;background:rgba(0,0,0,.06)}
+.tool-tab.active .cl:hover{background:rgba(255,255,255,.15)}
+
+.w-btn{width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:5px;color:var(--text-dim);font-size:11px;transition:background 150ms,color 150ms}
+.w-btn:hover{background:var(--accent-subtle);color:var(--text-mid)}
+.w-btn.cls:hover{background:#B84A4A;color:#fff}
+.w-btn.tog:hover{color:var(--accent)}
+
+/* Tool grid */
+.tg{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.tc{display:flex;flex-direction:column;align-items:center;gap:3px;padding:12px 10px;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:8px;text-align:center;transition:all 150ms;cursor:pointer}
+.tc:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(122,96,64,.06);transform:translateY(-1px)}
+.tc .ic{font-size:16px;color:var(--accent);line-height:1}
+.tc .lb{font-size:13px;font-weight:500;color:var(--text)}
+.tc .ht{font-size:11px;color:var(--text-dim)}
+
+/* Tool content */
+.tool-content h3{font-family:'Noto Serif SC','Songti SC',serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:10px}
+.pn{display:flex;align-items:center;justify-content:center;gap:3px;padding:8px;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:8px;margin-bottom:10px}
+.pn .nn{font-family:'Noto Serif SC','Songti SC',serif;font-size:20px;font-weight:600;color:var(--accent);line-height:1}
+.pn .dd{color:var(--text-dim)}
+.pn .tt{font-size:16px;color:var(--text-mid)}
+.pn .lb2{font-size:11px;color:var(--text-dim);margin-left:2px}
+
+.ts{display:flex;align-items:flex-start;gap:8px;padding:5px 0;position:relative}
+.ts:not(:last-child)::after{content:'';position:absolute;left:8px;top:23px;bottom:0;width:1px;background:var(--border-sub)}
+.tm{width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:8px;flex-shrink:0;background:var(--bg-elevated);border:1.5px solid var(--border-sub);color:var(--text-dim)}
+.tm.done{background:var(--accent);border-color:var(--accent);color:#fff}
+.tm.now{border-color:var(--accent);color:var(--accent);background:var(--bg-elevated)}
+.ttxt{flex:1;padding-top:1px}
+.ttxt .sl{font-size:13px;color:var(--text);font-weight:500}
+.ttxt .sm{font-size:11px;color:var(--text-dim);margin-top:1px}
+
+.ld{padding:7px 0;border-bottom:1px solid var(--border-sub)}
+.ld:last-child{border-bottom:none}
+.ld .dt{font-family:'Noto Serif SC','Songti SC',serif;font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px}
+.ld .en{font-size:13px;line-height:1.6;color:var(--text-mid);margin-bottom:2px}
+.ld .en .tn{color:#B84A4A}
+.ld .en .tr{color:#5A8F68}
+
+.titem{display:flex;align-items:center;gap:5px;padding:6px 8px;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:5px;text-align:left;cursor:pointer;transition:all 150ms;width:100%;margin-bottom:2px}
+.titem:hover{border-color:var(--accent);transform:translateX(2px);box-shadow:0 2px 6px rgba(122,96,64,.06)}
+.titem .nm2{flex:1;font-size:13px;color:var(--text)}
+.titem .lv{font-size:9px;color:var(--text-dim);background:var(--bg-panel);padding:0 4px;border-radius:999px}
+.tcat{font-size:11px;color:var(--text-dim);letter-spacing:.04em;margin-top:8px;margin-bottom:3px;padding:0 2px;font-weight:500}
+.tcat:first-child{margin-top:0}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- Left collapsed floating bar: 月笙[☰][▼当前项目▾] -->
+<div class="l-collapsed-bar" id="lCollBar">
+  <span class="l-bar-icon">月</span>
+  <button class="l-bar-expand" id="expandLeftCol" title="展开左栏">☰</button>
+  <div class="l-bar-proj" id="lBarProj">
+    <span class="caret">▼</span>
+    <span>我的第一本小说</span>
+    <span class="caret">▾</span>
+  </div>
+</div>
+
+<!-- Right collapsed floating bar: [＋][⚙][⤢][─][□][✕] -->
+<div class="r-collapsed-bar" id="rCollBar">
+  <button class="r-bar-btn" id="rBarAdd" title="添加工具">＋</button>
+  <button class="r-bar-btn" id="rBarSet" title="设置">⚙</button>
+  <div class="r-bar-sep"></div>
+  <button class="r-bar-btn" id="rBarExp" title="展开">⤢</button>
+  <button class="r-bar-btn" data-w="min" title="最小化">─</button>
+  <button class="r-bar-btn" data-w="max" title="最大化">□</button>
+  <button class="r-bar-btn cls" data-w="close" title="关闭">✕</button>
+</div>
+
+<div class="app" id="app">
+
+  <!-- ===== LEFT ===== -->
+  <aside class="left">
+    <div class="l-hdr">
+      <div class="l-hdr-l">
+        <span class="l-hdr-icon">月</span>
+        <span class="l-hdr-name">月笙</span>
+      </div>
+      <button class="l-collapse-btn" id="collapseL" title="收起面板">☰</button>
+    </div>
+    <div class="l-tabs">
+      <button class="l-tab-r1 active" data-tab="train">训练</button>
+      <div class="l-tab-r2">
+        <button class="active" data-tab="chat">对话</button>
+        <button data-tab="proj">项目</button>
+      </div>
+    </div>
+    <div class="l-div"></div>
+    <div class="l-srch">
+      <div class="l-srch-box">
+        <span class="ic">⌕</span>
+        <input type="text" placeholder="搜索...">
+      </div>
+    </div>
+    <div class="l-list" id="lList"></div>
+  </aside>
+
+  <!-- ===== CENTER ===== -->
+  <main class="center">
+    <header class="c-hdr">
+      <div class="c-hdr-l">
+        <button class="proj-btn">
+          <span class="caret">▼</span>
+          <span>我的第一本小说</span>
+          <span class="caret">▾</span>
+        </button>
+        <span class="st-badge teach" id="stBadge">
+          <span class="dot"></span>
+          <span>教学中</span>
+        </span>
+      </div>
+      <div class="c-hdr-r" id="cHdrActions">
+        <button id="cHdrAdd" title="新建">＋</button>
+        <button id="cHdrSet" title="设置">⚙</button>
+      </div>
+    </header>
+    <div class="c-body" id="cBody"></div>
+    <footer class="in-area">
+      <div class="in-tb">
+        <div class="in-tb-l"><button class="in-tmpl">[模板]</button></div>
+        <div class="in-tb-r">
+          <div class="att-l" id="attL">
+            <button class="l g on" data-lv="g" title="豆包"></button>
+            <button class="l y" data-lv="y" title="月笙"></button>
+            <button class="l r" data-lv="r" title="sensei"></button>
+          </div>
+          <button class="att-lk" id="attLk" title="锁定">🔓</button>
+        </div>
+      </div>
+      <div class="in-box">
+        <textarea class="in-ta" rows="2" placeholder="输入你的作品，或直接开始对话..."></textarea>
+        <button class="in-send" disabled>发送</button>
+      </div>
+    </footer>
+  </main>
+
+  <!-- ===== RIGHT ===== -->
+  <aside class="right">
+    <div class="r-hdr" id="rHdr"></div>
+    <div class="r-body" id="rBody"></div>
+    <div class="tool-add-popup" id="tPopup"></div>
+  </aside>
+
+</div>
+
+<style>
+.tool-add-popup{position:absolute;top:34px;left:6px;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:8px;box-shadow:0 4px 12px rgba(30,26,20,.08);padding:4px;min-width:130px;z-index:10;display:none}
+.tool-add-popup.show{display:block}
+.tool-add-popup .item{display:flex;align-items:center;gap:5px;padding:5px 7px;border-radius:5px;font-size:13px;color:var(--text);cursor:pointer;width:100%;text-align:left}
+.tool-add-popup .item:hover{background:var(--accent-subtle)}
+.tool-add-popup .item .ic{color:var(--accent);font-size:11px;width:13px;text-align:center}
+.right{position:relative}
+</style>
+
+<script>
+const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+const app=$('#app'),list=$('#lList'),body=$('#cBody'),rh=$('#rHdr'),rb=$('#rBody'),pop=$('#tPopup'),sb=$('#stBadge'),cHdrR=$('#cHdrR');
+let tab='chat',sid=null,tools=[],atid=null,col=0,stat='teach';
+
+const sss=[
+  {id:1,title:'初稿诊断',t:'chat',tm:'今天'},{id:2,title:'第一章节奏讨论',t:'chat',tm:'昨天'},
+  {id:3,title:'训练:动作替代情绪词',t:'train',tm:'3天前'},{id:4,title:'配角动机梳理',t:'chat',tm:'5天前'},
+  {id:5,title:'训练:对话节奏',t:'train',tm:'上周'}
+];
+const pt=[{id:'p1',title:'第一章:山门',t:'ch'},{id:'p2',title:'第二章:试炼',t:'ch'},{id:'p3',title:'第三章:初遇',t:'ch'},{id:'p4',title:'第四章:暗流',t:'ch'},{id:'p5',title:'大纲',t:'nt'}];
+const tc=[{n:'推荐技法',r:1,is:[{n:'动作替代情绪词',l:'入门'},{n:'对话节奏控制',l:'入门'}]},{n:'结构技法',is:[{n:'三幕剧结构',l:'进阶'},{n:'伏笔回收',l:'进阶'}]},{n:'人物技法',is:[{n:'动机层次',l:'入门'},{n:'视角切换',l:'高阶'}]}];
+const tl=[{id:'prog',n:'教学进度',ic:'◐',h:'纵向时序'},{id:'log',n:'学习日志',ic:'✎',h:'每日记录'},{id:'ms',n:'作品',ic:'☰',h:'章节编辑器'},{id:'nt',n:'教学笔记',ic:'✤',h:'设定树'},{id:'set',n:'设置',ic:'⚙',h:'API Key & 偏好'}];
+const msgs=[
+  {r:'ai',c:'<p>早上好。你昨天发的开头整体氛围不错。</p><p>节奏稍慢了一些，主要集中在第一段环境描写。你方便聊聊为什么用这么长一段开始吗？</p>',t:'10:32'},
+  {r:'me',c:'<p>我怕读者不了解世界观会看不懂后面的剧情。</p>',t:'10:33'},
+  {r:'ai',c:'<p>这个担心我理解。试试先给一个"钩子"(人物处境、悬念),世界观通过后续情节自然透露。一边看一边懂,比一次性说清更有效。</p>',t:'10:34'}
+];
+
+/* ===== Right panel header ===== */
+function rRHdr(){
+  const mid=tools.length?rTabs():'<div class="r-hdr-m" style="flex:0"></div>';
+  rh.innerHTML=`<div class="r-hdr-l"><button id="rAddBtn" title="新建工具">＋</button><button id="rSetBtn" title="设置">⚙</button></div>${mid}<div class="r-hdr-r"><div class="w-btn tog" id="hidRC" title="收起">⤢</div><div class="w-btn" data-w="min">─</div><div class="w-btn" data-w="max">□</div><div class="w-btn cls" data-w="close">✕</div></div>`;
+  $('#rAddBtn').onclick=e=>{e.stopPropagation();pop.classList.toggle('show');rPop();};
+  $('#rSetBtn').onclick=()=>openTool('set');
+  $('#hidRC').onclick=()=>{col=1;app.classList.add('rc');};
+  bindRH();
+}
+function rTabs(){
+  const ts=tools.map(t=>{const o=tl.find(x=>x.id===t);return `<div class="tool-tab ${t===atid?'active':''}" data-t="${t}"><span class="nm">${o?o.n:t}</span><span class="cl" data-c="${t}">✕</span></div>`;}).join('');
+  return `<div class="r-hdr-m">${ts}</div>`;
+}
+function bindRH(){
+  $$('.tool-tab').forEach(t=>{t.onclick=e=>{if(e.target.classList.contains('cl')){e.stopPropagation();closeTool(e.target.dataset.c);return;}atid=t.dataset.t;rRHdr();rRBody();};});
+}
+function rPop(){
+  const its=tl.filter(t=>!tools.includes(t.id));
+  if(!its.length){pop.innerHTML='<div style="padding:6px;color:var(--text-dim);font-size:11px;text-align:center">全部已开</div>';return;}
+  pop.innerHTML=its.map(t=>`<button class="item" data-t="${t.id}"><span class="ic">${t.ic}</span><span>${t.n}</span></button>`).join('');
+  $$('.item').forEach(i=>{i.onclick=()=>{openTool(i.dataset.t);pop.classList.remove('show');};});
+}
+document.addEventListener('click',e=>{if(!e.target.closest('#rAddBtn')&&!e.target.closest('#tPopup'))pop.classList.remove('show');});
+
+function openTool(id){
+  if(!tools.includes(id))tools.push(id);
+  atid=id;col=0;app.classList.remove('rc');rRHdr();rRBody();
+}
+function closeTool(id){
+  tools=tools.filter(t=>t!==id);if(atid===id)atid=tools[tools.length-1]||null;
+  if(!tools.length){rRHdr();rGrid();}else{rRHdr();rRBody();}
+}
+function rRBody(){if(!tools.length)rGrid();else{if(!atid)atid=tools[0];rb.innerHTML=rCont(atid);}}
+function rGrid(){rb.innerHTML=`<div class="tg">${tl.map(t=>`<button class="tc" data-t="${t.id}"><span class="ic">${t.ic}</span><span class="lb">${t.n}</span><span class="ht">${t.h}</span></button>`).join('')}</div>`;$$('.tc').forEach(c=>{c.onclick=()=>openTool(c.dataset.t);});}
+function rCont(id){
+  const o=tl.find(t=>t.id===id),n=o?o.n:id;
+  if(id==='prog')return `<div class="tool-content"><h3>${n}</h3><div class="pn"><span class="nn">3</span><span class="dd">/</span><span class="tt">7</span><span class="lb2">已解决</span></div><div class="ts"><div class="tm done">✓</div><div class="ttxt"><div class="sl">提交作品</div><div class="sm">2026-06-15</div></div></div><div class="ts"><div class="tm done">✓</div><div class="ttxt"><div class="sl">诊断分析</div><div class="sm">发现7个问题</div></div></div><div class="ts"><div class="tm now">●</div><div class="ttxt"><div class="sl">教学中</div><div class="sm">当前: 对话节奏</div></div></div><div class="ts"><div class="tm">○</div><div class="ttxt"><div class="sl">已收尾</div></div></div><div class="ts"><div class="tm">○</div><div class="ttxt"><div class="sl">等待修改</div></div></div></div>`;
+  if(id==='log')return `<div class="tool-content"><h3>${n}</h3><div class="ld"><div class="dt">6月17日</div><div class="en"><span class="tn">新发现:</span> 铺垫过多</div><div class="en"><span class="tr">已攻克:</span> 动作替代情绪词</div></div><div class="ld"><div class="dt">6月15日</div><div class="en"><span class="tn">新发现:</span> 信息硬塞</div><div class="en"><span class="tr">已攻克:</span> 对话节奏</div></div></div>`;
+  if(id==='set')return `<div class="tool-content"><h3>${n}</h3><div style="margin-bottom:10px"><div style="font-size:13px;color:var(--text-mid);margin-bottom:3px">API Key</div><input type="password" placeholder="sk-..." style="width:100%;padding:5px 8px;background:var(--bg-elevated);border:1px solid var(--border-sub);border-radius:5px;font-size:13px"></div><div><div style="font-size:13px;color:var(--text-mid);margin-bottom:3px">默认态度</div><div class="att-l" style="opacity:1;pointer-events:auto"><button class="l g on"></button><button class="l y"></button><button class="l r"></button></div></div><button style="margin-top:12px;padding:5px 12px;background:var(--accent);color:#fff;border-radius:8px;font-size:13px">保存</button></div>`;
+  return `<div class="tool-content"><h3>${n}</h3><p style="color:var(--text-dim);font-size:13px;line-height:1.6">后续阶段实施。</p></div>`;
+}
+
+/* ===== Training panel ===== */
+function rTrain(){
+  rh.innerHTML=`<div class="r-hdr-l"><button id="rAddBtn">＋</button><button id="rSetBtn">⚙</button></div><div class="r-hdr-m"><div class="tool-tab active"><span class="nm">训练技法</span><span class="cl" id="closeTr">✕</span></div></div><div class="r-hdr-r"><div class="w-btn tog" id="hidRC">⤢</div><div class="w-btn" data-w="min">─</div><div class="w-btn" data-w="max">□</div><div class="w-btn cls" data-w="close">✕</div></div>`;
+  rb.innerHTML=tc.map(c=>`<div class="tcat">${c.n}${c.r?'  👍':''}</div><div>${c.is.map(i=>`<button class="titem"><span class="nm2">${i.n}</span><span class="lv">${i.l}</span></button>`).join('')}</div>`).join('');
+  $('#closeTr').onclick=()=>{tools=[];atid=null;rRHdr();rGrid();$$('.l-tab-r1,.l-tab-r2 button').forEach(b=>b.classList.remove('active'));$('.l-tab-r2 button[data-tab="chat"]')?.classList.add('active');tab='chat';sid=null;rList();rChat();};
+  $('#rAddBtn').onclick=e=>{e.stopPropagation();pop.classList.toggle('show');rPop();};
+  $('#rSetBtn').onclick=()=>openTool('set');
+  $('#hidRC').onclick=()=>{col=1;app.classList.add('rc');};
+}
+
+/* ===== Left list ===== */
+function rList(){
+  if(tab==='chat')list.innerHTML=sss.filter(s=>s.t==='chat').map(s=>`<div class="list-item ${sid===s.id?'active':''}" data-id="${s.id}"><span class="ic">◌</span><span class="title">${s.title}</span><span class="badge">${s.tm}</span></div>`).join('');
+  else if(tab==='proj')list.innerHTML=pt.map(p=>`<div class="list-item"><span class="ic">${p.t==='ch'?'☰':'✎'}</span><span class="title">${p.title}</span></div>`).join('');
+  else list.innerHTML=sss.filter(s=>s.t==='train').map(s=>`<div class="list-item active" data-id="${s.id}"><span class="ic">◎</span><span class="title">${s.title}</span><span class="badge">${s.tm}</span></div>`).join('');
+  $$('.list-item').forEach(i=>{i.onclick=()=>{if(tab==='proj')openTool('ms');else{sid=parseInt(i.dataset.id);rList();rChat();}};});
+}
+function rChat(){
+  if(!sid){body.innerHTML=`<div class="empty-msg"><h2>开始你的写作之旅</h2><div class="choices"><button class="choice-btn"><span class="emoji">📝</span><div><div class="lb">我有作品</div><div class="ht">直接进入聊天,我会帮你分析</div></div></button><button class="choice-btn"><span class="emoji">🌱</span><div><div class="lb">从头学习</div><div class="ht">我引导你搭建世界观和人物</div></div></button><button class="choice-btn"><span class="emoji">💬</span><div><div class="lb">先聊聊</div><div class="ht">正常聊天,我在对话中自然引导</div></div></button></div></div>`;return;}
+  body.innerHTML=`<div class="msgs">${msgs.map(m=>`<div class="msg"><div class="msg-av">${m.r==='ai'?'月':'我'}</div><div class="msg-bb">${m.c}<div class="meta">${m.t}</div></div></div>`).join('')}</div>`;
+}
+
+function setStatus(s){stat=s;sb.className='st-badge '+s;const m={idle:'待开始',diag:'诊断中',teach:'教学中',done:'已收尾'};sb.innerHTML=`<span class="dot"></span><span>${m[s]||s}</span>`;}
+
+/* ===== Panel toggles ===== */
+function toggleL(){app.classList.toggle('lc');}
+function toggleR(){col=app.classList.toggle('rc');}
+
+/* ===== Events ===== */
+$('#collapseL').onclick=toggleL;
+$('#expandLeftCol').onclick=toggleL;
+$('.l-tab-r1,.l-tab-r2 button').forEach(b=>{b.onclick=()=>{$$('.l-tab-r1,.l-tab-r2 button').forEach(x=>x.classList.remove('active'));b.classList.add('active');tab=b.dataset.tab;if(tab==='train'){rTrain();sid=null;}else{if(!tools.length){rRHdr();rGrid();}else rRHdr();}rList();rChat();};});
+
+// Attitude
+$('#attL').addEventListener('click',e=>{if(!e.target.classList.contains('l'))return;if($('#attLk').classList.contains('locked'))return;$$('.l').forEach(l=>l.classList.remove('on'));e.target.classList.add('on');});
+let lkd=0;
+$('#attLk').onclick=()=>{lkd=!lkd;$('#attLk').textContent=lkd?'🔒':'🔓';$('#attLk').classList.toggle('locked',lkd);const el=$('#attL');el.style.opacity=lkd?'.4':'1';el.style.pointerEvents=lkd?'none':'auto';};
+
+// Right bar expand
+$('#rBarAdd').onclick=e=>{e.stopPropagation();pop.classList.toggle('show');rPop();};
+$('#rBarSet').onclick=()=>toggleR();
+$('#rBarExp').onclick=()=>{col=0;app.classList.remove('rc');rRHdr();};
+
+// Status
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){app.classList.remove('lo','ro');pop.classList.remove('show');}});
+
+// Init
+rList();rTrain();setStatus('teach');
+</script>
+</body>
+</html>

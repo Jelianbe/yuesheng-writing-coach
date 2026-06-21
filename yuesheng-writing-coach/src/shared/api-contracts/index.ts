@@ -43,6 +43,8 @@ export type {
   TrainingCompleteRequest, TrainingSkipRequest,
   TrainingHistoryRequest, TrainingSubmitRequest,
   TrainingEvaluateRequest, TrainingDeriveBehaviorRequest,
+  TrainingCatalogRequest, TrainingCatalogResponse,
+  TechniqueCatalogGroup,
   TrainingRecommendResponse, TrainingAssignResponse,
   TrainingCompleteResponse, TrainingHistoryResponse,
   TrainingSubmitResponse, TrainingEvaluateResponse,
@@ -119,6 +121,9 @@ export type {
 } from './growth.contract';
 export { GrowthApi } from './growth.contract';
 export type { GrowthInvokeChannels } from './growth.contract';
+
+export { TeachingNoteApi } from './teaching-note.contract';
+export type { TeachingNoteInvokeChannels } from './teaching-note.contract';
 
 // 新用户引导域
 export type {

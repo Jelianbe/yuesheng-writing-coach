@@ -64,6 +64,8 @@
     "*.js",
     "*.mjs",
     "*.cjs",
-    "vite.config.ts"
+    "vite.config.ts",
+    "components_archived/",
+    "plugins/"
   ]
 }

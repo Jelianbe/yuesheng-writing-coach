@@ -1,0 +1,1327 @@
+{
+  "$source": "teaching-knowledge-bridge_V1.0.md §3.4",
+  "description": "训练工坊 Schema — 症候→技法→练习的唯一数据源。包含21条症候训练条目和8条能力底层训练条目，总计29条。",
+  "version": "1.1",
+  "updatedAt": "2026-06-14",
+  "totalEntries": 29,
+  "categories": [
+    {
+      "id": "motivation_deficit",
+      "name": "动机缺失型",
+      "description": "学生缺乏写作动力或目标模糊",
+      "syndromeIds": [
+        "P001",
+        "P009"
+      ]
+    },
+    {
+      "id": "expressive_deficit",
+      "name": "表达不足型",
+      "description": "学生有想法但无法有效表达",
+      "syndromeIds": [
+        "P003",
+        "P010",
+        "P002"
+      ]
+    },
+    {
+      "id": "structural_disorder",
+      "name": "结构/视角失控型",
+      "description": "文章结构松散或逻辑不清",
+      "syndromeIds": [
+        "P004",
+        "P005",
+        "P006",
+        "P007"
+      ]
+    }
+  ],
+  "entries": [
+    {
+      "id": "TRAIN-P001-001",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "title": "聚焦一个场景",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "只能保留一个具体场景，其余全部删除",
+      "expectedOutcome": "用户学会聚焦核心场景",
+      "techniques": [],
+      "exercises": [],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "LAO_SHE_EVERYTHING_MATTERS"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P001-002",
+      "syndromeId": "P001",
+      "syndromeName": "世界观膨胀",
+      "title": "主角优先叙事",
+      "difficulty": "medium",
+      "mode": "narrow_focus",
+      "tier": "structural",
+      "constraint": "主角信息必须先于世界观信息",
+      "expectedOutcome": "用户学会以人物驱动叙事",
+      "techniques": [],
+      "exercises": [],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "LAO_SHE_EVERYTHING_MATTERS"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P002-001",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "title": "赋予角色矛盾动机",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "structural",
+      "constraint": "角色必须有至少两个相互矛盾的愿望",
+      "expectedOutcome": "用户学会塑造立体角色",
+      "techniques": [],
+      "exercises": [],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "LAO_SHE_ACTION"
+        },
+        {
+          "principleId": "FORSTER_ROUND"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P003-001",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "title": "精准动词替换",
+      "difficulty": "easy",
+      "mode": "word_refine",
+      "tier": "surface",
+      "constraint": "每句话至少使用一个具体动词替代'是''有''做'",
+      "expectedOutcome": "用户积累精准动词库",
+      "techniques": [],
+      "exercises": [],
+      "developmentStage": "word",
+      "classicalBasis": [
+        {
+          "principleId": "WANG_ZENG_QI_ACCURACY"
+        },
+        {
+          "principleId": "CHEKHOV_EMOTION"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P002-002",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "title": "角色行为追溯",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "structural",
+      "constraint": "选择你笔下一个配角，列出ta的5个关键行为。在每个行为后面写出驱使ta这样做的内在原因（恐惧/渴望/创伤）。要求每个原因不能重复，且不能使用'因为剧情需要'。",
+      "expectedOutcome": "用户学会从动机而非功能来理解角色行为，减少角色沦为剧情工具人的情况",
+      "techniques": [
+        "T042"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选出你作品中一个行为驱动力最模糊的配角",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "为该角色写出5个关键行为（从作品中提取或重新设计）",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "在每个行为后写一段50字的内心动机说明，格式：'她这样做是因为...'",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "检查5个动机是否有逻辑矛盾，修正后选择1条最深刻的，在原文中埋一个暗示",
+          "duration": "7min"
+        }
+      ],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "LAO_SHE_ACTION"
+        },
+        {
+          "principleId": "FORSTER_ROUND"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P002-003",
+      "syndromeId": "P002",
+      "syndromeName": "角色工具化",
+      "title": "一致性压力测试",
+      "difficulty": "hard",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "选择你的主角，写出3个ta绝对不可能做的事。然后设计一个极端场景，迫使ta必须做其中一件。写出ta最终做了或没做的完整心理过程（200字）。不能使用'他想了想就做了'。",
+      "expectedOutcome": "用户通过'压力测试'深入理解角色的一致性边界，知道角色何时会打破原则以及代价",
+      "techniques": [
+        "T042",
+        "T118"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "总结主角的核心人格标签（3个词），写出3件ta绝对不会做的事",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "设计一个两难场景：不做=失去最重要的东西，做=违背核心人格",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "写出ta的心理天平摇摆过程——每个念头都要有来源（童年/经历/价值观）",
+          "duration": "12min"
+        },
+        {
+          "step": 4,
+          "instruction": "决定结局：ta做了还是没做？写出这一选择带来的永久改变",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "LAO_SHE_ACTION"
+        },
+        {
+          "principleId": "FORSTER_ROUND"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P003-002",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "title": "五感情绪锚",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "surface",
+      "constraint": "选择一种情绪（愤怒/悲伤/恐惧/喜悦），用一段200字的场景描写展示它。规则：全文禁止出现该情绪词本身及其近义词（如写'愤怒'则禁止出现'生气''恼火''愤怒''怒'等），只能通过动作、环境、身体反应和对话节奏来传达。",
+      "expectedOutcome": "用户学会用感官细节替代情绪标签词，建立'展示而非告知'的写作习惯",
+      "techniques": [
+        "T063",
+        "T016",
+        "T026"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选定一个情绪词，写出它的5个身体反应（如愤怒→紧握拳头/呼吸变浅/耳鸣/下颚收紧/视野变窄）",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "设计一个日常场景（等公交/做饭/接电话），让角色在这个场景中体验你选的情绪",
+          "duration": "5min"
+        },
+        {
+          "step": 3,
+          "instruction": "写出200字段落，只用动作+环境+身体反应+对话节奏来表达，逐句检查是否出现了情绪词",
+          "duration": "15min"
+        },
+        {
+          "step": 4,
+          "instruction": "找一个人读你的文字，问他感受到什么情绪。如果不对，调整细节直到匹配",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "word",
+      "classicalBasis": [
+        {
+          "principleId": "WANG_ZENG_QI_ACCURACY"
+        },
+        {
+          "principleId": "CHEKHOV_EMOTION"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P003-003",
+      "syndromeId": "P003",
+      "syndromeName": "情绪标签化",
+      "title": "情感颗粒度训练",
+      "difficulty": "medium",
+      "mode": "word_refine",
+      "tier": "structural",
+      "constraint": "给定一段充满情绪标签的原文（100字），将其改写为无情绪标签版本。进一步要求：将原文中的单一情绪拆分为至少3个不同的情感层次（如'伤心'→挫折+不甘+隐约的解脱），并为每个层次找到不同的身体表现。",
+      "expectedOutcome": "用户提升情感描写的颗粒度，从粗糙的情绪标签进化为多层次的情绪光谱",
+      "techniques": [
+        "T063",
+        "T016"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "读提供的原文，标记所有情绪词（标签词）",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "对每个标签词，问自己'这个情绪下面还有什么？'拆出至少2个子情绪",
+          "duration": "7min"
+        },
+        {
+          "step": 3,
+          "instruction": "为每个子情绪匹配1个独特的身体/行为表现，要求不能雷同",
+          "duration": "8min"
+        },
+        {
+          "step": 4,
+          "instruction": "用新发现的细节重写原文，形成有情感层次的新版本",
+          "duration": "10min"
+        }
+      ],
+      "developmentStage": "word",
+      "classicalBasis": [
+        {
+          "principleId": "WANG_ZENG_QI_ACCURACY"
+        },
+        {
+          "principleId": "CHEKHOV_EMOTION"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P004-001",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "title": "冰山叙事法",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "你有一段需要向读者交代的背景设定（世界观/人物前史）。规则：只准写10%，其余90%只能通过一个日常物品在被使用时无意间透露。例如：角色从不解释魔法世界的历史，但他在翻一本边角磨损的《咒语基础（修订第3版）》时，看到扉页上手写的'献给我的师傅，火刑柱上最后一个老派法师'。",
+      "expectedOutcome": "用户学会将信息从'旁白交代'转化为'日常嵌入'，让读者在剧情中自然吸收设定",
+      "techniques": [
+        "T105",
+        "T096"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "列出3段你想告诉读者的关键设定信息（每段一句话）",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "为每段信息设计一个日常物品，该物品的外观/使用方式能暗含这条信息",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "写一个角色使用该物品的200字场景——让信息在动作中被'顺便'透露",
+          "duration": "12min"
+        },
+        {
+          "step": 4,
+          "instruction": "删掉所有旁白解释句，只保留物品触发的场景信息。检查读者是否不需要额外说明就能理解",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "STRUNK_WHITE_CONCISE"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P004-002",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "title": "对话式信息注入",
+      "difficulty": "easy",
+      "mode": "restructure",
+      "tier": "surface",
+      "constraint": "给你一段200字的纯旁白背景信息（世界观/人物前史/规则说明）。规则：删除所有旁白句，将其中至少80%的信息转化为角色之间的对话。对话必须自然——两个角色在聊天中'顺便'透露了这些信息。禁止出现'你知道我们为什么要...？'式的生硬提问。对话中的信息必须是说话者此刻有理由提到的东西。",
+      "expectedOutcome": "用户学会将交代型信息通过角色对话自然嵌入，消除'作者旁白'的出戏感",
+      "techniques": [
+        "T066",
+        "T105"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取一段你作品中的纯旁白背景交代（200字以内）",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "圈出每个信息点，判断它'谁会在什么场景下有理由提到'",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "设计一段对话：两个角色因为某事发生而需要谈论这些信息——谈话本身有张力（意见分歧/信息不对称/隐瞒）",
+          "duration": "12min"
+        },
+        {
+          "step": 4,
+          "instruction": "逐句检查：这句对话是否自然？对话双方是否有足够的动机说这句话？删除所有'为了交代而说'的句子。",
+          "duration": "7min"
+        }
+      ],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "STRUNK_WHITE_CONCISE"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P004-003",
+      "syndromeId": "P004",
+      "syndromeName": "信息硬塞",
+      "title": "信息分层释放",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "你有一段300字的世界观/角色设定信息。规则：将这些信息按'读者必须现在知道'和'读者可以稍后知道'分为两层。第一层（必须现在）最多保留3个信息点（每个不超过20字）。第二层分布到后面3个不同的章节情节点中释放，每个点只释放一个信息，且必须与当前情节产生化学反应——不是生硬插入而是'这里正好提到'。写出原始段落、精炼后的段落、以及3个释放点的场景设计。",
+      "expectedOutcome": "用户建立'信息分层意识'，能区分读者何时需要知道某条信息并为其设计自然的释放时机",
+      "techniques": [
+        "T105",
+        "T096"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取一段300字设定，逐句标注：这句信息对理解当前情节是必要/重要/可选？",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "保留'必要'信息（最多3条，每条≤20字），其他全部从当前段删除",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "为每条被删除的信息，找一个未来3章内的情节点——在该情节点中，这条信息的出现能推动情节、制造阻碍或揭示人物",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "为每个释放点写一个50-100字的嵌入场景，确保信息不是被'说'出来的而是在情节中被'遇'到的",
+          "duration": "10min"
+        }
+      ],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "STRUNK_WHITE_CONCISE"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P005-001",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "title": "单视角强制锁定",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "surface",
+      "constraint": "重写一段你写过的双视角场景。规则：全程锁定在一个角色的视角内，只写他能看到、听到、闻到、触摸到、想到的东西。禁止出现'他没有注意到''他不知道的是'等全知视角词。另外角色无法看到自己的脸（除非有镜子），无法知道别人的心理活动。",
+      "expectedOutcome": "用户通过强制单视角练习建立视角边界意识，能区分'角色所知'和'作者所知'",
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选择一个你之前写过的双视角场景，标记所有视角切换点",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "选择其中一个角色的视角，列出该角色此刻能感知到的所有信息（五官+思维）",
+          "duration": "5min"
+        },
+        {
+          "step": 3,
+          "instruction": "仅用该角色的感知信息重写场景，删除所有越界内容",
+          "duration": "12min"
+        },
+        {
+          "step": 4,
+          "instruction": "逐句自检：'这句话里的信息，这个角色是怎么知道的？'如果答案是'作者告诉他的'→删除或改写",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "control",
+      "classicalBasis": [
+        {
+          "principleId": "GARDNER_PSYCHIC_DISTANCE"
+        },
+        {
+          "principleId": "SHEN_CONGWEN_CLING"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P005-002",
+      "syndromeId": "P005",
+      "syndromeName": "视角漂移",
+      "title": "双视角分界设计",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "如果一定要写双视角场景，请设计清晰的视角分界。使用小节分隔符（***或空行+数字标记），每节锁定一个视角。在分界处安排一个'视角交接点'——上节角色做了什么引起下节角色的注意，形成自然的视角过渡。完成一个300字的双人场景。",
+      "expectedOutcome": "用户学会用结构手段（而非随意跳跃）管理多视角叙事",
+      "techniques": [
+        "T035"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "设计一个对话场景，两个角色各怀心事",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "先用角色A视角写150字（锁定A的感知）",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "设计一个'视角交接点'：A说/做了某件事让B产生反应，然后切到B视角",
+          "duration": "3min"
+        },
+        {
+          "step": 4,
+          "instruction": "用角色B视角写150字，从B对交接点的反应开始",
+          "duration": "8min"
+        },
+        {
+          "step": 5,
+          "instruction": "检查两节之间的信息泄漏：B视角不能知道A视角中的心理活动",
+          "duration": "3min"
+        }
+      ],
+      "developmentStage": "control",
+      "classicalBasis": [
+        {
+          "principleId": "GARDNER_PSYCHIC_DISTANCE"
+        },
+        {
+          "principleId": "SHEN_CONGWEN_CLING"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P006-001",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "title": "冲突心电图",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "给你自己最近一章小说画一张'冲突心电图'：在10个章节位置上标记冲突强度（1-10分），要求至少出现3个波峰（强度≥7）和3个波谷（强度≤3），相邻两点之间变化幅度不得小于2分。对每个低分段写出'这里读者在等什么'，并为每个低分段设计一个微型悬念或伏笔。",
+      "expectedOutcome": "用户建立'冲突曲线'意识，能用数据分析而非感觉来判断节奏是否停滞",
+      "techniques": [
+        "T010"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取你最近一章，按情节节点分为10段，对每段冲突强度打分1-10",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "画出折线图，标记波峰和波谷，检查是否有超过3段连续的强度≤4",
+          "duration": "3min"
+        },
+        {
+          "step": 3,
+          "instruction": "对每个低分段回答：如果读者在这里停下来，ta在期待什么？",
+          "duration": "5min"
+        },
+        {
+          "step": 4,
+          "instruction": "为每个低分段插入一个微型钩子——一个未回答的问题、一个反常细节、一个即将到来的威胁",
+          "duration": "10min"
+        }
+      ],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "LAO_SHE_ONE_THING"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P006-002",
+      "syndromeId": "P006",
+      "syndromeName": "节奏停滞",
+      "title": "倒计时压迫法",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "tier": "surface",
+      "constraint": "给你一个停滞的场景加一个倒计时。规则：你必须在场景开头设置一个明确的时限（'太阳下山之前''在门被撞开之前''在咖啡变冷之前'），并在后续300字中至少3次提及时间的流逝或逼近。这个时限必须有真实的后果——错过时限会发生不可逆的变化。",
+      "expectedOutcome": "用户学会用'时间压力'作为最有效的节奏驱动器，让静态场景产生内在紧张感",
+      "techniques": [
+        "T001",
+        "T058"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选择一个你感觉'写不动了'的静态场景",
+          "duration": "2min"
+        },
+        {
+          "step": 2,
+          "instruction": "问自己：什么即将到来？什么正在逼近？什么在倒计时？选定一个真实时限",
+          "duration": "3min"
+        },
+        {
+          "step": 3,
+          "instruction": "在场景开头加一句话，宣告时限。在场景中段加一次'时间提醒'，在结尾前加最后一次",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "写出错过时限的后果，确保后果不可逆且对角色有真实伤害",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "structure",
+      "classicalBasis": [
+        {
+          "principleId": "CHEKHOV_GUN"
+        },
+        {
+          "principleId": "LAO_SHE_ONE_THING"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P007-001",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "title": "句式呼吸训练",
+      "difficulty": "easy",
+      "mode": "word_refine",
+      "tier": "surface",
+      "constraint": "取一段300字的文字。统计所有句子的字数：长句（>25字）、中句（10-25字）、短句（<10字）。理想比例为长:中:短 = 1:3:2。如果不达标，重新编排句子长度，强制将最长句拆成至少2句，并为每个长句后面紧跟一个短句制造呼吸节奏。",
+      "expectedOutcome": "用户获得对句式节奏的量化控制能力，从无意识写作变为有意识的节奏设计",
+      "techniques": [
+        "T096"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取300字原文，逐句标注字数，统计长中短分布",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "找出最长句尝试拆分为2-3句中短句",
+          "duration": "5min"
+        },
+        {
+          "step": 3,
+          "instruction": "在每段长描述后插入一个短句——'他停了下来。'级别",
+          "duration": "8min"
+        },
+        {
+          "step": 4,
+          "instruction": "朗读修改后的文字，用呼吸节奏感受：读到长句时自然的停顿是否舒适",
+          "duration": "3min"
+        }
+      ],
+      "developmentStage": "word",
+      "classicalBasis": [
+        {
+          "principleId": "STRUNK_WHITE_CONCISE"
+        },
+        {
+          "principleId": "LU_XUN_DELETE"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P007-002",
+      "syndromeId": "P007",
+      "syndromeName": "阅读结构单一",
+      "title": "叙事模式翻转",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "tier": "structural",
+      "constraint": "取一段200字的文字。识别其当前的叙事模式（描写/对话/心理/动作/旁白）。将其中30%的内容翻转为另一种模式——如果原文全是描写，插入一段急促对话；如果全是对话，插入一段内心独白。最终输出必须包含至少2种叙事模式的交错。",
+      "expectedOutcome": "用户学会在叙事中主动切换模式，打破单一结构的阅读疲劳",
+      "techniques": [
+        "T058",
+        "T035"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取200字原文，标注每句话的叙事模式",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "观察模式单一程度——如果超过80%是一种模式，标记为需要翻转",
+          "duration": "2min"
+        },
+        {
+          "step": 3,
+          "instruction": "选择最少的模式（如果原文没有对话，插入对话；没有心理，插入心理），改写30%内容",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "朗读原版和修改版，感受节奏差异",
+          "duration": "3min"
+        }
+      ],
+      "developmentStage": "word",
+      "classicalBasis": [
+        {
+          "principleId": "STRUNK_WHITE_CONCISE"
+        },
+        {
+          "principleId": "LU_XUN_DELETE"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P009-001",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "title": "动机冰山模型",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "为你的主角画一棵'动机树'。树干：ta现在最想要什么。3根主枝：为什么想要（表层/中层/深层各一）。每根主枝上的叶子：这个动机在童年/青春期/最近的某个事件中是如何形成的。最终选择一层动机，在200字的场景中只埋一个暗示——一个物品、一个习惯、一句口误——让读者隐约感觉到但不确定。",
+      "expectedOutcome": "用户建立角色的多层动机体系，学会在文本中'埋'动机而非'讲'动机",
+      "techniques": [
+        "T042",
+        "T118"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "写下主角当前最想要的一个东西（具体、有形的目标）",
+          "duration": "2min"
+        },
+        {
+          "step": 2,
+          "instruction": "问3次'为什么'，每次深挖一层：表层→价值观层面→童年创伤层面",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "为每层动机找一个'触发物'——一个能唤起该层记忆的具体物品/地点/气味",
+          "duration": "5min"
+        },
+        {
+          "step": 4,
+          "instruction": "写200字段落，在推进当前剧情的同时让主角无意间接触到这个触发物，不解释",
+          "duration": "10min"
+        }
+      ],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "FORSTER_ROUND"
+        },
+        {
+          "principleId": "LAO_SHE_MOTIVATION"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P009-002",
+      "syndromeId": "P009",
+      "syndromeName": "角色动机缺失",
+      "title": "转折点的代价",
+      "difficulty": "hard",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "选择一个角色做出的重大决定（背叛/离开/选择/放弃）。写出3个不同的动机版本：A) 高尚的动机、B) 自私的动机、C) 连角色自己都没意识到的动机。然后选择C版本作为'真实版本'，但只在角色独处的一个瞬间给它一个0.5秒的闪现——一个ta立刻压下去的念头。",
+      "expectedOutcome": "用户学会为角色重大行为设计深层且不自知的动机，增加人物的真实性和复杂度",
+      "techniques": [
+        "T118"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选定角色的一次重大选择，写出ta自己认为的原因（A版本，公开版本）",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "写出真正的原因但ta不愿承认的版本（B版本）",
+          "duration": "5min"
+        },
+        {
+          "step": 3,
+          "instruction": "写出ta自己都没意识到的版本（C版本）——这种动机通常来自童年/未处理的情感/恐惧",
+          "duration": "8min"
+        },
+        {
+          "step": 4,
+          "instruction": "在原文中插入一个0.5秒的C版本闪现：ta在独处时突然想到什么→立刻压下去→继续按A版本行动。只写1-2句话",
+          "duration": "7min"
+        }
+      ],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "FORSTER_ROUND"
+        },
+        {
+          "principleId": "LAO_SHE_MOTIVATION"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P010-001",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "title": "人物内在矛盾设计",
+      "difficulty": "medium",
+      "mode": "character_depth",
+      "tier": "structural",
+      "constraint": "给你的OC设计一对内在矛盾：ta嘴上说的 vs ta实际做的、ta以为自己要的 vs ta真正需要的、ta在公开场合的样子 vs ta独处时的样子。选择其中一对，在一个200字的场景中同时展示两面——让读者看到裂缝。",
+      "expectedOutcome": "用户通过制造内在矛盾为OC注入立体感，从'标签集合'变为'矛盾的活人'",
+      "techniques": [
+        "T118",
+        "T042"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "写下你的OC的三个'标签'（如'勇敢''温柔''聪明'），为每个标签写一个反例场景",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "选择最有张力的一对矛盾（如'公开说不在乎别人的看法，但每天翻3遍社交平台的评论'）",
+          "duration": "3min"
+        },
+        {
+          "step": 3,
+          "instruction": "写一个场景：前半段展示公开面，后半段展示私下自相矛盾的行为/想法",
+          "duration": "12min"
+        },
+        {
+          "step": 4,
+          "instruction": "确保场景中不出现任何解释性旁白（如'其实他不是真的不在乎'），让矛盾自己说话",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "BOOTH_SHOWING"
+        },
+        {
+          "principleId": "LAO_SHE_LIVING"
+        }
+      ]
+    },
+    {
+      "id": "TRAIN-P010-002",
+      "syndromeId": "P010",
+      "syndromeName": "OC平面化",
+      "title": "陌生化视角重塑",
+      "difficulty": "hard",
+      "mode": "character_depth",
+      "tier": "deep",
+      "constraint": "让另一个角色（非主角）用200字描述你的OC。要求：这个描述者必须带着自己的偏见和认知局限，说出的话不客观但真实。然后你再写200字——OC眼中的自己，形成双重视角的立体拼图。",
+      "expectedOutcome": "用户学会通过'他者视角'为OC制造立体感，理解'人物在别人眼中的样子'和'人物真实的样子'之间的空间就是立体感",
+      "techniques": [
+        "T042"
+      ],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选一个与你OC有利益冲突或情感纠葛的配角，列出ta对OC的3个偏见",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "以该配角的视角写200字对OC的描述（刻意带着偏见写）",
+          "duration": "10min"
+        },
+        {
+          "step": 3,
+          "instruction": "以OC的第一视角写200字自述——OC自己怎么看待同样的话题",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "对比两个版本，找到'误解中的真实'和'自述中的盲区'——这个差异就是OC的立体空间",
+          "duration": "5min"
+        }
+      ],
+      "developmentStage": "person",
+      "classicalBasis": [
+        {
+          "principleId": "BOOTH_SHOWING"
+        },
+        {
+          "principleId": "LAO_SHE_LIVING"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-EYE-001",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "看烂书·找茬",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "exerciseType": "perception",
+      "developmentStage": "eye",
+      "tier": "surface",
+      "constraint": "打开番茄小说随便找一本评分低的，读2000字第一章，找出3个让你读不下去的地方。每个写30字说明'为什么读不下去'——禁止用'文笔差''剧情无聊'等笼统判断。",
+      "expectedOutcome": "建立'对差的本能反感'，能在阅读中主动识别具体问题段落并给出针对理由",
+      "classicalBasis": [
+        {
+          "principleId": "ZHU_GUANG_QIAN_DISCRIMINATION"
+        },
+        {
+          "principleId": "LU_XUN_DELETE"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "打开番茄小说随便找一本评分低的新手作品",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "边读边在想跳过的段落旁边打标记",
+          "duration": "不限时"
+        },
+        {
+          "step": 3,
+          "instruction": "选出最让你难受的3处，每处写30字以上'为什么难受'",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "检查理由中是否出现了'无聊''不好看'等笼统词，有则重写",
+          "duration": "3min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "识别精准度",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "语言表达",
+          "scoring": "0-2"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-EYE-002",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "看烂书·归类",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "exerciseType": "perception",
+      "developmentStage": "eye",
+      "tier": "surface",
+      "constraint": "再用同一本书的第二章（或换一本），再找3个问题。这次除了写'为什么'，还要把你找出来的问题归个类——归类名称自己定，不需要用术语。3个问题全部有归类，且同一归类标准不自相矛盾。",
+      "expectedOutcome": "在'找茬'的基础上训练归类能力，为后续理解P症候体系打感知基础",
+      "classicalBasis": [
+        {
+          "principleId": "STRUNK_WHITE_CONCISE"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "阅读同一本或新一本的第二章（读完，不限时）",
+          "duration": "不限时"
+        },
+        {
+          "step": 2,
+          "instruction": "找3个问题，每个写30字+理由+自定义归类标签",
+          "duration": "12min"
+        },
+        {
+          "step": 3,
+          "instruction": "回头看你的3个归类——如果用同一个'归类的逻辑'去判断，它们是一致的吗？",
+          "duration": "3min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "归类一致性",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "归类粒度",
+          "scoring": "0-2"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-PEN-001",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "指定视角阅读/观影协议",
+      "difficulty": "medium",
+      "mode": "narrow_focus",
+      "exerciseType": "analysis",
+      "developmentStage": "pen",
+      "tier": "deep",
+      "constraint": "选择一部作品，指定一个视角（得与失/准确表达/结构经济/人物塑造），带着这个视角看完并做笔记。输出500字以上分析报告——不准AI、不准错字、逻辑连贯、表达清晰、结构完整。",
+      "expectedOutcome": "带着具体诊断任务去阅读/观影，而非泛泛感受",
+      "classicalBasis": [
+        {
+          "principleId": "ZHU_GUANG_QIAN_DISCRIMINATION"
+        },
+        {
+          "principleId": "WANG_ZENG_QI_ACCURACY"
+        },
+        {
+          "principleId": "YE_SHENGTAO_PRECISE"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选定作品和视角，在笔记里写下'我要找什么'",
+          "duration": "2min"
+        },
+        {
+          "step": 2,
+          "instruction": "观看/阅读全作品，随时记录符合视角观察点的内容",
+          "duration": "不限时"
+        },
+        {
+          "step": 3,
+          "instruction": "写500字以上分析报告——开头一句话抛出核心判断，中间逐点引用文本支撑，结尾一句话收束",
+          "duration": "60min"
+        },
+        {
+          "step": 4,
+          "instruction": "自检——删掉所有'我觉得''我感觉'开头的句子，把主观感受改写成可验证的判断",
+          "duration": "5min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "分析轴心明确度",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "论证严密性",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "语言表达",
+          "scoring": "0-2"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-PEN-002",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "一人一事",
+      "difficulty": "easy",
+      "mode": "narrow_focus",
+      "exerciseType": "writing",
+      "developmentStage": "pen",
+      "tier": "surface",
+      "constraint": "选一个人（可以是自己、认识的某人、虚构的角色），选一件事（有开头发展结尾），写300-500字讲清楚。硬约束：只写这一个人这件事，不许引入第二个人物线，不许写背景，不许写'他想起了以前'。",
+      "expectedOutcome": "在进入任何技法训练之前，先确保能讲清楚一个完整的最小叙事单元",
+      "classicalBasis": [
+        {
+          "principleId": "LAO_SHE_ONE_THING"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选定人物和事件，用一句话写下来'谁，做了什么'",
+          "duration": "3min"
+        },
+        {
+          "step": 2,
+          "instruction": "写出这件事的3个节点：开头→发展→结尾",
+          "duration": "5min"
+        },
+        {
+          "step": 3,
+          "instruction": "写300-500字完整叙事",
+          "duration": "20min"
+        },
+        {
+          "step": 4,
+          "instruction": "找一个人读，让他回答——①这个人做了什么？②为什么做？③结果如何？",
+          "duration": "5min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "叙事完整性",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "叙事聚焦度",
+          "scoring": "0-2"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-WORD-001",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "删可有可无",
+      "difficulty": "easy",
+      "mode": "word_refine",
+      "exerciseType": "editing",
+      "developmentStage": "word",
+      "tier": "surface",
+      "constraint": "取你自己写过的一段300-500字文字。第一遍：删词——找出所有'的''了''是''有''很''非常'等虚词删到最少。第二遍：删句——找出所有删掉也不影响意思的句子直接删除。第三遍：删段——如果删掉某段后前后文仍然连贯，删除。目标：至少缩减30%。",
+      "expectedOutcome": "建立删改的勇气和判断力——删到不能再删为止",
+      "classicalBasis": [
+        {
+          "principleId": "LU_XUN_DELETE"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取300-500字自己的文字",
+          "duration": "2min"
+        },
+        {
+          "step": 2,
+          "instruction": "逐句删虚词——每删一个停顿问自己'没有它意思变了吗'",
+          "duration": "10min"
+        },
+        {
+          "step": 3,
+          "instruction": "删可删句子——每句问'删了它读者会漏掉什么必要信息吗'",
+          "duration": "8min"
+        },
+        {
+          "step": 4,
+          "instruction": "删可删段落+计算缩减率，不足30%继续删",
+          "duration": "5min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "删减率",
+          "scoring": "0-2"
+        },
+        {
+          "dimension": "信息保真度",
+          "scoring": "0-3"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-STRUCT-001",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "得与失框架应用",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "exerciseType": "analysis",
+      "developmentStage": "structure",
+      "tier": "structural",
+      "constraint": "选一段自己写过的人物困境场景（300字以内）。列出：角色正在失去什么（具体的、有形的）？曾经得到过什么（与失去形成对比）？害怕失去什么（还没失去但可能失去）？如果有一项空白，补充这一项。",
+      "expectedOutcome": "用'得与失'作为简易工具分析任何叙事文本的情感驱动力",
+      "classicalBasis": [
+        {
+          "principleId": "ZHU_GUANG_QIAN_DISCRIMINATION"
+        },
+        {
+          "principleId": "LAO_SHE_MOTIVATION"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "选取300字人物困境场景",
+          "duration": "2min"
+        },
+        {
+          "step": 2,
+          "instruction": "列出'正在失去''曾经得到''害怕失去'三项",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "找到空白项，补充1-2句植入原文",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "自检——补充的内容是'展示'出来的还是'告诉'出来的？",
+          "duration": "5min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "三维度覆盖率",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "展示质量",
+          "scoring": "0-2"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-TASTE-001",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "高阶平淡练习",
+      "difficulty": "medium",
+      "mode": "word_refine",
+      "exerciseType": "editing",
+      "developmentStage": "taste",
+      "tier": "deep",
+      "constraint": "取一段自己写过的200-300字场景。先删到150字，再删到100字。在100字版本里确保：a) 仍然有一个具体的动作在进行 b) 仍然有一个具体的物品被看到/使用 c) 仍然有一个情绪被感受到（但不能出现情绪词）",
+      "expectedOutcome": "训练'写得少但写得准'的能力——用最少的文字传达最精确的信息",
+      "classicalBasis": [
+        {
+          "principleId": "WANG_ZENG_QI_ACCURACY"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "取200-300字自己的场景",
+          "duration": "2min"
+        },
+        {
+          "step": 2,
+          "instruction": "第一轮删减到150字——删词删句不删结构",
+          "duration": "8min"
+        },
+        {
+          "step": 3,
+          "instruction": "第二轮删减到100字——可以动结构重新组织",
+          "duration": "10min"
+        },
+        {
+          "step": 4,
+          "instruction": "找人盲读两个版本，问'哪个版本情绪更强烈'",
+          "duration": "5min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "情绪保真度",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "删减质量",
+          "scoring": "0-2"
+        }
+      ]
+    },
+    {
+      "id": "PRAC-TASTE-002",
+      "syndromeId": null,
+      "syndromeName": null,
+      "title": "趣味自检",
+      "difficulty": "medium",
+      "mode": "restructure",
+      "exerciseType": "self_check",
+      "developmentStage": "taste",
+      "tier": "structural",
+      "constraint": "取自己最近一周写的文字（累计不少于1000字）。对照朱光潜十大弊病逐条自检：无病呻吟？装腔作势？堆砌典故？油腔滑调？涂脂抹粉？找出自己最高频的1-2条弊病，选一段文字针对性修改。",
+      "expectedOutcome": "建立对自己写作趣味的自检能力——识别自己最容易滑入的低级趣味",
+      "classicalBasis": [
+        {
+          "principleId": "ZHU_GUANG_QIAN_DISCRIMINATION"
+        }
+      ],
+      "techniques": [],
+      "exercises": [
+        {
+          "step": 1,
+          "instruction": "收集自己最近一周的文字，不少于1000字",
+          "duration": "5min"
+        },
+        {
+          "step": 2,
+          "instruction": "逐条对照十大弊病，每命中一处做标记",
+          "duration": "15min"
+        },
+        {
+          "step": 3,
+          "instruction": "统计标记分布，找出你的'主力弊病'",
+          "duration": "3min"
+        },
+        {
+          "step": 4,
+          "instruction": "选一段典型文字针对性修改",
+          "duration": "10min"
+        }
+      ],
+      "criteria": [
+        {
+          "dimension": "自检准确度",
+          "scoring": "0-3"
+        },
+        {
+          "dimension": "修改有效性",
+          "scoring": "0-2"
+        }
+      ]
+    }
+  ]
+}

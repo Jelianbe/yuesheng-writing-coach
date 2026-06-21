@@ -37,7 +37,7 @@ import {
   TOOL_TO_SESSION_TYPE,
   SESSION_TYPE_TO_TOOL_ID,
   SESSION_DEFAULT_TITLE,
-} from '../components/layout/drawer-constants';
+} from '../components_archived/layout/drawer-constants';
 
 /** 与原 rightPanelService.PanelId 一致（包含 settings 与 tools） */
 export type RightPanelToolId =
