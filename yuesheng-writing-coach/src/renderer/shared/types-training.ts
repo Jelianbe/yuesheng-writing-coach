@@ -4,7 +4,7 @@ import type { SeverityLevel, SyndromeType } from './types-diagnosis';
 // ======================== 训练相关类型（T-021） ========================
 
 /** 中心面板模式 */
-export type CenterMode = 'chat' | 'training' | 'retro';
+export type CenterMode = 'chat' | 'training' | 'retro' | 'editor';
 
 /** 训练步骤 */
 export interface TrainingStep {

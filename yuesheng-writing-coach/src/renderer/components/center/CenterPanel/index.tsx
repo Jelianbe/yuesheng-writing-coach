@@ -9,6 +9,7 @@ import { useConfigStore } from '../../../stores/config.store';
 import { useStudentContextStore } from '../../../stores/student-context.store';
 import { ChatView } from '../../chat/ChatView';
 import { TrainingWorkshop } from '../../training/TrainingWorkshop';
+import { ManuscriptPanel } from '../../manuscript/ManuscriptPanel';
 import { Footer } from '../Footer';
 import { useDiagnosisFlow } from '../../../hooks/useDiagnosisFlow';
 import { RetroSummaryView } from '../../retro/RetroSummaryView';
@@ -272,6 +273,8 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
             onBackToChat={handleBackToChat}
             onStartNewTraining={handleBackToChat}
           />
+        ) : centerMode === 'editor' ? (
+          <ManuscriptPanel />
         ) : centerMode === 'training' ? (
           <TrainingWorkshop
             errorCards={trainingState.errorCards}
