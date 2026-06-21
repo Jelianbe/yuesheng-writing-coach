@@ -6,6 +6,8 @@
  * 区块二：推荐训练任务（RecommendationsSection）
  * 区块三：近期训练记录（HistorySection）
  *
+ * 额外：ProgressTimeline（教学进度时间轴）
+ *
  * 步骤式练习（activeTraining 不为 null）：
  *   所有 mode 共享通用三步框架，Step 2 提交后由 AI 评估是否符合约束。
  *   前端不做任何 mode 特定的硬编码校验。添加新 mode 只需改模板 JSON。
@@ -53,6 +55,76 @@ export interface TrainingWorkshopProps {
   lastSyndromeId?: string | null;
 }
 
+// ===== ProgressTimeline 子组件 =====
+
+const PHASES = [
+  { id: 'diagnosis', label: '诊断' },
+  { id: 'teaching', label: '教学' },
+  { id: 'validation', label: '验证' },
+  { id: 'retro', label: '复盘' },
+];
+
+/** 从训练记录推断当前教学阶段 */
+function inferActivePhase(history: TrainingRecord[]): { activeId: string; completedIds: Set<string> } {
+  const completedIds = new Set<string>();
+  if (history.length === 0) return { activeId: 'diagnosis', completedIds };
+
+  // 有完成的训练 = 教学阶段
+  const hasCompleted = history.some(r => r.status === 'completed');
+  if (!hasCompleted) return { activeId: 'diagnosis', completedIds };
+
+  completedIds.add('diagnosis');
+  completedIds.add('teaching');
+  // 有验证结果则标记验证完成
+  const hasValidation = history.some(r => r.effectiveness != null);
+  if (hasValidation) completedIds.add('validation');
+  // 历史超过 5 条则标记复盘完成
+  if (history.length >= 5) completedIds.add('retro');
+
+  return {
+    activeId: hasCompleted ? 'validation' : 'teaching',
+    completedIds,
+  };
+}
+
+const ProgressTimeline: React.FC<{ history: TrainingRecord[] }> = ({ history }) => {
+  const { activeId, completedIds } = inferActivePhase(history);
+
+  return (
+    <div className={sharedStyles.timeline}>
+      {PHASES.map((phase, i) => {
+        const isActive = phase.id === activeId;
+        const isCompleted = completedIds.has(phase.id);
+        const isPending = !isActive && !isCompleted;
+        return (
+          <React.Fragment key={phase.id}>
+            <div
+              className={`${sharedStyles.timelinePhase} ${
+                isActive ? sharedStyles.timelinePhaseActive : ''
+              } ${isCompleted ? sharedStyles.timelinePhaseCompleted : ''}`}
+              style={{ opacity: isPending ? 0.5 : 1 }}
+            >
+              <span
+                className={`${sharedStyles.timelineDot} ${
+                  isActive ? sharedStyles.timelineDotActive : ''
+                } ${isCompleted ? sharedStyles.timelineDotCompleted : ''}`}
+              />
+              <span>{phase.label}</span>
+            </div>
+            {i < PHASES.length - 1 && (
+              <div
+                className={`${sharedStyles.timelineConnector} ${
+                  isCompleted || isActive ? sharedStyles.timelineConnectorCompleted : ''
+                } ${isCompleted ? sharedStyles.timelineConnectorCompleted : ''}`}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
 // ===== 主组件 =====
 
 export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
@@ -93,7 +165,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
     return (
       <div className={sharedStyles.trainingContainer}>
         <div className={`${sharedStyles.trainingLoading} animate-fade-in`}>
-          <div style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>加载中...</div>
+          <div className={sharedStyles.loadingText}>加载中...</div>
         </div>
       </div>
     );
@@ -104,7 +176,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
     return (
       <div className={sharedStyles.trainingContainer}>
         <div className={`${sharedStyles.trainingLoading} animate-fade-in`}>
-          <div style={{ fontSize: '0.875rem', color: '#e74c3c' }}>{error}</div>
+          <div className={sharedStyles.errorText}>{error}</div>
         </div>
       </div>
     );
@@ -113,7 +185,7 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
   // 步骤式练习视图
   if (activeTraining) {
     return (
-      <div className="animate-fade-in" style={{ height: '100%' }}>
+      <div className={`animate-fade-in ${sharedStyles.activeTrainingView}`}>
         <ActiveTrainingView
           activeTraining={activeTraining}
           submissionResult={submissionResult}
@@ -129,38 +201,26 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
     );
   }
 
-  // 训练工坊主面板（三区块布局）
+  // 训练工坊主面板（三区块布局 + 时间轴）
   return (
     <div className={`${sharedStyles.trainingContainer} animate-fade-in`}>
       {/* 工坊头部 */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '16px 24px',
-        backgroundColor: 'var(--accent-subtle)',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-          训练工坊
-        </div>
+      <div className={sharedStyles.workshopHeader}>
+        <div className={sharedStyles.workshopHeaderTitle}>训练工坊</div>
       </div>
+
+      {/* Progress Timeline */}
+      <ProgressTimeline history={history} />
 
       {/* M4: 阅读完成横幅 */}
       {readingComplete && (
-        <div style={{
-          margin: '0 20px', padding: '12px 20px', borderRadius: 8,
-          backgroundColor: 'var(--success-light)', color: 'var(--success)',
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          marginTop: 12,
-        }}>
-          <span style={{ fontWeight: 500 }}>阅读分析已完成。下面是根据诊断结果调整后的推荐训练任务。</span>
+        <div className={sharedStyles.readingBanner}>
+          <span className={sharedStyles.readingBannerText}>
+            阅读分析已完成。下面是根据诊断结果调整后的推荐训练任务。
+          </span>
           <button
+            className={sharedStyles.readingBannerBtn}
             onClick={onDismissReadingComplete}
-            style={{
-              background: 'none', border: '1px solid var(--success)', borderRadius: 4,
-              padding: '4px 12px', cursor: 'pointer', color: 'var(--success)', fontSize: '0.85rem',
-            }}
           >
             知道了
           </button>
@@ -168,8 +228,8 @@ export const TrainingWorkshop: React.FC<TrainingWorkshopProps> = ({
       )}
 
       {/* 三区块内容 */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <div className={sharedStyles.workshopContent}>
+        <div className={sharedStyles.workshopInner}>
           <ErrorCardsSection
           cards={errorCards}
           recommendations={recommendations}
