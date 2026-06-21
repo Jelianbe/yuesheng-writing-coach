@@ -35,6 +35,7 @@ const CONFIG_SET_ALLOWED_KEYS = new Set<keyof ApiConfig>([
   'modelName',
   'temperature',
   'attitudeLevel',
+  'attitudeLocked',
   'maxTokens',
 ]);
 
@@ -45,6 +46,7 @@ const CONFIG_VALUE_VALIDATORS: Record<string, (v: unknown) => boolean> = {
   modelName: (v): v is string => typeof v === 'string',
   temperature: (v): v is number => typeof v === 'number' && v >= 0 && v <= 2,
   attitudeLevel: (v): v is string => typeof v === 'string' && ['yuesheng', 'doubao', 'sensei'].includes(v),
+  attitudeLocked: (v): v is boolean => typeof v === 'boolean',
   maxTokens: (v): v is number => typeof v === 'number' && v >= 256 && v <= 128000,
 };
 

@@ -15,6 +15,8 @@ export interface ApiConfig {
   temperature: number;
   /** 态度档位 */
   attitudeLevel: AttitudeLevel;
+  /** 态度是否锁定（锁定后不可切换档位） */
+  attitudeLocked: boolean;
   /** 聊天流输出最大 token 数（默认 8192） */
   maxTokens: number;
 }

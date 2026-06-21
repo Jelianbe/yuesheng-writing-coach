@@ -16,10 +16,9 @@ const ATT_LEVELS = [
 ];
 
 export const Footer: React.FC<FooterProps> = ({ chatSessionId, onToggleTemplate }) => {
-  const { attitudeLevel, setAttitudeLevel } = useConfigStore();
+  const { attitudeLevel, attitudeLocked, setAttitudeLevel, setAttitudeLocked } = useConfigStore();
   const { trainingContexts } = useUiStore();
   const [text, setText] = useState('');
-  const [locked, setLocked] = useState(false);
 
   const handleSend = useCallback(async () => {
     if (!text.trim() || !chatSessionId) return;
@@ -68,19 +67,19 @@ export const Footer: React.FC<FooterProps> = ({ chatSessionId, onToggleTemplate 
                 style={{
                   borderColor: lv.color,
                   background: attitudeLevel === lv.id ? lv.color : 'transparent',
-                  opacity: locked ? 0.6 : 1,
+                  opacity: attitudeLocked ? 0.6 : 1,
                 }}
-                onClick={() => !locked && setAttitudeLevel(lv.id)}
+                onClick={() => !attitudeLocked && setAttitudeLevel(lv.id)}
                 title={lv.label}
               />
             ))}
           </div>
           <button
             className={styles.lockBtn}
-            onClick={() => setLocked(!locked)}
-            title={locked ? '已锁定' : '未锁定'}
+            onClick={() => setAttitudeLocked(!attitudeLocked)}
+            title={attitudeLocked ? '已锁定' : '未锁定'}
           >
-            {locked ? '🔒' : '🔓'}
+            {attitudeLocked ? '🔒' : '🔓'}
           </button>
         </div>
       </div>

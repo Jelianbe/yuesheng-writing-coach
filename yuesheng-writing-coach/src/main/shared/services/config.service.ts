@@ -29,6 +29,7 @@ const DEFAULT_CONFIG: ApiConfig = {
   modelName: 'deepseek-v4-flash',
   temperature: 0.7,
   attitudeLevel: 'yuesheng',
+  attitudeLocked: false,
   maxTokens: 8192,
 };
 
@@ -74,6 +75,7 @@ export class ConfigService {
       modelName: this.store.get(CONFIG_KEYS.MODEL_NAME, DEFAULT_CONFIG.modelName),
       temperature: this.store.get(CONFIG_KEYS.TEMPERATURE, DEFAULT_CONFIG.temperature),
       attitudeLevel: this.store.get(CONFIG_KEYS.ATTITUDE_LEVEL, DEFAULT_CONFIG.attitudeLevel),
+      attitudeLocked: this.store.get('attitudeLocked', DEFAULT_CONFIG.attitudeLocked),
       maxTokens: this.store.get(CONFIG_KEYS.MAX_TOKENS, DEFAULT_CONFIG.maxTokens),
     };
 
