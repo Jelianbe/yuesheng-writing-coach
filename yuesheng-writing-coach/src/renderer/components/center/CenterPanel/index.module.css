@@ -1,3 +1,33 @@
+/* Wrapper: 整体容器 */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Header 返回按钮（训练模式 → 对话模式）*/
+.headerBackBtn {
+  width: auto;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-radius: 4px;
+  color: #7A6040;
+  font-size: 11px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 150ms;
+  white-space: nowrap;
+}
+.headerBackBtn:hover {
+  color: #5C5242;
+  background: rgba(122, 96, 64, 0.09);
+}
+
 .empty {
   flex: 1;
   display: flex;
