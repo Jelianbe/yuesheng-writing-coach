@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SYNDROME_NAMES } from '../../../../../shared/mappings';
 import { getInvoke } from '../../../../utils/ipc';
 import { useSessionStore } from '../../../../stores/session.store';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import type { TeachingStateGetResponse } from '../../../../../shared/api-contracts/teaching-state.contract';
 import type { AbilityProfile } from '../../../../../shared/api-contracts/ability.contract';
 import type { DiagnosisEntry } from '../../../../../shared/api-contracts/diagnosis.contract';
@@ -173,3 +174,12 @@ export const ProgressWorkspace: React.FC = () => {
     </div>
   );
 };
+
+// ADR-002: 自注册
+registerWorkspace({
+  id: 'progress',
+  name: '教学进度',
+  icon: '◐',
+  defaultOpen: true,
+  component: () => import('./index').then(m => ({ default: m.ProgressWorkspace })),
+});

@@ -5,16 +5,9 @@
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
 import { getInvoke } from '../utils/ipc';
+import type { ProjectInfo } from '../../shared/api-contracts/project.contract';
 
-export interface ProjectInfo {
-  id: string;
-  name: string;
-  description: string | null;
-  settingTree?: string;
-  settingTreeType?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+export type { ProjectInfo };
 
 interface ProjectState {
   projects: ProjectInfo[];

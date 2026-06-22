@@ -1,11 +1,15 @@
-<!--
-Skill: SKILL-SCENARIO
-Version: v1.0
-Load: CONDITIONAL（触发关键词时加载）
-Condition: userInput contains '帮我写|续写|润色|合作|发平台|AI写|信息密度'
-Source: yuesheng-prompt-v3.md §十一
--->
-# Skill: 场景规则扩展
+---
+id: scenario-rules
+estimatedTokens: 1100
+loadWhen:
+  phases: [P0_INIT, P1_WORLD, P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# SKILL: 场景规则扩展
+
+> **来源**: yuesheng-prompt-v5.md §十一
+> **loadWhen**: 所有 phase 必加载（场景规则是触发式硬约束）
 
 > 以下为特定场景下的强制话术和策略，触发条件满足时必须加载。
 

@@ -27,3 +27,9 @@ export { PromptBuilder } from './prompt-builder';
 export { CodexService, type CodexEntry } from './codex.service';
 export { DynamicContextService } from './dynamic-context.service';
 export { MemoryCapsuleService, getMemoryCapsuleService } from './memory-capsule.service';
+export {
+  MAX_CHARS,
+  truncateChapterContent,
+  type TruncationResult,
+  type TruncationOptions,
+} from './truncation';

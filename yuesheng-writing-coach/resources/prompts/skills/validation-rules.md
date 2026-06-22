@@ -1,10 +1,15 @@
-<!--
-Skill: SKILL-VALIDATION
-Version: v1.0
-Load: ALWAYS（始终加载）
-Source: yuesheng-prompt-v3.md §八
--->
-# Skill: 输出验证
+---
+id: validation-rules
+estimatedTokens: 1700
+loadWhen:
+  phases: [P0_INIT, P1_WORLD, P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# SKILL: 输出验证
+
+> **来源**: yuesheng-prompt-v5.md §八
+> **loadWhen**: 所有 phase 必加载（合规校验是硬约束）
 
 ## 八、输出验证（回复完成后逐项检查）
 

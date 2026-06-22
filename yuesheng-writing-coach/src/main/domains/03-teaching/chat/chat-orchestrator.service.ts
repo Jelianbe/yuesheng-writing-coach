@@ -23,6 +23,7 @@ import type { StreamHandlerDeps } from './stream-handler';
 import type { DiagnosisOrchestratorService } from '../../01-diagnosis/orchestrator/diagnosis-orchestrator.service';
 import type { TeachingContextService } from './teaching-context.service';
 import type { StreamHandlerService } from './stream-handler.service';
+import { truncateChapterContent } from '../prompt/truncation';
 
 export interface ChatOrchestratorDeps {
   configService: ConfigService;
@@ -259,7 +260,17 @@ export class ChatOrchestratorService {
           continue;
         }
 
-        resolved = resolved.replace(fullMatch, chapterContent);
+        // ADR-003 D 阶段：长文截断（hard-cap + warn）
+        const { text: truncatedContent, truncated } = truncateChapterContent(chapterContent, {
+          chapterId,
+          source: 'chat-orchestrator.resolveChapterReference',
+        });
+        if (truncated) {
+          console.warn(
+            `[ChapterResolve] Chapter ${chapterId} truncated: ${chapterContent.length} -> ${truncatedContent.length}`,
+          );
+        }
+        resolved = resolved.replace(fullMatch, truncatedContent);
       } catch (err) {
         console.error('[ChapterResolve] Failed to load chapter:', err);
       }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useRightToolsStore } from '../../../../stores/right-tools.store';
 import { useProjectStore } from '../../../../stores/project.store';
 import { getInvoke } from '../../../../utils/ipc';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import styles from './index.module.css';
 
 /** IPC chapter:get 返回的章节数据类型 */
@@ -109,3 +110,12 @@ export const WorksWorkspace: React.FC = () => {
     </div>
   );
 };
+
+// ADR-002: 自注册
+registerWorkspace({
+  id: 'works',
+  name: '作品',
+  icon: '☰',
+  defaultOpen: true,
+  component: () => import('./index').then(m => ({ default: m.WorksWorkspace })),
+});

@@ -91,7 +91,14 @@ export interface DiagnosisEntry {
   teachingProgress?: TeachingProgress;
 }
 
-/** 单条证据记录 */
+/** 单条证据记录
+ *
+ * ADR-003 扩展（B-5）：
+ * - 可选 chapterId / startOffset / endOffset 用于原文位置溯源
+ * - chapterId: 关联到 chapters 表（app-initializer.ts 中 evidence 表已有 chapter_id 列，但 save/rowToRecord 此前未映射）
+ * - startOffset / endOffset: 字符位置，遵循 JS String.slice 语义
+ * - 老证据（无 offset 字段）继续按纯文本处理
+ */
 export interface EvidenceRecord {
   evidenceId: string;
   type: 'text' | 'pattern' | 'statistical' | 'comparison';
@@ -102,6 +109,12 @@ export interface EvidenceRecord {
   relatedAbility: string;
   extractedBy: string;
   createdAt: string;
+  /** 所属章节 ID（可选，B-5 修复后 rowToRecord 会映射数据库 chapter_id 列） */
+  chapterId?: string;
+  /** 原文起始偏移（字符单位，0-based inclusive），可选 */
+  startOffset?: number;
+  /** 原文结束偏移（字符单位，0-based exclusive），可选 */
+  endOffset?: number;
 }
 
 /** 诊断证据链（含关联关系） */
@@ -122,7 +135,14 @@ export interface TechniqueRef {
   difficulty: 'beginner' | 'intermediate';
 }
 
-/** 关键段落引用（Diagnosis Agent 输出用） */
+/** 关键段落引用（Diagnosis Agent 输出用）
+ *
+ * ADR-003 扩展（B-2）：
+ * - 可选 chapterId / startOffset / endOffset 用于原文位置溯源
+ * - 老诊断（无 offset 字段）继续按纯文本证据处理
+ * - offset 单位：字符（UTF-16 code unit），与 String.slice 语义一致
+ *   ⚠ 不使用 Array.from().length（多字符 emoji 偏移会差）
+ */
 export interface KeyPassage {
   /** 原文片段（不超过 50 字） */
   text: string;
@@ -130,6 +150,12 @@ export interface KeyPassage {
   issue: string;
   /** 关联的症候 ID（可选，用于按症候分组证据） */
   syndromeRef?: string;
+  /** 所属章节 ID（可选，Sprint 10 UI 跳转原文使用） */
+  chapterId?: string;
+  /** 原文起始偏移（字符单位，0-based inclusive），可选 */
+  startOffset?: number;
+  /** 原文结束偏移（字符单位，0-based exclusive），可选 */
+  endOffset?: number;
 }
 
 /** 诊断 Agent 的结构化输出 */

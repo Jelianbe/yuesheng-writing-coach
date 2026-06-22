@@ -1,13 +1,12 @@
-import React, { useCallback, useRef } from 'react';
-import { useRightToolsStore, ALL_TOOLS, type ToolId } from '../../../stores/right-tools.store';
+import React, { Suspense, useCallback, useRef } from 'react';
+import { useRightToolsStore } from '../../../stores/right-tools.store';
 import { useProjectStore } from '../../../stores/project.store';
-import { CatalogWorkspace } from '../workspaces/CatalogWorkspace';
-import { ProgressWorkspace } from '../workspaces/ProgressWorkspace';
-import { LearningLogWorkspace } from '../workspaces/LearningLogWorkspace';
-import { WorksWorkspace } from '../workspaces/WorksWorkspace';
-import { TeachingNoteWorkspace } from '../workspaces/TeachingNoteWorkspace';
-import { SettingsWorkspace } from '../workspaces/SettingsWorkspace';
-import { StageProgressWorkspace } from '../workspaces/StageProgressWorkspace';
+import {
+  getAllWorkspaces,
+  getWorkspace,
+  type WorkspaceId,
+} from '../../../registry/workspace-registry';
+import '../../../registry/workspaces-index';
 import { ToolGrid } from '../ToolGrid';
 import { ToolTabs } from '../ToolTabs';
 import { SubTabs, type SubTabItem } from '../SubTabs';
@@ -17,22 +16,12 @@ interface RightPanelProps {
   setCollapsedRight: (v: boolean) => void;
 }
 
-const WORKSPACE_MAP: Record<ToolId, React.FC> = {
-  catalog: CatalogWorkspace,
-  progress: ProgressWorkspace,
-  growth: LearningLogWorkspace,
-  works: WorksWorkspace,
-  training: TeachingNoteWorkspace,
-  stage: StageProgressWorkspace,
-  __settings__: SettingsWorkspace,
-};
-
 export const RightPanel: React.FC<RightPanelProps> = ({
   setCollapsedRight,
 }) => {
   const {
     openTools, activeToolId, openTool, setActiveTool, closeTool,
-    subTabs, activeSubTabId, removeSubTab, setActiveSubTab,
+    subTabs, activeSubTabId, removeSubTab, setActiveSubTab, clearSubTabs,
     projectTabs, activeProjectTabId, setActiveProjectTab, closeProjectTab,
   } = useRightToolsStore();
 
@@ -42,7 +31,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 
   // ── 加工具弹窗 ──
   const handleAddTool = useCallback(() => setShowPopup(v => !v), []);
-  const handleSelectTool = useCallback((id: ToolId) => {
+  const handleSelectTool = useCallback((id: WorkspaceId) => {
     openTool(id);
     setShowPopup(false);
   }, [openTool]);
@@ -60,8 +49,9 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     return () => window.removeEventListener('mousedown', handler);
   }, [showPopup]);
 
-  // ── 可用工具（未打开的）──
-  const availTools = ALL_TOOLS.filter(t => !openTools.includes(t.id));
+  // ── 可用工具(未打开的)— 来自注册表(ADR-002)──
+  const allWorkspaces = getAllWorkspaces();
+  const availTools = allWorkspaces.filter(w => !openTools.includes(w.id));
 
   // ── 收起面板 ──
   const handleCollapse = useCallback(() => setCollapsedRight(true), [setCollapsedRight]);
@@ -74,6 +64,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     const p = useProjectStore.getState().getById(pid);
     return { id: pid, label: p?.name.replace('第', '') ?? pid };
   });
+
+  // ── 当前工作区组件(懒加载)— 来自注册表(ADR-002)──
+  const activeWorkspace = activeToolId ? getWorkspace(activeToolId) : null;
+  const ActiveWorkspace = activeWorkspace
+    ? React.lazy(activeWorkspace.component)
+    : null;
 
   return (
     <div className={styles.panel}>
@@ -106,6 +102,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           emptyHint={activeToolId === 'catalog' ? '选择技法开始训练' : ''}
           showAddBtn={activeToolId === 'catalog'}
           addBtnTitle="回到目录"
+          onAddBtnClick={() => {
+            if (activeToolId) {
+              clearSubTabs(activeToolId);
+              setActiveSubTab(null);
+            }
+          }}
         />
       ) : (
         <SubTabs
@@ -116,21 +118,24 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           emptyHint={activeToolId === 'catalog' ? '选择技法开始训练' : ''}
           showAddBtn={activeToolId === 'catalog'}
           addBtnTitle="回到目录"
+          onAddBtnClick={() => {
+            // 目录态无子标签,按钮仅作占位以保持视觉一致性
+            setActiveSubTab(null);
+          }}
         />
       )}
 
       {/* ═══ #rightBody — 内容体 ═══ */}
       <div className={styles.rightBody} id="rightBody">
-        {activeToolId ? (
-          (() => {
-            const Workspace = WORKSPACE_MAP[activeToolId];
-            return Workspace ? <Workspace /> : (
-              <div className={styles.empty}>
-                <div>{ALL_TOOLS.find(t => t.id === activeToolId)?.name ?? activeToolId}</div>
-                <div className={styles.emptySub}>通过 IPC {activeToolId} 通道读取数据</div>
-              </div>
-            );
-          })()
+        {ActiveWorkspace ? (
+          <Suspense fallback={<div className={styles.empty}>加载中...</div>}>
+            <ActiveWorkspace />
+          </Suspense>
+        ) : activeToolId ? (
+          <div className={styles.empty}>
+            <div>{allWorkspaces.find(t => t.id === activeToolId)?.name ?? activeToolId}</div>
+            <div className={styles.emptySub}>通过 IPC {activeToolId} 通道读取数据</div>
+          </div>
         ) : (
           <ToolGrid onOpenTool={openTool} />
         )}
