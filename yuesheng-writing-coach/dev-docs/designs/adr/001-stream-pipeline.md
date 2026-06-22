@@ -179,7 +179,7 @@ const unsubStreamEnd = window.electronAPI.on('chat:stream:end', (data: unknown) 
 
 ## 决策 (Decision)
 
-**采用选项 C**。
+**采用选项 B-lite**（用户 2026-06-22 确认）。
 
 理由：
 1. **解决全部 3 个症状**（R-01 sanitizer / R-02 流锁 / R-03 字段名）
