@@ -23,7 +23,10 @@
     {
       "text": "原文片段（不超过50字）",
       "issue": "问题描述",
-      "syndromeRef": "P001"
+      "syndromeRef": "P001",
+      "chapterId": "ch-001",
+      "startOffset": 120,
+      "endOffset": 160
     }
   ],
   "lockedSyndromes": ["P003", "P005"],
@@ -36,6 +39,20 @@
 - 只有确实无法关联到任何症候的通用性内容（如整体结构评价），才省略 syndromeRef
 - 一个症候最多对应 2 个 keyPassage（避免证据过多）
 - syndromeRef 必须是有效的症候 ID（如 P001、P002、P003 等）；如需标注变种使用 `P001::setting_overload` 格式
+
+### 原文位置溯源（ADR-003 · 可选）
+
+如果系统提供了 `{{chapter_id}}` 占位符，请在 `keyPassage` 中**尽量**提供以下三个字段（用于前端高亮原文）：
+
+- `chapterId`: 章节 ID，**必须**与 `{{chapter_id}}` 一致
+- `startOffset`: 该片段在原文中的起始字符位置（0-based inclusive）
+- `endOffset`: 该片段在原文中的结束字符位置（0-based exclusive，遵循 JS `String.slice` 语义）
+
+⚠️ 溯源规则：
+1. offset 是**字符数**（不是字节数），emoji 按 1 个或 2 个 UTF-16 code unit 计算均可
+2. **必须保证** `content.slice(startOffset, endOffset) === text`，否则视为无效
+3. 如果你无法精确计算 offset（特别是长文），**省略**三个字段而不是编造 — 降级到纯文本证据
+4. text 与原文**必须逐字一致**（包括标点），不要做"近似匹配"
 
 ## 分析流程
 

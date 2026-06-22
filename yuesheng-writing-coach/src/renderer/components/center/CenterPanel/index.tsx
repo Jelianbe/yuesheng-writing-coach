@@ -1,8 +1,15 @@
+/**
+ * CenterPanel — 中间栏内容区
+ *
+ * 架构（G-2 后）：
+ * - 顶部 Header 由 CenterHeader 子组件渲染（多项目下拉、状态徽章、操作按钮）
+ * - 本组件只负责：会话加载、内容区切换（Chat/Training/Editor/Retro/Empty）
+ */
+
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useSessionStore } from '../../../stores/session.store';
 import { useChatStore } from '../../../stores/chat.store';
 import { useTeachingStateStore } from '../../../stores/teaching-state.store';
-import { useRightToolsStore } from '../../../stores/right-tools.store';
 import { useTrainingStore, selectCenterMode } from '../../../stores/training.store';
 import { useDiagStore } from '../../../stores/diag.store';
 import { useConfigStore } from '../../../stores/config.store';
@@ -11,6 +18,7 @@ import { ChatView } from '../../chat/ChatView';
 import { TrainingWorkshop } from '../../training/TrainingWorkshop';
 import { ManuscriptPanel } from '../../manuscript/ManuscriptPanel';
 import { Footer } from '../Footer';
+import { CenterHeader } from '../CenterHeader';
 import { useDiagnosisFlow } from '../../../hooks/useDiagnosisFlow';
 import { RetroSummaryView } from '../../retro/RetroSummaryView';
 import styles from './index.module.css';
@@ -64,8 +72,6 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
 }) => {
   const { sessions, currentSessionId, loadSessions, switchSession } = useSessionStore();
   const messages = useChatStore((s) => s.messages);
-  const { currentState } = useTeachingStateStore();
-  const { openTool } = useRightToolsStore();
   const centerMode = useTrainingStore(selectCenterMode);
   const trainingState = useTrainingStore((s) => ({
     errorCards: s.errorCards,
@@ -104,17 +110,19 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     }
   }, [sessions, currentSessionId, switchSession]);
 
-  const currentSession = sessions.find(s => s.id === currentSessionId);
-
-  const handleNewSession = async () => {
-    const { createSession } = useSessionStore.getState();
-    const s = await createSession();
-    if (s) switchSession(s.id);
-  };
-
   // [模板] 按钮（由 Footer 触发，功能在 F-02 后续完善）
   const handleToggleTemplate = useCallback(() => {
     // F-02: wire template panel
+  }, []);
+
+  const handleNewSession = useCallback(async () => {
+    const { createSession } = useSessionStore.getState();
+    const s = await createSession();
+    if (s) switchSession(s.id);
+  }, [switchSession]);
+
+  const handleBackToChat = useCallback(() => {
+    useTrainingStore.getState().backToChat();
   }, []);
 
   // 桥接卡片 → 进入训练工坊
@@ -142,10 +150,6 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   const handleDismissReadingComplete = useCallback(() => {
     useTrainingStore.getState().dismissReadingComplete();
   }, []);
-  const handleBackToChat = useCallback(() => {
-    useTrainingStore.getState().backToChat();
-  }, []);
-
   const handleSubmitStep = useCallback(() => {
     useTrainingStore.getState().submitStep();
   }, []);
@@ -175,16 +179,6 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   const handleCancelEditing = useCallback(() => {
     flow.cancelEditing();
   }, [flow]);
-
-  // 教学状态标签
-  const statusText = React.useMemo(() => {
-    if (!currentState?.currentSubphase) return '教学中';
-    const LABELS: Record<string, string> = {
-      S1: '待诊断', S2: '诊断中', S3: '待训练',
-      S4: '训练中', S5: '待回顾', S6: '回顾中', S7: '已完成',
-    };
-    return LABELS[currentState.currentSubphase] ?? currentState.currentSubphase;
-  }, [currentState]);
 
   // ChatView props — 用 useMemo 避免无关更新
   const isStreaming = useChatStore((s) => s.isLoading);
@@ -222,42 +216,14 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
 
   return (
     <div className={styles.wrapper}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerLeft}>
-          {collapsedLeft && (
-            <div className={styles.collapsedBar}>
-              <div className="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
-              <button className={styles.expandBtn} onClick={() => setCollapsedLeft(false)} title="展开">☰</button>
-            </div>
-          )}
-          <button className={styles.projectBtn}>
-            <span className={styles.projectBtnArrow}>▼</span>
-            <span>我的第一本小说</span>
-            <span className={styles.projectBtnArrow}>▾</span>
-          </button>
-          <span className={styles.statusBadge}>
-            <span className={styles.statusDot} />
-            <span>{statusText}</span>
-          </span>
-          {currentSession && (
-            <span className={styles.sessionBadge}>{currentSession.title}</span>
-          )}
-        </div>
-        <div className={styles.headerActions}>
-          {centerMode === 'training' && (
-            <button
-              className={styles.headerBackBtn}
-              onClick={handleBackToChat}
-              title="返回对话"
-            >
-              ← 返回
-            </button>
-          )}
-          <button className={styles.headerBtn} onClick={handleNewSession} title="新建会话">＋</button>
-          <button className={styles.headerBtn} onClick={() => openTool('__settings__')} title="设置">⚙</button>
-        </div>
-      </header>
+      {/* G-2: Header 拆为独立子组件 */}
+      <CenterHeader
+        collapsedLeft={collapsedLeft}
+        setCollapsedLeft={setCollapsedLeft}
+        centerMode={centerMode}
+        onNewSession={handleNewSession}
+        onBackToChat={handleBackToChat}
+      />
 
       {/* Content */}
       <div className={styles.chatArea}>
@@ -330,8 +296,8 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
         )}
       </div>
 
-      {/* Footer（仅在对话/复盘模式下显示） */}
-      {centerMode !== 'training' && (
+      {/* Footer（仅在 chat 模式下显示 — training/retro/editor 由各自视图内部负责底部交互） */}
+      {centerMode === 'chat' && (
         <Footer chatSessionId={currentSessionId} onToggleTemplate={handleToggleTemplate} />
       )}
     </div>

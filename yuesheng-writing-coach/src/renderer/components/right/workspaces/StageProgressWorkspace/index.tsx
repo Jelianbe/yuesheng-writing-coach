@@ -8,6 +8,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { getInvoke } from '../../../../utils/ipc';
 import { IPC_CHANNELS } from '../../../../../shared/constants';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import type { StageProgress, DevelopmentStageInfo } from '../../../../shared/types';
 import styles from './index.module.css';
 
@@ -137,3 +138,12 @@ export const StageProgressWorkspace: React.FC = () => {
     </div>
   );
 };
+
+// ADR-002: 自注册
+registerWorkspace({
+  id: 'stage',
+  name: '发展路径',
+  icon: '◈',
+  defaultOpen: true,
+  component: () => import('./index').then(m => ({ default: m.StageProgressWorkspace })),
+});

@@ -241,3 +241,250 @@
   4. **V2 prompt 缺口二次评估** — 延期至后续 Sprint
   5. **蒸馏素材工程化** — 全部延期
   6. **MasteryGate 阈值可配置性** — 当前硬编码 8 分，未外置为配置项
+
+
+---
+
+## 2026-06-23
+
+### D-027: 为什么先做资产普查再动手（Sprint 11 启动决策）
+- **类型**: 工程方法论
+- **决策**: Sprint 12 提示词工程统一启动前，先用 Sprint 11 做"只读+文档"的资产普查，再动手合并/去重/废弃
+- **原因**:
+  1. **盲改代价大**: resources/ 树下 162 个文本资产，跨 esources/prompts/（老根目录）与 esources/01-05/（新 domain 结构）双副本共存，hash 比对发现 17 组重复/近似重复文件；不盘点直接合并必然产生遗漏或误删
+  2. **Sprint 12 风险前置**: v4→v5 合并需要回答"保留哪个、废弃哪个、改名为什么"，这些决策依赖资产清单的事实基线
+  3. **决策可追溯**: 通过 udit-prompt-assets.js 脚本生成 JSON 清单 + 命名规范草案，让"为什么 v1 归档、为什么 v3 合并"等决策可以引用具体文件路径与 hash
+  4. **零代码风险**: 普查只新增脚本+清单+规范三类文档，零代码改动 → 门禁零影响，回退成本几乎为零
+- **范围**:
+  - 扫描 esources/prompts/** + esources/01-diagnosis/** ~ esources/05-retro/** + .trae/.agents/.claude/.qoder/skills/**
+  - 输出 dev-docs/audits/2026-06-23-prompt-asset-inventory.{json,md} 两份文件
+  - 命名规范草案落 dev-docs/standards/2026-06-23-prompt-naming-spec.md
+  - 不改任何 src/ / resources/ / .trae/ 文件
+- **风险**:
+  - 扫描脚本遗漏某些扩展名 → 已通过白名单机制（.md/.txt/.json/.yaml/.yml）显式声明 TEXT_EXT，新增扩展名时同步更新
+  - 重复判定阈值（hash + 95% 相似度）误判 → 决策权交回给 Sprint 12 的人工 review，自动化只做"标记"不做"删除"
+  - 命名规范草案过早收敛 → 显式标注"草案状态，不执行"，Sprint 12 才会真正落地
+- **验证**:
+  - typecheck + test + lint 全绿（无代码改动应自然绿，作为回归基线）
+  - 资产清单 .md 与 .json 数量一致（162 个）
+  - 命名规范草案 ≤150 行，符合 R-019 单文件上限
+- **回退**:
+  - 普查不修改任何运行时文件，删除 scripts/audit-prompt-assets.js + 三个新增 .md 即可完全回退
+  - 决策日志条目本身保留（按 R-011 记忆强化，决策记录不回退）
+- **依据**: 设计 005 §二 Sprint 拆分 + R-018 变更溯源规范（决策→任务→交付物）
+- **Issue**: #16 (Sprint 11 资产普查 P1)
+- **提交**: （待 commit T11-7）
+
+---
+
+## 2026-06-23
+
+### D-028: Sprint 11 复盘 + 债务记录
+- **类型**: Reflect（复盘）
+- **阶段**: GStack Sprint 11（Plan → Build → Review → Test → Ship → Reflect）
+
+## 概况
+- **Issue**: #16 (Sprint 11 资产普查 P1)
+- **PR**: https://github.com/Jelianbe/yuesheng-writing-coach/pull/19
+- **branch**: feature/sprint-9-audit-fix
+- **commit 数**: 5（全部按 R-016 规范，subject ≤50 字符）
+
+## 交付清单（Done）
+- `f169bcd` chore(scripts): add audit-prompt-assets scanner
+- `71ff734` docs(audits): add Sprint 11 prompt asset inventory
+- `ecc2e00` docs(design): add Sprint 11 prompt asset audit plan
+- `c62bd09` docs(standards): add prompt asset naming spec draft
+- `74b09ee` docs(decision): add D-027 audit-first rationale
+
+## 门禁结果
+- typecheck: exit 0 ✓
+- test: 421/421 passed ✓
+- lint: 0 errors, 191 warnings（< 300 软上限）✓
+
+## 做得好的（Keep）
+1. **零代码改动设计**：Sprint 11 全部为脚本+清单+规范文档，源代码与资源 0 改动，最大化安全性
+2. **R-016 严格遵循**：5 个 commit subject 全部 ≤50 字符，含 scope
+3. **决策前置**：D-027 提前记录"为什么先普查"理由，避免 Sprint 12 返工
+4. **扫描器通用化**：scripts/audit-prompt-assets.js 可被 Sprint 12 复用为回归基线
+5. **门禁与决策可追溯**：4 项 DoD 全部满足（100% inventory / 17 组重复 / 命名草案 / 决策日志）
+
+## 教训（Learn）
+1. **Edit/Read 工具缓存问题**：本会话出现 Read 工具返回内容 ≠ 磁盘实际内容（缓存含 D-027 但磁盘未写入），导致 Edit 报 "File has not been read yet" / WriteAllText 把 UTF-8 文件按 GBK 解析后再以 UTF-8 写出 = mojibake。**解决方案**：对中文文件追加必须用 node.js + UTF-8 或 base64 + byte 级 `File.WriteAllBytes`，禁用 PowerShell 5.1 here-string 中文路径
+2. **PR 描述中文走 gh CLI JSON 输出是 Unicode escape**：gh 输出的 body 是 `\uXXXX` 形式，GitHub Web 渲染应正常但本地 gh CLI 验证不直观。下次可改用 `--body-file` 配合 UTF-8 临时文件（已采用）
+3. **未创建项目级 CHANGELOG.md**：虽符合 R-019 最小化原则，但失去 sprint 历史可读性。Sprint 13 可考虑加一个最小化 CHANGELOG（每个 sprint 标题 + 关键 commit hash）
+
+## 新增技术债（Debt）
+1. **D-DEBT-2026-06-23-01**: Sprint 12 启动前必须 review 资产清单的 17 组重复文件，逐组决定保留/废弃/合并，否则合并会返工
+2. **D-DEBT-2026-06-23-02**: resources/ 与 resources/0X-domain/ 双副本结构问题，建议 Sprint 12 用"先归档 v1-v2 + 统一 v5"策略
+3. **D-DEBT-2026-06-23-03**: 4 个 IDE skill 目录（.trae/.agents/.claude/.qoder）内容互不相同，需要逐个决定保留哪些 skill，未来 5th IDE 加入时需要再扫描一次
+4. **D-DEBT-2026-06-23-04**: PowerShell 5.1 中文编码问题应在 `.trae/rules/R-019-代码规范标准.md` 增补"Windows 工具链"段落，避免下次踩坑
+
+## 下一阶段（Next）
+- **PR #19 等待用户 merge**（AI 不主动 merge 主分支，按 R-009 用户主权 + R-019 安全性）
+- **Issue #16 在 PR merge 时自动关闭**（PR body 含 "Closes #16"）
+- **Sprint 12 启动条件**：用户说"开始 Sprint 12"→ 进入 Plan 阶段，依据 Sprint 11 普查结果设计 v4→v5 合并方案
+
+## 依据
+- 设计 005 §二 Sprint 拆分
+- R-011 记忆强化（决策日志 = 知识归档）
+- R-018 变更溯源（决策→任务→交付物）
+- RWR-MASTER-CHAIN（Reflect 阶段产出）
+
+
+## D-029 (2026-06-23) Sprint 12 复盘：提示词工程统一 (v4 拆分逆转 + v5 合并)
+
+### 上下文
+- 设计 005 §三 Sprint 12 / Issue #17 P0
+- Sprint 11 普查结果：162 个资产 + 17 组重复 + 命名规范草案
+- 起点：v4 拆分产物 5 个 SKILL-*.md + v3.9.0
+- 终点：v5.0 单一 prompt 文件 + 历史归档 + 代码侧 v5 路径
+
+### 决策
+1. **保留 v5.md 为单一真源**：30K 字符，5 大 SKILL 块顺序固定为 IDENTITY→TEACHING→VALIDATION→FEEDBACK→SCENARIO
+2. **v3.9.0 tag 作为回退锚点**：`git checkout v3.9.0 -- resources/prompts/yuesheng-prompt-v3.md` 可一键恢复
+3. **truncation 不应用于 system prompt**：v5.md ≈ 30K 字符远超 MAX_CHARS=4000，但 v5 是 system prompt 不走 truncation；yuesheng-prompt-v5-structure.test.ts 显式断言此约束
+4. **代码侧引用 v3→v5 在 Sprint 12 完成**：避免 17 组重复扩大（每多一份 v3 副本都增加回退难度）
+
+### 交付（5 commits）
+1. `9ff5da1` → `d901f53` `feat(prompt): add v5 unified prompt (merge 5 SKILL)` + tag v3.9.0
+2. `8ef3c40` `docs(prompt): archive v3.9 + 5 SKILL + v2 old pos`
+3. `555da74` `refactor(prompt): switch code path to v5`
+4. `b904f80` `test(prompt): v5 path + structure coverage` (15 个新测试)
+5. `b267ddb` `docs(audit): add v5 prompt reference graph`
+
+### 门禁
+- typecheck: 0 errors
+- test: 435/435（+15 新增）
+- lint: 0 errors, 191 warnings（持平）
+
+### 做得好的（Keep）
+1. **R-016 严格遵循**：3 个新 commit subject 全部 ≤50 字符，含 scope，符合规范
+2. **单一真源策略**：v5.md 替换 5 SKILL + v3，避免分散维护
+3. **回退机制明确**：v3.9.0 tag + v5.md 头部 "回退" 段落 = 双保险
+4. **结构测试覆盖**：yuesheng-prompt-v5-structure.test.ts 5 大 SKILL 顺序、关键防御点（V-01/V-09/DP-F/DP-G/DP-I）、truncation 行为全部锁死
+5. **引用关系图落地**：dev-docs/audits/2026-06-23-prompt-reference-graph.md 标出"03-teaching/ 双副本"待清理
+
+### 教训（Learn）
+1. **Edit 工具缓存漂移再次出现**：本会话 2 次 Edit 报告成功但磁盘未变更（行 428/460 "月笙 MVP Prompt" → "月笙写作教练 v5"），最终用 Node.js + fs.writeFileSync 写入解决。**根因假设**：Edit 工具基于 Read 工具的内部快照做字符串匹配，但 Read 快照与磁盘实际可能不同步（D-DEBT-2026-06-23-04 同类问题）。**新约束**：中文文件 + 多次连续 Edit 改同一文件时，必须用 `node -e` 或 Node.js 脚本验证
+2. **truncation 测试用例设计踩坑**：第一次断言 "v5 误用 truncation 后仍包含 V-01" 失败，V-01 在 v5.md 中段（第 335 行）被截断。**修正**：明确文档化 "system prompt 不走 truncation" + 测试只断言头/尾（IDENTITY/SCENARIO）保留
+3. **GH PR body 中文走 gh CLI 仍输出 Unicode escape**：与 Sprint 11 同类问题（D-028 教训 #2），但已用 `--body-file` + UTF-8 临时文件解决，无需重复记录
+4. **v5.md 引用关系图应在 commit 前生成**：本会话在 commit 后才补 reference-graph.md，导致 git log 顺序中"代码切到 v5"早于"v5 引用图"。下个 sprint 应先建依赖图再动代码
+
+### 新增技术债（Debt）
+1. **D-DEBT-2026-06-23-05**: `resources/03-teaching/prompts/yuesheng-prompt-v3.md` + 5 SKILL 双副本未清理（Sprint 11 标记的 17 组重复之一）。Sprint 13 教育链路重整时统一处理
+2. **D-DEBT-2026-06-23-06**: v5.md 约 30K 字符已接近 DeepSeek 8K 模型可用 prompt 余量上限（30K char ≈ 45K tokens，单 prompt 框架就占满 6K tokens），若日后 LLM 切换到更小上下文模型需重新评估。**当前缓解**：truncation MAX_CHARS=4000 仅对章节内容生效，v5 system prompt 走完整加载
+3. **D-DEBT-2026-06-23-07**: Sprint 12 Plan 中提到的"5 个 placeholder {{}} → 检查"任务已合并到 v5 合并产物中，但未单独跑统计对比。下次类似合并任务应在合并前 grep `{{[a-z_]}}` 计数，合并后再次计数验证"未丢失"
+4. **D-DEBT-2026-06-23-08**: 跨会话状态连续性问题：本会话从 summary 恢复后只看到 "T12-6 待执行"，但实际 T12-1~4 已在历史 commit 完成（d901f53/8ef3c40）。**改进**：下次开新会话时第一步应是 `git log --oneline -20` + 状态同步，避免重复已完成工作
+
+### 下一阶段（Next）
+- **PR #19 等用户 merge**（AI 不主动 merge 主分支）
+- **Sprint 13 启动条件**：用户说"开始 Sprint 13" → 进入 Plan 阶段，处理 D-DEBT-2026-06-23-05（双副本清理）+ 教育链路再次整理
+- **关闭 Issue #17**：PR body 含 "Closes #17"
+
+### 依据
+- 设计 005 §三 Sprint 12 / Issue #17
+- R-011 记忆强化 / R-018 变更溯源 / R-025 Prompt 治理
+- ADR-003（占位符 + truncation 复用）
+
+
+
+---
+
+## D-030 (2026-06-23) Sprint 13 复盘：Skill Dispatcher（v5 拆分 + 按 phase 加载）
+
+### 上下文
+- 设计 005 §三 Sprint 13 / Issue #18 P1
+- Sprint 11/12 完成（资产普查 + v5 合并）
+- 目标：把 v5 拆为 6 个 SKILL 文件 + SkillDispatcher 按 phase 选择加载
+
+### 决策摘要
+- Sprint 13 实施方向 B 精简版：拆分 v5.md 为 6 个 SKILL 文件 + SkillDispatcher 按 phase+attitude 选择加载
+- attitude 维度接口预留但不实质过滤（Sprint 13 实质做 phase 维度 5 种组合）
+- 4 个关键决策：(1) 拆出 reference-drawer (2) DP-F/G/I 独立 (3) phase+attitude 调度 (4) C 升级三处占位
+
+### Sprint 13 范围
+- 拆分 v5.md 为 6 SKILL 文件 + YAML metadata（22.5K 字符 / 530 行 / 零内容损失）
+- SkillMetadata TypeScript 接口
+- SkillDispatcher 类
+- dynamic-context.service.ts loadCorePrompt 委托给 SkillDispatcher（保留 v5.md 降级路径）
+- prompt-loader.ts initializeSkillDispatcher 启动入口
+- 8 个 skill-structure.test.ts + 13 个 dispatcher/metadata 测试
+- 清理 resources/03-teaching/ 双副本（6 个文件）
+- v5.0.0 tag 锚定拆分前快照
+
+### Sprint 13 不做（保留给方向 C）
+- 完整 YAML metadata schema
+- 跨 SKILL 依赖图自动校验
+- 运行时根据 user 行为切换 SKILL
+- 动态 load 缓存 + LRU
+- SKILL 热更新
+- attitude 维度实质过滤
+- E2E 测试
+
+### 关键风险发现：dispatcher opt-in 状态与 prompt 膨胀
+
+实施时发现一个未在 Sprint 13 Plan 中预见的回归风险：
+
+- **现状**：v5.md loadCorePrompt 实际只提取 §一铁三角（约 800 字符 / 约 1200 tokens）
+- **风险**：如果 Sprint 13 启用 dispatcher 默认 phase=P0_INIT，会加载 4 个 always SKILL（约 20K 字符 / 约 30K tokens）
+- **回归**：prompt 体积从 800 字符膨胀到 20K 字符（25 倍），与 Sprint 13 节省 token 目标直接矛盾
+- **当前状态**：dispatcher 集成是 opt-in 状态（service-config.ts 未调用 initializeSkillDispatcher()），运行时仍走 v5.md 降级路径，行为未改变
+- **决策**：保持 opt-in 状态，启用 dispatcher 需要先解决按 phase 加载的体积优化问题
+
+### 方向 C 占位（三处都写）
+1. 本决策日志（D-030）— 为什么 + 何时
+2. GitHub Issue #19 — 做什么 + 验收
+3. dev-docs/designs/sprint-14-dispatcher-upgrade.md — 怎么做
+
+### 何时启动方向 C
+- 当 attitude 维度需要实质过滤时
+- 当需要根据 user 行为动态切换 SKILL 时
+- 当切换到更小上下文模型时（小于 8K 余量时精细化调度）
+- 当需要真正启用 dispatcher 时（必须先解决 prompt 体积优化问题）
+
+### 回退路径
+- git checkout v5.0.0 -- resources/prompts/yuesheng-prompt-v5.md
+- git checkout v3.9.0 -- resources/prompts/yuesheng-prompt-v3.md
+
+### 提交清单
+Sprint 13 共 9 个 commit（按 R-016 规范）：
+
+```
+0880c7c chore(cleanup): remove 03-teaching double-copy debt
+5279a84 test(prompt): replace v5-structure with skill-structure
+3c24f7b feat(prompt): expose dispatcher init in PromptLoader
+f175427 refactor(prompt): integrate dispatcher into loadCorePrompt
+e9dd4b4 test(prompt): add metadata + dispatcher tests
+b1d16c6 feat(prompt): add SkillDispatcher phase loader
+4c13cbd feat(prompt): add SkillMetadata TS interface
+3427a35 chore(scripts): add sprint-13 split/verify tools
+a753088 refactor(prompt): split v5 into 6 SKILL files
+```
+
+### 门禁结果
+- typecheck: 0 errors
+- test: 441 / 441 passed
+- lint: 0 errors
+
+### 新增技术债
+1. D-DEBT-2026-06-23-09: dynamic-context 不感知教学状态机，使用 P0_INIT 默认值
+2. D-DEBT-2026-06-23-10: SkillDispatcher 无 LRU 缓存
+3. D-DEBT-2026-06-23-11: dispatcher 启用需解决按 phase 加载的体积优化问题
+4. D-DEBT-2026-06-23-12: resources/03-teaching/ 仍残留 actions/、config/、feedback/ 子目录未审查
+
+### 经验
+1. 拆分前先审计实际使用情况很重要
+2. 激活死代码比拆分更有价值
+3. Sprint 13 简化策略（attitude 接口预留）有效避免过度设计
+4. opt-in 集成比激进替换更安全
+
+### Sprint 14+ 启动条件
+- 等用户 merge PR
+- 启动方向 C 前先解决 D-DEBT-2026-06-23-11（prompt 体积优化）
+- 解决 D-DEBT-2026-06-23-09（教学状态机 phase 注入 dispatcher）
+
+### 依据
+- dev-docs/designs/sprint-13-skill-dispatcher-design.md v1.0
+- dev-docs/designs/sprint-13-implementation-plan.md v1.0
+- dev-docs/designs/sprint-14-dispatcher-upgrade.md v1.0（方向 C 草案）
+- R-018 变更溯源 / R-025 Prompt 治理 / R-019 代码规范

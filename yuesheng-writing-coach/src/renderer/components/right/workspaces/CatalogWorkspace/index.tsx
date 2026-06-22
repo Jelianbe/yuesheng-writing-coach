@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRightToolsStore } from '../../../../stores/right-tools.store';
 import { useStartTraining } from '../../../../hooks/useStartTraining';
 import { getInvoke } from '../../../../utils/ipc';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import styles from './index.module.css';
 
 /** 技法条目 */
@@ -147,3 +148,12 @@ export const CatalogWorkspace: React.FC = () => {
 
   return <div className={styles.wrapper}>{renderBody()}</div>;
 };
+
+// ADR-002: 自注册(添加到工作区列表,默认打开)
+registerWorkspace({
+  id: 'catalog',
+  name: '技法目录',
+  icon: '✤',
+  defaultOpen: true,
+  component: () => import('./index').then(m => ({ default: m.CatalogWorkspace })),
+});

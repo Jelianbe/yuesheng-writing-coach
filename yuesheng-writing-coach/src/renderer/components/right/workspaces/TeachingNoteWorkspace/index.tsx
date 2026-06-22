@@ -3,6 +3,7 @@ import { Tree } from 'react-arborist';
 import type { NodeRendererProps } from 'react-arborist';
 import { getInvoke } from '../../../../utils/ipc';
 import { IPC_CHANNELS } from '../../../../shared/constants';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import type { ActiveProblem } from '../../../../../shared/types/types-teaching';
 import styles from './index.module.css';
 
@@ -294,3 +295,12 @@ export const TeachingNoteWorkspace: React.FC = () => {
     </div>
   );
 };
+
+// ADR-002: 自注册
+registerWorkspace({
+  id: 'training',
+  name: '教学笔记',
+  icon: '✤',
+  defaultOpen: true,
+  component: () => import('./index').then(m => ({ default: m.TeachingNoteWorkspace })),
+});
