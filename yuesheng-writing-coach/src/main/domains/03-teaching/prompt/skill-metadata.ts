@@ -111,7 +111,6 @@ function extractYamlString(yaml: string, key: string): string {
 function parseLoadWhen(yaml: string): SkillLoadWhen {
   const phasesMatch = yaml.match(/phases:\s*\[([^\]]+)\]/);
   const attitudesMatch = yaml.match(/attitudes:\s*\[([^\]]+)\]/);
-  const conditionsMatch = yaml.match(/conditions:\s*\[([^\]]+)\]/);
 
   if (!phasesMatch || !attitudesMatch) {
     throw new Error('[parseSkillFile] Invalid loadWhen format');
@@ -120,26 +119,138 @@ function parseLoadWhen(yaml: string): SkillLoadWhen {
   return {
     phases: phasesMatch[1].split(',').map(s => s.trim()) as TeachingPhase[],
     attitudes: attitudesMatch[1].split(',').map(s => s.trim()) as AttitudeLevel[],
-    conditions: conditionsMatch ? parseConditions(conditionsMatch[1]) : undefined,
+    conditions: parseConditions(yaml),
   };
 }
 
 /**
- * 解析 conditions 简写语法
- * Sprint 14 T14-5: 简写格式 — 逗号分隔的字符串
- *   完整 YAML 形式（如 evidence.quality IN [...]）解析待后续 Sprint 15
- *   当前实现：仅解析为标识符，保留语义在 dispatcher 评估
+ * 解析 conditions（支持两种 YAML 格式）
  *
- * 实际 dispatcher 不依赖 conditions 字符串的语义（YAML 解析结果仅用于诊断），
- * 真正的 condition 定义由 PhaseConfig / RuntimeContext 注入。
+ * 1. 简写数组：`conditions: [a, b, c]`
+ * 2. 完整对象列表：
+ *    ```yaml
+ *    conditions:
+ *      - type: user.safetyWord
+ *        op: IS_NOT
+ *        value: true
+ *      - type: evidence.quality
+ *        op: IN
+ *        values: [low, medium]
+ *    ```
+ *
+ * 完整格式会构造结构化 LoadCondition，简写格式回退为 identifier 列表。
  *
  * @internal
  */
-function parseConditions(raw: string): LoadCondition[] {
-  const items = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
-  // 简写语法：每个 item 作为 identifier（保留为 LoadCondition 数组）
-  // 真实语义由 RuntimeContext 注入时由 dispatch 调用方构造完整 LoadCondition
-  return items.map(item => ({ type: 'user.dominantSyndrome', op: 'EQ', syndromeId: item }));
+function parseConditions(yaml: string): LoadCondition[] | undefined {
+  // 先检测是否存在多行对象列表（以 "- " 开头）
+  // 找到 "conditions:" 行（不是数组形式），然后扫描后续行
+  const lines = yaml.split('\n');
+  const conditionsLineIdx = lines.findIndex((l, i) => {
+    if (!/^\s*conditions:\s*$/.test(l)) return false;
+    // 必须是 list 形式（不是 inline array）
+    const next = lines[i + 1] ?? '';
+    return /^\s*-\s+/.test(next);
+  });
+
+  if (conditionsLineIdx >= 0) {
+    // 从 conditionsLineIdx + 1 开始，收集到下一个顶级 key 或空行
+    const block: string[] = [];
+    for (let i = conditionsLineIdx + 1; i < lines.length; i++) {
+      const line = lines[i];
+      // 顶级 key（行首是字母/数字，不是缩进）停止
+      if (/^[a-zA-Z]/.test(line)) break;
+      block.push(line);
+    }
+    if (block.length > 0) {
+      return parseConditionsList(block.join('\n'));
+    }
+  }
+
+  // 退回简写数组
+  const inlineMatch = yaml.match(/conditions:\s*\[([^\]]+)\]/);
+  if (inlineMatch) {
+    const items = inlineMatch[1].split(',').map(s => s.trim()).filter(s => s.length > 0);
+    return items.map(item => ({ type: 'user.dominantSyndrome', op: 'EQ', syndromeId: item }));
+  }
+
+  return undefined;
+}
+
+/**
+ * 解析完整条件对象列表（每项以 `- ` 开头）
+ * @internal
+ */
+function parseConditionsList(raw: string): LoadCondition[] {
+  const items: LoadCondition[] = [];
+  // 用 trim 清理每行（处理前导空格）
+  const lines = raw.split('\n').map(l => l.replace(/^\s+|\s+$/g, ''));
+  let current: Record<string, string> | null = null;
+
+  for (const line of lines) {
+    if (line === '') continue; // 跳过空行
+    if (line.startsWith('- ')) {
+      // 提交上一个
+      if (current) {
+        const cond = buildCondition(current);
+        if (cond) items.push(cond);
+      }
+      // 起始新项（key: value 在 "- " 同一行）
+      const inline = line.slice(2).trim();
+      current = {};
+      if (inline.includes(':')) {
+        const idx = inline.indexOf(':');
+        const k = inline.slice(0, idx).trim();
+        const v = inline.slice(idx + 1).trim();
+        current[k] = v;
+      }
+    } else if (current) {
+      // 缩进的 key: value
+      const idx = line.indexOf(':');
+      if (idx > 0) {
+        const k = line.slice(0, idx).trim();
+        const v = line.slice(idx + 1).trim();
+        current[k] = v;
+      }
+    }
+  }
+  if (current) {
+    const cond = buildCondition(current);
+    if (cond) items.push(cond);
+  }
+
+  return items;
+}
+
+/**
+ * 从扁平 key-value 对象构造 LoadCondition
+ * @internal
+ */
+function buildCondition(raw: Record<string, string>): LoadCondition | null {
+  const type = raw.type;
+  const op = raw.op;
+  if (!type) return null;
+
+  switch (type) {
+    case 'evidence.quality': {
+      const valuesStr = raw.values ?? '';
+      const values = valuesStr
+        .replace(/[[\]]/g, '')
+        .split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0) as Array<'low' | 'medium' | 'high'>;
+      return { type, op: op as 'IN' | 'NOT_IN', values };
+    }
+    case 'user.safetyWord': {
+      const value = raw.value === 'true';
+      return { type, op: op as 'IS' | 'IS_NOT', value };
+    }
+    case 'user.dominantSyndrome': {
+      return { type, op: op as 'EQ' | 'NEQ', syndromeId: raw.syndromeId ?? '' };
+    }
+    default:
+      return null;
+  }
 }
 
 function validateMetadata(meta: SkillMetadata, filePath: string): void {

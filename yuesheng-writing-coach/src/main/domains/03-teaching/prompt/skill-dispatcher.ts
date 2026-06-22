@@ -12,13 +12,20 @@
  * - 新增 SelectOptions 支持 coreSubsetOnly / maxTokens 过滤
  * - composePrompt 接受预算参数（用于体积优化）
  *
- * 简化：Sprint 13 实质做 phase 维度 5 种组合；attitude 接口预留但不实质过滤
- * 升级：方向 C 时启用 attitude 维度过滤 + conditions 条件
+ * Sprint 14 方向 C 升级（T14-2/3/5/6/7）：
+ * - T14-2: SkillMetadata 扩展（version / depends / conditions）
+ * - T14-3: SkillGraph 依赖图校验（启动时 fail-fast）
+ * - T14-5: 运行时 conditions 评估（evidence 质量 / 安全词 / 主导症结）
+ * - T14-6: 两层截断（SKILL 级别 size tiebreak + content 级别 truncation 集成）
+ * - T14-7: E2E 集成测试
+ *
+ * 反思：早期 T14-4 设计为"用 AttitudeFilter 规则屏蔽鼓励话术"，违反
+ * "AI 驱动优于规则约束"原则。已重构为 attitude-*.md SKILL 文件，
+ * 由 LLM 自主理解和执行行为指令（详见 D-033）。
  */
 
 import { loadAllSkills, type Skill, type TeachingPhase, type AttitudeLevel } from './skill-metadata';
 import { assertSkillGraphValid } from './skill-graph';
-import { AttitudeFilter } from './attitude-filter';
 import { evaluateConditions, type RuntimeContext } from './condition-evaluator';
 import { truncateChapterContent } from './truncation';
 
@@ -35,8 +42,6 @@ export interface SelectOptions {
 export class SkillDispatcher {
   private skills: Map<string, Skill> = new Map();
   private loaded: boolean = false;
-  /** Sprint 14 T14-4: attitude 过滤注入槽（默认无过滤） */
-  private attitudeFilter: AttitudeFilter | null = null;
 
   /**
    * 加载所有 SKILL 文件（首次调用时）
@@ -58,8 +63,8 @@ export class SkillDispatcher {
   /**
    * 按 phase + attitude + options + runtimeContext 选 SKILL
    * @param phase 当前教学阶段
-   * @param attitude 当前态度档位（Sprint 13 不实质过滤，接口预留）
-   * @param options 过滤选项（coreSubsetOnly / maxTokens）
+   * @param attitude 当前态度档位
+   * @param options 过滤选项（coreSubsetOnly / maxTokens / maxCharsPerSkill）
    * @param runtimeCtx 运行时上下文（用于 conditions 评估，T14-5 新增）
    * @returns 命中的 SKILL 数组
    */
@@ -75,7 +80,7 @@ export class SkillDispatcher {
 
     const matched = [...this.skills.values()].filter(skill => {
       const phaseMatch = skill.meta.loadWhen.phases.includes(phase);
-      // Sprint 13 简化：attitude 不过滤（接口预留，C 时启用）
+      // Sprint 14 方向 C: attitude 维度实质过滤（每个 attitude 对应专门的 SKILL 指令）
       const attitudeMatch = skill.meta.loadWhen.attitudes.includes(attitude);
       // Sprint 14-prior: coreSubset 过滤（解决 D-DEBT-11）
       const subsetMatch = options.coreSubsetOnly ? skill.meta.isCoreSubset === true : true;
@@ -141,7 +146,6 @@ export class SkillDispatcher {
 
   /**
    * 拼接 SKILL 为 prompt 文本
-   * Sprint 14 T14-4: 集成 AttitudeFilter，sensei 档自动应用过滤
    * Sprint 14 T14-5: 支持 runtimeCtx（conditions 评估）
    * Sprint 14 T14-6: 支持 maxCharsPerSkill（content 级别截断）
    * @param phase 当前教学阶段
@@ -156,25 +160,14 @@ export class SkillDispatcher {
     runtimeCtx: RuntimeContext = {},
   ): string {
     const skills = this.selectForPhase(phase, attitude, options, runtimeCtx);
-    // Sprint 14 T14-6: content 级别截断（在 attitude filter 之前/之后均可；先截断后过滤更省）
+    // Sprint 14 T14-6: content 级别截断
     const processed = options.maxCharsPerSkill
       ? skills.map(s => ({
           ...s,
           content: this.truncateSkillContent(s, options.maxCharsPerSkill!),
         }))
       : skills;
-    // Sprint 14 T14-4: 注入 attitude 过滤
-    if (this.attitudeFilter) {
-      return processed
-        .map(s => this.attitudeFilter!.apply(s.content, attitude))
-        .join('\n\n---\n\n');
-    }
     return processed.map(s => s.content).join('\n\n---\n\n');
-  }
-
-  /** Sprint 14 T14-4: 注入 attitude 过滤 */
-  setAttitudeFilter(filter: AttitudeFilter): void {
-    this.attitudeFilter = filter;
   }
 
   /**
