@@ -128,6 +128,21 @@
   margin-right: 6px;
 }
 
+.collapsedBarLogo {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: #7A6040;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-serif, serif);
+  flex-shrink: 0;
+}
+
 .expandBtn {
   width: 22px;
   height: 22px;
