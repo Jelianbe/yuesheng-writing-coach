@@ -22,7 +22,6 @@ import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
 import { processAIResponse } from '../domains/01-diagnosis/diagnosis-processor';
-import { SYNDROME_NAMES } from '../../shared/mappings';
 
 // Re-export merge functions for use by diagnosis-merger service
 export { severityToNumber, mergeSyndromesIntoState } from '../domains/01-diagnosis/diagnosis-merger-utils';
@@ -113,34 +112,6 @@ export function registerDiagnosisHandlers(): void {
 
       const comparison = parts.join('；');
       return { hasHistory: true, comparison };
-    },
-  );
-
-  /**
-   * 获取成长趋势数据
-   */
-  createHandler(
-    IPC_CHANNELS.GROWTH_GET_TRENDS,
-    (_event, args: { sessionId: string }) => {
-      const summary = d.growthTrendService.getGrowthSummary(
-        args.sessionId,
-        (id) => SYNDROME_NAMES[id] || id,
-      );
-      return summary;
-    },
-  );
-
-  /**
-   * 获取全局成长趋势
-   */
-  createHandler(
-    IPC_CHANNELS.GROWTH_GET_GLOBAL_TRENDS,
-    () => {
-      const summary = d.growthTrendService.getGrowthSummary(
-        undefined,
-        (id) => SYNDROME_NAMES[id] || id,
-      );
-      return summary;
     },
   );
 
