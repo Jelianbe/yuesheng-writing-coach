@@ -8,10 +8,11 @@ describe('SKILL 结构校验（按文件）', () => {
   const skills: Skill[] = loadAllSkills(SKILLS_DIR);
   const skillsById = new Map(skills.map(s => [s.meta.id, s]));
 
-  it('加载到 8 个 SKILL 文件（Sprint 14-prior 拆分 core-identity）', () => {
+  it('加载到 11 个 SKILL 文件（Sprint 14 + 3 个 attitude-*.md）', () => {
     // Sprint 14-prior: core-identity 拆分为 core-iron-triangle + core-product-identity
     // 原 6 个 + 2 个新核心子集 = 8 个
-    expect(skills.length).toBe(8);
+    // Sprint 14 T14-4 重构：+ 3 个 attitude-{doubao,yuesheng,sensei}.md = 11 个
+    expect(skills.length).toBe(11);
   });
 
   it('core-iron-triangle 必含铁三角与回复控制（核心子集）', () => {
