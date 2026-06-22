@@ -20,6 +20,7 @@ import { loadAllSkills, type Skill, type TeachingPhase, type AttitudeLevel } fro
 import { assertSkillGraphValid } from './skill-graph';
 import { AttitudeFilter } from './attitude-filter';
 import { evaluateConditions, type RuntimeContext } from './condition-evaluator';
+import { truncateChapterContent } from './truncation';
 
 /** Sprint 14-prior 新增：选择选项 */
 export interface SelectOptions {
@@ -27,6 +28,8 @@ export interface SelectOptions {
   coreSubsetOnly?: boolean;
   /** 最大 token 预算（超出会按 tokenPriority 截断） */
   maxTokens?: number;
+  /** Sprint 14 T14-6: 单个 SKILL content 最大字符数（超出用 truncation.ts 截断） */
+  maxCharsPerSkill?: number;
 }
 
 export class SkillDispatcher {
@@ -94,16 +97,20 @@ export class SkillDispatcher {
 
   /**
    * 按 tokenPriority 截断 SKILL 列表（保留高优先级）
+   * Sprint 14 T14-6: 同优先级时按 estimatedTokens 升序优先（小优先），保证不被大 SKILL 挤出
    * @internal
    */
   private truncateByPriority(skills: Skill[], maxTokens: number): Skill[] {
     if (skills.length === 0) return skills;
 
-    // 按 tokenPriority 降序排序（高优先级在前）
+    // 按 (tokenPriority 降序, estimatedTokens 升序) 排序
+    // 高优先级在前；同优先级时小 SKILL 优先（避免大 SKILL 占用预算）
     const sorted = [...skills].sort((a, b) => {
       const pa = a.meta.tokenPriority ?? 5;
       const pb = b.meta.tokenPriority ?? 5;
-      return pb - pa;
+      if (pa !== pb) return pb - pa;
+      // size tiebreak：estimatedTokens 升序
+      return a.meta.estimatedTokens - b.meta.estimatedTokens;
     });
 
     const result: Skill[] = [];
@@ -119,9 +126,24 @@ export class SkillDispatcher {
   }
 
   /**
+   * 对单 SKILL content 截断（Sprint 14 T14-6 集成 truncation.ts）
+   * @internal
+   */
+  private truncateSkillContent(skill: Skill, maxChars: number): string {
+    if (skill.content.length <= maxChars) return skill.content;
+    const result = truncateChapterContent(skill.content, {
+      maxChars,
+      silent: true, // 避免 dispatcher 流程的 spam 日志
+      source: `skill:${skill.meta.id}`,
+    });
+    return result.text;
+  }
+
+  /**
    * 拼接 SKILL 为 prompt 文本
    * Sprint 14 T14-4: 集成 AttitudeFilter，sensei 档自动应用过滤
    * Sprint 14 T14-5: 支持 runtimeCtx（conditions 评估）
+   * Sprint 14 T14-6: 支持 maxCharsPerSkill（content 级别截断）
    * @param phase 当前教学阶段
    * @param attitude 当前态度档位
    * @param options 过滤选项（见 SelectOptions）
@@ -134,13 +156,20 @@ export class SkillDispatcher {
     runtimeCtx: RuntimeContext = {},
   ): string {
     const skills = this.selectForPhase(phase, attitude, options, runtimeCtx);
+    // Sprint 14 T14-6: content 级别截断（在 attitude filter 之前/之后均可；先截断后过滤更省）
+    const processed = options.maxCharsPerSkill
+      ? skills.map(s => ({
+          ...s,
+          content: this.truncateSkillContent(s, options.maxCharsPerSkill!),
+        }))
+      : skills;
     // Sprint 14 T14-4: 注入 attitude 过滤
     if (this.attitudeFilter) {
-      return skills
+      return processed
         .map(s => this.attitudeFilter!.apply(s.content, attitude))
         .join('\n\n---\n\n');
     }
-    return skills.map(s => s.content).join('\n\n---\n\n');
+    return processed.map(s => s.content).join('\n\n---\n\n');
   }
 
   /** Sprint 14 T14-4: 注入 attitude 过滤 */
