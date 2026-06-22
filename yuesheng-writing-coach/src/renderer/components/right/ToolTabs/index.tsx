@@ -1,12 +1,12 @@
 import React, { useCallback, useRef } from 'react';
-import { ALL_TOOLS, type ToolId } from '../../../stores/right-tools.store';
+import { getAllWorkspaces, type WorkspaceId } from '../../../registry/workspace-registry';
 import styles from './index.module.css';
 
 interface ToolTabsProps {
-  openTools: ToolId[];
-  activeToolId: ToolId | null;
-  onSetActive: (id: ToolId) => void;
-  onCloseTool: (id: ToolId) => void;
+  openTools: WorkspaceId[];
+  activeToolId: WorkspaceId | null;
+  onSetActive: (id: WorkspaceId) => void;
+  onCloseTool: (id: WorkspaceId) => void;
   onAddTool: () => void;
   onCollapse: () => void;
   addBtnRef: React.RefObject<HTMLButtonElement | null>;
@@ -22,6 +22,7 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({
   addBtnRef,
 }) => {
   const toolTabsRef = useRef<HTMLDivElement>(null);
+  const allTools = getAllWorkspaces();
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.deltaX !== 0) return;
@@ -39,7 +40,7 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({
       >
         {openTools.length > 0 ? (
           openTools.map(tId => {
-            const tool = ALL_TOOLS.find(x => x.id === tId);
+            const tool = allTools.find(x => x.id === tId);
             const active = tId === activeToolId;
             return (
               <div

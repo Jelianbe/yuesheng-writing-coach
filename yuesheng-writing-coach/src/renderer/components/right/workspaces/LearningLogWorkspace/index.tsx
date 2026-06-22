@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getInvoke } from '../../../../utils/ipc';
 import { IPC_CHANNELS } from '../../../../shared/constants';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import styles from './index.module.css';
 
 // -- 后端 IPC 返回类型 --
@@ -174,3 +175,12 @@ export const LearningLogWorkspace: React.FC = () => {
     </div>
   );
 };
+
+// ADR-002: 自注册
+registerWorkspace({
+  id: 'growth',
+  name: '学习日志',
+  icon: '✎',
+  defaultOpen: true,
+  component: () => import('./index').then(m => ({ default: m.LearningLogWorkspace })),
+});
