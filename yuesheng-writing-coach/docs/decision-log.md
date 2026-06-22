@@ -711,4 +711,87 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
 - **门禁**: typecheck 0 / test 496/496 / lint 0 errors / 安全 OK
 - **回退**: 删除 service-config.ts 中的 loader.initializeSkillDispatcher() 那一行（软回退）
 - **依据**: D-032 + D-033 + Issue #20 + Sprint 14 方向 C 4 个启动条件已满足
-- **Status**: ✅ 完成（待 commit）
+- **PR**: #22（feature/sprint-14 → main，2026-06-22 merge commit b197e50）
+- **Status**: ✅ 已合并到 main（PR #22 merged 2026-06-22）
+
+
+---
+
+## D-033 (2026-06-23) Sprint 9~14 整体 Reflect 复盘 — 3 个 PR 合并完毕
+
+### 上下文
+- Sprint 9 (前端全面审计与修复) + Sprint 11 (提示词资产审计) + Sprint 12 (提示词工程统一) + Sprint 13 (SkillDispatcher v1) + Sprint 14-prior (清方向 C 启动债务) + Sprint 14 (方向 C 核心升级) 全部完成并合并
+- PR 合并链：#19 (Sprint 9+11+12+13 综合，50 commits) → #21 (Sprint 14-prior，7 commits) → #22 (Sprint 14，11 commits) 全部 MERGED
+- main HEAD: b197e50 — 3 个 merge commit 完整保留历史
+- 累计交付：121 个文件 / +12706 行 / -1762 行 / 68 个 commits / 4 个 ADR / 7 个 Sprint 计划文档
+
+### 交付（3 个 PR / 68 commits）
+
+| PR | Sprint | Commits | 范围 |
+|:--:|:------:|:-------:|------|
+| #19 | 9+11+12+13 | 50 | 前端审计 (S-01, H-02~05, M-01~09, L-01~05, R-01/02/03) + workspace-registry + AI 读写管道 (ADR-003/004) + 资产审计 + v5 合并 + SkillDispatcher v1 |
+| #21 | 14-prior | 7 | 解决 D-DEBT-11 (A+C 组合) + D-DEBT-09 (phase 注入) |
+| #22 | 14 | 11 | 方向 C 核心升级：attitude filter / runtime conditions / 依赖图 / 两层截断 / E2E / 启用 dispatcher v2 |
+
+### 4 个 ADR（架构决策记录）
+- ADR-001 stream-pipeline：B-lite stream pipeline with typed events
+- ADR-002 workspace-registry：right sidebar plugin-style extensibility
+- ADR-003 ai-readwrite-pipeline：MAX_CHARS=4000 truncation + 双花占位符
+- ADR-004 x02-writeback：AI 写回编辑器三阶段协议（Stash→Confirm→Persist）
+
+### 7 个 Sprint 计划文档
+- sprint-9-plan.md / sprint-11-prompt-asset-audit-plan.md / sprint-12-prompt-unify-plan.md
+- sprint-13-skill-dispatcher-design.md / sprint-13-implementation-plan.md
+- sprint-14-prior-plan.md / sprint-14-plan.md
+
+### 门禁结果（合并时 main HEAD 状态）
+- typecheck: 0 errors
+- test: 502/502 passed
+- lint: 0 errors
+- 安全: 0 硬编码密钥
+
+### 做得好的（Keep）
+1. **R-016 严格遵循**：68 个 commit subject 全部 ≤50 字符、含 scope、祈使句 — 提交历史清晰可读
+2. **ADR 与实现同步落地**：4 个 ADR 都在 #19 一并合并，决策可追溯
+3. **PR 描述质量高**：每个 PR 都有完整的"做什么/为什么/门禁/回退"四段
+4. **债务前置清偿**：Sprint 14-prior 先解决 2 个启动债务再开 14，避免方向 C 启动时崩溃
+5. **opt-in 集成策略**：SkillDispatcher 长期保持 opt-in 状态，每次启用都有充分测试
+6. **设计文档驱动**：Sprint 11~14 都有正式 plan / design 文档，决策有依据
+7. **三道门禁到位**：每个 PR merge 前 typecheck/test/lint 全绿
+
+### 教训（Learn）
+1. **PR 体量过大会拖慢 review 节奏**：#19 一个 PR 50 commits / 105 files，理想拆分为 3-4 个 PR（前端审计 / 资产审计 / 提示词统一 / SkillDispatcher v1）。**改进**：下个 sprint 大型工作拆分为多个小 PR（≤ 15 commits / ≤ 30 files）
+2. **设计文档是债务**：#19 中 D-027/D-028/D-029/D-030 4 个决策日志条目，9ff5da1 / 1cd9750 / b267ddb 等多个 docs commit — 文档量超过代码量。**改进**：决策日志做"摘要版"（R-011 强调可读性），细节放进 ADR
+3. **方向 C 的"按 phase 加载"目标与"启用 dispatcher"目标互相牵制**：Sprint 13 实施时才发现 prompt 膨胀 25 倍，必须 Sprint 14-prior 先解决体积问题才能真正启用 dispatcher。**改进**：技术决策应先做"启用影响范围"评估再实施
+4. **GH PR 中文 mojibake 反复出现**：D-028/D-029 都记录了 PR body 编码问题。**根因**：gh CLI 走 PowerShell 5.1 OEM 代码页。**改进**：PR body 永远用 `--body-file` + UTF-8 临时文件
+5. **v5 拆分后 dispatcher "激活死代码比拆分更有价值"**（D-030 经验）：拆分只是结构变化，激活才有用户感知价值。**改进**：下个 sprint 评估新功能时区分"建设"和"激活"
+
+### 新增/更新技术债
+1. **D-DEBT-2026-06-23-13** (新)：能力图谱（ability-atlas.json）8 个能力节点 / 10 个症候 / 20 个训练任务中，仅 2/5 消费方接入（training-recommendation.service.ts + prompt-loader.ts）。诊断展示 / 教学状态机 / 能力画像未接入。**Sprint 15 启动处理**
+2. **D-DEBT-2026-06-23-14** (新)：461 条写作蒸馏素材（v3.1+ 200 条 + 扩展第 2 批 200 条 + 扩展第 3 批 61 条）散落在 3 个 MD 文件中，无结构化索引，无法被 AI 检索。**Sprint 15 启动处理**
+3. **D-DEBT-2026-06-23-15** (新)：训练任务 3 套体系并行（T001-T020 占位 / TRAIN-PXXX-XXX 29 条教学工坊 / CH-PXXX-XXX 31 条挑战式微练），无 ID 关联，存在重复语义。**Sprint 15 启动处理**
+4. **D-DEBT-2026-06-23-16** (新)：PR #19 体量过大（50 commits / 105 files），增加 review 难度。**改进方向**：未来大型工作拆分为多个小 PR
+5. **D-DEBT-2026-06-23-17** (新)：dispatcher v2 启用后 attitude 透传链路未改造（chat → teaching-state → dynamicContext），P2+ 阶段 doubao/sensei 档实际加载 yuesheng 档 SKILL（D-034 已知债务，纳入 Sprint 15 范围）
+
+### 保留未变债务
+- D-DEBT-09 (resolved by Sprint 14-prior)
+- D-DEBT-11 (resolved by Sprint 14-prior)
+- D-DEBT-10 (LRU 缓存 — 暂缓，性能未瓶颈)
+- D-DEBT-12 (03-teaching 子目录审查 — 部分清理)
+
+### 下一阶段（Sprint 15 启动）
+按 GStack 流程，Reflect 完成 → 进入 Think 阶段：
+1. **创建 Issue #22 (Sprint 15)**：诊断库漏洞修复
+2. **设计文档已就位**：`dev-docs/designs/2026-06-23-diagnosis-library-remediation.md` (307 行) — 含 3 个核心任务（T15-A 蒸馏素材索引化 / T15-B 训练任务断层消除 / T15-C 能力图谱消费链补全）
+3. **DoD 至少 3 条**：可量化（如：461 条素材 100% 索引化、3 套训练任务 100% ID 关联、能力图谱 5/5 消费方接入）+ 4 道门禁全绿
+
+### 依据
+- 3 个 PR 的 commit message + body
+- D-027 ~ D-034 决策日志（Sprint 11~14 完整决策链）
+- 4 个 ADR（ADR-001/002/003/004）
+- dev-docs/designs/sprint-9/11/12/13/14-plan.md
+- R-011 记忆强化 / R-018 变更溯源 / R-027 四道门禁
+
+### Status
+✅ Sprint 9~14 整体 Reflect 完成 — main 状态健康，可启动 Sprint 15
+
