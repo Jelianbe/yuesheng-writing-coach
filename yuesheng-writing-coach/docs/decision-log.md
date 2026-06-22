@@ -646,3 +646,26 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
   - SKILL 文件补充 conditions 字段（如 feedback-cognition 加 evidence.quality 条件）
 - **依据**: dev-docs/designs/sprint-14-plan.md + Issue #20 + D-031 + R-014/R-018/R-019/R-027
 - **Status**: ✅ Sprint 14 方向 C 核心升级完成（6 commits / PR 待创建）
+
+
+---
+
+### D-033: T14-4 AttitudeFilter 重构 — 删除硬编码鼓励词表，改用 SKILL 文件定义 LLM 行为指令
+- **类型**: 架构决策（重构 / 范围调整）
+- **触发**: 用户 review 发现 D-032 中 T14-4 实现的 AttitudeFilter 内置了"加油/棒/继续努力"等硬编码鼓励词清单，本质是用规则屏蔽词面，与 AI 驱动优于规则约束 原则冲突
+- **决策**:
+  - 删除 attitude-filter.ts / attitude-filter.json / attitude-filter.test.ts
+  - 替换为 3 个 attitude-{doubao,yuesheng,sensei}.md SKILL 文件定义 LLM 行为指令
+  - 重写 E2E 场景 2 验证 SKILL 加载而非过滤结果
+  - 补全 skill-metadata.ts 的 YAML conditions 多行对象列表解析（parseConditions/parseConditionsList/buildCondition）
+  - skill-structure.test.ts 加载数量 8 → 11（含 3 个 attitude-*.md）
+  - sprint-14-e2e.test.ts 场景 5 p3-strict 加 conditions 约束
+- **为什么这个方案对**:
+  - 硬编码词表是金剧系统：维护成本高、容易遗漏新词、限制 LLM 表达空间
+  - SKILL 行为指令（用 AI 自己的语言系统表达技术反馈，避免空泛鼓励话术）让 LLM 自主判断
+  - 与 dispatcher 的按需加载架构一致：不同 attitude 加载不同 SKILL，不需要过滤逻辑
+- **门禁**: typecheck 0 errors / test 493/493 / lint 0 errors / 安全 OK
+- **影响**: resources/prompts/skills/ 从 8 个 → 11 个；D-032 commit d9ac96b 描述需修订；Sprint 15 灰度对比调整
+- **回退**: 软回退=禁用 dispatcher（service-config.ts）回到 v5 单 prompt；硬回退=git revert（不推荐）
+- **依据**: 用户原始反馈（你这和我们早期拒绝的金剧系统有啥差别）+ D-032 + Issue #20 + R-014/R-018
+- **Status**: ✅ 完成（待 commit）
