@@ -21,10 +21,20 @@ export type TeachingPhase =
 /** 态度档位（三档） */
 export type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei';
 
+/** 运行时加载条件（运行时由 context 评估）
+ * Sprint 14 新增：所有 condition 必须满足才加载 SKILL（AND 语义）
+ */
+export type LoadCondition =
+  | { type: 'evidence.quality'; op: 'IN' | 'NOT_IN'; values: Array<'low' | 'medium' | 'high'> }
+  | { type: 'user.safetyWord'; op: 'IS' | 'IS_NOT'; value: boolean }
+  | { type: 'user.dominantSyndrome'; op: 'EQ' | 'NEQ'; syndromeId: string };
+
 /** Skill 加载条件 */
 export interface SkillLoadWhen {
   phases: TeachingPhase[];
   attitudes: AttitudeLevel[];
+  /** Sprint 14 新增：运行时条件（AND 语义） */
+  conditions?: LoadCondition[];
 }
 
 /** Skill 元数据（YAML frontmatter 解析后）
@@ -45,6 +55,10 @@ export interface SkillMetadata {
   isCoreSubset?: boolean;
   /** 父 SKILL ID（如 core-iron-triangle → core-identity），可选 */
   parentId?: string | null;
+  /** Sprint 14 新增：语义化版本（默认 '1.0'） */
+  version?: string;
+  /** Sprint 14 新增：依赖的其他 SKILL id 列表（默认 []） */
+  depends?: string[];
 }
 
 /** Skill 文件（meta + content） */
@@ -78,6 +92,8 @@ export function parseSkillFile(filePath: string): Skill {
     tokenPriority: parseOptionalYamlNumber(yamlBlock, 'tokenPriority', 5),
     isCoreSubset: parseOptionalYamlBoolean(yamlBlock, 'isCoreSubset', false),
     parentId: parseOptionalYamlStringOrNull(yamlBlock, 'parentId'),
+    version: parseOptionalYamlString(yamlBlock, 'version', '1.0'),
+    depends: parseOptionalYamlStringArray(yamlBlock, 'depends', []),
   };
 
   validateMetadata(meta, filePath);
@@ -121,6 +137,14 @@ function validateMetadata(meta: SkillMetadata, filePath: string): void {
   if (meta.tokenPriority !== undefined && (meta.tokenPriority < 1 || meta.tokenPriority > 10)) {
     throw new Error(`[parseSkillFile] tokenPriority out of range [1,10] in ${filePath}: ${meta.tokenPriority}`);
   }
+  // Sprint 14: version 格式校验（简单 semver）
+  if (meta.version !== undefined && !/^\d+\.\d+(\.\d+)?$/.test(meta.version)) {
+    throw new Error(`[parseSkillFile] Invalid version format in ${filePath}: ${meta.version}`);
+  }
+  // Sprint 14: depends 不能包含自身
+  if (meta.depends && meta.depends.includes(meta.id)) {
+    throw new Error(`[parseSkillFile] SKILL ${meta.id} depends on itself in ${filePath}`);
+  }
 }
 
 /** 解析可选的 YAML number 字段（不存在则返回 defaultValue） */
@@ -148,6 +172,22 @@ function parseOptionalYamlStringOrNull(yaml: string, key: string): string | null
   const value = match[1].trim();
   if (value === 'null' || value === '~') return null;
   return value;
+}
+
+/** 解析可选的 YAML string 字段（带默认值） */
+function parseOptionalYamlString(yaml: string, key: string, defaultValue: string): string {
+  const match = yaml.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+  if (!match) return defaultValue;
+  return match[1].trim();
+}
+
+/** 解析可选的 YAML string 数组（[a, b, c] 格式） */
+function parseOptionalYamlStringArray(yaml: string, key: string, defaultValue: string[]): string[] {
+  const match = yaml.match(new RegExp(`^${key}:\\s*\\[([^\\]]*)\\]\\s*$`, 'm'));
+  if (!match) return defaultValue;
+  const content = match[1].trim();
+  if (content === '') return [];
+  return content.split(',').map(s => s.trim()).filter(s => s.length > 0);
 }
 
 /** 扫描 skills 目录下所有 .md 文件 */
