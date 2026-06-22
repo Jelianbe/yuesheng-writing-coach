@@ -7,9 +7,7 @@ export type { DevelopmentStageInfo, StageProgress };
 // ─── 数据类型 ───
 
 /** 学习阶段 ID 列表请求(无入参) */
-export interface PrescriptionGetAllStagesRequest {
-  // empty
-}
+export type PrescriptionGetAllStagesRequest = Record<string, never>;
 
 /** 按 ID 获取学习阶段 */
 export interface PrescriptionGetStageByIdRequest {
