@@ -241,3 +241,36 @@
   4. **V2 prompt 缺口二次评估** — 延期至后续 Sprint
   5. **蒸馏素材工程化** — 全部延期
   6. **MasteryGate 阈值可配置性** — 当前硬编码 8 分，未外置为配置项
+
+
+---
+
+## 2026-06-23
+
+### D-027: 为什么先做资产普查再动手（Sprint 11 启动决策）
+- **类型**: 工程方法论
+- **决策**: Sprint 12 提示词工程统一启动前，先用 Sprint 11 做"只读+文档"的资产普查，再动手合并/去重/废弃
+- **原因**:
+  1. **盲改代价大**: resources/ 树下 162 个文本资产，跨 esources/prompts/（老根目录）与 esources/01-05/（新 domain 结构）双副本共存，hash 比对发现 17 组重复/近似重复文件；不盘点直接合并必然产生遗漏或误删
+  2. **Sprint 12 风险前置**: v4→v5 合并需要回答"保留哪个、废弃哪个、改名为什么"，这些决策依赖资产清单的事实基线
+  3. **决策可追溯**: 通过 udit-prompt-assets.js 脚本生成 JSON 清单 + 命名规范草案，让"为什么 v1 归档、为什么 v3 合并"等决策可以引用具体文件路径与 hash
+  4. **零代码风险**: 普查只新增脚本+清单+规范三类文档，零代码改动 → 门禁零影响，回退成本几乎为零
+- **范围**:
+  - 扫描 esources/prompts/** + esources/01-diagnosis/** ~ esources/05-retro/** + .trae/.agents/.claude/.qoder/skills/**
+  - 输出 dev-docs/audits/2026-06-23-prompt-asset-inventory.{json,md} 两份文件
+  - 命名规范草案落 dev-docs/standards/2026-06-23-prompt-naming-spec.md
+  - 不改任何 src/ / resources/ / .trae/ 文件
+- **风险**:
+  - 扫描脚本遗漏某些扩展名 → 已通过白名单机制（.md/.txt/.json/.yaml/.yml）显式声明 TEXT_EXT，新增扩展名时同步更新
+  - 重复判定阈值（hash + 95% 相似度）误判 → 决策权交回给 Sprint 12 的人工 review，自动化只做"标记"不做"删除"
+  - 命名规范草案过早收敛 → 显式标注"草案状态，不执行"，Sprint 12 才会真正落地
+- **验证**:
+  - typecheck + test + lint 全绿（无代码改动应自然绿，作为回归基线）
+  - 资产清单 .md 与 .json 数量一致（162 个）
+  - 命名规范草案 ≤150 行，符合 R-019 单文件上限
+- **回退**:
+  - 普查不修改任何运行时文件，删除 scripts/audit-prompt-assets.js + 三个新增 .md 即可完全回退
+  - 决策日志条目本身保留（按 R-011 记忆强化，决策记录不回退）
+- **依据**: 设计 005 §二 Sprint 拆分 + R-018 变更溯源规范（决策→任务→交付物）
+- **Issue**: #16 (Sprint 11 资产普查 P1)
+- **提交**: （待 commit T11-7）
