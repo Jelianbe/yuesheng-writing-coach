@@ -69,21 +69,26 @@ export function App(): React.ReactElement {
       cleanups.push(unsubTool);
 
       // chat:stream:data → 追加流式响应片段
+      // B-lite: 传递 eventType 和 streamId 用于类型分发 + 流锁
       const unsubStream = window.electronAPI.on('chat:stream:data', (data: unknown) => {
-        const chunk = data as { content?: string };
-        if (chunk?.content) {
-          useChatStore.getState().appendToLastAssistant(chunk.content);
+        const chunk = data as { chunk?: string; eventType?: 'text' | 'json_block' | 'tool_call'; streamId?: string };
+        if (chunk?.chunk) {
+          useChatStore.getState().appendToLastAssistant(chunk.chunk, chunk.eventType, chunk.streamId);
         }
       });
       cleanups.push(unsubStream);
 
       // chat:stream:end → 完成最后一条消息
+      // B-lite: 字段名修正(R-03 根因) — IPC payload 实际是 fullResponse 而非 finalContent
       const unsubStreamEnd = window.electronAPI.on('chat:stream:end', (data: unknown) => {
-        const end = data as { finalContent?: string; error?: string };
-        if (end?.finalContent) {
-          useChatStore.getState().finalizeLastMessage();
+        const end = data as { fullResponse?: string; error?: string; aborted?: boolean };
+        if (end?.fullResponse) {
+          useChatStore.getState().finalizeLastMessage(end.fullResponse);
         } else if (end?.error) {
           useChatStore.getState().setError(end.error);
+        } else if (end?.aborted) {
+          // 用户中断：用现有累积内容 finalize
+          useChatStore.getState().finalizeLastMessage();
         }
       });
       cleanups.push(unsubStreamEnd);

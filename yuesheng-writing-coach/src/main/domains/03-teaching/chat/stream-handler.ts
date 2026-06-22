@@ -14,7 +14,7 @@ import type Database from 'better-sqlite3';
 import type { ApiProxy} from '../../../api-proxy';
 import { type AccumulatedToolCall } from '../../../api-proxy';
 import { IPC_CHANNELS } from '../../../../shared/constants';
-import type { DiagnosisAnalysis } from '../../../../shared/types/index';
+import type { DiagnosisAnalysis, DiagnosisEntry } from '../../../../shared/types/index';
 import { toolHandlers, TOOLS_DEFINITIONS } from './chat-tools';
 
 const MAX_TOOL_ROUNDS = 3;
@@ -31,7 +31,7 @@ export interface StreamHandlerDeps {
   db: Database.Database;
   saveMessage: (sessionId: string, role: MessageRole, content: string) => void;
   autoGenerateTitle: (sessionId: string) => void;
-  processAIResponse: (response: string, sessionId: string, messageId: string) => void;
+  processAIResponse: (response: string, sessionId: string, messageId: string) => { diagnosisId: string; diagnosis: DiagnosisEntry } | undefined;
 }
 
 export interface StreamResult {
@@ -54,6 +54,8 @@ export async function handleStreamResponse(
   generateId: () => string,
 ): Promise<StreamResult> {
   const messageId = generateId();
+  // B-lite: 每个流一个唯一 ID，用于前端流锁(R-02)
+  const streamId = generateId();
   let fullResponse = '';
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -68,6 +70,8 @@ export async function handleStreamResponse(
       deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
         sessionId: deps.sessionId,
         chunk: `\u{1F4CB} 分析摘要：${diagnosisAnalysis.rootCause}\n\n---\n\n`,
+        eventType: 'text',
+        streamId,
       });
     }
 
@@ -76,6 +80,8 @@ export async function handleStreamResponse(
       deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
         sessionId: deps.sessionId,
         chunk,
+        eventType: 'text',
+        streamId,
       });
     }
 
@@ -83,8 +89,17 @@ export async function handleStreamResponse(
     deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
     deps.autoGenerateTitle(deps.sessionId);
 
+    // B-lite: 处理诊断后若提取到 JSON，发送 json_block 事件(R-01)
     try {
-      deps.processAIResponse(fullResponse, deps.sessionId, messageId);
+      const result = deps.processAIResponse(fullResponse, deps.sessionId, messageId);
+      if (result?.diagnosis) {
+        deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
+          sessionId: deps.sessionId,
+          chunk: `\`\`\`json\n${JSON.stringify(result.diagnosis, null, 2)}\n\`\`\``,
+          eventType: 'json_block',
+          streamId,
+        });
+      }
     } catch (err) {
       console.error('[Chat] Diagnosis processing failed:', err);
     }
@@ -93,6 +108,7 @@ export async function handleStreamResponse(
       sessionId: deps.sessionId,
       fullResponse,
       messageId,
+      streamId,
     });
 
     return { success: true, messageId, sessionId: deps.sessionId };
@@ -108,6 +124,7 @@ export async function handleStreamResponse(
           sessionId: deps.sessionId,
           fullResponse,
           messageId,
+          streamId,
           error: errorMessage,
         });
         return { success: false, error: errorMessage };
@@ -120,6 +137,7 @@ export async function handleStreamResponse(
         sessionId: deps.sessionId,
         fullResponse,
         messageId,
+        streamId,
         aborted: true,
       });
       return { success: true, messageId, sessionId: deps.sessionId };
@@ -130,6 +148,7 @@ export async function handleStreamResponse(
       sessionId: deps.sessionId,
       fullResponse,
       messageId,
+      streamId,
       error: errorMessage,
     });
     return { success: false, error: errorMessage };
@@ -147,6 +166,8 @@ export async function handleStreamResponseWithTools(
   generateId: () => string,
 ): Promise<StreamResult> {
   const messageId = generateId();
+  // B-lite: 每个流一个唯一 ID，用于前端流锁(R-02)
+  const streamId = generateId();
   let fullResponse = '';
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -168,6 +189,8 @@ export async function handleStreamResponseWithTools(
           deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
             sessionId: deps.sessionId,
             chunk: event.content,
+            eventType: 'text',
+            streamId,
           });
         } else if (event.type === 'tool_calls') {
           toolCallsInRound.push(...event.toolCalls);
@@ -214,8 +237,17 @@ export async function handleStreamResponseWithTools(
     deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
     deps.autoGenerateTitle(deps.sessionId);
 
+    // B-lite: 处理诊断后若提取到 JSON，发送 json_block 事件(R-01)
     try {
-      deps.processAIResponse(fullResponse, deps.sessionId, messageId);
+      const result = deps.processAIResponse(fullResponse, deps.sessionId, messageId);
+      if (result?.diagnosis) {
+        deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
+          sessionId: deps.sessionId,
+          chunk: `\`\`\`json\n${JSON.stringify(result.diagnosis, null, 2)}\n\`\`\``,
+          eventType: 'json_block',
+          streamId,
+        });
+      }
     } catch (err) {
       console.error('[Chat] Diagnosis processing failed:', err);
     }
@@ -224,6 +256,7 @@ export async function handleStreamResponseWithTools(
       sessionId: deps.sessionId,
       fullResponse,
       messageId,
+      streamId,
     });
 
     return { success: true, messageId, sessionId: deps.sessionId };
@@ -239,6 +272,7 @@ export async function handleStreamResponseWithTools(
           sessionId: deps.sessionId,
           fullResponse,
           messageId,
+          streamId,
           error: errorMessage,
         });
         return { success: false, error: errorMessage };
@@ -251,6 +285,7 @@ export async function handleStreamResponseWithTools(
         sessionId: deps.sessionId,
         fullResponse,
         messageId,
+        streamId,
         aborted: true,
       });
       return { success: true, messageId, sessionId: deps.sessionId };
@@ -261,6 +296,7 @@ export async function handleStreamResponseWithTools(
       sessionId: deps.sessionId,
       fullResponse,
       messageId,
+      streamId,
       error: errorMessage,
     });
     return { success: false, error: errorMessage };
