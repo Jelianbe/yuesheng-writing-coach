@@ -65,8 +65,8 @@ interface RightToolsActions {
 }
 
 export const useRightToolsStore = create<RightToolsState & RightToolsActions>((set, get) => ({
-  // ── 初始状态：5 个主要工具默认打开（对齐 v6.2 HTML）──
-  openTools: ['catalog', 'progress', 'growth', 'works', 'training'],
+  // ── 初始状态：6 个主要工具默认打开（对齐 v6.2 HTML + Sprint 8 新增 stage）──
+  openTools: ['catalog', 'progress', 'growth', 'works', 'training', 'stage'],
   activeToolId: 'catalog',
   subTabs: {},
   activeSubTabId: null,

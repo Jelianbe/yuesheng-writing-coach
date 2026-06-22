@@ -227,7 +227,7 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
         <div className={styles.headerLeft}>
           {collapsedLeft && (
             <div className={styles.collapsedBar}>
-              <div className="w-[26px] h-[26px] rounded bg-[#7A6040] text-white flex items-center justify-center text-[13px] font-bold font-serif flex-shrink-0">月</div>
+              <div className={styles.collapsedBarLogo}>月</div>
               <button className={styles.expandBtn} onClick={() => setCollapsedLeft(false)} title="展开">☰</button>
             </div>
           )}
