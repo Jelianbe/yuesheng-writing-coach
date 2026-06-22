@@ -101,6 +101,12 @@ export interface TrainingRecommendation {
   wordCount?: number;
   forbiddenWords?: string[];
   evaluationCriteria?: string[];
+  /** S7: 关联能力节点 ID 列表 */
+  abilityNodeIds?: string[];
+  /** S7: 难度级别（来自能力图谱） */
+  difficulty?: number;
+  /** S7: 前置能力 ID 列表 */
+  prerequisites?: string[];
 }
 
 /** 技法信息（来自 technique-library.json） */
