@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { registerWorkspace } from '../../../../registry/workspace-registry';
 import styles from './index.module.css';
 
 type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei';
@@ -64,3 +65,12 @@ export const SettingsWorkspace: React.FC = () => {
     </div>
   );
 };
+
+// ADR-002: 自注册(默认不打开)
+registerWorkspace({
+  id: '__settings__',
+  name: '设置',
+  icon: '⚙',
+  defaultOpen: false,
+  component: () => import('./index').then(m => ({ default: m.SettingsWorkspace })),
+});
