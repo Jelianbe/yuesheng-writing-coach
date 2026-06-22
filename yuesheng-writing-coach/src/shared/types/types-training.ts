@@ -206,3 +206,101 @@ export interface TrainingCategory {
   /** 包含的症候 ID 列表 */
   syndromeIds: string[];
 }
+
+// ======================== S8: 发展路径类型 ========================
+
+/** 发展阶段基础信息 */
+export interface DevelopmentStageInfo {
+  /** 阶段 ID（eye/pen/word/person/structure/control/taste） */
+  stageId: string;
+  /** 阶段名称 */
+  name: string;
+  /** 阶段序号（1-7） */
+  order: number;
+  /** 核心问题 */
+  coreQuestion: string;
+  /** 前置阶段 ID 列表 */
+  prerequisites: string[];
+  /** 入门练习 */
+  entryPractices: string[];
+  /** 通过标准 */
+  passCriteria: string;
+  /** 关联症候 ID 列表 */
+  associatedSyndromes: string[];
+  /** 教学焦点 */
+  teachingFocus: string;
+}
+
+/** 用户症候掌握度数据 */
+export interface UserMasteryData {
+  /** 症候 ID */
+  syndromeId: string;
+  /** 平均评分（0-10） */
+  averageScore: number;
+  /** 训练次数 */
+  trainingCount: number;
+  /** 最后一次评分 */
+  lastScore?: number;
+}
+
+/** 阶段进度 */
+export interface StageProgress {
+  /** 当前阶段 */
+  currentStage: DevelopmentStageInfo;
+  /** 当前阶段进度百分比（0-100） */
+  progress: number;
+  /** 下一阶段（null = 已是最终阶段） */
+  nextStage?: DevelopmentStageInfo;
+  /** 当前阶段已解锁 */
+  stageUnlocked: boolean;
+  /** 下一阶段是否可解锁 */
+  nextStageUnlockable?: boolean;
+  /** 未通过的症候列表（阻碍解锁的原因） */
+  blockingSyndromes?: string[];
+}
+
+// ======================== S8: 训练流类型 ========================
+
+/** 五步通用训练流步骤 ID */
+export type TrainingFlowStepId = 1 | 2 | 3 | 4 | 5;
+
+/** 五步通用训练流步骤名称映射 */
+export const TRAINING_FLOW_STEP_NAMES: Record<TrainingFlowStepId, string> = {
+  1: '解说技法',
+  2: '例证展示',
+  3: '确认理解',
+  4: '主动尝试',
+  5: '修改反馈',
+};
+
+/** 训练流步骤 */
+export interface TrainingFlowStep {
+  /** 步骤序号 */
+  stepId: TrainingFlowStepId;
+  /** 步骤名称 */
+  name: string;
+  /** 系统指令（向用户展示的内容） */
+  instruction: string;
+  /** 用户操作描述 */
+  userAction: string;
+  /** 预计耗时 */
+  estimatedMinutes: number;
+  /** 指导提示（可选的系统内部提示） */
+  coachingHint?: string;
+}
+
+/** 完整训练流 */
+export interface TrainingFlow {
+  /** 对应症候 ID */
+  syndromeId: string;
+  /** 技法名称 */
+  techniqueName: string;
+  /** 能力大类分类 */
+  category: string;
+  /** 五步流程 */
+  steps: TrainingFlowStep[];
+  /** 预计总耗时（分钟） */
+  estimatedTotalMinutes: number;
+  /** 关联能力节点 ID */
+  abilityNodeIds?: string[];
+}

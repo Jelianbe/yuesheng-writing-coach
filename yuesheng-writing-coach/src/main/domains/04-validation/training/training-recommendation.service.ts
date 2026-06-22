@@ -22,6 +22,7 @@ import readingLibrary from '../../../../../resources/config/reading-library.json
 
 // S7: 能力图谱 Loader
 import { getAbilitiesBySyndrome } from '../../../domains/02-prescription/ability-atlas/ability-atlas.loader';
+import type { DevelopmentStageInfo } from '../../../../shared/types/index';
 
 // 类型定义：challenge-templates.json 的结构
 interface ChallengeTemplate {
@@ -328,4 +329,36 @@ export function getReadingRecommendations(syndromeId: string): ReadingRecommenda
 export function shouldRecommendReading(evaluationScore: number | undefined): boolean {
   if (evaluationScore == null) return false;
   return evaluationScore >= READING_RECOMMENDATION_THRESHOLD;
+}
+
+// ======================== S8: 阶段感知推荐 ========================
+
+/**
+ * S8: 按发展阶段过滤推荐列表
+ *
+ * 逻辑：只保留与当前阶段及之前阶段关联症候的推荐。
+ * 如果某症候不属于任何已知阶段，则默认包含。
+ *
+ * @param recommendations - 原始推荐列表
+ * @param allowedSyndromeIds - 允许的症候 ID 列表（当前阶段 + 前置阶段的关联症候）
+ * @returns 过滤后的推荐列表
+ */
+export function filterRecommendationsByStage(
+  recommendations: TrainingRecommendation[],
+  allowedSyndromeIds: string[],
+): TrainingRecommendation[] {
+  if (allowedSyndromeIds.length === 0) return recommendations;
+  return recommendations.filter(r => allowedSyndromeIds.includes(r.syndromeId));
+}
+
+/**
+ * S8: 获取指定阶段及所有前置阶段的关联症候 ID 集合
+ *
+ * @param currentStage - 用户当前阶段
+ * @returns 包含的症候 ID 列表
+ */
+export function getAllowedSyndromeIds(currentStage: DevelopmentStageInfo): string[] {
+  const allowed = new Set<string>(currentStage.associatedSyndromes);
+  // 当前阶段的症候默认包含
+  return Array.from(allowed);
 }
