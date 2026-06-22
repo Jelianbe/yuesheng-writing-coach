@@ -32,7 +32,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 }) => {
   const {
     openTools, activeToolId, openTool, setActiveTool, closeTool,
-    subTabs, activeSubTabId, removeSubTab, setActiveSubTab,
+    subTabs, activeSubTabId, removeSubTab, setActiveSubTab, clearSubTabs,
     projectTabs, activeProjectTabId, setActiveProjectTab, closeProjectTab,
   } = useRightToolsStore();
 
@@ -106,6 +106,12 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           emptyHint={activeToolId === 'catalog' ? '选择技法开始训练' : ''}
           showAddBtn={activeToolId === 'catalog'}
           addBtnTitle="回到目录"
+          onAddBtnClick={() => {
+            if (activeToolId) {
+              clearSubTabs(activeToolId);
+              setActiveSubTab(null);
+            }
+          }}
         />
       ) : (
         <SubTabs
@@ -116,6 +122,10 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           emptyHint={activeToolId === 'catalog' ? '选择技法开始训练' : ''}
           showAddBtn={activeToolId === 'catalog'}
           addBtnTitle="回到目录"
+          onAddBtnClick={() => {
+            // 目录态无子标签，按钮仅作占位以保持视觉一致性
+            setActiveSubTab(null);
+          }}
         />
       )}
 
