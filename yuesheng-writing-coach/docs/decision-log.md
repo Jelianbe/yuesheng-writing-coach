@@ -329,3 +329,60 @@
 - R-011 记忆强化（决策日志 = 知识归档）
 - R-018 变更溯源（决策→任务→交付物）
 - RWR-MASTER-CHAIN（Reflect 阶段产出）
+
+
+## D-029 (2026-06-23) Sprint 12 复盘：提示词工程统一 (v4 拆分逆转 + v5 合并)
+
+### 上下文
+- 设计 005 §三 Sprint 12 / Issue #17 P0
+- Sprint 11 普查结果：162 个资产 + 17 组重复 + 命名规范草案
+- 起点：v4 拆分产物 5 个 SKILL-*.md + v3.9.0
+- 终点：v5.0 单一 prompt 文件 + 历史归档 + 代码侧 v5 路径
+
+### 决策
+1. **保留 v5.md 为单一真源**：30K 字符，5 大 SKILL 块顺序固定为 IDENTITY→TEACHING→VALIDATION→FEEDBACK→SCENARIO
+2. **v3.9.0 tag 作为回退锚点**：`git checkout v3.9.0 -- resources/prompts/yuesheng-prompt-v3.md` 可一键恢复
+3. **truncation 不应用于 system prompt**：v5.md ≈ 30K 字符远超 MAX_CHARS=4000，但 v5 是 system prompt 不走 truncation；yuesheng-prompt-v5-structure.test.ts 显式断言此约束
+4. **代码侧引用 v3→v5 在 Sprint 12 完成**：避免 17 组重复扩大（每多一份 v3 副本都增加回退难度）
+
+### 交付（5 commits）
+1. `9ff5da1` → `d901f53` `feat(prompt): add v5 unified prompt (merge 5 SKILL)` + tag v3.9.0
+2. `8ef3c40` `docs(prompt): archive v3.9 + 5 SKILL + v2 old pos`
+3. `555da74` `refactor(prompt): switch code path to v5`
+4. `b904f80` `test(prompt): v5 path + structure coverage` (15 个新测试)
+5. `b267ddb` `docs(audit): add v5 prompt reference graph`
+
+### 门禁
+- typecheck: 0 errors
+- test: 435/435（+15 新增）
+- lint: 0 errors, 191 warnings（持平）
+
+### 做得好的（Keep）
+1. **R-016 严格遵循**：3 个新 commit subject 全部 ≤50 字符，含 scope，符合规范
+2. **单一真源策略**：v5.md 替换 5 SKILL + v3，避免分散维护
+3. **回退机制明确**：v3.9.0 tag + v5.md 头部 "回退" 段落 = 双保险
+4. **结构测试覆盖**：yuesheng-prompt-v5-structure.test.ts 5 大 SKILL 顺序、关键防御点（V-01/V-09/DP-F/DP-G/DP-I）、truncation 行为全部锁死
+5. **引用关系图落地**：dev-docs/audits/2026-06-23-prompt-reference-graph.md 标出"03-teaching/ 双副本"待清理
+
+### 教训（Learn）
+1. **Edit 工具缓存漂移再次出现**：本会话 2 次 Edit 报告成功但磁盘未变更（行 428/460 "月笙 MVP Prompt" → "月笙写作教练 v5"），最终用 Node.js + fs.writeFileSync 写入解决。**根因假设**：Edit 工具基于 Read 工具的内部快照做字符串匹配，但 Read 快照与磁盘实际可能不同步（D-DEBT-2026-06-23-04 同类问题）。**新约束**：中文文件 + 多次连续 Edit 改同一文件时，必须用 `node -e` 或 Node.js 脚本验证
+2. **truncation 测试用例设计踩坑**：第一次断言 "v5 误用 truncation 后仍包含 V-01" 失败，V-01 在 v5.md 中段（第 335 行）被截断。**修正**：明确文档化 "system prompt 不走 truncation" + 测试只断言头/尾（IDENTITY/SCENARIO）保留
+3. **GH PR body 中文走 gh CLI 仍输出 Unicode escape**：与 Sprint 11 同类问题（D-028 教训 #2），但已用 `--body-file` + UTF-8 临时文件解决，无需重复记录
+4. **v5.md 引用关系图应在 commit 前生成**：本会话在 commit 后才补 reference-graph.md，导致 git log 顺序中"代码切到 v5"早于"v5 引用图"。下个 sprint 应先建依赖图再动代码
+
+### 新增技术债（Debt）
+1. **D-DEBT-2026-06-23-05**: `resources/03-teaching/prompts/yuesheng-prompt-v3.md` + 5 SKILL 双副本未清理（Sprint 11 标记的 17 组重复之一）。Sprint 13 教育链路重整时统一处理
+2. **D-DEBT-2026-06-23-06**: v5.md 约 30K 字符已接近 DeepSeek 8K 模型可用 prompt 余量上限（30K char ≈ 45K tokens，单 prompt 框架就占满 6K tokens），若日后 LLM 切换到更小上下文模型需重新评估。**当前缓解**：truncation MAX_CHARS=4000 仅对章节内容生效，v5 system prompt 走完整加载
+3. **D-DEBT-2026-06-23-07**: Sprint 12 Plan 中提到的"5 个 placeholder {{}} → 检查"任务已合并到 v5 合并产物中，但未单独跑统计对比。下次类似合并任务应在合并前 grep `{{[a-z_]}}` 计数，合并后再次计数验证"未丢失"
+4. **D-DEBT-2026-06-23-08**: 跨会话状态连续性问题：本会话从 summary 恢复后只看到 "T12-6 待执行"，但实际 T12-1~4 已在历史 commit 完成（d901f53/8ef3c40）。**改进**：下次开新会话时第一步应是 `git log --oneline -20` + 状态同步，避免重复已完成工作
+
+### 下一阶段（Next）
+- **PR #19 等用户 merge**（AI 不主动 merge 主分支）
+- **Sprint 13 启动条件**：用户说"开始 Sprint 13" → 进入 Plan 阶段，处理 D-DEBT-2026-06-23-05（双副本清理）+ 教育链路再次整理
+- **关闭 Issue #17**：PR body 含 "Closes #17"
+
+### 依据
+- 设计 005 §三 Sprint 12 / Issue #17
+- R-011 记忆强化 / R-018 变更溯源 / R-025 Prompt 治理
+- ADR-003（占位符 + truncation 复用）
+
