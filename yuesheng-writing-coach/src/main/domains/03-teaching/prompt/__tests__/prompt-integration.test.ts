@@ -421,11 +421,11 @@ describe('PromptLoader 构造函数与降级行为', () => {
   it('无依赖时 loadSystemPrompt 应降级返回核心 prompt + 语气修饰', () => {
     const loader = new PromptLoader(resourcesRoot);
 
-    // 无 DynamicContextService → 使用 readPrompt 从 process.cwd() 读取 resources/prompts/yuesheng-prompt-v3.md
+    // 无 DynamicContextService → 使用 readPrompt 从 process.cwd() 读取 resources/prompts/yuesheng-prompt-v5.md
     const output = loader.loadSystemPrompt('doubao');
 
     // 应包含读取到的 Prompt 文件内容
-    expect(output).toContain('月笙 MVP Prompt');
+    expect(output).toContain('月笙写作教练 v5');
     // 应包含语气修饰
     expect(output).toContain('豆包');
     expect(output).toContain('温暖、鼓励');
@@ -457,9 +457,9 @@ describe('PromptLoader 构造函数与降级行为', () => {
 
     // direct 没有默认 tone modifier
     // 输出应为 Prompt 文件内容，不含 direct 特有的语气修饰
-    expect(output).toContain('月笙 MVP Prompt');
+    expect(output).toContain('月笙写作教练 v5');
     // direct 没有对应的 DEFAULT_TONE_MODIFIERS 条目，因此不会追加额外修饰
-    // 注意：yuesheng-prompt-v3.md 文件已内嵌豆包语气，所以输出仍可能包含"风格指令"
+    // 注意：yuesheng-prompt-v5.md 文件已内嵌豆包语气，所以输出仍可能包含"风格指令"
   });
 
   it('loadSystemPrompt 应处理 studentContext 占位符替换', () => {
@@ -468,7 +468,7 @@ describe('PromptLoader 构造函数与降级行为', () => {
     const output = loader.loadSystemPrompt('doubao', null, undefined, '学生当前水平：初级，擅长描述但不擅长结构');
 
     // 调用不应抛异常，且包含文件内容
-    expect(output).toContain('月笙 MVP Prompt');
+    expect(output).toContain('月笙写作教练 v5');
   });
 
   it('连续多次调用 loadSystemPrompt 应保持状态一致', () => {

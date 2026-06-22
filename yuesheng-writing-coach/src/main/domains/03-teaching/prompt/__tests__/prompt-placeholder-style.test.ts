@@ -6,7 +6,7 @@
  * - 禁止单花占位符 {xxx}（易与 markdown / JSON 冲突）
  * - 允许双花占位符 {{xxx}}（推荐规范）
  * - 例外：teacher-prompt.md / assistant-prompt.md / clown-prompt.md
- *   （这 3 个文件已被 yuesheng-prompt-v3.md 取代，无任何代码引用）
+ *   （这 3 个文件已被 yuesheng-prompt-v5.md 取代，无任何代码引用）
  *
  * 为什么用回归测试而非 lint 规则：
  * - 静态分析不识别"业务上下文是否在用"
