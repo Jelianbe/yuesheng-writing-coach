@@ -330,8 +330,8 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
         )}
       </div>
 
-      {/* Footer（仅在对话/复盘模式下显示） */}
-      {centerMode !== 'training' && (
+      {/* Footer（仅在 chat 模式下显示 — training/retro/editor 由各自视图内部负责底部交互） */}
+      {centerMode === 'chat' && (
         <Footer chatSessionId={currentSessionId} onToggleTemplate={handleToggleTemplate} />
       )}
     </div>
