@@ -546,3 +546,103 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
   - 灰度发布双轨对比 1 周
 - **依据**: dev-docs/designs/sprint-14-prior-plan.md + Issue #20 + R-018 变更溯源 / R-019 代码规范 / R-027 四道门禁
 - **Status**: ✅ Sprint 14-prior 完成（6 commits / PR #21 待 merge）
+
+
+### D-032: Sprint 14 方向 C 核心升级 — 完成
+- **类型**: 架构决策
+- **决策**: 完成方向 C 全量升级（Issue #20）— attitude 实质过滤 + 运行时 conditions + 完整 metadata + 依赖图校验
+- **范围**:
+  - T14-2: 扩展 SkillMetadata（version / depends / conditions）
+  - T14-3: SkillGraph 依赖图校验器（启动时 fail-fast）
+  - T14-4: AttitudeFilter 态度档位实质过滤（sensei 档删鼓励话术）
+  - T14-5: ConditionEvaluator 运行时条件评估（evidence.quality / user.safetyWord / user.dominantSyndrome）
+  - T14-6: 两层截断（SKILL 级别 size tiebreak + Content 级别 truncation 集成）
+  - T14-7: E2E 集成测试覆盖 5 个核心场景
+- **关键改动**:
+
+  **T14-2 (SkillMetadata 扩展) — 完整 schema：**
+  - 扩展 SkillMetadata：version（语义化版本）/ depends（依赖的 SKILL id 列表）
+  - 扩展 SkillLoadWhen：conditions?: LoadCondition[]（运行时条件）
+  - LoadCondition 三种类型：
+    - evidence.quality IN/NOT_IN [low, medium, high]
+    - user.safetyWord IS/IS_NOT boolean
+    - user.dominantSyndrome EQ/NEQ syndromeId
+  - YAML 解析支持 conditions: [low] 简写语法
+
+  **T14-3 (SkillGraph 依赖校验) — 启动时 fail-fast：**
+  - validateSkillGraph(skills) → ValidationResult { valid, errors, cycles, missingDeps }
+  - assertSkillGraphValid() 启动时 throw with structured message
+  - SkillDispatcher.load() 内置调用
+
+  **T14-4 (AttitudeFilter 实质过滤) — sensei 档态度过滤：**
+  - AttitudeFilter 类 + 规则外置到 resources/config/attitude-filter.json（R-014）
+  - sensei 档 removePatterns：加油/棒/真棒/非常好/继续努力 + emoji
+  - replacePatterns：希望... → ''（弱化客套）
+  - 长度下限保护（默认 50 字符）：过滤后太短回退到原内容
+  - 配置文件缺失/无效时降级为默认（无过滤）
+  - SkillDispatcher.setAttitudeFilter() 注入，composePrompt 自动应用
+
+  **T14-5 (ConditionEvaluator 运行时条件) — 动态切换 SKILL：**
+  - RuntimeContext 注入：evidenceQuality / safetyWord / dominantSyndrome
+  - evaluateConditions(conditions, ctx) → AND 语义
+  - 缺失 context 字段视为 fail（保守策略）
+  - 未知 condition type 抛 warning 但不阻塞
+  - SkillDispatcher.selectForPhase / composePrompt / estimateTokens 接受 runtimeCtx
+
+  **T14-6 (两层截断) — 体积控制：**
+  - SKILL 级别：truncateByPriority 同 priority 时按 estimatedTokens 升序优先（小优先）
+  - Content 级别：truncateSkillContent 集成 truncation.ts（头70+省略+尾30）
+  - SelectOptions 新增 maxCharsPerSkill 字段
+  - silent=true 避免 dispatcher 流程 spam warn 日志
+
+  **T14-7 (E2E 集成测试) — 5 场景：**
+  - P0 + doubao + coreSubsetOnly + maxTokens：核心子集 + 体积控制
+  - P2 + sensei：dispatcher 加载 + 删鼓励话术
+  - safety word 触发：跳过有 user.safetyWord IS_NOT 约束的 SKILL
+  - evidence.quality 条件：低/高质量时加载不同的 SKILL
+  - 循环依赖 + 缺失依赖：load() fail-fast
+  - 完整 phase × attitude × conditions 矩阵运行无错
+
+- **方案选择理由（AttitudeFilter 规则设计）**:
+  - **方案 A**（正则 removePatterns）：灵活、覆盖广、易扩展；选择此方案
+  - **方案 B**（关键词列表）：简单但精度低
+  - **方案 C**（LLM 重写）：智能但增加 LLM 调用成本
+
+  **T14-6 size tiebreak 选择**:
+  - 同 priority 时小 SKILL 优先，确保不被大 SKILL 占用预算
+  - 原因：高 phase（如 P3_TRAINING）可能需要加载多个 SKILL，避免单个大 SKILL 挤出小但关键的 SKILL
+
+- **门禁**:
+  - typecheck: 0 errors ✓
+  - test: 502/502 passed (新增 50 个 T14-2~T14-7 测试) ✓
+  - lint: 0 errors ✓
+  - 安全: 0 硬编码密钥 ✓
+- **提交**: 6 commits on `feature/sprint-14`:
+  1. `e706db0` feat(prompt): extend SkillMetadata with version/depends/conditions (T14-2)
+  2. `6cb5009` feat(prompt): SkillGraph dependency validator with fail-fast (T14-3)
+  3. `d9ac96b` feat(prompt): AttitudeFilter with attitude-axis real filtering (T14-4)
+  4. `066d466` feat(prompt): runtime conditions evaluator with evidence/safety/syndrome (T14-5)
+  5. `7f16f4e` feat(prompt): priority-based truncation with size tiebreak + content-level truncation (T14-6)
+  6. `1fa5849` test(prompt): sprint-14 E2E integration covering 5 core scenarios (T14-7)
+- **PR**: 待创建（feature/sprint-14 分支）
+- **新增/修改**: 8 files / +~1300 lines (含 E2E 测试)
+- **风险**:
+  - conditions 评估误跳过关键 SKILL → 已用"缺失 context = fail"保守策略
+  - attitude filter 误删有效话术 → 已用"长度下限保护回退"机制
+  - YAML conditions 简写语法仅支持 identifier → 完整 YAML 形式推迟到 Sprint 15
+  - sensei 档 attitude filter 改动了 SKILL 内容 → 测试已验证核心子集 + dispatcher 流程无错
+- **测试覆盖**:
+  - skill-metadata.test.ts: T14-2 元数据扩展
+  - skill-graph.test.ts: T14-3 依赖图校验
+  - attitude-filter.test.ts: T14-4 态度过滤（9 个）
+  - condition-evaluator.test.ts: T14-5 条件评估（16 个）
+  - skill-dispatcher-t14-6.test.ts: T14-6 两层截断（6 个）
+  - sprint-14-e2e.test.ts: T14-7 端到端（7 个）
+- **后续**（Sprint 15+）:
+  - service-config.ts 启用 SkillDispatcher.initializeSkillDispatcher（真正启用 dispatcher v2）
+  - YAML conditions 完整结构解析（evidence.quality IN [...] 完整语法）
+  - 灰度发布双轨对比 1 周（sensei 档新旧版本对比）
+  - prompt-loader 集成 dispatcher v2（替换 v5 降级路径）
+  - SKILL 文件补充 conditions 字段（如 feedback-cognition 加 evidence.quality 条件）
+- **依据**: dev-docs/designs/sprint-14-plan.md + Issue #20 + D-031 + R-014/R-018/R-019/R-027
+- **Status**: ✅ Sprint 14 方向 C 核心升级完成（6 commits / PR 待创建）
