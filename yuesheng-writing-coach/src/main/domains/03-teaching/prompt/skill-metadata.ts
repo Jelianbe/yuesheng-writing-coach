@@ -111,6 +111,7 @@ function extractYamlString(yaml: string, key: string): string {
 function parseLoadWhen(yaml: string): SkillLoadWhen {
   const phasesMatch = yaml.match(/phases:\s*\[([^\]]+)\]/);
   const attitudesMatch = yaml.match(/attitudes:\s*\[([^\]]+)\]/);
+  const conditionsMatch = yaml.match(/conditions:\s*\[([^\]]+)\]/);
 
   if (!phasesMatch || !attitudesMatch) {
     throw new Error('[parseSkillFile] Invalid loadWhen format');
@@ -119,7 +120,26 @@ function parseLoadWhen(yaml: string): SkillLoadWhen {
   return {
     phases: phasesMatch[1].split(',').map(s => s.trim()) as TeachingPhase[],
     attitudes: attitudesMatch[1].split(',').map(s => s.trim()) as AttitudeLevel[],
+    conditions: conditionsMatch ? parseConditions(conditionsMatch[1]) : undefined,
   };
+}
+
+/**
+ * 解析 conditions 简写语法
+ * Sprint 14 T14-5: 简写格式 — 逗号分隔的字符串
+ *   完整 YAML 形式（如 evidence.quality IN [...]）解析待后续 Sprint 15
+ *   当前实现：仅解析为标识符，保留语义在 dispatcher 评估
+ *
+ * 实际 dispatcher 不依赖 conditions 字符串的语义（YAML 解析结果仅用于诊断），
+ * 真正的 condition 定义由 PhaseConfig / RuntimeContext 注入。
+ *
+ * @internal
+ */
+function parseConditions(raw: string): LoadCondition[] {
+  const items = raw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  // 简写语法：每个 item 作为 identifier（保留为 LoadCondition 数组）
+  // 真实语义由 RuntimeContext 注入时由 dispatch 调用方构造完整 LoadCondition
+  return items.map(item => ({ type: 'user.dominantSyndrome', op: 'EQ', syndromeId: item }));
 }
 
 function validateMetadata(meta: SkillMetadata, filePath: string): void {

@@ -19,6 +19,7 @@
 import { loadAllSkills, type Skill, type TeachingPhase, type AttitudeLevel } from './skill-metadata';
 import { assertSkillGraphValid } from './skill-graph';
 import { AttitudeFilter } from './attitude-filter';
+import { evaluateConditions, type RuntimeContext } from './condition-evaluator';
 
 /** Sprint 14-prior 新增：选择选项 */
 export interface SelectOptions {
@@ -52,16 +53,18 @@ export class SkillDispatcher {
   }
 
   /**
-   * 按 phase + attitude + options 选 SKILL
+   * 按 phase + attitude + options + runtimeContext 选 SKILL
    * @param phase 当前教学阶段
    * @param attitude 当前态度档位（Sprint 13 不实质过滤，接口预留）
    * @param options 过滤选项（coreSubsetOnly / maxTokens）
+   * @param runtimeCtx 运行时上下文（用于 conditions 评估，T14-5 新增）
    * @returns 命中的 SKILL 数组
    */
   selectForPhase(
     phase: TeachingPhase,
     attitude: AttitudeLevel,
     options: SelectOptions = {},
+    runtimeCtx: RuntimeContext = {},
   ): Skill[] {
     if (!this.loaded) {
       throw new Error('[SkillDispatcher] Not loaded. Call load() first.');
@@ -73,7 +76,12 @@ export class SkillDispatcher {
       const attitudeMatch = skill.meta.loadWhen.attitudes.includes(attitude);
       // Sprint 14-prior: coreSubset 过滤（解决 D-DEBT-11）
       const subsetMatch = options.coreSubsetOnly ? skill.meta.isCoreSubset === true : true;
-      return phaseMatch && attitudeMatch && subsetMatch;
+      // Sprint 14 T14-5: conditions 评估（AND 语义）
+      const conditionsMatch = evaluateConditions(
+        skill.meta.loadWhen.conditions,
+        runtimeCtx,
+      ).passed;
+      return phaseMatch && attitudeMatch && subsetMatch && conditionsMatch;
     });
 
     // Sprint 14-prior: 按 tokenPriority 截断
@@ -113,16 +121,19 @@ export class SkillDispatcher {
   /**
    * 拼接 SKILL 为 prompt 文本
    * Sprint 14 T14-4: 集成 AttitudeFilter，sensei 档自动应用过滤
+   * Sprint 14 T14-5: 支持 runtimeCtx（conditions 评估）
    * @param phase 当前教学阶段
    * @param attitude 当前态度档位
    * @param options 过滤选项（见 SelectOptions）
+   * @param runtimeCtx 运行时上下文（T14-5 新增）
    */
   composePrompt(
     phase: TeachingPhase,
     attitude: AttitudeLevel,
     options: SelectOptions = {},
+    runtimeCtx: RuntimeContext = {},
   ): string {
-    const skills = this.selectForPhase(phase, attitude, options);
+    const skills = this.selectForPhase(phase, attitude, options, runtimeCtx);
     // Sprint 14 T14-4: 注入 attitude 过滤
     if (this.attitudeFilter) {
       return skills
@@ -142,13 +153,15 @@ export class SkillDispatcher {
    * @param phase 当前教学阶段
    * @param attitude 当前态度档位
    * @param options 过滤选项（见 SelectOptions）
+   * @param runtimeCtx 运行时上下文（T14-5 新增）
    */
   estimateTokens(
     phase: TeachingPhase,
     attitude: AttitudeLevel,
     options: SelectOptions = {},
+    runtimeCtx: RuntimeContext = {},
   ): number {
-    const skills = this.selectForPhase(phase, attitude, options);
+    const skills = this.selectForPhase(phase, attitude, options, runtimeCtx);
     return skills.reduce((sum, s) => sum + s.meta.estimatedTokens, 0);
   }
 
