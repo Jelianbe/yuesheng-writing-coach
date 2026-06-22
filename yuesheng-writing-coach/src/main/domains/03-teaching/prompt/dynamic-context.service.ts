@@ -123,7 +123,7 @@ export class DynamicContextService {
 
   /**
    * 装载核心 Prompt（铁三角）
-   * 从 yuesheng-prompt-v3.md 中提取"铁三角"部分
+   * 从 yuesheng-prompt-v5.md 中提取"铁三角"部分
    * 如果没有片段标记，降级为读取整个文件的前 500 字
    */
   private loadCorePrompt(): string {
@@ -131,7 +131,7 @@ export class DynamicContextService {
       return this.cachedCorePrompt;
     }
 
-    const fullText = this.readPrompt('yuesheng-prompt-v3.md');
+    const fullText = this.readPrompt('yuesheng-prompt-v5.md');
     if (!fullText) {
       this.cachedCorePrompt = '';
       return '';

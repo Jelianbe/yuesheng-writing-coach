@@ -179,7 +179,7 @@ export class PromptLoader {
         }
 
         // 注入学生状态（替换核心 Prompt 中的 {{student_context}} 占位符）
-        // ADR-003：占位符统一为双花；yuesheng-prompt-v3.md 当前未使用此占位符
+        // ADR-003：占位符统一为双花；yuesheng-prompt-v5.md 当前未使用此占位符
         // （学生状态通过 dynamicContextService.formatReferenceDrawer 单独注入），
         // 此处保留 replace 调用以兼容未来再次引入 {{student_context}} 占位符的 prompt 文件。
         const studentText = studentContext || '暂无学生状态数据。';
@@ -191,8 +191,8 @@ export class PromptLoader {
           sections.push(referenceDrawer);
         }
       } else {
-        // 降级：无 DynamicContextService 时，使用旧的全量 V3 Prompt 加载
-        let basePrompt = this.readPrompt('yuesheng-prompt-v3.md', FALLBACK);
+        // 降级：无 DynamicContextService 时，使用旧的全量 V5 Prompt 加载
+        let basePrompt = this.readPrompt('yuesheng-prompt-v5.md', FALLBACK);
         basePrompt = basePrompt.replace('{{student_context}}', studentContext || '暂无学生状态数据。');
         sections.push(basePrompt);
       }
