@@ -20,6 +20,9 @@ import techniqueLibrary from '../../../../../resources/config/technique-library.
 import syndromeTypeMap from '../../../../../resources/config/syndrome-type-map.json';
 import readingLibrary from '../../../../../resources/config/reading-library.json';
 
+// S7: 能力图谱 Loader
+import { getAbilitiesBySyndrome } from '../../../domains/02-prescription/ability-atlas/ability-atlas.loader';
+
 // 类型定义：challenge-templates.json 的结构
 interface ChallengeTemplate {
   id: string;
@@ -138,6 +141,17 @@ export function generateRecommendations(
 
   // 为每个症候生成推荐
   const raw = sorted.map((problem) => {
+    // S7: 从能力图谱查询关联能力节点
+    const abilityNodes = getAbilitiesBySyndrome(problem.id);
+    const abilityNodeIds = abilityNodes.map(a => a.atlasId);
+    // S7: 收集所有前置能力（去重）
+    const allPrereqs = new Set<string>();
+    for (const node of abilityNodes) {
+      for (const prereq of node.prerequisites) {
+        allPrereqs.add(prereq);
+      }
+    }
+
     const matchedTemplate = templates.templates.find(
       (t) => t.syndromeId === problem.id,
     );
@@ -155,6 +169,9 @@ export function generateRecommendations(
         expectedOutcome: matchedTemplate.expectedOutcome,
         mode: matchedTemplate.mode,
         techniques: matchTechniques(problem.id),
+        abilityNodeIds: abilityNodeIds.length > 0 ? abilityNodeIds : undefined,
+        difficulty: abilityNodes[0]?.level,
+        prerequisites: allPrereqs.size > 0 ? Array.from(allPrereqs) : undefined,
       };
     }
 
@@ -171,6 +188,9 @@ export function generateRecommendations(
       expectedOutcome: '改善该症候',
       mode: fallback.mode,
       techniques: matchTechniques(problem.id),
+      abilityNodeIds: abilityNodeIds.length > 0 ? abilityNodeIds : undefined,
+      difficulty: abilityNodes[0]?.level,
+      prerequisites: allPrereqs.size > 0 ? Array.from(allPrereqs) : undefined,
     };
   });
 

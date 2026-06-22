@@ -16,6 +16,9 @@ import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES, SYNDROME_META } from '../..
 import type { DynamicContextService } from './dynamic-context.service';
 import type { CodexService, CodexEntry, CodexContext } from './codex.service';
 
+// S7: 能力图谱查询（按症候获取能力节点信息）
+import { getAbilitiesBySyndrome } from '../../../domains/02-prescription/ability-atlas/ability-atlas.loader';
+
 /** 教学状态上下文接口 */
 export interface StateContext {
   currentPhase: string;
@@ -278,6 +281,11 @@ export class PromptLoader {
         const meta = SYNDROME_META[ref as SyndromeId];
         const severity = meta ? `（${meta.severity}）` : '';
         lines.push(`- ${name}${severity}`);
+        // S7: 从能力图谱查询关联能力节点
+        const abilityNodes = getAbilitiesBySyndrome(ref);
+        for (const node of abilityNodes) {
+          lines.push(`  - 关联能力：[${node.atlasId}] ${node.name} — ${node.trainingFocus}`);
+        }
       }
       lines.push('');
     }

@@ -74,6 +74,9 @@ export class TeachingStrategyRouter {
   private _userTypeMap: RouterConfigs['userTypeMap'] | null = null;
   private _syndromeTypeMap: RouterConfigs['syndromeTypeMap'] | null = null;
 
+  // S7: 症候动作映射缓存（从 syndrome-action-map.json 加载）
+  private _actionMappings: Array<{ syndromeId: string; triggerSignal: string; triggerTemplate: string; coachingQuestion: string }> | null = null;
+
   constructor(resourcesRoot: string) {
     this.resourcesRoot = resourcesRoot;
   }
@@ -147,6 +150,21 @@ export class TeachingStrategyRouter {
     return this._syndromeTypeMap;
   }
 
+  /** S7: 加载症候动作映射（来自 01-diagnosis/syndromes/syndrome-action-map.json） */
+  private loadActionMappings(): Array<{ syndromeId: string; triggerSignal: string; triggerTemplate: string; coachingQuestion: string }> {
+    if (this._actionMappings) return this._actionMappings;
+    const filePath = path.join(this.resourcesRoot, '01-diagnosis', 'syndromes', 'syndrome-action-map.json');
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const data = JSON.parse(raw) as { mappings: Array<{ syndromeId: string; triggerSignal: string; triggerTemplate: string; coachingQuestion: string }> };
+      this._actionMappings = data.mappings ?? [];
+    } catch {
+      console.warn('[TeachingStrategyRouter] Failed to load syndrome-action-map.json');
+      this._actionMappings = [];
+    }
+    return this._actionMappings;
+  }
+
   /** 获取全部配置的快照（供 extracted functions 使用） */
   private getConfigs(): RouterConfigs {
     return {
@@ -167,6 +185,7 @@ export class TeachingStrategyRouter {
     this._coachingTemplates = null;
     this._userTypeMap = null;
     this._syndromeTypeMap = null;
+    this._actionMappings = null;
   }
 
   /**
@@ -214,11 +233,21 @@ export class TeachingStrategyRouter {
     const parameterDecision = refineParameters(input, focusDecision, modeDecision, configs);
     const compatibleWithLegacy = buildLegacyBridge(input, modeDecision, configs.userTypeMap);
 
+    // S7: 查找症候动作映射
+    const mappings = this.loadActionMappings();
+    const targetId = focusDecision.targetSyndrome;
+    const actionMap = mappings.find(m => m.syndromeId === targetId);
+
     return {
       targetSyndrome: focusDecision,
       teachingMode: modeDecision,
       parameters: parameterDecision,
       compatibleWithLegacy,
+      actionMapping: actionMap ? {
+        triggerSignal: actionMap.triggerSignal,
+        triggerTemplate: actionMap.triggerTemplate,
+        coachingQuestion: actionMap.coachingQuestion,
+      } : undefined,
     };
   }
 }

@@ -254,6 +254,21 @@ export interface RouterOutput {
     tone: string;
     format?: string;
   };
+  /** S7: 症候教学动作映射（来自 syndrome-action-map.json） */
+  actionMapping?: {
+    /** 触发信号描述 */
+    triggerSignal: string;
+    /** 触发模板（含占位符） */
+    triggerTemplate: string;
+    /** 教练引导问题 */
+    coachingQuestion: string;
+  };
+  /** S7: 关联能力节点信息 */
+  abilityNode?: {
+    id: string;
+    name: string;
+    focus: string;
+  };
 }
 
 // ======================== 会话进度（RWR-P0-2 新增） ========================
