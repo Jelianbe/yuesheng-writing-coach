@@ -20,7 +20,6 @@ import {
 } from '../workspace-registry';
 
 const StubA: React.FC = () => null;
-const StubB: React.FC = () => null;
 const StubC: React.FC = () => null;
 
 const mockImport = (): Promise<{ default: React.FC }> =>
