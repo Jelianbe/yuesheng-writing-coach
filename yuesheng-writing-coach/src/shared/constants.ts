@@ -205,6 +205,12 @@ export const IPC_CHANNELS = {
   RETRO_SAVE: 'retro:save',
   // === 工具调用 ===
   CHAT_TOOL_EXECUTING: 'chat:tool:executing',
+  // === 教学决策记录(直接 service 调用,保留通道常量以供 IPC 化时使用) ===
+  TEACHING_DECISION_RECORD: 'teachingDecision:record',
+  // === 窗口控制(ipcMain.on,非 invoke) ===
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE: 'window:maximize',
+  WINDOW_CLOSE: 'window:close',
 } as const;
 
 /** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */

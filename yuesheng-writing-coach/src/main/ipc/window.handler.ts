@@ -5,6 +5,7 @@
  */
 
 import { ipcMain, BrowserWindow } from 'electron';
+import { IPC_CHANNELS } from '../../shared/constants';
 
 /** 获取当前主窗口实例 */
 function getMainWindow(): BrowserWindow | null {
@@ -17,13 +18,13 @@ function getMainWindow(): BrowserWindow | null {
  */
 export function initWindowHandlers(): void {
   // 最小化窗口
-  ipcMain.on('window:minimize', () => {
+  ipcMain.on(IPC_CHANNELS.WINDOW_MINIMIZE, () => {
     const win = getMainWindow();
     if (win) win.minimize();
   });
 
   // 最大化/还原窗口
-  ipcMain.on('window:maximize', () => {
+  ipcMain.on(IPC_CHANNELS.WINDOW_MAXIMIZE, () => {
     const win = getMainWindow();
     if (win) {
       if (win.isMaximized()) {
@@ -35,7 +36,7 @@ export function initWindowHandlers(): void {
   });
 
   // 关闭窗口
-  ipcMain.on('window:close', () => {
+  ipcMain.on(IPC_CHANNELS.WINDOW_CLOSE, () => {
     const win = getMainWindow();
     if (win) win.close();
   });
