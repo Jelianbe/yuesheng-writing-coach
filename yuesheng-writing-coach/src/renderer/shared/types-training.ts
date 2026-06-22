@@ -50,6 +50,8 @@ export interface ActiveTrainingSession {
   longTermProgress?: number;
   /** AI 评估结果（用于 complete 提交） */
   submissionResult?: { passed: boolean; feedback: string };
+  /** S8: 五步通用训练流 */
+  trainingFlow?: TrainingFlow;
 }
 
 /** 错误卡片（训练工坊区块一） */
@@ -189,4 +191,62 @@ export interface TrainingCategory {
   description: string;
   /** 包含的症候 ID 列表 */
   syndromeIds: string[];
+}
+
+// ======================== S8: 训练流类型 ========================
+
+/** 训练流步骤 ID */
+export type TrainingFlowStepId = 1 | 2 | 3 | 4 | 5;
+
+/** 训练流步骤 */
+export interface TrainingFlowStep {
+  stepId: TrainingFlowStepId;
+  name: string;
+  instruction: string;
+  userAction: string;
+  estimatedMinutes: number;
+  coachingHint?: string;
+}
+
+/** 完整训练流 */
+export interface TrainingFlow {
+  syndromeId: string;
+  techniqueName: string;
+  category: string;
+  steps: TrainingFlowStep[];
+  estimatedTotalMinutes: number;
+  abilityNodeIds?: string[];
+}
+
+// ======================== S8: 发展路径类型 ========================
+
+/** 发展阶段基础信息 */
+export interface DevelopmentStageInfo {
+  stageId: string;
+  name: string;
+  order: number;
+  coreQuestion: string;
+  prerequisites: string[];
+  entryPractices: string[];
+  passCriteria: string;
+  associatedSyndromes: string[];
+  teachingFocus: string;
+}
+
+/** 用户症候掌握度数据 */
+export interface UserMasteryData {
+  syndromeId: string;
+  averageScore: number;
+  trainingCount: number;
+  lastScore?: number;
+}
+
+/** 阶段进度 */
+export interface StageProgress {
+  currentStage: DevelopmentStageInfo;
+  progress: number;
+  nextStage?: DevelopmentStageInfo;
+  stageUnlocked: boolean;
+  nextStageUnlockable?: boolean;
+  blockingSyndromes?: string[];
 }

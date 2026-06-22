@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 
-export type ToolId = 'catalog' | 'progress' | 'growth' | 'works' | 'training' | '__settings__';
+export type ToolId = 'catalog' | 'progress' | 'growth' | 'works' | 'training' | 'stage' | '__settings__';
 
 export interface ToolMeta {
   id: ToolId;
@@ -21,6 +21,7 @@ export const ALL_TOOLS: ToolMeta[] = [
   { id: 'growth',    name: '学习日志', icon: '✎' },
   { id: 'works',     name: '作品',     icon: '☰' },
   { id: 'training',  name: '教学笔记', icon: '✤' },
+  { id: 'stage',     name: '发展路径', icon: '◈' },
   { id: '__settings__',  name: '设置',     icon: '⚙' },
 ];
 

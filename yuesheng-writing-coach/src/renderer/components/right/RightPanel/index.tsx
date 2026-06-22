@@ -7,6 +7,7 @@ import { LearningLogWorkspace } from '../workspaces/LearningLogWorkspace';
 import { WorksWorkspace } from '../workspaces/WorksWorkspace';
 import { TeachingNoteWorkspace } from '../workspaces/TeachingNoteWorkspace';
 import { SettingsWorkspace } from '../workspaces/SettingsWorkspace';
+import { StageProgressWorkspace } from '../workspaces/StageProgressWorkspace';
 import { ToolGrid } from '../ToolGrid';
 import { ToolTabs } from '../ToolTabs';
 import { SubTabs, type SubTabItem } from '../SubTabs';
@@ -22,6 +23,7 @@ const WORKSPACE_MAP: Record<ToolId, React.FC> = {
   growth: LearningLogWorkspace,
   works: WorksWorkspace,
   training: TeachingNoteWorkspace,
+  stage: StageProgressWorkspace,
   __settings__: SettingsWorkspace,
 };
 

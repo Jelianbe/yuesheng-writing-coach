@@ -6,6 +6,7 @@ import { initSessionHandlers, registerSessionHandlers } from '../ipc/session.han
 import { initEvidenceHandlers, registerEvidenceHandlers } from '../ipc/evidence.handler';
 import { initAbilityProfileHandlers, registerAbilityProfileHandlers } from '../ipc/ability-profile.handler';
 import { initTrainingHandlers, registerTrainingHandlers } from '../ipc/training.handler';
+import { initDevelopmentPathHandlers, registerDevelopmentPathHandlers } from '../ipc/development-path.handler';
 import { initGrowthHandlers, registerGrowthHandlers } from '../ipc/growth.handler';
 import { initTeachingNoteHandlers, registerTeachingNoteHandlers } from '../ipc/teaching-note.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../ipc/diagnosis.handler';
@@ -75,6 +76,10 @@ export class IpcRegistry {
       teachingStrategyService,
     });
     registerTrainingHandlers();
+
+    // Development Path (S8: 七阶段发展路径 + MasteryGate)
+    initDevelopmentPathHandlers({ studentModelService });
+    registerDevelopmentPathHandlers();
 
     // Growth Trends (学习日志工具)
     initGrowthHandlers({ growthTrendService });

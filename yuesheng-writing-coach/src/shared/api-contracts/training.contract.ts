@@ -1,5 +1,5 @@
 import type { ApiResponse } from './base';
-import type { TrainingRecord } from '../types/types-training';
+import type { TrainingRecord, TrainingFlow } from '../types/types-training';
 
 // ─── 请求类型 ───
 
@@ -206,7 +206,21 @@ export const TrainingApi = {
     request: {} as TrainingCatalogRequest,
     response: {} as ApiResponse<TrainingCatalogResponse>,
   },
+
+  generateFlow: {
+    channel: 'training:generateFlow' as const,
+    request: {} as TrainingGenerateFlowRequest,
+    response: {} as TrainingFlow,
+  },
 } as const;
+
+export interface TrainingGenerateFlowRequest {
+  syndromeId: string;
+  techniqueName: string;
+  userLevel?: number;
+  syndromeDescription?: string;
+  challengeConstraint?: string;
+}
 
 export type TrainingInvokeChannels =
   | typeof TrainingApi.recommend.channel
@@ -218,4 +232,5 @@ export type TrainingInvokeChannels =
   | typeof TrainingApi.evaluate.channel
   | typeof TrainingApi.decideReading.channel
   | typeof TrainingApi.deriveBehavior.channel
-  | typeof TrainingApi.catalog.channel;
+  | typeof TrainingApi.catalog.channel
+  | typeof TrainingApi.generateFlow.channel;

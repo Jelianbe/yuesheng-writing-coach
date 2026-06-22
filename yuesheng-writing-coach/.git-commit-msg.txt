@@ -1,0 +1,12 @@
+﻿fix(training): Sprint 8 -- 清偿 3/6 技术债务
+
+TrainingFlow → Store 集成、DevelopmentPathService IPC handler、右侧工具栏发展路径工具。
+
+已清偿：
+- training:generateFlow IPC 通道 + startTraining 集成
+- prescription:getStageProgress/getAllStages/getStageById IPC handler
+- 右侧工具栏新增「发展路径」工具（stage ToolId）
+
+门禁：typecheck 0 / test 336/336 / lint 0 errors 191 warnings
+
+Remaining debt: V2 prompt 评估、蒸馏素材、MasteryGate 阈值可配置
