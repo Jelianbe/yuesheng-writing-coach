@@ -107,7 +107,14 @@ export interface TechniqueRef {
   difficulty: 'beginner' | 'intermediate';
 }
 
-/** 关键段落引用（Diagnosis Agent 输出用） */
+/** 关键段落引用（Diagnosis Agent 输出用）
+ *
+ * ADR-003 扩展（B-2）：
+ * - 可选 chapterId / startOffset / endOffset 用于原文位置溯源
+ * - 老诊断（无 offset 字段）继续按纯文本证据处理
+ * - offset 单位：字符（UTF-16 code unit），与 String.slice 语义一致
+ *   ⚠ 不使用 Array.from().length（多字符 emoji 偏移会差）
+ */
 export interface KeyPassage {
   /** 原文片段（不超过 50 字） */
   text: string;
@@ -115,6 +122,12 @@ export interface KeyPassage {
   issue: string;
   /** 关联的症候 ID（可选，用于按症候分组证据） */
   syndromeRef?: string;
+  /** 所属章节 ID（可选，Sprint 10 UI 跳转原文使用） */
+  chapterId?: string;
+  /** 原文起始偏移（字符单位，0-based inclusive），可选 */
+  startOffset?: number;
+  /** 原文结束偏移（字符单位，0-based exclusive），可选 */
+  endOffset?: number;
 }
 
 /** 诊断 Agent 的结构化输出 */
