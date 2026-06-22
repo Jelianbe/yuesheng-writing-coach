@@ -386,3 +386,105 @@
 - R-011 记忆强化 / R-018 变更溯源 / R-025 Prompt 治理
 - ADR-003（占位符 + truncation 复用）
 
+
+
+---
+
+## D-030 (2026-06-23) Sprint 13 复盘：Skill Dispatcher（v5 拆分 + 按 phase 加载）
+
+### 上下文
+- 设计 005 §三 Sprint 13 / Issue #18 P1
+- Sprint 11/12 完成（资产普查 + v5 合并）
+- 目标：把 v5 拆为 6 个 SKILL 文件 + SkillDispatcher 按 phase 选择加载
+
+### 决策摘要
+- Sprint 13 实施方向 B 精简版：拆分 v5.md 为 6 个 SKILL 文件 + SkillDispatcher 按 phase+attitude 选择加载
+- attitude 维度接口预留但不实质过滤（Sprint 13 实质做 phase 维度 5 种组合）
+- 4 个关键决策：(1) 拆出 reference-drawer (2) DP-F/G/I 独立 (3) phase+attitude 调度 (4) C 升级三处占位
+
+### Sprint 13 范围
+- 拆分 v5.md 为 6 SKILL 文件 + YAML metadata（22.5K 字符 / 530 行 / 零内容损失）
+- SkillMetadata TypeScript 接口
+- SkillDispatcher 类
+- dynamic-context.service.ts loadCorePrompt 委托给 SkillDispatcher（保留 v5.md 降级路径）
+- prompt-loader.ts initializeSkillDispatcher 启动入口
+- 8 个 skill-structure.test.ts + 13 个 dispatcher/metadata 测试
+- 清理 resources/03-teaching/ 双副本（6 个文件）
+- v5.0.0 tag 锚定拆分前快照
+
+### Sprint 13 不做（保留给方向 C）
+- 完整 YAML metadata schema
+- 跨 SKILL 依赖图自动校验
+- 运行时根据 user 行为切换 SKILL
+- 动态 load 缓存 + LRU
+- SKILL 热更新
+- attitude 维度实质过滤
+- E2E 测试
+
+### 关键风险发现：dispatcher opt-in 状态与 prompt 膨胀
+
+实施时发现一个未在 Sprint 13 Plan 中预见的回归风险：
+
+- **现状**：v5.md loadCorePrompt 实际只提取 §一铁三角（约 800 字符 / 约 1200 tokens）
+- **风险**：如果 Sprint 13 启用 dispatcher 默认 phase=P0_INIT，会加载 4 个 always SKILL（约 20K 字符 / 约 30K tokens）
+- **回归**：prompt 体积从 800 字符膨胀到 20K 字符（25 倍），与 Sprint 13 节省 token 目标直接矛盾
+- **当前状态**：dispatcher 集成是 opt-in 状态（service-config.ts 未调用 initializeSkillDispatcher()），运行时仍走 v5.md 降级路径，行为未改变
+- **决策**：保持 opt-in 状态，启用 dispatcher 需要先解决按 phase 加载的体积优化问题
+
+### 方向 C 占位（三处都写）
+1. 本决策日志（D-030）— 为什么 + 何时
+2. GitHub Issue #19 — 做什么 + 验收
+3. dev-docs/designs/sprint-14-dispatcher-upgrade.md — 怎么做
+
+### 何时启动方向 C
+- 当 attitude 维度需要实质过滤时
+- 当需要根据 user 行为动态切换 SKILL 时
+- 当切换到更小上下文模型时（小于 8K 余量时精细化调度）
+- 当需要真正启用 dispatcher 时（必须先解决 prompt 体积优化问题）
+
+### 回退路径
+- git checkout v5.0.0 -- resources/prompts/yuesheng-prompt-v5.md
+- git checkout v3.9.0 -- resources/prompts/yuesheng-prompt-v3.md
+
+### 提交清单
+Sprint 13 共 9 个 commit（按 R-016 规范）：
+
+```
+0880c7c chore(cleanup): remove 03-teaching double-copy debt
+5279a84 test(prompt): replace v5-structure with skill-structure
+3c24f7b feat(prompt): expose dispatcher init in PromptLoader
+f175427 refactor(prompt): integrate dispatcher into loadCorePrompt
+e9dd4b4 test(prompt): add metadata + dispatcher tests
+b1d16c6 feat(prompt): add SkillDispatcher phase loader
+4c13cbd feat(prompt): add SkillMetadata TS interface
+3427a35 chore(scripts): add sprint-13 split/verify tools
+a753088 refactor(prompt): split v5 into 6 SKILL files
+```
+
+### 门禁结果
+- typecheck: 0 errors
+- test: 441 / 441 passed
+- lint: 0 errors
+
+### 新增技术债
+1. D-DEBT-2026-06-23-09: dynamic-context 不感知教学状态机，使用 P0_INIT 默认值
+2. D-DEBT-2026-06-23-10: SkillDispatcher 无 LRU 缓存
+3. D-DEBT-2026-06-23-11: dispatcher 启用需解决按 phase 加载的体积优化问题
+4. D-DEBT-2026-06-23-12: resources/03-teaching/ 仍残留 actions/、config/、feedback/ 子目录未审查
+
+### 经验
+1. 拆分前先审计实际使用情况很重要
+2. 激活死代码比拆分更有价值
+3. Sprint 13 简化策略（attitude 接口预留）有效避免过度设计
+4. opt-in 集成比激进替换更安全
+
+### Sprint 14+ 启动条件
+- 等用户 merge PR
+- 启动方向 C 前先解决 D-DEBT-2026-06-23-11（prompt 体积优化）
+- 解决 D-DEBT-2026-06-23-09（教学状态机 phase 注入 dispatcher）
+
+### 依据
+- dev-docs/designs/sprint-13-skill-dispatcher-design.md v1.0
+- dev-docs/designs/sprint-13-implementation-plan.md v1.0
+- dev-docs/designs/sprint-14-dispatcher-upgrade.md v1.0（方向 C 草案）
+- R-018 变更溯源 / R-025 Prompt 治理 / R-019 代码规范
