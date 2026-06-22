@@ -16,6 +16,9 @@ interface EvidenceRow {
   related_observations: string | null;
   extracted_by: string;
   created_at: string;
+  // ADR-003 B-5：原文位置溯源字段
+  start_offset: number | null;
+  end_offset: number | null;
 }
 
 export class EvidenceService {
@@ -27,19 +30,26 @@ export class EvidenceService {
 
   save(evidence: EvidenceRecord): void {
     const stmt = this.db.prepare(`
-      INSERT INTO evidence (evidence_id, type, level, novel_id, content_json, related_disease, related_ability, extracted_by, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO evidence (
+        evidence_id, type, level, novel_id, chapter_id, content_json,
+        related_disease, related_ability, extracted_by, created_at,
+        start_offset, end_offset
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(
       evidence.evidenceId,
       evidence.type,
       evidence.level,
       evidence.novelId,
+      evidence.chapterId ?? null,    // B-5 修复：之前未存 chapterId
       evidence.contentJson,
       evidence.relatedDisease,
       evidence.relatedAbility,
       evidence.extractedBy,
       evidence.createdAt,
+      evidence.startOffset ?? null,   // B-5 新增
+      evidence.endOffset ?? null,     // B-5 新增
     );
   }
 
@@ -132,7 +142,9 @@ export class EvidenceService {
   }
 
   private rowToRecord(row: EvidenceRow): EvidenceRecord {
-    return {
+    // ADR-003 B-5：补充 chapterId / startOffset / endOffset 映射
+    // 之前 rowToRecord 漏掉 chapter_id 字段，存进去的数据查询时拿不到
+    const record: EvidenceRecord = {
       evidenceId: row.evidence_id,
       type: row.type as EvidenceRecord['type'],
       level: row.level as EvidenceRecord['level'],
@@ -143,5 +155,16 @@ export class EvidenceService {
       extractedBy: row.extracted_by,
       createdAt: row.created_at,
     };
+    // 仅在数据库有值时设置可选字段，避免污染老数据
+    if (row.chapter_id !== null) {
+      record.chapterId = row.chapter_id;
+    }
+    if (row.start_offset !== null) {
+      record.startOffset = row.start_offset;
+    }
+    if (row.end_offset !== null) {
+      record.endOffset = row.end_offset;
+    }
+    return record;
   }
 }

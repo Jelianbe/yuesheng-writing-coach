@@ -58,6 +58,8 @@ function createRow(overrides?: Partial<{
   related_observations: string | null;
   extracted_by: string;
   created_at: string;
+  start_offset: number | null;
+  end_offset: number | null;
   relevance?: string;
 }>): Record<string, unknown> {
   return {
@@ -75,6 +77,8 @@ function createRow(overrides?: Partial<{
     related_observations: null,
     extracted_by: 'parser-v1',
     created_at: '2026-01-01T00:00:00.000Z',
+    start_offset: null,   // B-5 新增
+    end_offset: null,     // B-5 新增
     ...overrides,
   };
 }
@@ -127,11 +131,14 @@ describe('EvidenceService', () => {
         'text',
         2,
         'novel-001',
+        null,                                  // chapter_id (B-5 修复后)
         JSON.stringify({ sample: '原文片段' }),
         'disease-001',
         'ability-001',
         'parser-v1',
         '2026-01-01T00:00:00.000Z',
+        null,                                  // start_offset (B-5)
+        null,                                  // end_offset (B-5)
       );
     });
 
@@ -144,11 +151,14 @@ describe('EvidenceService', () => {
       expect(sql).toContain('type');
       expect(sql).toContain('level');
       expect(sql).toContain('novel_id');
+      expect(sql).toContain('chapter_id');
       expect(sql).toContain('content_json');
       expect(sql).toContain('related_disease');
       expect(sql).toContain('related_ability');
       expect(sql).toContain('extracted_by');
       expect(sql).toContain('created_at');
+      expect(sql).toContain('start_offset');    // B-5
+      expect(sql).toContain('end_offset');      // B-5
     });
 
     it('可以保存 type=pattern 和 level=4 的证据', () => {
@@ -164,12 +174,41 @@ describe('EvidenceService', () => {
         'ev-999',
         'pattern',
         4,
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
+        'novel-001',
+        null,
+        JSON.stringify({ sample: '原文片段' }),
+        'disease-001',
+        'ability-001',
+        'parser-v1',
+        '2026-01-01T00:00:00.000Z',
+        null,
+        null,
+      );
+    });
+
+    // ───── B-5 新增：原文位置溯源字段 ─────
+    it('保存带 chapterId / startOffset / endOffset 的证据', () => {
+      const evidence = createRecord({
+        chapterId: 'ch-001',
+        startOffset: 120,
+        endOffset: 160,
+      });
+
+      service.save(evidence);
+
+      expect(mockStmt.run).toHaveBeenCalledWith(
+        'ev-001',
+        'text',
+        2,
+        'novel-001',
+        'ch-001',                             // chapterId
+        JSON.stringify({ sample: '原文片段' }),
+        'disease-001',
+        'ability-001',
+        'parser-v1',
+        '2026-01-01T00:00:00.000Z',
+        120,                                  // startOffset
+        160,                                  // endOffset
       );
     });
   });
@@ -268,6 +307,50 @@ describe('EvidenceService', () => {
         extractedBy: 'bot-v2',
         createdAt: '2026-06-01T00:00:00.000Z',
       });
+    });
+
+    // ───── B-5 新增：原文位置溯源字段映射 ─────
+    it('行有 chapterId 时映射到 record.chapterId', () => {
+      const row = createRow({ chapter_id: 'ch-001' });
+      mockStmt.all.mockReturnValue([row]);
+
+      const [r] = service.getByDisease('disease-001', 'novel-001');
+
+      expect(r.chapterId).toBe('ch-001');
+    });
+
+    it('行有 startOffset / endOffset 时映射到 record', () => {
+      const row = createRow({ start_offset: 120, end_offset: 160 });
+      mockStmt.all.mockReturnValue([row]);
+
+      const [r] = service.getByDisease('disease-001', 'novel-001');
+
+      expect(r.startOffset).toBe(120);
+      expect(r.endOffset).toBe(160);
+    });
+
+    it('老数据（chapter_id / start_offset / end_offset 均为 null）不污染 record', () => {
+      // createRow 默认所有溯源字段为 null
+      mockStmt.all.mockReturnValue([createRow()]);
+
+      const [r] = service.getByDisease('disease-001', 'novel-001');
+
+      expect(r.chapterId).toBeUndefined();
+      expect(r.startOffset).toBeUndefined();
+      expect(r.endOffset).toBeUndefined();
+      // 仍保留必填字段
+      expect(r.evidenceId).toBe('ev-001');
+    });
+
+    it('部分溯源字段为 null（仅 chapterId）时只映射有的字段', () => {
+      const row = createRow({ chapter_id: 'ch-001', start_offset: null, end_offset: null });
+      mockStmt.all.mockReturnValue([row]);
+
+      const [r] = service.getByDisease('disease-001', 'novel-001');
+
+      expect(r.chapterId).toBe('ch-001');
+      expect(r.startOffset).toBeUndefined();
+      expect(r.endOffset).toBeUndefined();
     });
 
     it('返回多条匹配结果', () => {
