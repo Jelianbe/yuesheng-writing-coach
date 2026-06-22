@@ -15,6 +15,7 @@ import type { TeachingState } from '../state/teaching-state.types';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES, SYNDROME_META } from '../../../../shared/mappings';
 import type { DynamicContextService } from './dynamic-context.service';
 import type { CodexService, CodexEntry, CodexContext } from './codex.service';
+import { SkillDispatcher } from './skill-dispatcher';
 
 // S7: 能力图谱查询（按症候获取能力节点信息）
 import { getAbilitiesBySyndrome } from '../../../domains/02-prescription/ability-atlas/ability-atlas.loader';
@@ -99,6 +100,8 @@ export class PromptLoader {
   private getStore: (() => { getBySession: (sessionId: string) => unknown }) | null = null;
   private dynamicContextService: DynamicContextService | null = null;
   private codexService: CodexService | null = null;
+  /** Sprint 13: SkillDispatcher 实例（注入到 DynamicContextService） */
+  private skillDispatcher: SkillDispatcher | null = null;
 
   constructor(resourcesRoot: string) {
     this.resourcesRoot = resourcesRoot;
@@ -107,6 +110,25 @@ export class PromptLoader {
   /** 设置 DynamicContextService 实例 */
   setDynamicContextService(service: DynamicContextService): void {
     this.dynamicContextService = service;
+    // 反向注入：若 dispatcher 已初始化则立即同步给 dynamicContextService
+    if (this.skillDispatcher) {
+      service.setDispatcher(this.skillDispatcher);
+    }
+  }
+
+  /**
+   * 初始化 SkillDispatcher 并注入到 dynamicContextService
+   * @param skillsDir skills 目录绝对路径（可选，默认 resources/prompts/skills）
+   */
+  initializeSkillDispatcher(skillsDir?: string): void {
+    const dispatcher = new SkillDispatcher();
+    const dir = skillsDir ?? path.join(this.resourcesRoot, 'prompts/skills');
+    dispatcher.load(dir);
+    this.skillDispatcher = dispatcher;
+
+    if (this.dynamicContextService) {
+      this.dynamicContextService.setDispatcher(dispatcher);
+    }
   }
 
   /** 设置 CodexService 实例 */
@@ -152,7 +174,8 @@ export class PromptLoader {
    * 加载 System Prompt
    *
    * 三段式组装：
-   * 1. 核心层 — 铁三角 + 教学原则（始终装载，从 DynamicContextService 获取）
+   * 1. 核心层 — 必加载 SKILL 组合（IDENTITY + TEACHING + VALIDATION + SCENARIO，
+   *           由 SkillDispatcher 按 phase+attitude 选）
    * 2. 按需层 — 活跃症候相关的手册片段和动作库片段（按需装载）
    * 3. 上下文层 — 学生状态 + 教学进度 + 诊断增强 + 语气修饰
    */
