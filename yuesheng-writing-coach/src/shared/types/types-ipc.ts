@@ -127,6 +127,18 @@ export interface IPCResponseMap {
 export interface IPCEventMap {
   'diagnosis:updated': DiagnosisUpdateEvent;
   'teachingState:updated': TeachingState & { phaseName: string; subphaseName: string; phaseProgress: number };
-  'chat:stream:data': { sessionId: string; chunk: string };
-  'chat:stream:end': { sessionId: string; fullResponse: string; messageId: string; error?: string };
+  // B-lite: 事件类型(可选,默认 'text') + 流ID(可选,用于流锁)
+  'chat:stream:data': {
+    sessionId: string;
+    chunk: string;
+    eventType?: 'text' | 'json_block' | 'tool_call';
+    streamId?: string;
+  };
+  'chat:stream:end': {
+    sessionId: string;
+    fullResponse: string;
+    messageId: string;
+    streamId?: string;
+    error?: string;
+  };
 }

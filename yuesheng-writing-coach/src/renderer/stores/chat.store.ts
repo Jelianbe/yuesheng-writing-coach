@@ -23,8 +23,9 @@ interface ChatState {
   onboardingStep: 0 | 1 | 2 | 3;
 
   addMessage: (msg: ChatMessage) => void;
-  appendToLastAssistant: (chunk: string) => void;
-  finalizeLastMessage: () => void;
+  // B-lite: 接受 eventType 和 streamId 用于类型分发 + 流锁(R-01/R-02)
+  appendToLastAssistant: (chunk: string, eventType?: 'text' | 'json_block' | 'tool_call', streamId?: string) => void;
+  finalizeLastMessage: (finalContent?: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   sendMessage: (text: string, deps: SendMessageDeps) => Promise<void>;
@@ -35,6 +36,9 @@ interface ChatState {
   // P0-1: chat:stop — 中断流式响应
   streamAborted: boolean;
   abortStream: () => void;
+
+  // B-lite: 当前活跃流的 ID（用于流锁）
+  currentStreamId: string | null;
 
   // Q-02: 重试机制
   /** 上次发送失败的消息文本 */
@@ -132,26 +136,50 @@ export const useChatStore = create<ChatState>((set, get) => ({
   streamAborted: false,
   lastFailedMessage: null,
   retryable: false,
+  currentStreamId: null,
 
   addMessage: (msg: ChatMessage) => {
     set((state) => ({ messages: [...state.messages, msg] }));
   },
 
-  appendToLastAssistant: (chunk: string) => {
+  // B-lite: 接受 eventType 和 streamId
+  // - R-01: eventType='json_block' 时附加换行让 markdown 识别为代码块
+  // - R-02: streamId 不匹配 currentStreamId 则丢弃(流锁)
+  appendToLastAssistant: (chunk: string, eventType: 'text' | 'json_block' | 'tool_call' = 'text', streamId?: string) => {
+    set((state) => {
+      // 流锁检查:已锁定流后只接受同 ID 的 chunk
+      if (state.currentStreamId !== null && streamId && state.currentStreamId !== streamId) {
+        return state;
+      }
+      const msgs = [...state.messages];
+      for (let i = msgs.length - 1; i >= 0; i--) {
+        if (msgs[i].role === 'assistant') {
+          const separator = eventType === 'json_block' && msgs[i].content ? '\n' : '';
+          msgs[i] = { ...msgs[i], content: msgs[i].content + separator + chunk };
+          break;
+        }
+      }
+      return {
+        messages: msgs,
+        currentStreamId: streamId ?? state.currentStreamId,
+      };
+    });
+  },
+
+  // B-lite: 真实实现 — 用 fullResponse 覆盖累积内容(R-03 修复 + 内容对账)
+  finalizeLastMessage: (finalContent?: string) => {
     set((state) => {
       const msgs = [...state.messages];
       for (let i = msgs.length - 1; i >= 0; i--) {
         if (msgs[i].role === 'assistant') {
-          msgs[i] = { ...msgs[i], content: msgs[i].content + chunk };
+          if (finalContent !== undefined) {
+            msgs[i] = { ...msgs[i], content: finalContent };
+          }
           break;
         }
       }
-      return { messages: msgs };
+      return { messages: msgs, currentStreamId: null, isLoading: false };
     });
-  },
-
-  finalizeLastMessage: () => {
-    // placeholder for future post-processing
   },
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
@@ -235,6 +263,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       error: null,
       lastFailedMessage: null,
       retryable: false,
+      // B-lite: 清除上一轮流锁(R-02)
+      currentStreamId: null,
     }));
 
     try {
