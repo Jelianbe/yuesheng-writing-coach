@@ -17,6 +17,7 @@
  */
 
 import { loadAllSkills, type Skill, type TeachingPhase, type AttitudeLevel } from './skill-metadata';
+import { assertSkillGraphValid } from './skill-graph';
 
 /** Sprint 14-prior 新增：选择选项 */
 export interface SelectOptions {
@@ -32,12 +33,15 @@ export class SkillDispatcher {
 
   /**
    * 加载所有 SKILL 文件（首次调用时）
+   * Sprint 14 升级：加载后调用 assertSkillGraphValid 启动时 fail-fast
    * @param skillsDir skills 目录绝对路径
    */
   load(skillsDir: string): void {
     if (this.loaded) return;
 
     const skills = loadAllSkills(skillsDir);
+    // Sprint 14 T14-3: 启动时校验依赖图（循环 + 缺失）
+    assertSkillGraphValid(skills);
     for (const skill of skills) {
       this.skills.set(skill.meta.id, skill);
     }
