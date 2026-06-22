@@ -196,7 +196,19 @@ export class PromptLoader {
 
       // === 第一段：核心层（铁三角） ===
       if (this.dynamicContextService) {
-        const bundle = this.dynamicContextService.loadContext(syndromeIds ?? []);
+        // Sprint 14-prior 解决 D-DEBT-09：从 stateContextGetter 注入 phase
+        // 优先使用 stateContextGetter 获取的 phase，否则降级为 P0_INIT
+        let phase: string = 'P0_INIT';
+        if (sessionId && this.stateContextGetter) {
+          const ctx = this.stateContextGetter(sessionId);
+          if (ctx && ctx.currentPhase) {
+            phase = ctx.currentPhase;
+          }
+        }
+        const bundle = this.dynamicContextService.loadContext(
+          syndromeIds ?? [],
+          phase as 'P0_INIT' | 'P1_WORLD' | 'P2_PRACTICE_LOOP' | 'P3_TRAINING' | 'P4_REVIEW',
+        );
         if (bundle.corePrompt) {
           sections.push(bundle.corePrompt);
         }
