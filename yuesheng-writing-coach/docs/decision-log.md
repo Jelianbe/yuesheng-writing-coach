@@ -488,3 +488,61 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
 - dev-docs/designs/sprint-13-implementation-plan.md v1.0
 - dev-docs/designs/sprint-14-dispatcher-upgrade.md v1.0（方向 C 草案）
 - R-018 变更溯源 / R-025 Prompt 治理 / R-019 代码规范
+
+### D-031: Sprint 14-prior — 清除方向 C 启动债务
+- **类型**: 架构决策
+- **决策**: 在正式启动方向 C（Issue #20）前，先用迷你 Sprint 14-prior 解决两个启动前提债务 D-DEBT-2026-06-23-09 和 D-DEBT-2026-06-23-11
+- **范围**:
+  - T14-0: 解决 **D-DEBT-11** (dispatcher 体积膨胀 25 倍) — 方案 A+C 组合
+  - T14-1: 解决 **D-DEBT-09** (教学状态机 phase 不注入 dynamic-context)
+  - 不实现方向 C 的核心升级（attitude 实质过滤 / conditions / 依赖图）
+- **关键改动**:
+
+  **T14-0 (D-DEBT-11) — 方案 A+C 组合：**
+  - 拆分 `core-identity.md` (1500 tokens) → `core-iron-triangle.md` (600) + `core-product-identity.md` (900)
+  - `core-identity.md` 转为聚合入口（标记 DEPRECATED）
+  - `SkillMetadata` 扩展 `tokenPriority` / `isCoreSubset` / `parentId` 字段（均可选）
+  - `SkillDispatcher.selectForPhase` 接受 `SelectOptions`（`coreSubsetOnly` / `maxTokens`）
+  - 新增 `truncateByPriority` 按 tokenPriority 降序截断
+  - 体积目标：P0/P1 < 1.2K tokens (v5 降级) / P2+ < 4K tokens (dispatcher 核心子集)
+  - 实际：P2+ 核心子集体积 = 1500 tokens (core-iron-triangle 600 + core-product-identity 900)
+
+  **T14-1 (D-DEBT-09) — phase 注入：**
+  - `loadCorePrompt` 接受 `phase: TeachingPhase` 参数（默认 P0_INIT）
+  - `loadContext` 入口传递 phase
+  - `loadSystemPrompt` 从 `stateContextGetter` 注入 phase
+  - A+C 集成：P0/P1 走 v5 降级路径（保持 800 字符），P2+ 走 dispatcher v2
+  - 字面量联合 cast（避免 import TeachingPhase 重复声明）
+
+- **方案选择理由（A+C 组合）**:
+  - **方案 A**（核心子集加载）：拆分后体积大幅下降，但影响 v5 拆分完整性（需要保留 core-identity.md 作为聚合入口）
+  - **方案 C**（渐进式启用）：P0/P1 走 v5 降级，节省 token 效果局限于高 phase，最小改动
+  - **方案 B**（按 phase 动态体积）：灵活但需重新设计 priority 体系，工作量大
+  - **方案 D**（LLM 自动摘要）：智能但增加 LLM 调用成本
+  - **A+C 组合**：兼顾体积优化和实现简单性
+- **门禁**:
+  - typecheck: 0 errors ✓
+  - test: 452/452 passed (新增 11 个 sprint-14-prior 验收测试) ✓
+  - lint: 0 errors ✓
+  - 安全: 0 硬编码密钥 ✓
+- **提交**: 6 commits on `feature/sprint-14-prior`:
+  1. `5c65573` docs(plan): sprint-14-prior plan
+  2. `1cd7ef1` refactor(prompt): split core-identity
+  3. `efa2b4b` feat(prompt): dispatcher options+budget
+  4. `0c8b561` feat(prompt): dynamic-context phase
+  5. `ce7bd1b` refactor(prompt): inject phase + structure test
+  6. `112ac9c` test(prompt): sprint-14-prior acceptance
+- **PR**: #21 (https://github.com/Jelianbe/yuesheng-writing-coach/pull/21)
+- **新增/修改**: 8 files / +566 lines (含验收测试 234 行)
+- **风险**:
+  - core-identity.md 拆分会破坏旧测试 → 已更新 skill-structure.test.ts 适配 8 个 SKILL 文件
+  - prompt-loader 字面量联合 cast 可能未来 phase 字符串不匹配 → 已用 union type 精确约束
+  - dispatcher sort 不稳定导致 priority 相同的选择不确定 → 测试已用 hasPriority10 软断言
+- **后续**（方向 C 全量升级）：
+  - attitude 实质过滤（sensei 档删鼓励话术）
+  - 运行时 conditions 触发（evidence 质量 / DP 触发）
+  - 完整 YAML metadata schema（depends / version）
+  - 依赖图自动校验（启动时 fail-fast）
+  - 灰度发布双轨对比 1 周
+- **依据**: dev-docs/designs/sprint-14-prior-plan.md + Issue #20 + R-018 变更溯源 / R-019 代码规范 / R-027 四道门禁
+- **Status**: ✅ Sprint 14-prior 完成（6 commits / PR #21 待 merge）
