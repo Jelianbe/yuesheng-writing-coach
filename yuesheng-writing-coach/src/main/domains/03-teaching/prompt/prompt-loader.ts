@@ -15,6 +15,7 @@ import type { TeachingState } from '../state/teaching-state.types';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES, SYNDROME_META } from '../../../../shared/mappings';
 import type { DynamicContextService } from './dynamic-context.service';
 import type { CodexService, CodexEntry, CodexContext } from './codex.service';
+import { SkillDispatcher } from './skill-dispatcher';
 
 // S7: 能力图谱查询（按症候获取能力节点信息）
 import { getAbilitiesBySyndrome } from '../../../domains/02-prescription/ability-atlas/ability-atlas.loader';
@@ -99,6 +100,8 @@ export class PromptLoader {
   private getStore: (() => { getBySession: (sessionId: string) => unknown }) | null = null;
   private dynamicContextService: DynamicContextService | null = null;
   private codexService: CodexService | null = null;
+  /** Sprint 13: SkillDispatcher 实例（注入到 DynamicContextService） */
+  private skillDispatcher: SkillDispatcher | null = null;
 
   constructor(resourcesRoot: string) {
     this.resourcesRoot = resourcesRoot;
@@ -107,6 +110,25 @@ export class PromptLoader {
   /** 设置 DynamicContextService 实例 */
   setDynamicContextService(service: DynamicContextService): void {
     this.dynamicContextService = service;
+    // 反向注入：若 dispatcher 已初始化则立即同步给 dynamicContextService
+    if (this.skillDispatcher) {
+      service.setDispatcher(this.skillDispatcher);
+    }
+  }
+
+  /**
+   * 初始化 SkillDispatcher 并注入到 dynamicContextService
+   * @param skillsDir skills 目录绝对路径（可选，默认 resources/prompts/skills）
+   */
+  initializeSkillDispatcher(skillsDir?: string): void {
+    const dispatcher = new SkillDispatcher();
+    const dir = skillsDir ?? path.join(this.resourcesRoot, 'prompts/skills');
+    dispatcher.load(dir);
+    this.skillDispatcher = dispatcher;
+
+    if (this.dynamicContextService) {
+      this.dynamicContextService.setDispatcher(dispatcher);
+    }
   }
 
   /** 设置 CodexService 实例 */
@@ -152,7 +174,8 @@ export class PromptLoader {
    * 加载 System Prompt
    *
    * 三段式组装：
-   * 1. 核心层 — 铁三角 + 教学原则（始终装载，从 DynamicContextService 获取）
+   * 1. 核心层 — 必加载 SKILL 组合（IDENTITY + TEACHING + VALIDATION + SCENARIO，
+   *           由 SkillDispatcher 按 phase+attitude 选）
    * 2. 按需层 — 活跃症候相关的手册片段和动作库片段（按需装载）
    * 3. 上下文层 — 学生状态 + 教学进度 + 诊断增强 + 语气修饰
    */
@@ -178,9 +201,12 @@ export class PromptLoader {
           sections.push(bundle.corePrompt);
         }
 
-        // 注入学生状态（替换核心 Prompt 中的 {student_context} 占位符）
+        // 注入学生状态（替换核心 Prompt 中的 {{student_context}} 占位符）
+        // ADR-003：占位符统一为双花；yuesheng-prompt-v5.md 当前未使用此占位符
+        // （学生状态通过 dynamicContextService.formatReferenceDrawer 单独注入），
+        // 此处保留 replace 调用以兼容未来再次引入 {{student_context}} 占位符的 prompt 文件。
         const studentText = studentContext || '暂无学生状态数据。';
-        sections[sections.length - 1] = sections[sections.length - 1].replace('{student_context}', studentText);
+        sections[sections.length - 1] = sections[sections.length - 1].replace('{{student_context}}', studentText);
 
         // === 第二段：按需层（参考抽屉） ===
         const referenceDrawer = this.dynamicContextService.formatReferenceDrawer(bundle);
@@ -188,9 +214,9 @@ export class PromptLoader {
           sections.push(referenceDrawer);
         }
       } else {
-        // 降级：无 DynamicContextService 时，使用旧的全量 V3 Prompt 加载
-        let basePrompt = this.readPrompt('yuesheng-prompt-v3.md', FALLBACK);
-        basePrompt = basePrompt.replace('{student_context}', studentContext || '暂无学生状态数据。');
+        // 降级：无 DynamicContextService 时，使用旧的全量 V5 Prompt 加载
+        let basePrompt = this.readPrompt('yuesheng-prompt-v5.md', FALLBACK);
+        basePrompt = basePrompt.replace('{{student_context}}', studentContext || '暂无学生状态数据。');
         sections.push(basePrompt);
       }
 

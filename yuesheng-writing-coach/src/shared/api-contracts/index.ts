@@ -143,6 +143,15 @@ export type {
 export { ProjectApi } from './project.contract';
 export type { ProjectInvokeChannels } from './project.contract';
 
+// 处方域(发展路径 + 训练流,Phase 1 数据契约)
+export type {
+  DevelopmentStageInfo, StageProgress,
+  PrescriptionGetAllStagesRequest, PrescriptionGetStageByIdRequest,
+  PrescriptionGetStageProgressRequest, PrescriptionGetStageProgressResponse,
+} from './prescription.contract';
+export { PrescriptionApi } from './prescription.contract';
+export type { PrescriptionInvokeChannels } from './prescription.contract';
+
 // 事件通道映射
 export type {
   EventChannelMap, EventChannel, EventPayload,

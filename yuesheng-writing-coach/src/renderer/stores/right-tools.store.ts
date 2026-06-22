@@ -1,29 +1,22 @@
 /**
- * right-tools.store.ts — 右侧栏工具管理（V6.2 Shell 版）
+ * right-tools.store.ts — 右侧栏工具运行时状态（V6.2 Shell 版 + ADR-002）
  *
- * 跟踪 6 个工具的打开/关闭/激活状态，
- * 以及每个工具的子标签（sub-tab）管理。
+ * 注册表（id/name/icon）由 workspace-registry.ts 管理。
+ * 本文件只管理运行时状态：哪些工具打开/激活、子标签、项目标签。
+ *
+ * ToolId 现在是 WorkspaceId 的别名 — 保持向后兼容。
  */
 
 import { create } from 'zustand';
+import type { WorkspaceId } from '../registry/workspace-registry';
+import {
+  getDefaultOpenWorkspaces,
+  getAllWorkspaces,
+} from '../registry/workspace-registry';
+// 触发自注册（必须在 getDefaultOpenWorkspaces 之前）
+import '../registry/workspaces-index';
 
-export type ToolId = 'catalog' | 'progress' | 'growth' | 'works' | 'training' | 'stage' | '__settings__';
-
-export interface ToolMeta {
-  id: ToolId;
-  name: string;
-  icon: string;
-}
-
-export const ALL_TOOLS: ToolMeta[] = [
-  { id: 'catalog',   name: '技法目录', icon: '✤' },
-  { id: 'progress',  name: '教学进度', icon: '◐' },
-  { id: 'growth',    name: '学习日志', icon: '✎' },
-  { id: 'works',     name: '作品',     icon: '☰' },
-  { id: 'training',  name: '教学笔记', icon: '✤' },
-  { id: 'stage',     name: '发展路径', icon: '◈' },
-  { id: '__settings__',  name: '设置',     icon: '⚙' },
-];
+export type ToolId = WorkspaceId;
 
 /** 子标签条目 */
 export interface SubTabEntry {
@@ -64,10 +57,18 @@ interface RightToolsActions {
   clearProjectTabs: () => void;
 }
 
+/**
+ * 计算默认打开的工具集（来自注册表的 defaultOpen）
+ * 注意：此函数必须在 workspaces-index 已被 import 后调用。
+ */
+function computeDefaultOpenToolIds(): ToolId[] {
+  return getDefaultOpenWorkspaces().map(w => w.id);
+}
+
 export const useRightToolsStore = create<RightToolsState & RightToolsActions>((set, get) => ({
-  // ── 初始状态：5 个主要工具默认打开（对齐 v6.2 HTML）──
-  openTools: ['catalog', 'progress', 'growth', 'works', 'training'],
-  activeToolId: 'catalog',
+  // ── 初始状态：来自注册表的 defaultOpen workspaces ──
+  openTools: computeDefaultOpenToolIds(),
+  activeToolId: (computeDefaultOpenToolIds()[0] ?? null) as ToolId | null,
   subTabs: {},
   activeSubTabId: null,
   projectTabs: [],
@@ -198,3 +199,8 @@ export const useRightToolsStore = create<RightToolsState & RightToolsActions>((s
     set({ projectTabs: [], activeProjectTabId: null });
   },
 }));
+
+/** 重新导出以保留 ALL_TOOLS 的引用兼容（已迁移到注册表） */
+export function getAvailableTools() {
+  return getAllWorkspaces();
+}

@@ -16,6 +16,8 @@ import * as fs from 'fs';
 
 import { SYNDROME_NAMES, SYNDROME_TO_ACTIONS, ACTION_NAMES, ACTION_GOALS } from '../../../../shared/mappings';
 import type { SyndromeId, ActionId } from '../../../../shared/constants';
+import { SkillDispatcher } from './skill-dispatcher';
+import type { TeachingPhase, AttitudeLevel } from './skill-metadata';
 
 /** 从知识文件中提取的片段 */
 export interface KnowledgeSnippet {
@@ -83,6 +85,8 @@ export class DynamicContextService {
   private resourcesRoot: string;
   /** 核心 Prompt 缓存（铁三角不变，只读一次） */
   private cachedCorePrompt: string | null = null;
+  /** Sprint 13: SkillDispatcher 注入槽（运行时按 phase+attitude 选 SKILL） */
+  private dispatcher: SkillDispatcher | null = null;
 
   /** 症候手册全文缓存（已废弃） */
   // @ts-expect-error: Kept for backward compatibility, set but not read
@@ -122,38 +126,52 @@ export class DynamicContextService {
   }
 
   /**
-   * 装载核心 Prompt（铁三角）
-   * 从 yuesheng-prompt-v3.md 中提取"铁三角"部分
-   * 如果没有片段标记，降级为读取整个文件的前 500 字
+   * 装载核心 Prompt（铁三角 + 教学策略 + 验证规则）
+   * Sprint 13 改造：委托给 SkillDispatcher 按 phase+attitude 选 SKILL
+   * 降级路径：dispatcher 不可用时回退到 v5.md §一铁三角提取
    */
   private loadCorePrompt(): string {
     if (this.cachedCorePrompt) {
       return this.cachedCorePrompt;
     }
 
-    const fullText = this.readPrompt('yuesheng-prompt-v3.md');
+    // 新路径：使用 SkillDispatcher
+    if (this.dispatcher && this.dispatcher['loaded']) {
+      // P0_INIT 作为默认 phase（dynamic-context 不感知教学状态机）
+      const defaultPhase: TeachingPhase = 'P0_INIT';
+      const defaultAttitude: AttitudeLevel = 'yuesheng';
+      this.cachedCorePrompt = this.dispatcher.composePrompt(defaultPhase, defaultAttitude);
+      return this.cachedCorePrompt;
+    }
+
+    // 降级路径：从 v5.md 提取铁三角
+    const fullText = this.readPrompt('yuesheng-prompt-v5.md');
     if (!fullText) {
       this.cachedCorePrompt = '';
       return '';
     }
 
-    // 尝试提取带标记的核心片段
     const coreSnippets = extractSnippetsFromMarkdown(fullText, 'SYNDROME');
     if (coreSnippets.length > 0) {
       this.cachedCorePrompt = coreSnippets.map(s => s.content).join('\n\n');
       return this.cachedCorePrompt;
     }
 
-    // 降级：从 V3 Prompt 中提取"铁三角"部分
     const ironTriangleMatch = fullText.match(/## 一、铁三角[\s\S]*?(?=## 二|## 三|$)/);
     if (ironTriangleMatch) {
       this.cachedCorePrompt = ironTriangleMatch[0].trim();
       return this.cachedCorePrompt;
     }
 
-    // 最终降级：读取前 800 字符
     this.cachedCorePrompt = fullText.substring(0, 800).trim();
     return this.cachedCorePrompt;
+  }
+
+  /** 设置 SkillDispatcher 实例（外部注入） */
+  setDispatcher(dispatcher: SkillDispatcher): void {
+    this.dispatcher = dispatcher;
+    // dispatcher 变更后清除缓存，强制重新加载
+    this.clearCache();
   }
 
   /**

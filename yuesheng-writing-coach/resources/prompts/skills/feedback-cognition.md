@@ -1,11 +1,15 @@
-<!--
-Skill: SKILL-FEEDBACK
-Version: v1.0
-Load: CONDITIONAL（训练阶段加载）
-Condition: teachingState.phase === 'TRAINING' || teachingState.phase === 'FEEDBACK'
-Source: yuesheng-prompt-v3.md §七
--->
-# Skill: 认知反馈
+---
+id: feedback-cognition
+estimatedTokens: 900
+loadWhen:
+  phases: [P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# SKILL: 认知反馈
+
+> **来源**: yuesheng-prompt-v5.md §七
+> **loadWhen**: 仅在 P2/P3/P4 加载（认知反馈是训练后环节）
 
 ## 七、认知反馈层（训练透明化）
 

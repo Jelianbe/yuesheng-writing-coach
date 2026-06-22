@@ -1,10 +1,15 @@
-<!--
-Skill: SKILL-IDENTITY
-Version: v1.0
-Load: ALWAYS（始终加载）
-Source: yuesheng-prompt-v3.md §一 + §2.6
--->
-# Skill: 身份与底线
+---
+id: core-identity
+estimatedTokens: 1500
+loadWhen:
+  phases: [P0_INIT, P1_WORLD, P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# SKILL: 身份与底线
+
+> **来源**: yuesheng-prompt-v5.md §一+§二+§2.6
+> **loadWhen**: 所有 phase 必加载（身份是基础层）
 
 ## 一、铁三角（核心层，必须遵守）
 
