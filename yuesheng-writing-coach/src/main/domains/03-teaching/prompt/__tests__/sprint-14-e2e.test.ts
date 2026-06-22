@@ -19,6 +19,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { SkillDispatcher } from '../skill-dispatcher';
+import { PromptLoader } from '../prompt-loader';
+import { DynamicContextService } from '../dynamic-context.service';
 
 const TEST_DIR = path.join(os.tmpdir(), 'test-sprint-14-e2e-' + Date.now());
 
@@ -375,5 +377,129 @@ ${att} 档位行为指令。`;
     expect(safeP3.map(s => s.meta.id)).not.toContain('p3-strict');
 
     fs.rmSync(skillsDir, { recursive: true, force: true });
+  });
+});
+
+/**
+ * T14-8 场景 6（D-034）：PromptLoader.initializeSkillDispatcher 启用链路
+ *
+ * 验证：
+ * 1. PromptLoader.initializeSkillDispatcher 后 isDispatcherReady() = true
+ * 2. DynamicContextService 接收 dispatcher 注入（dispatcher 不为 null）
+ * 3. P2+ 阶段走 dispatcher v2（loadContext 返回的 corePrompt 来自 dispatcher，不含 v5 特征）
+ * 4. P0/P1 阶段仍走 v5 降级（不变）
+ *
+ * 设计依据：dev-docs/designs/sprint-14-plan.md T14-8 + D-034
+ */
+describe('Sprint 14 T14-8 场景 6：PromptLoader 启用 SkillDispatcher v2（D-034）', () => {
+  it('initializeSkillDispatcher 后 isDispatcherReady() = true 且 dispatcher 注入到 dynamicContextService', () => {
+    // 构造最小 SKILL 目录
+    const skillsDir = path.join(TEST_DIR, 's6');
+    fs.mkdirSync(skillsDir, { recursive: true });
+
+    // 写入 1 个核心子集 SKILL（让 dispatcher 加载后能产出内容）
+    fs.writeFileSync(path.join(skillsDir, 'core-test.md'), `---
+id: core-test
+estimatedTokens: 100
+isCoreSubset: true
+tokenPriority: 10
+loadWhen:
+  phases: [P2_PRACTICE_LOOP, P3_TRAINING]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# 核心测试 SKILL
+这一段是 dispatcher 启用后 P2+ 应加载的内容。`);
+
+    // 构造 PromptLoader + DynamicContextService
+    const resourcesRoot = path.dirname(skillsDir); // 父目录
+    const loader = new PromptLoader(resourcesRoot);
+    const dcs = new DynamicContextService(resourcesRoot);
+    loader.setDynamicContextService(dcs);
+
+    // 启用前：dispatcher 应为 null
+    expect(loader.isDispatcherReady()).toBe(false);
+
+    // 启用：传入 skillsDir
+    loader.initializeSkillDispatcher(skillsDir);
+
+    // 启用后：isDispatcherReady() = true
+    expect(loader.isDispatcherReady()).toBe(true);
+
+    fs.rmSync(skillsDir, { recursive: true, force: true });
+  });
+
+  it('P2+ 阶段走 dispatcher v2，corePrompt 来自 dispatcher（不再含 v5 铁三角）', () => {
+    const skillsDir = path.join(TEST_DIR, 's6b-p2');
+    fs.mkdirSync(skillsDir, { recursive: true });
+
+    fs.writeFileSync(path.join(skillsDir, 'core-iron-triangle.md'), `---
+id: core-iron-triangle
+estimatedTokens: 600
+isCoreSubset: true
+tokenPriority: 10
+loadWhen:
+  phases: [P0_INIT, P1_WORLD, P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# 铁三角（dispatcher 注入）
+Sprint 14 T14-8 启用验证。`);
+
+    const resourcesRoot = path.dirname(skillsDir);
+    const loader = new PromptLoader(resourcesRoot);
+    const dcs = new DynamicContextService(resourcesRoot);
+    loader.setDynamicContextService(dcs);
+    loader.initializeSkillDispatcher(skillsDir);
+
+    // P2+ 阶段：loadContext 返回的 corePrompt 应来自 dispatcher
+    const p2Bundle = dcs.loadContext([], 'P2_PRACTICE_LOOP');
+    expect(p2Bundle.corePrompt).toBeTruthy();
+    expect(p2Bundle.corePrompt).toContain('dispatcher 注入');
+    expect(p2Bundle.corePrompt).not.toContain('V5 Fallback');
+
+    fs.rmSync(skillsDir, { recursive: true, force: true });
+  });
+
+  it('P0/P1 阶段仍走 v5 降级（即使 dispatcher 已启用）', () => {
+    const skillsDir = path.join(TEST_DIR, 's6b-p0');
+    fs.mkdirSync(skillsDir, { recursive: true });
+
+    fs.writeFileSync(path.join(skillsDir, 'core-iron-triangle.md'), `---
+id: core-iron-triangle
+estimatedTokens: 600
+isCoreSubset: true
+tokenPriority: 10
+loadWhen:
+  phases: [P0_INIT, P1_WORLD, P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
+  attitudes: [doubao, yuesheng, sensei]
+---
+
+# 铁三角（dispatcher 注入）
+不应该在 P0 看到此内容。`);
+
+    // 构造 v5 降级路径文件
+    const promptsDir = path.join(skillsDir, '..', 'prompts');
+    fs.mkdirSync(promptsDir, { recursive: true });
+    fs.writeFileSync(path.join(promptsDir, 'yuesheng-prompt-v5.md'), '# V5 Fallback 铁三角\n这一段是 v5 降级路径的内容。');
+
+    const resourcesRoot = path.dirname(skillsDir);
+    const loader = new PromptLoader(resourcesRoot);
+    const dcs = new DynamicContextService(resourcesRoot);
+    loader.setDynamicContextService(dcs);
+    loader.initializeSkillDispatcher(skillsDir);
+
+    // P0 阶段：应走 v5 降级路径（即使 dispatcher 已启用）
+    const p0Bundle = dcs.loadContext([], 'P0_INIT');
+    expect(p0Bundle.corePrompt).toContain('V5 Fallback');
+    expect(p0Bundle.corePrompt).not.toContain('dispatcher 注入');
+
+    // P1 阶段：同上
+    const p1Bundle = dcs.loadContext([], 'P1_WORLD');
+    expect(p1Bundle.corePrompt).toContain('V5 Fallback');
+    expect(p1Bundle.corePrompt).not.toContain('dispatcher 注入');
+
+    fs.rmSync(skillsDir, { recursive: true, force: true });
+    fs.rmSync(promptsDir, { recursive: true, force: true });
   });
 });

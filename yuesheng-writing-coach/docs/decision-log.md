@@ -251,12 +251,17 @@
 - **类型**: 工程方法论
 - **决策**: Sprint 12 提示词工程统一启动前，先用 Sprint 11 做"只读+文档"的资产普查，再动手合并/去重/废弃
 - **原因**:
-  1. **盲改代价大**: resources/ 树下 162 个文本资产，跨 esources/prompts/（老根目录）与 esources/01-05/（新 domain 结构）双副本共存，hash 比对发现 17 组重复/近似重复文件；不盘点直接合并必然产生遗漏或误删
+  1. **盲改代价大**: resources/ 树下 162 个文本资产，跨 
+esources/prompts/（老根目录）与 
+esources/01-05/（新 domain 结构）双副本共存，hash 比对发现 17 组重复/近似重复文件；不盘点直接合并必然产生遗漏或误删
   2. **Sprint 12 风险前置**: v4→v5 合并需要回答"保留哪个、废弃哪个、改名为什么"，这些决策依赖资产清单的事实基线
   3. **决策可追溯**: 通过 udit-prompt-assets.js 脚本生成 JSON 清单 + 命名规范草案，让"为什么 v1 归档、为什么 v3 合并"等决策可以引用具体文件路径与 hash
   4. **零代码风险**: 普查只新增脚本+清单+规范三类文档，零代码改动 → 门禁零影响，回退成本几乎为零
 - **范围**:
-  - 扫描 esources/prompts/** + esources/01-diagnosis/** ~ esources/05-retro/** + .trae/.agents/.claude/.qoder/skills/**
+  - 扫描 
+esources/prompts/** + 
+esources/01-diagnosis/** ~ 
+esources/05-retro/** + .trae/.agents/.claude/.qoder/skills/**
   - 输出 dev-docs/audits/2026-06-23-prompt-asset-inventory.{json,md} 两份文件
   - 命名规范草案落 dev-docs/standards/2026-06-23-prompt-naming-spec.md
   - 不改任何 src/ / resources/ / .trae/ 文件
@@ -274,6 +279,44 @@
 - **依据**: 设计 005 §二 Sprint 拆分 + R-018 变更溯源规范（决策→任务→交付物）
 - **Issue**: #16 (Sprint 11 资产普查 P1)
 - **提交**: （待 commit T11-7）
+
+---
+
+### D-033: T14-4 AttitudeFilter 重构 — 删除硬编码鼓励词表，改用 SKILL 文件定义 LLM 行为指令
+- **类型**: 架构决策（重构 / 范围调整）
+- **触发**: 用户 review 发现 D-032 中 T14-4 实现的 AttitudeFilter 内置了"加油/棒/继续努力"等硬编码鼓励词清单，本质是"用规则屏蔽词面"，与"AI 驱动优于规则约束"原则冲突
+- **决策**:
+  - **删除**：`attitude-filter.ts` + `attitude-filter.json` + `attitude-filter.test.ts`（已删除）
+  - **替换**：用 3 个 `attitude-{doubao,yuesheng,sensei}.md` SKILL 文件定义行为指令，由 LLM 自主理解和执行
+  - **重写**：E2E 场景 2 从"验证过滤结果"改为"验证对应 attitude SKILL 被加载"
+- **范围**:
+  - 3 个 attitude-*.md SKILL 文件（resources/prompts/skills/）
+  - skill-dispatcher.ts：移除 AttitudeFilter 相关 import/字段/方法
+  - sprint-14-e2e.test.ts：场景 2 重写
+  - skill-metadata.ts：补全 YAML conditions 多行对象列表解析（parseConditions + parseConditionsList + buildCondition）
+  - skill-structure.test.ts：加载数量 8 → 11（含 3 个 attitude-*.md）
+  - sprint-14-e2e.test.ts 场景 5：p3-strict 加 conditions 约束以让 safetyWord 过滤生效
+- **为什么这个方案对**:
+  - 硬编码词表是"金剧系统"——维护成本高、容易遗漏新词、限制 LLM 表达空间
+  - SKILL 行为指令（"用 AI 自己的语言系统表达技术反馈，避免空泛鼓励话术"）让 LLM 自主判断"什么算空泛鼓励"，更鲁棒
+  - 与 dispatcher 的"按需加载"架构一致——不同 attitude 加载不同 SKILL，不需要过滤逻辑
+- **门禁**:
+  - typecheck: 0 errors ✓
+  - test: 493/493 passed ✓
+  - lint: 0 errors（226 warnings 全部为项目原有） ✓
+  - 安全: 0 硬编码密钥 ✓
+- **影响**:
+  - resources/prompts/skills/ 从 8 个文件 → 11 个文件
+  - D-032 的 commit `d9ac96b` (feat(prompt): AttitudeFilter with attitude-axis real filtering) 描述需要修订为"重构为 SKILL 行为指令"
+  - 后续 Sprint 15 灰度对比需要调整：attitude 差异由 SKILL 切换实现，不再有"过滤前后"对比
+- **回退**:
+  - 软回退：禁用 dispatcher 启用（service-config.ts）回到 v5 单 prompt 路径
+  - 硬回退：git revert D-033 commit + 恢复 AttitudeFilter（不推荐，已知违反原则）
+- **依据**:
+  - 用户原始反馈："问题是正确的处理办法不应该是告诉ai:这一块你可以鼓励，用ai自己的语言系统进行赞美或者解说之类的吗？你这和我们早期拒绝的金剧系统有啥差别？"
+  - R-014 配置外置规范（虽然本方案将"配置"提升为"指令"，但精神一致：业务语义不入代码）
+  - D-032 + Issue #20 + R-018 变更溯源
+- **Status**: ✅ 完成（待 commit）
 
 ---
 
@@ -650,22 +693,22 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
 
 ---
 
-### D-033: T14-4 AttitudeFilter 重构 — 删除硬编码鼓励词表，改用 SKILL 文件定义 LLM 行为指令
-- **类型**: 架构决策（重构 / 范围调整）
-- **触发**: 用户 review 发现 D-032 中 T14-4 实现的 AttitudeFilter 内置了"加油/棒/继续努力"等硬编码鼓励词清单，本质是用规则屏蔽词面，与 AI 驱动优于规则约束 原则冲突
+### D-034: T14-8 启用 SkillDispatcher v2
+- **类型**: 架构决策（启用 / 切换主路径）
+- **触发**: Sprint 14 方向 C 全部就绪（D-032 + D-033 + 4 个启动条件）
 - **决策**:
-  - 删除 attitude-filter.ts / attitude-filter.json / attitude-filter.test.ts
-  - 替换为 3 个 attitude-{doubao,yuesheng,sensei}.md SKILL 文件定义 LLM 行为指令
-  - 重写 E2E 场景 2 验证 SKILL 加载而非过滤结果
-  - 补全 skill-metadata.ts 的 YAML conditions 多行对象列表解析（parseConditions/parseConditionsList/buildCondition）
-  - skill-structure.test.ts 加载数量 8 → 11（含 3 个 attitude-*.md）
-  - sprint-14-e2e.test.ts 场景 5 p3-strict 加 conditions 约束
-- **为什么这个方案对**:
-  - 硬编码词表是金剧系统：维护成本高、容易遗漏新词、限制 LLM 表达空间
-  - SKILL 行为指令（用 AI 自己的语言系统表达技术反馈，避免空泛鼓励话术）让 LLM 自主判断
-  - 与 dispatcher 的按需加载架构一致：不同 attitude 加载不同 SKILL，不需要过滤逻辑
-- **门禁**: typecheck 0 errors / test 493/493 / lint 0 errors / 安全 OK
-- **影响**: resources/prompts/skills/ 从 8 个 → 11 个；D-032 commit d9ac96b 描述需修订；Sprint 15 灰度对比调整
-- **回退**: 软回退=禁用 dispatcher（service-config.ts）回到 v5 单 prompt；硬回退=git revert（不推荐）
-- **依据**: 用户原始反馈（你这和我们早期拒绝的金剧系统有啥差别）+ D-032 + Issue #20 + R-014/R-018
+  - 在 service-config.ts 的 promptLoader 注册后调用 initializeSkillDispatcher()
+  - P2+ 阶段：dispatcher v2（coreSubset 过滤 + 4K token 预算）
+  - P0/P1 阶段：仍走 v5 降级（保持 ~800 字符，零风险）
+  - PromptLoader 新增 isDispatcherReady() 方法（供健康检查 + 测试）
+- **已知债务**（暂不修）：
+  - loadCorePrompt 中 defaultAttitude="yuesheng" 硬编码，用户选 doubao/sensei 时 P2+ 实际加载 yuesheng 档 SKILL
+  - 修复需 attitude 透传链路改造（chat → teaching-state → dynamicContext）
+  - 影响面：用户体验（attitude 切换不生效），不影响系统功能
+- **风险**:
+  - prompt 体积 P2+ 从 ~800 字符跳到 ~1500+ tokens（已通过 coreSubset 过滤控制）
+  - dispatcher 启动时 assertSkillGraphValid fail-fast（如 SKILL 错误会 throw）
+- **门禁**: typecheck 0 / test 496/496 / lint 0 errors / 安全 OK
+- **回退**: 删除 service-config.ts 中的 loader.initializeSkillDispatcher() 那一行（软回退）
+- **依据**: D-032 + D-033 + Issue #20 + Sprint 14 方向 C 4 个启动条件已满足
 - **Status**: ✅ 完成（待 commit）
