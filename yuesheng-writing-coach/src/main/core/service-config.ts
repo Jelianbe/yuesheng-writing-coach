@@ -172,6 +172,10 @@ export function configureServices(
     loader.setStoreGetter(getStoreForPromptLoader);
     loader.setDynamicContextService(c.get<DynamicContextService>('dynamicContextService'));
     loader.setCodexService(c.get<CodexService>('codexService'));
+    // T14-8: 启用 SkillDispatcher v2（D-034）
+    // P2+ 阶段走 dispatcher（coreSubset + 4K token 预算）
+    // P0/P1 仍走 v5 降级（保持 ~800 字符）
+    loader.initializeSkillDispatcher();
     return loader;
   });
 
