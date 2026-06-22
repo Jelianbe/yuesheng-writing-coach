@@ -274,3 +274,58 @@
 - **依据**: 设计 005 §二 Sprint 拆分 + R-018 变更溯源规范（决策→任务→交付物）
 - **Issue**: #16 (Sprint 11 资产普查 P1)
 - **提交**: （待 commit T11-7）
+
+---
+
+## 2026-06-23
+
+### D-028: Sprint 11 复盘 + 债务记录
+- **类型**: Reflect（复盘）
+- **阶段**: GStack Sprint 11（Plan → Build → Review → Test → Ship → Reflect）
+
+## 概况
+- **Issue**: #16 (Sprint 11 资产普查 P1)
+- **PR**: https://github.com/Jelianbe/yuesheng-writing-coach/pull/19
+- **branch**: feature/sprint-9-audit-fix
+- **commit 数**: 5（全部按 R-016 规范，subject ≤50 字符）
+
+## 交付清单（Done）
+- `f169bcd` chore(scripts): add audit-prompt-assets scanner
+- `71ff734` docs(audits): add Sprint 11 prompt asset inventory
+- `ecc2e00` docs(design): add Sprint 11 prompt asset audit plan
+- `c62bd09` docs(standards): add prompt asset naming spec draft
+- `74b09ee` docs(decision): add D-027 audit-first rationale
+
+## 门禁结果
+- typecheck: exit 0 ✓
+- test: 421/421 passed ✓
+- lint: 0 errors, 191 warnings（< 300 软上限）✓
+
+## 做得好的（Keep）
+1. **零代码改动设计**：Sprint 11 全部为脚本+清单+规范文档，源代码与资源 0 改动，最大化安全性
+2. **R-016 严格遵循**：5 个 commit subject 全部 ≤50 字符，含 scope
+3. **决策前置**：D-027 提前记录"为什么先普查"理由，避免 Sprint 12 返工
+4. **扫描器通用化**：scripts/audit-prompt-assets.js 可被 Sprint 12 复用为回归基线
+5. **门禁与决策可追溯**：4 项 DoD 全部满足（100% inventory / 17 组重复 / 命名草案 / 决策日志）
+
+## 教训（Learn）
+1. **Edit/Read 工具缓存问题**：本会话出现 Read 工具返回内容 ≠ 磁盘实际内容（缓存含 D-027 但磁盘未写入），导致 Edit 报 "File has not been read yet" / WriteAllText 把 UTF-8 文件按 GBK 解析后再以 UTF-8 写出 = mojibake。**解决方案**：对中文文件追加必须用 node.js + UTF-8 或 base64 + byte 级 `File.WriteAllBytes`，禁用 PowerShell 5.1 here-string 中文路径
+2. **PR 描述中文走 gh CLI JSON 输出是 Unicode escape**：gh 输出的 body 是 `\uXXXX` 形式，GitHub Web 渲染应正常但本地 gh CLI 验证不直观。下次可改用 `--body-file` 配合 UTF-8 临时文件（已采用）
+3. **未创建项目级 CHANGELOG.md**：虽符合 R-019 最小化原则，但失去 sprint 历史可读性。Sprint 13 可考虑加一个最小化 CHANGELOG（每个 sprint 标题 + 关键 commit hash）
+
+## 新增技术债（Debt）
+1. **D-DEBT-2026-06-23-01**: Sprint 12 启动前必须 review 资产清单的 17 组重复文件，逐组决定保留/废弃/合并，否则合并会返工
+2. **D-DEBT-2026-06-23-02**: resources/ 与 resources/0X-domain/ 双副本结构问题，建议 Sprint 12 用"先归档 v1-v2 + 统一 v5"策略
+3. **D-DEBT-2026-06-23-03**: 4 个 IDE skill 目录（.trae/.agents/.claude/.qoder）内容互不相同，需要逐个决定保留哪些 skill，未来 5th IDE 加入时需要再扫描一次
+4. **D-DEBT-2026-06-23-04**: PowerShell 5.1 中文编码问题应在 `.trae/rules/R-019-代码规范标准.md` 增补"Windows 工具链"段落，避免下次踩坑
+
+## 下一阶段（Next）
+- **PR #19 等待用户 merge**（AI 不主动 merge 主分支，按 R-009 用户主权 + R-019 安全性）
+- **Issue #16 在 PR merge 时自动关闭**（PR body 含 "Closes #16"）
+- **Sprint 12 启动条件**：用户说"开始 Sprint 12"→ 进入 Plan 阶段，依据 Sprint 11 普查结果设计 v4→v5 合并方案
+
+## 依据
+- 设计 005 §二 Sprint 拆分
+- R-011 记忆强化（决策日志 = 知识归档）
+- R-018 变更溯源（决策→任务→交付物）
+- RWR-MASTER-CHAIN（Reflect 阶段产出）
