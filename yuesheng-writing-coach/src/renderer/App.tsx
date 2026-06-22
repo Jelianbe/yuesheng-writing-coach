@@ -1,5 +1,5 @@
 /**
- * Phase F 占位 App —— 仅保留 store 调用与 handleSendMessage（C-5 mastery 注入）。
+ * Phase F 占位 App —— 保留 store 调用与 IPC 事件订阅。
  * 真实 UI 将在 F-1~F-5 中按 spec §2.1 三栏布局重建。
  *
  * 旧版 import 列表备份在 __PHASE_F_LEGACY_IMPORTS__ 字符串中,供后续恢复参考:
@@ -11,13 +11,11 @@
  *     useSessionStore, useStudentContextStore, useTeachingStateStore, useTrainingStore,
  *     useRightPanelStore, type RightPanelToolId as PanelId, chatService, OnboardingBaseline }
  */
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppShell } from './components/AppShell';
 import { useAppController } from './services/useAppController';
 import { useConfigStore } from './stores/config.store';
 import { useChatStore } from './stores/chat.store';
-import { useSessionStore } from './stores/session.store';
-import { useStudentContextStore } from './stores/student-context.store';
 import { useTeachingStateStore } from './stores/teaching-state.store';
 import type { TeachingState } from './shared/types';
 
@@ -27,7 +25,8 @@ const TOOL_LABELS: Record<string, string> = {
 };
 
 export function App(): React.ReactElement {
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  // showOnboarding 由 useAppController 内部使用,setter 通过 props 传入;值不直接读取
+  const [, setShowOnboarding] = useState(false);
   const [executingTool, setExecutingTool] = useState<{ name: string } | null>(null);
   const { ready } = useAppController({ setShowOnboarding });
   const { loadConfig } = useConfigStore();
@@ -93,31 +92,9 @@ export function App(): React.ReactElement {
     return () => { cleanups.forEach(fn => fn()); };
   }, []);
 
-  // 保留 C-5 mastery 注入:F-2 重建 ChatView 时,本段代码移植到 handleSendMessage
-  const handleSendMessage = useCallback(async (text: string) => {
-    let sid = useSessionStore.getState().currentSessionId;
-    if (!sid) {
-      const s = await useSessionStore.getState().createSession();
-      if (!s) return;
-      sid = s.id;
-    }
-    const attitudeLevel = useConfigStore.getState().attitudeLevel;
-    const studentContext = useStudentContextStore.getState().toJSON();
-    // RWR-P1-11 / C-5 精通信息注入 Prompt(R-021: 只传 ID 不传 description)
-    const masteredIds = useTeachingStateStore.getState().masteredSyndromeIds;
-    const masterySuffix = masteredIds.length > 0
-      ? `\n\n[已精通技法] ${masteredIds.join(', ')}`
-      : '';
-    useChatStore.getState().sendMessage(text, { sessionId: sid, attitudeLevel, studentContext: studentContext + masterySuffix });
-  }, []);
-
   if (!ready) {
     return <div className="app-loading">正在启动...</div>;
   }
-
-  // showOnboarding / handleSendMessage 保留供 C-5 迁移使用
-  void showOnboarding;
-  void handleSendMessage;
 
   return (
     <>
