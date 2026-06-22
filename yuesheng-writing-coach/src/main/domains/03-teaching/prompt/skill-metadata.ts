@@ -27,11 +27,24 @@ export interface SkillLoadWhen {
   attitudes: AttitudeLevel[];
 }
 
-/** Skill 元数据（YAML frontmatter 解析后） */
+/** Skill 元数据（YAML frontmatter 解析后）
+ * Sprint 14-prior 扩展（解决 D-DEBT-11）：
+ * - tokenPriority: 截断时优先级（10 最高，1 最低，默认 5）
+ * - isCoreSubset: 是否核心子集（用于 dispatcher 子集过滤）
+ * - parentId: 父 SKILL ID（标识拆分来源）
+ *
+ * 完整版本（depends / version / conditions）推迟到 Sprint 14+ 方向 C
+ */
 export interface SkillMetadata {
   id: string;
   estimatedTokens: number;
   loadWhen: SkillLoadWhen;
+  /** 截断时优先级（10 最高，1 最低），可选，默认 5 */
+  tokenPriority?: number;
+  /** 是否核心子集（dispatcher 用 isCoreSubset=true 过滤），可选，默认 false */
+  isCoreSubset?: boolean;
+  /** 父 SKILL ID（如 core-iron-triangle → core-identity），可选 */
+  parentId?: string | null;
 }
 
 /** Skill 文件（meta + content） */
@@ -62,6 +75,9 @@ export function parseSkillFile(filePath: string): Skill {
     id: extractYamlString(yamlBlock, 'id'),
     estimatedTokens: parseInt(extractYamlString(yamlBlock, 'estimatedTokens'), 10),
     loadWhen: parseLoadWhen(yamlBlock),
+    tokenPriority: parseOptionalYamlNumber(yamlBlock, 'tokenPriority', 5),
+    isCoreSubset: parseOptionalYamlBoolean(yamlBlock, 'isCoreSubset', false),
+    parentId: parseOptionalYamlStringOrNull(yamlBlock, 'parentId'),
   };
 
   validateMetadata(meta, filePath);
@@ -101,6 +117,37 @@ function validateMetadata(meta: SkillMetadata, filePath: string): void {
   if (meta.loadWhen.attitudes.length === 0) {
     throw new Error(`[parseSkillFile] Empty attitudes in ${filePath}`);
   }
+  // Sprint 14-prior: tokenPriority 范围校验
+  if (meta.tokenPriority !== undefined && (meta.tokenPriority < 1 || meta.tokenPriority > 10)) {
+    throw new Error(`[parseSkillFile] tokenPriority out of range [1,10] in ${filePath}: ${meta.tokenPriority}`);
+  }
+}
+
+/** 解析可选的 YAML number 字段（不存在则返回 defaultValue） */
+function parseOptionalYamlNumber(yaml: string, key: string, defaultValue: number): number {
+  const match = yaml.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+  if (!match) return defaultValue;
+  const parsed = parseInt(match[1].trim(), 10);
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+/** 解析可选的 YAML boolean 字段（不存在则返回 defaultValue） */
+function parseOptionalYamlBoolean(yaml: string, key: string, defaultValue: boolean): boolean {
+  const match = yaml.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+  if (!match) return defaultValue;
+  const value = match[1].trim();
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return defaultValue;
+}
+
+/** 解析可选的 YAML string 字段（null 字符串转为 JS null） */
+function parseOptionalYamlStringOrNull(yaml: string, key: string): string | null {
+  const match = yaml.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'));
+  if (!match) return null;
+  const value = match[1].trim();
+  if (value === 'null' || value === '~') return null;
+  return value;
 }
 
 /** 扫描 skills 目录下所有 .md 文件 */
