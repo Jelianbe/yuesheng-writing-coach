@@ -1,31 +1,11 @@
+/* CenterPanel — 中间栏内容区 */
+
 /* Wrapper: 整体容器 */
 .wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-
-/* Header 返回按钮（训练模式 → 对话模式）*/
-.headerBackBtn {
-  width: auto;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 0 8px;
-  border-radius: 4px;
-  color: #7A6040;
-  font-size: 11px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: all 150ms;
-  white-space: nowrap;
-}
-.headerBackBtn:hover {
-  color: #5C5242;
-  background: rgba(122, 96, 64, 0.09);
 }
 
 .empty {
@@ -50,7 +30,7 @@
   font-size: 12px;
 }
 
-/* Empty state with 3 options (对照 HTML) */
+/* Empty state with 3 options */
 .emptyTitle {
   font-family: 'Noto Serif SC', 'Songti SC', serif;
   font-size: 20px;
@@ -102,168 +82,6 @@
   font-size: 11px;
   color: #8A7F6E;
   margin-top: 1px;
-}
-
-/* Header */
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px 4px;
-  flex-shrink: 0;
-}
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-}
-
-.collapsedBar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-right: 6px;
-}
-
-.collapsedBarLogo {
-  width: 26px;
-  height: 26px;
-  border-radius: 4px;
-  background: #7A6040;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: var(--font-serif, serif);
-  flex-shrink: 0;
-}
-
-.expandBtn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: #8A7F6E;
-  font-size: 11px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: all 150ms;
-}
-
-.expandBtn:hover {
-  color: #7A6040;
-  background: rgba(122, 96, 64, 0.09);
-}
-
-.projectBtn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: #1E1A14;
-  font-weight: 500;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: background 150ms;
-}
-
-.projectBtn:hover {
-  background: rgba(122, 96, 64, 0.09);
-}
-
-.projectBtnArrow {
-  font-size: 7px;
-  color: #8A7F6E;
-}
-
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  border: 1px solid;
-  color: #C8943C;
-  border-color: rgba(200, 148, 60, 0.3);
-  background: rgba(200, 148, 60, 0.07);
-}
-
-.statusDot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #C8943C;
-}
-
-.sessionBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #5C5242;
-  background: #E8E3DA;
-  max-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.trainBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  border-radius: 999px;
-  font-size: 10px;
-  border: 1px solid rgba(200, 148, 60, 0.3);
-  color: #C8943C;
-  background: rgba(200, 148, 60, 0.07);
-}
-
-.trainBadgeDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #C8943C;
-}
-
-.headerActions {
-  display: flex;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.headerBtn {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: #8A7F6E;
-  font-size: 11px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  transition: all 150ms;
-}
-
-.headerBtn:hover {
-  color: #7A6040;
-  background: rgba(122, 96, 64, 0.09);
 }
 
 .chatArea {
