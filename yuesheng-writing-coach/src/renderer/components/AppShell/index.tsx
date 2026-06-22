@@ -3,9 +3,13 @@ import { LeftPanel } from '../left/LeftPanel';
 import { CenterPanel } from '../center/CenterPanel';
 import { RightPanel } from '../right/RightPanel';
 import { useRightToolsStore } from '../../stores/right-tools.store';
+import { usePanelBusBridge } from '../../bus/panel-bus-bridge';
 import styles from './index.module.css';
 
 export const AppShell: React.FC = () => {
+  // X-01: 挂载全局 panel-bus 路由
+  usePanelBusBridge();
+
   const [collapsedLeft, setCollapsedLeft] = React.useState(false);
   const [collapsedRight, setCollapsedRight] = React.useState(false);
   const [leftWidth, setLeftWidth] = React.useState(220);
