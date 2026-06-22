@@ -19,6 +19,7 @@ import type {
   ActiveTrainingSession,
   TrainingStep,
   TrainingRecord,
+  TrainingFlow,
 } from '../shared/types';
 import type { TrainingState } from './training.types';
 import { DEFAULT_STEPS, READING_STEPS } from './training.types';
@@ -83,6 +84,20 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
         targetSyndrome: match?.syndromeName,
         longTermProgress,
       };
+
+      // S8: 非阅读任务时，异步获取五步通用训练流
+      if (match?.mode !== 'reading_task' && match?.syndromeId) {
+        try {
+          const flow = await getInvoke()(TrainingApi.generateFlow.channel, {
+            syndromeId: match.syndromeId,
+            techniqueName: match.challengeName ?? challengeId,
+            challengeConstraint: match.constraint,
+          }) as TrainingFlow;
+          session.trainingFlow = flow;
+        } catch (e) {
+          console.warn('[TrainingStore] generateTrainingFlow failed (non-fatal):', e);
+        }
+      }
 
       set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
     } catch (error) {

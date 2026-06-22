@@ -19,6 +19,7 @@ import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 import techniqueLibrary from '../../../resources/config/technique-library.json';
 import { generateRecommendations, getChallengeTemplate } from '../domains/04-validation/training/training-recommendation.service';
+import { generateTrainingFlow } from '../domains/04-validation/training/training-flow.service';
 import type { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
 import type { StudentModelService } from '../domains/02-prescription/student/student-model-service';
 import { evaluateTraining } from '../domains/04-validation/training/training-evaluator.service';
@@ -292,6 +293,30 @@ export function registerTrainingHandlers(): void {
     }
 
     return { added: true, masteryReached, consumed, total };
+  });
+
+  /**
+   * training:generateFlow — S8 五步通用训练流生成
+   */
+  createHandler(IPC_CHANNELS.TRAINING_GENERATE_FLOW, async (_event, args) => {
+    const validation = validatePayload<{
+      syndromeId: string;
+      techniqueName: string;
+      userLevel?: number;
+      syndromeDescription?: string;
+      challengeConstraint?: string;
+    }>(args, { required: ['syndromeId', 'techniqueName'], types: { syndromeId: 'string', techniqueName: 'string' } });
+    if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+
+    const flow = generateTrainingFlow({
+      syndromeId: validation.data.syndromeId,
+      techniqueName: validation.data.techniqueName,
+      userLevel: validation.data.userLevel ?? 1,
+      syndromeDescription: validation.data.syndromeDescription,
+      challengeConstraint: validation.data.challengeConstraint,
+    });
+
+    return flow;
   });
 
   /**

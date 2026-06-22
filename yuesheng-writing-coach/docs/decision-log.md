@@ -203,3 +203,41 @@
   - 跨阶段流转必须使用 IPC handler，不得直接调用其他阶段的 domain service
   - 错误信息使用 ErrorCode + ERROR_MESSAGES 中文体系
 - **Sprint 2 交付**: 5 commits / 47 files / +3332 -490 lines / 319 tests (from 201) / typecheck zero / lint zero errors
+
+---
+
+## 2026-06-22
+
+### D-025: Sprint 8 — 训练体系工程化方案
+- **类型**: 架构决策
+- **决策**: 实现两个核心子系统：
+  1. **DevelopmentPathService**（`02-prescription/development-path/`）— 七阶段发展路径惰性加载 + MasteryGate 解锁检查 + 当前阶段判定
+  2. **TrainingFlowService**（`04-validation/training/training-flow.service.ts`）— 五步通用训练流模板生成（按能力大类分类）
+- **MasteryGate 规则**:
+  - 当前阶段所有关联症候的平均评分 > 80%（即 score > 8/10）才能解锁下一阶段
+  - 无关联症候的阶段视为自动通过（如 eye 阶段）
+  - `getCurrentStage()` 从第一阶段开始遍历，返回第一个未通过（关联症候评分 < 8）的阶段
+- **五步流分类方案**:
+  - 5 个预定义分类（开篇/人物/节奏/语言/结构）+ 1 个默认 fallback
+  - 不逐个技法写练法，而是按大类生成通用指令文本
+  - 使用 `fillTemplate()` 将 `{techniqueName}`/`{description}`/`{example}`/`{effect}`/`{constraint}` 替换为实际数据
+- **阶段感知推荐**: `filterRecommendationsByStage()` 按用户当前阶段过滤推荐列表，只展示当前阶段关联症候对应的训练
+- **原因**:
+  1. 训练体系需要"用户当前该练什么"的算法支撑，不再靠人工判断
+  2. 五步通用训练流避免对 89 条技法逐一写练法的大规模手工工作
+  3. 发展路径和训练流解耦设计，可独立测试和调优
+- **门禁**: typecheck zero / test 336/336 / lint 0 errors 191 warnings
+- **提交**: `7f437ba` — feat(training): Sprint 8 — 五步通用训练流 + 七阶段发展路径工程化 (Closes #15)
+- **新增**: 8 files / +1039 lines
+
+### D-026: Sprint 8 已知技术债务（2026-06-22 更新）
+- **类型**: 债务记录
+- **状态**: 3/6 已清偿
+- **已清偿**:
+  1. ~~TrainingFlow 未集成训练 Store~~ — ✅ `training:generateFlow` IPC + startTraining 集成
+  2. ~~DevelopmentPathService 无 IPC handler~~ — ✅ `prescription:getStageProgress` / `getAllStages` / `getStageById` 三个通道
+  3. ~~UI 侧无阶段进度显示~~ — ✅ 右侧工具栏「发展路径」工具（`'stage'` ToolId）
+- **仍待处理**:
+  4. **V2 prompt 缺口二次评估** — 延期至后续 Sprint
+  5. **蒸馏素材工程化** — 全部延期
+  6. **MasteryGate 阈值可配置性** — 当前硬编码 8 分，未外置为配置项

@@ -64,6 +64,12 @@ export type { TrainingRecommendation } from './types-training';
 export type { TechniqueInfo } from './types-training';
 export type { TrainingRecord } from './types-training';
 export type { EvaluationResult } from './types-training';
+export type { TrainingFlow } from './types-training';
+export type { TrainingFlowStep } from './types-training';
+export type { TrainingFlowStepId } from './types-training';
+export type { DevelopmentStageInfo } from './types-training';
+export type { UserMasteryData } from './types-training';
+export type { StageProgress } from './types-training';
 
 // --- types-growth: 成长与能力画像 ---
 export type { AbilityScore } from './types-growth';

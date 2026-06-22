@@ -50,6 +50,8 @@ export interface ActiveTrainingSession {
   longTermProgress?: number;
   /** AI 评估结果（用于 complete 提交） */
   submissionResult?: { passed: boolean; feedback: string };
+  /** S8: 五步通用训练流（由 TrainingFlowService 生成） */
+  trainingFlow?: TrainingFlow;
 }
 
 /** 错误卡片（训练工坊区块一） */
