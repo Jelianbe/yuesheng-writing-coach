@@ -128,43 +128,64 @@ export class DynamicContextService {
   /**
    * 装载核心 Prompt（铁三角 + 教学策略 + 验证规则）
    * Sprint 13 改造：委托给 SkillDispatcher 按 phase+attitude 选 SKILL
+   * Sprint 14-prior 改造：接受 phase 参数 + A+C 方案解决 D-DEBT-11 体积膨胀
+   *   - P0/P1 走 v5 降级（保持 ~800 字符）
+   *   - P2+ 走 dispatcher v2（coreSubset 过滤 + tokenPriority 截断）
    * 降级路径：dispatcher 不可用时回退到 v5.md §一铁三角提取
+   *
+   * @param phase 教学阶段（默认 P0_INIT）
    */
-  private loadCorePrompt(): string {
+  private loadCorePrompt(phase: TeachingPhase = 'P0_INIT'): string {
     if (this.cachedCorePrompt) {
       return this.cachedCorePrompt;
     }
 
-    // 新路径：使用 SkillDispatcher
-    if (this.dispatcher && this.dispatcher['loaded']) {
-      // P0_INIT 作为默认 phase（dynamic-context 不感知教学状态机）
-      const defaultPhase: TeachingPhase = 'P0_INIT';
-      const defaultAttitude: AttitudeLevel = 'yuesheng';
-      this.cachedCorePrompt = this.dispatcher.composePrompt(defaultPhase, defaultAttitude);
+    // 方案 C：P0/P1 走 v5 降级路径（保持 800 字符，不启用 dispatcher）
+    if (phase === 'P0_INIT' || phase === 'P1_WORLD') {
+      this.cachedCorePrompt = this.loadV5CoreFallback();
       return this.cachedCorePrompt;
     }
 
-    // 降级路径：从 v5.md 提取铁三角
+    // 方案 A：P2+ 走 dispatcher v2 + coreSubset 过滤
+    if (this.dispatcher && this.dispatcher['loaded']) {
+      const defaultAttitude: AttitudeLevel = 'yuesheng';
+      // 体积预算：P2+ 限制 4K tokens，dispatcher 内部按 tokenPriority 截断
+      const budget = 4000;
+      this.cachedCorePrompt = this.dispatcher.composePrompt(
+        phase,
+        defaultAttitude,
+        { coreSubsetOnly: true, maxTokens: budget },
+      );
+      return this.cachedCorePrompt;
+    }
+
+    // 降级路径：dispatcher 不可用时回退到 v5
+    this.cachedCorePrompt = this.loadV5CoreFallback();
+    return this.cachedCorePrompt;
+  }
+
+  /**
+   * v5 降级路径：从 v5.md 提取铁三角
+   * P0/P1 走此路径，体积 < 1.2K tokens
+   * @internal
+   */
+  private loadV5CoreFallback(): string {
     const fullText = this.readPrompt('yuesheng-prompt-v5.md');
     if (!fullText) {
-      this.cachedCorePrompt = '';
       return '';
     }
 
     const coreSnippets = extractSnippetsFromMarkdown(fullText, 'SYNDROME');
     if (coreSnippets.length > 0) {
-      this.cachedCorePrompt = coreSnippets.map(s => s.content).join('\n\n');
-      return this.cachedCorePrompt;
+      return coreSnippets.map(s => s.content).join('\n\n');
     }
 
     const ironTriangleMatch = fullText.match(/## 一、铁三角[\s\S]*?(?=## 二|## 三|$)/);
     if (ironTriangleMatch) {
-      this.cachedCorePrompt = ironTriangleMatch[0].trim();
-      return this.cachedCorePrompt;
+      return ironTriangleMatch[0].trim();
     }
 
-    this.cachedCorePrompt = fullText.substring(0, 800).trim();
-    return this.cachedCorePrompt;
+    return fullText.substring(0, 800).trim();
   }
 
   /** 设置 SkillDispatcher 实例（外部注入） */
@@ -317,12 +338,14 @@ export class DynamicContextService {
 
   /**
    * 入口：根据教学状态装载上下文
+   * Sprint 14-prior 升级（解决 D-DEBT-09）：接受 phase 参数注入 dispatcher
    *
    * @param syndromeIds - 活跃症候 ID 列表（如 ['P001', 'P003']）
+   * @param phase - 当前教学阶段（默认 P0_INIT）
    * @returns ContextBundle 上下文包
    */
-  loadContext(syndromeIds: string[]): ContextBundle {
-    const corePrompt = this.loadCorePrompt();
+  loadContext(syndromeIds: string[], phase: TeachingPhase = 'P0_INIT'): ContextBundle {
+    const corePrompt = this.loadCorePrompt(phase);
     const syndromeSnippets = this.loadSyndromeSnippets(syndromeIds);
     const actionSnippets = this.loadActionSnippets(syndromeIds);
 
