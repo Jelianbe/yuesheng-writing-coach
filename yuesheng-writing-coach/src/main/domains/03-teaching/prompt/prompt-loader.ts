@@ -131,6 +131,14 @@ export class PromptLoader {
     }
   }
 
+  /**
+   * T14-8（D-034）：检查 SkillDispatcher 是否已初始化
+   * 用于 service-config 集成测试 + 运行时健康检查
+   */
+  isDispatcherReady(): boolean {
+    return this.skillDispatcher !== null;
+  }
+
   /** 设置 CodexService 实例 */
   setCodexService(service: CodexService): void {
     this.codexService = service;
