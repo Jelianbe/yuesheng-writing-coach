@@ -10,6 +10,7 @@
 import type Database from 'better-sqlite3';
 import type { ApiProxy} from '../../../api-proxy';
 import { type ChatCompletionTool } from '../../../api-proxy';
+import { truncateChapterContent } from '../prompt/truncation';
 
 // ─── 工具处理函数 ───
 
@@ -22,14 +23,36 @@ export const toolHandlers: Record<string, (args: unknown, db: Database.Database)
       const row = db.prepare('SELECT id, title, content FROM chapters WHERE id = ?').get(chapterId) as
         { id: string; title: string; content: string } | undefined;
       if (!row) return { found: false, error: '章节不存在' };
-      return { found: true, title: row.title, content: row.content, wordCount: row.content?.length ?? 0 };
+      // ADR-003 D 阶段：长文截断（hard-cap + warn），避免 readChapter 返回内容挤爆 prompt
+      const { text, truncated, originalLength, truncatedLength } = truncateChapterContent(row.content ?? '', {
+        chapterId: row.id,
+        source: 'chat-tools.readChapter',
+      });
+      return {
+        found: true,
+        title: row.title,
+        content: text,
+        wordCount: row.content?.length ?? 0,
+        ...(truncated ? { truncated: true, originalLength, truncatedLength } : {}),
+      };
     }
 
     if (titleHint) {
       const row = db.prepare('SELECT id, title, content FROM chapters WHERE title LIKE ? ORDER BY updated_at DESC LIMIT 1').get(`%${titleHint}%`) as
         { id: string; title: string; content: string } | undefined;
       if (!row) return { found: false, error: '未找到匹配章节', titleHint };
-      return { found: true, title: row.title, content: row.content, wordCount: row.content?.length ?? 0 };
+      // ADR-003 D 阶段：长文截断
+      const { text, truncated, originalLength, truncatedLength } = truncateChapterContent(row.content ?? '', {
+        chapterId: row.id,
+        source: 'chat-tools.readChapter',
+      });
+      return {
+        found: true,
+        title: row.title,
+        content: text,
+        wordCount: row.content?.length ?? 0,
+        ...(truncated ? { truncated: true, originalLength, truncatedLength } : {}),
+      };
     }
 
     const recent = db.prepare('SELECT id, title, length(content) as wordCount FROM chapters ORDER BY updated_at DESC LIMIT 5').all();
