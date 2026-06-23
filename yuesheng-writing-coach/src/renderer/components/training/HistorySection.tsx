@@ -103,7 +103,7 @@ export const HistorySection: React.FC<{
                 {record.effectiveness != null && (
                   <span
                     className={sharedStyles.historyEffectiveness}
-                    style={{ color: record.effectiveness >= 0.6 ? '#27ae60' : '#e67e22' }}
+                    style={{ color: record.effectiveness >= 0.6 ? 'var(--success)' : 'var(--warning)' }}
                   >
                     {Math.round(record.effectiveness * 100)}% 有效
                   </span>

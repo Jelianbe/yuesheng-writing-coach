@@ -80,8 +80,8 @@ export const ProgressWorkspace: React.FC = () => {
         <h3 className={styles.title}>教学进度</h3>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 8 }}>
           <span style={{ fontSize: 32, opacity: 0.3 }}>📊</span>
-          <div style={{ fontSize: 13, color: '#8A7F6E' }}>暂无教学数据</div>
-          <div style={{ fontSize: 11, color: '#A89F90' }}>创建会话后，教学进度将自动追踪</div>
+          <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>暂无教学数据</div>
+          <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>创建会话后，教学进度将自动追踪</div>
         </div>
       </div>
     );

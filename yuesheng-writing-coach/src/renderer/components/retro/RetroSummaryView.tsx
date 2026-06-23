@@ -72,7 +72,7 @@ export const RetroSummaryView: React.FC<RetroSummaryViewProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               <StatCard label="训练次数" value={String(totalTrainingCount)} />
               <StatCard label="涉及症候" value={String(syndromeCount)} />
-              <StatCard label="改善幅度" value={improvementLabel(overallImprovement)} color={overallImprovement > 0 ? 'var(--success, #2e7d32)' : 'var(--text-secondary)'} />
+              <StatCard label="改善幅度" value={improvementLabel(overallImprovement)} color={overallImprovement > 0 ? 'var(--success)' : 'var(--text-secondary)'} />
             </div>
           </div>
 
@@ -87,14 +87,14 @@ export const RetroSummaryView: React.FC<RetroSummaryViewProps> = ({
                   <div key={s.syndromeId} style={{
                     display: 'flex', alignItems: 'center', gap: 12,
                     padding: '10px 12px', borderRadius: 6,
-                    background: s.mastered ? 'var(--success-light, #e8f5e9)' : 'transparent',
+                    background: s.mastered ? 'var(--success-light)' : 'transparent',
                     border: '1px solid var(--border)',
                   }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
                         {s.syndromeName}
                         {s.mastered && (
-                          <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--success, #2e7d32)' }}>
+                          <span style={{ marginLeft: 8, fontSize: '0.75rem', color: 'var(--success)' }}>
                             ✅ 已掌握
                           </span>
                         )}
@@ -108,7 +108,7 @@ export const RetroSummaryView: React.FC<RetroSummaryViewProps> = ({
                     {s.improvement != null && (
                       <div style={{
                         fontSize: '0.85rem', fontWeight: 600,
-                        color: s.improvement >= 0 ? 'var(--success, #2e7d32)' : 'var(--danger, #c62828)',
+                        color: s.improvement >= 0 ? 'var(--success)' : 'var(--error)',
                       }}>
                         {s.improvement >= 0 ? '+' : ''}{s.improvement}%
                       </div>
@@ -129,7 +129,7 @@ export const RetroSummaryView: React.FC<RetroSummaryViewProps> = ({
                 {masteredTechniques.map((t, i) => (
                   <span key={i} style={{
                     padding: '4px 10px', borderRadius: 12,
-                    background: 'var(--success-light, #e8f5e9)', color: 'var(--success, #2e7d32)',
+                    background: 'var(--success-light)', color: 'var(--success)',
                     fontSize: '0.8rem', fontWeight: 500,
                   }}>
                     ✅ {t}
@@ -149,7 +149,7 @@ export const RetroSummaryView: React.FC<RetroSummaryViewProps> = ({
                 {recommendedFocus.map((f, i) => (
                   <span key={i} style={{
                     padding: '4px 10px', borderRadius: 12,
-                    background: 'var(--warning-light, #fff3e0)', color: 'var(--warning, #f57c00)',
+                    background: 'var(--warning-light)', color: 'var(--warning)',
                     fontSize: '0.8rem', fontWeight: 500,
                   }}>
                     {f}

@@ -141,7 +141,7 @@ export const AppShell: React.FC = () => {
           minWidth: collapsedRight ? 0 : 260,
           overflow: 'hidden',
           flexShrink: 0,
-          borderLeft: collapsedRight ? 'transparent' : '1px solid #D6CEC0',
+          borderLeft: collapsedRight ? 'transparent' : '1px solid var(--border)',
         }}
       >
         <RightPanel setCollapsedRight={setCollapsedRight} />

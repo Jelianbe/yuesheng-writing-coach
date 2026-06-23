@@ -10,9 +10,9 @@ interface FooterProps {
 }
 
 const ATT_LEVELS = [
-  { id: 'doubao' as const,  color: '#5A8F68', label: '豆包' },
-  { id: 'yuesheng' as const,color: '#C8943C', label: '月笙如歌' },
-  { id: 'sensei' as const,  color: '#B84A4A', label: 'Sensei' },
+  { id: 'doubao' as const,  color: 'var(--color-attitude-doubao)', label: '豆包' },
+  { id: 'yuesheng' as const,color: 'var(--color-attitude-yuesheng)', label: '月笙如歌' },
+  { id: 'sensei' as const,  color: 'var(--color-attitude-sensei)', label: 'Sensei' },
 ];
 
 export const Footer: React.FC<FooterProps> = ({ chatSessionId, onToggleTemplate }) => {

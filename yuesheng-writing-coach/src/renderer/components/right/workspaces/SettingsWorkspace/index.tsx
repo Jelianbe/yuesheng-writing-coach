@@ -5,9 +5,9 @@ import styles from './index.module.css';
 type AttitudeLevel = 'doubao' | 'yuesheng' | 'sensei';
 
 const ATTITUDE_DOTS: { level: AttitudeLevel; color: string; title: string }[] = [
-  { level: 'doubao', color: '#5A8F68', title: '豆包(温和鼓励)' },
-  { level: 'yuesheng', color: '#C8943C', title: '月笙如歌(专业平衡)' },
-  { level: 'sensei', color: '#B84A4A', title: 'Sensei(直接挑战)' },
+  { level: 'doubao', color: 'var(--color-attitude-doubao)', title: '豆包(温和鼓励)' },
+  { level: 'yuesheng', color: 'var(--color-attitude-yuesheng)', title: '月笙如歌(专业平衡)' },
+  { level: 'sensei', color: 'var(--color-attitude-sensei)', title: 'Sensei(直接挑战)' },
 ];
 
 export const SettingsWorkspace: React.FC = () => {

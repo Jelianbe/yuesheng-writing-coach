@@ -79,7 +79,7 @@ export const FormatConfirmDialog: React.FC<FormatConfirmDialogProps> = ({
               borderRadius: 6,
               border: 'none',
               background: 'var(--accent, #3b82f6)',
-              color: '#fff',
+              color: 'var(--text-on-accent)',
               fontSize: 13,
               fontWeight: 500,
               cursor: 'pointer',

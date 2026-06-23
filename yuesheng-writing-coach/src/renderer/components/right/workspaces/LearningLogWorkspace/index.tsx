@@ -24,10 +24,10 @@ interface GrowthSummary {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  mastered: '#5A8F68',
+  mastered: 'var(--success)',
   improving: '#7A9F5A',
-  stable: '#C8943C',
-  needsAttention: '#B84A4A',
+  stable: 'var(--warning)',
+  needsAttention: 'var(--error)',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -73,14 +73,14 @@ export const LearningLogWorkspace: React.FC = () => {
   // 统计卡片
   const statCards = summary
     ? [
-        { value: summary.trends.length, color: '#7A6040', label: '追踪症候' },
-        { value: summary.masteredCount, color: '#5A8F68', label: '已攻克' },
-        { value: summary.needsAttentionCount, color: '#C8943C', label: '需关注' },
+        { value: summary.trends.length, color: 'var(--accent)', label: '追踪症候' },
+        { value: summary.masteredCount, color: 'var(--success)', label: '已攻克' },
+        { value: summary.needsAttentionCount, color: 'var(--warning)', label: '需关注' },
       ]
     : [
-        { value: 0, color: '#7A6040', label: '追踪症候' },
-        { value: 0, color: '#5A8F68', label: '已攻克' },
-        { value: 0, color: '#C8943C', label: '需关注' },
+        { value: 0, color: 'var(--accent)', label: '追踪症候' },
+        { value: 0, color: 'var(--success)', label: '已攻克' },
+        { value: 0, color: 'var(--warning)', label: '需关注' },
       ];
 
   // 图表：显示 top 症候的严重度变化
@@ -128,7 +128,7 @@ export const LearningLogWorkspace: React.FC = () => {
                   <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: maxH }}>
                     {prev > 0 && (
                       <div style={{
-                        width: 10, height: prevH, background: '#D6CEC0', borderRadius: 2,
+                        width: 10, height: prevH, background: 'var(--border)', borderRadius: 2,
                       }} title={`之前: ${severityLabel(t.previousSeverity)}`} />
                     )}
                     <div style={{
@@ -168,7 +168,7 @@ export const LearningLogWorkspace: React.FC = () => {
 
       {/* 空状态 */}
       {!loadError && (!summary || summary.trends.length === 0) && (
-        <div className={styles.entryText} style={{ marginTop: 8, color: '#8A7F6E' }}>
+        <div className={styles.entryText} style={{ marginTop: 8, color: 'var(--text-tertiary)' }}>
           暂无成长趋势数据。开始训练后，这里将展示你的进步轨迹。
         </div>
       )}

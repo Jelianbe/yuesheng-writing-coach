@@ -34,9 +34,9 @@ function relTime(ts: number): string {
 }
 
 function severityColor(severity: string): string {
-  if (severity === 'L3' || severity === 'high') return '#B84A4A';
-  if (severity === 'L2' || severity === 'medium') return '#C8943C';
-  return '#8A7F6E';
+  if (severity === 'L3' || severity === 'high') return 'var(--error)';
+  if (severity === 'L2' || severity === 'medium') return 'var(--warning)';
+  return 'var(--text-tertiary)';
 }
 
 function severityLabel(s: string): string {
@@ -290,7 +290,7 @@ export const TeachingNoteWorkspace: React.FC = () => {
         <div className={styles.loadingText}>教学笔记树加载中（首次使用将自动创建）...</div>
       )}
       {treeLoadError && (
-        <div className={styles.loadingText} style={{ color: '#B84A4A' }}>{treeLoadError}</div>
+        <div className={styles.loadingText} style={{ color: 'var(--error)' }}>{treeLoadError}</div>
       )}
     </div>
   );
