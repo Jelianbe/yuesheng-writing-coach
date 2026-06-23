@@ -93,6 +93,37 @@ PR #24 合并完成，本地门禁全绿（typecheck 0 / test 629 / lint 0），
 | **T17-11** | #33 | AppShell 硬编码颜色 → token + 拖拽 layout thrashing 优化 | 无 |
 | **T17-12** | #31 | 移除 Tailwind 依赖，统一 CSS Modules | T17-7/8/9/10/11 完成后做最后清理 |
 
+#### T17-7 详细方案
+
+**现状**:
+- `CenterPanel/index.tsx:73` — `useSessionStore()` 无 selector，**全 store 订阅**
+- `CenterPanel/index.tsx:76-92` — `useTrainingStore((s) => ({...14 fields}))` **聚合订阅**，每次创建新对象
+- 训练流 stream 高频更新（activeTraining/isLoading）时，CenterPanel + 所有 ChatView/TrainingWorkshop 全部 re-render
+
+**目标**:
+- 每个字段独立 selector
+- 训练流 stream 高频字段（activeTraining/isLoading）单独订阅，与低频字段（errorCards/recommendations/retroSummary）解耦
+
+**重构方案**:
+1. **`useSessionStore()` 拆分**（4 selectors）：
+   - `useSessionId()` → `currentSessionId`
+   - `useSessionList()` → `sessions`
+   - `useSessionActions()` → `loadSessions, switchSession`（actions 不变）
+2. **`trainingState` 14 字段拆分**（4 selectors，按使用场景分组）：
+   - `useTrainingWorkshopState()` → 训练工坊 props（11 字段）
+   - `useBridgeState()` → `bridgeRecommendation`（ChatView 桥接卡片用）
+   - `useRetroState()` → `retroSummary, retroLoading`（RetroSummaryView 用）
+   - **保持** `useTrainingStore(selectCenterMode)` 现状
+3. **位置**：新增 `src/renderer/components/center/CenterPanel/selectors.ts`（与组件同目录，局部状态）
+4. **不改 props 结构**：保持父→子 props 透传，**只动订阅**（R-021 不顺手重构范围外）
+
+**DoD**:
+- CenterPanel 渲染次数（用 React Profiler）: 训练流 stream 时 **0 次额外 re-render**（仅 TrainingWorkshop re-render）
+- 8 个新 selectors 单元测试：返回引用稳定性（`useState(selector(s))` 二次值相同时返回相同引用）
+- typecheck 0 / test 全绿 / lint 0
+
+**回退**: 软回退 — selectors.ts 是新文件，删除即可完全回退，不影响 store
+
 ### Phase 4: 验证 + 收尾
 
 | 任务 | 描述 |
