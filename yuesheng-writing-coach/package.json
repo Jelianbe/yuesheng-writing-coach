@@ -1,6 +1,6 @@
 {
   "name": "yuesheng-writing-coach",
-  "version": "1.1.0",
+  "version": "1.4.0",
   "description": "月笙写作教练 - AI 驱动的写作辅导工具",
   "main": "dist/main/index.js",
   "scripts": {
