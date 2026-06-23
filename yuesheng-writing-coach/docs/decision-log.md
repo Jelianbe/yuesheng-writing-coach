@@ -927,3 +927,50 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
 ✅ Sprint 15 整体 Reflect 完成 — PR #24 待用户 merge；3 个诊断库漏洞全部 RESOLVED；4 个新债务已记录；Sprint 16 候选范围已建议
 
 ---
+
+## D-046 · 2026-06-23 · Sprint 16 五步通用训练流贯通
+
+### Context
+Sprint 8 已落地 TrainingFlowService（IPC 通道 training:generateFlow 已存在），Sprint 12 已为 technique-pool 暴露 `injectIntoPrompt(prompt, filter)` API。但 UI 端 32 项 Sprint 9 审计发现：训练 UI 仍走传统 3 步流（Step 0→1→2），五步流数据 `session.trainingFlow` 已被 service 填充却从未被 UI 渲染。同时技法库注入层 `injectIntoPrompt` 的 `filter` 参数一直未被 orchestrator 透传（bug）。
+
+### Decision
+1. **走通用流，不走 per-症候内容堆砌**：用户原话「技法库膨胀按当前缺口必定导致训练库膨胀，转为五步教学动作流程才是正确解决方案」。BL-01 落地为「统一五步模板 + 从技法库动态取数据」，**不新增 per-症候训练任务**。
+2. **配置外置（R-014）**：将 5 步模板与技法分类移出代码，外置为 `resources/config/training-flow-mapping.json`，新增分类只需追加 JSON。
+3. **类型统一**：types-training.ts 中 `flowType` 改为 `'flow5' | 'legacy'`，与既有 `TrainingFlowType` 对齐，**不新增重复枚举**。
+4. **降级机制**：`session.flowType` 缺省时按 `legacy` 处理，保证向后兼容。无 `generateTrainingFlow` IPC 路径的旧 challengeId 自动降级。
+5. **修复 BL-02 真实 bug**：orchestrator `analyze()` 把 `options` 直接传给 `callDiagnosisAgent` 的 `filter` 位置 —— 形如 `{syndromeIds: []}` 是 `TechniqueFilter` 的子集（无 coreId），看起来「巧合」工作但 coreId 永远为 undefined。改为显式映射 `options.syndromeIds → TechniqueFilter.syndromeIds`，**显式优于巧合**。
+
+### Files
+- New: `resources/config/training-flow-mapping.json` (6 类 + 5 步模板)
+- New: `src/renderer/flow/training.flow.ts` (loader)
+- New: `src/renderer/components/training/flow/{FlowStepIndicator,StepExplain,StepExample,StepConfirm,StepPractice,StepFeedback,FiveStepFlow}.tsx` (7 components)
+- New: 3 test files (22 cases)
+- Modified: `src/renderer/stores/training.actions.ts` (assign flowType)
+- Modified: `src/renderer/components/training/ActiveTrainingView.tsx` (flowType 分支)
+- Modified: `src/renderer/shared/types-training.ts` (flowType 字段)
+- Modified: `src/main/domains/01-diagnosis/orchestrator/diagnosis-orchestrator.service.ts` (filter 透传)
+
+### Gates
+typecheck 0 错 / test 627 全绿 / lint 0 error
+
+### Debt
+- FiveStepFlow.tsx 中 6 处 `as never` 来自测试 mock —— 可接受，非生产代码
+- ActiveTrainingView 残留 StepIndicatorList / ReadingStepContent 等**未被新分支覆盖**的代码 —— 旧 3 步流兼容用，不算死代码但建议 Sprint 19 质量加固时审视
+
+### Status
+✅ Sprint 16 整体 Review 完成 — 五步流贯通 + BL-02 filter 修复 + 22 测试用例；可进入 Test 阶段
+
+### Test 阶段发现 ⚠️
+应用启动测试时发现 `workspaces-index.ts` 引用了 7 个从未创建的 workspace 目录（catalog/progress/learningLog/works/teachingNote/settings/stageProgress）。这是 Phase F 留下的**未完成债务**（commit c552c21 只创建了注册表 + index，未创建实际 workspace 组件）。
+
+**临时处理**：注释掉 7 个 import，加 TODO，待 Sprint 17/18 补实际 workspace 时恢复。
+
+**根因**：`git show HEAD -- src/renderer/registry/` 历史只有 2 commits：
+- c552c21 feat(right-panel): workspace registry for extensibility (ADR-002) — 注册表
+- 781516f chore(test): remove unused StubB — 测试清理
+
+7 个 workspace 文件从未进入 git 索引。
+
+**任务纳入 Sprint 18 backlog**：BL-19「Phase F 7 个 workspace 实际组件实现」
+
+---

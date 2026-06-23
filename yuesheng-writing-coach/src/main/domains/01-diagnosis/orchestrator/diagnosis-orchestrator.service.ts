@@ -51,7 +51,11 @@ export class DiagnosisOrchestratorService {
   ): Promise<{ analysis: DiagnosisAnalysis | null; isNarrative: boolean }> {
     if (!this.mainWindow) return { analysis: null, isNarrative: true };
 
-    const analysis = await this.callDiagnosisAgent(apiProxy, message, options);
+    // S16 BL-02: 把 options.syndromeIds 映射为 TechniqueFilter，按活跃症候过滤技法池
+    const filter: TechniqueFilter | undefined = options?.syndromeIds?.length
+      ? { syndromeIds: options.syndromeIds }
+      : undefined;
+    const analysis = await this.callDiagnosisAgent(apiProxy, message, filter);
     const isNarrative = analysis?.contentType !== 'non-narrative';
 
     if (analysis && isNarrative) {
