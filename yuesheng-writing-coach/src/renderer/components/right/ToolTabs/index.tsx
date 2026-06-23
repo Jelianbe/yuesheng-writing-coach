@@ -1,4 +1,5 @@
 import React, { useCallback, useRef } from 'react';
+import { X, Plus, Minimize2, Minus, Maximize } from 'lucide-react';
 import { getAllWorkspaces, type WorkspaceId } from '../../../registry/workspace-registry';
 import styles from './index.module.css';
 
@@ -52,7 +53,7 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({
                 <span
                   className={styles.tabCloseBtn}
                   onClick={e => { e.stopPropagation(); onCloseTool(tId); }}
-                >✕</span>
+                ><X size={10} /></span>
               </div>
             );
           })
@@ -62,11 +63,11 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({
       </div>
 
       <div className={styles.rightActions}>
-        <button ref={addBtnRef as React.Ref<HTMLButtonElement>} className={styles.actionBtn} title="添加工具" onClick={onAddTool}>＋</button>
-        <button className={styles.actionBtn} title="收起面板" onClick={onCollapse}>⤢</button>
-        <button className={styles.actionBtn} title="最小化">─</button>
-        <button className={styles.actionBtn} title="缩放">□</button>
-        <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} title="关闭">✕</button>
+        <button ref={addBtnRef as React.Ref<HTMLButtonElement>} className={styles.actionBtn} aria-label="添加工具" onClick={onAddTool}><Plus size={14} /></button>
+        <button className={styles.actionBtn} aria-label="收起面板" onClick={onCollapse}><Minimize2 size={14} /></button>
+        <button className={styles.actionBtn} aria-label="最小化"><Minus size={14} /></button>
+        <button className={styles.actionBtn} aria-label="缩放"><Maximize size={14} /></button>
+        <button className={`${styles.actionBtn} ${styles.actionBtnDanger}`} aria-label="关闭"><X size={14} /></button>
       </div>
     </div>
   );
