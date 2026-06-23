@@ -1,0 +1,80 @@
+{
+  "$schema": "https://trae.local/schemas/training-flow-mapping.v1.json",
+  "version": "1.0.0",
+  "description": "S16-1 配置：技法分类(CATEGORY)与五步流模板(FLOW_TEMPLATES)外置。新增技法分类只需追加条目。",
+  "categories": [
+    {
+      "key": "开篇",
+      "abilityCategory": "叙事能力",
+      "displayName": "开篇技法",
+      "effect": "吸引力和悬念"
+    },
+    {
+      "key": "人物",
+      "abilityCategory": "角色能力",
+      "displayName": "人物技法",
+      "effect": "人物的立体感和真实感"
+    },
+    {
+      "key": "节奏",
+      "abilityCategory": "叙事能力",
+      "displayName": "节奏技法",
+      "effect": "节奏的张弛变化"
+    },
+    {
+      "key": "语言",
+      "abilityCategory": "语言能力",
+      "displayName": "语言技法",
+      "effect": "语言的精准度和表现力"
+    },
+    {
+      "key": "结构",
+      "abilityCategory": "叙事能力",
+      "displayName": "结构技法",
+      "effect": "结构的条理性和经济性"
+    },
+    {
+      "key": "_default",
+      "abilityCategory": "综合能力",
+      "displayName": "通用技法",
+      "effect": "表现效果"
+    }
+  ],
+  "flowTemplates": [
+    {
+      "stepId": 1,
+      "name": "解说技法",
+      "template": "「{{techniqueName}}」是一种{{description}}。它的核心价值在于让读者在第一瞬间被抓住，愿意继续读下去。",
+      "userAction": "通读解说，识别该技法的核心机制。",
+      "estimatedMinutes": 3
+    },
+    {
+      "stepId": 2,
+      "name": "例证展示",
+      "template": "看看这个例子：「{{example}}」。注意它是怎么在极短的篇幅内制造{{effect}}的。你能感受到什么？",
+      "userAction": "对比原例与你的理解，标记出触动你的点。",
+      "estimatedMinutes": 5
+    },
+    {
+      "stepId": 3,
+      "name": "确认理解",
+      "template": "用你自己的话描述「{{techniqueName}}」的核心要点。如果让你给一个没听过的人讲解，你会怎么说？",
+      "userAction": "在理解框中写下你的复述（不少于 30 字）。",
+      "estimatedMinutes": 3
+    },
+    {
+      "stepId": 4,
+      "name": "主动尝试",
+      "template": "现在轮到你尝试了。找到你作品中开篇的一段，应用「{{techniqueName}}」来改写。{{constraint}}",
+      "userAction": "在练习区应用该技法写一稿。",
+      "estimatedMinutes": 15
+    },
+    {
+      "stepId": 5,
+      "name": "修改反馈",
+      "template": "对照练习目标检查你的改写：是否抓住了核心要点？是否偏离了原文的意思？根据反馈进行修订。",
+      "userAction": "阅读 AI 反馈并修订第二稿。",
+      "estimatedMinutes": 10
+    }
+  ]
+}

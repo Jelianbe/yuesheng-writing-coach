@@ -7,6 +7,12 @@
 >
 > **重要声明**：RWR Phase A/F（前端重写任务）已被 V6.2 Shell 计划推翻重构。所有前端工作以 V6.2 Phases G-K 为准。
 > **创建日期**：2026-06-17 | **重构日期**：2026-06-19 — RWR 并入 V6.2 主干
+>
+> **🔥 2026-06-22 状态同步（用户指令）**：后续 Sprint 9~15（前端审计、workspace-registry、v5 prompt 合并、SKILL 系统、诊断库修复、AI 读写管道）已实际完成 RWR 大部分任务。
+> - Phase I (后端缺口 I-01~I-08) → **全部 ✅ 已完成**
+> - SEC-DEBT-1/2/4 → **全部 ✅ 已完成**
+> - Phases G/H/J/K (前端) → **❌ 已过时**（被 Sprint 9~15 实际工程替代）
+> - 剩余待办见 §十一 任务诊断及清理
 
 ---
 
@@ -965,3 +971,68 @@ Phase BL ──→ Phase G ─── Phase I ──── Phase H ─── Phas
 | **OPT-31** | 脚手架"微小胜利"反馈 | CoachGPT | 子阶段完成正反馈 |
 | **OPT-32** | "不给答案"工程化硬约束 | Khanmigo | 独立验证层 + 安全分类器 |
 | **OPT-33** | React 树组件库选型替换（X-01d） | 待完成 | `react-arborist` vs `dnd-kit/sortable` 等
+
+---
+
+## 十一、2026-06-22 任务诊断及清理（用户指令 — 五步训练流优先级确认）
+
+> **诊断结论**：RWR 原始待办中，Phase I 后端缺口（I-01~I-08）和 SEC-DEBT 已全部被后续 Sprint 完成。Phases G/H/J/K 前端任务已过时（被实际工程替代）。剩余待办已整合到统一 backlog（见 §十二）。
+
+### 已清理（标记为 ✅ 或 ❌）
+| 编号 | 诊断 | 清理原因 |
+|:----:|:----:|:---------|
+| I-01~I-08 | ✅ 已完成 | 全部 handler 已注册（training:catalog / teachingNote:* / growth:getTrends / config:set 安全 / teachingState:update 安全） |
+| SEC-DEBT-1/2/4 | ✅ 已完成 | CONFIG_SET_ALLOWED_KEYS 白名单 + teachingState 字段白名单 + training:deriveBehavior 已添加 |
+| Phases G/H/J/K | ❌ 已过时 | V6.2 Shell HTML 原型被 Sprint 9~15 实际工程替代（当前 UI = React + CSS Modules + workspace-registry） |
+
+### 仍待办（已迁入统一 backlog）
+| 原编号 | 内容 | 新优先级 | backlog 编号 |
+|:------:|------|:--------:|:------------|
+| GAP-11 | 训练会话创建链路选型 | P1 | BL-09 |
+| SEC-DEBT-3 | IPC 三份白名单不一致 | P1 | BL-10 |
+| DOC-DEBT-1 | 决策日志补充（V6.2 转向期） | P2 | BL-11 |
+
+
+
+## 十二、统一待办 Backlog（2026-06-22）
+
+> 按用户指令：P0 = 五步通用训练流落地，其余按原有任务链前后关系排序。
+
+### P0 — 五步通用训练流落地
+
+| # | 任务 | 描述 | 预估 |
+|:--:|------|------|:----:|
+| BL-01 | **五步流集成到教学管道** | TrainingFlowService 已存在但未真正贯通。需要：① 与 TrainingWorkshop UI 对接；② 从技法库动态取数据替换模板占位符；③ 五步流每一步产出可提交/可评估 | ~1 Sprint |
+| BL-02 | **技法消费层过滤** | `injectTechniquePool()` 全量注入~100 条技法→ 加 `activeSyndromeIds` 参数按活跃症候过滤 | .5 Sprint |
+
+### P1 — 核心教学链路断裂修补
+
+| # | 任务 | 前置 | 预估 |
+|:--:|------|:----:|:----:|
+| BL-03 | **X-02 训练编辑器联动** | BL-01（训练流程就绪后改造编辑器输入） | .5 Sprint |
+| BL-04 | **技法库 P011/P012 补全** | 各新增 4-6 条收尾/套路破解技法 | .5 Sprint |
+| BL-05 | **UX 问题批量修复**（A3/B2/B3/B4/C2） | 无 | 1 Sprint |
+| BL-06 | **"从零构建"模式恢复（P-04）** | 需要设计审查 | 1 Sprint |
+| BL-07 | **Attitude 透传链路（D-DEBT-17）** | 修复 P2+ doubao/sensei 不生效 | .5 Sprint |
+| BL-08 | **定义分裂修复（D-01~D-03）** | 统一 P009/P010/A004 文档侧与代码侧名称 | .3 Sprint |
+| BL-09 | **训练会话创建链路决策（GAP-11）** | 需用户确认 | — |
+
+### P2 — 技术债务
+
+| # | 任务 | 预估 |
+|:--:|------|:----:|
+| BL-10 | IPC 三份白名单统一（SEC-DEBT-3） | .3 Sprint |
+| BL-11 | 蒸馏 61 条 heuristic 二次精标（D-DEBT-18） | .5 Sprint |
+| BL-12 | 孤儿 P008/T016 补全（D-DEBT-19） | .3 Sprint |
+| BL-13 | ActiveProblem 字段统一（D-DEBT-20） | .3 Sprint |
+| BL-14 | MasteryGate 阈值外置（D-026 #6） | .2 Sprint |
+| BL-15 | Decision-log 补充 V6.2 转向期（DOC-DEBT-1） | .3 Sprint |
+| BL-16 | 代码质量清理（E1/E3/UI-P0a/c/P1b/c） | .5 Sprint |
+
+### P3 — 远期/参考
+
+| # | 任务 | 说明 |
+|:--:|------|:------|
+| BL-17 | P-05 Layer 2 认知反馈恢复 | 需架构设计先行 |
+| BL-18 | P-06 状态锁定跨轮次一致性 | 需架构设计先行 |
+| BL-19 | V2 prompt 缺口二次评估（D-026 #4） | 独立评估任务 |

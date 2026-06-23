@@ -6,6 +6,13 @@ import type { SeverityLevel, SyndromeType } from './types-diagnosis';
 /** 中心面板模式 */
 export type CenterMode = 'chat' | 'training' | 'retro';
 
+/**
+ * 训练流类型 — S16 五步通用训练流贯通
+ * - legacy: 原三步框架（阅读/改写/评估），用于 reading_task
+ * - flow5: 五步通用训练流（解说/例证/理解/尝试/反馈），通用任务默认
+ */
+export type TrainingFlowType = 'legacy' | 'flow5';
+
 /** 训练步骤 */
 export interface TrainingStep {
   /** 步骤 ID */
@@ -109,6 +116,8 @@ export interface TrainingRecommendation {
   difficulty?: number;
   /** S7: 前置能力 ID 列表 */
   prerequisites?: string[];
+  /** T15-C.5: 关联训练任务 ID 列表（TRAIN-PXXX-XXX），任务→能力反向推荐 */
+  relatedTrainIds?: string[];
 }
 
 /** 技法信息（来自 technique-library.json） */
