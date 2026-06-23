@@ -42,9 +42,11 @@ export const CatalogWorkspace: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await getInvoke()('training:catalog', {}) as { groups?: CoreGroup[] };
+        const res = await getInvoke()('training:catalog', {}) as { groups?: CoreGroup[]; error?: string; success?: boolean };
         if (res?.groups && Array.isArray(res.groups) && res.groups.length > 0) {
           setGroups(res.groups);
+        } else if (res?.success === false && res?.error === 'IPC not available') {
+          setError('技法库在浏览器预览模式下不可用，请启动 Electron 窗口');
         } else {
           setError('技法目录为空');
         }

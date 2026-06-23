@@ -10,10 +10,9 @@
 import { create } from 'zustand';
 import type { WorkspaceId } from '../registry/workspace-registry';
 import {
-  getDefaultOpenWorkspaces,
   getAllWorkspaces,
 } from '../registry/workspace-registry';
-// 触发自注册（必须在 getDefaultOpenWorkspaces 之前）
+// 触发自注册
 import '../registry/workspaces-index';
 
 export type ToolId = WorkspaceId;
@@ -57,18 +56,10 @@ interface RightToolsActions {
   clearProjectTabs: () => void;
 }
 
-/**
- * 计算默认打开的工具集（来自注册表的 defaultOpen）
- * 注意：此函数必须在 workspaces-index 已被 import 后调用。
- */
-function computeDefaultOpenToolIds(): ToolId[] {
-  return getDefaultOpenWorkspaces().map(w => w.id);
-}
-
 export const useRightToolsStore = create<RightToolsState & RightToolsActions>((set, get) => ({
-  // ── 初始状态：来自注册表的 defaultOpen workspaces ──
-  openTools: computeDefaultOpenToolIds(),
-  activeToolId: (computeDefaultOpenToolIds()[0] ?? null) as ToolId | null,
+  // ── 初始状态：全部关闭，由用户手动打开（S17 修复）──
+  openTools: [],
+  activeToolId: null,
   subTabs: {},
   activeSubTabId: null,
   projectTabs: [],
