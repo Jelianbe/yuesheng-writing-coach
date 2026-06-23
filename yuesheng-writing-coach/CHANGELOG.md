@@ -4,6 +4,25 @@
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-23
+
+### Sprint 17 — Tailwind 迁移 + 二次审计 (2026-06-23)
+
+#### Added
+- **T17-13 二次审计** `dev-docs/audits/2026-06-23-frontend-audit-v2.md`：13/20 (Good)，+2 分
+- **PRODUCT.md**：完整产品战略定义（register / user / purpose / anti-references / design principles）
+
+#### Changed
+- **T17-12 Tailwind → CSS Modules (4 批, 12 文件, ~103 处)**：
+  - **B1**：Card / EmptyState / TypingIndicator / AppConfigGate（4 文件 12 处）
+  - **B2**：BeatCheckChart / SelfCheckList / GrowthCard（3 文件 20 处）
+  - **B3**：EvaluationCard / EditPanel / OriginalEvidenceSection（3 文件 29 处）
+  - **B4**：OnboardingFlow / DiagnosisCard（2 文件 41 处）
+  - 全量使用 design tokens（`var(--bg-*)` / `var(--text-*)` / `var(--space-*)`）
+
+#### Chore
+- **packages**：Tailwind 配置保留 1 sprint 观察期，包暂未移除
+
 ## [1.2.0] - 2026-06-23
 
 ### Sprint 17 — 前端审计整改 + Sprint 16 验收闭环 (2026-06-23)
