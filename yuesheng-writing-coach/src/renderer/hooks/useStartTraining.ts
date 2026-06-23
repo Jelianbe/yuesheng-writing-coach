@@ -19,21 +19,24 @@ async function findTechniqueByName(name: string): Promise<TechniqueInfo | null> 
   try {
     const invoke = getInvoke();
     const res = await invoke('training:catalog', {}) as {
-      groups?: Array<{
-        coreId: string;
-        coreName: string;
-        count: number;
-        techniques: Array<{
-          id: string;
-          name: string;
-          difficulty: string;
-          category: string;
-          description: string;
+      success: boolean;
+      data?: {
+        groups?: Array<{
+          coreId: string;
+          coreName: string;
+          count: number;
+          techniques: Array<{
+            id: string;
+            name: string;
+            difficulty: string;
+            category: string;
+            description: string;
+          }>;
         }>;
-      }>;
+      };
     };
-    if (!res?.groups) return null;
-    for (const g of res.groups) {
+    if (!res?.success || !res?.data?.groups) return null;
+    for (const g of res.data.groups) {
       const found = g.techniques.find(t => t.name === name);
       if (found) {
         return { ...found, coreName: g.coreName };
