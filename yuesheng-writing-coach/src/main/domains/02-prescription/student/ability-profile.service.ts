@@ -2,11 +2,11 @@
  * 能力画像服务
  * 负责：实时聚合诊断数据，生成用户能力画像
  * 设计：不缓存，查询时实时计算（数据量小，一致性优先）
- * 依赖：diagnosis.service, training-record.service, ability-atlas.json
+ * 依赖：diagnosis.service, training-record.service, ability-atlas.loader
+ *
+ * T15-C.3 改造：使用 ability-atlas.loader 替代手写 JSON 读取，
+ * 消除重复实现，共享 loader 缓存。
  */
-
-import fs from 'fs';
-import path from 'path';
 
 import type {
   AbilityProfile,
@@ -18,58 +18,38 @@ import type { ProfileDataAggregator } from './profile-data-aggregator';
 import { calcTrend as calcTrendDir, mapTrendLabel } from '../../../../shared/trend-utils';
 import { SEVERITY_TO_SCORE, SEVERITY_TO_NUM } from '../../../../shared/severity-utils';
 
-// ============ 能力图谱加载 ============
-
-interface AbilityAtlas {
-  abilities: Array<{
-    id: string;
-    name: string;
-    syndromes: string[];
-  }>;
-  syndromes: Array<{
-    id: string;
-    name: string;
-  }>;
-}
-
-let cachedAtlas: AbilityAtlas | null = null;
-
-function loadAbilityAtlas(resourcesRoot: string): AbilityAtlas {
-  if (cachedAtlas) return cachedAtlas;
-
-  const atlasPath = path.join(resourcesRoot, 'knowledge-graph/ability-atlas.json');
-
-  const raw = fs.readFileSync(atlasPath, 'utf-8');
-  cachedAtlas = JSON.parse(raw) as AbilityAtlas;
-  return cachedAtlas;
-}
+// T15-C.3: 改用 ability-atlas.loader 替代手写 JSON 读取
+import {
+  getAllAbilityNodes,
+  getAllSyndromes,
+} from '../ability-atlas/ability-atlas.loader';
 
 // ============ 服务类 ============
 
 export class AbilityProfileService {
-  private resourcesRoot: string;
-  private aggregator: ProfileDataAggregator;
-
+  /**
+   * @param aggregator 数据聚合器
+   * @param _resourcesRoot 已废弃（T15-C.3 改造后通过 loader 读取）
+   */
   constructor(
-    aggregator: ProfileDataAggregator,
-    resourcesRoot: string,
-  ) {
-    this.aggregator = aggregator;
-    this.resourcesRoot = resourcesRoot;
-  }
+    private aggregator: ProfileDataAggregator,
+    _resourcesRoot?: string,
+  ) {}
 
   /**
    * 计算用户能力画像（实时聚合）
    */
   computeProfile(sessionId: string): AbilityProfile {
-    const atlas = loadAbilityAtlas(this.resourcesRoot);
+    // T15-C.3: 通过 loader 读取（带缓存）
+    const abilities = getAllAbilityNodes();
+    const syndromes = getAllSyndromes();
     const data = this.aggregator.getProfileData(sessionId);
     const occurrences = this.aggregateSyndromeOccurrences(data.diagnoses);
 
     return {
       sessionId,
-      abilities: this.computeAbilityScores(atlas, occurrences),
-      weakPoints: this.computeWeakPoints(atlas, occurrences),
+      abilities: this.computeAbilityScores(abilities, occurrences),
+      weakPoints: this.computeWeakPoints(syndromes, occurrences),
       trainingStats: this.computeTrainingStats(data.trainings),
       diagnosisTrend: this.computeDiagnosisTrend(data.diagnoses),
       computedAt: new Date().toISOString(),
@@ -97,10 +77,10 @@ export class AbilityProfileService {
 
   /** 计算能力评分 */
   private computeAbilityScores(
-    atlas: AbilityAtlas,
+    abilities: Array<{ atlasId: string; name: string; syndromes: string[] }>,
     occurrences: Record<string, { severity: SeverityLevel; timestamp: string; score: number; num: number }[]>,
   ): AbilityScore[] {
-    return atlas.abilities.map(ability => {
+    return abilities.map(ability => {
       const related = ability.syndromes;
       const allScores: number[] = [];
       const allNums: number[] = [];
@@ -124,7 +104,7 @@ export class AbilityProfileService {
       const trend = calcTrendDir(recentNums, previousNums);
 
       return {
-        abilityId: ability.id,
+        abilityId: ability.atlasId, // T15-C.3: loader 用 atlasId，原 id 字段映射为 atlasId
         abilityName: ability.name,
         score: Math.min(100, Math.max(0, score)),
         relatedSyndromes: related,
@@ -137,11 +117,11 @@ export class AbilityProfileService {
 
   /** 计算弱点标签 */
   private computeWeakPoints(
-    atlas: AbilityAtlas,
+    syndromes: Array<{ id: string; name: string }>,
     occurrences: Record<string, { severity: SeverityLevel; timestamp: string; score: number; num: number }[]>,
   ): WeakPoint[] {
     const weakPoints: WeakPoint[] = [];
-    for (const syndrome of atlas.syndromes) {
+    for (const syndrome of syndromes) {
       const occs = occurrences[syndrome.id] ?? [];
       if (occs.length === 0) continue;
 

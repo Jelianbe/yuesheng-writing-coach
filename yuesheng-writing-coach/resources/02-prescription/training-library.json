@@ -57,6 +57,10 @@
         {
           "principleId": "LAO_SHE_EVERYTHING_MATTERS"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P001-001",
+        "CH-P001-003"
       ]
     },
     {
@@ -79,6 +83,9 @@
         {
           "principleId": "LAO_SHE_EVERYTHING_MATTERS"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P001-002"
       ]
     },
     {
@@ -101,6 +108,9 @@
         {
           "principleId": "FORSTER_ROUND"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P002-001"
       ]
     },
     {
@@ -123,6 +133,9 @@
         {
           "principleId": "CHEKHOV_EMOTION"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P003-001"
       ]
     },
     {
@@ -168,6 +181,9 @@
         {
           "principleId": "FORSTER_ROUND"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P002-002"
       ]
     },
     {
@@ -214,6 +230,9 @@
         {
           "principleId": "FORSTER_ROUND"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P002-003"
       ]
     },
     {
@@ -261,6 +280,9 @@
         {
           "principleId": "CHEKHOV_EMOTION"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P003-002"
       ]
     },
     {
@@ -307,6 +329,9 @@
         {
           "principleId": "CHEKHOV_EMOTION"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P003-003"
       ]
     },
     {
@@ -353,6 +378,9 @@
         {
           "principleId": "STRUNK_WHITE_CONCISE"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P004-001"
       ]
     },
     {
@@ -399,6 +427,9 @@
         {
           "principleId": "STRUNK_WHITE_CONCISE"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P004-002"
       ]
     },
     {
@@ -445,6 +476,9 @@
         {
           "principleId": "STRUNK_WHITE_CONCISE"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P004-003"
       ]
     },
     {
@@ -488,6 +522,10 @@
         {
           "principleId": "SHEN_CONGWEN_CLING"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P005-001",
+        "CH-P005-002"
       ]
     },
     {
@@ -538,6 +576,9 @@
         {
           "principleId": "SHEN_CONGWEN_CLING"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P005-003"
       ]
     },
     {
@@ -583,6 +624,10 @@
         {
           "principleId": "LAO_SHE_ONE_THING"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P006-001",
+        "CH-P006-003"
       ]
     },
     {
@@ -629,6 +674,9 @@
         {
           "principleId": "LAO_SHE_ONE_THING"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P006-002"
       ]
     },
     {
@@ -674,6 +722,10 @@
         {
           "principleId": "LU_XUN_DELETE"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P007-001",
+        "CH-P007-002"
       ]
     },
     {
@@ -720,6 +772,9 @@
         {
           "principleId": "LU_XUN_DELETE"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P007-003"
       ]
     },
     {
@@ -766,6 +821,10 @@
         {
           "principleId": "LAO_SHE_MOTIVATION"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P009-001",
+        "CH-P009-002"
       ]
     },
     {
@@ -811,6 +870,9 @@
         {
           "principleId": "LAO_SHE_MOTIVATION"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P009-003"
       ]
     },
     {
@@ -857,6 +919,10 @@
         {
           "principleId": "LAO_SHE_LIVING"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P010-001",
+        "CH-P010-003"
       ]
     },
     {
@@ -902,6 +968,9 @@
         {
           "principleId": "LAO_SHE_LIVING"
         }
+      ],
+      "relatedChallengeIds": [
+        "CH-P010-002"
       ]
     },
     {
@@ -956,7 +1025,8 @@
           "dimension": "语言表达",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P007"
     },
     {
       "id": "PRAC-EYE-002",
@@ -1002,7 +1072,8 @@
           "dimension": "归类粒度",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P007"
     },
     {
       "id": "PRAC-PEN-001",
@@ -1063,7 +1134,8 @@
           "dimension": "语言表达",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P007"
     },
     {
       "id": "PRAC-PEN-002",
@@ -1114,7 +1186,8 @@
           "dimension": "叙事聚焦度",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P007"
     },
     {
       "id": "PRAC-WORD-001",
@@ -1165,7 +1238,8 @@
           "dimension": "信息保真度",
           "scoring": "0-3"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P003"
     },
     {
       "id": "PRAC-STRUCT-001",
@@ -1219,7 +1293,8 @@
           "dimension": "展示质量",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P006"
     },
     {
       "id": "PRAC-TASTE-001",
@@ -1270,7 +1345,8 @@
           "dimension": "删减质量",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P010"
     },
     {
       "id": "PRAC-TASTE-002",
@@ -1321,7 +1397,15 @@
           "dimension": "修改有效性",
           "scoring": "0-2"
         }
-      ]
+      ],
+      "relatedSyndromeId": "P010"
+    }
+  ],
+  "change_log": [
+    {
+      "date": "2026-06-23",
+      "version": "1.2.0",
+      "changes": "T15-B.2: 注入 relatedChallengeIds 字段（21 条 TRAIN-PXXX）和 relatedSyndromeId 字段（8 条 PRAC-XXX）。新增 task-id-mapping.json 引用。"
     }
   ]
 }

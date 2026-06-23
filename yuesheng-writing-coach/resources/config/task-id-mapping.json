@@ -1,0 +1,283 @@
+{
+  "$schema": "task-id-mapping.schema.json",
+  "$source": "Sprint 15 T15-B：建立 T0XX ↔ TRAIN-PXXX ↔ CH-PXXX 三向训练任务 ID 映射",
+  "description": "训练任务 ID 双向映射表。TRAIN-PXXX 为主源（21 条带症候 + 8 条 PRAC-XXX 通用），T0XX 是 ability-atlas 的能力视角，CH-PXXX 是 challenge-templates 的挑战视角。映射规则：同症候+主题/难度相近优先匹配，无匹配项标 TBD。",
+  "version": "1.0.0",
+  "generatedAt": "2026-06-23",
+  "generatedBy": "scripts/build-task-id-mapping.mjs",
+
+  "_meta": {
+    "primarySource": "training-library.json (TRAIN-PXXX)",
+    "sources": {
+      "T0XX": "resources/knowledge-graph/ability-atlas.json (20 条)",
+      "TRAIN_PXXX": "resources/02-prescription/training-library.json (21 条带症候 + 8 条 PRAC)",
+      "CH_PXXX": "resources/04-validation/mastery/challenge-templates.json (31 条)"
+    },
+    "matchingRules": [
+      "T0XX ↔ TRAIN-PXXX：同症候 + 主题/难度相近",
+      "TRAIN-PXXX ↔ CH-PXXX：同症候 + 训练模式与挑战模式兼容",
+      "无匹配项：T0XX.TBD 表示需在 training-library 中新建对应训练任务",
+      "孤儿症候：CH-P008 暂无对应 T0XX/TRAIN-PXXX，需在 Sprint 16+ 处理"
+    ]
+  },
+
+  "syndromeMapping": {
+    "_comment": "症候级映射统计",
+    "P001": { "T0XX": ["T011", "T012"], "TRAIN_PXXX": ["TRAIN-P001-001", "TRAIN-P001-002"], "CH_PXXX": ["CH-P001-001", "CH-P001-002", "CH-P001-003"] },
+    "P002": { "T0XX": ["T003", "T004"], "TRAIN_PXXX": ["TRAIN-P002-001", "TRAIN-P002-002", "TRAIN-P002-003"], "CH_PXXX": ["CH-P002-001", "CH-P002-002", "CH-P002-003"] },
+    "P003": { "T0XX": ["T001", "T002"], "TRAIN_PXXX": ["TRAIN-P003-001", "TRAIN-P003-002", "TRAIN-P003-003"], "CH_PXXX": ["CH-P003-001", "CH-P003-002", "CH-P003-003"] },
+    "P004": { "T0XX": ["T005", "T006", "T015", "T016"], "TRAIN_PXXX": ["TRAIN-P004-001", "TRAIN-P004-002", "TRAIN-P004-003"], "CH_PXXX": ["CH-P004-001", "CH-P004-002", "CH-P004-003"] },
+    "P005": { "T0XX": ["T007", "T008"], "TRAIN_PXXX": ["TRAIN-P005-001", "TRAIN-P005-002"], "CH_PXXX": ["CH-P005-001", "CH-P005-002", "CH-P005-003"] },
+    "P006": { "T0XX": ["T009", "T010"], "TRAIN_PXXX": ["TRAIN-P006-001", "TRAIN-P006-002"], "CH_PXXX": ["CH-P006-001", "CH-P006-002", "CH-P006-003"] },
+    "P007": { "T0XX": ["T013", "T014"], "TRAIN_PXXX": ["TRAIN-P007-001", "TRAIN-P007-002"], "CH_PXXX": ["CH-P007-001", "CH-P007-002", "CH-P007-003"] },
+    "P008": { "T0XX": [], "TRAIN_PXXX": [], "CH_PXXX": ["CH-P008-001", "CH-P008-002", "CH-P008-003", "CH-P008-004"], "_note": "孤儿症候：P008 仅存在于 CH-PXXX，需在 Sprint 16+ 在 training-library 中补全" },
+    "P009": { "T0XX": ["T017", "T018"], "TRAIN_PXXX": ["TRAIN-P009-001", "TRAIN-P009-002"], "CH_PXXX": ["CH-P009-001", "CH-P009-002", "CH-P009-003"] },
+    "P010": { "T0XX": ["T019", "T020"], "TRAIN_PXXX": ["TRAIN-P010-001", "TRAIN-P010-002"], "CH_PXXX": ["CH-P010-001", "CH-P010-002", "CH-P010-003"] }
+  },
+
+  "T0XX_to_TRAIN": {
+    "_comment": "T0XX → TRAIN-PXXX 主映射（一对一）。T0XX 是 ability-atlas 的能力视角，映射依据是同症候 + 训练类型兼容。",
+    "T001": { "syndrome": "P003", "type": "情绪描写", "difficulty": 1, "mapsTo": "TRAIN-P003-001", "rationale": "同症候 P003，T0XX.type=情绪描写 与 TRAIN-P003-001.mode=word_refine 兼容，难度 1→easy" },
+    "T002": { "syndrome": "P003", "type": "情绪描写", "difficulty": 2, "mapsTo": "TRAIN-P003-002", "rationale": "同症候 P003，T0XX.type=情绪描写 与 TRAIN-P003-002.mode=narrow_focus 兼容，难度 2→easy" },
+    "T003": { "syndrome": "P002", "type": "角色塑造", "difficulty": 2, "mapsTo": "TRAIN-P002-001", "rationale": "同症候 P002，T0XX.type=角色塑造 与 TRAIN-P002-001.mode=character_depth 兼容，难度 2→medium" },
+    "T004": { "syndrome": "P002", "type": "角色塑造", "difficulty": 1, "mapsTo": "TRAIN-P002-002", "rationale": "同症候 P002，T0XX.type=角色塑造 与 TRAIN-P002-002.mode=character_depth 兼容" },
+    "T005": { "syndrome": "P004", "type": "信息嵌入", "difficulty": 2, "mapsTo": "TRAIN-P004-001", "rationale": "同症候 P004，T0XX.type=信息嵌入 与 TRAIN-P004-001.mode=restructure 兼容" },
+    "T006": { "syndrome": "P004", "type": "信息嵌入", "difficulty": 2, "mapsTo": "TRAIN-P004-002", "rationale": "同症候 P004，T0XX.type=信息嵌入 与 TRAIN-P004-002.mode=restructure 兼容" },
+    "T007": { "syndrome": "P005", "type": "视角练习", "difficulty": 2, "mapsTo": "TRAIN-P005-001", "rationale": "同症候 P005，T0XX.type=视角练习 与 TRAIN-P005-001.mode=narrow_focus 兼容" },
+    "T008": { "syndrome": "P005", "type": "视角练习", "difficulty": 1, "mapsTo": "TRAIN-P005-002", "rationale": "同症候 P005，T0XX.type=视角练习 与 TRAIN-P005-002.mode=restructure 兼容" },
+    "T009": { "syndrome": "P006", "type": "开头练习", "difficulty": 2, "mapsTo": "TRAIN-P006-001", "rationale": "同症候 P006，T0XX.type=开头练习 与 TRAIN-P006-001.mode=restructure 兼容" },
+    "T010": { "syndrome": "P006", "type": "开头练习", "difficulty": 3, "mapsTo": "TRAIN-P006-002", "rationale": "同症候 P006，T0XX.type=开头练习 与 TRAIN-P006-002.mode=narrow_focus 兼容" },
+    "T011": { "syndrome": "P001", "type": "缩小练习", "difficulty": 2, "mapsTo": "TRAIN-P001-001", "rationale": "同症候 P001，T0XX.type=缩小练习 与 TRAIN-P001-001.title=聚焦一个场景 完全匹配" },
+    "T012": { "syndrome": "P001", "type": "缩小练习", "difficulty": 3, "mapsTo": "TRAIN-P001-002", "rationale": "同症候 P001，T0XX.type=缩小练习 与 TRAIN-P001-002.title=主角优先叙事 兼容" },
+    "T013": { "syndrome": "P007", "type": "阅读拓展", "difficulty": 1, "mapsTo": "TRAIN-P007-001", "rationale": "同症候 P007，T0XX.type=阅读拓展 与 TRAIN-P007-001.mode=word_refine 兼容" },
+    "T014": { "syndrome": "P007", "type": "阅读锚点", "difficulty": 2, "mapsTo": "TRAIN-P007-002", "rationale": "同症候 P007，T0XX.type=阅读锚点 与 TRAIN-P007-002.mode=restructure 兼容" },
+    "T015": { "syndrome": "P004", "type": "展示练习", "difficulty": 2, "mapsTo": "TRAIN-P004-003", "rationale": "同症候 P004，T0XX.type=展示练习 与 TRAIN-P004-003.mode=restructure 兼容（信息分层释放）" },
+    "T016": { "syndrome": "P004", "type": "展示练习", "difficulty": 3, "mapsTo": "TBD", "rationale": "同症候 P004 的 TRAIN-P004 训练已用完 3 条；需在 Sprint 16+ 新建 TRAIN-P004-004（difficulty=hard）" },
+    "T017": { "syndrome": "P009", "type": "动机练习", "difficulty": 1, "mapsTo": "TRAIN-P009-001", "rationale": "同症候 P009，T0XX.type=动机练习 与 TRAIN-P009-001.mode=character_depth 兼容" },
+    "T018": { "syndrome": "P009", "type": "动机练习", "difficulty": 3, "mapsTo": "TRAIN-P009-002", "rationale": "同症候 P009，T0XX.type=动机练习 与 TRAIN-P009-002.mode=character_depth 兼容（hard）" },
+    "T019": { "syndrome": "P010", "type": "弧光练习", "difficulty": 2, "mapsTo": "TRAIN-P010-001", "rationale": "同症候 P010，T0XX.type=弧光练习 与 TRAIN-P010-001.mode=character_depth 兼容" },
+    "T020": { "syndrome": "P010", "type": "弧光练习", "difficulty": 3, "mapsTo": "TRAIN-P010-002", "rationale": "同症候 P010，T0XX.type=弧光练习 与 TRAIN-P010-002.mode=character_depth 兼容（hard）" }
+  },
+
+  "TRAIN_to_T0XX": {
+    "_comment": "TRAIN-PXXX → T0XX 反向映射（基于 T0XX_to_TRAIN 自动生成）",
+    "TRAIN-P001-001": "T011",
+    "TRAIN-P001-002": "T012",
+    "TRAIN-P002-001": "T003",
+    "TRAIN-P002-002": "T004",
+    "TRAIN-P002-003": null,
+    "TRAIN-P003-001": "T001",
+    "TRAIN-P003-002": "T002",
+    "TRAIN-P003-003": null,
+    "TRAIN-P004-001": "T005",
+    "TRAIN-P004-002": "T006",
+    "TRAIN-P004-003": "T015",
+    "TRAIN-P005-001": "T007",
+    "TRAIN-P005-002": "T008",
+    "TRAIN-P006-001": "T009",
+    "TRAIN-P006-002": "T010",
+    "TRAIN-P007-001": "T013",
+    "TRAIN-P007-002": "T014",
+    "TRAIN-P009-001": "T017",
+    "TRAIN-P009-002": "T018",
+    "TRAIN-P010-001": "T019",
+    "TRAIN-P010-002": "T020"
+  },
+
+  "TRAIN_to_CH": {
+    "_comment": "TRAIN-PXXX → CH-PXXX 多对一映射。每条 TRAIN 任务挂 1-2 个最相关的挑战模板。",
+    "TRAIN-P001-001": {
+      "syndrome": "P001",
+      "relatedChallenges": ["CH-P001-001", "CH-P001-003"],
+      "rationale": "TRAIN-P001-001=聚焦一个场景，CH-P001-001=挑出一个具体场景（直接匹配），CH-P001-003=日常场景聚焦（适用）"
+    },
+    "TRAIN-P001-002": {
+      "syndrome": "P001",
+      "relatedChallenges": ["CH-P001-002"],
+      "rationale": "TRAIN-P001-002=主角优先叙事，CH-P001-002=主角信息先于世界观（精确匹配）"
+    },
+    "TRAIN-P002-001": {
+      "syndrome": "P002",
+      "relatedChallenges": ["CH-P002-001"],
+      "rationale": "TRAIN-P002-001=赋予角色矛盾动机，CH-P002-001=配角有独立立场（精确匹配）"
+    },
+    "TRAIN-P002-002": {
+      "syndrome": "P002",
+      "relatedChallenges": ["CH-P002-002"],
+      "rationale": "TRAIN-P002-002=角色行为追溯，CH-P002-002=NPC 一句话活人（行为驱动）"
+    },
+    "TRAIN-P002-003": {
+      "syndrome": "P002",
+      "relatedChallenges": ["CH-P002-003"],
+      "rationale": "TRAIN-P002-003=一致性压力测试，CH-P002-003=配角独立优先级（深度匹配）"
+    },
+    "TRAIN-P003-001": {
+      "syndrome": "P003",
+      "relatedChallenges": ["CH-P003-001"],
+      "rationale": "TRAIN-P003-001=精准动词替换，CH-P003-001=紧张→动作（show-don't-tell 直接匹配）"
+    },
+    "TRAIN-P003-002": {
+      "syndrome": "P003",
+      "relatedChallenges": ["CH-P003-002"],
+      "rationale": "TRAIN-P003-002=五感情绪锚，CH-P003-002=愤怒→动作（情绪锚匹配）"
+    },
+    "TRAIN-P003-003": {
+      "syndrome": "P003",
+      "relatedChallenges": ["CH-P003-003"],
+      "rationale": "TRAIN-P003-003=情感颗粒度训练，CH-P003-003=悲伤→多层次（颗粒度匹配）"
+    },
+    "TRAIN-P004-001": {
+      "syndrome": "P004",
+      "relatedChallenges": ["CH-P004-001"],
+      "rationale": "TRAIN-P004-001=冰山叙事法，CH-P004-001=说明→动作（冰山原则直接匹配）"
+    },
+    "TRAIN-P004-002": {
+      "syndrome": "P004",
+      "relatedChallenges": ["CH-P004-002"],
+      "rationale": "TRAIN-P004-002=对话式信息注入，CH-P004-002=主角观察展现（对话式匹配）"
+    },
+    "TRAIN-P004-003": {
+      "syndrome": "P004",
+      "relatedChallenges": ["CH-P004-003"],
+      "rationale": "TRAIN-P004-003=信息分层释放，CH-P004-003=读者自己发现（分层释放匹配）"
+    },
+    "TRAIN-P005-001": {
+      "syndrome": "P005",
+      "relatedChallenges": ["CH-P005-001", "CH-P005-002"],
+      "rationale": "TRAIN-P005-001=单视角锁定，CH-P005-001=教室场景，CH-P005-002=对话视角（单视角匹配）"
+    },
+    "TRAIN-P005-002": {
+      "syndrome": "P005",
+      "relatedChallenges": ["CH-P005-003"],
+      "rationale": "TRAIN-P005-002=双视角分界，CH-P005-003=陌生场所五感（视角控制）"
+    },
+    "TRAIN-P006-001": {
+      "syndrome": "P006",
+      "relatedChallenges": ["CH-P006-001", "CH-P006-003"],
+      "rationale": "TRAIN-P006-001=冲突心电图，CH-P006-001=开篇有动作，CH-P006-003=对话开篇（冲突+动作匹配）"
+    },
+    "TRAIN-P006-002": {
+      "syndrome": "P006",
+      "relatedChallenges": ["CH-P006-002"],
+      "rationale": "TRAIN-P006-002=倒计时压迫法，CH-P006-002=前三段有钩子（钩子+倒计时匹配）"
+    },
+    "TRAIN-P007-001": {
+      "syndrome": "P007",
+      "relatedChallenges": ["CH-P007-001", "CH-P007-002"],
+      "rationale": "TRAIN-P007-001=句式呼吸训练，CH-P007-001=精读传统文学，CH-P007-002=回答三个问题（阅读任务）"
+    },
+    "TRAIN-P007-002": {
+      "syndrome": "P007",
+      "relatedChallenges": ["CH-P007-003"],
+      "rationale": "TRAIN-P007-002=叙事模式翻转，CH-P007-003=对比阅读（模式对比匹配）"
+    },
+    "TRAIN-P009-001": {
+      "syndrome": "P009",
+      "relatedChallenges": ["CH-P009-001", "CH-P009-002"],
+      "rationale": "TRAIN-P009-001=动机冰山模型，CH-P009-001=深层动机，CH-P009-002=选择背后的代价（动机深度匹配）"
+    },
+    "TRAIN-P009-002": {
+      "syndrome": "P009",
+      "relatedChallenges": ["CH-P009-003"],
+      "rationale": "TRAIN-P009-002=转折点的代价，CH-P009-003=道德困境（转折点+代价匹配）"
+    },
+    "TRAIN-P010-001": {
+      "syndrome": "P010",
+      "relatedChallenges": ["CH-P010-001", "CH-P010-003"],
+      "rationale": "TRAIN-P010-001=人物内在矛盾，CH-P010-001=弧光起点，CH-P010-003=成长验证（弧光设计匹配）"
+    },
+    "TRAIN-P010-002": {
+      "syndrome": "P010",
+      "relatedChallenges": ["CH-P010-002"],
+      "rationale": "TRAIN-P010-002=陌生化视角重塑，CH-P010-002=解构式观察（陌生化匹配）"
+    }
+  },
+
+  "CH_to_TRAIN": {
+    "_comment": "CH-PXXX → TRAIN-PXXX 反向映射（基于 TRAIN_to_CH 自动生成去重）",
+    "CH-P001-001": ["TRAIN-P001-001"],
+    "CH-P001-002": ["TRAIN-P001-002"],
+    "CH-P001-003": ["TRAIN-P001-001"],
+    "CH-P002-001": ["TRAIN-P002-001"],
+    "CH-P002-002": ["TRAIN-P002-002"],
+    "CH-P002-003": ["TRAIN-P002-003"],
+    "CH-P003-001": ["TRAIN-P003-001"],
+    "CH-P003-002": ["TRAIN-P003-002"],
+    "CH-P003-003": ["TRAIN-P003-003"],
+    "CH-P004-001": ["TRAIN-P004-001"],
+    "CH-P004-002": ["TRAIN-P004-002"],
+    "CH-P004-003": ["TRAIN-P004-003"],
+    "CH-P005-001": ["TRAIN-P005-001"],
+    "CH-P005-002": ["TRAIN-P005-001"],
+    "CH-P005-003": ["TRAIN-P005-002"],
+    "CH-P006-001": ["TRAIN-P006-001"],
+    "CH-P006-002": ["TRAIN-P006-002"],
+    "CH-P006-003": ["TRAIN-P006-001"],
+    "CH-P007-001": ["TRAIN-P007-001"],
+    "CH-P007-002": ["TRAIN-P007-001"],
+    "CH-P007-003": ["TRAIN-P007-002"],
+    "CH-P008-001": [],
+    "CH-P008-002": [],
+    "CH-P008-003": [],
+    "CH-P008-004": [],
+    "CH-P009-001": ["TRAIN-P009-001"],
+    "CH-P009-002": ["TRAIN-P009-001"],
+    "CH-P009-003": ["TRAIN-P009-002"],
+    "CH-P010-001": ["TRAIN-P010-001"],
+    "CH-P010-002": ["TRAIN-P010-002"],
+    "CH-P010-003": ["TRAIN-P010-001"]
+  },
+
+  "PRAC_to_syndrome": {
+    "_comment": "PRAC-XXX 通用训练任务（无症候）映射。8 条全部映射到 P007 阅读结构单一（因为 PRAC 全部是阅读/写作基本功）",
+    "PRAC-EYE-001": { "primarySyndrome": "P007", "rationale": "PRAC-EYE=看烂书·找茬，本质是阅读素养提升，关联 P007 阅读结构单一" },
+    "PRAC-EYE-002": { "primarySyndrome": "P007", "rationale": "PRAC-EYE=看烂书·归类，关联 P007" },
+    "PRAC-PEN-001": { "primarySyndrome": "P007", "rationale": "PRAC-PEN=指定视角阅读，关联 P007（精读方法）" },
+    "PRAC-PEN-002": { "primarySyndrome": "P007", "rationale": "PRAC-PEN=一人一事，关联 P007（精读+基本功）" },
+    "PRAC-WORD-001": { "primarySyndrome": "P003", "rationale": "PRAC-WORD=删可有可无，关联 P003 情绪标签化（精准表达）" },
+    "PRAC-STRUCT-001": { "primarySyndrome": "P006", "rationale": "PRAC-STRUCT=得失框架应用，关联 P006 节奏停滞（结构控制）" },
+    "PRAC-TASTE-001": { "primarySyndrome": "P010", "rationale": "PRAC-TASTE=高阶平淡练习，关联 P010 OC 平面化（深度表达）" },
+    "PRAC-TASTE-002": { "primarySyndrome": "P010", "rationale": "PRAC-TASTE=趣味自检，关联 P010" }
+  },
+
+  "orphanTracking": {
+    "_comment": "孤儿项追踪。需在 Sprint 16+ 处理。",
+    "orphanT0XX": [
+      {
+        "id": "T016",
+        "reason": "T0XX 体系要求 P004 有 4 条训练（T005/T006/T015/T016），但 training-library 中 P004 只有 3 条 TRAIN-PXXX 任务",
+        "action": "Sprint 16+ 新建 TRAIN-P004-004（hard 难度，展示练习）"
+      }
+    ],
+    "orphanTRAIN": [
+      { "id": "TRAIN-P002-003", "reason": "P002 在 T0XX 中只有 2 条（T003/T004），但 TRAIN-PXXX 有 3 条" },
+      { "id": "TRAIN-P003-003", "reason": "P003 在 T0XX 中只有 2 条（T001/T002），但 TRAIN-PXXX 有 3 条" }
+    ],
+    "orphanCH": [
+      { "id": "CH-P008-001", "reason": "P008 症候仅在 challenge-templates 存在，ability-atlas 和 training-library 都没有" },
+      { "id": "CH-P008-002", "reason": "P008 症候仅在 challenge-templates 存在，ability-atlas 和 training-library 都没有" },
+      { "id": "CH-P008-003", "reason": "P008 症候仅在 challenge-templates 存在，ability-atlas 和 training-library 都没有" },
+      { "id": "CH-P008-004", "reason": "P008 症候仅在 challenge-templates 存在，ability-atlas 和 training-library 都没有" }
+    ],
+    "orphanSyndromes": [
+      {
+        "id": "P008",
+        "name": "世界观说明书症",
+        "presentIn": { "T0XX": false, "TRAIN_PXXX": false, "CH_PXXX": true },
+        "action": "Sprint 16+ 在 ability-atlas.json 中补全 P008 定义，并在 training-library 中新增至少 2 条 TRAIN-P008-XXX"
+      }
+    ]
+  },
+
+  "statistics": {
+    "T0XX": 20,
+    "TRAIN_PXXX": 21,
+    "TRAIN_PXXX_general": 8,
+    "CH_PXXX": 31,
+    "syndromesCovered": 10,
+    "orphanSyndromes": 1,
+    "orphanT0XX": 1,
+    "orphanTRAIN": 2,
+    "orphanCH": 4
+  }
+}

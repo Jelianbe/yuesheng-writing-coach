@@ -15,7 +15,7 @@
  */
 
 import type { ActiveProblem, TrainingRecommendation, TechniqueInfo, SyndromeType } from '../../../../shared/types/index';
-import challengeTemplates from '../../../../../resources/config/challenge-templates.json';
+import challengeTemplates from '../../../../../resources/04-validation/mastery/challenge-templates.json';
 import techniqueLibrary from '../../../../../resources/config/technique-library.json';
 import syndromeTypeMap from '../../../../../resources/config/syndrome-type-map.json';
 import readingLibrary from '../../../../../resources/config/reading-library.json';
@@ -23,6 +23,9 @@ import readingLibrary from '../../../../../resources/config/reading-library.json
 // S7: 能力图谱 Loader
 import { getAbilitiesBySyndrome } from '../../../domains/02-prescription/ability-atlas/ability-atlas.loader';
 import type { DevelopmentStageInfo } from '../../../../shared/types/index';
+
+// T15-C.5: 引入 task-id-mapping，提供训练任务（TRAIN-PXXX）→ 能力（ABL-XXX）反向推荐
+import { challengeToTrains } from './task-id-mapping.loader';
 
 // 类型定义：challenge-templates.json 的结构
 interface ChallengeTemplate {
@@ -157,6 +160,12 @@ export function generateRecommendations(
       (t) => t.syndromeId === problem.id,
     );
 
+    // T15-C.5: 通过 task-id-mapping 反查训练任务 ID
+    let relatedTrainIds: string[] = [];
+    if (matchedTemplate) {
+      relatedTrainIds = challengeToTrains(matchedTemplate.id);
+    }
+
     if (matchedTemplate) {
       return {
         challengeId: matchedTemplate.id,
@@ -173,6 +182,8 @@ export function generateRecommendations(
         abilityNodeIds: abilityNodeIds.length > 0 ? abilityNodeIds : undefined,
         difficulty: abilityNodes[0]?.level,
         prerequisites: allPrereqs.size > 0 ? Array.from(allPrereqs) : undefined,
+        // T15-C.5: 新增 relatedTrainIds 字段（任务→能力反向推荐）
+        relatedTrainIds: relatedTrainIds.length > 0 ? relatedTrainIds : undefined,
       };
     }
 
@@ -192,6 +203,7 @@ export function generateRecommendations(
       abilityNodeIds: abilityNodeIds.length > 0 ? abilityNodeIds : undefined,
       difficulty: abilityNodes[0]?.level,
       prerequisites: allPrereqs.size > 0 ? Array.from(allPrereqs) : undefined,
+      relatedTrainIds: undefined, // fallback 无对应 TRAIN
     };
   });
 

@@ -7,7 +7,7 @@
  * @module services/recommendation-engine
  */
 
-import challengeTemplates from '../../../resources/config/challenge-templates.json';
+import challengeTemplates from '../../../resources/04-validation/mastery/challenge-templates.json';
 import techniqueLibrary from '../../../resources/config/technique-library.json';
 
 // ===== 类型定义 =====

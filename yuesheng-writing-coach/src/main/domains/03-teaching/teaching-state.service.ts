@@ -3,6 +3,8 @@
  * 负责：集中管理 TeachingStateStore、PromptBuilder、MainWindow 等教学状态相关依赖
  * 消除原先 teaching-state.handler.ts 中的模块级变量模式
  * DI 注册名：'teachingStateService'
+ *
+ * T15-C.4 改造：注入 ability-atlas loader，把教学状态与能力图谱关联。
  */
 
 import type { BrowserWindow } from 'electron';
@@ -19,6 +21,9 @@ import {
 } from './state/teaching-state-machine';
 import { IPC_CHANNELS } from '../../../shared/constants';
 
+// T15-C.4: 注入能力图谱 loader
+import { getAbilitiesBySyndrome } from '../02-prescription/ability-atlas/ability-atlas.loader';
+
 export interface TeachingStateContext {
   currentPhase: string | null;
   currentSubphase: string | null;
@@ -27,6 +32,20 @@ export interface TeachingStateContext {
 
 export interface TeachingStateReadContext {
   getBySession: (sessionId: string) => TeachingState | null;
+}
+
+/** 能力图谱亮点（与活跃症候关联） */
+export interface AbilityHighlight {
+  syndromeId: string;
+  syndromeName?: string;
+  abilities: Array<{
+    atlasId: string;
+    prototypeId?: string;
+    name: string;
+    category: string;
+    level: number;
+    trainingFocus: string;
+  }>;
 }
 
 export class TeachingStateService {
@@ -177,5 +196,75 @@ export class TeachingStateService {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * T15-C.4: 获取与活跃症候关联的能力图谱亮点
+   *
+   * 遍历当前会话的 activeProblems，提取每个症候对应的能力节点。
+   * 用于 ProgressWorkspace 等消费方展示"用户在训练什么能力"。
+   */
+  getAbilityHighlights(sessionId: string): AbilityHighlight[] {
+    try {
+      const state = this.getStore().getBySession(sessionId);
+      if (!state?.activeProblems) return [];
+
+      const highlights: AbilityHighlight[] = [];
+      const seen = new Set<string>(); // 去重 abilityId
+
+      for (const problem of state.activeProblems) {
+        // activeProblems 元素是 ActiveProblem 类型：syndromeId 字段实际名为 id（T15-C.6 修复）
+        const sid = (problem as { id?: string; syndromeId?: string }).id
+          ?? (problem as { syndromeId?: string }).syndromeId;
+        const sname = (problem as { syndromeId?: string; name?: string }).name;
+        if (!sid) continue;
+
+        const abilities = getAbilitiesBySyndrome(sid);
+        if (abilities.length === 0) continue;
+
+        highlights.push({
+          syndromeId: sid,
+          syndromeName: sname,
+          abilities: abilities
+            .filter(a => !seen.has(a.atlasId))
+            .map(a => {
+              seen.add(a.atlasId);
+              return {
+                atlasId: a.atlasId,
+                prototypeId: a.prototypeId,
+                name: a.name,
+                category: a.category,
+                level: a.level,
+                trainingFocus: a.trainingFocus,
+              };
+            }),
+        });
+      }
+
+      return highlights;
+    } catch (e) {
+      console.warn('[TeachingStateService] getAbilityHighlights failed:', e);
+      return [];
+    }
+  }
+
+  /**
+   * T15-C.4: 获取完整状态（含能力图谱亮点）
+   * 在 getFullState 基础上追加 abilityHighlights 字段。
+   */
+  getFullStateWithAbilities(
+    sessionId: string,
+  ): ((TeachingState & {
+    phaseName: string;
+    subphaseName: string;
+    phaseProgress: number;
+    abilityHighlights: AbilityHighlight[];
+  }) | null) {
+    const base = this.getFullState(sessionId);
+    if (!base) return null;
+    return {
+      ...base,
+      abilityHighlights: this.getAbilityHighlights(sessionId),
+    };
   }
 }
