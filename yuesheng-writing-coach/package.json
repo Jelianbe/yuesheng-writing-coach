@@ -1,6 +1,6 @@
 {
   "name": "yuesheng-writing-coach",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "月笙写作教练 - AI 驱动的写作辅导工具",
   "main": "dist/main/index.js",
   "scripts": {
@@ -17,6 +17,7 @@
     "scan:hardcode": "npx tsx scripts/check-a11y-colors.ts",
     "check:size": "npx tsx scripts/check-file-size.ts",
     "check:circular": "madge --circular --extensions ts,tsx src/",
+    "check:id": "node scripts/check-id-naming.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -24,7 +25,7 @@
     "ci": "npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
   },
   "dependencies": {
-    "better-sqlite3": "^12.10.0",
+    "better-sqlite3": "^12.11.1",
     "electron-store": "^8.1.0",
     "lucide-react": "^1.17.0",
     "react-arborist": "^3.10.5",

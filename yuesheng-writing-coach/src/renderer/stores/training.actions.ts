@@ -94,9 +94,16 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
             challengeConstraint: match.constraint,
           }) as TrainingFlow;
           session.trainingFlow = flow;
+          // S16: 标记走五步流（UI 切到 FlowPanel）
+          session.flowType = 'flow5';
         } catch (e) {
           console.warn('[TrainingStore] generateTrainingFlow failed (non-fatal):', e);
+          // 降级到传统 3 步流
+          session.flowType = 'legacy';
         }
+      } else {
+        // reading_task 走传统流
+        session.flowType = 'legacy';
       }
 
       set({ activeTraining: session, isLoading: false, submissionResult: null, evaluationResult: null });
