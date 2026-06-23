@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './Card.module.css';
 
 interface CardProps {
   children: React.ReactNode;
@@ -17,11 +18,9 @@ export const Card: React.FC<CardProps> = ({
   role,
   'aria-label': ariaLabel,
 }) => {
-  const baseClasses = [
-    'bg-surface rounded-[var(--radius-md)] shadow-sm',
-    hover ? 'transition-shadow duration-fast hover:shadow-md cursor-pointer' : '',
-    className,
-  ].join(' ');
+  const baseClasses = hover
+    ? `${styles.card} ${styles.cardHover} ${className}`
+    : `${styles.card} ${className}`;
 
   return (
     <div
