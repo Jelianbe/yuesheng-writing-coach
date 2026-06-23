@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { X, Plus, Minimize2, Minus, Maximize } from 'lucide-react';
 import { getAllWorkspaces, type WorkspaceId } from '../../../registry/workspace-registry';
 import styles from './index.module.css';
@@ -25,10 +25,17 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({
   const toolTabsRef = useRef<HTMLDivElement>(null);
   const allTools = getAllWorkspaces();
 
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    if (e.deltaX !== 0) return;
-    e.currentTarget.scrollLeft += e.deltaY;
-    e.preventDefault();
+  // 非 passive wheel handler（避免 preventDefault 警告）
+  useEffect(() => {
+    const el = toolTabsRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaX !== 0) return;
+      el.scrollLeft += e.deltaY;
+      e.preventDefault();
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
   return (
@@ -37,7 +44,6 @@ export const ToolTabs: React.FC<ToolTabsProps> = ({
         ref={toolTabsRef}
         className={styles.toolTabs}
         id="toolTabs"
-        onWheel={handleWheel}
       >
         {openTools.length > 0 ? (
           openTools.map(tId => {
