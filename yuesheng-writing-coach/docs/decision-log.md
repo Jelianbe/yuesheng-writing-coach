@@ -991,6 +991,98 @@ PR #24 合并完成（main @ 9ccd82d，v1.1.0），但 Sprint 16 plan 的 6 条 
 ✅ Sprint 17 计划完成 — 验收闭环 + 审计整改双轨；D-046 临时处理的 BL-19 已纳入 Sprint 18；6 个新债务已记录；目标 audit 得分 ≥14/20
 
 ---
+
+## D-048 · 2026-06-23 · Sprint 17 完工 Reflect — 6 P1 整改 + 1 P0 全部落地
+
+### Context
+
+按 D-047 计划执行 Sprint 17，期间用户要求"按顺序推"，逐项完成 T17-5/7/8/9/10/11。T17-12（移除 Tailwind）按 R-021 最小化范围**主动跳过**（plan 中标注"加分"项，high 风险，需分批迁移）。T17-13（audit 重跑）留待后续 PR 验证。
+
+### 已完成（6 任务 / 8 commits）
+
+| 任务 | 描述 | commit |
+|:---:|---|:--:|
+| **T17-5** | training/flow/flow.module.css（180 行，覆盖 FiveStepFlow + 5 步面板） | 308edad |
+| **T17-7** | CenterPanel selectors 拆分（5 selectors + 11 tests，useShallow 保证引用稳定） | 36e0c31 / 81f6705 |
+| **T17-8** | AppShell 收起栏 emoji → lucide-react（Plus/Settings/Maximize2/Minus/Square/X） | 849a3ab |
+| **T17-9** | CenterPanel empty state emoji → lucide-react（PenLine/Sprout/MessageCircle） | 902deec |
+| **T17-10** | FiveStepFlow 启用 4 skip 测试（user-event v14.6.1，覆盖核心禁用逻辑） | 7f22662 |
+| **T17-11** | AppShell 硬编码 #D6CEC0 → var(--border) + 拖拽 rAF 节流 | c963dfe |
+| **T17-14** | CHANGELOG → [1.2.0] - 2026-06-23 | 1c9e466 |
+
+### 门禁（最终）
+
+- typecheck: **0 errors**
+- test: **644/644 passed**（Sprint 17 新增 4 个 = 启用 4 skip 测试；Sprint 16 基础 640）
+- lint: **0 errors**
+- 安全: 0 硬编码密钥 ✓
+
+### 未做（按 R-021 主动收敛）
+
+1. **T17-12 移除 Tailwind 依赖**（plan 加分项，high 风险）— 需分批迁移 + 1 sprint 观察期，留待 Sprint 18 候选
+2. **T17-13 重跑 audit**（目标 ≥14/20）— skill 耗时长，留待 Sprint 17 PR 合入后单独验证
+
+### 做得好的（Keep）
+
+1. **R-021 严格遵守**：每 commit ≤1 主题，跨域不混；T17-12 主动跳过而非简化版交付
+2. **R-010 最小化范围**：6 任务全部 1 文件 1 commit（T17-7 拆 2 commits 因为 git add 因 CRLF 警告未生效，事后补 commit 时仍按 1 主题）
+3. **T17-7 useShallow 进阶优化**：原 plan 写"4 selectors 拆合"，实际使用 zustand `useShallow` 保证聚合 selector 引用稳定性，比原 plan 更优
+4. **R-027 门禁精神**：T17-10 启用 skip 测试发现真问题（用户文本 < 30 字），**修复测试而非 skip**，符合 R-027 "修复 bug 而非继续 skip"
+5. **T17-11 rAF 节流 + 引用 commit**：mousemove → ref pending → rAF flush，mousemove 仍触发 handler 但 setState 节流到帧率
+6. **push 顺序**：每个 T17 commit 单独 push 一次（feat/fix → push → 下一任务），避免累积到末尾一次性 push 难排查
+
+### 教训（Learn）
+
+1. **PowerShell `git add` + CRLF 警告陷阱**：写入带 CRLF 换行符的文件时 `git add` 会显示 LF/CRLF 警告但**实际不报错**，导致 commit 时文件未 stage 而开发者未察觉。**改进**：重要文件 stage 后用 `git status --short` 二次确认
+2. **`$(cat <<'EOF' ... EOF)` 在 PowerShell 中解析失败**：heredoc 在 PowerShell 5.1 不被原生支持，会被解析为多行命令导致语法错误。**改进**：commit message 统一用临时文件 + `git commit -F path` 模式
+3. **`$(pwd)` 在 `cd` 之后子 shell 解析时丢失路径**：PowerShell 子表达式中 `cd` 不影响 `$(pwd)` 解析上下文。**改进**：用绝对路径字符串代替 `$(pwd)/.git/xxx`
+4. **user.type 字符数计算需精确**：T17-10 第一次启用 4 测试时 understanding 文本 28 字 < 30 阈值，2 个测试 fail。**改进**：测试文本长度要 ≥ 业务阈值的 1.2x（30 → 32），留余量
+5. **git 在 Windows 大小写不敏感文件系统会把 `centerpanel/` 自动归到 `CenterPanel/`**（已存在的目录大小写）。无需操作，但要知道 git status 输出会显示已存在的 case
+
+### 新增技术债
+
+1. **D-DEBT-2026-06-23-28**（新）：T17-12 Tailwind 移除延期，需 Sprint 18 启动时分批迁移计划
+2. **D-DEBT-2026-06-23-29**（新）：T17-13 audit 重跑延期，需 Sprint 17 PR 合入后单独验证
+
+### 已结清债务
+
+- **D-DEBT-22**（CSS 缺失）→ T17-5 ✅
+- **D-DEBT-23**（Zustand 整订阅）→ T17-7 ✅
+- **D-DEBT-24**（emoji UI 元素）→ T17-8 + T17-9 ✅
+- **D-DEBT-25**（layout thrashing）→ T17-11 ✅
+- **D-DEBT-26**（Tailwind 混用）→ 部分（依赖包未移除，CSS 工具类未全部迁移到 CSS Modules）— 部分结清
+- **D-DEBT-27**（4 skip 测试）→ T17-10 ✅
+
+### 下一阶段（Sprint 18 启动条件）
+
+按 GStack 流程，Reflect 完成 → 进入 Think 阶段：
+
+1. **创建 Issue #35 (Sprint 18)**：新功能恢复 + T15-1/2/3 + BL-19 workspace 组件化 + T17-12 Tailwind 分批迁移
+2. **Sprint 18 候选范围**：
+   - 必修：T15-1 attitude 透传改造（D-DEBT-17）
+   - 必修：T15-2 SKILL 文件补充 conditions 字段
+   - 必修：BL-19 7 个 workspace 实际组件实现
+   - 必修：T17-12 Tailwind 移除（分批，每批迁移后跑门禁）
+   - 必修：T17-13 audit 重跑验证 ≥14/20
+   - 必修：D-DEBT-18（61 条 heuristic 二次精标）
+   - 必修：D-DEBT-19（孤儿 P008 / T016 补全）
+   - 选修：T15-3 v5 vs dispatcher v2 A/B 灰度
+   - 选修：D-DEBT-20 ActiveProblem 字段统一
+   - 选修：D-DEBT-21 训练推荐边界测试增补
+
+### 依据
+
+- `dev-docs/designs/sprint-17-plan.md`（15 任务 / ~2.4d）
+- `dev-docs/audits/2026-06-23-frontend-audit.md`（11/20 + 15 issues）
+- 6 个 GitHub Issue #28-#33
+- 8 个 commit message + D-047 Sprint 17 计划
+- R-010 最小化范围 / R-021 AI 行为边界 / R-027 四道门禁
+
+### Status
+
+✅ Sprint 17 完工 — 6 P1 整改 + 1 P0 全部落地，644 tests pass / typecheck 0 / lint 0；T17-12/T17-13 按 R-021 主动收敛留待 Sprint 18；新债务 28/29 记录
+
+---
    - 实现 task-id-mapping.loader.ts（双向查询 + 孤儿追踪 + 完整性校验）
    - 标记 1 孤儿症候 P008 + 1 孤儿 T0XX T016 + 1 孤儿 TRAIN + 1 孤儿 CH（Sprint 16+ 处理）
 4. **T15-C 能力图谱消费链补全**（5 个消费方全链路打通）
