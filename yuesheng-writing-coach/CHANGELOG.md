@@ -2,7 +2,29 @@
 
 > 月笙写作教练变更日志。版本号遵循语义化版本（semver）。
 
-## [Unreleased]
+## [1.4.0] - 2026-06-23
+
+### Sprint 17 三期 — Catalog 修复 + ToolGrid 重构 + 硬编码清理 + 审计 14/20
+
+#### Fixed
+- **Catalog IPC 包裹层**: `createHandler` 把 handler 返回值包装为 `{ success: true, data: ... }`，CatalogWorkspace 和 useStartTraining 直读 `res.groups` 导致始终为空（回归自 S16）
+- **Catalog CSS 类名失配**: 组件用 14 个 CSS 类名在 css 文件中不存在（`wrapper`/`catalogGrid`/`coreGroupCard`/`techCard` 等），核心组网格和技法卡片全部裸奔
+- **ToolGrid 图标**: 文本字符 `✤ ◐ ✎ ☰ ⚙ ◈` → lucide-react（BookOpen/BarChart3/FileText 等）
+- **~80 硬编码 hex → CSS design tokens**: 18 个文件，核心组网格/技法卡片/进度面板 统一 token 化
+- **SubTabs/ToolTabs emoji → lucide + aria-label**: 剩余 emoji 清理
+- **--transition-bounce 移除**: 全局移除不合理的 bounce 动效
+- **RightPanel header onWheel**: passive listener preventDefault 警告修复（改用 addEventListener + passive: false）
+
+#### Changed
+- **ToolGrid**: 重做为方格标签布局（圆形 icon 容器 + 描述文案 + hover 上浮）
+- **Catalog 技法卡片**: 左侧 3px accent 边框卡片 + hover 左移
+- **Catalog 核心组网格**: 2 列居中卡片 + hover 上浮
+- **WelcomeCard / ChatView / Recommendations emoji → lucide**: 剩余批次清理
+
+#### Chore
+- **README**: 全面重写（项目概览 / 架构图 / 路线图 / 已知债务）
+- **PRODUCT.md**: 产品战略定义（register / user / purpose / anti-references / design principles）
+- **二次审计 v3**: 14.5/20 Good（目标 ≥14/20 达成），v1→v3 +3.5
 
 ## [1.3.0] - 2026-06-23
 
