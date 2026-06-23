@@ -21,6 +21,7 @@ import { Footer } from '../Footer';
 import { CenterHeader } from '../CenterHeader';
 import { useDiagnosisFlow } from '../../../hooks/useDiagnosisFlow';
 import { RetroSummaryView } from '../../retro/RetroSummaryView';
+import { PenLine, Sprout, MessageCircle } from 'lucide-react';
 import {
   useCenterSessionId,
   useCenterSessionList,
@@ -264,21 +265,21 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
             <h2 className={styles.emptyTitle}>开始你的写作之旅</h2>
             <div className={styles.emptyOptions}>
               <button className={styles.emptyOption} onClick={() => handleNewSession()}>
-                <span className={styles.emptyOptionIcon}>📝</span>
+                <span className={styles.emptyOptionIcon}><PenLine size={20} aria-hidden /></span>
                 <div>
                   <div className={styles.emptyOptionLabel}>我有作品</div>
                   <div className={styles.emptyOptionHint}>直接进入聊天，我会帮你分析</div>
                 </div>
               </button>
               <button className={styles.emptyOption} onClick={() => handleNewSession()}>
-                <span className={styles.emptyOptionIcon}>🌱</span>
+                <span className={styles.emptyOptionIcon}><Sprout size={20} aria-hidden /></span>
                 <div>
                   <div className={styles.emptyOptionLabel}>从头学习</div>
                   <div className={styles.emptyOptionHint}>我引导你搭建世界观和人物</div>
                 </div>
               </button>
               <button className={styles.emptyOption} onClick={() => handleNewSession()}>
-                <span className={styles.emptyOptionIcon}>💬</span>
+                <span className={styles.emptyOptionIcon}><MessageCircle size={20} aria-hidden /></span>
                 <div>
                   <div className={styles.emptyOptionLabel}>先聊聊</div>
                   <div className={styles.emptyOptionHint}>正常聊天，我在对话中自然引导</div>
