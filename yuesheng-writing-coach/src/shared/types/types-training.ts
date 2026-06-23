@@ -109,6 +109,8 @@ export interface TrainingRecommendation {
   difficulty?: number;
   /** S7: 前置能力 ID 列表 */
   prerequisites?: string[];
+  /** T15-C.5: 关联训练任务 ID 列表（TRAIN-PXXX-XXX），任务→能力反向推荐 */
+  relatedTrainIds?: string[];
 }
 
 /** 技法信息（来自 technique-library.json） */
