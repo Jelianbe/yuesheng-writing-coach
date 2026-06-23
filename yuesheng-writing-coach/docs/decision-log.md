@@ -858,6 +858,172 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
 - `9c46dee` feat(distillation): T15-A.5+A.6 loader + 测试
 - `6b8dc89` feat(sprint15): T15-B 三向 ID 映射
 - `03c4fe8` feat(sprint15): T15-C.6 能力图谱消费链 E2E
+- **PR #24**（feature/sprint-15 → main）— MERGED 2026-06-23
+
+### 门禁（最终）
+- typecheck: **0 errors**
+- test: **611/611 passed**（Sprint 15 新增 81 个：T15-A 45 + T15-B 34 + T15-C.5 29 + T15-C.6 7 - 34 调整）
+- lint: **0 errors**（252 historical warnings 全部为既有债务）
+- check:id: **100/100 合规**
+- 安全: 0 硬编码密钥 ✓
+
+### Status
+✅ Sprint 15 整体 Reflect 完成 — PR #24 已合并；3 个诊断库漏洞全部 RESOLVED；4 个新债务已记录
+
+---
+
+## D-046 · 2026-06-23 · Sprint 16 五步通用训练流贯通
+
+### Context
+Sprint 8 已落地 TrainingFlowService（IPC 通道 training:generateFlow 已存在），Sprint 12 已为 technique-pool 暴露 `injectIntoPrompt(prompt, filter)` API。但 UI 端 32 项 Sprint 9 审计发现：训练 UI 仍走传统 3 步流（Step 0→1→2），五步流数据 `session.trainingFlow` 已被 service 填充却从未被 UI 渲染。同时技法库注入层 `injectIntoPrompt` 的 `filter` 参数一直未被 orchestrator 透传（bug）。
+
+### Decision
+1. **走通用流，不走 per-症候内容堆砌**：用户原话「技法库膨胀按当前缺口必定导致训练库膨胀，转为五步教学动作流程才是正确解决方案」。BL-01 落地为「统一五步模板 + 从技法库动态取数据」，**不新增 per-症候训练任务**。
+2. **配置外置（R-014）**：将 5 步模板与技法分类移出代码，外置为 `resources/config/training-flow-mapping.json`，新增分类只需追加 JSON。
+3. **类型统一**：types-training.ts 中 `flowType` 改为 `'flow5' | 'legacy'`，与既有 `TrainingFlowType` 对齐，**不新增重复枚举**。
+4. **降级机制**：`session.flowType` 缺省时按 `legacy` 处理，保证向后兼容。无 `generateTrainingFlow` IPC 路径的旧 challengeId 自动降级。
+5. **修复 BL-02 真实 bug**：orchestrator `analyze()` 把 `options` 直接传给 `callDiagnosisAgent` 的 `filter` 位置 —— 形如 `{syndromeIds: []}` 是 `TechniqueFilter` 的子集（无 coreId），看起来「巧合」工作但 coreId 永远为 undefined。改为显式映射 `options.syndromeIds → TechniqueFilter.syndromeIds`，**显式优于巧合**。
+
+### Files
+- New: `resources/config/training-flow-mapping.json`（5 分类 + 5 步模板）
+- New: `src/renderer/flow/training.flow.ts` (loader)
+- New: `src/renderer/components/training/flow/{FlowStepIndicator,StepExplain,StepExample,StepConfirm,StepPractice,StepFeedback,FiveStepFlow}.tsx` (7 components)
+- New: 3 test files (22 cases)
+- Modified: `src/renderer/stores/training.actions.ts` (assign flowType)
+- Modified: `src/renderer/components/training/ActiveTrainingView.tsx` (flowType 分支)
+- Modified: `src/renderer/shared/types-training.ts` (flowType 字段)
+- Modified: `src/main/domains/01-diagnosis/orchestrator/diagnosis-orchestrator.service.ts` (filter 透传)
+
+### Gates
+typecheck 0 错 / test 627 全绿 / lint 0 error
+
+### Debt
+- FiveStepFlow.tsx 中 6 处 `as never` 来自测试 mock —— 可接受，非生产代码
+- ActiveTrainingView 残留 StepIndicatorList / ReadingStepContent 等**未被新分支覆盖**的代码 —— 旧 3 步流兼容用，不算死代码但建议 Sprint 19 质量加固时审视
+- **7 个 workspace 组件文件缺失**（BL-19）：`workspaces-index.ts` 引用了 catalog/progress/learningLog/works/teachingNote/settings/stageProgress 7 个目录，但从未进入 git 索引。临时处理：注释掉 7 个 import + TODO。任务纳入 Sprint 18 backlog
+
+### Status
+✅ Sprint 16 整体 Review 完成 — 五步流贯通 + BL-02 filter 修复 + 22 测试用例；PR #24 已合并到 main @ 9ccd82d (v1.1.0)；3 个新债务已记录
+
+---
+
+## D-047 · 2026-06-23 · Sprint 16 验收闭环 + 2026-06-23 前端审计整改（Sprint 17 启动）
+
+### Context
+
+PR #24 合并完成（main @ 9ccd82d，v1.1.0），但 Sprint 16 plan 的 6 条 DoD 中 #1（用户可走完五步流）和 #2（fillTemplate 覆盖 P001-P007）未正式验收。同期使用 `$impeccable` skill 跑了一次全项目前端审计，**得分 11/20（Acceptable 档）**——15 个 issues（1 P0 + 6 P1 + 5 P2 + 3 P3）。
+
+**两个独立工作流汇合**：
+1. **Sprint 16 验收**：BL-22（better-sqlite3 dual target）阻塞 Electron E2E；mapping 偏离原 plan（challengeId → CATEGORY）需 ADR 解释
+2. **前端审计整改**：CSS 缺失、Zustand 整 state 订阅、emoji 按钮、emoji empty state、硬编码颜色、Tailwind/CSS 混用、4 skip 测试
+
+### Decision
+
+1. **Sprint 17 范围锁定为「验收闭环 + 审计整改」**，新功能（T15-1/2/3）全部推迟到 Sprint 18
+2. **ADR-007 解释 CATEGORY 模式偏离**：5 步教学动作（解说→例证→确认→尝试→反馈）与具体 challengeId 解耦后**可复用**，避免 6 挑战 × 5 步笛卡尔积爆炸。DoD #2 修订为「5 个 CATEGORY 至少各覆盖 1 个 challengeId」（更宽松指标）
+3. **6 个 P1 Issue 全部走完**（#28-#33），按依赖关系排序而非编号
+4. **P0 优先**：训练流 CSS 必须先于其他审计整改
+5. **审计得分目标 ≥14/20**（从 11/20 起跳 +3 分）
+
+### Files
+
+详见 `dev-docs/designs/sprint-17-plan.md`（15 任务 / ~2.4d）：
+
+- Phase 1（验收前置）：T17-1 ADR-007 / T17-2 BL-22 / T17-3 E2E / T17-4 BL-19 恢复 import
+- Phase 2（P0 修复）：T17-5 training/flow/flow.module.css / T17-6 AppShell preventDefault
+- Phase 3（6 个 P1 整改）：T17-7 ~ T17-12
+- Phase 4（验证收尾）：T17-13 audit 重跑 / T17-14 CHANGELOG → [1.2.0] / T17-15 本决策日志
+
+### Gates
+
+完成 Sprint 17 时必须达到：
+
+- typecheck: 0 errors
+- test: ≥633 passed（含 4 个 skip 启用）
+- lint: 0 errors
+- audit score: ≥14/20
+- 安全: 0 硬编码密钥
+
+### 新增/更新技术债
+
+1. **D-DEBT-2026-06-23-22**（新，由审计发现）：训练流 5 步 UI 组件 className 全用全局名（`flow-panel*`），CSS 完全缺失 → 裸 DOM。Sprint 17 P0 解决
+2. **D-DEBT-2026-06-23-23**（新）：CenterPanel `useTrainingStore` 一次订阅 14 字段，每次 stream token 触发整树 re-render → 性能债。Sprint 17 #28 解决
+3. **D-DEBT-2026-06-23-24**（新）：AppShell 收起栏 + CenterPanel empty state 共 9 个 emoji 当 UI 元素，与 PRODUCT.md anti-reference 冲突。Sprint 17 #29/#30 解决
+4. **D-DEBT-2026-06-23-25**（新）：AppShell 拖拽同时动画 `flex/width/min-width`，layout thrashing 风险。Sprint 17 #33 解决
+5. **D-DEBT-2026-06-23-26**（新）：Tailwind 工具类 + CSS Modules 混用，产物体积膨胀 ~30KB。Sprint 17 #31 解决
+6. **D-DEBT-2026-06-23-27**（新）：FiveStepFlow 4 个核心交互测试 skip，覆盖率 0%。Sprint 17 #32 解决
+7. **D-DEBT-2026-06-23-20**（更新）：ActiveProblem 字段命名一致性债务继续推迟到 Sprint 18
+
+### 保留未变债务
+
+- D-DEBT-17（attitude 透传 — 推迟到 Sprint 18）
+- BL-22（better-sqlite3 dual target — Sprint 17 解决）
+- BL-23（preload 白名单腐化 — Sprint 17+ 解决）
+- BL-19（7 个 workspace 组件 — 仅恢复 import，组件实现在 Sprint 18）
+- Sprint 9 剩余 32 项
+
+### 下一阶段（Sprint 18 启动条件）
+
+按 GStack 流程，Reflect 完成 → 进入 Think 阶段：
+
+1. **创建 Issue #34 (Sprint 18)**：新功能恢复 + T15-1/2/3 + BL-19 workspace 组件化
+2. **前置条件**：Sprint 17 全部 DoD 通过，audit 得分 ≥14/20，Sprint 16 验收签字
+3. **Sprint 18 候选范围**：
+   - 必修：T15-1 attitude 透传改造
+   - 必修：T15-2 SKILL 文件补充 conditions 字段
+   - 必修：BL-19 7 个 workspace 实际组件实现
+   - 必修：D-DEBT-18（61 条 heuristic 二次精标）
+   - 必修：D-DEBT-19（孤儿 P008 / T016 补全）
+   - 选修：T15-3 v5 vs dispatcher v2 A/B 灰度
+   - 选修：D-DEBT-20 ActiveProblem 字段统一
+   - 选修：D-DEBT-21 训练推荐边界测试增补
+
+### 依据
+
+- `dev-docs/designs/sprint-17-plan.md`（5 阶段 15 任务 / ~2.4d）
+- `dev-docs/audits/2026-06-23-frontend-audit.md`（11/20 + 15 issues）
+- 6 个 GitHub Issue #28-#33
+- D-046 Sprint 16 Reflect（5 决策 + BL-19 临时处理）
+- R-010 最小化范围 / R-014 配置外置 / R-027 四道门禁
+
+### Status
+
+✅ Sprint 17 计划完成 — 验收闭环 + 审计整改双轨；D-046 临时处理的 BL-19 已纳入 Sprint 18；6 个新债务已记录；目标 audit 得分 ≥14/20
+
+---
+   - 实现 task-id-mapping.loader.ts（双向查询 + 孤儿追踪 + 完整性校验）
+   - 标记 1 孤儿症候 P008 + 1 孤儿 T0XX T016 + 1 孤儿 TRAIN + 1 孤儿 CH（Sprint 16+ 处理）
+4. **T15-C 能力图谱消费链补全**（5 个消费方全链路打通）
+   - C.1 训练推荐（已就位 — 验证 + ABL 节点 + prerequisites）
+   - C.2 Prompt loader（已就位 — 验证症候展示）
+   - C.3 ProgressWorkspace（新增 — 雷达图/进度条）
+   - C.4 TeachingStateService（新增 — 注入 ability-atlas loader，getAbilityHighlights）
+   - C.5 TrainingRecommendation（增强 — relatedTrainIds 字段 + 任务→能力反向推荐）
+5. **T15-C.6 端到端测试**（1 commit / 6 files / +876 lines）
+   - capability-graph-e2e.test.ts（7 个场景，471 行）
+   - training-recommendation.service.test.ts（29 个单元测试）
+   - 修复 activeProblems 症候 ID 字段名兼容（id 优先 / 回退 syndromeId）
+
+### 7 个 E2E 场景（全部通过）
+1. P001 单症候全链路：诊断→教学→推荐→画像（3 向 ID 校验 + 高亮 + 反映）
+2. P001 L3 + P003 L2：多症候排序（L3 优先）+ 高亮
+3. 训练评分触发 severity 降级（L2→L1），推荐列表过滤
+4. 任务→能力反向推荐（TRAIN-PXXX 经 task-id-mapping 桥接到 ABL-XXX）
+5. 跨症候多次诊断产出 trend / weakPoints / trainingStats
+6. 能力图谱 loader 覆盖性不变量（8+ 节点 / 8+ 症候）
+7. getFullStateWithAbilities 集成（教学状态机 + 能力高亮合并返回）
+
+### 交付（10 commits / 1 PR）
+- `49a6b6d` docs(plan): add sprint-15 plan
+- `a9d7cd5` docs(plan): sprint-15 4 decisions + ADR-005
+- `1057900` docs(standards): ID naming spec v1.0 (T15-D)
+- `136d7e9` chore(scripts): check-id-naming.mjs
+- `e99c3fa` chore(package): check:id npm script
+- `c306490` fix(skill-metadata): CRLF 换行符解析（额外发现）
+- `ff0e61e` feat(distillation): T15-A.1-A.4 461 条结构化
+- `9c46dee` feat(distillation): T15-A.5+A.6 loader + 测试
+- `6b8dc89` feat(sprint15): T15-B 三向 ID 映射
+- `03c4fe8` feat(sprint15): T15-C.6 能力图谱消费链 E2E
 - **PR #24**（feature/sprint-15 → main）— READY FOR REVIEW
 
 ### 门禁（最终）
@@ -928,135 +1094,3 @@ a753088 refactor(prompt): split v5 into 6 SKILL files
 
 ---
 
-## D-046 · 2026-06-23 · Sprint 16 五步通用训练流贯通
-
-### Context
-Sprint 8 已落地 TrainingFlowService（IPC 通道 training:generateFlow 已存在），Sprint 12 已为 technique-pool 暴露 `injectIntoPrompt(prompt, filter)` API。但 UI 端 32 项 Sprint 9 审计发现：训练 UI 仍走传统 3 步流（Step 0→1→2），五步流数据 `session.trainingFlow` 已被 service 填充却从未被 UI 渲染。同时技法库注入层 `injectIntoPrompt` 的 `filter` 参数一直未被 orchestrator 透传（bug）。
-
-### Decision
-1. **走通用流，不走 per-症候内容堆砌**：用户原话「技法库膨胀按当前缺口必定导致训练库膨胀，转为五步教学动作流程才是正确解决方案」。BL-01 落地为「统一五步模板 + 从技法库动态取数据」，**不新增 per-症候训练任务**。
-2. **配置外置（R-014）**：将 5 步模板与技法分类移出代码，外置为 `resources/config/training-flow-mapping.json`，新增分类只需追加 JSON。
-3. **类型统一**：types-training.ts 中 `flowType` 改为 `'flow5' | 'legacy'`，与既有 `TrainingFlowType` 对齐，**不新增重复枚举**。
-4. **降级机制**：`session.flowType` 缺省时按 `legacy` 处理，保证向后兼容。无 `generateTrainingFlow` IPC 路径的旧 challengeId 自动降级。
-5. **修复 BL-02 真实 bug**：orchestrator `analyze()` 把 `options` 直接传给 `callDiagnosisAgent` 的 `filter` 位置 —— 形如 `{syndromeIds: []}` 是 `TechniqueFilter` 的子集（无 coreId），看起来「巧合」工作但 coreId 永远为 undefined。改为显式映射 `options.syndromeIds → TechniqueFilter.syndromeIds`，**显式优于巧合**。
-
-### Files
-- New: `resources/config/training-flow-mapping.json` (6 类 + 5 步模板)
-- New: `src/renderer/flow/training.flow.ts` (loader)
-- New: `src/renderer/components/training/flow/{FlowStepIndicator,StepExplain,StepExample,StepConfirm,StepPractice,StepFeedback,FiveStepFlow}.tsx` (7 components)
-- New: 3 test files (22 cases)
-- Modified: `src/renderer/stores/training.actions.ts` (assign flowType)
-- Modified: `src/renderer/components/training/ActiveTrainingView.tsx` (flowType 分支)
-- Modified: `src/renderer/shared/types-training.ts` (flowType 字段)
-- Modified: `src/main/domains/01-diagnosis/orchestrator/diagnosis-orchestrator.service.ts` (filter 透传)
-
-### Gates
-typecheck 0 错 / test 627 全绿 / lint 0 error
-
-### Debt
-- FiveStepFlow.tsx 中 6 处 `as never` 来自测试 mock —— 可接受，非生产代码
-- ActiveTrainingView 残留 StepIndicatorList / ReadingStepContent 等**未被新分支覆盖**的代码 —— 旧 3 步流兼容用，不算死代码但建议 Sprint 19 质量加固时审视
-
-### Status
-✅ Sprint 16 整体 Review 完成 — 五步流贯通 + BL-02 filter 修复 + 22 测试用例；可进入 Test 阶段
-
-### Test 阶段发现 ⚠️
-应用启动测试时发现 `workspaces-index.ts` 引用了 7 个从未创建的 workspace 目录（catalog/progress/learningLog/works/teachingNote/settings/stageProgress）。这是 Phase F 留下的**未完成债务**（commit c552c21 只创建了注册表 + index，未创建实际 workspace 组件）。
-
-**临时处理**：注释掉 7 个 import，加 TODO，待 Sprint 17/18 补实际 workspace 时恢复。
-
-**根因**：`git show HEAD -- src/renderer/registry/` 历史只有 2 commits：
-- c552c21 feat(right-panel): workspace registry for extensibility (ADR-002) — 注册表
-- 781516f chore(test): remove unused StubB — 测试清理
-
-7 个 workspace 文件从未进入 git 索引。
-
-**任务纳入 Sprint 18 backlog**：BL-19「Phase F 7 个 workspace 实际组件实现」
-
----
-
-
-## D-047 · 2026-06-23 · Sprint 16 验收闭环 + 2026-06-23 前端审计整改（Sprint 17 启动）
-
-### Context
-
-PR #24 合并完成（main @ 9ccd82d，v1.1.0），但 Sprint 16 plan 的 6 条 DoD 中 #1（用户可走完五步流）和 #2（fillTemplate 覆盖 P001-P007）未正式验收。同期使用  skill 跑了一次全项目前端审计，**得分 11/20（Acceptable 档）**——15 个 issues（1 P0 + 6 P1 + 5 P2 + 3 P3）。
-
-**两个独立工作流汇合**：
-1. **Sprint 16 验收**：BL-22（better-sqlite3 dual target）阻塞 Electron E2E；mapping 偏离原 plan（challengeId → CATEGORY）需 ADR 解释
-2. **前端审计整改**：CSS 缺失、Zustand 整 state 订阅、emoji 按钮、emoji empty state、硬编码颜色、Tailwind/CSS 混用、4 skip 测试
-
-### Decision
-
-1. **Sprint 17 范围锁定为「验收闭环 + 审计整改」**，新功能（T15-1/2/3）全部推迟到 Sprint 18
-2. **ADR-007 解释 CATEGORY 模式偏离**：5 步教学动作（解说→例证→确认→尝试→反馈）与具体 challengeId 解耦后**可复用**，避免 6 挑战 × 5 步笛卡尔积爆炸。DoD #2 修订为「5 个 CATEGORY 至少各覆盖 1 个 challengeId」（更宽松指标）
-3. **6 个 P1 Issue 全部走完**（#28-#33），按依赖关系排序而非编号
-4. **P0 优先**：训练流 CSS 必须先于其他审计整改
-5. **审计得分目标 ≥14/20**（从 11/20 起跳 +3 分）
-
-### Files
-
-详见 dev-docs/designs/sprint-17-plan.md（15 任务 / ~2.4d）：
-
-- Phase 1（验收前置）：T17-1 ADR-007 / T17-2 BL-22 / T17-3 E2E / T17-4 BL-19 恢复 import
-- Phase 2（P0 修复）：T17-5 training/flow/flow.module.css / T17-6 AppShell preventDefault
-- Phase 3（6 个 P1 整改）：T17-7 ~ T17-12
-- Phase 4（验证收尾）：T17-13 audit 重跑 / T17-14 CHANGELOG → [1.2.0] / T17-15 本决策日志
-
-### Gates
-
-完成 Sprint 17 时必须达到：
-
-- typecheck: 0 errors
-- test: ≥633 passed（含 4 个 skip 启用）
-- lint: 0 errors
-- audit score: ≥14/20
-- 安全: 0 硬编码密钥
-
-### 新增/更新技术债
-
-1. **D-DEBT-2026-06-23-22**（新，由审计发现）：训练流 5 步 UI 组件 className 全用全局名（low-panel*），CSS 完全缺失 → 裸 DOM。Sprint 17 P0 解决
-2. **D-DEBT-2026-06-23-23**（新）：CenterPanel useTrainingStore 一次订阅 14 字段，每次 stream token 触发整树 re-render → 性能债。Sprint 17 #28 解决
-3. **D-DEBT-2026-06-23-24**（新）：AppShell 收起栏 + CenterPanel empty state 共 9 个 emoji 当 UI 元素，与 PRODUCT.md anti-reference 冲突。Sprint 17 #29/#30 解决
-4. **D-DEBT-2026-06-23-25**（新）：AppShell 拖拽同时动画 lex/width/min-width，layout thrashing 风险。Sprint 17 #33 解决
-5. **D-DEBT-2026-06-23-26**（新）：Tailwind 工具类 + CSS Modules 混用，产物体积膨胀 ~30KB。Sprint 17 #31 解决
-6. **D-DEBT-2026-06-23-27**（新）：FiveStepFlow 4 个核心交互测试 skip，覆盖率 0%。Sprint 17 #32 解决
-7. **D-DEBT-2026-06-23-20**（更新）：ActiveProblem 字段命名一致性债务继续推迟到 Sprint 18
-
-### 保留未变债务
-
-- D-DEBT-17（attitude 透传 — 推迟到 Sprint 18）
-- BL-22（better-sqlite3 dual target — Sprint 17 解决）
-- BL-23（preload 白名单腐化 — Sprint 17+ 解决）
-- BL-19（7 个 workspace 组件 — 仅恢复 import，组件实现在 Sprint 18）
-- Sprint 9 剩余 32 项
-
-### 下一阶段（Sprint 18 启动条件）
-
-按 GStack 流程，Reflect 完成 → 进入 Think 阶段：
-
-1. **创建 Issue #34 (Sprint 18)**：新功能恢复 + T15-1/2/3 + BL-19 workspace 组件化
-2. **前置条件**：Sprint 17 全部 DoD 通过，audit 得分 ≥14/20，Sprint 16 验收签字
-3. **Sprint 18 候选范围**：
-   - 必修：T15-1 attitude 透传改造
-   - 必修：T15-2 SKILL 文件补充 conditions 字段
-   - 必修：BL-19 7 个 workspace 实际组件实现
-   - 必修：D-DEBT-18（61 条 heuristic 二次精标）
-   - 必修：D-DEBT-19（孤儿 P008 / T016 补全）
-   - 选修：T15-3 v5 vs dispatcher v2 A/B 灰度
-   - 选修：D-DEBT-20 ActiveProblem 字段统一
-   - 选修：D-DEBT-21 训练推荐边界测试增补
-
-### 依据
-
-- dev-docs/designs/sprint-17-plan.md（5 阶段 15 任务 / ~2.4d）
-- dev-docs/audits/2026-06-23-frontend-audit.md（11/20 + 15 issues）
-- 6 个 GitHub Issue #28-#33
-- D-046 Sprint 16 Reflect（5 决策 + BL-19 临时处理）
-- R-010 最小化范围 / R-014 配置外置 / R-027 四道门禁
-
-### Status
-
-✅ Sprint 17 计划完成 — 验收闭环 + 审计整改双轨；D-046 临时处理的 BL-19 已纳入 Sprint 18；6 个新债务已记录；目标 audit 得分 ≥14/20
-
----
