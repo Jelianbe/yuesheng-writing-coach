@@ -125,8 +125,10 @@ export const CatalogWorkspace: React.FC = () => {
             {sorted.map(t => (
               <div key={t.id} className={styles.techCard} onClick={() => selectTechnique(t.id)}>
                 <span className={styles.techName}>{t.name}</span>
-                <span className={styles.badge}>{DIFF_LABEL[t.difficulty] || t.difficulty}</span>
-                <span className={styles.categoryTag}>{t.category}</span>
+                <span className={styles.techMeta}>
+                  <span className={styles.badge}>{DIFF_LABEL[t.difficulty] || t.difficulty}</span>
+                  <span className={styles.categoryTag}>{t.category}</span>
+                </span>
               </div>
             ))}
           </div>
