@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import { BarChart3 } from 'lucide-react';
+import styles from './BeatCheckChart.module.css';
 
 /** 标准叙事节拍的中文标签映射 */
 const BEAT_LABELS: Record<string, string> = {
@@ -41,30 +42,28 @@ export const BeatCheckChart: React.FC<BeatCheckChartProps> = ({ beatCheck }) => 
   const completionRate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
 
   return (
-    <div className="border border-border rounded-[var(--radius-sm)] overflow-hidden">
+    <div className={styles.container}>
       {/* Header */}
-      <div className="px-3 py-2 bg-bg-tertiary/50 border-b border-border flex items-center gap-2">
-        <BarChart3 className="w-3.5 h-3.5 text-accent-primary" />
-        <span className="text-xs font-medium text-text-secondary">叙事节拍完整性</span>
-        <span className="text-xs text-text-tertiary ml-auto">
+      <div className={styles.header}>
+        <BarChart3 className={styles.headerIcon} />
+        <span className={styles.headerText}>叙事节拍完整性</span>
+        <span className={styles.headerCount}>
           {presentCount}/{totalCount} ({completionRate}%)
         </span>
       </div>
 
       {/* Chart body */}
-      <div className="px-3 py-2.5 space-y-2">
+      <div className={styles.body}>
         {entries.map(({ key, label, present }) => (
-          <div key={key} className="flex items-center gap-2">
+          <div key={key} className={styles.row}>
             {/* Label */}
-            <span className="text-xs text-text-secondary w-16 flex-shrink-0 text-right">
+            <span className={styles.label}>
               {label}
             </span>
             {/* Bar track */}
-            <div className="flex-1 h-4 bg-bg-tertiary rounded-full overflow-hidden">
+            <div className={styles.barTrack}>
               <div
-                className={`h-full rounded-full transition-all duration-500 ease-out ${
-                  present ? 'bg-accent-success' : 'bg-text-muted/30'
-                }`}
+                className={present ? styles.barFillPresent : styles.barFillMissing}
                 style={{
                   width: present ? '100%' : '8%',
                   minWidth: present ? undefined : '8px',
@@ -72,16 +71,14 @@ export const BeatCheckChart: React.FC<BeatCheckChartProps> = ({ beatCheck }) => 
               />
             </div>
             {/* Status indicator */}
-            <span className={`text-xs w-6 flex-shrink-0 ${
-              present ? 'text-accent-success' : 'text-text-muted'
-            }`}>
+            <span className={present ? styles.statusPresent : styles.statusMissing}>
               {present ? '✓' : '—'}
             </span>
           </div>
         ))}
 
         {/* Legend / hint */}
-        <p className="text-[10px] text-text-muted pt-1 leading-tight">
+        <p className={styles.hint}>
           检测文本是否包含标准的叙事节拍。缺失的节拍可能意味着节奏问题。
         </p>
       </div>
