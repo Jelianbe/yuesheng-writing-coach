@@ -26,19 +26,43 @@ export const AppShell: React.FC = () => {
 
   React.useEffect(() => {
     if (!dragging) return;
+    // T17-11: rAF 节流避免拖拽时 mousemove 频繁 setState 引发布局抖动
+    // 用 ref 存 pending 宽度，每帧只 commit 一次到 React state
+    let rafId: number | null = null;
+    let pendingLeft: number | null = null;
+    let pendingRight: number | null = null;
+    const flush = () => {
+      if (pendingLeft !== null) {
+        setLeftWidth(pendingLeft);
+        pendingLeft = null;
+      }
+      if (pendingRight !== null) {
+        setRightWidth(pendingRight);
+        pendingRight = null;
+      }
+      rafId = null;
+    };
     const handleMove = (e: MouseEvent) => {
       if (dragging === 'left') {
-        setLeftWidth(Math.max(160, Math.min(400, e.clientX)));
+        pendingLeft = Math.max(160, Math.min(400, e.clientX));
       } else {
-        setRightWidth(Math.max(260, Math.min(600, window.innerWidth - e.clientX)));
+        pendingRight = Math.max(260, Math.min(600, window.innerWidth - e.clientX));
       }
+      if (rafId === null) rafId = requestAnimationFrame(flush);
     };
-    const handleUp = () => setDragging(null);
+    const handleUp = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        flush();
+      }
+      setDragging(null);
+    };
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
     return () => {
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, [dragging]);
 
