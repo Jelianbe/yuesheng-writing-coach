@@ -4,6 +4,27 @@
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-23
+
+### Sprint 17 — 前端审计整改 + Sprint 16 验收闭环 (2026-06-23)
+
+#### Added
+- **训练流 CSS Module** `src/renderer/components/training/flow/flow.module.css`（180 行）：覆盖 FiveStepFlow + FlowStepIndicator + 5 步面板样式，design tokens + 金棕暖灰 + WCAG AA + reduced-motion
+- **CenterPanel selectors** `selectors.ts`：5 个独立 selector 替代全 store 订阅，useShallow 保证聚合字段引用稳定性
+- **selector 单元测试** `__tests__/selectors.test.ts`：11 个用例覆盖引用稳定性
+- **FiveStepFlow 启用 4 个 skip 测试**：引入 @testing-library/user-event v14.6.1，覆盖核心禁用逻辑
+
+#### Changed
+- **CenterPanel** 改用新 selectors：actions 走 getState()，高频/低频字段解耦
+- **AppShell 收起栏** 6 个 emoji 按钮 → lucide-react 图标（Plus / Settings / Maximize2 / Minus / Square / X）
+- **CenterPanel empty state** 3 个 emoji → lucide-react 图标（PenLine / Sprout / MessageCircle）
+- **AppShell 拖拽**：mousemove 改用 requestAnimationFrame 节流，避免布局抖动
+- **AppShell borderLeft**：硬编码 #D6CEC0 → var(--border) token
+
+#### Performance
+- **CenterPanel 训练流 stream**：ChatView / RetroSummaryView 不再因 CenterPanel 重渲染被波及
+- **AppShell 拖拽节流**：每帧只 commit 一次到 React state
+
 ## [1.1.0] - 2026-06-23
 
 ### Sprint 16 — 五步通用训练流贯通 (2026-06-22)
