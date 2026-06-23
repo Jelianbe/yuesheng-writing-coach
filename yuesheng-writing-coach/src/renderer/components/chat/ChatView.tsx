@@ -23,6 +23,7 @@ import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { useChatStore } from '../../stores/chat.store';
 import styles from './ChatView.module.css';
+import { AlertTriangle } from 'lucide-react';
 
 interface ChatViewProps {
   messages: ChatMessage[];
@@ -198,8 +199,8 @@ export const ChatView: React.FC<ChatViewProps> = ({
             {/* Q-02: 错误展示横幅 + 重试按钮 */}
             {error && !isStreaming && (
               <div className={styles.errorBanner}>
-                <span className={styles.errorIcon}>⚠</span>
-                <span className={styles.errorMessage}>{error}</span>
+                <span className={styles.errorIcon}><AlertTriangle size={14} /></span>
+                  <span className={styles.errorMessage}>{error}</span>
                 {retryable && onRetry && (
                   <button className={styles.retryBtn} onClick={onRetry}>
                     重试

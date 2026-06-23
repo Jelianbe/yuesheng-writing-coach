@@ -1,4 +1,5 @@
 import React, { useCallback, useRef } from 'react';
+import { X, Plus } from 'lucide-react';
 import styles from './index.module.css';
 
 export interface SubTabItem {
@@ -56,7 +57,7 @@ export const SubTabs: React.FC<SubTabsProps> = ({
                 <span
                   className={styles.subTabClose}
                   onClick={(e) => { e.stopPropagation(); onClose(item.id); }}
-                >✕</span>
+                ><X size={10} /></span>
               </span>
             );
           })
@@ -65,7 +66,7 @@ export const SubTabs: React.FC<SubTabsProps> = ({
         )}
       </div>
       {showAddBtn && onAddBtnClick && (
-        <button className={styles.subAddBtn} id="subAddBtn" title={addBtnTitle} onClick={onAddBtnClick}>＋</button>
+        <button className={styles.subAddBtn} id="subAddBtn" aria-label={addBtnTitle} onClick={onAddBtnClick}><Plus size={14} /></button>
       )}
     </div>
   );
