@@ -16,8 +16,10 @@ export const AppShell: React.FC = () => {
   const [rightWidth, setRightWidth] = React.useState(360);
   const [dragging, setDragging] = React.useState<'left' | 'right' | null>(null);
 
-  const handleMouseDown = (side: 'left' | 'right') => (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleMouseDown = (side: 'left' | 'right') => (_e: React.MouseEvent) => {
+    // 注：React 17+ mousedown 事件在 document 级别会被标记为 passive，
+    // 此处调用 preventDefault 会触发 "Unable to preventDefault inside passive event listener" 警告。
+    // 由于 mousedown 不需要阻止默认行为（不会触发滚动/缩放），直接省略。
     setDragging(side);
   };
 
