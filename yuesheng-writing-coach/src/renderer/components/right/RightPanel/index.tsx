@@ -3,6 +3,7 @@ import { useRightToolsStore } from '../../../stores/right-tools.store';
 import { useProjectStore } from '../../../stores/project.store';
 import {
   getAllWorkspaces,
+  getDefaultOpenWorkspaces,
   getWorkspace,
   type WorkspaceId,
 } from '../../../registry/workspace-registry';
@@ -48,6 +49,22 @@ export const RightPanel: React.FC<RightPanelProps> = ({
     window.addEventListener('mousedown', handler);
     return () => window.removeEventListener('mousedown', handler);
   }, [showPopup]);
+
+  // ── 同步注册表 defaultOpen → store (S16 修复)──
+  // store 初始化时机可能早于 workspaces-index 触发自注册，
+  // 这里 mount 时补齐缺失的 defaultOpen 工具。
+  React.useEffect(() => {
+    const defaults = getDefaultOpenWorkspaces().map(w => w.id);
+    if (defaults.length === 0) return; // 注册表为空时不强行写入
+    const missing = defaults.filter(id => !openTools.includes(id));
+    if (missing.length > 0) {
+      useRightToolsStore.setState({
+        openTools: [...openTools, ...missing],
+        activeToolId: activeToolId ?? (missing[0] ?? null),
+      });
+    }
+    // 仅在 mount 时跑一次（不依赖外部变量，openTools/activeToolId 是 mount 时快照）
+  }, []);
 
   // ── 可用工具(未打开的)— 来自注册表(ADR-002)──
   const allWorkspaces = getAllWorkspaces();
