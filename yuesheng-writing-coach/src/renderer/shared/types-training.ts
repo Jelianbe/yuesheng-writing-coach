@@ -52,6 +52,12 @@ export interface ActiveTrainingSession {
   submissionResult?: { passed: boolean; feedback: string };
   /** S8: 五步通用训练流 */
   trainingFlow?: TrainingFlow;
+  /** S16: 训练流类型
+   *  - flow5: 走 5 步通用训练流（说明/例证/确认/尝试/反馈）
+   *  - legacy: 走传统 3 步流（Step 0→1→2 提交）
+   *  缺省时按 legacy 处理以保证向后兼容。
+   */
+  flowType?: 'flow5' | 'legacy';
 }
 
 /** 错误卡片（训练工坊区块一） */

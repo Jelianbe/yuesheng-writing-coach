@@ -77,6 +77,11 @@ const allowedInvokeChannels: readonly string[] = [
   'project:create',
   'project:update',
   'project:delete',
+  // S16 修复：补回 prescription 三个频道（与 ALLOWED_INVOKE_CHANNELS 同步）
+  'prescription:getStageProgress',
+  'prescription:getAllStages',
+  'prescription:getStageById',
+  'training:generateFlow',
 ];
 
 /** 允许渲染进程通过 send() 单向发送的 IPC 通道白名单 */
