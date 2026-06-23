@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { Plus, Settings, Maximize2, Minus, Square, X } from 'lucide-react';
 import { LeftPanel } from '../left/LeftPanel';
 import { CenterPanel } from '../center/CenterPanel';
 import { RightPanel } from '../right/RightPanel';
@@ -90,13 +91,13 @@ export const AppShell: React.FC = () => {
       {/* ── Collapsed right bar ── */}
       {collapsedRight && (
         <div className={styles.collapsedBar}>
-          <button className={styles.collapsedBarBtn} title="展开面板" onClick={handleAdd}>＋</button>
-          <button className={styles.collapsedBarBtn} title="设置" onClick={handleSettings}>⚙</button>
+          <button className={styles.collapsedBarBtn} title="新建标签" onClick={handleAdd} aria-label="新建标签"><Plus size={16} /></button>
+          <button className={styles.collapsedBarBtn} title="设置" onClick={handleSettings} aria-label="设置"><Settings size={16} /></button>
           <div className={styles.collapsedBarSep} />
-          <button className={styles.collapsedBarBtn} title="展开面板" onClick={handleExpand}>⤢</button>
-          <button className={styles.collapsedBarBtn} title="最小化" onClick={() => window.electronAPI?.send('window:minimize')}>─</button>
-          <button className={styles.collapsedBarBtn} title="缩放" onClick={() => window.electronAPI?.send('window:maximize')}>□</button>
-          <button className={`${styles.collapsedBarBtn} ${styles.collapsedBarBtnDanger}`} title="关闭" onClick={() => window.electronAPI?.send('window:close')}>✕</button>
+          <button className={styles.collapsedBarBtn} title="展开面板" onClick={handleExpand} aria-label="展开面板"><Maximize2 size={16} /></button>
+          <button className={styles.collapsedBarBtn} title="最小化" onClick={() => window.electronAPI?.send('window:minimize')} aria-label="最小化"><Minus size={16} /></button>
+          <button className={styles.collapsedBarBtn} title="缩放" onClick={() => window.electronAPI?.send('window:maximize')} aria-label="缩放"><Square size={16} /></button>
+          <button className={`${styles.collapsedBarBtn} ${styles.collapsedBarBtnDanger}`} title="关闭" onClick={() => window.electronAPI?.send('window:close')} aria-label="关闭"><X size={16} /></button>
         </div>
       )}
 
