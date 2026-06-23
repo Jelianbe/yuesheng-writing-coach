@@ -3,7 +3,8 @@
  * 验证 5 步流的渲染、分支、降级（flowType 缺失时不影响原 3 步流）。
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import { FiveStepFlow } from '../FiveStepFlow';
 
@@ -101,9 +102,9 @@ describe('<FiveStepFlow />', () => {
     expect(screen.queryByTestId('step-explain')).not.toBeInTheDocument();
   });
 
-  it.skip('第 3 步（确认）短文本 < 30 字时禁用「下一步」', () => {
-    // S16: 需要 react-testing-library user-event 才能稳定模拟多次 click + state flush
-    // 留待 Sprint 19 测试基础设施加固时补
+  it('第 3 步（确认）短文本 < 30 字时禁用「下一步」', async () => {
+    // T17-10: 用 user-event 稳定模拟多次 click + state flush
+    const user = userEvent.setup();
     render(
       <FiveStepFlow
         active={makeActive() as never}
@@ -112,19 +113,16 @@ describe('<FiveStepFlow />', () => {
         onExit={() => {}}
       />,
     );
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next')); // → 2
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next')); // → 3
-    });
+    await user.click(screen.getByTestId('flow-next')); // → 2
+    await user.click(screen.getByTestId('flow-next')); // → 3
     expect(screen.getByTestId('step-confirm')).toBeInTheDocument();
     const ta = screen.getByLabelText('理解复述');
-    fireEvent.change(ta, { target: { value: '太短' } });
+    await user.type(ta, '太短');
     expect(screen.getByTestId('flow-next')).toBeDisabled();
   });
 
-  it.skip('第 3 步（确认）≥ 30 字时启用「下一步」', () => {
+  it('第 3 步（确认）≥ 30 字时启用「下一步」', async () => {
+    const user = userEvent.setup();
     render(
       <FiveStepFlow
         active={makeActive() as never}
@@ -133,20 +131,18 @@ describe('<FiveStepFlow />', () => {
         onExit={() => {}}
       />,
     );
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
     const ta = screen.getByLabelText('理解复述');
-    fireEvent.change(ta, {
-      target: { value: '这段话讲了反差开篇的核心要点是用角色的反差来制造悬念' },
-    });
+    await user.type(
+      ta,
+      '这段话讲了反差开篇的核心要点是用角色的反差来制造悬念并吸引读者继续阅读',
+    );
     expect(screen.getByTestId('flow-next')).not.toBeDisabled();
   });
 
-  it.skip('第 4 步（尝试）空草稿时「提交评估」禁用', () => {
+  it('第 4 步（尝试）空草稿时「提交评估」禁用', async () => {
+    const user = userEvent.setup();
     render(
       <FiveStepFlow
         active={makeActive({ userDraft: '' }) as never}
@@ -155,24 +151,20 @@ describe('<FiveStepFlow />', () => {
         onExit={() => {}}
       />,
     );
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
     const ta = screen.getByLabelText('理解复述');
-    fireEvent.change(ta, {
-      target: { value: '用反差开篇能在第一段就让读者好奇人物背后的故事' },
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
+    await user.type(
+      ta,
+      '用反差开篇能在第一段就让读者好奇人物背后隐藏的复杂故事和命运走向',
+    );
+    await user.click(screen.getByTestId('flow-next'));
     expect(screen.getByTestId('step-practice')).toBeInTheDocument();
     expect(screen.getByTestId('flow-next')).toBeDisabled();
   });
 
-  it.skip('第 4 步（尝试）有草稿时「提交评估」启用并切到第 5 步', () => {
+  it('第 4 步（尝试）有草稿时「提交评估」启用并切到第 5 步', async () => {
+    const user = userEvent.setup();
     render(
       <FiveStepFlow
         active={makeActive({ userDraft: '改写后的版本' }) as never}
@@ -181,24 +173,17 @@ describe('<FiveStepFlow />', () => {
         onExit={() => {}}
       />,
     );
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
     const ta = screen.getByLabelText('理解复述');
-    fireEvent.change(ta, {
-      target: { value: '用反差开篇能在第一段就让读者好奇人物背后的故事' },
-    });
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
+    await user.type(
+      ta,
+      '用反差开篇能在第一段就让读者好奇人物背后隐藏的复杂故事和命运走向',
+    );
+    await user.click(screen.getByTestId('flow-next'));
     expect(screen.getByTestId('step-practice')).toBeInTheDocument();
     expect(screen.getByTestId('flow-next')).not.toBeDisabled();
-    act(() => {
-      fireEvent.click(screen.getByTestId('flow-next'));
-    });
+    await user.click(screen.getByTestId('flow-next'));
     expect(screen.getByTestId('step-feedback')).toBeInTheDocument();
   });
 
