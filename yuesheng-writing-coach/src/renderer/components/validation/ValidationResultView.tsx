@@ -51,10 +51,10 @@ export const ValidationResultView: React.FC<ValidationResultViewProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <div style={{
               width: 64, height: 64, borderRadius: '50%',
-              background: score >= 7 ? 'var(--success-light, #e8f5e9)' : 'var(--warning-light, #fff3e0)',
+              background: score >= 7 ? 'var(--success-light)' : 'var(--warning-light)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '1.5rem', fontWeight: 700,
-              color: score >= 7 ? 'var(--success, #2e7d32)' : 'var(--warning, #f57c00)',
+              color: score >= 7 ? 'var(--success)' : 'var(--warning)',
             }}>
               {score}/10
             </div>
@@ -71,10 +71,10 @@ export const ValidationResultView: React.FC<ValidationResultViewProps> = ({
                   height: '100%', width: `${(score / 10) * 100}%`,
                   borderRadius: 4,
                   background: score >= 7
-                    ? 'var(--success, #2e7d32)'
+                    ? 'var(--success)'
                     : score >= 5
-                      ? 'var(--warning, #f57c00)'
-                      : 'var(--danger, #c62828)',
+                      ? 'var(--warning)'
+                      : 'var(--error)',
                   transition: 'width 0.5s ease',
                 }} />
               </div>
@@ -96,8 +96,8 @@ export const ValidationResultView: React.FC<ValidationResultViewProps> = ({
           {hasMastered && (
             <div style={{
               padding: '8px 12px', borderRadius: 6,
-              background: 'var(--success-light, #e8f5e9)',
-              fontSize: '0.85rem', color: 'var(--success, #2e7d32)',
+              background: 'var(--success-light)',
+              fontSize: '0.85rem', color: 'var(--success)',
               marginBottom: 16,
             }}>
               已掌握 {masteredSyndromeIds.length} 个技法方向
