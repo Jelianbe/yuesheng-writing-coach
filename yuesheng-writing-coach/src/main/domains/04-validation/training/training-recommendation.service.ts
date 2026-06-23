@@ -15,7 +15,7 @@
  */
 
 import type { ActiveProblem, TrainingRecommendation, TechniqueInfo, SyndromeType } from '../../../../shared/types/index';
-import challengeTemplates from '../../../../../resources/config/challenge-templates.json';
+import challengeTemplates from '../../../../../resources/04-validation/mastery/challenge-templates.json';
 import techniqueLibrary from '../../../../../resources/config/technique-library.json';
 import syndromeTypeMap from '../../../../../resources/config/syndrome-type-map.json';
 import readingLibrary from '../../../../../resources/config/reading-library.json';

@@ -56,11 +56,11 @@ const ID_FIELD_RULES = [
     required: true,
   },
   {
-    file: 'config/challenge-templates.json',
+    file: '04-validation/mastery/challenge-templates.json',
     jsonPath: 'templates',
     idField: 'id',
     expectedType: 'CH',
-    required: true,
+    required: true, // T15-B 完成：单一主源在 04-validation/mastery/
   },
   {
     file: 'knowledge-graph/ability-atlas.json',
