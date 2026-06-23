@@ -23,17 +23,17 @@ interface SyndromeTrendData {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  mastered: { label: '已掌握', color: '#5B8C5A', bgColor: '#5B8C5A18' },
-  improving: { label: '改善中', color: '#D4A04A', bgColor: '#D4A04A18' },
-  stable: { label: '稳定', color: '#6B8FA3', bgColor: '#6B8FA318' },
-  needsAttention: { label: '需关注', color: '#C0392B', bgColor: '#C0392B18' },
+  mastered: { label: '已掌握', color: 'var(--success)', bgColor: '#5B8C5A18' },
+  improving: { label: '改善中', color: 'var(--warning)', bgColor: '#D4A04A18' },
+  stable: { label: '稳定', color: 'var(--info)', bgColor: '#6B8FA318' },
+  needsAttention: { label: '需关注', color: 'var(--error)', bgColor: '#C0392B18' },
 };
 
 const TREND_ICON: Record<string, React.ReactNode> = {
-  mastered: <TrendingUp size={14} strokeWidth={1.8} color="#5B8C5A" />,
-  improving: <TrendingUp size={14} strokeWidth={1.8} color="#D4A04A" />,
-  stable: <Minus size={14} strokeWidth={1.8} color="#6B8FA3" />,
-  needsAttention: <TrendingDown size={14} strokeWidth={1.8} color="#C0392B" />,
+  mastered: <TrendingUp size={14} strokeWidth={1.8} color="var(--success)" />,
+  improving: <TrendingUp size={14} strokeWidth={1.8} color="var(--warning)" />,
+  stable: <Minus size={14} strokeWidth={1.8} color="var(--info)" />,
+  needsAttention: <TrendingDown size={14} strokeWidth={1.8} color="var(--error)" />,
 };
 
 export const DiagnosisComparisonView: React.FC = () => {
@@ -116,10 +116,10 @@ export const DiagnosisComparisonView: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div style={{ padding: '12px', borderRadius: 'var(--radius-sm)', background: '#5B8C5A12', border: '1px solid #5B8C5A30' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <TrendingUp size={16} strokeWidth={1.8} color="#5B8C5A" />
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#5B8C5A' }}>改善项</span>
+            <TrendingUp size={16} strokeWidth={1.8} color="var(--success)" />
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--success)' }}>改善项</span>
           </div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#5B8C5A' }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--success)' }}>
             {summary.masteredCount + summary.improvingCount}
           </div>
           <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)', marginTop: 2 }}>
@@ -128,10 +128,10 @@ export const DiagnosisComparisonView: React.FC = () => {
         </div>
         <div style={{ padding: '12px', borderRadius: 'var(--radius-sm)', background: '#C0392B12', border: '1px solid #C0392B30' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <TrendingDown size={16} strokeWidth={1.8} color="#C0392B" />
-            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#C0392B' }}>需关注</span>
+            <TrendingDown size={16} strokeWidth={1.8} color="var(--error)" />
+            <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--error)' }}>需关注</span>
           </div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 700, color: '#C0392B' }}>
+          <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--error)' }}>
             {summary.needsAttentionCount}
           </div>
           <div style={{ fontSize: '0.62rem', color: 'var(--text-tertiary)', marginTop: 2 }}>
@@ -188,7 +188,7 @@ export const DiagnosisComparisonView: React.FC = () => {
                 <div key={t.name + t.status} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 'var(--radius-sm)', background: '#C0392B08', transition: 'background 0.15s ease' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#C0392B14'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#C0392B08'; }}>
-                  <TrendingDown size={14} strokeWidth={1.8} color="#C0392B" />
+                  <TrendingDown size={14} strokeWidth={1.8} color="var(--error)" />
                   <span style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text-primary)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {t.name}
                   </span>

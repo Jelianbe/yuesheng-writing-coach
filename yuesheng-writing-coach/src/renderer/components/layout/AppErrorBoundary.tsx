@@ -50,7 +50,7 @@ export class AppErrorBoundary extends React.Component<
               border: '1px solid var(--accent)',
               borderRadius: 'var(--radius-full)',
               background: 'var(--accent)',
-              color: '#fff',
+              color: 'var(--text-on-accent)',
               cursor: 'pointer',
             }}
           >

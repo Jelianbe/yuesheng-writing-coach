@@ -8,10 +8,10 @@ interface SyndromeTrendData {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bgColor: string }> = {
-  mastered: { label: '已掌握', color: '#5B8C5A', bgColor: '#5B8C5A18' },
-  improving: { label: '改善中', color: '#D4A04A', bgColor: '#D4A04A18' },
-  stable: { label: '稳定', color: '#6B8FA3', bgColor: '#6B8FA318' },
-  needsAttention: { label: '需关注', color: '#C0392B', bgColor: '#C0392B18' },
+  mastered: { label: '已掌握', color: 'var(--success)', bgColor: '#5B8C5A18' },
+  improving: { label: '改善中', color: 'var(--warning)', bgColor: '#D4A04A18' },
+  stable: { label: '稳定', color: 'var(--info)', bgColor: '#6B8FA318' },
+  needsAttention: { label: '需关注', color: 'var(--error)', bgColor: '#C0392B18' },
 };
 
 interface TrendChartProps {
