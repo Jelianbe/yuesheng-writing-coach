@@ -102,7 +102,7 @@ const ID_FIELD_RULES = [
     jsonPath: 'entries',
     idField: 'id',
     expectedType: 'DST',
-    required: false, // 待创建
+    required: true, // T15-A 完成
   },
   {
     file: 'config/technique-library.json',
