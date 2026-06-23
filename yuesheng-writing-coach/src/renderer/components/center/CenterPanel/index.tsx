@@ -21,6 +21,13 @@ import { Footer } from '../Footer';
 import { CenterHeader } from '../CenterHeader';
 import { useDiagnosisFlow } from '../../../hooks/useDiagnosisFlow';
 import { RetroSummaryView } from '../../retro/RetroSummaryView';
+import {
+  useCenterSessionId,
+  useCenterSessionList,
+  useTrainingWorkshopState,
+  useBridgeState,
+  useRetroState,
+} from './selectors';
 import styles from './index.module.css';
 
 interface CenterPanelProps {
@@ -70,26 +77,14 @@ async function handleSendMessage(text: string): Promise<void> {
 export const CenterPanel: React.FC<CenterPanelProps> = ({
   collapsedLeft, setCollapsedLeft,
 }) => {
-  const { sessions, currentSessionId, loadSessions, switchSession } = useSessionStore();
+  // T17-7: 拆分为独立 selectors（避免整 store 订阅 + 聚合订阅）
+  const currentSessionId = useCenterSessionId();
+  const sessions = useCenterSessionList();
   const messages = useChatStore((s) => s.messages);
   const centerMode = useTrainingStore(selectCenterMode);
-  const trainingState = useTrainingStore((s) => ({
-    errorCards: s.errorCards,
-    recommendations: s.recommendations,
-    readingDecision: s.readingDecision,
-    readingComplete: s.readingComplete,
-    activeTraining: s.activeTraining,
-    history: s.history,
-    submissionResult: s.submissionResult,
-    evaluationResult: s.evaluationResult,
-    isLoading: s.isLoading,
-    error: s.error ?? null,
-    bridgeRecommendation: s.bridgeRecommendation,
-    lastEvaluationScore: s.lastEvaluationScore,
-    lastSyndromeId: s.lastSyndromeId,
-    retroSummary: s.retroSummary,
-    retroLoading: s.retroLoading,
-  }));
+  const trainingState = useTrainingWorkshopState();
+  const bridgeRecommendation = useBridgeState();
+  const { retroSummary } = useRetroState();
   const myCurrentDiagnosis = useDiagStore((s) => s.currentDiagnosis);
   const isConfigured = useConfigStore((s) => s.isConfigured);
 
@@ -100,15 +95,15 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   useSessionMessages(currentSessionId);
 
   useEffect(() => {
-    loadSessions();
-  }, [loadSessions]);
+    useSessionStore.getState().loadSessions();
+  }, []);
 
   // Auto-select first session
   useEffect(() => {
     if (!currentSessionId && sessions.length > 0) {
-      switchSession(sessions[0].id);
+      useSessionStore.getState().switchSession(sessions[0].id);
     }
-  }, [sessions, currentSessionId, switchSession]);
+  }, [sessions, currentSessionId]);
 
   // [模板] 按钮（由 Footer 触发，功能在 F-02 后续完善）
   const handleToggleTemplate = useCallback(() => {
@@ -118,8 +113,8 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
   const handleNewSession = useCallback(async () => {
     const { createSession } = useSessionStore.getState();
     const s = await createSession();
-    if (s) switchSession(s.id);
-  }, [switchSession]);
+    if (s) useSessionStore.getState().switchSession(s.id);
+  }, []);
 
   const handleBackToChat = useCallback(() => {
     useTrainingStore.getState().backToChat();
@@ -195,7 +190,7 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     growthLoading: flow.growthLoading,
     hasHistory: flow.hasHistory,
     growthSummary: flow.growthSummary,
-    bridgeRecommendation: trainingState.bridgeRecommendation,
+    bridgeRecommendation,
     isConfigured,
     onSend: handleSendMessage,
     onStop: handleStop,
@@ -209,7 +204,7 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
     flow.editingSyndrome, flow.isSubmitting, flow.lastEvaluation,
     flow.lastOriginalText, flow.lastRewrittenText,
     flow.growthLoading, flow.hasHistory, flow.growthSummary,
-    trainingState.bridgeRecommendation, isConfigured,
+    bridgeRecommendation, isConfigured,
     handleStop, handleStartEditing, handleSubmitRewrite,
     handleCancelEditing, handleEnterWorkshopFromBridge, handleDismissBridge,
   ]);
@@ -229,13 +224,13 @@ export const CenterPanel: React.FC<CenterPanelProps> = ({
       <div className={styles.chatArea}>
         {centerMode === 'retro' ? (
           <RetroSummaryView
-            totalTrainingCount={trainingState.retroSummary?.totalTrainingCount ?? 0}
-            syndromeCount={trainingState.retroSummary?.syndromeCount ?? 0}
-            syndromeSummaries={trainingState.retroSummary?.syndromeSummaries ?? []}
-            overallImprovement={trainingState.retroSummary?.overallImprovement ?? 0}
-            masteredTechniques={trainingState.retroSummary?.masteredTechniques ?? []}
-            recommendedFocus={trainingState.retroSummary?.recommendedFocus ?? []}
-            summary={trainingState.retroSummary?.summary ?? ''}
+            totalTrainingCount={retroSummary?.totalTrainingCount ?? 0}
+            syndromeCount={retroSummary?.syndromeCount ?? 0}
+            syndromeSummaries={retroSummary?.syndromeSummaries ?? []}
+            overallImprovement={retroSummary?.overallImprovement ?? 0}
+            masteredTechniques={retroSummary?.masteredTechniques ?? []}
+            recommendedFocus={retroSummary?.recommendedFocus ?? []}
+            summary={retroSummary?.summary ?? ''}
             onBackToChat={handleBackToChat}
             onStartNewTraining={handleBackToChat}
           />
