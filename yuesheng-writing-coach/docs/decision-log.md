@@ -974,3 +974,89 @@ typecheck 0 错 / test 627 全绿 / lint 0 error
 **任务纳入 Sprint 18 backlog**：BL-19「Phase F 7 个 workspace 实际组件实现」
 
 ---
+
+
+## D-047 · 2026-06-23 · Sprint 16 验收闭环 + 2026-06-23 前端审计整改（Sprint 17 启动）
+
+### Context
+
+PR #24 合并完成（main @ 9ccd82d，v1.1.0），但 Sprint 16 plan 的 6 条 DoD 中 #1（用户可走完五步流）和 #2（fillTemplate 覆盖 P001-P007）未正式验收。同期使用  skill 跑了一次全项目前端审计，**得分 11/20（Acceptable 档）**——15 个 issues（1 P0 + 6 P1 + 5 P2 + 3 P3）。
+
+**两个独立工作流汇合**：
+1. **Sprint 16 验收**：BL-22（better-sqlite3 dual target）阻塞 Electron E2E；mapping 偏离原 plan（challengeId → CATEGORY）需 ADR 解释
+2. **前端审计整改**：CSS 缺失、Zustand 整 state 订阅、emoji 按钮、emoji empty state、硬编码颜色、Tailwind/CSS 混用、4 skip 测试
+
+### Decision
+
+1. **Sprint 17 范围锁定为「验收闭环 + 审计整改」**，新功能（T15-1/2/3）全部推迟到 Sprint 18
+2. **ADR-007 解释 CATEGORY 模式偏离**：5 步教学动作（解说→例证→确认→尝试→反馈）与具体 challengeId 解耦后**可复用**，避免 6 挑战 × 5 步笛卡尔积爆炸。DoD #2 修订为「5 个 CATEGORY 至少各覆盖 1 个 challengeId」（更宽松指标）
+3. **6 个 P1 Issue 全部走完**（#28-#33），按依赖关系排序而非编号
+4. **P0 优先**：训练流 CSS 必须先于其他审计整改
+5. **审计得分目标 ≥14/20**（从 11/20 起跳 +3 分）
+
+### Files
+
+详见 dev-docs/designs/sprint-17-plan.md（15 任务 / ~2.4d）：
+
+- Phase 1（验收前置）：T17-1 ADR-007 / T17-2 BL-22 / T17-3 E2E / T17-4 BL-19 恢复 import
+- Phase 2（P0 修复）：T17-5 training/flow/flow.module.css / T17-6 AppShell preventDefault
+- Phase 3（6 个 P1 整改）：T17-7 ~ T17-12
+- Phase 4（验证收尾）：T17-13 audit 重跑 / T17-14 CHANGELOG → [1.2.0] / T17-15 本决策日志
+
+### Gates
+
+完成 Sprint 17 时必须达到：
+
+- typecheck: 0 errors
+- test: ≥633 passed（含 4 个 skip 启用）
+- lint: 0 errors
+- audit score: ≥14/20
+- 安全: 0 硬编码密钥
+
+### 新增/更新技术债
+
+1. **D-DEBT-2026-06-23-22**（新，由审计发现）：训练流 5 步 UI 组件 className 全用全局名（low-panel*），CSS 完全缺失 → 裸 DOM。Sprint 17 P0 解决
+2. **D-DEBT-2026-06-23-23**（新）：CenterPanel useTrainingStore 一次订阅 14 字段，每次 stream token 触发整树 re-render → 性能债。Sprint 17 #28 解决
+3. **D-DEBT-2026-06-23-24**（新）：AppShell 收起栏 + CenterPanel empty state 共 9 个 emoji 当 UI 元素，与 PRODUCT.md anti-reference 冲突。Sprint 17 #29/#30 解决
+4. **D-DEBT-2026-06-23-25**（新）：AppShell 拖拽同时动画 lex/width/min-width，layout thrashing 风险。Sprint 17 #33 解决
+5. **D-DEBT-2026-06-23-26**（新）：Tailwind 工具类 + CSS Modules 混用，产物体积膨胀 ~30KB。Sprint 17 #31 解决
+6. **D-DEBT-2026-06-23-27**（新）：FiveStepFlow 4 个核心交互测试 skip，覆盖率 0%。Sprint 17 #32 解决
+7. **D-DEBT-2026-06-23-20**（更新）：ActiveProblem 字段命名一致性债务继续推迟到 Sprint 18
+
+### 保留未变债务
+
+- D-DEBT-17（attitude 透传 — 推迟到 Sprint 18）
+- BL-22（better-sqlite3 dual target — Sprint 17 解决）
+- BL-23（preload 白名单腐化 — Sprint 17+ 解决）
+- BL-19（7 个 workspace 组件 — 仅恢复 import，组件实现在 Sprint 18）
+- Sprint 9 剩余 32 项
+
+### 下一阶段（Sprint 18 启动条件）
+
+按 GStack 流程，Reflect 完成 → 进入 Think 阶段：
+
+1. **创建 Issue #34 (Sprint 18)**：新功能恢复 + T15-1/2/3 + BL-19 workspace 组件化
+2. **前置条件**：Sprint 17 全部 DoD 通过，audit 得分 ≥14/20，Sprint 16 验收签字
+3. **Sprint 18 候选范围**：
+   - 必修：T15-1 attitude 透传改造
+   - 必修：T15-2 SKILL 文件补充 conditions 字段
+   - 必修：BL-19 7 个 workspace 实际组件实现
+   - 必修：D-DEBT-18（61 条 heuristic 二次精标）
+   - 必修：D-DEBT-19（孤儿 P008 / T016 补全）
+   - 选修：T15-3 v5 vs dispatcher v2 A/B 灰度
+   - 选修：D-DEBT-20 ActiveProblem 字段统一
+   - 选修：D-DEBT-21 训练推荐边界测试增补
+
+### 依据
+
+- dev-docs/designs/sprint-17-plan.md（5 阶段 15 任务 / ~2.4d）
+- dev-docs/audits/2026-06-23-frontend-audit.md（11/20 + 15 issues）
+- 6 个 GitHub Issue #28-#33
+- D-046 Sprint 16 Reflect（5 决策 + BL-19 临时处理）
+- R-010 最小化范围 / R-014 配置外置 / R-027 四道门禁
+
+### Status
+
+✅ Sprint 17 计划完成 — 验收闭环 + 审计整改双轨；D-046 临时处理的 BL-19 已纳入 Sprint 18；6 个新债务已记录；目标 audit 得分 ≥14/20
+
+---
