@@ -1,32 +1,57 @@
 /**
  * BookshelfPage — 书架首页
  *
- * 对齐设计稿暖紫体系：
+ * 对齐设计稿暖紫体系:
  * - Navbar: "书架" + 🔍/➕
- * - 书卡（渐变色封面 + 书名 + 元数据 + 成长指示）
+ * - 书卡(渐变色封面 + 书名 + 元数据 + 成长指示)
  * - 虚线新建按钮
+ *
+ * 数据来源:useManuscriptStore (真实 manuscripts 表)
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Search, Plus, Book } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
-
-const BOOKS = [
-  { id: '1', title: '深海回响', chapters: 12, words: '4.2w', growth: 3, gradient: 'linear-gradient(135deg, #8A7A9E, #B8A9D4)' },
-  { id: '2', title: '星尘之旅', chapters: 8, words: '2.8w', growth: 2, gradient: 'linear-gradient(135deg, #7A93AC, #A8C4D8)' },
-  { id: '3', title: '春日迟迟', chapters: 6, words: '1.5w', growth: 1, gradient: 'linear-gradient(135deg, #7BA089, #A8D4B8)' },
-];
+import { useManuscriptStore } from '../stores/manuscript.store';
 
 const COVER_W = 46;
 const COVER_H = 60;
 
+/** 根据 genre/title 衍生稳定颜色 hash */
+const colorFromString = (s: string): string => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  return `linear-gradient(135deg, hsl(${hue}, 35%, 55%), hsl(${(hue + 30) % 360}, 45%, 75%))`;
+};
+
 export const BookshelfPage: React.FC = () => {
   const push = usePageStackStore(s => s.push);
+  const { manuscripts, loading, error, fetchList, create } = useManuscriptStore(
+    useShallow(s => ({
+      manuscripts: s.manuscripts,
+      loading: s.loading,
+      error: s.error,
+      fetchList: s.fetchList,
+      create: s.create,
+    })),
+  );
+
+  useEffect(() => {
+    void fetchList();
+  }, [fetchList]);
+
+  const handleCreate = async () => {
+    const title = window.prompt('新作品名称', '未命名作品')?.trim();
+    if (!title) return;
+    await create(title);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Navbar */}
-      <div style={{
+      <header style={{
         height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', borderBottom: '1px solid var(--border)', flexShrink: 0,
         background: 'var(--bg-card)',
@@ -35,65 +60,93 @@ export const BookshelfPage: React.FC = () => {
           书架
         </h1>
         <div style={{ display: 'flex', gap: 12 }}>
-          <Search size={20} color="var(--text-secondary)" style={{ cursor: 'pointer' }} strokeWidth={1.5} />
-          <Plus size={20} color="var(--text-secondary)" style={{ cursor: 'pointer' }} strokeWidth={1.5} />
+          <button
+            type="button"
+            aria-label="搜索"
+            style={{ border: 'none', background: 'none', padding: 4, cursor: 'pointer', display: 'flex' }}
+          >
+            <Search size={20} color="var(--text-secondary)" strokeWidth={1.5} />
+          </button>
+          <button
+            type="button"
+            aria-label="新建作品"
+            onClick={handleCreate}
+            style={{ border: 'none', background: 'none', padding: 4, cursor: 'pointer', display: 'flex' }}
+          >
+            <Plus size={20} color="var(--text-secondary)" strokeWidth={1.5} />
+          </button>
         </div>
-      </div>
+      </header>
 
       {/* 内容区 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '16px 16px 8px' }}>
-        {/* 书卡列表 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {BOOKS.map(book => (
-            <div
-              key={book.id}
-              onClick={() => push('project-space', { id: book.id, title: book.title })}
-              style={{
-                display: 'flex', gap: 12, padding: 12,
-                background: 'var(--bg-card)', borderRadius: 12,
-                border: '1px solid var(--border)',
-                cursor: 'pointer', transition: 'box-shadow 200ms',
-              }}
-            >
-              {/* 封面 */}
-              <div style={{
-                width: COVER_W, height: COVER_H, borderRadius: 6, flexShrink: 0,
-                background: book.gradient,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Book size={20} color="rgba(255,255,255,0.7)" />
-              </div>
+        {error && (
+          <div style={{ padding: 12, marginBottom: 12, borderRadius: 8, background: 'var(--error-light)', color: 'var(--error)', fontSize: 12 }}>
+            {error}
+          </div>
+        )}
 
-              {/* 信息 */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{book.title}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-                  {book.chapters} 章 · {book.words} 字
+        {loading && manuscripts.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
+            加载中…
+          </div>
+        ) : manuscripts.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
+            暂无作品,点击下方按钮创建
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {manuscripts.map(m => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => push('project-space', { id: m.id, title: m.title })}
+                style={{
+                  display: 'flex', gap: 12, padding: 12,
+                  background: 'var(--bg-card)', borderRadius: 12,
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer', textAlign: 'left',
+                  transition: 'box-shadow 200ms',
+                  color: 'inherit',
+                  font: 'inherit',
+                }}
+              >
+                {/* 封面 */}
+                <div style={{
+                  width: COVER_W, height: COVER_H, borderRadius: 6, flexShrink: 0,
+                  background: colorFromString(m.genre || m.title),
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Book size={20} color="rgba(255,255,255,0.7)" />
                 </div>
-                {/* 成长指示点 */}
-                <div style={{ display: 'flex', gap: 4, marginTop: 2 }}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} style={{
-                      width: 6, height: 6, borderRadius: '50%',
-                      background: i < book.growth ? 'var(--color-growth)' : 'var(--border)',
-                    }} />
-                  ))}
+
+                {/* 信息 */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{m.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
+                    {m.genre || '未分类'}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* 新建按钮 */}
-        <div style={{
-          marginTop: 12, padding: '14px 0',
-          border: '1.5px dashed var(--border)',
-          borderRadius: 12, textAlign: 'center',
-          color: 'var(--text-tertiary)', fontSize: 13,
-          cursor: 'pointer',
-        }}>
+        <button
+          type="button"
+          onClick={handleCreate}
+          style={{
+            marginTop: 12, padding: '14px 0', width: '100%',
+            border: '1.5px dashed var(--border)',
+            borderRadius: 12, textAlign: 'center',
+            color: 'var(--text-tertiary)', fontSize: 13,
+            cursor: 'pointer', background: 'transparent',
+            font: 'inherit',
+          }}
+        >
           + 新建学习项目
-        </div>
+        </button>
       </div>
     </div>
   );
