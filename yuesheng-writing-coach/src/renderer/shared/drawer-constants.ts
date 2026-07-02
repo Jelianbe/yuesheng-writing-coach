@@ -10,7 +10,7 @@ import {
   FileText,
   BarChart3,
 } from 'lucide-react';
-import type { PanelSessionType } from '../../stores/panel-session.store';
+import type { PanelSessionType } from '../stores/panel-session.store';
 
 // ============================================================
 // drawer-constants.ts — RightDrawer 所有静态常量集中定义
