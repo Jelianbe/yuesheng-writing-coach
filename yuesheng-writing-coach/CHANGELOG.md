@@ -2,6 +2,31 @@
 
 > 月笙写作教练变更日志。版本号遵循语义化版本（semver）。
 
+## [1.5.0] - 2026-06-25
+
+### 移动端 V1 — 前端重构
+
+#### Added
+- **PageStackRouter**: 轻量页面栈路由（Context + Zustand），支持 push/pop/navigateToTab，子页面隐藏 TabBar
+- **TabBar 3 tab**: 书架 | 对话 | 应用（Lucide 图标 + 激活指示器）
+- **BookshelfPage**: 书卡列表（渐变色封面 46×60px + 书名 + 元数据 + 成长指示点）+ 虚线新建按钮
+- **ProjectSpacePage**: 项目空间（诊断/训练/学习天数统计 + SVG 雷达图五维能力 + CTA + 最近记录 + 章节列表）
+- **ChatPage**: 教学对话（欢迎引导区含月头像 + 用户/诊断/思考中三种气泡 + 诊断分析标签 + 工具条输入栏）
+- **ConversationsPage**: 对话列表（标题/摘要/时间/作品关联 + 空状态引导）
+- **AppsPage**: 应用中心（4×4 图标网格 + 工具列表）
+- **page-stack.store**: Zustand store 管理页面栈状态，RootTab 类型约束
+
+#### Changed
+- **variables.css V3.0**: 金棕暖灰 → 暖紫柔棕体系（主色 `#8A7A9E`，功能色教学 `#7A93AC`/练习 `#B8956E`/成长 `#7BA089`）
+- **App.tsx**: 替换 AppShell 为 PageStackRouter，保留全部 IPC 订阅
+- 圆角体系对齐设计稿（sm: 8px / md: 12px / lg: 16px / xl: 20px）
+- 阴影色相从暖棕 → 暖紫调
+
+#### Architecture
+- 375px 移动端优先容器（maxWidth: 430, margin: 0 auto, 100dvh）
+- 现有桌面端三栏布局（AppShell/CenterPanel/RightPanel）保留未改动
+- 后端 IPC 订阅、Store、Service 层零改动
+
 ## [1.4.0] - 2026-06-23
 
 ### Sprint 17 三期 — Catalog 修复 + ToolGrid 重构 + 硬编码清理 + 审计 14/20

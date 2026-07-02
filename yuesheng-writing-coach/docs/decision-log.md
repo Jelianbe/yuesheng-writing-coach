@@ -1186,3 +1186,88 @@ PR #24 合并完成（main @ 9ccd82d，v1.1.0），但 Sprint 16 plan 的 6 条 
 
 ---
 
+## D-049 · 2026-06-25 · 移动端 V1 前端重构（GStack 全流程）
+
+### Context
+
+用户 review 第一次赶工的 Phase A（响应式/意图样式/骨架屏/输入热区/微交互/底部 TabBar）后指出：
+> "先回退，重新阅读前端设计参考和PRD文件，完整走gstake工作流。你直接赶出来的结果甚至没用符合手机的size"
+
+核心问题：
+1. **色板不对** — 使用金棕暖灰（`#7A6040`），设计稿为暖紫柔棕（`#8A7A9E`）
+2. **无 375px 容器** — 页面全宽拉伸，无移动端尺寸约束
+3. **TabBar 4 tab 错误** — 设计稿要求 3 tab（书架/对话/应用）
+
+### 范式转换（Think 阶段发现）
+
+PRD V1.0（三层架构）揭示核心命题：
+- **月笙不是写作工具，是 AI 教学系统**
+- 用户永远面对老师，不是面对功能操作台
+- 前端极简（对话入口 90%），后台复杂（诊断/教学/训练/成长）
+- 意图驱动路由取代人工模式选择
+
+### Rollback
+
+- `git checkout -- .` 回退所有 tracked 文件修改
+- 删除赶工的 untracked 前端文件（Phase A）
+- 保留 dev-docs/ 文档资产（user-journey-v1.md、arch-map.md 等）
+
+### 决策
+
+1. **375px 移动端优先** — `maxWidth: 430, margin: 0 auto, height: 100dvh`，桌面端居中拉伸
+2. **暖紫柔棕色板** — 主色 `#8A7A9E`，功能色教学 `#7A93AC`/练习 `#B8956E`/成长 `#7BA089`
+3. **PageStackRouter** — Context + Zustand 轻量页面栈路由（非 react-router），push/pop/navigateToTab
+4. **TabBar 3 tab** — 书架(Book) | 对话(MessageCircle) | 应用(Puzzle)，顶部激活指示器
+5. **子页面隐藏 TabBar** — push（project-space/chat）时 TabBar 隐藏，pop 恢复
+6. **Mock 数据 V1** — 所有页面使用 mock 数据，不阻塞门禁
+7. **现有后端零改动** — IPC 订阅/Store/Service 层不变
+
+### 实施（A0→A4 依赖图）
+
+| 步 | 交付物 | 行数 | 依赖 |
+|:--:|:-------|:----:|:-----|
+| A0 | variables.css V3.0（暖紫色板 + 功能色 + 圆角 8/12/16/20px） | 189 | 无 |
+| A1 | page-stack.store + PageStackRouter + TabBar + clamp 375px | ~150 | A0 |
+| A2 | BookshelfPage（书卡列表 + 渐变色封面） + ConversationsPage（对话列表） | ~200 | A1 |
+| A3 | ProjectSpacePage（雷达图 + 统计 + CTA） + ChatPage（5 种气泡 + 输入栏） | ~350 | A1 |
+| A4 | AppsPage（4×4 网格 + 工具列表） + App.tsx 接入 | ~150 | A1 |
+
+### 门禁结果
+
+- typecheck: **0 errors** ✅
+- test: **683/683 passed**（48 个测试文件，零回归）✅
+- lint: **0 errors**（255 pre-existing warnings）✅
+- 安全: 0 硬编码密钥 ✅
+
+### 做得好的（Keep）
+
+1. **完整 GStack 流程** — Rollback→Think→Plan→Build→Review 全部走完，用户要求"完整走"后一次性满足
+2. **范式转换文档化** — 输出 user-journey-v1.md（6 阶段闭环 + 未覆盖路径 + 架构风险）
+3. **设计稿对齐精确** — 色板/圆角/布局常量全部提取自设计 HTML，无猜测值
+4. **变量过渡平滑** — variables.css V3.0 保留全部兼容别名，旧组件不受影响
+5. **不加新依赖** — PageStackRouter 用原生 Context + Zustand，无 react-router 等外部依赖
+
+### 教训（Learn）
+
+1. **不读设计稿就动手必出错** — 第一次赶工凭记忆写了金棕暖灰色板，与设计稿暖紫体系完全不匹配。原色板无功能色（教学/练习/成长），需三色分离的设计意图也未理解
+2. **移动端优先要一开始就做** — 从第一天起就应约束容器尺寸，而非在 100% 宽度的桌面端布局上加"响应式适配"
+3. **PRD 的范式转换比代码实现更重要** — 先读懂"教学系统"的定位，才能判断 TabBar 应该放什么 tab、ChatPage 应该长什么样、书架是什么角色
+
+### 新增技术债
+
+1. **D-DEBT-2026-06-25-01**：所有页面使用 mock 数据，需对接真实 IPC（BookshelfPage→useProjectStore、ChatPage→useChatStore 等）。Phase B 处理
+2. **D-DEBT-2026-06-25-02**：ChatPage 的工具条（📝文字/🖼️图片/📄文档/⚙️设定）为纯 UI 占位，功能未实现
+3. **D-DEBT-2026-06-25-03**：未处理移动端键盘弹出 + TabBar 冲突（iOS safari 行为），V2 移动端增强处理
+
+### Status
+
+✅ GStack 移动端 V1 Refactor 完成 — PR #36 对应 Issue #36；A0-A4 全部落地；Phase B（IPC 对接）+ Phase C（移动端键盘适配）标注为 V2
+
+### 依据
+
+- dev-docs/architecture/mobile-v1-plan.md（方案文档）
+- dev-docs/designs/prd-v1-three-layer-architecture.md（PRD V1.0）
+- dev-docs/designs/前端设计参考.html（设计 HTML）
+- dev-docs/architecture/user-journey-v1.md（用户旅程）
+- R-018 变更溯源 / R-019 代码规范标准 / R-027 AI 代码质量门禁
+
