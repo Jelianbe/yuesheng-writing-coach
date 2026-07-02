@@ -31,9 +31,11 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:chromium": "playwright test --project=firefox",
     "test:e2e:mobile": "playwright test --project=firefox-mobile",
+    "test:e2e:verbose": "cross-env PWVERBOSE=1 playwright test",
     "test:a11y": "playwright test --grep @a11y",
     "test:visual": "playwright test --grep @visual --update-snapshots",
     "test:visual:check": "playwright test --grep @visual",
+    "test:report": "playwright show-report",
     "precommit": "npm run sync:ipc && npm run typecheck && npm run test",
     "ci": "npm run sync:ipc && npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
   },
