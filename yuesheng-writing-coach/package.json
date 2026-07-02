@@ -27,8 +27,8 @@
     "pretest": "npm run rebuild:node",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "precommit": "npm run typecheck && npm run test",
-    "ci": "npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
+    "precommit": "npm run sync:ipc && npm run typecheck && npm run test",
+    "ci": "npm run sync:ipc && npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
   },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
