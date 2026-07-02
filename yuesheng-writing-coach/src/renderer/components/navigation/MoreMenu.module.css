@@ -1,0 +1,97 @@
+.wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.trigger:hover {
+  background: var(--bg-surface-hover, rgba(138, 122, 158, 0.08));
+}
+
+.trigger:active {
+  background: var(--bg-surface-active, rgba(138, 122, 158, 0.14));
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: transparent;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 100;
+  min-width: 160px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #eceaf0);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(45, 42, 50, 0.10), 0 1px 4px rgba(45, 42, 50, 0.06);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: menuIn 150ms ease-out;
+  transform-origin: top right;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #2d2a32);
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: left;
+  transition: background var(--transition-fast);
+  min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menuItem:hover {
+  background: var(--bg-surface-hover, rgba(138, 122, 158, 0.08));
+}
+
+.menuItem:active {
+  background: var(--bg-surface-active, rgba(138, 122, 158, 0.14));
+}
+
+.menuIcon {
+  display: flex;
+  align-items: center;
+  color: var(--text-tertiary, #8e8996);
+}
