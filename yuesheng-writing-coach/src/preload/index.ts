@@ -2,12 +2,13 @@
  * preload 脚本 — Electron 安全桥接
  *
  * ⚠️ Electron sandbox 限制：preload 无法 require 外部相对路径模块，
- * 因此白名单必须内联在此文件。同步参考 src/shared/constants.ts。
+ * 因此白名单必须内联在此文件。
  *
- * 添加新 IPC 通道时，必须同步更新：
- *   1. src/shared/constants.ts（IPC_CHANNELS + ALLOWED_INVOKE_CHANNELS）
- *   2. src/shared/constants.js（IPC_CHANNELS + 白名单）
- *   3. src/preload/index.ts（下面的 allowedInvokeChannels / allowedEventChannels）
+ * 添加新 IPC 通道时：
+ *   1. 在 src/shared/constants.ts 的 IPC_CHANNELS 加 KEY
+ *   2. 在 ALLOWED_INVOKE_CHANNELS / ALLOWED_EVENT_CHANNELS 数组中引用
+ *   3. 跑 `npm run sync:ipc` 自动同步 preload 白名单
+ *   （也已在 prebuild / precommit / ci 阶段自动触发）
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
@@ -17,6 +18,7 @@ const allowedInvokeChannels: readonly string[] = [
   'config:get',
   'config:set',
   'config:testConnection',
+  'config:getReadingEntry',
   'diagnosis:query',
   'diagnosis:submitRewrite',
   'diagnosis:getComparison',
@@ -28,6 +30,7 @@ const allowedInvokeChannels: readonly string[] = [
   'teachingState:getPrompt',
   'teachingState:updateSummary',
   'ability:getProfile',
+  'teachingHistory:add',
   'teachingNote:record',
   'teachingNote:getTree',
   'teachingNote:delete',
@@ -57,31 +60,30 @@ const allowedInvokeChannels: readonly string[] = [
   'training:history',
   'training:submit',
   'training:evaluate',
+  'training:decideReading',
   'training:deriveBehavior',
+  'training:catalog',
+  'prescription:getStageProgress',
+  'prescription:getAllStages',
+  'prescription:getStageById',
+  'training:generateFlow',
+  'retro:generate',
+  'retro:save',
   'manuscript:list',
   'manuscript:get',
   'manuscript:create',
   'manuscript:update',
   'manuscript:delete',
-  'chapter:list',
-  'chapter:get',
-  'chapter:create',
-  'chapter:delete',
-  'chapter:updateContent',
-  'teachingHistory:add',
-  'training:catalog',
-  'training:decideReading',
-  'config:getReadingEntry',
   'project:list',
   'project:get',
   'project:create',
   'project:update',
   'project:delete',
-  // S16 修复：补回 prescription 三个频道（与 ALLOWED_INVOKE_CHANNELS 同步）
-  'prescription:getStageProgress',
-  'prescription:getAllStages',
-  'prescription:getStageById',
-  'training:generateFlow',
+  'chapter:list',
+  'chapter:get',
+  'chapter:create',
+  'chapter:delete',
+  'chapter:updateContent',
 ];
 
 /** 允许渲染进程通过 send() 单向发送的 IPC 通道白名单 */
