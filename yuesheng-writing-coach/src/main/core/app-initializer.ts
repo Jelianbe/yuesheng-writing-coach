@@ -199,9 +199,9 @@ export class AppInitializer {
 
     this.ensureBaseSchema(db);
 
-    const migrationsDir = app.isPackaged
-      ? path.join(process.resourcesPath, 'db')
-      : path.join(app.getAppPath(), 'src/main/db');
+    const migrationsDir = process.env.NODE_ENV === 'development' || !app.isPackaged
+      ? path.join(app.getAppPath(), 'src/main/db')
+      : path.join(process.resourcesPath, 'db');
 
     const migrationFiles = [
       '013_manuscripts.sql',
@@ -248,6 +248,7 @@ export class AppInitializer {
   }
 
   private getResourcesRoot(): string {
-    return app.isPackaged ? process.resourcesPath : path.join(app.getAppPath(), 'resources');
+    const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+    return isDev ? path.join(app.getAppPath(), 'resources') : process.resourcesPath;
   }
 }
