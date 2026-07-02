@@ -88,7 +88,13 @@ export const RightDrawer: React.FC<RightDrawerProps> = React.memo(({
 
   const handleToolClick = useCallback((tool: ToolItem) => {
     if (tool.disabled) return;
-    tool.onClick ? tool.onClick() : onToolClick ? onToolClick(tool.id) : useRightPanelStore.getState().openTool(tool.id);
+    if (tool.onClick) {
+      tool.onClick();
+    } else if (onToolClick) {
+      onToolClick(tool.id);
+    } else {
+      useRightPanelStore.getState().openTool(tool.id);
+    }
   }, [onToolClick]);
 
   /* 标签切换 */

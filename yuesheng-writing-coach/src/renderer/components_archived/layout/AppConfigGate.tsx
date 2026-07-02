@@ -1,5 +1,7 @@
 import React from 'react';
 import { OnboardingFlow } from '../onboarding/OnboardingFlow';
+import type { OnboardingBaseline } from '../../shared/types';
+import styles from './AppConfigGate.module.css';
 
 export interface AppConfigGateProps {
   /** 是否正在加载配置 */
@@ -9,7 +11,7 @@ export interface AppConfigGateProps {
   /** 是否显示引导流程 */
   showOnboarding: boolean;
   /** 引导完成回调 */
-  onOnboardingComplete: (baseline: any) => Promise<void>;
+  onOnboardingComplete: (baseline: OnboardingBaseline) => Promise<void>;
   /** 引导跳过回调 */
   onOnboardingSkip: () => Promise<void>;
   /** 通过守卫后的子节点（主应用内容） */
@@ -37,14 +39,14 @@ export const AppConfigGate: React.FC<AppConfigGateProps> = ({
   // === 加载中 ===
   if (isConfigLoading) {
     return (
-      <div className="h-screen w-screen bg-[var(--color-bg)] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-[var(--radius-lg)] bg-surface-secondary flex items-center justify-center mx-auto mb-4 animate-pulse-custom">
-            <svg className="w-6 h-6 text-accent-primary animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <div className={styles.gate}>
+        <div className={styles.inner}>
+          <div className={styles.spinnerWrap}>
+            <svg className={styles.spinner} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 12a9 9 0 11-6.219-8.56" />
             </svg>
           </div>
-          <p className="text-sm text-text-secondary">加载中...</p>
+          <p className={styles.loadingLabel}>加载中...</p>
         </div>
       </div>
     );
@@ -53,7 +55,7 @@ export const AppConfigGate: React.FC<AppConfigGateProps> = ({
   // === 新用户引导 ===
   if (showOnboarding) {
     return (
-      <div className="h-screen w-screen bg-[var(--color-bg)] flex items-center justify-center">
+      <div className={styles.gate}>
         <OnboardingFlow
           onComplete={onOnboardingComplete}
           onSkip={onOnboardingSkip}

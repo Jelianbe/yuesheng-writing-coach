@@ -1,0 +1,15 @@
+/* Card Tailwind → CSS Modules (T17-12 B1) */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.cardHover {
+  transition: box-shadow var(--transition-fast);
+}
+
+.cardHover:hover {
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}

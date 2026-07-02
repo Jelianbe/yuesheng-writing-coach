@@ -7,7 +7,7 @@ import { TemplateFormView } from './TemplateFormView';
 import type { SyndromeResult, EvidenceRecord } from '../../shared/types';
 
 const severityLabel: Record<string, string> = { L3: '严重', L2: '中度', L1: '轻度' };
-const severityColor: Record<string, string> = { L3: '#C0392B', L2: '#D4A04A', L1: '#7EA87E' };
+const severityColor: Record<string, string> = { L3: 'var(--error)', L2: 'var(--warning)', L1: '#7EA87E' };
 
 const MIN_REFLECTION_LENGTH = 50;
 
@@ -161,7 +161,7 @@ const SyndromeCard: React.FC<{ syndrome: SyndromeResult }> = ({ syndrome }) => {
                     border: 'none',
                     borderRadius: 'var(--radius-sm)',
                     background: canReveal ? 'var(--accent)' : 'var(--bg-hover)',
-                    color: canReveal ? '#fff' : 'var(--text-tertiary)',
+                    color: canReveal ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
                     fontSize: '0.72rem',
                     cursor: canReveal ? 'pointer' : 'not-allowed',
                     transition: 'all 200ms ease',
