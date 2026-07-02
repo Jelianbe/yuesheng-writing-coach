@@ -1,20 +1,26 @@
 /**
  * ProjectSpacePage — 项目空间
  *
- * 对齐设计稿：
+ * 对齐设计稿:
  * - Navbar: ‹ 返回 + 项目标题 + ⋯
- * - 统计区（诊断/训练/学习天数）
- * - SVG 雷达图（五维能力）
+ * - 统计区(诊断/训练/学习天数)
+ * - SVG 雷达图(五维能力)
  * - CTA 按钮 + 最近记录
+ *
+ * 数据来源:
+ * - useProjectStore (按 params.id 查 project 元数据)
+ * - 雷达图当前为占位 mock — D-DEBT-30 待 ID 路由改造后接入 ability.store
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft, Book, FileText, MessageSquare } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
+import { useProjectStore } from '../stores/project.store';
 import { MoreMenu } from '../components/navigation/MoreMenu';
 
 const RADAR_LABELS = ['人物塑造', '情节节奏', '环境描写', '对话设计', '叙事视角'];
-const RADAR_VALUES = [4, 3, 5, 2, 4]; // 1-5
+const RADAR_VALUES = [4, 3, 5, 2, 4]; // 1-5 - D-DEBT-30 待 ability store 接入后替换
 const RADAR_SIZE = 140;
 const CENTER = RADAR_SIZE / 2;
 const RADIUS = RADAR_SIZE * 0.38;
@@ -22,7 +28,6 @@ const LEVELS = 5;
 
 function RadarChart() {
   const angleStep = (Math.PI * 2) / RADAR_LABELS.length;
-  // 生成网格点
   const gridPoints = Array.from({ length: LEVELS }).map((_, level) => {
     const r = (RADIUS / LEVELS) * (level + 1);
     return RADAR_LABELS.map((_, i) => {
@@ -31,14 +36,12 @@ function RadarChart() {
     }).join(' ');
   });
 
-  // 数据点
   const dataPoints = RADAR_VALUES.map((v, i) => {
     const r = (RADIUS / 5) * v;
     const a = angleStep * i - Math.PI / 2;
     return `${CENTER + r * Math.cos(a)},${CENTER + r * Math.sin(a)}`;
   }).join(' ');
 
-  // 标签位置
   const labelPositions = RADAR_LABELS.map((_, i) => {
     const a = angleStep * i - Math.PI / 2;
     const r = RADIUS + 18;
@@ -47,11 +50,9 @@ function RadarChart() {
 
   return (
     <svg width={RADAR_SIZE} height={RADAR_SIZE} viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`}>
-      {/* 网格 */}
       {gridPoints.map((pts, i) => (
         <polygon key={i} points={pts} fill="none" stroke="var(--border)" strokeWidth={0.8} />
       ))}
-      {/* 轴线 */}
       {RADAR_LABELS.map((_, i) => {
         const a = angleStep * i - Math.PI / 2;
         return (
@@ -63,7 +64,6 @@ function RadarChart() {
           />
         );
       })}
-      {/* 数据 */}
       <polygon points={dataPoints} fill="rgba(138,122,158,0.25)" stroke="var(--accent)" strokeWidth={1.5} />
       {RADAR_VALUES.map((v, i) => {
         const r = (RADIUS / 5) * v;
@@ -72,7 +72,6 @@ function RadarChart() {
           <circle key={i} cx={CENTER + r * Math.cos(a)} cy={CENTER + r * Math.sin(a)} r={2.5} fill="var(--accent)" />
         );
       })}
-      {/* 标签 */}
       {labelPositions.map((pos, i) => (
         <text
           key={i}
@@ -87,12 +86,14 @@ function RadarChart() {
   );
 }
 
+// D-DEBT-31 暂无 activity/history store 接入,保留占位
 const RECENT_RECORDS = [
   { type: '诊断', label: '人物动机分析', time: '2天前' },
   { type: '训练', label: '对话写作练习', time: '4天前' },
   { type: '教学', label: '环境描写技法学习', time: '1周前' },
 ];
 
+// D-DEBT-30 章节需 manuscriptId 列表,project 概念不直接对应,占位
 const CHAPTERS = [
   { title: '第一章：初遇', status: '已完成' },
   { title: '第二章：暗流', status: '修改中' },
@@ -102,7 +103,29 @@ const CHAPTERS = [
 export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = ({ params }) => {
   const pop = usePageStackStore(s => s.pop);
   const push = usePageStackStore(s => s.push);
-  const title = params?.title ?? '深海回响';
+  const { projects, fetchList, fetchById, currentProject } = useProjectStore(
+    useShallow(s => ({
+      projects: s.projects,
+      fetchList: s.fetchList,
+      fetchById: s.fetchById,
+      currentProject: s.projects.find(p => p.id === params?.id),
+    })),
+  );
+  const title = currentProject?.name ?? params?.title ?? '项目空间';
+  const stats = [
+    { label: '诊断', value: '—', color: 'var(--color-teaching)' },
+    { label: '训练', value: '—', color: 'var(--color-practice)' },
+    { label: '学习天', value: '—', color: 'var(--color-growth)' },
+  ];
+
+  useEffect(() => {
+    if (projects.length === 0) {
+      void fetchList();
+    }
+    if (params?.id && !currentProject) {
+      void fetchById(params.id);
+    }
+  }, [params?.id, projects.length, fetchList, fetchById, currentProject]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -112,7 +135,7 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
         padding: '0 12px', borderBottom: '1px solid var(--border)',
         background: 'var(--bg-card)',
       }}>
-        <button onClick={pop} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
+        <button onClick={pop} aria-label="返回" style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
           <ArrowLeft size={20} color="var(--text-primary)" />
         </button>
         <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{title}</span>
@@ -128,11 +151,7 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
         <div style={{
           display: 'flex', gap: 8, marginTop: 16, marginBottom: 20,
         }}>
-          {[
-            { label: '诊断', value: '6', color: 'var(--color-teaching)' },
-            { label: '训练', value: '4', color: 'var(--color-practice)' },
-            { label: '学习天', value: '23', color: 'var(--color-growth)' },
-          ].map(s => (
+          {stats.map(s => (
             <div key={s.label} style={{
               flex: 1, textAlign: 'center', padding: '10px 0',
               background: 'var(--bg-card)', borderRadius: 12,

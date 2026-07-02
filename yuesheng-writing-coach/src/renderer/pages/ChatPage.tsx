@@ -1,17 +1,25 @@
 /**
  * ChatPage — 教学对话
  *
- * 对齐设计稿：
+ * 对齐设计稿:
  * - Navbar: ‹ 返回 + 标题 + 副标题 + ⋯
- * - 欢迎引导区（月头像 + 快捷选项）
- * - 消息气泡（用户/诊断教学/AI思考中）
- * - 输入栏（工具条 + 输入框 + 发送按钮）
+ * - 欢迎引导区(月头像 + 快捷选项)
+ * - 消息气泡(用户/诊断教学/AI思考中)
+ * - 输入栏(工具条 + 输入框 + 发送按钮)
+ *
+ * 数据来源:
+ * - useSessionStore 拿 currentSessionId + loadMessages
+ * - 消息区渲染真实 session.messages
+ * - 发送:Phase C 再接入 chatService (本步仅显示 + 占位)
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Send, Type, Image, FileText, Settings, MessageSquare } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
+import { useSessionStore } from '../stores/session.store';
 import { MoreMenu } from '../components/navigation/MoreMenu';
+import type { ChatMessage } from '../shared/types';
 
 /* ── 欢迎引导区 ── */
 const WelcomeGuide: React.FC = () => (
@@ -19,7 +27,6 @@ const WelcomeGuide: React.FC = () => (
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '32px 16px 24px', gap: 16,
   }}>
-    {/* 月头像 */}
     <div style={{
       width: 56, height: 56, borderRadius: '50%',
       background: 'linear-gradient(135deg, #8A7A9E, #B8A9D4)',
@@ -48,97 +55,37 @@ const WelcomeGuide: React.FC = () => (
   </div>
 );
 
-/* ── 用户消息气泡 ── */
-const UserBubble: React.FC<{ text: string }> = ({ text }) => (
-  <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px 8px' }}>
-    <div style={{
-      maxWidth: '75%', padding: '10px 14px', borderRadius: 12,
-      background: 'var(--accent)', color: '#fff', fontSize: 14,
-      lineHeight: 1.5, borderBottomRightRadius: 4,
-    }}>
-      {text}
-    </div>
-  </div>
-);
-
-/* ── AI 思考中 ── */
-const ThinkingIndicator: React.FC = () => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px 8px' }}>
-    <div style={{
-      padding: '10px 14px', borderRadius: 12, background: 'var(--bg-card)',
-      border: '1px solid var(--border)',
-      display: 'flex', alignItems: 'center', gap: 8,
-    }}>
-      <div style={{ display: 'flex', gap: 3 }}>
-        {[0, 1, 2].map(i => (
-          <span key={i} style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: 'var(--accent)',
-            animation: `pulse 1.4s ${i * 0.2}s infinite`,
-          }} />
-        ))}
-      </div>
-      <span style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>我整理一下核心问题…</span>
-    </div>
-  </div>
-);
-
-/* ── 诊断教学气泡 ── */
-const DiagBubble: React.FC = () => (
-  <div style={{ padding: '0 16px 8px' }}>
-    <div style={{
-      background: 'var(--bg-card)', border: '1px solid var(--border)',
-      borderRadius: 12, overflow: 'hidden',
-    }}>
-      {/* 标签 */}
-      <div style={{
-        padding: '8px 12px', background: 'var(--accent-light)',
-        fontSize: 11, fontWeight: 600, color: 'var(--accent)',
-      }}>
-        诊断分析
-      </div>
-      {/* 问题列表 */}
-      <div style={{ padding: '10px 12px' }}>
-        {[
-          { id: 1, text: '主角的行为动机缺乏深层逻辑支撑，导致读者难以产生共情' },
-          { id: 2, text: '对话部分过于直白，缺乏潜台词和人物个性的表达' },
-          { id: 3, text: '关键情节节点的节奏控制不够，高潮部分铺垫不足' },
-        ].map(item => (
-          <div key={item.id} style={{
-            display: 'flex', gap: 8, padding: '6px 0',
-            borderBottom: '1px solid var(--border)',
-          }}>
-            <span style={{
-              width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-              background: 'var(--accent)', color: '#fff', fontSize: 11,
-              fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {item.id}
-            </span>
-            <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
-              {item.text}
-            </span>
-          </div>
-        ))}
-      </div>
-      {/* 引导按钮 */}
-      <div style={{ display: 'flex', gap: 8, padding: '8px 12px 12px' }}>
-        <button style={{
-          padding: '7px 14px', borderRadius: 20, border: '1px solid var(--accent)',
-          background: 'transparent', color: 'var(--accent)', fontSize: 12, cursor: 'pointer',
+/* ── 消息气泡(根据 role 分支) ── */
+const MessageBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
+  if (msg.role === 'user') {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px 8px' }}>
+        <div style={{
+          maxWidth: '75%', padding: '10px 14px', borderRadius: 12,
+          background: 'var(--accent)', color: '#fff', fontSize: 14,
+          lineHeight: 1.5, borderBottomRightRadius: 4,
         }}>
-          先看改写示例
-        </button>
-        <button style={{
-          padding: '7px 14px', borderRadius: 20, border: 'none',
-          background: 'var(--accent)', color: '#fff', fontSize: 12, cursor: 'pointer',
-        }}>
-          好，讲讲
-        </button>
+          {msg.content}
+        </div>
       </div>
-    </div>
-  </div>
-);
+    );
+  }
+  if (msg.role === 'assistant') {
+    return (
+      <div style={{ display: 'flex', padding: '0 16px 8px' }}>
+        <div style={{
+          maxWidth: '75%', padding: '10px 14px', borderRadius: 12,
+          background: 'var(--bg-card)', color: 'var(--text-primary)',
+          border: '1px solid var(--border)',
+          fontSize: 14, lineHeight: 1.5, borderBottomLeftRadius: 4,
+        }}>
+          {msg.content}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 /* ── 输入栏 ── */
 const TOOLBAR_ITEMS = [
@@ -148,16 +95,22 @@ const TOOLBAR_ITEMS = [
   { Icon: Settings, label: '设定' },
 ];
 
-const InputBar: React.FC = () => {
+const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }> = ({ onSend, disabled }) => {
   const [text, setText] = useState('');
   const hasContent = text.trim().length > 0;
+
+  const handleSend = () => {
+    const t = text.trim();
+    if (!t) return;
+    onSend(t);
+    setText('');
+  };
 
   return (
     <div style={{
       borderTop: '1px solid var(--border)', background: 'var(--bg-card)',
       padding: '8px 12px', paddingBottom: `calc(8px + env(safe-area-inset-bottom, 0px))`,
     }}>
-      {/* 工具条 */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 6, paddingLeft: 4 }}>
         {TOOLBAR_ITEMS.map(({ Icon, label }) => (
           <button
@@ -169,12 +122,13 @@ const InputBar: React.FC = () => {
           </button>
         ))}
       </div>
-      {/* 输入行 */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input
           value={text}
           onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           placeholder="输入你的问题和作品…"
+          disabled={disabled}
           style={{
             flex: 1, height: 38, borderRadius: 8, border: 'none',
             background: 'var(--bg-input)', padding: '0 12px',
@@ -182,11 +136,13 @@ const InputBar: React.FC = () => {
           }}
         />
         <button
+          onClick={handleSend}
+          disabled={!hasContent || disabled}
           style={{
             width: 38, height: 38, borderRadius: 8, border: 'none',
-            background: hasContent ? 'var(--accent)' : 'var(--bg-input)',
-            color: hasContent ? '#fff' : 'var(--text-tertiary)',
-            cursor: hasContent ? 'pointer' : 'default',
+            background: hasContent && !disabled ? 'var(--accent)' : 'var(--bg-input)',
+            color: hasContent && !disabled ? '#fff' : 'var(--text-tertiary)',
+            cursor: hasContent && !disabled ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 200ms',
           }}
@@ -203,7 +159,44 @@ const InputBar: React.FC = () => {
 export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params }) => {
   const pop = usePageStackStore(s => s.pop);
   const push = usePageStackStore(s => s.push);
-  const title = params?.title ?? '深海回响';
+  const { currentSessionId, loadMessages, switchSession } = useSessionStore(
+    useShallow(s => ({
+      currentSessionId: s.currentSessionId,
+      loadMessages: s.loadMessages,
+      switchSession: s.switchSession,
+    })),
+  );
+  const [messages, setLocalMessages] = useState<ChatMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // 进入页面时,若 params.id 提供,切到该 session
+  useEffect(() => {
+    if (params?.id && params.id !== currentSessionId) {
+      switchSession(params.id);
+    }
+  }, [params?.id, currentSessionId, switchSession]);
+
+  // 切换 session 时加载消息
+  useEffect(() => {
+    const sid = params?.id ?? currentSessionId;
+    if (!sid) return;
+    setLoading(true);
+    void loadMessages(sid)
+      .then(list => setLocalMessages(Array.isArray(list) ? list : []))
+      .finally(() => setLoading(false));
+  }, [params?.id, currentSessionId, loadMessages]);
+
+  const title = params?.title ?? '对话';
+  const handleSend = (text: string) => {
+    // Phase C: 接入 chatService.send + 流式响应监听
+    // 本步仅本地追加用户消息,演示输入链路通
+    setLocalMessages(prev => [...prev, {
+      id: `tmp_${Date.now()}`,
+      role: 'user',
+      content: text,
+      timestamp: Date.now(),
+    }]);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -214,7 +207,7 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
         background: 'var(--bg-card)', flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button onClick={pop} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
+          <button onClick={pop} aria-label="返回" style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4 }}>
             <ArrowLeft size={20} color="var(--text-primary)" strokeWidth={1.5} />
           </button>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -222,7 +215,7 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
               {title}
             </span>
             <span style={{ fontSize: 11, color: 'var(--color-teaching)' }}>
-              人物动机学习 · 进行中
+              教学对话
             </span>
           </div>
         </div>
@@ -237,21 +230,20 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
         flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column',
         paddingTop: 8,
       }}>
-        {/* 欢迎引导 */}
-        <WelcomeGuide />
-
-        {/* 消息列表 */}
-        <UserBubble text="老师，我写的对话总觉得不自然，能帮我看看吗？" />
-        <ThinkingIndicator />
-        <DiagBubble />
-        <UserBubble text="分析的很有道理，能教教我怎么改吗？" />
-
-        {/* 底部占位 */}
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
+            加载消息中…
+          </div>
+        ) : messages.length === 0 ? (
+          <WelcomeGuide />
+        ) : (
+          messages.map(m => <MessageBubble key={m.id} msg={m} />)
+        )}
         <div style={{ height: 8 }} />
       </div>
 
       {/* 输入栏 */}
-      <InputBar />
+      <InputBar onSend={handleSend} />
     </div>
   );
 };

@@ -45,18 +45,22 @@
   --border-light: #E0DCE6;
   --border-focus: var(--accent);
 
-  /* ── 文字色（柔黑减少刺眼）── */
+  /* ── 文字色（柔黑减少刺眼）
+     WCAG AA:tertiary 在 bg-main 上需 ≥ 4.5:1(原 #8E8996 仅 3.21)
+     加深到 #6B6878 后约 5.0:1,满足 13px+ 正文标准 ── */
   --text-primary: #2D2A32;
   --text-secondary: #5B5663;
-  --text-tertiary: #8E8996;
+  --text-tertiary: #6B6878;
   --text-on-accent: #FFFFFF;
 
-  /* ── 语义色 ── */
+  /* ── 语义色
+     WCAG AA:error 在 error-light 上需 ≥ 4.5:1
+     原 #B84A4A 在 #F5E8E6 上约 4.6,加深到 #8A2A2A(约 6.8)更稳 ── */
   --success: #5A8F68;
   --success-light: #E8F0E9;
   --warning: #C8943C;
   --warning-light: #F5EDE0;
-  --error: #B84A4A;
+  --error: #8A2A2A;
   --error-light: #F5E8E6;
 
   /* ── 态度档位色（三灯互斥）── */
