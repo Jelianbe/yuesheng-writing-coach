@@ -9,3 +9,8 @@ data/
 scripts/__pycache__/
 .hologram/
 .trae/tmp/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.auth/
