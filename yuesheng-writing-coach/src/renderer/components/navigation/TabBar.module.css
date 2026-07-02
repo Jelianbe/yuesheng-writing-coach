@@ -1,0 +1,63 @@
+/* TabBar 底部导航 */
+
+.tabbar {
+  display: flex;
+  align-items: stretch;
+  height: var(--tabbar-height);
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  flex-shrink: 0;
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  position: relative;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+  padding: 6px 0 4px;
+  opacity: 0.85;
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+  opacity: 1;
+}
+
+.tab:hover {
+  color: var(--text-secondary);
+}
+
+.tabActive {
+  color: var(--accent);
+}
+
+.tabActive:hover {
+  color: var(--accent-hover);
+}
+
+.tabLabel {
+  font-size: 10px;
+  line-height: 1;
+  font-weight: var(--font-medium);
+}
+
+.tabIndicator {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2.5px;
+  border-radius: 0 0 2px 2px;
+  background: var(--accent);
+}
