@@ -1,0 +1,67 @@
+/* ═══ SettingsWorkspace ═══ */
+
+.wrap {
+  padding: 8px 12px;
+}
+
+.title {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E1A14;
+  margin-bottom: 10px;
+}
+
+.section {
+  margin-bottom: 10px;
+}
+
+.label {
+  font-size: 13px;
+  color: #5C5242;
+  margin-bottom: 4px;
+}
+
+.input {
+  width: 100%;
+  padding: 4px 8px;
+  background-color: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.attRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.attDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+  transition: transform 0.15s;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+
+.saveBtn {
+  margin-top: 12px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: none;
+  background-color: #7A6040;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.saveBtn:hover {
+  background-color: #6A5030;
+}

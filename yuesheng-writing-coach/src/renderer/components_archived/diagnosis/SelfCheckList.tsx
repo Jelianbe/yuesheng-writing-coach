@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CheckSquare } from 'lucide-react';
+import styles from './SelfCheckList.module.css';
 
 interface SelfCheckListProps {
   questions: string[];
@@ -26,27 +27,27 @@ export const SelfCheckList: React.FC<SelfCheckListProps> = ({ questions }) => {
   };
 
   return (
-    <div className="border border-border rounded-md overflow-hidden">
-      <div className="px-3 py-2 bg-bg-tertiary/50 border-b border-border flex items-center gap-2">
-        <CheckSquare className="w-3.5 h-3.5 text-accent-primary" />
-        <span className="text-xs font-medium text-text-secondary">自检清单</span>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <CheckSquare className={styles.icon} />
+        <span className={styles.headerText}>自检清单</span>
         {allChecked && (
-          <span className="text-xs text-accent-success ml-auto">已自查 ✓</span>
+          <span className={styles.allCheckedText}>已自查 ✓</span>
         )}
       </div>
-      <div className="px-3 py-2 space-y-1.5">
+      <div className={styles.body}>
         {questions.map((q, i) => (
           <label
             key={i}
-            className="flex items-start gap-2 py-1 cursor-pointer hover:text-text-primary transition-colors"
+            className={styles.label}
           >
             <input
               type="checkbox"
               checked={checkedItems.has(i)}
               onChange={() => handleToggleCheck(i)}
-              className="mt-0.5 w-3.5 h-3.5 accent-accent-primary"
+              className={styles.checkbox}
             />
-            <span className={`text-xs ${checkedItems.has(i) ? 'text-text-muted line-through' : 'text-text-secondary'}`}>
+            <span className={checkedItems.has(i) ? styles.checkedText : styles.uncheckedText}>
               {q}
             </span>
           </label>

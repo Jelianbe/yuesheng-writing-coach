@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import { User } from 'lucide-react';
-import type { ChatMessage, SeverityLevel } from '../../shared/types';
+import { ChatMessage, SeverityLevel } from '../../shared/types';
 import { Badge } from '../common/Badge';
 
 interface MessageBubbleProps {

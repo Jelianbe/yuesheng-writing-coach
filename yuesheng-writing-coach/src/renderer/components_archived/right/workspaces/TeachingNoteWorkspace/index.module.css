@@ -1,0 +1,284 @@
+/* ═══ TeachingNoteWorkspace ═══ */
+
+.wrap { padding: 8px 4px; }
+
+.title {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E1A14;
+  margin-bottom: 10px;
+}
+
+/* ── 最新诊断卡片 ── */
+.diagCard {
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+
+.diagSubtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1E1A14;
+  margin-bottom: 4px;
+}
+
+.diagSummary {
+  font-size: 11px;
+  color: #5C5242;
+  margin-bottom: 4px;
+}
+
+.syndromeRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+
+.syndromeDesc {
+  font-size: 11px;
+  color: #1E1A14;
+  flex: 1;
+}
+
+.severityLabel {
+  font-size: 9px;
+  color: #8A7F6E;
+}
+
+/* ── 教练建议 ── */
+.adviceSection { margin-bottom: 10px; }
+
+.adviceLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1E1A14;
+}
+
+.adviceText {
+  font-size: 11px;
+  color: #5C5242;
+  line-height: 1.625;
+  margin-top: 2px;
+}
+
+.adviceHighlight {
+  color: #B84A4A;
+  font-weight: 500;
+}
+
+/* ── 训练记录 ── */
+.recordHeader { margin-bottom: 8px; }
+
+.recordLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1E1A14;
+}
+
+.recordCount {
+  font-size: 10px;
+  color: #8A7F6E;
+  font-weight: 400;
+}
+
+.recordItem {
+  padding: 6px;
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 6px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.recordItem:hover { border-color: #7A6040; }
+
+.recordRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.recordIcon {
+  color: #C8943C;
+  font-size: 10px;
+}
+
+.recordName {
+  font-size: 13px;
+  color: #1E1A14;
+}
+
+.recordMeta {
+  font-size: 11px;
+  color: #8A7F6E;
+  margin-top: 2px;
+}
+
+.emptyText {
+  font-size: 13px;
+  color: #8A7F6E;
+}
+
+/* ── [记录到教学笔记] 输入 ── */
+.recordForm {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.recordInput {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 6px;
+  border: 1px solid #D6CEC0;
+  border-radius: 4px;
+  background: #FAF8F5;
+  color: #1E1A14;
+  outline: none;
+}
+
+.recordBtn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #7A6040;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.recordBtnDisabled {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  background: #D6CEC0;
+  color: #8A7F6E;
+  border: none;
+  border-radius: 4px;
+  cursor: default;
+}
+
+/* ── 教学笔记树 ── */
+.treeSection {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid #D6CEC0;
+}
+
+.treeHeader {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.treeLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #1E1A14;
+}
+
+.treeBadge {
+  font-size: 9px;
+  color: #5A8F68;
+  background: rgba(90,143,104,0.1);
+  padding-left: 4px;
+  padding-right: 4px;
+  border-radius: 9999px;
+}
+
+.treeCard {
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.treeProjectInfo {
+  font-size: 10px;
+  color: #8A7F6E;
+  margin-bottom: 4px;
+}
+
+.treeFooter {
+  font-size: 9px;
+  color: #8A7F6E;
+  margin-top: 4px;
+}
+
+/* ── react-arborist Node ── */
+.arborNode {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.arborNode:hover { background: rgba(122,96,64,0.06); }
+
+.arborArrow {
+  font-size: 10px;
+  color: #8A7F6E;
+  flex-shrink: 0;
+  width: 12px;
+  text-align: center;
+  user-select: none;
+}
+
+.arborIcon {
+  font-size: 11px;
+  color: #7A6040;
+  flex-shrink: 0;
+}
+
+.arborLabel {
+  color: #1E1A14;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 笔记详情面板 ── */
+.nodeDetail {
+  margin-top: 8px;
+  padding: 8px;
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 6px;
+}
+
+.nodeDetailTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1E1A14;
+  margin-bottom: 4px;
+}
+
+.nodeDetailContent {
+  font-size: 12px;
+  color: #5C5242;
+  line-height: 1.625;
+}
+
+.treeProjectInfo { display: none; }
+
+.loadingText {
+  font-size: 11px;
+  color: #8A7F6E;
+  padding: 4px 0;
+}

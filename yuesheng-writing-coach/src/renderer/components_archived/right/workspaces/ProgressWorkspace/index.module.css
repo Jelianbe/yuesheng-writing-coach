@@ -1,0 +1,184 @@
+/* ProgressWorkspace */
+.container { /* root wrapper */ }
+
+.title {
+  font-family: serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+/* 掌握统计卡片 */
+.statCard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.statMastered {
+  font-family: serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+}
+.statSlash { color: var(--text-muted); }
+.statTotal { font-size: 16px; color: var(--text-secondary); }
+.statLabel { font-size: 11px; color: var(--text-muted); margin-left: 2px; }
+
+/* 当前阶段行 */
+.phaseRow { margin-bottom: 8px; padding: 0 2px; }
+.phaseLabel { font-size: 11px; color: var(--text-muted); }
+.phaseValue { color: var(--accent); font-weight: 500; }
+.phaseSub { font-size: 10px; color: var(--text-muted); margin-left: 4px; }
+.progressTrack {
+  height: 6px;
+  background: var(--border);
+  border-radius: 9999px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 9999px;
+  transition: all 0.3s;
+}
+
+/* 诊断摘要 */
+.diagSummary { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+
+/* 当前问题 */
+.problemsSection { margin-bottom: 8px; padding: 0 2px; }
+.problemsTitle { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.problemRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.problemRowTrained { opacity: 0.5; }
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.dotTrained { background: #5A8F68; }
+.dotHigh { background: #B84A4A; }
+.dotMedium { background: #C8943C; }
+.problemName { font-size: 12px; color: var(--text-primary); flex: 1; }
+.problemScore { font-size: 10px; color: var(--text-muted); }
+.tagMastered { font-size: 8px; color: #5A8F68; font-weight: 500; }
+.tagPending { font-size: 8px; color: #B84A4A; font-weight: 500; }
+
+/* 阶段视图 */
+.phaseViewTitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+.phaseViewSub { font-size: 10px; color: var(--text-muted); font-weight: 400; }
+
+/* 阶段步骤 + 连接线 */
+.phaseStep {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  position: relative;
+}
+.phaseStep:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 23px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.stepCircle {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  flex-shrink: 0;
+}
+.stepDone { background: var(--accent); border: 2px solid var(--accent); color: #fff; }
+.stepCurrent { background: var(--bg-card); border: 2px solid var(--accent); color: var(--accent); }
+.stepFuture { background: var(--bg-card); border: 2px solid var(--border); color: var(--text-muted); }
+
+.stepContent { flex: 1; padding-top: 1px; position: relative; }
+.stepName { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+.stepDesc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* 当前指针 badge */
+.pointerBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 9px;
+  border: 1px solid var(--border);
+  float: right;
+  margin-top: 2px;
+  color: #C8943C;
+  border-color: rgba(200, 148, 60, 0.3);
+  background: rgba(200, 148, 60, 0.07);
+  transition: all 150ms ease;
+}
+.pointerDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--accent);
+  margin-right: 2px;
+  display: inline-block;
+}
+
+/* 能力画像 */
+.abilitySection { margin-top: 12px; padding: 0 2px; }
+.abilityTitle { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.abilityGrid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.abilityChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+}
+.abilityName { color: var(--text-primary); }
+.abilityBar {
+  width: 32px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 9999px;
+  overflow: hidden;
+  display: inline-block;
+}
+.abilityBarFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 9999px;
+  display: block;
+}
+.abilityScore { color: var(--text-muted); }
+.trendUp { color: #5A8F68; }
+.trendDown { color: #B84A4A; }
+.trendStable { color: var(--text-muted); }

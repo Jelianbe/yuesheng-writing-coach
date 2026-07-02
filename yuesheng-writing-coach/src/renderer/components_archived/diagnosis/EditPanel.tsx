@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../common/Button';
+import styles from './EditPanel.module.css';
 
 interface EditPanelProps {
   /** 原文段落 */
@@ -36,10 +37,10 @@ export const EditPanel: React.FC<EditPanelProps> = ({
   };
 
   return (
-    <div className="border border-border rounded-[var(--radius-md)] bg-surface shadow-sm animate-expand">
+    <div className={`${styles.container} animate-expand`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <span className="text-sm font-medium text-text-primary">
+      <div className={styles.header}>
+        <span className={styles.headerTitle}>
           修改 — {syndromeName}
         </span>
         <Button
@@ -48,19 +49,19 @@ export const EditPanel: React.FC<EditPanelProps> = ({
           aria-label="Close edit panel"
           className="btn-hover-effect"
         >
-          <X className="w-4 h-4" />
+          <X className={styles.closeIcon} />
         </Button>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className={styles.body}>
         {/* Original text (read-only) */}
         <div>
-          <label className="text-xs text-text-tertiary font-medium mb-1.5 block">
+          <label className={styles.fieldLabel}>
             原文
           </label>
-          <div className="bg-surface-secondary rounded-[var(--radius-sm)] p-3 text-sm text-text-secondary leading-relaxed border border-border">
+          <div className={styles.originalBox}>
             {originalTexts.map((text, i) => (
-              <p key={i} className={i > 0 ? 'mt-2' : ''}>
+              <p key={i} className={i > 0 ? styles.paragraph : ''}>
                 {text}
               </p>
             ))}
@@ -69,7 +70,7 @@ export const EditPanel: React.FC<EditPanelProps> = ({
 
         {/* User rewrite area */}
         <div>
-          <label className="text-xs text-text-tertiary font-medium mb-1.5 block">
+          <label className={styles.fieldLabel}>
             你的修改
           </label>
           <textarea
@@ -77,16 +78,13 @@ export const EditPanel: React.FC<EditPanelProps> = ({
             onChange={(e) => setRewritten(e.target.value)}
             placeholder="在这里写下你的修改..."
             rows={4}
-            className="w-full resize-none py-3 px-4 text-sm bg-surface border border-border rounded-[var(--radius-md)]
-              placeholder:text-text-tertiary text-text-primary
-              focus:outline-none focus:ring-2 focus:ring-accent-primary/30 focus:border-accent-primary
-              transition-all duration-fast"
+            className={styles.textarea}
             aria-label="Rewrite text"
           />
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-2">
+        <div className={styles.actions}>
           <Button
             variant="secondary"
             size="sm"

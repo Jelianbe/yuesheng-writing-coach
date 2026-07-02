@@ -1,0 +1,313 @@
+/* OnboardingFlow — CSS Module */
+/* Uses CSS variables from variables.css V2.1 */
+
+/* ── Container ── */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 80px);
+  padding: var(--space-8) var(--space-6);
+}
+
+/* ── Progress bar ── */
+.progressBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.progressDot {
+  height: 4px;
+  border-radius: var(--radius-full);
+  transition: all var(--transition-normal);
+}
+
+.progressDotActive {
+  width: var(--space-8);
+  background: var(--accent);
+}
+
+.progressDotInactive {
+  width: var(--space-4);
+  background: var(--border);
+}
+
+/* ── Step wrapper ── */
+.stepWrapper {
+  max-width: 28rem;
+  width: 100%;
+  text-align: center;
+}
+
+/* ── Welcome card ── */
+.welcomeCard {
+  margin-bottom: var(--space-8);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.welcomeIcon {
+  font-size: var(--text-3xl);
+  margin-bottom: var(--space-3);
+}
+
+.welcomeHeading {
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.welcomeParagraph {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.welcomeStrong {
+  color: var(--text-primary);
+}
+
+.welcomeParagraph + .welcomeParagraph {
+  margin-top: var(--space-2);
+}
+
+/* ── Section prompt ── */
+.sectionPrompt {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+/* ── Type grid ── */
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.typeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.typeButton:hover {
+  transform: scale(1.02);
+  border-color: var(--accent);
+  opacity: 0.7;
+}
+
+.typeButtonActive {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+/* ── Skip link ── */
+.skipLink {
+  margin-top: var(--space-6);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.skipLink:hover {
+  color: var(--text-secondary);
+}
+
+/* ── Info card (step 2 & 3) ── */
+.infoCard {
+  margin-bottom: var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+.infoCardTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.infoCardText {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.infoCardHint {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: var(--space-2);
+}
+
+.infoCardLeft {
+  composes: infoCard;
+  text-align: left;
+}
+
+/* ── Textarea ── */
+.textarea {
+  width: 100%;
+  height: 128px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  resize: none;
+  outline: none;
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.textarea:focus {
+  border-color: var(--accent);
+  opacity: 0.5;
+}
+
+/* ── Textarea actions ── */
+.textareaActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-3);
+}
+
+.skipTextButton {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.skipTextButton:hover {
+  color: var(--text-secondary);
+}
+
+.submitButton {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.submitButtonActive {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.submitButtonActive:hover {
+  background: var(--accent-hover);
+}
+
+.submitButtonDisabled {
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+
+/* ── Analysis result ── */
+.analysisCard {
+  margin-bottom: var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.analysisTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.analysisText {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+  white-space: pre-wrap;
+}
+
+/* ── Goal section ── */
+.goalList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.goalButton {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.goalButton:hover {
+  transform: scale(1.01);
+  border-color: var(--accent);
+  opacity: 0.7;
+}
+
+.goalButtonActive {
+  border-color: var(--accent);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+/* ── Recommendation card ── */
+.recommendationCard {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, transparent), transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.recommendationTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.recommendationText {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}

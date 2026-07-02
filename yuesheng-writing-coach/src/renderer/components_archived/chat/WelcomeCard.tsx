@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { Settings } from 'lucide-react';
 
 export const WelcomeCard: React.FC = () => {
   return (
@@ -27,10 +28,9 @@ export const WelcomeCard: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 24,
-        fontSize: 28,
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
-        ⚙️
+        <Settings size={28} strokeWidth={1.5} />
       </div>
       <div style={{
         fontSize: '1.25rem',
