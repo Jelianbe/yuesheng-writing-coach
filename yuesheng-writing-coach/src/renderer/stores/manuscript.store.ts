@@ -5,7 +5,14 @@
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
 import type { Manuscript } from '../shared/types';
-import { getInvoke } from '../utils/ipc';
+import { typedInvoke } from '../services/ipc-client';
+import type {
+  ManuscriptListResponse,
+  ManuscriptCreateRequest,
+  ManuscriptCreateResponse,
+  ManuscriptUpdateRequest,
+  ManuscriptDeleteRequest,
+} from '../../shared/api-contracts/manuscript.contract';
 
 interface ManuscriptState {
   /** 作品列表 */
@@ -24,12 +31,24 @@ interface ManuscriptActions {
   /** 选中某个作品 */
   select: (id: string) => void;
   /** 创建新作品 */
-  create: (title: string, description?: string, genre?: string) => Promise<Manuscript | null>;
+  create: (title: string, content?: string, genre?: string) => Promise<Manuscript | null>;
   /** 更新作品信息 */
   update: (id: string, data: Partial<Pick<Manuscript, 'title' | 'description' | 'genre' | 'status'>>) => Promise<void>;
   /** 删除作品 */
   remove: (id: string) => Promise<boolean>;
 }
+
+/** API 投影 ManuscriptInfo → 本地 Manuscript(补齐 DB 字段默认值) */
+const toManuscript = (info: { id: string; title: string; genre?: string; createdAt: number; updatedAt: number }): Manuscript => ({
+  id: info.id,
+  title: info.title,
+  description: '',
+  genre: info.genre ?? '',
+  status: 'active',
+  created_at: info.createdAt,
+  updated_at: info.updatedAt,
+  sort_order: 0,
+});
 
 export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((set, get) => ({
   // State
@@ -42,13 +61,15 @@ export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((s
   fetchList: async () => {
     set({ loading: true, error: null });
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.MANUSCRIPT_LIST, {}) as { success: boolean; data?: Manuscript[]; error?: string };
+      const res = await typedInvoke<Record<string, never>, ManuscriptListResponse>(
+        IPC_CHANNELS.MANUSCRIPT_LIST,
+        {},
+      );
       if (res.success && res.data) {
-        set({ manuscripts: res.data, loading: false });
-      } else {
-        set({ error: res.error || '获取作品列表失败', loading: false });
+        set({ manuscripts: res.data.manuscripts.map(toManuscript), loading: false });
+        return;
       }
+      set({ error: !res.success ? res.error : '获取作品列表失败', loading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : '获取作品列表异常', loading: false });
     }
@@ -60,19 +81,20 @@ export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((s
     set({ currentManuscript: found });
   },
 
-  create: async (title: string, description?: string, genre?: string) => {
+  create: async (title: string, content?: string, genre?: string) => {
     set({ loading: true, error: null });
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.MANUSCRIPT_CREATE, { title, description, genre }) as { success: boolean; data?: Manuscript; error?: string };
+      const res = await typedInvoke<ManuscriptCreateRequest, ManuscriptCreateResponse>(
+        IPC_CHANNELS.MANUSCRIPT_CREATE,
+        { title, content, genre },
+      );
       if (res.success && res.data) {
         await get().fetchList();
         set({ loading: false });
-        return res.data;
-      } else {
-        set({ error: res.error || '创建作品失败', loading: false });
-        return null;
+        return toManuscript(res.data.manuscript);
       }
+      set({ error: !res.success ? res.error : '创建作品失败', loading: false });
+      return null;
     } catch (err) {
       set({ error: err instanceof Error ? err.message : '创建作品异常', loading: false });
       return null;
@@ -81,18 +103,24 @@ export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((s
 
   update: async (id: string, data: Partial<Pick<Manuscript, 'title' | 'description' | 'genre' | 'status'>>) => {
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.MANUSCRIPT_UPDATE, { id, ...data }) as { success: boolean; data?: Manuscript; error?: string };
+      const payload: ManuscriptUpdateRequest = {
+        manuscriptId: id,
+        title: data.title,
+        content: data.description,
+        genre: data.genre,
+      };
+      const res = await typedInvoke<ManuscriptUpdateRequest, ManuscriptCreateResponse>(
+        IPC_CHANNELS.MANUSCRIPT_UPDATE,
+        payload,
+      );
       if (res.success) {
-        // 刷新列表
         await get().fetchList();
-        // 如果更新的是当前选中的作品，同步更新
-        if (get().currentManuscript?.id === id) {
-          set({ currentManuscript: res.data ?? null });
+        if (get().currentManuscript?.id === id && res.data) {
+          set({ currentManuscript: toManuscript(res.data.manuscript) });
         }
-      } else {
-        set({ error: res.error || '更新作品失败' });
+        return;
       }
+      set({ error: res.error || '更新作品失败' });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : '更新作品异常' });
     }
@@ -100,8 +128,11 @@ export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((s
 
   remove: async (id: string) => {
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.MANUSCRIPT_DELETE, { id }) as { success: boolean; error?: string };
+      const payload: ManuscriptDeleteRequest = { manuscriptId: id };
+      const res = await typedInvoke<ManuscriptDeleteRequest, { success: true }>(
+        IPC_CHANNELS.MANUSCRIPT_DELETE,
+        payload,
+      );
       if (res.success) {
         await get().fetchList();
         if (get().currentManuscript?.id === id) {

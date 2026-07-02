@@ -12,7 +12,11 @@ export type RootTab = 'bookshelf' | 'conversations' | 'apps';
 export type PageName =
   | RootTab
   | 'project-space'
-  | 'chat';
+  | 'chat'
+  | 'growth-report'
+  | 'training-plan'
+  | 'technique-library'
+  | 'material-library';
 
 export interface PageStackEntry {
   name: PageName;

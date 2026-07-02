@@ -15,6 +15,10 @@ import { ConversationsPage } from '../pages/ConversationsPage';
 import { AppsPage } from '../pages/AppsPage';
 import { ProjectSpacePage } from '../pages/ProjectSpacePage';
 import { ChatPage } from '../pages/ChatPage';
+import { GrowthReportPage } from '../pages/GrowthReportPage';
+import { TrainingPlanPage } from '../pages/TrainingPlanPage';
+import { TechniqueLibraryPage } from '../pages/TechniqueLibraryPage';
+import { MaterialLibraryPage } from '../pages/MaterialLibraryPage';
 
 const PAGE_MAP: Record<string, React.FC<{ params?: Record<string, string> }>> = {
   bookshelf: BookshelfPage,
@@ -22,6 +26,10 @@ const PAGE_MAP: Record<string, React.FC<{ params?: Record<string, string> }>> = 
   apps: AppsPage,
   'project-space': ProjectSpacePage,
   chat: ChatPage,
+  'growth-report': GrowthReportPage,
+  'training-plan': TrainingPlanPage,
+  'technique-library': TechniqueLibraryPage,
+  'material-library': MaterialLibraryPage,
 };
 
 export const PageStackRouter: React.FC = () => {

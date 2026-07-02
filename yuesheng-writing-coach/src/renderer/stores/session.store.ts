@@ -12,8 +12,17 @@
 
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
-import { getInvoke } from '../utils/ipc';
+import { typedInvoke } from '../services/ipc-client';
 import type { ChatMessage } from '../shared/types';
+import type {
+  SessionListWithMetaResponse,
+  SessionCreateResponse,
+  SessionGetMessagesResponse,
+  SessionCreateRequest,
+  SessionGetMessagesRequest,
+  SessionDeleteRequest,
+  SessionRenameRequest,
+} from '../../shared/api-contracts/session.contract';
 
 /** 聊天会话 */
 export interface ChatSession {
@@ -21,8 +30,8 @@ export interface ChatSession {
   title: string;
   createdAt: number;
   updatedAt: number;
-  lastMessage?: string;
   messageCount?: number;
+  lastMessageAt?: number;
   messages?: unknown[];
 }
 
@@ -34,10 +43,10 @@ interface SessionState {
 }
 
 interface SessionActions {
-  /** 从后端加载会话列表 */
+  /** 从后端加载会话列表(带 messageCount/lastMessageAt) */
   loadSessions: () => Promise<void>;
   /** 创建新会话 */
-  createSession: () => Promise<ChatSession | null>;
+  createSession: (title?: string) => Promise<ChatSession | null>;
   /** 切换当前会话 */
   switchSession: (id: string) => void;
   /** 加载指定会话的消息列表 */
@@ -48,6 +57,15 @@ interface SessionActions {
   renameSession: (id: string, title: string) => Promise<void>;
 }
 
+const toChatSession = (s: { id: string; title: string; createdAt: number; updatedAt: number; messageCount?: number; lastMessageAt?: number }): ChatSession => ({
+  id: s.id,
+  title: s.title,
+  createdAt: s.createdAt,
+  updatedAt: s.updatedAt,
+  messageCount: s.messageCount,
+  lastMessageAt: s.lastMessageAt,
+});
+
 export const useSessionStore = create<SessionState & SessionActions>((set, get) => ({
   // State
   sessions: [],
@@ -56,13 +74,15 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   // Actions
   loadSessions: async () => {
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.SESSION_LIST) as { success: boolean; data?: ChatSession[] };
+      const res = await typedInvoke<Record<string, never>, SessionListWithMetaResponse>(
+        IPC_CHANNELS.SESSION_LIST_WITH_META,
+        {},
+      );
       if (res.success && res.data) {
-        set({ sessions: res.data });
-        // 自动激活第一个会话
-        if (res.data.length > 0 && !get().currentSessionId) {
-          set({ currentSessionId: res.data[0].id });
+        const list = res.data.sessions.map(toChatSession);
+        set({ sessions: list });
+        if (list.length > 0 && !get().currentSessionId) {
+          set({ currentSessionId: list[0].id });
         }
       }
     } catch (err) {
@@ -70,16 +90,19 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     }
   },
 
-  createSession: async () => {
+  createSession: async (title?: string) => {
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.SESSION_CREATE) as { success: boolean; data?: ChatSession };
+      const res = await typedInvoke<SessionCreateRequest, SessionCreateResponse>(
+        IPC_CHANNELS.SESSION_CREATE,
+        title ? { title } : {},
+      );
       if (res.success && res.data) {
+        const session = toChatSession(res.data.session);
         set((state) => ({
-          sessions: [...state.sessions, res.data!],
-          currentSessionId: res.data!.id,
+          sessions: [...state.sessions, session],
+          currentSessionId: session.id,
         }));
-        return res.data;
+        return session;
       }
       return null;
     } catch (err) {
@@ -92,10 +115,12 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
   loadMessages: async (sessionId) => {
     try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.SESSION_GET_MESSAGES, { sessionId }) as { success: boolean; data?: ChatMessage[] };
+      const res = await typedInvoke<SessionGetMessagesRequest, SessionGetMessagesResponse>(
+        IPC_CHANNELS.SESSION_GET_MESSAGES,
+        { sessionId },
+      );
       if (res.success && res.data) {
-        return res.data;
+        return res.data.messages as unknown as ChatMessage[];
       }
       return [];
     } catch (err) {
@@ -106,8 +131,11 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
   deleteSession: async (id) => {
     try {
-      const invoke = getInvoke();
-      await invoke(IPC_CHANNELS.SESSION_DELETE, { sessionId: id });
+      const payload: SessionDeleteRequest = { sessionId: id };
+      await typedInvoke<SessionDeleteRequest, { success: true }>(
+        IPC_CHANNELS.SESSION_DELETE,
+        payload,
+      );
       set((state) => ({
         sessions: state.sessions.filter(s => s.id !== id),
         currentSessionId: state.currentSessionId === id ? null : state.currentSessionId,
@@ -119,8 +147,11 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
   renameSession: async (id, title) => {
     try {
-      const invoke = getInvoke();
-      await invoke(IPC_CHANNELS.SESSION_RENAME, { sessionId: id, title });
+      const payload: SessionRenameRequest = { sessionId: id, title };
+      await typedInvoke<SessionRenameRequest, { success: true }>(
+        IPC_CHANNELS.SESSION_RENAME,
+        payload,
+      );
       set((state) => ({
         sessions: state.sessions.map(s => s.id === id ? { ...s, title } : s),
       }));
