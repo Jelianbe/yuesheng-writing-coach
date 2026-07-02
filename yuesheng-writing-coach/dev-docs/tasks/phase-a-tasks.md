@@ -1,8 +1,8 @@
-# Phase A — 移动端 H5 适配 任务清单
+# Phase A — 移动端 V1 数据对接 任务清单
 
-> Issue: [#35](https://github.com/Jelianbe/yuesheng-writing-coach/issues/35)
-> Sprint: sprint-2
-> 状态: ✅ Build 完成，待 Review/Ship
+> Issue: Sprint 18 Phase A
+> Sprint: sprint-18
+> 状态: ✅ **Done** (2026-07-02)
 
 ---
 

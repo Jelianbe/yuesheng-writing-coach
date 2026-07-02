@@ -1271,3 +1271,154 @@ PRD V1.0（三层架构）揭示核心命题：
 - dev-docs/architecture/user-journey-v1.md（用户旅程）
 - R-018 变更溯源 / R-019 代码规范标准 / R-027 AI 代码质量门禁
 
+---
+
+## D-050 · 2026-07-02 · Sprint 18 复盘：移动端 V1 数据对接 + 前端测试基建
+
+### Context
+
+Sprint 18 承接 D-049 移动端 V1 Refactor,目标:
+1. 完成 Phase A 数据对接（5 页面 + 4 子页 Store 补全）
+2. 建立前端测试基础设施（E2E + a11y + 视觉基线）
+3. 修复 Sprint 18 关键 bug（Windows + E28 `app.isPackaged` 误判）
+
+期间用户提出 1 个新关注点：测试可见性（截图/视频/报告），通过
+"平衡模式 + 报告脚本" 方案解决。
+
+### 关键 Bug 修复
+
+**`app.isPackaged` 误判**（f0e41a7）
+
+Windows + Electron 28 在 `electron .` dev 启动时 `app.isPackaged` 错误返回
+`true`,导致 `process.resourcesPath` 指向 `node_modules/electron/dist/resources`
+(不存在),Migrations 加载失败。
+
+**修复**：`runMigrations` / `getResourcesRoot` 同时判断
+```typescript
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
+```
+
+dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`。
+
+### Phase A 数据流
+
+| 页面 | Store | IPC 通道 | 状态 |
+|:-----|:------|:---------|:----:|
+| BookshelfPage | useManuscriptStore | manuscript:list/create | ✅ |
+| ConversationsPage | useSessionStore | session:listWithMeta | ✅ |
+| AppsPage | useProjectStore | project:list | ✅ |
+| ProjectSpacePage | useProjectStore + useAbilityStore (mock) | project:get | ✅ |
+| ChatPage | useSessionStore | session:switch | ✅ |
+| 4 子页 (成长/计划/技法/素材) | 4 新 Store (占位) | - | D-DEBT-32 |
+
+**ID 维度陷阱**：Contract 字段是 `manuscriptId` 而非 `id`,
+第一次对接时报类型错误,后续 Store 全部按 Contract 名匹配。
+
+### 前端测试基础设施
+
+**Playwright 三层覆盖**（bdb69d0）：
+
+| 层 | 用例数 | 工具 | 入仓产物 |
+|:---|:------:|:-----|:--------:|
+| E2E | 24 | Playwright | 失败 trace |
+| a11y | 7 | axe-core | 失败报告 |
+| 视觉基线 | 4 | Playwright toHaveScreenshot | 4 PNG |
+| **合计** | **31** | | |
+
+**关键决策**：
+- 视觉基线限定 firefox-mobile：桌面版价值低不入仓
+- a11y 修复限定 critical/serious：渐进式修不阻断
+- 页面级 inline 样式豁免：R-019 硬上限例外,符合本项目实际
+- E2E 不入默认 CI：跑完 2-3 分钟,通过 `ci:full` 显式触发
+- Firefox 模拟移动端：Firefox 不支持 isMobile,改用 viewport+hasTouch+UA
+
+**a11y 修复清单**（ec579fe）：
+- 语义化标签：5 根页 + 4 子页 navbar div→header
+- 可交互元素：div→button + aria-label（共 9 处）
+- 文本对比度：--text-tertiary 3.21→5.0、--error 4.6→6.8
+- TabBar：aria-pressed 新增（测试可识别激活态）
+
+**测试可见性改进**（9fbde87）：
+- 默认平衡模式：失败留 trace/screenshot/video
+- `PWVERBOSE=1` 开启全量捕获（trace 12.8MB + 截图 88KB + 视频 58KB / 用例）
+- `npm run test:report` 一键打开 HTML 报告
+- 重命名 E2E 脚本（test:e2e:chromium → :firefox，:mobile → :firefox-mobile）（a8d11a7）
+
+### 门禁结果
+
+- typecheck: **0 errors** ✅
+- vitest: **683/683 passed**（零回归）✅
+- lint: **0 errors**（244 warnings，pre-existing）✅
+- E2E (firefox-mobile): **31/31 passed** ✅
+- E2E (firefox): **27/27 passed**（视觉测试被忽略,符合规范）✅
+- 安全: 0 硬编码密钥 ✅
+
+### 提交链
+
+| # | SHA | 标题 |
+|:--:|:----|:-----|
+| 1 | f0e41a7 | fix(main): Sprint 18 Windows+E28 app.isPackaged 误判 |
+| 2 | bdb69d0 | test(e2e): Sprint 18 前端测试基础设施（Playwright + a11y + 视觉基线） |
+| 3 | ec579fe | fix(a11y): 7 页面 WCAG AA 合规 + 语义化标签 + 对比度修复 |
+| 4 | acc822b | feat(renderer): Phase A Store 补全 + 路由收尾 |
+| 5 | 678d647 | chore(config): gitignore 添加 Playwright 输出目录 |
+| 6 | 9fbde87 | chore(test): Playwright 平衡模式 + 报告/verbose 便捷脚本 |
+| 7 | a8d11a7 | chore(test): 重命名 E2E 脚本以匹配实际浏览器 |
+
+**7 commits, 53 files, +1,941/-489**
+
+### 做得好的（Keep）
+
+1. **Phase A 严格按 Contract 对齐** — 4 新 Store + 3 升级 Store 全部 typedInvoke
+2. **测试基建三层一次性落地** — E2E + a11y + 视觉基线,Page Object 模式
+3. **a11y 合规性系统性修复** — 一次性清掉 12 类 critical/serious 违规
+4. **关键 bug 修复及时** — Sprint 18 启动阻塞 issue 1 commit 内解决
+5. **工程平衡决策** — Playwright 平衡模式 + 按需 verbose,避免"测试慢+磁盘大"
+6. **重命名清理** — 脚本名与 project 错位主动发现并修复
+
+### 教训（Learn）
+
+1. **视觉基线需要重建流程** — 颜色 token 变更后基线不匹配,需重跑。改进:写进 design-tokens.md
+2. **a11y moderate/minor 未处理** — 只修了 critical/serious,完整覆盖应下个 Sprint 收尾
+3. **Electron 端到端验证未在 Sprint 内闭环** — Phase A 数据流只在 Vite 跑通,未通过 dev:electron 验证主进程+IPC+DB 全链路
+4. **D-DEBT 仅口头记录** — 8 个新债务未写入 dev-docs/audits/,可能在 Sprint 19 启动时被遗忘
+
+### 新增技术债
+
+| 编号 | 描述 | 优先级 |
+|:----:|------|:------:|
+| D-DEBT-30 | ChatPage 历史消息分页（无上限加载） | P2 |
+| D-DEBT-31 | ProjectSpacePage 雷达图数据源（当前 mock） | P2 |
+| D-DEBT-32 | 4 子页 Store 实装（目前占位"加载中…"） | **P1** |
+| D-DEBT-33 | ProjectSpacePage 维度数据整合（4 ID 维度收敛） | P2 |
+| D-DEBT-34 | Phase B 前的 typedInvoke 全量覆盖审计 | **P1** |
+| D-DEBT-35 | a11y moderate/minor 级别未处理 | P3 |
+| D-DEBT-36 | 视觉基线重建流程未文档化 | P3 |
+| D-DEBT-37 | Electron 端到端烟测未集成门禁 | P2 |
+
+### Status
+
+✅ Sprint 18 完工 — 7/7 commit 入仓；Phase A 数据流闭环（Vite 端验证）；前端测试基础设施三层落地；8 项新债务已记录；Sprint 19 候选已建议
+
+### 下一阶段（Sprint 19 候选）
+
+**P1 优先**（高 ROI）:
+1. D-DEBT-32：4 子页 Store 实装（成长/计划/技法/素材 数据从 SQLite 拉取）— 收益最大、依赖最少
+2. D-DEBT-34：typedInvoke 全量覆盖审计（剩余 0 直接 IPC 调用点）— 纯静态分析,1-2 天可完成
+
+**P2 顺序**:
+3. Phase B：event-bus.service.ts（Event 通道集中化）
+4. Phase C：骨架屏（加载/空/错误三态）
+
+**P3 后置**:
+5. D-DEBT-35/36/37：a11y + 视觉基线 + Electron 烟测补全
+
+### 依据
+
+- dev-docs/retrospectives/sprint-18-retrospective.md（完整复盘）
+- dev-docs/tasks/phase-a-tasks.md（Phase A 任务清单）
+- tests/e2e/（E2E + a11y + 视觉基线 31 用例）
+- playwright.config.ts（测试配置 + 平衡模式 + 报告脚本）
+- R-018 变更溯源 / R-019 代码规范标准 / R-027 AI 代码质量门禁 / R-011 记忆强化
+
+
