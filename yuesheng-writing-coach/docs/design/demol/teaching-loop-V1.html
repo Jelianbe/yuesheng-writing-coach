@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>月笙写作教练 — 教学闭环 V1 原型</title>
+<style>
+/* ========================================
+   CSS Variables — 对齐 variables.css V3.0
+   ======================================== */
+:root {
+  --accent: #8A7A9E;
+  --accent-hover: #6E5E82;
+  --accent-light: #ECE8F2;
+  --accent-subtle: rgba(138,122,158,0.10);
+  --accent-faint: rgba(138,122,158,0.06);
+  --text-on-accent: #FFFFFF;
+
+  --color-teaching: #7A93AC;
+  --color-practice: #B8956E;
+  --color-growth: #7BA089;
+  --color-teaching-light: #E8EFF5;
+  --color-practice-light: #F5EDE0;
+  --color-growth-light: #E8F0E9;
+
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #ECE8F2;
+  --bg-main: #F9F8FB;
+  --bg-card: #FFFFFF;
+  --bg-input: #F5F2F9;
+
+  --border: #ECEAF0;
+  --border-light: #E0DCE6;
+  --border-focus: var(--accent);
+
+  --text-primary: #2D2A32;
+  --text-secondary: #5B5663;
+  --text-tertiary: #8E8996;
+
+  --success: #5A8F68;
+  --warning: #C8943C;
+  --error: #B84A4A;
+
+  --shadow-sm: 0 2px 10px rgba(138,122,158,0.06);
+  --shadow-md: 0 4px 16px rgba(138,122,158,0.10);
+  --shadow-lg: 0 8px 24px rgba(138,122,158,0.12);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --font-display: 'Noto Serif SC', 'Songti SC', Georgia, serif;
+  --font-body: -apple-system, 'Segoe UI', 'Noto Sans SC', sans-serif;
+
+  --navbar-height: 52px;
+  --tabbar-height: 58px;
+  --container-max: 430px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: #F0EDF4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 20px;
+}
+
+/* ── 手机容器 ── */
+.phone {
+  width: 100%;
+  max-width: var(--container-max);
+  height: 88dvh;
+  max-height: 820px;
+  background: var(--bg-main);
+  border-radius: 28px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(45,42,50,0.15), 0 4px 16px rgba(45,42,50,0.08);
+  position: relative;
+}
+
+/* ── 阶段指示条 ── */
+.stage-bar {
+  display: flex;
+  gap: 2px;
+  padding: 10px 16px 6px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.stage-dot {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 400ms ease;
+  cursor: pointer;
+  position: relative;
+}
+.stage-dot.active { background: var(--accent); }
+.stage-dot.done { background: var(--color-growth); }
+.stage-dot::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  opacity: 0;
+  transition: all 200ms;
+  pointer-events: none;
+}
+.stage-dot:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Navbar ── */
+.navbar {
+  height: var(--navbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+.navbar-left { display: flex; align-items: center; gap: 4px; }
+.navbar-back {
+  border: none; background: none; cursor: pointer;
+  padding: 4px; border-radius: 8px;
+  display: flex; align-items: center;
+  transition: background 150ms;
+}
+.navbar-back:hover { background: var(--accent-faint); }
+.navbar-title-wrap { display: flex; flex-direction: column; }
+.navbar-title { font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.navbar-subtitle { font-size: 11px; color: var(--accent); }
+
+/* ── 消息区 ── */
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+  scroll-behavior: smooth;
+}
+.messages::-webkit-scrollbar { width: 4px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ════════════════════════════════════════
+   Welcome Guide
+   ════════════════════════════════════════ */
+.welcome {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 16px 24px; gap: 14px;
+}
+.welcome-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #B8A9D4);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 22px; font-weight: 700;
+  box-shadow: 0 4px 16px rgba(138,122,158,0.25);
+  font-family: var(--font-display);
+}
+.welcome-text { font-size: 15px; color: var(--text-primary); font-weight: 500; }
+.welcome-pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.welcome-pill {
+  padding: 8px 14px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-secondary); font-size: 13px; cursor: pointer;
+  transition: all 200ms;
+}
+.welcome-pill:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* ════════════════════════════════════════
+   用户气泡
+   ════════════════════════════════════════ */
+.user-msg {
+  display: flex; justify-content: flex-end; padding: 0 16px 8px;
+}
+.user-bubble {
+  max-width: 75%; padding: 10px 14px; border-radius: 12px 12px 4px 12px;
+  background: var(--accent); color: #fff; font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ════════════════════════════════════════
+   作品引用卡片 — 缺失的设计补完
+   ════════════════════════════════════════ */
+.manuscript-ref {
+  margin: 0 16px 12px; padding: 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--color-teaching);
+  transition: box-shadow 200ms;
+}
+.manuscript-ref:hover { box-shadow: var(--shadow-sm); }
+.manuscript-ref-header {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+}
+.manuscript-ref-badge {
+  font-size: 10px; font-weight: 600; color: var(--color-teaching);
+  background: var(--color-teaching-light); padding: 2px 8px;
+  border-radius: 4px; text-transform: uppercase;
+}
+.manuscript-ref-chapter { font-size: 12px; color: var(--text-tertiary); }
+.manuscript-ref-text {
+  font-size: 13px; color: var(--text-primary); line-height: 1.6;
+  font-family: var(--font-display);
+  padding: 8px 10px; background: var(--bg-input); border-radius: 8px;
+  max-height: 80px; overflow: hidden;
+  position: relative;
+}
+.manuscript-ref-text::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 24px;
+  background: linear-gradient(transparent, var(--bg-input));
+}
+.manuscript-ref-expand {
+  font-size: 11px; color: var(--accent); cursor: pointer;
+  margin-top: 6px; display: inline-block;
+}
+.manuscript-ref-expand:hover { text-decoration: underline; }
+
+/* ════════════════════════════════════════
+   AI 思考中
+   ════════════════════════════════════════ */
+.thinking {
+  display: flex; align-items: center; gap: 8px; padding: 0 16px 8px;
+}
+.thinking-box {
+  padding: 10px 14px; border-radius: 12px; background: var(--bg-card);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.thinking-dots { display: flex; gap: 3px; }
+.thinking-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); opacity: 0.4;
+  animation: pulseDot 1.4s infinite;
+}
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes pulseDot {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+.thinking-text { font-size: 13px; color: var(--text-tertiary); }
+
+/* ════════════════════════════════════════
+   诊断卡片 — 已有，微调
+   ════════════════════════════════════════ */
+.diag-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.diag-header {
+  padding: 8px 12px; background: var(--accent-light);
+  font-size: 11px; font-weight: 600; color: var(--accent);
+  display: flex; align-items: center; gap: 6px;
+}
+.diag-header::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 2px;
+  background: var(--accent);
+}
+.diag-body { padding: 10px 12px; }
+.diag-item {
+  display: flex; gap: 8px; padding: 6px 0;
+  border-bottom: 1px solid var(--border); transition: background 150ms;
+  cursor: default;
+}
+.diag-item:last-child { border-bottom: none; }
+.diag-item:hover { background: var(--accent-faint); margin: 0 -12px; padding: 6px 12px; border-radius: 6px; }
+.diag-num {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent); color: #fff; font-size: 11px;
+  font-weight: 600; display: flex; align-items: center; justify-content: center;
+}
+.diag-item-content { flex: 1; }
+.diag-item-title { font-size: 13px; color: var(--text-primary); font-weight: 500; line-height: 1.4; }
+.diag-evidence {
+  margin-top: 4px; font-size: 11px; color: var(--text-tertiary);
+  line-height: 1.4;
+  padding: 4px 8px; background: var(--bg-input); border-radius: 4px;
+  font-style: italic;
+}
+.diag-severity {
+  display: inline-block; margin-left: 6px; font-size: 10px; padding: 1px 6px;
+  border-radius: 4px; font-weight: 600;
+}
+.sev-high { background: #F5E8E6; color: var(--error); }
+.sev-mid { background: var(--color-practice-light); color: var(--color-practice); }
+.sev-low { background: var(--color-growth-light); color: var(--color-growth); }
+.diag-actions { display: flex; gap: 8px; padding: 8px 12px 12px; }
+.diag-btn {
+  padding: 7px 14px; border-radius: var(--radius-xl);
+  font-size: 12px; cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 200ms;
+}
+.diag-btn.outline {
+  border: 1px solid var(--accent); background: transparent;
+  color: var(--accent);
+}
+.diag-btn.outline:hover { background: var(--accent-light); }
+.diag-btn.solid {
+  border: none; background: var(--accent); color: #fff;
+}
+.diag-btn.solid:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+/* ════════════════════════════════════════
+   讲解卡片 — 缺失的设计补完
+   ════════════════════════════════════════ */
+.teach-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.teach-header {
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.teach-header-icon {
+  width: 24px; height: 24px; border-radius: 6px;
+  background: var(--color-teaching-light); color: var(--color-teaching);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+}
+.teach-body { padding: 12px; }
+.teach-principle {
+  margin-bottom: 12px;
+}
+.teach-principle-label {
+  font-size: 11px; font-weight: 600; color: var(--color-teaching);
+  margin-bottom: 4px; text-transform: uppercase;
+}
+.teach-principle-text {
+  font-size: 13px; color: var(--text-primary); line-height: 1.6;
+}
+.teach-example {
+  background: var(--bg-input); border-radius: var(--radius-sm); padding: 10px;
+  margin-bottom: 12px;
+}
+.teach-example-label { font-size: 10px; color: var(--text-tertiary); margin-bottom: 6px; text-transform: uppercase; }
+.teach-example-row {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 12px; line-height: 1.6;
+}
+.teach-example-before {
+  flex: 1; padding: 6px 8px; background: rgba(184,74,74,0.06);
+  border-radius: 4px; border-left: 2px solid var(--error);
+  color: var(--text-secondary);
+}
+.teach-example-after {
+  flex: 1; padding: 6px 8px; background: rgba(90,143,104,0.06);
+  border-radius: 4px; border-left: 2px solid var(--success);
+  color: var(--text-primary);
+}
+.teach-example-label-badge {
+  font-size: 9px; font-weight: 600; margin-bottom: 2px;
+  display: flex; align-items: center; gap: 4px;
+}
+.teach-example-label-badge.bad { color: var(--error); }
+.teach-example-label-badge.good { color: var(--success); }
+.teach-cta {
+  display: flex; gap: 8px;
+}
+.teach-cta-hint {
+  flex: 1; font-size: 11px; color: var(--text-tertiary);
+  align-self: center;
+}
+
+/* ════════════════════════════════════════
+   训练入口卡片 — 缺失的设计补完
+   ════════════════════════════════════════ */
+.train-card {
+  margin: 0 16px 12px;
+  background: linear-gradient(135deg, var(--bg-card), var(--color-practice-light));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.train-header {
+  padding: 10px 12px;
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(184,149,110,0.08);
+}
+.train-header-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--color-practice); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.train-header-text { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.train-subtitle { font-size: 11px; color: var(--text-tertiary); }
+.train-body { padding: 12px; }
+.train-task {
+  font-size: 14px; color: var(--text-primary); font-weight: 500; line-height: 1.5;
+  margin-bottom: 10px;
+}
+.train-meta {
+  display: flex; gap: 12px; margin-bottom: 12px;
+}
+.train-meta-item {
+  font-size: 11px; color: var(--text-tertiary);
+  display: flex; align-items: center; gap: 4px;
+}
+.train-meta-item svg { flex-shrink: 0; }
+.train-start {
+  width: 100%; padding: 10px; border: none; border-radius: var(--radius-sm);
+  background: var(--color-practice); color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 200ms;
+  font-family: var(--font-body);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.train-start:hover { background: #A8815E; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(184,149,110,0.3); }
+
+/* ════════════════════════════════════════
+   评估对比卡片 — 缺失的设计补完
+   ════════════════════════════════════════ */
+.eval-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.eval-header {
+  padding: 10px 12px;
+  background: var(--color-growth-light);
+  font-size: 12px; font-weight: 600; color: var(--color-growth);
+  display: flex; align-items: center; gap: 6px;
+}
+.eval-header::before {
+  content: '';
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-growth);
+}
+.eval-body { padding: 12px; }
+.eval-compare {
+  display: flex; gap: 8px; margin-bottom: 12px;
+}
+.eval-col {
+  flex: 1; border-radius: var(--radius-sm); padding: 10px;
+}
+.eval-col.before { background: #F5F2F9; border: 1px solid var(--border); }
+.eval-col.after { background: var(--color-growth-light); border: 1px solid var(--color-growth); }
+.eval-col-label {
+  font-size: 10px; font-weight: 600; margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.eval-col-label.before { color: var(--text-tertiary); }
+.eval-col-label.after { color: var(--color-growth); }
+.eval-col-text { font-size: 13px; line-height: 1.75; }
+.eval-col-text.before { color: var(--text-secondary); font-family: var(--font-display); }
+.eval-col-text.after { color: var(--text-primary); font-family: var(--font-display); }
+.eval-col-text .highlight { background: var(--color-growth-light); padding: 1px 4px; border-radius: 3px; }
+.eval-col-text .deem {
+  text-decoration: line-through;
+  text-decoration-color: var(--error);
+  text-decoration-thickness: 1px;
+  color: var(--text-tertiary);
+}
+.eval-growth {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 10px; background: var(--bg-input); border-radius: var(--radius-sm);
+}
+.eval-growth-item {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-secondary);
+}
+.eval-growth-dot {
+  width: 6px; height: 6px; border-radius: 2px;
+  background: var(--color-growth);
+}
+.eval-next {
+  margin-top: 12px; padding: 8px 12px; background: var(--color-teaching-light);
+  border-radius: var(--radius-sm); font-size: 12px; color: var(--text-primary);
+  line-height: 1.5;
+  border-left: 3px solid var(--color-teaching);
+}
+
+/* ════════════════════════════════════════
+   输入栏
+   ════════════════════════════════════════ */
+.input-bar {
+  border-top: 1px solid var(--border); background: var(--bg-card);
+  padding: 8px 12px 12px;
+  flex-shrink: 0;
+  position: relative;
+}
+/* ── 待发送引用 chip ── */
+.pending-ref-chip {
+  display: none;
+  align-items: center; gap: 8px;
+  padding: 8px 10px; margin-bottom: 8px;
+  background: var(--accent-faint);
+  border: 1px solid var(--accent-light);
+  border-radius: var(--radius-sm);
+  animation: slideUp 250ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+.pending-ref-chip.show { display: flex; }
+.pending-ref-chip-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--accent-light); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pending-ref-chip-info { flex: 1; min-width: 0; }
+.pending-ref-chip-label {
+  font-size: 11px; color: var(--text-tertiary); font-weight: 500;
+}
+.pending-ref-chip-name {
+  font-size: 13px; color: var(--text-primary); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pending-ref-chip-preview {
+  font-size: 11px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 1px;
+  font-family: var(--font-display);
+}
+.pending-ref-chip-remove {
+  border: none; background: none; cursor: pointer;
+  color: var(--text-tertiary); padding: 4px;
+  border-radius: 4px; line-height: 1;
+  transition: all 150ms;
+  flex-shrink: 0;
+}
+.pending-ref-chip-remove:hover { color: var(--color-danger); background: rgba(226,93,93,0.08); }
+
+.input-row { display: flex; gap: 8px; align-items: center; }
+.input-plus {
+  width: 38px; height: 38px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg-input); color: var(--text-tertiary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 200ms;
+  font-size: 20px; line-height: 1;
+  flex-shrink: 0;
+}
+.input-plus:hover { background: var(--accent-light); color: var(--accent); }
+.input-field {
+  flex: 1; height: 38px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg-input); padding: 0 12px;
+  font-size: 13px; color: var(--text-primary); outline: none;
+  font-family: var(--font-body);
+}
+.input-field::placeholder { color: var(--text-tertiary); }
+.input-send {
+  width: 38px; height: 38px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg-input); color: var(--text-tertiary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 200ms;
+  flex-shrink: 0;
+}
+.input-send.active { background: var(--accent); color: #fff; cursor: pointer; }
+.input-send.active:hover { background: var(--accent-hover); }
+
+/* ── + 菜单浮层 ── */
+.plus-menu {
+  position: absolute; bottom: 100%; left: 12px;
+  margin-bottom: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+  z-index: 10;
+  animation: slideUp 200ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+.plus-menu.show { display: flex; }
+.plus-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  border: none; background: none; cursor: pointer;
+  border-radius: 8px;
+  font-size: 13px; color: var(--text-primary);
+  font-family: var(--font-body);
+  transition: background 150ms;
+  text-align: left;
+  width: 100%;
+}
+.plus-menu-item:hover { background: var(--accent-faint); }
+.plus-menu-item-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.plus-menu-item-icon.chapter { background: var(--color-teaching-light); color: var(--color-teaching); }
+.plus-menu-item-icon.world { background: var(--color-practice-light); color: var(--color-practice); }
+.plus-menu-item-icon.snippet { background: var(--accent-light); color: var(--accent); }
+.plus-menu-backdrop {
+  position: fixed; inset: 0; z-index: 5;
+  display: none;
+}
+.plus-menu-backdrop.show { display: block; }
+
+/* ── 章节选择器（底部浮层） ── */
+.chapter-sheet {
+  position: absolute; z-index: 20;
+  left: 0; right: 0; bottom: 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -4px 24px rgba(45,42,50,0.15);
+  max-height: 60%;
+  display: none;
+  flex-direction: column;
+  animation: slideUp 300ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+.chapter-sheet.show { display: flex; }
+.chapter-sheet-handle {
+  width: 32px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 10px auto;
+  flex-shrink: 0;
+}
+.chapter-sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 16px 12px;
+  flex-shrink: 0;
+}
+.chapter-sheet-title {
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+}
+.chapter-sheet-close {
+  border: none; background: none; cursor: pointer;
+  color: var(--text-tertiary); font-size: 20px; padding: 4px;
+  border-radius: 6px; line-height: 1;
+}
+.chapter-sheet-close:hover { background: var(--accent-faint); }
+.chapter-sheet-list {
+  flex: 1; overflow-y: auto; padding: 0 16px 16px;
+}
+.chapter-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 150ms;
+  border: 1px solid transparent;
+}
+.chapter-item:hover { background: var(--accent-faint); border-color: var(--border); }
+.chapter-item-num {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--bg-input); color: var(--text-tertiary);
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.chapter-item-info { flex: 1; min-width: 0; }
+.chapter-item-name { font-size: 13px; font-weight: 500; color: var(--text-primary); line-height: 1.4; }
+.chapter-item-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.chapter-item-preview {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.5;
+  margin-top: 4px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+}
+.chapter-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 15;
+  background: rgba(45,42,50,0.3);
+  display: none;
+}
+.chapter-sheet-backdrop.show { display: block; }
+
+/* ── 步骤说明提示 ── */
+.step-label {
+  padding: 6px 16px; font-size: 10px; font-weight: 600;
+  color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-light);
+  text-align: center;
+}
+
+/* ── 动画 ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-up { animation: slideUp 350ms cubic-bezier(0.25, 1, 0.5, 1) both; }
+.anim-scale { animation: scaleIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.25s; }
+.delay-3 { animation-delay: 0.4s; }
+.delay-4 { animation-delay: 0.55s; }
+
+/* ── Navbar MoreMenu ── */
+.more-menu-wrapper { position: relative; display: flex; align-items: center; z-index: 20; }
+.more-menu-trigger {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: none; background: transparent;
+  color: var(--text-secondary); cursor: pointer;
+  border-radius: 8px; transition: background 150ms;
+}
+.more-menu-trigger:hover { background: var(--accent-faint); }
+.more-menu-backdrop { position: fixed; inset: 0; z-index: 98; display: none; }
+.more-menu-backdrop.show { display: block; }
+.more-menu-dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0;
+  z-index: 99; min-width: 172px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(45,42,50,0.10), 0 1px 4px rgba(45,42,50,0.06);
+  padding: 4px; display: none; flex-direction: column; gap: 2px;
+  animation: menuIn 150ms ease-out; transform-origin: top right;
+}
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.more-menu-dropdown.show { display: flex; }
+.more-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px; border: none;
+  background: transparent; color: var(--text-primary);
+  font-size: 13px; line-height: 1.4; cursor: pointer;
+  border-radius: 8px; text-align: left;
+  transition: background 150ms; min-height: 40px;
+  font-family: var(--font-body);
+}
+.more-menu-item:hover { background: var(--accent-faint); }
+.more-menu-item-icon { display: flex; align-items: center; color: var(--text-tertiary); flex-shrink: 0; }
+.more-menu-item-destructive { color: #E25D5D; }
+.more-menu-item-destructive .more-menu-item-icon { color: #E25D5D; }
+
+/* ── MoreMenu toast ── */
+.more-toast {
+  position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: var(--text-primary); color: var(--bg-card);
+  padding: 8px 16px; border-radius: 20px; font-size: 12px;
+  pointer-events: none; opacity: 0; transition: opacity 250ms;
+  white-space: nowrap; z-index: 200;
+}
+.more-toast.show { opacity: 0.92; }
+
+/* ── 底部安全区说明 ── */
+.footnote {
+  text-align: center; padding: 16px;
+  font-size: 11px; color: var(--text-tertiary);
+  position: absolute; bottom: 0; left: 0; right: 0;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <!-- Stage Progress -->
+  <div class="stage-bar" id="stageBar"></div>
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <div class="navbar-left">
+      <button class="navbar-back" title="返回" onclick="resetAll()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="1.5" stroke-linecap="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <div class="navbar-title-wrap">
+        <span class="navbar-title">深海回响</span>
+        <span class="navbar-subtitle">人物动机学习 · 进行中</span>
+      </div>
+    </div>
+    <!-- MoreMenu -->
+    <div class="more-menu-wrapper">
+      <button class="more-menu-trigger" onclick="toggleMoreMenu()" title="更多">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="12" cy="5" r="1.5" fill="var(--text-secondary)"/><circle cx="12" cy="12" r="1.5" fill="var(--text-secondary)"/><circle cx="12" cy="19" r="1.5" fill="var(--text-secondary)"/>
+        </svg>
+      </button>
+      <div class="more-menu-backdrop" id="moreMenuBackdrop" onclick="closeMoreMenu()"></div>
+      <div class="more-menu-dropdown" id="moreMenuDropdown" role="menu">
+        <button class="more-menu-item" role="menuitem" onclick="moreMenuAction('projectProfile')">
+          <span class="more-menu-item-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </span>
+          <span>查看项目画像</span>
+        </button>
+        <button class="more-menu-item" role="menuitem" onclick="moreMenuAction('learningLog')">
+          <span class="more-menu-item-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </span>
+          <span>查看学习记录</span>
+        </button>
+        <button class="more-menu-item" role="menuitem" onclick="moreMenuAction('adjustGoal')">
+          <span class="more-menu-item-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
+          <span>调整学习目标</span>
+        </button>
+        <button class="more-menu-item" role="menuitem" onclick="moreMenuAction('exportChat')">
+          <span class="more-menu-item-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </span>
+          <span>导出对话</span>
+        </button>
+        <div style="height:1px;background:var(--border);margin:4px 0;"></div>
+        <button class="more-menu-item more-menu-item-destructive" role="menuitem" onclick="moreMenuAction('resetProject')">
+          <span class="more-menu-item-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+          </span>
+          <span>重置项目</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="messages" id="messages"></div>
+
+  <!-- Input Bar -->
+  <div class="input-bar" id="inputBar">
+    <div class="plus-menu-backdrop" id="plusBackdrop" onclick="closePlusMenu()"></div>
+    <div class="plus-menu" id="plusMenu">
+      <button class="plus-menu-item" onclick="closePlusMenu(); alert('【导入文件】\n\n支持 .docx / .txt / .md\n导入后自动解析章节结构。');">
+        <span class="plus-menu-item-icon chapter">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </span>
+        导入文件
+      </button>
+      <button class="plus-menu-item" onclick="openChapterSheet()">
+        <span class="plus-menu-item-icon world">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        </span>
+        选择章节
+      </button>
+    </div>
+    <!-- 待发送的引用 chip -->
+    <div class="pending-ref-chip" id="pendingRefChip">
+      <div class="pending-ref-chip-icon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      <div class="pending-ref-chip-info">
+        <div class="pending-ref-chip-label">已引用</div>
+        <div class="pending-ref-chip-name" id="pendingRefName"></div>
+        <div class="pending-ref-chip-preview" id="pendingRefPreview"></div>
+      </div>
+      <button class="pending-ref-chip-remove" onclick="clearPendingRef()" title="取消引用">&times;</button>
+    </div>
+    <div class="input-row">
+      <button class="input-plus" id="plusBtn" onclick="togglePlusMenu()" title="添加引用或文件">+</button>
+      <input class="input-field" type="text" id="inputField" placeholder="输入你的问题…" />
+      <button class="input-send" id="sendBtn" onclick="advanceStep()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Chapter Selector Bottom Sheet -->
+  <div class="chapter-sheet-backdrop" id="chapterBackdrop" onclick="closeChapterSheet()"></div>
+  <div class="chapter-sheet" id="chapterSheet">
+    <div class="chapter-sheet-handle"></div>
+    <div class="chapter-sheet-header">
+      <span class="chapter-sheet-title">深海回响 · 选择章节</span>
+      <button class="chapter-sheet-close" onclick="closeChapterSheet()">&times;</button>
+    </div>
+    <div class="chapter-sheet-list" id="chapterList"></div>
+  </div>
+</div>
+
+<script>
+/* ========================================
+   交互逻辑 — 六步教学闭环
+   ======================================== */
+
+/* Step definitions */
+const STEPS = [
+  { id: 'welcome', label: '准备', tip: '问：用户提问' },
+  { id: 'diag', label: '诊断', tip: '诊：识别问题' },
+  { id: 'teach', label: '讲解', tip: '教：构建理解' },
+  { id: 'train', label: '训练', tip: '练：巩固能力' },
+  { id: 'eval', label: '评估', tip: '评：记录成长' },
+  { id: 'done', label: '闭环', tip: '问：继续学习' },
+];
+
+let currentStep = 0; // 0=welcome, 1=diag, 2=teach, 3=train, 4=eval, 5=done
+let pendingRef = null;     // { name, text, preview } — 选中但未发送的章节引用
+let pendingRefSent = null; // 已发送的引用（用于 renderStep1 展示）
+
+const messages = document.getElementById('messages');
+const stageBar = document.getElementById('stageBar');
+const inputField = document.getElementById('inputField');
+const sendBtn = document.getElementById('sendBtn');
+
+/* Build stage bar */
+STEPS.forEach((s, i) => {
+  const dot = document.createElement('div');
+  dot.className = 'stage-dot';
+  if (i === 0) dot.classList.add('active');
+  dot.setAttribute('data-tip', s.tip);
+  dot.title = s.label;
+  dot.onclick = () => jumpToStep(i);
+  stageBar.appendChild(dot);
+});
+
+const stageDots = stageBar.querySelectorAll('.stage-dot');
+
+function updateStageBar(step) {
+  stageDots.forEach((d, i) => {
+    d.className = 'stage-dot';
+    if (i < step) d.classList.add('done');
+    if (i === step) d.classList.add('active');
+  });
+}
+
+/* ── SVG icons (inline for simplicity) ── */
+const ICONS = {
+  clock: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  dumbbell: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11"/><rect x="2" y="8" width="4" height="8" rx="1"/><rect x="18" y="8" width="4" height="8" rx="1"/></svg>',
+  sparkles: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/></svg>',
+  target: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  lightbulb: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6"/><path d="M10 22h4"/><circle cx="12" cy="6" r="4"/></svg>',
+  book: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+  play: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+};
+
+/* ── Welcome ── */
+function renderWelcome() {
+  return `
+    <div class="welcome anim-scale">
+      <div class="welcome-avatar">月</div>
+      <div class="welcome-text">嘿，今天想从哪里开始？</div>
+      <div class="welcome-pills">
+        <button class="welcome-pill" onclick="jumpToStep(1)">帮我看看作品</button>
+        <button class="welcome-pill" onclick="jumpToStep(2)">学点描写技法</button>
+        <button class="welcome-pill" onclick="jumpToStep(3)">出个题目练练</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 1: 问 + 作品引用（仅在发送后显示） ── */
+function renderStep1() {
+  let html = renderWelcome();
+  if (pendingRefSent) {
+    html += `
+    <div class="user-msg anim-up delay-2">
+      <div class="user-bubble">${inputField.value || '老师，这段对话总觉得哪里不对'}</div>
+    </div>
+    <div class="manuscript-ref anim-up delay-3">
+      <div class="manuscript-ref-header">
+        <span class="manuscript-ref-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+          引用
+        </span>
+        <span class="manuscript-ref-chapter">深海回响 · ${pendingRefSent.name}</span>
+      </div>
+      <div class="manuscript-ref-text">${pendingRefSent.text}</div>
+      <span class="manuscript-ref-expand">展开全文 ↓</span>
+    </div>
+    `;
+  }
+  return html;
+}
+
+/* ── Thinking ── */
+function renderThinking(text) {
+  return `
+    <div class="thinking anim-up delay-1">
+      <div class="thinking-box">
+        <div class="thinking-dots">
+          <div class="thinking-dot"></div>
+          <div class="thinking-dot"></div>
+          <div class="thinking-dot"></div>
+        </div>
+        <span class="thinking-text">${text || '正在分析…'}</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 2: 诊断卡片 ── */
+function renderDiagCard() {
+  // This appears after a thinking delay
+  return `
+    <div class="diag-card anim-scale">
+      <div class="diag-header">诊断分析</div>
+      <div class="diag-body">
+        <div class="diag-item">
+          <div class="diag-num">1</div>
+          <div class="diag-item-content">
+            <div class="diag-item-title">直接陈述替代了情感呈现<span class="diag-severity sev-high">高</span></div>
+            <div class="diag-evidence">"你知道我走了之后会发生什么吗？"——角色在向读者"解释"自己的恐惧，而非通过行为让读者自行感知。</div>
+          </div>
+        </div>
+        <div class="diag-item">
+          <div class="diag-num">2</div>
+          <div class="diag-item-content">
+            <div class="diag-item-title">身体描写与情绪脱节<span class="diag-severity sev-mid">中</span></div>
+            <div class="diag-evidence">"拳头却被攥得发白"和"声音很大"都是愤怒的信号，但林深此刻的情绪是"恐惧失去"，二者存在错位。</div>
+          </div>
+        </div>
+        <div class="diag-item">
+          <div class="diag-num">3</div>
+          <div class="diag-item-content">
+            <div class="diag-item-title">叙述视角在两句间漂移<span class="diag-severity sev-low">低</span></div>
+            <div class="diag-evidence">"他的声音很大。苏晚没有回答。"——从林深的内部感受突然跳到纯外部观察，读者视角被打断。</div>
+          </div>
+        </div>
+      </div>
+      <div class="diag-actions">
+        <button class="diag-btn outline" onclick="jumpToStep(2)">先看改写示例</button>
+        <button class="diag-btn solid" onclick="jumpToStep(2)">好，讲讲</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 3: 讲解卡片 ── */
+function renderTeachCard() {
+  return `
+    <div class="user-msg anim-up">
+      <div class="user-bubble">分析的很有道理，能教教我怎么改吗？</div>
+    </div>
+    ${renderThinking('整理讲解内容…')}
+    <div class="teach-card anim-scale delay-2">
+      <div class="teach-header">
+        <span class="teach-header-icon">${ICONS.lightbulb}</span>
+        什么是「展示而非告知」
+      </div>
+      <div class="teach-body">
+        <div class="teach-principle">
+          <div class="teach-principle-label">核心原理</div>
+          <div class="teach-principle-text">
+            好的人物描写不告诉读者角色"是什么感受"，而是通过具体行为让读者自己感受到。<br>
+            读者自己得出的结论，比作者直接告知的结论更有说服力。
+          </div>
+        </div>
+        <div class="teach-example">
+          <div class="teach-example-label">对比示例</div>
+          <div class="teach-example-row">
+            <div class="teach-example-before">
+              <div class="teach-example-label-badge bad">✕ 直接告知</div>
+              他很紧张，他的手在发抖。
+            </div>
+            <div class="teach-example-after">
+              <div class="teach-example-label-badge good">✓ 行为呈现</div>
+              他把打火机从左手换到右手，又从右手换回左手。拇指反复推着砂轮，却没有一次点燃。
+            </div>
+          </div>
+        </div>
+        <div class="teach-cta">
+          <span class="teach-cta-hint">试试把这个技巧用在你的段落里？</span>
+          <button class="diag-btn solid" onclick="jumpToStep(3)">好，练练</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 4: 训练入口卡片 ── */
+function renderTrainCard() {
+  return `
+    <div class="train-card anim-scale">
+      <div class="train-header">
+        <span class="train-header-icon">${ICONS.target}</span>
+        <div>
+          <div class="train-header-text">展示而非告知 — 改写练习</div>
+          <div class="train-subtitle">针对性训练</div>
+        </div>
+      </div>
+      <div class="train-body">
+        <div class="train-task">
+          把下面这段"直接告知"的文字，改写为一段以行为呈现的对话场景：
+        </div>
+        <div class="teach-example" style="margin-bottom:10px;">
+          <div class="teach-example-text" style="font-size:13px; color:var(--text-secondary); font-family:var(--font-display); line-height:1.6;">
+            "他感到很生气，因为苏晚根本没有把他放在心上。"
+          </div>
+        </div>
+        <div class="train-meta">
+          <span class="train-meta-item">${ICONS.clock} 约 5 分钟</span>
+          <span class="train-meta-item">${ICONS.dumbbell} 入门难度</span>
+        </div>
+        <button class="train-start" onclick="jumpToStep(4)">
+          ${ICONS.play} 开始练习
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 5: 评估对比卡片 ── */
+function renderEvalCard() {
+  return `
+    <div class="user-msg anim-up delay-1">
+      <div class="user-bubble" style="font-size:13px; font-family:var(--font-display);">
+        他把咖啡杯重重搁在桌上，褐色的液体溅到了白瓷托盘里，他没有去擦。<br>
+        "你说完了？"他问苏晚。眼神却盯着自己手背上那块烫出的红印。指甲掐进掌心，他忽然笑了一下。
+      </div>
+    </div>
+    ${renderThinking('评估你的改写…')}
+    <div class="eval-card anim-scale delay-2">
+      <div class="eval-header">修改评估</div>
+      <div class="eval-body">
+        <div class="eval-compare">
+          <div class="eval-col before">
+            <div class="eval-col-label before">修改前</div>
+            <div class="eval-col-text before">
+              <span class="deem">"我不走。"林深说。他低下头，拳头却被攥得发白。</span>
+              <span class="deem">"你知道我走了之后会发生什么吗？你知道我会多后悔吗？"</span>
+              <span class="deem">他的声音很大。</span>
+            </div>
+          </div>
+          <div class="eval-col after">
+            <div class="eval-col-label after">修改后</div>
+            <div class="eval-col-text after">
+              他把咖啡杯<span class="highlight">重重搁在桌上</span>，液体溅到托盘里<span class="highlight">没有去擦</span>。
+              "你说完了？"眼神却<span class="highlight">盯着烫出的红印</span>。指甲<span class="highlight">掐进掌心</span>，他忽然笑了一下。
+            </div>
+          </div>
+        </div>
+        <div class="eval-growth">
+          <div class="eval-growth-item"><span class="eval-growth-dot"></span> 用行为替换了独白</div>
+          <div class="eval-growth-item"><span class="eval-growth-dot"></span> 身体细节承载情绪</div>
+          <div class="eval-growth-item"><span class="eval-growth-dot"></span> 视角统一在外部观察</div>
+        </div>
+        <div class="eval-next">
+          <strong>月笙的建议：</strong>你已经掌握了用行为呈现紧张感的核心技巧。下次可以试试在「日常动作」里藏情绪——比如一个人倒水时的水流声，比任何内心描写都更能体现安静房间里的压抑。
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Step 6: 闭环 ── */
+function renderDone() {
+  return `
+    <div class="welcome anim-scale" style="padding-top: 40px; gap: 18px;">
+      <div class="welcome-avatar" style="background: linear-gradient(135deg, var(--color-growth), #A8D4B8);">月</div>
+      <div class="welcome-text">这次对话，你的成长记录：</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:0 16px;">
+        <span style="font-size:11px;padding:4px 10px;background:var(--color-teaching-light);color:var(--color-teaching);border-radius:20px;">展示 vs 告知</span>
+        <span style="font-size:11px;padding:4px 10px;background:var(--color-practice-light);color:var(--color-practice);border-radius:20px;">行为承载情绪</span>
+        <span style="font-size:11px;padding:4px 10px;background:var(--color-growth-light);color:var(--color-growth);border-radius:20px;">视角一致性</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:0 24px;line-height:1.6;">
+        能力「呈现力」从 <strong style="color:var(--text-primary);">初级</strong> 提升至 <strong style="color:var(--accent);">进阶</strong><br>
+        继续打开下一个话题，或者回顾刚才的练习。
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="welcome-pill" onclick="resetAll()">再来一次</button>
+        <button class="diag-btn solid" onclick="resetAll()" style="font-size:13px;">继续学习 →</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ── Render current step ── */
+function render() {
+  let html = '';
+  const step = currentStep;
+
+  if (step >= 0) html += renderStep1();
+  if (step >= 1) html += renderThinking('正在诊断文本…') + renderDiagCard();
+  if (step >= 2) html += renderTeachCard();
+  if (step >= 3) html += renderTrainCard();
+  if (step >= 4) html += renderEvalCard();
+  if (step >= 5) html += renderDone();
+
+  messages.innerHTML = html;
+  updateStageBar(step);
+  messages.scrollTop = messages.scrollHeight;
+
+  // Update input bar state
+  inputField.disabled = (step >= 5);
+  if (step >= 5) inputField.placeholder = '教学闭环已完成';
+  else if (pendingRef) inputField.placeholder = '补充你的问题，然后发送…';
+  else if (step >= 2) inputField.placeholder = '说说你的想法…';
+  else if (step >= 1) inputField.placeholder = '继续提问…';
+  else inputField.placeholder = '输入你的问题…';
+
+  // Send button active when there's text OR a pending ref
+  if (inputField.value.trim() || pendingRef) {
+    sendBtn.classList.add('active');
+  } else {
+    sendBtn.classList.remove('active');
+  }
+  if (step >= 5) sendBtn.classList.remove('active');
+}
+
+function advanceStep() {
+  // If there's a pending ref and we're at step 0 — "send" it first
+  if (pendingRef && currentStep === 0) {
+    pendingRefSent = pendingRef;
+    pendingRef = null;
+    document.getElementById('pendingRefChip').classList.remove('show');
+    inputField.placeholder = '继续提问…';
+  }
+
+  if (currentStep < STEPS.length - 1) {
+    currentStep++;
+    render();
+    setTimeout(() => {
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    }, 100);
+  }
+}
+
+function jumpToStep(idx) {
+  currentStep = Math.max(0, Math.min(idx, STEPS.length - 1));
+  render();
+  setTimeout(() => {
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  }, 100);
+}
+
+function resetAll() {
+  currentStep = 0;
+  pendingRef = null;
+  pendingRefSent = null;
+  inputField.value = '';
+  inputField.disabled = false;
+  sendBtn.classList.remove('active');
+  document.getElementById('pendingRefChip').classList.remove('show');
+  inputField.placeholder = '输入你的问题…';
+  render();
+}
+
+/* ── Plus menu ── */
+function togglePlusMenu() {
+  const menu = document.getElementById('plusMenu');
+  const backdrop = document.getElementById('plusBackdrop');
+  const isOpen = menu.classList.contains('show');
+  if (isOpen) { closePlusMenu(); return; }
+  menu.classList.add('show');
+  backdrop.classList.add('show');
+}
+function closePlusMenu() {
+  document.getElementById('plusMenu').classList.remove('show');
+  document.getElementById('plusBackdrop').classList.remove('show');
+}
+
+/* ── MoreMenu (navbar ⋮) ── */
+function toggleMoreMenu() {
+  const dd = document.getElementById('moreMenuDropdown');
+  const bd = document.getElementById('moreMenuBackdrop');
+  const isOpen = dd.classList.contains('show');
+  if (isOpen) { closeMoreMenu(); return; }
+  dd.classList.add('show');
+  bd.classList.add('show');
+}
+function closeMoreMenu() {
+  document.getElementById('moreMenuDropdown').classList.remove('show');
+  document.getElementById('moreMenuBackdrop').classList.remove('show');
+}
+function moreMenuAction(action) {
+  closeMoreMenu();
+  // Prototype: show a brief toast in the chat area
+  const labels = {
+    projectProfile: '项目画像 — 世界观 / 人物 / 设定',
+    learningLog: '学习记录 — 诊断历史 / 能力变化',
+    adjustGoal: '调整学习目标 — 对话内引导',
+    exportChat: '导出对话 — Markdown / PDF',
+    resetProject: '重置项目数据',
+  };
+  const toast = document.createElement('div');
+  toast.className = 'more-toast';
+  toast.textContent = labels[action] || action;
+  document.querySelector('.chat-view').appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 2000);
+}
+
+/* ── Chapter data ── */
+const CHAPTERS = [
+  { num: 1, name: '第一章「潮声」', meta: '3,245 字 · 2025-03-12', preview: '海潮在凌晨三点淹没了码头。林深站在栈桥尽头\u2026', text: '\u201C海潮在凌晨三点淹没了码头。林深站在栈桥尽头，看着黑色的海水一寸一寸漫过木板。\u201D' },
+  { num: 2, name: '第二章「暗流」', meta: '4,891 字 · 2025-03-25', preview: '苏晚第一次注意到那片海域的颜色不对\u2026', text: '\u201C苏晚第一次注意到那片海域的颜色不对。不是寻常的深蓝，而是某种介于灰和绿之间的浑浊。\u201D' },
+  { num: 3, name: '第三章「深渊低语」', meta: '2,876 字 · 2025-04-08 · 当前章节', preview: '\u201C我不走。\u201D林深说。他低下头，拳头却被攥得发白\u2026', text: '\u201C我不走。\u201D林深说。他低下头，拳头却被攥得发白。\u201C你知道我走了之后会发生什么吗？你知道我会多后悔吗？\u201D他的声音很大。苏晚没有回答，只是站在那里看着他。' },
+  { num: 4, name: '第四章「断崖」', meta: '1,204 字 · 草稿', preview: '船上只剩下三个人。船长、大副，和林深。没有人说话。', text: '\u201C船上只剩下三个人。船长、大副，和林深。没有人说话。\u201D' },
+];
+
+/* Build chapter list */
+function buildChapterList() {
+  const list = document.getElementById('chapterList');
+  list.innerHTML = CHAPTERS.map(ch => `
+    <div class="chapter-item" data-idx="${ch.num - 1}">
+      <div class="chapter-item-num">${ch.num}</div>
+      <div class="chapter-item-info">
+        <div class="chapter-item-name">${ch.name}</div>
+        <div class="chapter-item-meta">${ch.meta}</div>
+        <div class="chapter-item-preview">\u201C${ch.preview}\u201D</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Attach click handlers
+  list.querySelectorAll('.chapter-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const idx = parseInt(this.getAttribute('data-idx'));
+      selectChapter(CHAPTERS[idx]);
+    });
+  });
+}
+function openChapterSheet() {
+  closePlusMenu();
+  buildChapterList();
+  document.getElementById('chapterSheet').classList.add('show');
+  document.getElementById('chapterBackdrop').classList.add('show');
+}
+function closeChapterSheet() {
+  document.getElementById('chapterSheet').classList.remove('show');
+  document.getElementById('chapterBackdrop').classList.remove('show');
+}
+function selectChapter(ch) {
+  // Set pending ref — don't send yet, show chip above input
+  pendingRef = ch;
+  pendingRefSent = null;
+  document.getElementById('pendingRefName').textContent = '深海回响 · ' + ch.name;
+  document.getElementById('pendingRefPreview').textContent = ch.preview.length > 40 ? '\u201C' + ch.preview.substring(0, 40) + '\u2026\u201D' : '\u201C' + ch.preview + '\u201D';
+  document.getElementById('pendingRefChip').classList.add('show');
+  closeChapterSheet();
+
+  // Focus input so user can type their question
+  inputField.focus();
+  inputField.placeholder = '补充你的问题，然后发送…';
+}
+
+function clearPendingRef() {
+  pendingRef = null;
+  pendingRefSent = null;
+  document.getElementById('pendingRefChip').classList.remove('show');
+  if (currentStep < 5) inputField.placeholder = '输入你的问题…';
+}
+
+// Input field listener
+inputField.addEventListener('input', () => {
+  if (inputField.value.trim() || pendingRef) {
+    sendBtn.classList.add('active');
+  } else {
+    sendBtn.classList.remove('active');
+  }
+});
+
+// Enter to advance
+inputField.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && currentStep < STEPS.length - 1) {
+    advanceStep();
+    inputField.value = '';
+    sendBtn.classList.remove('active');
+  }
+});
+
+// Init
+render();
+</script>
+
+</body>
+</html>

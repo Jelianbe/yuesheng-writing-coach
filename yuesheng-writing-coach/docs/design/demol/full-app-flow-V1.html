@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, user-scalable=no">
+<title>月笙写作教练 — 完整应用流程 V1</title>
+<style>
+/* ════════════════════════════════════════
+   Design Tokens V3.0 — 暖调水墨·文学编辑
+   ════════════════════════════════════════ */
+:root {
+  --bg-base: #F7F5F0;
+  --bg-card: #FEFCF8;
+  --bg-input: #F3F0EA;
+  --bg-surface-hover: rgba(138,122,158,0.06);
+
+  --text-primary: #3D3830;
+  --text-secondary: #8B8576;
+  --text-tertiary: #B5AFA0;
+
+  --accent: #C4945A;
+  --accent-hover: #A87A40;
+  --accent-light: rgba(196,148,90,0.12);
+  --accent-faint: rgba(196,148,90,0.06);
+
+  --border: #E8E2D5;
+  --border-light: #F0ECE3;
+
+  --color-teaching: #B5936E;
+  --color-practice: #C4945A;
+  --color-growth: #8FA880;
+  --color-teaching-light: rgba(181,147,110,0.10);
+  --color-practice-light: rgba(196,148,90,0.10);
+  --color-growth-light: rgba(143,168,128,0.10);
+
+  --shadow-sm: 0 1px 3px rgba(61,56,48,0.06);
+  --shadow-md: 0 4px 12px rgba(61,56,48,0.08);
+  --shadow-lg: 0 6px 20px rgba(61,56,48,0.10);
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  --font-body: 'PingFang SC', 'Noto Sans SC', -apple-system, sans-serif;
+  --font-display: 'LXGW WenKai', 'Noto Serif SC', 'Songti SC', serif;
+  --navbar-height: 52px;
+  --tabbar-height: 56px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: var(--font-body);
+  background: #E0DBD2;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh;
+}
+
+/* ── Phone container ── */
+.phone {
+  width: 375px; height: 760px;
+  background: var(--bg-base);
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(61,56,48,0.15), 0 4px 16px rgba(61,56,48,0.08);
+  display: flex; flex-direction: column;
+}
+
+/* ── Page stack ── */
+.page-stack {
+  flex: 1; overflow: hidden; position: relative;
+  display: flex; flex-direction: column;
+}
+
+/* ── Page base ── */
+.page {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg-base);
+  transition: transform 300ms cubic-bezier(0.25, 0.8, 0.25, 1.2);
+  will-change: transform;
+}
+.page.active { transform: translateX(0); }
+.page.enter-right { transform: translateX(100%); }
+.page.exit-left { transform: translateX(-30%); opacity: 0.7; pointer-events: none; }
+
+/* Home pages (always visible under stack) */
+.page.stack-hidden { transform: translateX(-20%); opacity: 0.5; pointer-events: none; }
+
+/* ════════════════════════════════════════
+   Navbar
+   ════════════════════════════════════════ */
+.navbar {
+  height: var(--navbar-height);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.navbar h1 {
+  font-size: 18px; font-weight: 600; color: var(--text-primary);
+}
+.navbar-left { display: flex; align-items: center; gap: 4px; }
+.navbar-back {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: none; background: transparent;
+  color: var(--text-primary); cursor: pointer; border-radius: var(--radius-sm);
+  transition: background 150ms;
+}
+.navbar-back:hover { background: var(--accent-faint); }
+.navbar-title-wrap { display: flex; flex-direction: column; }
+.navbar-title { font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+.navbar-subtitle { font-size: 11px; color: var(--accent); }
+.navbar-ref-row {
+  display: flex; align-items: center; gap: 4px; margin-top: 2px;
+}
+.navbar-ref-badge {
+  font-size: 10px; font-weight: 500; color: var(--text-tertiary);
+  background: var(--bg-input); border-radius: var(--radius-xs);
+  padding: 1px 6px; line-height: 1.6;
+}
+.navbar-ref-sep { color: var(--text-tertiary); font-size: 10px; }
+.navbar-actions { display: flex; gap: 12px; align-items: center; }
+.navbar-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: none; background: transparent;
+  color: var(--text-secondary); cursor: pointer;
+  border-radius: var(--radius-sm); transition: background 150ms;
+}
+.navbar-icon-btn:hover { background: var(--accent-faint); }
+
+/* ════════════════════════════════════════
+   TabBar
+   ════════════════════════════════════════ */
+.tabbar {
+  height: var(--tabbar-height);
+  display: flex; align-items: center;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 4px 0;
+}
+.tabbar.hidden { display: none; }
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-tertiary); padding: 4px 0;
+  transition: color 200ms;
+  position: relative;
+  font-family: var(--font-body);
+}
+.tab.active { color: var(--accent); }
+.tab-label { font-size: 10px; font-weight: 500; }
+.tab-indicator {
+  position: absolute; bottom: -4px;
+  width: 20px; height: 3px; border-radius: 2px;
+  background: var(--accent);
+}
+
+/* ════════════════════════════════════════
+   MoreMenu
+   ════════════════════════════════════════ */
+.more-menu-wrapper { position: relative; display: flex; align-items: center; z-index: 20; }
+.more-menu-trigger {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: none; background: transparent;
+  color: var(--text-secondary); cursor: pointer;
+  border-radius: var(--radius-sm); transition: background 150ms;
+}
+.more-menu-trigger:hover { background: var(--accent-faint); }
+.more-menu-backdrop { position: fixed; inset: 0; z-index: 98; display: none; }
+.more-menu-backdrop.show { display: block; }
+.more-menu-dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0;
+  z-index: 99; min-width: 172px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(45,42,50,0.10), 0 1px 4px rgba(45,42,50,0.06);
+  padding: 4px; display: none; flex-direction: column; gap: 2px;
+  animation: menuIn 150ms ease-out; transform-origin: top right;
+}
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.more-menu-dropdown.show { display: flex; }
+.more-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px; border: none;
+  background: transparent; color: var(--text-primary);
+  font-size: 13px; line-height: 1.4; cursor: pointer;
+  border-radius: 8px; text-align: left;
+  transition: background 150ms; min-height: 40px;
+  font-family: var(--font-body);
+}
+.more-menu-item:hover { background: var(--accent-faint); }
+.more-menu-item-icon { display: flex; align-items: center; color: var(--text-tertiary); flex-shrink: 0; }
+.more-menu-item-destructive { color: #E25D5D; }
+.more-menu-item-destructive .more-menu-item-icon { color: #E25D5D; }
+
+/* ════════════════════════════════════════
+   Bookshelf
+   ════════════════════════════════════════ */
+.bookshelf-content { flex: 1; overflow: auto; padding: 16px 16px 8px; }
+.book-card {
+  display: flex; gap: 12px; padding: 12px;
+  background: var(--bg-card); border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  cursor: pointer; transition: box-shadow 200ms;
+}
+.book-card:hover { box-shadow: var(--shadow-md); }
+.book-cover {
+  width: 46px; height: 60px; border-radius: var(--radius-xs); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.book-cover svg { color: rgba(255,255,255,0.7); }
+.book-info { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.book-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.book-meta { font-size: 12px; color: var(--text-tertiary); }
+.book-growth-dots { display: flex; gap: 4px; margin-top: 2px; }
+.book-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--border);
+}
+.book-dot.filled { background: var(--color-growth); }
+.book-list { display: flex; flex-direction: column; gap: 12px; }
+.dashed-new {
+  margin-top: 12px; padding: 14px 0;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md); text-align: center;
+  color: var(--text-tertiary); font-size: 13px; cursor: pointer;
+}
+.dashed-new:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ════════════════════════════════════════
+   Conversations
+   ════════════════════════════════════════ */
+.conv-content { flex: 1; overflow: auto; padding: 8px 16px; }
+.conv-item {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.conv-item-row { display: flex; justify-content: space-between; align-items: center; }
+.conv-title { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.conv-time { font-size: 11px; color: var(--text-tertiary); }
+.conv-summary { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+.conv-project { font-size: 11px; color: var(--accent); }
+.conv-refs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.conv-ref-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; color: var(--text-secondary);
+  background: var(--bg-input); border-radius: var(--radius-xs);
+  padding: 2px 8px; line-height: 1.5;
+}
+.conv-ref-chip svg { color: var(--text-tertiary); }
+.conv-empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; gap: 12px;
+  color: var(--text-tertiary);
+}
+.conv-list { display: flex; flex-direction: column; gap: 2px; }
+.conv-new-entry {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 0; margin-bottom: 8px;
+  border: 1.5px dashed var(--border); border-radius: var(--radius-md);
+  justify-content: center; cursor: pointer;
+  color: var(--accent); font-size: 14px; font-weight: 500;
+  transition: border-color 200ms, background 200ms;
+  font-family: var(--font-body);
+}
+.conv-new-entry:hover { border-color: var(--accent); background: var(--accent-faint); }
+.conv-new-entry svg { flex-shrink: 0; }
+
+/* ════════════════════════════════════════
+   Apps
+   ════════════════════════════════════════ */
+.apps-content { flex: 1; overflow: auto; padding: 16px; }
+.apps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.apps-grid-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 6px; padding: 12px 4px; cursor: pointer;
+  transition: transform 150ms;
+}
+.apps-grid-item:hover { transform: translateY(-2px); }
+.apps-grid-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--accent-faint);
+  display: flex; align-items: center; justify-content: center;
+}
+.apps-grid-label { font-size: 11px; color: var(--text-secondary); text-align: center; line-height: 1.3; }
+.apps-section-title { margin-top: 24px; margin-bottom: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.apps-tool-list { display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--border); overflow: hidden; }
+.apps-tool-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms;
+}
+.apps-tool-item:last-child { border-bottom: none; }
+.apps-tool-item:hover { background: var(--accent-faint); }
+.apps-tool-item-label { font-size: 13px; color: var(--text-primary); }
+
+/* ════════════════════════════════════════
+   Project Space
+   ════════════════════════════════════════ */
+.ps-content { flex: 1; overflow: auto; padding: 0 16px 16px; }
+.ps-stats { display: flex; gap: 8px; margin-top: 16px; margin-bottom: 20px; }
+.ps-stat {
+  flex: 1; text-align: center; padding: 10px 0;
+  background: var(--bg-card); border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+.ps-stat-value { font-size: 20px; font-weight: 700; }
+.ps-stat-label { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.ps-radar-wrap { display: flex; justify-content: center; margin-bottom: 20px; }
+.ps-cta {
+  width: 100%; padding: 12px 0; border: none; border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent), #A8804A);
+  color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(196,148,90,0.3);
+  margin-bottom: 20px; font-family: var(--font-body);
+  transition: transform 150ms;
+}
+.ps-cta:hover { transform: translateY(-1px); }
+.ps-section-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 8px; }
+.ps-recent { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.ps-recent-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; background: var(--bg-card); border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.ps-recent-badge {
+  font-size: 10px; font-weight: 600; color: #fff;
+  padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.ps-recent-label { flex: 1; font-size: 13px; color: var(--text-primary); }
+.ps-recent-time { font-size: 11px; color: var(--text-tertiary); }
+.ps-chapters { display: flex; flex-direction: column; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; }
+.ps-chapter {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms;
+}
+.ps-chapter:last-child { border-bottom: none; }
+.ps-chapter:hover { background: var(--accent-faint); }
+.ps-chapter-name { flex: 1; font-size: 13px; color: var(--text-primary); }
+.ps-chapter-status { font-size: 11px; }
+.ps-chapter-discuss {
+  font-size: 11px; color: var(--text-tertiary);
+  padding: 3px 8px; border-radius: var(--radius-xs);
+  background: var(--bg-input); cursor: pointer;
+  transition: all 150ms;
+}
+.ps-chapter-discuss:hover { color: var(--accent); background: var(--accent-faint); }
+.ps-chapter-discuss-active {
+  color: var(--accent); background: var(--accent-faint);
+}
+.ps-chapter-discuss-count { font-weight: 500; }
+
+/* ════════════════════════════════════════
+   Chat page
+   ════════════════════════════════════════ */
+.chat-messages { flex: 1; overflow-y: auto; padding: 12px 0; }
+.welcome {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 16px 20px; gap: 12px;
+}
+.welcome-avatar {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #A8804A);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 600; font-family: var(--font-display);
+}
+.welcome-text { font-size: 15px; color: var(--text-primary); font-weight: 500; }
+.welcome-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.welcome-pill {
+  padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--bg-card); color: var(--text-secondary);
+  font-size: 12px; cursor: pointer; font-family: var(--font-body);
+  transition: all 150ms;
+}
+.welcome-pill:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-faint); }
+.user-msg { display: flex; justify-content: flex-end; padding: 0 16px 8px; }
+.user-bubble {
+  max-width: 78%; padding: 8px 12px; border-radius: 16px 16px 4px 16px;
+  background: var(--accent-faint); color: var(--text-primary);
+  font-size: 14px; line-height: 1.5;
+  word-break: break-word;
+}
+.thinking { padding: 0 16px 10px; display: flex; align-items: center; }
+.thinking-box {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 16px;
+  background: var(--bg-card); border: 1px solid var(--border-light);
+}
+.thinking-dots { display: flex; gap: 4px; }
+.thinking-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+.thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+.thinking-text { font-size: 12px; color: var(--text-tertiary); }
+.diag-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.diag-header {
+  padding: 10px 12px; background: var(--color-teaching-light);
+  font-size: 12px; font-weight: 600; color: var(--color-teaching);
+  display: flex; align-items: center; gap: 6px;
+}
+.diag-body { padding: 12px; }
+.diag-item { display: flex; gap: 10px; margin-bottom: 10px; }
+.diag-item:last-child { margin-bottom: 0; }
+.diag-num {
+  width: 22px; height: 22px; border-radius: 6px;
+  background: var(--accent-faint); color: var(--accent);
+  font-size: 12px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.diag-item-content { flex: 1; }
+.diag-item-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.diag-item-cause { font-size: 12px; color: var(--text-secondary); margin-top: 2px; line-height: 1.5; }
+.diag-item-evidence {
+  font-size: 12px; color: var(--text-tertiary); font-style: italic;
+  margin-top: 4px; padding: 4px 8px; background: var(--bg-input); border-radius: var(--radius-xs);
+}
+.diag-btn {
+  width: 100%; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg-card);
+  color: var(--text-primary); font-size: 13px; cursor: pointer;
+  margin-top: 10px; font-family: var(--font-body);
+  transition: all 150ms;
+}
+.diag-btn:hover { border-color: var(--accent); color: var(--accent); }
+.diag-btn.solid {
+  background: var(--accent); color: #fff; border: none;
+  margin-top: 6px;
+}
+.diag-btn.solid:hover { background: var(--accent-hover); }
+.teach-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.teach-header {
+  padding: 10px 12px; background: var(--color-growth-light);
+  font-size: 12px; font-weight: 600; color: var(--color-growth);
+  display: flex; align-items: center; gap: 6px;
+}
+.teach-header::before { content: '💡'; }
+.teach-body { padding: 12px; }
+.teach-point { font-size: 14px; color: var(--text-primary); font-weight: 500; line-height: 1.5; margin-bottom: 10px; }
+.teach-example {
+  background: var(--bg-input); border-radius: var(--radius-sm);
+  padding: 10px; margin-bottom: 10px;
+}
+.teach-example-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; }
+.teach-example-row:last-child { margin-bottom: 0; }
+.teach-ex-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px;
+  flex-shrink: 0; width: 40px; text-align: center;
+}
+.teach-ex-bad { background: #FDF0ED; color: #E25D5D; }
+.teach-ex-good { background: #EFF6ED; color: #7BA089; }
+.teach-ex-text { font-size: 13px; color: var(--text-primary); line-height: 1.5; font-family: var(--font-display); }
+.train-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.train-header-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-practice-light);
+}
+.train-header-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: var(--color-practice); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.train-header-text { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.train-body { padding: 12px; }
+.train-task {
+  font-size: 14px; color: var(--text-primary); font-weight: 500; line-height: 1.5;
+  margin-bottom: 10px;
+}
+.train-meta { display: flex; gap: 12px; margin-bottom: 12px; }
+.train-meta-item { font-size: 11px; color: var(--text-tertiary); display: flex; align-items: center; gap: 4px; }
+.train-start {
+  width: 100%; padding: 10px; border: none; border-radius: var(--radius-sm);
+  background: var(--color-practice); color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body);
+}
+.train-start:hover { opacity: 0.9; }
+
+.eval-card {
+  margin: 0 16px 12px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); overflow: hidden;
+}
+.eval-header {
+  padding: 10px 12px; background: var(--color-growth-light);
+  font-size: 12px; font-weight: 600; color: var(--color-growth);
+  display: flex; align-items: center; gap: 6px;
+}
+.eval-header::before { content: '📊'; }
+.eval-body { padding: 12px; }
+.eval-compare { display: flex; gap: 8px; margin-bottom: 10px; }
+.eval-compare-col {
+  flex: 1; border-radius: var(--radius-sm);
+  padding: 8px; font-size: 11px; line-height: 1.5;
+}
+.eval-compare-before { background: #FDF5F0; }
+.eval-compare-after { background: #F5F8F3; }
+.eval-compare-label { font-weight: 600; margin-bottom: 4px; }
+.eval-compare-before .eval-compare-label { color: #C08060; }
+.eval-compare-after .eval-compare-label { color: #7BA089; }
+.eval-compare-text { font-family: var(--font-display); color: var(--text-primary); }
+.eval-compare-before .eval-compare-text { text-decoration: line-through; color: var(--text-tertiary); }
+.eval-growth { margin-bottom: 10px; }
+.eval-growth-item {
+  font-size: 12px; color: var(--text-primary); line-height: 1.8;
+  display: flex; align-items: center; gap: 6px;
+}
+.eval-growth-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--color-growth);
+  flex-shrink: 0;
+}
+.eval-next {
+  font-size: 12px; color: var(--text-secondary); line-height: 1.6;
+  padding: 8px; background: var(--bg-input); border-radius: var(--radius-sm);
+}
+.manuscript-ref {
+  margin: 0 16px 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 10px 12px;
+}
+.manuscript-ref-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.manuscript-ref-badge {
+  font-size: 11px; color: var(--accent); font-weight: 500;
+  display: flex; align-items: center; gap: 4px;
+}
+.manuscript-ref-chapter { font-size: 12px; color: var(--text-tertiary); }
+.manuscript-ref-text {
+  font-size: 13px; color: var(--text-primary); line-height: 1.7;
+  font-family: var(--font-display);
+}
+.manuscript-ref-expand {
+  font-size: 11px; color: var(--accent); cursor: pointer; margin-top: 4px;
+  display: inline-block;
+}
+
+/* ── Chat demo progress bar ── */
+.chat-progress {
+  display: flex; gap: 14px; justify-content: center;
+  padding: 6px 0; border-top: 1px solid var(--border); background: var(--bg-card);
+  flex-shrink: 0;
+}
+.chat-step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); transition: all 200ms;
+}
+.chat-step-dot.done { background: var(--accent); }
+.chat-step-dot.current { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+/* ── Input bar (chat) ── */
+.input-bar {
+  border-top: 1px solid var(--border); background: var(--bg-card);
+  padding: 8px 12px 12px; flex-shrink: 0; position: relative;
+}
+.pending-ref-chip {
+  display: none; align-items: center; gap: 8px;
+  padding: 8px 10px; margin-bottom: 8px;
+  background: var(--accent-faint); border: 1px solid var(--accent-light);
+  border-radius: var(--radius-sm);
+  animation: slideUp 250ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+.pending-ref-chip.show { display: flex; }
+.pending-ref-chip-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--accent-light); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.pending-ref-chip-info { flex: 1; min-width: 0; }
+.pending-ref-chip-label { font-size: 11px; color: var(--text-tertiary); font-weight: 500; }
+.pending-ref-chip-name {
+  font-size: 13px; color: var(--text-primary); font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pending-ref-chip-preview {
+  font-size: 11px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 1px; font-family: var(--font-display);
+}
+.pending-ref-chip-remove {
+  border: none; background: none; cursor: pointer;
+  color: var(--text-tertiary); padding: 4px;
+  border-radius: 4px; line-height: 1; flex-shrink: 0;
+}
+.pending-ref-chip-remove:hover { color: #E25D5D; background: rgba(226,93,93,0.08); }
+.input-row { display: flex; gap: 8px; align-items: center; }
+.input-plus {
+  width: 38px; height: 38px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg-input); color: var(--text-tertiary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 20px; line-height: 1; flex-shrink: 0;
+}
+.input-plus:hover { background: var(--accent-light); color: var(--accent); }
+.input-field {
+  flex: 1; height: 38px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg-input); padding: 0 12px;
+  font-size: 13px; color: var(--text-primary); outline: none;
+  font-family: var(--font-body);
+}
+.input-field::placeholder { color: var(--text-tertiary); }
+.input-send {
+  width: 38px; height: 38px; border-radius: var(--radius-sm); border: none;
+  background: var(--bg-input); color: var(--text-tertiary);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.input-send.active { background: var(--accent); color: #fff; cursor: pointer; }
+.input-send.active:hover { background: var(--accent-hover); }
+
+/* ── Plus menu ── */
+.plus-menu {
+  position: absolute; bottom: 100%; left: 12px;
+  margin-bottom: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); box-shadow: var(--shadow-lg);
+  padding: 4px; display: none; flex-direction: column; gap: 2px;
+  min-width: 170px; z-index: 10;
+  animation: slideUp 200ms cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+.plus-menu.show { display: flex; }
+.plus-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 12px; border: none;
+  background: transparent; color: var(--text-primary);
+  font-size: 13px; cursor: pointer; border-radius: var(--radius-sm);
+  transition: background 150ms; text-align: left;
+  font-family: var(--font-body);
+}
+.plus-menu-item:hover { background: var(--accent-faint); }
+.plus-menu-item-icon {
+  width: 28px; height: 28px; border-radius: var(--radius-xs);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.plus-menu-item-icon.file { background: #F2EDF8; color: #8A7A9E; }
+.plus-menu-item-icon.chapter { background: #FDF0E8; color: var(--accent); }
+.plus-menu-backdrop { position: fixed; inset: 0; z-index: 5; display: none; }
+.plus-menu-backdrop.show { display: block; }
+
+/* ── Chapter selector sheet ── */
+.chapter-sheet {
+  position: absolute; inset: 0; z-index: 30;
+  background: var(--bg-base);
+  display: none; flex-direction: column;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 30px rgba(61,56,48,0.12);
+}
+.chapter-sheet.show { display: flex; }
+.chapter-sheet-handle {
+  width: 32px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 10px auto;
+}
+.chapter-sheet-header {
+  padding: 0 16px 12px; display: flex; align-items: center; justify-content: space-between;
+}
+.chapter-sheet-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.chapter-sheet-close {
+  width: 32px; height: 32px; border: none; background: none;
+  cursor: pointer; color: var(--text-tertiary); font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.chapter-sheet-back {
+  width: 32px; height: 32px; border: none; background: none;
+  cursor: pointer; color: var(--text-secondary);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+}
+.chapter-sheet-list { flex: 1; overflow: auto; padding: 0 16px 16px; }
+.chapter-sheet-list.preview-mode {
+  display: flex; flex-direction: column;
+  padding: 0; overflow: hidden;
+}
+.chapter-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 150ms;
+}
+.chapter-item:hover { background: var(--accent-faint); }
+.chapter-item-num {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--bg-input); color: var(--text-tertiary);
+  font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.chapter-item-info { flex: 1; }
+.chapter-item-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.chapter-item-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.chapter-item-preview {
+  font-size: 12px; color: var(--text-secondary); margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--font-display);
+}
+
+/* ── Chapter preview (partial text selection) ── */
+.preview-toolbar {
+  display: flex; gap: 8px; padding: 12px 16px; align-items: center;
+  flex-shrink: 0; background: var(--bg-base);
+}
+.preview-select-all {
+  padding: 6px 12px; border: 1px solid var(--accent); border-radius: var(--radius-xs);
+  background: transparent; color: var(--accent); font-size: 12px;
+  cursor: pointer; font-family: var(--font-body); white-space: nowrap;
+  transition: all 150ms;
+}
+.preview-select-all:hover { background: var(--accent-faint); }
+.preview-select-all.selected { background: var(--accent); color: #fff; }
+
+.preview-count {
+  font-size: 12px; color: var(--text-tertiary); margin-left: auto;
+}
+.preview-count.has-selection { color: var(--accent); font-weight: 500; }
+
+.preview-text-area {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 0 16px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+.chapter-pg {
+  padding: 14px 14px; margin-bottom: 10px;
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 14px; line-height: 1.9; color: var(--text-primary);
+  font-family: var(--font-display);
+  transition: all 180ms;
+  border: 1.5px solid transparent;
+  background: var(--bg-card);
+  position: relative;
+  text-indent: 2em;
+}
+.chapter-pg:hover { background: var(--accent-faint); }
+.chapter-pg.selected {
+  background: var(--accent-faint);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-light);
+}
+.chapter-pg.selected::after {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+
+.preview-confirm-bar {
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
+  position: sticky; bottom: 0;
+}
+.preview-confirm-btn {
+  flex: 1; padding: 12px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 150ms;
+}
+.preview-confirm-btn:disabled {
+  background: var(--bg-input); color: var(--text-tertiary);
+  cursor: not-allowed;
+}
+.preview-confirm-btn:not(:disabled):hover { background: var(--accent-hover); }
+.preview-cancel-btn {
+  padding: 12px 16px;
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; cursor: pointer;
+  font-family: var(--font-body);
+}
+.preview-cancel-btn:hover { background: var(--accent-faint); }
+
+/* ── Book list in selector ── */
+.book-sel-item {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 150ms;
+}
+.book-sel-item:hover { background: var(--accent-faint); }
+.book-sel-cover {
+  width: 40px; height: 52px; border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.book-sel-cover svg { color: rgba(255,255,255,0.6); }
+.book-sel-info { flex: 1; }
+.book-sel-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+.book-sel-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.book-sel-arrow { color: var(--text-tertiary); flex-shrink: 0; }
+
+/* Whole-book select row */
+.book-whole-row {
+  display: flex; gap: 10px; align-items: center;
+  padding: 12px; margin-bottom: 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 150ms;
+}
+.book-whole-row:hover { background: var(--accent-faint); }
+.book-whole-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--accent-faint); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.book-whole-info { flex: 1; }
+.book-whole-name { font-size: 13px; font-weight: 500; color: var(--accent); }
+.book-whole-meta { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+
+/* ── Animations ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.anim-up { animation: slideUp 350ms cubic-bezier(0.25, 1, 0.5, 1) both; }
+.anim-scale { animation: scaleIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.25s; }
+.delay-3 { animation-delay: 0.4s; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="page-stack" id="pageStack">
+    <!-- ═════════ Bookshelf ═════════ -->
+    <div class="page active" id="page-bookshelf">
+      <div class="navbar">
+        <h1>书架</h1>
+        <div class="navbar-actions">
+          <button class="navbar-icon-btn" title="搜索" onclick="toast('搜索项目')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <button class="navbar-icon-btn" title="新建" onclick="toast('新建学习项目')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="bookshelf-content">
+        <div class="book-list">
+          <div class="book-card" onclick="pushPage('project-space', {id:'1',title:'深海回响'})">
+            <div class="book-cover" style="background:linear-gradient(135deg,#8A7A9E,#B8A9D4)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            </div>
+            <div class="book-info">
+              <div class="book-name">深海回响</div>
+              <div class="book-meta">12 章 · 4.2w 字 · 5 次对话</div>
+              <div class="book-growth-dots">
+                <div class="book-dot filled"></div><div class="book-dot filled"></div><div class="book-dot filled"></div><div class="book-dot"></div><div class="book-dot"></div>
+              </div>
+            </div>
+          </div>
+          <div class="book-card" onclick="pushPage('project-space', {id:'2',title:'星尘之旅'})">
+            <div class="book-cover" style="background:linear-gradient(135deg,#7A93AC,#A8C4D8)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            </div>
+            <div class="book-info">
+              <div class="book-name">星尘之旅</div>
+              <div class="book-meta">8 章 · 2.8w 字 · 3 次对话</div>
+              <div class="book-growth-dots">
+                <div class="book-dot filled"></div><div class="book-dot filled"></div><div class="book-dot"></div><div class="book-dot"></div><div class="book-dot"></div>
+              </div>
+            </div>
+          </div>
+          <div class="book-card" onclick="pushPage('project-space', {id:'3',title:'春日迟迟'})">
+            <div class="book-cover" style="background:linear-gradient(135deg,#7BA089,#A8D4B8)">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            </div>
+            <div class="book-info">
+              <div class="book-name">春日迟迟</div>
+              <div class="book-meta">6 章 · 1.5w 字 · 1 次对话</div>
+              <div class="book-growth-dots">
+                <div class="book-dot filled"></div><div class="book-dot"></div><div class="book-dot"></div><div class="book-dot"></div><div class="book-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dashed-new" onclick="toast('新建学习项目')">+ 新建学习项目</div>
+      </div>
+    </div>
+
+    <!-- ═════════ Conversations ═════════ -->
+    <div class="page enter-right" id="page-conversations">
+      <div class="navbar">
+        <h1>对话</h1>
+        <div class="navbar-actions">
+          <button class="navbar-icon-btn" title="新建对话" onclick="startNewConversation()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="conv-content">
+        <div class="conv-list">
+          <div class="conv-new-entry" onclick="startNewConversation()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            开始新对话
+          </div>
+          <div class="conv-item" onclick="pushPage('chat', {id:'1',title:'人物动机分析',refs:['第3章','第7章']})">
+            <div class="conv-item-row">
+              <span class="conv-title">人物动机分析</span>
+              <span class="conv-time">10分钟前</span>
+            </div>
+            <div class="conv-summary">分析了主角深海回响中的人物动机冲突…</div>
+            <div class="conv-refs">
+              <span class="conv-project">深海回响</span>
+              <span class="conv-ref-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>第3章</span>
+              <span class="conv-ref-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>第7章</span>
+            </div>
+          </div>
+          <div class="conv-item" onclick="pushPage('chat', {id:'2',title:'对话写作练习',refs:['第2章']})">
+            <div class="conv-item-row">
+              <span class="conv-title">对话写作练习</span>
+              <span class="conv-time">昨天</span>
+            </div>
+            <div class="conv-summary">完成了三个对话场景的修改练习…</div>
+            <div class="conv-refs">
+              <span class="conv-project">星尘之旅</span>
+              <span class="conv-ref-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>第2章</span>
+            </div>
+          </div>
+          <div class="conv-item" onclick="pushPage('chat', {id:'3',title:'环境描写技法',refs:['全文']})">
+            <div class="conv-item-row">
+              <span class="conv-title">环境描写技法</span>
+              <span class="conv-time">3天前</span>
+            </div>
+            <div class="conv-summary">学习了五种环境描写的技法…</div>
+            <div class="conv-refs">
+              <span class="conv-project">春日迟迟</span>
+              <span class="conv-ref-chip"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>全文</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════ Apps ═════════ -->
+    <div class="page enter-right" id="page-apps">
+      <div class="navbar">
+        <h1>应用</h1>
+      </div>
+      <div class="apps-content">
+        <div class="apps-grid">
+          <div class="apps-grid-item" onclick="toast('成长报告')">
+            <div class="apps-grid-icon" style="color:var(--color-growth)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+            <div class="apps-grid-label">成长报告</div>
+          </div>
+          <div class="apps-grid-item" onclick="toast('训练计划')">
+            <div class="apps-grid-icon" style="color:var(--color-practice)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="apps-grid-label">训练计划</div>
+          </div>
+          <div class="apps-grid-item" onclick="toast('技法库')">
+            <div class="apps-grid-icon" style="color:var(--color-teaching)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>
+            <div class="apps-grid-label">技法库</div>
+          </div>
+          <div class="apps-grid-item" onclick="toast('素材库')">
+            <div class="apps-grid-icon" style="color:var(--accent)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+            <div class="apps-grid-label">素材库</div>
+          </div>
+        </div>
+        <div class="apps-section-title">写作工具</div>
+        <div class="apps-tool-list">
+          <div class="apps-tool-item" onclick="toast('结构拆解')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span class="apps-tool-item-label">结构拆解</span>
+          </div>
+          <div class="apps-tool-item" onclick="toast('设定管理')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            <span class="apps-tool-item-label">设定管理</span>
+          </div>
+          <div class="apps-tool-item" onclick="toast('导出作品')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span class="apps-tool-item-label">导出作品</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════ Project Space ═════════ -->
+    <div class="page enter-right" id="page-project-space">
+      <div class="navbar">
+        <div class="navbar-left">
+          <button class="navbar-back" onclick="popPage()" title="返回">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="1.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="navbar-title-wrap">
+            <span class="navbar-title" id="ps-title">深海回响</span>
+            <span class="navbar-subtitle">人物动机学习 · 进行中</span>
+          </div>
+        </div>
+        <div class="more-menu-wrapper">
+          <button class="more-menu-trigger" onclick="toggleMoreMenu('project-space')" title="更多">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="5" r="1.5" fill="var(--text-secondary)"/><circle cx="12" cy="12" r="1.5" fill="var(--text-secondary)"/><circle cx="12" cy="19" r="1.5" fill="var(--text-secondary)"/></svg>
+          </button>
+          <div class="more-menu-backdrop" onclick="closeAllMenus()"></div>
+          <div class="more-menu-dropdown" id="moreMenu-project-space">
+            <button class="more-menu-item" onclick="closeAllMenus();toast('查看项目画像')"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></span>查看项目画像</button>
+            <button class="more-menu-item" onclick="closeAllMenus();toast('查看学习记录')"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>查看学习记录</button>
+            <button class="more-menu-item" onclick="pushPage('chat', {title:document.getElementById('ps-title').textContent,projectId:currentStackParams?.id});closeAllMenus();"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></span>新建对话</button>
+          </div>
+        </div>
+      </div>
+      <div class="ps-content">
+        <div class="ps-stats">
+          <div class="ps-stat">
+            <div class="ps-stat-value" style="color:var(--color-teaching)">6</div>
+            <div class="ps-stat-label">诊断</div>
+          </div>
+          <div class="ps-stat">
+            <div class="ps-stat-value" style="color:var(--color-practice)">4</div>
+            <div class="ps-stat-label">训练</div>
+          </div>
+          <div class="ps-stat">
+            <div class="ps-stat-value" style="color:var(--color-growth)">23</div>
+            <div class="ps-stat-label">学习天</div>
+          </div>
+        </div>
+        <div class="ps-radar-wrap">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <!-- Grid --><g stroke="var(--border)" stroke-width="0.8" fill="none">
+              <polygon points="70,17 118,46 106,97 34,97 22,46"/>
+              <polygon points="70,28 108,51 99,88 41,88 32,51"/>
+              <polygon points="70,39 99,57 92,79 48,79 41,57"/>
+              <polygon points="70,50 89,65 85,70 55,70 51,65"/>
+              <polygon points="70,61 80,71 78,71 62,71 60,71"/>
+            </g>
+            <!-- Axes --><g stroke="var(--border)" stroke-width="0.8"><line x1="70" y1="70" x2="70" y2="17"/><line x1="70" y1="70" x2="118" y2="46"/><line x1="70" y1="70" x2="106" y2="97"/><line x1="70" y1="70" x2="34" y2="97"/><line x1="70" y1="70" x2="22" y2="46"/></g>
+            <polygon points="70,28 98,50 90,86 44,86 32,50" fill="rgba(138,122,158,0.22)" stroke="var(--accent)" stroke-width="1.5"/>
+            <circle cx="70" cy="28" r="2.5" fill="var(--accent)"/><circle cx="98" cy="50" r="2.5" fill="var(--accent)"/><circle cx="90" cy="86" r="2.5" fill="var(--accent)"/><circle cx="44" cy="86" r="2.5" fill="var(--accent)"/><circle cx="32" cy="50" r="2.5" fill="var(--accent)"/>
+            <text x="70" y="6" text-anchor="middle" font-size="8" fill="var(--text-secondary)">人物塑造</text><text x="126" y="48" text-anchor="middle" font-size="8" fill="var(--text-secondary)">情节节奏</text><text x="111" y="108" font-size="8" fill="var(--text-secondary)">环境描写</text><text x="29" y="108" text-anchor="middle" font-size="8" fill="var(--text-secondary)">对话设计</text><text x="14" y="48" text-anchor="middle" font-size="8" fill="var(--text-secondary)">叙事视角</text>
+          </svg>
+        </div>
+        <button class="ps-cta" onclick="pushPage('chat', {projectId:currentStackParams?.id,title:document.getElementById('ps-title').textContent})">开始新的学习</button>
+        <div class="ps-section-title">最近学习</div>
+        <div class="ps-recent">
+          <div class="ps-recent-item">
+            <span class="ps-recent-badge" style="background:var(--color-teaching)">诊断</span>
+            <span class="ps-recent-label">人物动机分析</span>
+            <span class="ps-recent-time">2天前</span>
+          </div>
+          <div class="ps-recent-item">
+            <span class="ps-recent-badge" style="background:var(--color-practice)">训练</span>
+            <span class="ps-recent-label">对话写作练习</span>
+            <span class="ps-recent-time">4天前</span>
+          </div>
+          <div class="ps-recent-item">
+            <span class="ps-recent-badge" style="background:var(--accent)">教学</span>
+            <span class="ps-recent-label">环境描写技法学习</span>
+            <span class="ps-recent-time">1周前</span>
+          </div>
+        </div>
+        <div class="ps-section-title">作品章节</div>
+        <div class="ps-chapters">
+          <div class="ps-chapter" onclick="toast('打开章节：初遇')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            <span class="ps-chapter-name">第一章：初遇</span>
+            <span class="ps-chapter-discuss ps-chapter-discuss-active" onclick="event.stopPropagation();toast('已讨论 5 次：\n人物动机分析 · 10分钟前\n环境描写对比 · 3天前\n对话节奏 · 1周前\n开头修改 · 2周前\n首次诊断 · 1月前')"><span class="ps-chapter-discuss-count">5</span> 次讨论</span>
+            <span class="ps-chapter-status" style="color:var(--color-growth)">已完成</span>
+          </div>
+          <div class="ps-chapter" onclick="toast('打开章节：暗流')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            <span class="ps-chapter-name">第二章：暗流</span>
+            <span class="ps-chapter-discuss" onclick="event.stopPropagation();toast('已讨论 2 次：\n对话写作练习 · 昨天\n场景修改 · 5天前')"><span class="ps-chapter-discuss-count">2</span> 次讨论</span>
+            <span class="ps-chapter-status" style="color:var(--color-practice)">修改中</span>
+          </div>
+          <div class="ps-chapter" onclick="toast('打开章节：抉择')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            <span class="ps-chapter-name">第三章：抉择</span>
+            <span class="ps-chapter-discuss"><span class="ps-chapter-discuss-count">0</span> 次讨论</span>
+            <span class="ps-chapter-status" style="color:var(--text-tertiary)">未开始</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════ Chat ═════════ -->
+    <div class="page enter-right" id="page-chat" style="background:var(--bg-base)">
+      <div class="navbar">
+        <div class="navbar-left">
+          <button class="navbar-back" onclick="resetChat();popPage()" title="返回">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" stroke-width="1.5"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <div class="navbar-title-wrap">
+            <span class="navbar-title" id="chat-title">深海回响</span>
+            <span class="navbar-subtitle">人物动机学习 · 进行中</span>
+          </div>
+        </div>
+        <div class="more-menu-wrapper">
+          <button class="more-menu-trigger" onclick="toggleMoreMenu('chat')" title="更多">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5"><circle cx="12" cy="5" r="1.5" fill="var(--text-secondary)"/><circle cx="12" cy="12" r="1.5" fill="var(--text-secondary)"/><circle cx="12" cy="19" r="1.5" fill="var(--text-secondary)"/></svg>
+          </button>
+          <div class="more-menu-backdrop" onclick="closeAllMenus()"></div>
+          <div class="more-menu-dropdown" id="moreMenu-chat">
+            <button class="more-menu-item" onclick="closeAllMenus();toast('查看项目画像')"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/></svg></span>查看项目画像</button>
+            <button class="more-menu-item" onclick="closeAllMenus();toast('查看学习记录')"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg></span>查看学习记录</button>
+            <button class="more-menu-item" onclick="closeAllMenus();toast('调整学习目标')"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>调整学习目标</button>
+            <button class="more-menu-item" onclick="closeAllMenus();toast('导出对话')"><span class="more-menu-item-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg></span>导出对话</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat messages -->
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <!-- Progress bar (demo) -->
+      <div class="chat-progress" id="chatProgress"></div>
+
+      <!-- Input bar -->
+      <div class="input-bar">
+        <div class="plus-menu" id="plusMenu">
+          <button class="plus-menu-item" onclick="toast('导入文件: .docx / .txt / .md');closePlusMenu()">
+            <span class="plus-menu-item-icon file"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>导入文件
+          </button>
+          <button class="plus-menu-item" onclick="openChapterSheet();closePlusMenu()">
+            <span class="plus-menu-item-icon chapter"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></span>引用作品
+          </button>
+        </div>
+        <div class="plus-menu-backdrop" id="plusBackdrop" onclick="closePlusMenu()"></div>
+
+        <div class="pending-ref-chip" id="pendingRefChip">
+          <div class="pending-ref-chip-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>
+          <div class="pending-ref-chip-info"><div class="pending-ref-chip-label">已引用</div><div class="pending-ref-chip-name" id="pendingRefName"></div><div class="pending-ref-chip-preview" id="pendingRefPreview"></div></div>
+          <button class="pending-ref-chip-remove" onclick="clearPendingRef()">&times;</button>
+        </div>
+
+        <div class="input-row">
+          <button class="input-plus" onclick="togglePlusMenu()" title="添加引用或文件">+</button>
+          <input class="input-field" type="text" id="chatInput" placeholder="输入你的问题…">
+          <button class="input-send" id="chatSendBtn" onclick="chatAdvanceStep()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Chapter / book selector sheet -->
+      <div class="chapter-sheet" id="chapterSheet">
+        <div class="chapter-sheet-handle"></div>
+        <div class="chapter-sheet-header">
+          <button class="chapter-sheet-back" id="sheetBackBtn" onclick="sheetBack()" style="visibility:hidden">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="chapter-sheet-title" id="sheetTitle">选择来源</span>
+          <button class="chapter-sheet-close" onclick="closeChapterSheet()">&times;</button>
+        </div>
+        <div class="chapter-sheet-list" id="chapterList"></div>
+      </div>
+      <div class="plus-menu-backdrop" id="chapterBackdrop" onclick="closeChapterSheet()"></div>
+    </div>
+  </div>
+
+  <!-- TabBar (conditionally hidden when stack has pages) -->
+  <div class="tabbar" id="tabbar">
+    <button class="tab active" id="tab-bookshelf" onclick="switchTab('bookshelf')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <span class="tab-label">书架</span>
+      <span class="tab-indicator"></span>
+    </button>
+    <button class="tab" id="tab-conversations" onclick="switchTab('conversations')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="tab-label">对话</span>
+      <span class="tab-indicator"></span>
+    </button>
+    <button class="tab" id="tab-apps" onclick="switchTab('apps')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      <span class="tab-label">应用</span>
+      <span class="tab-indicator"></span>
+    </button>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   Page Stack Engine
+   ════════════════════════════════════════ */
+let pageStack = []; // [{ name, params }]
+let currentTab = 'bookshelf';
+let currentStackParams = null;
+
+function switchTab(tab) {
+  if (currentTab === tab && pageStack.length === 0) return;
+  currentTab = tab;
+  pageStack = [];
+  currentStackParams = null;
+  updateNav();
+  updateTabBar();
+}
+
+function pushPage(name, params) {
+  pageStack.push({ name, params });
+  currentStackParams = params;
+  updateNav();
+  updateTabBar();
+  if (name === 'chat') {
+    resetChat();
+    const title = params?.title || '新对话';
+    document.getElementById('chat-title').textContent = title;
+    updateChatNavRefs(params?.refs || []);
+    // If new conversation (no project, no refs), switch to fresh mode
+    if (!params?.id) {
+      document.querySelector('#page-chat .navbar-subtitle').textContent = '自由提问';
+      document.querySelector('#page-chat .navbar-subtitle').style.display = '';
+    }
+  }
+  if (name === 'project-space') {
+    document.getElementById('ps-title').textContent = params?.title || '深海回响';
+  }
+}
+
+function popPage() {
+  pageStack.pop();
+  currentStackParams = pageStack.length > 0 ? pageStack[pageStack.length - 1].params : null;
+  updateNav();
+  updateTabBar();
+}
+
+function startNewConversation() {
+  pushPage('chat', { id: null, title: null, refs: [] });
+}
+
+function updateNav() {
+  const stack = document.getElementById('pageStack');
+  const pages = stack.querySelectorAll('.page');
+  const activePageName = pageStack.length > 0 ? pageStack[pageStack.length - 1].name : currentTab;
+
+  pages.forEach(p => {
+    const pageId = p.id.replace('page-', '');
+    if (pageId === activePageName) {
+      p.className = 'page active';
+    } else if (pageStack.length > 0 && pageId === currentTab) {
+      // Stacked tab — hide behind
+      p.className = 'page stack-hidden';
+    } else {
+      p.className = 'page enter-right';
+    }
+  });
+}
+
+function updateTabBar() {
+  const tabbar = document.getElementById('tabbar');
+  const hasStack = pageStack.length > 0;
+  tabbar.classList.toggle('hidden', hasStack);
+
+  if (!hasStack) {
+    ['bookshelf','conversations','apps'].forEach(t => {
+      const btn = document.getElementById('tab-' + t);
+      if (t === currentTab) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+}
+
+/* ════════════════════════════════════════
+   MoreMenu
+   ════════════════════════════════════════ */
+function toggleMoreMenu(scope) {
+  const dd = document.getElementById('moreMenu-' + scope);
+  if (!dd) return;
+  const isOpen = dd.classList.contains('show');
+  closeAllMenus();
+  if (!isOpen) {
+    dd.classList.add('show');
+    const bd = dd.parentElement.querySelector('.more-menu-backdrop');
+    if (bd) bd.classList.add('show');
+  }
+}
+function closeAllMenus() {
+  document.querySelectorAll('.more-menu-dropdown.show').forEach(d => d.classList.remove('show'));
+  document.querySelectorAll('.more-menu-backdrop.show').forEach(d => d.classList.remove('show'));
+}
+
+/* ════════════════════════════════════════
+   Chat demo engine
+   ════════════════════════════════════════ */
+const STEPS = ['问','诊','教','练','评','闭环'];
+let chatStep = 0;
+let pendingRef = null;
+let pendingRefSent = null;
+
+function updateChatNavRefs(refs) {
+  const subEl = document.querySelector('#page-chat .navbar-subtitle');
+  const refRow = document.querySelector('#page-chat .navbar-ref-row');
+  if (!refs || refs.length === 0) {
+    subEl.style.display = '';
+    if (refRow) refRow.remove();
+    return;
+  }
+  subEl.style.display = 'none';
+  if (refRow) refRow.remove();
+  const row = document.createElement('div');
+  row.className = 'navbar-ref-row';
+  row.innerHTML = refs.map(r => `<span class="navbar-ref-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>${r}</span>`).join('');
+  document.querySelector('#page-chat .navbar-title-wrap').appendChild(row);
+}
+
+function resetChat() {
+  chatStep = 0;
+  pendingRef = null;
+  pendingRefSent = null;
+  document.getElementById('chatInput').value = '';
+  document.getElementById('chatInput').placeholder = '输入你的问题…';
+  document.getElementById('chatInput').disabled = false;
+  document.getElementById('pendingRefChip').classList.remove('show');
+  const subEl = document.querySelector('#page-chat .navbar-subtitle');
+  if (subEl) subEl.style.display = '';
+  const refRow = document.querySelector('#page-chat .navbar-ref-row');
+  if (refRow) refRow.remove();
+  renderChat();
+}
+
+function renderChat() {
+  const msgs = document.getElementById('chatMessages');
+  let html = '';
+  const step = chatStep;
+
+  // Welcome
+  html += `<div class="welcome anim-scale">
+    <div class="welcome-avatar">月</div>
+    <div class="welcome-text">今天想从哪里开始？</div>
+    <div class="welcome-pills">
+      <button class="welcome-pill" onclick="chatJumpTo(1)">帮我看看作品</button>
+      <button class="welcome-pill" onclick="chatJumpTo(2)">学点描写技法</button>
+      <button class="welcome-pill" onclick="chatJumpTo(3)">出个题目练练</button>
+    </div>
+  </div>`;
+
+  if (step >= 1) {
+    if (pendingRefSent) {
+      const refBadgeLabel = pendingRefSent.type === 'book' ? '讨论全书' : (pendingRefSent.type === 'chapter_partial' ? '引用节选' : '引用');
+      const refChapterLabel = pendingRefSent.type === 'book' ? ' · 全书' : (pendingRefSent.type === 'chapter_partial' ? ' · ' + pendingRefSent.chapterName + ' · ' + pendingRefSent.paraCount + '段' : ' · ' + pendingRefSent.chapterName);
+      html += `<div class="user-msg anim-up delay-2">
+        <div class="user-bubble">${document.getElementById('chatInput').value || '这段对话总觉得哪里不对'}</div>
+      </div>
+      <div class="manuscript-ref anim-up delay-3">
+        <div class="manuscript-ref-header">
+          <span class="manuscript-ref-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>${refBadgeLabel}</span>
+          <span class="manuscript-ref-chapter">${pendingRefSent.bookName}${refChapterLabel}</span>
+        </div>
+        <div class="manuscript-ref-text">${pendingRefSent.text}</div>
+        ${pendingRefSent.type === 'chapter' || pendingRefSent.type === 'chapter_partial' ? '<span class="manuscript-ref-expand">展开全文 ↓</span>' : ''}
+      </div>`;
+    }
+    html += `<div class="thinking anim-up delay-1">
+      <div class="thinking-box"><div class="thinking-dots"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div><span class="thinking-text">正在诊断文本\u2026</span></div>
+    </div>
+    <div class="diag-card anim-scale delay-2">
+      <div class="diag-header">诊断分析</div>
+      <div class="diag-body">
+        <div class="diag-item"><div class="diag-num">1</div><div class="diag-item-content"><div class="diag-item-title">告知代替展示</div><div class="diag-item-cause">角色的情绪状态被直接陈述，而非通过行为或感官细节呈现。读者被"告知"而非"感受"到情绪。</div><div class="diag-item-evidence">"他的声音很大" — 直接告知了情绪强度</div></div></div>
+        <div class="diag-item"><div class="diag-num">2</div><div class="diag-item-content"><div class="diag-item-title">内心状态缺乏身体锚点</div><div class="diag-item-cause">"你知道我会多后悔吗"是内心独白，但没有身体动作或环境线索支撑。读者被关在角色脑子里，而非观察场景。</div><div class="diag-item-evidence">"你走了之后会发生什么吗" — 全对话、无场景</div></div></div>
+        <div class="diag-item"><div class="diag-num">3</div><div class="diag-item-content"><div class="diag-item-title">单一信息通道</div><div class="diag-item-cause">整个段落几乎完全依赖对话传递情绪。缺少视觉、听觉、触觉信息，场景的立体感不足。</div><div class="diag-item-evidence">"苏晚没有回答，只是站在那里看着他" — 视觉信息极少</div></div></div>
+        <button class="diag-btn" onclick="chatAdvanceStep()">先看改写示例</button>
+        <button class="diag-btn solid" onclick="chatAdvanceStep()">好，讲讲</button>
+      </div>
+    </div>`;
+  }
+
+  if (step >= 2) {
+    html += `<div class="teach-card anim-up delay-1">
+      <div class="teach-header">技法讲解</div>
+      <div class="teach-body">
+        <div class="teach-point">核心问题：你的"林深"在说话，但他没有在"动"。读者听到的是信息，感受到的却是空白。</div>
+        <div class="teach-example">
+          <div class="teach-example-row"><span class="teach-ex-badge teach-ex-bad">修改前</span><span class="teach-ex-text">"我不走。"林深说。</span></div>
+          <div class="teach-example-row"><span class="teach-ex-badge teach-ex-good">修改后</span><span class="teach-ex-text">"我不走。"指节收紧，在裤缝上摁出发白的印子。</span></div>
+        </div>
+        <button class="diag-btn solid" onclick="chatAdvanceStep()">试试改一段</button>
+      </div>
+    </div>`;
+  }
+
+  if (step >= 3) {
+    html += `<div class="train-card anim-up delay-1">
+      <div class="train-header-row">
+        <div class="train-header-icon">练</div>
+        <div>
+          <div class="train-header-text">写作训练</div>
+          <div class="train-subtitle">展示 vs 告知</div>
+        </div>
+      </div>
+      <div class="train-body">
+        <div class="train-task">请改写下面这句话，把"他很生气"用动作或场景细节呈现出来：<br><br>\u201C林深很生气。\u201D</div>
+        <div class="train-meta">
+          <div class="train-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>约5分钟</div>
+          <div class="train-meta-item"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><polyline points="6 11 10 15 18 7"/></svg>初级</div>
+        </div>
+        <button class="train-start" onclick="chatAdvanceStep()">开始练习</button>
+      </div>
+    </div>`;
+  }
+
+  if (step >= 4) {
+    html += `<div class="eval-card anim-up delay-1">
+      <div class="eval-header">练习评估</div>
+      <div class="eval-body">
+        <div class="eval-compare">
+          <div class="eval-compare-col eval-compare-before">
+            <div class="eval-compare-label">修改前</div>
+            <div class="eval-compare-text">林深很生气。</div>
+          </div>
+          <div class="eval-compare-col eval-compare-after">
+            <div class="eval-compare-label">修改后</div>
+            <div class="eval-compare-text">林深站在那里，指节捏得发白。他没有看任何人。</div>
+          </div>
+        </div>
+        <div class="eval-growth">
+          <div class="eval-growth-item"><span class="eval-growth-dot"></span>用行为替换了独白</div>
+          <div class="eval-growth-item"><span class="eval-growth-dot"></span>身体细节承载情绪</div>
+          <div class="eval-growth-item"><span class="eval-growth-dot"></span>视角统一在外部观察</div>
+        </div>
+        <div class="eval-next"><strong>月笙的建议：</strong>你已经掌握了用行为呈现紧张感的核心技巧。下次可以试试在「日常动作」里藏情绪。</div>
+      </div>
+    </div>`;
+  }
+
+  if (step >= 5) {
+    html += `<div class="welcome anim-scale" style="padding-top:40px;gap:18px;">
+      <div class="welcome-avatar" style="background:linear-gradient(135deg,var(--color-growth),#A8D4B8)">月</div>
+      <div class="welcome-text">这次对话，你的成长记录：</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:0 16px;">
+        <span style="font-size:11px;padding:4px 10px;background:var(--color-teaching-light);color:var(--color-teaching);border-radius:20px;">展示 vs 告知</span>
+        <span style="font-size:11px;padding:4px 10px;background:var(--color-practice-light);color:var(--color-practice);border-radius:20px;">行为承载情绪</span>
+        <span style="font-size:11px;padding:4px 10px;background:var(--color-growth-light);color:var(--color-growth);border-radius:20px;">视角一致性</span>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);text-align:center;padding:0 24px;line-height:1.6;">
+        能力「呈现力」从 <strong style="color:var(--text-primary);">初级</strong> 提升至 <strong style="color:var(--accent);">进阶</strong>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="welcome-pill" onclick="resetChat()">再来一次</button>
+        <button class="diag-btn solid" onclick="resetChat()" style="font-size:13px;">继续学习 →</button>
+      </div>
+    </div>`;
+  }
+
+  msgs.innerHTML = html;
+  updateChatProgress();
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const input = document.getElementById('chatInput');
+  input.disabled = (step >= 5);
+  if (step >= 5) {
+    input.placeholder = '教学闭环已完成';
+  } else if (pendingRef) {
+    input.placeholder = '补充你的问题，然后发送\u2026';
+  } else if (step >= 2) {
+    input.placeholder = '说说你的想法\u2026';
+  } else if (step >= 1) {
+    input.placeholder = '继续提问\u2026';
+  } else {
+    input.placeholder = '输入你的问题\u2026';
+  }
+
+  const sendBtn = document.getElementById('chatSendBtn');
+  if (input.value.trim() || pendingRef) {
+    sendBtn.classList.add('active');
+  } else {
+    sendBtn.classList.remove('active');
+  }
+  if (step >= 5) sendBtn.classList.remove('active');
+}
+
+function updateChatProgress() {
+  const bar = document.getElementById('chatProgress');
+  let html = '';
+  STEPS.forEach((s, i) => {
+    let cls = '';
+    if (i < chatStep) cls = 'done';
+    else if (i === chatStep) cls = 'current';
+    html += `<div class="chat-step-dot ${cls}" title="${s}: ${['问','诊','教','练','评','闭环'][i]}"></div>`;
+  });
+  bar.innerHTML = html;
+}
+
+function chatAdvanceStep() {
+  // If there's a pending ref and we're at step 0 — "send" it
+  if (pendingRef && chatStep === 0) {
+    pendingRefSent = pendingRef;
+    pendingRef = null;
+    document.getElementById('pendingRefChip').classList.remove('show');
+  }
+
+  if (chatStep < 5) {
+    chatStep++;
+    renderChat();
+    setTimeout(() => {
+      document.getElementById('chatMessages').scrollTo({ top: document.getElementById('chatMessages').scrollHeight, behavior: 'smooth' });
+    }, 100);
+  }
+}
+
+function chatJumpTo(idx) {
+  chatStep = Math.max(1, Math.min(idx, 5));
+  renderChat();
+}
+
+/* ════════════════════════════════════════
+   Chapter / Book selector (two-level)
+   ════════════════════════════════════════ */
+const BOOKS_DATA = [
+  {
+    id: '1', name: '深海回响', color: '#3D668F', chapters: '12章', words: '4.2w', convCount: 5,
+    chapters: [
+      { num:1, name:'第一章\u300C潮声\u300D', meta:'3,245字\u00B72025-03-12', preview:'海潮在凌晨三点淹没了码头。林深站在栈桥尽头，看着黑色的海水一寸一寸漫过木板。', 
+        text:'海潮在凌晨三点淹没了码头。林深站在栈桥尽头，看着黑色的海水一寸一寸漫过木板。远处的灯塔每隔七秒闪烁一次，像某种古老的计数。\n\n码头上散落着渔船的残骸。生锈的铁锚半埋在沙里，缆绳像蛇一样盘在木桩上。空气里混杂着盐、柴油和腐烂海藻的气味。\n\n他蹲下来，用手指摸了摸浸了海水的地面。凉的。比他预想的凉得多。然后他站起来，把手插进口袋，朝着灯塔的方向走去。\n\n"你还来干什么？"身后传来声音。林深没有回头。他知道那是谁。"我以为你不会来了。"他听见自己说，声音比想象中平静。\n\n其实他不知道自己在等什么。或许是什么都不会发生的平静，又或许是能把一切都吞掉的浪。这两种结局他都能接受。' },
+      { num:2, name:'第二章\u300C暗流\u300D', meta:'4,891字\u00B72025-03-25', preview:'苏晚第一次注意到那片海域的颜色不对。不是寻常的深蓝，而是某种介于灰和绿之间的浑浊。', 
+        text:'苏晚第一次注意到那片海域的颜色不对。不是寻常的深蓝，而是某种介于灰和绿之间的浑浊，像一块洗不干净的旧布。\n\n她用地图查了一遍。这片海域在地图上标的是"严禁靠近"。但奇怪的是，所有的渔船都往那个方向走。一艘接一艘，像被什么看不见的手拽着。\n\n"别去那边。"房东老赵说这话的时候正在修渔网，头都没抬。"去了的人，回来以后都不会说话了。"苏晚笑了："都在瞒着什么？"老赵终于抬起头。他的眼睛很浑浊。"不是瞒。是说不出。"\n\n苏晚不相信。她从不相信任何说不清道不明的东西。十六岁那年开始，她就养成了把所有不确定感压下去的习惯。但这次，那种压在胸口的感觉，压了三天都没散。' },
+      { num:3, name:'第三章\u300C深渊低语\u300D', meta:'2,876字\u00B72025-04-08\u00B7当前章节', preview:'"我不走。"林深说。他低下头，拳头却被攥得发白。', 
+        text:'"我不走。"林深说。他低下头，拳头却被攥得发白。"你知道我走了之后会发生什么吗？"他的声音很大。苏晚没有回答，只是站在那里看着他。\n\n她的目光从他脸上移开，落在他的手上。指节发白，手背青筋暴起。她认识这双手七年了，从来没见过它们攥成这样。\n\n她想起他们第一次见面的时候。他站在教室门口，说"你好，我叫林深。"那时候他的手松松散散地垂在两侧，像永远不会握紧什么。现在这双手在发抖。\n\n窗外的海还在涨。潮水已经漫过了栈桥的第一根木桩。但没有人往窗外看。整个房间只剩下呼吸声和林深指节里发出的细微响声。\n\n"那你告诉我。"苏晚终于开口，声音很轻。"你不走的话，会发生什么？"林深的嘴唇动了动。那两个词已经在他舌尖上放了很久。但他没说出来。' },
+      { num:4, name:'第四章\u300C断崖\u300D', meta:'1,204字\u00B7草稿', preview:'船上只剩下三个人。船长、大副，和林深。没有人说话。', 
+        text:'船上只剩下三个人。船长、大副，和林深。没有人说话。引擎的声音盖过了海风，但每个人都听得见那种沉默。不是安静的沉默，是快要爆炸的沉默。\n\n甲板在轻微晃动。海浪把船一下抬起来，一下又摔下去。船舱里的灯管闪烁了两下，发出嗡嗡的电流声。林深盯着那根灯管，心跳和它同步闪烁。\n\n大副从口袋里摸出一包烟，抽出一根叼在嘴里，却没有点。他只是咬着过滤嘴，死死地盯着前方的海面。林深注意到他的拇指在烟盒上反复摩擦，纸壳已经磨出了一道白印。' },
+    ]
+  },
+  {
+    id: '2', name: '星尘之旅', color: '#6B4E8D', chapters: '8章', words: '2.8w', convCount: 3,
+    chapters: [
+      { num:1, name:'第一章\u300C启程\u300D', meta:'4,120字\u00B72025-05-01', preview:'飞船的引擎在第三次点火后终于发出了一声低沉的轰鸣。', 
+        text:'飞船的引擎在第三次点火后终于发出了一声低沉的轰鸣。控制台上所有的灯都变成了绿色。陈屿从口袋里掏出那张照片——照片上的女人在笑，背景是十年前还没被淹没的青岛栈桥。\n\n他把照片贴在仪表盘上，然后系好安全带。抬手的时候，手腕上的旧伤又疼了起来。那是三年前在月球中转站留下的——不是什么战斗伤口，是管道爆裂时烫的。他从来不解释这道疤。\n\n他其实不确定自己还能不能回来。但奇怪的是，这让他觉得轻松。所有确定的事情都已经让他累了太久——确定的航线、确定的工资、确定的孤独。' },
+      { num:2, name:'第二章\u300C星门\u300D', meta:'3,670字\u00B72025-05-15', preview:'穿越星门的瞬间，所有的光都消失了。', 
+        text:'穿越星门的瞬间，所有的光都消失了。不是黑暗——是比黑暗更彻底的虚无。陈屿觉得自己变成了一串数字，在无边无际的寂静里被拆解又重组。\n\n那一秒钟像是被拉长了一百年。他想起了很多不愿意想起的事。母亲的葬礼。青岛的最后一班撤离船。那个没来得及说出口的名字。\n\n光重新亮起来的时候，飞船出现在一片他从未见过的星域。星云的颜色不对——不是天文台照片上的粉紫，而是血红色，像在燃烧。仪表盘上的所有指针都在疯狂摆动。陈屿知道，回不去了。' },
+    ]
+  },
+  {
+    id: '3', name: '春日迟迟', color: '#C47A4A', chapters: '6章', words: '1.5w', convCount: 1,
+    chapters: [
+      { num:1, name:'第一章\u300C初遇\u300D', meta:'2,450字\u00B72025-06-10', preview:'三月的风还带着凉意，她站在书店门口犹豫了很久。', 
+        text:'三月的风还带着凉意，她站在书店门口犹豫了很久。门上的风铃每隔几秒就响一次，每次有人推门。她数了七个人。然后终于伸出手去。\n\n书店很小。天花板低得几乎能碰到头顶。书从地面堆到天花板，只留出刚好一个人侧身通过的过道。靠窗的位置有一张旧的木头桌子，桌上放着一杯半凉的绿茶。\n\n"找什么？"有人从书架后面探出头。她愣住了——不是因为突然，是因为那人的眼睛。不是漂亮，是熟悉。像在什么地方见过，但怎么也想不起来。"我也不知道。"她老实回答。那人笑了。"那说明你找的东西是对的。"' },
+      { num:2, name:'第二章\u300C春日\u300D', meta:'3,100字\u00B72025-06-18', preview:'樱花落了一地，像一场迟到的雪。', 
+        text:'樱花落了一地，像一场迟到的雪。但在三月末的风里，这些花瓣一点都不冷。它们聚在排水沟的格栅上，厚厚的一层，粉色的雪。\n\n"你觉得春天是什么颜色的？"她转头问身边那个人。他想了很久。"透明的。"他说。她以为他在开玩笑，但他的表情很认真。"因为春天是冬天的影子和夏天的预兆之间那段空白的部分。"\n\n她没再追问。但她记住了"透明"这个词。后来她想了很久，觉得他说得对——春天确实什么都不保留。它把一切摊开，让该来的都来。' },
+    ]
+  }
+];
+let sheetLevel = 'books'; // 'books' | 'chapters' | 'preview'
+let sheetBook = null;
+let sheetChapter = null;
+let selectedParas = []; // indices of selected paragraphs
+
+function buildBookList() {
+  const list = document.getElementById('chapterList');
+  list.classList.remove('preview-mode');
+  list.innerHTML = BOOKS_DATA.map(b => `
+    <div class="book-sel-item" data-book-id="${b.id}">
+      <div class="book-sel-cover" style="background:${b.color}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      <div class="book-sel-info">
+        <div class="book-sel-name">${b.name}</div>
+        <div class="book-sel-meta">${b.chapters} · ${b.words} · ${b.convCount} 次对话</div>
+      </div>
+      <div class="book-sel-arrow">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.book-sel-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const id = this.getAttribute('data-book-id');
+      sheetDrillInto(id);
+    });
+  });
+}
+
+function sheetDrillInto(bookId) {
+  sheetBook = BOOKS_DATA.find(b => b.id === bookId);
+  if (!sheetBook) return;
+  sheetLevel = 'chapters';
+  document.getElementById('sheetTitle').textContent = sheetBook.name;
+  document.getElementById('sheetBackBtn').style.visibility = 'visible';
+  buildChapterList();
+}
+
+function buildChapterList() {
+  const list = document.getElementById('chapterList');
+  list.classList.remove('preview-mode');
+  let html = '';
+  // "讨论全书" row
+  html += `
+    <div class="book-whole-row" id="wholeBookRow">
+      <div class="book-whole-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      </div>
+      <div class="book-whole-info">
+        <div class="book-whole-name">讨论全书</div>
+        <div class="book-whole-meta">${sheetBook.chapters} · ${sheetBook.words}</div>
+      </div>
+    </div>
+  `;
+  // Chapter items
+  html += sheetBook.chapters.map(ch => `
+    <div class="chapter-item" data-idx="${ch.num - 1}">
+      <div class="chapter-item-num">${ch.num}</div>
+      <div class="chapter-item-info">
+        <div class="chapter-item-name">${ch.name}</div>
+        <div class="chapter-item-meta">${ch.meta}</div>
+        <div class="chapter-item-preview">${ch.preview}</div>
+      </div>
+    </div>
+  `).join('');
+
+  list.innerHTML = html;
+
+  // Whole book row
+  document.getElementById('wholeBookRow').addEventListener('click', function() {
+    selectBook(sheetBook);
+  });
+  // Chapter items → navigate to preview
+  list.querySelectorAll('.chapter-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const idx = parseInt(this.getAttribute('data-idx'));
+      sheetChapter = sheetBook.chapters[idx];
+      selectedParas = [];
+      showChapterPreview();
+    });
+  });
+}
+
+function sheetBack() {
+  if (sheetLevel === 'preview') {
+    sheetLevel = 'chapters';
+    selectedParas = [];
+    document.getElementById('sheetTitle').textContent = sheetBook.name;
+    document.getElementById('sheetBackBtn').style.visibility = 'visible';
+    buildChapterList();
+  } else if (sheetLevel === 'chapters') {
+    sheetLevel = 'books';
+    sheetBook = null;
+    document.getElementById('sheetTitle').textContent = '选择来源';
+    document.getElementById('sheetBackBtn').style.visibility = 'hidden';
+    buildBookList();
+  }
+}
+
+function openChapterSheet() {
+  sheetLevel = 'books';
+  sheetBook = null;
+  document.getElementById('sheetTitle').textContent = '选择来源';
+  document.getElementById('sheetBackBtn').style.visibility = 'hidden';
+  buildBookList();
+  document.getElementById('chapterSheet').classList.add('show');
+  document.getElementById('chapterBackdrop').classList.add('show');
+}
+
+function closeChapterSheet() {
+  document.getElementById('chapterSheet').classList.remove('show');
+  document.getElementById('chapterBackdrop').classList.remove('show');
+  document.getElementById('chapterList').classList.remove('preview-mode');
+  sheetLevel = 'books';
+  selectedParas = [];
+}
+
+/* ════════════════════════════════════════
+   Chapter Preview — partial text selection
+   ════════════════════════════════════════ */
+function showChapterPreview() {
+  sheetLevel = 'preview';
+  document.getElementById('sheetTitle').textContent = sheetChapter.name;
+  document.getElementById('sheetBackBtn').style.visibility = 'visible';
+
+  const list = document.getElementById('chapterList');
+  list.classList.add('preview-mode');
+
+  const paragraphs = sheetChapter.text.split('\n\n');
+  const total = paragraphs.length;
+
+  let html = `
+    <div class="preview-toolbar">
+      <button class="preview-select-all" id="previewSelectAll" onclick="selectAllParas()">全选</button>
+      <span class="preview-count" id="previewCount">共 ${total} 段</span>
+    </div>
+    <div class="preview-text-area" id="previewTextArea">
+  `;
+
+  html += paragraphs.map((pg, i) => `
+    <div class="chapter-pg" data-pidx="${i}" onclick="togglePara(${i})">${pg}</div>
+  `).join('');
+
+  html += `</div>`;
+
+  html += `
+    <div class="preview-confirm-bar">
+      <button class="preview-cancel-btn" onclick="sheetBack()">返回</button>
+      <button class="preview-confirm-btn" id="previewConfirmBtn" disabled>引用选中内容</button>
+    </div>
+  `;
+
+  list.innerHTML = html;
+  updatePreviewConfirm();
+}
+
+function togglePara(idx) {
+  const existIdx = selectedParas.indexOf(idx);
+  if (existIdx >= 0) {
+    selectedParas.splice(existIdx, 1);
+  } else {
+    selectedParas.push(idx);
+  }
+  selectedParas.sort((a,b) => a-b);
+
+  // Update visual state
+  document.querySelectorAll('.chapter-pg').forEach(el => {
+    const pidx = parseInt(el.getAttribute('data-pidx'));
+    if (selectedParas.includes(pidx)) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+
+  updatePreviewConfirm();
+}
+
+function selectAllParas() {
+  const paragraphs = sheetChapter.text.split('\n\n');
+  const total = paragraphs.length;
+  if (selectedParas.length === total) {
+    selectedParas = [];
+  } else {
+    selectedParas = paragraphs.map((_, i) => i);
+  }
+
+  document.querySelectorAll('.chapter-pg').forEach(el => {
+    const pidx = parseInt(el.getAttribute('data-pidx'));
+    if (selectedParas.includes(pidx)) el.classList.add('selected');
+    else el.classList.remove('selected');
+  });
+
+  updatePreviewConfirm();
+}
+
+function updatePreviewConfirm() {
+  const paragraphs = sheetChapter.text.split('\n\n');
+  const total = paragraphs.length;
+  const count = selectedParas.length;
+  const btn = document.getElementById('previewConfirmBtn');
+  const cntEl = document.getElementById('previewCount');
+  const allBtn = document.getElementById('previewSelectAll');
+
+  if (count > 0) {
+    btn.disabled = false;
+    btn.textContent = '引用选中内容（' + count + '/' + total + '段）';
+  } else {
+    btn.disabled = true;
+    btn.textContent = '引用选中内容';
+  }
+
+  cntEl.textContent = count > 0 ? '已选 ' + count + '/' + total + ' 段' : '共 ' + total + ' 段';
+  cntEl.className = count > 0 ? 'preview-count has-selection' : 'preview-count';
+
+  allBtn.textContent = count === total ? '取消全选' : '全选';
+  allBtn.className = count === total ? 'preview-select-all selected' : 'preview-select-all';
+
+  // Set up confirm button onclick
+  btn.onclick = function() { confirmPartialRef(); };
+}
+
+function confirmPartialRef() {
+  if (selectedParas.length === 0) return;
+
+  const ch = sheetChapter;
+  const paragraphs = ch.text.split('\n\n');
+  const total = paragraphs.length;
+  const selectedText = selectedParas.map(i => paragraphs[i]).join(' ');
+
+  selectChapter(sheetBook, ch, selectedText, selectedParas);
+}
+
+function selectBook(book) {
+  pendingRef = {
+    type: 'book',
+    bookName: book.name,
+    name: book.name + ' · 全文',
+    text: book.name + ' · ' + book.chapters + ' · ' + book.words,
+    color: book.color
+  };
+  showPendingRefChip();
+  closeChapterSheet();
+}
+
+function selectChapter(book, ch, partialText, paraIndices) {
+  const paragraphs = ch.text.split('\n\n');
+  if (partialText && paraIndices.length > 0 && paraIndices.length < paragraphs.length) {
+    // Partial selection
+    pendingRef = {
+      type: 'chapter_partial',
+      bookName: book.name,
+      chapterName: ch.name,
+      name: ch.name + ' (节选)',
+      text: partialText,
+      paraCount: paraIndices.length,
+      totalPara: paragraphs.length
+    };
+  } else {
+    // Whole chapter
+    pendingRef = {
+      type: 'chapter',
+      bookName: book.name,
+      chapterName: ch.name,
+      name: ch.name,
+      text: ch.text
+    };
+  }
+  showPendingRefChip();
+  closeChapterSheet();
+}
+
+function showPendingRefChip() {
+  const chip = document.getElementById('pendingRefChip');
+  const icon = document.getElementById('pendingRefIcon');
+  const label = document.getElementById('pendingRefLabel');
+  const preview = document.getElementById('pendingRefPreview');
+
+  if (pendingRef.type === 'book') {
+    icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>';
+    label.textContent = pendingRef.bookName + ' · 全书';
+  } else if (pendingRef.type === 'chapter_partial') {
+    icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>';
+    label.textContent = pendingRef.bookName + ' · ' + pendingRef.chapterName + ' · ' + pendingRef.paraCount + '/' + pendingRef.totalPara + '段';
+  } else {
+    icon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>';
+    label.textContent = pendingRef.bookName + ' · ' + pendingRef.chapterName;
+  }
+  preview.textContent = pendingRef.text.length > 45 ? pendingRef.text.slice(0,45) + '\u2026' : pendingRef.text;
+  chip.classList.add('show');
+  document.getElementById('chatInput').focus();
+  document.getElementById('chatInput').placeholder = '补充你的问题，然后发送\u2026';
+}
+
+function clearPendingRef() {
+  pendingRef = null;
+  pendingRefSent = null;
+  document.getElementById('pendingRefChip').classList.remove('show');
+  if (chatStep < 5) document.getElementById('chatInput').placeholder = '\u8F93\u5165\u4F60\u7684\u95EE\u9898\u2026';
+  document.getElementById('chatSendBtn').classList.remove('active');
+}
+
+/* ════════════════════════════════════════
+   Plus menu
+   ════════════════════════════════════════ */
+function togglePlusMenu() {
+  const menu = document.getElementById('plusMenu');
+  const bd = document.getElementById('plusBackdrop');
+  const isOpen = menu.classList.contains('show');
+  if (isOpen) { closePlusMenu(); return; }
+  menu.classList.add('show');
+  bd.classList.add('show');
+}
+function closePlusMenu() {
+  document.getElementById('plusMenu').classList.remove('show');
+  document.getElementById('plusBackdrop').classList.remove('show');
+}
+
+/* Input listener */
+document.getElementById('chatInput').addEventListener('input', function() {
+  const btn = document.getElementById('chatSendBtn');
+  if (this.value.trim() || pendingRef) btn.classList.add('active');
+  else btn.classList.remove('active');
+});
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && chatStep < 5) {
+    chatAdvanceStep();
+    this.value = '';
+  }
+});
+
+/* ════════════════════════════════════════
+   Toast
+   ════════════════════════════════════════ */
+function toast(msg) {
+  const existing = document.querySelector('.global-toast');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'global-toast';
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--bg-card);padding:8px 16px;border-radius:20px;font-size:12px;pointer-events:none;opacity:0;transition:opacity 250ms;z-index:300;white-space:nowrap;';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.style.opacity = '0.92');
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 1800);
+}
+
+// Init
+updateNav();
+updateTabBar();
+</script>
+</body>
+</html>
