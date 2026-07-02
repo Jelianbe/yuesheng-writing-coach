@@ -1,0 +1,103 @@
+/* ═══ LearningLogWorkspace ═══ */
+
+.wrap { padding: 8px 4px; }
+
+.title {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E1A14;
+  margin-bottom: 10px;
+}
+
+.cardRow {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.card {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  background: #FAF8F5;
+  border: 1px solid #D6CEC0;
+  border-radius: 4px;
+}
+
+.cardValue {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.cardLabel {
+  font-size: 10px;
+  color: #8A7F6E;
+}
+
+.chartSection { margin-bottom: 10px; }
+
+.chartTitle {
+  font-size: 11px;
+  color: #5C5242;
+  font-weight: 500;
+}
+
+.chartContainer {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+  height: 48px;
+}
+
+.barWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.barScore { font-size: 7px; color: #8A7F6E; }
+
+.barNote {
+  font-size: 6px;
+  color: #8A7F6E;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
+}
+
+.logRow {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #D6CEC0;
+}
+
+.logRowLast {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.dateLabel {
+  font-family: 'Noto Serif SC', 'Songti SC', serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1E1A14;
+  margin-bottom: 4px;
+}
+
+.entryText {
+  font-size: 13px;
+  line-height: 1.625;
+  color: #5C5242;
+  margin-bottom: 2px;
+}
+
+.scoreChange { font-size: 10px; color: #8A7F6E; }
+
+.errorMsg { padding: 8px; color: #B84A4A; font-size: 11px; }

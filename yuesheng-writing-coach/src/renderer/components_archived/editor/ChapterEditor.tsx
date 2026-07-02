@@ -36,7 +36,7 @@ export const ChapterEditor: React.FC = () => {
     loadContent(currentChapter.id)
       .then(c => { setContent(c || ''); setLoading(false); })
       .catch(() => { setContent(''); setLoading(false); });
-  }, [currentChapter?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [currentChapter?.id]);
 
   // 自动保存防抖
   const doSave = useCallback(async (text: string) => {
@@ -61,7 +61,7 @@ export const ChapterEditor: React.FC = () => {
       doSave(contentRef.current);
     }, SAVE_DEBOUNCE_MS);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [content, currentChapter?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [content, currentChapter?.id]);
 
   // 找当前作品名
   const workTitle = manuscripts.find(m => m.id === currentManuscript?.id)?.title || '未选择作品';

@@ -3,6 +3,7 @@ import { FileText, BookOpen } from 'lucide-react';
 import type { EvidenceRecord } from '../../shared/types';
 import { useDiagStore } from '../../stores/diag.store';
 import { useChatStore } from '../../stores/chat.store';
+import styles from './OriginalEvidenceSection.module.css';
 
 interface OriginalEvidenceSectionProps {
   syndromeId: string;
@@ -39,8 +40,8 @@ export const OriginalEvidenceSection: React.FC<OriginalEvidenceSectionProps> = (
 
   if (loading) {
     return (
-      <div className="bg-highlight rounded-[var(--radius-sm)] p-3 border border-border-light">
-        <p className="text-xs text-text-tertiary">加载原文证据...</p>
+      <div className={styles.loadingBox}>
+        <p className={styles.loadingText}>加载原文证据...</p>
       </div>
     );
   }
@@ -48,12 +49,12 @@ export const OriginalEvidenceSection: React.FC<OriginalEvidenceSectionProps> = (
   if (evidence.length === 0) return null;
 
   return (
-    <div className="bg-highlight rounded-[var(--radius-sm)] border border-border-light overflow-hidden">
-      <div className="px-3 py-2 bg-bg-tertiary/30 border-b border-border-light flex items-center gap-2">
-        <BookOpen className="w-3.5 h-3.5 text-accent-primary" />
-        <span className="text-xs font-medium text-text-secondary">原文证据</span>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <BookOpen className={styles.headerIcon} />
+        <span className={styles.headerText}>原文证据</span>
       </div>
-      <div className="p-3 space-y-2">
+      <div className={styles.body}>
         {evidence.map((ev) => {
           // 解析 contentJson 获取原文片段和问题描述
           let text = '';
@@ -71,23 +72,23 @@ export const OriginalEvidenceSection: React.FC<OriginalEvidenceSectionProps> = (
           }
 
           return (
-            <div key={ev.evidenceId} className="space-y-1">
+            <div key={ev.evidenceId} className={styles.evidenceItem}>
               {text && (
-                <div className="flex items-start gap-2">
-                  <FileText className="w-3.5 h-3.5 text-text-tertiary mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-text-secondary leading-relaxed italic">
-                    "{text}"
+                <div className={styles.textRow}>
+                  <FileText className={styles.textIcon} />
+                  <p className={styles.textContent}>
+                    &ldquo;{text}&rdquo;
                   </p>
                 </div>
               )}
               {issue && (
-                <p className="text-xs text-accent-warning pl-5">
+                <p className={styles.issueText}>
                   ⚠️ {issue}
                 </p>
               )}
               {/* 交叉引用标记：同段原文被多个症候引用 */}
               {relatedDiseases.length > 1 && (
-                <p className="text-xs text-text-tertiary pl-5">
+                <p className={styles.relatedText}>
                   关联症候：{relatedDiseases.join(' · ')}
                 </p>
               )}

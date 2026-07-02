@@ -34,7 +34,7 @@ const ATTITUDE_LABELS: ReadonlyArray<{
 }> = [
   { value: 'doubao', label: '温柔', description: '多鼓励,少批评' },
   { value: 'yuesheng', label: '月笙', description: '平衡,有建议有肯定' },
-  { value: 'sensei', label: '尖锐', description: '直接指出问题' },
+  { value: 'direct', label: '尖锐', description: '直接指出问题' },
 ];
 
 /** 输入行组件(简化版,无内联样式) */
