@@ -31,6 +31,7 @@ export const TabBar: React.FC = () => {
             onClick={() => navigateToTab(key)}
             aria-label={label}
             aria-current={isActive ? 'page' : undefined}
+            aria-pressed={isActive}
           >
             <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
             <span className={styles.tabLabel}>{label}</span>

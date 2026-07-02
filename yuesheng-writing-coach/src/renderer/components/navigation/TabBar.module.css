@@ -22,15 +22,9 @@
   color: var(--text-tertiary);
   cursor: pointer;
   position: relative;
-  transition: color var(--transition-fast), opacity var(--transition-fast);
+  transition: color var(--transition-fast);
   -webkit-tap-highlight-color: transparent;
   padding: 6px 0 4px;
-  opacity: 0.85;
-}
-
-.tab:hover {
-  color: var(--text-secondary);
-  opacity: 1;
 }
 
 .tab:hover {
@@ -38,7 +32,7 @@
 }
 
 .tabActive {
-  color: var(--accent);
+  color: var(--accent-hover);
 }
 
 .tabActive:hover {
