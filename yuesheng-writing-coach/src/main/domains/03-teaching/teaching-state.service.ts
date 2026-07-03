@@ -267,4 +267,94 @@ export class TeachingStateService {
       abilityHighlights: this.getAbilityHighlights(sessionId),
     };
   }
+
+  // ─── Sprint 21 D-2: 事件驱动 action ───
+
+  /**
+   * 标记训练意图(由 TeachingStateSubscriber 在收到 intent:train 时调用)
+   *
+   * 业务语义:
+   * - 写入 lastUserConfirmation = `train:${syndromeId}:${timestamp}`(focusArea 是枚举值,不适合承载意图标记)
+   * - 异常隔离:任何错误仅 warn,不抛出
+   *
+   * @param sessionId  会话 ID
+   * @param syndromeId 触发训练的症候 ID(如 P003)
+   * @param techniqueId 可选技法 ID
+   */
+  markTrainingIntent(sessionId: string, syndromeId: string, techniqueId?: string): void {
+    try {
+      const state = this.getStore().getBySession(sessionId);
+      if (!state) return;
+      const stamp = new Date().toISOString();
+      const confirmation = techniqueId
+        ? `train:${syndromeId}:${techniqueId}:${stamp}`
+        : `train:${syndromeId}:${stamp}`;
+      this.getStore().update(sessionId, {
+        lastUserConfirmation: confirmation,
+      });
+    } catch (e) {
+      console.warn('[TeachingStateService] markTrainingIntent failed:', e);
+    }
+  }
+
+  /**
+   * 记录诊断到 activeProblems(由 TeachingStateSubscriber 在收到 diagnosis_extracted 时调用)
+   *
+   * 业务语义:
+   * - 读 activeProblems,若已存在相同 syndromeId 则累加 detectionCount + 追加 evidence
+   * - 不存在则按 ActiveProblem 字段填充并 push
+   * - status 默认 'detected'(待用户确认)
+   * - severity 为 null 时默认 'L1'(ActiveProblem.severity 不接受 null)
+   * - 异常隔离:任何错误仅 warn,不抛出
+   *
+   * @param sessionId     会话 ID
+   * @param syndromeId    症候 ID
+   * @param severity      严重度(null 时回退 L1)
+   * @param evidenceQuote 证据片段
+   */
+  recordProblem(
+    sessionId: string,
+    syndromeId: string,
+    severity: 'L1' | 'L2' | 'L3' | null,
+    evidenceQuote: string,
+  ): void {
+    try {
+      const state = this.getStore().getOrCreate(sessionId);
+      const effectiveSeverity = severity ?? 'L1';
+      const existing = state.activeProblems.find(
+        (p: { id?: string; syndromeId?: string }) =>
+          (p.id ?? p.syndromeId) === syndromeId,
+      );
+      const now = new Date().toISOString();
+      const newProblems = [...state.activeProblems];
+      if (existing) {
+        const idx = newProblems.indexOf(existing);
+        const updated = {
+          ...existing,
+          detectionCount: ((existing as { detectionCount?: number }).detectionCount ?? 0) + 1,
+          evidence: [
+            ...((existing as { evidence?: string[] }).evidence ?? []),
+            evidenceQuote,
+          ].slice(-10),
+          severity: effectiveSeverity,
+        };
+        newProblems[idx] = updated;
+      } else {
+        newProblems.push({
+          id: syndromeId,
+          name: syndromeId,
+          severity: effectiveSeverity,
+          evidence: [evidenceQuote],
+          firstDetected: now,
+          status: 'detected',
+          detectionCount: 1,
+          missedCount: 0,
+          suggestedActions: [],
+        } as unknown as typeof newProblems[number]);
+      }
+      this.getStore().update(sessionId, { activeProblems: newProblems });
+    } catch (e) {
+      console.warn('[TeachingStateService] recordProblem failed:', e);
+    }
+  }
 }

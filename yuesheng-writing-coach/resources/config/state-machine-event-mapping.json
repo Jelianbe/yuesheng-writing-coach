@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "comment": "Sprint 21 D-2: 教学状态机事件→动作映射表 (R-014 配置外置)。新增/修改只改 JSON,无需改代码。新增 eventType 时,TeachingStateSubscriber 需同步 dispatch case。",
+  "subscribers": [
+    {
+      "eventType": "intent:train",
+      "action": "markTrainingIntent",
+      "enabled": true,
+      "comment": "用户表达训练意图 → 标记 training intent 写入状态(供 PromptBuilder / PromptContext 使用)"
+    },
+    {
+      "eventType": "diagnosis_extracted",
+      "action": "recordProblem",
+      "enabled": true,
+      "comment": "AI 输出解析出症候证据 → 写入 activeProblems(待用户确认)"
+    },
+    {
+      "eventType": "phase_transition",
+      "action": "confirmPhase",
+      "enabled": false,
+      "comment": "阶段切换确认 — Sprint 22 启用(避免影响 FiveStepFlow E2E 行为)"
+    },
+    {
+      "eventType": "training_triggered",
+      "action": "setActiveTraining",
+      "enabled": false,
+      "comment": "训练触发 — Sprint 22 启用"
+    }
+  ]
+}
