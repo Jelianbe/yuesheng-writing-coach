@@ -80,6 +80,29 @@ export interface TeachingState {
   updatedAt: string;
   /** 锁定的症候 ID 列表（诊断后锁定，跨轮次保持，直到 resolved） */
   lockedSyndromes: string[];
+  /**
+   * Sprint 23 G-1: 主进程侧 ActiveTraining 业务元数据
+   * 记录 session 进入 ActiveTraining 状态的元数据,实际 ActiveTrainingSession
+   * 完整状态机仍在 renderer 侧维护(renderer/stores/training.store.ts)。
+   * 主进程侧仅承担"哪个 session 进入了训练态 + 关联症候"业务元数据,供审计/查询用。
+   * 完整状态机迁移推到 S24。
+   */
+  activeTrainingMeta?: ActiveTrainingMeta | null;
+}
+
+/**
+ * Sprint 23 G-1: ActiveTraining 业务元数据
+ * 轻量级 JSON 字段,记录训练触发的关键元数据
+ */
+export interface ActiveTrainingMeta {
+  /** 触发的症候 ID */
+  syndromeId: string;
+  /** 关联技法 ID(可选) */
+  techniqueId?: string;
+  /** 触发时间 ISO 格式 */
+  triggeredAt: string;
+  /** 触发来源(对齐 TrainingTriggeredEvent.reason) */
+  source: 'training_triggered' | 'user_request' | 'diagnosis_result' | 'prescription';
 }
 
 /** 教学状态更新请求 */

@@ -10,6 +10,7 @@
 
 import type Database from 'better-sqlite3';
 import { TeachingPhase, TeachingSubphase } from '../../../../shared/constants';
+import type { ActiveTrainingMeta } from '../../../../shared/types/index';
 import type {
   TeachingState,
   TeachingStateRow,
@@ -34,6 +35,10 @@ function rowToState(row: TeachingStateRow): TeachingState {
     focusArea: (row.focus_area ?? null) as TeachingState['focusArea'],
     transitionOffered: row.transition_offered === 1,
     lockedSyndromes: JSON.parse(row.locked_syndromes ?? '[]'),
+    // Sprint 23 G-1: 解析 ActiveTraining 业务元数据(JSON 字符串)
+    activeTrainingMeta: row.active_training_meta
+      ? (JSON.parse(row.active_training_meta) as ActiveTrainingMeta)
+      : null,
     updatedAt: row.updated_at,
   };
 }
@@ -56,6 +61,10 @@ function stateToRow(state: TeachingState): Omit<TeachingStateRow, 'id'> {
     focus_area: state.focusArea,
     transition_offered: state.transitionOffered ? 1 : 0,
     locked_syndromes: JSON.stringify(state.lockedSyndromes),
+    // Sprint 23 G-1: 序列化 ActiveTraining 业务元数据
+    active_training_meta: state.activeTrainingMeta
+      ? JSON.stringify(state.activeTrainingMeta)
+      : null,
     updated_at: state.updatedAt,
   };
 }
@@ -114,12 +123,14 @@ export class TeachingStateStore {
         session_id, current_phase, current_subphase,
         completed_actions, completed_tasks, active_problems,
         next_suggested_actions, current_task_id, diagnosis_summary,
-        last_user_confirmation, focus_area, transition_offered, locked_syndromes, updated_at
+        last_user_confirmation, focus_area, transition_offered, locked_syndromes,
+        active_training_meta, updated_at
       ) VALUES (
         @session_id, @current_phase, @current_subphase,
         @completed_actions, @completed_tasks, @active_problems,
         @next_suggested_actions, @current_task_id, @diagnosis_summary,
-        @last_user_confirmation, @focus_area, @transition_offered, @locked_syndromes, @updated_at
+        @last_user_confirmation, @focus_area, @transition_offered, @locked_syndromes,
+        @active_training_meta, @updated_at
       )
     `);
 
@@ -161,6 +172,7 @@ export class TeachingStateStore {
         focus_area = @focus_area,
         transition_offered = @transition_offered,
         locked_syndromes = @locked_syndromes,
+        active_training_meta = @active_training_meta,
         updated_at = @updated_at
       WHERE session_id = @session_id
     `);

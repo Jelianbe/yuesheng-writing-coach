@@ -1,14 +1,21 @@
 /**
- * TeachingStateSubscriber F-2 单测 — Sprint 22
+ * TeachingStateSubscriber F-2 → G-1 单测 — Sprint 22 F-2 / Sprint 23 G-1
  *
- * 覆盖 training_triggered enabled 后行为(承接 D-2 disabled 状态):
- * 1. training_triggered 事件触发 handleSetActiveTraining → markTrainingIntent + console.info
- * 2. console.info 标注 S23+ 接入主进程
- * 3. payload 字段全部透传
+ * Sprint 22 F-2: training_triggered enabled 后行为(承接 D-2 disabled 状态)
+ *   - 当时实现: markTrainingIntent + console.info (占位,S23+ 接入)
+ * Sprint 23 G-1: 真实主进程侧 ActiveTraining 业务元数据
+ *   - 替换为: setActiveTraining
+ *   - 不再调用 markTrainingIntent
+ *   - 不再有 console.info 占位标注
+ *
+ * 覆盖:
+ * 1. training_triggered → setActiveTraining 透传 syndromeId/techniqueId/source
+ * 2. setActiveTraining 替代 markTrainingIntent(原占位不再调用)
+ * 3. payload 字段(syndromeId/techniqueId/reason)完整透传
  * 4. 与 phase_transition 同时触发不互相干扰
  *
  * DoD: ≥3 单测
- * 依据: dev-docs/tasks/sprint-22-plan.md §F-2
+ * 依据: dev-docs/tasks/sprint-22-plan.md §F-2 + dev-docs/tasks/sprint-23-plan.md §G-1
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -17,6 +24,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { TeachingStateSubscriber } from '../teaching-state-subscriber';
 import type { TeachingStateService } from '../../teaching-state.service';
+import type { ActiveTrainingMeta } from '../../../../../shared/types/index';
 
 function writeTempConfig(content: unknown): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tss-f2-'));
@@ -26,6 +34,12 @@ function writeTempConfig(content: unknown): string {
 }
 
 interface FakeCalls {
+  setActiveTraining: Array<{
+    sessionId: string;
+    syndromeId: string;
+    techniqueId?: string;
+    source: ActiveTrainingMeta['source'];
+  }>;
   markTrainingIntent: Array<{ sessionId: string; syndromeId: string; techniqueId?: string }>;
   confirmPhase: Array<{ sessionId: string }>;
   recordProblem: Array<{ sessionId: string; syndromeId: string }>;
@@ -43,11 +57,22 @@ const f2Config = {
 
 const createFakeService = (): { service: TeachingStateService; calls: FakeCalls } => {
   const calls: FakeCalls = {
+    setActiveTraining: [],
     markTrainingIntent: [],
     confirmPhase: [],
     recordProblem: [],
   };
   const service = {
+    // Sprint 23 G-1: 新增 setActiveTraining 替代 Sprint 22 F-2 占位
+    setActiveTraining: (
+      sessionId: string,
+      syndromeId: string,
+      techniqueId: string | undefined,
+      source: ActiveTrainingMeta['source'],
+    ) => {
+      calls.setActiveTraining.push({ sessionId, syndromeId, techniqueId, source });
+    },
+    // Sprint 21 D-2 保留: markTrainingIntent 仍服务于 intent:train 事件(语义不同)
     markTrainingIntent: (sessionId: string, syndromeId: string, techniqueId?: string) => {
       calls.markTrainingIntent.push({ sessionId, syndromeId, techniqueId });
     },
@@ -63,13 +88,13 @@ const createFakeService = (): { service: TeachingStateService; calls: FakeCalls 
   return { service, calls };
 };
 
-describe('TeachingStateSubscriber training_triggered enabled (Sprint 22 F-2)', () => {
+describe('TeachingStateSubscriber training_triggered (Sprint 22 F-2 → Sprint 23 G-1)', () => {
   beforeEach(() => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'info').mockImplementation(() => {});
   });
 
-  it('training_triggered → markTrainingIntent 透传 syndromeId/techniqueId', () => {
+  it('training_triggered → setActiveTraining 透传 syndromeId/techniqueId/source (G-1)', () => {
     const configPath = writeTempConfig(f2Config);
     const { service, calls } = createFakeService();
     const subscriber = new TeachingStateSubscriber(service, configPath);
@@ -87,16 +112,14 @@ describe('TeachingStateSubscriber training_triggered enabled (Sprint 22 F-2)', (
       'sess-f2-1',
     );
 
-    expect(calls.markTrainingIntent).toEqual([
-      { sessionId: 'sess-f2-1', syndromeId: 'P003', techniqueId: 'TQ-007' },
+    expect(calls.setActiveTraining).toEqual([
+      { sessionId: 'sess-f2-1', syndromeId: 'P003', techniqueId: 'TQ-007', source: 'user_request' },
     ]);
   });
 
-  it('training_triggered → console.info 标注 S23+ 接入主进程', () => {
+  it('training_triggered → setActiveTraining 不再调用 markTrainingIntent (G-1 替换占位)', () => {
     const configPath = writeTempConfig(f2Config);
-    const infoSpy = vi.mocked(console.info);
-    infoSpy.mockClear();
-    const { service } = createFakeService();
+    const { service, calls } = createFakeService();
     const subscriber = new TeachingStateSubscriber(service, configPath);
 
     subscriber.handle(
@@ -111,19 +134,23 @@ describe('TeachingStateSubscriber training_triggered enabled (Sprint 22 F-2)', (
       'sess-f2-2',
     );
 
-    expect(infoSpy).toHaveBeenCalled();
-    const message = infoSpy.mock.calls[0]?.[0] as string;
-    expect(message).toContain('training_triggered received');
-    expect(message).toContain('syndrome=P005');
-    expect(message).toContain('reason=diagnosis_result');
-    expect(message).toContain('S23+');
+    // G-1: setActiveTraining 被调用
+    expect(calls.setActiveTraining).toHaveLength(1);
+    expect(calls.setActiveTraining[0]).toEqual({
+      sessionId: 'sess-f2-2',
+      syndromeId: 'P005',
+      techniqueId: undefined,
+      source: 'diagnosis_result',
+    });
+    // G-1: 原 Sprint 22 F-2 占位的 markTrainingIntent 不再被调用
+    expect(calls.markTrainingIntent).toHaveLength(0);
   });
 
-  it('training_triggered → techniqueId 缺省 → console.info 显示 "none"', () => {
+  it('training_triggered → 移除 F-2 占位 console.info (G-1 真实实现不再需要占位标注)', () => {
     const configPath = writeTempConfig(f2Config);
     const infoSpy = vi.mocked(console.info);
     infoSpy.mockClear();
-    const { service, calls } = createFakeService();
+    const { service } = createFakeService();
     const subscriber = new TeachingStateSubscriber(service, configPath);
 
     subscriber.handle(
@@ -131,17 +158,42 @@ describe('TeachingStateSubscriber training_triggered enabled (Sprint 22 F-2)', (
         type: 'training_triggered',
         payload: {
           sessionId: 'sess-f2-3',
-          syndromeId: 'P001',
-          reason: 'user_request',
+          syndromeId: 'P005',
+          reason: 'diagnosis_result',
         },
       },
       'sess-f2-3',
     );
 
-    expect(calls.markTrainingIntent).toHaveLength(1);
-    expect(calls.markTrainingIntent[0].techniqueId).toBeUndefined();
-    const message = infoSpy.mock.calls[0]?.[0] as string;
-    expect(message).toContain('technique=none');
+    // G-1: 真实 setActiveTraining 替代了 F-2 占位 console.info
+    // 不再输出 "S23+ 接入主进程" 占位标注
+    const trainingTriggeredInfoCalls = infoSpy.mock.calls.filter((call) => {
+      const msg = call[0];
+      return typeof msg === 'string' && msg.includes('training_triggered received');
+    });
+    expect(trainingTriggeredInfoCalls).toHaveLength(0);
+  });
+
+  it('training_triggered → techniqueId 缺省 → setActiveTraining source 透传', () => {
+    const configPath = writeTempConfig(f2Config);
+    const { service, calls } = createFakeService();
+    const subscriber = new TeachingStateSubscriber(service, configPath);
+
+    subscriber.handle(
+      {
+        type: 'training_triggered',
+        payload: {
+          sessionId: 'sess-f2-3b',
+          syndromeId: 'P001',
+          reason: 'user_request',
+        },
+      },
+      'sess-f2-3b',
+    );
+
+    expect(calls.setActiveTraining).toHaveLength(1);
+    expect(calls.setActiveTraining[0].techniqueId).toBeUndefined();
+    expect(calls.setActiveTraining[0].source).toBe('user_request');
   });
 
   it('phase_transition + training_triggered 互不干扰', () => {
@@ -165,6 +217,8 @@ describe('TeachingStateSubscriber training_triggered enabled (Sprint 22 F-2)', (
     );
 
     expect(calls.confirmPhase).toEqual([{ sessionId: 'sess-f2-4' }]);
-    expect(calls.markTrainingIntent).toEqual([{ sessionId: 'sess-f2-4', syndromeId: 'P003', techniqueId: undefined }]);
+    expect(calls.setActiveTraining).toEqual([
+      { sessionId: 'sess-f2-4', syndromeId: 'P003', techniqueId: undefined, source: 'user_request' },
+    ]);
   });
 });
