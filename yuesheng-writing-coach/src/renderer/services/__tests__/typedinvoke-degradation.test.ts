@@ -171,4 +171,101 @@ describe('typedInvoke 降级 — Sprint 20 B-2', () => {
       expect(mockTypedInvoke).toHaveBeenCalledWith('chat:stop', { sessionId: 'sess-42' });
     });
   });
+
+  describe('session.service — B-3 降级补齐', () => {
+    it('list() 失败时返回 []', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.list();
+      expect(result).toEqual([]);
+    });
+
+    it('create() 失败时返回 null', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.create('title');
+      expect(result).toBeNull();
+    });
+
+    it('delete() 失败时返回 false', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.delete('s1');
+      expect(result).toBe(false);
+    });
+
+    it('rename() 失败时返回 false', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.rename('s1', 'new');
+      expect(result).toBe(false);
+    });
+
+    it('getMessagesPaged() 失败时返回空页', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.getMessagesPaged('s1', 0, 20);
+      expect(result).toEqual({ messages: [], hasMore: false });
+    });
+
+    it('listWithMeta() 失败时返回 []', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.listWithMeta();
+      expect(result).toEqual([]);
+    });
+
+    it('updateTitle() 失败时返回 false', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.updateTitle('s1', 'new');
+      expect(result).toBe(false);
+    });
+
+    it('searchMessages() 失败时返回 []', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { sessionService } = await import('../session.service');
+      const result = await sessionService.searchMessages('s1', 'q');
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('teaching-state.service — B-3 降级补齐', () => {
+    it('get() 失败时返回 null', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.get({ sessionId: 's1' });
+      expect(result).toBeNull();
+    });
+
+    it('update() 失败时返回 null(签名变化:Promise<TeachingState> → Promise<TeachingState | null>)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.update({ sessionId: 's1', updates: { currentPhase: 'P1_WORLD' } });
+      expect(result).toBeNull();
+    });
+
+    it('confirm() 失败时返回 null', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.confirm({ sessionId: 's1' });
+      expect(result).toBeNull();
+    });
+
+    it('updateSummary() 失败时返回 null', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.updateSummary({ sessionId: 's1', newContent: 'text' });
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('training.service.skip — B-3 降级补齐', () => {
+    it('skip() 失败时返回 null(原 throw 模式已对齐)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { trainingService } = await import('../training.service');
+      const result = await trainingService.skip({ sessionId: 's1', recordId: 'r1' });
+      expect(result).toBeNull();
+    });
+  });
 });
