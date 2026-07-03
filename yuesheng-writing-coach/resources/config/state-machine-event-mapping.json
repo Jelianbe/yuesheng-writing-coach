@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "comment": "Sprint 21 D-2: 教学状态机事件→动作映射表 (R-014 配置外置)。新增/修改只改 JSON,无需改代码。新增 eventType 时,TeachingStateSubscriber 需同步 dispatch case。",
+  "version": "1.1",
+  "comment": "Sprint 21 D-2: 教学状态机事件→动作映射表 (R-014 配置外置)。新增/修改只改 JSON,无需改代码。新增 eventType 时,TeachingStateSubscriber 需同步 dispatch case。Sprint 24 A-2: 新增 startActiveTraining action。",
   "subscribers": [
     {
       "eventType": "intent:train",
@@ -24,7 +24,13 @@
       "eventType": "training_triggered",
       "action": "setActiveTraining",
       "enabled": true,
-      "comment": "Sprint 22 F-2: 训练触发(用户消息含训练意图关键词 + 诊断有症候时 emit。占位:Subscriber 调 markTrainingIntent + console.info,主进程侧 ActiveTraining 状态机推到 S23+)"
+      "comment": "Sprint 22 F-2 / Sprint 23 G-1: 训练触发,轻量业务元数据写入 teaching_state.active_training_meta(供审计/查询)"
+    },
+    {
+      "eventType": "training_triggered",
+      "action": "startActiveTraining",
+      "enabled": true,
+      "comment": "Sprint 24 A-2: 训练触发,完整状态机入口。从 training-library.json 查 syndromeId 匹配训练条目,组装 TrainingStep[] 并调 ActiveTrainingService.start() 写入 active_training 表。与 setActiveTraining 共存,前者写业务元数据,后者写完整状态。"
     }
   ]
 }

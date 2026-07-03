@@ -68,6 +68,11 @@ const allowedInvokeChannels: readonly string[] = [
   'prescription:getAllStages',
   'prescription:getStageById',
   'training:generateFlow',
+  // Sprint 24 A-3: ActiveTraining 草稿持久化
+  'activeTraining:updateDraft',
+  'activeTraining:get',
+  // Sprint 24 A-4: ActiveTraining 状态推送事件
+  'activeTraining:updated',
   'retro:generate',
   'retro:save',
   'manuscript:list',
@@ -102,6 +107,8 @@ const allowedEventChannels: readonly string[] = [
   'chat:stream:data',
   'chat:stream:end',
   'chat:tool:executing',
+  // Sprint 24 A-4: ActiveTraining 状态推送事件(主进程 → renderer)
+  'activeTraining:updated',
 ];
 
 contextBridge.exposeInMainWorld('electronAPI', {
