@@ -13,7 +13,8 @@
         "originalText": "redact",
         "rewrittenText": "truncate",
         "evaluation.feedback": "truncate",
-        "evaluation.suggestion": "truncate"
+        "evaluation.suggestion": "truncate",
+        "evidence": "truncate-nested"
       }
     },
     "training": {
@@ -34,7 +35,7 @@
       "fields": {
         "diagnosisSummary": "truncate",
         "focusArea": "omit",
-        "activeProblems": "truncate-nested"
+        "activeProblems.evidence": "truncate-nested"
       }
     },
     "student-context": {

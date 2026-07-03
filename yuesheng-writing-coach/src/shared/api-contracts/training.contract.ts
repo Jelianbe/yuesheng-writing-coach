@@ -156,13 +156,27 @@ export const TrainingApi = {
   assign: {
     channel: 'training:assign' as const,
     request: {} as TrainingAssignRequest,
-    response: {} as ApiResponse<TrainingAssignResponse>,
+    response: {
+      success: true,
+      data: {} as TrainingAssignResponse,
+      sensitiveFields: [
+        'record.userResponse',
+        'record.aiFeedback',
+      ] as const,
+    } as ApiResponse<TrainingAssignResponse>,
   },
 
   complete: {
     channel: 'training:complete' as const,
     request: {} as TrainingCompleteRequest,
-    response: {} as ApiResponse<TrainingCompleteResponse>,
+    response: {
+      success: true,
+      data: {} as TrainingCompleteResponse,
+      sensitiveFields: [
+        'record.userResponse',
+        'record.aiFeedback',
+      ] as const,
+    } as ApiResponse<TrainingCompleteResponse>,
   },
 
   skip: {
@@ -180,13 +194,35 @@ export const TrainingApi = {
   submit: {
     channel: 'training:submit' as const,
     request: {} as TrainingSubmitRequest,
-    response: {} as ApiResponse<TrainingSubmitResponse>,
+    response: {
+      success: true,
+      data: {} as TrainingSubmitResponse,
+      sensitiveFields: [
+        'originalQuote',
+        'userDraft',
+        'challengeDescription',
+        'constraint',
+        'feedback',
+        'nextStep',
+      ] as const,
+    } as ApiResponse<TrainingSubmitResponse>,
   },
 
   evaluate: {
     channel: 'training:evaluate' as const,
     request: {} as TrainingEvaluateRequest,
-    response: {} as ApiResponse<TrainingEvaluateResponse>,
+    response: {
+      success: true,
+      data: {} as TrainingEvaluateResponse,
+      sensitiveFields: [
+        'originalQuote',
+        'userDraft',
+        'challengeDescription',
+        'constraint',
+        'feedback',
+        'nextStep',
+      ] as const,
+    } as ApiResponse<TrainingEvaluateResponse>,
   },
 
   decideReading: {

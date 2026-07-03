@@ -56,7 +56,7 @@ const baseWhitelist = {
       fields: {
         diagnosisSummary: 'truncate',
         focusArea: 'omit',
-        activeProblems: 'truncate-nested',
+        'activeProblems.evidence': 'truncate-nested',
       },
     },
     'student-context': {

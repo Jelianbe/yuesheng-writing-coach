@@ -156,19 +156,48 @@ function maskValue(value: unknown): string {
   return value[0] + '*'.repeat(Math.max(value.length - 2, 1)) + value[value.length - 1];
 }
 
-/** 截断嵌套数组字段(特化: activeProblems[].evidence[]) */
-function truncateNestedValue(value: unknown, maxChars: number): unknown {
-  if (!Array.isArray(value)) return value;
-  return value.map((item: unknown) => {
+/** 截断嵌套数组字段(支持 2 种路径格式,与 contract.sensitiveFields 约定一致)
+ *  - 'X' 单层:obj 本身是数组,对每个元素的 X 字段 truncate
+ *  - 'X.Y' 双层:obj.X 是数组,对每个元素的 Y 字段 truncate
+ *  注:ActiveProblem.evidence 是 string[],不是嵌套对象。
+ *  truncate-nested 动作对每个元素 → 子字段是 string[] 时,truncate 每个字符串
+ */
+function truncateNestedByPath(obj: unknown, fieldPath: string, maxChars: number): unknown {
+  const parts = fieldPath.split('.');
+  if (parts.length === 0) return obj;
+
+  let arr: unknown;
+  let childKey: string;
+  let parentPath: string | null = null;
+
+  if (parts.length === 1) {
+    // 单层:obj 本身是数组
+    if (!Array.isArray(obj)) return obj;
+    arr = obj;
+    childKey = parts[0];
+  } else {
+    // 双层:obj.X 是数组
+    parentPath = parts.slice(0, -1).join('.');
+    childKey = parts[parts.length - 1];
+    arr = getByPath(obj, parentPath);
+    if (!Array.isArray(arr)) return obj;
+  }
+
+  const newArr = (arr as unknown[]).map((item: unknown) => {
     if (item === null || item === undefined || typeof item !== 'object') return item;
     const out: Record<string, unknown> = { ...(item as Record<string, unknown>) };
-    if (Array.isArray(out.evidence)) {
-      out.evidence = (out.evidence as unknown[]).map((ev: unknown) =>
+    if (Array.isArray(out[childKey])) {
+      out[childKey] = (out[childKey] as unknown[]).map((ev: unknown) =>
         typeof ev === 'string' ? truncateString(ev, maxChars) : ev,
       );
     }
     return out;
   });
+
+  if (parentPath === null) {
+    return newArr;
+  }
+  return setByPath(obj, parentPath, newArr);
 }
 
 /**
@@ -215,10 +244,34 @@ export class PayloadSanitizer {
       let out = payload;
       for (const [fieldPath, rule] of Object.entries(config.fields)) {
         const { action, maxChars } = normalizeRule(rule);
+        const effMax = maxChars ?? this.defaultMaxChars;
+
+        // truncate-nested: 支持 'X' 和 'X.Y' 两种路径
+        // 'X' 单层: payload 本身是数组(诊断 DIAGNOSIS_QUERY 返回 activeProblems[])
+        // 'X.Y' 双层: payload.X 是数组(教学状态 TEACHING_STATE_GET 返回 fullState.activeProblems)
+        if (action === 'truncate-nested') {
+          const parts = fieldPath.split('.');
+          if (parts.length === 0) continue;
+          if (parts.length === 1) {
+            if (!Array.isArray(out)) continue;
+            out = this.applyAction(out, fieldPath, action, undefined, effMax);
+            this.hitCount++;
+            this.hitsByAction[action]++;
+            continue;
+          }
+          const parentPath = parts.slice(0, -1).join('.');
+          const arr = getByPath(out, parentPath);
+          if (!Array.isArray(arr)) continue;
+          out = this.applyAction(out, fieldPath, action, undefined, effMax);
+          this.hitCount++;
+          this.hitsByAction[action]++;
+          continue;
+        }
+
         const value = getByPath(out, fieldPath);
         if (value === undefined) continue;
 
-        out = this.applyAction(out, fieldPath, action, value, maxChars ?? this.defaultMaxChars);
+        out = this.applyAction(out, fieldPath, action, value, effMax);
         this.hitCount++;
         this.hitsByAction[action]++;
       }
@@ -249,7 +302,7 @@ export class PayloadSanitizer {
       case 'omit':
         return unsetByPath(obj, fieldPath);
       case 'truncate-nested':
-        return setByPath(obj, fieldPath, truncateNestedValue(value, maxChars));
+        return truncateNestedByPath(obj, fieldPath, maxChars);
     }
   }
 
