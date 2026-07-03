@@ -57,14 +57,15 @@ export const teachingStateService = {
     return result.data;
   },
 
-  /** 获取 Prompt 注入内容 */
+  /** 获取 Prompt 注入内容 — 失败时返回 null(降级,涉及系统 prompt 全文) */
   async getPrompt(params: TeachingStateGetPromptRequest): Promise<string | null> {
     const result = await typedInvoke<TeachingStateGetPromptRequest, TeachingStateGetPromptResponse>(
       TeachingStateApi.getPrompt.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[teaching-state] getPrompt failed:', result.error);
+      return null;
     }
     return result.data.promptContent;
   },

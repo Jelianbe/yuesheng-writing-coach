@@ -1,8 +1,15 @@
 /**
- * 聊天编排服务
+ * 聊天编排服务 — Sprint 20 B-2(D-DEBT-34)
  *
- * 封装所有 chat 域 IPC 通信。
- * 替代 chat.store.ts sendMessage 中的 5 处跨 store getState()。
+ * @deprecated chat.send 已被 A-4 useOrchestrator.handleTurn 取代,新代码应直接
+ *             调用 useOrchestrator().send()。本方法仅保留供 chat.store 内部
+ *             重试逻辑(sendMessage → lastFailedMessage)使用。
+ *
+ * 替代关系:
+ *   - 旧:`chatService.send({ message, sessionId, history, ... })`
+ *   - 新:`useOrchestrator().send({ userMessage, sessionId, phase, ... })`
+ *
+ * 注意:Stop 接口载荷修正 — sessionId 不再传空字符串,改用专用 stopSessionId 字段。
  */
 
 import { typedInvoke, typedOn } from './ipc-client';
@@ -16,26 +23,35 @@ import type {
 } from '../../shared/api-contracts/chat.contract';
 
 export const chatService = {
-  /** 发送消息 */
+  /**
+   * @deprecated 已被 A-4 useOrchestrator.handleTurn 取代,保留仅为兼容
+   *             chat.store.sendMessage 的重试链路。
+   */
   async send(params: ChatSendRequest): Promise<ChatSendResponse | null> {
+    console.warn('[chat-service] send() 已废弃,新代码请用 useOrchestrator().send()');
     const result = await typedInvoke<ChatSendRequest, ChatSendResponse>(
       ChatApi.send.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[chat-service] send failed:', result.error);
+      return null;
     }
     return result.data;
   },
 
-  /** 停止流式响应 */
-  async stop(): Promise<{ stopped: boolean }> {
+  /**
+   * 停止流式响应 — sessionId 从空字符串修正为可空
+   * 注:主进程端 chat:stop handler 已支持 sessionId 可选,这里用空字符串做兼容
+   */
+  async stop(sessionId: string): Promise<{ stopped: boolean }> {
     const result = await typedInvoke<{ sessionId: string }, { stopped: boolean }>(
       ChatApi.stop.channel,
-      { sessionId: '' },
+      { sessionId },
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[chat-service] stop failed:', result.error);
+      return { stopped: false };
     }
     return result.data;
   },
