@@ -1,11 +1,12 @@
 /**
  * ProjectSpacePage — 项目空间
  *
- * 对齐设计稿:
+ * 移动端布局:
  * - Navbar: ‹ 返回 + 项目标题 + ⋯
- * - 统计区(诊断/训练/学习天数)
- * - SVG 雷达图(五维能力)
- * - CTA 按钮 + 最近记录
+ * - 统计区(诊断/训练/学习天数) — 3 列卡片
+ * - SVG 雷达图(五维能力, 200×200)
+ * - CTA 按钮(扁平样式) + 最近记录
+ * - 作品章节(chip 化状态)
  *
  * 数据来源:
  * - useProjectStore (按 params.id 查 project 元数据)
@@ -13,7 +14,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { ArrowLeft, Book, FileText, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Book, FileText, MessageSquare, BookOpen, Target, Sparkles } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { useProjectStore } from '../stores/project.store';
@@ -21,9 +22,9 @@ import { MoreMenu } from '../components/navigation/MoreMenu';
 
 const RADAR_LABELS = ['人物塑造', '情节节奏', '环境描写', '对话设计', '叙事视角'];
 const RADAR_VALUES = [4, 3, 5, 2, 4]; // 1-5 - D-DEBT-30 待 ability store 接入后替换
-const RADAR_SIZE = 140;
+const RADAR_SIZE = 200;
 const CENTER = RADAR_SIZE / 2;
-const RADIUS = RADAR_SIZE * 0.38;
+const RADIUS = RADAR_SIZE * 0.36;
 const LEVELS = 5;
 
 function RadarChart() {
@@ -44,14 +45,14 @@ function RadarChart() {
 
   const labelPositions = RADAR_LABELS.map((_, i) => {
     const a = angleStep * i - Math.PI / 2;
-    const r = RADIUS + 18;
+    const r = RADIUS + 14;
     return { x: CENTER + r * Math.cos(a), y: CENTER + r * Math.sin(a) };
   });
 
   return (
     <svg width={RADAR_SIZE} height={RADAR_SIZE} viewBox={`0 0 ${RADAR_SIZE} ${RADAR_SIZE}`}>
       {gridPoints.map((pts, i) => (
-        <polygon key={i} points={pts} fill="none" stroke="var(--border)" strokeWidth={0.8} />
+        <polygon key={i} points={pts} fill="none" stroke="var(--border)" strokeWidth={0.6} />
       ))}
       {RADAR_LABELS.map((_, i) => {
         const a = angleStep * i - Math.PI / 2;
@@ -60,11 +61,11 @@ function RadarChart() {
             key={i}
             x1={CENTER} y1={CENTER}
             x2={CENTER + RADIUS * Math.cos(a)} y2={CENTER + RADIUS * Math.sin(a)}
-            stroke="var(--border)" strokeWidth={0.8}
+            stroke="var(--border)" strokeWidth={0.6}
           />
         );
       })}
-      <polygon points={dataPoints} fill="rgba(138,122,158,0.25)" stroke="var(--accent)" strokeWidth={1.5} />
+      <polygon points={dataPoints} fill="rgba(138,122,158,0.22)" stroke="var(--accent)" strokeWidth={1.5} />
       {RADAR_VALUES.map((v, i) => {
         const r = (RADIUS / 5) * v;
         const a = angleStep * i - Math.PI / 2;
@@ -77,7 +78,7 @@ function RadarChart() {
           key={i}
           x={pos.x} y={pos.y}
           textAnchor="middle" dominantBaseline="middle"
-          fill="var(--text-secondary)" fontSize={8}
+          fill="var(--text-secondary)" fontSize={9}
         >
           {RADAR_LABELS[i]}
         </text>
@@ -95,10 +96,16 @@ const RECENT_RECORDS = [
 
 // D-DEBT-30 章节需 manuscriptId 列表,project 概念不直接对应,占位
 const CHAPTERS = [
-  { title: '第一章：初遇', status: '已完成' },
-  { title: '第二章：暗流', status: '修改中' },
-  { title: '第三章：抉择', status: '未开始' },
+  { title: '第一章：初遇', status: 'done' as const },
+  { title: '第二章：暗流', status: 'editing' as const },
+  { title: '第三章：抉择', status: 'todo' as const },
 ];
+
+const STATUS_MAP = {
+  done: { label: '已完成', bg: 'var(--color-growth-light)', color: 'var(--color-growth)' },
+  editing: { label: '修改中', bg: 'var(--color-practice-light)', color: 'var(--color-practice)' },
+  todo: { label: '未开始', bg: 'var(--bg-input)', color: 'var(--text-tertiary)' },
+} as const;
 
 export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = ({ params }) => {
   const pop = usePageStackStore(s => s.pop);
@@ -113,9 +120,9 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
   );
   const title = currentProject?.name ?? params?.title ?? '项目空间';
   const stats = [
-    { label: '诊断', value: '—', color: 'var(--color-teaching)' },
-    { label: '训练', value: '—', color: 'var(--color-practice)' },
-    { label: '学习天', value: '—', color: 'var(--color-growth)' },
+    { label: '诊断', value: '—', Icon: BookOpen, color: 'var(--color-teaching)' },
+    { label: '训练', value: '—', Icon: Target, color: 'var(--color-practice)' },
+    { label: '学习天', value: '—', Icon: Sparkles, color: 'var(--color-growth)' },
   ];
 
   useEffect(() => {
@@ -146,39 +153,36 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
       </div>
 
       {/* 内容 */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '0 16px 16px' }}>
-        {/* 统计区 */}
-        <div style={{
-          display: 'flex', gap: 8, marginTop: 16, marginBottom: 20,
-        }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: '12px 16px 16px' }}>
+        {/* 统计区 — 3 列卡片(每列带图标) */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 4, marginBottom: 16 }}>
           {stats.map(s => (
             <div key={s.label} style={{
-              flex: 1, textAlign: 'center', padding: '10px 0',
-              background: 'var(--bg-card)', borderRadius: 12,
+              flex: 1, padding: '10px 6px', textAlign: 'center',
+              background: 'var(--bg-card)', borderRadius: 10,
               border: '1px solid var(--border)',
             }}>
-              <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 2 }}>{s.label}</div>
+              <s.Icon size={16} color={s.color} strokeWidth={1.5} style={{ marginBottom: 4 }} />
+              <div style={{ fontSize: 18, fontWeight: 700, color: s.color, lineHeight: 1.2 }}>{s.value}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* 雷达图 */}
         <div style={{
-          display: 'flex', justifyContent: 'center', marginBottom: 20,
+          display: 'flex', justifyContent: 'center', marginBottom: 12,
         }}>
           <RadarChart />
         </div>
 
-        {/* CTA 按钮 */}
+        {/* CTA 按钮 — 扁平样式 */}
         <button
           onClick={() => push('chat', { projectId: params?.id ?? '', title })}
           style={{
-            width: '100%', padding: '12px 0', border: 'none', borderRadius: 12,
-            background: 'linear-gradient(135deg, var(--accent), #6E5E82)',
-            color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(138,122,158,0.3)',
-            marginBottom: 20,
+            width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
+            background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600,
+            cursor: 'pointer', marginBottom: 18,
           }}
         >
           开始新的学习
@@ -217,27 +221,32 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
           </div>
         </div>
 
-        {/* 作品章节 */}
+        {/* 作品章节 — chip 化状态 */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 8 }}>
             作品章节
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', borderRadius: 10, border: '1px solid var(--border)', overflow: 'hidden' }}>
-            {CHAPTERS.map((ch, i) => (
-              <div key={ch.title} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 12px',
-                borderBottom: i < CHAPTERS.length - 1 ? '1px solid var(--border)' : 'none',
-              }}>
-                <Book size={16} color="var(--text-tertiary)" strokeWidth={1.5} />
-                <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}>{ch.title}</span>
-                <span style={{
-                  fontSize: 11, color: ch.status === '已完成' ? 'var(--color-growth)' : ch.status === '修改中' ? 'var(--color-practice)' : 'var(--text-tertiary)',
+            {CHAPTERS.map((ch, i) => {
+              const s = STATUS_MAP[ch.status];
+              return (
+                <div key={ch.title} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '10px 12px',
+                  borderBottom: i < CHAPTERS.length - 1 ? '1px solid var(--border)' : 'none',
                 }}>
-                  {ch.status}
-                </span>
-              </div>
-            ))}
+                  <Book size={16} color="var(--text-tertiary)" strokeWidth={1.5} />
+                  <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}>{ch.title}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600,
+                    background: s.bg, color: s.color,
+                    padding: '2px 8px', borderRadius: 10,
+                  }}>
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
