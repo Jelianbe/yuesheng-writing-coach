@@ -56,11 +56,11 @@ export const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
     [activeTraining.challengeId],
   );
 
-  // S16: 五步流分支 —— 当 flowType === 'flow5' 且 trainingFlow 存在时切换到 FiveStepFlow
+  // S16: 五步流分支 —— 当 flowType === 'flow5' 且 trainingFlow 存在时切换到 FlowPanel
   if (activeTraining.flowType === 'flow5' && activeTraining.trainingFlow) {
     return (
       <div className={sharedStyles.trainingContainer}>
-        <FiveStepFlow
+        <FlowPanel
           active={activeTraining}
           flow={activeTraining.trainingFlow}
           evaluation={evaluationResult}
