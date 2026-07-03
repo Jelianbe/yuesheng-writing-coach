@@ -36,7 +36,9 @@ test.describe('PageStackRouter 路由 @smoke', () => {
     // 返回按钮是 navbar 内第一个 button
     const backButton = page.locator('header, [class*="navbar"]').first().getByRole('button').first();
     await expect(backButton).toBeVisible();
-    await expect(page.getByText('数据加载中…')).toBeVisible();
+    // Vite 环境无 IPC,页面会从 loading 快速切到 empty 任一即可
+    const placeholder = page.getByTestId('growth-loading').or(page.getByTestId('growth-empty'));
+    await expect(placeholder.first()).toBeVisible();
   });
 
   test('点击返回按钮 pop 回应用页', async ({ page }) => {
