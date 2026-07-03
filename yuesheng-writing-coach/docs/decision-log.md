@@ -2122,7 +2122,8 @@ Sprint 21 D-2 要求:
 ## 实施内容
 
 ### 新增
-- **esources/config/state-machine-event-mapping.json**(R-014 配置外置)
+- **
+esources/config/state-machine-event-mapping.json**(R-014 配置外置)
   - 4 个 subscribers 声明:intent:train / diagnosis_extracted / phase_transition / training_triggered
   - 2 个 enabled(markTrainingIntent / recordProblem)
   - 2 个 disabled 留 Sprint 22 扩展点(confirmPhase / setActiveTraining)
@@ -2145,7 +2146,8 @@ Sprint 21 D-2 要求:
   - A-3 兼容:既有 getContext + lastTrainEvent 逻辑保留
 - **TeachingStateService** 新增 2 个方法(Sprint 21 D-2)
   - markTrainingIntent(sessionId, syndromeId, techniqueId?) — 写 lastUserConfirmation = train::
-  - ecordProblem(sessionId, syndromeId, severity, evidenceQuote) — 累加 detectionCount + 追加 evidence(限 10 条)
+  - 
+ecordProblem(sessionId, syndromeId, severity, evidenceQuote) — 累加 detectionCount + 追加 evidence(限 10 条)
   - 异常隔离:内部 try-catch + console.warn
   - severity 为 null 时回退 L1(ActiveProblem.severity 不接受 null)
 
@@ -2176,7 +2178,8 @@ Sprint 21 D-2 要求:
 
 - Sprint 21 D 轨收尾:D-1 ✅ + D-2 ✅,可考虑 D-3(暂未计划)
 - E-1 载荷脱敏白名单启动(最大价值,R-029 安全优先)
-- 监控: 真实场景中 ecordProblem 调用频率(避免 activeProblems 数组膨胀)
+- 监控: 真实场景中 
+ecordProblem 调用频率(避免 activeProblems 数组膨胀)
 - Sprint 22 候选:启用 confirmPhase / setActiveTraining 两个 disabled action
 
 ---
@@ -2199,7 +2202,8 @@ Sprint 21 E-1 要求:
 ## 实施内容
 
 ### 新增
-- **esources/config/payload-sanitize-whitelist.json**
+- **
+esources/config/payload-sanitize-whitelist.json**
   - 4 service(diagnosis / training / teaching-state / student-context)字段级动作映射
   - truncate 默认 80 字符,可在字段级覆盖
   - student-context 留接口(目前无独立 handler,未来扩展)
@@ -2271,3 +2275,81 @@ Sprint 21 E-1 要求:
 - E-2 契约类型加固: 在 ApiResponse 中加 sensitiveFields? 字段,4 个 contract 标注
 - Sprint 22 候选: student-context 真实 handler 接入 + 日志告警
 - 监控: PayloadSanitizer.stats() 接入主进程 health endpoint(目前无)
+
+---
+
+## D-067: Sprint 21 E-2 契约类型加固 (2026-07-03)
+
+### 背景
+
+E-1 实现了 PayloadSanitizer 运行时脱敏,但 contract 端没有类型系统层面的"哪些字段敏感"声明。出现两个问题:
+1. 新增 endpoint 时,容易忘记标注 sensitiveFields,导致白名单覆盖缺失
+2. 改白名单字段名时,contract 端无法 typecheck 强制对齐,容易出现"白名单标 'X' 但 contract 标 'Y'"的不一致
+
+### 改造
+
+#### 1. ApiResponse 类型扩展
+
+`src/shared/api-contracts/base.ts` 给 ApiSuccess 和 ApiError 都加 `sensitiveFields?: ReadonlyArray<string>` 字段。阶段 1 设为可选,Sprint 22 收尾时改必填。
+
+```typescript
+export interface ApiSuccess<T> {
+  success: true;
+  data: T;
+  sensitiveFields?: ReadonlyArray<string>;
+}
+```
+
+#### 2. 4 个 contract 标注
+
+- **diagnosis.contract.ts**: query 标 `evidence` (ActiveProblem 元素字段), submitRewrite 标 `originalText`/`rewrittenText`/`evaluation.feedback`/`evaluation.suggestion`, getComparison 标 `originalText`
+- **training.contract.ts**: submit + evaluate 标 `feedback`/`nextStep` (与白名单完全一致)
+- **teaching-state.contract.ts**: get 标 `diagnosisSummary`/`focusArea`/`activeProblems.evidence`
+- **student-context.contract.ts**: load + save + toJSON 标 `studentName`/`email`/`phone` (新 contract)
+
+#### 3. truncate-nested 路径格式重构
+
+E-1 truncate-nested 用单层 'activeProblems' 路径,与 contract 'activeProblems.evidence' 路径不一致。重构后:
+- **单层 'X'**: payload 本身是数组,每个元素的 X 字段 truncate
+- **双层 'X.Y'**: payload.X 是数组,每个元素的 Y 字段 truncate
+
+E-1 白名单配置同步更新: `teaching-state.activeProblems` → `teaching-state.activeProblems.evidence`, 新增 `diagnosis.evidence` (单层)。
+
+#### 4. 联动测试 (12 个)
+
+`src/shared/api-contracts/__tests__/contract-sensitive-fields.test.ts` 验证:
+- 4 contract 标注存在性 (5 用例)
+- contract 字段名 ⊆ 白名单字段名 (4 用例,标错即失败)
+- ApiResponse 类型系统 (2 用例)
+- E-1 → E-2 联动 (1 用例)
+
+### 关键决策
+
+1. **sensitiveFields 阶段 1 设为可选**: 避免一次性改必填导致大量 typecheck 错误。Sprint 22 收尾时改必填,强制每个 endpoint 显式声明(无敏感数据时填 `[]`)
+2. **contract 字段名 = sanitize 路径 = 白名单字段名**: 三者完全一致,typecheck + 运行时双向校验。trim 操作简单
+3. **student-context 新建 contract**: 原项目无 student-context.contract.ts,但 E-1 白名单已含 student-context service 配置。新建 contract 让 E-2 标注有载体
+4. **truncate-nested 双格式**: 'X' 单层适用于 sanitize 接收 activeProblems[] 的情况(诊断),'X.Y' 双层适用于 sanitize 接收 fullState 的情况(教学状态)
+5. **truncate-nested 不下钻深层数组**: 只对 'X.Y' (一层数组 + 元素内数组字段) truncate。如果数据是 'X.Y.Z' 三层嵌套,保持原样(避免性能/语义复杂度)
+6. **不引入枚举类型**: sensitiveFields 用 ReadonlyArray<string> 而非 union 联合,允许灵活扩展。typecheck 阶段 1 不强制,Sprint 22 改必填时引入 type-level 校验
+
+### 门禁
+
+- typecheck: **0 errors**
+- vitest: **842/842 passed**(含 12 个新增 E-2 单测,共 38 个 E-1 + E-2)
+- lint: **0 errors**(257 warnings,R-019 允许范围)
+- E2E: **62 passed**
+
+### 教训
+
+1. **truncate-nested 双格式源于数据形态差异**: 诊断 handler sanitize 接收数组,教学状态 handler sanitize 接收包含数组的对象。两种数据结构都存在,必须支持双格式
+2. **字段名一致 = 路径空间一致**: contract / sanitize / 白名单三者用相同的字段名,任何不一致都能通过 typecheck 或测试捕获。E-1 阶段没保持一致,E-2 阶段补救
+3. **白名单过度配置无害但需谨慎**: E-1 白名单 training 配了 6 个字段,实际 sanitize 接收的 EvaluationResult 只有 2 个命中。剩余 4 个字段是"未来扩展预留",但会让 E-2 标注需要把这些字段都标上,扩大了"敏感字段声明"的范围
+4. **test `__dirname` 路径深度**: 单测在 `src/shared/api-contracts/__tests__/`,要回到 `resources/config/` 需要 4 级 `../` 而非 3 级。E-2 测试初始就用了 3 级,跑测试才发现
+5. **TS 'unknown' 类型传播**: `getByPath` 返回 `unknown`,传给 `arr.map` 时 tsc 报 'arr is of type unknown'。强转 `(arr as unknown[]).map(...)` 是最小侵入修复
+6. **ReadOnlyArray<string> as const 模式**: 字段元组用 `as const` + `ReadonlyArray<string>` 类型,既保留精确字面量类型又满足 schema 契约。TypeScript 类型推断很爽
+
+### 后续
+
+- Sprint 22 收尾: sensitiveFields 改必填,typecheck 强制每个 endpoint 显式声明
+- 增量 2: Sprint 22 候选 student-context 真实 handler 接入时,sanitize 调用点直接复用 E-1 注入模式
+- 监控: sensitiveFields 实际命中数与白名单覆盖率埋点(目前没统计)
