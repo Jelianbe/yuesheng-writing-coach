@@ -56,6 +56,9 @@ type OrchestratorEvent =
 - renderer 无 `import` skill 文件路径
 - preload 暴露 `skill:manifest` IPC 通道
 - 4 个 always-required skills 仍可加载
+- [x] **(增量 1) SkillDispatcher 集成 SkillRegistry 版本过滤**: `SelectOptions.promptVersion` 可选,不传 = 向后兼容,传 = 走 SkillRegistry.compatibleWith 过滤
+- [x] **(增量 1) SkillRegistry 可注入**: `setRegistry()` 必须在 `load()` 前调用
+- [x] **(增量 1) 测试覆盖 10 个用例**: promptVersion=v5.0.0 / v6.0.0 / 未知 / 注入测试桩 / setRegistry 抛错 / 空元数据 / 空数组声明 / phase+attitude+version AND 组合
 
 ### A-3: 教学状态机消费迁移
 

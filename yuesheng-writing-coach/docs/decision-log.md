@@ -1595,3 +1595,110 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
 - R-027(AI 代码质量门禁)
 - D-052(Sprint 19 PC 改造决策)
 - D-053(Issue 19-3 契约断链教训 → 推动解耦)
+## 2026-07-03
+
+### D-055: 契约端到端验证 — V5.0.0-draft 暴露契约/运行时错配,V5.0.1-draft 修复对齐
+- **类型**: 端到端验证 + 契约修复
+- **决策**:
+  1. 构建 `prompt-contract-integration.test.ts` 端到端测试,加载真实 .md 提示词 vs 真实运行时数据源
+  2. 验证 V5.0.0-draft **存在 2 类契约/运行时错配**(端到端暴露):
+     - `required_techniques: [P001..P010]` — P 前缀是症候 ID,但 technique-library.json 实际是 TQ/TC/TN/TE/AIP 前缀(128 条),P 前缀**根本不存在**
+     - `required_tools: [chapter:read, diagnosis:extract, training:start, session:saveMessage]` — 语义名,与 IPC_CHANNELS 值(`chapter:get` 等)**不匹配**
+  3. 创建 V5.0.1-draft 修复契约对齐:
+     - techniques: `P001-P010` → `TQ-001..TQ-010`(真实技法 ID 前缀)
+     - tools: 语义名 → `chapter:get/chapter:list/training:recommend/session:list`(真实 IPC 频道值)
+     - 故意追加 `TQ-999` 演示契约拦截行为
+- **原因**:
+  1. **回答用户核心顾虑**: "提示词 V5.0 独立迭代时,系统调度机制是否会出现兼容性问题" — 端到端验证给出了**可观察的失败证据**而不仅是口头保证
+  2. **机制按设计工作**: `validateContract()` 在启动拦截阶段捕获契约/运行时错配,抛出 `PromptContractError` 列出全部缺失项(不是只报第一个)
+  3. **发现真实生产风险**: 之前的契约设计混淆了"症候 ID"和"技法 ID",混淆了"语义工具名"和"IPC 频道值" — 这种混淆在生产中会导致训练任务找不到技法、IPC 工具调用 404
+  4. **为后续 V5.x 迭代提供标准验证流程**: `MUST` 在每次 prompt 变更后跑 `prompt-contract-integration.test.ts` 验证契约对齐
+- **交付物**:
+  1. `src/main/domains/03-teaching/conversation/__tests__/prompt-contract-integration.test.ts`(NEW, 140 行)
+     - 加载真实 .md(`parsePromptContract` 真实输入)
+     - 构建真实运行时 env(`technique-library.json` 128 条 + `skills/*.md` 11 个 + IPC_CHANNELS 24 个 + events 7 个)
+     - 验证 + 报告 `[category] 缺少 N 项: ...` 错误清单
+  2. `resources/prompts/yuesheng-prompt-v5.0.1-draft.md`(NEW)
+     - 修复 techniques 用 TQ 前缀
+     - 修复 tools 用 IPC_CHANNELS 值
+     - 追加 TQ-999 演示契约拦截
+     - 含 v5.0.0 → v5.0.1 变更日志
+  3. `src/main/domains/03-teaching/conversation/__tests__/prompt-contract.test.ts`
+     - 修复 pre-existing typecheck 错误(`as const` readonly 不匹配 + `satisfies PromptContract` 引入)
+- **门禁**:
+  - typecheck: ✅ 0 errors
+  - vitest: ✅ 715/715 passed(新加 3 个契约集成测试)
+  - lint: ✅ 0 errors, 246 warnings(阈值 300)
+- **教训**:
+  1. **契约声明必须对照真实运行时数据源**: 不能凭语义直觉声明依赖(`chapter:read` 听起来合理,但实际 IPC 频道叫 `chapter:get`)。契约应通过工具脚本自动从运行时生成,避免手写出错
+  2. **端到端验证价值远大于单元测试**: `prompt-contract.test.ts` 单元测试全绿但**没有暴露契约/运行时错配**(因为它用硬编码 mock env)。集成测试用真实数据源才暴露真实问题
+  3. **CRLF 文件 + Edit 工具失灵 = 必须用 Node fs**: 本次修改 `prompt-contract.test.ts` 时 Edit 工具声称成功但文件未变,改用 Node fs + 显式 `\r\n` 才成功。**所有 .ts 文件修改前应先 Node 探查行尾**
+  4. **`as const` 的双面性**: 单元测试用 `as const` 期望窄类型校验,但 `PromptContract.required_phases` 是 mutable 数组 → 类型不匹配。改用 `satisfies PromptContract` 同时获得窄类型 + 结构校验
+  5. **契约机制本身工作正常,问题是契约内容质量**: 这次的 bug 不在 `validateContract()` 也不在 `parsePromptContract()`,而在 V5.0.0-draft 的契约写错了。**机制正确 ≠ 契约正确**
+- **依据**:
+  - dev-docs/tasks/sprint-20-plan.md §增量 3
+  - R-018 变更溯源(契约是版本指纹)
+  - R-025 Prompt 治理(契约是 Prompt 治理的硬约束层)
+  - D-054(契约断链教训 → 推动解耦)
+- **后续**:
+  - 增量 1 SkillRegistry + compatibleWith() 实现(Sprint 20 Phase 1 收尾)
+  - 增量 1 完成后,契约层 + 版本过滤层共同构成"提示词独立迭代"的解耦基础
+  - 后续 prompt 迭代工作流: 编辑 → 跑 `prompt-contract-integration.test.ts` → 通过 → 提交
+
+---
+
+## 2026-07-03
+
+### D-056: SkillRegistry + compatibleWith() 增量 1 落地
+- **类型**: 架构实施
+- **决策**:
+  1. 创建 SkillRegistry 类,扫描 resources/prompts/skills/*.md 解析 frontmatter
+  2. SkillRef 接口已含 compatiblePromptVersions 字段
+  3. 5 个契约必需 skill 文件添加 compatiblePromptVersions 字段
+  4. ConversationOrchestrator.skillManifest(phase, version?) 新增可选 version 参数
+  5. MockConversationOrchestrator 注入 SkillRegistry 实现版本过滤
+- **交付物**:
+  1. skill-registry.ts(NEW, 145 行)
+  2. skill-registry.test.ts(NEW, 12 个用例)
+  3. orchestrator.types.ts(skillManifest 签名扩展)
+  4. mock-orchestrator.ts(注入 SkillRegistry)
+  5. 5 个 skill 文件(添加 compatiblePromptVersions 字段)
+- **门禁**: typecheck 0 / vitest 727-715+12=727 / lint 0 errors 250 warnings
+- **教训**:
+  1. frontmatter 解析保持简单,不引入 yaml 依赖
+  2. 找不到元数据保守放过(向后兼容),元数据声明空视为不兼容(契约硬要求)
+  3. phase 过滤暂留 mock-orchestrator(等 phase 命名统一)
+  4. SkillRegistry 是契约校验的"权威源",契约层 + 版本过滤层共享同一份真实数据
+- **依据**: dev-docs/tasks/sprint-20-plan.md §增量 1 / D-055 端到端验证
+
+---
+
+### D-057: SkillDispatcher 集成 SkillRegistry 版本过滤(Sprint 20 A-2 桥接)
+- **类型**: 架构桥接
+- **决策**:
+  1. SkillDispatcher 集成 SkillRegistry,新增 `SelectOptions.promptVersion` 可选参数
+  2. 不传 version = 向后兼容(行为不变),传 version = 走 SkillRegistry 过滤
+  3. 加载时自动创建默认 registry(从 skillsDir),允许 `setRegistry()` 注入测试桩
+  4. `setRegistry()` 必须在 load() 之前调用,否则抛错(防止覆盖)
+- **交付物**:
+  1. `src/main/domains/03-teaching/prompt/skill-dispatcher.ts` (修改: ~60 行新增/修改)
+  2. `src/main/domains/03-teaching/prompt/__tests__/skill-dispatcher-version.test.ts` (NEW, 10 个用例)
+- **门禁**:
+  - typecheck: ✅ 0 errors
+  - vitest: ✅ 737/737(新增 10 个 SkillDispatcher 版本过滤测试)
+  - lint: ✅ 0 errors, 251 warnings(阈值 300)
+  - E2E (firefox-mobile): ✅ 33/33
+- **教训**:
+  1. **注入 vs 自动创建的优先级**: 若先 setRegistry() 再 load(),应保留注入的实例;自动创建仅作为缺省。设计上让 setRegistry() 在 load() 后抛错,避免运行时"静默覆盖"导致调试噩梦
+  2. **"找不到元数据 → 通过"是显式选择**: SkillRegistry 是 skill 元数据的"权威源",但 SkillDispatcher 仍可能加载 registry 外的 skill(老格式/外部脚本)。保守放过可保持向后兼容,代价是契约硬要求稍弱。**契约硬约束已由 validateContract() 在启动时拦截,运行时再补一刀性价比低**
+  3. **测试桩需要"完整"才能精准测试**: setRegistry 注入测试桩时,必须把 dispatcher 会查到的所有 skill id 都在桩里声明"不兼容",否则"找不到元数据 → 保守放过"会污染断言。这是测试设计而非实现 bug
+  4. **selectForPhase 过滤是 AND 组合**: 现有 phase/attitude/coreSubset/conditions 不变,新增 version 是第 5 维度。这样保证旧调用方零改动,新调用方按需启用
+- **依据**:
+  - dev-docs/tasks/sprint-20-plan.md §A-2
+  - D-056(SkillRegistry 是版本过滤的元数据源)
+  - R-010 最小化范围(只改 SkillDispatcher,不动 ChatPage/状态机,A-3/A-4 后续)
+- **后续**:
+  - A-3: TeachingStateMachine 改订阅 OrchestratorEvent
+  - A-4: ChatPage 改订阅模式
+  - C-1: v5.0.0 提示词草案(契约/版本过滤层就绪,可独立迭代)
+---
