@@ -278,6 +278,20 @@ export interface StageProgress {
 /** 五步通用训练流步骤 ID */
 export type TrainingFlowStepId = 1 | 2 | 3 | 4 | 5;
 
+/**
+ * 5 步通用流每步提交的回答（Sprint 25 BL-01 C-4）
+ * - 与 userDraft 独立：userDraft 是 S8 改写主草稿，本类型是 5 步流的"复述/确认/尝试"等
+ * - stepId 1-5 对应 TRAINING_FLOW_STEP_NAMES 的解说/例证/确认/尝试/反馈
+ */
+export interface StepResponse {
+  /** 步骤 ID(1-based,S8 通用流 1-5) */
+  stepId: TrainingFlowStepId;
+  /** 用户回答内容(纯文本) */
+  content: string;
+  /** 提交时间(ISO 8601) */
+  submittedAt: string;
+}
+
 /** 五步通用训练流步骤名称映射 */
 export const TRAINING_FLOW_STEP_NAMES: Record<TrainingFlowStepId, string> = {
   1: '解说技法',

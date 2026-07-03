@@ -71,6 +71,8 @@ const allowedInvokeChannels: readonly string[] = [
   // Sprint 24 A-3: ActiveTraining 草稿持久化
   'activeTraining:updateDraft',
   'activeTraining:get',
+  // Sprint 25 BL-01 C-4: ActiveTraining 5 步分步提交
+  'activeTraining:submitStep',
   // Sprint 24 A-4: ActiveTraining 状态推送事件
   'activeTraining:updated',
   'retro:generate',

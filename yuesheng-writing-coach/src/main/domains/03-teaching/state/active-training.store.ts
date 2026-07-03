@@ -22,6 +22,7 @@ import type {
   CreateActiveTrainingInput,
   UpdateActiveTrainingInput,
   ActiveTrainingStatus,
+  StepResponse,
   SubmissionResultSnapshot,
   TrainingStep,
   TrainingFlow,
@@ -56,6 +57,7 @@ function rowToActiveTraining(row: ActiveTrainingRow): ActiveTraining {
       row.submission_result_json,
       null,
     ),
+    stepResponses: safeParseJson<StepResponse[]>(row.step_responses_json, []),
     status,
     startedAt: row.started_at,
     updatedAt: row.updated_at,
@@ -148,12 +150,14 @@ export class ActiveTrainingStore {
           current_step_index, steps_json, user_draft,
           flow_type, training_flow_json, record_id, syndrome_id,
           original_quote, constraint_text, submission_result_json,
+          step_responses_json,
           status, started_at, updated_at, completed_at
         ) VALUES (
           @session_id, @challenge_id, @challenge_name, @mode,
           @current_step_index, @steps_json, @user_draft,
           @flow_type, @training_flow_json, @record_id, @syndrome_id,
           @original_quote, @constraint_text, @submission_result_json,
+          @step_responses_json,
           @status, @started_at, @updated_at, @completed_at
         )
       `);
@@ -173,6 +177,7 @@ export class ActiveTrainingStore {
         original_quote: input.originalQuote ?? null,
         constraint_text: input.constraint ?? null,
         submission_result_json: null,
+        step_responses_json: '[]',
         status: 'in_progress',
         started_at: now,
         updated_at: now,
@@ -237,6 +242,7 @@ export class ActiveTrainingStore {
           original_quote = @original_quote,
           constraint_text = @constraint_text,
           submission_result_json = @submission_result_json,
+          step_responses_json = @step_responses_json,
           status = @status,
           updated_at = @updated_at,
           completed_at = @completed_at
@@ -258,6 +264,7 @@ export class ActiveTrainingStore {
         submission_result_json: updated.submissionResult
           ? JSON.stringify(updated.submissionResult)
           : null,
+        step_responses_json: JSON.stringify(updated.stepResponses),
         status: updated.status,
         updated_at: updated.updatedAt,
         completed_at: updated.completedAt,
@@ -285,6 +292,23 @@ export class ActiveTrainingStore {
       console.error('[ActiveTrainingStore] delete failed:', e);
       return false;
     }
+  }
+
+  /**
+   * C-4: 更新 5 步分步回答(整数组替换)
+   * - 由 ActiveTrainingService.submitFlowStep() 调用
+   * - 业务语义: 调用方负责合并(同 stepId 多次提交时取最新),store 只接受最终数组
+   * - 异常隔离: 失败返回 null
+   *
+   * @param sessionId 会话 ID
+   * @param stepResponses 5 步分步回答数组(已合并)
+   * @returns 更新后的 ActiveTraining
+   */
+  updateStepResponses(
+    sessionId: string,
+    stepResponses: StepResponse[],
+  ): ActiveTraining | null {
+    return this.update(sessionId, { stepResponses });
   }
 
   /**

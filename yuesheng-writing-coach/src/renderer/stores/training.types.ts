@@ -136,8 +136,8 @@ export interface TrainingState {
   /** 更新草稿 */
   updateDraft: (content: string) => void;
 
-  /** 提交练习步骤 */
-  submitStep: () => Promise<void>;
+  /** 提交练习步骤(向后兼容:无参 = 原 S8 评估流;有参 = Sprint 25 BL-01 C-4 5 步分步提交) */
+  submitStep: (stepId?: 1 | 2 | 3 | 4 | 5, content?: string) => Promise<void>;
 
   /** 跳过/放弃训练 */
   skipTraining: () => Promise<void>;

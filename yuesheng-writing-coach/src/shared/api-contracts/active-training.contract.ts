@@ -8,7 +8,12 @@
  */
 
 import type { ApiResponse } from './base';
-import type { ActiveTrainingStatus, TrainingStep, TrainingFlow } from '../types/index';
+import type {
+  ActiveTrainingStatus,
+  StepResponse,
+  TrainingStep,
+  TrainingFlow,
+} from '../types/index';
 
 /** 草稿更新请求 */
 export interface ActiveTrainingUpdateDraftRequest {
@@ -48,6 +53,8 @@ export interface ActiveTrainingGetResponse {
   originalQuote: string | null;
   constraint: string | null;
   submissionResult: unknown | null;
+  /** Sprint 25 BL-01 C-4: 5 步分步提交回答 */
+  stepResponses: StepResponse[];
   status: ActiveTrainingStatus;
   startedAt: string;
   updatedAt: string;
@@ -61,6 +68,7 @@ export type ActiveTrainingStateChangeType =
   | 'start'
   | 'updateDraft'
   | 'advanceStep'
+  | 'submitStep'
   | 'evaluate'
   | 'complete'
   | 'abort';
@@ -78,6 +86,27 @@ export interface ActiveTrainingUpdatedEvent {
 }
 
 /** IPC 频道 + 包装响应 */
+
+// ===== Sprint 25 BL-01 C-4: 5 步分步提交契约 =====
+
+/** 5 步分步提交请求 */
+export interface ActiveTrainingSubmitStepRequest {
+  sessionId: string;
+  stepId: 1 | 2 | 3 | 4 | 5;
+  content: string;
+}
+
+/** 5 步分步提交响应 */
+export interface ActiveTrainingSubmitStepResponse {
+  success: boolean;
+  /** 已累计 stepResponses 数量(1-5) */
+  submittedCount: number;
+  /** 本次提交时间戳(ISO 8601) */
+  submittedAt: string;
+  /** 当前训练状态(可能因 race condition 改变) */
+  status: ActiveTrainingStatus | null;
+}
+
 export const ActiveTrainingApi = {
   updateDraft: {
     channel: 'activeTraining:updateDraft',
@@ -86,6 +115,11 @@ export const ActiveTrainingApi = {
   get: {
     channel: 'activeTraining:get',
     response: {} as ApiResponse<ActiveTrainingGetResponse | null>,
+  },
+  /** Sprint 25 BL-01 C-4: 5 步分步提交 */
+  submitStep: {
+    channel: 'activeTraining:submitStep',
+    response: {} as ApiResponse<ActiveTrainingSubmitStepResponse>,
   },
   /** Sprint 24 A-4: 状态变更推送事件(主进程 → renderer) */
   updated: {

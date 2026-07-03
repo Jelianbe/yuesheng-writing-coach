@@ -30,6 +30,7 @@ import type {
   ActiveTrainingGetResponse,
   ActiveTrainingUpdatedEvent,
   ActiveTrainingStateChangeType,
+  ActiveTrainingSubmitStepResponse,
 } from '../../shared/api-contracts/active-training.contract';
 import type { ActiveTraining } from '../domains/03-teaching/state/active-training.types';
 
@@ -102,6 +103,52 @@ export function registerActiveTrainingHandlers(): void {
   });
 
   /**
+   * activeTraining:submitStep — Sprint 25 BL-01 C-4: 5 步分步提交
+   * - V6.2 FlowPanel 调用,接受 { sessionId, stepId(1-5), content }
+   * - 业务逻辑: 调用 ActiveTrainingService.submitFlowStep()
+   * - 异常隔离: 训练已 completed/aborted 或 stepId 越界时返回 success:false
+   */
+  createHandler<
+    { sessionId: string; stepId: 1 | 2 | 3 | 4 | 5; content: string },
+    ActiveTrainingSubmitStepResponse
+  >(IPC_CHANNELS.ACTIVE_TRAINING_SUBMIT_STEP, (_event, args) => {
+    const validation = validatePayload<{
+      sessionId: string;
+      stepId: 1 | 2 | 3 | 4 | 5;
+      content: string;
+    }>(args, {
+      required: ['sessionId', 'stepId', 'content'],
+      types: { sessionId: 'string', stepId: 'number', content: 'string' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const { sessionId, stepId, content } = validation.data;
+    const service = getService();
+    const updated = service.submitFlowStep(sessionId, stepId, content);
+
+    if (!updated) {
+      // 训练可能已完成 / aborted / 不存在 — stepId 越界时也走此路径
+      return {
+        success: false,
+        submittedCount: 0,
+        submittedAt: new Date().toISOString(),
+        status: service.getStatus(sessionId),
+      };
+    }
+
+    return {
+      success: true,
+      submittedCount: updated.stepResponses.length,
+      submittedAt:
+        updated.stepResponses.find((r) => r.stepId === stepId)?.submittedAt ??
+        new Date().toISOString(),
+      status: updated.status,
+    };
+  });
+
+  /**
    * activeTraining:get — 查询当前 in_progress 训练
    * 用途: 冷启动恢复当前 session 的训练状态
    * 返回: null(无进行中训练) 或 ActiveTraining 完整快照
@@ -139,6 +186,7 @@ export function registerActiveTrainingHandlers(): void {
         originalQuote: active.originalQuote,
         constraint: active.constraint,
         submissionResult: active.submissionResult as unknown,
+        stepResponses: active.stepResponses,
         status: active.status,
         startedAt: active.startedAt,
         updatedAt: active.updatedAt,
@@ -170,6 +218,7 @@ function activeTrainingToResponse(active: ActiveTraining): ActiveTrainingGetResp
     originalQuote: active.originalQuote,
     constraint: active.constraint,
     submissionResult: active.submissionResult as unknown,
+    stepResponses: active.stepResponses,
     status: active.status,
     startedAt: active.startedAt,
     updatedAt: active.updatedAt,

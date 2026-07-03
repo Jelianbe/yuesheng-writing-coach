@@ -52,6 +52,7 @@ function createTestDb(): Database.Database {
       original_quote TEXT,
       constraint_text TEXT,
       submission_result_json TEXT,
+      step_responses_json TEXT NOT NULL DEFAULT '[]',
       status TEXT NOT NULL DEFAULT 'in_progress',
       started_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,

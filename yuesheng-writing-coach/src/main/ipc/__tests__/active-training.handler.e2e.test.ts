@@ -83,6 +83,7 @@ function createTestDb(): Database.Database {
       original_quote TEXT,
       constraint_text TEXT,
       submission_result_json TEXT,
+      step_responses_json TEXT NOT NULL DEFAULT '[]',
       status TEXT NOT NULL CHECK(status IN ('in_progress', 'completed', 'aborted')),
       started_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -351,6 +352,120 @@ describe('ActiveTraining 状态推送 E2E (Sprint 24 A-4)', () => {
       sessionId,
     });
     expect((payload as ActiveTrainingUpdatedEvent).state.challengeId).toBe('CH-SECOND');
+
+    off();
+  });
+
+  // ─── E2E-6: 5 步全链路 start → 5×submitFlowStep → complete (Sprint 25 BL-01 C-4) ───
+
+  it('E2E-6: 5 步分步提交全链路 → step_responses 累计 5 条,推送 7 次', () => {
+    const sessionId = 'sess-e2e-flow5';
+
+    // 1) 启动
+    service.start({
+      sessionId,
+      challengeId: 'CH-FLOW5',
+      challengeName: '环境描写改写',
+      steps: TEST_STEPS,
+      syndromeId: 'P003',
+      source: 'training_triggered',
+    });
+
+    // 2) 5 步分步提交
+    const stepContents = [
+      'step1-理解技法: 环境描写要服务于情绪',
+      'step2-例证展示: 海面平静反衬内心波澜',
+      'step3-确认理解: 我会用环境烘托代替直接抒情',
+      'step4-主动尝试: 夜幕降临,城市在雨中沉默...',
+      'step5-修改反馈: 加入视觉细节强化氛围',
+    ];
+    stepContents.forEach((content, idx) => {
+      const result = service.submitFlowStep(
+        sessionId,
+        (idx + 1) as 1 | 2 | 3 | 4 | 5,
+        content,
+      );
+      expect(result).not.toBeNull();
+    });
+
+    // 3) 验证 state 累积 5 条 step_responses(升序)
+    const active = service.getActive(sessionId);
+    expect(active?.stepResponses).toHaveLength(5);
+    expect(active?.stepResponses.map((r) => r.stepId)).toEqual([1, 2, 3, 4, 5]);
+    expect(active?.stepResponses.map((r) => r.content)).toEqual(stepContents);
+    expect(active?.status).toBe('in_progress');
+
+    // 4) 评估 + 完成
+    service.evaluate(sessionId, { passed: true, feedback: '5 步全部完成', score: 9 });
+    service.complete(sessionId, 'rec-flow5');
+
+    // 5) 验证推送链路
+    const pushes = collectForSession(sessionId);
+    // 1 start + 5 submitStep + 1 evaluate + 1 complete = 8
+    expect(pushes.length).toBeGreaterThanOrEqual(8);
+
+    const types = pushes.map((p) => p.payload.type);
+    expect(types).toContain('start');
+    // setupActiveTrainingPush 对 getAllWindows() + 显式 mainWindow 双发,实际可能 5~10 次
+    expect(types.filter((t) => t === 'submitStep').length).toBeGreaterThanOrEqual(5);
+    expect(types).toContain('evaluate');
+    expect(types).toContain('complete');
+
+    // 6) 验证最后一条 submitStep 推送带最新 5 条 stepResponses
+    //    (双发机制下,同 stepId 会有 2 条推送,长度都应 ≥ 当前已提交步骤数)
+    const submitPushes = pushes.filter((p) => p.payload.type === 'submitStep');
+    expect(submitPushes.length).toBeGreaterThanOrEqual(5);
+    // 每条 submitStep 推送都应至少 1 条且单调不减
+    submitPushes.forEach((push) => {
+      const len = push.payload.state.stepResponses.length;
+      expect(len).toBeGreaterThanOrEqual(1);
+      expect(len).toBeLessThanOrEqual(5);
+    });
+    // 最后一条应为 5 条
+    const lastSubmit = submitPushes[submitPushes.length - 1];
+    expect(lastSubmit?.payload.state.stepResponses).toHaveLength(5);
+
+    // 7) 验证 complete 推送时 stepResponses 完整保留
+    const completePush = pushes.find((p) => p.payload.type === 'complete');
+    expect(completePush?.payload.state.stepResponses).toHaveLength(5);
+    expect(completePush?.payload.state.status).toBe('completed');
+
+    off();
+  });
+
+  // ─── E2E-7: submitFlowStep 校验失败时不触发推送 ───
+
+  it('E2E-7: submitFlowStep stepId 越界时返回 null,不触发推送', () => {
+    const sessionId = 'sess-e2e-flow5-invalid';
+
+    service.start({
+      sessionId,
+      challengeId: 'CH-INVALID',
+      steps: TEST_STEPS,
+      syndromeId: 'P003',
+      source: 'training_triggered',
+    });
+
+    vi.mocked(mainWindow.webContents.send).mockClear();
+
+    // 越界 stepId
+    const invalid1 = service.submitFlowStep(sessionId, 0 as never, 'invalid');
+    const invalid2 = service.submitFlowStep(sessionId, 6 as never, 'invalid');
+    expect(invalid1).toBeNull();
+    expect(invalid2).toBeNull();
+
+    // 无 in_progress(其他 session)
+    const invalid3 = service.submitFlowStep('sess-nonexistent', 1, 'invalid');
+    expect(invalid3).toBeNull();
+
+    // 不应有 submitStep 推送
+    const calls = vi.mocked(mainWindow.webContents.send).mock.calls;
+    const submitPushes = calls.filter(
+      ([ch, p]) =>
+        ch === IPC_CHANNELS.ACTIVE_TRAINING_UPDATED &&
+        (p as ActiveTrainingUpdatedEvent).type === 'submitStep',
+    );
+    expect(submitPushes).toHaveLength(0);
 
     off();
   });

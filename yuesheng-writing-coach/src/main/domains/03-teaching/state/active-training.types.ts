@@ -61,6 +61,21 @@ export interface SubmissionResultSnapshot {
   evaluatedAt: string;
 }
 
+/**
+ * 5 步通用流每步提交的回答(Sprint 25 BL-01 C-4)
+ * - 与 SubmissionResultSnapshot 独立:后者是 AI 评估快照,本类型是用户回答
+ * - 与 user_draft 独立:user_draft 是 S8 改写主草稿,本类型是 5 步流的"复述/确认/尝试"等
+ * - stepId 1-5 对应 flow5 通用流(解说/例证/确认/尝试/反馈)
+ */
+export interface StepResponse {
+  /** 步骤 ID(1-based,S8 通用流 1-5) */
+  stepId: 1 | 2 | 3 | 4 | 5;
+  /** 用户回答内容(纯文本) */
+  content: string;
+  /** 提交时间(ISO 8601) */
+  submittedAt: string;
+}
+
 /** 领域对象: ActiveTraining (主进程侧) */
 export interface ActiveTraining {
   /** 数据库行 ID(自增主键) */
@@ -93,6 +108,12 @@ export interface ActiveTraining {
   constraint: string | null;
   /** 上次评估结果快照 */
   submissionResult: SubmissionResultSnapshot | null;
+  /**
+   * 5 步通用流每步提交的回答(C-4 新增)
+   * - 数组按 stepId 升序,同一 stepId 多次提交时只保留最后一次
+   * - 不分步时为空数组
+   */
+  stepResponses: StepResponse[];
   /** 状态机状态 */
   status: ActiveTrainingStatus;
   /** 创建时间 */
@@ -120,6 +141,7 @@ export interface ActiveTrainingRow {
   original_quote: string | null;
   constraint_text: string | null;
   submission_result_json: string | null;
+  step_responses_json: string;
   status: string;
   started_at: string;
   updated_at: string;
@@ -156,6 +178,8 @@ export interface UpdateActiveTrainingInput {
   originalQuote?: string | null;
   constraint?: string | null;
   submissionResult?: SubmissionResultSnapshot | null;
+  /** C-4: 5 步分步回答(整数组替换) */
+  stepResponses?: StepResponse[];
   status?: ActiveTrainingStatus;
   completedAt?: string | null;
 }

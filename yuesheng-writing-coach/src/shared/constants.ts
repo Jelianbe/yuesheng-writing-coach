@@ -216,6 +216,10 @@ export const IPC_CHANNELS = {
   // - 主进程侧 ActiveTrainingService.updateDraft() 写入 SQLite
   ACTIVE_TRAINING_UPDATE_DRAFT: 'activeTraining:updateDraft',
   ACTIVE_TRAINING_GET: 'activeTraining:get',
+  // Sprint 25 BL-01 C-4: ActiveTraining 5 步分步提交
+  // - request/response 模式,带 ack
+  // - 每次提交 1 步的回答,后端持久化到 step_responses_json
+  ACTIVE_TRAINING_SUBMIT_STEP: 'activeTraining:submitStep',
   // Sprint 24 A-4: ActiveTraining 状态推送事件
   // - 主进程 → renderer 推送,无 ack
   // - 触发场景: start/updateDraft/advanceStep/evaluate/complete/abort
@@ -288,6 +292,8 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
   // Sprint 24 A-3: ActiveTraining 草稿持久化
   IPC_CHANNELS.ACTIVE_TRAINING_UPDATE_DRAFT,
   IPC_CHANNELS.ACTIVE_TRAINING_GET,
+  // Sprint 25 BL-01 C-4: ActiveTraining 5 步分步提交
+  IPC_CHANNELS.ACTIVE_TRAINING_SUBMIT_STEP,
   // Sprint 24 A-4: ActiveTraining 状态推送事件订阅
   IPC_CHANNELS.ACTIVE_TRAINING_UPDATED,
   IPC_CHANNELS.MANUSCRIPT_LIST,

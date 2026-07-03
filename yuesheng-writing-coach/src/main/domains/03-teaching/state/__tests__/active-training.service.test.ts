@@ -59,6 +59,7 @@ function createTestDb(): Database.Database {
       original_quote TEXT,
       constraint_text TEXT,
       submission_result_json TEXT,
+      step_responses_json TEXT NOT NULL DEFAULT '[]',
       status TEXT NOT NULL DEFAULT 'in_progress',
       started_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -533,5 +534,112 @@ describe('ActiveTrainingService (Sprint 24 A-2)', () => {
     expect(() => service.complete('sess-svc-1', 'rec-001')).not.toThrow();
     expect(() => service.abort('sess-svc-1')).not.toThrow();
     expect(() => service.updateDraft('sess-svc-1', 'test')).not.toThrow();
+  });
+
+  // ─── Sprint 25 BL-01 C-4: submitFlowStep 5 步分步提交 ───
+
+  it('submitFlowStep: 正常路径 → 持久化单步回答', () => {
+    service.start({
+      sessionId: 'sess-svc-1',
+      challengeId: 'CH-001',
+      steps: sampleSteps,
+      syndromeId: 'P003',
+      source: 'user_request',
+    });
+
+    const updated = service.submitFlowStep('sess-svc-1', 1, '我的理解是...');
+    expect(updated).not.toBeNull();
+    expect(updated?.stepResponses).toHaveLength(1);
+    expect(updated?.stepResponses[0]?.stepId).toBe(1);
+    expect(updated?.stepResponses[0]?.content).toBe('我的理解是...');
+    expect(updated?.status).toBe('in_progress');
+  });
+
+  it('submitFlowStep: 5 步全提交 → 数组长度 5,按 stepId 升序', () => {
+    service.start({
+      sessionId: 'sess-svc-1',
+      challengeId: 'CH-001',
+      steps: sampleSteps,
+      syndromeId: 'P003',
+      source: 'user_request',
+    });
+
+    // 按 1→5 顺序提交
+    service.submitFlowStep('sess-svc-1', 1, 'step1');
+    service.submitFlowStep('sess-svc-1', 2, 'step2');
+    service.submitFlowStep('sess-svc-1', 3, 'step3');
+    service.submitFlowStep('sess-svc-1', 4, 'step4');
+    const final = service.submitFlowStep('sess-svc-1', 5, 'step5');
+
+    expect(final?.stepResponses).toHaveLength(5);
+    expect(final?.stepResponses.map((r) => r.stepId)).toEqual([1, 2, 3, 4, 5]);
+    expect(final?.stepResponses.map((r) => r.content)).toEqual([
+      'step1',
+      'step2',
+      'step3',
+      'step4',
+      'step5',
+    ]);
+  });
+
+  it('submitFlowStep: 同 stepId 多次提交 → 只保留最后一次', () => {
+    service.start({
+      sessionId: 'sess-svc-1',
+      challengeId: 'CH-001',
+      steps: sampleSteps,
+      syndromeId: 'P003',
+      source: 'user_request',
+    });
+
+    service.submitFlowStep('sess-svc-1', 1, '第一次');
+    service.submitFlowStep('sess-svc-1', 2, 'step2');
+    const final = service.submitFlowStep('sess-svc-1', 1, '覆盖第一次');
+
+    expect(final?.stepResponses).toHaveLength(2);
+    const step1 = final?.stepResponses.find((r) => r.stepId === 1);
+    expect(step1?.content).toBe('覆盖第一次');
+    // stepId 仍按升序
+    expect(final?.stepResponses.map((r) => r.stepId)).toEqual([1, 2]);
+  });
+
+  it('submitFlowStep: 校验失败 → stepId 越界返回 null', () => {
+    service.start({
+      sessionId: 'sess-svc-1',
+      challengeId: 'CH-001',
+      steps: sampleSteps,
+      syndromeId: 'P003',
+      source: 'user_request',
+    });
+
+    expect(service.submitFlowStep('sess-svc-1', 0 as never, 'invalid')).toBeNull();
+    expect(service.submitFlowStep('sess-svc-1', 6 as never, 'invalid')).toBeNull();
+    expect(service.submitFlowStep('sess-svc-1', -1 as never, 'invalid')).toBeNull();
+  });
+
+  it('submitFlowStep: 校验失败 → 无 in_progress 返回 null', () => {
+    const result = service.submitFlowStep('sess-svc-1', 1, 'no active');
+    expect(result).toBeNull();
+  });
+
+  it('submitFlowStep: 触发 submitStep 状态变更事件', () => {
+    service.start({
+      sessionId: 'sess-svc-1',
+      challengeId: 'CH-001',
+      steps: sampleSteps,
+      syndromeId: 'P003',
+      source: 'user_request',
+    });
+
+    const events: Array<{ type: string; sessionId: string }> = [];
+    service.onStateChange((event) => {
+      events.push({ type: event.type, sessionId: event.sessionId });
+    });
+
+    service.submitFlowStep('sess-svc-1', 1, 'test');
+    service.submitFlowStep('sess-svc-1', 2, 'test2');
+
+    const submitEvents = events.filter((e) => e.type === 'submitStep');
+    expect(submitEvents).toHaveLength(2);
+    expect(submitEvents[0]?.sessionId).toBe('sess-svc-1');
   });
 });
