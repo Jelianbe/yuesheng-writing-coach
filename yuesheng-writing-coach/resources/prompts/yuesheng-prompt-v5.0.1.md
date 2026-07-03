@@ -1,11 +1,11 @@
-# 月笙写作教练 v5.0.1(草案) — 契约对齐 + 端到端验证
+# 月笙写作教练 v5.0.1 — 契约对齐 + 端到端验证(OFFICIAL)
 
-> **版本**: v5.0.1-draft
+> **版本**: v5.0.1
 > **创建**: 2026-07-03
 > **作者**: Sprint 20 C-1 + 增量 3 端到端验证产物
-> **状态**: DRAFT(端到端验证版,基于 v5.0.0-draft 修复契约/运行时错配)
-> **回退**: `git checkout v5.0.0-draft -- resources/prompts/yuesheng-prompt-v5.0.0-draft.md`(回退到 v5.0.0-draft)
-> **依据**: dev-docs/tasks/sprint-20-plan.md §增量 3 / 端到端验证结果
+> **状态**: OFFICIAL(端到端验证通过,契约与运行时数据源完全对齐)
+> **回退**: `git checkout v5 -- resources/prompts/yuesheng-prompt-v5.md`(回退到 v5 合并版)
+> **依据**: dev-docs/tasks/sprint-20-plan.md §增量 3 / 端到端验证结果 / D-062
 
 ---
 
@@ -14,10 +14,13 @@
 | 变更 | 原因 | 验证 |
 |------|------|------|
 | `required_techniques`: P001-P010 → TQ-001~TQ-010 | v5.0.0-draft 用 P 前缀(症候 ID),但技法库实际是 TQ/TC/TN/TE/AIP 前缀(128 条),P 前缀在 technique-library.json 中**不存在** | 端到端验证暴露: `[techniques] 缺少 10 项: P001, P002, ..., P010` |
-| `required_techniques` 追加 TQ-999 | 故意注入不存在的技法 ID,验证契约拦截行为 | 端到端验证预期: `[techniques] 缺少 1 项: TQ-999` |
+| ~~`required_techniques` 追加 TQ-999~~(draft 阶段注入,OFFICIAL 已移除) | draft 阶段故意注入不存在的技法 ID 验证契约拦截行为;OFFICIAL 收尾时移除,契约不再含失效项 | draft 端到端验证: `[techniques] 缺少 1 项: TQ-999`(预期);OFFICIAL 验证契约通过 |
 | `required_tools`: chapter:read/diagnosis:extract/training:start/session:saveMessage → chapter:get/chapter:list/training:recommend/session:list | v5.0.0-draft 用语义名,但契约校验对照 IPC_CHANNELS 值。语义名与 IPC 值不一致,启动会 404 | 端到端验证暴露: `[tools] 缺少 4 项: chapter:read, ...` |
 
-**关键教训**:`required_tools` 应直接对照 `IPC_CHANNELS` 常量值,不要造语义别名。语义层(AI 工具调用名)与 IPC 层(频道名)应统一。
+**关键教训**:
+- `required_tools` 应直接对照 `IPC_CHANNELS` 常量值,不要造语义别名。语义层(AI 工具调用名)与 IPC 层(频道名)应统一。
+- draft 阶段可故意注入失效项验证契约拦截,但 OFFICIAL 收尾前必须清除,避免契约校验自我矛盾(声明 X 必存在又触发"X 缺失"错误)。
+- 契约 `required_*` 列表与运行时数据源必须**一一对应**,启动校验是兜底防线,不是装饰。
 
 ---
 
@@ -29,12 +32,10 @@
 contract:
   required_phases: [trust_building, requirement, diagnosis, training, reflection]
   required_skills: [core-identity, scenario-rules, teaching-strategy, validation-rules, feedback-cognition]
-  required_techniques: [TQ-001, TQ-002, TQ-003, TQ-004, TQ-005, TQ-006, TQ-007, TQ-008, TQ-009, TQ-010, TQ-999]
+  required_techniques: [TQ-001, TQ-002, TQ-003, TQ-004, TQ-005, TQ-006, TQ-007, TQ-008, TQ-009, TQ-010]
   required_tools: [chapter:get, chapter:list, training:recommend, session:list]
   emits_events: [chat:token, chat:intent, chat:phase_transition, chat:done, chat:error, diagnosis:extracted, training:triggered]
 ```
-
-**TQ-999 说明**:故意注入不存在的技法 ID,用于演示契约拦截行为。生产版本应删除。
 
 **校验位置**: `src/main/domains/03-teaching/conversation/prompt-contract.ts` `validateContract()`
 **失败语义**: 抛 `PromptContractError`,列出缺失项,服务拒绝启动

@@ -124,16 +124,34 @@ describe('prompt-contract 端到端验证 (Sprint 20 增量 3)', () => {
     expect(result.mismatches.some(m => m.category === 'tools')).toBe(true);
   });
 
-  it('V5.0.1-draft vs 真实运行时 → 修复契约对齐后,应仅捕获故意注入的 TQ-999', () => {
-    const mdPath = path.join(PROMPTS_DIR, 'yuesheng-prompt-v5.0.1-draft.md');
-    const result = validateAndReport('V5.0.1-draft', mdPath);
+  it('V5.0.1 OFFICIAL vs 真实运行时 → 契约对齐,应通过校验', () => {
+    const mdPath = path.join(PROMPTS_DIR, 'yuesheng-prompt-v5.0.1.md');
+    const result = validateAndReport('V5.0.1 OFFICIAL', mdPath);
 
-    // 契约已对齐运行时,只有故意注入的 TQ-999 应该失败
-    expect(result.pass).toBe(false);
-    const techMismatch = result.mismatches.find(m => m.category === 'techniques');
-    expect(techMismatch).toBeDefined();
-    expect(techMismatch!.missing).toEqual(['TQ-999']);
-    // 不应再有 P 前缀或语义工具名错配
-    expect(result.mismatches.some(m => m.category === 'tools')).toBe(false);
+    // OFFICIAL 收尾: 移除 TQ-999 + 修复 techniques/tools 与运行时对齐
+    expect(result.pass).toBe(true);
+    expect(result.mismatches).toEqual([]);
+  });
+
+  it('契约拦截机制 → 故意注入 TQ-999 的契约,应被启动校验拦截', () => {
+    // 构造含 TQ-999 的内联契约,验证 validateContract 拦截行为
+    // (OFFICIAL 版本已移除 TQ-999,这里验证"如果注入会怎样"以固化契约防线)
+    const maliciousContract = {
+      required_phases: ['trust_building', 'requirement', 'diagnosis', 'training', 'reflection'] as Array<'trust_building' | 'requirement' | 'diagnosis' | 'training' | 'reflection'>,
+      required_skills: ENV.availableSkills.slice(0, 4),
+      required_techniques: [...ENV.availableTechniques.slice(0, 3), 'TQ-999'],
+      required_tools: ENV.availableTools.slice(0, 3),
+      emits_events: ENV.availableEvents.slice(0, 3),
+    };
+
+    expect(() => validateContract(maliciousContract, ENV, 'malicious-with-TQ999')).toThrow(PromptContractError);
+    try {
+      validateContract(maliciousContract, ENV, 'malicious-with-TQ999');
+    } catch (err) {
+      const e = err as PromptContractError;
+      const techMismatch = e.mismatches.find(m => m.category === 'techniques');
+      expect(techMismatch).toBeDefined();
+      expect(techMismatch!.missing).toEqual(['TQ-999']);
+    }
   });
 });
