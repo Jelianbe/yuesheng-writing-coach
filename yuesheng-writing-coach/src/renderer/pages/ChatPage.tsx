@@ -10,14 +10,18 @@
  * 数据来源:
  * - useSessionStore 拿 currentSessionId + loadMessages
  * - 消息区渲染真实 session.messages
- * - 发送:Phase C 再接入 chatService (本步仅显示 + 占位)
+ * - 发送:Sprint 20 A-4 — 通过 useOrchestrator.send() 触发 chat:handleTurn,
+ *   订阅 chat:event 累积 token/done/error
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Send, Plus, Type, Image, FileText, Settings, MessageSquare } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { useSessionStore } from '../stores/session.store';
+import { useOrchestrator } from '../hooks/useOrchestrator';
+import type { OrchestratorEventEnvelope } from '../hooks/useOrchestrator';
+import { isTokenEvent, isErrorEvent, isDoneEvent } from '../hooks/useOrchestrator';
 import { MoreMenu } from '../components/navigation/MoreMenu';
 import type { ChatMessage } from '../shared/types';
 
@@ -227,6 +231,12 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
   );
   const [messages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const activeStreamIdRef = useRef<string | null>(null);
+  const streamingMsgIdRef = useRef<string | null>(null);
+
+  // Sprint 20 A-4: useOrchestrator 订阅 orchestrator 事件流
+  const { send, subscribe, finishStream, streaming } = useOrchestrator();
 
   useEffect(() => {
     if (params?.id && params.id !== currentSessionId) {
@@ -243,14 +253,74 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
       .finally(() => setLoading(false));
   }, [params?.id, currentSessionId, loadMessages]);
 
+  // 订阅 chat:event — 按 streamId 过滤本轮 turn
+  useEffect(() => {
+    const unsubscribe = subscribe((envelope: OrchestratorEventEnvelope) => {
+      if (envelope.streamId !== activeStreamIdRef.current) return;
+      const { event } = envelope;
+
+      if (isTokenEvent(event)) {
+        // token 累积到当前 AI 流式消息
+        setLocalMessages(prev => {
+          const msgId = streamingMsgIdRef.current;
+          if (!msgId) return prev;
+          return prev.map(m =>
+            m.id === msgId ? { ...m, content: m.content + event.content } : m,
+          );
+        });
+        return;
+      }
+
+      if (isErrorEvent(event)) {
+        const payload = event.payload as { code: string; message: string };
+        setStreamError(`${payload.code}: ${payload.message}`);
+        activeStreamIdRef.current = null;
+        streamingMsgIdRef.current = null;
+        finishStream();
+        return;
+      }
+
+      if (isDoneEvent(event)) {
+        activeStreamIdRef.current = null;
+        streamingMsgIdRef.current = null;
+        finishStream();
+        return;
+      }
+
+      // phase_transition / intent / training_triggered / diagnosis_extracted
+      // 暂仅 console 留痕,Sprint 21 接入外部状态机
+      if (event.type === 'phase_transition' || event.type === 'intent' || event.type === 'training_triggered' || event.type === 'diagnosis_extracted') {
+        // eslint-disable-next-line no-console
+        console.log('[ChatPage] orchestrator event:', event.type, event.payload);
+      }
+    });
+    return unsubscribe;
+  }, [subscribe, finishStream]);
+
   const title = params?.title ?? '对话';
-  const handleSend = (text: string) => {
-    setLocalMessages(prev => [...prev, {
-      id: `tmp_${Date.now()}`,
-      role: 'user',
-      content: text,
-      timestamp: Date.now(),
-    }]);
+  const handleSend = async (text: string) => {
+    const sid = params?.id ?? currentSessionId;
+    if (!sid) return;
+    setStreamError(null);
+
+    // 1. 立即插入用户消息
+    const userMsgId = `tmp_u_${Date.now()}`;
+    const aiMsgId = `tmp_a_${Date.now()}`;
+    setLocalMessages(prev => [
+      ...prev,
+      { id: userMsgId, role: 'user', content: text, timestamp: Date.now() },
+      { id: aiMsgId, role: 'assistant', content: '', timestamp: Date.now() },
+    ]);
+    streamingMsgIdRef.current = aiMsgId;
+
+    // 2. 触发 orchestrator handleTurn
+    const result = await send({ userMessage: text, sessionId: sid, phase: 'requirement' });
+    if (!result) {
+      setStreamError('发送失败,主进程未响应');
+      streamingMsgIdRef.current = null;
+      return;
+    }
+    activeStreamIdRef.current = result.streamId;
   };
 
   return (
@@ -270,7 +340,7 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
               {title}
             </span>
             <span style={{ fontSize: 11, color: 'var(--color-teaching)' }}>
-              教学对话
+              {streaming ? '生成中…' : '教学对话'}
             </span>
           </div>
         </div>
@@ -279,6 +349,17 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
           { label: '对话配置', icon: <Settings size={16} />, onClick: () => {/* Phase C: 对话配置面板 */} },
         ]} />
       </div>
+
+      {/* 错误提示条 */}
+      {streamError && (
+        <div style={{
+          padding: '8px 12px', background: 'var(--color-error-bg, #fee)',
+          color: 'var(--color-error, #c33)', fontSize: 12, borderBottom: '1px solid var(--border)',
+        }} role="alert">
+          {streamError}
+          <button onClick={() => setStreamError(null)} style={{ float: 'right', border: 'none', background: 'none', cursor: 'pointer' }} aria-label="关闭">×</button>
+        </div>
+      )}
 
       {/* 消息区 */}
       <div style={{
@@ -298,7 +379,7 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
       </div>
 
       {/* 输入栏 */}
-      <InputBar onSend={handleSend} />
+      <InputBar onSend={handleSend} disabled={streaming} />
     </div>
   );
 };

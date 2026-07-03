@@ -42,6 +42,7 @@ const allowedInvokeChannels: readonly string[] = [
   'evidence:getBySyndrome',
   'chat:send',
   'chat:stop',
+  'chat:handleTurn',
   'session:list',
   'session:create',
   'session:delete',
