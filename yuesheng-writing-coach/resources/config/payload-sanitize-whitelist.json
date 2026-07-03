@@ -1,0 +1,50 @@
+{
+  "version": "1.0",
+  "comment": "Sprint 21 E-1: IPC 载荷脱敏白名单 (R-029 安全)。每个 service 字段映射到 5 种动作之一。新增/修改只改 JSON,无需改代码(在 payload-sanitizer.service.ts 中)。",
+  "truncate": {
+    "defaultMaxChars": 80,
+    "comment": "truncate 动作的默认最大字符数,可在字段级 overrides(单字段在 fields 对象里加 maxChars 覆盖)"
+  },
+  "services": {
+    "diagnosis": {
+      "enabled": true,
+      "comment": "诊断结果 + 用户原文证据",
+      "fields": {
+        "originalText": "redact",
+        "rewrittenText": "truncate",
+        "evaluation.feedback": "truncate",
+        "evaluation.suggestion": "truncate"
+      }
+    },
+    "training": {
+      "enabled": true,
+      "comment": "训练提交原文 + AI 评估反馈",
+      "fields": {
+        "originalQuote": "truncate",
+        "userDraft": "truncate",
+        "challengeDescription": "truncate",
+        "constraint": "truncate",
+        "feedback": "truncate",
+        "nextStep": "truncate"
+      }
+    },
+    "teaching-state": {
+      "enabled": true,
+      "comment": "教学状态中的诊断摘要 + 活跃问题的证据",
+      "fields": {
+        "diagnosisSummary": "truncate",
+        "focusArea": "omit",
+        "activeProblems": "truncate-nested"
+      }
+    },
+    "student-context": {
+      "enabled": true,
+      "comment": "学生个人信息(预留,目前未启用独立 handler)",
+      "fields": {
+        "studentName": "mask",
+        "email": "redact",
+        "phone": "redact"
+      }
+    }
+  }
+}
