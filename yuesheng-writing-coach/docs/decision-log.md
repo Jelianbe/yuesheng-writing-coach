@@ -1506,3 +1506,92 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
 - **Status**: ✅ Sprint 19 Issue 19-3 完工 — 成长报告从占位升级为真实数据驱动
 - **下一步**: 进入 Sprint 20 候选清单(D-DEBT-34 typedInvoke 审计 / Phase B event-bus / Phase C 骨架屏)
 - **依据**: dev-docs/tasks/sprint-19-plan.md §三 Issue 19-3 DoD
+
+---
+
+## 2026-07-03
+
+### D-054: Sprint 20 Phase 1 骨架 — Orchestrator 接口 + event-bus + v5.0.0 提示词草案
+- **类型**: 架构重构(Sprint 20 激进双轨骨架)
+- **决策**: Sprint 20 不一次性大重构,先走"骨架三件套"验证架构,再推后续轨道
+- **用户原始诉求**: "如果改动会话逻辑(建立信任联系等),会不会影响整个项目进程" → 不会,Sprint 20 解耦
+- **Sprint 20 战略**: 激进双轨(A 轨 + B 轨同步) / 提示词 v5.0.0 独立迭代(R-025 治理)
+- **Phase 1 范围**(本决策): A-1 + B-1 + C-1 三件骨架,验证后再推 A-2/3/4 + B-2/3
+
+## 三件骨架交付物
+
+### A-1: ConversationOrchestrator 接口
+- **新文件**: `src/main/domains/03-teaching/conversation/orchestrator.types.ts`
+  - `ConversationOrchestrator` 接口
+  - `OrchestratorEvent` 联合类型(token/intent/phase_transition/diagnosis_extracted/training_triggered/done/error)
+  - `ConversationPhase` 5 阶段枚举(trust_building/requirement/diagnosis/training/reflection)
+  - `ConversationIntent` 5 种意图(clarify/diagnose/train/close/none)
+  - `SkillRef` 类型 + `PromptVersion` 类型(R-025 治理入口)
+  - 6 个类型守卫辅助函数
+- **新文件**: `src/main/domains/03-teaching/conversation/mock-orchestrator.ts`
+  - `MockConversationOrchestrator` 实现,固定事件序列,无 AI 调用
+  - 5 phase × skill manifest 映射表
+- **新文件**: `src/main/domains/03-teaching/conversation/__tests__/orchestrator.test.ts`
+  - 8 个单测,覆盖 sessionId 缺失/trust 阶段切换/关键词意图/停止/版本元数据
+
+### B-1: EventBus 服务
+- **新文件**: `src/main/core/event-bus.service.ts`
+  - `EventBus` 类(emitter pattern)
+  - `DomainEvent` 联合类型(11 种事件,chat/diagnosis/training 三域)
+  - `on()` / `emit()` / `emitAndWait()` / `removeAllListeners()` API
+  - 全局单例 `getGlobalEventBus()` + 测试重置
+  - handler 抛错隔离,async handler 错误捕获
+  - `emittedLog` 测试可观测性
+- **新文件**: `src/main/core/__tests__/event-bus.service.test.ts`
+  - 8 个单测,覆盖订阅/取消/多订阅者/异常隔离/async 等待/全局单例
+
+### C-1: v5.0.0 提示词草案
+- **新文件**: `resources/prompts/yuesheng-prompt-v5.0.0-draft.md`
+  - R-025 元数据完整(version/changelog/rollback_to/status)
+  - 5 phase 显式定义(触发/退出/产物)
+  - v4 → v5 → v5.0.0 演进路径表
+  - OrchestratorEvent 与 phase 对齐
+  - SKILL 章节保留声明(不动 5 SKILL 内容)
+  - 灰度切换 + 30s 回滚演练方案
+  - A/B 实验设计(R-012:30 天窗口,α=0.05, MDE=10%)
+
+## 门禁 (R-027)
+
+- typecheck: 0 errors
+- vitest: 699 passed(新增 16: 8 orchestrator + 8 event-bus)
+- lint: 0 errors(244 pre-existing warnings)
+- E2E: 33 passed(无回归)
+
+## 教训
+
+- **EventBus 异常隔离是底线**: handler 抛错必须 console.error 而不阻断其他订阅者,否则一个 bad consumer 拖垮整条链路 → emit 实现里用 try/catch 包裹 + Promise.catch 兜底
+- **类型守卫配合联合类型**: `OrchestratorEvent` 是 7 种类型联合,TypeScript 的 discriminated union 配合 `isTokenEvent` / `isIntentEvent` 等守卫,消费者写起来 if 链冗长但类型安全
+- **mock 重置状态而非复用**: `MockConversationOrchestrator.stopRequested` 一旦设 true 就保持(同实例),提供 `reset()` 让多轮测试可继续。**生产环境 stopGeneration 应该是一次性的,让用户创建新 session 继续**
+- **现有 v5 prompt 是 v5.0.0 的"教练内核"**: v5 的 5 SKILL 章节内容不动,phase 结构只在外层加,符合 R-010 最小化原则
+- **Edit 工具对 CRLF 失灵问题再现**: A-1 测试文件 handler `() => aCount++` 返回 number 不匹配 `void | Promise<void>`,Edit 工具报告"成功"但未实际改写。**用 Node fs 兜底**
+
+## Status
+
+✅ Sprint 20 Phase 1 骨架完工 — 验证架构成立,可推后续轨道
+
+## 后续 (Sprint 20 Phase 2 候选)
+
+- A-2: SkillDispatcher 抽到主进程
+- A-3: TeachingStateMachine 改订阅 OrchestratorEvent
+- A-4: ChatPage 改订阅模式
+- B-2: typedInvoke 全量审计(D-DEBT-34)
+- B-3: chat/diagnosis/training 频道收口到 bus
+- C-2: v5.0.0 真实 prompt 文本(由产品迭代)
+- C-3: feature flag + 真实灰度切换
+
+## 依据 / 追溯 (R-018)
+
+- dev-docs/tasks/sprint-20-plan.md §A-1 §B-1 §C-1
+- R-004(DoD ≥3 条)
+- R-010(最小化范围)
+- R-012(假设驱动 A/B)
+- R-018(变更溯源)
+- R-025(Prompt 治理)
+- R-027(AI 代码质量门禁)
+- D-052(Sprint 19 PC 改造决策)
+- D-053(Issue 19-3 契约断链教训 → 推动解耦)
