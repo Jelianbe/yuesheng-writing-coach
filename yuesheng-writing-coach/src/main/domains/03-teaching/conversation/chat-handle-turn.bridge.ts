@@ -2,7 +2,8 @@
  * Chat HandleTurn Bridge — Sprint 20 A-4
  *
  * 桥接 ConversationOrchestrator (主进程) 与 ChatPage (renderer):
- * - 主进程:持有 MockConversationOrchestrator (A-4 试点,Sprint 21 切真实)
+ * - Sprint 21 D-1:默认持有 RealOrchestratorAdapter(包装真实 ChatOrchestratorService)
+ * - Sprint 20 A-4 阶段持有 MockConversationOrchestrator(现已 @legacy,仅测试桩)
  * - 调用 handleTurn(input) 拿到 AsyncIterable<OrchestratorEvent>
  * - 通过 webContents.send('chat:event', payload) 推送事件流给 renderer
  * - 关联 streamId 让 renderer 区分多轮 turn
@@ -12,15 +13,37 @@
 
 import type { BrowserWindow, WebContents } from 'electron';
 import { IPC_CHANNELS } from '../../../../shared/constants';
+// Sprint 21 D-1:RealOrchestratorAdapter 取代 MockConversationOrchestrator
+import { RealOrchestratorAdapter } from './real-orchestrator-adapter';
+// @legacy 兼容路径:MockConversationOrchestrator 仅用于测试桩(无 deps 时回退)
 import { MockConversationOrchestrator } from './mock-orchestrator';
+import type { ChatOrchestratorService } from '../chat/chat-orchestrator.service';
+import type { SkillRegistry } from './skill-registry';
 import type { ConversationOrchestrator, HandleTurnInput } from './orchestrator.types';
 
 export class ChatHandleTurnBridge {
   private readonly orchestrator: ConversationOrchestrator;
   private activeStreamIds: Set<string> = new Set();
 
-  constructor(orchestrator?: ConversationOrchestrator) {
-    this.orchestrator = orchestrator ?? new MockConversationOrchestrator();
+  /**
+   * Sprint 21 D-1:接受 ChatOrchestratorService + 可选 SkillRegistry
+   * 默认构造时自动包装为 RealOrchestratorAdapter
+   * 旧版"接受任意 orchestrator 实例"接口保留为兼容路径(测试桩场景)
+   */
+  constructor(orchestrator?: ConversationOrchestrator, deps?: {
+    chatOrchestrator: ChatOrchestratorService;
+    skillRegistry?: SkillRegistry;
+  }) {
+    if (orchestrator) {
+      // 兼容路径:测试桩(mock 或 自定义 orchestrator)
+      this.orchestrator = orchestrator;
+    } else if (deps) {
+      // Sprint 21 D-1:生产路径,包装真实 ChatOrchestratorService
+      this.orchestrator = new RealOrchestratorAdapter(deps.chatOrchestrator, deps.skillRegistry);
+    } else {
+      // @legacy 兜底:无 deps 时回退 mock(向后兼容老调用方,如未注入 chatOrchestrator)
+      this.orchestrator = new MockConversationOrchestrator();
+    }
   }
 
   /** 暴露底层 orchestrator,供测试/查询用 */
