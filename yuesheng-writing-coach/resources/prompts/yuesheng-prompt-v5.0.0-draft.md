@@ -2,10 +2,29 @@
 
 > **版本**: v5.0.0-draft
 > **创建**: 2026-07-03
-> **作者**: Sprint 20 C-1
+> **作者**: Sprint 20 C-1 + 增量 3
 > **状态**: DRAFT(架构草案,内容待产品迭代)
 > **回退**: `git checkout v5 -- resources/prompts/yuesheng-prompt-v5.md`(回退到 v5 合并版)
 > **依据**: dev-docs/tasks/sprint-20-plan.md §C-1 / R-025 Prompt 治理 / D-053 契约断链教训
+
+---
+
+## Contract(契约声明 — 启动时硬校验)
+
+> 启动拦截规则:本 prompt 加载时,Orchestrator 会校验以下依赖全部存在,任何缺失立即抛 `PromptContractError` 拒绝启动。
+
+```yaml
+contract:
+  required_phases: [trust_building, requirement, diagnosis, training, reflection]
+  required_skills: [core-identity, scenario-rules, teaching-strategy, validation-rules, feedback-cognition]
+  required_techniques: [P001, P002, P003, P004, P005, P006, P007, P008, P009, P010]
+  required_tools: [chapter:read, diagnosis:extract, training:start, session:saveMessage]
+  emits_events: [chat:token, chat:intent, chat:phase_transition, chat:done, chat:error, diagnosis:extracted, training:triggered]
+```
+
+**校验位置**: `src/main/domains/03-teaching/conversation/prompt-contract.ts` `validateContract()`
+**失败语义**: 抛 `PromptContractError`,列出缺失项,服务拒绝启动
+**变更本块时**: 必须同步更新 `mock-orchestrator.ts` 的 `MOCK_CONTRACT` 保持 typecheck 通过
 
 ---
 

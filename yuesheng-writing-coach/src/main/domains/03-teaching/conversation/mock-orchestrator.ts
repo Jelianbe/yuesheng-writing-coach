@@ -17,36 +17,54 @@ import type {
   PromptVersion,
   SkillRef,
 } from './orchestrator.types';
+import type { PromptContract } from './prompt-contract';
+import { createDefaultSkillRegistry, SkillRegistry } from './skill-registry';
+
+const MOCK_CONTRACT: PromptContract = {
+  required_phases: ['trust_building', 'requirement', 'diagnosis', 'training', 'reflection'],
+  required_skills: ['core-identity', 'scenario-rules', 'teaching-strategy', 'validation-rules', 'feedback-cognition'],
+  required_techniques: ['P001', 'P002', 'P003', 'P004', 'P005', 'P006', 'P007', 'P008', 'P009', 'P010'],
+  required_tools: ['chapter:read', 'diagnosis:extract', 'training:start', 'session:saveMessage'],
+  emits_events: ['chat:token', 'chat:intent', 'chat:phase_transition', 'chat:done', 'chat:error', 'diagnosis:extracted', 'training:triggered'],
+};
 
 const MOCK_PROMPT: PromptVersion = {
   version: 'v5.0.0-mock',
   changelog: 'A-1 骨架,固定响应,无 AI 调用',
+  contract: MOCK_CONTRACT,
 };
 
 const SKILL_MANIFEST: Record<ConversationPhase, SkillRef[]> = {
   trust_building: [
-    { id: 'core-identity', estimatedTokens: 200, phases: ['trust_building'] },
+    { id: 'core-identity', estimatedTokens: 200, phases: ['trust_building'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
   ],
   requirement: [
-    { id: 'core-identity', estimatedTokens: 200, phases: ['requirement'] },
-    { id: 'scenario-rules', estimatedTokens: 350, phases: ['requirement'] },
+    { id: 'core-identity', estimatedTokens: 200, phases: ['requirement'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
+    { id: 'scenario-rules', estimatedTokens: 350, phases: ['requirement'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
   ],
   diagnosis: [
-    { id: 'core-identity', estimatedTokens: 200, phases: ['diagnosis'] },
-    { id: 'teaching-strategy', estimatedTokens: 800, phases: ['diagnosis'] },
+    { id: 'core-identity', estimatedTokens: 200, phases: ['diagnosis'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
+    { id: 'teaching-strategy', estimatedTokens: 800, phases: ['diagnosis'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
+    { id: 'validation-rules', estimatedTokens: 400, phases: ['diagnosis'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
   ],
   training: [
-    { id: 'core-identity', estimatedTokens: 200, phases: ['training'] },
-    { id: 'validation-rules', estimatedTokens: 400, phases: ['training'] },
+    { id: 'core-identity', estimatedTokens: 200, phases: ['training'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
+    { id: 'teaching-strategy', estimatedTokens: 800, phases: ['training'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
+    { id: 'validation-rules', estimatedTokens: 400, phases: ['training'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
   ],
   reflection: [
-    { id: 'core-identity', estimatedTokens: 200, phases: ['reflection'] },
-    { id: 'feedback-cognition', estimatedTokens: 300, phases: ['reflection'] },
+    { id: 'core-identity', estimatedTokens: 200, phases: ['reflection'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
+    { id: 'feedback-cognition', estimatedTokens: 300, phases: ['reflection'], compatiblePromptVersions: ['v5.0.0', 'v5.0.0-mock'] },
   ],
 };
 
 export class MockConversationOrchestrator implements ConversationOrchestrator {
   private stopRequested = false;
+  private readonly registry: SkillRegistry;
+
+  constructor(registry?: SkillRegistry) {
+    this.registry = registry ?? createDefaultSkillRegistry(process.cwd());
+  }
 
   /** 重置状态,供多轮测试使用 */
   reset(): void {
@@ -113,8 +131,18 @@ export class MockConversationOrchestrator implements ConversationOrchestrator {
     return MOCK_PROMPT;
   }
 
-  skillManifest(phase: ConversationPhase): SkillRef[] {
-    return SKILL_MANIFEST[phase] ?? [];
+  skillManifest(phase: ConversationPhase, version?: string): SkillRef[] {
+    const phaseSkills = SKILL_MANIFEST[phase] ?? [];
+    if (!version) return phaseSkills;
+    // 增量 1:版本过滤 — 用 SkillRegistry 检查每个 skill 是否与 version 兼容
+    return phaseSkills.filter(s => {
+      const meta = this.registry.getById(s.id);
+      // 找不到元数据 → 保守放过(向后兼容)
+      if (!meta) return true;
+      // 元数据声明为空 → 视为不兼容(契约硬要求)
+      if (meta.compatiblePromptVersions.length === 0) return false;
+      return meta.compatiblePromptVersions.includes(version);
+    });
   }
 
   stopGeneration(): { stopped: boolean } {
