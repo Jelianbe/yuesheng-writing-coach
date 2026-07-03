@@ -2850,6 +2850,7 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
   - ❌ 5 步流 UI 集成(Sprint 25 BL-01 范围外,FlowPanel 暂未连接 submitStep,留待 V6.3 整合)
   - ❌ `step_responses_json` 字段索引:目前只按 session_id 查,该字段不参与查询过滤,无需索引
   - ❌ `step_responses` 历史审计:completed/aborted 后字段保留,审计时直接读取即可
+  - ❌ **264 个 lint warning(`no-console` 等)**:本轮门禁 0 errors 满足(`--max-warnings 300` 基线),多数 `console.error/warn` 是 R-028 异常隔离的**有意为之**(状态机失败回退、SQL 错误记录),加 `// eslint-disable-next-line` 是机械工作不增加可读性。**推 S26 债务专项治理**:按"无 console 服务类 vs 有 console 边界类"分类,源头方案是 `pino`/`winston` 替换 + 测试 mock 解耦
 - **依据**:
   - R-014 配置外置规范(无硬编码,字段定义在类型层)
   - R-019 代码规范标准(单文件 ≤ 300 行,本轮无新文件超限)
