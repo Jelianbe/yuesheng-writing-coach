@@ -1480,3 +1480,29 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
 - tests/e2e/a11y/all-pages.spec.ts（移除技法库/素材库）
 - tests/e2e/pages/apps.spec.ts（"工具"→"设置"）
 - R-019 代码规范标准 / R-027 AI 代码质量门禁 / R-016 Git 提交规范
+
+---
+
+## 2026-07-03
+
+### D-053: Issue 19-3 成长报告实装
+- **类型**: 新功能
+- **决策**: 完成 Sprint 19 Issue 19-3,成长报告从占位升级为真实数据驱动的成长画像
+- **交付物**:
+  1. `growth.contract.ts` — `GrowthGetGlobalTrendsResponse` 新增 `trends` 字段(per-syndrome)
+  2. `growth.handler.ts` — `getGlobalTrends` 同时返回 `overall` + `trends`(per-syndrome 明细)
+  3. `growth.store.ts` — 移除未使用的 `fetchTrends` action(契约曾断链),只保留 `fetchGlobalTrends`
+  4. `GrowthReportPage.tsx` — 4 状态卡片(已掌握/进步中/稳定/需关注) + 5 维 SVG 雷达图(叙事/角色/世界观/语言/学习,与 ability-atlas 的 5 大类对齐) + 趋势总览(总进度 + 优势方向/需关注) + 症候详情列表
+  5. `tests/e2e/pages/growth-report.spec.ts` — 改"加载占位"为"雷达图 + 状态卡片"断言,适配 Vite/Electron 双环境
+  6. `tests/e2e/visual/snapshots.spec.ts` + 视觉基线重建 — 改用 testid 选择器
+  7. `tests/e2e/navigation/routing.spec.ts` — 子页占位断言同步从 `数据加载中…` 改为 testid 兼容
+- **雷达维度映射**: P001/P008→世界观, P002/P009/P010→角色, P003→语言, P004/P005/P006→叙事, P007→学习(与 ability-atlas.json 的 related_abilities 一致)
+- **得分公式**: severityBase(L1=5/L2=3/L3=1) + statusBonus(mastered+1.5/improving+0.5/needsAttention-1),按维度求平均
+- **门禁**: typecheck 0 errors / vitest 683 passed / lint 0 errors / 33 E2E passed(新增 1 项雷达图渲染验证)
+- **教训**:
+  - **占位页契约早已断链**: `fetchTrends` 之前就调 `GROWTH_GET_TRENDS` 但 contract 写 `GrowthTrend`(points),handler 实际返 `SyndromeTrend`(status/severity) — 长期 typecheck 漂移,直到本次实装才被揭露。**主动审计 IPC 契约与 handler 返回值一致性应作为 V1 必修**
+  - **维度选择应复用真源**: 计划中"5 维(教学/结构/语言/情感/创新)"是草拟方案,系统真源是 ability-atlas 的 5 个 category。**优先用数据已有结构,避免凭空造分类**(符合 R-014 配置外置)
+  - **Edit 工具对 CRLF 文件失灵**: GrowthReportPage.tsx 在 Windows 用 CRLF 换行,Edit 工具声称成功但实际未写入。**必须用 Node fs 兜底 + 字符级 diff 验证**(已写入 lessons learned)
+- **Status**: ✅ Sprint 19 Issue 19-3 完工 — 成长报告从占位升级为真实数据驱动
+- **下一步**: 进入 Sprint 20 候选清单(D-DEBT-34 typedInvoke 审计 / Phase B event-bus / Phase C 骨架屏)
+- **依据**: dev-docs/tasks/sprint-19-plan.md §三 Issue 19-3 DoD

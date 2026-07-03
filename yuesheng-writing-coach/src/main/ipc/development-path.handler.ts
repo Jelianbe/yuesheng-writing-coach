@@ -79,10 +79,12 @@ export function registerDevelopmentPathHandlers(): void {
 
   /**
    * prescription:getAllStages — 获取全部发展阶段（只读）
+   *
+   * 返回 ApiResponse<DevelopmentStageInfo[]> 包装后的数据。
+   * handler 只返回裸数据,createHandler 会包成 { success, data }。
    */
   createHandler(IPC_CHANNELS.PRESCRIPTION_GET_ALL_STAGES, async () => {
-    const stages = getAllStages();
-    return { stages };
+    return getAllStages();
   });
 
   /**
