@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ActiveTraining IPC handler 集成测试 — Sprint 24 A-3
  *
  * 验证契约:
@@ -57,6 +57,7 @@ function createMemoryDb(): Database.Database {
       original_quote TEXT,
       constraint_text TEXT,
       submission_result_json TEXT,
+      step_responses_json TEXT NOT NULL DEFAULT '[]',
       status TEXT NOT NULL CHECK(status IN ('in_progress', 'completed', 'aborted')),
       started_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,

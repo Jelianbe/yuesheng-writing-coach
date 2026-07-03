@@ -79,6 +79,8 @@ export type { StageProgress } from './types-training';
 export type { TrainingFlowStepId } from './types-training';
 export type { TrainingFlowStep } from './types-training';
 export type { TrainingFlow } from './types-training';
+// Sprint 25 BL-01 C-4: 5 步分步提交
+export type { StepResponse } from './types-training';
 
 // --- types-growth: 成长与能力画像 ---
 export type { TeachingHistoryItem } from './types-growth';

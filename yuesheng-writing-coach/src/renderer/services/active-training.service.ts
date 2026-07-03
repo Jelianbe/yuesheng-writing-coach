@@ -27,6 +27,8 @@ import type {
   ActiveTrainingUpdateDraftResponse,
   ActiveTrainingGetRequest,
   ActiveTrainingGetResponse,
+  ActiveTrainingSubmitStepRequest,
+  ActiveTrainingSubmitStepResponse,
   ActiveTrainingUpdatedEvent,
 } from '../../shared/api-contracts/active-training.contract';
 
@@ -68,6 +70,28 @@ export const activeTrainingService = {
     );
     if (!result.success) {
       console.error('[activeTraining] get failed:', result.error);
+      return null;
+    }
+    return result.data;
+  },
+
+  /**
+   * Sprint 25 BL-01 C-4: 5 步分步提交
+   * - V6.2 FlowPanel 在每步"下一步"时调用
+   * - 失败时返回 null(降级模式,UI 不阻塞)
+   *
+   * @param params sessionId + stepId(1-5) + content
+   * @returns 提交结果,失败返回 null
+   */
+  async submitStep(
+    params: ActiveTrainingSubmitStepRequest,
+  ): Promise<ActiveTrainingSubmitStepResponse | null> {
+    const result = await typedInvoke<
+      ActiveTrainingSubmitStepRequest,
+      ActiveTrainingSubmitStepResponse
+    >(ActiveTrainingApi.submitStep.channel, params);
+    if (!result.success) {
+      console.error('[activeTraining] submitStep failed:', result.error);
       return null;
     }
     return result.data;

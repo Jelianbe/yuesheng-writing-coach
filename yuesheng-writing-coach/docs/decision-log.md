@@ -2813,3 +2813,55 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
   4. ✅ R-019 硬上限满足(单文件 ≤ 300 行,最大 FlowPanel.test.tsx 205 行)
   5. ✅ grep 全局类名 0 命中(testId 与 camelCase class 名除外)
   6. ✅ 无 stale 类型引用
+- **状态**: ✅ C-3 完成,准备 C-4
+
+#### C-4: submitStep 接受 stepIndex 实现 5 步分步提交
+
+- **类型**: 新功能(契约扩展)+ 持久化字段新增
+- **背景**:
+  - C-3 完成 V6.2 `FlowPanel` 组件,但当前 `submitStep` 只能整段提交,无法在 5 步流中保存"每一步的回答"
+  - V6.2 FlowPanel 5 步(解说/例证/确认/尝试/反馈)需要独立提交 + 评估能力,跨刷新/跨页签存活
+  - 当前 `userDraft` 字段只覆盖 S8 主改写草稿,与 5 步流的"理解复述/确认文本"语义不同,需独立字段
+- **方案**:
+  - **新增 DB 字段**:`active_training.step_responses_json TEXT NOT NULL DEFAULT '[]'`(SQL migration 027)
+  - **类型扩展**:`StepResponse { stepId: 1|2|3|4|5; content: string; submittedAt: string }` + `ActiveTraining.stepResponses: StepResponse[]`
+  - **service 新增**:`ActiveTrainingService.submitFlowStep(sessionId, stepId, content)`,合并同 stepId(只保留最新),触发 `submitStep` 状态变更事件
+  - **store 扩展**:`ActiveTrainingStore.updateStepResponses(sessionId, stepResponses)`,UPDATE SQL 新增 `step_responses_json` 字段(原 UPDATE 漏写会导致数据丢失)
+  - **IPC 契约**:新增 `activeTraining:submitStep` 通道,`ActiveTrainingSubmitStepRequest/Response` 类型
+  - **handler 校验**:`createHandler` + `validatePayload`(required + types),失败抛 `INVALID_PAYLOAD`
+  - **renderer 集成**:`activeTrainingService.submitStep({ sessionId, stepId, content })` 封装 IPC 调用
+  - **store action 扩展**:`training.actions.ts` 的 `submitStep(stepId?, content?)` 支持分步/全步双模式(无参走 legacy)
+- **DoD 验证**:
+  1. ✅ `submitFlowStep` 单测 6 用例(5 步全提交 / 同 stepId 覆盖 / stepId 越界 / 无 in_progress / 状态变更事件 / 合并排序)
+  2. ✅ E2E 测试:start → 5×submitFlowStep → evaluate → complete 全链路,验证 step_responses 累计 5 条 + 推送链路
+  3. ✅ 8 个测试文件 in-memory schema 同步更新(027 字段 NOT NULL DEFAULT '[]')
+  4. ✅ `update()` SQL 同步写入 `step_responses_json`(原 SQL 漏写导致 1st attempt 测试失败,已修复)
+  5. ✅ 86/86 active-training 测试全绿,997/997 全量测试全绿
+  6. ✅ `npm run typecheck` + `npm run lint` 0 errors
+  7. ✅ IPC 通道常量 `ACTIVE_TRAINING_SUBMIT_STEP` 在 `shared/constants.ts` + `preload/index.ts` 双白名单同步
+  8. ✅ R-019 硬上限满足(单文件 ≤ 300 行)
+  9. ✅ R-014 配置外置:无新增硬编码,字段定义在主进程 `active-training.types.ts`,DB 层只存 string
+- **设计权衡**:
+  - **独立字段 vs 复用 userDraft**:`step_responses_json` 与 `user_draft` 独立,因为语义不同(userDraft 是 S8 主草稿,stepResponses 是 5 步流"复述/确认")。混用会丢失流结构信息。
+  - **同 stepId 覆盖 vs 追加**:选择覆盖,符合"修改答案"心智模型。每次提交提交最新答案,`submittedAt` 更新。
+  - **数组 vs 单字段**:数组支持"任意步骤独立保存",5 步流不是顺序强制,用户可跳步。后续可扩展 N 步流。
+  - **UPDATE SQL 同步**:`step_responses_json` 必须在 `UPDATE` 字段列表中(Sprint 24 A-1 漏写 `submission_result_json` 同类问题)。需补充单测断言 `update({ stepResponses })` 后 reload 不丢失。
+- **未做事项**:
+  - ❌ 5 步流 UI 集成(Sprint 25 BL-01 范围外,FlowPanel 暂未连接 submitStep,留待 V6.3 整合)
+  - ❌ `step_responses_json` 字段索引:目前只按 session_id 查,该字段不参与查询过滤,无需索引
+  - ❌ `step_responses` 历史审计:completed/aborted 后字段保留,审计时直接读取即可
+- **依据**:
+  - R-014 配置外置规范(无硬编码,字段定义在类型层)
+  - R-019 代码规范标准(单文件 ≤ 300 行,本轮无新文件超限)
+  - R-020 循环依赖零容忍(handler 仍只引主进程类型,未跨域)
+  - R-021 AI 行为边界(不顺手改其他 service / store)
+  - R-027 AI 代码质量门禁(typecheck + test + lint + 文档)
+  - 决策日志 D-070(Sprint 24 A 轨状态机 + onStateChange 模式)
+  - 决策日志 D-072(D-DEBT-34 typedInvoke 降级基线)
+- **教训**:
+  1. **UPDATE SQL 字段遗漏是 A-1 同类问题复发**:Sprint 24 A-1 时漏写 `submission_result_json`,本轮新增字段同样漏写 `step_responses_json`。**根因:更新 SQL 与表结构脱节,无编译器检查。** 缓解:每个新字段应同时出现在 CREATE TABLE / UPDATE / rowToDomain 三处,缺一不可。建议下轮新增 ALTER TABLE 时,同步在 `update()` 显式 set 字段(可用 `SET @col = ?` 模式)
+  2. **测试 in-memory schema 易忘同步**:本轮 8 个测试文件需同步加 `step_responses_json` 列,手工批量补齐易漏。**缓解:抽 `TEST_SCHEMA` 常量集中管理,所有测试用 `createTestDb()` 复用**
+  3. **推送双发机制需在测试中断言对齐**:`setupActiveTrainingPush` 对 `getAllWindows()` + 显式 `mainWindow` 双发(防御 webContents 时序),测试断言应使用 `toBeGreaterThanOrEqual(N)` 而非 `toHaveLength(N)`,与 E2E-3 多窗口测试一致
+  4. **新增 IPC 通道需双白名单同步**:`shared/constants.ts` + `preload/index.ts` 两处手工同步,Sprint 17 已记为 BL-23 候选债务。本轮再次体验,优先级提至 P2
+- **状态**: ✅ C-4 完成,Sprint 25 BL-01 全部完成,准备 commit
+
