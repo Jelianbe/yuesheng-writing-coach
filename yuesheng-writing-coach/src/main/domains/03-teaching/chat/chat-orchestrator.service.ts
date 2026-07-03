@@ -24,6 +24,8 @@ import type { DiagnosisOrchestratorService } from '../../01-diagnosis/orchestrat
 import type { TeachingContextService } from './teaching-context.service';
 import type { StreamHandlerService } from './stream-handler.service';
 import { truncateChapterContent } from '../prompt/truncation';
+// Sprint 20 A-3: 事件订阅 API
+import type { OrchestratorEvent } from '../conversation/orchestrator.types';
 
 export interface ChatOrchestratorDeps {
   configService: ConfigService;
@@ -44,9 +46,36 @@ export class ChatOrchestratorService {
   private deps: ChatOrchestratorDeps;
   private apiProxy: ApiProxy | null = null;
   private toolSupportCache: boolean | null = null;
+  // Sprint 20 A-3: 事件订阅者列表(教学状态机/审计/未来的 A-4 ChatPage 都从这里订阅)
+  private orchestratorEventSubscribers: Set<(e: OrchestratorEvent, sessionId: string) => void> = new Set();
 
   constructor(deps: ChatOrchestratorDeps) {
     this.deps = deps;
+  }
+
+  /**
+   * Sprint 20 A-3: 订阅 OrchestratorEvent
+   * @param handler 事件处理函数
+   * @returns unsubscribe
+   */
+  onOrchestratorEvent(handler: (e: OrchestratorEvent, sessionId: string) => void): () => void {
+    this.orchestratorEventSubscribers.add(handler);
+    return () => {
+      this.orchestratorEventSubscribers.delete(handler);
+    };
+  }
+
+  /**
+   * Sprint 20 A-3: 派发事件给所有订阅者(handler 异常隔离)
+   */
+  private emitOrchestratorEvent(event: OrchestratorEvent, sessionId: string): void {
+    for (const handler of this.orchestratorEventSubscribers) {
+      try {
+        handler(event, sessionId);
+      } catch (e) {
+        console.warn('[ChatOrchestrator] subscriber handler failed:', e);
+      }
+    }
   }
 
   /** 设置主窗口（在窗口创建后调用） */
@@ -139,6 +168,15 @@ export class ChatOrchestratorService {
       : await deps.streamHandler.handleStream(proxy, messages, streamDeps, diagnosisAnalysis, isNarrative, () => this.generateId());
 
     if (!result.success) throw new Error(result.error || 'Chat send failed');
+
+    // Sprint 20 A-3 试点:emit OrchestratorEvent 给订阅者
+    // 试点:sendMessage 完成时发出 intent:none 作为"机制验证"事件
+    // 后续 S21+ 将替换为真实 intent 提取(基于 IntentRouter 输出)
+    this.emitOrchestratorEvent(
+      { type: 'intent', payload: { type: 'none' } },
+      activeSessionId,
+    );
+
     return { messageId: result.messageId! };
   }
 
