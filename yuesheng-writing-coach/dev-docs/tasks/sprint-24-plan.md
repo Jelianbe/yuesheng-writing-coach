@@ -3,7 +3,7 @@
 > **核心目标**: 把 Sprint 23 G 轨的"业务元数据"升级为"完整状态机"主进程化,让 ActiveTrainingSession 真正可审计、可恢复、可跨设备同步。
 > **依据**: D-069 S24 候选清单 + 用户确认 A 轨
 > **开始日期**: 2026-07-03
-> **完成日期**: (进行中)
+> **完成日期**: 2026-07-03 (A-1/A-2/A-3/A-4 全部完成)
 > **R-010**: 每阶段最小化,5 阶段串行交付
 
 ---
@@ -202,13 +202,13 @@ CREATE TABLE active_training (
 - 决策日志 D-070 更新
 
 ### 3.3 验收清单
-- [ ] 026 migration 在 dev 库 + 测试内存 DB 都能应用
-- [ ] ActiveTraining 状态机主进程侧独立可测(无需启动 renderer)
-- [ ] renderer store 冷启动时从主进程 fetch 状态
-- [ ] userDraft 刷新页面后能恢复
-- [ ] Complete/Abort 后行保留供审计
-- [ ] 4 道门禁全绿
-- [ ] 决策日志 D-070 实施结果 + 复盘 + S25 候选
+- [x] 026 migration 在 dev 库 + 测试内存 DB 都能应用
+- [x] ActiveTraining 状态机主进程侧独立可测(无需启动 renderer)
+- [x] renderer store 冷启动时从主进程 fetch 状态
+- [x] userDraft 刷新页面后能恢复
+- [x] Complete/Abort 后行保留供审计
+- [x] 4 道门禁全绿
+- [x] 决策日志 D-070 实施结果 + 复盘 + S25 候选
 
 ---
 
