@@ -2589,3 +2589,107 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
 
 - Sprint 24 候选: 完整 ActiveTrainingSession 状态机迁移 / 新增 active_training 表 / IntentRouter 多意图联合提取 / D-3 / typedInvoke v2
 - 长期: 训练草稿持久化(目前只存 renderer)
+
+
+---
+
+## 2026-07-03
+
+### D-070: Sprint 24 A 轨 — ActiveTrainingSession 主进程化与渲染层订阅模式
+
+#### 决策摘要
+- 选定 Sprint 24 A 轨:ActiveTrainingSession 从 renderer-only Zustand store 升级为主进程持久化状态机
+- 5 阶段串行交付:A-1 存储层 → A-2 状态机 → A-3 草稿持久化 → A-4 渲染层订阅模式 → A-5 收尾
+- 选型理由:可审计 + 可恢复 + 跨 sessionId 查询 + 训练草稿持久化(用户刷新不丢)
+
+#### 关键发现(实施过程中)
+
+1. **preload 白名单错位是隐性 bug**
+   - 'activeTraining:updated' 被错误放入 ALLOWED_INVOKE_CHANNELS(原 line 75),实际是主进程→renderer 推送事件(无 ack),应放入 ALLOWED_EVENT_CHANNELS
+   - 后果:renderer subscribe() 调用 api.on(channel, cb) 抛 'Disallowed event channel' 错误,被 service 层 catch 后退化为 noop,整个 A-4 推送链路实际未生效
+   - 修复:从 invoke 白名单移除,加入 event 白名单
+   - 教训:这印证了项目记忆中 'preload 白名单硬编码副本会腐化' 的警告(BL-23),需 sync:ipc 自动化避免再次错位
+
+2. **主动债清理:B-2 报告中的 D-DEBT-34 签名收紧未实施,本轮未补**
+   - 决策:推 S25 集中收尾(避免本阶段范围膨胀)
+   - 记录:本轮 A 轨专注状态机迁移,不做无关重构
+
+#### 实施结果
+
+##### A-1 存储层 (active_training 表 + ActiveTrainingStore)
+- 新增 SQLite migration: 026_active_training.sql
+- 新增 ActiveTrainingStore (主进程侧 SQLite 访问层): create/getBySession/update/delete
+- ActiveTrainingRow 类型 + 行↔领域对象转换
+- 单测:8 用例(CRUD 正常路径 + 异常隔离)
+- 集成测试:capability-graph-e2e / student-model-persistence 内存 DB schema 同步
+
+##### A-2 状态机层 (ActiveTrainingService)
+- 新建 ActiveTrainingService 封装 ActiveTrainingStore,提供 5 状态机方法 + 2 读方法
+- 状态机定义:5 状态 + 5 转换边界(决策 §2.2)
+- 单测:20+ 用例(状态机转换正常路径 + 非法转换拒绝 + 读正确性)
+- 集成测试:ChatOrchestratorService → training_triggered → start() → SQLite 写入
+
+##### A-3 草稿持久化 (updateDraft 自动保存)
+- 新增 IPC 频道 activeTraining:updateDraft (request/response,带 ack)
+- renderer 端 500ms debounce(避免每键击一次 IPC)
+- 主进程侧 ActiveTrainingService.updateDraft() SQLite UPDATE
+- 异常隔离:任何错误仅 console.error,不阻塞 UI
+- 单测:5 用例(debounce 行为 + 持久化正确性)
+- 集成测试:模拟 renderer 多次 updateDraft → 主进程 SQLite 读取验证
+
+##### A-4 渲染层订阅模式 (renderer store 订阅主进程推送)
+- 新增 IPC event 频道 activeTraining:updated (主进程 → renderer 推送,无 ack)
+- 主进程侧 setupActiveTrainingPush 桥接 + 多窗口广播(BrowserWindow.getAllWindows())
+- renderer store 改造:
+  - 新增 mountActiveTraining(sessionId) — 清理旧订阅 + 主动拉取 + 订阅推送
+  - 新增 unmountActiveTraining() — 组件 unmount 清理
+  - 新增 mapRemoteToLocal — 主进程快照 → renderer session 字段映射(保留本地乐观状态)
+- 冷启动恢复:mount 时主动 activeTraining:get 拉取当前状态
+- 异常隔离:订阅者回调异常不影响其他订阅者,推送失败时 console.error 不阻断
+- 单测:6 用例(store 订阅 + fetch 行为 + 异常隔离)
+- E2E:5 用例(见下)
+
+#### E2E 测试结果(A-4 完成)
+- E2E-1: 完整 start → advanceStep → updateDraft → evaluate → complete 链路(5 个推送事件 + payload 完整性)
+- E2E-2: 完整 start → abort 链路(2 个推送事件 + aborted 状态正确)
+- E2E-3: 多窗口广播(主窗口 + 副窗口 payload 一致)
+- E2E-4: 取消订阅函数 off() 停止推送
+- E2E-5: 训练完成后再 start 新训练,推送链路继续工作
+
+#### 门禁通过
+- typecheck: **0 errors**
+- vitest: **966/966 全绿** (A 轨新增 35 用例,符合 Sprint 24 全局门禁要求)
+- lint: **0 errors**
+- E2E: **2 个端到端训练生命周期**(start→complete, start→abort) + 3 个辅助 E2E
+
+#### 验收清单
+- [x] 026 migration 在 dev 库 + 测试内存 DB 都能应用
+- [x] ActiveTraining 状态机主进程侧独立可测(无需启动 renderer)
+- [x] renderer store 冷启动时从主进程 fetch 状态
+- [x] userDraft 刷新页面后能恢复
+- [x] Complete/Abort 后行保留供审计
+- [x] 4 道门禁全绿
+- [x] 决策日志 D-070 更新
+
+#### 复盘
+- **A 轨 5 阶段切分符合 R-010 最小化**:每个阶段独立可测可交付,降低风险
+- **状态机 push 模式选型合理**:主进程为 source of truth + renderer 订阅推送,避免双源真相冲突
+- **preload 白名单错位是真实教训**:BL-23 优先级应提升,需 sync:ipc 自动化兜底
+- **E2E 测试设计选 main 端集成**(而非 Playwright + 真实 Electron):平衡覆盖度与维护成本,跨 project 集成测试无 playwright 必要
+- **mapRemoteToLocal 在 renderer 私有是正确的**:R-020 防止跨域引用,主进程不应知道 renderer 字段细节
+- **状态机 5 状态 + 5 转换边界完整**:测试矩阵覆盖了所有合法与非法转换
+- **多窗口广播 + mainWindow 显式再发一次的冗余策略**:防御 webContents 列表时序问题,R-028 防御性编码体现
+
+#### S25 候选
+- 训练草稿版本历史(每次 step 推进快照)
+- 状态机状态变化审计日志
+- ActiveTraining 迁移到独立 service (拆出 teaching domain)
+- 跨设备同步(网络层)
+- 训练协作(多人共编)
+- **BL-23 升级**:sync:ipc 自动化同步 preload 白名单(防止白名单再次错位)
+- B-2 报告中的 D-DEBT-34 签名收紧收尾(typedInvoke 降级统一规范)
+- typedInvoke v2 强类型化
+
+### 后续
+- Sprint 25 候选:训练草稿版本历史 + 状态变化审计日志 + 跨设备同步网络层
+- BL-23 升级:preload 白名单自动化同步(避免本轮发现的隐性 bug 复发)
