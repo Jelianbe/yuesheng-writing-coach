@@ -91,6 +91,8 @@ export interface SkillRef {
   estimatedTokens: number;
   /** 加载阶段 */
   phases: ConversationPhase[];
+  /** 兼容的 prompt 版本列表(增量 1:Sprint 20 自描述) */
+  compatiblePromptVersions: string[];
 }
 
 /** 提示词元数据(R-025 治理入口) */
@@ -100,6 +102,8 @@ export interface PromptVersion {
   rollbackTo?: string;
   /** 变更日志 */
   changelog: string;
+  /** 契约声明(增量 3:Sprint 20 启动拦截) */
+  contract: import('./prompt-contract').PromptContract;
 }
 
 /** handleTurn 入参 */
@@ -138,9 +142,10 @@ export interface ConversationOrchestrator {
 
   /**
    * 当前 phase 应加载的 skill 清单
+   * @param version - 可选,指定 prompt 版本时仅返回与该版本兼容的 skill(增量 1)
    * A-2 落地主进程加载,目前返回声明
    */
-  skillManifest(phase: ConversationPhase): SkillRef[];
+  skillManifest(phase: ConversationPhase, version?: string): SkillRef[];
 
   /**
    * 停止当前生成

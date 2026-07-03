@@ -7,6 +7,7 @@ parentId: null
 loadWhen:
   phases: [P0_INIT, P1_WORLD, P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
   attitudes: [doubao, yuesheng, sensei]
+compatiblePromptVersions: [v5.0.0, v5.0.0-mock, v5.0.1-draft]
 ---
 
 # SKILL: 身份与底线（聚合入口）
