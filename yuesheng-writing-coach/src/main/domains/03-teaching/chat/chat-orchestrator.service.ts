@@ -111,11 +111,16 @@ export class ChatOrchestratorService {
     history?: { role: string; content: string }[];
     attitudeLevel?: AttitudeLevel;
     studentContext?: string;
+    /**
+     * Sprint 21 D-1: 可选 token 回调,由 RealOrchestratorAdapter 注入以桥接 token 流
+     * 不传则走既有 chat:stream IPC 路径(向后兼容)
+     */
+    onToken?: (chunk: string) => void;
   }): Promise<{ messageId: string }> {
     const { deps } = this;
     if (!deps.mainWindow) throw new Error('Main window not available');
 
-    let { message, sessionId, history, attitudeLevel, studentContext } = args;
+    let { message, sessionId, history, attitudeLevel, studentContext, onToken } = args;
 
     // 解析章节引用
     const resolvedMessage = this.resolveChapterReference(message);
@@ -159,7 +164,7 @@ export class ChatOrchestratorService {
 
     // 流式响应
     const proxy = this.getApiProxy();
-    const streamDeps = this.createStreamHandlerDeps(activeSessionId);
+    const streamDeps = this.createStreamHandlerDeps(activeSessionId, onToken);
 
     // 根据模型兼容性选择流式入口
     const useTools = await this.probeToolSupport(deps.configService.getConfig().modelName);
@@ -321,7 +326,10 @@ export class ChatOrchestratorService {
     return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
-  private createStreamHandlerDeps(sessionId: string): StreamHandlerDeps {
+  private createStreamHandlerDeps(
+    sessionId: string,
+    onToken?: (chunk: string) => void,
+  ): StreamHandlerDeps {
     const { deps } = this;
     return {
       mainWindow: deps.mainWindow,
@@ -330,6 +338,7 @@ export class ChatOrchestratorService {
       saveMessage: (sid, role, content) => deps.sessionService.saveMessage(sid, role, content),
       autoGenerateTitle: (sid) => deps.sessionService.autoGenerateTitle(sid),
       processAIResponse: (response, sid, messageId) => deps.diagnosisDomain.processAIResponse(response, sid, messageId),
+      onToken,
     };
   }
 }
