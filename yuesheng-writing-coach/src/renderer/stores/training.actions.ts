@@ -14,6 +14,7 @@ import { getInvoke } from '../utils/ipc';
 import { TrainingApi } from '../../shared/api-contracts/training.contract';
 import { TeachingHistoryApi } from '../../shared/api-contracts/teaching-history.contract';
 import { severityToNumber } from '../../shared/severity-utils';
+import { activeTrainingService } from '../services/active-training.service';
 import type {
   EvaluationResult,
   ActiveTrainingSession,
@@ -115,7 +116,34 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
 }
 
 export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
-  return async (): Promise<void> => {
+  return async (stepId?: 1 | 2 | 3 | 4 | 5, content?: string): Promise<void> => {
+    // Sprint 25 BL-01 C-4: 5 步分步提交分支
+    // - stepId 存在时:仅持久化本步内容到主进程 step_responses_json
+    // - 不影响 store.currentStepIndex(由 V6.2 FlowPanel 本地 state 管理)
+    // - 不评估、不走 S8 评估流(评估由 V6.2 FlowPanel 在第 4 步主动调 evaluateTraining)
+    // - stepId 不存在时:走原 S8 评估流(向后兼容)
+    if (stepId !== undefined) {
+      set({ error: null });
+      const sessionId = useChatStore.getState().currentSessionId;
+      if (!sessionId) {
+        set({ error: 'No active session' });
+        return;
+      }
+
+      // 异步持久化到主进程 step_responses(异常隔离:失败仅 console.warn)
+      const result = await activeTrainingService.submitStep({
+        sessionId,
+        stepId,
+        content: content ?? '',
+      });
+      if (!result) {
+        console.warn(
+          `[TrainingStore] submitStep(${stepId}) persist failed (non-fatal)`,
+        );
+      }
+      return;
+    }
+
     set({ isLoading: true, error: null, submissionResult: null });
     try {
       const active = get().activeTraining;

@@ -31,6 +31,7 @@ import type {
   ActiveTraining,
   ActiveTrainingStatus,
   CreateActiveTrainingInput,
+  StepResponse,
   SubmissionResultSnapshot,
   TrainingStep,
   UpdateActiveTrainingInput,
@@ -42,6 +43,7 @@ import { ActiveTrainingStore } from './active-training.store';
  *  - 'start'      : 新训练启动 (None/InProgress → InProgress)
  *  - 'updateDraft': 草稿更新(无状态变更,仅数据更新)
  *  - 'advanceStep': 推进步骤(无状态变更,仅数据更新)
+ *  - 'submitStep' : C-4 5 步分步提交(无状态变更,仅数据更新)
  *  - 'evaluate'   : 评估完成(无状态变更,仅数据更新)
  *  - 'complete'   : 完成训练(InProgress → Completed)
  *  - 'abort'      : 中止训练(InProgress → Aborted)
@@ -50,6 +52,7 @@ export type ActiveTrainingStateChangeType =
   | 'start'
   | 'updateDraft'
   | 'advanceStep'
+  | 'submitStep'
   | 'evaluate'
   | 'complete'
   | 'abort';
@@ -182,6 +185,63 @@ export class ActiveTrainingService {
     const updated = this.store.update(sessionId, updates);
     if (updated) {
       this.emitStateChange('advanceStep', sessionId, updated);
+    }
+    return updated;
+  }
+
+  /**
+   * C-4: 5 步通用流分步提交
+   * - 业务语义: 每步可独立保存回答内容,跨刷新/跨页签存活
+   * - 业务规则: stepId 必须 1-5(对应 flow5 的解说/例证/确认/尝试/反馈)
+   * - 业务规则: 同一 stepId 多次提交时只保留最后一次
+   * - 业务规则: 无 in_progress 训练时拒绝
+   * - 不改变 status(始终保持 in_progress)
+   *
+   * 典型流程(V6.2 FlowPanel):
+   *   1. user 在 Step 1(解说)输入理解复述
+   *   2. 提交: service.submitFlowStep(sessionId, 1, content)
+   *   3. user 跳到 Step 2 → Step 5,每步独立 submitFlowStep
+   *   4. Step 5 评估通过后调 complete()
+   *
+   * @param sessionId 会话 ID
+   * @param stepId 1-5 的步骤 ID
+   * @param content 用户本步回答内容
+   * @returns 更新后的 ActiveTraining
+   */
+  submitFlowStep(
+    sessionId: string,
+    stepId: 1 | 2 | 3 | 4 | 5,
+    content: string,
+  ): ActiveTraining | null {
+    if (typeof content !== 'string') {
+      console.error('[ActiveTrainingService] submitFlowStep: content must be string');
+      return null;
+    }
+    if (!Number.isInteger(stepId) || stepId < 1 || stepId > 5) {
+      console.error(
+        `[ActiveTrainingService] submitFlowStep: invalid stepId ${stepId}, must be 1-5`,
+      );
+      return null;
+    }
+
+    const active = this.getActive(sessionId);
+    if (!active) {
+      console.warn(
+        `[ActiveTrainingService] submitFlowStep: no in_progress training for session ${sessionId}`,
+      );
+      return null;
+    }
+
+    // 合并:同 stepId 覆盖,其他保留,按 stepId 升序
+    const filtered = active.stepResponses.filter((r) => r.stepId !== stepId);
+    const next: StepResponse[] = [
+      ...filtered,
+      { stepId, content, submittedAt: new Date().toISOString() },
+    ].sort((a, b) => a.stepId - b.stepId);
+
+    const updated = this.store.updateStepResponses(sessionId, next);
+    if (updated) {
+      this.emitStateChange('submitStep', sessionId, updated);
     }
     return updated;
   }
