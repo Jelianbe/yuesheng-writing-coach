@@ -2742,3 +2742,54 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
   - typedinvoke-degradation.test.ts 28/28 全绿(本轮现场验证)
 - **状态**: ✅ D-DEBT-34 已收尾,本次为决策日志事实修正 + 债务状态同步
 
+---
+
+## 2026-07-03
+
+### D-073: Sprint 25 BL-01 — 五步训练流集成到教学管道
+
+#### C-1: R-014 配置外置重构(TrainingFlowService 零硬编码)
+
+- **类型**: 重构(零行为变更) + R-014 配置外置实施
+- **背景**:
+  - `src/main/domains/04-validation/training/training-flow.service.ts` 在 S8 实现五步训练流时,因早期"先跑通"将 4 处静态配置硬编码进 service 源码:
+    1. `CATEGORY_CONFIGS` — 5 个分类各自的 5 步模板(开篇/人物/节奏/语言/结构)
+    2. `DEFAULT_CONFIG` — 兜底分类模板
+    3. `inferEffect()` — 5 分类的 effect 描述硬编码
+    4. `estimateMinutes()` — 5 步基础耗时硬编码(3/5/3/15/10 分钟)
+  - 此外,`training-flow.service.ts:20` 直接 `import techniqueLibrary from '*.json'` 违反 R-014(应走 loader)
+  - R-014 规范要求"所有静态配置外置,禁止硬编码业务映射表",但 S8 实现时未遵守
+- **方案**:
+  - **拆分两个 main 端 loader**(独立 TS 模块,各 ≤ 200 行):
+    - `flow-mapping.loader.ts` — 加载 `resources/config/training-flow-mapping.json`(v1.0.0 → v1.1.0)
+    - `technique-library.loader.ts` — 加载 `resources/config/technique-library.json`,暴露 `findTechnique` 等
+  - **JSON 扩展**:`training-flow-mapping.json` 新增 `categoryTemplates` 字段,承载 5+_default 套分类 5 步模板
+  - **service 简化**:`training-flow.service.ts` 272 行 → 162 行,删除全部 4 处硬编码,走 loader
+  - **跨端契约**:main/renderer 共享 JSON 文件路径,不共享 TS 模块(R-020 循环依赖零容忍)
+- **DoD 验证**:
+  1. ✅ `flow-mapping.loader.ts` 单例 + fail-fast 校验
+  2. ✅ `technique-library.loader.ts` 单例 + id 重复 fail-fast
+  3. ✅ `training-flow.service.ts` 0 处 `CATEGORY_CONFIGS`/`DEFAULT_CONFIG`/`inferEffect`/`estimateMinutes` 硬编码
+  4. ✅ `training-flow.service.ts` 0 处直接 import JSON
+  5. ✅ `npm run typecheck` 0 errors
+  6. ✅ 23/23 测试全绿(`flow-mapping.loader` 9 + `technique-library.loader` 5 + `training-flow.service` 9)
+  7. ✅ `npm run lint` 0 errors
+  8. ✅ JSON 升级 1.0.0 → 1.1.0,description 注明 S25 BL-01 扩展
+- **行为零变更**:原 9 个 `training-flow.service.test.ts` 全部继续通过,包括关键断言"开篇 vs 人物 instruction 不同"
+- **未做事项**:
+  - ❌ `resources/schemas/training-flow-mapping.v1.json` JSON Schema 文件:首期省略,loader 内 fail-fast 校验已足够,Schema 留给 S26 债务统一清理
+  - ❌ `training-recommendation.service.ts:20` 也直接 import techniqueLibrary JSON:超出 BL-01 范围,推 S26 BL-04 债务清理
+  - ❌ 其他 6 处 `DEFAULT_CONFIG` 硬编码(config.service.ts/output-validator.ts/writing-analyzer.ts/feedback-engine.ts/recommendation-engine.ts/student-classifier.ts):均非训练流相关,推 S26 整体债务清理
+- **依据**:
+  - R-014 配置外置规范
+  - R-019 代码规范标准(单文件 ≤ 300 行,本轮 3 个新文件 132/96/162 行)
+  - R-020 循环依赖零容忍(main/renderer 共享 JSON,不共享 TS 模块)
+  - R-021 AI 行为边界(不顺手改 `training-recommendation.service.ts`)
+  - R-027 AI 代码质量门禁(typecheck + test + lint + 文档)
+  - 决策日志 D-072 (D-DEBT-34 收尾 → typedInvoke 降级模式基线)
+- **教训**:
+  1. **早期"先跑通"留下的硬编码会成 R-014 债务**:S8 实现时为快速交付,把模板和 effect 内联到 service。重申:R-014 实施应在 S2 阶段就建立 loader 模式。
+  2. **JSON 升级必须显式 version 字段**:本次 1.0.0 → 1.1.0 升 version,description 注明扩展点,避免下游误读。
+  3. **fail-fast 校验应覆盖所有必填字段**:loader 不仅校验 `categories`/`flowTemplates` 存在,还要校验每个 `categoryTemplates[key]` 5 步模板字段全齐。
+- **状态**: ✅ C-1 完成,准备 commit
+
