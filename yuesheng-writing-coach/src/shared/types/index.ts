@@ -44,6 +44,7 @@ export type { AIStateSuggestion } from './types-teaching';
 export type { FocusAreaValue } from './types-teaching';
 export type { FocusArea } from './types-teaching';
 export type { TeachingState } from './types-teaching';
+export type { ActiveTrainingMeta } from './types-teaching';
 export type { TeachingStateUpdateRequest } from './types-teaching';
 export type { TeachingProgressDisplay } from './types-teaching';
 export type { TeachingMode } from './types-teaching';

@@ -37,6 +37,8 @@ export interface TeachingStateRow {
   focus_area: string | null;
   transition_offered: number;
   locked_syndromes: string;
+  /** Sprint 23 G-1: ActiveTraining 业务元数据(JSON 字符串) */
+  active_training_meta: string | null;
   updated_at: string;
 }
 
