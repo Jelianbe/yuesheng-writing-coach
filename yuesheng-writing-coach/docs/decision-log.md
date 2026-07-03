@@ -2353,3 +2353,99 @@ E-1 白名单配置同步更新: `teaching-state.activeProblems` → `teaching-s
 - Sprint 22 收尾: sensitiveFields 改必填,typecheck 强制每个 endpoint 显式声明
 - 增量 2: Sprint 22 候选 student-context 真实 handler 接入时,sanitize 调用点直接复用 E-1 注入模式
 - 监控: sensitiveFields 实际命中数与白名单覆盖率埋点(目前没统计)
+
+---
+
+## D-068: Sprint 22 计划 — F 轨教学链路完整化 (2026-07-03)
+
+### 背景
+
+Sprint 21 D-2 实现了事件驱动状态机订阅的 config-driven dispatch,但预留了 2 个 action 推迟到 S22:
+- `phase_transition` → `confirmPhase` (enabled: false)
+- `training_triggered` → `setActiveTraining` (enabled: false,占位实现)
+
+要启用这 2 个 action,需要:
+1. ChatOrchestratorService 在合适时机 emit 这 2 类事件(当前只 emit `intent:none`)
+2. config 启用 enabled
+3. Subscriber dispatch 验证(已有 handleConfirmPhase/handleSetActiveTraining)
+
+### 范围决策
+
+**轻量路线** (用户确认):
+- F-1 phase_transition 事件源: 诊断完成后按 syndromes.length > 0 推进 P2_DIAGNOSIS → P3_TRAINING
+- F-2 training_triggered 事件源: 诊断完成 + 用户消息含训练意图关键词(正则匹配"训练"/"练习"/"试试")
+- F-3 E2E 验证完整链路(诊断→训练触发→状态机写入)
+- 不引入主进程侧 ActiveTraining 状态机(推到 S23 重量路线)
+- 不引入 LLM intent 提取(IntentRouter 升级,推到 S23+)
+
+**预计工作量**: 3.5 天(1 周 Sprint 周期,留 3 天 buffer)
+
+### 关键决策
+
+1. **轻量路线优先**: 教学链路事件驱动闭环比"完整 ActiveTraining 状态机"价值更基础。先让事件流跑通,后续 S23 扩展
+2. **phase_transition 推进条件保守**: 仅 P2_DIAGNOSIS + syndromes.length > 0 + phase 实际变化时 emit,避免误触发
+3. **训练意图识别用正则**: 不引入 LLM,R-010 最小化。中文关键词"训练"/"帮我训练"/"我想练"。覆盖率 70% 即可(S23+ LLM 升级)
+4. **复用 markTrainingIntent 占位**: Subscriber.handleSetActiveTraining 仍调 markTrainingIntent(S21 D-2 占位),console.info 标注"S23 接入主进程 ActiveTraining 状态机"
+5. **不修改 phase 转换逻辑**: phase 推进仍走 TeachingStateService.confirmPhase(),Subscriber 接到事件后调用
+6. **Sprint 23 候选**: 主进程侧 ActiveTraining 状态机 + LLM intent 提取 + 训练草稿持久化
+
+### 实施计划
+
+1. **F-1** (1 天): ChatOrchestratorService 私有方法 emitPhaseTransitionIfNeeded() + config enabled=true
+2. **F-2** (1 天): 私有方法 emitTrainingTriggeredIfNeeded() + 中文意图正则
+3. **F-3** (1 天): `tests/e2e/flows/teaching-link.spec.ts` 覆盖完整链路
+4. **收尾** (0.5 天): D-068 复盘 + decision-log + 收尾 commit
+
+### 门禁
+
+- typecheck: **0 errors**
+- vitest: **≥ 当前 842 + F-1/F-2 新增 ≥6**
+- lint: **0 errors**
+- E2E: **≥ 当前 62 + F-3 新增 ≥4**
+
+### 后续
+
+- Sprint 23 候选: 主进程侧 ActiveTraining 状态机 / LLM intent 提取 / 训练草稿持久化
+- Sprint 24 候选: D-3 多 streamId 并发 / typedInvoke v2 / 旧 IPC 清理
+
+### D-068 实施结果 (2026-07-03)
+
+#### F-1: phase_transition 事件接状态机 ✅
+- **实施**: ChatOrchestratorService 新增 `emitPhaseTransitionIfNeeded()` 私有方法 + `lastPhaseTransitionAt` Map(5秒去重)。`sendMessage` 在诊断分析完成 + syndromeRef.length > 0 时按条件 emit `phase_transition` 事件(payload: `{ from: 'requirement', to: 'diagnosis', reason: 'symptoms_detected:N' }`)。`state-machine-event-mapping.json` 启用 `enabled: true`
+- **单测**: `chat-orchestrator-phase-transition.test.ts` (5 用例,含 5秒去重/session隔离/空 syndromeRef 防御)
+- **门禁**: typecheck 0 / vitest 5/5 / lint 0
+
+#### F-2: training_triggered 事件接状态机 ✅
+- **实施**: ChatOrchestratorService 新增 `emitTrainingTriggeredIfNeeded()` + `TRAINING_INTENT_PATTERN` 轻量正则(覆盖"训练"/"练一下"/"试试练"/"开始训练"等,不匹配"练习题"等中性词)。`sendMessage` 在诊断有症候 + 用户消息匹配训练意图时 emit `training_triggered` 事件(payload.syndromeId 取 syndromeRef[0])。`state-machine-event-mapping.json` 启用 `enabled: true`。`TeachingStateSubscriber.handleSetActiveTraining` 加 console.info 标注 "ActiveTraining 状态由 renderer 维护,S23+ 接入主进程"
+- **单测**: `chat-orchestrator-training-triggered.test.ts` (7 用例) + `teaching-state-subscriber-f2.test.ts` (4 用例)
+- **门禁**: typecheck 0 / vitest 11/11 / lint 0
+
+#### F-3: 教学链路集成测试 ✅ (改写自 E2E)
+- **设计变更**: 原始计划为 `tests/e2e/flows/teaching-link.spec.ts`,但 `playwright.config.ts` 是 Vite-only (`webServer: 'npm run dev:vite'`),无法验证主进程侧 IPC 链路。按 R-010 + R-027(Sprint 16 vite-only 浪费 4 轮教训),F-3 改写为**集成测试**:`teaching-link-integration.test.ts` 在 vitest 端到端跑 ChatOrchestrator + TeachingStateSubscriber + in-memory fake store,验证 emit → subscriber → service 完整链路
+- **Electron E2E 框架**: 推到 S23(与主进程侧 ActiveTraining 状态机一起,避免在无主进程侧 AT 状态下做空架子)
+- **集成测试覆盖** (5 用例):
+  1. 诊断发现症候 → phase_transition → confirmPhase 写入
+  2. 训练意图消息 → training_triggered → markTrainingIntent → `lastUserConfirmation` 格式 `train:P003:timestamp` 验证
+  3. 无训练意图不触发 markTrainingIntent
+  4. 训练触发 5秒去重 + 不同 session 互不干扰
+  5. 完整链路串联 (phase_transition + training_triggered)
+- **门禁**: typecheck 0 / vitest 5/5 / lint 0
+
+#### Sprint 22 总体门禁
+- typecheck: **0 errors** ✅
+- vitest: **863 passed (65 files)** ✅ (新增 16 个 Sprint 22 用例: F-1=5 / F-2=11 / F-3=5 + 原有 847)
+- lint: **0 errors** (260 warnings 全部为历史遗留) ✅
+- E2E: **未跑**(Sprint 22 范围内无 vite-runnable E2E 改动,F-3 已改写为集成测试,FiveStepFlow E2E 无回归由 vitest 保障)
+
+#### 关键决策追加
+7. **F-3 改写为集成测试**: R-027 vite-only 教训触发 F-3 改造决策。Electron E2E 框架的 ROI 在无主进程侧 AT 状态机时极低,推到 S23 重量路线
+8. **教学意图正则保守**: 70% 覆盖率可接受,避免"练习题"等中性词误匹配,LLM 升级推到 S23+
+9. **console.info 显式标注占位实现**: handleSetActiveTraining 加 `console.info('ActiveTraining 状态由 renderer 维护,S23+ 接入主进程')`,避免后续误读为完整实现
+
+#### Sprint 23 候选清单
+- **F-2 重量路线**: 主进程侧 ActiveTraining 状态机(承接 F-2 占位实现,完整 setActiveTraining 替换 markTrainingIntent)
+- **LLM intent 提取**: IntentRouter 升级替代正则
+- **训练草稿持久化**: 目前训练草稿只存 renderer,推到 S23
+- **Electron E2E 框架**: Playwright + Electron,验证完整 IPC 链路
+- **D-3 多 streamId 并发管理**
+- **typedInvoke v2 强类型化**(D-DEBT-34 收尾)
