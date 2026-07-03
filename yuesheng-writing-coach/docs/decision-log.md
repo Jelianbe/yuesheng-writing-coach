@@ -2746,6 +2746,9 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
 
 ## 2026-07-03
 
+
+
+
 ### D-073: Sprint 25 BL-01 — 五步训练流集成到教学管道
 
 #### C-1: R-014 配置外置重构(TrainingFlowService 零硬编码)
@@ -2793,3 +2796,20 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
   3. **fail-fast 校验应覆盖所有必填字段**:loader 不仅校验 `categories`/`flowTemplates` 存在,还要校验每个 `categoryTemplates[key]` 5 步模板字段全齐。
 - **状态**: ✅ C-1 完成,准备 commit
 
+#### C-3: UI 迁移 5 步组件到 V6.2
+
+- **类型**: 重构(零行为变更) + 命名收敛
+- **背景**: C-1 完成 R-014 配置外置后,UI 层仍位于 `components_archived/training/flow/`,V6.2 无 FlowPanel 消费 `flowType=flow5`
+- **方案**:
+  - 7 .tsx + 1 共享 CSS + 1 测试 → `src/renderer/components/training/flow/`
+  - 编排组件 `FiveStepFlow` → `FlowPanel`(对齐计划 DoD-1)
+  - BEM 全局类名 → CSS Modules(R-019)
+  - 类型 import 切到 `src/renderer/shared/types-training.ts`(避免 stale 类型与 store 冲突)
+  - archived 父组件 `ActiveTrainingView` 改 1 行 import,保留作为历史快照
+- **DoD 验证**:
+  1. ✅ 10 文件到位(7 tsx + 1 css + 1 test + 1 readme)
+  2. ✅ 9 测试全绿(行为零变更)
+  3. ✅ typecheck + lint 0 errors
+  4. ✅ R-019 硬上限满足(单文件 ≤ 300 行,最大 FlowPanel.test.tsx 205 行)
+  5. ✅ grep 全局类名 0 命中(testId 与 camelCase class 名除外)
+  6. ✅ 无 stale 类型引用
