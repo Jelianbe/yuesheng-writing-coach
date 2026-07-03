@@ -22,6 +22,7 @@ import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
 import { processAIResponse } from '../domains/01-diagnosis/diagnosis-processor';
+import type { PayloadSanitizer } from '../core/payload-sanitizer.service';
 
 // Re-export merge functions for use by diagnosis-merger service
 export { severityToNumber, mergeSyndromesIntoState } from '../domains/01-diagnosis/diagnosis-merger-utils';
@@ -38,9 +39,16 @@ export interface DiagnosisHandlerDeps {
 }
 
 let deps: DiagnosisHandlerDeps | null = null;
+// Sprint 21 E-1: 载荷脱敏注入
+let sanitizerInstance: PayloadSanitizer | null = null;
 
 export function initDiagnosisHandlers(d: DiagnosisHandlerDeps): void {
   deps = d;
+}
+
+/** Sprint 21 E-1: 注入 PayloadSanitizer(可选,未注入则不脱敏) */
+export function setDiagnosisSanitizer(s: PayloadSanitizer): void {
+  sanitizerInstance = s;
 }
 
 /**
@@ -59,7 +67,8 @@ export function registerDiagnosisHandlers(): void {
       const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
       if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
       const state = d.teachingStateService.getBySession(validation.data.sessionId);
-      return state?.activeProblems ?? null;
+      // Sprint 21 E-1: 载荷脱敏(activeProblems 内的 evidence 走 truncate-nested)
+      return sanitizerInstance?.sanitize('diagnosis', state?.activeProblems ?? null) ?? null;
     },
   );
 

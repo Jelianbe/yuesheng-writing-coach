@@ -2178,3 +2178,96 @@ Sprint 21 D-2 要求:
 - E-1 载荷脱敏白名单启动(最大价值,R-029 安全优先)
 - 监控: 真实场景中 ecordProblem 调用频率(避免 activeProblems 数组膨胀)
 - Sprint 22 候选:启用 confirmPhase / setActiveTraining 两个 disabled action
+
+---
+
+## 2026-07-03
+
+### D-066: Sprint 21 E-1 载荷脱敏白名单 — PayloadSanitizer + 5 动作 + 3 handler 接入
+- **类型**: 安全 + 重构
+
+## 背景
+
+Sprint 20 B-2/B-3 typedInvoke 全量审计后,Service 层降级已统一基线。但 IPC 载荷本身仍把原文(用户输入原文、训练草稿、症候证据)原样传输到 renderer,泄露风险高。
+Sprint 21 E-1 要求:
+1. 在 IPC handler returnValue 前对载荷脱敏
+2. 5 种动作: redact / truncate / hash / mask / omit
+3. 配置外置(R-014),新增/修改只改 JSON
+4. 异常隔离,降级不阻塞主流程
+5. 命中计数埋点(debug + 监控)
+
+## 实施内容
+
+### 新增
+- **esources/config/payload-sanitize-whitelist.json**
+  - 4 service(diagnosis / training / teaching-state / student-context)字段级动作映射
+  - truncate 默认 80 字符,可在字段级覆盖
+  - student-context 留接口(目前无独立 handler,未来扩展)
+- **src/main/core/payload-sanitizer.service.ts**
+  - 5 动作实现: redact('[REDACTED]') / truncate(80 字符+'...') / hash(SHA256 前 8 位) / mask(首尾 1 字符) / omit(删除字段)
+  - 第 6 动作 	runcate-nested 专化处理 activeProblems 数组的 evidence
+  - 嵌套路径: 'evaluation.feedback' 形式
+  - 命中计数 stats(): 	otal / yAction / errors
+  - 异常隔离: 任何错误 → 返回原 payload + console.warn
+  - 配置加载失败 → whitelist = { services: {} } + hasWhitelist() = false
+- **src/main/core/__tests__/payload-sanitizer.test.ts**(26 个单测)
+  - 5 动作 × 4 service 组合(10 测试)
+  - hash 单独验证(1 测试)
+  - 命中计数 + resetStats + 字段不存在(3 测试)
+  - 降级安全: 白名单缺失/非法/无 services/未知 service/disabled service/null payload/string payload(7 测试)
+  - 纯函数语义: 不修改原对象 / 多次调用一致(2 测试)
+  - 字段路径边界: 中间不存在/omit 不存在/顶层 redact(3 测试)
+
+### 修改(3 handler 接入)
+- **diagnosis.handler.ts**
+  - 新增 setDiagnosisSanitizer(s) DI 入口
+  - DIAGNOSIS_QUERY return: sanitizer?.sanitize('diagnosis', activeProblems)
+  - DIAGNOSIS_SUBMIT_REWRITE return: sanitizer?.sanitize('diagnosis', { evaluation })
+- **	raining.handler.ts**
+  - 新增 setTrainingSanitizer(s) DI 入口
+  - TRAINING_SUBMIT return: sanitize('training', payload)
+  - TRAINING_EVALUATE return: sanitize('training', result)
+- **	eaching-state.handler.ts**
+  - 新增 setTeachingStateSanitizer(s) DI 入口
+  - TEACHING_STATE_GET return: sanitize('teaching-state', fullState)
+
+### 接入模式
+每个 handler:
+- 模块级 let xxxSanitizer: PayloadSanitizer | null = null
+- setXxxSanitizer(s) 注入入口
+- 业务 return 处: sanitizerInstance?.sanitize('service-name', result) ?? result
+- **降级未注入时 = 不脱敏**(向后兼容)
+
+## 关键决策
+
+1. **5 动作 + 1 专化动作**: redact/truncate/hash/mask/omit 是基本动作,	runcate-nested 专化处理 activeProblems 数组(因 evidence 是数组,需要保留外层结构)。新增复杂场景时再扩展,避免动作集爆炸
+2. **hash 取 8 位 hex**: 不需要完整 64 位 SHA-256(性能浪费)。8 位 = 4 字节 = 2^32 可能性,够散列化,够"不可逆"但可关联相同值
+3. **mask 只保留首尾 1 字符**: 中文姓名/邮箱等都适用。极端短串(≤2 字符)用全 *,避免泄露
+4. **omit 优于 redact**: omit 完全删除字段,调用方明确知道"此字段不存在";redact 保留 [REDACTED] 字符串,调用方需类型守卫。ocusArea 是不需要传到 renderer 的,直接 omit
+5. **降级 = 原 payload**: sanitizer 内部 try-catch + whitelist 缺失/解析失败都返回原 payload,不抛错。**理由**: 脱敏失败比泄露更严重(脱敏失败的 payload 仍可能含敏感数据,但至少不阻塞业务)
+6. **DI 注入而非模块级单例**: 每个 handler 持自己的 let xxxSanitizer,不引入全局状态。R-020 循环依赖零容忍 + R-029 安全
+7. **未引入 DI 容器**: 保持现有 setXxxSanitizer 模式,与项目既有风格一致。Sprint 22 评估是否统一升级到 tsyringe / inversify
+8. **student-context 留接口**: 目前无独立 handler,但白名单 JSON 保留配置。未来 user-profile handler 接入时无需改 sanitizer
+
+## 门禁
+
+- typecheck: **0 errors**
+- vitest: **830/830 passed**(含 26 个新增 E-1 单测)
+- lint: **0 errors**(257 warnings,R-019 允许范围)
+- E2E: **62 passed**(确认脱敏不影响 renderer 既有渲染)
+
+## 教训
+
+1. **Edit 工具失灵 / cache 陷阱**: 实施过程中发现 Edit 工具的 old_string 部分插入到文件中间时可能 silent fail,文件实际未更新(诊断 handler let sanitizerInstance 未插入)。**教训**: Edit 后立即 Grep 验证插入成功,不要依赖工具返回 success 状态
+2. **TS 缓存延迟可见**: typecheck 报"Cannot find name 'sanitizerInstance'"但文件实际已包含,表明 tsc 用了 stale 增量缓存。**教训**: 修改 handler 后重跑 typecheck 2-3 次确认,**或** 删 .tsbuildinfo 后重跑
+3. **mask 长度计算测试期望值错**: 'Alice李' 是 6 字符,首尾各 1 + 中间 4 个 * = 6 字符总,期望 'A****李' 而非 'A***李'。**教训**: 含中文的字符串长度计算要逐字符数,不能脑补
+4. **降级原 payload 是双刃剑**: 脱敏失败时返回原 payload 可能泄露,但抛错会阻塞业务。**当前选择**: 返回原 payload + console.warn + errors 计数。**未来增强**: errors > 阈值时上报 Sentry 等监控
+5. **import type 而非 import**: sanitizer 在 handler 中只作类型用,import type 让 tsc 知道不需要 runtime import,避免 "declared but never read" 错误
+6. **truncate-nested 必要**: activeProblems 是数组,evidence 是嵌套数组,通用 truncate 只能处理字符串。需要专化动作 	runcate-nested 处理"数组内每个对象的某个数组字段"。**教训**: 配置动作既要"原子"也要"语义化",不要试图用一个通用动作覆盖所有
+7. **DI 入口函数命名一致性**: setDiagnosisSanitizer / setTrainingSanitizer / setTeachingStateSanitizer 三个独立函数。比统一 setPayloadSanitizer('diagnosis', s) 更简单(避免引入路由表)。R-010 体现
+
+## 后续
+
+- E-2 契约类型加固: 在 ApiResponse 中加 sensitiveFields? 字段,4 个 contract 标注
+- Sprint 22 候选: student-context 真实 handler 接入 + 日志告警
+- 监控: PayloadSanitizer.stats() 接入主进程 health endpoint(目前无)
