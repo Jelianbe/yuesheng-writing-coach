@@ -1422,3 +1422,61 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
 - R-018 变更溯源 / R-019 代码规范标准 / R-027 AI 代码质量门禁 / R-011 记忆强化
 
 
+
+
+---
+
+## D-052 · Sprint 19 PC 端嫌疑改造
+
+**触发**：用户在 2026-07-02 看演示后反馈"子界面很多基于 PC 端而不是手机端"。
+
+**扫描结果**：7 个 PC 端嫌疑点
+1. **ProjectSpacePage** — 3 列统计卡 + 雷达图 + 渐变阴影 CTA + 章节列表 → 像 admin dashboard
+2. **AppsPage** — 4 列网格只放 2 个图标，左对齐空荡
+3. **PageStackRouter** — 桌面端无手机外观，像"PC 浏览器嵌小程序"
+4. **ChatPage** — 4 个工具图标横排（Type/Image/FileText/Settings）→ 编辑器风格
+5. **TrainingPlanPage** — "关联 N 个症候" → 技术语言
+6. **TabBar/ConversationsPage** — 底部 tab 和页面顶部 h1 都叫"对话"
+7. **状态栏模拟缺失** — 桌面端顶部没有 9:41 + 信号/电量
+
+**决策**：用户选 H（全部按顺序改）
+
+**执行**（7 个子任务）：
+- #55+59 PageStackRouter 桌面端加手机外观（圆角/边框/阴影/状态栏/HomeIndicator）
+- #53 ProjectSpacePage 统计区 3 列加图标、雷达图 140→200、CTA 扁平、章节状态 chip 化
+- #54 AppsPage 4 列→2 列大卡片网格
+- #56 ChatPage 4 工具图标→[+] 折叠半屏 ActionSheet
+- #57 TrainingPlanPage "关联 N 个症候"→"涵盖 N 个常见写作问题"
+- #58 ConversationsPage "对话"→"对话历史"
+
+**E2E 修复**：
+- all-pages.spec.ts 移除技法库/素材库 a11y 用例（Sprint 19 已删除）
+- apps.spec.ts 工具分割标题"工具"→"设置"
+- 视觉基线删除旧基线（4 个 firefox-desktop）后用 --update-snapshots=missing 重建
+
+**门禁**：typecheck 0 errors / vitest 683 passed / lint 0 errors / 33 E2E passed
+
+**commit**：c603319（17 files changed, 450 insertions(+), 161 deletions(-)）
+
+**教训**：
+- **桌面端模拟手机外观比简单 maxWidth:375px 更能让用户识别"这是手机 UI"** — 圆角边框 + 阴影 + 状态栏组合是关键
+- **E2E 测试需要随 UI 改造同步更新** — 改文案/删除旧页面都会导致测试失败，应该在建视觉基线前先跑一遍确认
+- **视觉基线不能盲目信任** — UI 风格调整后基线会失效，需要 --update-snapshots=missing 重建
+
+### Status
+
+✅ Sprint 19 PC 改造完工 — 7 个嫌疑点全部修复；E2E 测试同步更新；视觉基线重建
+
+### 下一步候选（Sprint 20）
+
+- **D-DEBT-32**：4 子页 Store 实装（成长报告仍占位 Issue 19-3 待做）
+- **D-DEBT-34**：typedInvoke 全量覆盖审计
+- **Phase B**：event-bus.service.ts（Event 通道集中化）
+- **Phase C**：骨架屏（加载/空/错误三态）
+
+### 依据
+
+- dev-docs/tasks/sprint-19-plan.md（Sprint 19 任务清单）
+- tests/e2e/a11y/all-pages.spec.ts（移除技法库/素材库）
+- tests/e2e/pages/apps.spec.ts（"工具"→"设置"）
+- R-019 代码规范标准 / R-027 AI 代码质量门禁 / R-016 Git 提交规范
