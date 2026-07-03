@@ -1902,3 +1902,43 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
 - **后续**:
   - Sprint 21: C-2 载荷脱敏字段白名单(主进程侧)
   - Sprint 21: typedInvoke v2 — 强类型 API 客户端(skill registry 风格)
+
+### D-062: v5.0.1 提示词 OFFICIAL 收尾(Sprint 20 C-1 闭环)
+- **类型**: Prompt 治理收尾(R-025 闭环)
+- **背景**:
+  - D-055 创建 `yuesheng-prompt-v5.0.1-draft.md`,修复 v5.0.0-draft 与运行时错配(技法 P 前缀 → TQ 前缀,工具语义名 → IPC_CHANNELS 值)
+  - draft 阶段故意追加 `TQ-999` 不存在技法 ID 验证契约拦截行为
+  - 状态标注 DRAFT(端到端验证版),尚未作为生产可用提示词发布
+- **决策**:
+  1. **移除 TQ-999 测试注入**: `required_techniques` 不再含失效项,契约校验自我一致
+  2. **状态升级 DRAFT → OFFICIAL**: 端到端验证已通过(`prompt-contract-integration.test.ts` 4/4 通过)
+  3. **文件重命名**: `yuesheng-prompt-v5.0.1-draft.md` → `yuesheng-prompt-v5.0.1.md`(OFFICIAL 命名规范,R-025)
+  4. **changelog 完善**: 标注 TQ-999 已被移除,补 3 条关键教训(工具名对齐 IPC_CHANNELS、draft 测试注入不进入 OFFICIAL、契约 required_* 必须与运行时一一对应)
+  5. **测试改造**: V5.0.1-draft 测试断言改写为两部分
+     - "V5.0.1 OFFICIAL vs 真实运行时" → 断言 `pass=true`(契约对齐)
+     - "契约拦截机制" → 构造内联 `maliciousContract` 含 TQ-999,断言 `validateContract` 抛 `PromptContractError`(固化契约防线)
+- **改动清单**:
+  1. `resources/prompts/yuesheng-prompt-v5.0.1-draft.md` → `resources/prompts/yuesheng-prompt-v5.0.1.md`(git mv)
+  2. `resources/prompts/yuesheng-prompt-v5.0.1.md`(内容更新:状态/头部/changelog/契约)
+  3. `src/main/domains/03-teaching/conversation/__tests__/prompt-contract-integration.test.ts`(测试改造)
+- **门禁**:
+  - typecheck: ✅ 0 errors
+  - vitest: ✅ 778/778(777 + 1 新增 OFFICIAL PASS 测试)
+  - lint: ✅ 0 errors, 255 warnings
+  - E2E: ✅ 62 passed(无回归)
+- **教训**:
+  1. **OFFICIAL 收尾必须清除 draft 测试注入**: 故意注入的 TQ-999 验证了契约拦截行为,但生产版本不能保留 — 契约是版本指纹,自相矛盾会让审计/回归测试误判。OFFICIAL = 契约自洽
+  2. **契约机制测试不依赖 .md 文件**: 把"TQ-999 应被拦截"从文件依赖改为内联契约,避免 OFFICIAL 版本移除 TQ-999 后该测试无意义。机制验证 = 构造恶意输入,不是污染生产文件
+  3. **DRAFT 命名 + 状态分离**: 用文件名(`-draft.md`)和 frontmatter `status:` 双重表达生命周期,OFFICIAL 时**文件重命名 + 状态升级**两步都做,避免出现"内容是 OFFICIAL 但文件名还是 -draft"的混乱
+  4. **提示词 v5.0.1 独立迭代闭环**: 用户原始诉求"v5.0 独立迭代时,系统调度机制是否兼容" → D-055 端到端验证暴露问题 → D-062 收尾 OFFICIAL → 后续 v5.x 迭代可走"编辑 .md → 跑契约测试 → 通过 → 提交"的标准工作流
+- **依据**:
+  - dev-docs/tasks/sprint-20-plan.md §C-1 收尾
+  - R-025 Prompt 治理(OFFICIAL 状态 + 命名规范)
+  - R-006 回退机制(OFFICIAL 收尾需指明回退路径:v5)
+  - R-018 变更溯源(D-055 → D-062 完整决策链)
+  - D-055(契约/运行时错配暴露)
+  - D-056(增量 1 SkillRegistry 版本过滤)
+- **后续**:
+  - Sprint 21: C-2 载荷脱敏字段白名单(主进程侧)
+  - Sprint 21: v5.0.x 迭代工作流固化(契约测试 + 灰度 + 决策日志)
+  - 后续 v5.x 提示词迭代的最小工作流: 编辑 .md → `npm run typecheck && npm run test -- prompt-contract` → 通过 → 提交
