@@ -2,12 +2,14 @@
  * ConversationsPage — 对话列表
  *
  * 对齐设计稿:
- * - Navbar: "对话"
+ * - Navbar: "对话历史"
  * - 列表项: 标题 | 消息数 | 时间
  * - 空状态引导
  *
  * 数据来源:useSessionStore.loadSessions → session:listWithMeta
  *   返回字段: title, messageCount, lastMessageAt
+ *
+ * Sprint 19 PC 改造:顶部 h1 改为"对话历史",避免与 TabBar "对话" tab 重名
  */
 
 import React, { useEffect } from 'react';
@@ -57,7 +59,7 @@ export const ConversationsPage: React.FC = () => {
         background: 'var(--bg-card)',
       }}>
         <h1 style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-          对话
+          对话历史
         </h1>
         <button
           type="button"

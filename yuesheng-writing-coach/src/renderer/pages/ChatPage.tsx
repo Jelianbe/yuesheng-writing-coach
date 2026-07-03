@@ -4,8 +4,8 @@
  * 对齐设计稿:
  * - Navbar: ‹ 返回 + 标题 + 副标题 + ⋯
  * - 欢迎引导区(月头像 + 快捷选项)
- * - 消息气泡(用户/诊断教学/AI思考中)
- * - 输入栏(工具条 + 输入框 + 发送按钮)
+ * - 消息气泡(用户/AI)
+ * - 输入栏(工具[+] + 输入框 + 发送按钮)
  *
  * 数据来源:
  * - useSessionStore 拿 currentSessionId + loadMessages
@@ -14,7 +14,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Send, Type, Image, FileText, Settings, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Send, Plus, Type, Image, FileText, Settings, MessageSquare } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { useSessionStore } from '../stores/session.store';
@@ -36,7 +36,7 @@ const WelcomeGuide: React.FC = () => (
       月
     </div>
     <div style={{ fontSize: 15, color: 'var(--text-primary)', fontWeight: 500 }}>
-      嘿，今天想从哪里开始？
+      嘿,今天想从哪里开始?
     </div>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
       {['分析一下作品', '学点描写技法', '出个题目练练'].map(text => (
@@ -55,7 +55,7 @@ const WelcomeGuide: React.FC = () => (
   </div>
 );
 
-/* ── 消息气泡(根据 role 分支) ── */
+/* ── 消息气泡 ── */
 const MessageBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
   if (msg.role === 'user') {
     return (
@@ -87,16 +87,73 @@ const MessageBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
   return null;
 };
 
-/* ── 输入栏 ── */
-const TOOLBAR_ITEMS = [
-  { Icon: Type, label: '文字' },
-  { Icon: Image, label: '图片' },
-  { Icon: FileText, label: '文档' },
-  { Icon: Settings, label: '设定' },
+/* ── 工具 ActionSheet ── */
+const TOOL_ACTIONS = [
+  { Icon: Type, label: '纯文字', desc: '直接输入文字消息' },
+  { Icon: Image, label: '图片', desc: '上传图片辅助分析' },
+  { Icon: FileText, label: '文档', desc: '上传作品章节' },
+  { Icon: Settings, label: '设定', desc: '配置本次对话' },
 ];
 
+const ActionSheet: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+  if (!open) return null;
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+          zIndex: 100, animation: 'fadeIn 200ms',
+        }}
+        aria-hidden
+      />
+      <div style={{
+        position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 101,
+        background: 'var(--bg-card)', borderRadius: '16px 16px 0 0',
+        padding: '8px 0 calc(16px + env(safe-area-inset-bottom, 0px))',
+        animation: 'slideUp 240ms cubic-bezier(0.25, 1, 0.5, 1)',
+      }} role="dialog" aria-label="工具">
+        <div style={{
+          width: 36, height: 4, borderRadius: 2, background: 'var(--border)',
+          margin: '0 auto 8px',
+        }} />
+        <div style={{ padding: '4px 16px 8px', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
+          添加工具
+        </div>
+        {TOOL_ACTIONS.map(({ Icon, label, desc }) => (
+          <button
+            key={label}
+            type="button"
+            onClick={onClose}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              width: '100%', padding: '12px 16px',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: 'inherit', font: 'inherit', textAlign: 'left',
+            }}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'var(--accent-faint)', color: 'var(--accent)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon size={18} strokeWidth={1.5} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>{label}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+};
+
+/* ── 输入栏 ── */
 const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }> = ({ onSend, disabled }) => {
   const [text, setText] = useState('');
+  const [sheetOpen, setSheetOpen] = useState(false);
   const hasContent = text.trim().length > 0;
 
   const handleSend = () => {
@@ -111,18 +168,19 @@ const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }>
       borderTop: '1px solid var(--border)', background: 'var(--bg-card)',
       padding: '8px 12px', paddingBottom: `calc(8px + env(safe-area-inset-bottom, 0px))`,
     }}>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 6, paddingLeft: 4 }}>
-        {TOOLBAR_ITEMS.map(({ Icon, label }) => (
-          <button
-            key={label}
-            style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, transition: 'background 150ms' }}
-            aria-label={label}
-          >
-            <Icon size={18} color="var(--text-tertiary)" strokeWidth={1.5} />
-          </button>
-        ))}
-      </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <button
+          onClick={() => setSheetOpen(true)}
+          aria-label="添加工具"
+          style={{
+            width: 38, height: 38, borderRadius: 8, border: 'none',
+            background: 'var(--bg-input)', color: 'var(--text-secondary)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Plus size={18} strokeWidth={2} />
+        </button>
         <input
           value={text}
           onChange={e => setText(e.target.value)}
@@ -144,13 +202,14 @@ const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }>
             color: hasContent && !disabled ? '#fff' : 'var(--text-tertiary)',
             cursor: hasContent && !disabled ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 200ms',
+            transition: 'all 200ms', flexShrink: 0,
           }}
           aria-label="发送"
         >
           <Send size={16} />
         </button>
       </div>
+      <ActionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </div>
   );
 };
@@ -169,14 +228,12 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
   const [messages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 进入页面时,若 params.id 提供,切到该 session
   useEffect(() => {
     if (params?.id && params.id !== currentSessionId) {
       switchSession(params.id);
     }
   }, [params?.id, currentSessionId, switchSession]);
 
-  // 切换 session 时加载消息
   useEffect(() => {
     const sid = params?.id ?? currentSessionId;
     if (!sid) return;
@@ -188,8 +245,6 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
 
   const title = params?.title ?? '对话';
   const handleSend = (text: string) => {
-    // Phase C: 接入 chatService.send + 流式响应监听
-    // 本步仅本地追加用户消息,演示输入链路通
     setLocalMessages(prev => [...prev, {
       id: `tmp_${Date.now()}`,
       role: 'user',

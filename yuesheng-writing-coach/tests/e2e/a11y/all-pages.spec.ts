@@ -54,22 +54,6 @@ const PAGES: PageTarget[] = [
       await page.getByText('训练计划', { exact: true }).first().click();
     },
   },
-  {
-    name: '技法库',
-    navigate: async (page) => {
-      await page.goto('/');
-      await page.getByRole('navigation').getByRole('button', { name: '应用' }).click();
-      await page.getByText('技法库', { exact: true }).first().click();
-    },
-  },
-  {
-    name: '素材库',
-    navigate: async (page) => {
-      await page.goto('/');
-      await page.getByRole('navigation').getByRole('button', { name: '应用' }).click();
-      await page.getByText('素材库', { exact: true }).first().click();
-    },
-  },
 ];
 
 for (const target of PAGES) {

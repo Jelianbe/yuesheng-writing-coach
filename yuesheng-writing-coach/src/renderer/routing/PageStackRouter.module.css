@@ -1,0 +1,103 @@
+/* PageStackRouter — 移动端布局 + 桌面端手机外观 */
+
+.outer {
+  width: 100%;
+  height: 100dvh;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.phone {
+  width: 100%;
+  max-width: 375px;
+  height: 100dvh;
+  background: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── 状态栏(模拟手机顶部 24px)── */
+.statusBar {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.statusTime {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.statusIcons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  color: var(--text-primary);
+}
+
+/* ── 主内容区 ── */
+.content {
+  flex: 1;
+  overflow: hidden auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Home Indicator(iOS 底部小白条,桌面端模拟时显示)── */
+.homeIndicator {
+  position: relative;
+  height: 18px;
+  background: var(--bg-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.homeBar {
+  width: 108px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--text-primary);
+  opacity: 0.85;
+}
+
+/* ── 桌面端 (>=431px) 手机外观模拟 ── */
+@media (min-width: 431px) {
+  .outer {
+    background:
+      radial-gradient(ellipse at center top, #2D2A32 0%, #1A1820 100%);
+    padding: 24px;
+  }
+
+  .phone {
+    max-width: 375px;
+    height: min(100dvh - 48px, 780px);
+    border-radius: 40px;
+    border: 8px solid #1A1820;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 24px 64px rgba(0, 0, 0, 0.35),
+      0 8px 24px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+  }
+
+  .statusBar {
+    border-radius: 32px 32px 0 0;
+  }
+}
