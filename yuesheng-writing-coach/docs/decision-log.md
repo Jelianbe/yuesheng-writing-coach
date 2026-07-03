@@ -2102,3 +2102,79 @@ Sprint 21 计划 D-1 要求:
 - 启动 D-2 事件接状态机(基于 D-1 真实路径)
 - E-1 载荷脱敏白名单开发
 - 监控 ChatPage 是否需要 onToken 直通(避免双通道冗余)
+
+---
+
+## 2026-07-03
+
+### D-065: Sprint 21 D-2 事件接状态机 — 配置驱动 dispatch + 2 个 action
+- **类型**: 重构 + 增强
+
+## 背景
+
+Sprint 20 A-3 试点创建了 TeachingStateSubscriber,订阅 intent:train 事件并调 	eachingStateService.getContext 验证链路。但仅 1 个分支,且 dispatch 写死在代码里,新增事件类型需要改代码。
+Sprint 21 D-2 要求:
+1. 至少 2 个状态机分支走事件驱动
+2. 配置外置(R-014 强制)
+3. 异常隔离,避免单事件抛错影响主流程
+4. 不影响既有 E2E(disabled 字段控制开关)
+
+## 实施内容
+
+### 新增
+- **esources/config/state-machine-event-mapping.json**(R-014 配置外置)
+  - 4 个 subscribers 声明:intent:train / diagnosis_extracted / phase_transition / training_triggered
+  - 2 个 enabled(markTrainingIntent / recordProblem)
+  - 2 个 disabled 留 Sprint 22 扩展点(confirmPhase / setActiveTraining)
+- **	eaching-state-subscriber-d2.test.ts**(13 个单测)
+  - config 加载(默认/自定义/不存在 fallback/非法 JSON fallback/无 subscribers fallback)
+  - markTrainingIntent 触发 + A-3 兼容 getContext + lastTrainEvent 记录
+  - recordProblem 触发 + severity 透传(null 也透传)
+  - disabled action 跳过
+  - 未知 eventType 跳过
+  - markTrainingIntent / recordProblem 抛错 → 异常隔离
+  - 多次事件累加
+
+### 修改
+- **TeachingStateSubscriber**(从 70 行扩展到 212 行)
+  - 加载 config JSON,按 eventType:action 单一 dispatch
+  - 支持 intent:* 复合 eventType 解析(eventTypeOf)
+  - 异常隔离:try-catch 包 switch,任何 action 抛错仅 warn
+  - disabled / 未知 eventType 静默跳过(无副作用)
+  - 新增 getter:getMapping() / getLastDiagnosisRecord()
+  - A-3 兼容:既有 getContext + lastTrainEvent 逻辑保留
+- **TeachingStateService** 新增 2 个方法(Sprint 21 D-2)
+  - markTrainingIntent(sessionId, syndromeId, techniqueId?) — 写 lastUserConfirmation = train::
+  - ecordProblem(sessionId, syndromeId, severity, evidenceQuote) — 累加 detectionCount + 追加 evidence(限 10 条)
+  - 异常隔离:内部 try-catch + console.warn
+  - severity 为 null 时回退 L1(ActiveProblem.severity 不接受 null)
+
+## 关键决策
+
+1. **disabled 字段兜底 phase_transition / training_triggered**: 不直接实现 confirmPhase/setActiveTraining,避免影响 FiveStepFlow E2E(那里 phase transition 是 FiveStepFlow 自管理)。Sprint 22 真正接入时只需把 enabled: false 改为 	rue
+2. **focusArea 不用来标训练意图**: FocusArea 是 'worldbuilding' | 'character' | 'general' | null 枚举,不适合承载 train 标记。改用 lastUserConfirmation 字符串承载(已用类似格式存"用户确认"信息)
+3. **recordProblem 业务在 Service 而非 Subscriber**: 分层原则。Subscriber 只 dispatch + 转换,业务规则(累加 detectionCount / 限 10 条 evidence / severity 回退)在 Service 层封装。R-029 安全 + R-028 防御性编码
+4. **配置加载失败不崩**: catch → 	his.mapping = []。Subscriber 仍能 handle(无副作用)而不是 throw,符合"配置缺失应降级而非阻塞"原则
+5. **未引入 YAML 库**: config 是 JSON,直接 JSON.parse。YAML 是 Sprint 22 之后才考虑(目前需求 JSON 已足够)
+
+## 门禁
+
+- typecheck: **0 errors**
+- vitest: **804/804 passed**(含 13 个新增 D-2 单测)
+- lint: **0 errors**(257 warnings,R-019 允许范围)
+- E2E: **62 passed**(确认 disabled 行为不影响 FiveStepFlow)
+
+## 教训
+
+1. **类型推断暴露字段语义约束**: 一开始 markTrainingIntent 想写 ocusArea = 'train:...' 自由字符串,被 typecheck 拒。FocusArea 是枚举,本质是"用户聚焦方向",不能用作任意 tag。**类型系统是设计意图的强制约束**,不是"麻烦"。若需要 train 标记,要么扩枚举,要么复用 lastUserConfirmation 这种"自由字符串"字段
+2. **ActiveProblem.severity 不接受 null**: 当时签名写成 severity: 'L1' | 'L2' | 'L3' | null 是为透传 SyndromeEvidence.severity 的 null,实际 ActiveProblem.severity: SeverityLevel(无 null)。需要在 Service 层做 effectiveSeverity = severity ?? 'L1' 兜底。**契约类型不"自动兼容"是好事**,暴露了上下游语义差异
+3. **配置加载失败应降级**: 旧版如果 config 不存在会 throw,导致进程启动失败。Sprint 21 D-2 改成 	ry { load } catch { mapping = [] } 后,即使 config 损坏,Subscriber 仍能 handle(只是无映射 = 无 action),主流程不阻塞。**R-028 防御性编码在配置层同样适用**
+4. **A-3 兼容不能丢**: D-2 扩展时保留 getContext 调用 + lastTrainEvent 记录,既有 5 个 A-3 单测继续工作。教训:**功能扩展优先 additive,避免 breaking change**。R-010 体现
+5. **test 文件名带 d2 后缀**: 	eaching-state-subscriber-d2.test.ts 与 	eaching-state-subscriber.test.ts 并存,清楚区分 A-3 试点 / D-2 扩展。后续 Sprint 22 如果 D-3 继续扩展,可以建 	eaching-state-subscriber-d3.test.ts。命名带版本后缀比单一文件堆测试更易维护
+
+## 后续
+
+- Sprint 21 D 轨收尾:D-1 ✅ + D-2 ✅,可考虑 D-3(暂未计划)
+- E-1 载荷脱敏白名单启动(最大价值,R-029 安全优先)
+- 监控: 真实场景中 ecordProblem 调用频率(避免 activeProblems 数组膨胀)
+- Sprint 22 候选:启用 confirmPhase / setActiveTraining 两个 disabled action

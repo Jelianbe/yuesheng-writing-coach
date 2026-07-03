@@ -1,24 +1,33 @@
 /**
- * TeachingStateSubscriber — 教学状态机事件订阅器 (Sprint 20 A-3 试点)
+ * TeachingStateSubscriber — 教学状态机事件订阅器 (Sprint 20 A-3 试点 / Sprint 21 D-2 扩展)
  *
  * 职责:
  * - 订阅 ChatOrchestratorService 派发的 OrchestratorEvent
  * - 在收到特定事件时调用 TeachingStateService 对应方法
+ * - 事件→动作映射由 resources/config/state-machine-event-mapping.json 声明(R-014)
  *
- * 试点范围(本类):
- * - intent:train → 调用 teachingStateService.getContext(sessionId) 验证集成
- *   (纯读,无副作用,只为证明"事件 → 状态机方法"链路可工作)
+ * 试点范围(Sprint 20 A-3):
+ * - intent:train → 记录 lastTrainEvent + 调用 teachingStateService.getContext 验证集成
  *
- * 后续(Sprint 21+):
- * - intent:train → 调用新方法 teachingStateService.flagTrainingIntent(...)
- * - phase_transition → 调用 setPhase(...)
- * - diagnosis_extracted → 调用 recordDiagnosis(...)
+ * Sprint 21 D-2 扩展:
+ * - 引入 config 驱动 dispatch(enabled 控制开关,避免影响既有 E2E)
+ * - intent:train → markTrainingIntent (新) + 保留 A-3 读 + 记录
+ * - diagnosis_extracted → recordProblem (新)
+ * - phase_transition / training_triggered → disabled 留扩展点
  *
- * 依据: dev-docs/tasks/sprint-20-plan.md §A-3 / D-057
+ * 依据: dev-docs/tasks/sprint-21-plan.md §D-2
  */
 
-import type { OrchestratorEvent } from './orchestrator.types';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type {
+  ConversationIntent,
+  OrchestratorEvent,
+  PhaseTransitionEvent,
+  SyndromeEvidence,
+} from './orchestrator.types';
 import type { TeachingStateService } from '../teaching-state.service';
+import type { TrainingTriggeredEvent } from './orchestrator.types';
 
 export interface TrainingIntentRecord {
   sessionId: string;
@@ -27,44 +36,177 @@ export interface TrainingIntentRecord {
   receivedAt: number;
 }
 
+/** 单条 subscriber 声明(对应 config JSON) */
+export interface SubscriberMapping {
+  eventType: string;
+  action: string;
+  enabled: boolean;
+}
+
+/** config 整体结构 */
+export interface StateMachineEventMapping {
+  version: string;
+  subscribers: SubscriberMapping[];
+}
+
+/** 简易 config 解析(Sprint 21 D-2:不引入 YAML 库,直接 JSON.parse) */
+function loadMapping(configPath: string): StateMachineEventMapping {
+  const raw = fs.readFileSync(configPath, 'utf-8');
+  const parsed = JSON.parse(raw) as StateMachineEventMapping;
+  if (!parsed.subscribers || !Array.isArray(parsed.subscribers)) {
+    throw new Error(`[TeachingStateSubscriber] Invalid mapping: subscribers not array`);
+  }
+  return parsed;
+}
+
+/** eventType 解析(支持 "intent:train" 复合形式) */
+function eventTypeOf(event: OrchestratorEvent): string {
+  if (event.type === 'intent') {
+    const intent = event.payload as ConversationIntent;
+    return `intent:${intent.type}`;
+  }
+  return event.type;
+}
+
 /** 教学状态机事件订阅器 */
 export class TeachingStateSubscriber {
   private readonly teachingStateService: TeachingStateService;
+  private readonly mapping: SubscriberMapping[];
   private lastTrainEvent: TrainingIntentRecord | null = null;
+  private lastDiagnosisRecord: { sessionId: string; syndromeId: string; severity: string | null } | null = null;
 
-  constructor(teachingStateService: TeachingStateService) {
+  constructor(
+    teachingStateService: TeachingStateService,
+    configPath?: string,
+  ) {
     this.teachingStateService = teachingStateService;
+
+    // 默认 config 路径(resources/config/state-machine-event-mapping.json)
+    const resolvedPath = configPath ?? this.resolveDefaultConfigPath();
+    try {
+      const m = loadMapping(resolvedPath);
+      this.mapping = m.subscribers;
+    } catch (e) {
+      console.warn('[TeachingStateSubscriber] failed to load mapping, using empty:', e);
+      this.mapping = [];
+    }
   }
 
   /**
-   * 事件处理入口
+   * 事件处理入口(单一调度)
    * @param event OrchestratorEvent
    * @param sessionId 关联会话
    */
   handle(event: OrchestratorEvent, sessionId: string): void {
+    // 1) 查找匹配的 subscriber 声明
+    const et = eventTypeOf(event);
+    const sub = this.mapping.find(s => s.eventType === et && s.enabled);
+    if (!sub) {
+      // 未配置或 disabled:静默跳过(无副作用)
+      return;
+    }
+
+    // 2) 异常隔离:任何 action 抛错不中断事件流
+    try {
+      switch (sub.action) {
+        case 'markTrainingIntent':
+          this.handleMarkTrainingIntent(event, sessionId);
+          break;
+        case 'recordProblem':
+          this.handleRecordProblem(event, sessionId);
+          break;
+        case 'confirmPhase':
+          this.handleConfirmPhase(event, sessionId);
+          break;
+        case 'setActiveTraining':
+          this.handleSetActiveTraining(event, sessionId);
+          break;
+        default:
+          // 未知 action:不抛错,只 warn
+          console.warn(`[TeachingStateSubscriber] unknown action: ${sub.action}`);
+      }
+    } catch (e) {
+      console.warn(`[TeachingStateSubscriber] action ${sub.action} failed:`, e);
+    }
+  }
+
+  // ─── Action handlers ───
+
+  private handleMarkTrainingIntent(event: OrchestratorEvent, sessionId: string): void {
     if (event.type !== 'intent') return;
-    const intent = event.payload;
+    const intent = event.payload as ConversationIntent;
     if (intent.type !== 'train') return;
 
-    // 1) 记录(测试用 getter 暴露)
+    // A-3 兼容:记录 + 读(getContext)保留为"机制验证"
     this.lastTrainEvent = {
       sessionId,
       syndromeId: intent.syndromeId,
       techniqueId: intent.techniqueId,
       receivedAt: Date.now(),
     };
-
-    // 2) 试点动作:调用 teachingStateService.getContext 验证集成
-    //    真实业务接入在 Sprint 21+ 进行(避免影响 FiveStepFlow E2E)
     try {
       this.teachingStateService.getContext(sessionId);
     } catch (e) {
-      console.warn('[TeachingStateSubscriber] handle failed:', e);
+      console.warn('[TeachingStateSubscriber] getContext failed:', e);
     }
+
+    // D-2 新:写入训练意图到状态
+    this.teachingStateService.markTrainingIntent(sessionId, intent.syndromeId, intent.techniqueId);
   }
 
-  /** 测试用:获取最近一次收到的 train 事件 */
+  private handleRecordProblem(event: OrchestratorEvent, sessionId: string): void {
+    if (event.type !== 'diagnosis_extracted') return;
+    const evidence = event.payload as SyndromeEvidence;
+    this.lastDiagnosisRecord = {
+      sessionId,
+      syndromeId: evidence.syndromeId,
+      severity: evidence.severity,
+    };
+    this.teachingStateService.recordProblem(
+      sessionId,
+      evidence.syndromeId,
+      evidence.severity,
+      evidence.evidenceQuote,
+    );
+  }
+
+  private handleConfirmPhase(event: OrchestratorEvent, sessionId: string): void {
+    if (event.type !== 'phase_transition') return;
+    const transition = event.payload as PhaseTransitionEvent;
+    // 仅当 to 阶段是已确认阶段时调用 confirmPhase(避免误推进)
+    if (!transition.to) return;
+    this.teachingStateService.confirmPhase(sessionId);
+  }
+
+  private handleSetActiveTraining(event: OrchestratorEvent, sessionId: string): void {
+    if (event.type !== 'training_triggered') return;
+    const triggered = event.payload as TrainingTriggeredEvent;
+    this.teachingStateService.markTrainingIntent(
+      sessionId,
+      triggered.syndromeId,
+      triggered.techniqueId,
+    );
+  }
+
+  // ─── 测试用 getter ───
+
   getLastTrainEvent(): TrainingIntentRecord | null {
     return this.lastTrainEvent;
+  }
+
+  getLastDiagnosisRecord(): { sessionId: string; syndromeId: string; severity: string | null } | null {
+    return this.lastDiagnosisRecord;
+  }
+
+  getMapping(): SubscriberMapping[] {
+    return this.mapping;
+  }
+
+  /** 默认 config 路径解析(相对 main 工作目录) */
+  private resolveDefaultConfigPath(): string {
+    // dev 模式:项目根/resources/config/...
+    // 生产模式:resourcesPath/resources/config/...
+    // 此处只做 dev 兜底,生产环境由 DI 注入 configPath
+    return path.join(process.cwd(), 'resources', 'config', 'state-machine-event-mapping.json');
   }
 }
