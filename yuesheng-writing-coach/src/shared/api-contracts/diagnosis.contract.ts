@@ -90,25 +90,42 @@ export const DiagnosisApi = {
   update: {
     channel: 'diagnosis:update' as const,
     request: {} as DiagnosisUpdateRequest,
-    response: {} as DiagnosisUpdateResponse,
+    response: {} as ApiResponse<DiagnosisUpdateResponse>,
   },
 
   query: {
     channel: 'diagnosis:query' as const,
     request: {} as DiagnosisQueryRequest,
-    response: {} as ApiResponse<DiagnosisQueryResponse>,
+    response: {
+      success: true,
+      data: {} as DiagnosisQueryResponse,
+      sensitiveFields: ['evidence'] as const,
+    } as ApiResponse<DiagnosisQueryResponse>,
   },
 
   submitRewrite: {
     channel: 'diagnosis:submitRewrite' as const,
     request: {} as DiagnosisSubmitRewriteRequest,
-    response: {} as ApiResponse<DiagnosisRewriteEvaluation>,
+    response: {
+      success: true,
+      data: {} as DiagnosisRewriteEvaluation,
+      sensitiveFields: [
+        'originalText',
+        'rewrittenText',
+        'evaluation.feedback',
+        'evaluation.suggestion',
+      ] as const,
+    } as ApiResponse<DiagnosisRewriteEvaluation>,
   },
 
   getComparison: {
     channel: 'diagnosis:getComparison' as const,
     request: {} as DiagnosisGetComparisonRequest,
-    response: {} as DiagnosisComparisonResult,
+    response: {
+      success: true,
+      data: {} as DiagnosisComparisonResult,
+      sensitiveFields: ['originalText'] as const,
+    } as ApiResponse<DiagnosisComparisonResult>,
   },
 
   updated: {

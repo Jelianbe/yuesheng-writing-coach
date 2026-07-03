@@ -105,6 +105,16 @@ export type {
 export { ManuscriptApi, ChapterApi } from './manuscript.contract';
 export type { ManuscriptInvokeChannels, ChapterInvokeChannels } from './manuscript.contract';
 
+// 处方域(Sprint 21 E-2 引入)
+export type {
+  StudentContextData, StudentContextJson,
+  StudentContextLoadRequest, StudentContextSaveRequest,
+  StudentContextToJsonRequest,
+  StudentContextLoadResponse, StudentContextSaveResponse, StudentContextToJsonResponse,
+} from './student-context.contract';
+export { StudentContextApi } from './student-context.contract';
+export type { StudentContextInvokeChannels } from './student-context.contract';
+
 // 能力画像域
 export type {
   SyndromesAbility, AbilityProfile,
