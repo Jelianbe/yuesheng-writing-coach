@@ -31,6 +31,20 @@ export interface ITeachingDomain {
 export { TeachingStateService } from './teaching-state.service';
 export { TeachingStateStore } from './state/teaching-state.store';
 export { TeachingState } from './state/teaching-state.types';
+// Sprint 24 A-1/A-2: ActiveTraining 完整状态机
+export { ActiveTrainingStore } from './state/active-training.store';
+export { ActiveTrainingService } from './state/active-training.service';
+export type {
+  ActiveTraining,
+  ActiveTrainingRow,
+  CreateActiveTrainingInput,
+  UpdateActiveTrainingInput,
+  ActiveTrainingStatus,
+  TrainingStep,
+  TrainingFlow,
+  TrainingFlowStep,
+  SubmissionResultSnapshot,
+} from './state/active-training.types';
 export { DisputeTrackerService } from './dispute-tracker.service';
 export { ReflectionGateService } from './reflection-gate.service';
 export { StrategyInstructionBuilder } from './strategy-instruction-builder';
