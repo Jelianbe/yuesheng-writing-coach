@@ -1391,7 +1391,7 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
 | D-DEBT-31 | ProjectSpacePage 雷达图数据源（当前 mock） | P2 |
 | D-DEBT-32 | 4 子页 Store 实装（目前占位"加载中…"） | **P1** |
 | D-DEBT-33 | ProjectSpacePage 维度数据整合（4 ID 维度收敛） | P2 |
-| D-DEBT-34 | Phase B 前的 typedInvoke 全量覆盖审计 | **P1** |
+| D-DEBT-34 | ~~Phase B 前的 typedInvoke 全量覆盖审计~~ ✅ **已 Sprint 20 B-2/B-3 收尾(D-060/D-061)**,28 降级测试全绿 | 已完成 |
 | D-DEBT-35 | a11y moderate/minor 级别未处理 | P3 |
 | D-DEBT-36 | 视觉基线重建流程未文档化 | P3 |
 | D-DEBT-37 | Electron 端到端烟测未集成门禁 | P2 |
@@ -2610,9 +2610,10 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
    - 修复:从 invoke 白名单移除,加入 event 白名单
    - 教训:这印证了项目记忆中 'preload 白名单硬编码副本会腐化' 的警告(BL-23),需 sync:ipc 自动化避免再次错位
 
-2. **主动债清理:B-2 报告中的 D-DEBT-34 签名收紧未实施,本轮未补**
-   - 决策:推 S25 集中收尾(避免本阶段范围膨胀)
-   - 记录:本轮 A 轨专注状态机迁移,不做无关重构
+2. **D-DEBT-34 已在 Sprint 20 B-2/B-3 收尾(D-060/D-061),本轮无需再补**
+   - 事实纠正:D-070 撰写时 AI 助手未交叉验证 D-060/D-061 的"全 53 处降级全景"表,误把已收尾债务列为欠债
+   - 已 Sprint 20 收尾:53 处调用点全部对齐降级模式,0 处强错误 throw 残留,28 个降级测试全绿
+   - 正式收尾记录见 D-072(2026-07-03)
 
 #### 实施结果
 
@@ -2687,9 +2688,57 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
 - 跨设备同步(网络层)
 - 训练协作(多人共编)
 - **BL-23 升级**:sync:ipc 自动化同步 preload 白名单(防止白名单再次错位)
-- B-2 报告中的 D-DEBT-34 签名收紧收尾(typedInvoke 降级统一规范)
-- typedInvoke v2 强类型化
+- typedInvoke v2 强类型化(独立优化项,与已收尾的 D-DEBT-34 降级模式无关)
 
 ### 后续
 - Sprint 25 候选:训练草稿版本历史 + 状态变化审计日志 + 跨设备同步网络层
 - BL-23 升级:preload 白名单自动化同步(避免本轮发现的隐性 bug 复发)
+
+
+---
+
+## 2026-07-03
+
+### D-072: D-DEBT-34 收尾 — 修正 D-070 事实错误(typedInvoke 降级统一规范)
+- **类型**: 决策日志事实修正 + 债务收尾(R-018 变更溯源闭环)
+- **背景**:
+  - D-070 (Sprint 24 A 轨收尾) 撰写时,`关键发现 §2` 描述 "B-2 报告中的 D-DEBT-34 签名收紧未实施,本轮未补" — **此为事实错误**:
+    - D-060 (B-2,2026-07-03) 已完成 P0 高敏感数据降级(11 处)+ 反模式修复(chat.send @deprecated)
+    - D-061 (B-3,2026-07-03) 已完成 P1 剩余降级(13 处:session 8 + teaching-state 4 + training.skip 1)
+    - 53 处 typedInvoke 调用点全部对齐降级模式,**0 处强错误 throw 残留**
+  - D-070 `S25 候选` 列表第 2690 行重复列入"B-2 报告中的 D-DEBT-34 签名收紧收尾" — 该收尾实际已发生在 Sprint 20,不应再列为 S25 候选
+  - 决策日志债务表第 1394 行仍把 D-DEBT-34 列为 P1 — 状态应更新为已完成
+- **错误根因**:
+  - D-070 撰写时 AI 助手未交叉验证 D-060/D-061 的"全 53 处降级全景"表(行 1891-1901)
+  - 仅凭"B-2 报告剩余 P1 项"印象,推断"未补" — 忽视 B-3 收尾的存在
+- **审计证据**:
+  1. `docs/decision-log.md` D-060 行 1800-1851: B-2 完成 P0 降级 + 15 个测试
+  2. `docs/decision-log.md` D-061 行 1854-1904: B-3 完成 P1 收尾 + 13 个测试
+  3. `docs/decision-log.md` D-061 行 1891-1901: **全 53 处降级全景**(student-context 3 / diagnosis 3 / training 9 / teaching-state 5 / chat 2 / session 9 / useOrchestrator 1 / store 直接 21)
+  4. `src/renderer/services/teaching-state.service.ts` 文件头注释:`Sprint 20 B-3 降级(D-DEBT-34)`
+  5. `src/renderer/services/__tests__/typedinvoke-degradation.test.ts`: **28 个降级测试全绿** (本轮现场验证:28 passed / 28)
+  6. `src/renderer/services/session.service.ts` 文件头注释:`Sprint 20 B-3 降级(D-DEBT-34)`,8 处 throw → console.error + fallback
+- **修正动作**(本轮 D-072 收尾):
+  1. D-070 §关键发现 段 2 (line 2613) "主动债清理:D-DEBT-34 未补" → 删除并替换为事实描述"D-DEBT-34 已在 Sprint 20 收尾,D-070 撰写时未交叉验证 D-060/D-061"
+  2. D-070 §S25 候选 (line 2690) "B-2 报告中的 D-DEBT-34 签名收紧收尾" → 删除(已 Sprint 20 收尾,不属 S25 候选)
+  3. 债务表 (line 1394) D-DEBT-34 状态 P1 → **已完成**,加备注"已 Sprint 20 B-2/B-3 收尾(D-060/D-061)"
+- **未做事项**(明示):
+  - **typedInvoke v2 强类型化** 仍属 S25+ 候选(D-061 后续列)— 这是与 D-DEBT-34 不同的独立优化项,不是 D-DEBT-34 的"未完成部分"
+  - **载荷脱敏字段白名单** 已由 D-066 (Sprint 21 E-1) 收尾
+- **门禁**:
+  - typecheck: ✅ 0 errors(决策日志修改不涉及代码)
+  - vitest: ✅ typedinvoke-degradation 28/28 全绿(本轮现场验证)
+  - lint: ✅ 0 errors(决策日志修改不涉及代码)
+- **教训**:
+  1. **决策日志引用必须交叉验证**: D-070 描述"未补"前应查 D-060/D-061 状态,避免凭印象撰写。**R-018 变更溯源要求事实可追溯到证据** — 写决策时同步引用证据链行号
+  2. **债务表状态应主动更新**: B-3 收尾 13 处降级时(D-061),债务表 D-DEBT-34 应同步从 P1 → 已完成,不应留给 S24 才补。**债务状态变更与债务关闭必须原子化**(R-010 最小化的延伸)
+  3. **Sprint 收尾决策日志易遗漏债务收尾的"反向同步"**: Sprint 20 实际完成多项 P1 债务(B-2/B-3),但这些"已完成"信息分散在 D-060/D-061,债务表未及时收敛 → 后续 Sprint 又误列为候选。**建议未来 Sprint 收尾时强制更新债务表** (候选规则:BL-24)
+- **依据**:
+  - D-060 typedInvoke 强错误 → 降级统一规范 (B-2)
+  - D-061 typedInvoke 强错误降级 — B-3 收尾
+  - D-070 Sprint 24 A 轨实施结果(本轮修正的事实错误源)
+  - R-018 变更溯源规范(决策必须可追溯到证据)
+  - R-011 记忆强化(关键决策持久化)
+  - typedinvoke-degradation.test.ts 28/28 全绿(本轮现场验证)
+- **状态**: ✅ D-DEBT-34 已收尾,本次为决策日志事实修正 + 债务状态同步
+
