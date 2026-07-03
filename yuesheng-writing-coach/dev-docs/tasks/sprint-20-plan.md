@@ -74,6 +74,10 @@ type OrchestratorEvent =
 - TeachingStateMachine 无 `stream.parse()` 调用
 - 至少 1 个状态机分支走事件驱动
 - 现有 FiveStepFlow E2E 仍全绿
+- [x] **(试点) ChatOrchestratorService.onOrchestratorEvent(handler) 订阅 API**: 返回 unsubscribe,handler 异常隔离
+- [x] **(试点) sendMessage() 末尾 emit `intent:none`**: 机制验证点
+- [x] **(试点) TeachingStateSubscriber**: `intent:train` → teachingStateService.getContext() 纯读验证集成
+- [x] **(试点) 5 个单测覆盖**: train 事件 / 非 train 忽略 / 非 intent 忽略 / 多次记录 / 异常隔离
 
 ### A-4: ChatPage 入口改为订阅模式
 

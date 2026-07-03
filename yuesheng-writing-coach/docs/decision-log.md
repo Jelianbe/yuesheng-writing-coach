@@ -1702,3 +1702,35 @@ dev 模式走 `resources/` 相对路径,生产模式走 `process.resourcesPath`�
   - A-4: ChatPage 改订阅模式
   - C-1: v5.0.0 提示词草案(契约/版本过滤层就绪,可独立迭代)
 ---
+
+### D-058: A-3 状态机迁移试点 — 订阅点 + 1 分支 (Sprint 20)
+- **类型**: 架构桥接
+- **决策**:
+  1. ChatOrchestratorService 暴露 `onOrchestratorEvent(handler)` 订阅 API,返回 unsubscribe
+  2. sendMessage() 末尾 emit `{ type: 'intent', payload: { type: 'none' } }` 作为"机制验证"事件
+  3. 新建 TeachingStateSubscriber 类,订阅 `intent:train` → 调用 teachingStateService.getContext()(纯读,验证集成)
+  4. 试点范围仅 1 个分支(Sprint 20 plan DoD 要求"至少 1 个")
+  5. handler 异常隔离:单个 subscriber 抛错不影响其他 subscriber
+- **交付物**:
+  1. `src/main/domains/03-teaching/chat/chat-orchestrator.service.ts` (新增 onOrchestratorEvent + emitOrchestratorEvent + sendMessage 末尾 emit)
+  2. `src/main/domains/03-teaching/conversation/teaching-state-subscriber.ts` (NEW, 70 行)
+  3. `src/main/domains/03-teaching/conversation/__tests__/teaching-state-subscriber.test.ts` (NEW, 5 个用例)
+- **门禁**:
+  - typecheck: ✅ 0 errors
+  - vitest: ✅ 742/742(新增 5 个 subscriber 测试)
+  - lint: ✅ 0 errors, 257 warnings
+  - E2E: ✅ 33/33(FiveStepFlow 不受影响)
+- **教训**:
+  1. **"试点"不等于"空跑"**: 选了 `getContext()` 而非纯 noop,确保"事件 → 状态机方法"链路真在跑。否则测试只验证了订阅机制,没验证集成
+  2. **异常隔离必须测试覆盖**: 单 subscriber 抛错不能让整个 emit 链断,这是 R-028 防御性编码的硬要求
+  3. **teachingStateService.getContext() 抛错 → warn 而非 throw**: 上层期望是"事件是观察者",不抛错意味着不会反向影响主流程
+  4. **emit 时机选 sendMessage 末尾而非 start**: 末尾是"已完成"语义点,主流程最稳定。后续可加诊断/意图/phase 等中间点
+  5. **只改 1 个分支是 S20 DoD 底线,不是目标**: A-4 ChatPage 订阅模式就绪后,会基于此订阅点全量切换
+- **依据**:
+  - dev-docs/tasks/sprint-20-plan.md §A-3
+  - D-055/D-056(契约 + 版本过滤是状态机迁移的前置)
+  - R-028 防御性编码(handler 异常隔离)
+- **后续**:
+  - A-4: ChatPage 改订阅模式
+  - S21: 扩展 emit 点(intent 提取 / phase 切换 / diagnosis 入库),subscriber 接入真实业务
+---
