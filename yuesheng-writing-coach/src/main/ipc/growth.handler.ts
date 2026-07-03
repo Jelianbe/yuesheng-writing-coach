@@ -6,6 +6,7 @@
 
 import { IPC_CHANNELS } from '../../shared/constants';
 import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
+import type { GrowthGlobalSyndromeTrend } from '../../shared/api-contracts/growth.contract';
 import { createHandler } from './utils/create-handler';
 
 export interface GrowthHandlerDeps {
@@ -37,6 +38,14 @@ export function registerGrowthHandlers(): void {
       throw new Error('GrowthHandler deps not initialized');
     }
     const summary = deps.growthTrendService.getGrowthSummary();
+    const trends: GrowthGlobalSyndromeTrend[] = summary.trends.map(t => ({
+      syndromeId: t.id,
+      name: t.name,
+      status: t.status,
+      latestSeverity: t.latestSeverity,
+      occurrenceCount: t.occurrenceCount,
+      description: t.description,
+    }));
     return {
       overall: {
         averageScore: summary.masteredCount > 0 ? Math.round((summary.masteredCount / (summary.trends.length || 1)) * 100) / 100 : 0,
@@ -44,6 +53,7 @@ export function registerGrowthHandlers(): void {
         topGainers: summary.trends.filter(t => t.status === 'mastered').map(t => t.name),
         topLosers: summary.trends.filter(t => t.status === 'needsAttention').map(t => t.name),
       },
+      trends,
     };
   });
 }

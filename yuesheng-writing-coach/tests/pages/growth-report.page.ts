@@ -1,10 +1,9 @@
 /**
- * GrowthReportPage — 成长报告子页 Page Object
+ * GrowthReportPage / TrainingPlanPage — 子页 Page Object
  *
- * 子页面(隐藏 TabBar,显示返回箭头 + 标题 + 占位内容)
+ * 通用子页结构(隐藏 TabBar,显示返回箭头 + 标题 + 内容)
  *
- * 其他 3 个子页面(TrainingPlan/TechniqueLibrary/MaterialLibrary)结构相同,
- * 此 Page 通用化用于覆盖 4 个子页
+ * Sprint 19 重划后,只剩 2 个子页:成长报告 / 训练计划
  */
 
 import { Locator, expect, Page } from '@playwright/test';
@@ -13,8 +12,6 @@ import { BasePage } from './base.page';
 const SUB_PAGE_TITLES = [
   '成长报告',
   '训练计划',
-  '技法库',
-  '素材库',
 ] as const;
 
 export type SubPageTitle = typeof SUB_PAGE_TITLES[number];

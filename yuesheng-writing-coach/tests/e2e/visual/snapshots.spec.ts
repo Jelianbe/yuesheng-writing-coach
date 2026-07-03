@@ -41,8 +41,8 @@ test.describe('视觉回归基线 @visual', () => {
     await page.getByRole('navigation').getByRole('button', { name: '应用' }).click();
     await page.getByText('成长报告', { exact: true }).first().click();
     await expect(page.getByRole('heading', { name: '成长报告' })).toBeVisible();
-    // 等加载占位稳定
-    await expect(page.getByText('数据加载中…')).toBeVisible();
+    // Vite 环境无 IPC,等待加载占位稳定
+    await expect(page.getByTestId('growth-loading').or(page.getByTestId('growth-empty')).first()).toBeVisible();
 
     await expect(page).toHaveScreenshot('sub-growth-report.png', {
       fullPage: true,
