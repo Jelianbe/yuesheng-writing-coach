@@ -181,6 +181,15 @@ export class TeachingStateSubscriber {
   private handleSetActiveTraining(event: OrchestratorEvent, sessionId: string): void {
     if (event.type !== 'training_triggered') return;
     const triggered = event.payload as TrainingTriggeredEvent;
+    // Sprint 22 F-2: 占位实现(R-010 最小化,主进程侧 ActiveTraining 状态机推到 Sprint 23+)
+    // 当前职责:在主进程侧写 lastUserConfirmation 标记,renderer 收到 chat 流后
+    // 驱动 ActiveTrainingSession 创建(已有路径,未变更)。
+    // console.info 显式标注,避免后续误读为"完整实现"。
+    console.info(
+      `[TeachingStateSubscriber] training_triggered received: syndrome=${triggered.syndromeId} ` +
+      `technique=${triggered.techniqueId ?? 'none'} reason=${triggered.reason} ` +
+      `(ActiveTraining 状态由 renderer 维护,S23+ 接入主进程)`,
+    );
     this.teachingStateService.markTrainingIntent(
       sessionId,
       triggered.syndromeId,

@@ -27,6 +27,19 @@ import { truncateChapterContent } from '../prompt/truncation';
 // Sprint 20 A-3: 事件订阅 API
 import type { OrchestratorEvent } from '../conversation/orchestrator.types';
 
+/**
+ * Sprint 22 F-2: 训练意图识别正则(轻量占位,S23+ 升级 IntentRouter)
+ *
+ * 覆盖:用户显式表达"想训练/练习/试试"训练任务的关键词
+ * 不覆盖(避免误匹配):
+ *   - "练习题"(中性场景词,非训练意图)
+ *   - "做了练习"(陈述,无训练意图)
+ *   - "练习"独立成词(过宽)
+ *
+ * 来源:dev-docs/tasks/sprint-22-plan.md §F-2
+ */
+const TRAINING_INTENT_PATTERN = /(帮我|我想|来|想)?(训练|练一下|练一练|试试练)|给我布置.*训练|开始训练/;
+
 export interface ChatOrchestratorDeps {
   configService: ConfigService;
   sessionService: SessionService;
@@ -48,6 +61,13 @@ export class ChatOrchestratorService {
   private toolSupportCache: boolean | null = null;
   // Sprint 20 A-3: 事件订阅者列表(教学状态机/审计/未来的 A-4 ChatPage 都从这里订阅)
   private orchestratorEventSubscribers: Set<(e: OrchestratorEvent, sessionId: string) => void> = new Set();
+  // Sprint 22 F-1: phase_transition 事件 emit 去重(5 秒窗口)
+  // 避免用户连续发送消息时多次推进 phase。教学状态机自身有循环保护
+  // (PRACTICE_LOOP 阶段回到第一个子阶段),但短时间内重复推进不符合"阶段切换"语义。
+  private lastPhaseTransitionAt: Map<string, number> = new Map();
+  // Sprint 22 F-2: training_triggered 事件 emit 去重(5 秒窗口)
+  // 同 sessionId 短时间内重复训练触发应被合并,避免"训练/练一下"被误识别多次。
+  private lastTrainingTriggeredAt: Map<string, number> = new Map();
 
   constructor(deps: ChatOrchestratorDeps) {
     this.deps = deps;
@@ -75,6 +95,88 @@ export class ChatOrchestratorService {
       } catch (e) {
         console.warn('[ChatOrchestrator] subscriber handler failed:', e);
       }
+    }
+  }
+
+  /**
+   * Sprint 22 F-1: 诊断完成触发 phase_transition 事件
+   * 5 秒去重窗口避免连续消息重复推进 phase。
+   * payload 字段 from/to/reason 仅作审计 metadata,
+   * 实际 phase 推进由 TeachingStateSubscriber.handleConfirmPhase
+   * 调 teachingStateService.confirmPhase() 完成。
+   */
+  private emitPhaseTransitionIfNeeded(
+    sessionId: string,
+    analysis: { syndromeRef?: string[] },
+  ): void {
+    const now = Date.now();
+    const last = this.lastPhaseTransitionAt.get(sessionId) ?? 0;
+    if (now - last < 5000) {
+      // 5 秒内已 emit,跳过(R-010 最小化:不引入完整去重配置)
+      return;
+    }
+    this.lastPhaseTransitionAt.set(sessionId, now);
+    try {
+      this.emitOrchestratorEvent(
+        {
+          type: 'phase_transition',
+          payload: {
+            from: 'requirement',
+            to: 'diagnosis',
+            reason: `symptoms_detected:${analysis.syndromeRef?.length ?? 0}`,
+          },
+        },
+        sessionId,
+      );
+    } catch (e) {
+      console.warn('[ChatOrchestrator] emit phase_transition failed:', e);
+    }
+  }
+
+  /**
+   * Sprint 22 F-2: 用户表达训练意图时触发 training_triggered 事件
+   *
+   * 触发条件(全部满足):
+   * 1. 诊断已发现症候(syndromeRef.length > 0)— 没症候就推训练毫无意义
+   * 2. 用户最新消息含训练意图关键词(轻量正则,见 TRAINING_INTENT_PATTERN)
+   * 3. 5 秒内同 session 未重复触发
+   *
+   * 技术选型:轻量正则而非 LLM intent 提取(R-010 最小化,S23+ 升级 IntentRouter)。
+   * ActiveTrainingSession 状态由 renderer 维护(主进程侧 ActiveTraining 状态机推到 Sprint 23),
+   * Subscriber.handleSetActiveTraining 当前为占位实现。
+   */
+  private emitTrainingTriggeredIfNeeded(
+    sessionId: string,
+    userMessage: string,
+    analysis: { syndromeRef?: string[] },
+  ): void {
+    if (!analysis.syndromeRef || analysis.syndromeRef.length === 0) {
+      return; // 无症候不触发训练
+    }
+    if (!TRAINING_INTENT_PATTERN.test(userMessage)) {
+      return; // 无训练意图关键词
+    }
+    const now = Date.now();
+    const last = this.lastTrainingTriggeredAt.get(sessionId) ?? 0;
+    if (now - last < 5000) {
+      return; // 5 秒内已 emit,跳过
+    }
+    this.lastTrainingTriggeredAt.set(sessionId, now);
+    try {
+      this.emitOrchestratorEvent(
+        {
+          type: 'training_triggered',
+          payload: {
+            sessionId,
+            syndromeId: analysis.syndromeRef[0]!,
+            techniqueId: undefined,
+            reason: 'user_request',
+          },
+        },
+        sessionId,
+      );
+    } catch (e) {
+      console.warn('[ChatOrchestrator] emit training_triggered failed:', e);
     }
   }
 
@@ -149,6 +251,18 @@ export class ChatOrchestratorService {
       activeSessionId,
       { syndromeIds },
     );
+
+    // Sprint 22 F-1: 诊断发现症候 → emit phase_transition 事件
+    // 推进教学状态机子阶段(由 TeachingStateSubscriber.handleConfirmPhase 消费)
+    if (diagnosisAnalysis && diagnosisAnalysis.syndromeRef && diagnosisAnalysis.syndromeRef.length > 0) {
+      this.emitPhaseTransitionIfNeeded(activeSessionId, diagnosisAnalysis);
+    }
+
+    // Sprint 22 F-2: 用户最新消息含训练意图关键词 + 诊断有症候 → emit training_triggered
+    // 由 TeachingStateSubscriber.handleSetActiveTraining 消费(占位:markTrainingIntent + console.info)
+    if (diagnosisAnalysis && diagnosisAnalysis.syndromeRef && diagnosisAnalysis.syndromeRef.length > 0) {
+      this.emitTrainingTriggeredIfNeeded(activeSessionId, message, diagnosisAnalysis);
+    }
 
     // 教学上下文准备
     const { finalPrompt, isReflectionGate } = deps.teachingContext.prepare(
