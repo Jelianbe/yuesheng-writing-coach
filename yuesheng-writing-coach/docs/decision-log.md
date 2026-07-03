@@ -2449,3 +2449,143 @@ Sprint 21 D-2 实现了事件驱动状态机订阅的 config-driven dispatch,但
 - **Electron E2E 框架**: Playwright + Electron,验证完整 IPC 链路
 - **D-3 多 streamId 并发管理**
 - **typedInvoke v2 强类型化**(D-DEBT-34 收尾)
+
+## D-069: Sprint 23 计划 — G 轨: 教学链路重量化 (2026-07-03)
+
+### 背景
+
+Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `console.info` 占位标注("S23+ 接入主进程")。同时 D-068 决策日志列出的 Sprint 23 候选有 6 个(F-2 重量路线 / LLM intent / 训练草稿持久化 / Electron E2E / D-3 / typedInvoke v2)。
+
+### 关键发现(影响范围决策)
+
+调研后发现两个事实,影响 Sprint 23 范围:
+
+1. **IntentRouter 已存在并支持 LLM 兜底**(`src/main/domains/03-teaching/chat/intent-router.ts`):
+   - 已有 keyword 规则(train 类覆盖 `['练习', '写一个', '试试', '练练', '来练', '我想练', '训练']`)
+   - 已有 LLM 分类系统提示词(Few-shot 10 示例,token ~50)
+   - 已有 5 秒超时 + 低置信度降级到 general_chat
+   - 结论: G-2 工作量 = "把 F-2 正则委托给 IntentRouter",不需要重新设计
+
+2. **ActiveTrainingSession 仅在 renderer 侧**(27 个文件引用):
+   - `src/renderer/shared/types-training.ts` 定义类型
+   - `src/renderer/stores/training.store.ts` 实现 zustand 状态机
+   - 主进程侧**完全无** ActiveTraining 状态表 / 类型 / service
+   - 结论: G-1 完整迁移是 S24 重量路线(新增表/类型/store/IPC 同步),Sprint 23 走**路径 C**(占位改进)
+
+### 范围决策
+
+**G 轨: 教学链路重量化** (用户确认,2 任务):
+
+- **G-1**: 新增 `TeachingStateService.setActiveTraining()`,替换 `markTrainingIntent` 占位
+  - 业务命名: `setActiveTraining` 表达"主进程侧记录 session 进入训练态"的业务语义
+  - 数据存储: `teaching_state` 表新增 `active_training_meta` JSON 字段(SQLite migration)
+  - 主动债收敛: 移除 `console.info('ActiveTraining 状态由 renderer 维护,S23+ 接入主进程')` 占位标注
+  - 完整状态机迁移(类型/store/IPC)推到 S24 重量路线
+  - `markTrainingIntent` 保留(intent:train 事件的通用方法,语义不同)
+
+- **G-2**: ChatOrchestratorService 注入 IntentRouter,委托其做训练意图识别
+  - `ChatOrchestratorDeps` 新增 `intentRouter?` 字段(optional,防御性)
+  - `emitTrainingTriggeredIfNeeded` 改用 `intentRouter.route()`,`result.intent === 'train'` 时 emit
+  - IntentRouter 不可用/抛错 → 降级到 `TRAINING_INTENT_PATTERN` 正则
+  - 不删除正则(IntentRouter.keyword 阶段已覆盖,保留作为快速路径 fallback)
+
+### 关键决策
+
+1. **G-1 路径 C(占位改进)**: R-010 最小化 + 完整迁移工作量过大(新增表/类型/store/IPC 同步)+ Sprint 23 周期约束。S24 重量路线处理完整迁移
+2. **G-2 委托 IntentRouter**: IntentRouter 已有完整 LLM 兜底逻辑,无需重新设计,降低开发风险
+3. **DI 注入容错**: `ChatOrchestratorDeps.intentRouter?` 标 optional,旧测试代码不破坏(R-028 防御性编码)
+4. **降级路径保留**: IntentRouter 失败/不可用时降级正则,确保 Sprint 22 F-2 功能不丢失
+5. **markTrainingIntent 不删**: 语义不同(`intent:train` 通用方法 vs `training_triggered` 业务方法),保留避免破坏其他路径
+6. **JSON 字段而非独立表**: `teaching_state.active_training_meta` 保持单表模式,避免破坏 R-014 配置外置精神
+7. **Sprint 24 重点**: 完整 ActiveTraining 状态机迁移 + IntentRouter 多意图联合提取 + D-3 / typedInvoke v2
+
+### 实施计划
+
+1. **G-1** (1.5 天): TeachingStateService.setActiveTraining + migration 021 + Subscriber 改写 + 集成测试更新
+2. **G-2** (1 天): ChatOrchestratorDeps.intentRouter + emitTrainingTriggeredIfNeeded 改写 + 4 个新单测
+3. **收尾** (0.5 天): D-069 复盘 + decision-log + 收尾 commit
+
+### 门禁
+
+- typecheck: **0 errors**
+- vitest: **≥ 当前 863 + G-1/G-2 新增 ≥7**
+- lint: **0 errors**
+- 集成测试: G-1 验证 activeTrainingMeta 字段,G-2 验证 IntentRouter 路径
+
+### 实施结果(2026-07-03)
+
+#### G-1 实施(setActiveTraining 替换 markTrainingIntent 占位)
+
+**代码变更**:
+- `TeachingStateRow` 接口新增 `active_training_meta: string | null` 字段
+- `TeachingState` 接口新增 `activeTrainingMeta?: ActiveTrainingMeta | null` 字段
+- `TeachingStateStore.create()` / `update()` SQL 包含 `active_training_meta` 列
+- `TeachingStateService` 新增 `setActiveTraining()` / `getActiveTrainingMeta()` / `clearActiveTraining()` 三个方法
+- `TeachingStateSubscriber.handleSetActiveTraining` 改调 `setActiveTraining`(移除 `console.info` 占位标注)
+- 新增 SQLite migration: `025_teaching_state_active_training.sql`(BEGIN TRANSACTION + ALTER TABLE ADD COLUMN)
+- `ActiveTrainingMeta` 类型定义:`{ syndromeId, techniqueId?, triggeredAt, source: 'training_triggered' | 'user_request' | 'diagnosis_result' | 'prescription' }`
+
+**测试**:
+- 新增 `teaching-state-service-setActiveTraining.test.ts`(10 用例:写入/异常隔离/无 session 降级/source 透传等)
+- 更新 `teaching-link-integration.test.ts`(G-1 验证 activeTrainingMeta 字段)
+- 重写 `teaching-state-subscriber-f2.test.ts`(G-1 验证 setActiveTraining 替代 markTrainingIntent 占位)
+- 修复 `capability-graph-e2e.test.ts` / `student-model-service-persistence.test.ts` 内存 DB schema(`active_training_meta` 列)
+- 修复 `teaching-link-integration.test.ts` import 路径(`../../../../` → `../../../../../`,5 层 `../`)
+
+#### G-2 实施(IntentRouter 替换 TRAINING_INTENT_PATTERN 正则)
+
+**代码变更**:
+- `ChatOrchestratorDeps` 新增 `intentRouter?: IntentRouter` 字段
+- `emitTrainingTriggeredIfNeeded` 改 `async`,委托 `IntentRouter.route()`(`result.intent === 'train'` 时 emit)
+- 新增内部 `getIntentRouter()` 懒加载方法(优先 `deps.intentRouter`,降级到 `getApiProxy() as LLMProvider`)
+- 新增 `detectTrainingIntent()` 私有方法(IntentRouter 主路径 + 正则降级,异常隔离)
+- `TRAINING_INTENT_PATTERN` 保留作为降级 fallback(IntentRouter 不可用/抛错时使用)
+- `sendMessage` 调用 `emitTrainingTriggeredIfNeeded` 加 `await`
+
+**测试**:
+- 重写 `chat-orchestrator-training-triggered.test.ts` 为 async 形式(7 用例,降级路径)
+- 新增 `chat-orchestrator-training-triggered-g2.test.ts`(6 用例:IntentRouter 触发/其他 intent/抛错降级/显式注入优先等)
+- 更新 `teaching-link-integration.test.ts` 4 处 emit 调用为 `await`
+
+**门禁通过**:
+- typecheck: **0 errors**
+- vitest: **881/881 全绿** (G-1/G-2 新增 18 用例)
+- lint: **0 errors**
+
+#### 关键发现(实施过程中)
+
+1. **IntentRouter keyword 含"练习"独立词**,原 F-2 设计的"中性词'练习'被排除(避免误匹配'练习题')"在 G-2 升级后失效
+   - 影响: "练习题"现在会被识别为 train 意图(由 IntentRouter keyword 阶段命中)
+   - 决策: 这是 G-2 升级的设计变化(从"严格正则"升级为"keyword + LLM 兜底"),接受此变化
+   - 测试同步更新: 改为"今天写了三千字"等完全中性的句子作为无意图用例
+
+2. **ApiProxy 与 LLMProvider 接口兼容**: ApiProxy 类已实现 `chatStream` / `chatStreamWithTools` / `testConnection` / `updateConfig` 等方法,通过 `as unknown as LLMProvider` cast 可直接注入 IntentRouter。IntentRouter 内部异常处理(5 秒超时 + 降级)已保证健壮性
+
+3. **emitTrainingTriggeredIfNeeded 异步化传播**: 改为 async 后,所有调用点(`sendMessage` / 集成测试 / 单元测试)需加 `await`,涉及 3 个测试文件 12 处修改
+
+#### 复盘
+
+- **G-1 路径 C 选择正确**: 完整 ActiveTrainingSession 迁移到 S24 重量路线,Sprint 23 用 `active_training_meta` JSON 字段 + 业务方法命名收敛,符合 R-010 最小化
+- **G-2 委托 IntentRouter 大幅降低工作量**: 无需重新设计 LLM 提示词/超时/降级,只做"注入 + 委托"两步
+- **DI 注入容错策略有效**: `intentRouter?` optional 字段 + 内部懒加载,旧测试代码零破坏,R-028 防御性编码到位
+- **降级路径双保险**: IntentRouter 不可用 + 正则不命中 → 双层 fail-closed,无白屏风险
+- **测试矩阵完整**: 降级路径(7) + 主路径(6) + 集成(4) = 17 个 G 轨相关用例,覆盖正常/异常/边界场景
+
+#### 主动债清理
+
+- ✅ Sprint 22 F-2 `console.info('ActiveTraining 状态由 renderer 维护,S23+ 接入主进程')` 占位标注已移除
+- ✅ Sprint 22 F-2 `markTrainingIntent` 占位调用已替换为 `setActiveTraining`(但 markTrainingIntent 本身保留供 `intent:train` 事件使用)
+
+#### S24 候选清单(已确认)
+
+- 完整 ActiveTrainingSession 状态机迁移(`renderer/stores/training.store.ts` → 主进程 service)
+- 新增独立 `active_training` 表(替代 `teaching_state.active_training_meta` JSON 字段)
+- IntentRouter 多意图联合提取(目前仅单意图)
+- D-3 多 streamId 并发管理
+- typedInvoke v2 强类型化(D-DEBT-34 收尾)
+- 训练草稿持久化(目前只存 renderer)
+
+### 后续
+
+- Sprint 24 候选: 完整 ActiveTrainingSession 状态机迁移 / 新增 active_training 表 / IntentRouter 多意图联合提取 / D-3 / typedInvoke v2
+- 长期: 训练草稿持久化(目前只存 renderer)

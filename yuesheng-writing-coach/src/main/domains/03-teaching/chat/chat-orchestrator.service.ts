@@ -26,9 +26,16 @@ import type { StreamHandlerService } from './stream-handler.service';
 import { truncateChapterContent } from '../prompt/truncation';
 // Sprint 20 A-3: 事件订阅 API
 import type { OrchestratorEvent } from '../conversation/orchestrator.types';
+// Sprint 23 G-2: IntentRouter 类型 + 内部实例(主路径)
+import { IntentRouter } from './intent-router';
+import type { LLMProvider } from '../../../shared/llm/types';
 
 /**
  * Sprint 22 F-2: 训练意图识别正则(轻量占位,S23+ 升级 IntentRouter)
+ *
+ * Sprint 23 G-2 更新:IntentRouter 升级为主路径后,此正则仅作为降级 fallback 使用
+ *  - IntentRouter 不可用(内部异常)时降级
+ *  - IntentRouter.route() 抛错时降级
  *
  * 覆盖:用户显式表达"想训练/练习/试试"训练任务的关键词
  * 不覆盖(避免误匹配):
@@ -53,6 +60,11 @@ export interface ChatOrchestratorDeps {
   diagnosisOrchestrator: DiagnosisOrchestratorService;
   teachingContext: TeachingContextService;
   streamHandler: StreamHandlerService;
+  // Sprint 23 G-2: IntentRouter 可选注入(主路径)
+  // - 不传:ChatOrchestratorService 内部懒加载(getApiProxy() 作为 LLMProvider)
+  // - 传:用外部注入的 IntentRouter(便于测试或单例复用)
+  // - 未注入或抛错时降级到 TRAINING_INTENT_PATTERN 正则
+  intentRouter?: IntentRouter;
 }
 
 export class ChatOrchestratorService {
@@ -68,6 +80,9 @@ export class ChatOrchestratorService {
   // Sprint 22 F-2: training_triggered 事件 emit 去重(5 秒窗口)
   // 同 sessionId 短时间内重复训练触发应被合并,避免"训练/练一下"被误识别多次。
   private lastTrainingTriggeredAt: Map<string, number> = new Map();
+  // Sprint 23 G-2: 内部 IntentRouter 懒加载缓存(主路径)
+  // 优先使用 deps.intentRouter(显式注入),否则用 ApiProxy 作为 LLMProvider 创建内部实例
+  private internalIntentRouter: IntentRouter | null = null;
 
   constructor(deps: ChatOrchestratorDeps) {
     this.deps = deps;
@@ -136,26 +151,37 @@ export class ChatOrchestratorService {
   /**
    * Sprint 22 F-2: 用户表达训练意图时触发 training_triggered 事件
    *
+   * Sprint 23 G-2 更新:IntentRouter 升级为意图识别主路径
+   *
    * 触发条件(全部满足):
    * 1. 诊断已发现症候(syndromeRef.length > 0)— 没症候就推训练毫无意义
-   * 2. 用户最新消息含训练意图关键词(轻量正则,见 TRAINING_INTENT_PATTERN)
+   * 2. 用户最新消息含训练意图(IntentRouter 优先,正则降级)
    * 3. 5 秒内同 session 未重复触发
    *
-   * 技术选型:轻量正则而非 LLM intent 提取(R-010 最小化,S23+ 升级 IntentRouter)。
-   * ActiveTrainingSession 状态由 renderer 维护(主进程侧 ActiveTraining 状态机推到 Sprint 23),
-   * Subscriber.handleSetActiveTraining 当前为占位实现。
+   * IntentRouter 集成(R-028 防御性编码):
+   * - 优先: await this.deps.intentRouter?.route(message) → result.intent === 'train'
+   * - 降级 1: IntentRouter 未注入(可选字段为空) → TRAINING_INTENT_PATTERN
+   * - 降级 2: IntentRouter.route() 抛错/超时 → TRAINING_INTENT_PATTERN
+   * - 异常隔离: IntentRouter 不可用时,sendMessage 主流程不阻塞
+   *
+   * 已知设计:IntentRouter 内部已有 5 秒 LLM 超时 + 低置信度降级,
+   * 故此处不重复加超时包裹。
    */
-  private emitTrainingTriggeredIfNeeded(
+  private async emitTrainingTriggeredIfNeeded(
     sessionId: string,
     userMessage: string,
     analysis: { syndromeRef?: string[] },
-  ): void {
+  ): Promise<void> {
     if (!analysis.syndromeRef || analysis.syndromeRef.length === 0) {
       return; // 无症候不触发训练
     }
-    if (!TRAINING_INTENT_PATTERN.test(userMessage)) {
-      return; // 无训练意图关键词
+
+    // 训练意图识别:IntentRouter 主路径 + 正则降级
+    const hasTrainingIntent = await this.detectTrainingIntent(userMessage);
+    if (!hasTrainingIntent) {
+      return; // 无训练意图
     }
+
     const now = Date.now();
     const last = this.lastTrainingTriggeredAt.get(sessionId) ?? 0;
     if (now - last < 5000) {
@@ -177,6 +203,61 @@ export class ChatOrchestratorService {
       );
     } catch (e) {
       console.warn('[ChatOrchestrator] emit training_triggered failed:', e);
+    }
+  }
+
+  /**
+   * Sprint 23 G-2: 训练意图识别(IntentRouter 主路径 + 正则降级)
+   *
+   * @param userMessage 用户最新消息
+   * @returns 是否为训练意图
+   *
+   * 优先级:
+   * 1. deps.intentRouter(显式注入)→ 优先使用
+   * 2. 内部懒加载 IntentRouter(getApiProxy() 作为 LLMProvider)
+   * 3. 内部 IntentRouter 不可用(初始化失败) → TRAINING_INTENT_PATTERN 正则
+   * 4. IntentRouter.route() 抛错 → TRAINING_INTENT_PATTERN 正则
+   * 5. IntentRouter 返回 intent === 'train' → true
+   * 6. IntentRouter 返回其他 intent → false
+   */
+  private async detectTrainingIntent(userMessage: string): Promise<boolean> {
+    const router = this.getIntentRouter();
+    if (router) {
+      try {
+        const result = await router.route(userMessage);
+        return result.intent === 'train';
+      } catch (e) {
+        console.warn('[ChatOrchestrator] IntentRouter.route failed, fallback to regex:', e);
+        // 降级:正则
+        return TRAINING_INTENT_PATTERN.test(userMessage);
+      }
+    }
+    // IntentRouter 不可用:降级正则
+    return TRAINING_INTENT_PATTERN.test(userMessage);
+  }
+
+  /**
+   * Sprint 23 G-2: 获取 IntentRouter 实例
+   * - 优先 deps.intentRouter(显式注入)
+   * - 降级到内部懒加载实例(ApiProxy 作为 LLMProvider)
+   * - 内部实例初始化失败 → 返回 null(由 detectTrainingIntent 降级正则)
+   */
+  private getIntentRouter(): IntentRouter | null {
+    if (this.deps.intentRouter) {
+      return this.deps.intentRouter;
+    }
+    if (this.internalIntentRouter) {
+      return this.internalIntentRouter;
+    }
+    try {
+      const proxy = this.getApiProxy();
+      // ApiProxy 类已实现 LLMProvider 兼容接口(chatStream/chatStreamWithTools/testConnection/updateConfig 等),
+      // 通过 cast 注入 IntentRouter。运行时由 IntentRouter 内部异常处理降级。
+      this.internalIntentRouter = new IntentRouter(proxy as unknown as LLMProvider);
+      return this.internalIntentRouter;
+    } catch (e) {
+      console.warn('[ChatOrchestrator] Failed to create internal IntentRouter:', e);
+      return null;
     }
   }
 
@@ -258,10 +339,10 @@ export class ChatOrchestratorService {
       this.emitPhaseTransitionIfNeeded(activeSessionId, diagnosisAnalysis);
     }
 
-    // Sprint 22 F-2: 用户最新消息含训练意图关键词 + 诊断有症候 → emit training_triggered
-    // 由 TeachingStateSubscriber.handleSetActiveTraining 消费(占位:markTrainingIntent + console.info)
+    // Sprint 22 F-2: 用户最新消息含训练意图(IntentRouter 主路径 + 正则降级) + 诊断有症候 → emit training_triggered
+    // 由 TeachingStateSubscriber.handleSetActiveTraining 消费(G-1: setActiveTraining 替代 markTrainingIntent 占位)
     if (diagnosisAnalysis && diagnosisAnalysis.syndromeRef && diagnosisAnalysis.syndromeRef.length > 0) {
-      this.emitTrainingTriggeredIfNeeded(activeSessionId, message, diagnosisAnalysis);
+      await this.emitTrainingTriggeredIfNeeded(activeSessionId, message, diagnosisAnalysis);
     }
 
     // 教学上下文准备
