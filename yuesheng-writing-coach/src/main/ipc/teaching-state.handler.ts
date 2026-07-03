@@ -14,6 +14,7 @@ import { IPC_CHANNELS } from '../../shared/constants';
 import { ACTION_NAMES, ACTION_GOALS, SYNDROME_NAMES } from '../../shared/mappings';
 import { createHandler } from './utils/create-handler';
 import type { TeachingStateUpdateRequest } from '../../shared/api-contracts/teaching-state.contract';
+import type { PayloadSanitizer } from '../core/payload-sanitizer.service';
 
 /** 教学状态可更新字段白名单 — SEC-DEBT-2 */
 const TEACHING_STATE_UPDATABLE_FIELDS = new Set<string>([
@@ -35,6 +36,14 @@ let teachingStateService: TeachingStateService | null = null;
  */
 export function initTeachingStateHandler(service: TeachingStateService): void {
   teachingStateService = service;
+}
+
+// Sprint 21 E-1: 载荷脱敏注入
+let teachingStateSanitizer: PayloadSanitizer | null = null;
+
+/** Sprint 21 E-1: 注入 PayloadSanitizer(可选,未注入则不脱敏) */
+export function setTeachingStateSanitizer(s: PayloadSanitizer): void {
+  teachingStateSanitizer = s;
 }
 
 /**
@@ -86,7 +95,8 @@ export function registerTeachingStateHandlers(): void {
     (_event, args: { sessionId: string }) => {
       const fullState = getService().getFullState(args.sessionId);
       if (!fullState) throw new Error('Teaching state not found');
-      return fullState;
+      // Sprint 21 E-1: 载荷脱敏(diagnosisSummary truncate + focusArea omit + activeProblems truncate-nested)
+      return teachingStateSanitizer?.sanitize('teaching-state', fullState) ?? fullState;
     },
   );
 

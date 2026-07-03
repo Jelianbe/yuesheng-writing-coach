@@ -27,6 +27,7 @@ import { deriveBehavior, type DerivationInput } from '../domains/04-validation/t
 import type { ConfigService } from '../shared/services/config.service';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
+import type { PayloadSanitizer } from '../core/payload-sanitizer.service';
 
 /**
  * 技法目录项类型
@@ -59,6 +60,14 @@ let deps: TrainingHandlerDeps | null = null;
 
 export function initTrainingHandlers(d: TrainingHandlerDeps): void {
   deps = d;
+}
+
+// Sprint 21 E-1: 载荷脱敏注入
+let trainingSanitizerInstance: PayloadSanitizer | null = null;
+
+/** Sprint 21 E-1: 注入 PayloadSanitizer(可选,未注入则不脱敏) */
+export function setTrainingSanitizer(s: PayloadSanitizer): void {
+  trainingSanitizerInstance = s;
 }
 
 // ===== IPC Handlers =====
@@ -173,13 +182,15 @@ export function registerTrainingHandlers(): void {
 
     const result = await evaluateTraining(validation.data, deps.configService);
 
-    return {
+    // Sprint 21 E-1: 载荷脱敏(feedback / nextStep 走 truncate)
+    const payload = {
       passed: result.score >= 7,
       feedback: result.feedback,
       score: result.score,
       improved: result.improved,
       nextStep: result.nextStep,
     };
+    return trainingSanitizerInstance?.sanitize('training', payload) ?? payload;
   });
 
   createHandler(IPC_CHANNELS.TRAINING_EVALUATE, async (_event, args) => {
@@ -207,7 +218,8 @@ export function registerTrainingHandlers(): void {
       }
     }
 
-    return result;
+    // Sprint 21 E-1: 载荷脱敏(feedback / nextStep 走 truncate)
+    return trainingSanitizerInstance?.sanitize('training', result) ?? result;
   });
 
   /**
