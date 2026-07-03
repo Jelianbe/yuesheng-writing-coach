@@ -53,6 +53,13 @@ export type {
 export { TrainingApi } from './training.contract';
 export type { TrainingInvokeChannels } from './training.contract';
 
+// Sprint 24 A-3: ActiveTraining 状态机 IPC 契约
+export type {
+  ActiveTrainingUpdateDraftRequest, ActiveTrainingUpdateDraftResponse,
+  ActiveTrainingGetRequest, ActiveTrainingGetResponse,
+} from './active-training.contract';
+export { ActiveTrainingApi } from './active-training.contract';
+
 // 会话域
 export type {
   SessionInfo, SessionMessage,
