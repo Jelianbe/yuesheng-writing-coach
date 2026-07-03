@@ -66,14 +66,15 @@ export const trainingService = {
     return result.data;
   },
 
-  /** 跳过训练 */
+  /** 跳过训练 — 失败时返回 null(降级,B-3 补齐) */
   async skip(params: TrainingSkipRequest): Promise<TrainingCompleteResponse | null> {
     const result = await typedInvoke<TrainingSkipRequest, TrainingCompleteResponse>(
       TrainingApi.skip.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[training] skip failed:', result.error);
+      return null;
     }
     return result.data;
   },

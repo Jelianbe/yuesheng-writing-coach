@@ -1,7 +1,8 @@
 /**
- * 教学状态协调服务
+ * 教学状态协调服务 — Sprint 20 B-3 降级(D-DEBT-34)
  *
- * 封装所有 teaching-state 域 IPC 通信。
+ * 降级策略:调用失败时 console.error + 返回 fallback,不再 throw。
+ * getPrompt 已在 B-2 降级,其余 4 处(强载荷)统一对齐。
  */
 
 import { typedInvoke, typedOn } from './ipc-client';
@@ -21,38 +22,41 @@ import type {
 } from '../../shared/api-contracts/teaching-state.contract';
 
 export const teachingStateService = {
-  /** 获取教学状态 */
+  /** 获取教学状态 — 失败时返回 null(降级) */
   async get(params: TeachingStateGetRequest): Promise<TeachingStateGetResponse | null> {
     const result = await typedInvoke<TeachingStateGetRequest, TeachingStateGetResponse>(
       TeachingStateApi.get.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[teaching-state] get failed:', result.error);
+      return null;
     }
     return result.data;
   },
 
-  /** 更新教学状态 */
-  async update(params: TeachingStateUpdateRequest): Promise<TeachingState> {
+  /** 更新教学状态 — 失败时返回 null(降级) */
+  async update(params: TeachingStateUpdateRequest): Promise<TeachingState | null> {
     const result = await typedInvoke<TeachingStateUpdateRequest, TeachingState>(
       TeachingStateApi.update.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[teaching-state] update failed:', result.error);
+      return null;
     }
-    return result.data!;
+    return result.data;
   },
 
-  /** 确认阶段完成 */
+  /** 确认阶段完成 — 失败时返回 null(降级) */
   async confirm(params: TeachingStateConfirmRequest): Promise<TeachingStateConfirmResponse | null> {
     const result = await typedInvoke<TeachingStateConfirmRequest, TeachingStateConfirmResponse>(
       TeachingStateApi.confirm.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[teaching-state] confirm failed:', result.error);
+      return null;
     }
     return result.data;
   },
@@ -70,16 +74,17 @@ export const teachingStateService = {
     return result.data.promptContent;
   },
 
-  /** 更新诊断摘要 */
-  async updateSummary(params: TeachingStateUpdateSummaryRequest): Promise<TeachingState> {
+  /** 更新诊断摘要 — 失败时返回 null(降级) */
+  async updateSummary(params: TeachingStateUpdateSummaryRequest): Promise<TeachingState | null> {
     const result = await typedInvoke<TeachingStateUpdateSummaryRequest, TeachingState>(
       TeachingStateApi.updateSummary.channel,
       params,
     );
     if (!result.success) {
-      throw new Error(result.error);
+      console.error('[teaching-state] updateSummary failed:', result.error);
+      return null;
     }
-    return result.data!;
+    return result.data;
   },
 
   /** 监听教学状态更新推送 — 返回 cleanup 函数 */
