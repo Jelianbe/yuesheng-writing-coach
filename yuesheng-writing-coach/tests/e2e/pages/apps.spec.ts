@@ -18,19 +18,19 @@ test.describe('AppsPage 应用中心 @critical', () => {
     await expect(page.getByRole('navigation')).toBeVisible();
   });
 
-  test('4 个图标全部渲染', async ({ page }) => {
+  test('2 个图标全部渲染', async ({ page }) => {
     for (const sub of SUB_PAGES) {
       await expect(page.getByText(sub.label, { exact: true }).first()).toBeVisible();
     }
   });
 
-  test('3 个工具项全部渲染', async ({ page }) => {
-    for (const label of ['结构拆解', '设定管理', '导出作品']) {
+  test('1 个工具项全部渲染', async ({ page }) => {
+    for (const label of ['设定管理']) {
       await expect(page.getByText(label, { exact: true })).toBeVisible();
     }
   });
 
-  test('工具区有"工具"分割标题', async ({ page }) => {
-    await expect(page.getByText('工具', { exact: true })).toBeVisible();
+  test('工具区有"设置"分割标题', async ({ page }) => {
+    await expect(page.getByText('设置', { exact: true })).toBeVisible();
   });
 });

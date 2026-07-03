@@ -2,12 +2,15 @@
  * PageStackRouter — 移动端页面栈路由
  *
  * 架构：
- * - 375px 容器（clamp(320px, 100%, 375px)），桌面端居中
- * - TabBar 3 tab：书架 | 对话 | 应用
- * - 子页面（project-space / chat）push 进入，TabBar 隐藏
+ * - 桌面端 (>=431px): 居中显示手机外观(圆角 + 边框 + 阴影)
+ * - 移动端 (<=430px): 铺满全屏,纯手机模式
+ * - 顶部 24px 模拟状态栏(9:41 + 信号/电量)
+ * - TabBar 3 tab:书架 | 对话 | 应用
+ * - 子页面(project-space / chat / growth-report / training-plan) push 进入,TabBar 隐藏
  */
 
 import React from 'react';
+import { Battery, Signal, Wifi } from 'lucide-react';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { TabBar } from '../components/navigation/TabBar';
 import { BookshelfPage } from '../pages/BookshelfPage';
@@ -17,8 +20,7 @@ import { ProjectSpacePage } from '../pages/ProjectSpacePage';
 import { ChatPage } from '../pages/ChatPage';
 import { GrowthReportPage } from '../pages/GrowthReportPage';
 import { TrainingPlanPage } from '../pages/TrainingPlanPage';
-import { TechniqueLibraryPage } from '../pages/TechniqueLibraryPage';
-import { MaterialLibraryPage } from '../pages/MaterialLibraryPage';
+import styles from './PageStackRouter.module.css';
 
 const PAGE_MAP: Record<string, React.FC<{ params?: Record<string, string> }>> = {
   bookshelf: BookshelfPage,
@@ -28,9 +30,24 @@ const PAGE_MAP: Record<string, React.FC<{ params?: Record<string, string> }>> = 
   chat: ChatPage,
   'growth-report': GrowthReportPage,
   'training-plan': TrainingPlanPage,
-  'technique-library': TechniqueLibraryPage,
-  'material-library': MaterialLibraryPage,
 };
+
+const StatusBar: React.FC = () => (
+  <div className={styles.statusBar}>
+    <span className={styles.statusTime}>9:41</span>
+    <div className={styles.statusIcons}>
+      <Signal size={12} strokeWidth={2} />
+      <Wifi size={12} strokeWidth={2} />
+      <Battery size={14} strokeWidth={1.5} />
+    </div>
+  </div>
+);
+
+const HomeIndicator: React.FC = () => (
+  <div className={styles.homeIndicator} aria-hidden>
+    <div className={styles.homeBar} />
+  </div>
+);
 
 export const PageStackRouter: React.FC = () => {
   const stack = usePageStackStore(s => s.stack);
@@ -43,28 +60,19 @@ export const PageStackRouter: React.FC = () => {
   }
 
   return (
-    <div style={{
-      width: '100%',
-      maxWidth: 430,
-      height: '100dvh',
-      margin: '0 auto',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'var(--bg-main)',
-      overflow: 'hidden',
-    }}>
-      {/* 主内容区 */}
-      <div style={{
-        flex: 1,
-        overflow: 'hidden auto',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        <PageComponent params={current.params} />
+    <div className={styles.outer}>
+      <div className={styles.phone}>
+        <StatusBar />
+        <div className={styles.content}>
+          <PageComponent params={current.params} />
+        </div>
+        {tabBarVisible && (
+          <>
+            <TabBar />
+            <HomeIndicator />
+          </>
+        )}
       </div>
-
-      {/* TabBar */}
-      {tabBarVisible && <TabBar />}
     </div>
   );
 };
