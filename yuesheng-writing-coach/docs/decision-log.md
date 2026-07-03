@@ -2019,3 +2019,86 @@ D-1 → E-1 → E-2 → D-2
 - 本决策批准后,启动 D-1 真实 Orchestrator 适配器
 - Sprint 21 实施过程中,每个任务完成追加 D-064~D-067
 - Sprint 22 候选清单(5 项)进入 Backlog,等 Sprint 21 Reflect 时评估优先级
+
+---
+
+## 2026-07-03
+
+### D-064: Sprint 21 D-1 真实 Orchestrator 适配器完成(mock 退役 + onToken 双通道桥接)
+- **类型**: 重构 + 测试
+
+## 背景
+
+Sprint 20 A-4 创建了 ChatHandleTurnBridge + MockConversationOrchestrator,实现了 ChatPage 订阅模式与 IPC 双通道(chat:handleTurn / chat:event)。但 Mock 不会触发真实 token 流,无法做端到端验证。
+Sprint 21 计划 D-1 要求:
+1. 真实 Orchestrator 适配器(RealOrchestratorAdapter)接入 ChatOrchestratorService
+2. onToken 回调双通道桥接:既有 chat:stream IPC 推送不变 + Orchestrator 事件流可订阅
+3. ≥5 个适配器单测覆盖关键场景
+4. Mock 标 @legacy 而非删除(保留测试桩)
+
+## 实施内容
+
+### 文件改动
+- **新增** src/main/domains/03-teaching/conversation/real-orchestrator-adapter.ts(165 行)
+  - RealOrchestratorAdapter 实现 ConversationOrchestrator 接口
+  - 事件队列 + push 模型(避免 for-await 跨 IPC 序列化问题,沿用 A-4 教训)
+  - sessionId 过滤:其他会话事件直接丢弃
+  - 异常隔离:订阅 handler 抛错仅 warn 不中断流
+  - promptVersion() 返回 v5.0.1 + FALLBACK_CONTRACT
+  - skillManifest(phase, version?) 委托 SkillRegistry,版本过滤由 SkillRegistry.compatibleWith 完成
+- **新增** src/main/domains/03-teaching/conversation/__tests__/real-orchestrator-adapter.test.ts(13 个单测)
+  - 缺失 sessionId → CONTEXT_MISSING
+  - onToken → token 事件按序累积
+  - emitOrchestratorEvent → intent 事件透传
+  - sendMessage reject → API_ERROR + 流终止
+  - 非 Error reject → message 正确序列化
+  - sessionId 过滤:其他会话事件被丢弃
+  - stream 完成后 unsubscribe
+  - 无 SkillRegistry → skillManifest 返回 []
+  - 有 SkillRegistry: 无 version → getAll, 有 version → compatibleWith
+  - promptVersion 返回 v5.0.1 + 契约
+  - stopGeneration 委托底层
+  - consumer break 时 unsubscribe 仍被调用
+- **修改** src/main/domains/03-teaching/chat/stream-handler.ts
+  - StreamHandlerDeps 新增 onToken?: (chunk: string) => void; 字段
+  - handleStreamResponse 在 or-await 循环中调用 deps.onToken?.(chunk)
+- **修改** src/main/domains/03-teaching/chat/chat-orchestrator.service.ts
+  - sendMessage args 新增 onToken 可选字段
+  - 解构出 onToken 并传递给 createStreamHandlerDeps
+  - createStreamHandlerDeps 新增 onToken 参数,组装到 StreamHandlerDeps
+- **修改** src/main/domains/03-teaching/conversation/chat-handle-turn.bridge.ts
+  - 构造函数支持注入 ConversationOrchestrator 或 { chatOrchestrator, skillRegistry? }
+  - 优先使用 RealOrchestratorAdapter,无 deps 时回退 Mock(标 @legacy)
+  - 移除 require 引入,改 ESM import
+
+### 事件映射表
+
+| 源 | 事件 | 转换点 |
+|---|---|---|
+| streamHandler.handleStreamResponse 的 for-await chunk | OrchestratorEvent.token | onToken 回调 |
+| chatOrchestrator.emitOrchestratorEvent(intent:...) | OrchestratorEvent.intent | 订阅 onOrchestratorEvent 透传 |
+| chatOrchestrator.emitOrchestratorEvent(diagnosis:...) | OrchestratorEvent.diagnosis_extracted | 透传 |
+| chatOrchestrator.sendMessage resolve | OrchestratorEvent.done | .then() |
+| chatOrchestrator.sendMessage reject | OrchestratorEvent.error(API_ERROR) | .catch() |
+
+## 门禁
+
+- typecheck: **0 errors**
+- vitest: **791/791 passed**(含 13 个新增)
+- lint: **0 errors**(257 warnings,R-019/R-027 允许范围)
+- E2E: **62 passed**
+
+## 教训
+
+1. **onToken 字段是隐式契约**: StreamHandlerDeps 在 Sprint 21 D-1 引入 onToken 后,所有未传 onToken 的调用方(包括 stream-handler.service.ts 的 handleStream)依然走 onToken undefined 的兼容路径。**TypeScript strict 没报错因为字段是 optional**,但 D-1 实施过程中发现 sendMessage 解构忘记加 onToken,导致 createStreamHandlerDeps(activeSessionId, onToken) 引用未定义变量。教训:**接口扩展时,所有调用点必须显式补字段**(即使可选),靠类型系统不会"提醒"漏传
+2. **adapter 适配 onToken 优于改 stream-handler 注入点**: 一开始考虑过修改 stream-handler.service.ts 接收 callbacks 数组,会增加主进程依赖图复杂度。最终选择 StreamHandlerDeps 加一个可选 onToken 字段,**最小化改动面**。R-010 体现
+3. **consumer break 必须清资源**: 之前 D-059 教训说 for-await 不能跨 IPC,这次发现 consumer break(主动退出循环)时仍需保证 unsubscribe 被调用。	ry { yield } finally { unsubscribe() } 是标准模式,但 done 标志 + .finally() 双保险更稳
+4. **Mock 退役是软删除**: MockConversationOrchestrator 不删,改 import 标 @legacy。**理由**:orchestrator.test.ts 5 个单测依赖 Mock,如果 RealOrchestratorAdapter 没有现成对照,回归测试失去 baseline。S22 后视情况再彻底退役
+5. **onToken 桥接不影响 chat:stream 推送**: 同时走两条通道(webContents.send(CHAT_STREAM_DATA) + onToken(chunks)),前端 ChatPage 旧路径依然工作,R-022"不破坏既有功能"约束
+6. **SkillRegistry 已是稳定依赖**: skillManifest 委托 SkillRegistry.compatibleWith 后,RealOrchestratorAdapter 不再自己解析 frontmatter。Sprint 20 增量 1 投入的版本过滤在 D-1 兑现价值(从"基础设施"变"消费方")
+
+## 后续
+
+- 启动 D-2 事件接状态机(基于 D-1 真实路径)
+- E-1 载荷脱敏白名单开发
+- 监控 ChatPage 是否需要 onToken 直通(避免双通道冗余)
