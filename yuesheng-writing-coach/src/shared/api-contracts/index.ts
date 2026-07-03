@@ -5,9 +5,9 @@ export type { ApiSuccess, ApiError, ApiResponse, ApiEndpoint, ApiEvent } from '.
 
 // 聊天域
 export type {
-  ChatSendRequest, ChatStopRequest,
-  ChatSendResponse, ChatStopResponse,
-  ChatStreamDataEvent, ChatStreamEndEvent, ChatToolExecutingEvent,
+  ChatSendRequest, ChatStopRequest, ChatHandleTurnRequest,
+  ChatSendResponse, ChatStopResponse, ChatHandleTurnResponse,
+  ChatStreamDataEvent, ChatStreamEndEvent, ChatToolExecutingEvent, ChatEventPayload,
 } from './chat.contract';
 export { ChatApi } from './chat.contract';
 export type { ChatInvokeChannels, ChatEventChannels } from './chat.contract';

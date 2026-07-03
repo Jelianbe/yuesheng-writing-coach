@@ -164,6 +164,9 @@ export const IPC_CHANNELS = {
   CHAT_STOP: 'chat:stop',
   CHAT_STREAM_DATA: 'chat:stream:data',
   CHAT_STREAM_END: 'chat:stream:end',
+  // Sprint 20 A-4
+  CHAT_HANDLE_TURN: 'chat:handleTurn',
+  CHAT_EVENT: 'chat:event',
   // === 会话管理 ===
   SESSION_LIST: 'session:list',
   SESSION_CREATE: 'session:create',
@@ -243,6 +246,7 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
   IPC_CHANNELS.EVIDENCE_GET_BY_SYNDROME,
   IPC_CHANNELS.CHAT_SEND,
   IPC_CHANNELS.CHAT_STOP,
+  IPC_CHANNELS.CHAT_HANDLE_TURN,
   IPC_CHANNELS.SESSION_LIST,
   IPC_CHANNELS.SESSION_CREATE,
   IPC_CHANNELS.SESSION_DELETE,
@@ -295,4 +299,5 @@ export const ALLOWED_EVENT_CHANNELS: readonly string[] = [
   IPC_CHANNELS.CHAT_STREAM_DATA,
   IPC_CHANNELS.CHAT_STREAM_END,
   IPC_CHANNELS.CHAT_TOOL_EXECUTING,
+  IPC_CHANNELS.CHAT_EVENT,
 ];
