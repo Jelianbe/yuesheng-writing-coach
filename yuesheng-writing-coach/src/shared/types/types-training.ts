@@ -13,6 +13,9 @@ export type CenterMode = 'chat' | 'training' | 'retro';
  */
 export type TrainingFlowType = 'legacy' | 'flow5';
 
+/** 活跃训练状态机状态(Sprint 24 A-1+) */
+export type ActiveTrainingStatus = 'in_progress' | 'completed' | 'aborted';
+
 /** 训练步骤 */
 export interface TrainingStep {
   /** 步骤 ID */

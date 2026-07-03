@@ -17,6 +17,12 @@ import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manus
 import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
 import { registerRetroHandlers } from '../ipc/retro.handler';
+// Sprint 24 A-3 / A-4: ActiveTraining 状态机 IPC handler
+import {
+  initActiveTrainingHandlers,
+  registerActiveTrainingHandlers,
+  setupActiveTrainingPush,
+} from '../ipc/active-training.handler';
 import type { ConfigService } from '../shared/services/config.service';
 import type { SessionService } from '../shared/services/session.service';
 import type { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
@@ -31,6 +37,8 @@ import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
 import type { RetroService } from '../domains/05-retro/retro.service';
+// Sprint 24 A-3: ActiveTraining 状态机服务
+import type { ActiveTrainingService } from '../domains/03-teaching/state/active-training.service';
 
 export class IpcRegistry {
   constructor(
@@ -130,5 +138,13 @@ export class IpcRegistry {
 
     // Window Controls (最小化/最大化/关闭)
     initWindowHandlers();
+
+    // Sprint 24 A-3: ActiveTraining 草稿持久化 — DI 注入状态机服务
+    const activeTrainingService = this.container.get<ActiveTrainingService>('activeTrainingService');
+    initActiveTrainingHandlers(activeTrainingService);
+    registerActiveTrainingHandlers();
+
+    // Sprint 24 A-4: 桥接状态变更到 renderer(渲染层订阅模式)
+    setupActiveTrainingPush(this.mainWindow);
   }
 }

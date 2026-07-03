@@ -64,6 +64,8 @@ export type { SessionProgress } from './types-teaching';
 // --- types-training: 训练工坊 ---
 export type { CenterMode } from './types-training';
 export type { TrainingStep } from './types-training';
+// Sprint 24 A-3: ActiveTraining 状态机共享类型(主进程 + renderer 通用)
+export type { ActiveTrainingStatus } from './types-training';
 export type { ActiveTrainingSession } from './types-training';
 export type { ErrorCard } from './types-training';
 export type { TrainingRecommendation } from './types-training';

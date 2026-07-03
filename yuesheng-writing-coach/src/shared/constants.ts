@@ -210,6 +210,17 @@ export const IPC_CHANNELS = {
   CHAT_TOOL_EXECUTING: 'chat:tool:executing',
   // === 教学决策记录(直接 service 调用,保留通道常量以供 IPC 化时使用) ===
   TEACHING_DECISION_RECORD: 'teachingDecision:record',
+  // Sprint 24 A-3: ActiveTraining 草稿持久化 IPC 频道
+  // - request/response 模式,带 ack
+  // - renderer 端 500ms debounce 后调用
+  // - 主进程侧 ActiveTrainingService.updateDraft() 写入 SQLite
+  ACTIVE_TRAINING_UPDATE_DRAFT: 'activeTraining:updateDraft',
+  ACTIVE_TRAINING_GET: 'activeTraining:get',
+  // Sprint 24 A-4: ActiveTraining 状态推送事件
+  // - 主进程 → renderer 推送,无 ack
+  // - 触发场景: start/updateDraft/advanceStep/evaluate/complete/abort
+  // - 用途: renderer store 订阅主进程状态变化,实现渲染层订阅模式
+  ACTIVE_TRAINING_UPDATED: 'activeTraining:updated',
   // === 窗口控制(ipcMain.on,非 invoke) ===
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
@@ -274,6 +285,11 @@ export const ALLOWED_INVOKE_CHANNELS: readonly string[] = [
   IPC_CHANNELS.TRAINING_GENERATE_FLOW,
   IPC_CHANNELS.RETRO_GENERATE,
   IPC_CHANNELS.RETRO_SAVE,
+  // Sprint 24 A-3: ActiveTraining 草稿持久化
+  IPC_CHANNELS.ACTIVE_TRAINING_UPDATE_DRAFT,
+  IPC_CHANNELS.ACTIVE_TRAINING_GET,
+  // Sprint 24 A-4: ActiveTraining 状态推送事件订阅
+  IPC_CHANNELS.ACTIVE_TRAINING_UPDATED,
   IPC_CHANNELS.MANUSCRIPT_LIST,
   IPC_CHANNELS.MANUSCRIPT_GET,
   IPC_CHANNELS.MANUSCRIPT_CREATE,
