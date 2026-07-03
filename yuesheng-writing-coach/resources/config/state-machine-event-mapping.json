@@ -17,14 +17,14 @@
     {
       "eventType": "phase_transition",
       "action": "confirmPhase",
-      "enabled": false,
-      "comment": "阶段切换确认 — Sprint 22 启用(避免影响 FiveStepFlow E2E 行为)"
+      "enabled": true,
+      "comment": "Sprint 22 F-1: 阶段切换确认(诊断完成 emit phase_transition 推进教学状态机子阶段)"
     },
     {
       "eventType": "training_triggered",
       "action": "setActiveTraining",
-      "enabled": false,
-      "comment": "训练触发 — Sprint 22 启用"
+      "enabled": true,
+      "comment": "Sprint 22 F-2: 训练触发(用户消息含训练意图关键词 + 诊断有症候时 emit。占位:Subscriber 调 markTrainingIntent + console.info,主进程侧 ActiveTraining 状态机推到 S23+)"
     }
   ]
 }
