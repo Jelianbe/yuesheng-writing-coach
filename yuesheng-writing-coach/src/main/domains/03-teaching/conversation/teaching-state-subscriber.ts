@@ -1,9 +1,9 @@
 /**
- * TeachingStateSubscriber — 教学状态机事件订阅器 (Sprint 20 A-3 试点 / Sprint 21 D-2 扩展)
+ * TeachingStateSubscriber — 教学状态机事件订阅器 (Sprint 20 A-3 试点 / Sprint 21 D-2 扩展 / Sprint 24 A-2 扩展)
  *
  * 职责:
  * - 订阅 ChatOrchestratorService 派发的 OrchestratorEvent
- * - 在收到特定事件时调用 TeachingStateService 对应方法
+ * - 在收到特定事件时调用 TeachingStateService / ActiveTrainingService 对应方法
  * - 事件→动作映射由 resources/config/state-machine-event-mapping.json 声明(R-014)
  *
  * 试点范围(Sprint 20 A-3):
@@ -15,7 +15,16 @@
  * - diagnosis_extracted → recordProblem (新)
  * - phase_transition / training_triggered → disabled 留扩展点
  *
- * 依据: dev-docs/tasks/sprint-21-plan.md §D-2
+ * Sprint 23 G-1 扩展:
+ * - training_triggered → setActiveTraining(轻量业务元数据,写入 teaching_state.active_training_meta)
+ *
+ * Sprint 24 A-2 扩展:
+ * - 新增 training_triggered → startActiveTraining(完整状态机入口)
+ * - 接收 ActiveTrainingService(可选,未传则跳过完整状态机路径)
+ * - 与 G-1 setActiveTraining 共存:前者写业务元数据,后者写 active_training 表
+ * - 步骤构造:从 training-library.json 查 syndromeId 匹配的 entry,组装 TrainingStep[]
+ *
+ * 依据: dev-docs/tasks/sprint-21-plan.md §D-2 + dev-docs/tasks/sprint-24-plan.md §A-2
  */
 
 import * as fs from 'node:fs';
@@ -27,7 +36,9 @@ import type {
   SyndromeEvidence,
 } from './orchestrator.types';
 import type { TeachingStateService } from '../teaching-state.service';
+import type { ActiveTrainingService } from '../state/active-training.service';
 import type { TrainingTriggeredEvent } from './orchestrator.types';
+import type { TrainingStep } from '../state/active-training.types';
 
 export interface TrainingIntentRecord {
   sessionId: string;
@@ -71,15 +82,25 @@ function eventTypeOf(event: OrchestratorEvent): string {
 /** 教学状态机事件订阅器 */
 export class TeachingStateSubscriber {
   private readonly teachingStateService: TeachingStateService;
+  private readonly activeTrainingService: ActiveTrainingService | null;
   private readonly mapping: SubscriberMapping[];
   private lastTrainEvent: TrainingIntentRecord | null = null;
   private lastDiagnosisRecord: { sessionId: string; syndromeId: string; severity: string | null } | null = null;
+  private lastStartActiveTrainingCall: {
+    sessionId: string;
+    syndromeId: string;
+    techniqueId?: string;
+    challengeId: string;
+    source: string;
+  } | null = null;
 
   constructor(
     teachingStateService: TeachingStateService,
     configPath?: string,
+    activeTrainingService?: ActiveTrainingService,
   ) {
     this.teachingStateService = teachingStateService;
+    this.activeTrainingService = activeTrainingService ?? null;
 
     // 默认 config 路径(resources/config/state-machine-event-mapping.json)
     const resolvedPath = configPath ?? this.resolveDefaultConfigPath();
@@ -98,35 +119,40 @@ export class TeachingStateSubscriber {
    * @param sessionId 关联会话
    */
   handle(event: OrchestratorEvent, sessionId: string): void {
-    // 1) 查找匹配的 subscriber 声明
+    // 1) 查找所有匹配的 subscriber 声明(支持同一事件多个 action)
     const et = eventTypeOf(event);
-    const sub = this.mapping.find(s => s.eventType === et && s.enabled);
-    if (!sub) {
+    const subs = this.mapping.filter(s => s.eventType === et && s.enabled);
+    if (subs.length === 0) {
       // 未配置或 disabled:静默跳过(无副作用)
       return;
     }
 
     // 2) 异常隔离:任何 action 抛错不中断事件流
-    try {
-      switch (sub.action) {
-        case 'markTrainingIntent':
-          this.handleMarkTrainingIntent(event, sessionId);
-          break;
-        case 'recordProblem':
-          this.handleRecordProblem(event, sessionId);
-          break;
-        case 'confirmPhase':
-          this.handleConfirmPhase(event, sessionId);
-          break;
-        case 'setActiveTraining':
-          this.handleSetActiveTraining(event, sessionId);
-          break;
-        default:
-          // 未知 action:不抛错,只 warn
-          console.warn(`[TeachingStateSubscriber] unknown action: ${sub.action}`);
+    for (const sub of subs) {
+      try {
+        switch (sub.action) {
+          case 'markTrainingIntent':
+            this.handleMarkTrainingIntent(event, sessionId);
+            break;
+          case 'recordProblem':
+            this.handleRecordProblem(event, sessionId);
+            break;
+          case 'confirmPhase':
+            this.handleConfirmPhase(event, sessionId);
+            break;
+          case 'setActiveTraining':
+            this.handleSetActiveTraining(event, sessionId);
+            break;
+          case 'startActiveTraining':
+            this.handleStartActiveTraining(event, sessionId);
+            break;
+          default:
+            // 未知 action:不抛错,只 warn
+            console.warn(`[TeachingStateSubscriber] unknown action: ${sub.action}`);
+        }
+      } catch (e) {
+        console.warn(`[TeachingStateSubscriber] action ${sub.action} failed:`, e);
       }
-    } catch (e) {
-      console.warn(`[TeachingStateSubscriber] action ${sub.action} failed:`, e);
     }
   }
 
@@ -193,6 +219,125 @@ export class TeachingStateSubscriber {
     );
   }
 
+  /**
+   * Sprint 24 A-2: 启动 ActiveTraining 完整状态机
+   * - 接收 training_triggered 事件
+   * - 从 training-library.json 查 syndromeId 匹配的训练条目
+   * - 组装 TrainingStep[] (3 步通用流:理解 → 尝试 → 确认)
+   * - 调用 ActiveTrainingService.start() 写入 active_training 表
+   * - 异常隔离: 任何错误仅 console.warn,不抛出
+   */
+  private handleStartActiveTraining(event: OrchestratorEvent, sessionId: string): void {
+    if (event.type !== 'training_triggered') return;
+    if (!this.activeTrainingService) {
+      // ActiveTrainingService 未注入(测试场景或降级路径),静默跳过
+      return;
+    }
+    const triggered = event.payload as TrainingTriggeredEvent;
+
+    const plan = this.buildTrainingPlan(triggered.syndromeId, triggered.techniqueId);
+    this.lastStartActiveTrainingCall = {
+      sessionId,
+      syndromeId: triggered.syndromeId,
+      techniqueId: triggered.techniqueId,
+      challengeId: plan.challengeId,
+      source: triggered.reason,
+    };
+
+    this.activeTrainingService.start({
+      sessionId,
+      syndromeId: triggered.syndromeId,
+      challengeId: plan.challengeId,
+      challengeName: plan.challengeName,
+      mode: plan.mode,
+      steps: plan.steps,
+      constraint: plan.constraint,
+      source: triggered.reason,
+    });
+  }
+
+  /**
+   * 训练计划构造: 从 training-library.json 查 syndromeId 匹配的训练条目
+   * 降级路径: 无匹配时返回通用 3 步计划
+   */
+  private buildTrainingPlan(
+    syndromeId: string,
+    techniqueId?: string,
+  ): {
+    challengeId: string;
+    challengeName: string;
+    mode: string;
+    constraint: string | undefined;
+    steps: TrainingStep[];
+  } {
+    const defaultSteps: TrainingStep[] = [
+      { id: 's1', title: '理解挑战', description: '理解训练任务', status: 'active' },
+      { id: 's2', title: '尝试改写', description: '按约束改写', status: 'pending' },
+      { id: 's3', title: '确认完成', description: '提交评估', status: 'pending' },
+    ];
+
+    try {
+      const libPath = path.join(
+        process.cwd(),
+        'resources',
+        'config',
+        'training-library.json',
+      );
+      const raw = fs.readFileSync(libPath, 'utf-8');
+      const lib = JSON.parse(raw) as {
+        entries: Array<{
+          id: string;
+          syndromeId: string;
+          title: string;
+          mode?: string;
+          constraint?: string;
+          expectedOutcome?: string;
+        }>;
+      };
+      const entry = techniqueId
+        ? lib.entries.find((e) => e.id === techniqueId)
+        : lib.entries.find((e) => e.syndromeId === syndromeId);
+      if (entry) {
+        return {
+          challengeId: entry.id,
+          challengeName: entry.title,
+          mode: entry.mode ?? 'generic',
+          constraint: entry.constraint,
+          steps: [
+            {
+              id: 's1',
+              title: '理解挑战',
+              description: entry.constraint ?? '理解训练任务',
+              status: 'active',
+            },
+            {
+              id: 's2',
+              title: '尝试改写',
+              description: entry.expectedOutcome ?? '按约束改写',
+              status: 'pending',
+            },
+            {
+              id: 's3',
+              title: '确认完成',
+              description: '提交评估',
+              status: 'pending',
+            },
+          ],
+        };
+      }
+    } catch (e) {
+      console.warn('[TeachingStateSubscriber] buildTrainingPlan: training-library load failed, using default:', e);
+    }
+
+    return {
+      challengeId: `generic-${syndromeId}`,
+      challengeName: `${syndromeId} 训练`,
+      mode: 'generic',
+      constraint: undefined,
+      steps: defaultSteps,
+    };
+  }
+
   // ─── 测试用 getter ───
 
   getLastTrainEvent(): TrainingIntentRecord | null {
@@ -201,6 +346,17 @@ export class TeachingStateSubscriber {
 
   getLastDiagnosisRecord(): { sessionId: string; syndromeId: string; severity: string | null } | null {
     return this.lastDiagnosisRecord;
+  }
+
+  /** Sprint 24 A-2: 测试用 - 最近一次 startActiveTraining 调用 */
+  getLastStartActiveTrainingCall(): {
+    sessionId: string;
+    syndromeId: string;
+    techniqueId?: string;
+    challengeId: string;
+    source: string;
+  } | null {
+    return this.lastStartActiveTrainingCall;
   }
 
   getMapping(): SubscriberMapping[] {

@@ -21,6 +21,8 @@ import { ReflectionGateService } from '../domains/03-teaching/reflection-gate.se
 import { CodexService } from '../domains/03-teaching/prompt/codex.service';
 import { getTeachingStateContext, getStoreForPromptLoader } from '../ipc/teaching-state.handler';
 import { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
+import { ActiveTrainingService } from '../domains/03-teaching/state/active-training.service';
+import { ActiveTrainingStore } from '../domains/03-teaching/state/active-training.store';
 import { TeachingNoteService } from '../domains/03-teaching/teaching-note.service';
 import { ApiProxyService } from '../shared/services/api-proxy.service';
 import { StrategyInstructionBuilder } from '../domains/03-teaching/strategy-instruction-builder';
@@ -143,6 +145,14 @@ export function configureServices(
     const service = new TeachingStateService();
     service.initStore(db);
     return service;
+  });
+
+  // Sprint 24 A-1/A-2: ActiveTraining 完整状态机服务
+  // - 封装 ActiveTrainingStore (active_training 表)
+  // - 订阅 training_triggered 事件,实现 start/advanceStep/updateDraft/evaluate/complete/abort
+  container.register<ActiveTrainingService>('activeTrainingService', () => {
+    const store = new ActiveTrainingStore(db);
+    return new ActiveTrainingService(store);
   });
 
   // 教学笔记服务 (I-08)
