@@ -40,6 +40,10 @@
     "ci": "npm run sync:ipc && npm run typecheck && npm run test && npm run scan:hardcode && npm run build"
   },
   "dependencies": {
+    "@capacitor-community/sqlite": "^8.1.0",
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
     "better-sqlite3": "^12.11.1",
     "electron-store": "^8.1.0",
     "lucide-react": "^1.17.0",
