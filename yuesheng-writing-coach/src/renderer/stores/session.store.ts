@@ -1,27 +1,20 @@
 /**
  * session.store.ts — 聊天会话管理（主会话，非面板会话）
  *
- * ⚠️ 本文件 catch 块中的 console.error / console.warn 仅用于开发调试，
- *    生产环境应通过构建工具（如 terser drop_console）自动移除。
- *
  * 职责：
  * - 管理聊天会话列表（创建/切换/删除）
- * - 通过 IPC 与主进程 SessionService 交互
+ * - 通过双轨 service 与主进程/SessionService 交互 (Sprint 26 阶段 3.4 Z-1)
  * - 提供 currentSessionId 给 chat.store 使用
+ *
+ * 双轨说明: 全部调用走 renderer/services/session.service.ts,
+ * 平台检测在 service 内部,store 无需关心。
  */
 
 import { create } from 'zustand';
-import { IPC_CHANNELS } from '../shared/constants';
-import { typedInvoke } from '../services/ipc-client';
+import { sessionService } from '../services/session.service';
 import type { ChatMessage } from '../shared/types';
 import type {
-  SessionListWithMetaResponse,
-  SessionCreateResponse,
-  SessionGetMessagesResponse,
   SessionCreateRequest,
-  SessionGetMessagesRequest,
-  SessionDeleteRequest,
-  SessionRenameRequest,
 } from '../../shared/api-contracts/session.contract';
 
 /** 聊天会话 */
@@ -71,92 +64,56 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   sessions: [],
   currentSessionId: null,
 
-  // Actions
+  // Actions — 全部走 sessionService (双轨)
   loadSessions: async () => {
-    try {
-      const res = await typedInvoke<Record<string, never>, SessionListWithMetaResponse>(
-        IPC_CHANNELS.SESSION_LIST_WITH_META,
-        {},
-      );
-      if (res.success && res.data) {
-        const list = res.data.sessions.map(toChatSession);
-        set({ sessions: list });
-        if (list.length > 0 && !get().currentSessionId) {
-          set({ currentSessionId: list[0].id });
-        }
+    const sessions = await sessionService.listWithMeta();
+    if (sessions.length > 0) {
+      const list = sessions.map(toChatSession);
+      set({ sessions: list });
+      if (!get().currentSessionId) {
+        set({ currentSessionId: list[0].id });
       }
-    } catch (err) {
-      console.error('[session.store] loadSessions failed:', err);
     }
   },
 
   createSession: async (title?: string) => {
-    try {
-      const res = await typedInvoke<SessionCreateRequest, SessionCreateResponse>(
-        IPC_CHANNELS.SESSION_CREATE,
-        title ? { title } : {},
-      );
-      if (res.success && res.data) {
-        const session = toChatSession(res.data.session);
-        set((state) => ({
-          sessions: [...state.sessions, session],
-          currentSessionId: session.id,
-        }));
-        return session;
-      }
-      return null;
-    } catch (err) {
-      console.error('[session.store] createSession failed:', err);
-      return null;
+    const session = await sessionService.create(title);
+    if (session) {
+      const chatSession = toChatSession(session);
+      set((state) => ({
+        sessions: [...state.sessions, chatSession],
+        currentSessionId: chatSession.id,
+      }));
+      return chatSession;
     }
+    return null;
   },
 
   switchSession: (id) => set({ currentSessionId: id }),
 
   loadMessages: async (sessionId) => {
-    try {
-      const res = await typedInvoke<SessionGetMessagesRequest, SessionGetMessagesResponse>(
-        IPC_CHANNELS.SESSION_GET_MESSAGES,
-        { sessionId },
-      );
-      if (res.success && res.data) {
-        return res.data.messages as unknown as ChatMessage[];
-      }
-      return [];
-    } catch (err) {
-      console.error('[session.store] loadMessages failed:', err);
-      return [];
-    }
+    return sessionService.getMessages(sessionId) as unknown as Promise<ChatMessage[]>;
   },
 
   deleteSession: async (id) => {
-    try {
-      const payload: SessionDeleteRequest = { sessionId: id };
-      await typedInvoke<SessionDeleteRequest, { success: true }>(
-        IPC_CHANNELS.SESSION_DELETE,
-        payload,
-      );
+    const success = await sessionService.delete(id);
+    if (success) {
       set((state) => ({
         sessions: state.sessions.filter(s => s.id !== id),
         currentSessionId: state.currentSessionId === id ? null : state.currentSessionId,
       }));
-    } catch (err) {
-      console.error('[session.store] deleteSession failed:', err);
     }
   },
 
   renameSession: async (id, title) => {
-    try {
-      const payload: SessionRenameRequest = { sessionId: id, title };
-      await typedInvoke<SessionRenameRequest, { success: true }>(
-        IPC_CHANNELS.SESSION_RENAME,
-        payload,
-      );
+    const success = await sessionService.rename(id, title);
+    if (success) {
       set((state) => ({
         sessions: state.sessions.map(s => s.id === id ? { ...s, title } : s),
       }));
-    } catch (err) {
-      console.error('[session.store] renameSession failed:', err);
     }
   },
 }));
+
+// 保留 unused warning 抑制(Sprint 26 阶段 3.4 Z-1 改造后)
+void ({} as SessionCreateRequest);

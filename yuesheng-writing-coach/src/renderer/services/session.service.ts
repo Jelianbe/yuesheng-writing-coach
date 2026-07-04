@@ -166,6 +166,40 @@ export const sessionService = {
     });
   },
 
+  /** 加载会话所有消息 — 失败时返回 [] (Sprint 26 阶段 3.4 Z-1: 补 getMessages 供 store 迁移) */
+  async getMessages(sessionId: string): Promise<SessionMessage[]> {
+    return runDualTrack({ sessionId }, {
+      direct: async (args) => {
+        const direct = await getDirectService();
+        if (!direct) return [];
+        try {
+          const rows = await direct.getMessages(args.sessionId);
+          return rows.map((m) => ({
+            id: m.id,
+            sessionId: m.session_id,
+            role: m.role,
+            content: m.content,
+            createdAt: m.timestamp,
+          }));
+        } catch (err) {
+          console.error('[session] getMessages failed (direct):', err);
+          return [];
+        }
+      },
+      electron: async (args) => {
+        const result = await typedInvoke<
+          { sessionId: string },
+          { messages: SessionMessage[] }
+        >(SessionApi.getMessages.channel, { sessionId: args.sessionId });
+        if (!result.success) {
+          console.error('[session] getMessages failed:', result.error);
+          return [];
+        }
+        return result.data.messages;
+      },
+    });
+  },
+
   /** 分页加载消息 — 失败时返回空页 */
   async getMessagesPaged(
     sessionId: string,
