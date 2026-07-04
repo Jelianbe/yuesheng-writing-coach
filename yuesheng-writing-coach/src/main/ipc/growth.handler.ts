@@ -1,43 +1,43 @@
 /**
- * 成长趋势 IPC 处理器
- * 负责：前端学习日志工具查询症候成长趋势
- * 依赖：GrowthTrendService
+ * 成长趋势 — Sprint 26 阶段 3.5 方案 4a bridge 注册
+ *
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('growth:getTrends' | 'growth:getGlobalTrends', ...)`
+ *
+ * 依赖: GrowthTrendService (DI 注入)
  */
 
-import { IPC_CHANNELS } from '../../shared/constants';
-import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
 import type { GrowthGlobalSyndromeTrend } from '../../shared/api-contracts/growth.contract';
-import { createHandler } from './utils/create-handler';
+import { validatePayload } from './utils/validate-payload';
+import { registerMethod } from '../core/service-bridge';
+import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';
 
-export interface GrowthHandlerDeps {
-  growthTrendService: GrowthTrendService;
+let growthTrendService: GrowthTrendService | null = null;
+
+export function initGrowthHandlers(d: { growthTrendService: GrowthTrendService }): void {
+  growthTrendService = d.growthTrendService;
 }
 
-let deps: GrowthHandlerDeps | null = null;
-
-export function initGrowthHandlers(d: GrowthHandlerDeps): void {
-  deps = d;
-}
-
-/**
- * 注册成长趋势相关的 IPC 处理器
- */
 export function registerGrowthHandlers(): void {
-  createHandler(IPC_CHANNELS.GROWTH_GET_TRENDS, async (_event, args: { sessionId?: string }) => {
-    if (!deps) {
-      console.warn('[GrowthHandler] Deps not initialized');
-      throw new Error('GrowthHandler deps not initialized');
+  registerMethod('growth:getTrends', async (args) => {
+    const validation = validatePayload<{ sessionId?: string }>(args, {
+      types: { sessionId: 'string' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     }
-    const summary = deps.growthTrendService.getGrowthSummary(args.sessionId);
-    return summary;
+
+    if (!growthTrendService) {
+      throw new Error('GrowthTrendService not initialized');
+    }
+    return growthTrendService.getGrowthSummary(validation.data.sessionId);
   });
 
-  createHandler(IPC_CHANNELS.GROWTH_GET_GLOBAL_TRENDS, async () => {
-    if (!deps) {
-      console.warn('[GrowthHandler] Deps not initialized');
-      throw new Error('GrowthHandler deps not initialized');
+  registerMethod('growth:getGlobalTrends', async (_args) => {
+    if (!growthTrendService) {
+      throw new Error('GrowthTrendService not initialized');
     }
-    const summary = deps.growthTrendService.getGrowthSummary();
+    const summary = growthTrendService.getGrowthSummary();
     const trends: GrowthGlobalSyndromeTrend[] = summary.trends.map(t => ({
       syndromeId: t.id,
       name: t.name,

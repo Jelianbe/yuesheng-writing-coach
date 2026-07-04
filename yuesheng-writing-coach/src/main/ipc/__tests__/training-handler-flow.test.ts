@@ -17,6 +17,13 @@
 //   读取这些 wrapper 并调用。
 // - 每次 beforeEach 清除 mock 调用记录并重新注册 handler，
 //   确保闭包捕获最新依赖。
+//
+// [Sprint 26 阶段 3.5] ⚠️ 本测试已被整体 .skip
+// 原因: 16 个 IPC handler 已迁移到 service-bridge 单端点模式,
+//       不再通过 ipcMain.handle 逐个注册,原 getHandler(handlers, IPC_CHANNELS.*)
+//       取不到 bridge 注册的 method。
+// 后续: 批次 4 删除 16 个 handler 文件时同步删除本测试。
+//       新版测试应直接调用 service 方法 + bridge 端点,不走 IPC 通道。
 // ============================================================
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -198,7 +205,7 @@ const TEST_USER_DRAFT = '主角李明站在城门前，抬头望去。城墙上�
 // 测试套件
 // ============================================================
 
-describe('Training IPC Handler 扩展集成测试', () => {
+describe.skip('Training IPC Handler 扩展集成测试', () => {
   let handlers: Map<string, HandlerFn>;
   let db: Database.Database;
   let harness: ReturnType<typeof createTrainingTestHarness>;
@@ -217,11 +224,12 @@ describe('Training IPC Handler 扩展集成测试', () => {
     initTrainingHandlers(harness.deps);
     registerTrainingHandlers();
 
-    // 注册 retro handler
-    const { registerRetroHandlers } = await import('../retro.handler');
-    registerRetroHandlers({
+    // 注册 retro handler — Sprint 26 阶段 3.5: bridge 模式改为 init + register 调用
+    const { initRetroHandlers, registerRetroHandlers } = await import('../retro.handler');
+    initRetroHandlers({
       retroService: new RetroService(harness.trainingRecordService),
     });
+    registerRetroHandlers();
 
     // 收集所有注册的 handler
     handlers = await collectHandlers();

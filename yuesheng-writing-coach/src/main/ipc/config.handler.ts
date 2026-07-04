@@ -1,14 +1,16 @@
-// 配置相关 IPC 处理器
-// 负责：处理渲染进程的配置请求，转发到 ConfigService
-// 依赖：electron.ipcMain, ConfigService
-// 安全：不在日志中打印 API Key
+/**
+ * 配置管理 — Sprint 26 阶段 3.5 方案 4a bridge 注册
+ *
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('config:get' | 'config:set' | 'config:testConnection' | 'config:getReadingEntry', ...)`
+ *
+ * 保留 SEC-DEBT-1 白名单 + 值类型校验(安全要求)
+ * 保留 app.isPackaged 路径解析(已知不可靠,后续 Sprint 27 修)
+ */
 
 import type { ConfigService } from '../shared/services/config.service';
-import { IPC_CHANNELS } from '../../shared/constants';
-import type {
-  ApiConfig,
-} from '../../shared/types/index';
-import { createHandler } from './utils/create-handler';
+import type { ApiConfig } from '../../shared/types/index';
+import { registerMethod } from '../core/service-bridge';
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -23,12 +25,6 @@ export function initConfigHandlers(d: ConfigHandlerDeps): void {
   deps = d;
 }
 
-/**
- * 可修改配置键白名单 — SEC-DEBT-1
- *
- * 运行时白名单，防止 renderer 注入任意 key 覆盖敏感配置。
- * 所有值类型在运行时再次校验。
- */
 const CONFIG_SET_ALLOWED_KEYS = new Set<keyof ApiConfig>([
   'apiKey',
   'baseUrl',
@@ -39,7 +35,6 @@ const CONFIG_SET_ALLOWED_KEYS = new Set<keyof ApiConfig>([
   'maxTokens',
 ]);
 
-/** 每个 key 对应的预期运行时类型 */
 const CONFIG_VALUE_VALIDATORS: Record<string, (v: unknown) => boolean> = {
   apiKey: (v): v is string => typeof v === 'string',
   baseUrl: (v): v is string => typeof v === 'string',
@@ -50,74 +45,52 @@ const CONFIG_VALUE_VALIDATORS: Record<string, (v: unknown) => boolean> = {
   maxTokens: (v): v is number => typeof v === 'number' && v >= 256 && v <= 128000,
 };
 
-/**
- * 注册配置相关的 IPC 处理器
- * 应在主进程初始化时调用
- */
 export function registerConfigHandlers(): void {
   if (!deps) {
     throw new Error('ConfigHandler deps not injected');
   }
   const d = deps;
 
-  // 获取配置值
-  createHandler(
-    IPC_CHANNELS.CONFIG_GET,
-    (_event, args: { key: keyof ApiConfig }) => {
-      return d.configService.getConfig()[args.key];
-    }
-  );
+  registerMethod('config:get', async (args) => {
+    const { key } = args as { key: keyof ApiConfig };
+    return d.configService.getConfig()[key];
+  });
 
-  // 设置配置值（SEC-DEBT-1：白名单 + 值类型校验）
-  createHandler(
-    IPC_CHANNELS.CONFIG_SET,
-    async (
-      _event,
-      args: { key: string; value: unknown }
-    ) => {
-      // 1. 白名单检查
-      if (!CONFIG_SET_ALLOWED_KEYS.has(args.key as keyof ApiConfig)) {
-        throw new Error(`INVALID_PAYLOAD: config key '${args.key}' is not writable`);
-      }
-      // 2. 值类型校验（白名单 key 必须存在对应校验器）
-      const validator = CONFIG_VALUE_VALIDATORS[args.key];
-      if (!validator || !validator(args.value)) {
-        throw new Error(`INVALID_PAYLOAD: invalid value type for config key '${args.key}'`);
-      }
-      d.configService.setConfigKey(args.key as keyof ApiConfig, args.value as ApiConfig[keyof ApiConfig]);
+  registerMethod('config:set', async (args) => {
+    const { key, value } = args as { key: string; value: unknown };
+    if (!CONFIG_SET_ALLOWED_KEYS.has(key as keyof ApiConfig)) {
+      throw new Error(`INVALID_PAYLOAD: config key '${key}' is not writable`);
     }
-  );
-
-  // 测试连接
-  createHandler(
-    IPC_CHANNELS.CONFIG_TEST_CONNECTION,
-    async (_event, args: { apiKey: string; baseUrl: string }) => {
-      return await d.configService.testConnection(args.apiKey, args.baseUrl);
+    const validator = CONFIG_VALUE_VALIDATORS[key];
+    if (!validator || !validator(value)) {
+      throw new Error(`INVALID_PAYLOAD: invalid value type for config key '${key}'`);
     }
-  );
+    d.configService.setConfigKey(key as keyof ApiConfig, value as ApiConfig[keyof ApiConfig]);
+  });
 
-  // 获取阅读库条目（按症候 ID 筛选）
-  createHandler(
-    IPC_CHANNELS.CONFIG_GET_READING_ENTRY,
-    async (_event, args: { syndromeId: string }) => {
-      const resourcesRoot = app.isPackaged
-        ? path.join(process.resourcesPath, 'config')
-        : path.join(app.getAppPath(), 'resources', 'config');
-      const filePath = path.join(resourcesRoot, 'reading-library.json');
-      try {
-        const raw = fs.readFileSync(filePath, 'utf-8');
-        const library = JSON.parse(raw);
-        if (!library.entries || !Array.isArray(library.entries)) {
-          return { entries: [] };
-        }
-        // 按 syndromeId 筛选：精确匹配或包含
-        const matches = library.entries.filter(
-          (e: { syndromeId: string }) => e.syndromeId === args.syndromeId
-        );
-        return { entries: matches };
-      } catch {
+  registerMethod('config:testConnection', async (args) => {
+    const { apiKey, baseUrl } = args as { apiKey: string; baseUrl: string };
+    return await d.configService.testConnection(apiKey, baseUrl);
+  });
+
+  registerMethod('config:getReadingEntry', async (args) => {
+    const { syndromeId } = args as { syndromeId: string };
+    const resourcesRoot = app.isPackaged
+      ? path.join(process.resourcesPath, 'config')
+      : path.join(app.getAppPath(), 'resources', 'config');
+    const filePath = path.join(resourcesRoot, 'reading-library.json');
+    try {
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      const library = JSON.parse(raw);
+      if (!library.entries || !Array.isArray(library.entries)) {
         return { entries: [] };
       }
+      const matches = library.entries.filter(
+        (e: { syndromeId: string }) => e.syndromeId === syndromeId
+      );
+      return { entries: matches };
+    } catch {
+      return { entries: [] };
     }
-  );
+  });
 }
