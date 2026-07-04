@@ -258,24 +258,41 @@ export class BetterSqliteAdapter implements StorageAdapter {
         ON teaching_state(session_id);
     `);
 
-    // training_records
+    // user_training_records (Sprint 26 阶段 2 T26-2.4)
+    // 注意:必须与 src/main/domains/04-validation/training/training-record.service.ts 实际使用对齐
+    // 字段累积自多个 migration:
+    //   - 015_db_create_user_training_records.sql 基础字段
+    //   - 020_db_add_task_type.sql task_type
+    // 表名 user_training_records(非 training_records),与生产环境一致
+    // 开发态与 app-initializer.ensureBaseSchema 共存(IF NOT EXISTS,不冲突)
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS training_records (
+      CREATE TABLE IF NOT EXISTS user_training_records (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
-        challenge_id TEXT NOT NULL,
-        flow_type TEXT,
-        passed INTEGER NOT NULL DEFAULT 0,
-        score REAL,
-        feedback TEXT,
-        started_at TEXT NOT NULL,
-        completed_at TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        syndrome_id TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('assigned', 'completed', 'skipped')),
+        assigned_at TEXT NOT NULL,
+        completed_at TEXT,
+        user_response TEXT,
+        ai_feedback TEXT,
+        effectiveness INTEGER CHECK(effectiveness IS NULL OR (effectiveness >= 1 AND effectiveness <= 5)),
+        score INTEGER,
+        task_type TEXT NOT NULL DEFAULT 'writing' CHECK(task_type IN ('writing', 'reading', 'reflection', 'technique')),
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       );
     `);
     this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_training_records_session
-        ON training_records(session_id);
+      CREATE INDEX IF NOT EXISTS idx_training_session
+        ON user_training_records(session_id, assigned_at);
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_training_task
+        ON user_training_records(task_id);
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_training_status
+        ON user_training_records(session_id, status);
     `);
   }
 }
