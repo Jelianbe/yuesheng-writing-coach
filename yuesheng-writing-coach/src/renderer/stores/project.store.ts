@@ -1,20 +1,13 @@
 // 项目状态管理（Zustand）
 // 负责：管理项目列表和选中状态
-// 依赖：zustand, electron IPC (IPC_CHANNELS.PROJECT_*)
+// 依赖：projectService (Sprint 26 阶段 3.4 Z-1: 调用方迁移,双轨透明)
 
 import { create } from 'zustand';
-import { IPC_CHANNELS } from '../shared/constants';
-import { typedInvoke } from '../services/ipc-client';
+import { projectService } from '../services/project.service';
 import type {
   ProjectInfo,
-  ProjectListResponse,
   ProjectCreateRequest,
-  ProjectCreateResponse,
   ProjectUpdateRequest,
-  ProjectUpdateResponse,
-  ProjectDeleteRequest,
-  ProjectGetRequest,
-  ProjectGetResponse,
 } from '../../shared/api-contracts/project.contract';
 
 export type { ProjectInfo };
@@ -40,22 +33,15 @@ export const useProjectStore = create<ProjectState & ProjectActions>((set, get) 
   loading: false,
   error: null,
 
-  // Actions
+  // Actions — 全部走 projectService (双轨)
   fetchList: async () => {
     set({ loading: true, error: null });
-    try {
-      const res = await typedInvoke<Record<string, never>, ProjectListResponse>(
-        IPC_CHANNELS.PROJECT_LIST,
-        {},
-      );
-      if (res.success && res.data) {
-        set({ projects: res.data, loading: false });
-        return;
-      }
-      set({ error: !res.success ? res.error : '获取项目列表失败', loading: false });
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '获取项目列表异常', loading: false });
+    const list = await projectService.list();
+    if (list.length > 0) {
+      set({ projects: list, loading: false });
+      return;
     }
+    set({ error: '获取项目列表失败', loading: false });
   },
 
   getById: (id: string) => {
@@ -63,83 +49,53 @@ export const useProjectStore = create<ProjectState & ProjectActions>((set, get) 
   },
 
   fetchById: async (id: string) => {
-    try {
-      const payload: ProjectGetRequest = { projectId: id };
-      const res = await typedInvoke<ProjectGetRequest, ProjectGetResponse>(
-        IPC_CHANNELS.PROJECT_GET,
-        payload,
-      );
-      if (res.success && res.data) {
-        set((state) => ({
-          projects: state.projects.some(p => p.id === res.data.id)
-            ? state.projects.map(p => p.id === res.data.id ? res.data : p)
-            : [...state.projects, res.data],
-        }));
-        return res.data;
-      }
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '获取项目详情异常' });
-      return null;
+    const data = await projectService.getById(id);
+    if (data) {
+      set((state) => ({
+        projects: state.projects.some(p => p.id === data.id)
+          ? state.projects.map(p => p.id === data.id ? data : p)
+          : [...state.projects, data],
+      }));
+      return data;
     }
+    return null;
   },
 
   createProject: async (input) => {
     set({ loading: true, error: null });
-    try {
-      const res = await typedInvoke<ProjectCreateRequest, ProjectCreateResponse>(
-        IPC_CHANNELS.PROJECT_CREATE,
-        input,
-      );
-      if (res.success && res.data) {
-        set((state) => ({ projects: [...state.projects, res.data], loading: false }));
-        return res.data;
-      }
-      set({ error: !res.success ? res.error : '创建项目失败', loading: false });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '创建项目异常', loading: false });
-      return null;
+    const data = await projectService.create(input);
+    if (data) {
+      set((state) => ({ projects: [...state.projects, data], loading: false }));
+      return data;
     }
+    set({ error: '创建项目失败', loading: false });
+    return null;
   },
 
   updateProject: async (id, data) => {
-    try {
-      const payload: ProjectUpdateRequest = { projectId: id, ...data };
-      const res = await typedInvoke<ProjectUpdateRequest, ProjectUpdateResponse>(
-        IPC_CHANNELS.PROJECT_UPDATE,
-        payload,
-      );
-      if (res.success && res.data) {
-        set((state) => ({
-          projects: state.projects.map(p => p.id === id ? res.data : p),
-        }));
-        return res.data;
-      }
-      set({ error: !res.success ? res.error : '更新项目失败' });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '更新项目异常' });
-      return null;
+    const updated = await projectService.update(id, {
+      name: data.name,
+      description: data.description,
+      settingTree: data.settingTree,
+      settingTreeType: data.settingTreeType,
+    });
+    if (updated) {
+      set((state) => ({
+        projects: state.projects.map(p => p.id === id ? updated : p),
+      }));
+      return updated;
     }
+    set({ error: '更新项目失败' });
+    return null;
   },
 
   removeProject: async (id) => {
-    try {
-      const payload: ProjectDeleteRequest = { projectId: id };
-      const res = await typedInvoke<ProjectDeleteRequest, { success: true }>(
-        IPC_CHANNELS.PROJECT_DELETE,
-        payload,
-      );
-      if (res.success) {
-        set((state) => ({ projects: state.projects.filter(p => p.id !== id) }));
-        return true;
-      }
-      set({ error: res.error || '删除项目失败' });
-      return false;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '删除项目异常' });
-      return false;
+    const success = await projectService.remove(id);
+    if (success) {
+      set((state) => ({ projects: state.projects.filter(p => p.id !== id) }));
+      return true;
     }
+    set({ error: '删除项目失败' });
+    return false;
   },
 }));

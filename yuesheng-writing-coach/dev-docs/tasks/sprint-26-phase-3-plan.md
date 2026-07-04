@@ -88,9 +88,19 @@
 
 ### 阶段 3.3: typedInvoke 收尾（D-DEBT-34，1 天）
 
-**目标**: 13 处 `if (!success) throw` 改为 `console.error + return fallback`
+> ⚠️ **状态: 已 Sprint 20 B-2/B-3 收尾(D-060/D-061),D-072(2026-07-04)做了事实修正**。
+> 本阶段无工作可做,事实状态如下:
+> - ✅ 28/28 降级测试全绿(`src/renderer/services/__tests__/typedinvoke-degradation.test.ts`)
+> - ✅ 所有 renderer service 全部降级(chat/student-context/training/diagnosis/teaching-state/session)
+> - ✅ 决策日志 D-DEBT-34 状态 line 1394: **已完成**
+> - ✅ 反模式修复(chat.send @deprecated)+ P0 高敏感数据降级(11 处)
+> - 残留 throw 1 处(`chat-orchestrator:374`)是主进程内部,经 IPC 框架 `createHandler` try-catch 标准化 + renderer 端 `chat.service.send` 降级,链路安全
+>
+> **不要**把此阶段列为"待办",如本会话外有 AI 误判,直接以本注 + 决策日志为准。
 
-**DoD**:
+**原目标**: 13 处 `if (!success) throw` 改为 `console.error + return fallback`
+
+**原 DoD**:
 - 0 处 `throw new Error('IPC failed')` 模式
 - D-DEBT-34 在决策日志中关闭
 - 单测覆盖降级路径

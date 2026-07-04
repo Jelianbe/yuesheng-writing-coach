@@ -5,11 +5,15 @@
  * - 拉取全部学习阶段列表 / 单个阶段 / 阶段进度
  *
  * 数据契约:src/shared/api-contracts/prescription.contract.ts
+ *
+ * Sprint 26 阶段 3.4 Z-1: fetchAllStages / fetchStageById 走双轨 service,
+ * fetchStageProgress 仍走 IPC(依赖 DB mastery 数据,暂不直调)
  */
 
 import { create } from 'zustand';
 import { IPC_CHANNELS } from '../shared/constants';
 import { typedInvoke } from '../services/ipc-client';
+import { developmentPathService } from '../services/development-path.service';
 import type {
   DevelopmentStageInfo,
   StageProgress,
@@ -42,40 +46,24 @@ export const usePrescriptionStore = create<PrescriptionState & PrescriptionActio
 
   fetchAllStages: async () => {
     set({ loading: true, error: null });
-    try {
-      const res = await typedInvoke<Record<string, never>, DevelopmentStageInfo[]>(
-        IPC_CHANNELS.PRESCRIPTION_GET_ALL_STAGES,
-        {},
-      );
-      if (res.success && res.data) {
-        set({ allStages: res.data, loading: false });
-        return res.data;
-      }
-      set({ loading: false, error: !res.success ? res.error : '阶段列表为空' });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '获取阶段列表异常', loading: false });
-      return null;
+    const stages = await developmentPathService.getAllStages();
+    if (stages.length > 0) {
+      set({ allStages: stages, loading: false });
+      return stages;
     }
+    set({ loading: false, error: '阶段列表为空' });
+    return null;
   },
 
   fetchStageById: async (stageId) => {
     set({ loading: true, error: null });
-    try {
-      const res = await typedInvoke<{ stageId: string }, DevelopmentStageInfo | null>(
-        IPC_CHANNELS.PRESCRIPTION_GET_STAGE_BY_ID,
-        { stageId },
-      );
-      if (res.success && res.data) {
-        set({ currentStage: res.data, loading: false });
-        return res.data;
-      }
-      set({ loading: false, error: !res.success ? res.error : '阶段详情为空' });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '获取阶段详情异常', loading: false });
-      return null;
+    const stage = await developmentPathService.getStageById(stageId);
+    if (stage) {
+      set({ currentStage: stage, loading: false });
+      return stage;
     }
+    set({ loading: false, error: '阶段详情为空' });
+    return null;
   },
 
   fetchStageProgress: async (sessionId) => {
