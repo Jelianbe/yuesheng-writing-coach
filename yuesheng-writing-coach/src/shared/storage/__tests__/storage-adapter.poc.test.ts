@@ -147,7 +147,7 @@ describe('StorageAdapter PoC — Sprint 26 阶段 1', () => {
     expect(tableNames).toContain('projects');
     expect(tableNames).toContain('active_training');
     expect(tableNames).toContain('teaching_state');
-    expect(tableNames).toContain('training_records');
+    expect(tableNames).toContain('user_training_records');
 
     // 验证 active_training 表含 step_responses_json 字段(Sprint 25 C-4)
     const columns = await a.query<{ name: string }>(

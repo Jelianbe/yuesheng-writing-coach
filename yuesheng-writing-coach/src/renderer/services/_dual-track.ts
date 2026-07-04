@@ -11,10 +11,20 @@
  * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.1
  */
 
-/** Capacitor 平台检测 */
+/**
+ * Capacitor 平台检测
+ *
+ * 为什么不用 `!!window.Capacitor`?
+ * - @capacitor/core 在 jsdom/普通浏览器环境会**自动注入** `window.Capacitor` 对象(副作用)
+ * - 注入的对象存在但平台是 'web',不是真原生
+ * - 导致 isCapacitor() 在 jsdom 测试环境误判为 true,触发 CapacitorSqliteAdapter 初始化失败
+ *
+ * 正确做法:检测 navigator.userAgent,真 Capacitor WebView 包含 'Capacitor' 标识
+ * (参考 @capacitor/core 文档: https://capacitorjs.com/docs/core-apis/web#capacitor-isp)
+ */
 export function isCapacitor(): boolean {
-  if (typeof window === 'undefined') return false;
-  return !!(window as unknown as { Capacitor?: unknown }).Capacitor;
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  return /Capacitor/i.test(navigator.userAgent || '');
 }
 
 /**
