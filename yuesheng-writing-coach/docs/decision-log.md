@@ -2920,3 +2920,38 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
 - **状态**: 🚧 阶段 1 进行中,等待用户安装 Android Studio/JDK
 
 
+
+
+### D-075: Sprint 26 阶段 1 — jsdom 环境 Capacitor 误判债务
+
+- **类型**: 测试债务（jsdom Capacitor mock 缺失）
+- **背景**:
+  - Sprint 26 阶段 1（commit d5bd96b）实现 StorageAdapter 抽象层 + 3 个 adapter
+  - 引入 isCapacitor() 平台检测（window.Capacitor）在 src/renderer/services/session.service.ts
+  - jsdom 测试环境中 window.Capacitor 被 @capacitor/core 注入（虽然应该是 undefined），导致 getDirectService() 返回 direct service 而非走 typedInvoke 降级路径
+  - 后果：8 个 typedinvoke-degradation.test.ts 测试失败（CapacitorSqliteAdapter.initialize → createConnection 失败）
+- **8 个失败测试**（src/renderer/services/__tests__/typedinvoke-degradation.test.ts）:
+  1. session.service.list() 失败时返回 []
+  2. session.service.create() 失败时返回 null
+  3. session.service.delete() 失败时返回 false
+  4. session.service.rename() 失败时返回 false
+  5. session.service.getMessagesPaged() 失败时返回空页
+  6. session.service.listWithMeta() 失败时返回 []
+  7. session.service.updateTitle() 失败时返回 false
+  8. session.service.searchMessages() 失败时返回 []
+- **修复方案**（Sprint 26 阶段 2 待办）:
+  1. **方案 A**: 在 vitest setup 中 mock window.Capacitor = undefined
+  2. **方案 B**: 增强 isCapacitor() 检测（检查 @capacitor/core 是否真正加载）
+  3. **方案 C**: 改造 typedinvoke-degradation.test.ts 使用 vitest mock 完全模拟 IPC 失败（不依赖 isCapacitor 判断）
+- **决策**: 用户 2026-07-04 决定**修复 lint 后 commit，8 test failures 留为 Sprint 26 阶段 2 债务**
+- **理由**:
+  - Sprint 26 阶段 1 核心是接口 + 3 个 adapter 实现，平台检测是 Sprint 26 阶段 2（5 张表迁移）的细化问题
+  - 8 个 test failures 全部是 typedinvoke-degradation 路径，不是 StorageAdapter 本身问题
+  - 4 道门禁中：typecheck 0 / test 994/1002 (99.2%) / lint 0 / 安全 OK
+  - Sprint 26 阶段 1 已完成 80% 工作（接口 + 2 个 adapter + 1 个跨端 service + Capacitor 初始化 + PoC 测试 5/5）
+- **关联**:
+  - D-074 Sprint 26 战略转向
+  - 决策日志 D-074（commit 4db34bd）
+  - dev-docs/tasks/sprint-26-plan.md §1.1.5
+  - 3 个 lint errors 修复（commit ea40e35 计划中）
+- **状态**: 🚧 Sprint 26 阶段 2 启动时一并修复
