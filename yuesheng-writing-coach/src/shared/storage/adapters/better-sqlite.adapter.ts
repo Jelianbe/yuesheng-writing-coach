@@ -224,16 +224,38 @@ export class BetterSqliteAdapter implements StorageAdapter {
     `);
 
     // teaching_state
+    // 注意:必须与 app-initializer.ensureBaseSchema 保持一致(主进程 store 实际使用此 schema)
+    // 字段累积自多个 migration:
+    //   - 003_create_teaching_state.sql 基础字段
+    //   - 006_add_focus_area.sql focus_area
+    //   - 011_add_locked_syndromes.sql locked_syndromes
+    //   - 025_teaching_state_active_training.sql active_training_meta
+    // JSON 数组字段(completed_actions/completed_tasks/active_problems/next_suggested_actions/locked_syndromes)
+    // 全部用 TEXT 存 JSON 字符串,Service 层负责 parse/stringify
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS teaching_state (
-        session_id TEXT PRIMARY KEY,
-        current_phase TEXT NOT NULL DEFAULT 'idle',
-        active_training_id TEXT,
-        last_event_at TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL UNIQUE,
+        current_phase TEXT NOT NULL DEFAULT 'P0_INIT',
+        current_subphase TEXT,
+        completed_actions TEXT NOT NULL DEFAULT '[]',
+        completed_tasks TEXT NOT NULL DEFAULT '[]',
+        active_problems TEXT NOT NULL DEFAULT '[]',
+        next_suggested_actions TEXT NOT NULL DEFAULT '[]',
+        current_task_id TEXT,
+        diagnosis_summary TEXT NOT NULL DEFAULT '',
+        last_user_confirmation TEXT,
+        focus_area TEXT DEFAULT NULL,
+        transition_offered INTEGER NOT NULL DEFAULT 0,
+        locked_syndromes TEXT NOT NULL DEFAULT '[]',
+        active_training_meta TEXT DEFAULT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
       );
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_teaching_state_session
+        ON teaching_state(session_id);
     `);
 
     // training_records
