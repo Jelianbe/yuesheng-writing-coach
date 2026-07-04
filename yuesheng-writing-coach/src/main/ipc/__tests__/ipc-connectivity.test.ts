@@ -396,7 +396,10 @@ describe('IPC 连通性测试', () => {
   // 验证 3：删除功能
   // ============================================================
   describe('删除功能', () => {
-    it('session:delete 应删除会话', async () => {
+    // Sprint 26 阶段 3.5 方案 4a:session/project 改为 registerMethod 注册,
+    // 不再调 ipcMain.handle,handlers Map 收不到这两个 channel。
+    // 后续批次 4 会按 3.4 评估删 handler 文件,届时本测试块整体删。
+    it.skip('session:delete 应删除会话', async () => {
       const handler = handlers.get(IPC_CHANNELS.SESSION_DELETE)!;
       expect(handler).toBeDefined();
 
@@ -405,7 +408,7 @@ describe('IPC 连通性测试', () => {
       expect(res).toHaveProperty('success');
     });
 
-    it('project:delete 应删除项目', async () => {
+    it.skip('project:delete 应删除项目', async () => {
       const create = handlers.get(IPC_CHANNELS.PROJECT_CREATE)!;
       const del = handlers.get(IPC_CHANNELS.PROJECT_DELETE)!;
       const list = handlers.get(IPC_CHANNELS.PROJECT_LIST)!;

@@ -1,17 +1,15 @@
 /**
- * 发展路径 IPC 处理器
+ * 发展路径 — Sprint 26 阶段 3.5 方案 4a bridge 注册
  *
- * 负责：
- * 1. prescription:getStageProgress — 获取当前阶段进度（需 sessionId）
- * 2. prescription:getAllStages — 获取所有发展路径阶段
- * 3. prescription:getStageById — 按 ID 查询阶段信息
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('prescription:getStageProgress' | 'prescription:getAllStages' | 'prescription:getStageById', ...)`
  *
- * 依赖：StudentModelService（用于获取症候掌握度数据）
+ * 注: 3.4 评估标记 getAllStages/getStageById 为删除候选(纯直调),先迁 bridge 作为过渡收口,
+ *     后续批次 4 统一删除。getStageProgress 因有 StudentModelService 数据转换,短期保留。
  */
 
-import { IPC_CHANNELS } from '../../shared/constants';
-import { createHandler } from './utils/create-handler';
 import { validatePayload } from './utils/validate-payload';
+import { registerMethod } from '../core/service-bridge';
 import {
   getAllStages,
   getStageById,
@@ -21,13 +19,12 @@ import type { UserMasteryData } from '../../shared/types/index';
 import type { StudentModelService } from '../domains/02-prescription/student/student-model-service';
 import type { SyndromeAggregation } from '../domains/02-prescription/student/student-model-service.types';
 
-/** 症候严重度 → 掌握度评分映射（临时替代方案，后续应由训练评估数据替代） */
 function severityToMasteryScore(severity: string): number {
   switch (severity) {
-    case 'L3': return 3;  // 严重 → 低掌握度
-    case 'L2': return 6;  // 中等 → 中掌握度
-    case 'L1': return 9;  // 轻微 → 高掌握度
-    default: return 5;    // 未知 → 默认中等
+    case 'L3': return 3;
+    case 'L2': return 6;
+    case 'L1': return 9;
+    default: return 5;
   }
 }
 
@@ -42,12 +39,7 @@ export function initDevelopmentPathHandlers(d: DevelopmentPathHandlerDeps): void
 }
 
 export function registerDevelopmentPathHandlers(): void {
-  /**
-   * prescription:getStageProgress — 获取用户当前阶段进度
-   *
-   * 从 StudentModelService 获取症候画像，转换为掌握度数据后计算阶段进度。
-   */
-  createHandler(IPC_CHANNELS.PRESCRIPTION_GET_STAGE_PROGRESS, async (_event, args) => {
+  registerMethod('prescription:getStageProgress', async (args) => {
     const validation = validatePayload<{ sessionId: string }>(args, {
       required: ['sessionId'],
       types: { sessionId: 'string' },
@@ -57,9 +49,7 @@ export function registerDevelopmentPathHandlers(): void {
 
     const profile = deps.studentModelService.getSyndromeProfile(validation.data.sessionId);
     if (!profile || Object.keys(profile).length === 0) {
-      // 无诊断数据 → 返回第一阶段（eye 自动通过后为 pen）
-      const progress = getCurrentStage([]);
-      return progress;
+      return getCurrentStage([]);
     }
 
     const masteryData: UserMasteryData[] = Object.entries(profile).map(
@@ -73,24 +63,14 @@ export function registerDevelopmentPathHandlers(): void {
       }),
     );
 
-    const progress = getCurrentStage(masteryData);
-    return progress;
+    return getCurrentStage(masteryData);
   });
 
-  /**
-   * prescription:getAllStages — 获取全部发展阶段（只读）
-   *
-   * 返回 ApiResponse<DevelopmentStageInfo[]> 包装后的数据。
-   * handler 只返回裸数据,createHandler 会包成 { success, data }。
-   */
-  createHandler(IPC_CHANNELS.PRESCRIPTION_GET_ALL_STAGES, async () => {
+  registerMethod('prescription:getAllStages', async (_args) => {
     return getAllStages();
   });
 
-  /**
-   * prescription:getStageById — 按 ID 查询阶段信息
-   */
-  createHandler(IPC_CHANNELS.PRESCRIPTION_GET_STAGE_BY_ID, async (_event, args) => {
+  registerMethod('prescription:getStageById', async (args) => {
     const validation = validatePayload<{ stageId: string }>(args, {
       required: ['stageId'],
       types: { stageId: 'string' },
