@@ -79,6 +79,32 @@ function createMockContainer(db: Database.Database): MockContainer {
         getTree: vi.fn().mockResolvedValue([]),
         deleteNode: vi.fn(),
       };
+      // Sprint 26 T26-2.2:projectService mock(异步 ProjectService 实例,内部维护状态模拟 list/create/delete 联动)
+      if (key === 'projectService') {
+        const projects = new Map<string, Record<string, unknown>>();
+        return {
+          listProjects: vi.fn().mockImplementation(async () => Array.from(projects.values())),
+          getProject: vi.fn().mockImplementation(async (id: string) => projects.get(id) ?? null),
+          createProject: vi.fn().mockImplementation(async (input: { name: string }) => {
+            const id = `proj-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            const now = Math.floor(Date.now() / 1000);
+            const info = { id, name: input.name, createdAt: now, updatedAt: now };
+            projects.set(id, info);
+            return info;
+          }),
+          updateProject: vi.fn().mockImplementation(async (id: string, input: Record<string, unknown>) => {
+            const cur = projects.get(id);
+            if (!cur) throw new Error('PROJECT_NOT_FOUND');
+            const next = { ...cur, ...input, updatedAt: Math.floor(Date.now() / 1000) };
+            projects.set(id, next);
+            return next;
+          }),
+          deleteProject: vi.fn().mockImplementation(async (id: string) => {
+            if (!projects.has(id)) throw new Error('PROJECT_NOT_FOUND');
+            projects.delete(id);
+          }),
+        };
+      }
       return {};
     }),
   };
@@ -211,7 +237,8 @@ describe('IPC 连通性测试', () => {
     registerSessionHandlers();
 
     const { initProjectHandlers, registerProjectHandlers } = await import('../project.handler');
-    initProjectHandlers({ db });
+    // Sprint 26 T26-2.2:切到 ProjectService 异步版
+    initProjectHandlers({ projectService: container.get('projectService') as never });
     registerProjectHandlers();
 
     const { initDiagnosisHandlers, registerDiagnosisHandlers } = await import('../diagnosis.handler');

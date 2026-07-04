@@ -173,21 +173,23 @@ export class BetterSqliteAdapter implements StorageAdapter {
     `);
 
     // projects
+    // 注意:必须与 021_projects.sql 保持一致(主进程 handler 实际使用此 schema)
+    // - name/setting_tree/setting_tree_type 字段
+    // - created_at/updated_at 用 INTEGER unix 秒
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
-        session_id TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        status TEXT NOT NULL DEFAULT 'active',
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+        name TEXT NOT NULL,
+        description TEXT DEFAULT NULL,
+        setting_tree TEXT DEFAULT NULL,
+        setting_tree_type TEXT NOT NULL DEFAULT 'main',
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        updated_at INTEGER NOT NULL DEFAULT (unixepoch())
       );
     `);
     this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_projects_session
-        ON projects(session_id);
+      CREATE INDEX IF NOT EXISTS idx_projects_updated_at
+        ON projects(updated_at DESC);
     `);
 
     // active_training (Sprint 24 A-1 + Sprint 25 C-4 step_responses_json)

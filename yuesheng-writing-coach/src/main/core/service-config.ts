@@ -4,6 +4,8 @@ import { ConfigService } from '../shared/services/config.service';
 // Sprint 26 阶段 2:主进程 SessionService 切到 StorageAdapter 版本(异步 + 双端共用)
 // 旧 sync 版本 src/main/shared/services/session.service.ts 已标 @deprecated
 import { SessionService } from '../../shared/services/session.service';
+// Sprint 26 阶段 2 T26-2.2:ProjectService 切到 StorageAdapter 版本
+import { ProjectService } from '../../shared/services/project.service';
 import { BetterSqliteAdapter } from '../../shared/storage/adapters/better-sqlite.adapter';
 import { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
 import { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
@@ -62,6 +64,10 @@ export function configureServices(
   container.register<ConfigService>('configService', () => new ConfigService());
   container.register<SessionService>('sessionService', (c) =>
     new SessionService(c.get<BetterSqliteAdapter>('storageAdapter')),
+  );
+  // Sprint 26 阶段 2 T26-2.2:ProjectService 切到 StorageAdapter 版本(异步 + 双端共用)
+  container.register<ProjectService>('projectService', (c) =>
+    new ProjectService(c.get<BetterSqliteAdapter>('storageAdapter')),
   );
   container.register<ApiProxyService>('apiProxyService', (c) =>
     new ApiProxyService(c.get<ConfigService>('configService')),

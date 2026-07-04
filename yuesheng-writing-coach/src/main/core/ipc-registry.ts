@@ -127,8 +127,8 @@ export class IpcRegistry {
     initManuscriptHandlers({ db: this.container.get<Database.Database>('db') });
     registerManuscriptHandlers();
 
-    // Project (RWR-P0-4 — 直接使用 db 实例)
-    initProjectHandlers({ db: this.container.get<Database.Database>('db') });
+    // Project (RWR-P0-4 + Sprint 26 T26-2.2 — 切到 ProjectService 异步版)
+    initProjectHandlers({ projectService: this.container.get('projectService') });
     registerProjectHandlers();
 
     // Retro (F-03 复盘总结)
