@@ -1,7 +1,10 @@
 import type Database from 'better-sqlite3';
 import type { ServiceContainer } from './service-container';
 import { ConfigService } from '../shared/services/config.service';
-import { SessionService } from '../shared/services/session.service';
+// Sprint 26 阶段 2:主进程 SessionService 切到 StorageAdapter 版本(异步 + 双端共用)
+// 旧 sync 版本 src/main/shared/services/session.service.ts 已标 @deprecated
+import { SessionService } from '../../shared/services/session.service';
+import { BetterSqliteAdapter } from '../../shared/storage/adapters/better-sqlite.adapter';
 import { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
 import { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
 import { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
@@ -53,9 +56,13 @@ export function configureServices(
   // Shared / Infrastructure Layer
   // ============================================================
   container.register<Database.Database>('db', () => db);
+  // Sprint 26 阶段 2:StorageAdapter 注入(Electron 端用 BetterSqliteAdapter 包装 better-sqlite3)
+  container.register<BetterSqliteAdapter>('storageAdapter', () => new BetterSqliteAdapter({ db, dbName: 'yuesheng.db', version: 1 }));
   container.register<string>('resourcesRoot', () => resourcesRoot);
   container.register<ConfigService>('configService', () => new ConfigService());
-  container.register<SessionService>('sessionService', () => new SessionService(db));
+  container.register<SessionService>('sessionService', (c) =>
+    new SessionService(c.get<BetterSqliteAdapter>('storageAdapter')),
+  );
   container.register<ApiProxyService>('apiProxyService', (c) =>
     new ApiProxyService(c.get<ConfigService>('configService')),
   );

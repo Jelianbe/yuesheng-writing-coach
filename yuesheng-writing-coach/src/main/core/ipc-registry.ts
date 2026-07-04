@@ -24,7 +24,7 @@ import {
   setupActiveTrainingPush,
 } from '../ipc/active-training.handler';
 import type { ConfigService } from '../shared/services/config.service';
-import type { SessionService } from '../shared/services/session.service';
+import type { SessionService } from '../../shared/services/session.service';
 import type { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
 import type { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
 import type { TrainingRecordService } from '../domains/04-validation/training/training-record.service';

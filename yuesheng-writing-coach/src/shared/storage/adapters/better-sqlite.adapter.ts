@@ -156,6 +156,22 @@ export class BetterSqliteAdapter implements StorageAdapter {
       );
     `);
 
+    // messages (Sprint 26 阶段 2 补:SessionService 依赖)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        timestamp INTEGER NOT NULL,
+        FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+      );
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_messages_session
+        ON messages(session_id);
+    `);
+
     // projects
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS projects (
