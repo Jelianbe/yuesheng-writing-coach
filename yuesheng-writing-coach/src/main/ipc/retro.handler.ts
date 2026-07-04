@@ -1,37 +1,40 @@
 /**
- * 复盘总结 IPC 处理器
+ * 复盘总结 — Sprint 26 阶段 3.5 方案 4a bridge 注册
  *
- * 通道：
- * 1. retro:generate — 生成复盘总结
- * 2. retro:save — 保存复盘记录
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('retro:generate' | 'retro:save', ...)`
+ *
+ * 依赖: RetroService (DI 注入)
  */
 
-import { IPC_CHANNELS } from '../../shared/constants';
 import type { RetroService } from '../domains/05-retro/retro.service';
-import type { RetroSummary } from '../domains/05-retro/retro.service';
-import type { RetroGenerateRequest, RetroSaveRequest } from '../../shared/api-contracts/retro.contract';
-import { createHandler } from './utils/create-handler';
+import { validatePayload } from './utils/validate-payload';
+import { registerMethod } from '../core/service-bridge';
 
-export interface RetroHandlerDeps {
-  retroService: RetroService;
+let retroService: RetroService | null = null;
+
+export function initRetroHandlers(d: { retroService: RetroService }): void {
+  retroService = d.retroService;
 }
 
-export function registerRetroHandlers(deps: RetroHandlerDeps): void {
-  const { retroService } = deps;
+export function registerRetroHandlers(): void {
+  registerMethod('retro:generate', async (args) => {
+    const validation = validatePayload<{ sessionId: string }>(args, {
+      required: ['sessionId'],
+      types: { sessionId: 'string' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
 
-  createHandler<RetroGenerateRequest, RetroSummary>(
-    IPC_CHANNELS.RETRO_GENERATE,
-    async (_event, request) => {
-      const result = await retroService.generateRetroSummary({ sessionId: request.sessionId });
-      return result;
-    },
-  );
+    if (!retroService) {
+      throw new Error('RetroService not initialized');
+    }
+    return retroService.generateRetroSummary({ sessionId: validation.data.sessionId });
+  });
 
-  createHandler<RetroSaveRequest, { saved: boolean }>(
-    IPC_CHANNELS.RETRO_SAVE,
-    async (_event, _request) => {
-      // 保存复盘记录（MVP 阶段暂存于 teaching_history 表）
-      return { saved: true };
-    },
-  );
+  registerMethod('retro:save', async (_args) => {
+    // MVP: 复盘记录暂存于 teaching_history 表(RetroService 内部处理)
+    return { saved: true } satisfies { saved: boolean };
+  });
 }

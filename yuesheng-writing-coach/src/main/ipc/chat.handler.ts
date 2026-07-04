@@ -1,38 +1,42 @@
 /**
- * 聊天 IPC 处理器（薄委托层）
+ * 聊天 — Sprint 26 阶段 3.5 方案 4a bridge 注册
  *
- * 职责：
- *   - 参数校验（validatePayload）
- *   - 委托给 ChatOrchestratorService 执行业务逻辑
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('chat:send' | 'chat:stop' | 'chat:handleTurn' | 'onboarding:analyze', ...)`
  *
- * 所有编排逻辑已迁移至 ChatOrchestratorService。
+ * 依赖: ChatOrchestratorService, ChatHandleTurnBridge
+ *
+ * 流式推送: handleTurnBridge.startTurnToWindow(mainWindow, input) 替代原
+ *          event.sender (ChatHandleTurnBridge 已有 startTurnToWindow 封装)
+ *
+ * chat:event 事件推送 channel 保持不变(由 ChatHandleTurnBridge 内部用 webContents.send)
  */
 
 import type { AttitudeLevel } from '../../shared/types/index';
-import { IPC_CHANNELS } from '../../shared/constants';
 import { validatePayload } from './utils/validate-payload';
-import { createHandler } from './utils/create-handler';
+import { registerMethod } from '../core/service-bridge';
 import type { ChatOrchestratorService } from '../domains/03-teaching/chat/chat-orchestrator.service';
-// Sprint 20 A-4
 import { ChatHandleTurnBridge } from '../domains/03-teaching/conversation/chat-handle-turn.bridge';
 import type { HandleTurnInput, ConversationPhase } from '../domains/03-teaching/conversation/orchestrator.types';
+import type { BrowserWindow } from 'electron';
 
 let orchestrator: ChatOrchestratorService | null = null;
 let handleTurnBridge: ChatHandleTurnBridge | null = null;
+let mainWindow: BrowserWindow | null = null;
 
-export function initChatHandlers(orchestratorService: ChatOrchestratorService): void {
+export function initChatHandlers(
+  orchestratorService: ChatOrchestratorService,
+  win: BrowserWindow | null = null,
+): void {
   orchestrator = orchestratorService;
-  // A-4: 初始化订阅式入口桥接
   handleTurnBridge = new ChatHandleTurnBridge();
+  mainWindow = win;
 }
-
-// ============ 主 Handler ============
 
 export function registerChatHandlers(): void {
   if (!orchestrator) throw new Error('ChatHandler orchestrator not injected');
 
-  // CHAT_SEND: 发送消息
-  createHandler(IPC_CHANNELS.CHAT_SEND, async (_event, args) => {
+  registerMethod('chat:send', async (args) => {
     const validation = validatePayload<{
       message: string;
       sessionId: string;
@@ -51,15 +55,12 @@ export function registerChatHandlers(): void {
     return { messageId: result.messageId };
   });
 
-  // CHAT_STOP: 中断当前流式响应
-  createHandler(IPC_CHANNELS.CHAT_STOP, () => {
-    // A-4: 同时停止订阅式入口的活跃流
+  registerMethod('chat:stop', async (_args) => {
     handleTurnBridge?.stopAll();
     return orchestrator!.stopGeneration();
   });
 
-  // CHAT_HANDLE_TURN: Sprint 20 A-4 — 编排器订阅式入口
-  createHandler(IPC_CHANNELS.CHAT_HANDLE_TURN, async (event, args) => {
+  registerMethod('chat:handleTurn', async (args) => {
     if (!handleTurnBridge) throw new Error('ChatHandleTurnBridge not initialized');
     const validation = validatePayload<{
       userMessage: string;
@@ -90,12 +91,11 @@ export function registerChatHandlers(): void {
       activeTrainingSessionId: data.activeTrainingSessionId,
     };
 
-    const { streamId } = await handleTurnBridge.startTurn(event.sender, input);
+    const { streamId } = await handleTurnBridge.startTurnToWindow(mainWindow, input);
     return { streamId };
   });
 
-  // ONBOARDING_ANALYZE: 引导分析
-  createHandler(IPC_CHANNELS.ONBOARDING_ANALYZE, async (_event, args) => {
+  registerMethod('onboarding:analyze', async (args) => {
     const validation = validatePayload<{ text: string }>(args, {
       required: ['text'],
       types: { text: 'string' },

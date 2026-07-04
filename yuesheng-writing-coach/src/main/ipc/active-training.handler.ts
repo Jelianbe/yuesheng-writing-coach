@@ -1,29 +1,22 @@
 /**
- * ActiveTraining IPC 处理器 — Sprint 24 A-3
+ * ActiveTraining — Sprint 26 阶段 3.5 方案 4a bridge 注册
  *
- * 职责: 接收渲染进程的训练草稿持久化请求,调用 ActiveTrainingService
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('activeTraining:updateDraft' | 'activeTraining:submitStep' | 'activeTraining:get', ...)`
  *
- * 通道:
- *   - activeTraining:updateDraft : 草稿保存 (renderer 500ms 防抖后调用)
- *   - activeTraining:get        : 查询当前 in_progress 训练 (供冷启动恢复)
+ * 依赖: ActiveTrainingService (DI 注入)
  *
- * 设计:
- *   - 依赖通过 initActiveTrainingHandlers() 注入,模块级无变量
- *   - 业务逻辑全部委托给 ActiveTrainingService
- *   - 异常隔离: handler 内 try-catch 兜底,失败不污染主流程
+ * 保留 export 函数(被 ipc-registry 调用):
+ * - setupActiveTrainingPush(mainWindow): 订阅 Service 状态变更并广播到所有窗口
+ * - activeTrainingToResponse: 领域对象 → IPC 响应映射(供 setupActiveTrainingPush 使用)
  *
- * Sprint 24 A-4 增强:
- *   - 提供 setupActiveTrainingPush(mainWindow) 桥接函数
- *   - 订阅 ActiveTrainingService 状态变更,推送到 renderer
- *   - 通道: activeTraining:updated
- *
- * 依据: dev-docs/tasks/sprint-24-plan.md §A-3, §A-4
+ * 异常隔离: 训练已 completed/aborted 时静默返回
  */
 
 import { BrowserWindow } from 'electron';
 import { IPC_CHANNELS } from '../../shared/constants';
-import { createHandler } from './utils/create-handler';
 import { validatePayload } from './utils/validate-payload';
+import { registerMethod } from '../core/service-bridge';
 import type { ActiveTrainingService } from '../domains/03-teaching/state/active-training.service';
 import type {
   ActiveTrainingUpdateDraftResponse,
@@ -34,20 +27,12 @@ import type {
 } from '../../shared/api-contracts/active-training.contract';
 import type { ActiveTraining } from '../domains/03-teaching/state/active-training.types';
 
-/** DI 注入依赖 */
 let activeTrainingService: ActiveTrainingService | null = null;
 
-/**
- * 初始化 ActiveTraining handler 依赖
- * 必须在 registerActiveTrainingHandlers() 之前调用
- */
 export function initActiveTrainingHandlers(service: ActiveTrainingService): void {
   activeTrainingService = service;
 }
 
-/**
- * 获取服务实例(内部使用,未初始化时抛错)
- */
 function getService(): ActiveTrainingService {
   if (!activeTrainingService) {
     throw new Error(
@@ -57,152 +42,7 @@ function getService(): ActiveTrainingService {
   return activeTrainingService;
 }
 
-/**
- * 注册 ActiveTraining IPC 处理器
- * 应在主进程初始化阶段(ipc-registry.registerAll)调用
- */
-export function registerActiveTrainingHandlers(): void {
-  /**
-   * activeTraining:updateDraft — 草稿保存
-   * 业务逻辑: 调用 ActiveTrainingService.updateDraft()
-   *   - 训练已 completed/aborted 时静默返回(草稿可丢弃)
-   *   - 训练 in_progress 时持久化到 SQLite
-   */
-  createHandler<
-    { sessionId: string; content: string },
-    ActiveTrainingUpdateDraftResponse
-  >(IPC_CHANNELS.ACTIVE_TRAINING_UPDATE_DRAFT, (_event, args) => {
-    const validation = validatePayload<{ sessionId: string; content: string }>(args, {
-      required: ['sessionId', 'content'],
-      types: { sessionId: 'string', content: 'string' },
-    });
-    if (!validation.valid) {
-      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    }
-
-    const { sessionId, content } = validation.data;
-    const service = getService();
-    const updated = service.updateDraft(sessionId, content);
-
-    if (!updated) {
-      // 训练可能已完成 / aborted / 不存在 — 草稿可丢弃
-      return {
-        success: false,
-        length: content.length,
-        persistedAt: new Date().toISOString(),
-        status: service.getStatus(sessionId),
-      };
-    }
-
-    return {
-      success: true,
-      length: content.length,
-      persistedAt: updated.updatedAt,
-      status: updated.status,
-    };
-  });
-
-  /**
-   * activeTraining:submitStep — Sprint 25 BL-01 C-4: 5 步分步提交
-   * - V6.2 FlowPanel 调用,接受 { sessionId, stepId(1-5), content }
-   * - 业务逻辑: 调用 ActiveTrainingService.submitFlowStep()
-   * - 异常隔离: 训练已 completed/aborted 或 stepId 越界时返回 success:false
-   */
-  createHandler<
-    { sessionId: string; stepId: 1 | 2 | 3 | 4 | 5; content: string },
-    ActiveTrainingSubmitStepResponse
-  >(IPC_CHANNELS.ACTIVE_TRAINING_SUBMIT_STEP, (_event, args) => {
-    const validation = validatePayload<{
-      sessionId: string;
-      stepId: 1 | 2 | 3 | 4 | 5;
-      content: string;
-    }>(args, {
-      required: ['sessionId', 'stepId', 'content'],
-      types: { sessionId: 'string', stepId: 'number', content: 'string' },
-    });
-    if (!validation.valid) {
-      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    }
-
-    const { sessionId, stepId, content } = validation.data;
-    const service = getService();
-    const updated = service.submitFlowStep(sessionId, stepId, content);
-
-    if (!updated) {
-      // 训练可能已完成 / aborted / 不存在 — stepId 越界时也走此路径
-      return {
-        success: false,
-        submittedCount: 0,
-        submittedAt: new Date().toISOString(),
-        status: service.getStatus(sessionId),
-      };
-    }
-
-    return {
-      success: true,
-      submittedCount: updated.stepResponses.length,
-      submittedAt:
-        updated.stepResponses.find((r) => r.stepId === stepId)?.submittedAt ??
-        new Date().toISOString(),
-      status: updated.status,
-    };
-  });
-
-  /**
-   * activeTraining:get — 查询当前 in_progress 训练
-   * 用途: 冷启动恢复当前 session 的训练状态
-   * 返回: null(无进行中训练) 或 ActiveTraining 完整快照
-   */
-  createHandler<{ sessionId: string }, ActiveTrainingGetResponse | null>(
-    IPC_CHANNELS.ACTIVE_TRAINING_GET,
-    (_event, args) => {
-      const validation = validatePayload<{ sessionId: string }>(args, {
-        required: ['sessionId'],
-        types: { sessionId: 'string' },
-      });
-      if (!validation.valid) {
-        throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-      }
-
-      const service = getService();
-      const active = service.getActive(validation.data.sessionId);
-      if (!active) {
-        return null;
-      }
-
-      // 领域对象 → IPC 响应(字段映射)
-      const response: ActiveTrainingGetResponse = {
-        sessionId: active.sessionId,
-        challengeId: active.challengeId,
-        challengeName: active.challengeName,
-        mode: active.mode,
-        currentStepIndex: active.currentStepIndex,
-        steps: active.steps,
-        userDraft: active.userDraft,
-        flowType: active.flowType,
-        trainingFlow: active.trainingFlow,
-        recordId: active.recordId,
-        syndromeId: active.syndromeId,
-        originalQuote: active.originalQuote,
-        constraint: active.constraint,
-        submissionResult: active.submissionResult as unknown,
-        stepResponses: active.stepResponses,
-        status: active.status,
-        startedAt: active.startedAt,
-        updatedAt: active.updatedAt,
-        completedAt: active.completedAt,
-      };
-      return response;
-    },
-  );
-}
-
-/**
- * 领域对象 → IPC 响应(共享转换逻辑)
- * - start/advanceStep/updateDraft/evaluate/complete/abort 事件都需要此映射
- * - 提取为独立函数确保一致性
- */
-function activeTrainingToResponse(active: ActiveTraining): ActiveTrainingGetResponse {
+export function activeTrainingToResponse(active: ActiveTraining): ActiveTrainingGetResponse {
   return {
     sessionId: active.sessionId,
     challengeId: active.challengeId,
@@ -226,20 +66,92 @@ function activeTrainingToResponse(active: ActiveTraining): ActiveTrainingGetResp
   };
 }
 
-/**
- * Sprint 24 A-4: 桥接 ActiveTrainingService 状态变更到 renderer
- *
- * 工作流:
- *   1. 订阅 ActiveTrainingService.onStateChange()
- *   2. 收到事件后通过 mainWindow.webContents.send() 推送到渲染进程
- *   3. 推送到 BrowserWindow.getAllWindows()(多窗口场景都同步)
- *
- * 异常隔离:
- *   - 主窗口为 null 或已销毁时静默跳过
- *   - service 未初始化时静默跳过(开发期)
- *
- * @returns 取消订阅函数(测试清理用)
- */
+export function registerActiveTrainingHandlers(): void {
+  registerMethod('activeTraining:updateDraft', async (args) => {
+    const validation = validatePayload<{ sessionId: string; content: string }>(args, {
+      required: ['sessionId', 'content'],
+      types: { sessionId: 'string', content: 'string' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const { sessionId, content } = validation.data;
+    const service = getService();
+    const updated = service.updateDraft(sessionId, content);
+
+    if (!updated) {
+      return {
+        success: false,
+        length: content.length,
+        persistedAt: new Date().toISOString(),
+        status: service.getStatus(sessionId),
+      };
+    }
+
+    return {
+      success: true,
+      length: content.length,
+      persistedAt: updated.updatedAt,
+      status: updated.status,
+    } satisfies ActiveTrainingUpdateDraftResponse;
+  });
+
+  registerMethod('activeTraining:submitStep', async (args) => {
+    const validation = validatePayload<{
+      sessionId: string;
+      stepId: 1 | 2 | 3 | 4 | 5;
+      content: string;
+    }>(args, {
+      required: ['sessionId', 'stepId', 'content'],
+      types: { sessionId: 'string', stepId: 'number', content: 'string' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const { sessionId, stepId, content } = validation.data;
+    const service = getService();
+    const updated = service.submitFlowStep(sessionId, stepId, content);
+
+    if (!updated) {
+      return {
+        success: false,
+        submittedCount: 0,
+        submittedAt: new Date().toISOString(),
+        status: service.getStatus(sessionId),
+      };
+    }
+
+    return {
+      success: true,
+      submittedCount: updated.stepResponses.length,
+      submittedAt:
+        updated.stepResponses.find((r) => r.stepId === stepId)?.submittedAt ??
+        new Date().toISOString(),
+      status: updated.status,
+    } satisfies ActiveTrainingSubmitStepResponse;
+  });
+
+  registerMethod('activeTraining:get', async (args) => {
+    const validation = validatePayload<{ sessionId: string }>(args, {
+      required: ['sessionId'],
+      types: { sessionId: 'string' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const service = getService();
+    const active = service.getActive(validation.data.sessionId);
+    if (!active) {
+      return null;
+    }
+
+    return activeTrainingToResponse(active);
+  });
+}
+
 export function setupActiveTrainingPush(
   mainWindow: BrowserWindow | null,
 ): () => void {
@@ -257,7 +169,6 @@ export function setupActiveTrainingPush(
       state: activeTrainingToResponse(event.state),
     };
 
-    // 多窗口广播(包含主窗口)
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (win.isDestroyed()) continue;
@@ -273,7 +184,6 @@ export function setupActiveTrainingPush(
       }
     }
 
-    // 显式 mainWindow 单独再发一次(防止 webContents 列表时序问题)
     if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.webContents.isDestroyed()) {
       try {
         mainWindow.webContents.send(IPC_CHANNELS.ACTIVE_TRAINING_UPDATED, payload);
@@ -285,4 +195,3 @@ export function setupActiveTrainingPush(
 
   return off;
 }
-

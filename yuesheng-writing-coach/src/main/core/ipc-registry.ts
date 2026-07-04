@@ -17,7 +17,7 @@ import { initTeachingStateHandler } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
 import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
-import { registerRetroHandlers } from '../ipc/retro.handler';
+import { initRetroHandlers, registerRetroHandlers } from '../ipc/retro.handler';
 // Sprint 24 A-3 / A-4: ActiveTraining 状态机 IPC handler
 import {
   initActiveTrainingHandlers,
@@ -133,9 +133,10 @@ export class IpcRegistry {
     registerProjectHandlers();
 
     // Retro (F-03 复盘总结)
-    registerRetroHandlers({
+    initRetroHandlers({
       retroService: this.container.get<RetroService>('retroService'),
     });
+    registerRetroHandlers();
 
     // Window Controls (最小化/最大化/关闭)
     initWindowHandlers();
