@@ -1,12 +1,14 @@
 /**
- * 教学笔记 IPC 处理器
- * 负责：前端教学笔记工具的 CRUD 操作
- * 依赖：TeachingNoteService（内存存储）
+ * 教学笔记 — Sprint 26 阶段 3.5 方案 4a bridge 注册
+ *
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('teachingNote:record' | 'teachingNote:getTree' | 'teachingNote:delete' | 'teachingNote:update', ...)`
+ *
+ * flatToTree 树形转换保留在主进程(无现役 renderer 调用方,但契约稳定)
  */
 
-import { IPC_CHANNELS } from '../../shared/constants';
+import { registerMethod } from '../core/service-bridge';
 import type { TeachingNoteService } from '../domains/03-teaching/teaching-note.service';
-import { createHandler } from './utils/create-handler';
 
 export interface TeachingNoteHandlerDeps {
   teachingNoteService: TeachingNoteService;
@@ -18,52 +20,43 @@ export function initTeachingNoteHandlers(d: TeachingNoteHandlerDeps): void {
   deps = d;
 }
 
-/**
- * 注册教学笔记相关的 IPC 处理器
- */
 export function registerTeachingNoteHandlers(): void {
-  // 记录一条教学笔记
-  createHandler(IPC_CHANNELS.TEACHING_NOTE_RECORD, async (
-    _event,
-    args: { sessionId: string; label: string; content: string; parentId?: string },
-  ) => {
+  registerMethod('teachingNote:record', async (args) => {
     if (!deps) throw new Error('TeachingNoteHandler deps not initialized');
-    const node = deps.teachingNoteService.record(args.sessionId, args.label, args.content, args.parentId);
+    const { sessionId, label, content, parentId } = args as {
+      sessionId: string;
+      label: string;
+      content: string;
+      parentId?: string;
+    };
+    const node = deps.teachingNoteService.record(sessionId, label, content, parentId);
     return { id: node.id, createdAt: node.createdAt };
   });
 
-  // 获取教学笔记树
-  createHandler(IPC_CHANNELS.TEACHING_NOTE_GET_TREE, async (
-    _event,
-    args: { sessionId?: string },
-  ) => {
+  registerMethod('teachingNote:getTree', async (args) => {
     if (!deps) throw new Error('TeachingNoteHandler deps not initialized');
-    const nodes = deps.teachingNoteService.getTree(args.sessionId);
-    // 将平铺数据转为树
+    const { sessionId } = args as { sessionId?: string };
+    const nodes = deps.teachingNoteService.getTree(sessionId);
     const rootNodes = nodes.filter(n => n.parentId === null);
     const tree = rootNodes.map(n => flatToTree(n, nodes));
     return { nodes: tree };
   });
 
-  // 删除笔记节点（含子节点）
-  createHandler(IPC_CHANNELS.TEACHING_NOTE_DELETE, async (_event, args: { id: string }) => {
+  registerMethod('teachingNote:delete', async (args) => {
     if (!deps) throw new Error('TeachingNoteHandler deps not initialized');
-    const success = deps.teachingNoteService.deleteNode(args.id);
+    const { id } = args as { id: string };
+    const success = deps.teachingNoteService.deleteNode(id);
     return { success };
   });
 
-  // 更新笔记节点
-  createHandler(IPC_CHANNELS.TEACHING_NOTE_UPDATE, async (
-    _event,
-    args: { id: string; label?: string; content?: string },
-  ) => {
+  registerMethod('teachingNote:update', async (args) => {
     if (!deps) throw new Error('TeachingNoteHandler deps not initialized');
-    const success = deps.teachingNoteService.updateNode(args.id, { label: args.label, content: args.content });
+    const { id, label, content } = args as { id: string; label?: string; content?: string };
+    const success = deps.teachingNoteService.updateNode(id, { label, content });
     return { success };
   });
 }
 
-/** 将平铺节点递归转为树结构 */
 function flatToTree(
   node: { id: string; parentId: string | null; label: string; content: string; createdAt: number },
   allNodes: Array<{ id: string; parentId: string | null; label: string; content: string; createdAt: number }>,
