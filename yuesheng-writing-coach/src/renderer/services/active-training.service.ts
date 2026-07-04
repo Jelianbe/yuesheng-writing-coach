@@ -1,26 +1,21 @@
 /**
- * ActiveTraining 渲染端服务 — Sprint 24 A-3 / A-4
+ * ActiveTraining 渲染端服务 — Sprint 26 阶段 3.2 (双轨版)
  *
- * 职责: 封装 ActiveTraining IPC 边界,提供降级语义
+ * 继承自 Sprint 24 A-3/A-4:
+ *   - updateDraft (高频) / get (冷启动恢复) / submitStep (5 步分步提交)
+ *   - subscribe (主进程推送订阅)
  *
- * 降级策略(D-DEBT-34):
- *   - 调用失败时 console.error + 返回 null,不再 throw
- *   - 避免 UI 白屏(R-028 防御性编码)
+ * 3.2 双轨改造:
+ *   - 3 个 invoke 方法 (updateDraft/get/submitStep) 走 runDualTrack
+ *   - subscribe 保持 IPC-only (Capacitor 端无事件推送,降级为 noop + warn)
+ *   - Android 端直接 import shared/services/active-training.service.ts
  *
- * 重要:
- *   - updateDraft 是高频操作(用户每次按键都可能触发)
- *   - 调用方应自行防抖(典型 500ms)以减少 IPC 压力
- *   - 本服务不做防抖 — 防抖属于 UI 策略层
- *
- * Sprint 24 A-4 增强:
- *   - 添加 subscribe() 接口,订阅主进程状态变更推送
- *   - 通道: activeTraining:updated
- *   - 用途: renderer store 接收主进程推送并更新本地状态
- *
- * 依据: dev-docs/tasks/sprint-24-plan.md §A-3, §A-4
+ * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
  */
-
 import { typedInvoke } from './ipc-client';
+import { runDualTrack, isCapacitor } from './_dual-track';
+import { createStorageAdapter } from '../../shared/storage';
+import { ActiveTrainingService as DirectActiveTrainingService } from '../../shared/services/active-training.service';
 import { ActiveTrainingApi } from '../../shared/api-contracts/active-training.contract';
 import type {
   ActiveTrainingUpdateDraftRequest,
@@ -38,6 +33,19 @@ function getAPI(): Window['electronAPI'] | null {
   return window.electronAPI ?? null;
 }
 
+/** Android 端: 延迟初始化 adapter + direct service(单例) */
+let _directService: DirectActiveTrainingService | null = null;
+
+async function getDirectService(): Promise<DirectActiveTrainingService | null> {
+  if (!isCapacitor()) return null;
+  if (_directService) return _directService;
+
+  const adapter = createStorageAdapter({ type: 'capacitor-sqlite', dbName: 'yuesheng.db', version: 1 });
+  await adapter.initialize();
+  _directService = new DirectActiveTrainingService(adapter);
+  return _directService;
+}
+
 export const activeTrainingService = {
   /**
    * 草稿保存 — 失败时返回 null
@@ -46,73 +54,118 @@ export const activeTrainingService = {
   async updateDraft(
     params: ActiveTrainingUpdateDraftRequest,
   ): Promise<ActiveTrainingUpdateDraftResponse | null> {
-    const result = await typedInvoke<
-      ActiveTrainingUpdateDraftRequest,
-      ActiveTrainingUpdateDraftResponse
-    >(ActiveTrainingApi.updateDraft.channel, params);
-    if (!result.success) {
-      console.error('[activeTraining] updateDraft failed:', result.error);
-      return null;
-    }
-    return result.data;
+    return runDualTrack(params, {
+      direct: async (p) => {
+        const svc = await getDirectService();
+        if (!svc) return null;
+        const updated = await svc.update(p.sessionId, { userDraft: p.content });
+        if (!updated) return null;
+        return {
+          success: true,
+          length: p.content.length,
+          persistedAt: updated.updatedAt,
+          status: updated.status,
+        } as ActiveTrainingUpdateDraftResponse;
+      },
+      electron: async (p) => {
+        const result = await typedInvoke<
+          ActiveTrainingUpdateDraftRequest,
+          ActiveTrainingUpdateDraftResponse
+        >(ActiveTrainingApi.updateDraft.channel, p);
+        if (!result.success) {
+          console.error('[activeTraining] updateDraft failed:', result.error);
+          return null;
+        }
+        return result.data;
+      },
+    });
   },
 
   /**
-   * 查询当前 session 的 in_progress 训练 — 失败时返回 null
+   * 查询当前 session 的最新训练记录 — 失败时返回 null
    * 用途: 冷启动恢复 / 跨页签同步
    */
   async get(
     params: ActiveTrainingGetRequest,
   ): Promise<ActiveTrainingGetResponse | null> {
-    const result = await typedInvoke<ActiveTrainingGetRequest, ActiveTrainingGetResponse | null>(
-      ActiveTrainingApi.get.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[activeTraining] get failed:', result.error);
-      return null;
-    }
-    return result.data;
+    return runDualTrack(params, {
+      direct: async (p) => {
+        const svc = await getDirectService();
+        if (!svc) return null;
+        return svc.getBySession(p.sessionId);
+      },
+      electron: async (p) => {
+        const result = await typedInvoke<ActiveTrainingGetRequest, ActiveTrainingGetResponse | null>(
+          ActiveTrainingApi.get.channel,
+          p,
+        );
+        if (!result.success) {
+          console.error('[activeTraining] get failed:', result.error);
+          return null;
+        }
+        return result.data;
+      },
+    });
   },
 
   /**
    * Sprint 25 BL-01 C-4: 5 步分步提交
    * - V6.2 FlowPanel 在每步"下一步"时调用
    * - 失败时返回 null(降级模式,UI 不阻塞)
-   *
-   * @param params sessionId + stepId(1-5) + content
-   * @returns 提交结果,失败返回 null
    */
   async submitStep(
     params: ActiveTrainingSubmitStepRequest,
   ): Promise<ActiveTrainingSubmitStepResponse | null> {
-    const result = await typedInvoke<
-      ActiveTrainingSubmitStepRequest,
-      ActiveTrainingSubmitStepResponse
-    >(ActiveTrainingApi.submitStep.channel, params);
-    if (!result.success) {
-      console.error('[activeTraining] submitStep failed:', result.error);
-      return null;
-    }
-    return result.data;
+    return runDualTrack(params, {
+      direct: async (p) => {
+        const svc = await getDirectService();
+        if (!svc) return null;
+        // shared 端 updateStepResponses 整数组替换,需 caller 负责合并
+        // 此处直接提交单步,符合 submitStep 语义(每次只提交一个 stepId)
+        const now = new Date().toISOString();
+        const updated = await svc.updateStepResponses(p.sessionId, [
+          {
+            stepId: p.stepId,
+            content: p.content,
+            submittedAt: now,
+          },
+        ]);
+        if (!updated) return null;
+        return {
+          success: true,
+          submittedCount: updated.stepResponses.length,
+          submittedAt: now,
+          status: updated.status,
+        } as ActiveTrainingSubmitStepResponse;
+      },
+      electron: async (p) => {
+        const result = await typedInvoke<
+          ActiveTrainingSubmitStepRequest,
+          ActiveTrainingSubmitStepResponse
+        >(ActiveTrainingApi.submitStep.channel, p);
+        if (!result.success) {
+          console.error('[activeTraining] submitStep failed:', result.error);
+          return null;
+        }
+        return result.data;
+      },
+    });
   },
 
   /**
    * Sprint 24 A-4: 订阅主进程状态变更推送
    *
-   * 工作流:
-   *   1. 通过 preload 暴露的 electronAPI.on() 监听 activeTraining:updated
-   *   2. 收到事件后调用 callback(event)
-   *   3. 返回的 unsubscribe 函数用于清理(组件 unmount)
-   *
-   * 降级:
-   *   - electronAPI 不可用(非 Electron 环境)时静默返回 noop unsubscribe
-   *   - 调用方应自行检查 callback 是否被调用
-   *
-   * @param callback 状态变更事件回调
-   * @returns 取消订阅函数
+   * 双轨语义:
+   *   - Electron 端: 通过 IPC 订阅 activeTraining:updated
+   *   - Capacitor 端: 无 IPC 推送通道,降级为 noop + warn
+   *     (调用方应改用 store polling 或等待后续 Capacitor EventTarget 实现)
    */
   subscribe(callback: (event: ActiveTrainingUpdatedEvent) => void): () => void {
+    if (isCapacitor()) {
+      console.warn('[activeTraining] subscribe: not supported on Capacitor, use store polling instead');
+      return () => {};
+    }
+
     const api = getAPI();
     if (!api?.on) {
       console.warn('[activeTraining] subscribe: electronAPI not available');
@@ -132,4 +185,3 @@ export const activeTrainingService = {
     }
   },
 };
-

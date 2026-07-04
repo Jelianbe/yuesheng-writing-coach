@@ -13,23 +13,31 @@ import { isCapacitor, runDualTrack } from '../_dual-track';
 
 describe('isCapacitor', () => {
   const originalWindow = globalThis.window;
+  const originalUserAgent = navigator.userAgent;
 
   afterEach(() => {
     (globalThis as unknown as { window: unknown }).window = originalWindow;
+    Object.defineProperty(navigator, 'userAgent', { value: originalUserAgent, configurable: true });
   });
+
+  function setUserAgent(ua: string) {
+    Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
+  }
 
   it('returns false when window is undefined', () => {
     (globalThis as unknown as { window: unknown }).window = undefined;
     expect(isCapacitor()).toBe(false);
   });
 
-  it('returns false when window.Capacitor is missing', () => {
+  it('returns false when userAgent does not contain Capacitor', () => {
     (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0) AppleWebKit/537.36');
     expect(isCapacitor()).toBe(false);
   });
 
-  it('returns true when window.Capacitor is present', () => {
-    (globalThis as unknown as { window: unknown }).window = { Capacitor: {} };
+  it('returns true when userAgent contains Capacitor', () => {
+    (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Linux; Android 10) Capacitor/3.5.0');
     expect(isCapacitor()).toBe(true);
   });
 });
@@ -39,8 +47,13 @@ describe('runDualTrack', () => {
     vi.clearAllMocks();
   });
 
+  function setUserAgent(ua: string) {
+    Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
+  }
+
   it('uses direct handler on Capacitor platform', async () => {
-    (globalThis as unknown as { window: unknown }).window = { Capacitor: {} };
+    (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Linux; Android 10) Capacitor/3.5.0');
     const direct = vi.fn().mockResolvedValue('direct-result');
     const electron = vi.fn().mockResolvedValue('electron-result');
 
@@ -53,6 +66,7 @@ describe('runDualTrack', () => {
 
   it('uses electron handler on non-Capacitor platform', async () => {
     (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0)');
     const direct = vi.fn().mockResolvedValue('direct-result');
     const electron = vi.fn().mockResolvedValue('electron-result');
 
@@ -64,7 +78,8 @@ describe('runDualTrack', () => {
   });
 
   it('lets direct handler control its own fallback (does not downgrade to electron)', async () => {
-    (globalThis as unknown as { window: unknown }).window = { Capacitor: {} };
+    (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Linux; Android 10) Capacitor/3.5.0');
     const direct = vi.fn().mockRejectedValue(new Error('db broken'));
     const electron = vi.fn().mockResolvedValue('electron-result');
 
@@ -74,6 +89,7 @@ describe('runDualTrack', () => {
 
   it('lets electron handler control its own fallback (does not downgrade to direct)', async () => {
     (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0)');
     const direct = vi.fn().mockResolvedValue('direct-result');
     const electron = vi.fn().mockRejectedValue(new Error('ipc broken'));
 
@@ -83,6 +99,7 @@ describe('runDualTrack', () => {
 
   it('passes args to both handlers', async () => {
     (globalThis as unknown as { window: unknown }).window = {};
+    setUserAgent('Mozilla/5.0 (Windows NT 10.0)');
     const direct = vi.fn().mockResolvedValue('d');
     const electron = vi.fn().mockResolvedValue('e');
 
