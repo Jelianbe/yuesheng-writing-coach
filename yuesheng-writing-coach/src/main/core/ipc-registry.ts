@@ -1,6 +1,7 @@
 import type { BrowserWindow } from 'electron';
 import type Database from 'better-sqlite3';
 import type { ServiceContainer } from './service-container';
+import { mountBridgeEndpoint } from './bridge-endpoint';
 import { initConfigHandlers, registerConfigHandlers } from '../ipc/config.handler';
 import { initSessionHandlers, registerSessionHandlers } from '../ipc/session.handler';
 import { initEvidenceHandlers, registerEvidenceHandlers } from '../ipc/evidence.handler';
@@ -146,5 +147,9 @@ export class IpcRegistry {
 
     // Sprint 24 A-4: 桥接状态变更到 renderer(渲染层订阅模式)
     setupActiveTrainingPush(this.mainWindow);
+
+    // Sprint 26 阶段 3.5 方案 4a: 挂载单端点 bridge:invoke
+    // 必须在所有 service 注册完成后挂载,否则 method 查不到
+    mountBridgeEndpoint();
   }
 }

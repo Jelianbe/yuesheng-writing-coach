@@ -1,33 +1,27 @@
 /**
- * 能力画像 IPC 处理器
- * 负责：响应前端查询能力画像的请求
- * 依赖：AbilityProfileService
+ * 能力画像 — Sprint 26 阶段 3.5 方案 4a bridge 注册
+ *
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`abilityProfileService`('ability:getProfile', { sessionId })
  */
 
-import { IPC_CHANNELS } from '../../shared/constants';
+import { registerMethod } from '../core/service-bridge';
 import type { AbilityProfileService } from '../domains/02-prescription/student/ability-profile.service';
-import { createHandler } from './utils/create-handler';
 
-export interface AbilityProfileHandlerDeps {
-  abilityProfileService: AbilityProfileService;
+let abilityProfileService: AbilityProfileService | null = null;
+
+/** 注入 service(原 initAbilityProfileHandlers) */
+export function initAbilityProfileHandlers(d: { abilityProfileService: AbilityProfileService }): void {
+  abilityProfileService = d.abilityProfileService;
 }
 
-let deps: AbilityProfileHandlerDeps | null = null;
-
-export function initAbilityProfileHandlers(d: AbilityProfileHandlerDeps): void {
-  deps = d;
-}
-
-/**
- * 注册能力画像相关的 IPC 处理器
- */
+/** 注册 method 到 bridge(原 registerAbilityProfileHandlers) */
 export function registerAbilityProfileHandlers(): void {
-  createHandler(IPC_CHANNELS.ABILITY_GET_PROFILE, async (_event, args: { sessionId: string }) => {
-    if (!deps) {
-      console.warn('[AbilityProfileHandler] Deps not initialized');
-      throw new Error('AbilityProfileHandler deps not initialized');
+  registerMethod('ability:getProfile', async (args) => {
+    if (!abilityProfileService) {
+      throw new Error('AbilityProfileService not initialized');
     }
-    const profile = await deps.abilityProfileService.computeProfile(args.sessionId);
-    return profile;
+    const { sessionId } = args as { sessionId: string };
+    return abilityProfileService.computeProfile(sessionId);
   });
 }

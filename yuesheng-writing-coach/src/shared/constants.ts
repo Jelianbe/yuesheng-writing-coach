@@ -229,6 +229,8 @@ export const IPC_CHANNELS = {
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
   WINDOW_CLOSE: 'window:close',
+  // === Sprint 26 阶段 3.5 方案 4a: 单端点 RPC bridge ===
+  BRIDGE_INVOKE: 'bridge:invoke',
 } as const;
 
 /** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
