@@ -155,6 +155,21 @@ export class SessionService {
     return this.createSession();
   }
 
+  /**
+   * Sprint 26 阶段 2: 自动根据首条用户消息生成会话标题
+   * - 移植自主进程旧版 SessionService(Sprint 14 前)
+   * - 取首条 user 消息,截断 20 字作为标题
+   */
+  async autoGenerateTitle(sessionId: string): Promise<void> {
+    const first = await this.adapter.queryOne<{ content: string }>(
+      "SELECT content FROM messages WHERE session_id = ? AND role = 'user' ORDER BY timestamp ASC LIMIT 1",
+      [sessionId],
+    );
+    if (!first) return;
+    const title = first.content.length > 20 ? first.content.slice(0, 20) + '...' : first.content;
+    await this.renameSession(sessionId, title);
+  }
+
   private generateUUID(): string {
     // Web Crypto API 在 WebView 和 Node 21+ 都有
     return globalThis.crypto.randomUUID();

@@ -17,7 +17,7 @@ import { validatePayload } from './utils/validate-payload';
 import { createHandler } from './utils/create-handler';
 import { ApiProxy } from '../api-proxy';
 import type { ConfigService } from '../shared/services/config.service';
-import type { SessionService } from '../shared/services/session.service';
+import type { SessionService } from '../../shared/services/session.service';
 import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { GrowthTrendService } from '../domains/02-prescription/student/growth-trend.service';

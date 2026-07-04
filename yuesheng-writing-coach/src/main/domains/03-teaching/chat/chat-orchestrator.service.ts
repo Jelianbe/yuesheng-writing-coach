@@ -11,7 +11,7 @@ import type { BrowserWindow } from 'electron';
 import type Database from 'better-sqlite3';
 import { ApiProxy } from '../../../api-proxy';
 import type { ConfigService } from '../../../shared/services/config.service';
-import type { SessionService } from '../../../shared/services/session.service';
+import type { SessionService } from '../../../../shared/services/session.service';
 import type { AttitudeLevel } from '../../../../shared/types/index';
 import type { IDiagnosisDomain } from '../../01-diagnosis';
 import type { ITeachingDomain } from '../../03-teaching';
@@ -316,7 +316,11 @@ export class ChatOrchestratorService {
       throw new Error('MISSING_SESSION_ID: sessionId is required');
     }
     const activeSessionId = sessionId;
-    deps.sessionService.saveMessage(activeSessionId, 'user', message.trim());
+    // Sprint 26 阶段 2: SessionService 改为 async,saveMessage 返回 Promise
+    // 用 Promise.resolve 兼容 sync mock(测试环境)
+    void Promise.resolve(deps.sessionService.saveMessage(activeSessionId, 'user', message.trim())).catch((err) => {
+      console.error('[ChatOrchestrator] saveMessage(user) failed:', err);
+    });
 
     const userAttitude = attitudeLevel ?? deps.configService.getConfig().attitudeLevel;
 
