@@ -2866,3 +2866,57 @@ Sprint 22 F 轨实施结果中,`Subscriber.handleSetActiveTraining` 加了 `cons
   4. **新增 IPC 通道需双白名单同步**:`shared/constants.ts` + `preload/index.ts` 两处手工同步,Sprint 17 已记为 BL-23 候选债务。本轮再次体验,优先级提至 P2
 - **状态**: ✅ C-4 完成,Sprint 25 BL-01 全部完成,准备 commit
 
+### D-074: Sprint 26 — Electron → Capacitor Android 双端复用
+
+- **类型**: 战略调整 + 架构重设计(StorageAdapter 抽象)
+- **背景**:
+  - 用户决定:S26 战略转向 Android MVP,手机端为主力设备,Windows 桌面端"暂时抛弃"但代码保留
+  - 关键事实校正:项目 UI 早已是移动端风格(`PageStackRouter.module.css:max-width:375px`、status bar 模拟、tabbar/navbar 完整),不是"桌面 UI 改成移动端",而是"移动端 UI 套了 Electron 壳"
+  - 原计划误判为"Kotlin 原生重写"(基于"Electron 是桌面端"的错误前提),实际是"复用移动端 React UI + 跨端打包"
+  - "后端共用"是用户期待: 业务 services、27 张 SQLite 表 schema、数据模型应在双端共享
+- **方案**:
+  - **Capacitor 6.x + WebView 打包**: 把现有 React/TS 渲染层 100% 复用,Android 端获得真 APK
+  - **StorageAdapter 抽象层**: 新增 `src/shared/storage/` 目录,定义双端共用接口;两个实现:`BetterSqliteAdapter`(Windows/Electron 保留) + `CapacitorSqliteAdapter`(Android,基于 `@capacitor-community/sqlite`)
+  - **IPC 层全部移除**: 27 个 IPC 通道丢弃,WebView 内部直接 import service 调用(R-020 边界从"main ↔ renderer"变成"store ↔ adapter")
+  - **5 张核心表迁移**: sessions / projects / active_training / teaching_state / training_records(其余 22 张推 S27+)
+  - **Windows 处理**: 代码冻结不删,不维护不发版,横幅提示用户转 Android
+  - **业务逻辑零改动**: services 内部 `await this.store.xxx()` 适配异步(从同步 better-sqlite3 变 async adapter)
+- **事实校正(本轮关键教训)**:
+  - **不可在未读 UI 实际状态前推荐技术栈**。原计划基于"Electron 桌面"假设推荐 Kotlin 重写,实际 UI 早已移动端化,推荐方案应完全反转
+  - **跨端决策应在 MVP 早期评估**: Sprint 1 选 Electron 时未做"未来跨端"评估,导致 25 个 Sprint 后的战略转向需重构存储层
+  - **用户措辞需精确理解**:"安卓端项目开发"≠"Android 原生项目"——可能指"Android 平台上的应用"(可 Web 套壳),也可能是"Android 原生代码"(需 Kotlin/Swift)。本轮属前者
+- **DoD(阶段 1: Plan + PoC,2-3 天)**:
+  1. ☐ 本计划文档获用户批准
+  2. ☐ Capacitor 项目初始化(`capacitor.config.ts`、`android/` 目录结构、APK 构建成功)
+  3. ☐ `StorageAdapter` 接口定义完成 + 2 个空 adapter 文件
+  4. ☐ 1 张表(如 `sessions`)端到端跑通: SQL → Adapter → Service → Store → Zustand
+  5. ☐ Android 模拟器/真机装 APK 后能看到"sessions"页加载(可空列表)
+  6. ☐ Sprint 26 决策日志 D-074 启动条目(本条)
+- **环境依赖**:
+  - ⚠️ JDK 17+ 未安装(阻塞 APK 构建)
+  - ⚠️ Android SDK 未安装(阻塞模拟器/真机测试)
+  - 解决方案: 用户安装 Android Studio(自带 JDK 17 + SDK),或单独安装 JDK 17 + cmdline-tools
+- **未做事项**:
+  - ❌ 22 张非核心表迁移(用户接受"重新开始",S26 只迁 5 张)
+  - ❌ 业务逻辑重写(只做存储层抽象,不顺手优化 services)
+  - ❌ AI 集成层真实化(诊断/教学/训练 AI 仍走 mock 模式)
+  - ❌ Play 商店发布(产出签名 APK,不上架)
+  - ❌ iOS 端(暂不考虑,Capacitor 已支持,推 S27+)
+- **依据**:
+  - R-004 DoD(每阶段 ≥ 3 条)
+  - R-010 最小化范围
+  - R-019 代码规范标准
+  - R-020 循环依赖零容忍(Stores ↔ Adapter 边界)
+  - R-021 AI 行为边界(不顺手重写 services)
+  - R-022 过程可见
+  - R-027 AI 代码质量门禁
+  - D-070(Sprint 24 A 轨状态机)
+  - D-073(Sprint 25 BL-01 五步流)
+- **教训**:
+  1. **技术栈推荐前必须审计实际代码**:本轮失误——未先看 UI 实际状态就基于"Electron 桌面"前提推荐 Kotlin 重写,浪费 1 轮交互
+  2. **战略转向需做"事实校正"**:用户对"安卓端"的理解可能与 AI 不同,需先确认实际项目状态再给方案
+  3. **环境依赖前置检测**: 阶段 1 启动前应探测 JDK/Android SDK,缺失时及时标注,避免"代码完成但无法验证"的尴尬
+  4. **抽象层设计要"为未来复用"而非"为当前需求"**: 5 张核心表 + StorageAdapter 是为未来 Windows 复用 + iOS 复用铺路,不是 S26 必需
+- **状态**: 🚧 阶段 1 进行中,等待用户安装 Android Studio/JDK
+
+
