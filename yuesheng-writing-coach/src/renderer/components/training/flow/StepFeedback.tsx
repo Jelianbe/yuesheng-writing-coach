@@ -30,7 +30,7 @@ export function StepFeedback({
 }: Props) {
   return (
     <article className={`${styles.flowPanel} ${styles.flowPanelFeedback}`} data-testid="step-feedback">
-      <h3 className={styles.flowPanelTitle}>修改反馈</h3>
+      <h3 className={styles.flowPanelTitle}>{active.trainingFlow?.steps[4]?.name ?? '修改反馈'}</h3>
 
       {evaluation ? (
         <section className={styles.flowPanelEval}>

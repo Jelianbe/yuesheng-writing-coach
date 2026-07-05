@@ -398,23 +398,15 @@ export class StudentModelService {
     const stagnation = this.getStagnationStatus();
     const lines: string[] = [];
 
-    // 1. 基础画像（2 行）
-    const proficiencyMap: Record<ProficiencyLevel, string> = {
-      beginner: '新手写作者',
-      intermediate: '进阶写作者',
-      advanced: '成熟写作者',
-    };
-    const styleMap: Record<CognitiveStyle, string> = {
-      analytical: '理性分析型',
-      emotional: '实操导向型',
-      mixed: '混合型',
-    };
-    const maturityMap: Record<string, string> = {
-      mature: '教学适应度高',
-      developing: '教学适应中',
-      minimal: '教学适应低',
-    };
-    lines.push(`- 用户画像：${proficiencyMap[proficiency.level]}，${styleMap[cognitiveStyle.style]}，${maturityMap[maturity.maturity]}`);
+    // 1. 基础画像（2 行）— 标签从外置配置加载
+    const desc = this.descriptionsCache;
+    const proficiencyMap = desc?.proficiencyLabel as Record<string, string> | undefined;
+    const styleMap = desc?.cognitiveStyleLabel as Record<string, string> | undefined;
+    const maturityMap = desc?.trainingMaturityLabel as Record<string, string> | undefined;
+    const profLabel = proficiencyMap?.[proficiency.level] ?? proficiency.level;
+    const styleLabel = styleMap?.[cognitiveStyle.style] ?? cognitiveStyle.style;
+    const matLabel = maturityMap?.[maturity.maturity] ?? maturity.maturity;
+    lines.push(`- 用户画像：${profLabel}，${styleLabel}，${matLabel}`);
 
     // 2. 停滞状态（1 行）
     if (stagnation.stagnated) {

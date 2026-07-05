@@ -102,7 +102,7 @@ describe('TrainingStore - Retro', () => {
       expect(state.centerMode).toBe('retro');
       expect(invoke).toHaveBeenCalledWith(
         BRIDGE_INVOKE_CHANNEL,
-        { method: 'retro:generate', args: { sessionId: 'session-1' } },
+        { channel: 'retro:generate', args: { sessionId: 'session-1' } },
       );
     });
 

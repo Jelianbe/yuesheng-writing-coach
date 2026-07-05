@@ -124,7 +124,8 @@ export interface TrainingSubmitResponse {
 export interface TrainingEvaluateResponse {
   score: number;
   feedback: string;
-  downgraded: boolean;
+  improved: boolean;
+  nextStep: string;
 }
 
 import type { AttitudeLevel } from '../types/types-config';

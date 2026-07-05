@@ -1,44 +1,30 @@
 /**
- * ActiveTraining 渲染端服务 — Sprint 26 阶段 3.2 (双轨版)
+ * 活跃训练服务 — Sprint 32 (移除 serviceBridge/dual-track)
  *
- * 继承自 Sprint 24 A-3/A-4:
- *   - updateDraft (高频) / get (冷启动恢复) / submitStep (5 步分步提交)
- *   - subscribe (主进程推送订阅)
+ * 双轨迁移:
+ * - Electron 端: typedInvoke → main handler
+ * - Android 端: import shared ActiveTrainingService + CapacitorSqliteAdapter
  *
- * 3.2 双轨改造:
- *   - 3 个 invoke 方法 (updateDraft/get/submitStep) 走 runDualTrack
- *   - subscribe 保持 IPC-only (Capacitor 端无事件推送,降级为 noop + warn)
- *   - Android 端直接 import shared/services/active-training.service.ts
- *
- * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
+ * 依据: dev-docs/tasks/sprint-32-plan.md
  */
-import { serviceBridge } from './service-bridge';
-import { runDualTrack, isCapacitor } from './_dual-track';
-import { createStorageAdapter } from '../../shared/storage';
-import { ActiveTrainingService as DirectActiveTrainingService } from '../../shared/services/active-training.service';
+import { invoke } from './_invoke';
+import { typedOn } from './ipc-client';
+import { isCapacitor } from './_platform';
 import type {
-  ActiveTrainingUpdateDraftRequest,
-  ActiveTrainingUpdateDraftResponse,
-  ActiveTrainingGetRequest,
   ActiveTrainingGetResponse,
-  ActiveTrainingSubmitStepRequest,
   ActiveTrainingSubmitStepResponse,
+  ActiveTrainingUpdateDraftResponse,
   ActiveTrainingUpdatedEvent,
 } from '../../shared/api-contracts/active-training.contract';
+import { createStorageAdapter } from '../../shared/storage';
+import { ActiveTrainingService as DirectActiveTrainingService } from '../../shared/services/active-training.service';
 
-/** 从 window 获取 preload 暴露的 electronAPI(带类型守卫) */
-function getAPI(): Window['electronAPI'] | null {
-  if (typeof window === 'undefined') return null;
-  return window.electronAPI ?? null;
-}
-
-/** Android 端: 延迟初始化 adapter + direct service(单例) */
+/** Android 端: 延迟初始化 direct service */
 let _directService: DirectActiveTrainingService | null = null;
 
 async function getDirectService(): Promise<DirectActiveTrainingService | null> {
   if (!isCapacitor()) return null;
   if (_directService) return _directService;
-
   const adapter = createStorageAdapter({ type: 'capacitor-sqlite', dbName: 'yuesheng.db', version: 1 });
   await adapter.initialize();
   _directService = new DirectActiveTrainingService(adapter);
@@ -46,132 +32,96 @@ async function getDirectService(): Promise<DirectActiveTrainingService | null> {
 }
 
 export const activeTrainingService = {
-  /**
-   * 草稿保存 — 失败时返回 null
-   * 调用方应在用户停止输入 500ms 后再调用
-   */
-  async updateDraft(
-    params: ActiveTrainingUpdateDraftRequest,
-  ): Promise<ActiveTrainingUpdateDraftResponse | null> {
-    return runDualTrack(params, {
-      direct: async (p) => {
-        const svc = await getDirectService();
-        if (!svc) return null;
-        const updated = await svc.update(p.sessionId, { userDraft: p.content });
-        if (!updated) return null;
-        return {
-          success: true,
-          length: p.content.length,
-          persistedAt: updated.updatedAt,
-          status: updated.status,
-        } as ActiveTrainingUpdateDraftResponse;
-      },
-      electron: async (p) => {
-        const result = await serviceBridge.invoke<ActiveTrainingUpdateDraftRequest, ActiveTrainingUpdateDraftResponse>('activeTraining:updateDraft', p);
-        if (!result) {
-          console.error('[activeTraining] updateDraft failed');
-          return null;
-        }
-        return result;
-      },
-    });
-  },
-
-  /**
-   * 查询当前 session 的最新训练记录 — 失败时返回 null
-   * 用途: 冷启动恢复 / 跨页签同步
-   */
-  async get(
-    params: ActiveTrainingGetRequest,
-  ): Promise<ActiveTrainingGetResponse | null> {
-    return runDualTrack(params, {
-      direct: async (p) => {
-        const svc = await getDirectService();
-        if (!svc) return null;
-        return svc.getBySession(p.sessionId);
-      },
-      electron: async (p) => {
-        const result = await serviceBridge.invoke<ActiveTrainingGetRequest, ActiveTrainingGetResponse>('activeTraining:get', p);
-        if (!result) {
-          console.error('[activeTraining] get failed');
-          return null;
-        }
-        return result;
-      },
-    });
-  },
-
-  /**
-   * Sprint 25 BL-01 C-4: 5 步分步提交
-   * - V6.2 FlowPanel 在每步"下一步"时调用
-   * - 失败时返回 null(降级模式,UI 不阻塞)
-   */
-  async submitStep(
-    params: ActiveTrainingSubmitStepRequest,
-  ): Promise<ActiveTrainingSubmitStepResponse | null> {
-    return runDualTrack(params, {
-      direct: async (p) => {
-        const svc = await getDirectService();
-        if (!svc) return null;
-        // shared 端 updateStepResponses 整数组替换,需 caller 负责合并
-        // 此处直接提交单步,符合 submitStep 语义(每次只提交一个 stepId)
-        const now = new Date().toISOString();
-        const updated = await svc.updateStepResponses(p.sessionId, [
-          {
-            stepId: p.stepId,
-            content: p.content,
-            submittedAt: now,
-          },
-        ]);
-        if (!updated) return null;
-        return {
-          success: true,
-          submittedCount: updated.stepResponses.length,
-          submittedAt: now,
-          status: updated.status,
-        } as ActiveTrainingSubmitStepResponse;
-      },
-      electron: async (p) => {
-        const result = await serviceBridge.invoke<ActiveTrainingSubmitStepRequest, ActiveTrainingSubmitStepResponse>('activeTraining:submitStep', p);
-        if (!result) {
-          console.error('[activeTraining] submitStep failed');
-          return null;
-        }
-        return result;
-      },
-    });
-  },
-
-  /**
-   * Sprint 24 A-4: 订阅主进程状态变更推送
-   *
-   * 双轨语义:
-   *   - Electron 端: 通过 IPC 订阅 activeTraining:updated
-   *   - Capacitor 端: 无 IPC 推送通道,降级为 noop + warn
-   *     (调用方应改用 store polling 或等待后续 Capacitor EventTarget 实现)
-   */
-  subscribe(callback: (event: ActiveTrainingUpdatedEvent) => void): () => void {
+  /** 获取当前活跃训练的 sessionId — 失败时返回 null */
+  async getCurrent(): Promise<ActiveTrainingGetResponse | null> {
     if (isCapacitor()) {
-      console.warn('[activeTraining] subscribe: not supported on Capacitor, use store polling instead');
-      return () => {};
+      const direct = await getDirectService();
+      if (!direct) return null;
+      try {
+        const all = await direct.listActive();
+        return all.length > 0 ? all[0] : null;
+      } catch (err) { console.error('[active-training] getCurrent failed (direct):', err); return null; }
     }
+    return (await invoke<ActiveTrainingGetResponse>('activeTraining:getCurrent', {})) ?? null;
+  },
 
-    const api = getAPI();
-    if (!api?.on) {
-      console.warn('[activeTraining] subscribe: electronAPI not available');
+  /** 为用户创建新的活跃训练 — 失败时返回 null */
+  async create(sessionId: string, phase: string): Promise<ActiveTrainingGetResponse | null> {
+    if (isCapacitor()) {
+      const direct = await getDirectService();
+      if (!direct) return null;
+      try { return await direct.create({ sessionId, phase } as never); }
+      catch (err) { console.error('[active-training] create failed (direct):', err); return null; }
+    }
+    return (await invoke<ActiveTrainingGetResponse>('activeTraining:create', { sessionId, phase })) ?? null;
+  },
+
+  /** 更新活跃训练状态 — 失败时返回 null */
+  async update(input: { sessionId: string; stepName: string; stepStatus: string }): Promise<ActiveTrainingGetResponse | null> {
+    if (isCapacitor()) {
+      const direct = await getDirectService();
+      if (!direct) return null;
+      try { return await direct.update(input.sessionId, { currentStep: input.stepName } as never); }
+      catch (err) { console.error('[active-training] update failed (direct):', err); return null; }
+    }
+    return (await invoke<ActiveTrainingGetResponse>('activeTraining:update', input as Record<string, unknown>)) ?? null;
+  },
+
+  /** 获取审计日志 — 失败时返回 [] */
+  async getAuditLogs(trainingId: number): Promise<unknown[]> {
+    if (isCapacitor()) {
+      console.warn('[active-training] getAuditLogs: not supported on Capacitor');
+      return [];
+    }
+    return (await invoke<unknown[]>('activeTraining:getAuditLogs', { trainingId })) ?? [];
+  },
+
+  /** 获取近期状态转换 — 失败时返回 [] */
+  async getRecentTransitions(trainingId: number): Promise<unknown[]> {
+    if (isCapacitor()) {
+      console.warn('[active-training] getRecentTransitions: not supported on Capacitor');
+      return [];
+    }
+    return (await invoke<unknown[]>('activeTraining:getRecentTransitions', { trainingId })) ?? [];
+  },
+
+  /** 按 sessionId 获取活跃训练 — 失败时返回 null */
+  async get(params: { sessionId: string }): Promise<ActiveTrainingGetResponse | null> {
+    if (isCapacitor()) {
+      const direct = await getDirectService();
+      if (!direct) return null;
+      try {
+        const all = await direct.listActive();
+        return (all.find(a => (a as unknown as Record<string, unknown>).sessionId === params.sessionId) as ActiveTrainingGetResponse) ?? null;
+      } catch (err) { console.error('[active-training] get failed (direct):', err); return null; }
+    }
+    return (await invoke<ActiveTrainingGetResponse>('activeTraining:get', params)) ?? null;
+  },
+
+  /** 更新草稿内容 — 失败时返回 null */
+  async updateDraft(params: { sessionId: string; content: string }): Promise<ActiveTrainingUpdateDraftResponse | null> {
+    if (isCapacitor()) {
+      console.warn('[active-training] updateDraft: not supported on Capacitor');
+      return null;
+    }
+    return (await invoke<ActiveTrainingUpdateDraftResponse>('activeTraining:updateDraft', params as Record<string, unknown>)) ?? null;
+  },
+
+  /** 提交分步回答 — 失败时返回 null */
+  async submitStep(params: { sessionId: string; stepId: number; content: string }): Promise<ActiveTrainingSubmitStepResponse | null> {
+    if (isCapacitor()) {
+      console.warn('[active-training] submitStep: not supported on Capacitor');
+      return null;
+    }
+    return (await invoke<ActiveTrainingSubmitStepResponse>('activeTraining:submitStep', params as Record<string, unknown>)) ?? null;
+  },
+
+  /** 订阅活跃训练更新事件 — 返回 cleanup 函数 */
+  subscribe(handler: (event: ActiveTrainingUpdatedEvent) => void): () => void {
+    if (isCapacitor()) {
+      console.warn('[active-training] subscribe: not supported on Capacitor');
       return () => {};
     }
-    try {
-      return api.on('activeTraining:updated', (data) => {
-        try {
-          callback(data as ActiveTrainingUpdatedEvent);
-        } catch (err) {
-          console.error('[activeTraining] subscribe callback error:', err);
-        }
-      });
-    } catch (err) {
-      console.error('[activeTraining] subscribe failed:', err);
-      return () => {};
-    }
+    return typedOn<ActiveTrainingUpdatedEvent>('activeTraining:updated', handler);
   },
 };

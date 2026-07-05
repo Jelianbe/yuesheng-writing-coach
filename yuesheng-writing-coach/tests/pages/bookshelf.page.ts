@@ -25,7 +25,7 @@ export class BookshelfPage extends BasePage {
   }
 
   get createButton(): Locator {
-    return this.page.getByText('+ 新建学习项目');
+    return this.page.getByRole('button', { name: '新建作品' });
   }
 
   get loadingState(): Locator {
@@ -33,7 +33,7 @@ export class BookshelfPage extends BasePage {
   }
 
   get emptyState(): Locator {
-    return this.page.getByText('暂无作品,点击下方按钮创建');
+    return this.page.getByText('暂无作品,点击右上角 + 创建');
   }
 
   get errorBanner(): Locator {

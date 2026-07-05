@@ -138,19 +138,20 @@
 
 /* ── < 1280px Overlay 模式 ── */
 
-@media (max-width: 1279px) {
+@media (width <= 1279px) {
   .rightPanel {
     position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     z-index: 100;
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+    box-shadow: -4px 0 16px rgb(0 0 0 / 20%);
   }
 
   .rightPanelCollapsed {
     transform: translateX(100%);
     width: var(--right-panel-width, 420px);
+
     /* 折叠态: 移到屏幕外, 但保留宽度用于 transform */
   }
 }

@@ -1,5 +1,5 @@
 /**
- * 聊天编排服务 — Sprint 31 (Capacitor 聊天激活)
+ * 聊天编排服务 — Sprint 32 (移除 serviceBridge/dual-track)
  *
  * @deprecated chat.send 已被 A-4 useOrchestrator.handleTurn 取代,新代码应直接
  *             调用 useOrchestrator().send()。本方法仅保留供 chat.store 内部
@@ -16,12 +16,16 @@
  *   - onStreamData/onStreamEnd: 通过内存事件总线推送
  *   - onToolExecuting: 保持 noop（Android 端无 Tool 调用）
  *
- * 依据: dev-docs/tasks/sprint-31-plan.md §阶段 2
+ * ─── Sprint 32 (移除 serviceBridge) ───
+ *
+ * Electron 端: serviceBridge.invoke → invoke() 包装器
+ *
+ * 依据: dev-docs/tasks/sprint-32-plan.md
  */
 
 import { typedOn } from './ipc-client';
-import { serviceBridge } from './service-bridge';
-import { isCapacitor } from './_dual-track';
+import { invoke } from './_invoke';
+import { isCapacitor } from './_platform';
 import {
   capacitorSendMessage,
   capacitorOnStreamData,
@@ -47,18 +51,11 @@ export const chatService = {
       return capacitorSendMessage(params);
     }
     console.warn('[chat-service] send() 已废弃,新代码请用 useOrchestrator().send()');
-    const result = await serviceBridge.invoke<ChatSendRequest, ChatSendResponse>('chat:send', params);
-    if (!result) {
-      console.error('[chat-service] send failed');
-      return null;
-    }
-    return result;
+    return invoke<ChatSendResponse>('chat:send', params as unknown as Record<string, unknown>);
   },
 
   /**
-   * 停止流式响应 — sessionId 从空字符串修正为可空
-   * 注:主进程端 chat:stop handler 已支持 sessionId 可选,这里用空字符串做兼容
-   *
+   * 停止流式响应
    * Capacitor 端:降级 noop（流式在 Capacitor 端通过本地 fetch 完成,无需 IPC stop）。
    */
   async stop(sessionId: string): Promise<{ stopped: boolean }> {
@@ -66,12 +63,8 @@ export const chatService = {
       console.warn('[chat-service] stop: not supported on Capacitor, returning { stopped: false }');
       return { stopped: false };
     }
-    const result = await serviceBridge.invoke<{ sessionId: string }, { stopped: boolean }>('chat:stop', { sessionId });
-    if (!result) {
-      console.error('[chat-service] stop failed');
-      return { stopped: false };
-    }
-    return result;
+    const result = await invoke<{ stopped: boolean }>('chat:stop', { sessionId });
+    return result ?? { stopped: false };
   },
 
   /**
@@ -105,6 +98,6 @@ export const chatService = {
       console.warn('[chat-service] onToolExecuting: not supported on Capacitor');
       return () => {};
     }
-    return typedOn<ChatToolExecutingEvent>('chat:tool:executing', handler);
+    return typedOn<ChatToolExecutingEvent>('chat:toolExecuting', handler);
   },
 };

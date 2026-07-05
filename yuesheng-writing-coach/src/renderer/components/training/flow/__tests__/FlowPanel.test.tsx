@@ -214,4 +214,87 @@ describe('<FlowPanel />', () => {
     expect(screen.getByTestId('flow-step-0')).toBeInTheDocument();
     expect(screen.queryByTestId('flow-step-1')).not.toBeInTheDocument();
   });
+
+  // ---- Sprint 37: 评估结果展示 ----
+
+  it('第 5 步展示评估评分和反馈', async () => {
+    const user = userEvent.setup();
+    const evaluation = { score: 7, feedback: '改写有一定改善，结构更紧凑', improved: true, nextStep: '尝试更多练习' };
+    render(
+      <FlowPanel
+        active={makeActive({ userDraft: '改写版本' }) as never}
+        flow={makeFlow() as never}
+        evaluation={evaluation}
+        onExit={() => {}}
+      />,
+    );
+    // 快速切到第 5 步
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
+    const ta = screen.getByLabelText('理解复述');
+    await user.type(
+      ta,
+      '用反差开篇能在第一段就让读者好奇人物背后隐藏的复杂故事和命运走向',
+    );
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
+    expect(screen.getByTestId('step-feedback')).toBeInTheDocument();
+
+    // 评估信息展示
+    expect(screen.getByText(/评分/)).toBeInTheDocument();
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByText(/改写有一定改善/)).toBeInTheDocument();
+    expect(screen.getByText(/相比原文有改善/)).toBeInTheDocument();
+    expect(screen.getByText(/尝试更多练习/)).toBeInTheDocument();
+  });
+
+  it('第 5 步评估为 null 时显示"评估中…"', async () => {
+    const user = userEvent.setup();
+    render(
+      <FlowPanel
+        active={makeActive({ userDraft: '改写后的版本' }) as never}
+        flow={makeFlow() as never}
+        evaluation={null}
+        onExit={() => {}}
+      />,
+    );
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
+    const ta = screen.getByLabelText('理解复述');
+    await user.type(
+      ta,
+      '用反差开篇能在第一段就让读者好奇人物背后隐藏的复杂故事和命运走向',
+    );
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
+    expect(screen.getByTestId('step-feedback')).toBeInTheDocument();
+    expect(screen.getByText('评估中…')).toBeInTheDocument();
+  });
+
+  // ---- Sprint 37: 边界情况 ----
+
+  it('improved=false 时显示"与原文差异较小"', async () => {
+    const user = userEvent.setup();
+    const evaluation = { score: 4, feedback: '改写幅度不够', improved: false, nextStep: '尝试更大胆的改写' };
+    render(
+      <FlowPanel
+        active={makeActive({ userDraft: '小改' }) as never}
+        flow={makeFlow() as never}
+        evaluation={evaluation}
+        onExit={() => {}}
+      />,
+    );
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
+    const ta = screen.getByLabelText('理解复述');
+    await user.type(
+      ta,
+      '用反差开篇能在第一段就让读者好奇人物背后隐藏的复杂故事和命运走向',
+    );
+    await user.click(screen.getByTestId('flow-next'));
+    await user.click(screen.getByTestId('flow-next'));
+
+    expect(screen.getByText(/与原文差异较小/)).toBeInTheDocument();
+    expect(screen.getByText(/改写幅度不够/)).toBeInTheDocument();
+  });
 });

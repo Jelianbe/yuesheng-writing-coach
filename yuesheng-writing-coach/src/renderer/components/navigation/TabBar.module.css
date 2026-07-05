@@ -6,7 +6,7 @@
   height: var(--tabbar-height);
   background: var(--bg-card);
   border-top: 1px solid var(--border);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0);
   flex-shrink: 0;
 }
 

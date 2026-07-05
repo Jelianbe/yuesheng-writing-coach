@@ -117,6 +117,31 @@ export function registerManuscriptHandlers(): void {
     return { deleted: true };
   });
 
+  registerMethod('manuscript:stats', async (args) => {
+    const validation = validatePayload<{ id: string }>(args, {
+      required: ['id'],
+      types: { id: 'string' },
+    });
+    if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    const { id } = validation.data;
+    const chapterStats = d.db.prepare(
+      'SELECT COUNT(*) AS count, COALESCE(SUM(word_count), 0) AS totalWords FROM chapters WHERE manuscript_id = ?'
+    ).get(id) as { count: number; totalWords: number };
+    const sessionCount = (d.db.prepare(
+      'SELECT COUNT(*) AS count FROM sessions WHERE manuscript_id = ?'
+    ).get(id) as { count: number }).count;
+    // 通过 session 关联查找训练记录数
+    const trainingCount = (d.db.prepare(
+      'SELECT COUNT(*) AS count FROM user_training_records r WHERE r.session_id IN (SELECT id FROM sessions WHERE manuscript_id = ?)'
+    ).get(id) as { count: number }).count;
+    return {
+      chapterCount: chapterStats.count,
+      totalWordCount: chapterStats.totalWords,
+      sessionCount,
+      trainingCount,
+    };
+  });
+
   registerMethod('chapter:delete', async (args) => {
     const validation = validatePayload<{ id: string }>(args, {
       required: ['id'],

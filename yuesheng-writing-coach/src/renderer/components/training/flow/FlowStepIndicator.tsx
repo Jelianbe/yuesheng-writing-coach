@@ -17,8 +17,6 @@ interface Props {
   onJump?: (index: number) => void;
 }
 
-const STEP_LABELS = ['解说', '例证', '确认', '尝试', '反馈'];
-
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -42,7 +40,7 @@ export function FlowStepIndicator({ flow, currentIndex, onJump }: Props) {
             data-testid={`flow-step-${i}`}
           >
             <span className={styles.flowStepNum}>{i + 1}</span>
-            <span className={styles.flowStepLabel}>{STEP_LABELS[i] ?? s.name}</span>
+            <span className={styles.flowStepLabel}>{s.name}</span>
           </li>
         );
       })}

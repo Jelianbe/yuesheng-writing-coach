@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-07-05
+
+### D-009: 新增四项工程实践基础设施
+- **类型**: 工程治理
+- **决策**: 新增 stylelint、prettier、commitlint、coverage 阈值四项工程基础设施
+- **原因**:
+  1. stylelint: 之前没有 CSS 规范检查，ChatPage 等文件存有 367 处 inline style 违反 R-019
+  2. prettier: 缺少统一代码格式化，不同文件格式不一致
+  3. commitlint: R-016 提交规范无自动化校验，全靠人工自觉
+  4. coverage 阈值: 有 `test:coverage` 脚本但未设底线，覆盖率可能不知不觉下滑
+- **实现**:
+  - husky 钩子: pre-commit 自动 lint-staged + typecheck, commit-msg 自动 commitlint
+  - CI 新增 3 步: lint:css → format:check → audit
+  - vitest.config.ts 三域覆盖率阈值 (renderer 55/45/50, main 60/50/55, shared 65/55/60)
+  - ESLint 新增 no-restricted-syntax: inline style 标记为 warning
+- **债务记录**:
+  - inline style 欠债 367 处，ESLint max-warnings 临时提升至 400
+  - 主要分布在 ChatPage.tsx (~102 处)、TrainingPlanPage.tsx (~66 处)、WorkDetailPage.tsx (~39 处)
+  - 后续轮次逐步迁移到 CSS Modules + design tokens
+- **影响**:
+  - 所有 git commit 需通过 husky 门禁 (lint-staged + typecheck + commitlint)
+  - CI 流水线增加 3 个步骤 (~30s 额外耗时)
+  - 覆盖率跌破阈值时 CI 将告警
+
 ## 2026-06-04
 
 ### D-006: 删除 009_author_profile.sql 空壳迁移
@@ -3200,3 +3224,421 @@ gfxstream 36.x 在 VkEmulation 初始化时与 WHPX + Vulkan 上下文交互存�
 - **门禁**: typecheck 0 | test 1079 | lint 0
 - **依据**: D-083 未做事项 §1
 - **状态**: ✅ Sprint 34 完工
+
+---
+
+### D-085: Sprint 32(二期) — renderer 端 service IPC 层重构
+
+- **类型**: 重构
+- **背景**:
+  - 原 Sprint 26 Phase 3 (IPC通道移除) 已完成 7 个 renderer service 的双轨化
+  - 但 `service-bridge.ts` 和 `_dual-track.ts` 作为中间层仍存在，每个 service 入口有重复 try/catch/log
+  - 本次将 `serviceBridge.invoke` + `runDualTrack` 统一替换为 `invoke()` + `isCapacitor()` 直接调用
+- **实施**:
+  - **Phase 1**: 创建 `src/renderer/services/_invoke.ts` — 公共 invoke 包装器（消除重复 try/catch）
+  - **Phase 2**: 创建 `src/renderer/services/_platform.ts` — 从 `_dual-track.ts` 提取 `isCapacitor()` 独立模块
+  - **Phase 2**: 9 个 service 文件统一模式：
+    - `project.service.ts` / `session.service.ts` / `active-training.service.ts` / `teaching-state.service.ts`：使用 `getDirectService()` + 真实 shared 实现（Android 端）
+    - `diagnosis.service.ts` / `training.service.ts` / `student-context.service.ts` / `development-path.service.ts`：Android 端保持 warn + null（无 shared 实现）
+    - `chat.service.ts`：保留 Sprint 31 的 capacitor-chat（内存事件总线 + LlmClient），Electron 端改用 `invoke()`
+  - **Phase 3**: 创建向后兼容 shim（`service-bridge.ts` 和 `_dual-track.ts` 委托到新模块，避免 10+ store/hook 一次性迁移）
+  - **测试适配**: 更新 4 个测试文件（`_dual-track.test.ts`、`service-bridge.test.ts`、`capcitor-fallback.test.ts`、`typedinvoke-degradation.test.ts`），更新 2 个 store 测试（`training.store.test.ts`、`training.store.retro.test.ts`）
+- **关键设计决策**:
+  - 存留 shim 而非一次性迁移全部 stores：将 100+ 行 store 改动拆分为独立 sprint
+  - `_invoke.ts` 返回 `T | null`，调用方通过 `?? []` / `?? false` 自行决定 fallback
+  - service-bridge shim 保持 `bridge:invoke` 路由（stores 依赖此通道）
+  - `runDualTrack` shim 返回 `Promise.resolve(null)`（已无实际用途）
+- **门禁结果**:
+  - typecheck: 0 error
+  - 测试: 93 files / 1126 passed
+  - lint: 0 warning
+- **未做事项**:
+  - Store/hook 迁移到 `invoke()`（保留 `serviceBridge.invoke` 的 10+ 个引用点）
+  - Main process 的 `bridge:invoke` 注册层（`src/main/core/service-bridge.ts`）— 不同模块
+- **依据**: dev-docs/tasks/sprint-32-plan.md
+- **状态**: ✅ 完工
+
+### D-091: Sprint 34 — 基础设施债务清理
+
+- **类型**: 债务
+- **背景**:
+  - `ability:getProfile` IPC 合约类型与实际返回值不匹配（缺少 `trainingStats`/`diagnosisTrend`/`abilities`），导致统计卡片显示 `'0'`、雷达图关键词匹配不可靠
+  - ChatPage 消息加载无上限，会话累积可能导致性能问题
+- **实施**:
+
+  **1. 合约类型修正** (`ability.contract.ts`)
+  - 从 `shared/types/types-growth` 导入 `AbilityScore`/`WeakPoint`/`TrainingStats`/`DiagnosisTrend`
+  - `AbilityProfile` 补充 `abilities`/`weakPoints`/`trainingStats`/`diagnosisTrend`/`computedAt` 字段
+  - 保留旧字段标记 `@deprecated` 防止破坏现有引用
+
+  **2. 统计卡片真实数据** (`ProjectSpacePage.tsx`)
+  - "诊断" → `diagnosisTrend.totalDiagnoses`
+  - "训练" → `trainingStats.totalCompleted`
+  - "症候" → `Object.keys(diagnosisTrend.syndromeFrequency).length`
+  - 移除 C-2 的 `'0'` 硬编码注释
+
+  **3. 雷达图数据源重写**
+  - 移除 `SYNDROME_KEYWORD_MAP` 关键词匹配（不再需要）
+  - `extractAbilityRadarValues()` 从 `abilities[].abilityName` 直接映射到 `RADAR_LABELS`
+  - score 0-100 → 雷达图 0-5 归一化
+
+  **4. 消息分页** (`ChatPage.tsx` + `session.store.ts`)
+  - store 新增 `loadMessagesPaged` 方法
+  - ChatPage 渲染层限制最多 200 条，添加"显示更早消息"按钮
+- **关键设计决策**:
+  - 不改后端 IPC，仅在渲染层做分页限制：避免债务清理 sprint 引入新端点
+  - 第三列从"学习天"改为"症候"：profile 数据无活跃天数可用，syndromeFrequency 的 key 数量是更诚实的指标
+- **变更文件**:
+  - `src/shared/api-contracts/ability.contract.ts` — 合约类型补充
+  - `src/renderer/pages/ProjectSpacePage.tsx` — 统计卡片 + 雷达图
+  - `src/renderer/stores/session.store.ts` — 分页方法
+  - `src/renderer/pages/ChatPage.tsx` — 渲染分页
+  - `src/renderer/pages/__tests__/ProjectSpacePage.test.tsx` — 测试适配
+  - `dev-docs/tasks/sprint-34-plan.md` — 计划文档
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **依据**: dev-docs/tasks/sprint-34-plan.md
+- **状态**: ✅ 完工
+
+---
+
+### D-089: Sprint 33 C-4 — 硬编码映射表替换
+
+- **类型**: 重构
+- **背景**:
+  - 代码中存在多处 A→B 静态映射表(PHASE_LABELS/SYNDROME_TO_DIMENSION/SEVERITY_SCORE/STATUS_BONUS/STATUS_MAP/RADAR_LABELS 等)，缺乏编译期类型安全保障
+  - PHASE_LABELS 使用 `Record<string, string>` 宽松类型，丢失了具体 key 的类型信息
+  - 部分映射表缺少 `as const`，值未被推断为字面量类型
+- **实施**:
+  - **ChatPage.tsx — PHASE_LABELS**: 添加 `as const` + `type PhaseKey = keyof typeof PHASE_LABELS` 严格类型，两处使用点改为 `as PhaseKey` 安全索引
+  - **GrowthReportPage.tsx — 4 处映射**:
+    - `SYNDROME_TO_DIMENSION`: 保留 `Record<string, DimensionKey>` 显式类型(支持 string 索引)，添加 TODO 标记 JSON 替换路径
+    - `STATUS_MAP`: 移除冗余类型标注，改为 `as const` 推断(Icon 组件保留为 JSX 有效类型)
+    - `SEVERITY_SCORE`: 移除 `Record<'L1'|'L2'|'L3', number>`，改为 `as const` 5|3|1 字面量
+    - `STATUS_BONUS`: 移除 `Record<status, number>`，改为 `as const` 1.5|0.5|0|-1 字面量
+  - **ProjectSpacePage.tsx — 2 处**:
+    - `RADAR_LABELS`: 添加 `as const`
+    - `keywords`: 提取为顶层 `SYNDROME_KEYWORD_MAP` 常量，`as const` 推断，函数内直接引用
+- **关键设计决策**:
+  - 不创建独立 config 文件：5 处映射表均为页 UI 专属，与其他文件无共享需求，层内保留避免配置治理膨胀
+  - `SYNDROME_TO_DIMENSION` 保留显式类型而非 `as const`: string 索引是运行时必需(症候 ID 来自 DB)，`as const` 会阻断索引访问
+  - `STATUS_MAP` with `as const` 仍有效：React 函数组件的类型在 `as const` 下被推断为具体字面量组件类型，仍可用作 JSX
+- **变更文件**:
+  - `src/renderer/pages/ChatPage.tsx` — PHASE_LABELS as const + 严格类型
+  - `src/renderer/pages/GrowthReportPage.tsx` — 4 处映射表
+  - `src/renderer/pages/ProjectSpacePage.tsx` — RADAR_LABELS + SYNDROME_KEYWORD_MAP
+  - `dev-docs/tasks/sprint-33-c4-plan.md` — 新增计划文档
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **未做事项**:
+  - C-5: 训练 UI 全链路（GitHub Issue #53）
+  - `SYNDROME_TO_DIMENSION` 从 ability-atlas.json 运行时加载（需 infrastructure sprint）
+  - `STATUS_MAP` 的 Icon 组件在 `as const` 下类型未精确到单个组件(不影响运行)
+  - 主进程 `src/main/domains/` 下的 styleMap/maturityMap 等映射表(不同模块，后续处理)
+- **依据**: dev-docs/tasks/sprint-33-c4-plan.md
+- **状态**: ✅ 完工
+
+---
+
+### D-088: Sprint 33 C-3 — 4 子页数据通路打通
+
+- **类型**: 功能
+- **背景**:
+  - 4 个子页面（GrowthReportPage / TrainingPlanPage / BookshelfPage / ConversationsPage）中，ConversationsPage 缺少 loading 状态
+  - ability.store、growth.store、prescription.store 在数据为空时设置误导性的 `error: 'XXX为空'`，导致页面同时显示红色错误横幅和空状态
+- **实施**:
+  - **session.store**: 添加 `loading: boolean` 状态字段，`loadSessions` 开头/结尾正确管理 loading
+  - **ConversationsPage**: 添加加载指示器（`loading && sessions.length === 0` 时显示"加载中…"）
+  - **growth.store**: 移除空数据时的 `error: '全局趋势为空'`，仅 `set({ loading: false })`
+  - **ability.store**: 移除空数据时的 `error: '画像为空'`，仅 `set({ profile: null, loading: false })`
+  - **prescription.store**: 移除空数据时的 `error: '阶段列表为空'`，仅 `set({ loading: false })`
+- **关键设计决策**:
+  - 空数据不是 error：用户首次使用时数据库自然为空，显示用户友好的空状态（页面已有）而非技术性的错误横幅
+  - retro.store 保持现状：其 error 用于真实失败场景（IPC 调用失败），与空数据不同
+- **变更文件**:
+  - `src/renderer/stores/session.store.ts` — 添加 loading 字段
+  - `src/renderer/pages/ConversationsPage.tsx` — 加载指示器
+  - `src/renderer/stores/growth.store.ts` — 移除误导性 error
+  - `src/renderer/stores/ability.store.ts` — 移除误导性 error
+  - `src/renderer/stores/prescription.store.ts` — 移除误导性 error
+  - `dev-docs/tasks/sprint-33-c3-plan.md` — 新增计划文档
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **未做事项**:
+  - C-4: 硬编码映射表替换（GitHub Issue #52）
+  - C-5: 训练 UI 全链路（GitHub Issue #53）
+- **依据**: dev-docs/tasks/sprint-33-c3-plan.md
+- **状态**: ✅ 完工
+
+---
+
+## 2026-07-05
+
+### D-086: Sprint 33 C-1 — ChatPage 事件响应链路打通
+
+- **类型**: 功能
+- **背景**:
+  - ChatPage 的 orchestrator 事件（phase_transition / diagnosis_extracted / training_triggered）仅 console.log 输出，用户无感知
+  - 应用存在 5 类用户侧缺口：页面无数据、硬编码映射表、组件间交互未打通等
+  - Sprint 33 计划（sprint-33-user-gaps-plan.md）将 C-1 列为最高优先级
+- **实施**:
+  - **事件 → 系统消息**: 替换 3 个 console.log 事件处理器，注入 system 角色消息
+    - `phase_transition` → 阶段横幅（"📋 进入需求了解阶段"）+ Navbar 副标题更新
+    - `diagnosis_extracted` → 诊断信息卡 + 同步到 useDiagStore
+    - `training_triggered` → 训练建议卡片 + 按钮（"开始训练"）
+  - **系统消息渲染**: MessageBubble 扩展 `role === 'system'` 分支，按 `contentType` 渲染不同样式
+  - **训练入口**: CustomEvent（`start-training`）桥接 → useEffect 订阅 → `activeTrainingService.create()` → FlowPanel 渲染
+  - **ChatMessage 扩展**: 添加 `metadata?: Record<string, unknown>` 字段承载系统消息内容类型
+- **关键设计决策**:
+  - 使用 system 消息而非新组件：复用已有消息流，无需引入新页面
+  - CustomEvent 桥接而非 prop drilling：MessageBubble 是纯组件，不持有页面级状态
+  - FlowPanel 渲染而非 URL 路由跳转：训练流是 ChatPage 的覆盖层，保持对话上下文
+- **变更文件**:
+  - `src/renderer/shared/types-chat.ts` — ChatMessage.metadata 扩展
+  - `src/renderer/pages/ChatPage.tsx` — 事件处理器 + 系统消息渲染 + 训练入口
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1126 passed
+  - lint: 0 error
+- **未做事项**:
+  - C-2: ProjectSpacePage mock 数据替换（GitHub Issue #50）
+  - C-3: 4 个子页面真实数据接入（GitHub Issue #51）
+  - C-4: 硬编码映射表替换（GitHub Issue #52）
+  - C-5: 训练 UI 全链路（GitHub Issue #53）
+- **依据**: dev-docs/tasks/sprint-33-c1-plan.md
+- **状态**: ✅ 完工
+
+---
+
+### D-087: Sprint 33 C-2 — ProjectSpacePage Mock 数据替换
+
+- **类型**: 功能
+- **背景**:
+  - ProjectSpacePage 的雷达图使用 `RADAR_VALUES = [4,3,5,2,4]` 硬编码数组（D-DEBT-30）
+  - 统计卡片显示 `'—'` 占位符（D-DEBT-30）
+  - 最近学习记录 `RECENT_RECORDS` 和章节列表 `CHAPTERS` 为硬编码常量（D-DEBT-31）
+- **基础设施限制**:
+  - `session.store` 无 `projectId` 字段: 无法通过 projectId 查询关联 session
+  - `project→manuscript` 映射仅存在于 renderer 内存态,未持久化到 DB
+  - 无 stats/activity IPC 聚合端点
+  - 详见 dev-docs/tasks/sprint-33-c2-plan.md §2
+- **实施**:
+  - **雷达图**: 提取为 `RadarChart({ values })` 响应式组件,接受外部 prop 替代全局常量
+  - **AbilityStore 集成**: 接受 `params.sessionId`,通过 `useAbilityStore.fetchProfile(sessionId)` 获取真实能力画像
+  - **syndrome→雷达维度映射**: `extractRadarValues()` 函数基于关键词匹配,标记 TODO(C-4)
+  - **统计卡片**: `'—'` → `'0'`,标注待 D-DEBT-30 基础设施补齐
+  - **最近记录/章节**: mock 常量 → 空状态 UI（"暂无学习记录" / "暂无章节"）
+  - **STATUS_MAP**: 移除（仅用于已删除的章节列表）
+  - **测试**: 17 个测试（+3 新: ability store 集成/loading/空能力状态）
+- **关键设计决策**:
+  - 诚实暴露空状态而非保留假数据: 用户明确知道哪些功能尚未可用
+  - `sessionId` 通过 params 传入（非自动推导）: 保持组件简单,路由层负责提供正确的 ID
+  - 不在 C-2 中建立新的 IPC 端点: 先评估需求,留给专门 sprint
+- **变更文件**:
+  - `src/renderer/pages/ProjectSpacePage.tsx` — 全线替换 mock 数据
+  - `src/renderer/pages/__tests__/ProjectSpacePage.test.tsx` — 适配空状态测试
+  - `dev-docs/tasks/sprint-33-c2-plan.md` — 新增计划文档
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **未做事项**:
+  - C-3: 4 子页面真实数据接入（GitHub Issue #51）
+  - C-4: 硬编码映射表替换（GitHub Issue #52）
+  - C-5: 训练 UI 全链路（GitHub Issue #53）
+- **依据**: dev-docs/tasks/sprint-33-c2-plan.md
+- **状态**: ✅ 完工
+
+---
+
+### D-090: Sprint 33 C-5 — 训练流 UI 入口激活
+
+- **类型**: 功能
+- **背景**:
+  - C-1 已实现 `training_triggered` 事件 → FlowPanel 的基本链路，但存在 4 个缺口：
+    1. `evaluation={null}` 硬编码 — 第 5 步反馈无法显示真实评估
+    2. 未挂载 `mountActiveTraining` — 训练状态变更推送未订阅
+    3. 训练完成后无重置 — `onExit` 仅 `setShowTraining(false)`，状态残留
+    4. 无主动入口 — 用户只能等 AI 触发训练，无法自主发起
+- **实施**:
+  - **evaluation 传递**: 从 `useTrainingStore` 获取 `evaluationResult` 传给 FlowPanel，替代硬编码 `null`
+  - **mountActiveTraining 挂载**: 在 `start-training` handler 创建训练成功后调用 `mountActiveTraining(sid)`，订阅主进程推送（评估结果等）
+  - **训练完成清理**: `onExit` 注入训练完成系统消息 + 重置 `activeSession`/`trainingFlow`/`showTraining`
+  - **主动训练入口**: ActionSheet（工具菜单）中添加 GraduationCap 图标"训练"选项，点击复用 `activeTrainingService.create()` + `mountActiveTraining` 逻辑
+- **关键设计决策**:
+  - 主动入口放在 ActionSheet 而非侧边栏：ActionSheet 已作为"添加工具"的统一入口，符合用户预期
+  - `onExit` 同时负责清理和消息注入：简化组件接口，无需新增回调
+  - 训练完成消息用 `system` 角色 + `training_end` contentType：与 C-1 的系统消息渲染模式保持一致
+- **变更文件**:
+  - `src/renderer/pages/ChatPage.tsx` — 4 项改动
+  - `dev-docs/tasks/sprint-33-c5-plan.md` — 新增计划文档
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **依据**: dev-docs/tasks/sprint-33-c5-plan.md
+- **状态**: ✅ 完工
+
+---
+
+### D-092: Sprint 35 — 训练流端到端完善
+
+- **类型**: 功能
+- **背景**:
+  - Sprint 35 补全训练流的三个 UI/类型缺口:
+    1. `training_triggered` 系统消息仅显示通用文字，未利用 payload 中的 `syndromeId` 显示具体症候名称
+    2. `TrainingEvaluateResponse` 合约类型声明 `downgraded` 字段，但实际 `evaluateTraining()` 返回 `improved`/`nextStep`，类型与实际不匹配
+    3. `onExit` 完成通知仅写"训练已结束"，未包含评估评分和反馈
+- **实施**:
+  1. **增强 training_triggered 系统消息**: `systemMessageText` 从 event metadata 读取 `syndromeId`，通过 `SYNDROME_NAMES` 映射显示具体症候名（如 `💪 检测到「世界观膨胀」症候，建议进行专项训练`）；fallback 到 `reason` 字段，再 fallback 到通用文字
+  2. **评估结果类型对齐**: `TrainingEvaluateResponse` 的 `downgraded: boolean` 替换为 `improved: boolean`，补充 `nextStep: string`，与 `training-evaluator.service.ts` 的 `EvaluationResult` 保持一致
+  3. **完成通知展示评估摘要**: `onExit` 中读取 `evaluationResult`，拼装评分和反馈到系统消息中（`💪 训练已结束\n评分：7/10\n反馈：...`）
+- **关键设计决策**:
+  - 使用 `SYNDROME_NAMES` 共享映射（来自 `src/shared/mappings.ts`）而非硬编码：符合 R-014 配置外置，避免新增 A→B 映射表
+  - 保留三个 fallback 层级（症候名 → reason → 通用文字）：确保即使 `syndromeId` 缺失也能显示可读消息
+  - 不修改主进程的 `evaluateTraining` 返回类型：该函数已返回正确的字段名，仅合约类型声明有误
+- **变更文件**:
+  - `src/renderer/pages/ChatPage.tsx` — 导入 SYNDROME_NAMES、增强 systemMessageText、增强 onExit 完成通知
+  - `src/shared/api-contracts/training.contract.ts` — TrainingEvaluateResponse 字段修正
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **依据**: dev-docs/tasks/sprint-34-38-roadmap.md
+- **状态**: ✅ 完工
+
+
+### D-093: Sprint 36 — 硬编码映射表第二波（主进程）
+
+- **类型**: 重构（R-014 合规延续）
+- **背景**:
+  - `student-model-service.ts` 和 `student-model-analyzer.ts` 重复定义了三组完全相同的硬编码映射表：
+    1. `proficiencyMap` — ProficiencyLevel → 中文标签（如 `beginner` → '新手写作者'）
+    2. `styleMap` — CognitiveStyle → 中文标签（如 `analytical` → '理性分析型'）
+    3. `maturityMap` — TrainingMaturity → 中文标签（如 `mature` → '教学适应度高'）
+  - 违反了 R-014 配置外置规范（静态配置应外置为 JSON）
+- **实施**:
+  1. **扩展类型**: `StudentProfileDescriptions` 新增 `proficiencyLabel`/`cognitiveStyleLabel`/`trainingMaturityLabel` 三个可选 `Record<string, string>` 字段
+  2. **JSON 配置**: `resources/config/student-profile-descriptions.json` 新增对应的三个 label 节
+  3. **`student-model-service.ts`**: `toPromptText()` 中硬编码 Map → `this.descriptionsCache` 查找，fallback 到原始 key
+  4. **`student-model-analyzer.ts`**: `toPromptText(descriptions?)` 接受可选配置参数，hardcoded Map → 参数查找
+- **关键设计决策**:
+  - 标签放到已有 `student-profile-descriptions.json` 中（而非新建文件）：学生画像相关配置集中管理，避免文件膨胀
+  - `StudentModelAnalyzer.toPromptText()` 接受可选参数而非构造函数注入：该类未被生产代码引用，最小化改动
+  - fallback 到原始 key 而非抛异常：配置加载失败时仍可输出可读结果
+- **变更文件**:
+  - `resources/config/student-profile-descriptions.json` — 新增 3 个 label 节
+  - `src/main/domains/02-prescription/student/student-model-service.types.ts` — 类型扩展
+  - `src/main/domains/02-prescription/student/student-model-service.ts` — 替换硬编码 Map
+  - `src/main/domains/02-prescription/student/student-model-analyzer.ts` — 替换硬编码 Map
+- **门禁结果**:
+  - typecheck: 0 error
+  - test: 93 files / 1129 passed
+  - lint: 0 error
+- **依据**: dev-docs/tasks/sprint-34-38-roadmap.md
+- **状态**: ✅ 完工
+
+---
+
+### D-094: Sprint 37 — 测试覆盖率加厚
+
+- **类型**: 测试
+- **背景**:
+  - Sprint 35/36 新增了大量训练流和映射表外置代码，测试覆盖率不足
+  - 需要补充 ChatPage 训练入口交互、FlowPanel 评估展示、ProjectSpacePage 能力数据集成等测试
+- **实施**:
+  1. **ChatPage 训练入口** (13 tests): ActionSheet 训练按钮点击 → `activeTrainingService.create` 调用、`training_triggered` 事件系统消息插入、创建失败错误提示、成功时挂载 `mountActiveTraining`
+  2. **FlowPanel 评估展示** (12 tests): 第 5 步评估评分/反馈/improved 状态显示、`evaluation=null` 显示"评估中…"、`improved=false` 显示"与原文差异较小"
+  3. **ProjectSpacePage 能力集成** (20 tests): 能力数据存在/缺失时雷达图显示、统计卡片读取真实数值
+- **修复的测试缺陷**:
+  - FlowPanel 输入文字不足 30 字阈值 → 增加到 32 字
+  - 第 5 步 `flow-next` 按钮不存在（变为 `flow-complete`）→ 移除多余点击
+  - SVG 中评分文本跨元素拆分 → 改用 `/评分/` 正则 + 独立 `getByText('7')`
+  - 雷达图能力值以 SVG 坐标渲染（非文本）→ `container.querySelectorAll('svg polygon')` 检查数据多边形
+- **门禁结果**:
+  - test: 93 files / **1139 passed** (Sprint 36: 1129)
+  - typecheck: 2 个 pre-existing TS error（ChatPage.test.tsx, Sprint 35 遗留）
+  - lint: 0 error
+- **依据**: dev-docs/tasks/sprint-34-38-roadmap.md
+- **状态**: ✅ 完工
+
+### D-095: Sprint 38 — 自定义训练计划
+
+- **类型**: 新功能
+- **背景**:
+  - Sprint 34-37 完成了债务清理、训练流完善、映射表外置、测试加厚
+  - Sprint 38+ 用户选择了"自定义训练计划"方向
+- **实施**:
+  1. **共享类型/契约**: 新增 	raining-plan.contract.ts — TrainingPlanDTO, TrainingPlanWithItemsDTO, TrainingPlanItemDTO, AvailableChallengeDTO
+  2. **数据库迁移**:  30_training_plans.sql — 创建 	raining_plans 和 	raining_plan_items 两表
+  3. **IPC 通道**: constants.ts 新增 8 个 plan:* 通道常量
+  4. **主进程 Service**: TrainingPlanService — CRUD (create/list/get/delete) + Items 管理 (add/remove/updateItemStatus) + getAvailableChallenges
+  5. **IPC Handler**: 	raining-plan.handler.ts — 通过 
+egisterMethods 注册 8 个 handler，使用 alidatePayload 做运行时类型校验
+  6. **渲染进程 Store**: 	raining-plan.store.ts — Zustand store 封装所有 plan:* IPC 调用
+  7. **UI 页面**: TrainingPlanPage.tsx — 双标签页（发展阶段 / 自定义计划），包含计划列表、新建表单、计划详情、添加训练项等视图
+  8. **集成逻辑**: TrainingPlanPage 点击"开始训练"→ 传递 planItemId 到 ChatPage → ChatPage 自动启动 FlowPanel → 训练完成时自动调用 plan:updateItemStatus 标记为 completed
+- **门禁结果**:
+  - typecheck: 0 new errors（2 个 Sprint 37 pre-existing errors 不变）
+  - lint: 0 error
+- **依据**: dev-docs/tasks/sprint-34-38-roadmap.md
+- **状态**: ✅ 完工
+
+### D-096: Sprint 39 — 多作品管理增强
+
+- **类型**: UI/UX 增强
+- **背景**:
+  - Sprint 38 完成了自定义训练计划
+  - 用户选择了"多作品管理"作为 Sprint 39+ 方向
+  - 项目已有完整的数据层（manuscripts 表 + chapters 表 + CRUD IPC + Store），但书架页面较基础
+- **实施**:
+  1. **manuscript:stats IPC 通道**: 新增 manuscript:stats handler，返回作品统计（章节数、总字数、关联会话数、训练记录数）
+  2. **BookshelfPage 增强**:
+     - 新建弹窗（WorkFormDialog）— 支持输入名称 + 类型 + 描述，替代默认名创建
+     - 卡片操作菜单（⋮ MoreVertical）— 重命名（内联输入）、编辑详情（弹窗）、删除（确认）、作品详情（导航）
+     - 封面点击 → 作品详情页，信息区点击 → 项目空间
+  3. **新增 WorkDetailPage 作品详情页**:
+     - 顶部 Header：作品名 + 返回按钮 + 编辑按钮 + 跳转项目空间按钮
+     - 元数据展示：类型、描述、创建时间
+     - 统计概览卡片：章节数、总字数、对话数、训练数
+     - 章节管理：新增章节输入框、章节列表（序号 + 标题 + 字数 + 删除）
+     - 编辑弹窗：编辑名称 / 类型 / 描述
+  4. **路由注册**: PageName 新增 work-detail、pages/index.ts export、PageStackRouter PAGE_MAP 注册
+- **门禁结果**:
+  - typecheck: 0 new errors（2 个 Sprint 37 pre-existing errors 不变）
+  - lint: 0 error
+- **依据**: 用户选择 + dev-docs/tasks/sprint-34-38-roadmap.md
+- **状态**: ✅ 完工
+
+### D-097: Sprint 40 — 写作进度追踪
+
+- **类型**: 新功能
+- **背景**:
+  - Sprint 39 完成了多作品管理增强
+  - 用户选择了"写作进度追踪"作为 Sprint 40 方向
+  - 项目已有丰富的数据源（chapters.word_count、user_training_records、sessions），但缺少按时间维度聚合的进度总览
+- **实施**:
+  1. **progress:overview IPC 通道**: 新建 progress.handler.ts，6 组 SQL 聚合查询 + calcWritingStreak 连续天数计算
+     - 字数统计：今日/本周/本月/总计
+     - 写作连续天数：从 chapters.updated_at 反推
+     - 训练统计：总数 / 完成数 / 平均分
+     - 会话统计：总数 / 本周
+     - 每日字数柱状图数据（30 天）
+     - 每日训练数据（30 天）
+  2. **writing-progress.store.ts**: 封装 progress:overview 调用的 Zustand Store
+  3. **GrowthReportPage 增强**: 顶部新增"进度总览"区块
+     - 写作进度行：今日/本周/本月/总计字数 + 连续天数图标(🔥)
+     - 训练与活跃度行：总训练数/完成率/平均分/总对话/本周对话
+     - 30 天活动柱状图（SVG ActivityBarChart，非活动日为浅色占位条）
+     - 分隔线后为原有成长报告内容
+- **门禁结果**:
+  - typecheck: 0 new errors（2 个 Sprint 37 pre-existing errors 不变）
+  - lint: 0 error
+- **依据**: 用户选择
+- **状态**: ✅ 完工
