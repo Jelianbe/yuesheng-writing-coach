@@ -45,7 +45,13 @@
     }],
 
     // 严格比较
-    "eqeqeq": ["error", "always", { "null": "ignore" }]
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+
+    // 禁止内联 style (R-019: 必须用 CSS Modules + design tokens)
+    "no-restricted-syntax": ["warn", {
+      "selector": "JSXAttribute[name.name='style']",
+      "message": "禁止内联 style={{...}}。改用 CSS Modules + design tokens (variables.css)。"
+    }]
   },
   "overrides": [
     {
