@@ -11,6 +11,7 @@ export default defineConfig({
     outDir: '../../dist/renderer',
     emptyOutDir: true,
     target: 'chrome120',
+    sourcemap: 'hidden',  // 生产生成 sourcemap 但不暴露给用户，用于崩溃报告
   },
   resolve: {
     alias: {
