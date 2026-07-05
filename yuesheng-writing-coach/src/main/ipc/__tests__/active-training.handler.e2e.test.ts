@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * ActiveTraining 状态推送 — 端到端集成测试
  *

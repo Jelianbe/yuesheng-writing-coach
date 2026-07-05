@@ -1,9 +1,15 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useTrainingStore } from '../training.store';
 import { useChatStore } from '../chat.store';
 import { useDiagStore } from '../diag.store';
 import { IPC_CHANNELS } from '../../../shared/constants';
+
+// Sprint 26 阶段 3.6: 调用方迁移到 service-bridge 单端点,
+// 训练 store 调 training:history / training:complete 均经 BRIDGE_INVOKE 通道,
+// payload 为 { method, args } 形式。测试验证 BRIDGE_INVOKE 通道与方法名。
+const BRIDGE_INVOKE_CHANNEL = IPC_CHANNELS.BRIDGE_INVOKE;
 
 function clearMock() {
   delete window.electronAPI;
@@ -182,7 +188,11 @@ describe('TrainingStore', () => {
     });
 
     it('IPC 返回 error 时设置错误', async () => {
-      const invoke = vi.fn().mockResolvedValue({ error: 'assign failed' });
+      // bridge 模式: handler 抛错 → createHandler 包装为 { success: false, error: '...' }
+      //       → serviceBridge.invoke 内部 console.error + return null
+      //       → store 抛 'training:assign returned null'
+      // 测试用 reject 模拟抛错路径(与 bridge 端行为一致)
+      const invoke = vi.fn().mockRejectedValue(new Error('assign failed'));
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       useTrainingStore.setState({
         recommendations: [{ challengeId: 'CH-001', syndromeId: 'P004', description: 'desc', mode: 'generic' } as any],
@@ -194,7 +204,8 @@ describe('TrainingStore', () => {
     });
 
     it('IPC 返回记录时创建活跃训练', async () => {
-      const invoke = vi.fn().mockResolvedValue({ record: { id: 'rec-001' } });
+      // bridge 模式: createHandler 包装为 { success: true, data: { record: { id: 'rec-001' } } }
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { record: { id: 'rec-001' } } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       useTrainingStore.setState({
         recommendations: [{
@@ -231,6 +242,7 @@ describe('TrainingStore', () => {
         { recordId: 'r1', syndromeId: 'P004', title: '信息硬塞' },
         { recordId: 'r2', syndromeId: 'P002', title: '角色工具人化' },
       ];
+      // bridge 模式: createHandler 包装为 { success: true, data: { records } }
       const invoke = vi.fn().mockResolvedValue({ success: true, data: { records: mockRecords } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
@@ -241,13 +253,15 @@ describe('TrainingStore', () => {
       expect(useTrainingStore.getState().history).toEqual(expected as any);
       expect(useTrainingStore.getState().isLoading).toBe(false);
       expect(invoke).toHaveBeenCalledWith(
-        IPC_CHANNELS.TRAINING_HISTORY,
-        { sessionId: 'test-session' },
+        BRIDGE_INVOKE_CHANNEL,
+        { method: 'training:history', args: { sessionId: 'test-session' } },
       );
     });
 
     it('IPC 错误时设置 error', async () => {
-      const invoke = vi.fn().mockResolvedValue({ success: false, error: 'load failed' });
+      // bridge 模式: handler 抛错 → serviceBridge.invoke 内部 console.error + return null
+      // 测试用 reject 模拟抛错路径(与 bridge 端行为一致)
+      const invoke = vi.fn().mockRejectedValue(new Error('load failed'));
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
       expect(useTrainingStore.getState().error).toBe('Error: load failed');
@@ -297,7 +311,8 @@ describe('TrainingStore', () => {
         { challengeId: 'CH-001', challengeName: '信息硬塞', syndromeId: 'P004', severity: 'L2', tier: 'structural', mode: 'generic' },
         { challengeId: 'CH-002', challengeName: '角色工具化', syndromeId: 'P002', severity: 'L3', tier: 'structural', mode: 'generic' },
       ];
-      const invoke = vi.fn().mockResolvedValue({ recommendations: mockRecs });
+      // bridge 模式: createHandler 包装为 { success: true, data: { recommendations: ... } }
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { recommendations: mockRecs } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
 
       await useTrainingStore.getState().refreshFromDiagnosis();
@@ -312,7 +327,7 @@ describe('TrainingStore', () => {
     });
 
     it('无诊断历史时清空 errorCards', async () => {
-      const invoke = vi.fn().mockResolvedValue({ recommendations: [] });
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { recommendations: [] } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().refreshFromDiagnosis();
       expect(useTrainingStore.getState().errorCards).toEqual([]);
@@ -371,7 +386,8 @@ describe('TrainingStore', () => {
           userDraft: '我的改写稿',
         } as any,
       });
-      const invoke = vi.fn().mockResolvedValue({ passed: false, feedback: '改写还不够，缺少具体动作。' });
+      // bridge 模式: training:submit 评估结果经 createHandler 包装
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { passed: false, feedback: '改写还不够，缺少具体动作。' } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().submitStep();
       const state = useTrainingStore.getState();
@@ -398,7 +414,8 @@ describe('TrainingStore', () => {
           userDraft: '改写稿已通过',
         } as any,
       });
-      const invoke = vi.fn().mockResolvedValue({ passed: true, feedback: '改得很好！' });
+      // bridge 模式: training:submit 评估结果经 createHandler 包装
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { passed: true, feedback: '改得很好！' } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().submitStep();
       const state = useTrainingStore.getState();
@@ -428,13 +445,17 @@ describe('TrainingStore', () => {
         } as any,
         submissionResult: { passed: true, feedback: '做得好！' },
       });
-      const invoke = vi.fn().mockResolvedValue({ record: { id: 'rec-001' } });
+      // bridge 模式: training:complete 经 BRIDGE_INVOKE 通道, payload { method, args }
+      const invoke = vi.fn().mockResolvedValue({ success: true, data: { record: { id: 'rec-001' } } });
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().submitStep();
       const state = useTrainingStore.getState();
       expect(invoke).toHaveBeenCalledWith(
-        IPC_CHANNELS.TRAINING_COMPLETE,
-        expect.objectContaining({ recordId: 'rec-001', userResponse: '最终稿' }),
+        BRIDGE_INVOKE_CHANNEL,
+        expect.objectContaining({
+          method: 'training:complete',
+          args: expect.objectContaining({ recordId: 'rec-001', userResponse: '最终稿' }),
+        }),
       );
       // B3: 评估视图保留，不再自动切回
       expect(state.activeTraining).not.toBeNull();

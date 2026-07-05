@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * SkillDispatcher 版本过滤测试 — Sprint 20 A-2 桥接真实实现
  *

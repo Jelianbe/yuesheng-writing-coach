@@ -2,15 +2,15 @@
  * growth.store.ts — 成长趋势管理
  *
  * 职责:
- * - 通过 growth:getTrends / growth:getGlobalTrends 拉取能力趋势
+ * - 通过 service-bridge 单端点调用 growth:getGlobalTrends 拉取能力趋势
  * - 缓存 trends 与 global 状态
  *
  * 数据契约:src/shared/api-contracts/growth.contract.ts
+ * 调用:serviceBridge.invoke('growth:getGlobalTrends', {}) (Sprint 26 阶段 3.6)
  */
 
 import { create } from 'zustand';
-import { IPC_CHANNELS } from '../shared/constants';
-import { typedInvoke } from '../services/ipc-client';
+import { serviceBridge } from '../services/service-bridge';
 import type {
   GrowthGetGlobalTrendsResponse,
   GrowthGlobalSyndromeTrend,
@@ -36,21 +36,16 @@ export const useGrowthStore = create<GrowthState & GrowthActions>((set) => ({
 
   fetchGlobalTrends: async () => {
     set({ loading: true, error: null });
-    try {
-      const res = await typedInvoke<Record<string, never>, GrowthGetGlobalTrendsResponse>(
-        IPC_CHANNELS.GROWTH_GET_GLOBAL_TRENDS,
-        {},
-      );
-      if (res.success && res.data) {
-        set({ global: res.data.overall, trends: res.data.trends, loading: false });
-        return res.data.overall;
-      }
-      set({ loading: false, error: !res.success ? res.error : '全局趋势为空' });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '获取全局趋势异常', loading: false });
-      return null;
+    const data = await serviceBridge.invoke<Record<string, never>, GrowthGetGlobalTrendsResponse>(
+      'growth:getGlobalTrends',
+      {},
+    );
+    if (data) {
+      set({ global: data.overall, trends: data.trends, loading: false });
+      return data.overall;
     }
+    set({ loading: false, error: '全局趋势为空' });
+    return null;
   },
 
   reset: () => set({ trends: [], global: null, error: null }),

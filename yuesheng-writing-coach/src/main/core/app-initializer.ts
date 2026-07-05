@@ -80,7 +80,7 @@ export class AppInitializer {
     ).get();
     if (hasTeachingState) return;
 
-    console.log('[DB] 创建基础表结构');
+    console.warn('[DB] 创建基础表结构');
     db.exec(`
       -- sessions
       CREATE TABLE IF NOT EXISTS sessions (
@@ -223,7 +223,7 @@ export class AppInitializer {
         'SELECT 1 FROM _migrations WHERE name = ?'
       ).get(file);
       if (alreadyApplied) {
-        console.log(`[Migration] Already applied: ${file}`);
+        console.warn(`[Migration] Already applied: ${file}`);
         continue;
       }
 
@@ -231,7 +231,7 @@ export class AppInitializer {
         const sql = fs.readFileSync(filePath, 'utf-8');
         db.exec(sql);
         db.prepare('INSERT INTO _migrations (name) VALUES (?)').run(file);
-        console.log(`[Migration] Applied: ${file}`);
+        console.warn(`[Migration] Applied: ${file}`);
       } catch (err) {
         // 018 是 TEXT→INTEGER 格式转换迁移，如果旧表不存在则跳过
         //（例如从 ensureBaseSchema 新建数据库时）

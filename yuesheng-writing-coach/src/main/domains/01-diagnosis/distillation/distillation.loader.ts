@@ -86,7 +86,7 @@ function ensureLoaded(): void {
 }
 
 function buildCaches(): void {
-  const entries = indexData!.entries;
+  const entries = (indexData as DistillationIndexJson).entries;
 
   // 按 ID 索引
   cachedById = new Map(entries.map(e => [e.id, e]));
@@ -128,43 +128,45 @@ function matchQuery(entry: DistillationEntry, query: string): boolean {
 /** 按新格式 ID 查询 */
 export function getById(id: string): DistillationEntry | null {
   ensureLoaded();
-  return cachedById!.get(id) ?? null;
+  return (cachedById as Map<string, DistillationEntry>).get(id) ?? null;
 }
 
 /** 按旧格式 ID 查询（B-001 / J-001 / K-001 / X-001 / PL-01 / SC-01 / DG-01） */
 export function getByLegacyId(legacyId: string): DistillationEntry | null {
   ensureLoaded();
-  return cachedByLegacyId!.get(legacyId) ?? null;
+  return (cachedByLegacyId as Map<string, DistillationEntry>).get(legacyId) ?? null;
 }
 
 /** 按症候 ID 查询（匹配 primary + secondary） */
 export function getBySyndrome(syndromeId: string): DistillationEntry[] {
   ensureLoaded();
-  return indexData!.entries.filter(e => matchSyndrome(e, syndromeId));
+  return (indexData as DistillationIndexJson).entries.filter(e => matchSyndrome(e, syndromeId));
 }
 
 /** 按批次查询 */
 export function getByBatch(batch: '001' | '002' | '003'): DistillationEntry[] {
   ensureLoaded();
-  return [...(cachedByBatch!.get(batch) ?? [])];
+  return [...((cachedByBatch as Map<string, DistillationEntry[]>).get(batch) ?? [])];
 }
 
 /** 按标注方式查询 */
 export function getByTag(taggedBy: 'human' | 'heuristic'): DistillationEntry[] {
   ensureLoaded();
-  return indexData!.entries.filter(e => e.taggedBy === taggedBy);
+  return (indexData as DistillationIndexJson).entries.filter(e => e.taggedBy === taggedBy);
 }
 
 /** 多条件搜索 */
 export function search(options: DistillationSearchOptions): DistillationEntry[] {
   ensureLoaded();
-  let results = indexData!.entries;
+  let results = (indexData as DistillationIndexJson).entries;
 
   if (options.query) {
-    results = results.filter(e => matchQuery(e, options.query!));
+    const q = options.query;
+    results = results.filter(e => matchQuery(e, q));
   }
   if (options.syndromeId) {
-    results = results.filter(e => matchSyndrome(e, options.syndromeId!));
+    const sid = options.syndromeId;
+    results = results.filter(e => matchSyndrome(e, sid));
   }
   if (options.batch) {
     results = results.filter(e => e.batch === options.batch);
@@ -187,13 +189,13 @@ export function searchByKeyword(keyword: string, limit?: number): DistillationEn
 /** 获取所有素材 */
 export function getAll(): DistillationEntry[] {
   ensureLoaded();
-  return [...indexData!.entries];
+  return [...(indexData as DistillationIndexJson).entries];
 }
 
 /** 随机抽样（用于教学推荐的多样性） */
 export function getRandom(n: number): DistillationEntry[] {
   ensureLoaded();
-  const all = indexData!.entries;
+  const all = (indexData as DistillationIndexJson).entries;
   if (n >= all.length) return [...all];
 
   // Fisher-Yates 部分洗牌（前 n 个）
@@ -208,7 +210,7 @@ export function getRandom(n: number): DistillationEntry[] {
 /** 获取统计信息 */
 export function getStatistics(): DistillationStatistics {
   ensureLoaded();
-  const entries = indexData!.entries;
+  const entries = (indexData as DistillationIndexJson).entries;
   const stats: DistillationStatistics = {
     total: entries.length,
     byBatch: {},

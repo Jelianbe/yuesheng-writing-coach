@@ -101,7 +101,7 @@ export class MemoryAdapter implements StorageAdapter {
     // 支持: SELECT [cols] FROM <table> [WHERE col = ?]
     const fromMatch = sql.match(/FROM\s+(\w+)/i);
     if (!fromMatch) throw new StorageError('SELECT missing FROM', undefined, sql);
-    const tableName = fromMatch[1]!;
+    const tableName = fromMatch[1] as string;
     const table = this.tables.get(tableName);
     if (!table) return [];
 
@@ -110,7 +110,7 @@ export class MemoryAdapter implements StorageAdapter {
     // 极简 WHERE 支持: WHERE col = ?
     const whereMatch = sql.match(/WHERE\s+(\w+)\s*=\s*\?/i);
     if (whereMatch) {
-      const col = whereMatch[1]!;
+      const col = whereMatch[1] as string;
       const value = params[0];
       rows = rows.filter((r) => r[col] === value);
     }
@@ -122,9 +122,9 @@ export class MemoryAdapter implements StorageAdapter {
     // CREATE TABLE <name> (col TYPE, ...)
     const match = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\(([^)]+)\)/i);
     if (!match) throw new StorageError('CREATE TABLE parse failed', undefined, sql);
-    const tableName = match[1]!;
+    const tableName = match[1] as string;
     if (this.tables.has(tableName)) return;
-    const colDefs = match[2]!.split(',').map((c) => c.trim().split(/\s+/)[0]!);
+    const colDefs = (match[2] as string).split(',').map((c) => c.trim().split(/\s+/)[0] as string);
     this.tables.set(tableName, { columns: colDefs, rows: new Map() });
   }
 
@@ -135,9 +135,9 @@ export class MemoryAdapter implements StorageAdapter {
     // INSERT INTO <table> (col1, col2) VALUES (?, ?)
     const match = sql.match(/INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i);
     if (!match) throw new StorageError('INSERT parse failed', undefined, sql);
-    const tableName = match[1]!;
-    const cols = match[2]!.split(',').map((c) => c.trim());
-    const placeholders = match[3]!.split(',').length;
+    const tableName = match[1] as string;
+    const cols = (match[2] as string).split(',').map((c) => c.trim());
+    const placeholders = (match[3] as string).split(',').length;
     if (params.length < placeholders) {
       throw new StorageError('INSERT params mismatch', undefined, sql);
     }
@@ -159,7 +159,7 @@ export class MemoryAdapter implements StorageAdapter {
     // 简化实现: 仅支持 UPDATE ... SET col = ? 形式,PoC 阶段够用
     const tableMatch = sql.match(/UPDATE\s+(\w+)/i);
     if (!tableMatch) throw new StorageError('UPDATE parse failed', undefined, sql);
-    const tableName = tableMatch[1]!;
+    const tableName = tableMatch[1] as string;
     const table = this.tables.get(tableName);
     if (!table) return { changes: 0, lastInsertId: 0 };
     return { changes: table.rows.size, lastInsertId: 0 };
@@ -171,7 +171,7 @@ export class MemoryAdapter implements StorageAdapter {
   ): ExecuteResult {
     const tableMatch = sql.match(/DELETE\s+FROM\s+(\w+)/i);
     if (!tableMatch) throw new StorageError('DELETE parse failed', undefined, sql);
-    const tableName = tableMatch[1]!;
+    const tableName = tableMatch[1] as string;
     const table = this.tables.get(tableName);
     if (!table) return { changes: 0, lastInsertId: 0 };
     const count = table.rows.size;

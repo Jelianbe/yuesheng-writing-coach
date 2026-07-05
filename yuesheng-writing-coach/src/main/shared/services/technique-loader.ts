@@ -73,7 +73,7 @@ export const TechniqueLibraryLoader = {
       if (eventType === 'change') {
         try {
           this.reload();
-          console.log('[TechniqueLibraryLoader] 技法库已热重载');
+          console.warn('[TechniqueLibraryLoader] 技法库已热重载');
         } catch (err) {
           console.error('[TechniqueLibraryLoader] 热重载失败:', err);
         }

@@ -7,9 +7,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DiagnosisOrchestratorService } from '../diagnosis-orchestrator.service';
 import type { BrowserWindow } from 'electron';
+import type nodeFs from 'fs';
 
 vi.mock('fs', async () => {
-  const actual = await vi.importActual<typeof import('fs')>('fs');
+  const actual = await vi.importActual<typeof nodeFs>('fs');
   return {
     ...actual,
     promises: {

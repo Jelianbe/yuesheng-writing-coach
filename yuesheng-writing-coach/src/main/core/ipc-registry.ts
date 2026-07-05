@@ -12,8 +12,8 @@ import { initGrowthHandlers, registerGrowthHandlers } from '../ipc/growth.handle
 import { initTeachingNoteHandlers, registerTeachingNoteHandlers } from '../ipc/teaching-note.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../ipc/diagnosis.handler';
 import { initChatHandlers, registerChatHandlers } from '../ipc/chat.handler';
-import { registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
-import { initTeachingStateHandler } from '../ipc/teaching-state.handler';
+import type { TeachingNoteService } from '../domains/03-teaching/teaching-note.service';
+import { initTeachingStateHandler, registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
 import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
@@ -95,7 +95,7 @@ export class IpcRegistry {
     registerGrowthHandlers();
 
     // Teaching Note (教学笔记工具 I-08)
-    const teachingNoteService = this.container.get<import('../domains/03-teaching/teaching-note.service').TeachingNoteService>('teachingNoteService');
+    const teachingNoteService = this.container.get<TeachingNoteService>('teachingNoteService');
     initTeachingNoteHandlers({ teachingNoteService });
     registerTeachingNoteHandlers();
 

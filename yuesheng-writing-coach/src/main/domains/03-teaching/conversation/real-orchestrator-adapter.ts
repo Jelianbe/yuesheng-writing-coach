@@ -118,7 +118,8 @@ export class RealOrchestratorAdapter implements ConversationOrchestrator {
           });
           continue;
         }
-        const event = queue.shift()!;
+        const event = queue.shift();
+        if (!event) continue;
         yield event;
         if (event.type === 'done' || event.type === 'error') return;
       }

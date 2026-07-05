@@ -194,7 +194,7 @@ export class ChatOrchestratorService {
           type: 'training_triggered',
           payload: {
             sessionId,
-            syndromeId: analysis.syndromeRef[0]!,
+            syndromeId: analysis.syndromeRef[0] as string,
             techniqueId: undefined,
             reason: 'user_request',
           },
@@ -303,7 +303,8 @@ export class ChatOrchestratorService {
     const { deps } = this;
     if (!deps.mainWindow) throw new Error('Main window not available');
 
-    let { message, sessionId, history, attitudeLevel, studentContext, onToken } = args;
+    const { sessionId, history, attitudeLevel, studentContext, onToken } = args;
+    let { message } = args;
 
     // 解析章节引用
     const resolvedMessage = this.resolveChapterReference(message);
@@ -381,7 +382,7 @@ export class ChatOrchestratorService {
       activeSessionId,
     );
 
-    return { messageId: result.messageId! };
+    return { messageId: result.messageId as string };
   }
 
   /**

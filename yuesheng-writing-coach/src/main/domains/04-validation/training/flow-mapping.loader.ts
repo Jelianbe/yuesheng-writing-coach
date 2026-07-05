@@ -100,7 +100,7 @@ export const FLOW_CATEGORY_TEMPLATES: Record<string, FlowCategoryTemplate> = map
 
 /** 默认分类模板(_default) */
 export const FLOW_DEFAULT_CATEGORY_TEMPLATE: FlowCategoryTemplate =
-  FLOW_CATEGORY_TEMPLATES['_default'] ?? Object.values(FLOW_CATEGORY_TEMPLATES).pop()!;
+  FLOW_CATEGORY_TEMPLATES['_default'] ?? Object.values(FLOW_CATEGORY_TEMPLATES).pop() ?? (() => { throw new Error('No flow category templates found'); })();
 
 /** 五步模板(按 stepId 排序) */
 export const FLOW_TEMPLATES: Record<1 | 2 | 3 | 4 | 5, FlowTemplate> = (() => {

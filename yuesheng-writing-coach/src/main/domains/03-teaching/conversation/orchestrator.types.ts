@@ -24,6 +24,7 @@
  */
 
 import type { AttitudeLevel } from '../../../../shared/types/index';
+import type { PromptContract } from './prompt-contract';
 
 /** 会话阶段(对应 v5.0.0 提示词 phase 0-4) */
 export type ConversationPhase =
@@ -102,8 +103,8 @@ export interface PromptVersion {
   rollbackTo?: string;
   /** 变更日志 */
   changelog: string;
-  /** 契约声明(增量 3:Sprint 20 启动拦截) */
-  contract: import('./prompt-contract').PromptContract;
+  /** 契约声明 */
+  contract: PromptContract;
 }
 
 /** handleTurn 入参 */

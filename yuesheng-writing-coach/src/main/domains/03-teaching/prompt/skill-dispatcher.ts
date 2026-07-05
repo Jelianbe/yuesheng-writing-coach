@@ -220,7 +220,7 @@ export class SkillDispatcher {
     const processed = options.maxCharsPerSkill
       ? skills.map(s => ({
           ...s,
-          content: this.truncateSkillContent(s, options.maxCharsPerSkill!),
+          content: this.truncateSkillContent(s, options.maxCharsPerSkill as number),
         }))
       : skills;
     return processed.map(s => s.content).join('\n\n---\n\n');

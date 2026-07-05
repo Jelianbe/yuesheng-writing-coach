@@ -136,7 +136,7 @@ export async function handleStreamResponse(
         });
         return { success: false, error: errorMessage };
       }
-      console.log(`[Chat] Stream aborted by user, partial=${fullResponse.length}chars`);
+      console.warn(`[Chat] Stream aborted by user, partial=${fullResponse.length}chars`);
       if (fullResponse) {
         deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
       }
@@ -186,12 +186,12 @@ export async function handleStreamResponseWithTools(
     }, STREAM_TIMEOUT_MS);
 
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      let currentRoundText = '';
+      let _currentRoundText = '';
       const toolCallsInRound: AccumulatedToolCall[] = [];
 
       for await (const event of proxy.chatStreamWithTools(messages, TOOLS_DEFINITIONS, abortController.signal)) {
         if (event.type === 'text') {
-          currentRoundText += event.content;
+          _currentRoundText += event.content;
           fullResponse += event.content;
           deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
             sessionId: deps.sessionId,
@@ -284,7 +284,7 @@ export async function handleStreamResponseWithTools(
         });
         return { success: false, error: errorMessage };
       }
-      console.log(`[ToolCall] Stream aborted by user, partial=${fullResponse.length}chars`);
+      console.warn(`[ToolCall] Stream aborted by user, partial=${fullResponse.length}chars`);
       if (fullResponse) {
         deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
       }

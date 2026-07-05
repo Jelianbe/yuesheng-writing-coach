@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * Prompt Contract 端到端验证(Sprint 20 增量 3)
  *

@@ -4,94 +4,21 @@
  * ⚠️ Electron sandbox 限制：preload 无法 require 外部相对路径模块，
  * 因此白名单必须内联在此文件。
  *
+ * Sprint 26 阶段 3.4/3.5: invoke 白名单已压缩为单端点 `bridge:invoke`。
+ * 调用方通过 `serviceBridge.invoke('domain:method', args)` 走单 RPC 端点。
+ * window 控制保留(单向 send)、事件通道保留(主进程推送)。
+ *
  * 添加新 IPC 通道时：
- *   1. 在 src/shared/constants.ts 的 IPC_CHANNELS 加 KEY
- *   2. 在 ALLOWED_INVOKE_CHANNELS / ALLOWED_EVENT_CHANNELS 数组中引用
- *   3. 跑 `npm run sync:ipc` 自动同步 preload 白名单
- *   （也已在 prebuild / precommit / ci 阶段自动触发）
+ *   1. invoke 通道: 在主进程 service-bridge.registerMethod 注册,客户端用 serviceBridge.invoke
+ *   2. event 通道: 在此处 allowedEventChannels 添加,在主进程用 webContents.send
+ *   3. send 通道(单向): 在此处 allowedSendChannels 添加
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
 
-/** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
+/** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 — 阶段 3.5 压缩为单端点 bridge:invoke */
 const allowedInvokeChannels: readonly string[] = [
-  'config:get',
-  'config:set',
-  'config:testConnection',
-  'config:getReadingEntry',
-  'diagnosis:query',
-  'diagnosis:submitRewrite',
-  'diagnosis:getComparison',
-  'growth:getTrends',
-  'growth:getGlobalTrends',
-  'teachingState:get',
-  'teachingState:update',
-  'teachingState:confirm',
-  'teachingState:getPrompt',
-  'teachingState:updateSummary',
-  'ability:getProfile',
-  'teachingHistory:add',
-  'teachingNote:record',
-  'teachingNote:getTree',
-  'teachingNote:delete',
-  'teachingNote:update',
-  'evidence:getByDisease',
-  'evidence:getByAbility',
-  'evidence:getChain',
-  'evidence:create',
-  'evidence:getBySyndrome',
-  'chat:send',
-  'chat:stop',
-  'chat:handleTurn',
-  'session:list',
-  'session:create',
-  'session:delete',
-  'session:rename',
-  'session:getMessages',
-  'session:getMessagesPaged',
-  'session:listWithMeta',
-  'session:updateTitle',
-  'session:searchMessages',
-  'session:isNewUser',
-  'onboarding:analyze',
-  'training:recommend',
-  'training:assign',
-  'training:complete',
-  'training:skip',
-  'training:history',
-  'training:submit',
-  'training:evaluate',
-  'training:decideReading',
-  'training:deriveBehavior',
-  'training:catalog',
-  'prescription:getStageProgress',
-  'prescription:getAllStages',
-  'prescription:getStageById',
-  'training:generateFlow',
-  // Sprint 24 A-3: ActiveTraining 草稿持久化
-  'activeTraining:updateDraft',
-  'activeTraining:get',
-  // Sprint 25 BL-01 C-4: ActiveTraining 5 步分步提交
-  'activeTraining:submitStep',
-  // Sprint 24 A-4: ActiveTraining 状态推送事件
-  'activeTraining:updated',
-  'retro:generate',
-  'retro:save',
-  'manuscript:list',
-  'manuscript:get',
-  'manuscript:create',
-  'manuscript:update',
-  'manuscript:delete',
-  'project:list',
-  'project:get',
-  'project:create',
-  'project:update',
-  'project:delete',
-  'chapter:list',
-  'chapter:get',
-  'chapter:create',
-  'chapter:delete',
-  'chapter:updateContent',
+  'bridge:invoke',
 ];
 
 /** 允许渲染进程通过 send() 单向发送的 IPC 通道白名单 */
@@ -109,6 +36,7 @@ const allowedEventChannels: readonly string[] = [
   'chat:stream:data',
   'chat:stream:end',
   'chat:tool:executing',
+  'chat:event',
   // Sprint 24 A-4: ActiveTraining 状态推送事件(主进程 → renderer)
   'activeTraining:updated',
 ];
