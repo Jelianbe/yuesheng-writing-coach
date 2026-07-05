@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, it, expect } from 'vitest';
 import * as path from 'path';
 import { loadAllSkills, type Skill } from '../skill-metadata';

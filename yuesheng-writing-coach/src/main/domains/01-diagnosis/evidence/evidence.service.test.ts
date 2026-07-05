@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { EvidenceService } from './evidence.service';
 import type { EvidenceRecord } from '../../../../shared/types/index';

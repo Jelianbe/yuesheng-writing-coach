@@ -1,7 +1,8 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { Card } from '../common/Card';
-import type { RewriteEvaluation } from '../../shared/types';
+import { RewriteEvaluation } from '../../shared/types';
+import styles from './EvaluationCard.module.css';
 
 type EvaluationStatus = 'improved' | 'partial' | 'unchanged';
 
@@ -18,25 +19,22 @@ interface EvaluationCardProps {
 
 const statusConfig: Record<
   EvaluationStatus,
-  { icon: React.ReactNode; label: string; color: string; bgColor: string }
+  { icon: React.ReactNode; label: string; iconClass: string }
 > = {
   improved: {
-    icon: <CheckCircle className="w-5 h-5" />,
+    icon: <CheckCircle className={styles.statusIcon} />,
     label: '这个改法有效',
-    color: 'text-[var(--color-success)]',
-    bgColor: 'bg-[#E8F5E8]',
+    iconClass: styles.statusIconImproved,
   },
   partial: {
-    icon: <AlertTriangle className="w-5 h-5" />,
+    icon: <AlertTriangle className={styles.statusIcon} />,
     label: '部分改善',
-    color: 'text-[var(--color-warning)]',
-    bgColor: 'bg-[#F8F0E0]',
+    iconClass: styles.statusIconPartial,
   },
   unchanged: {
-    icon: <XCircle className="w-5 h-5" />,
+    icon: <XCircle className={styles.statusIcon} />,
     label: '需要调整',
-    color: 'text-[var(--color-error)]',
-    bgColor: 'bg-[#F5E8E6]',
+    iconClass: styles.statusIconUnchanged,
   },
 };
 
@@ -62,46 +60,46 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({
   const config = statusConfig[status];
 
   return (
-    <Card className="overflow-hidden animate-slide-up">
+    <Card className={`${styles.card} animate-slide-up`}>
       {/* Status header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <span className={config.color}>{config.icon}</span>
-        <span className="text-sm font-medium text-text-primary">
+      <div className={styles.statusHeader}>
+        <span className={config.iconClass}>{config.icon}</span>
+        <span className={styles.statusLabel}>
           {config.label}
         </span>
       </div>
 
-      <div className="px-4 py-3 space-y-3">
+      <div className={styles.body}>
         {/* Analysis */}
-        <div className="text-sm text-text-secondary leading-relaxed">
+        <div className={styles.analysis}>
           {evaluation.analysis}
         </div>
 
         {/* Suggestion */}
         {evaluation.suggestion && (
-          <div className="text-sm text-text-secondary leading-relaxed border-t border-border pt-3">
-            <span className="font-medium text-text-primary">建议：</span>
+          <div className={styles.suggestion}>
+            <span className={styles.suggestionLabel}>建议：</span>
             {evaluation.suggestion}
           </div>
         )}
 
         {/* Before/After comparison */}
         {(originalText || rewrittenText) && (
-          <div className="border-t border-border pt-3">
-            <p className="text-xs text-text-tertiary font-medium mb-2">对比之前：</p>
-            <div className="space-y-2">
+          <div className={styles.comparison}>
+            <p className={styles.comparisonTitle}>对比之前：</p>
+            <div className={styles.comparisonList}>
               {originalText && (
-                <div className="flex gap-2 text-sm">
-                  <span className="text-accent-danger flex-shrink-0">❌</span>
-                  <span className="text-text-secondary line-through opacity-70">
+                <div className={styles.comparisonItem}>
+                  <span className={styles.originalIcon}>❌</span>
+                  <span className={styles.originalText}>
                     {originalText}
                   </span>
                 </div>
               )}
               {rewrittenText && (
-                <div className="flex gap-2 text-sm">
-                  <span className="text-[var(--color-success)] flex-shrink-0">✅</span>
-                  <span className="text-text-primary">
+                <div className={styles.comparisonItem}>
+                  <span className={styles.rewrittenIcon}>✅</span>
+                  <span className={styles.rewrittenText}>
                     {rewrittenText}
                   </span>
                 </div>
@@ -112,7 +110,7 @@ export const EvaluationCard: React.FC<EvaluationCardProps> = ({
 
         {/* Actions */}
         {actions && (
-          <div className="flex gap-2 pt-1">
+          <div className={styles.actions}>
             {actions}
           </div>
         )}

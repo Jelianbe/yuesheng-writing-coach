@@ -1,22 +1,22 @@
 /**
- * 训练 IPC 处理器
+ * 训练 IPC Handler — Sprint 26 阶段 3.5 方案 4a bridge 注册
  *
- * 负责：
- * 1. training:recommend - 根据当前活跃症候生成推荐列表
- * 2. training:assign - 分配挑战任务
- * 3. training:complete - 标记训练完成 + AI 评估
- * 4. training:skip - 标记训练跳过
- * 5. training:history - 查询训练历史
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('training:recommend' | 'training:assign' | ...)`
  *
- * 依赖：TrainingRecommendationService, TrainingRecordService, StudentModelService
+ * 依赖: TrainingRecordService, StudentModelService, TeachingStateService,
+ *       TeachingStrategyService, ConfigService
+ *
+ * 事件: teachingState:mastery 仍走 webContents.send(由 initTrainingHandlers 注入 mainWindow)
+ *       改造前用 event.sender.send,改造后用注入的 mainWindow.webContents.send
+ *       (R-021 最小化:保持同一 channel 字符串,renderer 订阅端不动)
  */
 
-import { IPC_CHANNELS } from '../../shared/constants';
 import type { ActiveProblem } from '../../shared/types/index';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 import type { TrainingCatalogRequest } from '../../shared/api-contracts/training.contract';
 import { validatePayload } from './utils/validate-payload';
-import { createHandler } from './utils/create-handler';
+import { registerMethod } from '../core/service-bridge';
 import techniqueLibrary from '../../../resources/config/technique-library.json';
 import { generateRecommendations, getChallengeTemplate } from '../domains/04-validation/training/training-recommendation.service';
 import { generateTrainingFlow } from '../domains/04-validation/training/training-flow.service';
@@ -27,13 +27,10 @@ import { deriveBehavior, type DerivationInput } from '../domains/04-validation/t
 import type { ConfigService } from '../shared/services/config.service';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
+import type { PayloadSanitizer } from '../core/payload-sanitizer.service';
+import type { BrowserWindow } from 'electron';
+import { IPC_CHANNELS } from '../../shared/constants';
 
-/**
- * 技法目录项类型
- *
- * 对应 resources/config/technique-library.json 中每一项的结构。
- * 使用接口索引签名兼容 JSON 中可能存在的其他可选字段。
- */
 interface TechniqueItem {
   id: string;
   name: string;
@@ -53,6 +50,7 @@ export interface TrainingHandlerDeps {
   studentModelService: StudentModelService;
   teachingStateService: TeachingStateService;
   teachingStrategyService: TeachingStrategyService;
+  mainWindow?: BrowserWindow | null;
 }
 
 let deps: TrainingHandlerDeps | null = null;
@@ -61,13 +59,14 @@ export function initTrainingHandlers(d: TrainingHandlerDeps): void {
   deps = d;
 }
 
-// ===== IPC Handlers =====
+let trainingSanitizerInstance: PayloadSanitizer | null = null;
 
-/**
- * training:recommend
- */
+export function setTrainingSanitizer(s: PayloadSanitizer): void {
+  trainingSanitizerInstance = s;
+}
+
 export function registerTrainingHandlers(): void {
-  createHandler(IPC_CHANNELS.TRAINING_RECOMMEND, async (_event, args) => {
+  registerMethod('training:recommend', async (args) => {
     const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
@@ -101,7 +100,7 @@ export function registerTrainingHandlers(): void {
     return { recommendations };
   });
 
-  createHandler(IPC_CHANNELS.TRAINING_ASSIGN, async (_event, args) => {
+  registerMethod('training:assign', async (args) => {
     const validation = validatePayload<{ sessionId: string; challengeId: string }>(args, { required: ['sessionId', 'challengeId'], types: { sessionId: 'string', challengeId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
@@ -125,7 +124,7 @@ export function registerTrainingHandlers(): void {
     return { record };
   });
 
-  createHandler(IPC_CHANNELS.TRAINING_COMPLETE, async (_event, args) => {
+  registerMethod('training:complete', async (args) => {
     const validation = validatePayload<{ recordId: string; userResponse: string; aiFeedback?: string; effectiveness?: number }>(args, { required: ['recordId', 'userResponse'], types: { recordId: 'string', userResponse: 'string', aiFeedback: 'string', effectiveness: 'number' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
@@ -143,7 +142,7 @@ export function registerTrainingHandlers(): void {
     return { record };
   });
 
-  createHandler(IPC_CHANNELS.TRAINING_SKIP, async (_event, args) => {
+  registerMethod('training:skip', async (args) => {
     const validation = validatePayload<{ recordId: string }>(args, { required: ['recordId'], types: { recordId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
@@ -157,7 +156,7 @@ export function registerTrainingHandlers(): void {
     return { record };
   });
 
-  createHandler(IPC_CHANNELS.TRAINING_HISTORY, async (_event, args) => {
+  registerMethod('training:history', async (args) => {
     const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
@@ -166,30 +165,30 @@ export function registerTrainingHandlers(): void {
     return { records };
   });
 
-  createHandler(IPC_CHANNELS.TRAINING_SUBMIT, async (_event, args) => {
+  registerMethod('training:submit', async (args) => {
     const validation = validatePayload<{ challengeDescription: string; constraint: string; originalQuote: string; userDraft: string }>(args, { required: ['challengeDescription', 'constraint', 'originalQuote', 'userDraft'], types: { challengeDescription: 'string', constraint: 'string', originalQuote: 'string', userDraft: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
 
     const result = await evaluateTraining(validation.data, deps.configService);
 
-    return {
+    const payload = {
       passed: result.score >= 7,
       feedback: result.feedback,
       score: result.score,
       improved: result.improved,
       nextStep: result.nextStep,
     };
+    return trainingSanitizerInstance?.sanitize('training', payload) ?? payload;
   });
 
-  createHandler(IPC_CHANNELS.TRAINING_EVALUATE, async (_event, args) => {
+  registerMethod('training:evaluate', async (args) => {
     const validation = validatePayload<{ recordId: string; sessionId: string; syndromeId: string; challengeDescription: string; constraint: string; originalQuote: string; userDraft: string }>(args, { required: ['recordId', 'sessionId', 'syndromeId', 'challengeDescription', 'constraint', 'originalQuote', 'userDraft'], types: { recordId: 'string', sessionId: 'string', syndromeId: 'string', challengeDescription: 'string', constraint: 'string', originalQuote: 'string', userDraft: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
 
     const result = await evaluateTraining(validation.data, deps.configService);
 
-    // 持久化评分到训练记录
     if (validation.data.recordId) {
       deps.trainingRecordService.complete(validation.data.recordId, {
         userResponse: validation.data.userDraft,
@@ -198,7 +197,6 @@ export function registerTrainingHandlers(): void {
       });
     }
 
-    // 评分 >= 7 时降低症候严重度
     if (result.score >= 7 && validation.data.sessionId && validation.data.syndromeId) {
       try {
         deps.teachingStateService.downgradeSeverity(validation.data.sessionId, validation.data.syndromeId, result.score);
@@ -207,54 +205,24 @@ export function registerTrainingHandlers(): void {
       }
     }
 
-    return result;
+    return trainingSanitizerInstance?.sanitize('training', result) ?? result;
   });
 
-  /**
-   * training:decideReading — B-02 阅读前置决策
-   *
-   * 判断在分配训练前是否需要先执行阅读分析步骤。
-   * 依据：教学态度档位（doubao→must read, yuesheng→recommend, sensei→skip）
-   */
-  createHandler(IPC_CHANNELS.TRAINING_DECIDE_READING, async (_event, args) => {
+  registerMethod('training:decideReading', async (args) => {
     const validation = validatePayload<{ attitude: string }>(args, { required: ['attitude'], types: { attitude: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     if (!deps) throw new Error('TrainingHandler deps not initialized');
     if (!deps.teachingStrategyService.router) throw new Error('TeachingStrategyRouter not initialized');
 
-    const readingDecision = deps.teachingStrategyService.router.decideReading(validation.data.attitude);
-
-    return readingDecision;
+    return deps.teachingStrategyService.router.decideReading(validation.data.attitude);
   });
 
-  /**
-   * training:deriveBehavior - F-03 角色行为推导
-   */
-  createHandler(IPC_CHANNELS.TRAINING_DERIVE_BEHAVIOR, async (_event, input: DerivationInput) => {
+  registerMethod('training:deriveBehavior', async (input) => {
     if (!deps) throw new Error('TrainingHandler deps not initialized');
-
-    const result = await deriveBehavior(input, deps.configService);
-
-    return result;
+    return await deriveBehavior(input as DerivationInput, deps.configService);
   });
 
-  /**
-   * teachingHistory:add — RWR-P1-9 / C-3 训练反馈回路
-   *
-   * 训练完成后由渲染端发起,流程:
-   *   1. 调 deps.studentModelService.appendTeachingHistory 写入
-   *   2. 计算精通门控(consumed/total ≥ MASTERY_THRESHOLD)
-   *   3. 达成门控时 emit teachingState:mastery 事件
-   *
-   * 约束:
-   *   - R-020 循环依赖:此处是渲染端→主进程唯一调用入口
-   *   - R-010 最小化:不扩 StudentModelService(consumed/total 由调用方传)
-   *   - TODO R-014:0.8 门控值后续外置到配置文件
-   *
-   * 注意:事件通过 event.sender.send 发送(当前调用窗口的 webContents),
-   * 避免引入 mainWindow 依赖注入。
-   */
-  createHandler(IPC_CHANNELS.TEACHING_HISTORY_ADD, async (event, args) => {
+  registerMethod('teachingHistory:add', async (args) => {
     const validation = validatePayload<{
       sessionId: string;
       entry: {
@@ -279,12 +247,11 @@ export function registerTrainingHandlers(): void {
     const { sessionId, entry, consumed, total } = validation.data;
     deps.studentModelService.appendTeachingHistory(sessionId, entry);
 
-    // 精通门控(0.8 阈值,TODO R-014 外置)
     const MASTERY_THRESHOLD = 0.8;
     const masteryReached = total > 0 && consumed / total >= MASTERY_THRESHOLD;
 
-    if (masteryReached) {
-      event.sender.send(IPC_CHANNELS.TEACHING_STATE_MASTERY, {
+    if (masteryReached && deps.mainWindow && !deps.mainWindow.isDestroyed()) {
+      deps.mainWindow.webContents.send(IPC_CHANNELS.TEACHING_STATE_MASTERY, {
         sessionId,
         consumed,
         total,
@@ -295,10 +262,7 @@ export function registerTrainingHandlers(): void {
     return { added: true, masteryReached, consumed, total };
   });
 
-  /**
-   * training:generateFlow — S8 五步通用训练流生成
-   */
-  createHandler(IPC_CHANNELS.TRAINING_GENERATE_FLOW, async (_event, args) => {
+  registerMethod('training:generateFlow', async (args) => {
     const validation = validatePayload<{
       syndromeId: string;
       techniqueName: string;
@@ -308,33 +272,25 @@ export function registerTrainingHandlers(): void {
     }>(args, { required: ['syndromeId', 'techniqueName'], types: { syndromeId: 'string', techniqueName: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
 
-    const flow = generateTrainingFlow({
+    return generateTrainingFlow({
       syndromeId: validation.data.syndromeId,
       techniqueName: validation.data.techniqueName,
       userLevel: validation.data.userLevel ?? 1,
       syndromeDescription: validation.data.syndromeDescription,
       challengeConstraint: validation.data.challengeConstraint,
     });
-
-    return flow;
   });
 
-  /**
-   * training:catalog — I-01 技法目录
-   *
-   * 从 technique-library.json 读取技法数据，按 coreId 分组后返回。
-   * 无输入校验需求（只读操作，过滤参数可选）。
-   */
-  createHandler(IPC_CHANNELS.TRAINING_CATALOG, async (_event, args?: TrainingCatalogRequest) => {
+  registerMethod('training:catalog', async (args) => {
+    const req = (args ?? {}) as TrainingCatalogRequest;
     const grouped: Record<string, { coreName: string; techniques: Array<{
       id: string; name: string; difficulty: string; difficultyOrder: number;
       description: string; source: string; category: string;
     }> }> = {};
 
     for (const t of (techniqueLibrary as TechniqueItem[])) {
-      // 可选过滤
-      if (args?.difficulty && t.difficulty !== args.difficulty) continue;
-      if (args?.coreId && t.coreId !== args.coreId) continue;
+      if (req.difficulty && t.difficulty !== req.difficulty) continue;
+      if (req.coreId && t.coreId !== req.coreId) continue;
       if (!t.coreId) continue;
 
       if (!grouped[t.coreId]) {
@@ -363,5 +319,4 @@ export function registerTrainingHandlers(): void {
 
     return { groups, total };
   });
-
 }

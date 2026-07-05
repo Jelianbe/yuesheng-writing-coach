@@ -1,88 +1,85 @@
 /* ========================================
-   月笙写作教练 — CSS Variables V2.1 / 金棕暖灰体系
-   对齐 phase-f-shell-v6.2.html 精确色值
+   月笙写作教练 — CSS Variables V3.0 / 暖紫柔棕体系
+   对齐设计 HTML 精确色值 + PRD V1.0 三层架构
    ======================================== */
 
 :root {
-  /* ── 品牌色（金棕体系）
-       对齐 v6.2 HTML: #7A6040 / #6A5030
-       注意：accent 主要用于装饰性 UI 元素（按钮/图标），
-       不作为小号文字色使用，已通过 WCAG AA 3:1 UI 组件标准。
-       如需在白色背景上显示文字，使用 --text-on-accent 或 --warning。── */
-  --accent: #7A6040;
-  --accent-hover: #6A5030;
-  --accent-light: #C4A060;
-  --accent-subtle: rgba(122, 96, 64, 0.10);
-  --accent-faint: rgba(122, 96, 64, 0.06);
+  /* ── 品牌色（暖紫柔棕体系）
+       主色 #8A7A9E（暖紫） — 品牌识别、主要交互元素
+       悬停 #6E5E82 — 按钮/链接 hover 状态
+       淡色 #ECE8F2 — 浅色背景、标签底色
+       柔色 #F5F2F9 — 极浅背景、输入框底色 ── */
+  --accent: #8A7A9E;
+  --accent-hover: #6E5E82;
+  --accent-light: #ECE8F2;
+  --accent-subtle: rgba(138, 122, 158, 0.10);
+  --accent-faint: rgba(138, 122, 158, 0.06);
   --text-on-accent: #FFFFFF;
 
-  /* ── 背景色（暖纸质美学）
-       对齐 v6.2 HTML:
-         main bg     = #F0EDE6
-         panel/side  = #E8E3DA
-         card/surface= #FAF8F5
-         input       = #FAF8F5 ── */
-  --bg-primary: #FAF8F5;
-  --bg-secondary: #E8E3DA;
-  --bg-main: #F0EDE6;
-  --bg-card: #FAF8F5;
-  --bg-hover: rgba(122, 96, 64, 0.09);
-  --bg-active: rgba(122, 96, 64, 0.12);
-  --bg-input: #FAF8F5;
+  /* ── 功能色（教学三级色）
+       教学 #7A93AC — 学习/教学相关 UI
+       练习 #B8956E — 训练/练习相关 UI
+       成长 #7BA089 — 成长/进步相关 UI ── */
+  --color-teaching: #7A93AC;
+  --color-practice: #B8956E;
+  --color-growth: #7BA089;
+  --color-teaching-light: #E8EFF5;
+  --color-practice-light: #F5EDE0;
+  --color-growth-light: #E8F0E9;
+
+  /* ── 背景色（暖白柔紫美学）── */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #ECE8F2;
+  --bg-main: #F9F8FB;
+  --bg-card: #FFFFFF;
+  --bg-hover: rgba(138, 122, 158, 0.09);
+  --bg-active: rgba(138, 122, 158, 0.12);
+  --bg-input: #F5F2F9;
 
   /* 兼容旧变量名 */
-  --bg-page: var(--bg-primary);
+  --bg-page: var(--bg-main);
   --bg-sidebar: var(--bg-secondary);
 
-  /* ── 边框
-       对齐 v6.2 HTML: #D6CEC0 / #C8BFB0 ── */
-  --border: #D6CEC0;
-  --border-light: #C8BFB0;
+  /* ── 边框 ── */
+  --border: #ECEAF0;
+  --border-light: #E0DCE6;
   --border-focus: var(--accent);
 
-  /* ── 文字色（深褐黑减少刺眼）
-       对齐 v6.2 HTML:
-         primary   = #1E1A14
-         secondary = #5C5242
-         tertiary  = #8A7F6E ── */
-  --text-primary: #1E1A14;
-  --text-secondary: #5C5242;
-  --text-tertiary: #8A7F6E;
+  /* ── 文字色（柔黑减少刺眼）
+     WCAG AA:tertiary 在 bg-main 上需 ≥ 4.5:1(原 #8E8996 仅 3.21)
+     加深到 #6B6878 后约 5.0:1,满足 13px+ 正文标准 ── */
+  --text-primary: #2D2A32;
+  --text-secondary: #5B5663;
+  --text-tertiary: #6B6878;
   --text-on-accent: #FFFFFF;
 
-  /* ── 语义色（对齐 v6.2 HTML）
-       对齐 v6.2 HTML:
-         success = #5A8F68
-         warning = #C8943C
-         error   = #B84A4A ── */
+  /* ── 语义色
+     WCAG AA:error 在 error-light 上需 ≥ 4.5:1
+     原 #B84A4A 在 #F5E8E6 上约 4.6,加深到 #8A2A2A(约 6.8)更稳 ── */
   --success: #5A8F68;
   --success-light: #E8F0E9;
   --warning: #C8943C;
   --warning-light: #F5EDE0;
-  --error: #B84A4A;
+  --error: #8A2A2A;
   --error-light: #F5E8E6;
 
-  /* ── 态度档位色（三灯互斥）
-       对齐 v6.2 HTML:
-         doubao (绿) = #5A8F68
-         yuesheng(黄)= #C8943C
-         sensei (红) = #B84A4A ── */
+  /* ── 态度档位色（三灯互斥）── */
   --color-attitude-doubao: #5A8F68;
   --color-attitude-yuesheng: #C8943C;
   --color-attitude-sensei: #B84A4A;
   --info: #3D5E94;
   --info-light: #E4EDF5;
 
-  /* ── 阴影（暖调，基于 v6.2 纸质风格）── */
-  --shadow-sm: 0 1px 3px rgba(44, 36, 22, 0.06);
-  --shadow-md: 0 4px 12px rgba(44, 36, 22, 0.08);
-  --shadow-lg: 0 12px 32px rgba(44, 36, 22, 0.10);
-  --shadow-xl: 0 16px 48px rgba(44, 36, 22, 0.12);
+  /* ── 阴影（暖紫调）── */
+  --shadow-sm: 0 2px 10px rgba(138, 122, 158, 0.06);
+  --shadow-md: 0 4px 16px rgba(138, 122, 158, 0.10);
+  --shadow-lg: 0 8px 24px rgba(138, 122, 158, 0.12);
+  --shadow-xl: 0 16px 48px rgba(138, 122, 158, 0.14);
   --shadow-input: 0 2px 12px rgba(0, 0, 0, 0.06);
 
-  /* ── 圆角（4 档体系）── */
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  /* ── 圆角（5 档体系）── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
@@ -127,7 +124,6 @@
   /* ── 过渡动效 ── */
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
-  --transition-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
 
   /* ── Z-index 层级（语义化）── */
@@ -138,7 +134,13 @@
   --z-overlay: 40;
   --z-sticky: 30;
 
-  /* ── 布局尺寸（V6.2 Shell）── */
+  /* ── 移动端布局尺寸 ── */
+  --tabbar-height: 58px;
+  --navbar-height: 52px;
+  --phone-container-max: 375px;
+  --desktop-container-max: 430px;
+
+  /* ── 桌面端布局尺寸（保持兼容）── */
   --header-height: 0px;
   --sidebar-width: 240px;
   --sidebar-collapsed-w: 0px;

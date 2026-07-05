@@ -1,7 +1,16 @@
-import { IPC_CHANNELS } from '../../shared/constants';
-import type { SessionService } from '../shared/services/session.service';
+/**
+ * 会话管理 — Sprint 26 阶段 3.5 方案 4a bridge 注册
+ *
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('session:list' | 'session:isNewUser' | 'session:create' | ...)`
+ *
+ * 注: 3.4 评估标记 session 8 个直调为删除候选(纯直调),先迁 bridge 作为过渡收口,
+ *     后续批次 4 统一删除。SESSION_LIST_WITH_META 因有列表+消息组装,短期保留。
+ */
+
+import type { SessionService } from '../../shared/services/session.service';
 import { validatePayload } from './utils/validate-payload';
-import { createHandler } from './utils/create-handler';
+import { registerMethod } from '../core/service-bridge';
 
 export interface SessionHandlerDeps {
   sessionService: SessionService;
@@ -17,49 +26,50 @@ export function registerSessionHandlers(): void {
   if (!deps) throw new Error('SessionHandler deps not injected');
   const d = deps;
 
-  createHandler(IPC_CHANNELS.SESSION_LIST, () => {
-    const sessions = d.sessionService.listSessions();
-    return sessions.map(s => ({
-      id: s.id,
-      title: s.title,
-      createdAt: s.created_at,
-      updatedAt: s.updated_at,
-      lastMessage: d.sessionService.getLastMessage(s.id)?.content.slice(0, 50) || undefined,
-      messages: [],
+  registerMethod('session:list', async (_args) => {
+    const sessions = await d.sessionService.listSessions();
+    return Promise.all(sessions.map(async s => {
+      const last = await d.sessionService.getLastMessage(s.id);
+      return {
+        id: s.id,
+        title: s.title,
+        createdAt: s.created_at,
+        updatedAt: s.updated_at,
+        lastMessage: last?.content.slice(0, 50) || undefined,
+        messages: [],
+      };
     }));
   });
 
-  // session:isNewUser — 判断是否为新用户（无任何会话）
-  createHandler(IPC_CHANNELS.SESSION_IS_NEW_USER, () => {
-    const sessions = d.sessionService.listSessions();
+  registerMethod('session:isNewUser', async (_args) => {
+    const sessions = await d.sessionService.listSessions();
     return sessions.length === 0;
   });
 
-  createHandler(IPC_CHANNELS.SESSION_CREATE, () => {
-    const s = d.sessionService.createSession();
+  registerMethod('session:create', async (_args) => {
+    const s = await d.sessionService.createSession();
     return { id: s.id, title: s.title, createdAt: s.created_at, updatedAt: s.updated_at, messages: [] };
   });
 
-  createHandler(IPC_CHANNELS.SESSION_DELETE, (_event, args) => {
+  registerMethod('session:delete', async (args) => {
     const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    d.sessionService.deleteSession(validation.data.sessionId);
+    await d.sessionService.deleteSession(validation.data.sessionId);
   });
 
-  createHandler(IPC_CHANNELS.SESSION_RENAME, (_event, args) => {
+  registerMethod('session:rename', async (args) => {
     const validation = validatePayload<{ sessionId: string; title: string }>(args, { required: ['sessionId', 'title'], types: { sessionId: 'string', title: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    d.sessionService.renameSession(validation.data.sessionId, validation.data.title);
+    await d.sessionService.renameSession(validation.data.sessionId, validation.data.title);
   });
 
-  createHandler(IPC_CHANNELS.SESSION_GET_MESSAGES, (_event, args) => {
+  registerMethod('session:getMessages', async (args) => {
     const validation = validatePayload<{ sessionId: string }>(args, { required: ['sessionId'], types: { sessionId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     return d.sessionService.getMessages(validation.data.sessionId);
   });
 
-  // session:getMessagesPaged — 分页加载消息（V2-019）
-  createHandler(IPC_CHANNELS.SESSION_GET_MESSAGES_PAGED, (_event, args) => {
+  registerMethod('session:getMessagesPaged', async (args) => {
     const validation = validatePayload<{ sessionId: string; offset: number; limit: number }>(args, {
       required: ['sessionId'],
       types: { sessionId: 'string', offset: 'number', limit: 'number' },
@@ -69,11 +79,10 @@ export function registerSessionHandlers(): void {
     return d.sessionService.getMessagesPaged(validation.data.sessionId, validation.data.offset, validation.data.limit);
   });
 
-  // session:listWithMeta — 含 title/preview 的会话列表（V2 SOLO）
-  createHandler(IPC_CHANNELS.SESSION_LIST_WITH_META, (_event, args: { limit?: number; offset?: number }) => {
-    const sessions = d.sessionService.listSessions();
-    let result = sessions.map(s => {
-      const lastMsg = d.sessionService.getLastMessage(s.id);
+  registerMethod('session:listWithMeta', async (args) => {
+    const sessions = await d.sessionService.listSessions();
+    let result = await Promise.all(sessions.map(async s => {
+      const lastMsg = await d.sessionService.getLastMessage(s.id);
       return {
         id: s.id,
         title: s.title,
@@ -81,23 +90,21 @@ export function registerSessionHandlers(): void {
         createdAt: s.created_at,
         updatedAt: s.updated_at,
       };
-    });
-    // 分页
-    const offset = args.offset ?? 0;
-    const limit = args.limit ?? result.length;
-    result = result.slice(offset, offset + limit);
+    }));
+    const { limit, offset } = (args ?? {}) as { limit?: number; offset?: number };
+    const o = offset ?? 0;
+    const l = limit ?? result.length;
+    result = result.slice(o, o + l);
     return result;
   });
 
-  // session:updateTitle
-  createHandler(IPC_CHANNELS.SESSION_UPDATE_TITLE, (_event, args) => {
+  registerMethod('session:updateTitle', async (args) => {
     const validation = validatePayload<{ id: string; title: string }>(args, { required: ['id', 'title'], types: { id: 'string', title: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
-    d.sessionService.renameSession(validation.data.id, validation.data.title);
+    await d.sessionService.renameSession(validation.data.id, validation.data.title);
   });
 
-  // session:searchMessages — 跨会话搜索消息（全局搜索面板）
-  createHandler(IPC_CHANNELS.SESSION_SEARCH_MESSAGES, (_event, args) => {
+  registerMethod('session:searchMessages', async (args) => {
     const validation = validatePayload<{ query: string }>(args, { required: ['query'], types: { query: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     return d.sessionService.searchMessages(validation.data.query);

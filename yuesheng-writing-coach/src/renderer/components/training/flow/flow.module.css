@@ -1,0 +1,188 @@
+/* ============================================================
+   FlowPanel + 5 Step Panels CSS Module (Sprint 25 BL-01 C-3)
+   覆盖 FlowPanel / FlowStepIndicator / 5 Step 子组件。
+   迁移自 components_archived/training/flow/flow.module.css
+   改造: BEM 全局类名 → CSS Modules camelCase (R-019)
+   原则: design tokens + 金棕暖灰 + WCAG AA + reduced-motion
+   ============================================================ */
+
+/* ── 1. 主容器 ── */
+.fiveStepFlow {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  overflow: hidden; font-family: var(--font-body); color: var(--text-primary);
+}
+.fiveStepFlowHeader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.fiveStepFlowHeader h2 {
+  margin: 0; font-family: var(--font-display);
+  font-size: var(--text-xl); font-weight: var(--font-semibold);
+}
+.fiveStepFlowHeader button {
+  padding: var(--space-2) var(--space-4); background: transparent;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-secondary); font-size: var(--text-sm);
+  font-family: var(--font-body); cursor: pointer;
+}
+.fiveStepFlowHeader button:hover { background: var(--bg-hover); color: var(--text-primary); }
+.fiveStepFlowBody { flex: 1; padding: var(--space-6) var(--space-5); overflow-y: auto; }
+.fiveStepFlowFooter {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-3); padding: var(--space-4) var(--space-5);
+  background: var(--bg-secondary); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.fiveStepFlowFooter button {
+  padding: var(--space-3) var(--space-5); border-radius: var(--radius-md);
+  font-size: var(--text-base); font-weight: var(--font-medium);
+  font-family: var(--font-body); cursor: pointer; min-width: 96px;
+}
+.fiveStepFlowFooter button:first-child {
+  background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border);
+}
+.fiveStepFlowFooter button:last-child {
+  background: var(--accent); color: var(--text-on-accent); border: 1px solid var(--accent);
+}
+.fiveStepFlowFooter button:hover:not(:disabled):last-child { background: var(--accent-hover); }
+.fiveStepFlowFooter button:disabled {
+  background: var(--bg-secondary); color: var(--text-tertiary);
+  border-color: var(--border); cursor: not-allowed; opacity: 0.6;
+}
+
+/* ── 2. 进度条 ── */
+.flowStepIndicator {
+  display: flex; align-items: stretch; justify-content: space-between;
+  gap: var(--space-1); list-style: none; margin: 0;
+  padding: var(--space-4) var(--space-5);
+  background: var(--bg-secondary); border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.flowStep {
+  display: flex; align-items: center; gap: var(--space-2); flex: 1;
+  padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+  font-size: var(--text-sm); font-weight: var(--font-medium);
+  color: var(--text-tertiary); border: 1px solid transparent;
+  cursor: default; min-height: 40px;
+}
+.flowStepPending { opacity: 0.7; }
+.flowStepActive {
+  background: var(--accent-subtle); color: var(--accent);
+  font-weight: var(--font-semibold); border-color: var(--accent-light);
+}
+.flowStepCompleted {
+  color: var(--success); cursor: pointer; background: var(--success-light);
+}
+.flowStepCompleted:hover { background: var(--success); color: var(--text-on-accent); }
+.flowStepNum {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: var(--radius-full);
+  background: var(--bg-card); border: 1px solid var(--border);
+  font-size: var(--text-xs); font-weight: var(--font-semibold); flex-shrink: 0;
+}
+.flowStepActive .flowStepNum,
+.flowStepCompleted .flowStepNum {
+  color: var(--text-on-accent); background: var(--accent); border-color: var(--accent);
+}
+.flowStepCompleted .flowStepNum { background: var(--success); border-color: var(--success); }
+.flowStepLabel { /* 占位,label 直接用文本无需特殊样式 */ }
+
+/* ── 3. 步骤面板 ── */
+.flowPanel {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: var(--space-5) var(--space-6);
+  border-left-width: 3px; animation: flowPanelEnter var(--transition-normal) var(--ease-out);
+}
+.flowPanelExplain { border-left-color: var(--info); }
+.flowPanelExample { border-left-color: var(--accent-light); }
+.flowPanelConfirm { border-left-color: var(--warning); }
+.flowPanelPractice { border-left-color: var(--accent); }
+.flowPanelFeedback { border-left-color: var(--success); }
+.flowPanelTitle {
+  margin: 0 0 var(--space-3) 0; font-family: var(--font-display);
+  font-size: var(--text-lg); font-weight: var(--font-semibold);
+}
+.flowPanelContent {
+  margin-bottom: var(--space-4); color: var(--text-secondary);
+  font-size: var(--text-base); line-height: var(--leading-relaxed);
+}
+.flowPanelAction {
+  margin: var(--space-3) 0 0 0; font-size: var(--text-sm);
+  color: var(--text-tertiary); font-style: italic;
+}
+.flowPanelTextarea {
+  display: block; width: 100%; min-height: 120px;
+  margin-top: var(--space-3); padding: var(--space-3) var(--space-4);
+  background: var(--bg-input); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-family: var(--font-body);
+  font-size: var(--text-base); line-height: var(--leading-normal);
+  color: var(--text-primary); resize: vertical;
+}
+.flowPanelTextarea::placeholder { color: var(--text-tertiary); }
+.flowPanelQuote,
+.flowPanelConstraint,
+.flowPanelEval {
+  margin: var(--space-4) 0; padding: var(--space-4);
+  border-radius: var(--radius-sm); border-left-width: 3px; border-left-style: solid;
+}
+.flowPanelQuote { background: var(--bg-secondary); border-left-color: var(--border-light); }
+.flowPanelQuote blockquote {
+  margin: 0; font-family: var(--font-display); font-size: var(--text-md);
+  font-style: italic; line-height: var(--leading-relaxed);
+}
+.flowPanelConstraint {
+  background: var(--warning-light); border-left-color: var(--warning);
+  padding: var(--space-3) var(--space-4); margin: var(--space-3) 0;
+  color: var(--text-primary);
+}
+.flowPanelEval { background: var(--success-light); border-left-color: var(--success); }
+.flowPanelQuote h4,
+.flowPanelEditor h4 {
+  margin: 0 0 var(--space-2) 0; font-size: var(--text-sm);
+  font-weight: var(--font-semibold); color: var(--text-secondary);
+}
+.flowPanelScore {
+  font-size: var(--text-md); font-weight: var(--font-semibold); margin-bottom: var(--space-2);
+}
+.flowPanelScore strong { font-size: var(--text-xl); color: var(--success); }
+.flowPanelImprove,
+.flowPanelNext,
+.flowPanelLoading {
+  font-size: var(--text-sm); color: var(--text-secondary);
+  font-style: italic; margin: var(--space-2) 0;
+}
+.flowPanelFeedback {
+  margin: var(--space-3) 0 0 0; font-size: var(--text-base); line-height: var(--leading-relaxed);
+}
+.flowPanelBtn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  margin-top: var(--space-3); padding: var(--space-2) var(--space-4);
+  background: var(--accent); color: var(--text-on-accent); border: 1px solid var(--accent);
+  border-radius: var(--radius-sm); font-size: var(--text-sm);
+  font-weight: var(--font-medium); font-family: var(--font-body);
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.flowPanelBtn:hover { background: var(--accent-hover); }
+
+/* ── 4. 焦点 / 动画 / reduced-motion ── */
+.fiveStepFlow button:focus-visible,
+.flowStepCompleted:focus-visible,
+.flowPanelTextarea:focus,
+.flowPanelBtn:focus-visible {
+  outline: 2px solid var(--border-focus); outline-offset: 2px;
+}
+.flowPanelTextarea:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+@keyframes flowPanelEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flowPanel, .fiveStepFlowFooter button, .flowStep { animation: none; transition: none; }
+}

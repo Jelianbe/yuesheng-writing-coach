@@ -1,19 +1,17 @@
 // 配置状态管理（Zustand）
 // ⚠️ 本文件 catch 块中的 console.error / console.warn 仅用于开发调试，
 //    生产环境应通过构建工具（如 terser drop_console）自动移除。
-// 负责：管理 API 配置的前端状态，通过 IPC 与主进程同步
-// 依赖：zustand, electron IPC (通过 preload 暴露)
+// 负责：管理 API 配置的前端状态，通过 service-bridge 单端点与主进程同步
+// 依赖：zustand, service-bridge (Sprint 26 阶段 3.6: 调用方迁移)
 
 import { create } from 'zustand';
-import { IPC_CHANNELS } from '../shared/constants';
+import { serviceBridge } from '../services/service-bridge';
 import type {
   ApiConfig,
   ConnectionTestResult,
   ApiConfigValidation,
   AttitudeLevel,
-  ApiResponse,
 } from '../shared/types';
-import { getInvoke } from '../utils/ipc';
 
 /** 配置状态接口 */
 interface ConfigState {
@@ -132,8 +130,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   /** 设置 API Key */
   setApiKey: async (key: string) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'apiKey', value: key });
+    await serviceBridge.invoke('config:set', { key: 'apiKey', value: key });
     const validation = validateConfig({ ...get(), apiKey: key });
     set({
       apiKey: key,
@@ -144,24 +141,21 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   /** 设置 Base URL */
   setBaseUrl: async (url: string) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'baseUrl', value: url });
+    await serviceBridge.invoke('config:set', { key: 'baseUrl', value: url });
     const validation = validateConfig({ ...get(), baseUrl: url });
     set({ baseUrl: url, validation });
   },
 
   /** 设置模型名称 */
   setModelName: async (name: string) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'modelName', value: name });
+    await serviceBridge.invoke('config:set', { key: 'modelName', value: name });
     const validation = validateConfig({ ...get(), modelName: name });
     set({ modelName: name, validation });
   },
 
   /** 设置温度 */
   setTemperature: async (temp: number) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'temperature', value: temp });
+    await serviceBridge.invoke('config:set', { key: 'temperature', value: temp });
     const validation = validateConfig({ ...get(), temperature: temp });
     set({ temperature: temp, validation });
   },
@@ -169,24 +163,20 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   /** 设置态度档位 */
   setAttitudeLevel: async (level: AttitudeLevel) => {
     const { attitudeLocked } = get();
-    // 锁定状态下不切换
     if (attitudeLocked) return;
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'attitudeLevel', value: level });
+    await serviceBridge.invoke('config:set', { key: 'attitudeLevel', value: level });
     set({ attitudeLevel: level });
   },
 
   /** 设置态度锁定 */
   setAttitudeLocked: async (locked: boolean) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'attitudeLocked', value: locked });
+    await serviceBridge.invoke('config:set', { key: 'attitudeLocked', value: locked });
     set({ attitudeLocked: locked });
   },
 
   /** 设置最大 token 数 */
   setMaxTokens: async (tokens: number) => {
-    const invoke = getInvoke();
-    await invoke(IPC_CHANNELS.CONFIG_SET, { key: 'maxTokens', value: tokens });
+    await serviceBridge.invoke('config:set', { key: 'maxTokens', value: tokens });
     set({ maxTokens: tokens });
   },
 
@@ -195,65 +185,43 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const { apiKey, baseUrl } = get();
     set({ testStatus: 'testing', testError: undefined, testResponseTime: undefined });
 
-    try {
-      const invoke = getInvoke();
-      const response = (await invoke(IPC_CHANNELS.CONFIG_TEST_CONNECTION, {
-        apiKey,
-        baseUrl,
-      })) as ApiResponse<ConnectionTestResult>;
-      const result = response.data ?? { success: false, error: response.error || 'No response data' };
+    const result = await serviceBridge.invoke<{ apiKey: string; baseUrl: string }, ConnectionTestResult>(
+      'config:testConnection',
+      { apiKey, baseUrl },
+    );
+    const finalResult = result ?? { success: false, error: 'No response data' };
 
-      set({
-        testStatus: result.success ? 'success' : 'error',
-        testError: result.error,
-        testResponseTime: result.responseTime,
-      });
+    set({
+      testStatus: finalResult.success ? 'success' : 'error',
+      testError: finalResult.error,
+      testResponseTime: finalResult.responseTime,
+    });
 
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '未知错误';
-      set({
-        testStatus: 'error',
-        testError: errorMessage,
-      });
-      return { success: false, error: errorMessage };
-    }
+    return finalResult;
   },
 
   /** 从主进程加载配置 */
   loadConfig: async () => {
     set({ isLoading: true });
     try {
-      const invoke = getInvoke();
-      const results = await Promise.all([
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'apiKey' }),
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'baseUrl' }),
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'modelName' }),
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'temperature' }),
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'attitudeLevel' }),
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'attitudeLocked' }),
-        invoke(IPC_CHANNELS.CONFIG_GET, { key: 'maxTokens' }),
-      ]) as ApiResponse<unknown>[];
+      const keys: Array<keyof ApiConfig> = [
+        'apiKey', 'baseUrl', 'modelName', 'temperature',
+        'attitudeLevel', 'attitudeLocked', 'maxTokens',
+      ];
+      const results = await Promise.all(
+        keys.map(k => serviceBridge.invoke<{ key: string }, unknown>('config:get', { key: k })),
+      );
 
-      const extractValue = <T>(r: ApiResponse<unknown> | undefined | null, fallback: T): T =>
-        r && typeof r === 'object' && 'success' in r ? (r.success ? (r.data as T) : fallback) : fallback;
-
-      const apiKey = extractValue<string>(results[0], '');
-      const baseUrl = extractValue<string>(results[1], DEFAULT_CONFIG.baseUrl);
-      const modelName = extractValue<string>(results[2], DEFAULT_CONFIG.modelName);
-      const temperature = extractValue<number>(results[3], DEFAULT_CONFIG.temperature);
-      const attitudeLevel = extractValue<AttitudeLevel>(results[4], DEFAULT_CONFIG.attitudeLevel);
-      const attitudeLocked = extractValue<boolean>(results[5], DEFAULT_CONFIG.attitudeLocked);
-      const maxTokens = extractValue<number>(results[6], DEFAULT_CONFIG.maxTokens);
+      const extractValue = <T>(r: unknown, fallback: T): T => (r !== null && r !== undefined ? (r as T) : fallback);
 
       const config: ApiConfig = {
-        apiKey,
-        baseUrl,
-        modelName,
-        temperature,
-        attitudeLevel,
-        attitudeLocked,
-        maxTokens,
+        apiKey: extractValue<string>(results[0], ''),
+        baseUrl: extractValue<string>(results[1], DEFAULT_CONFIG.baseUrl),
+        modelName: extractValue<string>(results[2], DEFAULT_CONFIG.modelName),
+        temperature: extractValue<number>(results[3], DEFAULT_CONFIG.temperature),
+        attitudeLevel: extractValue<AttitudeLevel>(results[4], DEFAULT_CONFIG.attitudeLevel),
+        attitudeLocked: extractValue<boolean>(results[5], DEFAULT_CONFIG.attitudeLocked),
+        maxTokens: extractValue<number>(results[6], DEFAULT_CONFIG.maxTokens),
       };
 
       const validation = validateConfig(config);
@@ -275,4 +243,3 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     set({ validation: { isValid: false, errors: [] } });
   },
 }));
-

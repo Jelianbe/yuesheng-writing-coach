@@ -136,8 +136,8 @@ export interface TrainingState {
   /** 更新草稿 */
   updateDraft: (content: string) => void;
 
-  /** 提交练习步骤 */
-  submitStep: () => Promise<void>;
+  /** 提交练习步骤(向后兼容:无参 = 原 S8 评估流;有参 = Sprint 25 BL-01 C-4 5 步分步提交) */
+  submitStep: (stepId?: 1 | 2 | 3 | 4 | 5, content?: string) => Promise<void>;
 
   /** 跳过/放弃训练 */
   skipTraining: () => Promise<void>;
@@ -174,6 +174,22 @@ export interface TrainingState {
 
   /** X-02: 将训练稿写入编辑器（当前章节） */
   sendToEditor: () => void;
+
+  // ===== Sprint 24 A-4: 渲染层订阅模式 =====
+
+  /**
+   * 挂载活跃训练订阅
+   * - 冷启动时从主进程拉取当前 session 状态
+   * - 订阅 activeTraining:updated 事件,自动同步本地 state
+   * - 调用时机: App 启动 / session 切换 / 训练视图 mount
+   */
+  mountActiveTraining: (sessionId: string) => Promise<void>;
+
+  /**
+   * 卸载活跃训练订阅(清理 IPC 监听)
+   * - 调用时机: 组件 unmount / session 切换
+   */
+  unmountActiveTraining: () => void;
 }
 
 // ===== 通用三步框架 =====

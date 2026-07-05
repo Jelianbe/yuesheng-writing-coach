@@ -1,7 +1,16 @@
+/**
+ * 作品 + 章节管理 — Sprint 26 阶段 3.5 方案 4a bridge 注册
+ *
+ * 原 IPC handler 已废弃,改为 registerMethod 走单端点 bridge:invoke。
+ * 调用方:`serviceBridge.invoke('manuscript:list' | 'manuscript:get' | 'manuscript:create' | 'manuscript:update' | 'manuscript:delete' | 'chapter:list' | 'chapter:get' | 'chapter:create' | 'chapter:delete' | 'chapter:updateContent', ...)`
+ *
+ * 注: 11 个 channel 全部 SQL 直调(主进程 SQLite)。
+ *    Android 端 StorageAdapter 完整化后考虑统一迁移到 storage handler。
+ */
+
 import crypto from 'node:crypto';
-import { IPC_CHANNELS } from '../../shared/constants';
 import { validatePayload } from './utils/validate-payload';
-import { createHandler } from './utils/create-handler';
+import { registerMethod } from '../core/service-bridge';
 import type Database from 'better-sqlite3';
 
 export interface ManuscriptHandlerDeps {
@@ -18,14 +27,12 @@ export function registerManuscriptHandlers(): void {
   if (!deps) throw new Error('ManuscriptHandler deps not injected');
   const d = deps;
 
-  // manuscript:list — 获取作品列表
-  createHandler(IPC_CHANNELS.MANUSCRIPT_LIST, () => {
+  registerMethod('manuscript:list', async (_args) => {
     const rows = d.db.prepare('SELECT * FROM manuscripts ORDER BY sort_order ASC, created_at DESC').all();
     return rows;
   });
 
-  // manuscript:get — 获取单个作品详情
-  createHandler(IPC_CHANNELS.MANUSCRIPT_GET, (_event, args) => {
+  registerMethod('manuscript:get', async (args) => {
     const validation = validatePayload<{ id: string }>(args, {
       required: ['id'],
       types: { id: 'string' },
@@ -35,8 +42,7 @@ export function registerManuscriptHandlers(): void {
     return row || null;
   });
 
-  // manuscript:create — 创建新作品
-  createHandler(IPC_CHANNELS.MANUSCRIPT_CREATE, (_event, args) => {
+  registerMethod('manuscript:create', async (args) => {
     const validation = validatePayload<{ title: string; description?: string; genre?: string }>(args, {
       required: ['title'],
       types: { title: 'string', description: 'string', genre: 'string' },
@@ -51,8 +57,7 @@ export function registerManuscriptHandlers(): void {
     return row;
   });
 
-  // manuscript:update — 更新作品信息
-  createHandler(IPC_CHANNELS.MANUSCRIPT_UPDATE, (_event, args) => {
+  registerMethod('manuscript:update', async (args) => {
     const validation = validatePayload<{ id: string; title?: string; description?: string; genre?: string; status?: 'active' | 'archived' }>(args, {
       required: ['id'],
       types: { id: 'string', title: 'string', description: 'string', genre: 'string' },
@@ -71,24 +76,21 @@ export function registerManuscriptHandlers(): void {
     return row;
   });
 
-  // chapter:list — 获取某作品的所有章节
-  createHandler(IPC_CHANNELS.CHAPTER_LIST, (_event, args) => {
+  registerMethod('chapter:list', async (args) => {
     const validation = validatePayload<{ manuscriptId: string }>(args, { required: ['manuscriptId'], types: { manuscriptId: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const rows = d.db.prepare('SELECT * FROM chapters WHERE manuscript_id = ? ORDER BY sort_order ASC').all(validation.data.manuscriptId);
     return rows;
   });
 
-  // chapter:get — 获取单个章节（含内容）
-  createHandler(IPC_CHANNELS.CHAPTER_GET, (_event, args) => {
+  registerMethod('chapter:get', async (args) => {
     const validation = validatePayload<{ id: string }>(args, { required: ['id'], types: { id: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const row = d.db.prepare('SELECT * FROM chapters WHERE id = ?').get(validation.data.id);
     return row || null;
   });
 
-  // chapter:create — 创建新章节
-  createHandler(IPC_CHANNELS.CHAPTER_CREATE, (_event, args) => {
+  registerMethod('chapter:create', async (args) => {
     const validation = validatePayload<{ manuscriptId: string; title: string }>(args, { required: ['manuscriptId', 'title'], types: { manuscriptId: 'string', title: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const id = crypto.randomUUID();
@@ -102,8 +104,7 @@ export function registerManuscriptHandlers(): void {
     return row;
   });
 
-  // manuscript:delete — 删除作品及其所有章节
-  createHandler(IPC_CHANNELS.MANUSCRIPT_DELETE, (_event, args) => {
+  registerMethod('manuscript:delete', async (args) => {
     const validation = validatePayload<{ id: string }>(args, {
       required: ['id'],
       types: { id: 'string' },
@@ -116,8 +117,7 @@ export function registerManuscriptHandlers(): void {
     return { deleted: true };
   });
 
-  // chapter:delete — 删除单个章节
-  createHandler(IPC_CHANNELS.CHAPTER_DELETE, (_event, args) => {
+  registerMethod('chapter:delete', async (args) => {
     const validation = validatePayload<{ id: string }>(args, {
       required: ['id'],
       types: { id: 'string' },
@@ -127,8 +127,7 @@ export function registerManuscriptHandlers(): void {
     return { deleted: true };
   });
 
-  // chapter:updateContent — 更新章节正文
-  createHandler(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, (_event, args) => {
+  registerMethod('chapter:updateContent', async (args) => {
     const validation = validatePayload<{ id: string; content: string }>(args, { required: ['id', 'content'], types: { id: 'string', content: 'string' } });
     if (!validation.valid) throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     const wordCount = validation.data.content.replace(/[\s\n\r]+/g, '').length;

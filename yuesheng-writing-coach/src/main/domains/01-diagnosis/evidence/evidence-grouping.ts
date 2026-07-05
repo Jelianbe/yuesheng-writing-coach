@@ -90,7 +90,7 @@ export function getEvidenceForSyndrome(
 ): string[] {
   // 如果是降级模式（__shared__ 键存在），所有症候用共享证据
   if (passagesBySyndrome.has('__shared__')) {
-    return passagesBySyndrome.get('__shared__')!;
+    return passagesBySyndrome.get('__shared__') as string[];
   }
 
   // 按症候取证据（已在分组阶段做了去重和上限控制）

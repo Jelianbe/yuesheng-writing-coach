@@ -44,6 +44,7 @@ export type { AIStateSuggestion } from './types-teaching';
 export type { FocusAreaValue } from './types-teaching';
 export type { FocusArea } from './types-teaching';
 export type { TeachingState } from './types-teaching';
+export type { ActiveTrainingMeta } from './types-teaching';
 export type { TeachingStateUpdateRequest } from './types-teaching';
 export type { TeachingProgressDisplay } from './types-teaching';
 export type { TeachingMode } from './types-teaching';
@@ -63,6 +64,8 @@ export type { SessionProgress } from './types-teaching';
 // --- types-training: 训练工坊 ---
 export type { CenterMode } from './types-training';
 export type { TrainingStep } from './types-training';
+// Sprint 24 A-3: ActiveTraining 状态机共享类型(主进程 + renderer 通用)
+export type { ActiveTrainingStatus } from './types-training';
 export type { ActiveTrainingSession } from './types-training';
 export type { ErrorCard } from './types-training';
 export type { TrainingRecommendation } from './types-training';
@@ -76,6 +79,8 @@ export type { StageProgress } from './types-training';
 export type { TrainingFlowStepId } from './types-training';
 export type { TrainingFlowStep } from './types-training';
 export type { TrainingFlow } from './types-training';
+// Sprint 25 BL-01 C-4: 5 步分步提交
+export type { StepResponse } from './types-training';
 
 // --- types-growth: 成长与能力画像 ---
 export type { TeachingHistoryItem } from './types-growth';

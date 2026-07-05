@@ -46,7 +46,8 @@ export function updateSyndromeStatus(
   // Step 1: 更新已有症候
   const updated = state.activeProblems.map((existing) => {
     if (newIds.has(existing.id)) {
-      const newSyndrome = newDiagnosisSyndromes.find((s) => s.id === existing.id)!;
+      const newSyndrome = newDiagnosisSyndromes.find((s) => s.id === existing.id);
+      if (!newSyndrome) return existing;
       const newSev = severityToNumber(newSyndrome.severity);
       const oldSev = severityToNumber(existing.severity);
 

@@ -4,6 +4,7 @@ estimatedTokens: 900
 loadWhen:
   phases: [P2_PRACTICE_LOOP, P3_TRAINING, P4_REVIEW]
   attitudes: [doubao, yuesheng, sensei]
+compatiblePromptVersions: [v5.0.0, v5.0.0-mock, v5.0.1-draft]
 ---
 
 # SKILL: 认知反馈

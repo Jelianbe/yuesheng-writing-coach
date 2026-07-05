@@ -58,8 +58,9 @@ export class TechniquePoolService {
       filtered = filtered.filter(t => t.coreId === filter.coreId);
     }
     if (filter?.syndromeIds && filter.syndromeIds.length > 0) {
+      const syndromeIds = filter.syndromeIds;
       filtered = filtered.filter(t =>
-        t.applicableSyndromes.some(s => filter.syndromeIds!.includes(s)),
+        t.applicableSyndromes.some(s => syndromeIds.includes(s)),
       );
     }
 

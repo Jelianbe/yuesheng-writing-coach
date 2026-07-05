@@ -19,8 +19,13 @@
  * - T14-6: 两层截断（SKILL 级别 size tiebreak + content 级别 truncation 集成）
  * - T14-7: E2E 集成测试
  *
- * 反思：早期 T14-4 设计为"用 AttitudeFilter 规则屏蔽鼓励话术"，违反
- * "AI 驱动优于规则约束"原则。已重构为 attitude-*.md SKILL 文件，
+ * Sprint 20 A-2 升级（桥接 SkillRegistry）：
+ * - 集成 SkillRegistry,按 compatiblePromptVersions 过滤
+ * - SelectOptions.promptVersion 可选;不传 = 向后兼容
+ * - load() 时自动创建默认 registry,允许 setRegistry() 注入测试桩
+ *
+ * 反思：早期 T14-4 设计为"用 AttitudeFilter 规则屏蔽鼓励话术",违反
+ * "AI 驱动优于规则约束"原则。已重构为 attitude-*.md SKILL 文件,
  * 由 LLM 自主理解和执行行为指令（详见 D-033）。
  */
 
@@ -28,6 +33,7 @@ import { loadAllSkills, type Skill, type TeachingPhase, type AttitudeLevel } fro
 import { assertSkillGraphValid } from './skill-graph';
 import { evaluateConditions, type RuntimeContext } from './condition-evaluator';
 import { truncateChapterContent } from './truncation';
+import { SkillRegistry } from '../conversation/skill-registry';
 
 /** Sprint 14-prior 新增：选择选项 */
 export interface SelectOptions {
@@ -37,15 +43,24 @@ export interface SelectOptions {
   maxTokens?: number;
   /** Sprint 14 T14-6: 单个 SKILL content 最大字符数（超出用 truncation.ts 截断） */
   maxCharsPerSkill?: number;
+  /**
+   * Sprint 20 A-2: prompt 版本过滤
+   * 指定时,只返回 SkillRegistry.compatibleWith(version) 命中的 skill
+   * 不传 = 向后兼容,不过滤版本
+   */
+  promptVersion?: string;
 }
 
 export class SkillDispatcher {
   private skills: Map<string, Skill> = new Map();
   private loaded: boolean = false;
+  /** Sprint 20 A-2: skill 注册表(提供版本元数据),可注入 */
+  private registry: SkillRegistry | null = null;
 
   /**
    * 加载所有 SKILL 文件（首次调用时）
    * Sprint 14 升级：加载后调用 assertSkillGraphValid 启动时 fail-fast
+   * Sprint 20 A-2 升级:同步初始化 SkillRegistry（若尚未注入）
    * @param skillsDir skills 目录绝对路径
    */
   load(skillsDir: string): void {
@@ -57,14 +72,35 @@ export class SkillDispatcher {
     for (const skill of skills) {
       this.skills.set(skill.meta.id, skill);
     }
+    // Sprint 20 A-2: 若未注入 registry,自动从 skillsDir 创建默认实例
+    if (!this.registry) {
+      this.registry = new SkillRegistry(skillsDir);
+    }
     this.loaded = true;
   }
 
   /**
+   * Sprint 20 A-2: 注入 SkillRegistry(供测试桩或主进程依赖注入)
+   * 必须在 load() 之前调用,否则被自动创建的默认 registry 覆盖
+   */
+  setRegistry(registry: SkillRegistry): void {
+    if (this.loaded) {
+      throw new Error('[SkillDispatcher] setRegistry 必须在 load() 之前调用');
+    }
+    this.registry = registry;
+  }
+
+  /** 获取当前 registry(只读) */
+  getRegistry(): SkillRegistry | null {
+    return this.registry;
+  }
+
+  /**
    * 按 phase + attitude + options + runtimeContext 选 SKILL
+   * Sprint 20 A-2: 支持 options.promptVersion 按版本过滤
    * @param phase 当前教学阶段
    * @param attitude 当前态度档位
-   * @param options 过滤选项（coreSubsetOnly / maxTokens / maxCharsPerSkill）
+   * @param options 过滤选项（coreSubsetOnly / maxTokens / maxCharsPerSkill / promptVersion）
    * @param runtimeCtx 运行时上下文（用于 conditions 评估，T14-5 新增）
    * @returns 命中的 SKILL 数组
    */
@@ -89,7 +125,9 @@ export class SkillDispatcher {
         skill.meta.loadWhen.conditions,
         runtimeCtx,
       ).passed;
-      return phaseMatch && attitudeMatch && subsetMatch && conditionsMatch;
+      // Sprint 20 A-2: 版本过滤（若指定 promptVersion）
+      const versionMatch = this.matchesVersion(skill, options.promptVersion);
+      return phaseMatch && attitudeMatch && subsetMatch && conditionsMatch && versionMatch;
     });
 
     // Sprint 14-prior: 按 tokenPriority 截断
@@ -98,6 +136,24 @@ export class SkillDispatcher {
     }
 
     return matched;
+  }
+
+  /**
+   * Sprint 20 A-2: 检查 skill 是否与指定 prompt 版本兼容
+   * - 未指定 version → 全部通过(向后兼容)
+   * - 未加载 registry → 全部通过(降级,无契约硬约束)
+   * - registry 中无该 skill 的元数据 → 通过(向后兼容)
+   * - 元数据声明空数组 → 不通过(契约硬要求,绝不加载未声明 skill)
+   * - 元数据声明包含 version → 通过
+   * @internal
+   */
+  private matchesVersion(skill: Skill, version: string | undefined): boolean {
+    if (!version) return true;
+    if (!this.registry) return true;
+    const meta = this.registry.getById(skill.meta.id);
+    if (!meta) return true;
+    if (meta.compatiblePromptVersions.length === 0) return false;
+    return meta.compatiblePromptVersions.includes(version);
   }
 
   /**
@@ -164,7 +220,7 @@ export class SkillDispatcher {
     const processed = options.maxCharsPerSkill
       ? skills.map(s => ({
           ...s,
-          content: this.truncateSkillContent(s, options.maxCharsPerSkill!),
+          content: this.truncateSkillContent(s, options.maxCharsPerSkill as number),
         }))
       : skills;
     return processed.map(s => s.content).join('\n\n---\n\n');

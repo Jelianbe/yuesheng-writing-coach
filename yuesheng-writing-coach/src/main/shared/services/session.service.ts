@@ -1,3 +1,13 @@
+/**
+ * @deprecated Sprint 26 阶段 2 起,主进程应使用 `src/shared/services/session.service.ts`(异步 + StorageAdapter)
+ *
+ * 本文件保留至 S26 阶段 4(IPC 完全移除)以兼容未迁移的代码。
+ * - 新代码禁止引用本文件
+ * - 旧代码应在迁移到 async/await 时改用 src/shared/services/session.service.ts
+ *
+ * 依据: dev-docs/tasks/sprint-26-2-1-plan.md
+ * 决策: D-074 Sprint 26 战略
+ */
 import crypto from 'node:crypto';
 import type Database from 'better-sqlite3';
 

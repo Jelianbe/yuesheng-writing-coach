@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useTrainingStore } from '../training.store';
-import { RetroApi } from '../../../shared/api-contracts/retro.contract';
+import { IPC_CHANNELS } from '../../../shared/constants';
+
+// Sprint 26 阶段 3.6: enterRetro 改走 service-bridge 单端点
+const BRIDGE_INVOKE_CHANNEL = IPC_CHANNELS.BRIDGE_INVOKE;
 
 function clearMock() {
   delete window.electronAPI;
@@ -97,7 +100,10 @@ describe('TrainingStore - Retro', () => {
       expect(state.retroLoading).toBe(false);
       expect(state.retroSummary).toEqual(mockRetroSummary);
       expect(state.centerMode).toBe('retro');
-      expect(invoke).toHaveBeenCalledWith(RetroApi.generate.channel, { sessionId: 'session-1' });
+      expect(invoke).toHaveBeenCalledWith(
+        BRIDGE_INVOKE_CHANNEL,
+        { method: 'retro:generate', args: { sessionId: 'session-1' } },
+      );
     });
 
     it('IPC 返回失败时 retroSummary 保持 null', async () => {

@@ -1,12 +1,8 @@
 /* 月笙写作教练 - 全局样式 V2.0 */
 
-/* 导入变量和动效（必须位于最前，先于 @tailwind） */
+/* 导入变量和动效（必须位于最前） */
 @import './variables.css';
 @import './animations.css';
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 *,
 *::before,

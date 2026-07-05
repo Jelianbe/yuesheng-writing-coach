@@ -98,7 +98,15 @@ export const TeachingStateApi = {
   get: {
     channel: 'teachingState:get' as const,
     request: {} as TeachingStateGetRequest,
-    response: {} as ApiResponse<TeachingStateGetResponse>,
+    response: {
+      success: true,
+      data: {} as TeachingStateGetResponse,
+      sensitiveFields: [
+        'diagnosisSummary',
+        'focusArea',
+        'activeProblems.evidence',
+      ] as const,
+    } as ApiResponse<TeachingStateGetResponse>,
   },
 
   update: {

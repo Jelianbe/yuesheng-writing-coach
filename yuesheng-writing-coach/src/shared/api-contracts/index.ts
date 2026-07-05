@@ -5,9 +5,9 @@ export type { ApiSuccess, ApiError, ApiResponse, ApiEndpoint, ApiEvent } from '.
 
 // 聊天域
 export type {
-  ChatSendRequest, ChatStopRequest,
-  ChatSendResponse, ChatStopResponse,
-  ChatStreamDataEvent, ChatStreamEndEvent, ChatToolExecutingEvent,
+  ChatSendRequest, ChatStopRequest, ChatHandleTurnRequest,
+  ChatSendResponse, ChatStopResponse, ChatHandleTurnResponse,
+  ChatStreamDataEvent, ChatStreamEndEvent, ChatToolExecutingEvent, ChatEventPayload,
 } from './chat.contract';
 export { ChatApi } from './chat.contract';
 export type { ChatInvokeChannels, ChatEventChannels } from './chat.contract';
@@ -52,6 +52,13 @@ export type {
 } from './training.contract';
 export { TrainingApi } from './training.contract';
 export type { TrainingInvokeChannels } from './training.contract';
+
+// Sprint 24 A-3: ActiveTraining 状态机 IPC 契约
+export type {
+  ActiveTrainingUpdateDraftRequest, ActiveTrainingUpdateDraftResponse,
+  ActiveTrainingGetRequest, ActiveTrainingGetResponse,
+} from './active-training.contract';
+export { ActiveTrainingApi } from './active-training.contract';
 
 // 会话域
 export type {
@@ -104,6 +111,16 @@ export type {
 } from './manuscript.contract';
 export { ManuscriptApi, ChapterApi } from './manuscript.contract';
 export type { ManuscriptInvokeChannels, ChapterInvokeChannels } from './manuscript.contract';
+
+// 处方域(Sprint 21 E-2 引入)
+export type {
+  StudentContextData, StudentContextJson,
+  StudentContextLoadRequest, StudentContextSaveRequest,
+  StudentContextToJsonRequest,
+  StudentContextLoadResponse, StudentContextSaveResponse, StudentContextToJsonResponse,
+} from './student-context.contract';
+export { StudentContextApi } from './student-context.contract';
+export type { StudentContextInvokeChannels } from './student-context.contract';
 
 // 能力画像域
 export type {

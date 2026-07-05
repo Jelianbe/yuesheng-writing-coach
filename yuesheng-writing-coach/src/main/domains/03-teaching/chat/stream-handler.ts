@@ -32,6 +32,11 @@ export interface StreamHandlerDeps {
   saveMessage: (sessionId: string, role: MessageRole, content: string) => void;
   autoGenerateTitle: (sessionId: string) => void;
   processAIResponse: (response: string, sessionId: string, messageId: string) => { diagnosisId: string; diagnosis: DiagnosisEntry } | undefined;
+  /**
+   * Sprint 21 D-1: 可选 token 回调,RealOrchestratorAdapter 注入以桥接 token 流到 OrchestratorEvent
+   * 不影响既有 chat:stream IPC 推送(同时双通道)
+   */
+  onToken?: (chunk: string) => void;
 }
 
 export interface StreamResult {
@@ -83,6 +88,8 @@ export async function handleStreamResponse(
         eventType: 'text',
         streamId,
       });
+      // Sprint 21 D-1:Orchestrator 通道 token 桥接
+      deps.onToken?.(chunk);
     }
 
     if (timeoutId) clearTimeout(timeoutId);
@@ -129,7 +136,7 @@ export async function handleStreamResponse(
         });
         return { success: false, error: errorMessage };
       }
-      console.log(`[Chat] Stream aborted by user, partial=${fullResponse.length}chars`);
+      console.warn(`[Chat] Stream aborted by user, partial=${fullResponse.length}chars`);
       if (fullResponse) {
         deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
       }
@@ -179,12 +186,12 @@ export async function handleStreamResponseWithTools(
     }, STREAM_TIMEOUT_MS);
 
     for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      let currentRoundText = '';
+      let _currentRoundText = '';
       const toolCallsInRound: AccumulatedToolCall[] = [];
 
       for await (const event of proxy.chatStreamWithTools(messages, TOOLS_DEFINITIONS, abortController.signal)) {
         if (event.type === 'text') {
-          currentRoundText += event.content;
+          _currentRoundText += event.content;
           fullResponse += event.content;
           deps.mainWindow?.webContents.send(IPC_CHANNELS.CHAT_STREAM_DATA, {
             sessionId: deps.sessionId,
@@ -277,7 +284,7 @@ export async function handleStreamResponseWithTools(
         });
         return { success: false, error: errorMessage };
       }
-      console.log(`[ToolCall] Stream aborted by user, partial=${fullResponse.length}chars`);
+      console.warn(`[ToolCall] Stream aborted by user, partial=${fullResponse.length}chars`);
       if (fullResponse) {
         deps.saveMessage(deps.sessionId, 'assistant', fullResponse);
       }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * 状态锁定机制单元测试
  * 测试覆盖：lockSyndromes / updateSyndromeStatus / unlockResolvedSyndromes / areAllSyndromesResolved

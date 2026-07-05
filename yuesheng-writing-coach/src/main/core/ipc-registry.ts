@@ -1,6 +1,7 @@
 import type { BrowserWindow } from 'electron';
 import type Database from 'better-sqlite3';
 import type { ServiceContainer } from './service-container';
+import { mountBridgeEndpoint } from './bridge-endpoint';
 import { initConfigHandlers, registerConfigHandlers } from '../ipc/config.handler';
 import { initSessionHandlers, registerSessionHandlers } from '../ipc/session.handler';
 import { initEvidenceHandlers, registerEvidenceHandlers } from '../ipc/evidence.handler';
@@ -11,14 +12,20 @@ import { initGrowthHandlers, registerGrowthHandlers } from '../ipc/growth.handle
 import { initTeachingNoteHandlers, registerTeachingNoteHandlers } from '../ipc/teaching-note.handler';
 import { initDiagnosisHandlers, registerDiagnosisHandlers } from '../ipc/diagnosis.handler';
 import { initChatHandlers, registerChatHandlers } from '../ipc/chat.handler';
-import { registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
-import { initTeachingStateHandler } from '../ipc/teaching-state.handler';
+import type { TeachingNoteService } from '../domains/03-teaching/teaching-note.service';
+import { initTeachingStateHandler, registerTeachingStateHandlers } from '../ipc/teaching-state.handler';
 import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manuscript.handler';
 import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
-import { registerRetroHandlers } from '../ipc/retro.handler';
+import { initRetroHandlers, registerRetroHandlers } from '../ipc/retro.handler';
+// Sprint 24 A-3 / A-4: ActiveTraining 状态机 IPC handler
+import {
+  initActiveTrainingHandlers,
+  registerActiveTrainingHandlers,
+  setupActiveTrainingPush,
+} from '../ipc/active-training.handler';
 import type { ConfigService } from '../shared/services/config.service';
-import type { SessionService } from '../shared/services/session.service';
+import type { SessionService } from '../../shared/services/session.service';
 import type { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
 import type { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
 import type { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
@@ -31,6 +38,8 @@ import type { DiagnosisMerger } from '../domains/01-diagnosis/diagnosis-merger';
 import type { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
 import type { TeachingStrategyService } from '../domains/02-prescription/strategy/service';
 import type { RetroService } from '../domains/05-retro/retro.service';
+// Sprint 24 A-3: ActiveTraining 状态机服务
+import type { ActiveTrainingService } from '../domains/03-teaching/state/active-training.service';
 
 export class IpcRegistry {
   constructor(
@@ -86,7 +95,7 @@ export class IpcRegistry {
     registerGrowthHandlers();
 
     // Teaching Note (教学笔记工具 I-08)
-    const teachingNoteService = this.container.get<import('../domains/03-teaching/teaching-note.service').TeachingNoteService>('teachingNoteService');
+    const teachingNoteService = this.container.get<TeachingNoteService>('teachingNoteService');
     initTeachingNoteHandlers({ teachingNoteService });
     registerTeachingNoteHandlers();
 
@@ -119,16 +128,29 @@ export class IpcRegistry {
     initManuscriptHandlers({ db: this.container.get<Database.Database>('db') });
     registerManuscriptHandlers();
 
-    // Project (RWR-P0-4 — 直接使用 db 实例)
-    initProjectHandlers({ db: this.container.get<Database.Database>('db') });
+    // Project (RWR-P0-4 + Sprint 26 T26-2.2 — 切到 ProjectService 异步版)
+    initProjectHandlers({ projectService: this.container.get('projectService') });
     registerProjectHandlers();
 
     // Retro (F-03 复盘总结)
-    registerRetroHandlers({
+    initRetroHandlers({
       retroService: this.container.get<RetroService>('retroService'),
     });
+    registerRetroHandlers();
 
     // Window Controls (最小化/最大化/关闭)
     initWindowHandlers();
+
+    // Sprint 24 A-3: ActiveTraining 草稿持久化 — DI 注入状态机服务
+    const activeTrainingService = this.container.get<ActiveTrainingService>('activeTrainingService');
+    initActiveTrainingHandlers(activeTrainingService);
+    registerActiveTrainingHandlers();
+
+    // Sprint 24 A-4: 桥接状态变更到 renderer(渲染层订阅模式)
+    setupActiveTrainingPush(this.mainWindow);
+
+    // Sprint 26 阶段 3.5 方案 4a: 挂载单端点 bridge:invoke
+    // 必须在所有 service 注册完成后挂载,否则 method 查不到
+    mountBridgeEndpoint();
   }
 }

@@ -10,18 +10,37 @@ import {
 } from './training-styles';
 import sharedStyles from './TrainingShared.module.css';
 
+const FILTERS = [
+  { id: 'all', label: '全部' },
+  { id: 'completed', label: '完成' },
+  { id: 'in_progress', label: '进行中' },
+  { id: 'skipped', label: '跳过' },
+] as const;
+
+type FilterId = (typeof FILTERS)[number]['id'];
+
 export const HistorySection: React.FC<{
   history: TrainingRecord[];
   isLoading: boolean;
 }> = ({ history, isLoading }) => {
+  const [filter, setFilter] = React.useState<FilterId>('all');
+  const [expandedId, setExpandedId] = React.useState<string | null>(null);
+
+  const toggleExpand = React.useCallback((id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
+  }, []);
+
+  const filtered = React.useMemo(() => {
+    if (filter === 'all') return history;
+    return history.filter(r => r.status === filter);
+  }, [history, filter]);
+
   if (isLoading) {
     return (
       <div className={sharedStyles.trainingSection}>
         <div className={sharedStyles.trainingSectionTitle}>近期训练记录</div>
         <div className={sharedStyles.trainingEmpty}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
-            加载中...
-          </p>
+          <p className={sharedStyles.loadingText}>加载中...</p>
         </div>
       </div>
     );
@@ -32,7 +51,7 @@ export const HistorySection: React.FC<{
       <div className={sharedStyles.trainingSection}>
         <div className={sharedStyles.trainingSectionTitle}>近期训练记录</div>
         <div className={sharedStyles.trainingEmpty}>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', margin: 0 }}>
+          <p className={sharedStyles.loadingText}>
             暂无训练记录。完成练习后，记录会显示在此处。
           </p>
         </div>
@@ -43,37 +62,71 @@ export const HistorySection: React.FC<{
   return (
     <div className={sharedStyles.trainingSection}>
       <div className={sharedStyles.trainingSectionTitle}>近期训练记录</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {history.map((record) => (
-          <div
-            key={record.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '6px 0',
-              fontSize: '0.85rem',
-              color: record.status === 'skipped' ? 'var(--text-secondary)' : 'var(--text-primary)',
-              opacity: record.status === 'skipped' ? 0.7 : 1,
-            }}
+
+      {/* 筛选栏 */}
+      <div className={sharedStyles.historyFilterBar}>
+        {FILTERS.map(f => (
+          <button
+            key={f.id}
+            className={`${sharedStyles.historyFilterBtn} ${
+              filter === f.id ? sharedStyles.historyFilterBtnActive : ''
+            }`}
+            onClick={() => setFilter(f.id)}
           >
-            <span style={{ color: statusColors[record.status] ?? '#95a5a6', fontWeight: 600, width: 20, textAlign: 'center' }}>
-              {statusIcons[record.status] ?? '○'}
-            </span>
-            <span style={{ flex: 1 }}>{record.challengeName || record.taskId || ''}</span>
-            {record.effectiveness != null && (
-              <span style={{ fontSize: '0.75rem', color: record.effectiveness >= 0.6 ? '#27ae60' : '#e67e22' }}>
-                {Math.round(record.effectiveness * 100)}% 有效
-              </span>
-            )}
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              {record.completedAt ?? record.assignedAt}
-            </span>
-          </div>
+            {f.label}
+          </button>
         ))}
+      </div>
+
+      {/* 记录列表 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {filtered.map((record) => {
+          const isExpanded = expandedId === record.id;
+          return (
+            <React.Fragment key={record.id}>
+              <div
+                className={`${sharedStyles.historyRow} ${
+                  record.status === 'skipped' ? sharedStyles.historySkipped : ''
+                }`}
+                onClick={() => toggleExpand(record.id)}
+                style={{ color: record.status === 'skipped' ? 'var(--text-secondary)' : 'var(--text-primary)' }}
+              >
+                <span
+                  className={sharedStyles.historyIcon}
+                  style={{ color: statusColors[record.status] ?? '#95a5a6' }}
+                >
+                  {statusIcons[record.status] ?? '○'}
+                </span>
+                <span className={sharedStyles.historyName}>
+                  {record.challengeName || record.taskId || ''}
+                </span>
+                {record.effectiveness != null && (
+                  <span
+                    className={sharedStyles.historyEffectiveness}
+                    style={{ color: record.effectiveness >= 0.6 ? 'var(--success)' : 'var(--warning)' }}
+                  >
+                    {Math.round(record.effectiveness * 100)}% 有效
+                  </span>
+                )}
+                <span className={sharedStyles.historyDate}>
+                  {record.completedAt ?? record.assignedAt}
+                </span>
+              </div>
+              {/* 展开详情 */}
+              {isExpanded && (
+                <div className={sharedStyles.historyExpanded}>
+                  <div><strong>状态：</strong>{record.status === 'completed' ? '已完成' : record.status === 'in_progress' ? '进行中' : record.status === 'skipped' ? '已跳过' : record.status}</div>
+                  {record.challengeName && <div><strong>名称：</strong>{record.challengeName}</div>}
+                  {record.completedAt && <div><strong>完成时间：</strong>{record.completedAt}</div>}
+                  {record.effectiveness != null && (
+                    <div><strong>有效率：</strong>{Math.round(record.effectiveness * 100)}%</div>
+                  )}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
       </div>
     </div>
   );
 };
-
-
