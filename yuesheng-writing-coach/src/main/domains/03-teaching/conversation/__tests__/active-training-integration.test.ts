@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ActiveTraining 集成测试 — Sprint 24 A-2
  *
  * 端到端事件流:
@@ -103,6 +103,18 @@ function createTestDb(): Database.Database {
     CREATE UNIQUE INDEX idx_active_training_active_session
       ON active_training(session_id)
       WHERE status = 'in_progress';
+
+    CREATE TABLE active_training_drafts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      active_training_id INTEGER NOT NULL,
+      step_index INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      trigger TEXT NOT NULL,
+      snapshot_at TEXT NOT NULL,
+      restored_from_id INTEGER,
+      FOREIGN KEY (active_training_id) REFERENCES active_training(id) ON DELETE CASCADE
+    );
+    CREATE INDEX idx_atd_at_id ON active_training_drafts(active_training_id, step_index);
   `);
   // 插入测试 session
   for (let i = 1; i <= 5; i++) {

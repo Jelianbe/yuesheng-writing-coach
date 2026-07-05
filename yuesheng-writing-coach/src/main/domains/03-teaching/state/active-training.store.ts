@@ -26,8 +26,14 @@ import type {
   SubmissionResultSnapshot,
   TrainingStep,
   TrainingFlow,
+  DraftSnapshot,
+  DraftSnapshotRow,
+  CreateDraftSnapshotInput,
 } from './active-training.types';
-import { isValidActiveTrainingStatus } from './active-training.types';
+import { isValidActiveTrainingStatus, isValidDraftSnapshotTrigger } from './active-training.types';
+
+/** 草稿内容字符上限(与 active_training.user_draft 一致) */
+const DRAFT_MAX_LENGTH = 50000;
 
 /**
  * 将数据库行转换为 ActiveTraining 领域对象
@@ -76,6 +82,33 @@ function safeParseJson<T>(json: string | null, fallback: T): T {
     console.warn('[ActiveTrainingStore] safeParseJson failed:', e);
     return fallback;
   }
+}
+
+/**
+ * 将数据库行转换为 DraftSnapshot 领域对象
+ */
+function rowToDraftSnapshot(row: DraftSnapshotRow): DraftSnapshot {
+  const trigger = isValidDraftSnapshotTrigger(row.trigger) ? row.trigger : 'advance';
+  return {
+    id: row.id,
+    activeTrainingId: row.active_training_id,
+    stepIndex: row.step_index,
+    content: row.content,
+    trigger,
+    snapshotAt: row.snapshot_at,
+    restoredFromId: row.restored_from_id,
+  };
+}
+
+/**
+ * 截断超长草稿并记录警告
+ */
+function truncateDraft(content: string): string {
+  if (content.length <= DRAFT_MAX_LENGTH) return content;
+  console.warn(
+    `[ActiveTrainingStore] draft exceeds ${DRAFT_MAX_LENGTH} chars, truncating from ${content.length}`,
+  );
+  return content.slice(0, DRAFT_MAX_LENGTH);
 }
 
 /**
@@ -340,6 +373,115 @@ export class ActiveTrainingStore {
     } catch (e) {
       console.error('[ActiveTrainingStore] findBySyndrome failed:', e);
       return [];
+    }
+  }
+
+  // ─── 草稿快照(C-1) ───
+
+  /**
+   * 创建草稿快照
+   * - 自动截断超过 50K 的内容并 warn
+   * - 失败返回 null(异常隔离)
+   */
+  createDraftSnapshot(input: CreateDraftSnapshotInput): DraftSnapshot | null {
+    try {
+      const content = truncateDraft(input.content);
+      const stmt = this.db.prepare(`
+        INSERT INTO active_training_drafts (
+          active_training_id, step_index, content, trigger, snapshot_at, restored_from_id
+        ) VALUES (
+          @active_training_id, @step_index, @content, @trigger, @snapshot_at, @restored_from_id
+        )
+      `);
+      const now = new Date().toISOString();
+      const result = stmt.run({
+        active_training_id: input.activeTrainingId,
+        step_index: input.stepIndex,
+        content,
+        trigger: input.trigger,
+        snapshot_at: now,
+        restored_from_id: input.restoredFromId ?? null,
+      });
+      return this.getDraftSnapshotById(result.lastInsertRowid as number);
+    } catch (e) {
+      console.error('[ActiveTrainingStore] createDraftSnapshot failed:', e);
+      return null;
+    }
+  }
+
+  /**
+   * 根据 ID 获取草稿快照
+   */
+  getDraftSnapshotById(id: number): DraftSnapshot | null {
+    try {
+      const stmt = this.db.prepare('SELECT * FROM active_training_drafts WHERE id = ?');
+      const row = stmt.get(id) as DraftSnapshotRow | undefined;
+      return row ? rowToDraftSnapshot(row) : null;
+    } catch (e) {
+      console.error('[ActiveTrainingStore] getDraftSnapshotById failed:', e);
+      return null;
+    }
+  }
+
+  /**
+   * 获取指定活跃训练的所有快照(按时间倒序,最近优先)
+   */
+  getDraftSnapshotsByTrainingId(activeTrainingId: number): DraftSnapshot[] {
+    try {
+      const stmt = this.db.prepare(
+        'SELECT * FROM active_training_drafts WHERE active_training_id = ? ORDER BY snapshot_at DESC, id DESC',
+      );
+      const rows = stmt.all(activeTrainingId) as DraftSnapshotRow[];
+      return rows.map(rowToDraftSnapshot);
+    } catch (e) {
+      console.error('[ActiveTrainingStore] getDraftSnapshotsByTrainingId failed:', e);
+      return [];
+    }
+  }
+
+  /**
+   * 回退到指定快照
+   * - 读取快照 content 更新 active_training.user_draft
+   * - 同时创建一条 trigger='restore' 的新快照记录
+   * - 失败返回 null(异常隔离)
+   */
+  restoreDraftSnapshot(activeTrainingId: number, snapshotId: number): ActiveTraining | null {
+    try {
+      const snapshot = this.getDraftSnapshotById(snapshotId);
+      if (!snapshot) {
+        console.warn(`[ActiveTrainingStore] restoreDraftSnapshot: snapshot ${snapshotId} not found`);
+        return null;
+      }
+      if (snapshot.activeTrainingId !== activeTrainingId) {
+        console.warn(
+          `[ActiveTrainingStore] restoreDraftSnapshot: snapshot ${snapshotId} does not belong to training ${activeTrainingId}`,
+        );
+        return null;
+      }
+
+      const training = this.getById(activeTrainingId);
+      if (!training) {
+        console.warn(
+          `[ActiveTrainingStore] restoreDraftSnapshot: training ${activeTrainingId} not found`,
+        );
+        return null;
+      }
+
+      const updated = this.update(training.sessionId, { userDraft: snapshot.content });
+      if (!updated) return null;
+
+      this.createDraftSnapshot({
+        activeTrainingId,
+        stepIndex: updated.currentStepIndex,
+        content: snapshot.content,
+        trigger: 'restore',
+        restoredFromId: snapshotId,
+      });
+
+      return updated;
+    } catch (e) {
+      console.error('[ActiveTrainingStore] restoreDraftSnapshot failed:', e);
+      return null;
     }
   }
 }

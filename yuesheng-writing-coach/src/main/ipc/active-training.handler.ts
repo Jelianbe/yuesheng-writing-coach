@@ -24,6 +24,8 @@ import type {
   ActiveTrainingUpdatedEvent,
   ActiveTrainingStateChangeType,
   ActiveTrainingSubmitStepResponse,
+  ActiveTrainingGetDraftSnapshotsResponse,
+  ActiveTrainingRestoreDraftSnapshotResponse,
 } from '../../shared/api-contracts/active-training.contract';
 import type { ActiveTraining } from '../domains/03-teaching/state/active-training.types';
 
@@ -149,6 +151,40 @@ export function registerActiveTrainingHandlers(): void {
     }
 
     return activeTrainingToResponse(active);
+  });
+
+  registerMethod('activeTraining:getDraftSnapshots', async (args) => {
+    const validation = validatePayload<{ activeTrainingId: number }>(args, {
+      required: ['activeTrainingId'],
+      types: { activeTrainingId: 'number' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const service = getService();
+    const snapshots = service.getDraftSnapshots(validation.data.activeTrainingId);
+    return { snapshots } satisfies ActiveTrainingGetDraftSnapshotsResponse;
+  });
+
+  registerMethod('activeTraining:restoreDraftSnapshot', async (args) => {
+    const validation = validatePayload<{ activeTrainingId: number; snapshotId: number }>(args, {
+      required: ['activeTrainingId', 'snapshotId'],
+      types: { activeTrainingId: 'number', snapshotId: 'number' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const service = getService();
+    const restored = service.restoreDraftSnapshot(
+      validation.data.activeTrainingId,
+      validation.data.snapshotId,
+    );
+    return {
+      success: restored !== null,
+      restoredSnapshot: restored,
+    } satisfies ActiveTrainingRestoreDraftSnapshotResponse;
   });
 }
 

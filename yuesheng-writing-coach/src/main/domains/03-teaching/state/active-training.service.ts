@@ -31,6 +31,8 @@ import type {
   ActiveTraining,
   ActiveTrainingStatus,
   CreateActiveTrainingInput,
+  DraftSnapshot,
+  DraftSnapshotTrigger,
   StepResponse,
   SubmissionResultSnapshot,
   TrainingStep,
@@ -153,6 +155,7 @@ export class ActiveTrainingService {
    * - 要求: 当前必须存在 in_progress 训练
    * - 业务规则: stepIndex 必须 >= 0 且 <= steps.length
    * - 业务规则: 同一 session 已 completed/aborted 时拒绝
+   * - C-1: 推进前自动快照当前 step 的 userDraft
    * - A-4: 成功后发布 'advanceStep' 状态变更事件
    */
   advanceStep(sessionId: string, input: AdvanceStepInput): ActiveTraining | null {
@@ -182,6 +185,7 @@ export class ActiveTrainingService {
       updates.steps = input.steps;
     }
 
+    this.snapshotDraft(active, 'advance');
     const updated = this.store.update(sessionId, updates);
     if (updated) {
       this.emitStateChange('advanceStep', sessionId, updated);
@@ -283,6 +287,7 @@ export class ActiveTrainingService {
    * 评估(AI 评分结果)
    * - 不改变状态(保持 in_progress)
    * - 用于 A-2 状态机测试,验证 evaluate 是内部转换
+   * - C-1: 评估前自动快照当前 step 的 userDraft
    * - A-4: 成功后发布 'evaluate' 状态变更事件
    */
   evaluate(sessionId: string, result: EvaluateInput): ActiveTraining | null {
@@ -301,6 +306,7 @@ export class ActiveTrainingService {
       evaluatedAt: new Date().toISOString(),
     };
 
+    this.snapshotDraft(active, 'evaluate');
     const updated = this.store.update(sessionId, { submissionResult });
     if (updated) {
       this.emitStateChange('evaluate', sessionId, updated);
@@ -312,6 +318,7 @@ export class ActiveTrainingService {
    * 完成训练(InProgress → Completed)
    * - 写入 completedAt + recordId
    * - 业务规则: 同一 session 已 completed/aborted 时拒绝
+   * - C-1: 完成前自动快照最终 step 的 userDraft
    * - A-4: 成功后发布 'complete' 状态变更事件
    */
   complete(sessionId: string, recordId: string): ActiveTraining | null {
@@ -329,6 +336,7 @@ export class ActiveTrainingService {
     }
 
     const now = new Date().toISOString();
+    this.snapshotDraft(active, 'complete');
     const updated = this.store.update(sessionId, {
       status: 'completed',
       recordId,
@@ -344,6 +352,7 @@ export class ActiveTrainingService {
    * 中止训练(InProgress → Aborted)
    * - 业务规则: 用户主动取消或异常退出
    * - Aborted 后该行保留供审计,新训练需调 start() 创建新行
+   * - C-1: 中止前自动快照当前 step 的 userDraft
    * - A-4: 成功后发布 'abort' 状态变更事件
    */
   abort(sessionId: string): ActiveTraining | null {
@@ -356,6 +365,7 @@ export class ActiveTrainingService {
     }
 
     const now = new Date().toISOString();
+    this.snapshotDraft(active, 'abort');
     const updated = this.store.update(sessionId, {
       status: 'aborted',
       completedAt: now,
@@ -401,6 +411,30 @@ export class ActiveTrainingService {
    */
   getStatus(sessionId: string): ActiveTrainingStatus | null {
     return this.getBySession(sessionId)?.status ?? null;
+  }
+
+  // ─── C-1: 草稿快照查询与回退 ───
+
+  /**
+   * 获取指定训练的所有草稿快照(按时间倒序)
+   */
+  getDraftSnapshots(activeTrainingId: number): DraftSnapshot[] {
+    return this.store.getDraftSnapshotsByTrainingId(activeTrainingId);
+  }
+
+  /**
+   * 回退到指定快照
+   * - 更新 active_training.user_draft 为快照内容
+   * - 同时生成一条 trigger='restore' 的新快照
+   */
+  restoreDraftSnapshot(
+    activeTrainingId: number,
+    snapshotId: number,
+  ): DraftSnapshot | null {
+    const restored = this.store.restoreDraftSnapshot(activeTrainingId, snapshotId);
+    if (!restored) return null;
+    this.emitStateChange('updateDraft', restored.sessionId, restored);
+    return this.store.getDraftSnapshotsByTrainingId(activeTrainingId).find((s) => s.trigger === 'restore' && s.restoredFromId === snapshotId) ?? null;
   }
 
   // ─── Sprint 24 A-4: 状态变更订阅接口 ───
@@ -457,6 +491,25 @@ export class ActiveTrainingService {
   }
 
   // ─── 内部工具 ───
+
+  /**
+   * C-1: 自动快照当前草稿
+   * - 在 advanceStep/evaluate/complete/abort 成功后调用
+   * - 使用状态转换前的 stepIndex 与 userDraft
+   * - 快照失败不影响主流程(仅 console.error)
+   */
+  private snapshotDraft(active: ActiveTraining, trigger: DraftSnapshotTrigger): void {
+    try {
+      this.store.createDraftSnapshot({
+        activeTrainingId: active.id,
+        stepIndex: active.currentStepIndex,
+        content: active.userDraft,
+        trigger,
+      });
+    } catch (err) {
+      console.error(`[ActiveTrainingService] snapshotDraft(${trigger}) failed:`, err);
+    }
+  }
 
   private validateStartInput(input: StartActiveTrainingInput): boolean {
     return Boolean(

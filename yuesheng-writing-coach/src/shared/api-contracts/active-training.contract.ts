@@ -107,6 +107,44 @@ export interface ActiveTrainingSubmitStepResponse {
   status: ActiveTrainingStatus | null;
 }
 
+// ===== Sprint 25 C-1: 草稿快照版本历史 =====
+
+/** 草稿快照触发原因 */
+export type DraftSnapshotTrigger = 'advance' | 'evaluate' | 'complete' | 'abort' | 'restore';
+
+/** 草稿快照 */
+export interface DraftSnapshot {
+  id: number;
+  activeTrainingId: number;
+  stepIndex: number;
+  content: string;
+  trigger: DraftSnapshotTrigger;
+  snapshotAt: string;
+  restoredFromId: number | null;
+}
+
+/** 获取草稿快照请求 */
+export interface ActiveTrainingGetDraftSnapshotsRequest {
+  activeTrainingId: number;
+}
+
+/** 获取草稿快照响应 */
+export interface ActiveTrainingGetDraftSnapshotsResponse {
+  snapshots: DraftSnapshot[];
+}
+
+/** 回退草稿快照请求 */
+export interface ActiveTrainingRestoreDraftSnapshotRequest {
+  activeTrainingId: number;
+  snapshotId: number;
+}
+
+/** 回退草稿快照响应 */
+export interface ActiveTrainingRestoreDraftSnapshotResponse {
+  success: boolean;
+  restoredSnapshot: DraftSnapshot | null;
+}
+
 export const ActiveTrainingApi = {
   updateDraft: {
     channel: 'activeTraining:updateDraft',
@@ -120,6 +158,16 @@ export const ActiveTrainingApi = {
   submitStep: {
     channel: 'activeTraining:submitStep',
     response: {} as ApiResponse<ActiveTrainingSubmitStepResponse>,
+  },
+  /** Sprint 25 C-1: 获取草稿快照 */
+  getDraftSnapshots: {
+    channel: 'activeTraining:getDraftSnapshots',
+    response: {} as ApiResponse<ActiveTrainingGetDraftSnapshotsResponse>,
+  },
+  /** Sprint 25 C-1: 回退草稿快照 */
+  restoreDraftSnapshot: {
+    channel: 'activeTraining:restoreDraftSnapshot',
+    response: {} as ApiResponse<ActiveTrainingRestoreDraftSnapshotResponse>,
   },
   /** Sprint 24 A-4: 状态变更推送事件(主进程 → renderer) */
   updated: {

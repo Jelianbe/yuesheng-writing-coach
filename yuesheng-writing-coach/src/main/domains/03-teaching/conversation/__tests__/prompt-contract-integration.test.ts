@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * Prompt Contract 端到端验证(Sprint 20 增量 3)
  *
@@ -24,7 +23,7 @@ const PROMPTS_DIR = path.join(ROOT, 'resources/prompts');
 const CONFIG_DIR = path.join(ROOT, 'resources/config');
 
 function extractContractBlock(md: string): string {
-  const m = md.match(/```yaml\n([\s\S]*?)\n```/);
+  const m = md.match(/```yaml\r?\n([\s\S]*?)\r?\n```/);
   if (!m) throw new Error('未找到 ```yaml 契约块');
   return m[1];
 }
@@ -152,7 +151,8 @@ describe('prompt-contract 端到端验证 (Sprint 20 增量 3)', () => {
       const e = err as PromptContractError;
       const techMismatch = e.mismatches.find(m => m.category === 'techniques');
       expect(techMismatch).toBeDefined();
-      expect(techMismatch!.missing).toEqual(['TQ-999']);
+      if (!techMismatch) throw new Error('techMismatch missing');
+      expect(techMismatch.missing).toEqual(['TQ-999']);
     }
   });
 });

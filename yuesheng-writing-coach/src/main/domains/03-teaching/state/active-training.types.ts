@@ -184,7 +184,51 @@ export interface UpdateActiveTrainingInput {
   completedAt?: string | null;
 }
 
+/** 草稿快照触发原因 */
+export type DraftSnapshotTrigger =
+  | 'advance'
+  | 'evaluate'
+  | 'complete'
+  | 'abort'
+  | 'restore';
+
+/** 领域对象: ActiveTraining 草稿快照 */
+export interface DraftSnapshot {
+  id: number;
+  activeTrainingId: number;
+  stepIndex: number;
+  content: string;
+  trigger: DraftSnapshotTrigger;
+  snapshotAt: string;
+  restoredFromId: number | null;
+}
+
+/** 数据库存储行: DraftSnapshotRow */
+export interface DraftSnapshotRow {
+  id: number;
+  active_training_id: number;
+  step_index: number;
+  content: string;
+  trigger: string;
+  snapshot_at: string;
+  restored_from_id: number | null;
+}
+
+/** 创建草稿快照输入 */
+export interface CreateDraftSnapshotInput {
+  activeTrainingId: number;
+  stepIndex: number;
+  content: string;
+  trigger: DraftSnapshotTrigger;
+  restoredFromId?: number | null;
+}
+
 /** 类型守卫: 是否为有效状态 */
 export function isValidActiveTrainingStatus(s: string): s is ActiveTrainingStatus {
   return s === 'in_progress' || s === 'completed' || s === 'aborted';
+}
+
+/** 类型守卫: 是否为有效快照触发原因 */
+export function isValidDraftSnapshotTrigger(s: string): s is DraftSnapshotTrigger {
+  return s === 'advance' || s === 'evaluate' || s === 'complete' || s === 'abort' || s === 'restore';
 }
