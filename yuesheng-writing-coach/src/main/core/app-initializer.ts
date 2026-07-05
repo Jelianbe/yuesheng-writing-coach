@@ -210,6 +210,9 @@ export class AppInitializer {
       '021_teaching_progress.sql',
       '022_projects.sql',
       '023_data_migration.sql',
+      '026_active_training.sql',
+      '027_active_training_step_responses.sql',
+      '028_active_training_drafts.sql',
     ];
 
     for (const file of migrationFiles) {
