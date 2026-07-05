@@ -30,6 +30,8 @@
 import type {
   ActiveTraining,
   ActiveTrainingStatus,
+  AuditLog,
+  AuditLogTrigger,
   CreateActiveTrainingInput,
   DraftSnapshot,
   DraftSnapshotTrigger,
@@ -145,6 +147,7 @@ export class ActiveTrainingService {
     });
 
     if (created) {
+      this.recordAudit(created, 'start', null, 'in_progress', { source: input.source });
       this.emitStateChange('start', input.sessionId, created);
     }
     return created;
@@ -188,6 +191,9 @@ export class ActiveTrainingService {
     this.snapshotDraft(active, 'advance');
     const updated = this.store.update(sessionId, updates);
     if (updated) {
+      this.recordAudit(updated, 'advance', 'in_progress', 'in_progress', {
+        stepIndex: input.stepIndex,
+      });
       this.emitStateChange('advanceStep', sessionId, updated);
     }
     return updated;
@@ -309,6 +315,10 @@ export class ActiveTrainingService {
     this.snapshotDraft(active, 'evaluate');
     const updated = this.store.update(sessionId, { submissionResult });
     if (updated) {
+      this.recordAudit(updated, 'evaluate', 'in_progress', 'in_progress', {
+        passed: result.passed,
+        score: result.score,
+      });
       this.emitStateChange('evaluate', sessionId, updated);
     }
     return updated;
@@ -343,6 +353,7 @@ export class ActiveTrainingService {
       completedAt: now,
     });
     if (updated) {
+      this.recordAudit(updated, 'complete', 'in_progress', 'completed', { recordId });
       this.emitStateChange('complete', sessionId, updated);
     }
     return updated;
@@ -371,6 +382,7 @@ export class ActiveTrainingService {
       completedAt: now,
     });
     if (updated) {
+      this.recordAudit(updated, 'abort', 'in_progress', 'aborted', {});
       this.emitStateChange('abort', sessionId, updated);
     }
     return updated;
@@ -433,8 +445,29 @@ export class ActiveTrainingService {
   ): DraftSnapshot | null {
     const restored = this.store.restoreDraftSnapshot(activeTrainingId, snapshotId);
     if (!restored) return null;
+    this.recordAudit(restored, 'restore', 'in_progress', 'in_progress', {
+      snapshotId,
+    });
     this.emitStateChange('updateDraft', restored.sessionId, restored);
     return this.store.getDraftSnapshotsByTrainingId(activeTrainingId).find((s) => s.trigger === 'restore' && s.restoredFromId === snapshotId) ?? null;
+  }
+
+  // ─── C-2: 审计日志查询 ───
+
+  /**
+   * 获取指定训练的所有审计日志(按时间倒序)
+   */
+  getAuditLogs(activeTrainingId: number): AuditLog[] {
+    return this.store.getAuditLogsByTrainingId(activeTrainingId);
+  }
+
+  /**
+   * 按 session 维度获取最近 N 条审计日志
+   * @param sessionId 会话 ID
+   * @param limit 最多条数(默认 10)
+   */
+  getRecentTransitions(sessionId: string, limit: number = 10): AuditLog[] {
+    return this.store.getRecentTransitions(sessionId, limit);
   }
 
   // ─── Sprint 24 A-4: 状态变更订阅接口 ───
@@ -509,6 +542,29 @@ export class ActiveTrainingService {
     } catch (err) {
       console.error(`[ActiveTrainingService] snapshotDraft(${trigger}) failed:`, err);
     }
+  }
+
+  /**
+   * C-2: 记录审计日志
+   * - 与 snapshotDraft 不同:错误自然抛出(审计失败阻断状态转换)
+   * - context 自动 JSON.stringify 并截断至 2KB
+   */
+  private recordAudit(
+    active: ActiveTraining,
+    trigger: AuditLogTrigger,
+    fromState: string | null,
+    toState: string,
+    context: Record<string, unknown>,
+  ): void {
+    const contextJson = JSON.stringify(context);
+    this.store.createAuditLog({
+      activeTrainingId: active.id,
+      trigger,
+      fromState,
+      toState,
+      actor: 'main',
+      contextJson,
+    });
   }
 
   private validateStartInput(input: StartActiveTrainingInput): boolean {

@@ -29,8 +29,16 @@ import type {
   DraftSnapshot,
   DraftSnapshotRow,
   CreateDraftSnapshotInput,
+  AuditLog,
+  AuditLogRow,
+  CreateAuditLogInput,
 } from './active-training.types';
-import { isValidActiveTrainingStatus, isValidDraftSnapshotTrigger } from './active-training.types';
+import {
+  isValidActiveTrainingStatus,
+  isValidDraftSnapshotTrigger,
+  isValidAuditLogTrigger,
+  isValidAuditActor,
+} from './active-training.types';
 
 /** 草稿内容字符上限(与 active_training.user_draft 一致) */
 const DRAFT_MAX_LENGTH = 50000;
@@ -97,6 +105,24 @@ function rowToDraftSnapshot(row: DraftSnapshotRow): DraftSnapshot {
     trigger,
     snapshotAt: row.snapshot_at,
     restoredFromId: row.restored_from_id,
+  };
+}
+
+/**
+ * 将数据库行转换为 AuditLog 领域对象
+ */
+function rowToAuditLog(row: AuditLogRow): AuditLog {
+  const trigger = isValidAuditLogTrigger(row.trigger) ? row.trigger : 'start';
+  const actor = isValidAuditActor(row.actor) ? row.actor : 'main';
+  return {
+    id: row.id,
+    activeTrainingId: row.active_training_id,
+    trigger,
+    fromState: row.from_state,
+    toState: row.to_state,
+    actor,
+    contextJson: row.context_json,
+    occurredAt: row.occurred_at,
   };
 }
 
@@ -482,6 +508,86 @@ export class ActiveTrainingStore {
     } catch (e) {
       console.error('[ActiveTrainingStore] restoreDraftSnapshot failed:', e);
       return null;
+    }
+  }
+
+  // ─── C-2: 审计日志操作 ───
+
+  /**
+   * 创建审计日志
+   * - 与草稿快照不同:审计错误自然抛出(不静默),调用方决定是否阻断状态转换
+   * - context_json 截断至 2KB(避免 payload 膨胀)
+   * - 返回创建的 AuditLog
+   */
+  createAuditLog(input: CreateAuditLogInput): AuditLog {
+    const contextJson =
+      input.contextJson && input.contextJson.length > 2048
+        ? input.contextJson.slice(0, 2048)
+        : input.contextJson;
+
+    const stmt = this.db.prepare(`
+      INSERT INTO active_training_audit_log (
+        active_training_id, trigger, from_state, to_state, actor, context_json, occurred_at
+      ) VALUES (
+        @active_training_id, @trigger, @from_state, @to_state, @actor, @context_json, @occurred_at
+      )
+    `);
+    const now = new Date().toISOString();
+    const result = stmt.run({
+      active_training_id: input.activeTrainingId,
+      trigger: input.trigger,
+      from_state: input.fromState ?? null,
+      to_state: input.toState,
+      actor: input.actor,
+      context_json: contextJson,
+      occurred_at: now,
+    });
+    return this.getAuditLogById(result.lastInsertRowid as number);
+  }
+
+  /**
+   * 根据 ID 获取审计日志
+   */
+  getAuditLogById(id: number): AuditLog {
+    const stmt = this.db.prepare('SELECT * FROM active_training_audit_log WHERE id = ?');
+    const row = stmt.get(id) as AuditLogRow | undefined;
+    if (!row) throw new Error(`AuditLog ${id} not found`);
+    return rowToAuditLog(row);
+  }
+
+  /**
+   * 获取指定训练的所有审计日志(按时间倒序)
+   */
+  getAuditLogsByTrainingId(activeTrainingId: number): AuditLog[] {
+    try {
+      const stmt = this.db.prepare(
+        'SELECT * FROM active_training_audit_log WHERE active_training_id = ? ORDER BY occurred_at DESC, id DESC',
+      );
+      const rows = stmt.all(activeTrainingId) as AuditLogRow[];
+      return rows.map(rowToAuditLog);
+    } catch (e) {
+      console.error('[ActiveTrainingStore] getAuditLogsByTrainingId failed:', e);
+      return [];
+    }
+  }
+
+  /**
+   * 按 session 维度获取最近 N 条审计日志
+   */
+  getRecentTransitions(sessionId: string, limit: number = 10): AuditLog[] {
+    try {
+      const stmt = this.db.prepare(`
+        SELECT al.* FROM active_training_audit_log al
+        INNER JOIN active_training at ON at.id = al.active_training_id
+        WHERE at.session_id = ?
+        ORDER BY al.occurred_at DESC, al.id DESC
+        LIMIT ?
+      `);
+      const rows = stmt.all(sessionId, limit) as AuditLogRow[];
+      return rows.map(rowToAuditLog);
+    } catch (e) {
+      console.error('[ActiveTrainingStore] getRecentTransitions failed:', e);
+      return [];
     }
   }
 }

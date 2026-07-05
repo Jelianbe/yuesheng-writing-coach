@@ -145,6 +145,52 @@ export interface ActiveTrainingRestoreDraftSnapshotResponse {
   restoredSnapshot: DraftSnapshot | null;
 }
 
+// ===== Sprint 25 C-2: 审计日志 =====
+
+/** 审计日志触发原因 */
+export type AuditLogTrigger =
+  | 'start'
+  | 'advance'
+  | 'evaluate'
+  | 'complete'
+  | 'abort'
+  | 'restore'
+  | 'updateDraft'
+  | 'submitStep';
+
+/** 审计日志条目 */
+export interface AuditLog {
+  id: number;
+  activeTrainingId: number;
+  trigger: AuditLogTrigger;
+  fromState: string | null;
+  toState: string;
+  actor: 'main' | 'renderer';
+  contextJson: string | null;
+  occurredAt: string;
+}
+
+/** 获取审计日志请求 */
+export interface ActiveTrainingGetAuditLogsRequest {
+  activeTrainingId: number;
+}
+
+/** 获取审计日志响应 */
+export interface ActiveTrainingGetAuditLogsResponse {
+  auditLogs: AuditLog[];
+}
+
+/** 获取最近状态转换请求 */
+export interface ActiveTrainingGetRecentTransitionsRequest {
+  sessionId: string;
+  limit?: number;
+}
+
+/** 获取最近状态转换响应 */
+export interface ActiveTrainingGetRecentTransitionsResponse {
+  auditLogs: AuditLog[];
+}
+
 export const ActiveTrainingApi = {
   updateDraft: {
     channel: 'activeTraining:updateDraft',
@@ -168,6 +214,16 @@ export const ActiveTrainingApi = {
   restoreDraftSnapshot: {
     channel: 'activeTraining:restoreDraftSnapshot',
     response: {} as ApiResponse<ActiveTrainingRestoreDraftSnapshotResponse>,
+  },
+  /** Sprint 25 C-2: 获取审计日志 */
+  getAuditLogs: {
+    channel: 'activeTraining:getAuditLogs',
+    response: {} as ApiResponse<ActiveTrainingGetAuditLogsResponse>,
+  },
+  /** Sprint 25 C-2: 获取最近状态转换 */
+  getRecentTransitions: {
+    channel: 'activeTraining:getRecentTransitions',
+    response: {} as ApiResponse<ActiveTrainingGetRecentTransitionsResponse>,
   },
   /** Sprint 24 A-4: 状态变更推送事件(主进程 → renderer) */
   updated: {
