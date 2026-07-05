@@ -25,7 +25,7 @@ const DIMENSIONS = [
   { key: 'character', label: '角色', color: 'var(--accent)' },
   { key: 'worldview', label: '世界观', color: 'var(--color-practice)' },
   { key: 'language', label: '语言', color: 'var(--color-growth)' },
-  { key: 'learning', label: '学习', color: '#7B91B5' },
+  { key: 'learning', label: '学习', color: 'var(--color-teaching)' },
 ] as const;
 
 type DimensionKey = (typeof DIMENSIONS)[number]['key'];
@@ -127,7 +127,8 @@ function RadarChart({ values }: { values: number[] }) {
       })}
       <polygon
         points={dataPoints}
-        fill="rgba(138,122,158,0.22)"
+        fill="var(--accent)"
+        fillOpacity={0.22}
         stroke="var(--accent)"
         strokeWidth={1.5}
       />

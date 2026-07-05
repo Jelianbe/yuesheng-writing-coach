@@ -9,8 +9,8 @@
  * 数据来源:useManuscriptStore (真实 manuscripts 表)
  */
 
-import React, { useEffect } from 'react';
-import { Search, Plus, Book } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Search, Plus, Book, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { useManuscriptStore } from '../stores/manuscript.store';
@@ -37,16 +37,24 @@ export const BookshelfPage: React.FC = () => {
       create: s.create,
     })),
   );
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     void fetchList();
   }, [fetchList]);
 
   const handleCreate = async () => {
-    const title = window.prompt('新作品名称', '未命名作品')?.trim();
-    if (!title) return;
-    await create(title);
+    // Electron 28+ 不支 window.prompt（存在但调用时抛异常），直接用默认名创建
+    await create('未命名作品');
   };
+
+  const filtered = searchQuery.trim()
+    ? manuscripts.filter(m =>
+        m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.genre || '').toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : manuscripts;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -63,9 +71,10 @@ export const BookshelfPage: React.FC = () => {
           <button
             type="button"
             aria-label="搜索"
+            onClick={() => { setSearchOpen(!searchOpen); setSearchQuery(''); }}
             style={{ border: 'none', background: 'none', padding: 4, cursor: 'pointer', display: 'flex' }}
           >
-            <Search size={20} color="var(--text-secondary)" strokeWidth={1.5} />
+            <Search size={20} color={searchOpen ? 'var(--accent)' : 'var(--text-secondary)'} strokeWidth={1.5} />
           </button>
           <button
             type="button"
@@ -77,6 +86,36 @@ export const BookshelfPage: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* 搜索栏 */}
+      {searchOpen && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '8px 16px', borderBottom: '1px solid var(--border)',
+          background: 'var(--bg-card)', flexShrink: 0,
+        }}>
+          <Search size={16} color="var(--text-tertiary)" />
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="搜索作品名或类型…"
+            autoFocus
+            style={{
+              flex: 1, height: 32, border: 'none', background: 'transparent',
+              fontSize: 13, color: 'var(--text-primary)', outline: 'none',
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              aria-label="清除"
+              style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}
+            >
+              <X size={16} color="var(--text-tertiary)" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 内容区 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '16px 16px 8px' }}>
@@ -90,17 +129,17 @@ export const BookshelfPage: React.FC = () => {
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
             加载中…
           </div>
-        ) : manuscripts.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 13 }}>
-            暂无作品,点击下方按钮创建
+            {searchQuery ? `未找到匹配"${searchQuery}"的作品` : '暂无作品,点击下方按钮创建'}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {manuscripts.map(m => (
+            {filtered.map(m => (
               <button
                 key={m.id}
                 type="button"
-                onClick={() => push('project-space', { id: m.id, title: m.title })}
+                onClick={() => push('project-space', { id: m.projectId ?? m.id, title: m.title })}
                 style={{
                   display: 'flex', gap: 12, padding: 12,
                   background: 'var(--bg-card)', borderRadius: 12,
@@ -117,7 +156,7 @@ export const BookshelfPage: React.FC = () => {
                   background: colorFromString(m.genre || m.title),
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Book size={20} color="rgba(255,255,255,0.7)" />
+                  <Book size={20} color="var(--text-on-accent-muted)" />
                 </div>
 
                 {/* 信息 */}

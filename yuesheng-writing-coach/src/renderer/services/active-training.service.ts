@@ -12,11 +12,10 @@
  *
  * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
  */
-import { typedInvoke } from './ipc-client';
+import { serviceBridge } from './service-bridge';
 import { runDualTrack, isCapacitor } from './_dual-track';
 import { createStorageAdapter } from '../../shared/storage';
 import { ActiveTrainingService as DirectActiveTrainingService } from '../../shared/services/active-training.service';
-import { ActiveTrainingApi } from '../../shared/api-contracts/active-training.contract';
 import type {
   ActiveTrainingUpdateDraftRequest,
   ActiveTrainingUpdateDraftResponse,
@@ -68,15 +67,12 @@ export const activeTrainingService = {
         } as ActiveTrainingUpdateDraftResponse;
       },
       electron: async (p) => {
-        const result = await typedInvoke<
-          ActiveTrainingUpdateDraftRequest,
-          ActiveTrainingUpdateDraftResponse
-        >(ActiveTrainingApi.updateDraft.channel, p);
-        if (!result.success) {
-          console.error('[activeTraining] updateDraft failed:', result.error);
+        const result = await serviceBridge.invoke<ActiveTrainingUpdateDraftRequest, ActiveTrainingUpdateDraftResponse>('activeTraining:updateDraft', p);
+        if (!result) {
+          console.error('[activeTraining] updateDraft failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -95,15 +91,12 @@ export const activeTrainingService = {
         return svc.getBySession(p.sessionId);
       },
       electron: async (p) => {
-        const result = await typedInvoke<ActiveTrainingGetRequest, ActiveTrainingGetResponse | null>(
-          ActiveTrainingApi.get.channel,
-          p,
-        );
-        if (!result.success) {
-          console.error('[activeTraining] get failed:', result.error);
+        const result = await serviceBridge.invoke<ActiveTrainingGetRequest, ActiveTrainingGetResponse>('activeTraining:get', p);
+        if (!result) {
+          console.error('[activeTraining] get failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -139,15 +132,12 @@ export const activeTrainingService = {
         } as ActiveTrainingSubmitStepResponse;
       },
       electron: async (p) => {
-        const result = await typedInvoke<
-          ActiveTrainingSubmitStepRequest,
-          ActiveTrainingSubmitStepResponse
-        >(ActiveTrainingApi.submitStep.channel, p);
-        if (!result.success) {
-          console.error('[activeTraining] submitStep failed:', result.error);
+        const result = await serviceBridge.invoke<ActiveTrainingSubmitStepRequest, ActiveTrainingSubmitStepResponse>('activeTraining:submitStep', p);
+        if (!result) {
+          console.error('[activeTraining] submitStep failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -172,7 +162,7 @@ export const activeTrainingService = {
       return () => {};
     }
     try {
-      return api.on(ActiveTrainingApi.updated.channel, (data) => {
+      return api.on('activeTraining:updated', (data) => {
         try {
           callback(data as ActiveTrainingUpdatedEvent);
         } catch (err) {

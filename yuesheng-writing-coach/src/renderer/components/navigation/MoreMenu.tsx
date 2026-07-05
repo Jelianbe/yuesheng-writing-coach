@@ -17,6 +17,7 @@ export interface MoreMenuOption {
   label: string;
   icon?: ReactNode;
   onClick: () => void;
+  disabled?: boolean;
 }
 
 interface MoreMenuProps {
@@ -63,7 +64,9 @@ export function MoreMenu({ options }: MoreMenuProps) {
                 key={opt.label}
                 className={styles.menuItem}
                 role="menuitem"
-                onClick={() => { opt.onClick(); setOpen(false); }}
+                disabled={opt.disabled}
+                onClick={() => { if (!opt.disabled) { opt.onClick(); setOpen(false); } }}
+                style={opt.disabled ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
               >
                 {opt.icon && <span className={styles.menuIcon}>{opt.icon}</span>}
                 <span>{opt.label}</span>

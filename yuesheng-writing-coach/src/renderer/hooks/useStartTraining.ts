@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useSessionStore } from '../stores/session.store';
 import { useUiStore } from '../stores/ui.store';
 import { serviceBridge } from '../services/service-bridge';
+import { isCapacitor } from '../services/_dual-track';
 
 interface TechniqueInfo {
   id: string;
@@ -34,6 +35,11 @@ interface TrainingCatalogResponse {
  * 从后端加载技法目录，通过技法名称查找对应信息
  */
 async function findTechniqueByName(name: string): Promise<TechniqueInfo | null> {
+  // Android 端：训练目录在 main process，Android 无等价数据源，明确降级
+  if (isCapacitor()) {
+    console.warn('[useStartTraining] training:catalog not supported on Capacitor, returning null');
+    return null;
+  }
   try {
     const data = await serviceBridge.invoke<Record<string, never>, TrainingCatalogResponse>(
       'training:catalog',
@@ -70,16 +76,21 @@ export const useStartTraining = () => {
     }
 
     // 3. 请求后端分配训练（AI 将生成首条消息）
-    try {
-      await serviceBridge.invoke<
-        { sessionId: string; challengeId: string },
-        { record?: { id: string } }
-      >('training:assign', {
-        sessionId: session.id,
-        challengeId: techInfo.id,
-      });
-    } catch (e) {
-      console.warn('[useStartTraining] training:assign 失败，使用空会话', e);
+    // Android 端：assign 依赖 main process 训练协调逻辑，明确降级跳过
+    if (!isCapacitor()) {
+      try {
+        await serviceBridge.invoke<
+          { sessionId: string; challengeId: string },
+          { record?: { id: string } }
+        >('training:assign', {
+          sessionId: session.id,
+          challengeId: techInfo.id,
+        });
+      } catch (e) {
+        console.warn('[useStartTraining] training:assign 失败，使用空会话', e);
+      }
+    } else {
+      console.warn('[useStartTraining] training:assign not supported on Capacitor, skipping');
     }
 
     // 4. 设置训练上下文 UI 状态

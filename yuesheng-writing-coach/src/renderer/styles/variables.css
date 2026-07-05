@@ -70,6 +70,17 @@
   --info: #3D5E94;
   --info-light: #E4EDF5;
 
+  /* ── 渐变（品牌色衍生）── */
+  --accent-gradient: linear-gradient(135deg, #8A7A9E, #B8A9D4);
+  --accent-gradient-start: #8A7A9E;
+  --accent-gradient-end: #B8A9D4;
+
+  /* ── 遮罩层 ── */
+  --overlay-scrim: rgba(0, 0, 0, 0.4);
+
+  /* ── accent 上的半透明文字 ── */
+  --text-on-accent-muted: rgba(255, 255, 255, 0.7);
+
   /* ── 阴影（暖紫调）── */
   --shadow-sm: 0 2px 10px rgba(138, 122, 158, 0.06);
   --shadow-md: 0 4px 16px rgba(138, 122, 158, 0.10);

@@ -89,9 +89,21 @@ export const useManuscriptStore = create<ManuscriptState & ManuscriptActions>((s
       { title, description: content, genre },
     );
     if (data) {
+      // 自动创建对应的项目，保持数据一致
+      const projectData = await serviceBridge.invoke<{ name: string; description?: string; settingTreeType?: string }, { id: string }>(
+        'project:create',
+        { name: title, description: content, settingTreeType: 'default' },
+      );
+      const manuscript = Object.assign(toManuscript(data), { projectId: projectData?.id });
+      // 重新从 DB 加载后，把新创建的 projectId 附着到对应作品上
       await get().fetchList();
-      set({ loading: false });
-      return toManuscript(data);
+      set(state => ({
+        manuscripts: state.manuscripts.map(m =>
+          m.id === manuscript.id ? { ...m, projectId: manuscript.projectId } : m
+        ),
+        loading: false,
+      }));
+      return manuscript;
     }
     set({ error: '创建作品失败', loading: false });
     return null;

@@ -3156,3 +3156,47 @@ gfxstream 36.x 在 VkEmulation 初始化时与 WHPX + Vulkan 上下文交互存�
   - D-076（AVD 延期）
   - D-079（Sprint 28 完工）
 - **状态**: ✅ Sprint 29 完工
+
+---
+
+### D-082: Sprint 32 — Diagnosis Android 端激活 (2026-07-04)
+
+- **类型**: 功能移植
+- **背景**: Sprint 31 已打通 Android 端 Chat，但 Diagnosis 仍为 noop
+- **实施**:
+  1. 创建 `src/renderer/services/capacitor-diagnosis.ts`
+  2. 修改 `diagnosis.service.ts` 4 个方法的 Capacitor 分支
+- **Capacitor 端变化**: query(null→localStorage缓存), submitRewrite(undefined→LlmClient), getComparison(noop), onDiagnosisUpdate(空cleanup→事件总线)
+- **门禁**: typecheck 0 | test 1079 | lint 0
+- **依据**: D-081 未做事项 §1
+- **状态**: ✅ Sprint 32 完工
+
+---
+
+### D-083: Sprint 33 — Training Android 端激活 (2026-07-04)
+
+- **类型**: 功能移植
+- **背景**: Sprint 32 已打通 Diagnosis，Training 仍为 noop
+- **实施**:
+  1. 创建 `src/renderer/services/capacitor-training.ts`
+  2. 修改 `training.service.ts` 3 个方法的 Capacitor 分支
+- **Capacitor 端变化**: submit/evaluate/deriveBehavior(null→LlmClient)，其余 noop(SQLite依赖)
+- **门禁**: typecheck 0 | test 1079 | lint 0
+- **教训**: Training 的 Capacitor 移植范围明确切割（只 AI 类方法）
+- **依据**: D-082 未做事项 §2
+- **状态**: ✅ Sprint 33 完工
+
+---
+
+### D-084: Sprint 34 — TeachingState Android 端激活 (2026-07-04)
+
+- **类型**: 功能移植
+- **背景**: Sprint 33 已打通 Training，TeachingState 5 个 IPC-only 方法仍为 noop
+- **实施**:
+  1. 创建 `src/renderer/services/capacitor-teaching-state.ts`
+  2. 修改 `teaching-state.service.ts` 5 个方法的 Capacitor 分支
+  3. 删除废弃的 `capacitorNoop` 辅助函数（从全部 service.ts 中消亡）
+- **Capacitor 端变化**: confirm/localStorage, updateSummary/localStorage, onUpdated/onMastery(事件总线), getPrompt(保持noop)
+- **门禁**: typecheck 0 | test 1079 | lint 0
+- **依据**: D-083 未做事项 §1
+- **状态**: ✅ Sprint 34 完工

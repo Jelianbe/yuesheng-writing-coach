@@ -10,15 +10,13 @@
  *
  * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.4 / D-074
  */
-import { typedInvoke } from './ipc-client';
-import { ProjectApi } from '../../shared/api-contracts/project.contract';
+import { serviceBridge } from './service-bridge';
 import type {
   ProjectInfo,
   ProjectListResponse,
   ProjectGetResponse,
   ProjectCreateResponse,
   ProjectUpdateResponse,
-  ProjectDeleteResponse,
   ProjectCreateRequest,
   ProjectUpdateRequest,
 } from '../../shared/api-contracts/project.contract';
@@ -54,15 +52,12 @@ export const projectService = {
         }
       },
       electron: async () => {
-        const result = await typedInvoke<Record<string, never>, ProjectListResponse>(
-          ProjectApi.list.channel,
-          {},
-        );
-        if (!result.success) {
-          console.error('[project] list failed:', result.error);
+        const result = await serviceBridge.invoke<Record<string, never>, ProjectListResponse>('project:list', {});
+        if (!result) {
+          console.error('[project] list failed');
           return [];
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -81,15 +76,12 @@ export const projectService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<{ projectId: string }, ProjectGetResponse>(
-          ProjectApi.get.channel,
-          { projectId: args.projectId },
-        );
-        if (!result.success) {
-          console.error('[project] getById failed:', result.error);
+        const result = await serviceBridge.invoke<{ projectId: string }, ProjectGetResponse>('project:get', { projectId: args.projectId });
+        if (!result) {
+          console.error('[project] getById failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -113,15 +105,12 @@ export const projectService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<ProjectCreateRequest, ProjectCreateResponse>(
-          ProjectApi.create.channel,
-          args,
-        );
-        if (!result.success) {
-          console.error('[project] create failed:', result.error);
+        const result = await serviceBridge.invoke<ProjectCreateRequest, ProjectCreateResponse>('project:create', args);
+        if (!result) {
+          console.error('[project] create failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -145,21 +134,18 @@ export const projectService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<ProjectUpdateRequest, ProjectUpdateResponse>(
-          ProjectApi.update.channel,
-          {
-            projectId: args.projectId,
-            name: args.name,
-            description: args.description,
-            settingTree: args.settingTree,
-            settingTreeType: args.settingTreeType,
-          },
-        );
-        if (!result.success) {
-          console.error('[project] update failed:', result.error);
+        const result = await serviceBridge.invoke<ProjectUpdateRequest, ProjectUpdateResponse>('project:update', {
+          projectId: args.projectId,
+          name: args.name,
+          description: args.description,
+          settingTree: args.settingTree,
+          settingTreeType: args.settingTreeType,
+        });
+        if (!result) {
+          console.error('[project] update failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -179,12 +165,9 @@ export const projectService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<{ projectId: string }, ProjectDeleteResponse>(
-          ProjectApi.delete.channel,
-          { projectId: args.projectId },
-        );
-        if (!result.success) {
-          console.error('[project] remove failed:', result.error);
+        const result = await serviceBridge.invoke<{ projectId: string }, void>('project:delete', { projectId: args.projectId });
+        if (result === null) {
+          console.error('[project] remove failed');
           return false;
         }
         return true;

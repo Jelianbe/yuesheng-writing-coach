@@ -8,11 +8,12 @@
  *
  * 渲染:按 order 排序展示 7 个发展阶段(eye/pen/word/scene/figure/mood/style),
  *      每阶段含:阶段名 / 核心问题 / 教学方法 / 通过标准 / 涵盖写作问题数
- *      状态:首个阶段显示对勾占位(D-DEBT-30 待 status 字段落地后改为 stage.status 判断)
+ *      状态:首个阶段标记为"进行中"(Clock 图标),其余为"未开始"(Circle)
+ *      D-DEBT-30 待 status 字段落地后改为 stage.status 判断
  */
 
 import React, { useEffect } from 'react';
-import { ArrowLeft, BookOpen, CheckCircle2, Circle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Circle, Clock } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { usePrescriptionStore } from '../stores/prescription.store';
@@ -97,7 +98,7 @@ export const TrainingPlanPage: React.FC<{ params?: Record<string, string> }> = (
                       </p>
                     </div>
                     {idx === 0 ? (
-                      <CheckCircle2 size={18} color="var(--color-growth)" strokeWidth={1.5} />
+                      <Clock size={18} color="var(--color-practice)" strokeWidth={1.5} />
                     ) : (
                       <Circle size={18} color="var(--text-tertiary)" strokeWidth={1.5} />
                     )}

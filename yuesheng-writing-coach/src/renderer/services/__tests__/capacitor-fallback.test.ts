@@ -84,14 +84,14 @@ describe('chat.service — Capacitor 降级', () => {
 // ─── 2. diagnosis.service.ts ───
 
 describe('diagnosis.service — Capacitor 降级', () => {
-  it('query() 返回 null', async () => {
+  it('query() 返回空数组（无缓存诊断）', async () => {
     setCapacitorPlatform();
     const { diagnosisService } = await import('../diagnosis.service');
     const result = await diagnosisService.query({ sessionId: 'session-1' });
-    expect(result).toBeNull();
+    expect(result).toEqual([]);
   });
 
-  it('submitRewrite() 返回 undefined', async () => {
+  it('submitRewrite() 返回 undefined（无 API Key）', async () => {
     setCapacitorPlatform();
     const { diagnosisService } = await import('../diagnosis.service');
     const result = await diagnosisService.submitRewrite({
@@ -184,11 +184,13 @@ describe('app-controller — Capacitor 降级', () => {
 // ─── 6. teaching-state.service.ts (IPC-only 方法) ───
 
 describe('teaching-state.service — Capacitor 降级（IPC-only 方法）', () => {
-  it('confirm() 返回 null', async () => {
+  it('confirm() 返回日志对象（localStorage 记录）', async () => {
     setCapacitorPlatform();
     const { teachingStateService } = await import('../teaching-state.service');
     const result = await teachingStateService.confirm({ sessionId: 'session-1' });
-    expect(result).toBeNull();
+    expect(result).toBeTruthy();
+    expect(result).toHaveProperty('oldState');
+    expect(result).toHaveProperty('newState');
   });
 
   it('getPrompt() 返回 null', async () => {
@@ -198,14 +200,15 @@ describe('teaching-state.service — Capacitor 降级（IPC-only 方法）', () 
     expect(result).toBeNull();
   });
 
-  it('updateSummary() 返回 null', async () => {
+  it('updateSummary() 返回摘要对象（localStorage 持久化）', async () => {
     setCapacitorPlatform();
     const { teachingStateService } = await import('../teaching-state.service');
     const result = await teachingStateService.updateSummary({
       sessionId: 'session-1',
       newContent: 'summary',
     });
-    expect(result).toBeNull();
+    expect(result).toBeTruthy();
+    expect(result).toHaveProperty('diagnosisSummary', 'summary');
   });
 
   it('onUpdated() 返回空 cleanup 函数', async () => {
