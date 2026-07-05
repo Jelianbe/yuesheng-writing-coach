@@ -15,9 +15,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { typedOn } from '../services/ipc-client';
 import { serviceBridge } from '../services/service-bridge';
+import { isCapacitor } from '../services/_dual-track';
+import {
+  capacitorSendMessage,
+  capacitorOnStreamData,
+  capacitorOnStreamEnd,
+} from '../services/capacitor-chat';
 import { IPC_CHANNELS } from '../../shared/constants';
 import type {
   ChatHandleTurnRequest,
+  ChatSendRequest,
 } from '../../shared/api-contracts/chat.contract';
 
 // IPC 边界用 unknown(避免 shared 跨域引用 main/domains,符合 R-020)
@@ -75,6 +82,54 @@ let globalUnsub: (() => void) | null = null;
 
 function ensureGlobalSubscription(): () => void {
   if (globalUnsub) return globalUnsub;
+
+  // Android 端：走 capacitor-chat 内存事件总线
+  // capacitor-chat emit 的事件结构：
+  //   STREAM_DATA: { sessionId, chunk }
+  //   STREAM_END: { sessionId, fullResponse, messageId, error?, aborted? }
+  // 转成 OrchestratorEventEnvelope（仅 token/done/error 三类，其余明确不支持）
+  if (isCapacitor()) {
+    const unsubData = capacitorOnStreamData(({ sessionId, chunk }) => {
+      const envelope: OrchestratorEventEnvelope = {
+        streamId: sessionId,
+        sessionId,
+        event: { type: 'token', content: chunk },
+      };
+      for (const handler of eventHandlers) {
+        try {
+          handler(envelope);
+        } catch (e) {
+          console.warn('[useOrchestrator] handler failed:', e);
+        }
+      }
+    });
+
+    const unsubEnd = capacitorOnStreamEnd(({ sessionId, error, aborted }) => {
+      const event: OrchestratorEvent = error || aborted
+        ? { type: 'error', payload: { code: 'STREAM_ERROR', message: error ?? 'aborted', retryable: false } }
+        : { type: 'done' };
+      const envelope: OrchestratorEventEnvelope = {
+        streamId: sessionId,
+        sessionId,
+        event,
+      };
+      for (const handler of eventHandlers) {
+        try {
+          handler(envelope);
+        } catch (e) {
+          console.warn('[useOrchestrator] handler failed:', e);
+        }
+      }
+    });
+
+    globalUnsub = () => {
+      unsubData();
+      unsubEnd();
+    };
+    return globalUnsub;
+  }
+
+  // Electron 端：走 IPC typedOn
   globalUnsub = typedOn<unknown>(IPC_CHANNELS.CHAT_EVENT, (raw) => {
     const envelope = raw as OrchestratorEventEnvelope;
     if (!envelope || typeof envelope !== 'object') return;
@@ -116,6 +171,32 @@ export function useOrchestrator() {
   }, []);
 
   const send = useCallback(async (input: OrchestratorSendInput): Promise<{ streamId: string } | null> => {
+    // Android 端：走 capacitor-chat 直调 LLM
+    if (isCapacitor()) {
+      try {
+        const req: ChatSendRequest = {
+          sessionId: input.sessionId,
+          message: input.userMessage,
+          history: input.history ?? [],
+          attitudeLevel: input.attitudeLevel ?? 'doubao',
+          studentContext: input.studentContext ?? '',
+        };
+        const result = await capacitorSendMessage(req);
+        if (!result) {
+          console.warn('[useOrchestrator] capacitor send failed');
+          return null;
+        }
+        // Android 端用 sessionId 作为 streamId（capacitor-chat 以 sessionId 标识流）
+        streamIdRef.current = input.sessionId;
+        setStreaming(true);
+        return { streamId: input.sessionId };
+      } catch (e) {
+        console.warn('[useOrchestrator] capacitor send error:', e);
+        return null;
+      }
+    }
+
+    // Electron 端：走 service-bridge → orchestrator
     const req: ChatHandleTurnRequest = {
       userMessage: input.userMessage,
       sessionId: input.sessionId,

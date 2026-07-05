@@ -10,13 +10,13 @@
  *
  * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.1 / D-074
  */
-import { typedInvoke } from './ipc-client';
-import { SessionApi } from '../../shared/api-contracts/session.contract';
+import { serviceBridge } from './service-bridge';
 import type {
   SessionInfo,
   SessionMessage,
   SessionListResponse,
   SessionCreateResponse,
+  SessionGetMessagesResponse,
   SessionGetMessagesPagedResponse,
   SessionListWithMetaResponse,
   SessionSearchMessagesResponse,
@@ -65,15 +65,12 @@ export const sessionService = {
         }
       },
       electron: async () => {
-        const result = await typedInvoke<Record<string, never>, SessionListResponse>(
-          SessionApi.list.channel,
-          {},
-        );
-        if (!result.success) {
-          console.error('[session] list failed:', result.error);
+        const result = await serviceBridge.invoke<Record<string, never>, SessionListResponse['sessions']>('session:list', {});
+        if (!result) {
+          console.error('[session] list failed');
           return [];
         }
-        return result.data.sessions;
+        return result;
       },
     });
   },
@@ -97,15 +94,12 @@ export const sessionService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<{ title?: string }, SessionCreateResponse>(
-          SessionApi.create.channel,
-          { title: args.title },
-        );
-        if (!result.success) {
-          console.error('[session] create failed:', result.error);
+        const result = await serviceBridge.invoke<{ title?: string }, SessionCreateResponse['session']>('session:create', { title: args.title });
+        if (!result) {
+          console.error('[session] create failed');
           return null;
         }
-        return result.data.session;
+        return result;
       },
     });
   },
@@ -125,12 +119,9 @@ export const sessionService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<{ sessionId: string }, void>(
-          SessionApi.delete.channel,
-          { sessionId: args.sessionId },
-        );
-        if (!result.success) {
-          console.error('[session] delete failed:', result.error);
+        const result = await serviceBridge.invoke<{ sessionId: string }, { success: true }>('session:delete', { sessionId: args.sessionId });
+        if (!result) {
+          console.error('[session] delete failed');
           return false;
         }
         return true;
@@ -153,12 +144,9 @@ export const sessionService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<{ sessionId: string; title: string }, void>(
-          SessionApi.rename.channel,
-          { sessionId: args.sessionId, title: args.title },
-        );
-        if (!result.success) {
-          console.error('[session] rename failed:', result.error);
+        const result = await serviceBridge.invoke<{ sessionId: string; title: string }, { success: true }>('session:rename', { sessionId: args.sessionId, title: args.title });
+        if (!result) {
+          console.error('[session] rename failed');
           return false;
         }
         return true;
@@ -187,15 +175,12 @@ export const sessionService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<
-          { sessionId: string },
-          { messages: SessionMessage[] }
-        >(SessionApi.getMessages.channel, { sessionId: args.sessionId });
-        if (!result.success) {
-          console.error('[session] getMessages failed:', result.error);
+        const result = await serviceBridge.invoke<{ sessionId: string }, SessionGetMessagesResponse['messages']>('session:getMessages', { sessionId: args.sessionId });
+        if (!result) {
+          console.error('[session] getMessages failed');
           return [];
         }
-        return result.data.messages;
+        return result;
       },
     });
   },
@@ -228,19 +213,19 @@ export const sessionService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<
+        const result = await serviceBridge.invoke<
           { sessionId: string; offset: number; limit: number },
           SessionGetMessagesPagedResponse
-        >(SessionApi.getMessagesPaged.channel, {
+        >('session:getMessagesPaged', {
           sessionId: args.sessionId,
           offset: args.offset,
           limit: args.limit,
         });
-        if (!result.success) {
-          console.error('[session] getMessagesPaged failed:', result.error);
+        if (!result) {
+          console.error('[session] getMessagesPaged failed');
           return { messages: [], hasMore: false };
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -263,15 +248,12 @@ export const sessionService = {
         }
       },
       electron: async () => {
-        const result = await typedInvoke<Record<string, never>, SessionListWithMetaResponse>(
-          SessionApi.listWithMeta.channel,
-          {},
-        );
-        if (!result.success) {
-          console.error('[session] listWithMeta failed:', result.error);
+        const result = await serviceBridge.invoke<Record<string, never>, SessionListWithMetaResponse['sessions']>('session:listWithMeta', {});
+        if (!result) {
+          console.error('[session] listWithMeta failed');
           return [];
         }
-        return result.data.sessions;
+        return result;
       },
     });
   },
@@ -305,18 +287,18 @@ export const sessionService = {
         }
       },
       electron: async (args) => {
-        const result = await typedInvoke<
+        const result = await serviceBridge.invoke<
           { sessionId: string; query: string },
-          SessionSearchMessagesResponse
-        >(SessionApi.searchMessages.channel, {
+          SessionSearchMessagesResponse['messages']
+        >('session:searchMessages', {
           sessionId: args.sessionId,
           query: args.query,
         });
-        if (!result.success) {
-          console.error('[session] searchMessages failed:', result.error);
+        if (!result) {
+          console.error('[session] searchMessages failed');
           return [];
         }
-        return result.data.messages;
+        return result;
       },
     });
   },
@@ -336,14 +318,11 @@ export const sessionService = {
         }
       },
       electron: async () => {
-        const result = await typedInvoke<Record<string, never>, SessionIsNewUserResponse>(
-          SessionApi.isNewUser.channel,
-          {},
-        );
-        if (!result.success) {
+        const result = await serviceBridge.invoke<Record<string, never>, SessionIsNewUserResponse['isNewUser']>('session:isNewUser', {});
+        if (!result) {
           return false;
         }
-        return result.data.isNewUser;
+        return result;
       },
     });
   },

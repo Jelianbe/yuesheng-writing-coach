@@ -32,12 +32,13 @@ const formatTime = (ts?: number): string => {
 
 export const ConversationsPage: React.FC = () => {
   const push = usePageStackStore(s => s.push);
-  const { sessions, currentSessionId, loadSessions, createSession } = useSessionStore(
+  const { sessions, currentSessionId, loadSessions, createSession, switchSession } = useSessionStore(
     useShallow(s => ({
       sessions: s.sessions,
       currentSessionId: s.currentSessionId,
       loadSessions: s.loadSessions,
       createSession: s.createSession,
+      switchSession: s.switchSession,
     })),
   );
 
@@ -90,7 +91,7 @@ export const ConversationsPage: React.FC = () => {
                 key={s.id}
                 type="button"
                 onClick={() => {
-                  useSessionStore.getState().switchSession(s.id);
+                  switchSession(s.id);
                   push('chat', { id: s.id, title: s.title });
                 }}
                 style={{

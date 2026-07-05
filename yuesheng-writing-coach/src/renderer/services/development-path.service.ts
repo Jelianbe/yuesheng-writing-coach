@@ -11,8 +11,7 @@
  *
  * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.4 Z-1
  */
-import { typedInvoke } from './ipc-client';
-import { PrescriptionApi } from '../../shared/api-contracts/prescription.contract';
+import { serviceBridge } from './service-bridge';
 import type { DevelopmentStageInfo } from '../../shared/types/index';
 import { developmentPathService as directService } from '../../shared/services/development-path.service';
 import { isCapacitor, runDualTrack } from './_dual-track';
@@ -31,15 +30,12 @@ export const developmentPathService = {
     return runDualTrack(undefined, {
       direct: async () => directService.getAllStages(),
       electron: async () => {
-        const result = await typedInvoke<Record<string, never>, DevelopmentStageInfo[]>(
-          PrescriptionApi.getAllStages,
-          {},
-        );
-        if (!result.success) {
-          console.error('[development-path] getAllStages failed:', result.error);
+        const result = await serviceBridge.invoke<Record<string, never>, DevelopmentStageInfo[]>('prescription:getAllStages', {});
+        if (!result) {
+          console.error('[development-path] getAllStages failed');
           return [];
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -57,15 +53,12 @@ export const developmentPathService = {
     return runDualTrack({ stageId }, {
       direct: async (args) => directService.getStageById(args.stageId),
       electron: async (args) => {
-        const result = await typedInvoke<
-          { stageId: string },
-          DevelopmentStageInfo
-        >(PrescriptionApi.getStageById, { stageId: args.stageId });
-        if (!result.success) {
-          console.error('[development-path] getStageById failed:', result.error);
+        const result = await serviceBridge.invoke<{ stageId: string }, DevelopmentStageInfo>('prescription:getStageById', { stageId: args.stageId });
+        if (!result) {
+          console.error('[development-path] getStageById failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },

@@ -109,6 +109,7 @@ export const AppsPage: React.FC = () => {
               key={label}
               type="button"
               aria-label={label}
+              onClick={() => push('settings', { label })}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '12px 14px', textAlign: 'left',

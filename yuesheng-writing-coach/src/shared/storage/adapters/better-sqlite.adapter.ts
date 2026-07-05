@@ -37,6 +37,9 @@ export class BetterSqliteAdapter implements StorageAdapter {
 
   constructor(options: BetterSqliteAdapterOptions) {
     this.db = options.db;
+    // better-sqlite3 是同步的,构造时直接初始化 schema
+    this.initSchema();
+    this.initialized = true;
   }
 
   async initialize(): Promise<void> {

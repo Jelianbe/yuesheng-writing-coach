@@ -65,7 +65,7 @@ function RadarChart() {
           />
         );
       })}
-      <polygon points={dataPoints} fill="rgba(138,122,158,0.22)" stroke="var(--accent)" strokeWidth={1.5} />
+      <polygon points={dataPoints} fill="var(--accent)" fillOpacity={0.22} stroke="var(--accent)" strokeWidth={1.5} />
       {RADAR_VALUES.map((v, i) => {
         const r = (RADIUS / 5) * v;
         const a = angleStep * i - Math.PI / 2;
@@ -148,7 +148,7 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
         <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{title}</span>
         <MoreMenu options={[
           { label: '新建对话', icon: <MessageSquare size={16} />, onClick: () => push('chat', { title }) },
-          { label: '项目设置', icon: <FileText size={16} />, onClick: () => {/* Phase C: 项目设置页 */} },
+          { label: '项目设置', icon: <FileText size={16} />, onClick: () => {/* Phase C: 项目设置页 */}, disabled: true },
         ]} />
       </div>
 
@@ -181,7 +181,7 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
           onClick={() => push('chat', { projectId: params?.id ?? '', title })}
           style={{
             width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
-            background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600,
+            background: 'var(--accent)', color: 'var(--text-on-accent)', fontSize: 15, fontWeight: 600,
             cursor: 'pointer', marginBottom: 18,
           }}
         >
@@ -207,7 +207,7 @@ export const ProjectSpacePage: React.FC<{ params?: Record<string, string> }> = (
                   border: '1px solid var(--border)',
                 }}>
                   <span style={{
-                    fontSize: 10, fontWeight: 600, color: '#fff',
+                    fontSize: 10, fontWeight: 600, color: 'var(--text-on-accent)',
                     background: colorMap[r.type] ?? 'var(--accent)',
                     padding: '2px 6px', borderRadius: 4,
                   }}>

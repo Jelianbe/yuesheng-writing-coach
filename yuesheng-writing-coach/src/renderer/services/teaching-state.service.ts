@@ -8,15 +8,30 @@
  *   - confirm / getPrompt / updateSummary 保持 IPC-only
  *     (状态机/prompt 拼接/多字段更新是主进程业务,shared 端无等价实现)
  *   - onUpdated / onMastery 保持 IPC-only (事件订阅,Capacitor 端无推送通道)
- *   - Capacitor 端上述 5 个方法降级为 noop + warn
+ *   - Capacitor 端上述 5 个方法通过 capacitor-teaching-state 实现轻量化降级
  *
- * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
+ * ─── Sprint 34 (TeachingState Android 端激活) ───
+ *
+ * Capacitor 端从全部 noop 升级为轻量化真实实现:
+ *   - confirm: localStorage 记录阶段完成
+ *   - updateSummary: localStorage 持久化诊断摘要
+ *   - onUpdated/onMastery: 内存事件总线
+ *   - getPrompt: 保持 noop（PromptBuilder 在 main process）
+ *
+ * 依据: dev-docs/decision-log.md D-084
  */
-import { typedInvoke, typedOn } from './ipc-client';
+import { typedOn } from './ipc-client';
+import { serviceBridge } from './service-bridge';
 import { runDualTrack, isCapacitor } from './_dual-track';
 import { createStorageAdapter } from '../../shared/storage';
 import { TeachingStateService as DirectTeachingStateService } from '../../shared/services/teaching-state.service';
-import { TeachingStateApi } from '../../shared/api-contracts/teaching-state.contract';
+import {
+  capacitorTeachingStateConfirm,
+  capacitorTeachingStateGetPrompt,
+  capacitorTeachingStateUpdateSummary,
+  capacitorTeachingStateOnUpdated,
+  capacitorTeachingStateOnMastery,
+} from './capacitor-teaching-state';
 import type {
   TeachingStateGetRequest,
   TeachingStateGetResponse,
@@ -44,11 +59,7 @@ async function getDirectService(): Promise<DirectTeachingStateService | null> {
   return _directService;
 }
 
-/** Capacitor 端不支持 IPC-only 方法的统一兜底 */
-function capacitorNoop<T>(methodName: string): T | null {
-  console.warn(`[teaching-state] ${methodName}: not supported on Capacitor, returning null`);
-  return null;
-}
+
 
 export const teachingStateService = {
   /** 获取教学状态 — 失败时返回 null(降级) */
@@ -79,15 +90,12 @@ export const teachingStateService = {
         } as unknown as TeachingStateGetResponse;
       },
       electron: async (p) => {
-        const result = await typedInvoke<TeachingStateGetRequest, TeachingStateGetResponse>(
-          TeachingStateApi.get.channel,
-          p,
-        );
-        if (!result.success) {
-          console.error('[teaching-state] get failed:', result.error);
+        const result = await serviceBridge.invoke<TeachingStateGetRequest, TeachingStateGetResponse>('teachingState:get', p);
+        if (!result) {
+          console.error('[teaching-state] get failed');
           return null;
         }
-        return result.data;
+        return result;
       },
     });
   },
@@ -107,82 +115,64 @@ export const teachingStateService = {
         return svc.update(p.sessionId, updates as Partial<Omit<SharedTeachingState, 'sessionId'>>);
       },
       electron: async (p) => {
-        // IPC 端 typedInvoke 返回的是 contract.TeachingState (瘦版,缺 5 字段),
+        // IPC 端 serviceBridge 返回的是 contract.TeachingState (瘦版,缺 5 字段),
         // shared 端 svc.update 返回 SharedTeachingState (完整版)。
         // 这里统一返回 SharedTeachingState: contract 缺的字段 Android 端补空/默认。
-        const result = await typedInvoke<TeachingStateUpdateRequest, SharedTeachingState>(
-          TeachingStateApi.update.channel,
-          p,
-        );
-        if (!result.success) {
-          console.error('[teaching-state] update failed:', result.error);
+        const result = await serviceBridge.invoke<TeachingStateUpdateRequest, SharedTeachingState>('teachingState:update', p);
+        if (!result) {
+          console.error('[teaching-state] update failed');
           return null;
         }
-        return result.data as unknown as SharedTeachingState;
+        return result as unknown as SharedTeachingState;
       },
     });
   },
 
-  /** 确认阶段完成 — 失败时返回 null(降级,状态机业务,仅 Electron 支持) */
+  /** 确认阶段完成 — 失败时返回 null(降级,状态机业务) */
   async confirm(params: TeachingStateConfirmRequest): Promise<TeachingStateConfirmResponse | null> {
-    if (isCapacitor()) return capacitorNoop('confirm');
-    const result = await typedInvoke<TeachingStateConfirmRequest, TeachingStateConfirmResponse>(
-      TeachingStateApi.confirm.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[teaching-state] confirm failed:', result.error);
+    if (isCapacitor()) return capacitorTeachingStateConfirm(params) as Promise<TeachingStateConfirmResponse | null>;
+    const result = await serviceBridge.invoke<TeachingStateConfirmRequest, TeachingStateConfirmResponse>('teachingState:confirm', params);
+    if (!result) {
+      console.error('[teaching-state] confirm failed');
       return null;
     }
-    return result.data;
+    return result;
   },
 
-  /** 获取 Prompt 注入内容 — 失败时返回 null(降级,prompt 拼接业务,仅 Electron 支持) */
+  /** 获取 Prompt 注入内容 — 失败时返回 null(降级,prompt 拼接业务) */
   async getPrompt(params: TeachingStateGetPromptRequest): Promise<string | null> {
-    if (isCapacitor()) return capacitorNoop('getPrompt');
-    const result = await typedInvoke<TeachingStateGetPromptRequest, TeachingStateGetPromptResponse>(
-      TeachingStateApi.getPrompt.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[teaching-state] getPrompt failed:', result.error);
+    if (isCapacitor()) return capacitorTeachingStateGetPrompt(params);
+    const result = await serviceBridge.invoke<TeachingStateGetPromptRequest, TeachingStateGetPromptResponse['promptContent']>('teachingState:getPrompt', params);
+    if (!result) {
+      console.error('[teaching-state] getPrompt failed');
       return null;
     }
-    return result.data.promptContent;
+    return result;
   },
 
-  /** 更新诊断摘要 — 失败时返回 null(降级,仅 Electron 支持) */
+  /** 更新诊断摘要 — 失败时返回 null(降级) */
   async updateSummary(params: TeachingStateUpdateSummaryRequest): Promise<SharedTeachingState | null> {
-    if (isCapacitor()) return capacitorNoop('updateSummary');
-    const result = await typedInvoke<TeachingStateUpdateSummaryRequest, SharedTeachingState>(
-      TeachingStateApi.updateSummary.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[teaching-state] updateSummary failed:', result.error);
+    if (isCapacitor()) return capacitorTeachingStateUpdateSummary(params) as Promise<SharedTeachingState | null>;
+    const result = await serviceBridge.invoke<TeachingStateUpdateSummaryRequest, SharedTeachingState>('teachingState:updateSummary', params);
+    if (!result) {
+      console.error('[teaching-state] updateSummary failed');
       return null;
     }
-    return result.data as unknown as SharedTeachingState;
+    return result as unknown as SharedTeachingState;
   },
 
-  /** 监听教学状态更新推送 — Capacitor 端 noop */
+  /** 监听教学状态更新推送 — Capacitor 端走内存事件总线 */
   onUpdated(handler: (data: TeachingStateUpdatedEvent) => void): () => void {
-    if (isCapacitor()) {
-      console.warn('[teaching-state] onUpdated: not supported on Capacitor');
-      return () => {};
-    }
-    return typedOn<TeachingStateUpdatedEvent>(TeachingStateApi.updated.channel, handler);
+    if (isCapacitor()) return capacitorTeachingStateOnUpdated(handler as (data: unknown) => void);
+    return typedOn<TeachingStateUpdatedEvent>('teachingState:updated', handler);
   },
 
   /**
    * 监听精通门控达成事件(RWR-P1-10 / C-4)
-   * - Capacitor 端 noop
+   * - Capacitor 端走内存事件总线
    */
   onMastery(handler: (data: TeachingStateMasteryEvent) => void): () => void {
-    if (isCapacitor()) {
-      console.warn('[teaching-state] onMastery: not supported on Capacitor');
-      return () => {};
-    }
-    return typedOn<TeachingStateMasteryEvent>(TeachingStateApi.mastery.channel, handler);
+    if (isCapacitor()) return capacitorTeachingStateOnMastery(handler as (data: unknown) => void);
+    return typedOn<TeachingStateMasteryEvent>('teachingState:mastery', handler);
   },
 };

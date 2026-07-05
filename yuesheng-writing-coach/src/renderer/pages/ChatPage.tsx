@@ -26,16 +26,16 @@ import { MoreMenu } from '../components/navigation/MoreMenu';
 import type { ChatMessage } from '../shared/types';
 
 /* ── 欢迎引导区 ── */
-const WelcomeGuide: React.FC = () => (
+const WelcomeGuide: React.FC<{ onPick: (text: string) => void }> = ({ onPick }) => (
   <div style={{
     display: 'flex', flexDirection: 'column', alignItems: 'center',
     padding: '32px 16px 24px', gap: 16,
   }}>
     <div style={{
       width: 56, height: 56, borderRadius: '50%',
-      background: 'linear-gradient(135deg, #8A7A9E, #B8A9D4)',
+      background: 'var(--accent-gradient)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: '#fff', fontSize: 22, fontWeight: 700,
+      color: 'var(--text-on-accent)', fontSize: 22, fontWeight: 700,
     }}>
       月
     </div>
@@ -46,6 +46,8 @@ const WelcomeGuide: React.FC = () => (
       {['分析一下作品', '学点描写技法', '出个题目练练'].map(text => (
         <button
           key={text}
+          type="button"
+          onClick={() => onPick(text)}
           style={{
             padding: '8px 14px', borderRadius: 20,
             border: '1px solid var(--border)', background: 'var(--bg-card)',
@@ -66,7 +68,7 @@ const MessageBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
       <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 16px 8px' }}>
         <div style={{
           maxWidth: '75%', padding: '10px 14px', borderRadius: 12,
-          background: 'var(--accent)', color: '#fff', fontSize: 14,
+          background: 'var(--accent)', color: 'var(--text-on-accent)', fontSize: 14,
           lineHeight: 1.5, borderBottomRightRadius: 4,
         }}>
           {msg.content}
@@ -99,14 +101,18 @@ const TOOL_ACTIONS = [
   { Icon: Settings, label: '设定', desc: '配置本次对话' },
 ];
 
-const ActionSheet: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
+const ActionSheet: React.FC<{ open: boolean; onClose: () => void; onAction: (type: 'text' | 'image' | 'document' | 'settings') => void }> = ({ open, onClose, onAction }) => {
   if (!open) return null;
+  const handleClick = (type: 'text' | 'image' | 'document' | 'settings') => {
+    onAction(type);
+    onClose();
+  };
   return (
     <>
       <div
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+          position: 'fixed', inset: 0, background: 'var(--overlay-scrim)',
           zIndex: 100, animation: 'fadeIn 200ms',
         }}
         aria-hidden
@@ -124,38 +130,45 @@ const ActionSheet: React.FC<{ open: boolean; onClose: () => void }> = ({ open, o
         <div style={{ padding: '4px 16px 8px', fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)' }}>
           添加工具
         </div>
-        {TOOL_ACTIONS.map(({ Icon, label, desc }) => (
-          <button
-            key={label}
-            type="button"
-            onClick={onClose}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              width: '100%', padding: '12px 16px',
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: 'inherit', font: 'inherit', textAlign: 'left',
-            }}
-          >
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: 'var(--accent-faint)', color: 'var(--accent)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Icon size={18} strokeWidth={1.5} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>{label}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{desc}</div>
-            </div>
-          </button>
-        ))}
+        {TOOL_ACTIONS.map(({ Icon, label, desc }, i) => {
+          const type = (['text', 'image', 'document', 'settings'] as const)[i];
+          return (
+            <button
+              key={label}
+              type="button"
+              onClick={() => handleClick(type)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                width: '100%', padding: '12px 16px',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                color: 'inherit', font: 'inherit', textAlign: 'left',
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: 'var(--accent-faint)', color: 'var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon size={18} strokeWidth={1.5} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 }}>{desc}</div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </>
   );
 };
 
 /* ── 输入栏 ── */
-const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }> = ({ onSend, disabled }) => {
+const InputBar: React.FC<{
+  onSend: (text: string) => void;
+  disabled?: boolean;
+  onAction: (type: 'text' | 'image' | 'document' | 'settings') => void;
+}> = ({ onSend, disabled, onAction }) => {
   const [text, setText] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const hasContent = text.trim().length > 0;
@@ -203,7 +216,7 @@ const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }>
           style={{
             width: 38, height: 38, borderRadius: 8, border: 'none',
             background: hasContent && !disabled ? 'var(--accent)' : 'var(--bg-input)',
-            color: hasContent && !disabled ? '#fff' : 'var(--text-tertiary)',
+            color: hasContent && !disabled ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
             cursor: hasContent && !disabled ? 'pointer' : 'default',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'all 200ms', flexShrink: 0,
@@ -213,7 +226,7 @@ const InputBar: React.FC<{ onSend: (text: string) => void; disabled?: boolean }>
           <Send size={16} />
         </button>
       </div>
-      <ActionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <ActionSheet open={sheetOpen} onClose={() => setSheetOpen(false)} onAction={onAction} />
     </div>
   );
 };
@@ -345,16 +358,19 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
           </div>
         </div>
         <MoreMenu options={[
-          { label: '新建对话', icon: <MessageSquare size={16} />, onClick: () => push('chat', { title }) },
-          { label: '对话配置', icon: <Settings size={16} />, onClick: () => {/* Phase C: 对话配置面板 */} },
+          { label: '新建对话', icon: <MessageSquare size={16} />, onClick: async () => {
+            const session = await useSessionStore.getState().createSession('新对话');
+            if (session) push('chat', { id: session.id, title: session.title });
+          }},
+          { label: '对话配置', icon: <Settings size={16} />, onClick: () => push('settings', { label: '对话配置' }) },
         ]} />
       </div>
 
       {/* 错误提示条 */}
       {streamError && (
         <div style={{
-          padding: '8px 12px', background: 'var(--color-error-bg, #fee)',
-          color: 'var(--color-error, #c33)', fontSize: 12, borderBottom: '1px solid var(--border)',
+          padding: '8px 12px', background: 'var(--error-light)',
+          color: 'var(--error)', fontSize: 12, borderBottom: '1px solid var(--border)',
         }} role="alert">
           {streamError}
           <button onClick={() => setStreamError(null)} style={{ float: 'right', border: 'none', background: 'none', cursor: 'pointer' }} aria-label="关闭">×</button>
@@ -371,7 +387,7 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
             加载消息中…
           </div>
         ) : messages.length === 0 ? (
-          <WelcomeGuide />
+          <WelcomeGuide onPick={handleSend} />
         ) : (
           messages.map(m => <MessageBubble key={m.id} msg={m} />)
         )}
@@ -379,7 +395,16 @@ export const ChatPage: React.FC<{ params?: Record<string, string> }> = ({ params
       </div>
 
       {/* 输入栏 */}
-      <InputBar onSend={handleSend} disabled={streaming} />
+      <InputBar
+        onSend={handleSend}
+        disabled={streaming}
+        onAction={(type) => {
+          if (type === 'settings') push('settings', { label: '对话配置' });
+          else if (type === 'image' || type === 'document') {
+            setStreamError('暂不支持文件上传，请直接粘贴文字内容');
+          }
+        }}
+      />
     </div>
   );
 };

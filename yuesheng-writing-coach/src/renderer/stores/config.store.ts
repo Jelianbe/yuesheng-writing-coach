@@ -6,6 +6,12 @@
 
 import { create } from 'zustand';
 import { serviceBridge } from '../services/service-bridge';
+import { isCapacitor } from '../services/_dual-track';
+import {
+  loadConfig as capacitorLoadConfig,
+  setConfigValue as capacitorSetConfig,
+  testConnection as capacitorTestConnection,
+} from '../services/capacitor-config';
 import type {
   ApiConfig,
   ConnectionTestResult,
@@ -130,7 +136,11 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   /** 设置 API Key */
   setApiKey: async (key: string) => {
-    await serviceBridge.invoke('config:set', { key: 'apiKey', value: key });
+    if (isCapacitor()) {
+      await capacitorSetConfig('apiKey', key);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'apiKey', value: key });
+    }
     const validation = validateConfig({ ...get(), apiKey: key });
     set({
       apiKey: key,
@@ -141,21 +151,33 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   /** 设置 Base URL */
   setBaseUrl: async (url: string) => {
-    await serviceBridge.invoke('config:set', { key: 'baseUrl', value: url });
+    if (isCapacitor()) {
+      await capacitorSetConfig('baseUrl', url);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'baseUrl', value: url });
+    }
     const validation = validateConfig({ ...get(), baseUrl: url });
     set({ baseUrl: url, validation });
   },
 
   /** 设置模型名称 */
   setModelName: async (name: string) => {
-    await serviceBridge.invoke('config:set', { key: 'modelName', value: name });
+    if (isCapacitor()) {
+      await capacitorSetConfig('modelName', name);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'modelName', value: name });
+    }
     const validation = validateConfig({ ...get(), modelName: name });
     set({ modelName: name, validation });
   },
 
   /** 设置温度 */
   setTemperature: async (temp: number) => {
-    await serviceBridge.invoke('config:set', { key: 'temperature', value: temp });
+    if (isCapacitor()) {
+      await capacitorSetConfig('temperature', temp);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'temperature', value: temp });
+    }
     const validation = validateConfig({ ...get(), temperature: temp });
     set({ temperature: temp, validation });
   },
@@ -164,19 +186,31 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   setAttitudeLevel: async (level: AttitudeLevel) => {
     const { attitudeLocked } = get();
     if (attitudeLocked) return;
-    await serviceBridge.invoke('config:set', { key: 'attitudeLevel', value: level });
+    if (isCapacitor()) {
+      await capacitorSetConfig('attitudeLevel', level);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'attitudeLevel', value: level });
+    }
     set({ attitudeLevel: level });
   },
 
   /** 设置态度锁定 */
   setAttitudeLocked: async (locked: boolean) => {
-    await serviceBridge.invoke('config:set', { key: 'attitudeLocked', value: locked });
+    if (isCapacitor()) {
+      await capacitorSetConfig('attitudeLocked', locked);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'attitudeLocked', value: locked });
+    }
     set({ attitudeLocked: locked });
   },
 
   /** 设置最大 token 数 */
   setMaxTokens: async (tokens: number) => {
-    await serviceBridge.invoke('config:set', { key: 'maxTokens', value: tokens });
+    if (isCapacitor()) {
+      await capacitorSetConfig('maxTokens', tokens);
+    } else {
+      await serviceBridge.invoke('config:set', { key: 'maxTokens', value: tokens });
+    }
     set({ maxTokens: tokens });
   },
 
@@ -185,10 +219,12 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     const { apiKey, baseUrl } = get();
     set({ testStatus: 'testing', testError: undefined, testResponseTime: undefined });
 
-    const result = await serviceBridge.invoke<{ apiKey: string; baseUrl: string }, ConnectionTestResult>(
-      'config:testConnection',
-      { apiKey, baseUrl },
-    );
+    const result = isCapacitor()
+      ? await capacitorTestConnection(apiKey, baseUrl)
+      : await serviceBridge.invoke<{ apiKey: string; baseUrl: string }, ConnectionTestResult>(
+          'config:testConnection',
+          { apiKey, baseUrl },
+        );
     const finalResult = result ?? { success: false, error: 'No response data' };
 
     set({
@@ -200,29 +236,35 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     return finalResult;
   },
 
-  /** 从主进程加载配置 */
+  /** 加载配置（Electron 走 IPC，Capacitor 走 localStorage） */
   loadConfig: async () => {
     set({ isLoading: true });
     try {
-      const keys: Array<keyof ApiConfig> = [
-        'apiKey', 'baseUrl', 'modelName', 'temperature',
-        'attitudeLevel', 'attitudeLocked', 'maxTokens',
-      ];
-      const results = await Promise.all(
-        keys.map(k => serviceBridge.invoke<{ key: string }, unknown>('config:get', { key: k })),
-      );
+      let config: ApiConfig;
 
-      const extractValue = <T>(r: unknown, fallback: T): T => (r !== null && r !== undefined ? (r as T) : fallback);
+      if (isCapacitor()) {
+        config = await capacitorLoadConfig();
+      } else {
+        const keys: Array<keyof ApiConfig> = [
+          'apiKey', 'baseUrl', 'modelName', 'temperature',
+          'attitudeLevel', 'attitudeLocked', 'maxTokens',
+        ];
+        const results = await Promise.all(
+          keys.map(k => serviceBridge.invoke<{ key: string }, unknown>('config:get', { key: k })),
+        );
 
-      const config: ApiConfig = {
-        apiKey: extractValue<string>(results[0], ''),
-        baseUrl: extractValue<string>(results[1], DEFAULT_CONFIG.baseUrl),
-        modelName: extractValue<string>(results[2], DEFAULT_CONFIG.modelName),
-        temperature: extractValue<number>(results[3], DEFAULT_CONFIG.temperature),
-        attitudeLevel: extractValue<AttitudeLevel>(results[4], DEFAULT_CONFIG.attitudeLevel),
-        attitudeLocked: extractValue<boolean>(results[5], DEFAULT_CONFIG.attitudeLocked),
-        maxTokens: extractValue<number>(results[6], DEFAULT_CONFIG.maxTokens),
-      };
+        const extractValue = <T>(r: unknown, fallback: T): T => (r !== null && r !== undefined ? (r as T) : fallback);
+
+        config = {
+          apiKey: extractValue<string>(results[0], ''),
+          baseUrl: extractValue<string>(results[1], DEFAULT_CONFIG.baseUrl),
+          modelName: extractValue<string>(results[2], DEFAULT_CONFIG.modelName),
+          temperature: extractValue<number>(results[3], DEFAULT_CONFIG.temperature),
+          attitudeLevel: extractValue<AttitudeLevel>(results[4], DEFAULT_CONFIG.attitudeLevel),
+          attitudeLocked: extractValue<boolean>(results[5], DEFAULT_CONFIG.attitudeLocked),
+          maxTokens: extractValue<number>(results[6], DEFAULT_CONFIG.maxTokens),
+        };
+      }
 
       const validation = validateConfig(config);
 

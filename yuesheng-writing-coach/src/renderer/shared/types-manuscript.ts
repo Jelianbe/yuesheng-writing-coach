@@ -7,6 +7,7 @@ export interface Manuscript {
   description: string;
   genre: string;
   status: 'active' | 'archived';
+  projectId?: string;
   created_at: number;
   updated_at: number;
   sort_order: number;

@@ -9,24 +9,28 @@
  *
  * diagnosis 业务(诊断推理 + 改写评估 + 对比分析)全部在主进程 +
  * 依赖 AI 模型。shared 端**无等价 service**(无 types-diagnosis 之外的
- * service 实现)。因此本 service **不引入 runDualTrack**,而是:
- *   - 所有 invoke 方法保持 IPC-only
- *   - Capacitor 端 isCapacitor() 早返回 noop + warn
- *   - onDiagnosisUpdate 订阅在 Capacitor 端降级为 noop
- *   - 后续 diagnosis 业务下沉到 shared 时再统一迁移(待 S27+)
+ * service 实现)。
  *
- * Capacitor 端已知 trade-off:
- *   - query 降级:诊断面板不可用
- *   - submitRewrite 降级:改写评估不工作
- *   - getComparison 降级:历史对比不可用
- *   - onDiagnosisUpdate 降级:无事件推送
+ * ─── Sprint 32 (Android Diagnosis 激活) ───
  *
- * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
+ * Capacitor 端从 noop 升级为真实实现(通过 capacitor-diagnosis 模块):
+ *   - query: 从 localStorage 读取缓存的诊断结果
+ *   - submitRewrite: 直调 LLM API 评估改写
+ *   - getComparison: 保持 noop(需要 diagnosis_records 表,未迁移)
+ *   - onDiagnosisUpdate: 内存事件总线
+ *
+ * 依据: dev-docs/decision-log.md D-081 未做事项 §1
  */
 
-import { typedInvoke, typedOn } from './ipc-client';
+import { typedOn } from './ipc-client';
+import { serviceBridge } from './service-bridge';
 import { isCapacitor } from './_dual-track';
-import { DiagnosisApi } from '../../shared/api-contracts/diagnosis.contract';
+import {
+  capacitorDiagnosisQuery,
+  capacitorDiagnosisSubmitRewrite,
+  capacitorDiagnosisGetComparison,
+  capacitorOnDiagnosisUpdate,
+} from './capacitor-diagnosis';
 import type {
   DiagnosisQueryRequest,
   DiagnosisQueryResponse,
@@ -36,12 +40,6 @@ import type {
   DiagnosisUpdateEvent,
 } from '../../shared/api-contracts/diagnosis.contract';
 
-/** Capacitor 端无 IPC 通道,统一降级标识 */
-function capacitorNoopDiagnosis<T>(methodName: string, fallback: T): T {
-  console.warn(`[diagnosis] ${methodName}: not supported on Capacitor (诊断业务全在主进程), returning fallback`);
-  return fallback;
-}
-
 export const diagnosisService = {
   /**
    * 查询诊断结果 — 失败时返回 null(降级)
@@ -49,16 +47,13 @@ export const diagnosisService = {
    * Capacitor 端:降级 noop(diagnosis 业务全在主进程,shared 端无等价实现)。
    */
   async query(params: DiagnosisQueryRequest): Promise<DiagnosisQueryResponse | null> {
-    if (isCapacitor()) return capacitorNoopDiagnosis('query', null);
-    const result = await typedInvoke<DiagnosisQueryRequest, DiagnosisQueryResponse>(
-      DiagnosisApi.query.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[diagnosis] query failed:', result.error);
+    if (isCapacitor()) return capacitorDiagnosisQuery(params);
+    const result = await serviceBridge.invoke<DiagnosisQueryRequest, DiagnosisQueryResponse>('diagnosis:query', params);
+    if (!result) {
+      console.error('[diagnosis] query failed');
       return null;
     }
-    return result.data;
+    return result;
   },
 
   /**
@@ -67,16 +62,13 @@ export const diagnosisService = {
    * Capacitor 端:降级 noop。
    */
   async submitRewrite(params: DiagnosisSubmitRewriteRequest): Promise<{ evaluation: DiagnosisRewriteEvaluation } | undefined> {
-    if (isCapacitor()) return capacitorNoopDiagnosis('submitRewrite', undefined);
-    const result = await typedInvoke<DiagnosisSubmitRewriteRequest, { evaluation: DiagnosisRewriteEvaluation }>(
-      DiagnosisApi.submitRewrite.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[diagnosis] submitRewrite failed:', result.error);
+    if (isCapacitor()) return capacitorDiagnosisSubmitRewrite(params);
+    const result = await serviceBridge.invoke<DiagnosisSubmitRewriteRequest, { evaluation: DiagnosisRewriteEvaluation }>('diagnosis:submitRewrite', params);
+    if (!result) {
+      console.error('[diagnosis] submitRewrite failed');
       return undefined;
     }
-    return result.data;
+    return result;
   },
 
   /**
@@ -85,16 +77,13 @@ export const diagnosisService = {
    * Capacitor 端:降级 noop。
    */
   async getComparison(params: DiagnosisGetComparisonRequest): Promise<{ hasHistory: boolean; comparison?: string }> {
-    if (isCapacitor()) return capacitorNoopDiagnosis('getComparison', { hasHistory: false });
-    const result = await typedInvoke<DiagnosisGetComparisonRequest, { hasHistory: boolean; comparison?: string }>(
-      DiagnosisApi.getComparison.channel,
-      params,
-    );
-    if (!result.success) {
-      console.error('[diagnosis] getComparison failed:', result.error);
+    if (isCapacitor()) return capacitorDiagnosisGetComparison(params);
+    const result = await serviceBridge.invoke<DiagnosisGetComparisonRequest, { hasHistory: boolean; comparison?: string }>('diagnosis:getComparison', params);
+    if (!result) {
+      console.error('[diagnosis] getComparison failed');
       return { hasHistory: false };
     }
-    return result.data ?? { hasHistory: false };
+    return result;
   },
 
   /**
@@ -103,10 +92,7 @@ export const diagnosisService = {
    * Capacitor 端:降级 noop(无事件推送通道)。
    */
   onDiagnosisUpdate(handler: (data: DiagnosisUpdateEvent) => void): () => void {
-    if (isCapacitor()) {
-      console.warn('[diagnosis] onDiagnosisUpdate: not supported on Capacitor, returning noop');
-      return () => {};
-    }
-    return typedOn<DiagnosisUpdateEvent>(DiagnosisApi.updated.channel, handler);
+    if (isCapacitor()) return capacitorOnDiagnosisUpdate(handler);
+    return typedOn<DiagnosisUpdateEvent>('diagnosis:updated', handler);
   },
 };

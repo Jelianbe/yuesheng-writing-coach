@@ -20,6 +20,7 @@ import { ProjectSpacePage } from '../pages/ProjectSpacePage';
 import { ChatPage } from '../pages/ChatPage';
 import { GrowthReportPage } from '../pages/GrowthReportPage';
 import { TrainingPlanPage } from '../pages/TrainingPlanPage';
+import { SettingsPage } from '../pages/SettingsPage';
 import styles from './PageStackRouter.module.css';
 
 const PAGE_MAP: Record<string, React.FC<{ params?: Record<string, string> }>> = {
@@ -30,6 +31,7 @@ const PAGE_MAP: Record<string, React.FC<{ params?: Record<string, string> }>> = 
   chat: ChatPage,
   'growth-report': GrowthReportPage,
   'training-plan': TrainingPlanPage,
+  settings: SettingsPage,
 };
 
 const StatusBar: React.FC = () => (

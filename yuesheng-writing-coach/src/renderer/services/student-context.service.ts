@@ -1,36 +1,15 @@
 /**
- * 学生上下文服务 — Sprint 20 B-2 降级(D-DEBT-34)
+ * 学生上下文服务 — Sprint 26 阶段 3.5 方案 4a 降级
  *
- * 重要:本服务载荷包含学生认知风格/信心/挫折计数等敏感数据。
- * 降级策略:调用失败时 console.error + 返回 fallback,不再 throw,
- * 避免 UI 白屏(R-028 防御性编码 + R-027 门禁)。
+ * studentContext:load/save/toJSON 这三个通道在 Electron preload 白名单压缩后
+ * 未注册到 main process（不在 bridge 方法列表中），因此 Electron 端直接降级为
+ * null/false 返回。Capacitor 端保持原有降级行为不变。
  *
- * ─── Sprint 26 阶段 3.2 (双轨化决策) ───
- *
- * student-context 业务(认知风格推导/信心更新/JSON 序列化)全部在主进程,
- * 依赖 AI 模型 + 教学状态机。shared 端**无等价 service**。因此本 service
- * **不引入 runDualTrack**,而是:
- *   - 所有方法保持 IPC-only
- *   - Capacitor 端 isCapacitor() 早返回 noop + warn
- *   - 后续 student-context 业务下沉到 shared 时再统一迁移(待 S27+)
- *
- * Capacitor 端已知 trade-off:
- *   - load 降级:无学生上下文,UI 退化
- *   - save 降级:学生状态变更不持久化
- *   - toJSON 降级:无法导出
- *
- * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
+ * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.5 方案 4a
  */
 
-import { typedInvoke } from './ipc-client';
+import { serviceBridge } from './service-bridge';
 import { isCapacitor } from './_dual-track';
-import type { ApiResponse } from '../../shared/api-contracts/base';
-
-const CHANNEL = {
-  load: 'studentContext:load' as const,
-  save: 'studentContext:save' as const,
-  toJSON: 'studentContext:toJSON' as const,
-};
 
 /** Capacitor 端无 IPC 通道,统一降级标识 */
 function capacitorNoopStudentContext<T>(methodName: string, fallback: T): T {
@@ -46,15 +25,12 @@ export const studentContextService = {
    */
   async load(): Promise<unknown> {
     if (isCapacitor()) return capacitorNoopStudentContext('load', null);
-    const result = await typedInvoke<Record<string, never>, unknown>(
-      CHANNEL.load,
-      {},
-    );
-    if (!result.success) {
-      console.error('[student-context] load failed:', result.error);
+    const result = await serviceBridge.invoke<Record<string, never>, unknown>('studentContext:load', {});
+    if (!result) {
+      console.error('[student-context] load failed');
       return null;
     }
-    return result.data;
+    return result;
   },
 
   /**
@@ -64,12 +40,9 @@ export const studentContextService = {
    */
   async save(data: unknown): Promise<boolean> {
     if (isCapacitor()) return capacitorNoopStudentContext('save', false);
-    const result = await typedInvoke<{ data: unknown }, void>(
-      CHANNEL.save,
-      { data },
-    ) as ApiResponse<void>;
-    if (!result.success) {
-      console.error('[student-context] save failed:', result.error);
+    const result = await serviceBridge.invoke<{ data: unknown }, void>('studentContext:save', { data });
+    if (result === null) {
+      console.error('[student-context] save failed');
       return false;
     }
     return true;
@@ -82,14 +55,11 @@ export const studentContextService = {
    */
   async toJSON(): Promise<string> {
     if (isCapacitor()) return capacitorNoopStudentContext('toJSON', '');
-    const result = await typedInvoke<Record<string, never>, { text: string }>(
-      CHANNEL.toJSON,
-      {},
-    );
-    if (!result.success) {
-      console.error('[student-context] toJSON failed:', result.error);
+    const result = await serviceBridge.invoke<Record<string, never>, { text: string }>('studentContext:toJSON', {});
+    if (!result) {
+      console.error('[student-context] toJSON failed');
       return '';
     }
-    return result.data.text;
+    return result.text;
   },
 };

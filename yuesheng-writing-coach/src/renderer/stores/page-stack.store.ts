@@ -15,6 +15,7 @@ export type PageName =
   | 'chat'
   | 'growth-report'
   | 'training-plan'
+  | 'settings'
   | 'technique-library'
   | 'material-library';
 
