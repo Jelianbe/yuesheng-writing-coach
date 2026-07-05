@@ -10,9 +10,11 @@
  *     useAppController, useDiagnosisFlow, useConfigStore, useChatStore, useDiagStore,
  *     useSessionStore, useStudentContextStore, useTeachingStateStore, useTrainingStore,
  *     useRightPanelStore, type RightPanelToolId as PanelId, chatService, OnboardingBaseline }
+ *
+ * V3 移动端改造: 使用 PageStackRouter 替代 AppShell，保留 IPC 订阅
  */
 import React, { useEffect, useState } from 'react';
-import { AppShell } from './components/AppShell';
+import { PageStackRouter } from './routing';
 import { useAppController } from './services/useAppController';
 import { useConfigStore } from './stores/config.store';
 import { useChatStore } from './stores/chat.store';
@@ -103,7 +105,7 @@ export function App(): React.ReactElement {
 
   return (
     <>
-      <AppShell />
+      <PageStackRouter />
       {executingTool && (
         <div style={{
           position: 'fixed', bottom: 12, left: '50%', transform: 'translateX(-50%)',

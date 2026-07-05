@@ -1,11 +1,11 @@
 // 章节状态管理（Zustand）
 // 负责：管理章节列表、当前章节、打开的文件标签页和内容缓存
-// 依赖：zustand, electron IPC (IPC_CHANNELS.CHAPTER_*)
+// 依赖：zustand, service-bridge (Sprint 26 阶段 3.6: 调用方迁移)
+// 注意：bridge 模式返回纯数据（Chapter 对象 / null / { wordCount }），无 { success, data } 包装。
 
 import { create } from 'zustand';
-import { IPC_CHANNELS } from '../shared/constants';
+import { serviceBridge } from '../services/service-bridge';
 import type { Chapter } from '../shared/types';
-import { getInvoke } from '../utils/ipc';
 
 interface OpenTabMeta {
   title: string;
@@ -69,16 +69,14 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
   // Actions
   fetchByWork: async (manuscriptId: string) => {
     set({ loading: true, error: null, openFiles: [], openTabMeta: {} });
-    try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.CHAPTER_LIST, { manuscriptId }) as { success: boolean; data?: Chapter[]; error?: string };
-      if (res.success && res.data) {
-        set({ chapters: res.data, loading: false });
-      } else {
-        set({ error: res.error || '获取章节列表失败', loading: false });
-      }
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '获取章节列表异常', loading: false });
+    const data = await serviceBridge.invoke<{ manuscriptId: string }, Chapter[]>(
+      'chapter:list',
+      { manuscriptId },
+    );
+    if (data) {
+      set({ chapters: data, loading: false });
+    } else {
+      set({ error: '获取章节列表失败', loading: false });
     }
   },
 
@@ -89,24 +87,20 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
   },
 
   loadContent: async (id: string) => {
-    // 优先从缓存读取
     const cached = get().contentCache[id];
     if (cached !== undefined) return cached;
 
-    try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.CHAPTER_GET, { id }) as { success: boolean; data?: Chapter; error?: string };
-      if (res.success && res.data) {
-        // 写入缓存并返回
-        set((s) => ({
-          contentCache: { ...s.contentCache, [id]: res.data!.content },
-        }));
-        return res.data.content;
-      }
-      return null;
-    } catch {
-      return null;
+    const data = await serviceBridge.invoke<{ id: string }, Chapter>(
+      'chapter:get',
+      { id },
+    );
+    if (data) {
+      set((s) => ({
+        contentCache: { ...s.contentCache, [id]: data.content },
+      }));
+      return data.content;
     }
+    return null;
   },
 
   openTab: (chapterId: string, manuscriptTitle?: string) => {
@@ -129,7 +123,6 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
         set(s => ({ openFiles: [...s.openFiles, chapterId] }));
       }
     }
-    // 选中该章节
     get().select(chapterId);
   },
 
@@ -139,7 +132,6 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
     const { [chapterId]: _removed, ...restMeta } = openTabMeta;
     set({ openFiles: newFiles, openTabMeta: restMeta });
 
-    // 如果关闭的是当前章节，选中列表中的最后一个
     if (currentChapter?.id === chapterId) {
       if (newFiles.length > 0) {
         get().select(newFiles[newFiles.length - 1]);
@@ -150,78 +142,64 @@ export const useChapterStore = create<ChapterState & ChapterActions>((set, get) 
   },
 
   updateContent: async (id: string, content: string) => {
-    try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, { id, content }) as { success: boolean; data?: { wordCount: number }; error?: string };
-      if (res.success && res.data) {
-        // 更新缓存
-        set((s) => ({
-          contentCache: { ...s.contentCache, [id]: content },
-        }));
-        return res.data;
-      }
-      set({ error: res.error || '更新章节失败' });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '更新章节异常' });
-      return null;
+    const data = await serviceBridge.invoke<{ id: string; content: string }, { wordCount: number }>(
+      'chapter:updateContent',
+      { id, content },
+    );
+    if (data) {
+      set((s) => ({
+        contentCache: { ...s.contentCache, [id]: content },
+      }));
+      return data;
     }
+    set({ error: '更新章节失败' });
+    return null;
   },
 
   createChapter: async (manuscriptId: string, title: string) => {
-    try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.CHAPTER_CREATE, { manuscriptId, title }) as { success: boolean; data?: Chapter; error?: string };
-      if (res.success && res.data) {
-        // 列表刷新为 best-effort，不阻塞返回路径
-        get().fetchByWork(manuscriptId).catch(() => {});
-        return res.data;
-      }
-      set({ error: res.error || '创建章节失败' });
-      return null;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '创建章节异常' });
-      return null;
+    const data = await serviceBridge.invoke<{ manuscriptId: string; title: string }, Chapter>(
+      'chapter:create',
+      { manuscriptId, title },
+    );
+    if (data) {
+      get().fetchByWork(manuscriptId).catch(() => {});
+      return data;
     }
+    set({ error: '创建章节失败' });
+    return null;
   },
 
   deleteChapter: async (id: string, manuscriptId: string) => {
-    try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.CHAPTER_DELETE, { id }) as { success: boolean; error?: string };
-      if (res.success) {
-        // 列表刷新为 best-effort，不阻塞返回路径
-        get().fetchByWork(manuscriptId).catch(() => {});
-        if (get().currentChapter?.id === id) {
-          set({ currentChapter: null });
-        }
-        return true;
+    const data = await serviceBridge.invoke<{ id: string }, { deleted: boolean }>(
+      'chapter:delete',
+      { id },
+    );
+    if (data?.deleted) {
+      get().fetchByWork(manuscriptId).catch(() => {});
+      if (get().currentChapter?.id === id) {
+        set({ currentChapter: null });
       }
-      set({ error: res.error || '删除章节失败' });
-      return false;
-    } catch (err) {
-      set({ error: err instanceof Error ? err.message : '删除章节异常' });
-      return false;
+      return true;
     }
+    set({ error: '删除章节失败' });
+    return false;
   },
 
   // ===== X-02: 训练改写结果 =====
 
   applyRewrite: async (id: string, content: string) => {
-    try {
-      const invoke = getInvoke();
-      const res = await invoke(IPC_CHANNELS.CHAPTER_UPDATE_CONTENT, { id, content }) as { success: boolean; error?: string };
-      if (res.success) {
-        set((s) => ({
-          contentCache: { ...s.contentCache, [id]: content },
-          pendingRewrite: null,
-        }));
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
+    const data = await serviceBridge.invoke<{ id: string; content: string }, { wordCount: number }>(
+      'chapter:updateContent',
+      { id, content },
+    );
+    if (data) {
+      set((s) => ({
+        contentCache: { ...s.contentCache, [id]: content },
+        pendingRewrite: null,
+      }));
+      return true;
     }
+    return false;
   },
 
   clearRewrite: () => { set({ pendingRewrite: null }); },

@@ -23,6 +23,7 @@ import { StepIndicatorList } from './StepIndicatorList';
 import { ReadingStepContent } from './ReadingStepContent';
 import { RewriteStepContent } from './RewriteStepContent';
 import { EvaluationStepContent } from './EvaluationStepContent';
+import { FiveStepFlow } from './flow/FiveStepFlow';
 import styles from './ActiveTrainingView.module.css';
 
 interface ActiveTrainingViewProps {
@@ -54,6 +55,20 @@ export const ActiveTrainingView: React.FC<ActiveTrainingViewProps> = ({
     () => getStructuredTaskForActiveTraining(activeTraining.challengeId) ?? null,
     [activeTraining.challengeId],
   );
+
+  // S16: 五步流分支 —— 当 flowType === 'flow5' 且 trainingFlow 存在时切换到 FlowPanel
+  if (activeTraining.flowType === 'flow5' && activeTraining.trainingFlow) {
+    return (
+      <div className={sharedStyles.trainingContainer}>
+        <FlowPanel
+          active={activeTraining}
+          flow={activeTraining.trainingFlow}
+          evaluation={evaluationResult}
+          onExit={onBackToChat}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={sharedStyles.trainingContainer}>

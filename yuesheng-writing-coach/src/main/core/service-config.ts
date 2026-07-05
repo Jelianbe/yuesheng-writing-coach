@@ -1,7 +1,12 @@
 import type Database from 'better-sqlite3';
 import type { ServiceContainer } from './service-container';
 import { ConfigService } from '../shared/services/config.service';
-import { SessionService } from '../shared/services/session.service';
+// Sprint 26 阶段 2:主进程 SessionService 切到 StorageAdapter 版本(异步 + 双端共用)
+// 旧 sync 版本 src/main/shared/services/session.service.ts 已标 @deprecated
+import { SessionService } from '../../shared/services/session.service';
+// Sprint 26 阶段 2 T26-2.2:ProjectService 切到 StorageAdapter 版本
+import { ProjectService } from '../../shared/services/project.service';
+import { BetterSqliteAdapter } from '../../shared/storage/adapters/better-sqlite.adapter';
 import { DiagnosisService } from '../domains/01-diagnosis/diagnosis.service';
 import { EvidenceService } from '../domains/01-diagnosis/evidence/evidence.service';
 import { TrainingRecordService } from '../domains/04-validation/training/training-record.service';
@@ -21,6 +26,8 @@ import { ReflectionGateService } from '../domains/03-teaching/reflection-gate.se
 import { CodexService } from '../domains/03-teaching/prompt/codex.service';
 import { getTeachingStateContext, getStoreForPromptLoader } from '../ipc/teaching-state.handler';
 import { TeachingStateService } from '../domains/03-teaching/teaching-state.service';
+import { ActiveTrainingService } from '../domains/03-teaching/state/active-training.service';
+import { ActiveTrainingStore } from '../domains/03-teaching/state/active-training.store';
 import { TeachingNoteService } from '../domains/03-teaching/teaching-note.service';
 import { ApiProxyService } from '../shared/services/api-proxy.service';
 import { StrategyInstructionBuilder } from '../domains/03-teaching/strategy-instruction-builder';
@@ -51,9 +58,17 @@ export function configureServices(
   // Shared / Infrastructure Layer
   // ============================================================
   container.register<Database.Database>('db', () => db);
+  // Sprint 26 阶段 2:StorageAdapter 注入(Electron 端用 BetterSqliteAdapter 包装 better-sqlite3)
+  container.register<BetterSqliteAdapter>('storageAdapter', () => new BetterSqliteAdapter({ db, dbName: 'yuesheng.db', version: 1 }));
   container.register<string>('resourcesRoot', () => resourcesRoot);
   container.register<ConfigService>('configService', () => new ConfigService());
-  container.register<SessionService>('sessionService', () => new SessionService(db));
+  container.register<SessionService>('sessionService', (c) =>
+    new SessionService(c.get<BetterSqliteAdapter>('storageAdapter')),
+  );
+  // Sprint 26 阶段 2 T26-2.2:ProjectService 切到 StorageAdapter 版本(异步 + 双端共用)
+  container.register<ProjectService>('projectService', (c) =>
+    new ProjectService(c.get<BetterSqliteAdapter>('storageAdapter')),
+  );
   container.register<ApiProxyService>('apiProxyService', (c) =>
     new ApiProxyService(c.get<ConfigService>('configService')),
   );
@@ -143,6 +158,14 @@ export function configureServices(
     const service = new TeachingStateService();
     service.initStore(db);
     return service;
+  });
+
+  // Sprint 24 A-1/A-2: ActiveTraining 完整状态机服务
+  // - 封装 ActiveTrainingStore (active_training 表)
+  // - 订阅 training_triggered 事件,实现 start/advanceStep/updateDraft/evaluate/complete/abort
+  container.register<ActiveTrainingService>('activeTrainingService', () => {
+    const store = new ActiveTrainingStore(db);
+    return new ActiveTrainingService(store);
   });
 
   // 教学笔记服务 (I-08)

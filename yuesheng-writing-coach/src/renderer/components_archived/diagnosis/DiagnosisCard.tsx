@@ -7,6 +7,7 @@ import { OriginalEvidenceSection } from './OriginalEvidenceSection';
 import type { DiagnosisEntry, SeverityLevel } from '../../shared/types';
 import { ActionNameMap } from '../../shared/display-names';
 import { getVariantLabel } from '../../../shared/diagnosis-translations';
+import styles from './DiagnosisCard.module.css';
 
 interface DiagnosisCardProps {
   diagnosis: DiagnosisEntry;
@@ -56,24 +57,24 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
   if (!topSyndrome) return null;
 
   return (
-    <div className="border border-border rounded-[var(--radius-md)] bg-surface shadow-sm overflow-hidden">
+    <div className={styles.card}>
       {/* Summary row (always visible) */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-surface-secondary transition-colors duration-fast"
+        className={styles.summaryButton}
         aria-expanded={expanded}
         aria-label="Toggle diagnosis details"
       >
-        <div className="w-1 h-8 bg-accent-primary rounded-full flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-text-primary truncate">
+        <div className={styles.accentBar} />
+        <div className={styles.summaryContent}>
+          <p className={styles.summaryTitle}>
             {topSyndrome.name}
           </p>
-          <p className="text-xs text-text-tertiary mt-0.5">
+          <p className={styles.summaryEvidence}>
             {topSyndrome.evidence[0]?.slice(0, 50)}...
           </p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className={styles.badgeRow}>
           {topSyndrome.variant && (
             <Badge variant="default">{getVariantLabel(topSyndrome.variant)}</Badge>
           )}
@@ -81,17 +82,17 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
             {severityLabel[topSyndrome.severity]}
           </Badge>
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-text-tertiary" />
+            <ChevronUp className={styles.chevronIcon} />
           ) : (
-            <ChevronDown className="w-4 h-4 text-text-tertiary" />
+            <ChevronDown className={styles.chevronIcon} />
           )}
         </div>
       </button>
 
       {/* Expanded details */}
       {expanded && (
-        <div className="border-t border-border animate-expand">
-          <div className="px-4 py-3 space-y-4">
+        <div className={`${styles.expandedContent} animate-expand`}>
+          <div className={styles.expandedInner}>
             {/* SF-004: 叙事节拍完整性迷你图表 */}
             {diagnosis.beatCheck && (
               <BeatCheckChart beatCheck={diagnosis.beatCheck} />
@@ -100,10 +101,10 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
             {diagnosis.syndromes.map((syndrome) => {
               const questions = SELF_CHECK_QUESTIONS[syndrome.id] ?? [];
               return (
-                <div key={syndrome.id} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-accent-primary" />
-                    <span className="text-sm font-medium text-text-primary">
+                <div key={syndrome.id} className={styles.syndromeSection}>
+                  <div className={styles.syndromeHeader}>
+                    <AlertCircle className={styles.alertIcon} />
+                    <span className={styles.syndromeName}>
                       {syndrome.name}
                     </span>
                     {syndrome.variant && (
@@ -113,7 +114,7 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
                       {severityLabel[syndrome.severity]}
                     </Badge>
                     {syndrome.score && (
-                      <span className="text-xs text-text-tertiary ml-auto">
+                      <span className={styles.scoreText}>
                         信号分: {syndrome.score.toFixed(1)}
                       </span>
                     )}
@@ -125,11 +126,11 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
                   {/* Suggested actions */}
                   {syndrome.suggestedActions && syndrome.suggestedActions.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-text-secondary mb-1.5 flex items-center gap-1">
-                        <Target className="w-3 h-3" />
+                      <p className={styles.actionsLabel}>
+                        <Target className={styles.actionIcon} />
                         建议动作
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className={styles.actionBadges}>
                         {syndrome.suggestedActions.map((actionId) => (
                           <Badge key={actionId} variant="accent">
                             {(ActionNameMap as Record<string, string>)[actionId] ?? actionId}
@@ -145,13 +146,11 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
                   )}
 
                   {/* Action buttons: 尝试修改 + 查看建议 */}
-                  <div className="flex items-center gap-2 pt-1">
+                  <div className={styles.actionButtons}>
                     <button
                       type="button"
                       onClick={() => onStartEditing?.(syndrome.id, syndrome.evidence, syndrome.name, syndrome.severity)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-[var(--radius-sm)]
-                        bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20
-                        transition-colors duration-fast"
+                      className={styles.editButton}
                     >
                       ✏️ 尝试修改
                     </button>
@@ -159,9 +158,7 @@ export const DiagnosisCard: React.FC<DiagnosisCardProps> = ({
                       <button
                         type="button"
                         onClick={() => setExpanded(true)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-[var(--radius-sm)]
-                          bg-surface-secondary text-text-secondary hover:bg-border
-                          transition-colors duration-fast"
+                        className={styles.viewButton}
                       >
                         📖 查看建议
                       </button>

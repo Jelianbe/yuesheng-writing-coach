@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * T15-C.6 能力图谱消费链 — 端到端测试
  *
@@ -110,7 +111,7 @@ function createTestDb(): Database.Database {
       active_problems TEXT DEFAULT '[]', next_suggested_actions TEXT DEFAULT '[]',
       current_task_id TEXT, diagnosis_summary TEXT, last_user_confirmation TEXT,
       focus_area TEXT DEFAULT NULL, transition_offered INTEGER DEFAULT 0,
-      locked_syndromes TEXT DEFAULT '[]', updated_at TEXT,
+      locked_syndromes TEXT DEFAULT '[]', active_training_meta TEXT DEFAULT NULL, updated_at TEXT,
       FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
     );
     CREATE TABLE sessions (

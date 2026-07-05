@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { IPC_CHANNELS } from '../shared/constants';
-import type { RewriteEvaluation, ApiResponse } from '../shared/types';
+import { serviceBridge } from '../services/service-bridge';
+import type { RewriteEvaluation } from '../shared/types';
 
 interface EditingSyndrome {
   id: string;
@@ -38,6 +38,8 @@ interface DiagnosisFlowState {
  * 2. 用户点击"尝试修改"展开编辑面板
  * 3. 用户提交修改触发评估
  * 4. 评估完成后显示成长记录
+ *
+ * Sprint 26 阶段 3.6: 改走 service-bridge 单端点
  */
 export function useDiagnosisFlow(sessionId: string | null) {
   const [state, setState] = useState<DiagnosisFlowState>({
@@ -50,19 +52,6 @@ export function useDiagnosisFlow(sessionId: string | null) {
     growthSummary: null,
     hasHistory: false,
   });
-
-  const invokeIPC = useCallback(
-    async <T>(channel: string, args: unknown): Promise<{ success: boolean; data?: T; error?: string } | null> => {
-      try {
-        if (!window.electronAPI?.invoke) return null;
-        const response = await window.electronAPI.invoke(channel, args) as ApiResponse<T>;
-        return { success: response.success, data: response.data, error: response.error };
-      } catch {
-        return null;
-      }
-    },
-    []
-  );
 
   /** 开始编辑指定的综合征 */
   const startEditing = useCallback((syndromeId: string, evidence: string[], name?: string, severity?: string) => {
@@ -87,36 +76,35 @@ export function useDiagnosisFlow(sessionId: string | null) {
 
       setState((prev) => ({ ...prev, isSubmitting: true }));
 
-      try {
-        const result = await invokeIPC<{
-          evaluation?: RewriteEvaluation;
-        }>(IPC_CHANNELS.DIAGNOSIS_SUBMIT_REWRITE, {
-          sessionId,
-          syndromeId: state.editingSyndrome.id,
-          originalText: state.editingSyndrome.evidence.join('\n'),
-          rewrittenText,
-          syndromeName: state.editingSyndrome.name,
-          syndromeDesc: state.editingSyndrome.severity,
-        });
+      const data = await serviceBridge.invoke<
+        {
+          sessionId: string;
+          syndromeId: string;
+          originalText: string;
+          rewrittenText: string;
+          syndromeName: string;
+          syndromeDesc: string;
+        },
+        { evaluation: RewriteEvaluation } | undefined
+      >('diagnosis:submitRewrite', {
+        sessionId,
+        syndromeId: state.editingSyndrome.id,
+        originalText: state.editingSyndrome.evidence.join('\n'),
+        rewrittenText,
+        syndromeName: state.editingSyndrome.name,
+        syndromeDesc: state.editingSyndrome.severity,
+      });
 
-        if (result?.success && result.data?.evaluation) {
-          setState((prev) => ({
-            ...prev,
-            isSubmitting: false,
-            editingSyndrome: null,
-            lastEvaluation: (result.data as { evaluation: RewriteEvaluation }).evaluation,
-            lastRewrittenText: rewrittenText,
-            lastOriginalText: prev.editingSyndrome?.evidence.join('\n') ?? null,
-          }));
-        } else {
-          // 评估失败或无评估结果，关闭编辑面板
-          setState((prev) => ({
-            ...prev,
-            isSubmitting: false,
-            editingSyndrome: null,
-          }));
-        }
-      } catch {
+      if (data?.evaluation) {
+        setState((prev) => ({
+          ...prev,
+          isSubmitting: false,
+          editingSyndrome: null,
+          lastEvaluation: data.evaluation,
+          lastRewrittenText: rewrittenText,
+          lastOriginalText: prev.editingSyndrome?.evidence.join('\n') ?? null,
+        }));
+      } else {
         setState((prev) => ({
           ...prev,
           isSubmitting: false,
@@ -124,7 +112,7 @@ export function useDiagnosisFlow(sessionId: string | null) {
         }));
       }
     },
-    [sessionId, state.editingSyndrome, invokeIPC]
+    [sessionId, state.editingSyndrome],
   );
 
   /** 获取成长记录 */
@@ -133,22 +121,22 @@ export function useDiagnosisFlow(sessionId: string | null) {
 
     setState((prev) => ({ ...prev, growthLoading: true }));
 
-    const result = await invokeIPC<{
-      hasHistory: boolean;
-      comparison?: string;
-    }>(IPC_CHANNELS.DIAGNOSIS_GET_COMPARISON, { sessionId });
+    const data = await serviceBridge.invoke<
+      { sessionId: string },
+      { hasHistory: boolean; comparison?: string }
+    >('diagnosis:getComparison', { sessionId });
 
-    if (result?.success && result.data) {
+    if (data) {
       setState((prev) => ({
         ...prev,
-        hasHistory: result.data!.hasHistory,
-        growthSummary: result.data!.comparison || null,
+        hasHistory: data.hasHistory,
+        growthSummary: data.comparison ?? null,
         growthLoading: false,
       }));
     } else {
       setState((prev) => ({ ...prev, growthLoading: false }));
     }
-  }, [sessionId, invokeIPC]);
+  }, [sessionId]);
 
   /** 重置流程状态 */
   const reset = useCallback(() => {

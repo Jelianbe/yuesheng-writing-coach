@@ -2,18 +2,24 @@
  * 训练 Store — 阅读前置 Action
  *
  * ⚠️ 本文件由 training.actions.ts 拆分而来。
+ * Sprint 26 阶段 3.6: 调用方迁移到 service-bridge 单端点
  */
 
 import { useChatStore } from './chat.store';
-import { getInvoke } from '../utils/ipc';
-import { TrainingApi } from '../../shared/api-contracts/training.contract';
-import { ConfigApi } from '../../shared/api-contracts/config.contract';
+import { serviceBridge } from '../services/service-bridge';
 import { READING_STEPS } from './training.types';
 import type { TrainingState } from './training.types';
 import type { TrainingRecord } from '../shared/types';
 
 type SetStateFn = (partial: Partial<TrainingState> | ((state: TrainingState) => Partial<TrainingState>), replace?: boolean) => void;
 type GetStateFn = () => TrainingState;
+
+interface ReadingEntry {
+  id: string;
+  title: string;
+  excerpt: string;
+  analysisPrompt: string;
+}
 
 /**
  * startReading — 开始阅读前置任务
@@ -31,14 +37,21 @@ export function createStartReadingAction(set: SetStateFn, get: GetStateFn) {
       const fallbackSyndromeId = get().errorCards[0]?.syndromeId ?? 'unknown';
       const syndromeId = match?.syndromeId ?? fallbackSyndromeId;
 
-      const assignResult = await getInvoke()(TrainingApi.assign.channel, {
+      const assignResult = await serviceBridge.invoke<
+        { sessionId: string; challengeId: string },
+        { error?: string; record?: TrainingRecord }
+      >('training:assign', {
         sessionId,
         challengeId: `reading-${syndromeId}`,
-      }) as { error?: string; record?: TrainingRecord };
-
+      });
+      if (!assignResult) throw new Error('training:assign returned null');
       if (assignResult.error) throw new Error(assignResult.error);
 
-      const readingResult = await getInvoke()(ConfigApi.getReadingEntry.channel, { syndromeId }) as { entries: Array<{ id: string; title: string; excerpt: string; analysisPrompt: string }> };
+      const readingResult = await serviceBridge.invoke<
+        { syndromeId: string },
+        { entries: ReadingEntry[] }
+      >('config:getReadingEntry', { syndromeId });
+      if (!readingResult) throw new Error('config:getReadingEntry returned null');
       const entry = readingResult.entries[0];
 
       const readingContent = entry

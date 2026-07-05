@@ -15,7 +15,7 @@ export const ToggleButton: React.FC<ToggleButtonProps> = ({ showGlobal, onToggle
       borderRadius: 'var(--radius-full)',
       border: '1px solid var(--border-light)',
       background: showGlobal ? 'var(--accent)' : 'transparent',
-      color: showGlobal ? '#fff' : 'var(--text-tertiary)',
+      color: showGlobal ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
       fontSize: '0.65rem',
       cursor: 'pointer',
       transition: 'all 0.15s ease',

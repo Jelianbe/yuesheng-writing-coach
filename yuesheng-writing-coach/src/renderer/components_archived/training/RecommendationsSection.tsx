@@ -14,6 +14,7 @@ import { getStructuredTasksForChallenge } from '../../shared/structured-tasks';
 import { getInvoke } from '../../utils/ipc';
 import { ConfigApi } from '../../../shared/api-contracts/config.contract';
 import { usePanelSessionStore } from '../../stores/panel-session.store';
+import { FileText, Ban, Clapperboard, BookOpen } from 'lucide-react';
 import sharedStyles from './TrainingShared.module.css';
 import styles from './RecommendationsSection.module.css';
 
@@ -136,22 +137,22 @@ export const RecommendationsSection: React.FC<{
                     <div className={styles.metaInfoRow}>
                       {structuredTasks[0].wordCount && (
                         <span className={styles.metaItem}>
-                          <span>📝</span> 目标字数：{structuredTasks[0].wordCount} 字
+                          <FileText size={14} /> 目标字数：{structuredTasks[0].wordCount} 字
                         </span>
                       )}
                       {structuredTasks[0].forbiddenWords && structuredTasks[0].forbiddenWords.length > 0 && (
                         <span className={styles.forbiddenMetaItem}>
-                          <span>🚫</span> 禁止词：{structuredTasks[0].forbiddenWords.length} 个
+                          <Ban size={14} /> 禁止词：{structuredTasks[0].forbiddenWords.length} 个
                         </span>
                       )}
                       {structuredTasks[0].scene && (
                         <span className={styles.metaItem}>
-                          <span>🎬</span> 场景设定
+                          <Clapperboard size={14} /> 场景设定
                         </span>
                       )}
                       {structuredTasks[0].mode === 'reading' && (
                         <span className={styles.readingMetaItem}>
-                          <span>📖</span> 阅读任务
+                          <BookOpen size={14} /> 阅读任务
                         </span>
                       )}
                     </div>
@@ -210,7 +211,7 @@ export const RecommendationsSection: React.FC<{
       {shouldShowReading && (
         <div className={styles.readingSection}>
           <div className={styles.readingHeader}>
-            <span className={styles.readingIcon}>📚</span>
+            <BookOpen size={18} className={styles.readingIcon} />
             <span className={styles.readingTitle}>相关阅读推荐</span>
             <span className={styles.readingBadge}>表现优秀</span>
           </div>

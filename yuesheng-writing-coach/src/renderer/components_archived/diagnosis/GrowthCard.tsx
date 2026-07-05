@@ -1,5 +1,6 @@
 import React from 'react';
 import { TrendingUp } from 'lucide-react';
+import styles from './GrowthCard.module.css';
 
 interface GrowthCardProps {
   /** 一句话成长记录 */
@@ -23,26 +24,26 @@ export const GrowthCard: React.FC<GrowthCardProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="border border-border rounded-[var(--radius-md)] bg-surface px-4 py-3 animate-fade-in">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-surface-secondary animate-pulse-custom" />
-          <div className="h-4 bg-surface-secondary rounded-[var(--radius-sm)] flex-1 animate-pulse-custom" />
+      <div className={`${styles.skeletonContainer} animate-fade-in`}>
+        <div className={styles.skeletonRow}>
+          <div className={`${styles.skeletonCircle} animate-pulse-custom`} />
+          <div className={`${styles.skeletonBar} animate-pulse-custom`} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="border border-border rounded-[var(--radius-md)] bg-surface animate-slide-up">
-      <div className="flex items-start gap-3 px-4 py-3">
-        <div className="w-8 h-8 rounded-full bg-accent-primary-light flex items-center justify-center flex-shrink-0">
-          <TrendingUp className="w-4 h-4 text-accent-primary" />
+    <div className={`${styles.container} animate-slide-up`}>
+      <div className={styles.content}>
+        <div className={styles.iconWrapper}>
+          <TrendingUp className={styles.icon} />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-accent-primary font-medium mb-1">
+        <div className={styles.body}>
+          <p className={styles.title}>
             成长记录
           </p>
-          <p className="text-sm text-text-primary leading-relaxed">
+          <p className={styles.summary}>
             {hasHistory ? summary : '这是你的第一次诊断，还没有对比数据。'}
           </p>
         </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * IPC 通道模拟工厂
  * 用于集成测试中模拟 Electron IPC，无需实际 Electron 环境

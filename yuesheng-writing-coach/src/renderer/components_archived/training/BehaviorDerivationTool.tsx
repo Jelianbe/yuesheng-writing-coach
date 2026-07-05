@@ -177,7 +177,7 @@ export const BehaviorDerivationTool: React.FC = () => {
               borderRadius: 8,
               border: '1px solid #e74c3c',
               fontSize: '0.8rem',
-              color: '#c0392b',
+              color: 'var(--error)',
             }}>
               {derivationError}
             </div>
@@ -186,7 +186,7 @@ export const BehaviorDerivationTool: React.FC = () => {
           {/* 推导结果 */}
           {derivationResult && (
             <div key={deriveKey.current} style={resultCardStyle}>
-              <div style={{ fontWeight: 600, color: '#27ae60', marginBottom: 8 }}>
+              <div style={{ fontWeight: 600, color: 'var(--success)', marginBottom: 8 }}>
                 推导结果
               </div>
 

@@ -6,13 +6,14 @@
  *
  * 每个函数接收 Zustand 的 set/get，返回 action 实现。
  * 由 training.store.ts 在 create() 中组装。
+ *
+ * Sprint 26 阶段 3.6: 调用方迁移到 service-bridge 单端点
  */
 
 import { useChatStore } from './chat.store';
 import { useProgressStore } from './progress.store';
-import { getInvoke } from '../utils/ipc';
-import { TrainingApi } from '../../shared/api-contracts/training.contract';
-import { TeachingHistoryApi } from '../../shared/api-contracts/teaching-history.contract';
+import { serviceBridge } from '../services/service-bridge';
+import { activeTrainingService } from '../services/active-training.service';
 import { severityToNumber } from '../../shared/severity-utils';
 import type {
   EvaluationResult,
@@ -23,6 +24,13 @@ import type {
 } from '../shared/types';
 import type { TrainingState } from './training.types';
 import { DEFAULT_STEPS, READING_STEPS } from './training.types';
+
+/** 行为推导结果(sprint 26:与 behavior-derivation.service.DerivationResult 同构) */
+interface DerivationResult {
+  derivedBehavior: string;
+  analysis: string;
+  consistencyCheck: string;
+}
 
 // ===== Action 工厂类型 =====
 
@@ -44,12 +52,13 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
       const sessionId = useChatStore.getState().currentSessionId;
       if (!sessionId) throw new Error('No active session');
 
-      const result = await getInvoke()(TrainingApi.assign.channel, {
-        sessionId,
-        challengeId,
-      }) as { error?: string; record?: TrainingRecord };
+      const result = await serviceBridge.invoke<
+        { sessionId: string; challengeId: string },
+        { record?: TrainingRecord }
+      >('training:assign', { sessionId, challengeId });
 
-      if (result.error) throw new Error(result.error);
+      if (!result) throw new Error('training:assign returned null');
+      const assignedRecord = result.record;
 
       // 从 recommendations 中查找匹配模板
       const match = get().recommendations.find(r => r.challengeId === challengeId);
@@ -79,7 +88,7 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
         originalQuote: errorCard?.lastQuote ?? '',
         constraint: match?.constraint ?? '',
         userDraft: '',
-        recordId: result.record?.id,
+        recordId: assignedRecord?.id,
         syndromeId: match?.syndromeId,
         targetSyndrome: match?.syndromeName,
         longTermProgress,
@@ -88,14 +97,27 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
       // S8: 非阅读任务时，异步获取五步通用训练流
       if (match?.mode !== 'reading_task' && match?.syndromeId) {
         try {
-          const flow = await getInvoke()(TrainingApi.generateFlow.channel, {
+          const flow = await serviceBridge.invoke<
+            {
+              syndromeId: string;
+              techniqueName: string;
+              challengeConstraint?: string;
+              userLevel?: number;
+              syndromeDescription?: string;
+            },
+            TrainingFlow
+          >('training:generateFlow', {
             syndromeId: match.syndromeId,
             techniqueName: match.challengeName ?? challengeId,
             challengeConstraint: match.constraint,
-          }) as TrainingFlow;
-          session.trainingFlow = flow;
-          // S16: 标记走五步流（UI 切到 FlowPanel）
-          session.flowType = 'flow5';
+          });
+          if (flow) {
+            session.trainingFlow = flow;
+            // S16: 标记走五步流（UI 切到 FlowPanel）
+            session.flowType = 'flow5';
+          } else {
+            session.flowType = 'legacy';
+          }
         } catch (e) {
           console.warn('[TrainingStore] generateTrainingFlow failed (non-fatal):', e);
           // 降级到传统 3 步流
@@ -115,7 +137,34 @@ export function createStartAction(set: SetStateFn, get: GetStateFn) {
 }
 
 export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
-  return async (): Promise<void> => {
+  return async (stepId?: 1 | 2 | 3 | 4 | 5, content?: string): Promise<void> => {
+    // Sprint 25 BL-01 C-4: 5 步分步提交分支
+    // - stepId 存在时:仅持久化本步内容到主进程 step_responses_json
+    // - 不影响 store.currentStepIndex(由 V6.2 FlowPanel 本地 state 管理)
+    // - 不评估、不走 S8 评估流(评估由 V6.2 FlowPanel 在第 4 步主动调 evaluateTraining)
+    // - stepId 不存在时:走原 S8 评估流(向后兼容)
+    if (stepId !== undefined) {
+      set({ error: null });
+      const sessionId = useChatStore.getState().currentSessionId;
+      if (!sessionId) {
+        set({ error: 'No active session' });
+        return;
+      }
+
+      // 异步持久化到主进程 step_responses(异常隔离:失败仅 console.warn)
+      const result = await activeTrainingService.submitStep({
+        sessionId,
+        stepId,
+        content: content ?? '',
+      });
+      if (!result) {
+        console.warn(
+          `[TrainingStore] submitStep(${stepId}) persist failed (non-fatal)`,
+        );
+      }
+      return;
+    }
+
     set({ isLoading: true, error: null, submissionResult: null });
     try {
       const active = get().activeTraining;
@@ -146,12 +195,22 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
           return;
         }
 
-        const result = await getInvoke()(TrainingApi.submit.channel, {
+        const result = await serviceBridge.invoke<
+          {
+            challengeDescription: string;
+            constraint: string;
+            originalQuote: string;
+            userDraft: string;
+          },
+          { passed: boolean; feedback: string; score?: number; improved?: boolean; nextStep?: string }
+        >('training:submit', {
           challengeDescription: active.challengeDescription,
           constraint: active.constraint,
           originalQuote: active.originalQuote,
           userDraft: active.userDraft,
-        }) as { passed: boolean; feedback: string; score?: number; improved?: boolean; nextStep?: string };
+        });
+
+        if (!result) throw new Error('training:submit returned null');
 
         // 构建评估结果
         const evalResult: EvaluationResult | null = result.score != null
@@ -209,11 +268,18 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
         // B3: 不切回对话，用户可通过 onBackToChat 手动返回；评估结果保持可见
         if (active.recordId) {
           try {
-            await getInvoke()(TrainingApi.complete.channel, {
+            await serviceBridge.invoke<
+              {
+                recordId: string;
+                userResponse: string;
+                aiFeedback?: string;
+                effectiveness?: number;
+              },
+              { record?: TrainingRecord }
+            >('training:complete', {
               recordId: active.recordId,
               userResponse: active.userDraft,
               aiFeedback: get().submissionResult?.feedback ?? '',
-              score: get().evaluationResult?.score,
             });
           } catch (e) {
             console.warn('[TrainingStore] complete IPC failed:', e);
@@ -234,7 +300,15 @@ export function createSubmitStepAction(set: SetStateFn, get: GetStateFn) {
             const progress = useProgressStore.getState().progressMap[sessionId];
             const consumed = progress?.resolvedIssues ?? 0;
             const total = progress?.totalIssues ?? 0;
-            await getInvoke()(TeachingHistoryApi.add.channel, {
+            await serviceBridge.invoke<
+              {
+                sessionId: string;
+                entry: { action: string; syndromeId: string; outcome: 'success' | 'partial' | 'frustrated' | 'unknown' };
+                consumed: number;
+                total: number;
+              },
+              { added: boolean; masteryReached: boolean; consumed: number; total: number }
+            >('teachingHistory:add', {
               sessionId,
               entry: {
                 action: 'training:complete',
@@ -302,7 +376,18 @@ export function createEvaluateTrainingAction(set: SetStateFn, get: GetStateFn) {
 
       const sessionId = useChatStore.getState().currentSessionId;
 
-      const result = await getInvoke()(TrainingApi.evaluate.channel, {
+      const result = await serviceBridge.invoke<
+        {
+          recordId?: string;
+          sessionId?: string;
+          syndromeId?: string;
+          challengeDescription: string;
+          constraint: string;
+          originalQuote: string;
+          userDraft: string;
+        },
+        EvaluationResult
+      >('training:evaluate', {
         recordId: active.recordId,
         sessionId,
         syndromeId: active.syndromeId,
@@ -310,7 +395,9 @@ export function createEvaluateTrainingAction(set: SetStateFn, get: GetStateFn) {
         constraint: active.constraint,
         originalQuote: active.originalQuote,
         userDraft: active.userDraft,
-      }) as EvaluationResult;
+      });
+
+      if (!result) throw new Error('evaluateTraining returned null');
 
       set({ evaluationResult: result, isLoading: false });
     } catch (error) {
@@ -332,15 +419,20 @@ export function createDeriveBehaviorAction(set: SetStateFn, _get: GetStateFn) {
   }): Promise<void> => {
     set({ derivationLoading: true, derivationError: null, derivationResult: null });
     try {
-      const res = await getInvoke()(TrainingApi.deriveBehavior.channel, params) as {
-        success: boolean;
-        data?: { derivedBehavior: string; analysis: string; consistencyCheck: string };
-        error?: string;
-      };
-      if (res?.success && res.data) {
-        set({ derivationResult: res.data, derivationLoading: false });
+      const res = await serviceBridge.invoke<
+        {
+          characterName: string;
+          sceneDescription: string;
+          question1: string;
+          question2: string;
+          question3: string;
+        },
+        DerivationResult
+      >('training:deriveBehavior', params);
+      if (res) {
+        set({ derivationResult: res, derivationLoading: false });
       } else {
-        set({ derivationError: res?.error ?? '推导失败', derivationLoading: false });
+        set({ derivationError: '推导失败', derivationLoading: false });
       }
     } catch (e) {
       set({ derivationError: String(e), derivationLoading: false });

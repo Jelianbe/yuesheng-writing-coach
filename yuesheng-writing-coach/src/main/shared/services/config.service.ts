@@ -102,7 +102,7 @@ export class ConfigService {
       this.store.set(CONFIG_KEYS.BASE_URL, config.baseUrl);
       this.store.set(CONFIG_KEYS.MODEL_NAME, config.modelName);
       this.store.set(CONFIG_KEYS.ATTITUDE_LEVEL, config.attitudeLevel);
-      console.log('[Config] 已自动升级旧配置值');
+      console.warn('[Config] 已自动升级旧配置值');
     }
 
     return config;

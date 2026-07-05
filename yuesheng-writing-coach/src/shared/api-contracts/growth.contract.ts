@@ -28,6 +28,16 @@ export interface GrowthGetTrendsResponse {
   trends: GrowthTrend[];
 }
 
+/** 全局趋势的单条症候趋势项(Sprint 19 Issue 19-3) */
+export interface GrowthGlobalSyndromeTrend {
+  syndromeId: string;
+  name: string;
+  status: 'mastered' | 'improving' | 'stable' | 'needsAttention';
+  latestSeverity: 'L1' | 'L2' | 'L3' | null;
+  occurrenceCount: number;
+  description: string;
+}
+
 export interface GrowthGetGlobalTrendsResponse {
   overall: {
     averageScore: number;
@@ -35,6 +45,8 @@ export interface GrowthGetGlobalTrendsResponse {
     topGainers: string[];
     topLosers: string[];
   };
+  /** 全局趋势下每个症候的明细(用于雷达图与症候列表渲染) */
+  trends: GrowthGlobalSyndromeTrend[];
 }
 
 // ─── API 接口定义 ───

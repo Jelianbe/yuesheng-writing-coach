@@ -3,7 +3,7 @@ import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 import { EmptyState } from '../common/EmptyState';
 import { MessageSquare, ChevronUp } from 'lucide-react';
-import type { ChatMessage } from '../../shared/types';
+import { ChatMessage } from '../../shared/types';
 
 interface MessageListProps {
   messages: ChatMessage[];

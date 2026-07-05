@@ -1,0 +1,41 @@
+/**
+ * FlowStepIndicator.tsx — 五步流步骤指示器
+ *
+ * 职责：渲染顶部 5 步进度条，点击可跳到已完成步骤。
+ * 状态：active / completed / pending
+ */
+import type { TrainingFlow } from '../../../../shared/types/types-training';
+
+interface Props {
+  flow: TrainingFlow;
+  currentIndex: number; // 0-4
+  onJump?: (index: number) => void;
+}
+
+const STEP_LABELS = ['解说', '例证', '确认', '尝试', '反馈'];
+
+export function FlowStepIndicator({ flow, currentIndex, onJump }: Props) {
+  const steps = flow.steps.slice(0, 5);
+  return (
+    <ol className="flow-step-indicator" aria-label="训练进度">
+      {steps.map((s, i) => {
+        const status =
+          i < currentIndex ? 'completed' : i === currentIndex ? 'active' : 'pending';
+        const canJump = status === 'completed' && Boolean(onJump);
+        return (
+          <li
+            key={s.stepId ?? i}
+            className={`flow-step flow-step--${status}`}
+            onClick={canJump ? () => onJump?.(i) : undefined}
+            role={canJump ? 'button' : undefined}
+            tabIndex={canJump ? 0 : -1}
+            data-testid={`flow-step-${i}`}
+          >
+            <span className="flow-step__num">{i + 1}</span>
+            <span className="flow-step__label">{STEP_LABELS[i] ?? s.name}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}

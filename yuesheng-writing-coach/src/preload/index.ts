@@ -2,86 +2,23 @@
  * preload 脚本 — Electron 安全桥接
  *
  * ⚠️ Electron sandbox 限制：preload 无法 require 外部相对路径模块，
- * 因此白名单必须内联在此文件。同步参考 src/shared/constants.ts。
+ * 因此白名单必须内联在此文件。
  *
- * 添加新 IPC 通道时，必须同步更新：
- *   1. src/shared/constants.ts（IPC_CHANNELS + ALLOWED_INVOKE_CHANNELS）
- *   2. src/shared/constants.js（IPC_CHANNELS + 白名单）
- *   3. src/preload/index.ts（下面的 allowedInvokeChannels / allowedEventChannels）
+ * Sprint 26 阶段 3.4/3.5: invoke 白名单已压缩为单端点 `bridge:invoke`。
+ * 调用方通过 `serviceBridge.invoke('domain:method', args)` 走单 RPC 端点。
+ * window 控制保留(单向 send)、事件通道保留(主进程推送)。
+ *
+ * 添加新 IPC 通道时：
+ *   1. invoke 通道: 在主进程 service-bridge.registerMethod 注册,客户端用 serviceBridge.invoke
+ *   2. event 通道: 在此处 allowedEventChannels 添加,在主进程用 webContents.send
+ *   3. send 通道(单向): 在此处 allowedSendChannels 添加
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
 
-/** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 */
+/** 允许渲染进程通过 invoke() 调用的 IPC 通道白名单 — 阶段 3.5 压缩为单端点 bridge:invoke */
 const allowedInvokeChannels: readonly string[] = [
-  'config:get',
-  'config:set',
-  'config:testConnection',
-  'diagnosis:query',
-  'diagnosis:submitRewrite',
-  'diagnosis:getComparison',
-  'growth:getTrends',
-  'growth:getGlobalTrends',
-  'teachingState:get',
-  'teachingState:update',
-  'teachingState:confirm',
-  'teachingState:getPrompt',
-  'teachingState:updateSummary',
-  'ability:getProfile',
-  'teachingNote:record',
-  'teachingNote:getTree',
-  'teachingNote:delete',
-  'teachingNote:update',
-  'evidence:getByDisease',
-  'evidence:getByAbility',
-  'evidence:getChain',
-  'evidence:create',
-  'evidence:getBySyndrome',
-  'chat:send',
-  'chat:stop',
-  'session:list',
-  'session:create',
-  'session:delete',
-  'session:rename',
-  'session:getMessages',
-  'session:getMessagesPaged',
-  'session:listWithMeta',
-  'session:updateTitle',
-  'session:searchMessages',
-  'session:isNewUser',
-  'onboarding:analyze',
-  'training:recommend',
-  'training:assign',
-  'training:complete',
-  'training:skip',
-  'training:history',
-  'training:submit',
-  'training:evaluate',
-  'training:deriveBehavior',
-  'manuscript:list',
-  'manuscript:get',
-  'manuscript:create',
-  'manuscript:update',
-  'manuscript:delete',
-  'chapter:list',
-  'chapter:get',
-  'chapter:create',
-  'chapter:delete',
-  'chapter:updateContent',
-  'teachingHistory:add',
-  'training:catalog',
-  'training:decideReading',
-  'config:getReadingEntry',
-  'project:list',
-  'project:get',
-  'project:create',
-  'project:update',
-  'project:delete',
-  // S16 修复：补回 prescription 三个频道（与 ALLOWED_INVOKE_CHANNELS 同步）
-  'prescription:getStageProgress',
-  'prescription:getAllStages',
-  'prescription:getStageById',
-  'training:generateFlow',
+  'bridge:invoke',
 ];
 
 /** 允许渲染进程通过 send() 单向发送的 IPC 通道白名单 */
@@ -99,6 +36,9 @@ const allowedEventChannels: readonly string[] = [
   'chat:stream:data',
   'chat:stream:end',
   'chat:tool:executing',
+  'chat:event',
+  // Sprint 24 A-4: ActiveTraining 状态推送事件(主进程 → renderer)
+  'activeTraining:updated',
 ];
 
 contextBridge.exposeInMainWorld('electronAPI', {

@@ -40,6 +40,16 @@
   gap: 12px;
 }
 
+.loadingText {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.errorText {
+  font-size: 0.875rem;
+  color: #e74c3c;
+}
+
 /* ===== 卡片样式 ===== */
 
 .trainingCard {
@@ -80,6 +90,58 @@
     transform 250ms cubic-bezier(0.25, 1, 0.5, 1);
 }
 
+.workshopHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background-color: var(--accent-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.workshopHeaderTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.readingBanner {
+  margin: 0 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background-color: var(--success-light);
+  color: var(--success);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.readingBannerText {
+  font-weight: 500;
+}
+
+.readingBannerBtn {
+  background: none;
+  border: 1px solid var(--success);
+  border-radius: 4px;
+  padding: 4px 12px;
+  cursor: pointer;
+  color: var(--success);
+  font-size: 0.85rem;
+}
+
+.workshopContent {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.workshopInner {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 .trainingBackBtn {
   padding: 6px 16px;
   background-color: transparent;
@@ -112,4 +174,215 @@
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 250ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ===== F-03: 验证与复盘 ===== */
+
+.retroContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.retroHeader {
+  padding: 16px 24px;
+  background-color: var(--accent-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.retroBody {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+.retroCard {
+  padding: 20px;
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.retroFooter {
+  padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.primaryBtn {
+  padding: 8px 20px;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 250ms cubic-bezier(0.25, 1, 0.5, 1),
+    transform 250ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.secondaryBtn {
+  padding: 8px 20px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 250ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ===== Sprint 4: Progress Timeline ===== */
+
+.timeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 12px 24px;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.timelinePhase {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.timelinePhaseActive {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.timelinePhaseCompleted {
+  color: var(--success);
+}
+
+.timelineDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--border);
+  flex-shrink: 0;
+}
+
+.timelineDotActive {
+  background-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+
+.timelineDotCompleted {
+  background-color: var(--success);
+}
+
+.timelineConnector {
+  width: 24px;
+  height: 2px;
+  background-color: var(--border);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+.timelineConnectorActive {
+  background-color: var(--accent-light);
+}
+
+.timelineConnectorCompleted {
+  background-color: var(--success);
+}
+
+/* ===== Sprint 4: History Filters ===== */
+
+.historyFilterBar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.historyFilterBtn {
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms;
+}
+
+.historyFilterBtn:hover {
+  background: var(--accent-faint);
+}
+
+.historyFilterBtnActive {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
+
+.historyRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.historyRow:hover {
+  background: var(--accent-faint);
+}
+
+.historyIcon {
+  font-weight: 600;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.historyName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.historyEffectiveness {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.historyDate {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.historyExpanded {
+  padding: 8px 12px;
+  margin: 0 8px 4px 28px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.historySkipped {
+  opacity: 0.7;
+}
+
+.activeTrainingView {
+  height: 100%;
 }

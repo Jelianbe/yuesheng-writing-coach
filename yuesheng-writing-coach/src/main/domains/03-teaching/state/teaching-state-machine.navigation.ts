@@ -51,7 +51,7 @@ export function validateTransition(current: string, next: string): boolean {
  */
 export function safeGetNextPhase(current: string): TeachingPhase {
   const next = getNextPhase(current);
-  console.info(`[StateMachine] 阶段推进: ${current} → ${next}`);
+  console.warn(`[StateMachine] 阶段推进: ${current} → ${next}`);
   return next as TeachingPhase;
 }
 

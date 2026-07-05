@@ -16,7 +16,7 @@ import * as fs from 'fs';
 
 import { SYNDROME_NAMES, SYNDROME_TO_ACTIONS, ACTION_NAMES, ACTION_GOALS } from '../../../../shared/mappings';
 import type { SyndromeId, ActionId } from '../../../../shared/constants';
-import { SkillDispatcher } from './skill-dispatcher';
+import type { SkillDispatcher } from './skill-dispatcher';
 import type { TeachingPhase, AttitudeLevel } from './skill-metadata';
 
 /** 从知识文件中提取的片段 */

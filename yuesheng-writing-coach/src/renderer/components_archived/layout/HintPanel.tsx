@@ -99,7 +99,7 @@ const HintLevelCard: React.FC<{ level: HintLevel }> = ({ level }) => {
               border: 'none',
               borderRadius: 'var(--radius-sm)',
               background: canAfford ? 'var(--accent)' : 'var(--bg-hover)',
-              color: canAfford ? '#fff' : 'var(--text-tertiary)',
+              color: canAfford ? 'var(--text-on-accent)' : 'var(--text-tertiary)',
               fontSize: '0.72rem',
               cursor: canAfford ? 'pointer' : 'not-allowed',
               transition: 'all 200ms ease',

@@ -11,6 +11,7 @@ import type { Manuscript, Chapter } from '../../shared/types-manuscript';
 import { useChapterStore } from '../../stores/chapter.store';
 import { useManuscriptStore } from '../../stores/manuscript.store';
 import { useRightPanelStore } from '../../stores';
+import { useTrainingStore } from '../../stores/training.store';
 import { copyToClipboard } from '../../utils/clipboard';
 import styles from './WorkTreePanel.module.css';
 
@@ -210,6 +211,7 @@ export const WorkTreePanel: React.FC<WorkTreePanelProps> = ({
                       }
                       onSelectChapter(ch.id);
                       onOpenTab(ch.id, ms.title);
+                      useTrainingStore.getState().enterEditor();
                       useRightPanelStore.getState().openTool('works', { type: 'edit', chapterId: ch.id });
                     }}
                     onContextMenu={e => {

@@ -1,6 +1,5 @@
 import { useEditorStore } from '../../stores/editor.store';
-import type { ThemePalette } from './manuscript.constants';
-import { THEME_PALETTES } from './manuscript.constants';
+import { THEME_PALETTES, ThemePalette } from './manuscript.constants';
 
 /** EditorTheme 到 THEME_PALETTES key 的映射 */
 const THEME_KEY_MAP: Record<string, string> = {

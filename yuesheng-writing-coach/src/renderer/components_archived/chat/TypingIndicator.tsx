@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './TypingIndicator.module.css';
 
 interface TypingIndicatorProps {
   className?: string;
@@ -6,19 +7,19 @@ interface TypingIndicatorProps {
 
 export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ className = '' }) => {
   return (
-    <div className={`flex items-center gap-1 py-3 px-1 animate-fade-in ${className}`} role="status" aria-label="AI is typing">
-      <div className="flex gap-1.5">
+    <div className={`${styles.container} ${className}`} role="status" aria-label="AI is typing">
+      <div className={styles.dots}>
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="w-2 h-2 rounded-full bg-accent-primary/60"
+            className={styles.dot}
             style={{
               animation: `pulseDot 1.4s ease-in-out ${i * 0.16}s infinite both`,
             }}
           />
         ))}
       </div>
-      <span className="text-sm text-text-tertiary ml-2">
+      <span className={styles.label}>
         月笙正在思考...
       </span>
     </div>

@@ -1,7 +1,7 @@
 {
   "$schema": "https://trae.local/schemas/training-flow-mapping.v1.json",
-  "version": "1.0.0",
-  "description": "S16-1 配置：技法分类(CATEGORY)与五步流模板(FLOW_TEMPLATES)外置。新增技法分类只需追加条目。",
+  "version": "1.1.0",
+  "description": "S16-1 配置：技法分类(CATEGORY)与五步流模板(FLOW_TEMPLATES)外置。S25 BL-01 扩展：每个分类的 5 步模板(categoryTemplates)外置，消除 service 硬编码 4 处(R-014)。新增分类只需追加 categories 与 categoryTemplates 条目。",
   "categories": [
     {
       "key": "开篇",
@@ -40,6 +40,50 @@
       "effect": "表现效果"
     }
   ],
+  "categoryTemplates": {
+    "开篇": {
+      "explainTemplate": "「{techniqueName}」是一种{description}。它的核心价值在于让读者在第一瞬间被抓住，愿意继续读下去。",
+      "exampleTemplate": "看看这个例子：「{example}」。注意它是怎么在极短的篇幅内制造{effect}的。你能感受到什么？",
+      "verifyQuestion": "用你自己的话描述「{techniqueName}」的核心要点。如果让你给一个没听过的人讲解，你会怎么说？",
+      "practiceTemplate": "现在轮到你尝试了。找到你作品中开篇的一段，应用「{techniqueName}」来改写。{constraint}",
+      "revisionGuide": "对照练习目标检查你的改写：是否抓住了核心要点？是否偏离了原文的意思？根据反馈进行修订。"
+    },
+    "人物": {
+      "explainTemplate": "「{techniqueName}」是一种{description}。好的角色塑造让读者感受到角色是\"活人\"而非叙事工具。",
+      "exampleTemplate": "看这个例子：「{example}」。注意作者是怎么通过{effect}来塑造角色的立体感的。",
+      "verifyQuestion": "你觉得「{techniqueName}」最关键的要点是什么？在你的写作中，你觉得哪个方面最需要这个技巧？",
+      "practiceTemplate": "选择你作品中的一个角色，用「{techniqueName}」来加深ta的立体感。{constraint}",
+      "revisionGuide": "检查你的改写：角色是否有了更多层次？ta的行为是否更有说服力？根据反馈进行调整。"
+    },
+    "节奏": {
+      "explainTemplate": "「{techniqueName}」是一种{description}。叙事节奏决定了读者阅读时的情绪起伏和沉浸感。",
+      "exampleTemplate": "看这个例子：「{example}」。注意作者是怎么通过{effect}来控制节奏的。",
+      "verifyQuestion": "在你看来，「{techniqueName}」适用于什么样的场景？它和普通的写法区别在哪里？",
+      "practiceTemplate": "在你作品中选择一处节奏需要调整的地方，用「{techniqueName}」来改进。{constraint}",
+      "revisionGuide": "对比原文和改写：节奏感是否改善了？信息密度是否更合理？根据反馈修订。"
+    },
+    "语言": {
+      "explainTemplate": "「{techniqueName}」是一种{description}。精准的语言是写作的基石，它让读者\"看见\"而非\"知道\"。",
+      "exampleTemplate": "看这个例子：「{example}」。注意{effect}是怎么通过具体的词语选择来达成的。",
+      "verifyQuestion": "你觉得「{techniqueName}」的核心要点是什么？你能不能举一个你读过的作品中类似的例子？",
+      "practiceTemplate": "在你作品中找出一段可以用「{techniqueName}」改进的文字，尝试改写。{constraint}",
+      "revisionGuide": "检查你的用词：是否更精准了？是否删掉了多余的字？根据反馈进一步打磨。"
+    },
+    "结构": {
+      "explainTemplate": "「{techniqueName}」是一种{description}。好的结构让故事整体有条理，不松散、不跑题。",
+      "exampleTemplate": "看这个例子：「{example}」。注意作者是怎么通过{effect}来组织信息、引导读者注意力的。",
+      "verifyQuestion": "「{techniqueName}」的核心思路是什么？它解决了什么样的结构问题？",
+      "practiceTemplate": "在你作品中选一段结构需要优化之处，用「{techniqueName}」来重新组织。{constraint}",
+      "revisionGuide": "对比原文：结构是否更清晰了？信息是否更有序了？根据反馈调整。"
+    },
+    "_default": {
+      "explainTemplate": "「{techniqueName}」是一种{description}。掌握它能帮助你在写作中更有效地表达。",
+      "exampleTemplate": "看这个例子：「{example}」。注意作者是怎么做到的。",
+      "verifyQuestion": "用你自己的话总结「{techniqueName}」的核心要点。",
+      "practiceTemplate": "尝试在你的作品中应用「{techniqueName}」。{constraint}",
+      "revisionGuide": "检查你的改写是否达到了目标。根据反馈修订。"
+    }
+  },
   "flowTemplates": [
     {
       "stepId": 1,

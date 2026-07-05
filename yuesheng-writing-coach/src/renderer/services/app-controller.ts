@@ -7,8 +7,25 @@
  * 生命周期：
  *   1. initialize()  — 应用启动时调用，注册所有监听 + 初始化 store 数据
  *   2. destroy()     — 应用卸载时调用，清理所有监听
+ *
+ * ─── Sprint 26 阶段 3.2 (双轨化决策) ───
+ *
+ * 本控制器**完全依赖 IPC 事件推送**(diagnosis 更新/流式数据/教学状态/精通门控)。
+ * Capacitor 端无 IPC 推送通道,因此:
+ *   - initialize() 在 Capacitor 端早返回,不做任何监听注册
+ *   - store 数据初始化走本地降级路径(load 返回 null 时 store 用默认状态)
+ *   - destroy() 在 Capacitor 端是空操作
+ *
+ * Capacitor 端已知 trade-off:
+ *   - 诊断更新不推送 → diag.store 不会自动更新(用户需手动触发)
+ *   - 流式数据不推送 → chat.store 不会自动 append token
+ *   - 教学状态变化不推送 → teaching-state.store 不会自动更新
+ *   - 精通门控不推送 → 训练卡状态不会自动解锁
+ *
+ * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.2 / D-074
  */
 
+import { isCapacitor } from './_dual-track';
 import { useChatStore } from '../stores/chat.store';
 import { useDiagStore } from '../stores/diag.store';
 import { useTeachingStateStore } from '../stores/teaching-state.store';
@@ -45,6 +62,11 @@ export function createAppController(): AppController {
 
   return {
     initialize(callbacks?: AppControllerCallbacks): void {
+      if (isCapacitor()) {
+        console.warn('[AppController] initialize: Capacitor 端无 IPC 推送通道,跳过监听注册(已知 trade-off,见文件头)');
+        return;
+      }
+
       // 0. 初始化 store 数据（替代 App.tsx 中分散的 init useEffect）
       useStudentContextStore.getState().load();
 

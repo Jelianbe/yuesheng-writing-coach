@@ -2,7 +2,94 @@
 
 > 月笙写作教练变更日志。版本号遵循语义化版本（semver）。
 
-## [Unreleased]
+## [1.5.0] - 2026-06-25
+
+### 移动端 V1 — 前端重构
+
+#### Added
+- **PageStackRouter**: 轻量页面栈路由（Context + Zustand），支持 push/pop/navigateToTab，子页面隐藏 TabBar
+- **TabBar 3 tab**: 书架 | 对话 | 应用（Lucide 图标 + 激活指示器）
+- **BookshelfPage**: 书卡列表（渐变色封面 46×60px + 书名 + 元数据 + 成长指示点）+ 虚线新建按钮
+- **ProjectSpacePage**: 项目空间（诊断/训练/学习天数统计 + SVG 雷达图五维能力 + CTA + 最近记录 + 章节列表）
+- **ChatPage**: 教学对话（欢迎引导区含月头像 + 用户/诊断/思考中三种气泡 + 诊断分析标签 + 工具条输入栏）
+- **ConversationsPage**: 对话列表（标题/摘要/时间/作品关联 + 空状态引导）
+- **AppsPage**: 应用中心（4×4 图标网格 + 工具列表）
+- **page-stack.store**: Zustand store 管理页面栈状态，RootTab 类型约束
+
+#### Changed
+- **variables.css V3.0**: 金棕暖灰 → 暖紫柔棕体系（主色 `#8A7A9E`，功能色教学 `#7A93AC`/练习 `#B8956E`/成长 `#7BA089`）
+- **App.tsx**: 替换 AppShell 为 PageStackRouter，保留全部 IPC 订阅
+- 圆角体系对齐设计稿（sm: 8px / md: 12px / lg: 16px / xl: 20px）
+- 阴影色相从暖棕 → 暖紫调
+
+#### Architecture
+- 375px 移动端优先容器（maxWidth: 430, margin: 0 auto, 100dvh）
+- 现有桌面端三栏布局（AppShell/CenterPanel/RightPanel）保留未改动
+- 后端 IPC 订阅、Store、Service 层零改动
+
+## [1.4.0] - 2026-06-23
+
+### Sprint 17 三期 — Catalog 修复 + ToolGrid 重构 + 硬编码清理 + 审计 14/20
+
+#### Fixed
+- **Catalog IPC 包裹层**: `createHandler` 把 handler 返回值包装为 `{ success: true, data: ... }`，CatalogWorkspace 和 useStartTraining 直读 `res.groups` 导致始终为空（回归自 S16）
+- **Catalog CSS 类名失配**: 组件用 14 个 CSS 类名在 css 文件中不存在（`wrapper`/`catalogGrid`/`coreGroupCard`/`techCard` 等），核心组网格和技法卡片全部裸奔
+- **ToolGrid 图标**: 文本字符 `✤ ◐ ✎ ☰ ⚙ ◈` → lucide-react（BookOpen/BarChart3/FileText 等）
+- **~80 硬编码 hex → CSS design tokens**: 18 个文件，核心组网格/技法卡片/进度面板 统一 token 化
+- **SubTabs/ToolTabs emoji → lucide + aria-label**: 剩余 emoji 清理
+- **--transition-bounce 移除**: 全局移除不合理的 bounce 动效
+- **RightPanel header onWheel**: passive listener preventDefault 警告修复（改用 addEventListener + passive: false）
+
+#### Changed
+- **ToolGrid**: 重做为方格标签布局（圆形 icon 容器 + 描述文案 + hover 上浮）
+- **Catalog 技法卡片**: 左侧 3px accent 边框卡片 + hover 左移
+- **Catalog 核心组网格**: 2 列居中卡片 + hover 上浮
+- **WelcomeCard / ChatView / Recommendations emoji → lucide**: 剩余批次清理
+
+#### Chore
+- **README**: 全面重写（项目概览 / 架构图 / 路线图 / 已知债务）
+- **PRODUCT.md**: 产品战略定义（register / user / purpose / anti-references / design principles）
+- **二次审计 v3**: 14.5/20 Good（目标 ≥14/20 达成），v1→v3 +3.5
+
+## [1.3.0] - 2026-06-23
+
+### Sprint 17 — Tailwind 迁移 + 二次审计 (2026-06-23)
+
+#### Added
+- **T17-13 二次审计** `dev-docs/audits/2026-06-23-frontend-audit-v2.md`：13/20 (Good)，+2 分
+- **PRODUCT.md**：完整产品战略定义（register / user / purpose / anti-references / design principles）
+
+#### Changed
+- **T17-12 Tailwind → CSS Modules (4 批, 12 文件, ~103 处)**：
+  - **B1**：Card / EmptyState / TypingIndicator / AppConfigGate（4 文件 12 处）
+  - **B2**：BeatCheckChart / SelfCheckList / GrowthCard（3 文件 20 处）
+  - **B3**：EvaluationCard / EditPanel / OriginalEvidenceSection（3 文件 29 处）
+  - **B4**：OnboardingFlow / DiagnosisCard（2 文件 41 处）
+  - 全量使用 design tokens（`var(--bg-*)` / `var(--text-*)` / `var(--space-*)`）
+
+#### Chore
+- **packages**：Tailwind 配置保留 1 sprint 观察期，包暂未移除
+
+## [1.2.0] - 2026-06-23
+
+### Sprint 17 — 前端审计整改 + Sprint 16 验收闭环 (2026-06-23)
+
+#### Added
+- **训练流 CSS Module** `src/renderer/components/training/flow/flow.module.css`（180 行）：覆盖 FiveStepFlow + FlowStepIndicator + 5 步面板样式，design tokens + 金棕暖灰 + WCAG AA + reduced-motion
+- **CenterPanel selectors** `selectors.ts`：5 个独立 selector 替代全 store 订阅，useShallow 保证聚合字段引用稳定性
+- **selector 单元测试** `__tests__/selectors.test.ts`：11 个用例覆盖引用稳定性
+- **FiveStepFlow 启用 4 个 skip 测试**：引入 @testing-library/user-event v14.6.1，覆盖核心禁用逻辑
+
+#### Changed
+- **CenterPanel** 改用新 selectors：actions 走 getState()，高频/低频字段解耦
+- **AppShell 收起栏** 6 个 emoji 按钮 → lucide-react 图标（Plus / Settings / Maximize2 / Minus / Square / X）
+- **CenterPanel empty state** 3 个 emoji → lucide-react 图标（PenLine / Sprout / MessageCircle）
+- **AppShell 拖拽**：mousemove 改用 requestAnimationFrame 节流，避免布局抖动
+- **AppShell borderLeft**：硬编码 #D6CEC0 → var(--border) token
+
+#### Performance
+- **CenterPanel 训练流 stream**：ChatView / RetroSummaryView 不再因 CenterPanel 重渲染被波及
+- **AppShell 拖拽节流**：每帧只 commit 一次到 React state
 
 ## [1.1.0] - 2026-06-23
 

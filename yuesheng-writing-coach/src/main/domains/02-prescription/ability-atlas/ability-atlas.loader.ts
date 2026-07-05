@@ -89,13 +89,15 @@ function ensureLoaded(): void {
 }
 
 function buildCaches(): void {
-  const abMap = new Map<string, AtlasAbilityNode>(atlasData!.abilities.map(a => [a.id, a]));
-  const prototypes = prototypesData!.nodes ?? [];
+  const atlas = atlasData as AbilityAtlasJson;
+  const prototypes = (prototypesData as AbilityNodePrototypesJson).nodes ?? [];
+
+  const abMap = new Map<string, AtlasAbilityNode>(atlas.abilities.map(a => [a.id, a]));
 
   // 建立 ABL-XXX → AB-XXX 映射
   const mapping = new Map<string, string>();
   const nameToAbl = new Map<string, string>();
-  for (const abl of atlasData!.abilities) {
+  for (const abl of atlas.abilities) {
     nameToAbl.set(abl.name, abl.id);
   }
   for (const proto of prototypes) {
@@ -112,7 +114,7 @@ function buildCaches(): void {
 
   // 建立症候 → 能力节点 缓存
   const bySyndrome = new Map<string, AbilityNodeInfo[]>();
-  for (const syndrome of atlasData!.syndromes) {
+  for (const syndrome of atlas.syndromes) {
     const nodes = syndrome.related_abilities
       .map(id => abMap.get(id))
       .filter((n): n is AtlasAbilityNode => !!n)
@@ -124,7 +126,7 @@ function buildCaches(): void {
   // 建立能力 → 训练任务 缓存
   const byAbility = new Map<string, AtlasTrainingTask[]>();
   const tasksByAbilityId = new Map<string, AtlasTrainingTask[]>();
-  for (const task of atlasData!.training_tasks) {
+  for (const task of atlas.training_tasks) {
     for (const ablId of task.related_abilities) {
       const list = tasksByAbilityId.get(ablId) ?? [];
       list.push(task);
@@ -138,7 +140,7 @@ function buildCaches(): void {
 
   // 建立依赖拓扑
   const graph = new Map<string, string[]>();
-  for (const ability of atlasData!.abilities) {
+  for (const ability of atlas.abilities) {
     graph.set(ability.id, ability.prerequisites);
   }
   cachedDependencyGraph = graph;
@@ -167,7 +169,7 @@ function toAbilityNodeInfo(
 }
 
 function getActionMapping(syndromeId: string): SyndromeActionMapping | undefined {
-  return actionMapData!.mappings.find(m => m.syndromeId === syndromeId);
+  return (actionMapData as SyndromeActionMapJson).mappings.find(m => m.syndromeId === syndromeId);
 }
 
 // ==============================
@@ -179,7 +181,7 @@ function getActionMapping(syndromeId: string): SyndromeActionMapping | undefined
  */
 export function getAbilitiesBySyndrome(syndromeId: string): AbilityNodeInfo[] {
   ensureLoaded();
-  return cachedAbilitiesBySyndrome!.get(syndromeId) ?? [];
+  return (cachedAbilitiesBySyndrome as Map<string, AbilityNodeInfo[]>).get(syndromeId) ?? [];
 }
 
 /**
@@ -187,7 +189,7 @@ export function getAbilitiesBySyndrome(syndromeId: string): AbilityNodeInfo[] {
  */
 export function getTrainingTasksByAbility(abilityId: string): AtlasTrainingTask[] {
   ensureLoaded();
-  return cachedTasksByAbility!.get(abilityId) ?? [];
+  return (cachedTasksByAbility as Map<string, AtlasTrainingTask[]>).get(abilityId) ?? [];
 }
 
 /**
@@ -195,7 +197,7 @@ export function getTrainingTasksByAbility(abilityId: string): AtlasTrainingTask[
  */
 export function getPrerequisites(abilityId: string): string[] {
   ensureLoaded();
-  return cachedDependencyGraph!.get(abilityId) ?? [];
+  return (cachedDependencyGraph as Map<string, string[]>).get(abilityId) ?? [];
 }
 
 /**
@@ -203,7 +205,7 @@ export function getPrerequisites(abilityId: string): string[] {
  */
 export function getSyndromeDetail(syndromeId: string): SyndromeDetail | undefined {
   ensureLoaded();
-  const syndrome = atlasData!.syndromes.find(s => s.id === syndromeId);
+  const syndrome = (atlasData as AbilityAtlasJson).syndromes.find(s => s.id === syndromeId);
   if (!syndrome) return undefined;
 
   const actionMapping = getActionMapping(syndromeId);
@@ -234,7 +236,7 @@ export function getSyndromeDetail(syndromeId: string): SyndromeDetail | undefine
  */
 export function getDependencyGraph(): Map<string, string[]> {
   ensureLoaded();
-  return new Map(cachedDependencyGraph!);
+  return new Map(cachedDependencyGraph as Map<string, string[]>);
 }
 
 /**
@@ -242,7 +244,7 @@ export function getDependencyGraph(): Map<string, string[]> {
  */
 export function getAbilityNodeMapping(): Map<string, string> {
   ensureLoaded();
-  return new Map(cachedAbilityNodeMapping!);
+  return new Map(cachedAbilityNodeMapping as Map<string, string>);
 }
 
 /**
@@ -250,7 +252,9 @@ export function getAbilityNodeMapping(): Map<string, string> {
  */
 export function getAllAbilityNodes(): AbilityNodeInfo[] {
   ensureLoaded();
-  return atlasData!.abilities.map(n => toAbilityNodeInfo(n, cachedAbilityNodeMapping!, prototypesData!.nodes ?? []));
+  return (atlasData as AbilityAtlasJson).abilities.map(n =>
+    toAbilityNodeInfo(n, cachedAbilityNodeMapping as Map<string, string>, (prototypesData as AbilityNodePrototypesJson).nodes ?? [])
+  );
 }
 
 /**
@@ -258,7 +262,7 @@ export function getAllAbilityNodes(): AbilityNodeInfo[] {
  */
 export function getAllSyndromes(): Array<{ id: string; name: string; relatedAbilities: string[] }> {
   ensureLoaded();
-  return atlasData!.syndromes.map(s => ({
+  return (atlasData as AbilityAtlasJson).syndromes.map(s => ({
     id: s.id,
     name: s.name,
     relatedAbilities: s.related_abilities,
@@ -271,7 +275,7 @@ export function getAllSyndromes(): Array<{ id: string; name: string; relatedAbil
  */
 export function getAllActionMappings(): SyndromeActionMapping[] {
   ensureLoaded();
-  return [...actionMapData!.mappings];
+  return [...(actionMapData as SyndromeActionMapJson).mappings];
 }
 
 /**

@@ -10,13 +10,9 @@
 import React, { useState, useCallback } from 'react';
 import type { ChatMessage, DiagnosisEntry, RewriteEvaluation } from '../../shared/types';
 import { MessageList } from './MessageList';
-import { MessageInput } from './MessageInput';
-import { TemplateSelector } from './TemplateSelector';
 import { OnboardingFlow } from './OnboardingFlow';
 import { ChatSearchBar } from './ChatSearchBar';
 import { WelcomeCard } from './WelcomeCard';
-import { InputToolbar } from './InputToolbar';
-import { AttitudeIndicator } from './AttitudeIndicator';
 import { DiagnosisCard } from '../diagnosis/DiagnosisCard';
 import { EditPanel } from '../diagnosis/EditPanel';
 import { EvaluationCard } from '../diagnosis/EvaluationCard';
@@ -27,6 +23,7 @@ import { getInvoke } from '../../utils/ipc';
 import { IPC_CHANNELS } from '../../shared/constants';
 import { useChatStore } from '../../stores/chat.store';
 import styles from './ChatView.module.css';
+import { AlertTriangle } from 'lucide-react';
 
 interface ChatViewProps {
   messages: ChatMessage[];
@@ -45,6 +42,10 @@ interface ChatViewProps {
   bridgeRecommendation: TrainingRecommendation | null;
   /** 是否已配置 API Key（控制欢迎卡片和发送按钮禁用） */
   isConfigured?: boolean;
+  // Q-02: 错误展示 + 重试
+  error?: string | null;
+  retryable?: boolean;
+  onRetry?: () => void;
   onSend: (text: string) => void;
   onStop: () => void;
   onStartEditing: (syndromeId: string, evidence: string[], name: string, severity: string) => void;
@@ -71,8 +72,11 @@ export const ChatView: React.FC<ChatViewProps> = ({
   growthSummary,
   bridgeRecommendation,
   isConfigured = true,
-  onSend,
-  onStop,
+  error,
+  retryable,
+  onRetry,
+  onSend: _onSend,
+  onStop: _onStop,
   onStartEditing,
   onSubmitRewrite,
   onCancelEditing,
@@ -82,26 +86,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
   // ── 搜索状态 ──
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
-
-  // ── I-02: 模板辅助状态 ──
-  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
-
-  const handleQuickPillClick = useCallback((pillId: string) => {
-    if (pillId === 'template') {
-      setShowTemplatePicker(true);
-    }
-  }, []);
-
-  // A-2: InputToolbar 的"模板"按钮复用 QuickPill 逻辑
-  const handleInputTemplate = useCallback(
-    () => handleQuickPillClick('template'),
-    [handleQuickPillClick]
-  );
-
-  const handleTemplateSelect = useCallback((template: string) => {
-    setShowTemplatePicker(false);
-    onSend(template);
-  }, [onSend]);
 
   // ── 历史消息加载状态 ──
   const [loadedMessages, setLoadedMessages] = useState<ChatMessage[]>(messages);
@@ -211,6 +195,19 @@ export const ChatView: React.FC<ChatViewProps> = ({
                 onLoadMore={handleLoadMore}
               />
             )}
+
+            {/* Q-02: 错误展示横幅 + 重试按钮 */}
+            {error && !isStreaming && (
+              <div className={styles.errorBanner}>
+                <span className={styles.errorIcon}><AlertTriangle size={14} /></span>
+                  <span className={styles.errorMessage}>{error}</span>
+                {retryable && onRetry && (
+                  <button className={styles.retryBtn} onClick={onRetry}>
+                    重试
+                  </button>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -260,31 +257,6 @@ export const ChatView: React.FC<ChatViewProps> = ({
         </div>
       )}
 
-      {/* A-2: 输入区(顶部 InputToolbar + 主体 AttitudeIndicator/MessageInput) */}
-      {!onboardingActive && (
-        <div className={styles.inputArea}>
-          <div className={styles.inputAreaToolbarRow}>
-            <InputToolbar onTemplate={handleInputTemplate} />
-          </div>
-          <div className={styles.inputAreaBody}>
-            <div className={styles.inputAreaAttitude}>
-              <AttitudeIndicator />
-            </div>
-            <div className={styles.inputAreaTextCol}>
-              {showTemplatePicker && (
-                <TemplateSelector onSelect={handleTemplateSelect} onClose={() => setShowTemplatePicker(false)} />
-              )}
-              <MessageInput
-                onSend={onSend}
-                onStop={onStop}
-                isStreaming={isStreaming}
-                disabled={!isConfigured}
-                onQuickPillClick={handleQuickPillClick}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
