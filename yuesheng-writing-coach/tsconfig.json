@@ -24,5 +24,5 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/renderer/components_archived"]
+  "exclude": ["node_modules", "dist", "src/renderer/components_archived", "src/**/*.stories.*"]
 }

@@ -1,6 +1,31 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
+import { cjsToEsmFix } from './src/renderer/plugins/cjs-to-esm-fix';
+
+const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  plugins: [cjsToEsmFix(), react()],
+  root: 'src/renderer',
+  base: './',
+  build: {
+    outDir: '../../dist/renderer',
+    emptyOutDir: true,
+    target: 'chrome120',
+    sourcemap: 'hidden',
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(dirname, './src/renderer'),
+    },
+  },
+  server: {
+    port: 5173,
+  },
   test: {
     projects: [
       {
@@ -66,6 +91,21 @@ export default defineConfig({
               functions: 60,
               statements: 65,
             },
+          },
+        },
+      },
+      {
+        extends: true,
+        plugins: [
+          storybookTest({ configDir: path.join(dirname, '.storybook') }),
+        ],
+        test: {
+          name: 'storybook',
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [{ browser: 'chromium' }],
           },
         },
       },

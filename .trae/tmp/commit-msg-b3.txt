@@ -1,0 +1,21 @@
+feat(refactor): Sprint 20 B-3 typedInvoke 收尾 — 13 处强错误降级 (D-DEBT-34)
+
+B-3 收尾:完成剩余 13 处强错误 throw → 降级,实现全 53 处
+typedInvoke 调用点降级模式对齐。
+
+改动:
+- session.service.ts (8 处): list/create/delete/rename/getMessagesPaged/
+  listWithMeta/updateTitle/searchMessages 全部降级
+- teaching-state.service.ts (4 处): get/update/confirm/updateSummary 降级
+  (update/updateSummary 签名从 Promise<T> 收紧为 Promise<T | null>)
+- training.service.ts (1 处): skip 降级
+- typedinvoke-degradation.test.ts: 13 个新降级测试
+
+降级后状态:
+- 全 53 处 typedInvoke 调用点 100% 降级模式
+- 0 处强错误 throw
+- 0 处反模式载荷
+- 跨 7 个 service 域统一防御性编码基线
+
+依据: dev-docs/audits/typedinvoke-audit-s20.md §5 修复清单
+门禁: typecheck 0 / vitest 777(764+13) / lint 0 errors
