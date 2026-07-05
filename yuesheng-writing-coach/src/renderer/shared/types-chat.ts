@@ -11,6 +11,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   diagnosis?: DiagnosisEntry;
+  /** 系统消息扩展元数据（如诊断 payload/阶段转换/训练触发等） */
+  metadata?: Record<string, unknown>;
 }
 
 /** 会话 */

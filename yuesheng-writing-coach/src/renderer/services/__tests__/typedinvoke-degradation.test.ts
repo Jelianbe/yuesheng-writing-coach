@@ -7,12 +7,15 @@
  * 覆盖服务:
  *  - student-context.service.ts (3 处)
  *  - diagnosis.service.ts (3 处)
- *  - training.service.ts (8 处)
- *  - teaching-state.service.ts (getPrompt 1 处)
+ *  - training.service.ts (旧方法已移除,更新为现有方法的降级测试)
+ *  - teaching-state.service.ts (getPrompt/update/getState/confirmPhase/updateSummary)
  *  - chat.service.ts (send/stop 2 处)
+ *
+ * Sprint 32: 方法签名已更新,测试同步对齐
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import type { TeachingState } from '../../../shared/types/types-teaching';
 
 // Mock typedInvoke
 const mockTypedInvoke = vi.fn();
@@ -47,26 +50,26 @@ describe('typedInvoke 降级 — Sprint 20 B-2', () => {
   });
 
   describe('student-context.service', () => {
-    it('load() 失败时返回 null(不 throw)', async () => {
+    it('get() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { studentContextService } = await import('../student-context.service');
-      const result = await studentContextService.load();
+      const result = await studentContextService.get('user-1');
       expect(result).toBeNull();
-      expect(errorLogs.some(l => l.includes('student-context'))).toBe(true);
+      expect(errorLogs.some(l => l.includes('[invoke]'))).toBe(true);
     });
 
-    it('save() 失败时返回 false(不 throw)', async () => {
+    it('update() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { studentContextService } = await import('../student-context.service');
-      const result = await studentContextService.save({ test: 1 });
-      expect(result).toBe(false);
+      const result = await studentContextService.update('user-1', { test: 1 });
+      expect(result).toBeNull();
     });
 
-    it('toJSON() 失败时返回空串(不 throw)', async () => {
+    it('getNote() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { studentContextService } = await import('../student-context.service');
-      const result = await studentContextService.toJSON();
-      expect(result).toBe('');
+      const result = await studentContextService.getNote('user-1');
+      expect(result).toBeNull();
     });
   });
 
@@ -74,75 +77,90 @@ describe('typedInvoke 降级 — Sprint 20 B-2', () => {
     it('query() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { diagnosisService } = await import('../diagnosis.service');
-      const result = await diagnosisService.query({ sessionId: 's1' });
+      const result = await diagnosisService.query('analyze this text');
       expect(result).toBeNull();
     });
 
-    it('submitRewrite() 失败时返回 undefined(不 throw)', async () => {
+    it('submitRewrite() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { diagnosisService } = await import('../diagnosis.service');
-      const result = await diagnosisService.submitRewrite({
-        sessionId: 's1', syndromeId: 'P001', originalText: 'y', rewrittenText: 'x',
-      });
-      expect(result).toBeUndefined();
+      const result = await diagnosisService.submitRewrite('s1', 'original', 'rewritten');
+      expect(result).toBeNull();
     });
 
-    it('getComparison() 失败时返回 { hasHistory: false }(不 throw)', async () => {
+    it('getComparison() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { diagnosisService } = await import('../diagnosis.service');
-      const result = await diagnosisService.getComparison({ sessionId: 's1', syndromeId: 'P001' });
-      expect(result).toEqual({ hasHistory: false });
-    });
-  });
-
-  describe('training.service (高敏感方法)', () => {
-    it('submit() 失败时返回 null(不 throw)', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { trainingService } = await import('../training.service');
-      const result = await trainingService.submit({ sessionId: 's1', recordId: 'r1', text: 'x' });
-      expect(result).toBeNull();
-    });
-
-    it('evaluate() 失败时返回 null(不 throw)', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { trainingService } = await import('../training.service');
-      const result = await trainingService.evaluate({
-        sessionId: 's1', recordId: 'r1', syndromeId: 'P001', text: 'x', trainingType: 'T001',
-      });
-      expect(result).toBeNull();
-    });
-
-    it('deriveBehavior() 失败时返回 null(不 throw)', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { trainingService } = await import('../training.service');
-      const result = await trainingService.deriveBehavior({ sessionId: 's1', text: 'scene' });
+      const result = await diagnosisService.getComparison('s1');
       expect(result).toBeNull();
     });
   });
 
-  describe('training.service (其他方法降级)', () => {
-    it('recommend() 失败时返回 null', async () => {
+  describe('training.service (现有方法降级)', () => {
+    it('createObjective() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { trainingService } = await import('../training.service');
-      const result = await trainingService.recommend({ sessionId: 's1' });
+      const result = await trainingService.createObjective({ sessionId: 's1', title: 'objective' });
       expect(result).toBeNull();
     });
 
-    it('history() 失败时返回 null', async () => {
+    it('getObjectives() 失败时返回 [](不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { trainingService } = await import('../training.service');
-      const result = await trainingService.history({ sessionId: 's1' });
-      expect(result).toBeNull();
+      const result = await trainingService.getObjectives('s1');
+      expect(result).toEqual([]);
+    });
+
+    it('getHistory() 失败时返回 [](不 throw)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { trainingService } = await import('../training.service');
+      const result = await trainingService.getHistory('s1');
+      expect(result).toEqual([]);
+    });
+
+    it('remove() 失败时返回 false(不 throw)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { trainingService } = await import('../training.service');
+      const result = await trainingService.remove('r1');
+      expect(result).toBe(false);
     });
   });
 
-  describe('teaching-state.service (getPrompt 降级)', () => {
+  describe('teaching-state.service (降级)', () => {
     it('getPrompt() 失败时返回 null(不 throw)', async () => {
       mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
       const { teachingStateService } = await import('../teaching-state.service');
-      const result = await teachingStateService.getPrompt({ sessionId: 's1' });
+      const result = await teachingStateService.getPrompt('s1');
       expect(result).toBeNull();
-      expect(errorLogs.some(l => l.includes('teaching-state'))).toBe(true);
+      expect(errorLogs.some(l => l.includes('[invoke]'))).toBe(true);
+    });
+
+    it('getState() 失败时返回 null(不 throw)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.getState('s1');
+      expect(result).toBeNull();
+    });
+
+    it('update() 失败时返回 null(不 throw)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.update('s1', { currentPhase: 'P1_WORLD' } as Partial<TeachingState>);
+      expect(result).toBeNull();
+    });
+
+    it('confirmPhase() 失败时返回 null(不 throw)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.confirmPhase('s1', 'P1_WORLD');
+      expect(result).toBeNull();
+    });
+
+    it('updateSummary() 失败时返回 null(不 throw)', async () => {
+      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
+      const { teachingStateService } = await import('../teaching-state.service');
+      const result = await teachingStateService.updateSummary('s1', 'summary');
+      expect(result).toBeNull();
     });
   });
 
@@ -227,45 +245,6 @@ describe('typedInvoke 降级 — Sprint 20 B-2', () => {
       const { sessionService } = await import('../session.service');
       const result = await sessionService.searchMessages('s1', 'q');
       expect(result).toEqual([]);
-    });
-  });
-
-  describe('teaching-state.service — B-3 降级补齐', () => {
-    it('get() 失败时返回 null', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { teachingStateService } = await import('../teaching-state.service');
-      const result = await teachingStateService.get({ sessionId: 's1' });
-      expect(result).toBeNull();
-    });
-
-    it('update() 失败时返回 null(签名变化:Promise<TeachingState> → Promise<TeachingState | null>)', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { teachingStateService } = await import('../teaching-state.service');
-      const result = await teachingStateService.update({ sessionId: 's1', updates: { currentPhase: 'P1_WORLD' } });
-      expect(result).toBeNull();
-    });
-
-    it('confirm() 失败时返回 null', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { teachingStateService } = await import('../teaching-state.service');
-      const result = await teachingStateService.confirm({ sessionId: 's1' });
-      expect(result).toBeNull();
-    });
-
-    it('updateSummary() 失败时返回 null', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { teachingStateService } = await import('../teaching-state.service');
-      const result = await teachingStateService.updateSummary({ sessionId: 's1', newContent: 'text' });
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('training.service.skip — B-3 降级补齐', () => {
-    it('skip() 失败时返回 null(原 throw 模式已对齐)', async () => {
-      mockTypedInvoke.mockResolvedValue({ success: false, error: 'IPC_FAIL' });
-      const { trainingService } = await import('../training.service');
-      const result = await trainingService.skip({ sessionId: 's1', recordId: 'r1' });
-      expect(result).toBeNull();
     });
   });
 });

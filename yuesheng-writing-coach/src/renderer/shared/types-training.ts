@@ -58,6 +58,8 @@ export interface ActiveTrainingSession {
    *  缺省时按 legacy 处理以保证向后兼容。
    */
   flowType?: 'flow5' | 'legacy';
+  /** Sprint 38: 关联的训练计划项 ID（从自定义计划启动时设置） */
+  planItemId?: string;
 }
 
 /** 错误卡片（训练工坊区块一） */

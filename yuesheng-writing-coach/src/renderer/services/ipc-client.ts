@@ -9,6 +9,10 @@ import type { ApiResponse } from '../../shared/api-contracts/base';
 
 /**
  * 类型化 invoke — 编译时校验 channel 名与 payload/返回类型
+ *
+ * 安全保证:
+ * - 统一 try-catch 防止未捕获的 Promise 拒绝
+ * - electronAPI 不可用时返回标准错误格式
  */
 export async function typedInvoke<TRequest, TResponse>(
   channel: string,
@@ -17,8 +21,13 @@ export async function typedInvoke<TRequest, TResponse>(
   if (!window.electronAPI) {
     return { success: false, error: 'electronAPI not available' };
   }
-  const result = await window.electronAPI.invoke(channel, payload);
-  return result as ApiResponse<TResponse>;
+  try {
+    const result = await window.electronAPI.invoke(channel, payload);
+    return result as ApiResponse<TResponse>;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: `IPC invoke failed: ${message}` };
+  }
 }
 
 /**

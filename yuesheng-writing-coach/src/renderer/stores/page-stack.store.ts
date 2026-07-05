@@ -17,7 +17,8 @@ export type PageName =
   | 'training-plan'
   | 'settings'
   | 'technique-library'
-  | 'material-library';
+  | 'material-library'
+  | 'work-detail';
 
 export interface PageStackEntry {
   name: PageName;

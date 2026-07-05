@@ -18,6 +18,11 @@ import { initManuscriptHandlers, registerManuscriptHandlers } from '../ipc/manus
 import { initProjectHandlers, registerProjectHandlers } from '../ipc/project.handler';
 import { initWindowHandlers } from '../ipc/window.handler';
 import { initRetroHandlers, registerRetroHandlers } from '../ipc/retro.handler';
+// Sprint 38: 训练计划
+import { initTrainingPlanHandlers } from '../ipc/training-plan.handler';
+import { TrainingPlanService } from '../domains/04-validation/training-plan/training-plan.service';
+// Sprint 40: 写作进度追踪
+import { initProgressHandlers } from '../ipc/progress.handler';
 // Sprint 24 A-3 / A-4: ActiveTraining 状态机 IPC handler
 import {
   initActiveTrainingHandlers,
@@ -148,6 +153,13 @@ export class IpcRegistry {
 
     // Sprint 24 A-4: 桥接状态变更到 renderer(渲染层订阅模式)
     setupActiveTrainingPush(this.mainWindow);
+
+    // Sprint 38: 训练计划 — 直接使用 db 实例
+    const trainingPlanService = new TrainingPlanService(this.container.get<Database.Database>('db'));
+    initTrainingPlanHandlers(trainingPlanService);
+
+    // Sprint 40: 写作进度追踪 — 直接使用 db 实例
+    initProgressHandlers({ db: this.container.get<Database.Database>('db') });
 
     // Sprint 26 阶段 3.5 方案 4a: 挂载单端点 bridge:invoke
     // 必须在所有 service 注册完成后挂载,否则 method 查不到

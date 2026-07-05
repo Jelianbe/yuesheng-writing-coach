@@ -49,7 +49,7 @@ export const usePrescriptionStore = create<PrescriptionState & PrescriptionActio
       set({ allStages: stages, loading: false });
       return stages;
     }
-    set({ loading: false, error: '阶段列表为空' });
+    set({ loading: false });
     return null;
   },
 

@@ -2,16 +2,18 @@
  * ProjectSpacePage 交互测试
  *
  * 验证:
- * - 渲染: 项目名称、返回按钮、统计卡片、雷达图、最近记录、章节
+ * - 渲染: 项目名称、返回按钮、统计卡片、雷达图、空状态信息
  * - MoreMenu: 打开菜单,显示选项
  * - 项目设置选项: disabled 状态
  * - 开始新的学习 CTA → 调用 push('chat', ...)
  * - 返回按钮 → 调用 pop()
  * - 加载/错误状态: 页面当前不消费 loading/error 字段,见下方说明
  *
- * 注意: ProjectSpacePage 的 useShallow selector 只选取了 projects/fetchList/
- * fetchById/currentProject,未选取 loading/error。因此 loading/error 状态
- * 在页面上无对应渲染,相关测试暂跳过。
+ * C-2 (Sprint 33): mock 数据替换为空状态
+ * - 统计卡片显示 '0' 而非 '—'
+ * - 最近记录/章节显示空状态提示
+ * - 雷达图显示"暂无能力数据"
+ * - useAbilityStore 已 mock
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -50,6 +52,23 @@ vi.mock('../../stores/project.store', () => ({
     selector(mockProjectState),
 }));
 
+const mockAbilityState: {
+  profile: unknown;
+  loading: boolean;
+  error: string | null;
+  fetchProfile: ReturnType<typeof vi.fn>;
+} = {
+  profile: null,
+  loading: false,
+  error: null,
+  fetchProfile: vi.fn(),
+};
+
+vi.mock('../../stores/ability.store', () => ({
+  useAbilityStore: (selector: (s: unknown) => unknown) =>
+    selector(mockAbilityState),
+}));
+
 // ---------------------------------------------------------------------------
 // tests
 // ---------------------------------------------------------------------------
@@ -61,6 +80,9 @@ describe('<ProjectSpacePage />', () => {
     mockProjectState.projects = [];
     mockProjectState.loading = false;
     mockProjectState.error = null;
+    mockAbilityState.profile = null;
+    mockAbilityState.loading = false;
+    mockAbilityState.error = null;
   });
 
   // ---- 1. 渲染 ----
@@ -74,7 +96,6 @@ describe('<ProjectSpacePage />', () => {
   });
 
   it('currentProject 不存在时回退到 params.title', () => {
-    // projects 为空,currentProject 是 undefined
     render(<ProjectSpacePage params={{ id: 'p1', title: '测试项目' }} />);
 
     expect(screen.getByText('测试项目')).toBeInTheDocument();
@@ -86,23 +107,28 @@ describe('<ProjectSpacePage />', () => {
     expect(screen.getByLabelText('返回')).toBeInTheDocument();
   });
 
-  it('渲染统计卡片、雷达图、最近记录和章节等静态内容', () => {
+  it('渲染统计卡片和空状态等静态内容', () => {
     render(<ProjectSpacePage params={{ id: 'p1' }} />);
 
-    // 统计卡片（"诊断"和"训练"在统计卡片和最近记录各出现一次）
-    expect(screen.getAllByText('诊断').length).toBe(2);
-    expect(screen.getAllByText('训练').length).toBe(2);
-    expect(screen.getByText('学习天')).toBeInTheDocument();
+    // 统计卡片（Sprint 34: 第三列改为"症候"）
+    expect(screen.getByText('诊断')).toBeInTheDocument();
+    expect(screen.getByText('训练')).toBeInTheDocument();
+    expect(screen.getByText('症候')).toBeInTheDocument();
+    // 统计卡片显示 0
+    const zeros = screen.getAllByText('0');
+    expect(zeros.length).toBeGreaterThanOrEqual(3);
 
-    // 最近记录
+    // 空状态
     expect(screen.getByText('最近学习')).toBeInTheDocument();
-    expect(screen.getByText('人物动机分析')).toBeInTheDocument();
-
-    // 章节
+    expect(screen.getByText('暂无学习记录')).toBeInTheDocument();
     expect(screen.getByText('作品章节')).toBeInTheDocument();
-    expect(screen.getByText('第一章：初遇')).toBeInTheDocument();
-    expect(screen.getByText('第二章：暗流')).toBeInTheDocument();
-    expect(screen.getByText('第三章：抉择')).toBeInTheDocument();
+    expect(screen.getByText('暂无章节')).toBeInTheDocument();
+  });
+
+  it('未传入 sessionId 时显示"暂无能力数据"', () => {
+    render(<ProjectSpacePage params={{ id: 'p1' }} />);
+
+    expect(screen.getByText('暂无能力数据')).toBeInTheDocument();
   });
 
   // ---- 2. MoreMenu ----
@@ -111,13 +137,10 @@ describe('<ProjectSpacePage />', () => {
     const user = userEvent.setup();
     render(<ProjectSpacePage params={{ id: 'p1' }} />);
 
-    // 菜单初始关闭
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
 
-    // 点击 ⋮ 按钮
     await user.click(screen.getByLabelText('更多操作'));
 
-    // 菜单出现
     expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '新建对话' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: '项目设置' })).toBeInTheDocument();
@@ -132,7 +155,6 @@ describe('<ProjectSpacePage />', () => {
     await user.click(screen.getByLabelText('更多操作'));
 
     const settingItem = screen.getByRole('menuitem', { name: '项目设置' });
-    // disabled 属性阻止点击
     expect(settingItem).toBeDisabled();
   });
 
@@ -143,11 +165,9 @@ describe('<ProjectSpacePage />', () => {
     await user.click(screen.getByLabelText('更多操作'));
     expect(screen.getByRole('menu')).toBeInTheDocument();
 
-    // 尝试点击禁用项——disabled button 在 userEvent 下不会触发 onClick
     const settingItem = screen.getByRole('menuitem', { name: '项目设置' });
     await user.click(settingItem);
 
-    // 菜单仍保持打开（disabled 阻止了 onClick 内的 setOpen(false)）
     expect(screen.getByRole('menu')).toBeInTheDocument();
   });
 
@@ -191,7 +211,6 @@ describe('<ProjectSpacePage />', () => {
   });
 
   it('挂载时有 params.id 且无 currentProject 则调用 fetchById', () => {
-    // projects 为空 → currentProject undefined
     render(<ProjectSpacePage params={{ id: 'p1' }} />);
 
     expect(mockProjectState.fetchById).toHaveBeenCalledWith('p1');
@@ -202,7 +221,6 @@ describe('<ProjectSpacePage />', () => {
 
     render(<ProjectSpacePage params={{ id: 'p1' }} />);
 
-    // fetchList 可能仍会被调用(projects 非空时不会),但 fetchById 不应重复调用
     expect(mockProjectState.fetchById).not.toHaveBeenCalled();
   });
 
@@ -212,5 +230,73 @@ describe('<ProjectSpacePage />', () => {
     render(<ProjectSpacePage params={{ id: 'p1' }} />);
 
     expect(mockProjectState.fetchList).not.toHaveBeenCalled();
+  });
+
+  // ---- 7. ability store 集成 ----
+
+  it('传入 sessionId 时调用 fetchProfile', () => {
+    render(<ProjectSpacePage params={{ id: 'p1', sessionId: 's1' }} />);
+
+    expect(mockAbilityState.fetchProfile).toHaveBeenCalledWith('s1');
+  });
+
+  it('ability loading 时显示加载中', () => {
+    mockAbilityState.loading = true;
+
+    render(<ProjectSpacePage params={{ id: 'p1', sessionId: 's1' }} />);
+
+    expect(screen.getByText('加载中…')).toBeInTheDocument();
+  });
+
+  // ---- Sprint 37: 能力数据集成 ----
+
+  it('能力数据存在时显示雷达图能力值', () => {
+    mockAbilityState.profile = {
+      abilities: [
+        { abilityName: '情节架构', score: 75 },
+        { abilityName: '人物塑造', score: 60 },
+        { abilityName: '文笔表达', score: 80 },
+      ],
+      trainingStats: { totalCompleted: 5 },
+      diagnosisTrend: { totalDiagnoses: 12 },
+    };
+
+    const { container } = render(<ProjectSpacePage params={{ id: 'p1', sessionId: 's1' }} />);
+
+    // 雷达图数据多边形渲染（能力值 > 0 时 polygon 存在）
+    const polygons = container.querySelectorAll('svg polygon');
+    // grid polygons (5) + data polygon (1) = 6
+    expect(polygons.length).toBe(6);
+
+    // 暂无能力数据 不应出现
+    expect(screen.queryByText('暂无能力数据')).not.toBeInTheDocument();
+  });
+
+  it('能力数据中的统计卡片显示真实数值', () => {
+    mockAbilityState.profile = {
+      abilities: [],
+      trainingStats: { totalCompleted: 5 },
+      diagnosisTrend: { totalDiagnoses: 12 },
+      syndromeFrequency: { P001: 3, P002: 1 },
+    };
+
+    render(<ProjectSpacePage params={{ id: 'p1', sessionId: 's1' }} />);
+
+    // 诊断数显示 12
+    expect(screen.getByText('12')).toBeInTheDocument();
+    // 训练完成数显示 5
+    expect(screen.getByText('5')).toBeInTheDocument();
+  });
+
+  it('能力数据无 abilities 时仍显示"暂无能力数据"', () => {
+    mockAbilityState.profile = {
+      trainingStats: { totalCompleted: 0 },
+      diagnosisTrend: { totalDiagnoses: 0 },
+    };
+
+    render(<ProjectSpacePage params={{ id: 'p1', sessionId: 's1' }} />);
+
+    // 没有abilities时显示空状态
+    expect(screen.getByText('暂无能力数据')).toBeInTheDocument();
   });
 });

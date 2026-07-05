@@ -45,7 +45,7 @@ export const useAbilityStore = create<AbilityState & AbilityActions>((set) => ({
       set({ profile: result.profile, loading: false });
       return result.profile;
     }
-    set({ profile: null, error: '画像为空', loading: false });
+    set({ profile: null, loading: false });
     return null;
   },
 

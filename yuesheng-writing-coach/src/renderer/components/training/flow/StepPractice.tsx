@@ -19,7 +19,7 @@ interface Props {
 export function StepPractice({ active, userDraft, onChangeDraft }: Props) {
   return (
     <article className={`${styles.flowPanel} ${styles.flowPanelPractice}`} data-testid="step-practice">
-      <h3 className={styles.flowPanelTitle}>主动尝试</h3>
+      <h3 className={styles.flowPanelTitle}>{active.trainingFlow?.steps[3]?.name ?? '主动尝试'}</h3>
 
       {active.originalQuote && (
         <section className={styles.flowPanelQuote}>

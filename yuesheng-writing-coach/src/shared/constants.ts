@@ -125,6 +125,7 @@ export const IPC_CHANNELS = {
   DIAGNOSIS_GET_COMPARISON: 'diagnosis:getComparison',
   GROWTH_GET_TRENDS: 'growth:getTrends',
   GROWTH_GET_GLOBAL_TRENDS: 'growth:getGlobalTrends',
+  PROGRESS_OVERVIEW: 'progress:overview',
   // === 教学状态 ===
   TEACHING_STATE_GET: 'teachingState:get',
   TEACHING_STATE_UPDATE: 'teachingState:update',
@@ -185,6 +186,7 @@ export const IPC_CHANNELS = {
   MANUSCRIPT_GET: 'manuscript:get',
   MANUSCRIPT_CREATE: 'manuscript:create',
   MANUSCRIPT_UPDATE: 'manuscript:update',
+  MANUSCRIPT_STATS: 'manuscript:stats',
   CHAPTER_LIST: 'chapter:list',
   CHAPTER_GET: 'chapter:get',
   CHAPTER_CREATE: 'chapter:create',
@@ -201,6 +203,15 @@ export const IPC_CHANNELS = {
   PRESCRIPTION_GET_STAGE_PROGRESS: 'prescription:getStageProgress',
   PRESCRIPTION_GET_ALL_STAGES: 'prescription:getAllStages',
   PRESCRIPTION_GET_STAGE_BY_ID: 'prescription:getStageById',
+  // === 训练计划（Sprint 38） ===
+  PLAN_CREATE: 'plan:create',
+  PLAN_LIST: 'plan:list',
+  PLAN_GET: 'plan:get',
+  PLAN_DELETE: 'plan:delete',
+  PLAN_ADD_ITEM: 'plan:addItem',
+  PLAN_REMOVE_ITEM: 'plan:removeItem',
+  PLAN_UPDATE_ITEM_STATUS: 'plan:updateItemStatus',
+  PLAN_GET_AVAILABLE_CHALLENGES: 'plan:getAvailableChallenges',
   // === 训练流 ===
   TRAINING_GENERATE_FLOW: 'training:generateFlow',
   // === 复盘总结 (F-03) ===

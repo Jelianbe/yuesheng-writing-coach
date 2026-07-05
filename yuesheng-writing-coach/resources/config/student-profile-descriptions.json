@@ -15,5 +15,20 @@
     "hasIssues": "目前最需要关注的问题是：{topIssue}（{tierLabel}）。这是你当前最需要优先解决的问题。",
     "improving": "你的写作正在进步中！之前最严重的问题是{topIssue}，现在已有改善。继续保持。",
     "multipleIssues": "你有多个需要注意的问题，建议一次只专注于一个：{topIssue}（{tierLabel}）。"
+  },
+  "proficiencyLabel": {
+    "beginner": "新手写作者",
+    "intermediate": "进阶写作者",
+    "advanced": "成熟写作者"
+  },
+  "cognitiveStyleLabel": {
+    "analytical": "理性分析型",
+    "emotional": "实操导向型",
+    "mixed": "混合型"
+  },
+  "trainingMaturityLabel": {
+    "mature": "教学适应度高",
+    "developing": "教学适应中",
+    "minimal": "教学适应低"
   }
 }

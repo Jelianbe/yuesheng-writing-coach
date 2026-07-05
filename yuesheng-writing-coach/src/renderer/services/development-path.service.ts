@@ -1,65 +1,50 @@
 /**
- * DevelopmentPath 双轨服务 — Sprint 26 阶段 3.4 Z-1
+ * 发展路径服务 — Sprint 32 (移除 serviceBridge/dual-track)
  *
- * 双轨实现(用 _dual-track.ts helper 统一调度):
- * - Android 端: 静态 import shared service,直接读 development-path.json
- * - Electron 端: 走 typedInvoke → main 进程 → 主进程 fs 版 service
+ * 双轨迁移:
+ * - Electron 端: typedInvoke → main handler
+ * - Android 端: 暂不支持(无 shared 实现)
  *
- * 失败处理: console.error + 返回 caller 提供的 fallback([]/null)
- *
- * 覆盖方法: getAllStages / getStageById (不覆盖 getCurrentStage 等依赖 DB 的方法)
- *
- * 依据: dev-docs/tasks/sprint-26-phase-3-plan.md §3.4 Z-1
+ * 依据: dev-docs/tasks/sprint-32-plan.md
  */
-import { serviceBridge } from './service-bridge';
-import type { DevelopmentStageInfo } from '../../shared/types/index';
-import { developmentPathService as directService } from '../../shared/services/development-path.service';
-import { isCapacitor, runDualTrack } from './_dual-track';
+import { invoke } from './_invoke';
+import { isCapacitor } from './_platform';
+import type { DevelopmentStageInfo } from '../../shared/api-contracts/prescription.contract';
 
 export const developmentPathService = {
-  /** 获取所有发展阶段 — 失败时返回 [] */
-  async getAllStages(): Promise<DevelopmentStageInfo[]> {
+  /** 获取发展路径 — 失败时返回 null */
+  async get(userId: string): Promise<Record<string, unknown> | null> {
     if (isCapacitor()) {
-      try {
-        return directService.getAllStages();
-      } catch (err) {
-        console.error('[development-path] getAllStages failed (direct):', err);
-        return [];
-      }
+      console.warn('[dev-path] get: not supported on Capacitor');
+      return null;
     }
-    return runDualTrack(undefined, {
-      direct: async () => directService.getAllStages(),
-      electron: async () => {
-        const result = await serviceBridge.invoke<Record<string, never>, DevelopmentStageInfo[]>('prescription:getAllStages', {});
-        if (!result) {
-          console.error('[development-path] getAllStages failed');
-          return [];
-        }
-        return result;
-      },
-    });
+    return invoke<Record<string, unknown>>('developmentPath:get', { userId }) ?? null;
   },
 
-  /** 按 ID 查询阶段 — 失败时返回 null */
+  /** 更新发展路径 — 失败时返回 null */
+  async update(userId: string, data: Record<string, unknown>): Promise<Record<string, unknown> | null> {
+    if (isCapacitor()) {
+      console.warn('[dev-path] update: not supported on Capacitor');
+      return null;
+    }
+    return invoke<Record<string, unknown>>('developmentPath:update', { userId, ...data }) ?? null;
+  },
+
+  /** 获取全部学习阶段 — 失败时返回 [] */
+  async getAllStages(): Promise<DevelopmentStageInfo[]> {
+    if (isCapacitor()) {
+      console.warn('[dev-path] getAllStages: not supported on Capacitor');
+      return [];
+    }
+    return (await invoke<DevelopmentStageInfo[]>('prescription:getAllStages', {})) ?? [];
+  },
+
+  /** 按 ID 获取学习阶段 — 失败时返回 null */
   async getStageById(stageId: string): Promise<DevelopmentStageInfo | null> {
     if (isCapacitor()) {
-      try {
-        return directService.getStageById(stageId);
-      } catch (err) {
-        console.error('[development-path] getStageById failed (direct):', err);
-        return null;
-      }
+      console.warn('[dev-path] getStageById: not supported on Capacitor');
+      return null;
     }
-    return runDualTrack({ stageId }, {
-      direct: async (args) => directService.getStageById(args.stageId),
-      electron: async (args) => {
-        const result = await serviceBridge.invoke<{ stageId: string }, DevelopmentStageInfo>('prescription:getStageById', { stageId: args.stageId });
-        if (!result) {
-          console.error('[development-path] getStageById failed');
-          return null;
-        }
-        return result;
-      },
-    });
+    return (await invoke<DevelopmentStageInfo>('prescription:getStageById', { stageId })) ?? null;
   },
 };

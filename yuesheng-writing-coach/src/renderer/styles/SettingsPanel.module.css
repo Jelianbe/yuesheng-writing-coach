@@ -5,8 +5,7 @@
   flex-direction: column;
   gap: 20px;
   padding: 16px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden auto;
   scrollbar-width: thin;
   min-height: 0;
 }

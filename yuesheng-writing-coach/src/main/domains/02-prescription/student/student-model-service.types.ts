@@ -98,4 +98,10 @@ export interface StudentProfileDescriptions {
     improving: string;
     multipleIssues: string;
   };
+  /** 熟练度简标签（如 "新手写作者"） */
+  proficiencyLabel?: Record<string, string>;
+  /** 认知风格简标签（如 "理性分析型"） */
+  cognitiveStyleLabel?: Record<string, string>;
+  /** 训练成熟度简标签（如 "教学适应度高"） */
+  trainingMaturityLabel?: Record<string, string>;
 }

@@ -95,33 +95,30 @@ describe('<BookshelfPage />', () => {
   // ---- 1. 空状态 ----
   it('空状态时显示提示文案和新建按钮', () => {
     render(<BookshelfPage />);
-    expect(screen.getByText('暂无作品,点击下方按钮创建')).toBeInTheDocument();
+    expect(screen.getByText('暂无作品,点击右上角 + 创建')).toBeInTheDocument();
     // header 中的➕按钮
     expect(screen.getByLabelText('新建作品')).toBeInTheDocument();
-    // 底部虚线新建按钮
-    expect(screen.getByText('+ 新建学习项目')).toBeInTheDocument();
   });
 
   // ---- 2. 新建作品 ----
-  it('点击「新建作品」按钮调用 manuscriptStore.create("未命名作品")', async () => {
+  it('点击「新建作品」按钮打开弹窗，填入名称后创建', async () => {
     const user = userEvent.setup();
     render(<BookshelfPage />);
 
+    // 打开弹窗
     await user.click(screen.getByLabelText('新建作品'));
+    expect(screen.getByText('新建作品')).toBeInTheDocument();
+
+    // 填入名称
+    const nameInput = screen.getByPlaceholderText('作品名称 *');
+    await user.type(nameInput, '我的新作');
+
+    // 点击创建
+    const createBtn = screen.getByRole('button', { name: /创建/i });
+    await user.click(createBtn);
 
     await waitFor(() => {
-      expect(mockManuscriptStore.create).toHaveBeenCalledWith('未命名作品');
-    });
-  });
-
-  it('底部「+ 新建学习项目」按钮同样调用 create("未命名作品")', async () => {
-    const user = userEvent.setup();
-    render(<BookshelfPage />);
-
-    await user.click(screen.getByText('+ 新建学习项目'));
-
-    await waitFor(() => {
-      expect(mockManuscriptStore.create).toHaveBeenCalledWith('未命名作品');
+      expect(mockManuscriptStore.create).toHaveBeenCalledWith('我的新作', '', undefined);
     });
   });
 

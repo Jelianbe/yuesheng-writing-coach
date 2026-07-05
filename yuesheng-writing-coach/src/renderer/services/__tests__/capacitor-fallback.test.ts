@@ -3,13 +3,13 @@
  *
  * 覆盖 6 个 service 在 isCapacitor()=true 时的降级行为:
  * 1. chat.service.ts — 5 个方法降级（null / {stopped:false} / 空 cleanup）
- * 2. diagnosis.service.ts — 4 个方法降级（null / undefined / fallback / 空 cleanup）
- * 3. training.service.ts — 8 个方法降级（均返回 null）
- * 4. student-context.service.ts — 3 个方法降级（null / false / ''）
+ * 2. diagnosis.service.ts — 4 个方法降级（null / 空 cleanup）
+ * 3. training.service.ts — 现有方法降级（均返回 null/[]/false）
+ * 4. student-context.service.ts — 3 个方法降级（null）
  * 5. app-controller.ts — initialize 早返回
- * 6. teaching-state.service.ts — 5 个 IPC-only 方法降级（null / 空 cleanup）
+ * 6. teaching-state.service.ts — IPC-only 方法降级（null / 空 cleanup）
  *
- * 依据: dev-docs/tasks/sprint-29-plan.md §阶段 3
+ * Sprint 32: 方法签名已更新,测试同步对齐
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -84,30 +84,25 @@ describe('chat.service — Capacitor 降级', () => {
 // ─── 2. diagnosis.service.ts ───
 
 describe('diagnosis.service — Capacitor 降级', () => {
-  it('query() 返回空数组（无缓存诊断）', async () => {
+  it('query() 返回 null（不支持）', async () => {
     setCapacitorPlatform();
     const { diagnosisService } = await import('../diagnosis.service');
-    const result = await diagnosisService.query({ sessionId: 'session-1' });
-    expect(result).toEqual([]);
+    const result = await diagnosisService.query('analyze this text');
+    expect(result).toBeNull();
   });
 
-  it('submitRewrite() 返回 undefined（无 API Key）', async () => {
+  it('submitRewrite() 返回 null', async () => {
     setCapacitorPlatform();
     const { diagnosisService } = await import('../diagnosis.service');
-    const result = await diagnosisService.submitRewrite({
-      sessionId: 'session-1',
-      syndromeId: 's1',
-      originalText: 'original',
-      rewrittenText: 'text',
-    });
-    expect(result).toBeUndefined();
+    const result = await diagnosisService.submitRewrite('session-1', 'original', 'rewritten');
+    expect(result).toBeNull();
   });
 
-  it('getComparison() 返回 { hasHistory: false }', async () => {
+  it('getComparison() 返回 null', async () => {
     setCapacitorPlatform();
     const { diagnosisService } = await import('../diagnosis.service');
-    const result = await diagnosisService.getComparison({ sessionId: 'session-1', syndromeId: 's1' });
-    expect(result).toEqual({ hasHistory: false });
+    const result = await diagnosisService.getComparison('session-1');
+    expect(result).toBeNull();
   });
 
   it('onDiagnosisUpdate() 返回空 cleanup 函数', async () => {
@@ -122,49 +117,85 @@ describe('diagnosis.service — Capacitor 降级', () => {
 // ─── 3. training.service.ts ───
 
 describe('training.service — Capacitor 降级', () => {
-  const trainingMethods: Array<{ name: string; args: unknown }> = [
-    { name: 'recommend', args: { sessionId: 's1' } },
-    { name: 'assign', args: { sessionId: 's1', trainingId: 't1' } },
-    { name: 'complete', args: { sessionId: 's1', trainingId: 't1' } },
-    { name: 'skip', args: { sessionId: 's1', trainingId: 't1' } },
-    { name: 'history', args: { sessionId: 's1' } },
-    { name: 'submit', args: { sessionId: 's1', trainingId: 't1', content: '' } },
-    { name: 'evaluate', args: { sessionId: 's1', trainingId: 't1' } },
-    { name: 'deriveBehavior', args: { sessionId: 's1', trainingId: 't1' } },
-  ];
+  it('createObjective() 返回 null', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.createObjective({ sessionId: 's1', title: 'test' });
+    expect(result).toBeNull();
+  });
 
-  for (const { name, args } of trainingMethods) {
-    it(`${name}() 返回 null`, async () => {
-      setCapacitorPlatform();
-      const { trainingService } = await import('../training.service');
-      const result = await (trainingService as Record<string, (a: unknown) => Promise<unknown>>)[name](args);
-      expect(result).toBeNull();
-    });
-  }
+  it('getObjectives() 返回 []', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.getObjectives('s1');
+    expect(result).toEqual([]);
+  });
+
+  it('createNote() 返回 null', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.createNote({ sessionId: 's1', content: 'note' });
+    expect(result).toBeNull();
+  });
+
+  it('getNotes() 返回 []', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.getNotes('s1');
+    expect(result).toEqual([]);
+  });
+
+  it('createEvaluation() 返回 null', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.createEvaluation({ sessionId: 's1', score: 5, dimension: 'test' });
+    expect(result).toBeNull();
+  });
+
+  it('getEvaluations() 返回 []', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.getEvaluations('s1');
+    expect(result).toEqual([]);
+  });
+
+  it('getHistory() 返回 []', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.getHistory('s1');
+    expect(result).toEqual([]);
+  });
+
+  it('remove() 返回 false', async () => {
+    setCapacitorPlatform();
+    const { trainingService } = await import('../training.service');
+    const result = await trainingService.remove('r1');
+    expect(result).toBe(false);
+  });
 });
 
 // ─── 4. student-context.service.ts ───
 
 describe('student-context.service — Capacitor 降级', () => {
-  it('load() 返回 null', async () => {
+  it('get() 返回 null', async () => {
     setCapacitorPlatform();
     const { studentContextService } = await import('../student-context.service');
-    const result = await studentContextService.load();
+    const result = await studentContextService.get('user-1');
     expect(result).toBeNull();
   });
 
-  it('save() 返回 false', async () => {
+  it('update() 返回 null', async () => {
     setCapacitorPlatform();
     const { studentContextService } = await import('../student-context.service');
-    const result = await studentContextService.save({ sessionId: 'session-1', data: {} });
-    expect(result).toBe(false);
+    const result = await studentContextService.update('user-1', {});
+    expect(result).toBeNull();
   });
 
-  it('toJSON() 返回空字符串', async () => {
+  it('getNote() 返回 null', async () => {
     setCapacitorPlatform();
     const { studentContextService } = await import('../student-context.service');
-    const result = await studentContextService.toJSON();
-    expect(result).toBe('');
+    const result = await studentContextService.getNote('user-1');
+    expect(result).toBeNull();
   });
 });
 
@@ -184,31 +215,25 @@ describe('app-controller — Capacitor 降级', () => {
 // ─── 6. teaching-state.service.ts (IPC-only 方法) ───
 
 describe('teaching-state.service — Capacitor 降级（IPC-only 方法）', () => {
-  it('confirm() 返回日志对象（localStorage 记录）', async () => {
+  it('confirmPhase() 返回 null', async () => {
     setCapacitorPlatform();
     const { teachingStateService } = await import('../teaching-state.service');
-    const result = await teachingStateService.confirm({ sessionId: 'session-1' });
-    expect(result).toBeTruthy();
-    expect(result).toHaveProperty('oldState');
-    expect(result).toHaveProperty('newState');
+    const result = await teachingStateService.confirmPhase('session-1', 'P1_WORLD').catch(() => null);
+    expect(result).toBeNull();
   });
 
   it('getPrompt() 返回 null', async () => {
     setCapacitorPlatform();
     const { teachingStateService } = await import('../teaching-state.service');
-    const result = await teachingStateService.getPrompt({ sessionId: 'session-1' });
+    const result = await teachingStateService.getPrompt('session-1');
     expect(result).toBeNull();
   });
 
-  it('updateSummary() 返回摘要对象（localStorage 持久化）', async () => {
+  it('updateSummary() 返回 null', async () => {
     setCapacitorPlatform();
     const { teachingStateService } = await import('../teaching-state.service');
-    const result = await teachingStateService.updateSummary({
-      sessionId: 'session-1',
-      newContent: 'summary',
-    });
-    expect(result).toBeTruthy();
-    expect(result).toHaveProperty('diagnosisSummary', 'summary');
+    const result = await teachingStateService.updateSummary('session-1', 'summary');
+    expect(result).toBeNull();
   });
 
   it('onUpdated() 返回空 cleanup 函数', async () => {

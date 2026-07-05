@@ -44,7 +44,7 @@ export const useGrowthStore = create<GrowthState & GrowthActions>((set) => ({
       set({ global: data.overall, trends: data.trends, loading: false });
       return data.overall;
     }
-    set({ loading: false, error: '全局趋势为空' });
+    set({ loading: false });
     return null;
   },
 

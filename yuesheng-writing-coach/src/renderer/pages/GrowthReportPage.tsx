@@ -13,10 +13,11 @@
  */
 
 import React, { useEffect, useMemo } from 'react';
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, CheckCircle2, Flame, BookOpen, Target, MessageSquare } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageStackStore } from '../stores/page-stack.store';
 import { useGrowthStore } from '../stores/growth.store';
+import { useWritingProgressStore } from '../stores/writing-progress.store';
 import type { GrowthGlobalSyndromeTrend } from '../../shared/api-contracts/growth.contract';
 
 /** 5 大能力维度(与 ability-atlas.json 的 category 一致) */
@@ -30,7 +31,8 @@ const DIMENSIONS = [
 
 type DimensionKey = (typeof DIMENSIONS)[number]['key'];
 
-/** 症候 ID → 能力维度映射(基于 resources/knowledge-graph/ability-atlas.json 的 related_abilities) */
+/** 症候 ID → 能力维度映射(基于 resources/knowledge-graph/ability-atlas.json 的 category)
+ *  TODO(C-4): 改为从 ability-atlas.json 运行时加载 */
 const SYNDROME_TO_DIMENSION: Record<string, DimensionKey> = {
   P001: 'worldview',
   P002: 'character',
@@ -44,41 +46,74 @@ const SYNDROME_TO_DIMENSION: Record<string, DimensionKey> = {
   P010: 'character',
 };
 
-/** 状态 → 视觉属性映射 */
-const STATUS_MAP: Record<
-  GrowthGlobalSyndromeTrend['status'],
-  { label: string; Icon: typeof CheckCircle2; color: string; bg: string }
-> = {
+/** 状态 → 视觉属性映射(C-4: 页 UI 专属,保留在页面层) */
+const STATUS_MAP = {
   mastered: { label: '已掌握', Icon: CheckCircle2, color: 'var(--color-growth)', bg: 'var(--color-growth-light)' },
   improving: { label: '进步中', Icon: TrendingUp, color: 'var(--color-teaching)', bg: 'var(--color-teaching-light)' },
   stable: { label: '稳定', Icon: Minus, color: 'var(--text-secondary)', bg: 'var(--bg-input)' },
   needsAttention: { label: '需关注', Icon: TrendingDown, color: 'var(--color-practice)', bg: 'var(--color-practice-light)' },
-};
+} as const;
 
 /** 严重度 → 基础分(0-5,越高越健康) */
-const SEVERITY_SCORE: Record<'L1' | 'L2' | 'L3', number> = {
+const SEVERITY_SCORE = {
   L1: 5,
   L2: 3,
   L3: 1,
-};
+} as const;
 
 function severityBaseScore(severity: 'L1' | 'L2' | 'L3' | null): number {
   return severity === null ? 3 : SEVERITY_SCORE[severity];
 }
 
 /** 状态加分 */
-const STATUS_BONUS: Record<GrowthGlobalSyndromeTrend['status'], number> = {
+const STATUS_BONUS = {
   mastered: 1.5,
   improving: 0.5,
   stable: 0,
   needsAttention: -1,
-};
+} as const;
 
 const RADAR_SIZE = 220;
 const CENTER = RADAR_SIZE / 2;
 const RADIUS = RADAR_SIZE * 0.36;
 const LEVELS = 5;
 const MAX_SCORE = 7; // 基础分(5) + 状态加分(1.5) 上界
+
+/** 30天活动柱状图 */
+const ActivityBarChart: React.FC<{ data: { date: string; count: number }[] }> = ({ data }) => {
+  const BAR_W = 6;
+  const BAR_GAP = 2;
+  const HEIGHT = 60;
+  const PADDING = 4;
+  const maxCount = Math.max(...data.map(d => d.count), 1);
+  const totalW = data.length * (BAR_W + BAR_GAP);
+  const today = new Date().toISOString().slice(0, 10);
+
+  return (
+    <svg width={totalW} height={HEIGHT}
+      style={{ display: 'block', maxWidth: '100%', overflow: 'visible' }}
+    >
+      {data.map((d, i) => {
+        const barH = Math.max(2, (d.count / maxCount) * (HEIGHT - PADDING * 2));
+        const x = i * (BAR_W + BAR_GAP);
+        const y = HEIGHT - PADDING - barH;
+        const isToday = d.date === today;
+        return (
+          <rect
+            key={d.date}
+            x={x} y={y}
+            width={BAR_W} height={barH}
+            rx={2} ry={2}
+            fill={d.count > 0 ? (isToday ? 'var(--accent)' : 'var(--color-teaching)') : 'var(--bg-input)'}
+            opacity={d.count > 0 ? 0.7 : 0.4}
+          >
+            <title>{d.date}: {d.count} 字</title>
+          </rect>
+        );
+      })}
+    </svg>
+  );
+};
 
 function RadarChart({ values }: { values: number[] }) {
   const angleStep = (Math.PI * 2) / DIMENSIONS.length;
@@ -191,10 +226,19 @@ export const GrowthReportPage: React.FC<{ params?: Record<string, string> }> = (
       fetchGlobalTrends: s.fetchGlobalTrends,
     })),
   );
+  const { overview, loading: loadingProgress, error: _progressError, fetchOverview } = useWritingProgressStore(
+    useShallow(s => ({
+      overview: s.overview,
+      loading: s.loading,
+      error: s.error,
+      fetchOverview: s.fetchOverview,
+    })),
+  );
 
   useEffect(() => {
     void fetchGlobalTrends();
-  }, [fetchGlobalTrends]);
+    void fetchOverview();
+  }, [fetchGlobalTrends, fetchOverview]);
 
   const dimensionValues = useMemo(() => aggregateDimensionScores(trends), [trends]);
   const hasRealData = trends.length > 0;
@@ -221,6 +265,82 @@ export const GrowthReportPage: React.FC<{ params?: Record<string, string> }> = (
 
       {/* 内容区 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '16px 16px 8px' }}>
+        {/* 进度总览 — Sprint 40 */}
+        {!loadingProgress && overview && (
+          <div style={{ marginBottom: 16 }}>
+            {/* 写作统计行 */}
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              <BookOpen size={14} strokeWidth={1.5} style={{ marginRight: 4, verticalAlign: -2 }} />
+              写作进度
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+              {[
+                { label: '今日', value: overview.todayWordCount.toLocaleString(), suffix: '字' },
+                { label: '本周', value: overview.weeklyWordCount.toLocaleString(), suffix: '字' },
+                { label: '本月', value: overview.monthlyWordCount.toLocaleString(), suffix: '字' },
+                { label: '总计', value: overview.totalWordCount.toLocaleString(), suffix: '字' },
+                { label: '连续', value: `${overview.writingStreak}`, 
+                  suffix: '天', icon: <Flame size={14} color={overview.writingStreak > 0 ? 'var(--color-practice)' : 'var(--text-tertiary)'} strokeWidth={1.5} /> },
+              ].map(s => (
+                <div key={s.label} style={{
+                  flex: 1, minWidth: 60, padding: '6px 8px',
+                  background: 'var(--bg-card)', borderRadius: 8,
+                  border: '1px solid var(--border)',
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: s.label === '连续' && overview.writingStreak > 0 ? 'var(--color-practice)' : 'var(--text-primary)' }}>
+                    {s.icon ?? null} {s.value}
+                    <span style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-tertiary)', marginLeft: 2 }}>{s.suffix}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* 训练/会话统计行 */}
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-secondary)', marginBottom: 6 }}>
+              <Target size={14} strokeWidth={1.5} style={{ marginRight: 4, verticalAlign: -2 }} />
+              训练与活跃度
+            </div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+              {[
+                { label: '总训练', value: `${overview.completedTraining} / ${overview.totalTraining}`, suffix: '' },
+                { label: '平均分', value: overview.averageScore != null ? `${overview.averageScore}` : '—', suffix: '' },
+                { label: '总对话', value: `${overview.totalSessions}`, suffix: '次' },
+                { label: '本周', value: `${overview.weeklySessions}`, suffix: '次新对话',
+                  icon: <MessageSquare size={14} color="var(--accent)" strokeWidth={1.5} style={{ verticalAlign: -2, marginRight: 2 }} /> },
+              ].map(s => (
+                <div key={s.label} style={{
+                  flex: 1, minWidth: 60, padding: '6px 8px',
+                  background: 'var(--bg-card)', borderRadius: 8,
+                  border: '1px solid var(--border)',
+                }}>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {s.icon ?? null} {s.value}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-tertiary)', marginTop: 1 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* 30天活动柱状图 */}
+            {overview.dailyWordCounts.length > 0 && (
+              <div style={{
+                background: 'var(--bg-card)', borderRadius: 10,
+                border: '1px solid var(--border)', padding: '8px 10px',
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)', marginBottom: 4 }}>
+                  近 30 天写作活动
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <ActivityBarChart data={overview.dailyWordCounts} />
+                </div>
+              </div>
+            )}
+
+            <div style={{ height: 1, background: 'var(--border)', margin: '12px 0' }} />
+          </div>
+        )}
+
         {error && (
           <div style={{ padding: 12, marginBottom: 12, borderRadius: 8, background: 'var(--error-light)', color: 'var(--error)', fontSize: 12 }}>
             {error}

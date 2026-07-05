@@ -28,6 +28,7 @@ import type {
   TrainingMaturity,
   SyndromeAggregation,
   SeverityLevel,
+  StudentProfileDescriptions,
 } from './student-model-service.types';
 import {
   computeCrossSessionConsistency,
@@ -302,8 +303,9 @@ export class StudentModelAnalyzer {
 
   /**
    * 导出为 Prompt 注入文本
+   * @param descriptions - 可选的学生画像描述配置（标签从外置 JSON 加载）
    */
-  toPromptText(): string {
+  toPromptText(descriptions?: StudentProfileDescriptions): string {
     const profile = this.getSyndromeProfile();
     const proficiency = this.inferProficiency();
     const cognitiveStyle = this.inferCognitiveStyle();
@@ -311,22 +313,14 @@ export class StudentModelAnalyzer {
     const stagnation = this.getStagnationStatus();
     const lines: string[] = [];
 
-    const proficiencyMap: Record<ProficiencyLevel, string> = {
-      beginner: '新手写作者',
-      intermediate: '进阶写作者',
-      advanced: '成熟写作者',
-    };
-    const styleMap: Record<CognitiveStyle, string> = {
-      analytical: '理性分析型',
-      emotional: '实操导向型',
-      mixed: '混合型',
-    };
-    const maturityMap: Record<string, string> = {
-      mature: '教学适应度高',
-      developing: '教学适应中',
-      minimal: '教学适应低',
-    };
-    lines.push(`- 用户画像：${proficiencyMap[proficiency.level]}，${styleMap[cognitiveStyle.style]}，${maturityMap[maturity.maturity]}`);
+    // 标签从外置配置加载，fallback 到原始 key
+    const proficiencyMap = descriptions?.proficiencyLabel as Record<string, string> | undefined;
+    const styleMap = descriptions?.cognitiveStyleLabel as Record<string, string> | undefined;
+    const maturityMap = descriptions?.trainingMaturityLabel as Record<string, string> | undefined;
+    const profLabel = proficiencyMap?.[proficiency.level] ?? proficiency.level;
+    const styleLabel = styleMap?.[cognitiveStyle.style] ?? cognitiveStyle.style;
+    const matLabel = maturityMap?.[maturity.maturity] ?? maturity.maturity;
+    lines.push(`- 用户画像：${profLabel}，${styleLabel}，${matLabel}`);
 
     if (stagnation.stagnated) {
       lines.push(`- 停滞预警：${stagnation.reason}，建议调整教学方式`);

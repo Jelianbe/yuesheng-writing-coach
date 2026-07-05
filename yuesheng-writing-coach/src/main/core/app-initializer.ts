@@ -214,6 +214,7 @@ export class AppInitializer {
       '027_active_training_step_responses.sql',
       '028_active_training_drafts.sql',
       '029_active_training_audit_log.sql',
+      '030_training_plans.sql',
     ];
 
     for (const file of migrationFiles) {

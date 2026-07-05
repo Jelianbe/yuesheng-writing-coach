@@ -199,7 +199,7 @@ describe('TrainingStore', () => {
         errorCards: [{ syndromeId: 'P004', lastQuote: '原文引用' } as any],
       });
       await useTrainingStore.getState().startTraining('CH-001');
-      expect(useTrainingStore.getState().error).toBe('Error: assign failed');
+      expect(useTrainingStore.getState().error).toBe('Error: training:assign returned null');
       expect(useTrainingStore.getState().isLoading).toBe(false);
     });
 
@@ -254,7 +254,7 @@ describe('TrainingStore', () => {
       expect(useTrainingStore.getState().isLoading).toBe(false);
       expect(invoke).toHaveBeenCalledWith(
         BRIDGE_INVOKE_CHANNEL,
-        { method: 'training:history', args: { sessionId: 'test-session' } },
+        { channel: 'training:history', args: { sessionId: 'test-session' } },
       );
     });
 
@@ -264,7 +264,7 @@ describe('TrainingStore', () => {
       const invoke = vi.fn().mockRejectedValue(new Error('load failed'));
       window.electronAPI = { invoke: invoke as any, on: vi.fn() as any, send: vi.fn() as any };
       await useTrainingStore.getState().loadHistory('test-session');
-      expect(useTrainingStore.getState().error).toBe('Error: load failed');
+      expect(useTrainingStore.getState().error).toBe('Error: loadHistory returned null');
       expect(useTrainingStore.getState().isLoading).toBe(false);
     });
 
@@ -453,7 +453,7 @@ describe('TrainingStore', () => {
       expect(invoke).toHaveBeenCalledWith(
         BRIDGE_INVOKE_CHANNEL,
         expect.objectContaining({
-          method: 'training:complete',
+          channel: 'training:complete',
           args: expect.objectContaining({ recordId: 'rec-001', userResponse: '最终稿' }),
         }),
       );

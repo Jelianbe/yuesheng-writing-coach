@@ -32,13 +32,14 @@ const formatTime = (ts?: number): string => {
 
 export const ConversationsPage: React.FC = () => {
   const push = usePageStackStore(s => s.push);
-  const { sessions, currentSessionId, loadSessions, createSession, switchSession } = useSessionStore(
+  const { sessions, currentSessionId, loadSessions, createSession, switchSession, loading } = useSessionStore(
     useShallow(s => ({
       sessions: s.sessions,
       currentSessionId: s.currentSessionId,
       loadSessions: s.loadSessions,
       createSession: s.createSession,
       switchSession: s.switchSession,
+      loading: s.loading,
     })),
   );
 
@@ -74,7 +75,14 @@ export const ConversationsPage: React.FC = () => {
 
       {/* 列表 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '8px 16px' }}>
-        {sessions.length === 0 ? (
+        {loading && sessions.length === 0 ? (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '100%', color: 'var(--text-tertiary)', fontSize: 13,
+          }}>
+            加载中…
+          </div>
+        ) : sessions.length === 0 ? (
           <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', height: '100%', gap: 12,

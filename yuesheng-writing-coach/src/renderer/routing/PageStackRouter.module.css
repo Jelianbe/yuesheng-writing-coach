@@ -78,7 +78,7 @@
 }
 
 /* ── 桌面端 (>=431px) 手机外观模拟 ── */
-@media (min-width: 431px) {
+@media (width >= 431px) {
   .outer {
     background:
       radial-gradient(ellipse at center top, #2D2A32 0%, #1A1820 100%);
@@ -91,9 +91,9 @@
     border-radius: 40px;
     border: 8px solid #1A1820;
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.04),
-      0 24px 64px rgba(0, 0, 0, 0.35),
-      0 8px 24px rgba(0, 0, 0, 0.18);
+      0 0 0 1px rgb(255 255 255 / 4%),
+      0 24px 64px rgb(0 0 0 / 35%),
+      0 8px 24px rgb(0 0 0 / 18%);
     overflow: hidden;
   }
 
