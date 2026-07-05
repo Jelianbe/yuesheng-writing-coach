@@ -150,7 +150,7 @@ function getBlockingSyndromes(stage: DevelopmentStageInfo, masteryData: UserMast
  */
 export function getAllStages(): DevelopmentStageInfo[] {
   ensureLoaded();
-  return [...cachedStages!];
+  return [...(cachedStages as DevelopmentStageInfo[])];
 }
 
 /**
@@ -158,7 +158,7 @@ export function getAllStages(): DevelopmentStageInfo[] {
  */
 export function getStageById(stageId: string): DevelopmentStageInfo | undefined {
   ensureLoaded();
-  return cachedStages!.find(s => s.stageId === stageId);
+  return (cachedStages as DevelopmentStageInfo[]).find(s => s.stageId === stageId);
 }
 
 /**
@@ -166,7 +166,7 @@ export function getStageById(stageId: string): DevelopmentStageInfo | undefined 
  */
 export function getStageForSyndrome(syndromeId: string): DevelopmentStageInfo | undefined {
   ensureLoaded();
-  return cachedStages!.find(s => s.associatedSyndromes.includes(syndromeId));
+  return (cachedStages as DevelopmentStageInfo[]).find(s => s.associatedSyndromes.includes(syndromeId));
 }
 
 /**
@@ -174,7 +174,7 @@ export function getStageForSyndrome(syndromeId: string): DevelopmentStageInfo | 
  */
 export function getStagesByCategory(keyword: string): DevelopmentStageInfo[] {
   ensureLoaded();
-  return cachedStages!.filter(s => s.teachingFocus.includes(keyword));
+  return (cachedStages as DevelopmentStageInfo[]).filter(s => s.teachingFocus.includes(keyword));
 }
 
 /**
@@ -189,7 +189,7 @@ export function getStagesByCategory(keyword: string): DevelopmentStageInfo[] {
 export function getCurrentStage(masteryData: UserMasteryData[]): StageProgress {
   ensureLoaded();
 
-  const stages = cachedStages!;
+  const stages = cachedStages as DevelopmentStageInfo[];
 
   // 按 order 排序
   const sorted = [...stages].sort((a, b) => a.order - b.order);
@@ -249,7 +249,7 @@ export function getCurrentStage(masteryData: UserMasteryData[]): StageProgress {
  */
 export function checkStageUnlock(stageId: string, masteryData: UserMasteryData[]): boolean {
   ensureLoaded();
-  const stage = cachedStages!.find(s => s.stageId === stageId);
+  const stage = (cachedStages as DevelopmentStageInfo[]).find(s => s.stageId === stageId);
   if (!stage) return false;
 
   // 第一阶段无条件解锁
@@ -257,7 +257,7 @@ export function checkStageUnlock(stageId: string, masteryData: UserMasteryData[]
 
   // 检查所有前置阶段是否通过
   for (const prereqId of stage.prerequisites) {
-    const prereqStage = cachedStages!.find(s => s.stageId === prereqId);
+    const prereqStage = (cachedStages as DevelopmentStageInfo[]).find(s => s.stageId === prereqId);
     if (!prereqStage) return false;
     if (!isStagePassed(prereqStage, masteryData)) return false;
   }

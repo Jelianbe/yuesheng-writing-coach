@@ -70,7 +70,7 @@ export class CapacitorSqliteAdapter implements StorageAdapter {
   ): Promise<T[]> {
     this.assertInitialized();
     try {
-      const result = await this.connection!.query(sql, params);
+      const result = await (this.connection as SQLiteDBConnection).query(sql, params);
       // Android 端 query 返回 { values: Array<Record<string, any>> }
       // 兼容空结果
       if (!result.values || result.values.length === 0) return [];
@@ -94,7 +94,7 @@ export class CapacitorSqliteAdapter implements StorageAdapter {
   ): Promise<ExecuteResult> {
     this.assertInitialized();
     try {
-      const result = await this.connection!.run(sql, params);
+      const result = await (this.connection as SQLiteDBConnection).run(sql, params);
       return {
         changes: result.changes?.changes ?? 0,
         lastInsertId: Number(result.changes?.lastId ?? 0),
@@ -113,16 +113,16 @@ export class CapacitorSqliteAdapter implements StorageAdapter {
     };
     let inTransaction = true;
     try {
-      await this.connection!.beginTransaction();
+      await (this.connection as SQLiteDBConnection).beginTransaction();
       const result = await fn(txContext);
-      await this.connection!.commitTransaction();
+      await (this.connection as SQLiteDBConnection).commitTransaction();
       inTransaction = false;
       return result;
     } catch (e) {
       if (inTransaction) {
         try {
-          await this.connection!.rollbackTransaction();
-        } catch (rollbackErr) {
+          await (this.connection as SQLiteDBConnection).rollbackTransaction();
+        } catch {
           // 静默:回滚失败不应掩盖原始错误
         }
       }
@@ -186,7 +186,7 @@ export class CapacitorSqliteAdapter implements StorageAdapter {
       )`,
     ];
     for (const sql of statements) {
-      await this.connection!.run(sql);
+      await (this.connection as SQLiteDBConnection).run(sql);
     }
   }
 }

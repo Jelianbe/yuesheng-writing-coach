@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * Skill Registry 单测(Sprint 20 增量 1)
  *

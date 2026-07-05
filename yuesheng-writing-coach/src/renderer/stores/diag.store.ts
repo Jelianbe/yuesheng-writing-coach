@@ -7,12 +7,15 @@
 //   1. 状态与 UI 分离，通过订阅机制更新
 //   2. 支持多会话诊断记录查询
 //   3. 提供便捷的选择器方法
+//
+// Sprint 26 阶段 3.6: 调用方迁移到 service-bridge 单端点
+// - diagnosis:query 返回 ActiveProblem[] | null（handler 不包装 apiSuccess）
+// - evidence:getBySyndrome 仍包 apiSuccess,renderer 端需解一层 ApiResponse
 
 import { create } from 'zustand';
 import type { DiagnosisEntry, EvidenceRecord, SeverityLevel, SyndromeId } from '../shared/types';
 import type { ActiveProblem } from '../../shared/types/types-teaching';
-import { getInvoke } from '../utils/ipc';
-import { IPC_CHANNELS } from '../../shared/constants';
+import { serviceBridge } from '../services/service-bridge';
 
 /**
  * 诊断状态接口
@@ -81,20 +84,16 @@ export const useDiagStore = create<DiagState>((set, get) => ({
     if (!sessionId) return;
     set({ isLoading: true, error: null });
     try {
-      const result = await getInvoke()(IPC_CHANNELS.DIAGNOSIS_QUERY, { sessionId }) as {
-        success: boolean; data?: unknown; error?: string;
-      };
-      if (!result.success) {
-        set({ error: result.error ?? '诊断查询失败', isLoading: false });
-        return;
-      }
-      // Transform ActiveProblem[] → DiagnosisEntry
-      const raw = result.data;
-      if (!raw || !Array.isArray(raw) || raw.length === 0) {
+      const data = await serviceBridge.invoke<{ sessionId: string }, ActiveProblem[]>(
+        'diagnosis:query',
+        { sessionId },
+      );
+      if (!data || !Array.isArray(data) || data.length === 0) {
         set({ isLoading: false });
         return;
       }
-      const problems = raw as ActiveProblem[];
+      // Transform ActiveProblem[] → DiagnosisEntry
+      const problems = data;
       const syndromes = problems.map((p) => ({
         id: p.id,
         name: p.name,
@@ -123,17 +122,17 @@ export const useDiagStore = create<DiagState>((set, get) => ({
     if (cached && cached.length > 0) return cached;
 
     try {
-      const result = await getInvoke()(IPC_CHANNELS.EVIDENCE_GET_BY_SYNDROME, {
-        syndromeId,
-        sessionId,
-      }) as { success: boolean; data?: EvidenceRecord[]; error?: string };
+      const data = await serviceBridge.invoke<
+        { syndromeId: string; sessionId: string },
+        { success: boolean; data?: EvidenceRecord[]; error?: string }
+      >('evidence:getBySyndrome', { syndromeId, sessionId });
 
-      if (!result.success) {
-        console.warn('[DiagStore] loadEvidence failed:', result.error || 'Unknown error');
+      if (!data?.success) {
+        console.warn('[DiagStore] loadEvidence failed:', data?.error || 'Unknown error');
         return [];
       }
 
-      const records = result.data ?? [];
+      const records = data.data ?? [];
       set((state) => ({
         evidenceMap: { ...state.evidenceMap, [syndromeId]: records },
       }));

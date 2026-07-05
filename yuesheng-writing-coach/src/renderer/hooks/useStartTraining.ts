@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useSessionStore } from '../stores/session.store';
 import { useUiStore } from '../stores/ui.store';
-import { getInvoke } from '../utils/ipc';
+import { serviceBridge } from '../services/service-bridge';
 
 interface TechniqueInfo {
   id: string;
@@ -12,31 +12,35 @@ interface TechniqueInfo {
   coreName: string;
 }
 
+interface TrainingCatalogGroup {
+  coreId: string;
+  coreName: string;
+  count: number;
+  techniques: Array<{
+    id: string;
+    name: string;
+    difficulty: string;
+    category: string;
+    description: string;
+  }>;
+}
+
+interface TrainingCatalogResponse {
+  groups: TrainingCatalogGroup[];
+  total: number;
+}
+
 /**
  * 从后端加载技法目录，通过技法名称查找对应信息
  */
 async function findTechniqueByName(name: string): Promise<TechniqueInfo | null> {
   try {
-    const invoke = getInvoke();
-    const res = await invoke('training:catalog', {}) as {
-      success: boolean;
-      data?: {
-        groups?: Array<{
-          coreId: string;
-          coreName: string;
-          count: number;
-          techniques: Array<{
-            id: string;
-            name: string;
-            difficulty: string;
-            category: string;
-            description: string;
-          }>;
-        }>;
-      };
-    };
-    if (!res?.success || !res?.data?.groups) return null;
-    for (const g of res.data.groups) {
+    const data = await serviceBridge.invoke<Record<string, never>, TrainingCatalogResponse>(
+      'training:catalog',
+      {},
+    );
+    if (!data?.groups) return null;
+    for (const g of data.groups) {
       const found = g.techniques.find(t => t.name === name);
       if (found) {
         return { ...found, coreName: g.coreName };
@@ -67,8 +71,10 @@ export const useStartTraining = () => {
 
     // 3. 请求后端分配训练（AI 将生成首条消息）
     try {
-      const invoke = getInvoke();
-      await invoke('training:assign', {
+      await serviceBridge.invoke<
+        { sessionId: string; challengeId: string },
+        { record?: { id: string } }
+      >('training:assign', {
         sessionId: session.id,
         challengeId: techInfo.id,
       });

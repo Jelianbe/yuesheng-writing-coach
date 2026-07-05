@@ -13,11 +13,11 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { typedInvoke, typedOn } from '../services/ipc-client';
+import { typedOn } from '../services/ipc-client';
+import { serviceBridge } from '../services/service-bridge';
 import { IPC_CHANNELS } from '../../shared/constants';
 import type {
   ChatHandleTurnRequest,
-  ChatHandleTurnResponse,
 } from '../../shared/api-contracts/chat.contract';
 
 // IPC 边界用 unknown(避免 shared 跨域引用 main/domains,符合 R-020)
@@ -126,18 +126,18 @@ export function useOrchestrator() {
       activeProblemId: input.activeProblemId,
       activeTrainingSessionId: input.activeTrainingSessionId,
     };
-    const res = await typedInvoke<ChatHandleTurnRequest, ChatHandleTurnResponse>(
-      IPC_CHANNELS.CHAT_HANDLE_TURN,
+    // Sprint 26 阶段 3.6: 改走 service-bridge 单端点
+    const data = await serviceBridge.invoke<ChatHandleTurnRequest, { streamId: string }>(
+      'chat:handleTurn',
       req,
     );
-    if (!res.success) {
-      console.warn('[useOrchestrator] handleTurn failed:', (res as { error?: string }).error);
+    if (!data) {
+      console.warn('[useOrchestrator] handleTurn failed');
       return null;
     }
-    if (!res.data) return null;
-    streamIdRef.current = res.data.streamId;
+    streamIdRef.current = data.streamId;
     setStreaming(true);
-    return res.data;
+    return data;
   }, []);
 
   const finishStream = useCallback(() => {

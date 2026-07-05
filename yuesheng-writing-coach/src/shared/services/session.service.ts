@@ -151,7 +151,7 @@ export class SessionService {
 
   async getOrCreateDefaultSession(): Promise<SessionRow> {
     const sessions = await this.listSessions();
-    if (sessions.length > 0) return sessions[0]!;
+    if (sessions.length > 0) return sessions[0];
     return this.createSession();
   }
 

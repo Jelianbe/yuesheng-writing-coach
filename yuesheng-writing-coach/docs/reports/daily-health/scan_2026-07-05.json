@@ -1,0 +1,1825 @@
+{
+  "scan_date": "2026-07-05",
+  "scan_version": "V2.7",
+  "project_root": "D:\\ai-teacher\\yuesheng-writing-coach",
+  "stats": {
+    "date": "2026-07-05",
+    "total_files": 406,
+    "total_lines": 57918,
+    "total_any": 12,
+    "total_ts_ignore": 1,
+    "total_as_assert": 814,
+    "total_console": 298,
+    "total_todo": 3,
+    "total_fixme": 0,
+    "total_export_default": 0,
+    "total_nonnull_assert": 27,
+    "total_inline_style": 578,
+    "total_broken_imports": 4,
+    "total_security_issues": 0,
+    "total_ipc_trycatch_issues": 0,
+    "total_empty_catch": 5,
+    "large_files_count": 38,
+    "ts_ignore_files_count": 1,
+    "ipc_files_count": 21,
+    "db_files_count": 19
+  },
+  "large_files_top10": [
+    {
+      "file": "src\\main\\domains\\01-diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\01-diagnosis\\evidence\\evidence.service.test.ts",
+      "lines": 738
+    },
+    {
+      "file": "src\\main\\domains\\02-prescription\\student\\student-model-service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\02-prescription\\student\\student-model-service.ts",
+      "lines": 596
+    },
+    {
+      "file": "src\\main\\domains\\03-teaching\\prompt\\prompt-loader.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\03-teaching\\prompt\\prompt-loader.ts",
+      "lines": 565
+    },
+    {
+      "file": "src\\main\\domains\\03-teaching\\chat\\chat-orchestrator.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\03-teaching\\chat\\chat-orchestrator.service.ts",
+      "lines": 545
+    },
+    {
+      "file": "src\\main\\domains\\03-teaching\\state\\state-locking.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\03-teaching\\state\\state-locking.test.ts",
+      "lines": 530
+    },
+    {
+      "file": "src\\main\\domains\\03-teaching\\state\\active-training.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\03-teaching\\state\\active-training.service.ts",
+      "lines": 472
+    },
+    {
+      "file": "src\\shared\\services\\active-training.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\services\\active-training.service.ts",
+      "lines": 445
+    },
+    {
+      "file": "src\\renderer\\stores\\training.actions.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\training.actions.ts",
+      "lines": 442
+    },
+    {
+      "file": "src\\main\\domains\\03-teaching\\teaching-state.service.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\03-teaching\\teaching-state.service.ts",
+      "lines": 434
+    },
+    {
+      "file": "src\\renderer\\components_archived\\manuscript\\ManuscriptPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\manuscript\\ManuscriptPanel.tsx",
+      "lines": 421
+    }
+  ],
+  "any_heavy_top10": [],
+  "ts_ignore_files": [
+    {
+      "file": "src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\plugins\\cjs-to-esm-fix.ts",
+      "count": 1
+    }
+  ],
+  "export_default_files": [],
+  "nonnull_assert_top10": [
+    {
+      "file": "src\\main\\domains\\01-diagnosis\\evidence\\evidence.service.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\01-diagnosis\\evidence\\evidence.service.test.ts",
+      "count": 18
+    },
+    {
+      "file": "src\\main\\services\\output-validator.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\services\\output-validator.test.ts",
+      "count": 6
+    },
+    {
+      "file": "src\\main\\core\\app-initializer.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\core\\app-initializer.ts",
+      "count": 1
+    },
+    {
+      "file": "src\\main\\domains\\01-diagnosis\\evidence\\keypassage-validator.test.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\domains\\01-diagnosis\\evidence\\keypassage-validator.test.ts",
+      "count": 1
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\validate-payload.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\validate-payload.ts",
+      "count": 1
+    }
+  ],
+  "inline_style_top10": [
+    {
+      "file": "src\\renderer\\components_archived\\layout\\DiagnosisPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\DiagnosisPanel.tsx",
+      "count": 39
+    },
+    {
+      "file": "src\\renderer\\components_archived\\profile\\AbilityProfilePanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\profile\\AbilityProfilePanel.tsx",
+      "count": 39
+    },
+    {
+      "file": "src\\renderer\\pages\\ChatPage.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\pages\\ChatPage.tsx",
+      "count": 35
+    },
+    {
+      "file": "src\\renderer\\pages\\GrowthReportPage.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\pages\\GrowthReportPage.tsx",
+      "count": 34
+    },
+    {
+      "file": "src\\renderer\\components_archived\\growth\\DiagnosisComparisonView.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\growth\\DiagnosisComparisonView.tsx",
+      "count": 31
+    },
+    {
+      "file": "src\\renderer\\components_archived\\layout\\HintPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\HintPanel.tsx",
+      "count": 28
+    },
+    {
+      "file": "src\\renderer\\components_archived\\retro\\RetroSummaryView.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\retro\\RetroSummaryView.tsx",
+      "count": 24
+    },
+    {
+      "file": "src\\renderer\\pages\\ProjectSpacePage.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\pages\\ProjectSpacePage.tsx",
+      "count": 24
+    },
+    {
+      "file": "src\\renderer\\components_archived\\growth\\GrowthPanel.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\growth\\GrowthPanel.tsx",
+      "count": 23
+    },
+    {
+      "file": "src\\renderer\\pages\\TrainingPlanPage.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\pages\\TrainingPlanPage.tsx",
+      "count": 22
+    }
+  ],
+  "ipc_files": [
+    {
+      "file": "src\\main\\ipc\\ability-profile.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\ability-profile.handler.ts",
+      "channels": [
+        "ability:getProfile",
+        "ability:getProfile"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\active-training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\active-training.handler.ts",
+      "channels": [
+        "activeTraining:get",
+        "activeTraining:updateDraft",
+        "activeTraining:submitStep",
+        "activeTraining:get"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "channels": [
+        "onboarding:analyze",
+        "chat:send",
+        "chat:stop",
+        "chat:handleTurn",
+        "onboarding:analyze"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "channels": [
+        "config:getReadingEntry",
+        "config:get",
+        "config:set",
+        "config:testConnection",
+        "config:getReadingEntry"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\development-path.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\development-path.handler.ts",
+      "channels": [
+        "prescription:getStageById",
+        "prescription:getStageProgress",
+        "prescription:getAllStages",
+        "prescription:getStageById"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "channels": [
+        "diagnosis:submitRewrite",
+        "diagnosis:query",
+        "diagnosis:getComparison",
+        "diagnosis:submitRewrite"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "channels": [
+        "evidence:getBySyndrome",
+        "evidence:getByDisease",
+        "evidence:getByAbility",
+        "evidence:getChain",
+        "evidence:create",
+        "evidence:getBySyndrome"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\growth.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\growth.handler.ts",
+      "channels": [
+        "growth:getGlobalTrends",
+        "growth:getTrends",
+        "growth:getGlobalTrends"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "channels": [
+        "chapter:updateContent",
+        "manuscript:list",
+        "manuscript:get",
+        "manuscript:create",
+        "manuscript:update",
+        "chapter:list",
+        "chapter:get",
+        "chapter:create",
+        "manuscript:delete",
+        "chapter:delete",
+        "chapter:updateContent"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\project.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\project.handler.ts",
+      "channels": [
+        "project:delete",
+        "project:list",
+        "project:get",
+        "project:create",
+        "project:update",
+        "project:delete"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\retro.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\retro.handler.ts",
+      "channels": [
+        "retro:save",
+        "retro:generate",
+        "retro:save"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "channels": [
+        "session:list",
+        "session:isNewUser",
+        "session:create",
+        "session:delete",
+        "session:rename",
+        "session:getMessages",
+        "session:getMessagesPaged",
+        "session:listWithMeta",
+        "session:updateTitle",
+        "session:searchMessages"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\teaching-note.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-note.handler.ts",
+      "channels": [
+        "teachingNote:update",
+        "teachingNote:record",
+        "teachingNote:getTree",
+        "teachingNote:delete",
+        "teachingNote:update"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\teaching-state.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-state.handler.ts",
+      "channels": [
+        "teachingState:get",
+        "teachingState:update",
+        "teachingState:confirm",
+        "teachingState:getPrompt",
+        "teachingState:updateSummary"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\training.handler.ts",
+      "channels": [
+        "training:recommend",
+        "training:assign",
+        "training:complete",
+        "training:skip",
+        "training:history",
+        "training:submit",
+        "training:evaluate",
+        "training:decideReading",
+        "training:deriveBehavior",
+        "teachingHistory:add",
+        "training:generateFlow",
+        "training:catalog"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\window.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\window.handler.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\create-handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\create-handler.ts",
+      "channels": [
+        "channel:name",
+        "channel:set"
+      ]
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\diagnosis-dedup.ts",
+      "channels": []
+    },
+    {
+      "file": "src\\main\\ipc\\utils\\validate-payload.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\utils\\validate-payload.ts",
+      "channels": []
+    }
+  ],
+  "db_files": [],
+  "circular_deps": {
+    "checked": false,
+    "error": "madge 未安装，跳过循环依赖检测 (npm install -D madge)",
+    "dependencies": []
+  },
+  "security": {
+    "hardcoded_credentials": 0,
+    "total_issues": 0
+  },
+  "ipc_channel_pairing": {
+    "uncovered_channels": 76,
+    "details": [
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'config:get' (const CONFIG_GET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'config:set' (const CONFIG_SET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'config:testConnection' (const CONFIG_TEST_CONNECTION) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'config:getReadingEntry' (const CONFIG_GET_READING_ENTRY) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'diagnosis:query' (const DIAGNOSIS_QUERY) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'diagnosis:submitRewrite' (const DIAGNOSIS_SUBMIT_REWRITE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'diagnosis:getComparison' (const DIAGNOSIS_GET_COMPARISON) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'growth:getTrends' (const GROWTH_GET_TRENDS) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'growth:getGlobalTrends' (const GROWTH_GET_GLOBAL_TRENDS) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingState:get' (const TEACHING_STATE_GET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingState:update' (const TEACHING_STATE_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingState:confirm' (const TEACHING_STATE_CONFIRM) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingState:getPrompt' (const TEACHING_STATE_GET_PROMPT) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingState:updateSummary' (const TEACHING_STATE_UPDATE_SUMMARY) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingNote:record' (const TEACHING_NOTE_RECORD) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingNote:getTree' (const TEACHING_NOTE_GET_TREE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingNote:delete' (const TEACHING_NOTE_DELETE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingNote:update' (const TEACHING_NOTE_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingHistory:add' (const TEACHING_HISTORY_ADD) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'ability:getProfile' (const ABILITY_GET_PROFILE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'evidence:getByDisease' (const EVIDENCE_GET_BY_DISEASE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'evidence:getByAbility' (const EVIDENCE_GET_BY_ABILITY) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'evidence:getChain' (const EVIDENCE_GET_CHAIN) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'evidence:create' (const EVIDENCE_CREATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'evidence:getBySyndrome' (const EVIDENCE_GET_BY_SYNDROME) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:recommend' (const TRAINING_RECOMMEND) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:assign' (const TRAINING_ASSIGN) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:complete' (const TRAINING_COMPLETE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:skip' (const TRAINING_SKIP) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:history' (const TRAINING_HISTORY) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:submit' (const TRAINING_SUBMIT) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:evaluate' (const TRAINING_EVALUATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:decideReading' (const TRAINING_DECIDE_READING) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:deriveBehavior' (const TRAINING_DERIVE_BEHAVIOR) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:catalog' (const TRAINING_CATALOG) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chat:send' (const CHAT_SEND) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chat:stop' (const CHAT_STOP) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chat:handleTurn' (const CHAT_HANDLE_TURN) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chat:event' (const CHAT_EVENT) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:list' (const SESSION_LIST) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:create' (const SESSION_CREATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:delete' (const SESSION_DELETE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:rename' (const SESSION_RENAME) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:getMessages' (const SESSION_GET_MESSAGES) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:getMessagesPaged' (const SESSION_GET_MESSAGES_PAGED) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:listWithMeta' (const SESSION_LIST_WITH_META) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:updateTitle' (const SESSION_UPDATE_TITLE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:searchMessages' (const SESSION_SEARCH_MESSAGES) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'session:isNewUser' (const SESSION_IS_NEW_USER) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'onboarding:analyze' (const ONBOARDING_ANALYZE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'manuscript:list' (const MANUSCRIPT_LIST) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'manuscript:get' (const MANUSCRIPT_GET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'manuscript:create' (const MANUSCRIPT_CREATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'manuscript:update' (const MANUSCRIPT_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chapter:list' (const CHAPTER_LIST) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chapter:get' (const CHAPTER_GET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chapter:create' (const CHAPTER_CREATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chapter:delete' (const CHAPTER_DELETE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'chapter:updateContent' (const CHAPTER_UPDATE_CONTENT) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'manuscript:delete' (const MANUSCRIPT_DELETE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'project:list' (const PROJECT_LIST) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'project:get' (const PROJECT_GET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'project:create' (const PROJECT_CREATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'project:update' (const PROJECT_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'project:delete' (const PROJECT_DELETE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'prescription:getStageProgress' (const PRESCRIPTION_GET_STAGE_PROGRESS) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'prescription:getAllStages' (const PRESCRIPTION_GET_ALL_STAGES) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'prescription:getStageById' (const PRESCRIPTION_GET_STAGE_BY_ID) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'training:generateFlow' (const TRAINING_GENERATE_FLOW) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'retro:generate' (const RETRO_GENERATE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'retro:save' (const RETRO_SAVE) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'teachingDecision:record' (const TEACHING_DECISION_RECORD) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'activeTraining:updateDraft' (const ACTIVE_TRAINING_UPDATE_DRAFT) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'activeTraining:get' (const ACTIVE_TRAINING_GET) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'activeTraining:submitStep' (const ACTIVE_TRAINING_SUBMIT_STEP) 未在任何 handler.ts 中注册 createHandler"
+      },
+      {
+        "severity": "P0",
+        "file": "src\\shared\\constants.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+        "line": 0,
+        "type": "ipc_channel_no_handler",
+        "message": "IPC 频道 'bridge:invoke' (const BRIDGE_INVOKE) 未在任何 handler.ts 中注册 createHandler"
+      }
+    ]
+  },
+  "store_action_registration": {
+    "unregistered_actions": 0,
+    "details": []
+  },
+  "empty_catch_blocks": {
+    "total": 5,
+    "files": [
+      {
+        "file": "src\\main\\ipc\\active-training.handler.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\active-training.handler.ts",
+        "count": 1
+      },
+      {
+        "file": "src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+        "count": 3
+      },
+      {
+        "file": "src\\shared\\storage\\adapters\\capacitor-sqlite.adapter.ts",
+        "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\storage\\adapters\\capacitor-sqlite.adapter.ts",
+        "count": 1
+      }
+    ]
+  },
+  "import_boundary": {
+    "violations": 0,
+    "details": []
+  },
+  "di_injection": {
+    "unregistered": 0,
+    "unused": 0,
+    "details": []
+  },
+  "issues": [
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\layout\\RightDrawer.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\RightDrawer.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: ./drawer-constants"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\layout\\RightDrawer.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\RightDrawer.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: ./drawer-constants"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\components_archived\\layout\\ToolGrid.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\layout\\ToolGrid.tsx",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: ./drawer-constants"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\renderer\\stores\\index.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\stores\\index.ts",
+      "line": 1,
+      "type": "broken_import",
+      "message": "未解析的 import: @/stores"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\ability-profile.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\ability-profile.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\active-training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\active-training.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\chat.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\chat.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\config.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\config.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\development-path.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\development-path.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\diagnosis.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\diagnosis.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\evidence.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\evidence.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\growth.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\growth.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\manuscript.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\manuscript.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\project.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\project.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\retro.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\retro.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\session.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\session.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\teaching-note.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-note.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\teaching-state.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\teaching-state.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\main\\ipc\\training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\training.handler.ts",
+      "line": 1,
+      "type": "ipc_no_channel",
+      "message": "IPC 目录文件未检测到 ipcMain.handle/on 注册"
+    },
+    {
+      "severity": "P1",
+      "file": "src\\main\\ipc\\active-training.handler.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\main\\ipc\\active-training.handler.ts",
+      "line": 190,
+      "type": "empty_catch",
+      "message": "catch 块为空，异常被静默吞没 (R-028)"
+    },
+    {
+      "severity": "P1",
+      "file": "src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+      "line": 104,
+      "type": "empty_catch",
+      "message": "catch 块为空，异常被静默吞没 (R-028)"
+    },
+    {
+      "severity": "P1",
+      "file": "src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+      "line": 124,
+      "type": "empty_catch",
+      "message": "catch 块为空，异常被静默吞没 (R-028)"
+    },
+    {
+      "severity": "P1",
+      "file": "src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\renderer\\components_archived\\right\\workspaces\\TeachingNoteWorkspace\\index.tsx",
+      "line": 144,
+      "type": "empty_catch",
+      "message": "catch 块为空，异常被静默吞没 (R-028)"
+    },
+    {
+      "severity": "P1",
+      "file": "src\\shared\\storage\\adapters\\capacitor-sqlite.adapter.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\storage\\adapters\\capacitor-sqlite.adapter.ts",
+      "line": 125,
+      "type": "empty_catch",
+      "message": "catch 块为空，异常被静默吞没 (R-028)"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'config:get' (const CONFIG_GET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'config:set' (const CONFIG_SET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'config:testConnection' (const CONFIG_TEST_CONNECTION) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'config:getReadingEntry' (const CONFIG_GET_READING_ENTRY) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'diagnosis:query' (const DIAGNOSIS_QUERY) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'diagnosis:submitRewrite' (const DIAGNOSIS_SUBMIT_REWRITE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'diagnosis:getComparison' (const DIAGNOSIS_GET_COMPARISON) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'growth:getTrends' (const GROWTH_GET_TRENDS) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'growth:getGlobalTrends' (const GROWTH_GET_GLOBAL_TRENDS) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingState:get' (const TEACHING_STATE_GET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingState:update' (const TEACHING_STATE_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingState:confirm' (const TEACHING_STATE_CONFIRM) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingState:getPrompt' (const TEACHING_STATE_GET_PROMPT) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingState:updateSummary' (const TEACHING_STATE_UPDATE_SUMMARY) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingNote:record' (const TEACHING_NOTE_RECORD) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingNote:getTree' (const TEACHING_NOTE_GET_TREE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingNote:delete' (const TEACHING_NOTE_DELETE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingNote:update' (const TEACHING_NOTE_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingHistory:add' (const TEACHING_HISTORY_ADD) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'ability:getProfile' (const ABILITY_GET_PROFILE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'evidence:getByDisease' (const EVIDENCE_GET_BY_DISEASE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'evidence:getByAbility' (const EVIDENCE_GET_BY_ABILITY) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'evidence:getChain' (const EVIDENCE_GET_CHAIN) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'evidence:create' (const EVIDENCE_CREATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'evidence:getBySyndrome' (const EVIDENCE_GET_BY_SYNDROME) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:recommend' (const TRAINING_RECOMMEND) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:assign' (const TRAINING_ASSIGN) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:complete' (const TRAINING_COMPLETE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:skip' (const TRAINING_SKIP) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:history' (const TRAINING_HISTORY) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:submit' (const TRAINING_SUBMIT) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:evaluate' (const TRAINING_EVALUATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:decideReading' (const TRAINING_DECIDE_READING) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:deriveBehavior' (const TRAINING_DERIVE_BEHAVIOR) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:catalog' (const TRAINING_CATALOG) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chat:send' (const CHAT_SEND) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chat:stop' (const CHAT_STOP) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chat:handleTurn' (const CHAT_HANDLE_TURN) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chat:event' (const CHAT_EVENT) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:list' (const SESSION_LIST) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:create' (const SESSION_CREATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:delete' (const SESSION_DELETE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:rename' (const SESSION_RENAME) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:getMessages' (const SESSION_GET_MESSAGES) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:getMessagesPaged' (const SESSION_GET_MESSAGES_PAGED) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:listWithMeta' (const SESSION_LIST_WITH_META) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:updateTitle' (const SESSION_UPDATE_TITLE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:searchMessages' (const SESSION_SEARCH_MESSAGES) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'session:isNewUser' (const SESSION_IS_NEW_USER) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'onboarding:analyze' (const ONBOARDING_ANALYZE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'manuscript:list' (const MANUSCRIPT_LIST) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'manuscript:get' (const MANUSCRIPT_GET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'manuscript:create' (const MANUSCRIPT_CREATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'manuscript:update' (const MANUSCRIPT_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chapter:list' (const CHAPTER_LIST) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chapter:get' (const CHAPTER_GET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chapter:create' (const CHAPTER_CREATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chapter:delete' (const CHAPTER_DELETE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'chapter:updateContent' (const CHAPTER_UPDATE_CONTENT) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'manuscript:delete' (const MANUSCRIPT_DELETE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'project:list' (const PROJECT_LIST) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'project:get' (const PROJECT_GET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'project:create' (const PROJECT_CREATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'project:update' (const PROJECT_UPDATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'project:delete' (const PROJECT_DELETE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'prescription:getStageProgress' (const PRESCRIPTION_GET_STAGE_PROGRESS) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'prescription:getAllStages' (const PRESCRIPTION_GET_ALL_STAGES) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'prescription:getStageById' (const PRESCRIPTION_GET_STAGE_BY_ID) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'training:generateFlow' (const TRAINING_GENERATE_FLOW) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'retro:generate' (const RETRO_GENERATE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'retro:save' (const RETRO_SAVE) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'teachingDecision:record' (const TEACHING_DECISION_RECORD) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'activeTraining:updateDraft' (const ACTIVE_TRAINING_UPDATE_DRAFT) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'activeTraining:get' (const ACTIVE_TRAINING_GET) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'activeTraining:submitStep' (const ACTIVE_TRAINING_SUBMIT_STEP) 未在任何 handler.ts 中注册 createHandler"
+    },
+    {
+      "severity": "P0",
+      "file": "src\\shared\\constants.ts",
+      "path": "D:\\ai-teacher\\yuesheng-writing-coach\\src\\shared\\constants.ts",
+      "line": 0,
+      "type": "ipc_channel_no_handler",
+      "message": "IPC 频道 'bridge:invoke' (const BRIDGE_INVOKE) 未在任何 handler.ts 中注册 createHandler"
+    }
+  ]
+}

@@ -2,15 +2,15 @@
  * 训练 Store — 数据加载 Actions
  *
  * ⚠️ 本文件由 training.actions.ts 拆分而来。
+ *
+ * Sprint 26 阶段 3.6: 调用方迁移到 service-bridge 单端点
  */
 
 import { useChatStore } from './chat.store';
 import { useDiagStore } from './diag.store';
 import { useConfigStore } from './config.store';
-import { getInvoke } from '../utils/ipc';
-import { TrainingApi } from '../../shared/api-contracts/training.contract';
+import { serviceBridge } from '../services/service-bridge';
 import type { TrainingHistoryResponse } from '../../shared/api-contracts/training.contract';
-import type { ApiResponse } from '../../shared/api-contracts/base';
 import { SYNDROME_NAMES } from '../../shared/mappings';
 import type {
   ErrorCard,
@@ -28,15 +28,16 @@ export function createLoadHistoryAction(set: SetStateFn, _get: GetStateFn) {
   return async (sessionId: string): Promise<void> => {
     set({ isLoading: true, error: null });
     try {
-      const result = await getInvoke()(TrainingApi.history.channel, { sessionId });
+      const data = await serviceBridge.invoke<{ sessionId: string }, TrainingHistoryResponse>(
+        'training:history',
+        { sessionId },
+      );
 
-      const response = result as ApiResponse<TrainingHistoryResponse>;
-      if (!response.success) {
-        throw new Error(response.error);
+      if (!data) {
+        throw new Error('loadHistory returned null');
       }
 
-      const historyResponse = response.data;
-      const records: TrainingRecord[] = (historyResponse.records ?? []).map((r) => ({
+      const records: TrainingRecord[] = (data.records ?? []).map((r) => ({
         id: r.recordId,
         sessionId,
         challengeId: r.syndromeId,
@@ -110,7 +111,10 @@ export function createRefreshFromDiagnosisAction(set: SetStateFn, _get: GetState
       const attitude = useConfigStore.getState().attitudeLevel;
       let readingDecision = null;
       try {
-        const result = await getInvoke()(TrainingApi.decideReading.channel, { attitude }) as { required: boolean; recommended: boolean; label: string; reason?: string };
+        const result = await serviceBridge.invoke<
+          { attitude: string },
+          { required: boolean; recommended: boolean; label: string; reason?: string }
+        >('training:decideReading', { attitude });
         readingDecision = result;
       } catch (e) {
         console.warn('[training.actions] decideReading failed, falling back to null:', e);
@@ -118,8 +122,13 @@ export function createRefreshFromDiagnosisAction(set: SetStateFn, _get: GetState
       set({ readingDecision: readingDecision ?? null });
 
       // 2. 调用 training:recommend 获取推荐
-      const recResult = await getInvoke()(TrainingApi.recommend.channel, { sessionId }) as { recommendations?: TrainingRecommendation[] };
-      const recommendations = recResult.recommendations ?? [];
+      // 注: contract TrainingRecommendResponse 字段名 tasks 与 handler 实际返回 recommendations 不一致,
+      //     此处用业务实际类型(避免迁移时改 handler 触发更大改动)
+      const recData = await serviceBridge.invoke<
+        { sessionId: string },
+        { recommendations: TrainingRecommendation[] }
+      >('training:recommend', { sessionId });
+      const recommendations: TrainingRecommendation[] = recData?.recommendations ?? [];
 
       // 3. 关联匹配的 challengeId 到 errorCards
       if (recommendations.length > 0) {

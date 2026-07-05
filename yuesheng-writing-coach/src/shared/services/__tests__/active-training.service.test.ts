@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * ActiveTrainingService 单测 — Sprint 26 阶段 2 (T26-2.5)
  *

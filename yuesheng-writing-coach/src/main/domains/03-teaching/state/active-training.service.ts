@@ -36,7 +36,7 @@ import type {
   TrainingStep,
   UpdateActiveTrainingInput,
 } from './active-training.types';
-import { ActiveTrainingStore } from './active-training.store';
+import type { ActiveTrainingStore } from './active-training.store';
 
 /**
  * 状态机内部转换类型(用于状态变更订阅)

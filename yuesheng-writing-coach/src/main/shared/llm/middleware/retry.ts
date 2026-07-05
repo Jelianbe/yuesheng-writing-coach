@@ -34,5 +34,5 @@ export async function withRetry<T>(
       }
     }
   }
-  throw lastError!;
+  throw lastError as Error;
 }

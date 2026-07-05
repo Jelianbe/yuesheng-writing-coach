@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * T15-C.6 能力图谱消费链 — 端到端测试
  *

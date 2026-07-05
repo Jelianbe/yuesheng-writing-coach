@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /**
  * TeachingStateSubscriber + ChatOrchestratorService 事件订阅测试
  *

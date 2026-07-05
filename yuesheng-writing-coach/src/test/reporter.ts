@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * 测试报告自动生成系统
  *
@@ -106,6 +107,7 @@ function generateModuleReport(results: TestResult[]): ModuleReport[] {
     if (!moduleGroups.has(result.module)) {
       moduleGroups.set(result.module, []);
     }
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     moduleGroups.get(result.module)!.push(result);
   }
 

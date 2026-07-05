@@ -103,7 +103,7 @@ export class MemoryCapsuleService {
             count: (existing?.count ?? 0) + 1,
           });
         } else {
-          existing!.count++;
+          existing.count++;
         }
       }
     }

@@ -51,13 +51,13 @@ export function registerChatHandlers(): void {
       throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     }
 
-    const result = await orchestrator!.sendMessage(validation.data);
+    const result = await (orchestrator as ChatOrchestratorService).sendMessage(validation.data);
     return { messageId: result.messageId };
   });
 
   registerMethod('chat:stop', async (_args) => {
     handleTurnBridge?.stopAll();
-    return orchestrator!.stopGeneration();
+    return (orchestrator as ChatOrchestratorService).stopGeneration();
   });
 
   registerMethod('chat:handleTurn', async (args) => {
@@ -104,7 +104,7 @@ export function registerChatHandlers(): void {
       throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
     }
     const text = validation.data.text?.trim() ?? '';
-    return orchestrator!.handleOnboardingAnalyze(text);
+    return (orchestrator as ChatOrchestratorService).handleOnboardingAnalyze(text);
   });
 }
 

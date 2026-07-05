@@ -94,7 +94,7 @@ export const diagnosisService = {
       console.error('[diagnosis] getComparison failed:', result.error);
       return { hasHistory: false };
     }
-    return result.data!;
+    return result.data ?? { hasHistory: false };
   },
 
   /**

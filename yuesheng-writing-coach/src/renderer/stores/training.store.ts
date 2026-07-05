@@ -24,8 +24,7 @@ import {
 } from './training.actions';
 import { createStartReadingAction } from './training-reading.actions';
 import { createLoadHistoryAction, createRefreshFromDiagnosisAction } from './training-data.actions';
-import { RetroApi } from '../../shared/api-contracts/retro.contract';
-import { getInvoke } from '../utils/ipc';
+import { serviceBridge } from '../services/service-bridge';
 import { activeTrainingService } from '../services/active-training.service';
 import type {
   ActiveTrainingGetResponse,
@@ -304,9 +303,12 @@ export const useTrainingStore = create<TrainingState>((set, get) => ({
   enterRetro: async (sessionId: string) => {
     set({ retroLoading: true });
     try {
-      const result = await getInvoke()(RetroApi.generate.channel, { sessionId }) as { success: boolean; data: TrainingState['retroSummary'] };
-      if (result.success && result.data) {
-        set({ retroSummary: result.data, centerMode: 'retro', retroLoading: false });
+      const result = await serviceBridge.invoke<
+        { sessionId: string },
+        NonNullable<TrainingState['retroSummary']>
+      >('retro:generate', { sessionId });
+      if (result) {
+        set({ retroSummary: result, centerMode: 'retro', retroLoading: false });
       } else {
         set({ retroLoading: false });
       }

@@ -18,7 +18,8 @@ import type {
   SkillRef,
 } from './orchestrator.types';
 import type { PromptContract } from './prompt-contract';
-import { createDefaultSkillRegistry, SkillRegistry } from './skill-registry';
+import type { SkillRegistry } from './skill-registry';
+import { createDefaultSkillRegistry } from './skill-registry';
 
 const MOCK_CONTRACT: PromptContract = {
   required_phases: ['trust_building', 'requirement', 'diagnosis', 'training', 'reflection'],
