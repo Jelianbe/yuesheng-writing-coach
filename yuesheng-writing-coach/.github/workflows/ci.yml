@@ -18,6 +18,12 @@ jobs:
       - run: npm ci
       - name: Type check
         run: npm run typecheck
+      - name: CSS lint
+        run: npm run lint:css
+      - name: Format check
+        run: npm run format:check
+      - name: Security audit
+        run: npm audit --audit-level=high
       - name: Color contrast check
         run: npm run scan:hardcode
       - name: Run tests
