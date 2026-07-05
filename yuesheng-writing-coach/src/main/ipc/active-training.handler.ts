@@ -26,6 +26,8 @@ import type {
   ActiveTrainingSubmitStepResponse,
   ActiveTrainingGetDraftSnapshotsResponse,
   ActiveTrainingRestoreDraftSnapshotResponse,
+  ActiveTrainingGetAuditLogsResponse,
+  ActiveTrainingGetRecentTransitionsResponse,
 } from '../../shared/api-contracts/active-training.contract';
 import type { ActiveTraining } from '../domains/03-teaching/state/active-training.types';
 
@@ -185,6 +187,37 @@ export function registerActiveTrainingHandlers(): void {
       success: restored !== null,
       restoredSnapshot: restored,
     } satisfies ActiveTrainingRestoreDraftSnapshotResponse;
+  });
+
+  registerMethod('activeTraining:getAuditLogs', async (args) => {
+    const validation = validatePayload<{ activeTrainingId: number }>(args, {
+      required: ['activeTrainingId'],
+      types: { activeTrainingId: 'number' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const service = getService();
+    const auditLogs = service.getAuditLogs(validation.data.activeTrainingId);
+    return { auditLogs } satisfies ActiveTrainingGetAuditLogsResponse;
+  });
+
+  registerMethod('activeTraining:getRecentTransitions', async (args) => {
+    const validation = validatePayload<{ sessionId: string; limit?: number }>(args, {
+      required: ['sessionId'],
+      types: { sessionId: 'string', limit: 'number' },
+    });
+    if (!validation.valid) {
+      throw new Error(`INVALID_PAYLOAD: ${validation.error.message}`);
+    }
+
+    const service = getService();
+    const auditLogs = service.getRecentTransitions(
+      validation.data.sessionId,
+      validation.data.limit ?? 10,
+    );
+    return { auditLogs } satisfies ActiveTrainingGetRecentTransitionsResponse;
   });
 }
 

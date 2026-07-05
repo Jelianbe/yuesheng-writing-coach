@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ActiveTraining IPC 推送桥接测试 — Sprint 24 A-4
  *
  * 覆盖 setupActiveTrainingPush:
@@ -61,6 +61,31 @@ function createTestDb(): Database.Database {
       updated_at TEXT NOT NULL,
       completed_at TEXT
     );
+
+    CREATE TABLE active_training_drafts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      active_training_id INTEGER NOT NULL,
+      step_index INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      trigger TEXT NOT NULL,
+      snapshot_at TEXT NOT NULL,
+      restored_from_id INTEGER,
+      FOREIGN KEY (active_training_id) REFERENCES active_training(id) ON DELETE CASCADE
+    );
+    CREATE INDEX idx_atd_at_id ON active_training_drafts(active_training_id, step_index);
+
+    CREATE TABLE active_training_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      active_training_id INTEGER NOT NULL,
+      trigger TEXT NOT NULL,
+      from_state TEXT,
+      to_state TEXT NOT NULL,
+      actor TEXT NOT NULL DEFAULT 'main',
+      context_json TEXT,
+      occurred_at TEXT NOT NULL,
+      FOREIGN KEY (active_training_id) REFERENCES active_training(id) ON DELETE CASCADE
+    );
+    CREATE INDEX idx_atal_at_id ON active_training_audit_log(active_training_id, occurred_at);
   `);
   return db;
 }

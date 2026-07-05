@@ -232,3 +232,72 @@ export function isValidActiveTrainingStatus(s: string): s is ActiveTrainingStatu
 export function isValidDraftSnapshotTrigger(s: string): s is DraftSnapshotTrigger {
   return s === 'advance' || s === 'evaluate' || s === 'complete' || s === 'abort' || s === 'restore';
 }
+
+// ─── C-2: 审计日志类型 ───
+
+/** 审计日志触发原因 */
+export type AuditLogTrigger =
+  | 'start'
+  | 'advance'
+  | 'evaluate'
+  | 'complete'
+  | 'abort'
+  | 'restore'
+  | 'updateDraft'
+  | 'submitStep';
+
+/** 审计行为者 */
+export type AuditActor = 'main' | 'renderer';
+
+/** 领域对象: 审计日志条目 */
+export interface AuditLog {
+  id: number;
+  activeTrainingId: number;
+  trigger: AuditLogTrigger;
+  fromState: string | null;
+  toState: string;
+  actor: AuditActor;
+  contextJson: string | null;
+  occurredAt: string;
+}
+
+/** 数据库存储行: AuditLogRow */
+export interface AuditLogRow {
+  id: number;
+  active_training_id: number;
+  trigger: string;
+  from_state: string | null;
+  to_state: string;
+  actor: string;
+  context_json: string | null;
+  occurred_at: string;
+}
+
+/** 创建审计日志输入 */
+export interface CreateAuditLogInput {
+  activeTrainingId: number;
+  trigger: AuditLogTrigger;
+  fromState: string | null;
+  toState: string;
+  actor: AuditActor;
+  contextJson: string | null;
+}
+
+/** 类型守卫: 是否为有效审计触发原因 */
+export function isValidAuditLogTrigger(s: string): s is AuditLogTrigger {
+  return (
+    s === 'start' ||
+    s === 'advance' ||
+    s === 'evaluate' ||
+    s === 'complete' ||
+    s === 'abort' ||
+    s === 'restore' ||
+    s === 'updateDraft' ||
+    s === 'submitStep'
+  );
+}
+
+/** 类型守卫: 是否为有效审计行为者 */
+export function isValidAuditActor(s: string): s is AuditActor {
+  return s === 'main' || s === 'renderer';
+}
