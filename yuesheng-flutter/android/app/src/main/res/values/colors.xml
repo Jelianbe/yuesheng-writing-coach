@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 月色竹青配色（project memory 硬约束：深墨竹青 + 冷青灰白）-->
+<resources>
+    <!-- 冷青灰白（暖米纸色）：启动屏背景、卡片底色 -->
+    <color name="yuesheng_paper">#F7F8F6</color>
+    <!-- 深墨竹青：主色、按钮底色、图标背景 -->
+    <color name="yuesheng_ink">#2D5A52</color>
+</resources>

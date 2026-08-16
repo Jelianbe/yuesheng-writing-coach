@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  批次2（2.3）：Android 12+（targetSdk 31+）云备份 / 设备迁移规则——
+  明文 DB（yuesheng.db + WAL/SHM）与临时 DB 一律排除，防止外流。
+  对应 Android 12- 规则见 backup_rules.xml（fullBackupContent）。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="yuesheng.db"/>
+        <exclude domain="file" path="yuesheng.db-wal"/>
+        <exclude domain="file" path="yuesheng.db-shm"/>
+        <exclude domain="file" path="tmp_*.db"/>
+        <exclude domain="database" path="."/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="yuesheng.db"/>
+        <exclude domain="file" path="yuesheng.db-wal"/>
+        <exclude domain="file" path="yuesheng.db-shm"/>
+        <exclude domain="file" path="tmp_*.db"/>
+        <exclude domain="database" path="."/>
+    </device-transfer>
+</data-extraction-rules>

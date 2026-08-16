@@ -1,0 +1,11 @@
+开篇把失去与离开的骨架立得很利落，三句话就托住了沉重的情绪。但若把最重的一刻直接讲出来，读者还没来得及感受，转折就滑了过去，那种震动也就被轻轻带过了。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P021","name":"跳跃叙事","severity":"L2","evidence":["他妈妈死了"],"explanation":"关键情绪转折点被一句话概括带过，缺少可感知场景支撑","reader_impact":"读者难以体会丧亲之重，情绪被快速跳过"}],"suggested_actions":["将关键情节展开为可感知的具体场景"],"confidence":0.92,"feedback_summary":"核心转折被概括，建议展开为场景"}
+[/YS_DIAGNOSIS]
+
+开篇有力量、情绪内核很重，三句话就立住了失去与离开的骨架。不过「他妈妈死了」这一句如果落成一个能看见、能触到的场景，悲伤会更容易传到读者心里——试着把它写成一个具体的瞬间，让情绪自己说话。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"核心转折被概括带过，适合通过改写练习展开为可感知场景","natural_language":"开篇有力量、情绪内核很重，三句话就立住了失去与离开的骨架。不过「他妈妈死了」这一句如果落成一个能看见、能触到的场景，悲伤会更容易传到读者心里——试着把它写成一个具体的瞬间，让情绪自己说话。","location_marks":["第1段：他妈妈死了"],"training_task":{"target_syndrome_id":"P021","target_dimension":null,"task_type":"rewrite","task_description":"把「他妈妈死了」展开为可感知场景，让读者看见那个瞬间","difficulty":"medium","evaluation_criteria":["将「他妈妈死了」展开为可感知场景","保留他的悲伤反应而非一句话带过","场景服务于哀伤情绪不堆砌无关修饰"]}}
+[/YS_TEACHER]

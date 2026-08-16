@@ -1,0 +1,11 @@
+文中为水系魔法师立下了一条清晰有力的禁忌规则，读者很快记住并相信了它。可第七章里主角却用上了水属性招式，前后的约束力出现了对不上的地方，旁白没有补一句原委，读者难免困惑。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P031","name":"设定矛盾","severity":"L2","evidence":["水系魔法师沾水功力尽失","第七章水龙卷淹追兵"],"explanation":"前文确立的约束与后文行为直接冲突且未做例外说明，造成世界观自相矛盾","reader_impact":"读者对规则可信度产生怀疑，出戏并困惑"}],"suggested_actions":["补一条规则例外或代价","或收回前文设定以保持一致"],"confidence":0.9,"feedback_summary":"前后设定出现自相矛盾，需补例外或收回"}
+[/YS_DIAGNOSIS]
+
+规则立得清楚，读者一下子就记住了这条禁忌，张力也起来了。若能在第七章主角动用水的那一刻，补一句代价或例外，比如功力暂时受损、或此术来自别处传承，前后的咬合会更稳，读者也会更安心地跟随。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"前文设定与后文行为冲突且未补偿，需训练一致性修正","natural_language":"规则立得清楚，读者一下子就记住了这条禁忌，张力也起来了。若能在第七章主角动用水的那一刻，补一句代价或例外，比如功力暂时受损、或此术来自别处传承，前后的咬合会更稳，读者也会更安心地跟随。","location_marks":["第7章：主角水龙卷淹追兵"],"training_task":{"target_syndrome_id":"P031","target_dimension":null,"task_type":"rewrite","task_description":"为第七章主角使用水系招式补一条规则例外或代价，或收回前文禁忌设定，使前后世界观自洽","difficulty":"medium","evaluation_criteria":["新增内容明确解释前后不一致之处","代价或例外与既有设定逻辑相容","旁白自然不突兀，读者不再困惑"]}}
+[/YS_TEACHER]

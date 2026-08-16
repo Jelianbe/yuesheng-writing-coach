@@ -1,0 +1,11 @@
+这段文字用一串判断直接告诉读者人物的心情，句子一个接一个地往下排，读者接到的全是结论，却很难在脑海里看见那个人的样子、听见她的呼吸。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P003","name":"情绪标签化","severity":"L2","evidence":["她很难过","她很孤独","她觉得很无助"],"explanation":"连续用情绪词直接定义人物状态，缺少动作与感官支撑，情绪成了标签而非画面。","reader_impact":"读者知道她难过，却难以感同身受，容易读得平淡而走神。"}],"suggested_actions":["用具体的身体动作或环境细节代替情绪词","让一件事带出多重感受，减少重复的判断句"],"confidence":0.92,"feedback_summary":"情绪是真的，但说出来的方式让画面空了。"}
+[/YS_DIAGNOSIS]
+
+你的文字把那种孤独和想被陪伴的心情写得很真，读者一下就懂了她的处境。如果能让她的手、她的眼神、她周围的安静替她说话，那份难过会自己落在读者心里，比直接说出来更沉。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"学生已能清楚传递情绪，但呈现方式停留在判断词，适合用改写练习把情绪落到动作与感官上。","natural_language":"你的文字把那种孤独和想被陪伴的心情写得很真，读者一下就懂了她的处境。如果能让她的手、她的眼神、她周围的安静替她说话，那份难过会自己落在读者心里，比直接说出来更沉。","location_marks":["第1段：她很难过。她很孤独。"],"training_task":{"target_syndrome_id":"P003","target_dimension":null,"task_type":"rewrite","task_description":"把这段直接说心情的文字改写成一段画面：用具体的动作、身体感受或周围环境来呈现她的难过与渴望陪伴，不要出现「难过」「孤独」「无助」这类词。","difficulty":"medium","evaluation_criteria":["至少2处用动作或感官细节呈现情绪","保留原有的难过与渴望陪伴","读者能自行体会到情绪"]}}
+[/YS_TEACHER]

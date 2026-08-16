@@ -1,0 +1,17 @@
+[Android] Updating launch background(s) with splash image path...
+[Android]  - android/app/src/main/res/drawable/launch_background.xml
+[Android]  - android/app/src/main/res/drawable-v21/launch_background.xml
+[Android] Updating styles...
+[Android]  - android/app/src/main/res/values-v31/styles.xml
+[Android] No android/app/src/main/res/values-v31/styles.xml found in your Android project
+[Android] Creating android/app/src/main/res/values-v31/styles.xml and adding it to your Android project
+[Android]  - android/app/src/main/res/values-night-v31/styles.xml
+[Android] No android/app/src/main/res/values-night-v31/styles.xml found in your Android project
+[Android] Creating android/app/src/main/res/values-night-v31/styles.xml and adding it to your Android project
+[Android]  - android/app/src/main/res/values/styles.xml
+[Android]  - android/app/src/main/res/values-night/styles.xml
+
+✅ Native splash complete.
+Now go finish building something awesome! 💪 You rock! 🤘🤩
+Like the package? Please give it a 👍 here: https://pub.dev/packages/flutter_native_splash
+

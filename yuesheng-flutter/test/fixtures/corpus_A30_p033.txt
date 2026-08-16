@@ -1,0 +1,11 @@
+开篇把主角的成长写得痛快淋漓，一口气登顶的畅快很抓人。可满级之后几十章都停在同样的水准，新的成长弧线没有接上，节奏便从疾驰滑向了闲散。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P033","name":"升级节奏失衡","severity":"L2","evidence":["一级连升到一百级","满级后逛街聊天"],"explanation":"前期升级过快耗尽成长空间，后期缺乏阶坎与瓶颈导致节奏塌陷","reader_impact":"成长感停滞，读者失去跟随主角变强的动力"}],"suggested_actions":["把升级摊进长线","设置阶坎与瓶颈重建节奏"],"confidence":0.9,"feedback_summary":"升级过快后无成长弧线，需摊开节奏"}
+[/YS_DIAGNOSIS]
+
+升级痛快，主角一路冲顶的画面读起来很带劲，那种爆发式的成长让人痛快。若能把这些提升拆进更长的时间线，中间留几道阶坎和瓶颈，让每次突破都来之不易，后面的旅程便会持续有起伏，读者也更愿意一路跟下去。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"前期升级过快耗尽成长空间，后期无节奏，需训练长线摊开","natural_language":"升级痛快，主角一路冲顶的画面读起来很带劲，那种爆发式的成长让人痛快。若能把这些提升拆进更长的时间线，中间留几道阶坎和瓶颈，让每次突破都来之不易，后面的旅程便会持续有起伏，读者也更愿意一路跟下去。","location_marks":["第1章：一级连升到一百级"],"training_task":{"target_syndrome_id":"P033","target_dimension":null,"task_type":"rewrite","task_description":"将主角的升级摊入长线叙事，设置阶坎与瓶颈，使成长保持节奏与弧线","difficulty":"medium","evaluation_criteria":["升级被分配进多章节而非一次性","存在明确的阶坎或瓶颈制造起伏","后期仍有可感知的成长弧线"]}}
+[/YS_TEACHER]
