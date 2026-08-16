@@ -1,0 +1,50 @@
+name: Flutter CI (yuesheng-flutter)
+
+# 教训落地：报告第四节 #4「测试覆盖用机器保证」——把 analyze + test 设进 CI 门禁，
+# 不允许「没测试也提交 / 靠人工跑」。仅当 Flutter 子目录或本工作流变更时触发，
+# 避免 RN 工程改动无谓消耗 CI。
+on:
+  push:
+    paths:
+      - 'yuesheng-flutter/**'
+      - '.github/workflows/flutter_ci.yaml'
+  pull_request:
+    paths:
+      - 'yuesheng-flutter/**'
+      - '.github/workflows/flutter_ci.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  flutter-verify:
+    name: dart analyze + flutter test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: yuesheng-flutter
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # 与本地开发 SDK 对齐（本机 Flutter 3.44.8 / Dart 3.12.2）。
+          # 若该精确版本在 stable 镜像不可拉取，删掉 flutter-version 一行、仅留 channel: 'stable' 即可。
+          flutter-version: '3.44.8'
+          channel: 'stable'
+          cache: true
+
+      - name: Skip Flutter update check (avoid network hang)
+        run: echo "FLUTTER_SKIP_UPDATE_CHECK=true" >> "$GITHUB_ENV"
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Static analysis
+        run: flutter analyze lib
+
+      - name: Run tests
+        # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时自动 skip（见 flutter-llm-coach-validation skill），无需密钥。
+        run: flutter test
