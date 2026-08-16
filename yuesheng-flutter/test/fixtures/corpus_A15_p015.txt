@@ -1,0 +1,11 @@
+关键节点交代得清楚，决战、击杀、和平恢复一线推进，读者能跟上节奏，但最关键的瞬间读起来像走过场。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P015","name":"高潮疲软","severity":"L2","evidence":["他挥剑刺穿了魔王的胸膛。魔王倒下"],"explanation":"高潮以概要方式快速交待胜负，缺少代价、反转或情绪重量，最关键的瞬间读起来像走过场","reader_impact":"读者期待的燃点与震撼被轻描淡写带过，难以获得情绪释放"}],"suggested_actions":["为胜利附加可见的代价","在刺杀瞬间加入反转或意外","让主角情绪在高潮处真正落地"],"confidence":0.9,"feedback_summary":"高潮推进清晰却缺重量，补上代价与情绪会更打动人"}
+[/YS_DIAGNOSIS]
+
+关键一击写得很利落，胜负交代明白，节奏不拖。若想让这一幕更有冲击力，不妨让主角为这一剑付出点什么——伤、失去、或将魔王某一面的真实抖出来，再让他的情绪在那一下里真正落下来。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"高潮推进清晰但缺少代价与情绪重量，适合通过改写练习增强冲击力","natural_language":"关键一击写得很利落，胜负交代明白，节奏不拖。若想让这一幕更有冲击力，不妨让主角为这一剑付出点什么——伤、失去、或将魔王某一面的真实抖出来，再让他的情绪在那一下里真正落下来。","location_marks":["第1段：他挥剑刺穿了魔王的胸膛"],"training_task":{"target_syndrome_id":"P015","target_dimension":null,"task_type":"rewrite","task_description":"另写一版最终决战的高潮瞬间：保留『刺穿魔王』的结果，但加入至少一处代价（身体、关系或心理的损耗）、一处意料之外的反转或真相，并写出主角落剑那一刻的真实情绪，让这一幕有冲击力。","difficulty":"medium","evaluation_criteria":["为胜利附加一处可见的代价","在刺杀瞬间加入反转或真相","写出主角落剑时的真实情绪重量"]}}
+[/YS_TEACHER]

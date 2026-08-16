@@ -1,0 +1,11 @@
+信使递上黑漆火漆信的瞬间，读者的好奇心被牢牢勾起，可拆开后的打折传单与后续再无交代，让这份悬疑失去了落点。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P024","name":"期待感断裂","severity":"L2","evidence":["此后此事再未被提起"],"explanation":"前文用黑漆火漆信与「颠覆两国命运」把悬念推到高点，后文却让线索彻底消失，被勾起的期待没有兑现也没有反转，形成空转。","reader_impact":"读者被吊起的好奇落空，产生被戏弄的失落感，追读意愿下降"}],"suggested_actions":["为被抛出的悬念安排一次兑现或反转","让黑信线索在后续情节中回响","用信的内容反推主角处境而非弃置"],"confidence":0.9,"feedback_summary":"悬念起得好却断了回响，需要让期待落地。"}
+[/YS_DIAGNOSIS]
+
+钩子抛得好，黑漆火漆信一出现就让人想往下翻。若让那封被拆开的信在后面真正荡开涟漪，这份好奇心会从「被吊起」变成「被满足」。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"原文成功建立悬念却未兑现，适合用重写练习把被吊起的期待接回情节。","natural_language":"信使那段开场很有抓力，漆黑火漆信一亮相读者就坐不住了。试着别让打折传单成为终点，而让它成为转折的起点——比如传单背面藏着真正要命的东西，或主角从此事里读出了别样的讯号，让读者的好奇有个去处。","location_marks":["第1段：此后此事再未被提起"],"training_task":{"target_syndrome_id":"P024","target_dimension":null,"task_type":"rewrite","task_description":"重写该段结尾，让被黑漆火漆信吊起的期待得到一次兑现或反转，使悬念与主角的处境发生关联，而非无下文。","difficulty":"medium","evaluation_criteria":["被抛出的悬念在文中有明确回响或转折","转折与主角处境产生关联而非孤立噱头","语气连贯，不破坏前文营造的紧张感"]}}
+[/YS_TEACHER]

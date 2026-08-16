@@ -1,0 +1,11 @@
+这个反派塑造得很有压迫感，武力与智谋的设定先声夺人。但他在占尽优势的时刻突然停下，给了对手喘息空间，这份转折会削弱前面立起来的威胁。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P041","name":"降智反派","severity":"L2","evidence":["发表十分钟演讲，等主角逃走"],"explanation":"反派设定为智计无双，却在能彻底压制对手的关头选择拖延与演说，行为与其智力设定相悖","reader_impact":"读者感到出戏，反派威胁感骤降，前面的强设定被这一处转折消解"}],"suggested_actions":["为反派补充符合其智谋的利益动机，使其在优势时刻果断下死手"],"confidence":0.9,"feedback_summary":"反派有压迫感，但临门一脚的动机前后不一"}
+[/YS_DIAGNOSIS]
+
+你给反派铺的压迫感很足，武力与智计都立住了。如果想让这股威胁一直绷着，可以让他在占优时顺着自己的利益果断出手，而不是停下来给主角留余地。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"反派在优势时刻行为与其智力设定矛盾，通过改写可补上符合人设的利益动机","natural_language":"你给反派的压迫感铺得很足，武力与智计都立住了。可以让他在占优的关头顺着自己的利益果断出手，这股威胁感会一直绷着","location_marks":["第1段：发表十分钟演讲，等主角逃走"],"training_task":{"target_syndrome_id":"P041","target_dimension":null,"task_type":"rewrite","task_description":"为反派重写临门一脚的处理：给出符合其智谋与利益考量的动机，使他在能压制主角的时刻果断下死手，而非拖延给主角生机","difficulty":"medium","evaluation_criteria":["反派行为与其智计无双的设定保持一致","下死手的动机明确且贴合反派的利益或性格","改写后主角面临的威胁在逻辑上未被无故消解"]}}
+[/YS_TEACHER]

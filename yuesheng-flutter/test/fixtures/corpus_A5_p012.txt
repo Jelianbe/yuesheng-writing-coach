@@ -1,0 +1,11 @@
+你的几场战斗读起来一路顺滑，但对手的溃败来得太轻易，读者很难为胜负揪心。若能给冲突加上真实的代价，胜负的分量会立刻不同。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P012","name":"张力不足症","severity":"L2","evidence":["每个敌人都像纸糊的一样"],"explanation":"战斗全程没有真正意义上的阻碍与代价，胜负在读者心中缺乏分量","reader_impact":"读者难以投入紧张感，容易觉得进展空虚"}],"suggested_actions":["为战斗引入真实代价","制造主角可能落败的危机"],"confidence":0.92,"feedback_summary":"冲突缺少重量，胜利太轻易"}
+[/YS_DIAGNOSIS]
+
+爽感直接、推进利落，主角一路高歌确实读着痛快。不过如果让某一场胜利来之不易，比如加上真正会输的代价，故事的起伏会更抓人。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"学生在胜负之间缺少代价设计，值得通过重写练习建立张力意识","natural_language":"爽感直接、推进利落，主角一路高歌确实读着痛快。不过如果让某一场胜利来之不易，比如加上真正会输的代价，故事的起伏会更抓人。","location_marks":["第1段：每个敌人都像纸糊的一样"],"training_task":{"target_syndrome_id":"P012","target_dimension":null,"task_type":"rewrite","task_description":"重写其中一场战斗，为主角加入真正可能落败的代价，让胜利来之不易但仍保留爽感","difficulty":"medium","evaluation_criteria":["明确写出主角若输掉这一战会失去什么","制造至少一处读者怀疑他可能落败的危机","保留爽感但让胜利更来之不易"]}}
+[/YS_TEACHER]

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  批次2（2.3）：明文 DB 不外流——排除本地数据库（yuesheng.db 及其 WAL/SHM 伴生文件）
+  与临时合并 DB，防止写作内容/TKG 事实随云备份外流。
+  对应 dataExtractionRules（Android 12+）见 data_extraction_rules.xml。
+-->
+<full-backup-content>
+    <!-- 数据库（path_provider documents 目录下，domain=file） -->
+    <exclude domain="file" path="yuesheng.db"/>
+    <exclude domain="file" path="yuesheng.db-wal"/>
+    <exclude domain="file" path="yuesheng.db-shm"/>
+    <!-- 开发期临时合并/迁移 DB（防御性排除） -->
+    <exclude domain="file" path="tmp_*.db"/>
+    <!-- databasesDir（应用当前未使用，防御性排除） -->
+    <exclude domain="database" path="."/>
+</full-backup-content>

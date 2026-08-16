@@ -1,0 +1,1327 @@
+{
+  "meta": {
+    "caseCount": 47,
+    "note": "教学闭环结构化决策基线（话术文案不进快照，详见批次96-17/96-18）",
+    "generatedAt": "2026-08-15T00:00:21.256331"
+  },
+  "cases": {
+    "A1": {
+      "id": "A1",
+      "file": "corpus_A1_p003.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P003"
+        ],
+        "l2SyndromeIds": [
+          "P003"
+        ],
+        "primarySyndromeId": "P003",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P003",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A2": {
+      "id": "A2",
+      "file": "corpus_A2_p007.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P007"
+        ],
+        "l2SyndromeIds": [
+          "P007"
+        ],
+        "primarySyndromeId": "P007",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P007",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A3": {
+      "id": "A3",
+      "file": "corpus_A3_p009.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P009"
+        ],
+        "l2SyndromeIds": [
+          "P009"
+        ],
+        "primarySyndromeId": "P009",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P009",
+        "taskType": "analyze"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A4": {
+      "id": "A4",
+      "file": "corpus_A4_p011.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P011"
+        ],
+        "l2SyndromeIds": [
+          "P011"
+        ],
+        "primarySyndromeId": "P011",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P011",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A5": {
+      "id": "A5",
+      "file": "corpus_A5_p012.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P012"
+        ],
+        "l2SyndromeIds": [
+          "P012"
+        ],
+        "primarySyndromeId": "P012",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P012",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A6": {
+      "id": "A6",
+      "file": "corpus_A6_p013.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P013"
+        ],
+        "l2SyndromeIds": [
+          "P013"
+        ],
+        "primarySyndromeId": "P013",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P013",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A7": {
+      "id": "A7",
+      "file": "corpus_A7_p021.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P021"
+        ],
+        "l2SyndromeIds": [
+          "P021"
+        ],
+        "primarySyndromeId": "P021",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P021",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A8": {
+      "id": "A8",
+      "file": "corpus_A8_p028.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P028"
+        ],
+        "l2SyndromeIds": [
+          "P028"
+        ],
+        "primarySyndromeId": "P028",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P028",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A9": {
+      "id": "A9",
+      "file": "corpus_A9_p022.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P022"
+        ],
+        "l2SyndromeIds": [
+          "P022"
+        ],
+        "primarySyndromeId": "P022",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P022",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A10": {
+      "id": "A10",
+      "file": "corpus_A10_p004.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P004"
+        ],
+        "l2SyndromeIds": [
+          "P004"
+        ],
+        "primarySyndromeId": "P004",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P004",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A11": {
+      "id": "A11",
+      "file": "corpus_A11_p005.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P005"
+        ],
+        "l2SyndromeIds": [
+          "P005"
+        ],
+        "primarySyndromeId": "P005",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P005",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A_p006": {
+      "id": "A_p006",
+      "file": "corpus_A_p006.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P006"
+        ],
+        "l2SyndromeIds": [
+          "P006"
+        ],
+        "primarySyndromeId": "P006",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P006",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A12": {
+      "id": "A12",
+      "file": "corpus_A12_p008.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P008"
+        ],
+        "l2SyndromeIds": [
+          "P008"
+        ],
+        "primarySyndromeId": "P008",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P008",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A13": {
+      "id": "A13",
+      "file": "corpus_A13_p010.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P010"
+        ],
+        "l2SyndromeIds": [
+          "P010"
+        ],
+        "primarySyndromeId": "P010",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P010",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A14": {
+      "id": "A14",
+      "file": "corpus_A14_p014.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P014"
+        ],
+        "l2SyndromeIds": [
+          "P014"
+        ],
+        "primarySyndromeId": "P014",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P014",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A15": {
+      "id": "A15",
+      "file": "corpus_A15_p015.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P015"
+        ],
+        "l2SyndromeIds": [
+          "P015"
+        ],
+        "primarySyndromeId": "P015",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P015",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A16": {
+      "id": "A16",
+      "file": "corpus_A16_p016.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P016"
+        ],
+        "l2SyndromeIds": [
+          "P016"
+        ],
+        "primarySyndromeId": "P016",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P016",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A17": {
+      "id": "A17",
+      "file": "corpus_A17_p017.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P017"
+        ],
+        "l2SyndromeIds": [
+          "P017"
+        ],
+        "primarySyndromeId": "P017",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P017",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A18": {
+      "id": "A18",
+      "file": "corpus_A18_p018.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P018"
+        ],
+        "l2SyndromeIds": [
+          "P018"
+        ],
+        "primarySyndromeId": "P018",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P018",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A19": {
+      "id": "A19",
+      "file": "corpus_A19_p019.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P019"
+        ],
+        "l2SyndromeIds": [
+          "P019"
+        ],
+        "primarySyndromeId": "P019",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P019",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A20": {
+      "id": "A20",
+      "file": "corpus_A20_p020.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P020"
+        ],
+        "l2SyndromeIds": [
+          "P020"
+        ],
+        "primarySyndromeId": "P020",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P020",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A21": {
+      "id": "A21",
+      "file": "corpus_A21_p023.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P023"
+        ],
+        "l2SyndromeIds": [
+          "P023"
+        ],
+        "primarySyndromeId": "P023",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P023",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A22": {
+      "id": "A22",
+      "file": "corpus_A22_p024.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P024"
+        ],
+        "l2SyndromeIds": [
+          "P024"
+        ],
+        "primarySyndromeId": "P024",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P024",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A23": {
+      "id": "A23",
+      "file": "corpus_A23_p025.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P025"
+        ],
+        "l2SyndromeIds": [
+          "P025"
+        ],
+        "primarySyndromeId": "P025",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P025",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A24": {
+      "id": "A24",
+      "file": "corpus_A24_p026.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P026"
+        ],
+        "l2SyndromeIds": [
+          "P026"
+        ],
+        "primarySyndromeId": "P026",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P026",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A25": {
+      "id": "A25",
+      "file": "corpus_A25_p027.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P027"
+        ],
+        "l2SyndromeIds": [
+          "P027"
+        ],
+        "primarySyndromeId": "P027",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P027",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A26": {
+      "id": "A26",
+      "file": "corpus_A26_p029.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P029"
+        ],
+        "l2SyndromeIds": [
+          "P029"
+        ],
+        "primarySyndromeId": "P029",
+        "confidence": 0.91
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P029",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A27": {
+      "id": "A27",
+      "file": "corpus_A27_p030.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P030"
+        ],
+        "l2SyndromeIds": [
+          "P030"
+        ],
+        "primarySyndromeId": "P030",
+        "confidence": 0.93
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P030",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A28": {
+      "id": "A28",
+      "file": "corpus_A28_p031.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P031"
+        ],
+        "l2SyndromeIds": [
+          "P031"
+        ],
+        "primarySyndromeId": "P031",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P031",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A29": {
+      "id": "A29",
+      "file": "corpus_A29_p032.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P032"
+        ],
+        "l2SyndromeIds": [
+          "P032"
+        ],
+        "primarySyndromeId": "P032",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P032",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A30": {
+      "id": "A30",
+      "file": "corpus_A30_p033.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P033"
+        ],
+        "l2SyndromeIds": [
+          "P033"
+        ],
+        "primarySyndromeId": "P033",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P033",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A31": {
+      "id": "A31",
+      "file": "corpus_A31_p034.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P034"
+        ],
+        "l2SyndromeIds": [
+          "P034"
+        ],
+        "primarySyndromeId": "P034",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P034",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A32": {
+      "id": "A32",
+      "file": "corpus_A32_p035.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P035"
+        ],
+        "l2SyndromeIds": [
+          "P035"
+        ],
+        "primarySyndromeId": "P035",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P035",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A33": {
+      "id": "A33",
+      "file": "corpus_A33_p036.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P036"
+        ],
+        "l2SyndromeIds": [
+          "P036"
+        ],
+        "primarySyndromeId": "P036",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P036",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A34": {
+      "id": "A34",
+      "file": "corpus_A34_p037.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P037"
+        ],
+        "l2SyndromeIds": [
+          "P037"
+        ],
+        "primarySyndromeId": "P037",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P037",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A35": {
+      "id": "A35",
+      "file": "corpus_A35_p038.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P038"
+        ],
+        "l2SyndromeIds": [
+          "P038"
+        ],
+        "primarySyndromeId": "P038",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P038",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A36": {
+      "id": "A36",
+      "file": "corpus_A36_p039.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P039"
+        ],
+        "l2SyndromeIds": [
+          "P039"
+        ],
+        "primarySyndromeId": "P039",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P039",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A37": {
+      "id": "A37",
+      "file": "corpus_A37_p040.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P040"
+        ],
+        "l2SyndromeIds": [
+          "P040"
+        ],
+        "primarySyndromeId": "P040",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P040",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "A38": {
+      "id": "A38",
+      "file": "corpus_A38_p041.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P041"
+        ],
+        "l2SyndromeIds": [
+          "P041"
+        ],
+        "primarySyndromeId": "P041",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P041",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "B1": {
+      "id": "B1",
+      "file": "corpus_B1_p012_p006.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P012",
+          "P006"
+        ],
+        "l2SyndromeIds": [
+          "P012",
+          "P006"
+        ],
+        "primarySyndromeId": "P012",
+        "confidence": 0.82
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P012",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "B2": {
+      "id": "B2",
+      "file": "corpus_B2_p028_p003.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P028",
+          "P003"
+        ],
+        "l2SyndromeIds": [
+          "P028",
+          "P003"
+        ],
+        "primarySyndromeId": "P028",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P028",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "B3": {
+      "id": "B3",
+      "file": "corpus_B3_p005_p003.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P005"
+        ],
+        "l2SyndromeIds": [
+          "P005"
+        ],
+        "primarySyndromeId": "P005",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P005",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "B4": {
+      "id": "B4",
+      "file": "corpus_B4_p012_p015.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P012",
+          "P015"
+        ],
+        "l2SyndromeIds": [
+          "P012",
+          "P015"
+        ],
+        "primarySyndromeId": "P012",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P012",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "B5": {
+      "id": "B5",
+      "file": "corpus_B5_p030_p006.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P030",
+          "P006"
+        ],
+        "l2SyndromeIds": [
+          "P030",
+          "P006"
+        ],
+        "primarySyndromeId": "P030",
+        "confidence": 0.92
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P030",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "B6": {
+      "id": "B6",
+      "file": "corpus_B6_p041_p012.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [
+          "P041",
+          "P012"
+        ],
+        "l2SyndromeIds": [
+          "P041",
+          "P012"
+        ],
+        "primarySyndromeId": "P041",
+        "confidence": 0.9
+      },
+      "teacher": {
+        "teachingDecision": "train",
+        "hasTask": true,
+        "taskTargetSyndromeId": "P041",
+        "taskType": "rewrite"
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "C1": {
+      "id": "C1",
+      "file": "corpus_C1_good.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [],
+        "l2SyndromeIds": [],
+        "primarySyndromeId": "",
+        "confidence": 0.3
+      },
+      "teacher": {
+        "teachingDecision": "encourage",
+        "hasTask": false,
+        "taskTargetSyndromeId": null,
+        "taskType": null
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    },
+    "C2": {
+      "id": "C2",
+      "file": "corpus_C2_short.txt",
+      "diagnosis": {
+        "parsed": true,
+        "syndromeIds": [],
+        "l2SyndromeIds": [],
+        "primarySyndromeId": "",
+        "confidence": 0.2
+      },
+      "teacher": {
+        "teachingDecision": "defer",
+        "hasTask": false,
+        "taskTargetSyndromeId": null,
+        "taskType": null
+      },
+      "consistency": {
+        "passed": true,
+        "violationCount": 0
+      },
+      "compliance": {
+        "naturalLanguageLeakP0xx": false
+      }
+    }
+  }
+}

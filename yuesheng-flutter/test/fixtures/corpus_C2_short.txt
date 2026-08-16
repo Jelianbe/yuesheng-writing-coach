@@ -1,0 +1,11 @@
+这段文字只有三个字，篇幅太短，暂时看不出任何写作上的倾向或习惯。
+
+[YS_DIAGNOSIS]
+{"syndromes":[],"suggested_actions":["补充更完整的段落或文段后再提交诊断"],"confidence":0.2,"feedback_summary":"文本过短，无法诊断。"}
+[/YS_DIAGNOSIS]
+
+现在这段文字太短了，还不太适合一起琢磨写法。不妨等你有了一段更完整的文字，我们再一起看，那时候能聊得更具体些。
+
+[YS_TEACHER]
+{"teaching_decision":"defer","teaching_reason":"文本过短，无法开展有针对性的教学","natural_language":"现在这段文字太短了，还不太适合一起琢磨写法。不妨等你有了一段更完整的文字，我们再一起看，那时候能聊得更具体些。","location_marks":[]}
+[/YS_TEACHER]

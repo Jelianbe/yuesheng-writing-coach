@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - '**/*.g.dart'
+    - '**/*.freezed.dart'
+
+linter:
+  rules:
+    # drift 表定义中 .check(getter.isIn(...)) 链式调用会触发误报
+    recursive_getters: false
+    # drift 生成类的构造函数签名导致 super parameter 语法不兼容
+    use_super_parameters: false

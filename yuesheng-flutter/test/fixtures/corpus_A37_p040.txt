@@ -1,0 +1,11 @@
+事件排布得很密集，接连的转折让情节很有看头。不过推动故事前进的几乎全是外部力量，主角本人很少做出属于自己的选择。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P040","name":"被动主角","severity":"L2","evidence":["被抓、被救、被卷进战争"],"explanation":"主角在关键情节中始终由他人与环境推动，没有主动决策与行动，人物缺少能动性","reader_impact":"读者难以在主角身上找到代入感与期待，容易觉得他只是事件的旁观者"}],"suggested_actions":["为主角补充至少一个主动选择或主动推动情节的举动"],"confidence":0.9,"feedback_summary":"事件有张力，但主角缺少主动决策"}
+[/YS_DIAGNOSIS]
+
+你的情节推进很利落，冲突一个接一个。如果想让读者更牵挂主角，不妨让他自己迈出一步——哪怕是一次小小的主动选择，也能让人物立起来。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"主角缺少自主行动，通过改写练习可建立人物的主动性与情节推动力","natural_language":"你的情节推进很利落，冲突一个接一个。不妨让主角自己迈出一步，给他一个主动的选择或行动，故事会因为这份能动性更有劲","location_marks":["第1段：被抓、被救、被卷进战争"],"training_task":{"target_syndrome_id":"P040","target_dimension":null,"task_type":"rewrite","task_description":"在原文基础上，为主体补充至少一个主动做出的决定或推动情节的行动，使他在某一节点不再单纯被外力推着走","difficulty":"medium","evaluation_criteria":["改写后主角拥有清晰可见的自主决策或行动","该行动对后续情节产生实际推动作用","人物动机与行为保持连贯、可被读者理解"]}}
+[/YS_TEACHER]

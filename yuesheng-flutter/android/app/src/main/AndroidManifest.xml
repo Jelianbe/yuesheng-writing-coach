@@ -1,0 +1,77 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- ── 运行时权限（对齐 yuesheng-android + Flutter 插件需求）────────── -->
+    <!-- Dio 联网、connectivity_plus 网络检测 -->
+    <uses-permission
+        android:name="android.permission.INTERNET"/>
+    <!-- connectivity_plus 读取网络状态 -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- file_picker 读取外部文件（Android < 13） -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- ── package visibility（用于调用外部浏览器）────────────── -->
+    <queries>
+        <intent>
+            <action
+                android:name="android.intent.action.VIEW"/>
+            <category
+                android:name="android.intent.category.BROWSABLE"/>
+            <data
+                android:scheme="https"/>
+        </intent>
+        <!-- Flutter 引擎 ProcessTextPlugin 依赖 -->
+        <intent>
+            <action
+                android:name="android.intent.action.PROCESS_TEXT"/>
+            <data
+                android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+    <application
+        android:label="月笙写作教练"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:supportsRtl="true">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- 首屏主题（Flutter 引擎初始化期间显示） -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"/>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- deep link（对齐 yuesheng-android：两个 scheme） -->
+            <intent-filter>
+                <action
+                    android:name="android.intent.action.VIEW"/>
+                <category
+                    android:name="android.intent.category.DEFAULT"/>
+                <category
+                    android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="yuesheng"/>
+                <data
+                    android:scheme="com.yuesheng.writingcoach"/>
+            </intent-filter>
+        </activity>
+        <!-- Flutter embedding v2 标记，勿删 -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2"/>
+    </application>
+</manifest>

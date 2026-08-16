@@ -1,0 +1,11 @@
+这几句对白像生活里随口的客套，读着顺，却句句都在打招呼、没往前走一步。读者读了半天，记下的信息寥寥，注意力也容易散掉。
+
+[YS_DIAGNOSIS]
+{"syndromes":[{"syndrome_id":"P035","name":"对话注水","severity":"L2","evidence":["今天天气真好。是啊，阳光明媚","适合散步呢。确实适合散步"],"explanation":"对话停留在无信息量的寒暄互答，未承载情节推进、潜台词或人物动作，篇幅被日常客套占据","reader_impact":"读者在重复应答中难以获得新信息，容易走神并失去继续读下去的劲头"}],"suggested_actions":["删减无信息量的寒暄","让对话同时携带信息与潜台词"],"confidence":0.9,"feedback_summary":"对话多为客套寒暄，信息密度偏低"}
+[/YS_DIAGNOSIS]
+
+这段对话读起来很自然，像真实生活里朋友间的随口应答，语气分寸拿捏得舒服。若要让它更耐品，不妨把寒暄里的空隙填上内容——让一句话同时藏进信息、情绪或动作，读者会在简短对白里读出更多东西。
+
+[YS_TEACHER]
+{"teaching_decision":"train","teaching_reason":"对话停留在无信息量的寒暄，可通过删减注水并叠加信息或潜台词来提升密度","natural_language":"这段对话读起来很自然，像真实生活里朋友间的随口应答，语气分寸拿捏得舒服。若要让它更耐品，不妨把寒暄里的空隙填上内容——让一句话同时藏进信息、情绪或动作，读者会在简短对白里读出更多东西。","location_marks":["对话段落：今天天气真好。是啊，阳光明媚。"],"training_task":{"target_syndrome_id":"P035","target_dimension":null,"task_type":"rewrite","task_description":"删去寒暄注水，用一段更短的对话同时承载信息、潜台词或动作，改写示例中的公园之约。","difficulty":"medium","evaluation_criteria":["删除无信息量的寒暄，对话总量明显减少","保留的对话中含有可推进情节的信息或潜台词","至少融入一处动作或神态描写，使交流有画面"]}}
+[/YS_TEACHER]
