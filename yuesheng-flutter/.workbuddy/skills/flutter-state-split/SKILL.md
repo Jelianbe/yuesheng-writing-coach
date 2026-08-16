@@ -6,6 +6,8 @@ agent_created: true
 
 # Flutter 大 State 类拆分（part of + 私有扩展）
 
+> 原则级工程宪法见项目 `docs/yuesheng-flutter-宪法草案.md`（铁律②"机器强制分层"是本 skill 纪律来源之一）。本 skill 仅覆盖操作级拆分手法，原则冲突以宪法为准。
+
 ## Purpose
 
 把一个膨胀的 `State` 类（几千行、几十个 handler / builder 方法）**物理拆分**成多个
