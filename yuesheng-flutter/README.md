@@ -1,6 +1,6 @@
 # writingcoach
 
-A new Flutter project.
+> **月笙写作教练（Flutter 版，产品真源）**。工程纪律与真源：`docs/yuesheng-flutter-宪法草案.md`（v0.2 定稿）；批次执行：`docs/待办执行清单.md`；项目现状：`docs/Flutter版现状报告-2026-08-16.md`。
 
 ## Getting Started
 

@@ -6,6 +6,8 @@ agent_created: true
 
 # 在沙箱 Bash 里安全地跑 Flutter 验证命令
 
+> 原则级工程宪法见项目 `docs/yuesheng-flutter-宪法草案.md`（铁律①"防假完成 = 运行时证据"是本 skill 存在的根本原因：四闸必须经真实 `flutter test` 闭环，`analyze` 不算完成）。本 skill 仅覆盖沙箱环境绕过手法。
+
 ## Purpose
 
 在 WorkBuddy 的 **Bash 工具（沙箱）** 里跑 Flutter 项目的验证命令（`analyze`、`test`）
