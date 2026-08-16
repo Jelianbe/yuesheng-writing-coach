@@ -5,6 +5,7 @@
 !.gitignore
 !yuesheng-writing-coach/
 !yuesheng-flutter/
+!.github/
 
 # 项目内忽略规则
 **/node_modules/
