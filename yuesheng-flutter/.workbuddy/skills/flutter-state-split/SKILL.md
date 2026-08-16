@@ -1,6 +1,6 @@
 ---
 name: flutter-state-split
-description: Use when a Flutter + Riverpod StatefulWidget's State class OR a Service/Provider orchestrator class has grown huge (e.g. writing_page.dart _WritingPageState, writing_coach_panel.dart _WritingCoachPanelState, chat_service.dart ChatService in yuesheng-flutter) and needs physical decomposition without behavioral change. Provides the proven "part of + private extension on the host class" pattern, the anti-patterns that waste time (mixin-on-self-reference, mixin+getter bridge, missing ignore_for_file, private extension hiding a cross-file public method), a copy-paste template, a generic extraction script, and the gate discipline (flutter works once FLUTTER_SKIP_UPDATE_CHECK=true is set).
+description: Use when a Flutter + Riverpod StatefulWidget's State class OR a Service/Provider orchestrator class has grown huge (e.g. writing_page.dart _WritingPageState, writing_coach_panel.dart _WritingCoachPanelState, chat_service.dart ChatService in yuesheng-flutter) and needs physical decomposition without behavioral change. Provides the proven "part of + private extension on the host class" pattern, the anti-patterns that waste time (mixin-on-self-reference, mixin+getter bridge, missing ignore_for_file, private extension hiding a cross-file public method, and the P2-2 regression where moving a public instance method into an extension silently bypasses subclass @override — fix: keep a thin host stub delegating to a renamed private extension method), a copy-paste template, a generic extraction script, and the gate discipline (flutter works once FLUTTER_SKIP_UPDATE_CHECK=true is set).
 agent_created: true
 ---
 
@@ -62,6 +62,18 @@ part writing_page_selection_ai.dart
    扩展公开**不影响**其内部的私有方法（仍保持库内私有）。纯库内调用的私有方法用
    私有扩展名即可（命名 lint `camel_case_extensions` 会提示，改名即可）。
 
+5. **公开实例方法迁 extension 后必须留「薄实例桩」保 override 语义（P2-2 踩坑）**。
+   扩展方法**不是 virtual**：当 `sendMessage` 从宿主实例方法迁到 `extension` 后，若
+   宿主不再声明同名实例成员，静态类型 `ChatService` 上"没有实例成员"，Dart 会**静默
+   解析到 extension 方法**，从而**绕过子类（如测试替身 `_FakeChatService extends
+   ChatService`）的 `@override sendMessage`**。后果：9 个 `chat_page_test` 用例
+   `pumpAndSettle timed out`（真实 `sendMessage` 含真 `streamChat` 流式永不结束）。
+   **正确做法**：宿主保留一个**薄实例方法桩** `sendMessage(...)` 直接 `await
+   _sendMessageCore(...)` 委派给改名后的私有扩展方法（保留 `this` 语义、无需把
+   `this.` 改成 `self.`）。这样子类 override / 测试替身派发语义 100% 保住，扩展内
+   仍是逐字原方法体。另：extension 内引用宿主 `static` 成员须加 `ChatService.`
+   前缀（见反模式表）。
+
 ## Anti-patterns（已踩过，别再试）
 
 | 尝试 | 结果 | 结论 |
@@ -71,6 +83,8 @@ part writing_page_selection_ai.dart
 | 扩展 `on _HostState` 但**漏掉** `// ignore_for_file` | `invalid_use_of_protected_member` 报错 | State 类必须加文件级忽略 |
 | 被迁方法是**公开且跨文件调用**，却用私有扩展名 `_Xxx` | 外部报 `isn't defined` + 本库 `unused_element` | 改公开 UpperCamelCase 扩展名 |
 | 把 `static` 方法迁进扩展 | 编译错：extension 不能有 static 成员 | `static` 方法留宿主（或提成顶层函数） |
+| 把**公开实例方法**（如 `sendMessage`）迁到 extension 后宿主留空、靠 Dart 解析到 extension | 静默绕过子类（测试替身 `_FakeChatService extends ChatService`）的 `@override` → 9 个 `pumpAndSettle timed out`（真实 `sendMessage` 含真 `streamChat` 流式永不结束） | 宿主保留**薄实例桩**委派给改名后的私有扩展方法 `_sendMessageCore`，维持 override/子类派发语义（见下「要点 5」） |
+| 在 extension 内引用宿主 `static` 成员（如 `_kFullContentMaxLen`）未加 `ChatService.` 前缀 | 编译错：`unqualified_reference_to_static_member_of_extended_type` | extension 内访问宿主 static 须用 `ChatService._xxx` 全限定前缀（顶层 import const 不改） |
 
 ## 标准步骤
 
@@ -97,6 +111,9 @@ part writing_page_selection_ai.dart
 - **`dart analyze` 仍可作秒级静态闸门**：`/d/flutter/bin/cache/dart-sdk/bin/dart.exe
   analyze lib` 直接调同一分析引擎，适合逐组迁移时频繁跑；最终以 `flutter test` 闭环。
 - 游离的 `flutter.bat` 进程若泄漏拖垮资源，必要时 `ps -W` 定位 + `kill -9` 清理。
+- **沙箱跑命令的完整坑与绕过手法（`.bat` 被杀 / lockfile 死锁 / safe-delete 拦截 `rm` /
+  快照直调 `flutter_tools.snapshot`）已单独立项**：见 skill **`flutter-sandbox-run`**。
+  本工程在 WorkBuddy Bash 沙箱里跑 `analyze`/`test` 前，先按它走一遍可省大量试错。
 
 ## 参考
 
