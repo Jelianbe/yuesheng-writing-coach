@@ -287,6 +287,21 @@ bool isSafetyWordRequest(String text) {
   return true;
 }
 
+/// 临场输出约束（最高优先级）— 复刻 RN e8c46bb 表达密度提交。
+///
+/// 真源：chat_service_send.dart 步骤 6.5。利用 LLM recency bias，在所有教学内容
+/// 注入后、历史对话前追加，确保「表达密度」规则不被后续详细教学内容覆盖
+///（Flutter 曾缺失：三档态度 skill 表达密度小节 + 本约束，批次 41 补齐）。
+///
+/// 抽为共享常量：① 单一事实来源，避免 chat_service_send 内联字符串漂移；
+/// ② 供合约测试锁定其关键指令（「一次只抛一个点」「表达密度」「不堆叠」）
+/// 不被后续重构误删。
+const String kLiveOutputConstraints =
+    '# 临场输出约束（最高优先级）\n\n'
+    '以上注入的教学知识、症候定义、训练素材是你的内部参考，不是让你一次性念给学员听。\n'
+    '每次回复遵守当前态度档位的「表达密度」规则：一次只抛一个点，示范按档位执行（豆包/月笙可给最小示范一例，Sensei 不给示范只指方向），删掉所有铺垫。\n'
+    '学员问题多时按优先级分轮展开，不堆叠。';
+
 /// 字数格式化（真源：shared-constants.ts WORD_COUNT_FORMAT + formatWordCount）
 class WordCountFormat {
   const WordCountFormat._();

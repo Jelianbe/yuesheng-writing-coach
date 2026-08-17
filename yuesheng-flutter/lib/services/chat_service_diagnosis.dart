@@ -245,6 +245,13 @@ extension ChatServiceDiagnosis on ChatService {
       }
     }
 
+    // B1：D4-A 分块诊断链路必为诊断；成败记录 → 失败卡阈值门控
+    await _recordDiagnosisOutcome(
+      sessionId,
+      attempted: true,
+      success: diagnosis != null,
+    );
+
     return messageId;
   }
 
