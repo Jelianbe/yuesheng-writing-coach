@@ -228,17 +228,22 @@ class ManuscriptStats {
   const ManuscriptStats({required this.chapterCount, required this.totalWords});
 }
 
-/// 按作品统计章节数 + 总字数（书架卡片右下角信息）
-final manuscriptStatsProvider = FutureProvider.family<ManuscriptStats, String>((
-  ref,
-  manuscriptId,
-) async {
+/// 批次93-1（B27 修复）：一次性批量统计所有作品的章节数 + 总字数。
+/// 监听 manuscriptStoreProvider，作品列表变化时自动重算；以单条 GROUP BY
+/// 查询替代原先每张卡片单独 manuscriptStatsProvider 的 N+1 查询。
+final allManuscriptStatsProvider =
+    FutureProvider<Map<String, ManuscriptStats>>((ref) async {
+  final store = ref.watch(manuscriptStoreProvider);
+  final ids = store.manuscripts.map((m) => m.id).toList();
   final db = ref.watch(appDatabaseProvider);
-  final chapters = await ChapterRepository(db).listChapters(manuscriptId);
-  return ManuscriptStats(
-    chapterCount: chapters.length,
-    totalWords: chapters.fold(0, (sum, c) => sum + c.wordCount),
-  );
+  final stats = await ChapterRepository(db).statsForManuscripts(ids);
+  return {
+    for (final e in stats.entries)
+      e.key: ManuscriptStats(
+        chapterCount: e.value.chapterCount,
+        totalWords: e.value.totalWords,
+      ),
+  };
 });
 
 /// 批次83：大纲边写边看——一次加载作品全部实体 + 各自印象
