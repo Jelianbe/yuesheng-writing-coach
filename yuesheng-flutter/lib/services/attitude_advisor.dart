@@ -129,6 +129,36 @@ AttitudeSuggestion? suggestAttitudeAdjustment({
   return null;
 }
 
+/// 从消息摘要计算态度降档信号（B4 接线核心）。
+///
+/// 返回应传给 [suggestAttitudeAdjustment] 的 `consecutiveNegativeFeedback` 值：
+/// - 从最新用户消息向前，连续命中负反馈关键词的条数（[containsNegativeFeedback]）；
+/// - 若最新用户消息含安全词「轻一点」降档请求（[isSafetyWordRequest]），
+///   强制达到降档阈值（对齐教练哲学：安全词无条件降档）。
+///
+/// 用 record 传参避免引入数据库层耦合。
+int computeAttitudeDowngradeSignal(
+  List<({String role, String content})> messages,
+) {
+  int consecutiveNegative = 0;
+  for (final m in messages.reversed) {
+    if (m.role != 'user') continue;
+    if (containsNegativeFeedback(m.content)) {
+      consecutiveNegative++;
+    } else {
+      break;
+    }
+  }
+
+  final latestUser =
+      messages.reversed.where((m) => m.role == 'user').firstOrNull;
+  if (latestUser != null && isSafetyWordRequest(latestUser.content)) {
+    consecutiveNegative = AttitudeThresholds.negativeFeedbackDowngradeCount;
+  }
+
+  return consecutiveNegative;
+}
+
 String _generateUpgradeReason(
   AttitudeLevel target,
   List<Severity> syndromes,
