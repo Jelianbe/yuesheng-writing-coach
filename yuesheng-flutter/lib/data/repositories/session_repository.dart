@@ -18,29 +18,27 @@ class SessionRepository {
   Future<String> createBlankSession({String? title}) async {
     final id = generateUuid();
     final now = nowSec();
-    await _db
-        .into(_db.sessions)
-        .insert(
-          SessionsCompanion.insert(
-            id: id,
-            title: Value(title ?? '新建会话'),
-            preview: const Value(''),
-            diagnosisSummary: const Value('{}'),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-    // 同步创建 teaching_state 行（INSERT OR IGNORE，默认 P0_ENGAGE）
-    await _db
-        .into(_db.teachingState)
-        .insertOnConflictUpdate(
-          TeachingStateCompanion.insert(
-            id: generateUuid(),
-            sessionId: id,
-            currentPhase: const Value('P0_ENGAGE'),
-            updatedAt: Value(now),
-          ),
-        );
+    await _db.transaction(() async {
+      await _db.into(_db.sessions).insert(
+        SessionsCompanion.insert(
+          id: id,
+          title: Value(title ?? '新建会话'),
+          preview: const Value(''),
+          diagnosisSummary: const Value('{}'),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+      // 同步创建 teaching_state 行（INSERT OR IGNORE，默认 P0_ENGAGE）
+      await _db.into(_db.teachingState).insertOnConflictUpdate(
+        TeachingStateCompanion.insert(
+          id: generateUuid(),
+          sessionId: id,
+          currentPhase: const Value('P0_ENGAGE'),
+          updatedAt: Value(now),
+        ),
+      );
+    });
     return id;
   }
 
@@ -66,47 +64,51 @@ class SessionRepository {
 
     if (existing != null) return existing.id;
 
-    // 新建会话
-    final sessionId = await createBlankSession(title: '新建会话');
+    // 新建会话（建会话 + 建 teaching_state + 建冗余缓存 + 建引用，整体包事务，避免半完成态）
+    final sessionId = await _db.transaction(() async {
+      final sid = await createBlankSession(title: '新建会话');
 
-    // 写入冗余缓存 + 主引用
-    await (_db.update(
-      _db.sessions,
-    )..where((t) => t.id.equals(sessionId))).write(
-      SessionsCompanion(
-        manuscriptId: Value(manuscriptId),
-        chapterId: chapterId != null ? Value(chapterId) : const Value.absent(),
-        updatedAt: Value(nowSec()),
-      ),
-    );
+      // 写入冗余缓存 + 主引用
+      await (_db.update(
+        _db.sessions,
+      )..where((t) => t.id.equals(sid))).write(
+        SessionsCompanion(
+          manuscriptId: Value(manuscriptId),
+          chapterId: chapterId != null ? Value(chapterId) : const Value.absent(),
+          updatedAt: Value(nowSec()),
+        ),
+      );
 
-    // 建主引用（session_reference）
-    await _db
-        .into(_db.sessionReferences)
-        .insertOnConflictUpdate(
-          SessionReferencesCompanion.insert(
-            id: generateUuid(),
-            sessionId: sessionId,
-            refType: 'manuscript',
-            refId: manuscriptId,
-            isPrimary: const Value(1),
-            createdAt: Value(nowSec()),
-          ),
-        );
-    if (chapterId != null) {
+      // 建主引用（session_reference）
       await _db
           .into(_db.sessionReferences)
           .insertOnConflictUpdate(
             SessionReferencesCompanion.insert(
               id: generateUuid(),
-              sessionId: sessionId,
-              refType: 'chapter',
-              refId: chapterId,
+              sessionId: sid,
+              refType: 'manuscript',
+              refId: manuscriptId,
               isPrimary: const Value(1),
               createdAt: Value(nowSec()),
             ),
           );
-    }
+      if (chapterId != null) {
+        await _db
+            .into(_db.sessionReferences)
+            .insertOnConflictUpdate(
+              SessionReferencesCompanion.insert(
+                id: generateUuid(),
+                sessionId: sid,
+                refType: 'chapter',
+                refId: chapterId,
+                isPrimary: const Value(1),
+                createdAt: Value(nowSec()),
+              ),
+            );
+      }
+
+      return sid;
+    });
 
     return sessionId;
   }
@@ -142,47 +144,52 @@ class SessionRepository {
           .getSingleOrNull();
       chapterTitle = chapter?.title ?? '';
     } catch (_) {}
-    final sessionId = await createBlankSession(
-      title: chapterTitle.trim().isEmpty ? '章节会话' : '诊断·$chapterTitle',
-    );
+    // 新建会话（建会话 + 建 teaching_state + 建冗余缓存 + 建引用，整体包事务，避免半完成态）
+    final sessionId = await _db.transaction(() async {
+      final sid = await createBlankSession(
+        title: chapterTitle.trim().isEmpty ? '章节会话' : '诊断·$chapterTitle',
+      );
 
-    // 写入冗余缓存
-    await (_db.update(
-      _db.sessions,
-    )..where((t) => t.id.equals(sessionId))).write(
-      SessionsCompanion(
-        manuscriptId: Value(manuscriptId),
-        chapterId: Value(chapterId),
-        updatedAt: Value(nowSec()),
-      ),
-    );
+      // 写入冗余缓存
+      await (_db.update(
+        _db.sessions,
+      )..where((t) => t.id.equals(sid))).write(
+        SessionsCompanion(
+          manuscriptId: Value(manuscriptId),
+          chapterId: Value(chapterId),
+          updatedAt: Value(nowSec()),
+        ),
+      );
 
-    // 建主引用：chapter 为 primary（诊断目标）
-    await _db
-        .into(_db.sessionReferences)
-        .insertOnConflictUpdate(
-          SessionReferencesCompanion.insert(
-            id: generateUuid(),
-            sessionId: sessionId,
-            refType: 'chapter',
-            refId: chapterId,
-            isPrimary: const Value(1),
-            createdAt: Value(nowSec()),
-          ),
-        );
-    // manuscript 作为次要引用（提供全局上下文）
-    await _db
-        .into(_db.sessionReferences)
-        .insertOnConflictUpdate(
-          SessionReferencesCompanion.insert(
-            id: generateUuid(),
-            sessionId: sessionId,
-            refType: 'manuscript',
-            refId: manuscriptId,
-            isPrimary: const Value(0),
-            createdAt: Value(nowSec()),
-          ),
-        );
+      // 建主引用：chapter 为 primary（诊断目标）
+      await _db
+          .into(_db.sessionReferences)
+          .insertOnConflictUpdate(
+            SessionReferencesCompanion.insert(
+              id: generateUuid(),
+              sessionId: sid,
+              refType: 'chapter',
+              refId: chapterId,
+              isPrimary: const Value(1),
+              createdAt: Value(nowSec()),
+            ),
+          );
+      // manuscript 作为次要引用（提供全局上下文）
+      await _db
+          .into(_db.sessionReferences)
+          .insertOnConflictUpdate(
+            SessionReferencesCompanion.insert(
+              id: generateUuid(),
+              sessionId: sid,
+              refType: 'manuscript',
+              refId: manuscriptId,
+              isPrimary: const Value(0),
+              createdAt: Value(nowSec()),
+            ),
+          );
+
+      return sid;
+    });
 
     return sessionId;
   }
