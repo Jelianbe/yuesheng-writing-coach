@@ -53,7 +53,6 @@ void main() {
         // training 组
         'training-loop',
         'training-loop-v2',
-        'training-templates',
         'training-templates-index',
         'training-evaluation',
         'training-evaluation-v2',

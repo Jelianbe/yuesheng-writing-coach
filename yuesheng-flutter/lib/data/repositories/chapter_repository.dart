@@ -308,4 +308,37 @@ class ChapterRepository {
       ),
     );
   }
+
+  /// 批量统计多个作品的章节数 + 总字数。
+  /// 单条 `WHERE manuscript_id IN (...)` 查询替代书架逐卡片 [listChapters] 的 N+1 查询（B27 修复）；
+  /// 聚合在 Dart 侧完成，避免 drift 聚合表达式类型约束，且章节总量可控。
+  Future<Map<String, ChapterStat>> statsForManuscripts(
+    List<String> manuscriptIds,
+  ) async {
+    if (manuscriptIds.isEmpty) return const {};
+    final chapters = await (_db.select(_db.chapters)
+          ..where(
+            (t) =>
+                t.manuscriptId.isIn(manuscriptIds) &
+                t.status.isNotValue('archived'),
+          ))
+        .get();
+    final result = <String, ChapterStat>{};
+    for (final c in chapters) {
+      final prev = result[c.manuscriptId] ??
+          const ChapterStat(chapterCount: 0, totalWords: 0);
+      result[c.manuscriptId] = ChapterStat(
+        chapterCount: prev.chapterCount + 1,
+        totalWords: prev.totalWords + c.wordCount,
+      );
+    }
+    return result;
+  }
+}
+
+/// 作品章节统计（章节数 + 总字数，书架卡片信息加厚用；B27 批量查询返回值）
+class ChapterStat {
+  final int chapterCount;
+  final int totalWords;
+  const ChapterStat({required this.chapterCount, required this.totalWords});
 }

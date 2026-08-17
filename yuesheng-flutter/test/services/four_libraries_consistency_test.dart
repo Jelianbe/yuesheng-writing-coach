@@ -298,6 +298,41 @@ void main() {
           reason: 'P041/P012 重叠优先级（P041 优先）缺失');
     });
 
+    test('#8b 重叠优先级表覆盖 P022/P023/P024/P026（B9 补充）', () {
+      final manual = kSyndromeManualContent;
+      expect(manual, contains('P022 重复用词/基础语病 vs P008 语言堆砌'),
+          reason: 'P022/P008 重叠优先级缺失');
+      expect(manual, contains('P023 爽点乏力 vs P012 张力不足'),
+          reason: 'P023/P012 重叠优先级缺失');
+      expect(manual, contains('P024 期待感断裂 vs P026 章节钩子缺失'),
+          reason: 'P024/P026 重叠优先级缺失');
+      expect(manual, contains('P026 章节钩子缺失 vs P014 结尾乏力'),
+          reason: 'P026/P014 重叠优先级缺失');
+    });
+
+    test('#10 动作↔症候双向一致：coaching-actions 手写「适用症候」对齐注册表真源（B6）', () {
+      final content = getSkill('coaching-actions')?.content ?? '';
+      final re = RegExp(r'### (A0\d\d)[\s\S]*?\*\*适用症候\*\*：([^\n]*)');
+      final matches = re.allMatches(content);
+      final expected = <String, Set<String>>{};
+      for (final s in kSyndromeRegistry.where((s) => s.retired != true)) {
+        for (final a in s.actions) {
+          expected.putIfAbsent(a, () => <String>{}).add(s.id);
+        }
+      }
+      for (final m in matches) {
+        final actionId = m.group(1)!;
+        final line = m.group(2)!;
+        final ids =
+            RegExp(r'P0\d\d').allMatches(line).map((e) => e.group(0)!).toSet();
+        final exp = expected[actionId] ?? {};
+        expect(ids, exp,
+            reason: '$actionId 适用症候与注册表不一致: 手写=$ids 期望=$exp');
+      }
+      expect(matches.length, greaterThanOrEqualTo(expected.length),
+          reason: 'coaching-actions 动作覆盖数(${matches.length}) < 注册表动作数(${expected.length})');
+    });
+
     test('#9 内容引用漂移：全库出现的症候 ID 均合法（防 P023+ 悬空引用）', () {
       final allContent = [
         kSyndromeIndexContent,

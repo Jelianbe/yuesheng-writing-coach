@@ -115,9 +115,8 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
   void _refreshBookshelf() {
     final store = ref.read(manuscriptStoreProvider);
     debugPrint('[Bookshelf] _refreshBookshelf: books=${store.manuscripts.length}');
-    for (final m in store.manuscripts) {
-      ref.invalidate(manuscriptStatsProvider(m.id));
-    }
+    // B27：章节统计改为单一批量 provider，随 manuscriptStoreProvider 自动重算
+    ref.invalidate(allManuscriptStatsProvider);
     ref.read(manuscriptStoreProvider.notifier).loadManuscripts();
   }
 
@@ -150,6 +149,8 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
     });
     final state = ref.watch(manuscriptStoreProvider);
     final visible = _applyFilterAndSort(state.manuscripts);
+    // B27：一次性批量加载全部作品章节统计（N+1 → 单条 GROUP BY 查询）
+    final statsMap = ref.watch(allManuscriptStatsProvider).value ?? {};
     final searching = _query.trim().isNotEmpty;
 
     return Scaffold(
@@ -244,6 +245,7 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
                   ? _NoSearchResult(query: _query, searching: searching)
                   : _ManuscriptList(
                       manuscripts: visible,
+                      statsMap: statsMap,
                       onTap: _handleManuscriptTap,
                       onLongPress: _handleManuscriptLongPress,
                     ),
@@ -462,14 +464,16 @@ class _LongPressAction extends StatelessWidget {
   }
 }
 
-/// 作品列表（批次93-2：接收排序后的列表；卡片自身加载章节统计）
+/// 作品列表（批次93-2：接收排序后的列表；章节统计由父级一次性批量加载后传入）
 class _ManuscriptList extends StatelessWidget {
   final List<Manuscript> manuscripts;
+  final Map<String, ManuscriptStats> statsMap;
   final void Function(Manuscript) onTap;
   final void Function(Manuscript) onLongPress;
 
   const _ManuscriptList({
     required this.manuscripts,
+    required this.statsMap,
     required this.onTap,
     required this.onLongPress,
   });
@@ -486,6 +490,7 @@ class _ManuscriptList extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 10),
           child: _ManuscriptCard(
             manuscript: ms,
+            stats: statsMap[ms.id],
             onTap: () => onTap(ms),
             onLongPress: () => onLongPress(ms),
           ),
@@ -498,11 +503,13 @@ class _ManuscriptList extends StatelessWidget {
 /// 作品卡片（批次93-1 信息加厚：首字封面 + 章节数 + 总字数 + 相对时间 + 简介预览）
 class _ManuscriptCard extends ConsumerWidget {
   final Manuscript manuscript;
+  final ManuscriptStats? stats;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const _ManuscriptCard({
     required this.manuscript,
+    this.stats,
     required this.onTap,
     required this.onLongPress,
   });
@@ -518,9 +525,7 @@ class _ManuscriptCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 批次93-1：章节统计（章节数 + 总字数）
-    final statsAsync = ref.watch(manuscriptStatsProvider(manuscript.id));
-    final stats = statsAsync.value;
+    // 批次93-1（B27）：章节统计由父级批量加载后传入，避免逐卡片 N+1 查询
     final chapterCount = stats?.chapterCount ?? 0;
     final totalWords = stats?.totalWords ?? 0;
 
