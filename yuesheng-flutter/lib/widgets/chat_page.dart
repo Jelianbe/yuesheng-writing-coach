@@ -18,6 +18,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
@@ -110,6 +111,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   /// B20：最近一次发起的消息加载目标会话 ID。快速切换会话时，
   /// 仅最新请求的回调可写入 chatStore，旧的异步结果直接丢弃，杜绝乱序覆盖。
   String? _loadingSessionId;
+
+  /// 当前进行中的流式请求取消令牌；非 null 表示正在生成，可用于「停止生成」。
+  CancelToken? _cancelToken;
 
   @override
   void initState() {
@@ -443,6 +447,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 setState(() => _inputText = text);
               },
               onSend: _handleSend,
+              onStop: _cancelGeneration,
               onUploadFile: _handleUploadFile,
               onMention: _handleMention,
             ),

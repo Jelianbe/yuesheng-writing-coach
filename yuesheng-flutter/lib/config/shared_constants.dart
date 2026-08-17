@@ -15,6 +15,10 @@ class LlmConfig {
   static const double streamTemperature = 0.7;
   static const int streamTimeoutMs =
       180000; // 流式 3 分钟兜底：SSE 大响应深求索服务器可能 40s+ 后主动断
+  static const int streamConnectTimeoutMs =
+      60000; // 流式连接/首字超时：模型冷启动慢时首字可能 40s+，给足阈值避免误杀
+  static const int streamIdleTimeoutMs =
+      20000; // 流式中段空闲超时：相邻 chunk 超 20s 视为断流，避免 UI 永久卡死
   static const int errorPreviewLength = 100;
   static const int errorPreviewLengthLong = 200;
 }
