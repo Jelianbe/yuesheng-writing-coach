@@ -387,6 +387,30 @@ void main() {
       expect(find.text('这个诊断符合你的实际情况吗？'), findsNothing);
       expect(find.text('认同'), findsNothing);
     });
+
+    testWidgets('D5B-5 点击「部分认同」→ 插入 partial_agreement 卡片（B1）', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('部分认同'));
+      await tester.pumpAndSettle();
+
+      // UI 状态切换为部分认同
+      expect(find.text('部分认同'), findsOneWidget);
+      expect(find.text('建议继续沟通确认'), findsOneWidget);
+
+      // 落库验证：插入了一条 partial_agreement 消息卡片（B1 生产者接线）
+      final messages = await SessionRepository(db).listMessages(sessionId);
+      final pa = messages
+          .where((m) => m.messageType == 'partial_agreement')
+          .toList();
+      expect(pa, hasLength(1));
+    });
   });
 
   // ── 批次8: SyndromeDetailModal 接线（症候 chip 点击 → 详情弹层）──
