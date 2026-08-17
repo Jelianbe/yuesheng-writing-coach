@@ -259,11 +259,20 @@ class _MessageListState extends ConsumerState<MessageList> {
   @override
   void didUpdateWidget(MessageList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 消息数变化或流式内容变化时，滚动到底部
-    if (oldWidget.messages.length != widget.messages.length ||
-        oldWidget.streamingContent != widget.streamingContent) {
+    // 消息数变化或流式内容变化时，仅当用户本就停在底部才自动滚动到底部
+    // （B18：防止每收到一个 token 就无条件劫持滚动，用户上滑看历史时被拉回）
+    if ((oldWidget.messages.length != widget.messages.length ||
+            oldWidget.streamingContent != widget.streamingContent) &&
+        _isAtBottom()) {
       _scrollToBottom();
     }
+  }
+
+  /// 用户是否停在列表底部（80px 容差）。无 clients 时视为在底部。
+  bool _isAtBottom() {
+    if (!_scrollController.hasClients) return true;
+    final pos = _scrollController.position;
+    return pos.pixels >= pos.maxScrollExtent - 80;
   }
 
   void _scrollToBottom() {

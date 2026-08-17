@@ -107,6 +107,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   /// 批次 30：shell 重建时待打开会话已消费标志（防 build 期重复消费）
   bool _pendingSessionHandled = false;
 
+  /// B20：最近一次发起的消息加载目标会话 ID。快速切换会话时，
+  /// 仅最新请求的回调可写入 chatStore，旧的异步结果直接丢弃，杜绝乱序覆盖。
+  String? _loadingSessionId;
+
   @override
   void initState() {
     super.initState();
@@ -205,8 +209,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ref
             .read(evaluationReportsProvider.notifier)
             .restoreForSession(bootstrap.sessionId);
+        final targetSessionId = bootstrap.sessionId;
+        // B20：记录最新发起的加载请求，旧请求的异步回调若已不是最新则丢弃，
+        // 避免快速切换会话时 last-write-wins 乱序覆盖（不依赖 currentSessionId 是否被设置）。
+        _loadingSessionId = targetSessionId;
         final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
-        sessionRepo.listMessages(bootstrap.sessionId).then((messages) {
+        sessionRepo.listMessages(targetSessionId).then((messages) {
+          if (!mounted) return;
+          if (_loadingSessionId != targetSessionId) return;
           ref.read(chatStoreProvider.notifier).setMessages(messages);
         });
       }

@@ -151,5 +151,26 @@ void main() {
       notifier.clearError();
       expect(container.read(chatStoreProvider).error, isNull);
     });
+
+    test('#8 B14 切换会话清空流式状态（防止跨会话 stream 泄漏）', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      // 会话 A 流式进行中
+      notifier.setSessionId('session-A');
+      notifier.setStreaming(true);
+      notifier.appendStreamingContent('正在生成…');
+      expect(container.read(chatStoreProvider).isStreaming, isTrue);
+      expect(container.read(chatStoreProvider).streamingContent, isNotEmpty);
+
+      // 切到会话 B：流式状态必须被清空，不得泄漏到 B
+      notifier.setSessionId('session-B');
+      final after = container.read(chatStoreProvider);
+      expect(after.currentSessionId, 'session-B');
+      expect(after.isStreaming, isFalse);
+      expect(after.streamingContent, isEmpty);
+      expect(after.streamStageLabel, isNull);
+    });
   });
 }
