@@ -56,11 +56,18 @@ extension _ChatAttitude on _ChatPageState {
       }
     }
 
+    // B4：接入连续负反馈 / 安全词降档信号（原调用未传 consecutiveNegativeFeedback，
+    // 且 containsNegativeFeedback / isSafetyWordRequest 从未被调用 → 降档逻辑死代码）。
+    final consecutiveNegative = computeAttitudeDowngradeSignal(
+      messages.map((m) => (role: m.role, content: m.content)).toList(),
+    );
+
     final suggestion = suggestAttitudeAdjustment(
       currentAttitude: _attitude,
       currentPhase: _phase,
       syndromes: syndromes,
       messageCount: messages.length,
+      consecutiveNegativeFeedback: consecutiveNegative,
       lastSuggestionTime: _lastSuggestionTime,
     );
     if (suggestion != null && mounted) {

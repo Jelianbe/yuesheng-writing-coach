@@ -251,4 +251,56 @@ void main() {
       expect(isSafetyWordRequest('"轻一点"这个措辞更温柔'), isFalse);
     });
   });
+
+  // ── B4 接线：chat_attitude 调用 computeAttitudeDowngradeSignal 的回归锁 ──
+  group('computeAttitudeDowngradeSignal（B4 降档信号）', () {
+    ({String role, String content}) msg(String role, String content) =>
+        (role: role, content: content);
+
+    test('最近 3 条用户负反馈 → 返回 3', () {
+      final messages = [
+        msg('user', '我明白了'),
+        msg('user', '太深奥了，我完全听不懂'),
+        msg('user', '你讲太快了'),
+        msg('user', '我真的跟不上了'),
+      ];
+      expect(computeAttitudeDowngradeSignal(messages), 3);
+    });
+
+    test('非负反馈用户消息打断连续计数', () {
+      final messages = [
+        msg('user', '太深奥了听不懂'),
+        msg('user', '我明白了'),
+        msg('user', '还是听不懂'),
+      ];
+      // 从最新向前：听不懂→1，我明白了(非负反馈)→打断，停止
+      expect(computeAttitudeDowngradeSignal(messages), 1);
+    });
+
+    test('中间夹 assistant 消息不阻断连续计数', () {
+      final messages = [
+        msg('user', '太深奥了听不懂'),
+        msg('assistant', '我换个说法'),
+        msg('user', '你讲太快了'),
+      ];
+      // assistant 跳过不 break，用户负反馈仍连续 → 2
+      expect(computeAttitudeDowngradeSignal(messages), 2);
+    });
+
+    test('最新用户消息是安全词「轻一点」→ 强制达到降档阈值', () {
+      final messages = [
+        msg('user', '老师你说话轻一点'),
+        msg('assistant', '好的'),
+      ];
+      expect(
+        computeAttitudeDowngradeSignal(messages),
+        AttitudeThresholds.negativeFeedbackDowngradeCount,
+      );
+    });
+
+    test('转述的"轻一点"不触发降档信号', () {
+      final messages = [msg('user', '她说了"轻一点"')];
+      expect(computeAttitudeDowngradeSignal(messages), 0);
+    });
+  });
 }
