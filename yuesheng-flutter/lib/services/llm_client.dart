@@ -228,8 +228,8 @@ class LlmClient {
     final stream = response.data!.stream;
     String buffer = '';
 
-    await for (final chunk in stream) {
-      buffer += utf8.decode(chunk);
+    await for (final text in stream.cast<List<int>>().transform(utf8.decoder)) {
+      buffer += text;
 
       final lines = buffer.split('\n');
       // 保留最后可能不完整的行
