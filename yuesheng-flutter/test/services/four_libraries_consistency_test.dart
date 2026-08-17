@@ -196,6 +196,21 @@ void main() {
             reason: '索引表技法 $t 无完整条目');
       }
     });
+
+    test('#7 技法库无孤儿技法：每个定义技法至少被一个症候引用（B7 回归）', () {
+      final definedTech = RegExp(r'### (T\d{3})')
+          .allMatches(kTechniqueLibraryContent)
+          .map((m) => m.group(1)!)
+          .toSet();
+      expect(definedTech, isNotEmpty, reason: '技法库未解析到任何技法 ID');
+      final referenced = <String>{
+        for (final s in kSyndromeRegistry) ...s.techniques,
+      };
+      for (final t in definedTech) {
+        expect(referenced.contains(t), true,
+            reason: '孤儿技法 $t 未被任何症候 techniques 引用（B7 回归）');
+      }
+    });
   });
 
   group('批次3（3.2）动作库一致性', () {

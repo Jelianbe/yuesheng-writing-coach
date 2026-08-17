@@ -155,7 +155,7 @@ const List<SyndromeRecord> kSyndromeRegistry = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     position: 'global',
-    techniques: ['T001', 'T002', 'T020'],
+    techniques: ['T001', 'T002', 'T020', 'T031'],
     actions: ['A004', 'A006'],
   ),
   SyndromeRecord(
@@ -233,7 +233,7 @@ const List<SyndromeRecord> kSyndromeRegistry = [
     level: SkillLevel.l1,
     group: MaxAttemptsGroup.expression,
     position: 'global',
-    techniques: ['T003', 'T002', 'T021'],
+    techniques: ['T003', 'T002', 'T021', 'T031'],
     actions: ['A006', 'A011', 'A016'],
   ),
   SyndromeRecord(
@@ -360,7 +360,7 @@ const List<SyndromeRecord> kSyndromeRegistry = [
     level: SkillLevel.l4,
     group: MaxAttemptsGroup.structure,
     position: 'global',
-    techniques: ['T008', 'T009'],
+    techniques: ['T008', 'T009', 'T028'],
     actions: ['A013', 'A003'],
     v2ActionName: '情节巧合过多',
   ),
