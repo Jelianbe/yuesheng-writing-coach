@@ -2,7 +2,8 @@
 // Editor Observation Repository
 // 复刻 yuesheng-android/src/db/dao/editor-observation-dao.ts
 //
-// INSERT OR REPLACE：UNIQUE(session_id, message_id) 已由表 schema 保证。
+// 幂等写入：UNIQUE(session_id, message_id) 冲突则更新（见 insertEditorObservation
+// 内的原生 SQL，对齐 reference_repository 既有写法）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -40,42 +41,60 @@ class EditorObservationRepository {
   final AppDatabase _db;
   EditorObservationRepository(this._db);
 
-  /// 新增编辑观察（INSERT OR REPLACE）
+  /// 新增/更新编辑观察（幂等：UNIQUE(session_id, message_id) 冲突则更新）
   ///
   /// 真源：editor-observation-dao.ts insertEditorObservation
+  /// 说明：drift 的 insertOnConflictUpdate 默认以主键冲突为目标，而本表主键为随机
+  /// uuid，无法吸收 (session_id, message_id) 的 UNIQUE 冲突，重复写入会抛 UNIQUE
+  /// 异常被静默吞（B17）。故用原生 SQL 指定 UNIQUE 约束（对齐 reference_repository
+  /// 既有写法），冲突时更新而非抛错。
   Future<String> insertEditorObservation(
     InsertEditorObservationParams params,
   ) async {
     final id = generateUuid();
     final now = nowSec();
 
-    await _db
-        .into(_db.editorObservations)
-        .insertOnConflictUpdate(
-          EditorObservationsCompanion.insert(
-            id: id,
-            sessionId: params.sessionId,
-            messageId: params.messageId,
-            possibleIntent: params.editorResult.possibleIntent,
-            intentConfidence: params.editorResult.intentConfidence,
-            observations: jsonEncode(
-              _serializeObservations(params.editorResult.observations),
-            ),
-            overallImpression: params.editorResult.overallImpression,
-            strengths: Value(jsonEncode(params.editorResult.strengths)),
-            teacherTriggered: Value(params.teacherTriggered ? 1 : 0),
-            pronouncedCount: Value(params.pronouncedCount),
-            againstCount: Value(params.againstCount),
-            targetRefType: params.targetRefType == null
-                ? const Value.absent()
-                : Value(params.targetRefType),
-            targetRefId: params.targetRefId == null
-                ? const Value.absent()
-                : Value(params.targetRefId),
-            timestamp: Value(now),
-            createdAt: Value(now),
-          ),
-        );
+    await _db.transaction(() async {
+      await _db.customStatement(
+        '''
+        INSERT INTO editor_observation (
+          id, session_id, message_id, possible_intent, intent_confidence,
+          observations, overall_impression, strengths, teacher_triggered,
+          pronounced_count, against_count, target_ref_type, target_ref_id,
+          timestamp, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_id, message_id) DO UPDATE SET
+          possible_intent = excluded.possible_intent,
+          intent_confidence = excluded.intent_confidence,
+          observations = excluded.observations,
+          overall_impression = excluded.overall_impression,
+          strengths = excluded.strengths,
+          teacher_triggered = excluded.teacher_triggered,
+          pronounced_count = excluded.pronounced_count,
+          against_count = excluded.against_count,
+          target_ref_type = excluded.target_ref_type,
+          target_ref_id = excluded.target_ref_id,
+          timestamp = excluded.timestamp
+        ''',
+        [
+          id,
+          params.sessionId,
+          params.messageId,
+          params.editorResult.possibleIntent,
+          params.editorResult.intentConfidence,
+          jsonEncode(_serializeObservations(params.editorResult.observations)),
+          params.editorResult.overallImpression,
+          jsonEncode(params.editorResult.strengths),
+          params.teacherTriggered ? 1 : 0,
+          params.pronouncedCount,
+          params.againstCount,
+          params.targetRefType,
+          params.targetRefId,
+          now,
+          now,
+        ],
+      );
+    });
 
     return id;
   }
