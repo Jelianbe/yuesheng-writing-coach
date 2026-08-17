@@ -25,7 +25,9 @@ import '../config/app_motion.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/diagnosis_repository.dart';
+import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/chat_store.dart';
 import '../providers/session_providers.dart';
 import '../services/message_card_service.dart';
 import '../services/student_profile_compute.dart';
@@ -662,6 +664,25 @@ class _SyndromeConfirmationBarState
         level: level,
       );
       if (mounted) setState(() => _status = level);
+      // B1：部分认同 → 插入 PartialAgreementCard（反馈表单），让学员补充具体差异。
+      // 按钮点击后即切到 _buildStatus，仅能触发一次，无需去重。
+      if (level == 'partial' && mounted) {
+        try {
+          await insertPartialAgreementCard(
+            SessionRepository(ref.read(appDatabaseProvider)),
+            widget.sessionId,
+            widget.syndrome.syndromeId,
+            widget.syndrome.name,
+            widget.syndrome.severity,
+          );
+          final messages = await SessionRepository(
+            ref.read(appDatabaseProvider),
+          ).listMessages(widget.sessionId);
+          ref.read(chatStoreProvider.notifier).setMessages(messages);
+        } catch (_) {
+          // 部分认同卡片写入失败不阻断确认主流程
+        }
+      }
     } catch (_) {
       // 落库失败不切换状态（保持 pending，用户可重试）
     } finally {
