@@ -30,6 +30,9 @@ class ChatInput extends StatefulWidget {
   /// @ 引用触发回调：用户输入 "@" 字符时调用（批次70：字符级触发）
   final VoidCallback? onMention;
 
+  /// 停止生成回调（isStreaming 时由发送按钮位替换为停止按钮）
+  final VoidCallback? onStop;
+
   /// 入口标识：'manuscript' 显示诊断模式占位符
   final String? entryPoint;
 
@@ -41,6 +44,7 @@ class ChatInput extends StatefulWidget {
     required this.onSend,
     this.onUploadFile,
     this.onMention,
+    this.onStop,
     this.entryPoint,
   });
 
@@ -234,20 +238,35 @@ class ChatInputState extends State<ChatInput> {
           SizedBox(
             width: 36,
             height: 36,
-            child: FilledButton(
-              onPressed: _canSend ? _handleSend : null,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.disabled,
-                shape: const CircleBorder(),
-                padding: EdgeInsets.zero,
-              ),
-              child: const Icon(
-                Icons.arrow_upward,
-                color: AppColors.onPrimary,
-                size: 18,
-              ),
-            ),
+            child: widget.isStreaming
+                ? FilledButton(
+                    // 生成/识别中：发送按钮位变为「停止生成」，给用户手动逃生出口
+                    onPressed: widget.onStop,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.danger,
+                      shape: const CircleBorder(),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Icon(
+                      Icons.stop,
+                      color: AppColors.onPrimary,
+                      size: 18,
+                    ),
+                  )
+                : FilledButton(
+                    onPressed: _canSend ? _handleSend : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      disabledBackgroundColor: AppColors.disabled,
+                      shape: const CircleBorder(),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward,
+                      color: AppColors.onPrimary,
+                      size: 18,
+                    ),
+                  ),
           ),
         ],
       ),

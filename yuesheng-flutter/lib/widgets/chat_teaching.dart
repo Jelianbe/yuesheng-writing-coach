@@ -271,6 +271,9 @@ extension _ChatTeaching on _ChatPageState {
         );
 
     final chatService = ref.read(chatServiceProvider);
+    // 本次发送的取消令牌：供「停止生成」按钮在流式中段中止（避免卡死时无出口）
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
     try {
       await chatService.sendMessage(
         bootstrap.sessionId,
@@ -294,6 +297,10 @@ extension _ChatTeaching on _ChatPageState {
           onError: (error) {
             ref.read(chatStoreProvider.notifier).setError(error);
           },
+          onCancelled: () {
+            // 用户主动取消：优雅复位（不标记失败、不弹红错），回到可继续输入状态
+            ref.read(chatStoreProvider.notifier).cancelStreaming();
+          },
           onTrainingResult: onTrainingResult,
         ),
         SendMessageOptions(
@@ -305,15 +312,27 @@ extension _ChatTeaching on _ChatPageState {
           lastEditorEditAtSec: ref.read(editorActivityProvider),
           // 批次71：@ 引用快照随消息落库
           referencesJson: referencesJson,
+          // 取消令牌：让用户在生成中可主动中止（修复「组件卡死时无法脱身」）
+          cancelToken: cancelToken,
         ),
         subphase: subphase,
       );
     } catch (e) {
       ref.read(chatStoreProvider.notifier).setError(e.toString());
+    } finally {
+      // 无论完成/失败/取消，令牌都一次性作废，下次发送新建
+      _cancelToken = null;
     }
     if (mounted) {
       setState(() => _inputText = '');
     }
+  }
+
+  /// 主动停止当前生成（「停止生成」按钮回调）。
+  /// 取消底层 Dio 请求 → 流被中断 → sendMessage 走 onCancelled 优雅复位，
+  /// 让用户在「生成中/识别中」卡死时拥有手动逃生出口。
+  void _cancelGeneration() {
+    _cancelToken?.cancel('用户取消生成');
   }
 
   /// T3 训练系统：提交练习作答（复用 _handleSend 链路，强制 subphase=FEEDBACK，

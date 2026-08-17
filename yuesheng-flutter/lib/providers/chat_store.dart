@@ -140,6 +140,17 @@ class ChatStore extends StateNotifier<ChatState> {
     );
   }
 
+  /// 主动取消生成：重置流式状态但不标记消息失败（区别于 setError）。
+  /// 用户主动中止是预期行为，不应把最后一条 user 消息标红、也不弹错误横幅，
+  /// 让发送/识别这条链路干净地退回可继续输入的状态。
+  void cancelStreaming() {
+    state = state.copyWith(
+      isStreaming: false,
+      streamingContent: '',
+      clearError: true,
+    );
+  }
+
   /// 设置错误：标记最后一条 user 消息为 failed + 重置 isStreaming + 清空 streamingContent
   void setError(String error) {
     // 找到最后一条 user 消息，标记为 failed（复刻 RN chat-store.ts:147-152）

@@ -105,11 +105,15 @@ class SendMessageCallbacks {
   /// 训练结果回调（subphase==FEEDBACK 且 parseTrainingResult 命中时触发）
   final void Function(TrainingResult result)? onTrainingResult;
 
+  /// 用户主动取消时触发（区别于 onError：取消是预期行为，不应标记消息失败）
+  final void Function()? onCancelled;
+
   const SendMessageCallbacks({
     required this.onStream,
     required this.onComplete,
     required this.onError,
     this.onTrainingResult,
+    this.onCancelled,
   });
 }
 

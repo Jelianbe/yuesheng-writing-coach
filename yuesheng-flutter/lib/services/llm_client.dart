@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import '../config/shared_constants.dart';
 import 'llm_config_storage.dart';
 import 'network_check.dart';
+import 'stream_guard.dart';
 
 /// 聊天消息（OpenAI ChatMessage 格式）
 class ChatMessage {
@@ -32,6 +33,20 @@ class LlmStreamResponse {
   final bool isDone;
   const LlmStreamResponse({required this.content, required this.isDone});
 }
+
+/// 用户主动取消请求时抛出（区别于普通异常，调用方据此做优雅复位而非报错）
+class LlmRequestCancelledException implements Exception {
+  @override
+  String toString() => '请求已取消';
+}
+
+/// 对流式解码后的字符串流套一层「两段式空闲超时」守卫。
+///
+/// 实现见 [guardStream]（services/stream_guard.dart），抽为独立可测模块：
+/// - 首字符到达前：最长等待 [LlmConfig.streamConnectTimeoutMs]（连接/首字超时）；
+/// - 首字符之后：任意相邻 chunk 间隔超过 [LlmConfig.streamIdleTimeoutMs] 视为断流。
+/// 触发后抛出 [TimeoutException]，由 streamChat 调用方转 onError → UI 复位，
+/// 避免 `await for` 因网络静默断流而永久阻塞、发送与识别全程卡死。
 
 /// 测试连接结果
 class TestConnectionResult {
@@ -222,13 +237,20 @@ class LlmClient {
         cancelToken: cancelToken,
       );
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        throw LlmRequestCancelledException();
+      }
       throw Exception(_buildDioError(e));
     }
 
     final stream = response.data!.stream;
     String buffer = '';
 
-    await for (final text in stream.cast<List<int>>().transform(utf8.decoder)) {
+    // 流内空闲超时守卫：防止网络静默断流导致 await for 永久阻塞（UI 卡死）。
+    // 同时覆盖 Teacher/Editor/Progressive/Realtime 等所有走 streamChat 的链路。
+    await for (final text in guardStream(
+      stream.cast<List<int>>().transform(utf8.decoder),
+    )) {
       buffer += text;
 
       final lines = buffer.split('\n');
@@ -262,6 +284,12 @@ class LlmClient {
           continue;
         }
       }
+    }
+
+    // 流正常结束但被取消：Dio 取消时底层流可能干净关闭而非抛错，
+    // 此处补一道取消判定，确保统一走取消分支而非静默成功。
+    if (cancelToken?.isCancelled ?? false) {
+      throw LlmRequestCancelledException();
     }
 
     // 处理缓冲区中剩余的最后一块

@@ -1424,7 +1424,17 @@ extension ChatServiceSend on ChatService {
       debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
     } catch (e) {
       debugPrint('[ChatService] sendMessage 异常: $e');
-      callbacks.onError(e is Exception ? e.toString() : '发送失败');
+      // 区分「用户主动取消」与「真实失败」：取消是预期行为，
+      // 走 onCancelled 让 UI 优雅复位（不标记消息失败、不弹红错）；
+      // 其余异常走 onError。
+      final cancelled =
+          e is LlmRequestCancelledException ||
+          (options.cancelToken?.isCancelled ?? false);
+      if (cancelled) {
+        callbacks.onCancelled?.call();
+      } else {
+        callbacks.onError(e is Exception ? e.toString() : '发送失败');
+      }
     }
   }
 }
