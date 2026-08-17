@@ -167,6 +167,75 @@ class ChatService {
   /// 懒加载缓存：_ensureOutlineService 首次调用时由 _outlineRepo 构建
   OutlineService? _outlineService;
 
+  /// B1：诊断连续失败计数（内存态，按 session 隔离）。
+  /// 用于诊断失败卡阈值门控——连续失败达 UILimits.failureWarningThreshold 才插卡，
+  /// 避免偶发单次失败也打扰用户；普通聊天（非诊断轮次）不计入。
+  final Map<String, int> _consecutiveDiagnosisFails = {};
+
+  // ───────────────────────── B1 消息卡片确定性触发 ─────────────────────────
+
+  /// 诊断失败卡阈值门控（B1）。
+  ///
+  /// [attempted] 表示该轮是否确实发起了诊断（AI 输出含 [YS_DIAGNOSIS] 块，
+  /// 或走显式诊断链路 commitDiagnosisFromContent）。仅当 attempted && !success
+  /// 才计为一次失败，普通聊天（解析为 null）不会误触发。
+  ///
+  /// 连续失败达 UILimits.failureWarningThreshold 时插入诊断失败卡，
+  /// failureCount 传入当前连续失败次数（与卡片 UI 的额外提示阈值对齐）。
+  Future<void> _recordDiagnosisOutcome(
+    String sessionId, {
+    required bool attempted,
+    required bool success,
+  }) async {
+    if (!attempted) return; // 非诊断轮次：不动计数
+    if (success) {
+      _consecutiveDiagnosisFails[sessionId] = 0;
+      return;
+    }
+    final count = (_consecutiveDiagnosisFails[sessionId] ?? 0) + 1;
+    _consecutiveDiagnosisFails[sessionId] = count;
+    if (count >= UILimits.failureWarningThreshold) {
+      try {
+        await insertDiagnosisFailedCard(_sessionRepo, sessionId, count);
+      } catch (e) {
+        debugPrint('[SafeRun] 诊断失败卡插入失败不阻断主流程: $e');
+      }
+    }
+  }
+
+  /// 阶段总结卡（B1）：某症候训练达标 mastered 时插入，汇总该症候进展。
+  ///
+  /// 在 chat_service_send 两处 mastered 迁移点（步骤 6.3 评估 / 反馈后重评估）调用，
+  /// 与 resolveSyndromesBatch 成对，确保「达标→解锁」同时留下可读的进展卡片。
+  Future<void> _insertPhaseSummaryOnMastered(
+    String sessionId,
+    String syndromeId,
+    String syndromeName,
+    int trainingCount,
+  ) async {
+    try {
+      await insertPhaseSummaryCard(
+        _sessionRepo,
+        sessionId,
+        PhaseSummaryCardPayload(
+          result: 'passed',
+          resolvedSyndromeCount: 1,
+          trainingCount: trainingCount,
+          trend: 'improving',
+          syndromeChanges: [
+            SyndromeChangeItem(
+              syndromeId: syndromeId,
+              syndromeName: syndromeName,
+              trend: 'improving',
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      debugPrint('[SafeRun] 阶段总结卡插入失败不阻断主流程: $e');
+    }
+  }
+
   ChatService({
     required SessionRepository sessionRepo,
     required TeachingStateRepository stateRepo,

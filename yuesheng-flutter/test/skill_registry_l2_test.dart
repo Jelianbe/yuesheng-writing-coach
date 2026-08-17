@@ -44,7 +44,7 @@ void main() {
         'plot-design',
         'writer-psychology',
         // diagnosis 组（新增 6；coaching-rhythm/narrative-design/plot-design 与 beginner 共用）
-        'coaching-actions',
+        // 注：v1 coaching-actions 已于 B12 死负载清理中移除，仅保留 v2 变体
         'reader-awareness',
         'genre-guide',
         'writing-style',

@@ -743,6 +743,13 @@ extension ChatServiceSend on ChatService {
                     } catch (e) {
                       debugPrint('[SafeRun] resolveSyndromesBatch 内层: $e');
                     }
+                    // B1：达标→解锁同时插入阶段总结卡，汇总该症候进展
+                    await _insertPhaseSummaryOnMastered(
+                      sessionId,
+                      focusSyndromeId,
+                      focusProblem.syndromeName,
+                      trainingInput.passRateInput.totalCount,
+                    );
                   }
                 } catch (e) {
                   debugPrint('[SafeRun] FSM updateTeachingState 外层: $e');
@@ -824,8 +831,7 @@ extension ChatServiceSend on ChatService {
       messages.add(
         ChatMessage(
           role: 'system',
-          content:
-              '# 临场输出约束（最高优先级）\n\n以上注入的教学知识、症候定义、训练素材是你的内部参考，不是让你一次性念给学员听。\n每次回复遵守当前态度档位的「表达密度」规则：一次只抛一个点，示范按档位执行（豆包/月笙可给最小示范一例，Sensei 不给示范只指方向），删掉所有铺垫。\n学员问题多时按优先级分轮展开，不堆叠。',
+          content: kLiveOutputConstraints,
         ),
       );
 
@@ -1107,6 +1113,15 @@ extension ChatServiceSend on ChatService {
       // A6：剥离 [YS_FACT] 协议块（事实提取块，与实体块并列独立）
       displayContent = stripFactBlock(displayContent);
 
+      // B1：诊断成败记录 → 连续失败达阈值插诊断失败卡。
+      // attempted 仅当 AI 确实输出了 [YS_DIAGNOSIS] 块（inDiagnosisBlock），
+      // 普通聊天解析为 null 不计入，避免误触发「诊断失败」卡。
+      await _recordDiagnosisOutcome(
+        sessionId,
+        attempted: inDiagnosisBlock,
+        success: diagnosis != null,
+      );
+
       // Diagnosis → Teacher 条件触发（C3）
       // 真源：chat-service.ts L626-655
       String teacherDisplayContent = '';
@@ -1375,6 +1390,13 @@ extension ChatServiceSend on ChatService {
                         } catch (e) {
                           debugPrint('[SafeRun] 重评估resolveSyndromesBatch: $e');
                         }
+                        // B1：达标→解锁同时插入阶段总结卡，汇总该症候进展
+                        await _insertPhaseSummaryOnMastered(
+                          sessionId,
+                          trainingSyndromeId,
+                          problem.syndromeName,
+                          reEvalInput.passRateInput.totalCount,
+                        );
                       }
                     }
                   }

@@ -6,11 +6,13 @@
     <!-- connectivity_plus 读取网络状态 -->
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE"/>
-    <!-- file_picker 读取外部文件（Android < 13） -->
+    <!-- file_picker 读取外部文件（仅 Android < 13 需要；API 33+ 走 scoped storage / READ_MEDIA_*，不再申请此权限） -->
     <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
     <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
     <!-- ── package visibility（用于调用外部浏览器）────────────── -->
     <queries>
         <intent>
