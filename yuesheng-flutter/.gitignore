@@ -50,3 +50,6 @@ tmp_*
 screenshots_*.png
 /lib/main_dev.dart
 /lib/preview/
+
+# 沙箱隔离用的 Gradle 缓存（非项目依赖，禁止入库）
+.gradle_home/
