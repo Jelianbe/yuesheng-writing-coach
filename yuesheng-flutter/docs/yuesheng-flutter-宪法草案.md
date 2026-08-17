@@ -118,18 +118,18 @@
 
 | # | 反模式（禁止） | RN 实证（file:line，已抽验） | 对应铁律 | Flutter 布防状态 | 行动项 |
 |---|---|---|---|---|---|
-| A1 | 网络请求无超时 / 无中断逃生通道 | `llm-client.ts:230-296` 流式 XHR 无 `xhr.timeout`；`abortSignal` 从未接线 → 半开连接时 UI 永久卡死 | 铁律① | ⚠️ 待建（dio 超时/取消配置未落实） | http 客户端强制默认超时 + 可取消；UI 暴露"停止生成" |
+| A1 | 网络请求无超时 / 无中断逃生通道 | `llm-client.ts:230-296` 流式 XHR 无 `xhr.timeout`；`abortSignal` 从未接线 → 半开连接时 UI 永久卡死 | 铁律① | ✅ 已布防（dio 三态超时：test 15s / chat 60s / stream 独立，2026-08-16 安全自查确认） | http 客户端强制默认超时 + 可取消；UI 暴露"停止生成" |
 | A2 | 分块/遍历循环无"前进守卫" | `progressive-diagnosis.ts:176-231` 超长段落(≥CHUNK_SIZE)时 `endIndex===startIndex`、`slice` 空串、`startIndex` 不前进 → 崩溃级死循环（已读源码确认） | 铁律① | ⚠️ 待建 | 任何按 computed endIndex 推进的循环：若 `next<=cur` 必须按字符硬切或 break，杜绝无限循环 |
 | A3 | 冷启动不加载数据，只读空缓存 | `bookshelf.tsx:95-114` 从不调 `loadChapters` → 全部"0章/0字" | 铁律① | ⚠️ 待建（冷启动目前仅作为性能指标，非加载缺陷修复） | 首页/列表首帧必须触发加载；空态与"未加载"严格区分 |
 | A4 | 路由参数传了却未接通 | `chapter-editor.tsx:359` 传 `selectedText`，`chat.tsx:200` 始终取整章 → 选段诊断静默失效；`growth-detail.tsx:166` 跳页漏 `sessionId` → 必现错误页 | 铁律① | ✅ **已布防**（批次 77：成长详情死路由修复——有数据带 sessionId 正常跳转、无数据空态无入口） | 参数传递与消费方必须同 PR 验证；缺参路径必须有兜底 UI |
 | A5 | 持久化失败仅 console，无用户反馈 | `chapter-editor.tsx:203` 保存失败 `console.warn` → 用户以为存了，整章丢失 | 工程纪律(静默失败禁止) | ⚠️ 待核对（待办 #60「保存状态可见 + 失败反馈」未勾选） | 所有写操作失败必须 Toast/错误态；写入前后状态可观测 |
 | A6 | 静默失败 + 生产零可观测性（系统性） | `chat-service.ts` 等 15+ 处 `if(__DEV__) console.warn`；`error_logs` 表建了从不写 | 工程纪律(静默失败禁止) | ✅ **已布防**（批次 11：ErrorHandler 接线——FlutterError.onError + runZonedGuarded + 内存队列 flush） | 强制结构化错误接收器（脱敏后落本地日志）；release 下不得无声；错误日志须有写入与查看路径 |
-| A7 | 类型/建表/DAO 三方脱节 | `schema.ts:123` CHECK 漏 `'file'`，但类型/解析器/UI 全保留 file 链路 → CHECK 冲突；同类：`Message.status` 无列、`ConfirmationRecord.action` 缺 `'partial_confirmed'` | 铁律② + 安全红线③ | ✅ **已布防**（批次 7/D2：v21 迁移重建 session_reference，CHECK 加 'file'，UI 禁用 file 设主） | 枚举/类型与 DB 约束用单一真源生成；任何新增 ref_type 必须同步三处 |
+| A7 | 类型/建表/DAO 三方脱节 | `schema.ts:123` CHECK 漏 `'file'`，但类型/解析器/UI 全保留 file 链路 → CHECK 冲突；同类：`Message.status` 无列、`ConfirmationRecord.action` 缺 `'partial_confirmed'` | 铁律② + 安全红线③ | ⚠️ **部分布防**（file 已修；但 outline_impression.status='expired' 同型复发，2026-08-16 数据层实测） | 枚举/类型与 DB 约束用单一真源生成；任何新增 ref_type 必须同步三处 |
 | A8 | 死代码无"出生证明" | `skill-lifecycle`+`context-injector` ~900 行、`message-card` 5 类卡片等"有实现、有测试、无人调用" | 铁律③ | ⚠️ 待建 | 模块登记生产调用方；无人调用的进 `staging/`，不留在主目录 |
 | A9 | feature flag 默认关却文档宣称存在 | `shared-constants.ts:364` `REVIEWER_GATE.ENABLED=false` 但设计文档宣称三层架构 | 铁律④ + 真源优先级 | ⚠️ 待核对（chat_gates 已有门控逻辑；"文档宣称 vs 默认行为"一致性审计未见记录） | flag 默认关 = 功能不存在；文档宣称必须与默认行为一致，否则删休眠路径 |
 | A10 | DB 测试全 mock，真实语义零覆盖 | `jest.setup.ts:20` mock expo-sqlite → CHECK/FK/迁移/死循环全测不出 | 铁律① | 🟡 部分（批次 89：迁移测试用真实 sqlite3 构造旧库 v22→v23；DAO 层 in-memory 与否待核对） | DAO/迁移必须跑真实 SQLite（in-memory）；覆盖约束与边界 |
 | A11 | 排序/趋势取数方向反转 | `evaluation-service.ts:131` `ORDER BY DESC` 后 `slice(-2,-1)` 取最旧两条 → 趋势失真 | 铁律① | ⚠️ 待建 | 取数方向与语义必须单测断言（最新/最旧不靠 slice 巧合） |
-| A12 | 错误响应体原样回显（含密钥风险） | `llm-client.ts:279` 把 `xhr.responseText` 原样给 UI；若网关回显 `Authorization` 头则 Key 泄漏 | 安全红线① | ⚠️ 待建 | 错误展示一律脱敏；禁止透传 provider 原始错误体 |
+| A12 | 错误响应体原样回显（含密钥风险） | `llm-client.ts:279` 把 `xhr.responseText` 原样给 UI；若网关回显 `Authorization` 头则 Key 泄漏 | 安全红线① | 🟡 部分（截断 100 字符已做，缺 Authorization 头回显脱敏） | 错误展示一律脱敏；禁止透传 provider 原始错误体 |
 
 **落地原则**
 - **A1/A2/A3/A4/A5/A6 属"防假完成"核心**：最小闭环（§三.3）搭起来时必须同步布防，不接受"先跑通再补"——RN 版就是这么欠下的（8 个用户可感知缺陷，tsc/lint/jest 全绿也测不出）。
@@ -153,9 +153,9 @@
 
 | 工程 | 路径 | 状态 | 关系 |
 |---|---|---|---|
-| Flutter 版（本工程） | `D:\ai-teacher\yuesheng-flutter` | 🟢 **真源**（本宪法适用） | 产品未来；96-25 批次自旧位迁入（commit `f93e24d8`） |
+| Flutter 版（本工程） | `D:\ai-teacher\yuesheng-flutter` | 🟢 **唯一真源**（本宪法适用） | 产品未来；96-25 批次自旧位迁入（commit `f93e24d8`）；**所有新功能 / 架构演进只进本工程，Web 版不再承接**（决策 D10，2026-08-17） |
 | RN 版 | `D:\teacher\yuesheng-android` | ⚫ 已废弃（2026-08-11，DEPRECATED.md） | 仅作模式证据 / 教训收割，**不再开发** |
-| Web 版 | `D:\ai-teacher\yuesheng-writing-coach` | 🟡 独立工程 | Electron/Capacitor Web（main/preload/renderer/shared），与移动端两套代码，勿混 |
+| Web 版 | `D:\ai-teacher\yuesheng-writing-coach` | 🟡 **维护模式**（决策 D10，2026-08-17） | Electron/Capacitor Web；**仅修 bug、不再加新功能**；新能力一律进 Flutter，待其追平后退役（见该工程 `MAINTENANCE.md`） |
 
 ### 10.2 为什么迁移（背景说明，非决策理由重述）
 
@@ -180,6 +180,24 @@ RN 版 31 天实跑暴露"治理文档与代码现实脱节"：健康体检 0/10
 - 新对话接手：先读宪法 §八（避坑）→ 待办清单阶段 0（未决决策）→ 现状报告，再动手。
 - 任何"代码在哪儿"的疑问：查 §10.1 表，**禁止凭旧路径猜**（RN 版 DEPRECATED.md 里的旧位 `D:\teacher\yuesheng-flutter` 已清空）。
 - 本工程文件位于会话工作区外，沙箱写操作可能被拒——属预期环境行为，按当前环境规则处理，不是代码问题。
+
+### 10.5 决策登记 D10（2026-08-17）：Web 工程进入维护模式
+
+> 依据 §4.1——方向性决策必须登记为 D#。本决策由用户在主对话中拍板，git 历史实证支撑。
+
+- **背景**：同一产品「月笙写作教练」存在三份代码——Flutter（唯一真源 / 未来）、RN（已废弃）、Web（Electron+Capacitor，317 提交、2026-06 起持续发货）。git 历史证实 Web 是最成熟、长期在发货的实现，Flutter 为 2026-08-16 才迁入主仓库的"未来真源"迁移版（RN→Flutter）。
+- **选项**：
+  1. 双轨并行 + 文档化（Web 当前真产品，Flutter 未来目标）
+  2. **Flutter 定为唯一真源，Web 进维护模式**（✅ 选定）
+  3. 先比功能重合度再定
+- **选择**：选项 2。
+- **理由**：完全符合 RN 废弃口径（DEPRECATED.md 指明真源→Flutter）；消除"谁是权威"的长期模糊；Web 虽成熟，但新架构能力统一收敛到 Flutter，避免双轨功能漂移与重复建设。
+- **落点**：本 §10.1 表格（Web 行改为"维护模式"）+ Web 工程根 `MAINTENANCE.md`。
+- **执行纪律**：
+  - Web 工程：**只接受 bug 修复与依赖 / 安全更新**，禁止新增功能、禁止新架构演进。
+  - 所有新功能 / 新能力 / 迁移资产：**只进 Flutter 工程**。
+  - Flutter 功能追平 Web 前，Web 继续发货不阻断；追平后由后续决策决定是否退役。
+  - 若 Web 出现 Flutter 尚未覆盖、且用户急需的能力，先评估"是否应改在 Flutter 实现"再决定，禁止无脑在 Web 加。
 
 ---
 *定稿版本：v0.2（2026-08-16 评审通过）｜作者：主对话 AI 依据 RN 版 31 天实跑证据起草并评审修订；2026-08-16 迁入工程 `docs/` 并与 skills 对齐*
