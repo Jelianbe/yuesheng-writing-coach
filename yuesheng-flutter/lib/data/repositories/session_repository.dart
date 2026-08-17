@@ -392,7 +392,9 @@ class SessionRepository {
   /// 复刻 RN settings.tsx handleClearCache 的 SQL：
   /// DELETE FROM chat_sessions WHERE id NOT IN (SELECT DISTINCT session_id FROM messages)
   /// 依赖外键 ON DELETE CASCADE（messages/diagnosis_results/session_reference 等
-  /// 自动级联清理；student_model 置空）。返回删除的会话数。
+  /// 自动级联清理）。student_model 的 session_id 为 NOT NULL + FK SET NULL，
+  /// 删除会话会触发 NOT NULL 违反，故事务内先显式删 studentModels（同 deleteSession）。
+  /// 返回删除的会话数。
   /// 批次5（5.4）：会话删除事务内同步清理 app_state 孤儿 KV
   /// （eval_round:/eval_report: 前缀键，app_state 无外键不级联）。
   Future<int> deleteOrphanSessions() async {
@@ -404,6 +406,9 @@ class SessionRepository {
       )..where((t) => t.sessionId.equals(s.id))).get().then((l) => l.length);
       if (msgCount == 0) {
         await _db.transaction(() async {
+          await (_db.delete(_db.studentModels)
+                ..where((t) => t.sessionId.equals(s.id)))
+              .go();
           await (_db.delete(_db.sessions)..where((t) => t.id.equals(s.id)))
               .go();
           await (_db.delete(_db.appStates)
