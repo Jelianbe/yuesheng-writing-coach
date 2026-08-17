@@ -80,7 +80,14 @@ class ChatStore extends StateNotifier<ChatState> {
   ChatStore() : super(const ChatState());
 
   void setSessionId(String sessionId) {
-    state = state.copyWith(currentSessionId: sessionId);
+    if (sessionId == state.currentSessionId) return;
+    // B14：切换会话时重置流式状态，避免跨会话 stream 泄漏
+    // （A 会话流式进行中切到 B，isStreaming/streamingContent 不应残留到 B）
+    state = ChatState(
+      currentSessionId: sessionId,
+      messages: state.messages,
+      failedMessageIds: state.failedMessageIds,
+    );
   }
 
   void setMessages(List<Message> messages) {
