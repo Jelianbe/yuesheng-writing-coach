@@ -136,6 +136,22 @@ class ErrorHandler {
     String? stack,
     Map<String, dynamic>? context,
   }) {
+    // A12 安全红线（宪法 §八）：错误体可能带回显的 API Key
+    // （如 `Authorization: Bearer <key>`）。落库/上报前统一脱敏，
+    // 防 Key 经 error_logs / UI 泄漏。所有入口（FlutterError、
+    // PlatformDispatcher、直接调用）收口于此，单点防护。
+    final safeMessage = _redactSensitive(message);
+    // 注意：stack 为可空列，缺失时必须保留 null，不得经 _redactSensitive
+    // 的 `?? ''` 路径被 coerce 成空串（否则 error_logs.stack 会写入 '' 而非 NULL）。
+    // A12 脱敏只针对非空 stack，空栈原样置 null。
+    final safeStack = stack == null ? null : _redactSensitive(stack);
+    final safeContext = context == null
+        ? null
+        : {
+            for (final e in context.entries)
+              e.key:
+                  e.value is String ? _redactSensitive(e.value as String) : e.value,
+          };
     // 归一化到 error_logs 的 CHECK 白名单（category/level），防非法值被 DB 约束吞掉
     final normalized = _kAllowedCategories.contains(category)
         ? category
@@ -145,7 +161,7 @@ class ErrorHandler {
     if (repo != null) {
       unawaited(
         _persist(repo, level: normalizedLevel, category: normalized,
-            message: message, stack: stack, context: context),
+            message: safeMessage, stack: safeStack, context: safeContext),
       );
       return;
     }
@@ -156,11 +172,28 @@ class ErrorHandler {
       _PendingError(
         level: normalizedLevel,
         category: normalized,
-        message: message,
-        stack: stack,
-        context: context,
+        message: safeMessage,
+        stack: safeStack,
+        context: safeContext,
       ),
     );
+  }
+
+  /// A12 安全脱敏：抹除错误文本中的 API Key / Authorization 头。
+  /// 覆盖 `Bearer <token>`、`Authorization: <val>`、`api_key: <val>` 三种常见形态。
+  /// 注：Dart 的 RegExp 不支持内联 (?i)，用 caseSensitive:false 实现忽略大小写。
+  static String _redactSensitive(String? input) {
+    if (input == null || input.isEmpty) return input ?? '';
+    final patterns = [
+      RegExp(r'(Bearer\s+)[A-Za-z0-9._\-]+', caseSensitive: false),
+      RegExp(r'(Authorization\s*[:=]\s*)[^\s",}\]]+', caseSensitive: false),
+      RegExp(r'(api[_-]?key\s*[:=]\s*)[^\s",}\]]+', caseSensitive: false),
+    ];
+    var result = input;
+    for (final p in patterns) {
+      result = result.replaceAllMapped(p, (m) => '${m.group(1)}***');
+    }
+    return result;
   }
 
   Future<void> _persist(
