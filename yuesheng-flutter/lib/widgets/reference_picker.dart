@@ -102,7 +102,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   ) {
     Navigator.of(context).pop();
     if (widget.mode == 'mention') {
-      widget.onSelectMention?.call(mentionPath, title);
+      // A-2：mention 模式传出稳定 ID 标记 @[refType:refId]（改名免疫），
+      // 而非 @标题 文本；title 仍传出（选择器内徽章预览用）。
+      final markerPath = '@[$refType:$refId]';
+      widget.onSelectMention?.call(markerPath, title);
     } else {
       widget.onSelect?.call(refType, refId, title);
     }

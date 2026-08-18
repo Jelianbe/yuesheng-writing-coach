@@ -49,6 +49,10 @@ bool _isTitleBoundary(String after) {
   return RegExp(r"""^[\s。，！？；：、.,!?:;）)」』】》"']""").hasMatch(after);
 }
 
+/// A-2 稳定 ID 标记：@[manuscript:ID] / @[chapter:ID] / @[file:ID]
+/// 分隔符 @[ : ] 在中文写作中几乎不出现，refId 为生成型 ID（无 ]/ :），无歧义。
+final RegExp _kMarkerRegExp = RegExp(r'^\[([a-z]+):([^\]]+)\]');
+
 /// @ 引用解析服务
 class MentionParser {
   final ManuscriptRepository _msRepo;
@@ -79,6 +83,17 @@ class MentionParser {
       if (atIdx + 1 >= text.length) break;
 
       final afterAt = text.substring(atIdx + 1);
+
+      // A-2：稳定 ID 标记 @[type:id]（改名免疫，ID 优先）
+      // 优先于 legacy @标题 匹配；标记合法但目标不存在（被删）→ 降级为字面文本，
+      // 跳过整段避免死循环。
+      final marker = _kMarkerRegExp.firstMatch(afterAt);
+      if (marker != null) {
+        final parsed = await _resolveMarker(marker.group(1)!, marker.group(2)!);
+        idx = atIdx + marker.end;
+        if (parsed != null) mentions.add(parsed);
+        continue;
+      }
 
       // 尝试匹配作品标题（长度降序）
       Manuscript? ms;
@@ -187,6 +202,48 @@ class MentionParser {
     cleanedText = cleanedText.trim();
 
     return ParseResult(mentions: mentions, cleanedText: cleanedText);
+  }
+
+  /// A-2：按稳定 ID 标记解析单条引用（改名免疫）
+  /// [refType] ∈ {manuscript,chapter,file}，[refId] 为目标 ID；
+  /// 由 ID 反查当前标题；目标不存在（被删）返回 null，由调用方降级为字面文本。
+  Future<ParsedMention?> _resolveMarker(String refType, String refId) async {
+    switch (refType) {
+      case 'manuscript':
+        final m = await _msRepo.getManuscript(refId);
+        if (m == null) return null;
+        return ParsedMention(
+          raw: '@[$refType:$refId]',
+          refType: 'manuscript',
+          refId: m.id,
+          title: m.title,
+          manuscriptId: m.id,
+        );
+      case 'chapter':
+        final c = await _chRepo.getChapter(refId);
+        if (c == null) return null;
+        final ms = await _msRepo.getManuscript(c.manuscriptId);
+        final msTitle = ms?.title ?? '';
+        return ParsedMention(
+          raw: '@[$refType:$refId]',
+          refType: 'chapter',
+          refId: c.id,
+          title: msTitle.isEmpty ? c.title : '$msTitle · ${c.title}',
+          manuscriptId: c.manuscriptId,
+        );
+      case 'file':
+        final f = await _refRepo.getAttachedFile(refId);
+        if (f == null) return null;
+        return ParsedMention(
+          raw: '@[$refType:$refId]',
+          refType: 'file',
+          refId: f.id,
+          title: '【素材】${f.fileName}',
+          manuscriptId: f.bookId,
+        );
+      default:
+        return null;
+    }
   }
 
   /// 解析单个 @ 引用（如 "@我的小说/第三章"）
