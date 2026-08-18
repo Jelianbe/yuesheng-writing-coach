@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>月笙写作教练 · 目标分层架构</title>
+<style>
+  body{margin:0;background:#f5f7fa;color:#1f2937;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:980px;margin:24px auto;padding:0 16px;}
+  h2{font-size:18px;margin:8px 0 4px;}
+  .sub{color:#6b7280;font-size:13px;margin-bottom:14px;}
+  .card{background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom: 18px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  svg{width:100%;height:auto;}
+  .legend{font-size:12px;color:#6b7280;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h2>目标分层架构（模块化 / 可替换）</h2>
+    <div class="sub">UI 只依赖能力契约层；能力可多实现热插拔；底层基础设施共用契约。</div>
+    <svg viewBox="0 0 920 520" xmlns="http://www.w3.org/2000/svg">
+      <!-- connectors UI -> contract -->
+      <line x1="170" y1="70" x2="170" y2="150" stroke="#9ca3af" stroke-width="2"/>
+      <line x1="460" y1="70" x2="460" y2="150" stroke="#9ca3af" stroke-width="2"/>
+      <line x1="730" y1="70" x2="730" y2="150" stroke="#9ca3af" stroke-width="2"/>
+
+      <!-- connectors contract -> impl -->
+      <line x1="165" y1="210" x2="165" y2="290" stroke="#3b82f6" stroke-width="2"/>
+      <line x1="365" y1="210" x2="365" y2="290" stroke="#3b82f6" stroke-width="2"/>
+      <line x1="545" y1="210" x2="545" y2="290" stroke="#3b82f6" stroke-width="2"/>
+      <line x1="725" y1="210" x2="725" y2="290" stroke="#3b82f6" stroke-width="2"/>
+      <line x1="890" y1="210" x2="890" y2="290" stroke="#3b82f6" stroke-width="2"/>
+
+      <!-- connectors impl -> infra -->
+      <line x1="540" y1="350" x2="540" y2="420" stroke="#9ca3af" stroke-width="2"/>
+
+      <!-- UI layer -->
+      <rect x="70" y="30" width="780" height="40" rx="10" fill="#eef2ff" stroke="#c7d2fe" stroke-width="1.5"/>
+      <text x="460" y="55" text-anchor="middle" fill="#373737" font-size="15" font-weight="600">UI 层（展示与交互）</text>
+
+      <rect x="60" y="80" width="220" height="60" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="170" y="115" text-anchor="middle" fill="#1f2937" font-size="14">Electron / React 端</text>
+
+      <rect x="350" y="80" width="220" height="60" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="460" y="115" text-anchor="middle" fill="#1f2937" font-size="14">Flutter 端</text>
+
+      <rect x="640" y="80" width="220" height="60" rx="8" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="750" y="115" text-anchor="middle" fill="#1f2937" font-size="14">未来通道（Web/DSH）</text>
+
+      <!-- Contract layer -->
+      <rect x="60" y="150" width="780" height="60" rx="10" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1.5"/>
+      <text x="450" y="172" text-anchor="middle" fill="#0c4a6e" font-size="15" font-weight="600">能力契约层（Capability Interfaces · 依赖倒置）</text>
+      <text x="450" y="192" text-anchor="middle" fill="#0369a1" font-size="12">可替换 · 可扩展 · 契约测试护栏</text>
+
+      <!-- 5 capabilities -->
+      <rect x="60" y="220" width="210" height="60" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="165" y="248" text-anchor="middle" fill="#1f2937" font-size="13">Diagnosis</text>
+      <text x="165" y="268" text-anchor="middle" fill="#64748b" font-size="11">诊断能力</text>
+
+      <rect x="280" y="220" width="170" height="60" rx="8"  fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="365" y="248" text-anchor="middle" fill="#1f2937" font-size="13">Teaching</text>
+      <text x="365" y="268" text-anchor="middle" fill="#64748b" font-size="11">教学能力</text>
+
+      <rect x="460" y="220" width="170" height="60" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="545" y="248" text-anchor="middle" fill="#1f2937" font-size="13">Material</text>
+      <text x="545" y="268" text-anchor="middle" fill="#64748b" font-size="11">素材能力</text>
+
+      <rect x="640" y="220" width="170" height="60" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="725" y="248" text-anchor="middle" fill="#1f2937" font-size="13">GenUi</text>
+      <text x="725" y="268" text-anchor="middle" fill="#64748b" font-size="11">渲染能力</text>
+
+      <rect x="820" y="220" width="140" height="60" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5"/>
+      <text x="890" y="248" text-anchor="middle" fill="#1f2937" font-size="13">Reference</text>
+      <text x="890" y="268" text-anchor="middle" fill="#64748b" font-size="11">引用能力</text>
+
+      <!-- Implementation layer -->
+      <rect x="160" y="290" width="620" height="60" rx="10" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.5"/>
+      <text x="470" y="310" text-anchor="middle" fill="#065f46" font-size="14" font-weight="600">实现层（可替换实现，注册到分派器）</text>
+      <text x="470" y="332" text-anchor="middle" fill="#047857" font-size="12">Flutter+Riverpod · Electron+React · 云端/DSH 插件（未来）</text>
+
+      <!-- Infra -->
+      <rect x="230" y="380" width="480" height="60" rx="10" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/>
+      <text x="470" y="405" text-anchor="middle" fill="#334155" font-size="14" font-weight="600">基础设施（共用契约）</text>
+      <text x="470" y="427" text-anchor="middle" fill="#475569" font-size="12">drift/SQLite · IPC(domain:action) · Zustand/Riverpod · [YS_*] 协议块</text>
+
+      <!-- annotations -->
+      <text x="60" y="470" fill="#b45309" font-size="12">耦合热点：C1 service 直连 repo · C2 跨端重复 · C3 N+1 · C4 语义漂移 · C5 能力未接口化</text>
+      <text x="60" y="492" fill="#6b7280" font-size="12">说明：UI 经契约消费能力；新增能力只需实现接口并注册，UI 零改动即可扩展。</text>
+    </svg>
+    <div class="legend">图 1 · 目标分层架构：契约居中解耦，实现可热插拔。</div>
+  </div>
+</div>
+</body>
+</html>
