@@ -64,20 +64,17 @@ class AttachedFileInfo {
   });
 }
 
-/// 附属文件上下文格式化（V3）。
+/// 附属文件上下文格式化（V3.1 — A-1 token 止血）。
 ///
-/// 在 15K 字符预算内，将书籍下所有文件的完整内容注入 system prompt。
-/// 超过预算时按文件数均分截断。
+/// 不再全量注入书籍下所有文件的完整内容（token 爆炸源）：改为「标题 + 200 字开头摘要」
+/// 的清单式注入。完整内容仍由用户 @ 引用路径按需获取（见引用注入循环 file 分支）。
 String? formatAttachedFilesContext(List<AttachedFileInfo> files) {
   if (files.isEmpty) return null;
 
-  const budget = ContextBudget.totalBudget;
-  const header = '\n## 当前书籍文件\n\n以下是你所关联书籍下的参考文件。你可以直接参考这些内容来更好地帮助用户。\n\n';
-  // 取 max(minPerFileBudget, 均分预算)；files 非空已在上方 return
-  final evenShare = (budget - header.length) ~/ files.length;
-  final actualPerFile = evenShare > ContextBudget.minPerFileBudget
-      ? evenShare
-      : ContextBudget.minPerFileBudget;
+  const summaryLen = 200;
+  const header = '\n## 当前书籍文件（摘要）\n\n'
+      '以下是你所关联书籍下的参考文件清单及开头摘要。'
+      '需要某文件完整内容时，请引导用户通过 @ 引用该文件，而非在此全量展开。\n\n';
 
   final body = StringBuffer();
   for (final f in files) {
@@ -86,15 +83,12 @@ String? formatAttachedFilesContext(List<AttachedFileInfo> files) {
         : f.fileRole == 'material'
         ? '素材'
         : '常规';
-    final truncated = f.content.length > actualPerFile
-        ? '${f.content.substring(0, actualPerFile)}\n...(内容已截断)'
+    final summary = f.content.length > summaryLen
+        ? '${f.content.substring(0, summaryLen)}…（更多内容可通过 @ 引用获取）'
         : f.content;
     body.writeln('### ${f.fileName}（$roleLabel）');
-    body.writeln('```');
-    body.writeln(truncated);
-    body.writeln('```');
+    body.writeln(summary);
     body.writeln();
-    if (header.length + body.length > budget) break;
   }
 
   final bodyStr = body.toString();
@@ -608,9 +602,10 @@ String buildReferencesContext(
     if (ref.refType == 'file') {
       final file = resolvers.fileResolver(ref.refId);
       if (file != null) {
-        const fileBudget = 50 * 1024; // 50KB
-        final content = file.content.length > fileBudget
-            ? '${file.content.substring(0, fileBudget)}\n...(内容已截断，超过50KB)'
+        // A-1 止血：素材不再走 50KB 独立预算，与章节引用共享同一档位 budget，
+        // 消除「双预算体系 token 爆炸」。
+        final content = file.content.length > budget
+            ? '${file.content.substring(0, budget)}\n...(内容已截断，超过$budget字符)'
             : file.content;
         parts.add('### 【素材文件】${file.fileName}（${file.fileRole}）');
         parts.add('```');
