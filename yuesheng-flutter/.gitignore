@@ -53,3 +53,9 @@ screenshots_*.png
 
 # 沙箱隔离用的 Gradle 缓存（非项目依赖，禁止入库）
 .gradle_home/
+
+# 门禁产物（scripts/gate.sh 输出）
+outputs/
+
+# 门禁产物（scripts/gate.sh 输出）
+outputs/
