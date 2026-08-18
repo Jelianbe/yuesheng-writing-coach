@@ -346,6 +346,14 @@ class SessionRepository {
     });
   }
 
+  /// 更新消息内容（quiz 答题状态内联持久化，按 messageId 关联）
+  /// 仅重写 content 列；不更新 preview/sessions（卡片类消息不污染列表预览）。
+  Future<void> updateMessageContent(String messageId, String content) async {
+    await (_db.update(_db.messages)
+          ..where((t) => t.id.equals(messageId)))
+        .write(MessagesCompanion(content: Value(content)));
+  }
+
   /// 列出会话所有消息（按 timestamp ASC）
   /// 复刻 listMessages(sessionId)
   /// 注：RN 真源为 `ORDER BY timestamp, id`，但 id 为随机 UUID v4（无时间前缀），

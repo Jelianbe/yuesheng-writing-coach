@@ -1046,9 +1046,16 @@ extension ChatServiceSend on ChatService {
           scanStart,
         );
         final factMarkerIndex = fullContent.indexOf(kFactStart, scanStart);
+        final genuiMarkerIndex = fullContent.indexOf(kGenuiStart, scanStart);
         final markerIndex = ChatService._earliestMarkerIndex(
-          ChatService._earliestMarkerIndex(diagMarkerIndex, outlineMarkerIndex),
-          factMarkerIndex,
+          ChatService._earliestMarkerIndex(
+            ChatService._earliestMarkerIndex(
+              diagMarkerIndex,
+              outlineMarkerIndex,
+            ),
+            factMarkerIndex,
+          ),
+          genuiMarkerIndex,
         );
         if (markerIndex != -1) {
           final newDisplay = fullContent.substring(displayLength, markerIndex);
@@ -1130,6 +1137,10 @@ extension ChatServiceSend on ChatService {
       displayContent = stripOutlineBlock(displayContent);
       // A6：剥离 [YS_FACT] 协议块（事实提取块，与实体块并列独立）
       displayContent = stripFactBlock(displayContent);
+      // B-1：剥离 [YS_GENUI] 协议块（GenUI 组件块，独立于诊断/事实）
+      displayContent = stripGenuiBlock(displayContent);
+      // B-1：解析 GenUI 组件（用于后续确定性插入 genui 卡片）
+      final genuiComponents = parseGenuiBlock(fullContent);
 
       // B1：诊断成败记录 → 连续失败达阈值插诊断失败卡。
       // attempted 仅当 AI 确实输出了 [YS_DIAGNOSIS] 块（inDiagnosisBlock），
@@ -1204,6 +1215,19 @@ extension ChatServiceSend on ChatService {
       debugPrint(
         '[ChatService] 步骤10: assistant 消息已写入 | messageId=$messageId | contentLen=${finalContent.length}',
       );
+
+      // B-1：若有 GenUI 组件，确定性插入 genui 卡片（不阻断主流程）
+      if (genuiComponents != null && genuiComponents.isNotEmpty) {
+        try {
+          await insertGenuiCard(
+            _sessionRepo,
+            sessionId,
+            GenuiCardPayload(components: genuiComponents),
+          );
+        } catch (e) {
+          debugPrint('[SafeRun] GenUI 卡片插入失败不阻断主流程: $e');
+        }
+      }
 
       // 11. 若有诊断：commitDiagnosisWithHistory + phase-mapper resolver
       if (diagnosis != null) {
