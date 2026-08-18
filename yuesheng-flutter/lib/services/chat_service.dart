@@ -51,6 +51,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
+import 'package:writingcoach/services/reply_receipt_guard.dart';
 import 'package:writingcoach/services/conflict_detector.dart';
 import 'package:writingcoach/services/dialogue_tag_detector.dart';
 import 'package:writingcoach/services/event_causality_detector.dart';

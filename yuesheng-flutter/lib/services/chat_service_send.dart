@@ -1207,13 +1207,27 @@ extension ChatServiceSend on ChatService {
           ? '诊断完成。'
           : combinedContent;
 
+      // P0 机器回执态（2026-08-18，ADR-P0）：教练不替用户执行「保存/导出/应用/修改」
+      // 等副作用动作；若回复自称「已X」但本回合无真实机器回执，降级为「建议X」，
+      // 避免「我已替你做过」的虚假承诺。receipts 仅依据本次 service 实际落库构造：
+      // 诊断结构化数据已在步骤 11 commitDiagnosisWithHistory 落库，故允许「已保存」。
+      final performedActions = <ReceiptAction>{
+        if (diagnosis != null) ReceiptAction.saved,
+      };
+      final receiptResult = ReplyReceiptGuard.sanitize(
+        finalContent,
+        receipts: performedActions,
+      );
+      final assistantContent = receiptResult.text;
+
       final messageId = await _sessionRepo.addMessage(
         sessionId,
         'assistant',
-        finalContent,
+        assistantContent,
       );
       debugPrint(
-        '[ChatService] 步骤10: assistant 消息已写入 | messageId=$messageId | contentLen=${finalContent.length}',
+        '[ChatService] 步骤10: assistant 消息已写入 | messageId=$messageId | contentLen=${assistantContent.length}'
+        "${receiptResult.status == ReceiptStatus.humanReviewPending ? ' | 回执降级: ${receiptResult.downgraded.map((a) => a.claimPhrase).join('、')}' : ''}",
       );
 
       // B-1：若有 GenUI 组件，确定性插入 genui 卡片（不阻断主流程）
