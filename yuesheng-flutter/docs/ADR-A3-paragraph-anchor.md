@@ -59,7 +59,8 @@
 ### 3.4 范围（最小范围原则）
 
 - **已做**：数据语义变更 + 解析/提取 helper + 主引用注入改用段落窗口 + findKeywordExcerpt 段落锚点化 + 单测。
-- **未做（留待方案 Y）**：手动选区 UI、非主引用也记选段、MentionParser/ReferencePicker 查询合并（路线图 A-3 第 3 点 N+1）——等真实反馈再定。
+- **未做（留待方案 Y）**：手动选区 UI、非主引用也记选段——等真实反馈再定。
+- **后补（2026-08-18 晚）**：主引用反查 N+1 已消除——`chat_service_observers._preloadReferenceDetails` 改为按 refType 分组批量查询（仓库层新增 `getChaptersByIds` / `listChaptersForManuscripts` / `getManuscriptsByIds` / `getAttachedFilesByIds`），N 条引用从最多 2N 次查询降为固定 ≤5 次。MentionParser/ReferencePicker 侧的查询合并仍未做。
 
 ---
 
@@ -86,4 +87,4 @@
 2. **段落分隔符**：✅ `\n`（单换行）。
 3. **范围**：✅ 仅主引用。
 
-> 未决（留待方案 Y）：手动选区 UI、非主引用选段、N+1 查询合并。
+> 未决（留待方案 Y）：手动选区 UI、非主引用选段、MentionParser/ReferencePicker 的 N+1 查询合并（主引用批量反查已于 2026-08-18 晚实施，见 §3.4 后补）。

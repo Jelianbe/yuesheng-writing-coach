@@ -101,6 +101,16 @@ class ChapterRepository {
     )..where((t) => t.id.equals(chapterId))).getSingleOrNull();
   }
 
+  /// 按 id 集合批量取章节（A-3 遗留 N+1 消除：引用预加载用）
+  /// 语义对齐 getChapter：仅按 id 过滤，不过滤 archived（被软删的章节若仍被引用，
+  /// 与单条 getChapter 一致地返回）。空列表守卫避免 `IN ()` 非法 SQL。
+  Future<List<Chapter>> getChaptersByIds(List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    return (_db.select(_db.chapters)
+          ..where((t) => t.id.isIn(ids)))
+        .get();
+  }
+
   /// 列出稿件下所有章节（按 sort_order 排序）
   /// 复刻 listChapters(manuscriptId)
   /// 批次94-2：过滤回收站软删章节（status != 'archived'），回收站章节走
@@ -110,6 +120,23 @@ class ChapterRepository {
           ..where(
             (t) =>
                 t.manuscriptId.equals(manuscriptId) &
+                t.status.isNotValue('archived'),
+          )
+          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+        .get();
+  }
+
+  /// 跨多稿件批量取章节（A-3 遗留 N+1 消除：引用预加载作品章节用）
+  /// 语义对齐 listChapters：过滤 archived + 按 sort_order 排序；调用方按
+  /// manuscript_id 在内存分组。空列表守卫避免 `IN ()` 非法 SQL。
+  Future<List<Chapter>> listChaptersForManuscripts(
+    List<String> manuscriptIds,
+  ) async {
+    if (manuscriptIds.isEmpty) return const [];
+    return (_db.select(_db.chapters)
+          ..where(
+            (t) =>
+                t.manuscriptId.isIn(manuscriptIds) &
                 t.status.isNotValue('archived'),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))

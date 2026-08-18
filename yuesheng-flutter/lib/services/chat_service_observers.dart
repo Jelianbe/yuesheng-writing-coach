@@ -51,48 +51,95 @@ extension ChatServiceObservers on ChatService {
   }
 
   /// 预加载所有引用的详情到缓存（buildReferencesContext 调用前使用）
+  ///
+  /// A-3 遗留 N+1 消除：原实现逐条引用各发 1~2 次查询（getChapter /
+  /// getManuscript+listChapters / getAttachedFile），N 条引用最多 2N 次查询且
+  /// 在每次发送的热路径上执行。改为按 refType 分组，每类单次 `WHERE id IN(...)`
+  /// 批量取全（chapter 1 次 / file 1 次 / manuscript 2 次），与原实现填充的
+  /// 缓存键值完全等价（ChapterBrief/ManuscriptDetail/AttachedFileRow 字段不变）。
+  /// 每类批量查询独立 try/catch，保留「单类失败不阻断其它」语义；目标被删的 id
+  /// 自然不在结果集，等价原 `if (ch != null)` 跳过。
   Future<void> _preloadReferenceDetails(List<ReferencedItem> refs) async {
+    if (refs.isEmpty) return;
+
+    final chapterIds = <String>[];
+    final manuscriptIds = <String>[];
+    final fileIds = <String>[];
     for (final ref in refs) {
+      switch (ref.refType) {
+        case 'chapter':
+          chapterIds.add(ref.refId);
+        case 'manuscript':
+          manuscriptIds.add(ref.refId);
+        case 'file':
+          fileIds.add(ref.refId);
+      }
+    }
+
+    // 章节引用：单次 WHERE id IN(...) 取全
+    if (chapterIds.isNotEmpty) {
       try {
-        if (ref.refType == 'file') {
-          final file = await _referenceRepo.getAttachedFile(ref.refId);
-          if (file != null) {
-            _cachedAttachedFiles[ref.refId] = file;
-          }
-        } else if (ref.refType == 'chapter') {
-          final ch = await _chapterRepo.getChapter(ref.refId);
-          if (ch != null) {
-            _cachedChapters[ref.refId] = ChapterBrief(
+        final chapters = await _chapterRepo.getChaptersByIds(chapterIds);
+        for (final ch in chapters) {
+          _cachedChapters[ch.id] = ChapterBrief(
+            id: ch.id,
+            title: ch.title,
+            wordCount: ch.wordCount,
+            sortOrder: ch.sortOrder,
+            content: ch.content,
+          );
+        }
+      } catch (e) {
+        debugPrint('[SafeRun] 章节批量加载失败不阻断整体: $e');
+      }
+    }
+
+    // 素材文件引用：单次 WHERE id IN(...) 取全
+    if (fileIds.isNotEmpty) {
+      try {
+        final files = await _referenceRepo.getAttachedFilesByIds(fileIds);
+        for (final f in files) {
+          _cachedAttachedFiles[f.id] = f;
+        }
+      } catch (e) {
+        debugPrint('[SafeRun] 素材批量加载失败不阻断整体: $e');
+      }
+    }
+
+    // 作品引用：manuscripts 单次取全 + 其章节单次取全（2 查询替代 2N）
+    if (manuscriptIds.isNotEmpty) {
+      try {
+        final manuscripts = await _manuscriptRepo
+            .getManuscriptsByIds(manuscriptIds);
+        final msById = {for (final m in manuscripts) m.id: m};
+
+        final chapters = await _chapterRepo.listChaptersForManuscripts(
+          manuscriptIds,
+        );
+        final chaptersByMs = <String, List<ChapterBrief>>{};
+        for (final ch in chapters) {
+          (chaptersByMs[ch.manuscriptId] ??= []).add(
+            ChapterBrief(
               id: ch.id,
               title: ch.title,
               wordCount: ch.wordCount,
               sortOrder: ch.sortOrder,
               content: ch.content,
-            );
-          }
-        } else if (ref.refType == 'manuscript') {
-          final m = await _manuscriptRepo.getManuscript(ref.refId);
-          if (m == null) continue;
-          final chapters = await _chapterRepo.listChapters(ref.refId);
-          final chapterBriefs = chapters
-              .map(
-                (ch) => ChapterBrief(
-                  id: ch.id,
-                  title: ch.title,
-                  wordCount: ch.wordCount,
-                  sortOrder: ch.sortOrder,
-                  content: ch.content,
-                ),
-              )
-              .toList();
-          _cachedManuscripts[ref.refId] = ManuscriptDetail(
+            ),
+          );
+        }
+
+        for (final id in manuscriptIds) {
+          final m = msById[id];
+          if (m == null) continue; // 目标被删，跳过（等价原 if(m==null) continue）
+          _cachedManuscripts[id] = ManuscriptDetail(
             genre: m.genre,
             description: m.description,
-            chapters: chapterBriefs,
+            chapters: chaptersByMs[id] ?? const [],
           );
         }
       } catch (e) {
-        debugPrint('[SafeRun] 单个引用加载失败不阻断整体: $e');
+        debugPrint('[SafeRun] 作品批量加载失败不阻断整体: $e');
       }
     }
   }
