@@ -66,6 +66,7 @@ import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/services/evaluation_service.dart'
     show EvaluationService;
 import 'package:writingcoach/services/focus_resolver.dart' as focus;
+import 'package:writingcoach/services/style_technique_router.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/message_card_service.dart';
 import 'package:writingcoach/data/database/utils.dart';

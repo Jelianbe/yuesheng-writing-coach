@@ -796,6 +796,23 @@ extension ChatServiceSend on ChatService {
             )
             .toList();
 
+        // 2026-08-18 批次：文笔画像→技法旁路路由（设计 docs/2026-08-18-*.md）
+        // 五维非健康值→文笔层技法候选，门控通过才注入；失败不阻断主流程
+        String? styleTechniqueSection;
+        try {
+          final latestStyleProfile = await _studentModelRepo
+              .getLatestStyleProfile();
+          final suggestion = routeStyleTechniques(
+            styleProfile: latestStyleProfile,
+            activeProblems: activeSyndromeViews,
+            // TODO：症候级 teaching_state=mastered → 技法集合派生接入后启用过滤
+            focusSyndromeId: focusResult.activatedFocusId,
+          );
+          styleTechniqueSection = formatStyleTechniqueSection(suggestion);
+        } catch (e) {
+          debugPrint('[SafeRun] 文笔画像旁路路由失败不阻断主流程: $e');
+        }
+
         final structuredContext = buildStructuredSyndromeContext(
           activeSyndromeViews,
           activeFocus: ActiveFocusContext(
@@ -803,6 +820,7 @@ extension ChatServiceSend on ChatService {
             source: _mapFocusSource(focusResult.source),
             reason: focusResult.reason,
           ),
+          styleTechniqueSection: styleTechniqueSection,
         );
         markStage(BudgetStageNames.l3Structure);
         messages.add(ChatMessage(role: 'system', content: structuredContext));

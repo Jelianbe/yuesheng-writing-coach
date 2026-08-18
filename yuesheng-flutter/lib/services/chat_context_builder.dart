@@ -165,10 +165,14 @@ class ActiveSyndromeView {
 ///
 /// 注意：批次 22 已接入症候/技法知识库（syndrome_knowledge_base / technique_knowledge_base），
 /// focus 症候的 L3 定义和技法内容由 `_getSyndromeContent` / `_getTechniqueContent` 真实注入。
+///
+/// 2026-08-18 批次（文笔画像→技法旁路路由）：新增可选 [styleTechniqueSection]，
+/// 由调用方经 style_technique_router 产出后传入，追加在症候段之后（null=不注入）。
 String buildStructuredSyndromeContext(
   List<ActiveSyndromeView> problems, {
   Map<String, SyndromeEvidence>? evidenceMap,
   ActiveFocusContext? activeFocus,
+  String? styleTechniqueSection,
 }) {
   const severityRank = {Severity.l3: 3, Severity.l2: 2, Severity.l1: 1};
 
@@ -284,7 +288,13 @@ String buildStructuredSyndromeContext(
         '学员确认状态标注在方括号中：[待确认] 或 [已确认]。';
   }
 
-  return '$header\n\n---\n\n${sections.join('\n\n---\n\n')}';
+  final body = '$header\n\n---\n\n${sections.join('\n\n---\n\n')}';
+
+  // 2026-08-18 批次：文笔画像→技法旁路段（无候选时调用方传 null，零成本）
+  if (styleTechniqueSection == null || styleTechniqueSection.isEmpty) {
+    return body;
+  }
+  return '$body\n\n---\n\n$styleTechniqueSection';
 }
 
 /// 将文本截断为一行（按句号/分号分割取第一句，超长时追加省略号）
