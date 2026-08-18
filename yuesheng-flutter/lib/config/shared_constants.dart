@@ -99,8 +99,15 @@ class EvaluationThresholds {
 /// Token 估算与预算
 class TokenEstimate {
   const TokenEstimate._();
-  static const int maxBudget = 50000;
-  static const double charToTokenRatio = 0.4;
+  // B26：预算上限随中文口径再标定。原 50000 按 0.4 英文口径标定；改为 1.0 后
+  // systemPrompt 本体实测 56k–68k tokens（2026-08-18 token_measure_temp 实测，
+  // diagnosis 68010 / p1 67923 / training 63795 / beginner 56618），50000 下
+  // 常态即超限、闸门永久触发。128000 锚定主流 128k 上下文模型，保持
+  // 「常态不超（~70–90k）、最坏超限（预算表合计 145250）」的闸门语义。
+  static const int maxBudget = 128000;
+  // B26：中文口径。1 个中文字符 ≈ 1 token（原 0.4 为英文口径，导致中文严重低估、
+  // 预算闸门几乎不触发）。估算公式为 length × charToTokenRatio。
+  static const double charToTokenRatio = 1.0;
   static const double warningRatio = 0.8;
 }
 

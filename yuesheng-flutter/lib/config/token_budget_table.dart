@@ -12,7 +12,13 @@
 //   - L3 结构化详情 2200 → 1100（实测 focus 症候+技法 ~722）
 // 实测来源：test/services/token_measure_temp_test.dart（审计用临时文件，已删）
 //
-// 核算口径：最坏情形逐项求和 vs 模型上下文 TokenEstimate.maxBudget(50000)。
+// B26 中文口径再标定（2026-08-18）：charToTokenRatio 0.4→1.0，各阶段
+// worstCaseTokens 按 1.0/0.4=2.5 精确换算（估算=chars×ratio，chars 不变），
+// 旧"实测"注释数值为 0.4 口径。maxBudget 同步 50000→128000（见
+// shared_constants.dart TokenEstimate 注释）。换算后合计 145250 > 128000，
+// 闸门语义保持：常态（~70–90k）不触发、最坏情形真实触发。
+//
+// 核算口径：最坏情形逐项求和 vs 模型上下文 TokenEstimate.maxBudget(128000)。
 // 溢出降级顺序（degradePriority 越小越先裁）：
 //   L2 组数 → L3 非 focus 概览 → 规则检测器注入 → L3 训练知识 → 画像 →
 //   引用上下文 → 附属文件 → 历史消息；临场输出约束与协议块说明为保底层（不裁）。
@@ -78,116 +84,116 @@ abstract final class TokenBudgetTable {
 
   /// 各阶段最坏情形 token 估算
   /// （来源：机制审查包 §4.4；2026-08-11 体检修订 L1/L2/L3 数值见文件头；
-  ///   引用/附件 = ContextBudget.totalBudget(15000 chars) × charToTokenRatio(0.4)）
+  ///   引用/附件 = ContextBudget.totalBudget(15000 chars)，按 charToTokenRatio(1.0) 折算）
   static const List<TokenBudgetStage> stages = [
     TokenBudgetStage(
       name: BudgetStageNames.l1Core,
-      worstCaseTokens: 10000, // 实测 8 项 9323
+      worstCaseTokens: 25000, // 旧口径实测 9323×2.5≈23308
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.l1Attitude,
-      worstCaseTokens: 1000, // 实测 attitude skill ~1100
+      worstCaseTokens: 2500, // 旧口径实测 attitude skill ~1100×2.5≈2750
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.l2OnDemand,
-      worstCaseTokens: 16500, // 实测最重 diagnosis 组 16463
+      worstCaseTokens: 41250, // 旧口径实测最重 diagnosis 组 16463×2.5≈41158
       degradePriority: 1,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.positionGuidance,
-      worstCaseTokens: 800,
+      worstCaseTokens: 2000,
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.studentProfile,
-      worstCaseTokens: 1500,
+      worstCaseTokens: 3750,
       degradePriority: 5,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.planContinuation,
-      worstCaseTokens: 300,
+      worstCaseTokens: 750,
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.intentAndGranularity,
-      worstCaseTokens: 400,
+      worstCaseTokens: 1000,
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.references,
-      worstCaseTokens: 6000,
+      worstCaseTokens: 15000, // = ContextBudget.totalBudget(15000 chars)×1.0
       degradePriority: 6,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.reviewer,
-      worstCaseTokens: 300,
+      worstCaseTokens: 750,
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.voiceDrift,
-      worstCaseTokens: 200,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.ruleDetectors,
-      worstCaseTokens: 1500,
-      degradePriority: 3,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.entity,
-      worstCaseTokens: 800,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.fact,
-      worstCaseTokens: 900,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.attachedFiles,
-      worstCaseTokens: 6000,
-      degradePriority: 7,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.focusSwitch,
-      worstCaseTokens: 300,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.intervention,
-      worstCaseTokens: 200,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.trainingEvaluation,
-      worstCaseTokens: 1200,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.trainingKnowledge,
-      worstCaseTokens: 400, // 实测 focus 单症候 ~330
-      degradePriority: 4,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.l3Structure,
-      worstCaseTokens: 1100, // 实测 focus 症候 418 + 技法 304 ≈ 722
-      degradePriority: 2,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.skillLevel,
-      worstCaseTokens: 200,
-      degradePriority: kBottomLinePriority,
-    ),
-    TokenBudgetStage(
-      name: BudgetStageNames.outputConstraints,
       worstCaseTokens: 500,
       degradePriority: kBottomLinePriority,
     ),
     TokenBudgetStage(
+      name: BudgetStageNames.ruleDetectors,
+      worstCaseTokens: 3750,
+      degradePriority: 3,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.entity,
+      worstCaseTokens: 2000,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.fact,
+      worstCaseTokens: 2250,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.attachedFiles,
+      worstCaseTokens: 15000, // = ContextBudget.totalBudget(15000 chars)×1.0
+      degradePriority: 7,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.focusSwitch,
+      worstCaseTokens: 750,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.intervention,
+      worstCaseTokens: 500,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.trainingEvaluation,
+      worstCaseTokens: 3000,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.trainingKnowledge,
+      worstCaseTokens: 1000, // 旧口径实测 focus 单症候 ~330×2.5≈825
+      degradePriority: 4,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.l3Structure,
+      worstCaseTokens: 2750, // 旧口径实测 focus 症候+技法 ~722×2.5≈1805
+      degradePriority: 2,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.skillLevel,
+      worstCaseTokens: 500,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.outputConstraints,
+      worstCaseTokens: 1250,
+      degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
       name: BudgetStageNames.history,
-      worstCaseTokens: 8000,
+      worstCaseTokens: 20000,
       degradePriority: 8,
     ),
   ];
