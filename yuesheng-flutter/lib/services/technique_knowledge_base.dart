@@ -953,6 +953,153 @@ const Map<String, String> kTechniqueShortNames = {
 String? techniqueNameOf(String? id) =>
     id == null ? null : kTechniqueShortNames[id];
 
+// ─── 2026-08-18 批次（文笔画像→技法旁路路由）───────────────────
+// 设计：docs/2026-08-18-style-technique-bypass-routing-design.md
+// 技法分层标签 + 五维偏差→文笔层技法映射，供 style_technique_router 消费。
+// 按 R-021 映射表禁令：教学知识放在技法知识库真源文件内，与技法索引同源维护。
+
+/// 技法作用层：prose=文笔层（作用于句子/段落文本），
+/// content=内容层（作用于故事结构/情节推进），character=角色层（作用于角色塑造）
+enum TechniqueLayer { prose, content, character }
+
+/// 技法 ID → 作用层（31 条全覆盖）
+///
+/// 注：设计文档原文漏列 T012/T031（prose 计数 12 实为 11）。
+/// 按「作用于句子/段落文本本身」的定义补入：T012 视角锚定、T031 氛围构建 → prose。
+/// 实际分层：prose 13 / content 13 / character 5。
+const Map<String, TechniqueLayer> kTechniqueLayers = {
+  // prose（文笔层，13）
+  'T001': TechniqueLayer.prose,
+  'T002': TechniqueLayer.prose,
+  'T003': TechniqueLayer.prose,
+  'T012': TechniqueLayer.prose,
+  'T013': TechniqueLayer.prose,
+  'T014': TechniqueLayer.prose,
+  'T015': TechniqueLayer.prose,
+  'T016': TechniqueLayer.prose,
+  'T020': TechniqueLayer.prose,
+  'T021': TechniqueLayer.prose,
+  'T023': TechniqueLayer.prose,
+  'T025': TechniqueLayer.prose,
+  'T031': TechniqueLayer.prose,
+  // content（内容层，13）
+  'T008': TechniqueLayer.content,
+  'T009': TechniqueLayer.content,
+  'T010': TechniqueLayer.content,
+  'T011': TechniqueLayer.content,
+  'T017': TechniqueLayer.content,
+  'T018': TechniqueLayer.content,
+  'T019': TechniqueLayer.content,
+  'T022': TechniqueLayer.content,
+  'T024': TechniqueLayer.content,
+  'T026': TechniqueLayer.content,
+  'T027': TechniqueLayer.content,
+  'T028': TechniqueLayer.content,
+  'T029': TechniqueLayer.content,
+  // character（角色层，5）
+  'T004': TechniqueLayer.character,
+  'T005': TechniqueLayer.character,
+  'T006': TechniqueLayer.character,
+  'T007': TechniqueLayer.character,
+  'T030': TechniqueLayer.character,
+};
+
+/// 五维风格坐标偏差 → 文笔层技法候选映射（首版经验值，待学员数据校准）
+///
+/// 关键设计：五维坐标是「风格偏好」不是「错误」（spare 冷峻型不是病），
+/// 因此只映射「可提升方向」，健康/中性值（rhythm=alternating、sensory=balanced、
+/// narrativeDistance=fluid/observational、toneTexture=spare/elegant/colloquial、
+/// structure=linear/circular/divergent）不进映射。
+class StyleTechniqueMapping {
+  /// 维度键，格式 `维度:值`（如 `rhythm:long`）
+  final String dimensionKey;
+
+  /// 维度中文标签（如「节奏偏好=长句型」）
+  final String dimensionLabel;
+
+  /// 候选技法 ID 列表
+  final List<String> techniqueIds;
+
+  /// 一句提升理由
+  final String reason;
+
+  /// 跨层调用标注（文笔维度→非 prose 层技法时为 true）
+  final bool crossLayer;
+
+  const StyleTechniqueMapping({
+    required this.dimensionKey,
+    required this.dimensionLabel,
+    required this.techniqueIds,
+    required this.reason,
+    this.crossLayer = false,
+  });
+}
+
+/// 五维非健康值 → 文笔层技法映射表（8 条）
+const List<StyleTechniqueMapping> kStyleDimensionTechniques = [
+  StyleTechniqueMapping(
+    dimensionKey: 'rhythm:long',
+    dimensionLabel: '节奏偏好=长句型',
+    techniqueIds: ['T023'],
+    reason: '长句从句嵌套，节奏单一，可练句速切换',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'rhythm:short',
+    dimensionLabel: '节奏偏好=短句型',
+    techniqueIds: ['T021'],
+    reason: '短句碎片化，缺乏呼吸感，可用动静交替补节奏',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'rhythm:repetitive',
+    dimensionLabel: '节奏偏好=重复型',
+    techniqueIds: ['T023'],
+    reason: '排比过度、结构重复，可练句速变化破单调',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'sensory:visual',
+    dimensionLabel: '感官偏好=视觉型',
+    techniqueIds: ['T002'],
+    reason: '感官通道以视觉为主，可交织其他感官',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'sensory:auditory',
+    dimensionLabel: '感官偏好=听觉型',
+    techniqueIds: ['T002'],
+    reason: '感官通道以听觉为主，可交织其他感官',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'sensory:kinesthetic',
+    dimensionLabel: '感官偏好=体感型',
+    techniqueIds: ['T002'],
+    reason: '感官通道以体感为主，可交织其他感官',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'toneTexture:poetic',
+    dimensionLabel: '语调质感=诗意型',
+    techniqueIds: ['T003'],
+    reason: '修辞密集有堆砌风险（关联 P008），可练删繁就简',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'narrativeDistance:intimate',
+    dimensionLabel: '叙事距离=贴身型',
+    techniqueIds: ['T001'],
+    reason: '内心独白偏多（关联 P003），可练情绪外化',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'narrativeDistance:editorial',
+    dimensionLabel: '叙事距离=评述型',
+    techniqueIds: ['T020'],
+    reason: '叙述者抢戏、告知倾向，可练借景抒情',
+  ),
+  StyleTechniqueMapping(
+    dimensionKey: 'structure:fragmented',
+    dimensionLabel: '结构直觉=碎片型',
+    techniqueIds: ['T029'],
+    reason: '跳跃无过渡（关联 P020），可练场景桥接',
+    crossLayer: true, // T029 属 content 层，跨层调用显式声明
+  ),
+];
+
 // ── b9 批次29：技法库 L2 症候→技法映射表行渲染（输出与手写逐字一致）─
 
 /// 首选技法列：`T001 动态描写公式`
