@@ -269,12 +269,12 @@ class ReferenceRepository {
     String refType,
     String refId, {
     bool isPrimary = false,
-    ({int start, int end})? excerptRange,
+    ({String chapterId, int startPara, int endPara})? excerptRange,
   }) async {
     final id = generateUuid();
     final now = nowSec();
     final excerpt = excerptRange != null
-        ? '{"start":${excerptRange.start},"end":${excerptRange.end}}'
+        ? '{"chapterId":"${excerptRange.chapterId}","startPara":${excerptRange.startPara},"endPara":${excerptRange.endPara}}'
         : null;
 
     await _db.transaction(() async {

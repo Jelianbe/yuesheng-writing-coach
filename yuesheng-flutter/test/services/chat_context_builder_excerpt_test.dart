@@ -3,8 +3,8 @@
 // + 批次6（6.5）O11 原文摘录（findKeywordExcerpt / F05/F07/F11 渲染）
 //
 // 覆盖：
-//   1. parseExcerptRange：合法/非法/边界 JSON
-//   2. extractExcerpt：选段±50 字符上下文
+//   1. parseParagraphAnchor：合法/非法/边界 JSON（段落锚点）
+//   2. extractParagraphWindow：按段落锚点截取窗口
 //   3. buildReferencesContext：主引用 chapter + excerptRange →
 //      注入选段上下文（替代整章）；无范围 → 回退整章
 //   4. findKeywordExcerpt：关键词首现片段摘录（命中/未命中/空/clamp）
@@ -31,54 +31,57 @@ ChapterBrief _chapter({String? content}) {
 }
 
 void main() {
-  group('parseExcerptRange（5.5）', () {
-    test('合法 JSON → 解析 start/end', () {
-      final r = parseExcerptRange('{"start":100,"end":320}');
+  group('parseParagraphAnchor（A-3）', () {
+    test('合法 JSON → 解析 chapterId/startPara/endPara', () {
+      final r = parseParagraphAnchor('{"chapterId":"ch-1","startPara":2,"endPara":5}');
       expect(r, isNotNull);
-      expect(r!.start, 100);
-      expect(r.end, 320);
+      expect(r!.chapterId, 'ch-1');
+      expect(r.startPara, 2);
+      expect(r.endPara, 5);
     });
 
     test('null / 空串 → null', () {
-      expect(parseExcerptRange(null), isNull);
-      expect(parseExcerptRange(''), isNull);
+      expect(parseParagraphAnchor(null), isNull);
+      expect(parseParagraphAnchor(''), isNull);
     });
 
-    test('非法 JSON / 缺字段 / start>end → null', () {
-      expect(parseExcerptRange('not-json'), isNull);
-      expect(parseExcerptRange('{"start":100}'), isNull);
-      expect(parseExcerptRange('{"start":320,"end":100}'), isNull);
-      expect(parseExcerptRange('{"start":-1,"end":10}'), isNull);
+    test('非法 JSON / 缺字段 / start>end / 负数 → null', () {
+      expect(parseParagraphAnchor('not-json'), isNull);
+      expect(parseParagraphAnchor('{"chapterId":"x"}'), isNull);
+      expect(parseParagraphAnchor('{"chapterId":"x","startPara":5,"endPara":2}'), isNull);
+      expect(parseParagraphAnchor('{"chapterId":"x","startPara":-1,"endPara":10}'), isNull);
+      // 旧版字符偏移格式 {"start","end"} 已废弃 → null
+      expect(parseParagraphAnchor('{"start":100,"end":320}'), isNull);
     });
   });
 
-  group('extractExcerpt（5.5）', () {
-    test('中间选段 → 前后各补 50 字符上下文', () {
-      final content = 'A' * 200;
-      final r = extractExcerpt(content, (start: 100, end: 120));
-      expect(r.length, 120 - 50 + 50); // start-50 到 end+50
-      expect(r, startsWith('A' * 50));
-      expect(r, endsWith('A' * 70));
+  group('extractParagraphWindow（A-3）', () {
+    const content = 'p0\np1\np2\np3';
+
+    test('中间段落 → 返回 [start,end] 段落并用 \n 连接', () {
+      final r = extractParagraphWindow(content, 1, 2);
+      expect(r, 'p1\np2');
     });
 
-    test('选段贴近开头 → 上下文从 0 开始', () {
-      final content = 'B' * 200;
-      final r = extractExcerpt(content, (start: 10, end: 40));
-      expect(r.length, 40 + 50);
-      expect(r, startsWith('B'));
+    test('单段落 → 返回该段落', () {
+      final r = extractParagraphWindow(content, 0, 0);
+      expect(r, 'p0');
     });
 
-    test('选段贴近结尾 → 上下文截断到内容末尾', () {
-      final content = 'C' * 200;
-      final r = extractExcerpt(content, (start: 170, end: 190));
-      expect(r.length, 200 - 120); // start-50=120 到 end
-      expect(r, endsWith('C'));
+    test('结尾越界 → 截断到末段落', () {
+      final r = extractParagraphWindow(content, 3, 5);
+      expect(r, 'p3');
     });
 
-    test('范围超出内容 → 不越界', () {
-      final content = 'D' * 30;
-      final r = extractExcerpt(content, (start: 100, end: 120));
+    test('startPara 超出段落数 → 回退整段内容（不越界）', () {
+      final r = extractParagraphWindow(content, 10, 20);
       expect(r, content);
+    });
+
+    test('单行内容超出 → 返回整段', () {
+      final single = 'D' * 30;
+      final r = extractParagraphWindow(single, 100, 120);
+      expect(r, single);
     });
   });
 
@@ -100,7 +103,7 @@ void main() {
             title: '第一章',
             isPrimary: 1,
             manuscriptId: 'ms-1',
-            excerptRange: '{"start":10,"end":60}',
+            excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
           ),
         ],
         resolvers: resolvers(),
@@ -137,7 +140,7 @@ void main() {
             title: '第一章',
             isPrimary: 0,
             manuscriptId: 'ms-1',
-            excerptRange: '{"start":10,"end":60}',
+            excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
           ),
         ],
         resolvers: resolvers(),
@@ -171,11 +174,15 @@ void main() {
       expect(r, startsWith('开'));
     });
 
-    test('多句正文 → 只取首句截断为一行', () {
-      final r = findKeywordExcerpt('第一句，命中目标词。第二句，继续。', '命中目标词');
+    test('多段落正文 → 只返回关键词所在段落（不含其它段落）', () {
+      final r = findKeywordExcerpt(
+        '第一段包含目标词。\n第二段没有。\n第三段也没有。',
+        '目标词',
+      );
       expect(r, isNotNull);
-      expect(r, contains('命中目标词'));
-      expect(r, isNot(contains('第二句')));
+      expect(r, contains('目标词'));
+      expect(r, isNot(contains('第二段')));
+      expect(r, isNot(contains('第三段')));
     });
   });
 

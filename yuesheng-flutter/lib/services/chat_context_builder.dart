@@ -301,22 +301,24 @@ String _truncateToOneLine(String text, int maxLen) {
   return '${first.substring(0, maxLen)}...';
 }
 
-/// 关键词首现片段摘录（O11，批次6 6.5）
+/// 关键词片段摘录（O11，批次6 6.5）— A-3 段落锚点化
 ///
-/// 在正文中定位 keyword 首次出现，返回含前后 padding 上下文的单行片段。
+/// 定位 keyword 所在段落（以 `\n` 分段），返回该段落片段：以关键词为锚做句子级截断，
+/// 上限 [maxLen]。漂移从字符级降到段落级——编辑前文不影响定位。
 /// 未命中 / 关键词为空 / 正文为空 → 返回 null（降级安全，调用方不输出摘录）。
 String? findKeywordExcerpt(
   String content,
   String keyword, {
-  int padding = 12,
+  int maxLen = 120,
 }) {
   if (keyword.isEmpty || content.isEmpty) return null;
-  final start = content.indexOf(keyword);
-  if (start < 0) return null;
-  final from = (start - padding).clamp(0, content.length);
-  final to = (start + keyword.length + padding).clamp(0, content.length);
-  final snippet = content.substring(from, to);
-  return _truncateAroundKeyword(snippet, keyword, 48);
+  final paras = content.split('\n');
+  for (final p in paras) {
+    if (p.contains(keyword)) {
+      return _truncateAroundKeyword(p, keyword, maxLen);
+    }
+  }
+  return null;
 }
 
 /// 以关键词为锚截断为一行：保留关键词及其所在句（到句末分隔符）。
@@ -468,7 +470,7 @@ class ReferenceItem {
   final int isPrimary; // 0 | 1
   final String? manuscriptId;
 
-  /// 批次5（5.5）：选段范围 JSON（如 {"start":100,"end":320}），chapter 引用专用
+  /// A-3：选段锚点 JSON（如 {"chapterId":"ch-1","startPara":0,"endPara":1}），chapter  引用专用
   final String? excerptRange;
 
   const ReferenceItem({
@@ -481,34 +483,43 @@ class ReferenceItem {
   });
 }
 
-/// 批次5（5.5）：解析选段范围 JSON（{"start":..,"end":..}），非法返回 null
-({int start, int end})? parseExcerptRange(String? json) {
+/// A-3：段落锚点（chapterId + startPara/endPara，0-based 闭区间）
+/// 段落以换行 `\n` 分段为基线，编辑漂移从字符级降到段落级。
+class ParagraphAnchor {
+  final String chapterId;
+  final int startPara;
+  final int endPara;
+  const ParagraphAnchor(this.chapterId, this.startPara, this.endPara);
+}
+
+/// A-3：解析段落锚点 JSON（{"chapterId":..,"startPara":..,"endPara":..}），非法返回 null。
+/// 旧版 {"start","end"} 字符偏移格式已废弃，返回 null（安全降级）。
+ParagraphAnchor? parseParagraphAnchor(String? json) {
   if (json == null || json.isEmpty) return null;
   try {
     final decoded = jsonDecode(json);
     if (decoded is! Map<String, dynamic>) return null;
-    final start = decoded['start'];
-    final end = decoded['end'];
-    if (start is! num || end is! num || start < 0 || end < start) {
-      return null;
-    }
-    return (start: start.toInt(), end: end.toInt());
+    final chapterId = decoded['chapterId'];
+    final start = decoded['startPara'];
+    final end = decoded['endPara'];
+    if (chapterId is! String || start is! num || end is! num) return null;
+    if (start < 0 || end < start) return null;
+    return ParagraphAnchor(chapterId, start.toInt(), end.toInt());
   } catch (_) {
     return null;
   }
 }
 
-/// 批次5（5.5）：截取选段±上下文（start/end 为字符偏移，前后各补 50 字符）
-String extractExcerpt(String content, ({int start, int end}) range) {
+/// A-3：按段落锚点截取窗口（段落以 `\n` 分段）。越界自动 clamp；
+/// startPara 超出段落数 → 回退整段内容（安全降级）。
+String extractParagraphWindow(String content, int startPara, int endPara) {
   if (content.isEmpty) return content;
-  const ctx = 50;
-  final start = (range.start - ctx).clamp(0, content.length);
-  final end = (range.end + ctx).clamp(0, content.length);
-  if (start >= end) {
-    final capped = range.end.clamp(0, content.length);
-    return content.substring(0, capped);
-  }
-  return content.substring(start, end);
+  final paras = content.split('\n');
+  if (paras.isEmpty) return content;
+  if (startPara >= paras.length) return content;
+  final s = startPara.clamp(0, paras.length - 1);
+  final e = endPara.clamp(s, paras.length - 1);
+  return paras.sublist(s, e + 1).join('\n');
 }
 
 /// 引用内容解析后的详情（manuscript 类型需要聚合章节信息）
@@ -617,12 +628,12 @@ String buildReferencesContext(
       final chapter = resolvers.chapterResolver(ref.refId);
       if (chapter != null) {
         parts.add('### $tag 章节：${ref.title}（${chapter.wordCount}字）');
-        // 批次5（5.5）：主引用带选段范围 → 优先展开选段±上下文（替代整章）
-        final range = parseExcerptRange(ref.excerptRange);
-        if (ref.isPrimary == 1 && range != null) {
-          parts.add('【选段诊断】以下为主引用章节中的选中片段（含前后文）');
+        // A-3：主引用带段落锚点 → 优先展开锚点窗口（替代整章）；无锚点则全章截断
+        final anchor = parseParagraphAnchor(ref.excerptRange);
+        if (ref.isPrimary == 1 && anchor != null && anchor.chapterId == ref.refId) {
+          parts.add('【选段诊断】以下为主引用章节中的选中片段（段落锚点截取）');
           parts.add('```');
-          parts.add(smartTruncate(extractExcerpt(chapter.content, range), budget));
+          parts.add(extractParagraphWindow(chapter.content, anchor.startPara, anchor.endPara));
           parts.add('```');
           parts.add('');
         } else {
