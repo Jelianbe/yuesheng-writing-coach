@@ -688,6 +688,9 @@ class AppDatabase extends _$AppDatabase {
           );
         }
       }
+
+      // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，
+      //      不再需要 ref_title 快照列（死 schema，评审移除）。
     },
 
     beforeOpen: (details) async {

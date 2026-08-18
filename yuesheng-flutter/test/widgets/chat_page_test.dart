@@ -247,13 +247,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('选择引用'), findsOneWidget);
 
-      // mention 模式：选章节 → 输入框插入 @测试小说/第一章（批次71：标题路径）
+      // mention 模式：选章节 → 输入框插入稳定 ID 标记 @[chapter:<id>]（A-2：改名免疫）
       await tester.tap(find.text('测试小说'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('第一章'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('@测试小说/第一章'), findsOneWidget);
+      expect(find.textContaining('@[chapter:$chId]'), findsOneWidget);
 
       // 发送 → 解析 @ 引用 → 首条引用自动设主（批次 39：修复引用死数据，
       // 无主引用时 @ 首条设主，使保存到文件/相关对话等主引用链路可用）
