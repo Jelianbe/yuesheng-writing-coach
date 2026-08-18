@@ -54,13 +54,23 @@
 - **方案 X（最小改动）**：保留自动关键词摘录，底层从字符偏移改为段落锚点——`findKeywordExcerpt` 定位关键词所在段落（按 `\n` 分段），返回该段落（以关键词为锚做句子级截断，上限 120 字）。漂移从字符级降到段落级，UI 零改动。
 - 分隔符：`\n`（单换行，中文小说常见）。
 - 范围：保持仅主引用（选段展开仅对 `isPrimary==1` 生效）。
-- 方案 Y（手动选区 UI）暂不做，留待真实反馈。
+- 方案 Y（手动选区 UI）暂不做，留待真实反馈。→ **已实施（2026-08-19，见 §3.5）**。
 
 ### 3.4 范围（最小范围原则）
 
 - **已做**：数据语义变更 + 解析/提取 helper + 主引用注入改用段落窗口 + findKeywordExcerpt 段落锚点化 + 单测。
 - **未做（留待方案 Y）**：手动选区 UI、非主引用也记选段——等真实反馈再定。
 - **后补（2026-08-18 晚）**：主引用反查 N+1 已消除——`chat_service_observers._preloadReferenceDetails` 改为按 refType 分组批量查询（仓库层新增 `getChaptersByIds` / `listChaptersForManuscripts` / `getManuscriptsByIds` / `getAttachedFilesByIds`），N 条引用从最多 2N 次查询降为固定 ≤5 次。MentionParser/ReferencePicker 侧的查询合并仍未做。
+
+### 3.5 方案 Y 实施记录（2026-08-19，Accepted）
+
+激活段落窗口基建的唯一写入 UI，**仅主引用章节**（对齐 §3.3 范围决策）：
+
+- **纯函数** `lib/services/paragraph_selection.dart`：`updateParagraphSelection(start, end, tap)`——点空→单选；点区间外→向左/右扩展；点区间内→重锚单段。`selectionCharCount` 统计选区字数（含区间内空行段）。
+- **仓库** `ReferenceRepository.updateExcerptRange(sessionId, refType, refId, anchor?)`：锚点非空写 JSON、空值清列；命中 0 行返回 false（防误报）；不动 is_primary 与其它引用行。
+- **UI** `lib/widgets/excerpt_picker_sheet.dart`：段落分行弹层（空行占位「（空行）」），点击选段；底部「清除选段 / 取消 / 确定」。**pop 语义三分**：确定→`ExcerptPickResult(anchor)`（anchor 为 null 表示清除选段，恢复整章分析）；取消/下滑→null（调用方不写库）——「清除」与「取消」pop 值必须区分，这是不替用户做决定（R-009）的边界。既有锚点打开即预选回显；锚点指向其它章节不预选（防串段）；空内容章节显示占位（`''.split('\n')` 会得到 `['']`，须特判）。
+- **入口**：ReferenceBar 展开列表中主引用章节行的「选段」按钮；确认后 `updateExcerptRange` 写库并刷新引用栏；章节已删除则提示中止。
+- 仍未做：非主引用选段、MentionParser/ReferencePicker 的 N+1 查询合并——等真实反馈再定。
 
 ---
 
@@ -87,4 +97,4 @@
 2. **段落分隔符**：✅ `\n`（单换行）。
 3. **范围**：✅ 仅主引用。
 
-> 未决（留待方案 Y）：手动选区 UI、非主引用选段、MentionParser/ReferencePicker 的 N+1 查询合并（主引用批量反查已于 2026-08-18 晚实施，见 §3.4 后补）。
+> 未决（留待真实反馈）：非主引用选段、MentionParser/ReferencePicker 的 N+1 查询合并（主引用批量反查已于 2026-08-18 晚实施，见 §3.4 后补）。手动选区 UI（方案 Y）已于 2026-08-19 实施，见 §3.5。

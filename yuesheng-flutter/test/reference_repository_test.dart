@@ -565,4 +565,122 @@ void main() {
       expect(refs, isEmpty);
     });
   });
+
+  // ════════════════════════════════════════════════════════════
+  // 4. updateExcerptRange（A-3 方案 Y：手动选段写入/清除）
+  // ════════════════════════════════════════════════════════════
+  group('updateExcerptRange（A-3 方案 Y）', () {
+    test('写入段落锚点 → excerpt_range 为锚点 JSON', () async {
+      final seed = await seedManuscriptAndSession();
+      final chId = await chRepo.createChapter(seed.manuscriptId, title: '第一章');
+      await refRepo.addReference(seed.sessionId, 'chapter', chId);
+
+      final hit = await refRepo.updateExcerptRange(
+        seed.sessionId,
+        'chapter',
+        chId,
+        (chapterId: chId, startPara: 2, endPara: 5),
+      );
+      expect(hit, isTrue);
+
+      final refs = await refRepo.listReferencesOfSession(seed.sessionId);
+      expect(
+        refs.first.excerptRange,
+        '{"chapterId":"$chId","startPara":2,"endPara":5}',
+      );
+    });
+
+    test('清除选段（anchor=null）→ excerpt_range 置空', () async {
+      final seed = await seedManuscriptAndSession();
+      final chId = await chRepo.createChapter(seed.manuscriptId, title: '第一章');
+      await refRepo.addReference(
+        seed.sessionId,
+        'chapter',
+        chId,
+        excerptRange: (chapterId: chId, startPara: 1, endPara: 3),
+      );
+
+      final hit = await refRepo.updateExcerptRange(
+        seed.sessionId,
+        'chapter',
+        chId,
+        null,
+      );
+      expect(hit, isTrue);
+
+      final refs = await refRepo.listReferencesOfSession(seed.sessionId);
+      expect(refs.first.excerptRange, isNull);
+    });
+
+    test('会话无该引用 → 返回 false 且不写库', () async {
+      final seed = await seedManuscriptAndSession();
+      final chId = await chRepo.createChapter(seed.manuscriptId, title: '第一章');
+      // 不 addReference，直接 update
+      final hit = await refRepo.updateExcerptRange(
+        seed.sessionId,
+        'chapter',
+        chId,
+        (chapterId: chId, startPara: 0, endPara: 1),
+      );
+      expect(hit, isFalse);
+
+      final refs = await refRepo.listReferencesOfSession(seed.sessionId);
+      expect(refs, isEmpty);
+    });
+
+    test('不影响 is_primary 与其它引用（仅更新目标行）', () async {
+      final seed = await seedManuscriptAndSession();
+      final chId = await chRepo.createChapter(seed.manuscriptId, title: '第一章');
+      await refRepo.addReference(seed.sessionId, 'chapter', chId, isPrimary: true);
+      await refRepo.addReference(
+        seed.sessionId,
+        'manuscript',
+        seed.manuscriptId,
+      );
+
+      await refRepo.updateExcerptRange(
+        seed.sessionId,
+        'chapter',
+        chId,
+        (chapterId: chId, startPara: 0, endPara: 0),
+      );
+
+      final refs = await refRepo.listReferencesOfSession(seed.sessionId);
+      final chapter = refs.firstWhere((r) => r.refType == 'chapter');
+      final manuscript = refs.firstWhere((r) => r.refType == 'manuscript');
+      expect(chapter.isPrimary, 1); // 主引用身份不变
+      expect(chapter.excerptRange, isNotNull);
+      expect(manuscript.excerptRange, isNull); // 其它引用不受影响
+    });
+
+    test('addReference 携带 excerptRange 的序列化与 updateExcerptRange 一致', () async {
+      final seed = await seedManuscriptAndSession();
+      final chId = await chRepo.createChapter(seed.manuscriptId, title: '章A');
+
+      await refRepo.addReference(
+        seed.sessionId,
+        'chapter',
+        chId,
+        excerptRange: (chapterId: chId, startPara: 1, endPara: 2),
+      );
+      final viaAdd = (await refRepo.listReferencesOfSession(seed.sessionId))
+          .first
+          .excerptRange;
+
+      // 清除后经 updateExcerptRange 重新写入同一锚点
+      await refRepo.updateExcerptRange(seed.sessionId, 'chapter', chId, null);
+      await refRepo.updateExcerptRange(
+        seed.sessionId,
+        'chapter',
+        chId,
+        (chapterId: chId, startPara: 1, endPara: 2),
+      );
+      final viaUpdate = (await refRepo.listReferencesOfSession(seed.sessionId))
+          .first
+          .excerptRange;
+
+      expect(viaAdd, isNotNull);
+      expect(viaAdd, viaUpdate); // 两条写入路径字节级一致
+    });
+  });
 }

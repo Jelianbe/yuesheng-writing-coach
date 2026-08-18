@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -288,5 +289,137 @@ void main() {
 
     expect(gotAction, 'remove');
     expect(gotTitle, '测试小说');
+  });
+
+  // ════════════════════════════════════════════════════════════
+  // A-3 方案 Y：主引用章节「选段」
+  // ════════════════════════════════════════════════════════════
+  testWidgets('#11 主引用章节行显示「选段」按钮，非主引用/作品不显示', (tester) async {
+    await newSession();
+    final msId = await msRepo.createManuscript(title: '测试小说', genre: '小说');
+    final chId = await ChapterRepository(db).createChapter(
+      msId,
+      title: '第一章',
+      content: '第一段。\n第二段。',
+    );
+    await refRepo.addReference(sessionId, 'chapter', chId, isPrimary: true);
+    await refRepo.addReference(sessionId, 'manuscript', msId);
+
+    await tester.pumpWidget(buildHost(null));
+    await tester.pumpAndSettle();
+
+    // 展开 → 主引用章节行有选段按钮，作品行没有（仅 1 个 content_cut）
+    await tester.tap(find.text('第一章'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.content_cut), findsOneWidget);
+  });
+
+  testWidgets('#12 选段：点段落 → 确定 → excerpt_range 落库 + SnackBar', (tester) async {
+    await newSession();
+    final chRepo = ChapterRepository(db);
+    final msId = await msRepo.createManuscript(title: '测试小说', genre: '小说');
+    final chId = await chRepo.createChapter(
+      msId,
+      title: '第一章',
+      content: '第一段：柴门。\n第二段：风雪。',
+    );
+    await refRepo.addReference(sessionId, 'chapter', chId, isPrimary: true);
+
+    await tester.pumpWidget(buildHost(null));
+    await tester.pumpAndSettle();
+
+    // 展开 → 点选段按钮
+    await tester.tap(find.text('第一章'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.content_cut));
+    await tester.pumpAndSettle();
+
+    // 选段弹层：点第 2 段 → 确定
+    expect(find.textContaining('选段：第一章'), findsOneWidget);
+    await tester.tap(find.textContaining('风雪'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+
+    // DB 验证：锚点 = 第 2 段（0-based 1）
+    final refs = await refRepo.listReferencesOfSession(sessionId);
+    expect(refs.first.excerptRange, '{"chapterId":"$chId","startPara":1,"endPara":1}');
+    // SnackBar
+    expect(find.text('已选段：第 2 段'), findsOneWidget);
+  });
+
+  testWidgets('#13 清除选段：预选回显 → 清除 → 确定 → excerpt_range 置空', (tester) async {
+    await newSession();
+    final chRepo = ChapterRepository(db);
+    final msId = await msRepo.createManuscript(title: '测试小说', genre: '小说');
+    final chId = await chRepo.createChapter(
+      msId,
+      title: '第一章',
+      content: '第一段：柴门。\n第二段：风雪。',
+    );
+    await refRepo.addReference(
+      sessionId,
+      'chapter',
+      chId,
+      isPrimary: true,
+      excerptRange: (chapterId: chId, startPara: 0, endPara: 1),
+    );
+
+    await tester.pumpWidget(buildHost(null));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('第一章'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.content_cut));
+    await tester.pumpAndSettle();
+
+    // 预选回显
+    expect(find.textContaining('已选第 1–2 段'), findsOneWidget);
+    // 清除 + 确定
+    await tester.tap(find.text('清除选段'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+
+    final refs = await refRepo.listReferencesOfSession(sessionId);
+    expect(refs.first.excerptRange, isNull);
+    expect(find.text('已清除选段，将分析整章'), findsOneWidget);
+  });
+
+  testWidgets('#14 选段弹层取消 → excerpt_range 不变', (tester) async {
+    await newSession();
+    final chRepo = ChapterRepository(db);
+    final msId = await msRepo.createManuscript(title: '测试小说', genre: '小说');
+    final chId = await chRepo.createChapter(
+      msId,
+      title: '第一章',
+      content: '第一段：柴门。\n第二段：风雪。',
+    );
+    await refRepo.addReference(
+      sessionId,
+      'chapter',
+      chId,
+      isPrimary: true,
+      excerptRange: (chapterId: chId, startPara: 0, endPara: 0),
+    );
+
+    await tester.pumpWidget(buildHost(null));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('第一章'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.content_cut));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    final refs = await refRepo.listReferencesOfSession(sessionId);
+    expect(
+      refs.first.excerptRange,
+      '{"chapterId":"$chId","startPara":0,"endPara":0}',
+    );
+    // 无写库提示
+    expect(find.textContaining('已选段'), findsNothing);
+    expect(find.textContaining('已清除选段'), findsNothing);
   });
 }
