@@ -16,6 +16,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
@@ -212,7 +213,7 @@ class MessageBubble extends StatelessWidget {
                           bottomRight: Radius.circular(12),
                         ),
                       ),
-                      child: Text(
+                      child: GptMarkdown(
                         message.content,
                         style: const TextStyle(
                           fontSize: 15,
