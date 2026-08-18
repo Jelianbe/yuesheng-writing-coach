@@ -18,6 +18,7 @@
 import 'dart:convert';
 
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/services/genui_parser.dart';
 
 /// 诊断结果卡片 Payload
 /// 真源：message-card-service.ts DiagnosisResultCardPayload
@@ -562,11 +563,55 @@ Future<String> insertDiagnosisFailedCard(
   String sessionId,
   int failureCount,
 ) async {
-  final messageId = await sessionRepo.addMessage(
+      final messageId = await sessionRepo.addMessage(
+        sessionId,
+        'assistant',
+        jsonEncode(DiagnosisFailedCardPayload(failureCount: failureCount).toJson()),
+        messageType: 'diagnosis_failed',
+      );
+      return messageId;
+    }
+
+// ════════════════ GenUI 卡片（B-1 GenUI v1）════════════════
+
+/// GenUI 卡片 Payload（B-1）
+///
+/// 由 chat_service_send 解析 [YS_GENUI] 协议块并确定性插入。
+/// content 为 JSON，渲染端按 message_type=genui 分派到 GenUICard。
+class GenuiCardPayload {
+  final List<GenUiComponent> components;
+
+  const GenuiCardPayload({required this.components});
+
+  factory GenuiCardPayload.fromJson(Map<String, dynamic> json) {
+    final list = json['components'] as List<dynamic>? ?? [];
+    return GenuiCardPayload(
+      components: list.whereType<Map<String, dynamic>>().map((m) {
+        final type = (m['type'] as String?) ?? '';
+        final data = Map<String, dynamic>.from(m)..remove('type');
+        return GenUiComponent(type: type, data: data);
+      }).toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'components': components.map((c) => c.toJson()).toList(),
+      };
+}
+
+/// GenUI 组件解析落库后，确定性插入 GenUI 卡片消息（B-1）
+///
+/// 卡片以 system 角色 + genui 类型写入 messages 表，
+/// content 为 JSON 字符串，渲染端按 message_type 分派到 GenUICard。
+Future<String> insertGenuiCard(
+  SessionRepository sessionRepo,
+  String sessionId,
+  GenuiCardPayload payload,
+) async {
+  return sessionRepo.addMessage(
     sessionId,
-    'assistant',
-    jsonEncode(DiagnosisFailedCardPayload(failureCount: failureCount).toJson()),
-    messageType: 'diagnosis_failed',
+    'system',
+    jsonEncode(payload.toJson()),
+    messageType: 'genui',
   );
-  return messageId;
 }

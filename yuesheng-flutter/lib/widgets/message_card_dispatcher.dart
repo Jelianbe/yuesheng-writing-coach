@@ -17,6 +17,7 @@ import '../types/display_types.dart';
 import 'diagnosis_card.dart';
 import 'diagnosis_failed_card.dart';
 import 'evaluation_report_panel.dart';
+import 'gen_ui_card.dart';
 import 'message_bubble.dart';
 import 'outline_confirmation_card.dart';
 import 'partial_agreement_card.dart';
@@ -137,6 +138,14 @@ Widget? dispatchMessageCard({
         onAddContent: onAddContent,
         onContinueChat: onContinueChat,
       ),
+    );
+  }
+
+  // B-1：genui → GenUICard（GenUI 协议块渲染，diff/quiz 等教学交互组件）
+  if (!isStreamingBubble && msg.messageType == 'genui') {
+    return Padding(
+      padding: verticalPadding,
+      child: GenUICard.fromMessageContent(msg.content, messageId: msg.id),
     );
   }
 

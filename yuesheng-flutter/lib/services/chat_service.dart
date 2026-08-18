@@ -58,6 +58,7 @@ import 'package:writingcoach/services/grammar_lexical_detector.dart';
 import 'package:writingcoach/services/outline_parser.dart';
 import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/fact_parser.dart';
+import 'package:writingcoach/services/genui_parser.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/chat_training_parser.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
@@ -358,13 +359,14 @@ class ChatService {
     return a < b ? a : b;
   }
 
-  /// 检查 fullContent 尾部是否命中任一协议块标记（[YS_DIAGNOSIS]/[YS_ENTITY]/[YS_FACT]）的
+  /// 检查 fullContent 尾部是否命中任一协议块标记（[YS_DIAGNOSIS]/[YS_ENTITY]/[YS_FACT]/[YS_GENUI]）的
   /// 某个前缀，返回需暂缓转发的后缀长度（防分隔符跨 chunk 到达时误转发）
   static int _blockPendingPrefix(String fullContent) {
     final diag = getPendingMarkerPrefix(fullContent);
     final outline = _pendingPrefix(fullContent, kOutlineStart);
     final fact = _pendingPrefix(fullContent, kFactStart);
-    return [diag, outline, fact].reduce((a, b) => a > b ? a : b);
+    final genui = _pendingPrefix(fullContent, kGenuiStart);
+    return [diag, outline, fact, genui].reduce((a, b) => a > b ? a : b);
   }
 
   static int _pendingPrefix(String fullContent, String marker) {

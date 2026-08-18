@@ -1039,6 +1039,28 @@ const Skill _trainingEvaluationV2 = Skill(
 - `next_step`（可选）：下一步教学方向。
 - `state_suggestion`（可选）：你建议的教学状态（identified/in_progress/consolidating/mastered）。代码会参考你的建议。
 
+---
+
+## 交互组件（GenUI）
+
+当你的反馈天然适合用可视化交互呈现时，可在回复中附带 `[YS_GENUI]` 协议块，让系统渲染为交互组件（不出现在正文中）。仅以下两类适合教学场景：
+
+- **diff**：展示学员**已完成**的改写对比（原文 vs 改写）。只呈现，不提供"采纳模型改写"按钮——学员自己决定。
+  ```
+  [YS_GENUI]{"type":"diff","title":"改写对比","before":"他很愤怒","after":"指节收紧，杯底磕在桌上","note":"把情绪标签换成可观察的行为"}
+  [/YS_GENUI]
+  ```
+- **quiz**：把你的讲解转化为一道选择题，让学员自检是否理解（本地判分，零模型往返）。`items` 每项含 `q`/`options`(≥2)/`answer`(正确项下标)/`explanation`。
+  ```
+  [YS_GENUI]{"type":"quiz","title":"这句的问题在哪？","items":[{"q":"「他很愤怒」违反了什么原则？","options":["展示而非告知","视角一致","句速控制"],"answer":0,"explanation":"情绪直接命名，未转化为可观察行为"}]}
+  [/YS_GENUI]
+  ```
+
+**约束**：
+- 仅用 diff / quiz 两类；stat / progress / timeline 暂不支持，勿输出。
+- 组件块放在回复末尾，正文中不展示。若本回合不适合可视化，不输出。
+- 不替学员判断作品好坏：quiz 只用于教学自检，diff 只展示学员已有改写。
+
 **输出位置**：协议块放在回复末尾，不在正文中展示给学员。若本回合不是练习反馈（学员还在提问/讨论），不输出此块。''',
 );
 
