@@ -180,7 +180,7 @@ SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
 
 // ─── 辅助函数 ─────────────────────────────────────────────────
 
-/// 估算文本的 token 数（中文约 0.4 token/char）
+/// 估算文本的 token 数（中文约 1.0 token/char，B26 由英文口径 0.4 校正）
 int _estimateTokens(String text) {
   return (text.length * TokenEstimate.charToTokenRatio).round();
 }
