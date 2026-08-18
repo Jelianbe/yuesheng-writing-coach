@@ -20,8 +20,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
+import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import 'excerpt_picker_sheet.dart';
+import 'yue_sheet.dart';
 
 class ReferenceBar extends ConsumerStatefulWidget {
   /// 会话 ID（引用列表按会话隔离）
@@ -128,6 +131,57 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       await _loadReferences();
       widget.onReferencesChanged?.call('remove', ref.refType, ref.title);
       _notify('已移除引用：${ref.title}');
+    } catch (_) {
+      _notify('操作失败，请稍后再试');
+    }
+  }
+
+  /// A-3 方案 Y：主引用章节「选段」——打开段落选段弹层，
+  /// 确认后写入/清除 session_reference.excerpt_range（段落锚点）。
+  /// 取消（含下滑关闭）不写库；章节已删除时提示并中止。
+  Future<void> _handlePickExcerpt(ReferencedItem item) async {
+    final db = this.ref.read(appDatabaseProvider);
+    final chapter = await ChapterRepository(db).getChapter(item.refId);
+    if (!mounted) return;
+    if (chapter == null) {
+      _notify('章节不存在或已删除');
+      return;
+    }
+    final result = await showYueModalBottomSheet<ExcerptPickResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => ExcerptPickerSheet(
+        chapterId: chapter.id,
+        chapterTitle: chapter.title,
+        content: chapter.content,
+        initialAnchorJson: item.excerptRange,
+      ),
+    );
+    if (!mounted || result == null) return; // 取消：不写库
+    final anchor = result.anchor;
+    if (anchor == null && item.excerptRange == null) return; // 无选段可清
+    try {
+      final hit = await _repo.updateExcerptRange(
+        widget.sessionId,
+        item.refType,
+        item.refId,
+        anchor,
+      );
+      if (!hit) {
+        _notify('引用已变更，请重试');
+        await _loadReferences();
+        return;
+      }
+      await _loadReferences();
+      if (anchor == null) {
+        _notify('已清除选段，将分析整章');
+      } else if (anchor.startPara == anchor.endPara) {
+        _notify('已选段：第 ${anchor.startPara + 1} 段');
+      } else {
+        _notify(
+          '已选段：第 ${anchor.startPara + 1}–${anchor.endPara + 1} 段',
+        );
+      }
     } catch (_) {
       _notify('操作失败，请稍后再试');
     }
@@ -475,6 +529,21 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
               ),
             ),
           ),
+          // 选段按钮（A-3 方案 Y：仅主引用章节显示；多选模式下隐藏）
+          if (!isSelectMode &&
+              ref.refType == 'chapter' &&
+              ref.isPrimary == 1) ...[
+            IconButton(
+              onPressed: () => _handlePickExcerpt(ref),
+              tooltip: '选段',
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(
+                Icons.content_cut,
+                size: 18,
+                color: AppColors.primary,
+              ),
+            ),
+          ],
           // 移除按钮（多选模式下隐藏）
           if (!isSelectMode)
             IconButton(

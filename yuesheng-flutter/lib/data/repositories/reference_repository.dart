@@ -297,9 +297,7 @@ class ReferenceRepository {
   }) async {
     final id = generateUuid();
     final now = nowSec();
-    final excerpt = excerptRange != null
-        ? '{"chapterId":"${excerptRange.chapterId}","startPara":${excerptRange.startPara},"endPara":${excerptRange.endPara}}'
-        : null;
+    final excerpt = _encodeExcerpt(excerptRange);
 
     await _db.transaction(() async {
       // 幂等插入：ON CONFLICT(session_id, ref_type, ref_id) 更新 excerpt_range
@@ -317,6 +315,42 @@ class ReferenceRepository {
       }
     });
     return id;
+  }
+
+  /// 选段锚点序列化（addReference / updateExcerptRange 共用，字节级一致）
+  static String? _encodeExcerpt(
+    ({String chapterId, int startPara, int endPara})? anchor,
+  ) {
+    if (anchor == null) return null;
+    return '{"chapterId":"${anchor.chapterId}","startPara":${anchor.startPara},"endPara":${anchor.endPara}}';
+  }
+
+  /// A-3 方案 Y：更新已有引用的选段锚点（[anchor] 为 null 表示清除，恢复整章注入）
+  ///
+  /// 返回是否命中行——会话不存在该引用时返回 false（调用方提示，
+  /// 不静默）。语义上仅对主引用 chapter 有消费方
+  /// （chat_context_builder 主引用锚点窗口），但存储层不做类型限制，
+  /// 与 addReference 的 excerptRange 参数口径一致。
+  Future<bool> updateExcerptRange(
+    String sessionId,
+    String refType,
+    String refId,
+    ({String chapterId, int startPara, int endPara})? anchor,
+  ) async {
+    final count =
+        await (_db.update(_db.sessionReferences)
+              ..where(
+                (t) =>
+                    t.sessionId.equals(sessionId) &
+                    t.refType.equals(refType) &
+                    t.refId.equals(refId),
+              ))
+            .write(
+              SessionReferencesCompanion(
+                excerptRange: Value(_encodeExcerpt(anchor)),
+              ),
+            );
+    return count > 0;
   }
 
   /// 移除一条引用
