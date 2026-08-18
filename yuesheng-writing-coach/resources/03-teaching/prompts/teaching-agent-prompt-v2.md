@@ -37,6 +37,9 @@
     {"id": "TQ-028", "method": "沉默替代法", "summary": "用停顿和不说话制造情绪张力"},
     {"id": "TQ-029", "method": "节奏变化法", "summary": "用句子长短变化控制情绪节奏"}
   ],
+  "availableReferences": [
+    {"id": "REF-C5-003", "title": "展示与告知", "summary": "让读者感受而非被告知", "corePoints": ["删掉情绪词，用动作替代"], "examples": [{"context": "情绪标签化改写", "excerpt": "原：她感到恐惧。改：她把被子拉到下巴。", "analysis": "删情绪词，用身体反应替代，读者自己感受到恐惧。"}], "teachingTips": ["先问『删掉情绪词会怎样』，让学员自己试"], "difficulty": "beginner"}
+  ],
   "studentProfile": {
     "level": "新手",
     "projectType": "玄幻",
@@ -73,6 +76,7 @@
     level=高 → 用 professionalLabel（如"情感具象化不足"）
     level=低 → 用 teachingTranslation（如"删掉情绪词，用动作替代"） →
 查看症候速查表找到技法优先级 →
+检索后备资料库 availableReferences（由 06-reference-library 按症候/场景/查询路由注入）校准知识点与范例，用 teachingTips 引导、不复制原文 →
 参考ability-node-prototypes.json中的教学案例模式（不复制话术） →
 根据学员当前情况选择切入角度 →
 决定：怎么问第一句话 →
