@@ -9,6 +9,9 @@
 import '../config/shared_constants.dart';
 import '../services/syndrome_registry.dart';
 import '../types/teaching_types.dart';
+import 'package:writingcoach/contracts/diagnosis_capability.dart';
+
+export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
 /// 匹配所有 P0xx 格式的症候编号（P000-P099）
 final RegExp kSyndromeCodeRe = RegExp(r'P0\d{2}');
@@ -58,68 +61,9 @@ List<String> validateSyndromeMutexWarnings(List<String> syndromeIds) {
 /// 真拦截类型集合：V-03 + V-04
 const Set<String> _kBlockingFixTypes = {'V-03', 'V-04'};
 
-/// 校验错误
-class ValidationError {
-  final String field;
-  final String message;
-  const ValidationError({required this.field, required this.message});
-}
-
-/// JSON schema 校验结果
-class DiagnosisValidationResult {
-  final bool valid;
-  final List<ValidationError> errors;
-
-  /// 批次4（4.1 O6）：warning 级提示（互斥症候同命中，不阻断，先观察误伤率）
-  final List<String> warnings;
-  final Map<String, dynamic>? data;
-  const DiagnosisValidationResult({
-    required this.valid,
-    required this.errors,
-    this.warnings = const [],
-    this.data,
-  });
-}
-
-/// 自然语言校验修复项
-class NlFix {
-  final String type; // V-01 | V-02 | V-03 | V-04
-  final String original;
-  final String replacement;
-  const NlFix({
-    required this.type,
-    required this.original,
-    required this.replacement,
-  });
-}
-
-/// 自然语言校验结果
-class NlValidationResult {
-  final bool valid;
-  final List<NlFix> fixes;
-  final String cleaned;
-  const NlValidationResult({
-    required this.valid,
-    required this.fixes,
-    required this.cleaned,
-  });
-}
-
-/// 完整校验结果
-class FullValidationResult {
-  final bool passed;
-  final String displayContent;
-  final ParsedDiagnosis? diagnosis;
-  final DiagnosisValidationResult jsonValidation;
-  final NlValidationResult nlValidation;
-  const FullValidationResult({
-    required this.passed,
-    required this.displayContent,
-    required this.diagnosis,
-    required this.jsonValidation,
-    required this.nlValidation,
-  });
-}
+/// 校验错误 / JSON schema 校验结果 / 自然语言修复项 / 自然语言校验结果 /
+/// 完整校验结果 等 DTO 已上移至 contracts/diagnosis_capability.dart，
+/// 本文件经 import 复用，不再重复定义。
 
 /// JSON schema 校验
 DiagnosisValidationResult validateDiagnosisSchema(dynamic raw) {
