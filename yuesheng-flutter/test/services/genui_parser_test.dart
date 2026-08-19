@@ -105,6 +105,70 @@ void main() {
       });
       expect(c, isNull);
     });
+
+    test('合法 stat → 通过', () {
+      final c = validateGenuiComponent({
+        'type': 'stat',
+        'items': [
+          {'label': '画面感', 'value': 75, 'max': 100}
+        ]
+      });
+      expect(c, isNotNull);
+      expect(c!.type, 'stat');
+    });
+
+    test('stat 缺 value → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'stat',
+        'items': [
+          {'label': '画面感', 'max': 100}
+        ]
+      });
+      expect(c, isNull);
+    });
+
+    test('合法 progress → 通过', () {
+      final c = validateGenuiComponent({
+        'type': 'progress',
+        'steps': [
+          {'label': '诊断', 'status': 'done'},
+          {'label': '教学', 'status': 'current'}
+        ]
+      });
+      expect(c, isNotNull);
+      expect(c!.type, 'progress');
+    });
+
+    test('progress 缺 status → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'progress',
+        'steps': [
+          {'label': '诊断'}
+        ]
+      });
+      expect(c, isNull);
+    });
+
+    test('合法 timeline → 通过', () {
+      final c = validateGenuiComponent({
+        'type': 'timeline',
+        'events': [
+          {'date': '2026-08-01', 'title': '首次诊断'}
+        ]
+      });
+      expect(c, isNotNull);
+      expect(c!.type, 'timeline');
+    });
+
+    test('timeline 缺 title → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'timeline',
+        'events': [
+          {'date': '2026-08-01'}
+        ]
+      });
+      expect(c, isNull);
+    });
   });
 
   group('GenuiCardPayload 往返', () {

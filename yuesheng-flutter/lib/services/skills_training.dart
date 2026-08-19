@@ -1043,7 +1043,7 @@ const Skill _trainingEvaluationV2 = Skill(
 
 ## 交互组件（GenUI）
 
-当你的反馈天然适合用可视化交互呈现时，可在回复中附带 `[YS_GENUI]` 协议块，让系统渲染为交互组件（不出现在正文中）。仅以下两类适合教学场景：
+当你的反馈天然适合用可视化交互呈现时，可在回复中附带 `[YS_GENUI]` 协议块，让系统渲染为交互组件（不出现在正文中）。以下五种适合教学场景：
 
 - **diff**：展示学员**已完成**的改写对比（原文 vs 改写）。只呈现，不提供"采纳模型改写"按钮——学员自己决定。
   ```
@@ -1055,9 +1055,24 @@ const Skill _trainingEvaluationV2 = Skill(
   [YS_GENUI]{"type":"quiz","title":"这句的问题在哪？","items":[{"q":"「他很愤怒」违反了什么原则？","options":["展示而非告知","视角一致","句速控制"],"answer":0,"explanation":"情绪直接命名，未转化为可观察行为"}]}
   [/YS_GENUI]
   ```
+- **stat**：能力维度卡片，展示五维文笔画像等量化指标。`items` 每项含 `label`/`value`(数值)/`max`(满分)。
+  ```
+  [YS_GENUI]{"type":"stat","title":"文笔画像","items":[{"label":"画面感","value":75,"max":100},{"label":"节奏感","value":60,"max":100}]}
+  [/YS_GENUI]
+  ```
+- **progress**：训练进度指示器，展示六步闭环等阶段性进展。`steps` 每项含 `label`/`status`("done"|"current"|"pending")。
+  ```
+  [YS_GENUI]{"type":"progress","title":"训练进度","steps":[{"label":"诊断","status":"done"},{"label":"教学","status":"current"},{"label":"练习","status":"pending"}]}
+  [/YS_GENUI]
+  ```
+- **timeline**：成长证据链，按时间线展示关键成长节点。`events` 每项含 `date`/`title`/`desc`(可选)。
+  ```
+  [YS_GENUI]{"type":"timeline","title":"成长记录","events":[{"date":"2026-08-01","title":"首次诊断","desc":"识别出3个症候"},{"date":"2026-08-10","title":"画面感突破","desc":"从L1提升到L2"}]}
+  [/YS_GENUI]
+  ```
 
 **约束**：
-- 仅用 diff / quiz 两类；stat / progress / timeline 暂不支持，勿输出。
+- 五种组件按场景选用：练习反馈用 diff/quiz，画像/进度/成长回顾用 stat/progress/timeline。
 - 组件块放在回复末尾，正文中不展示。若本回合不适合可视化，不输出。
 - 不替学员判断作品好坏：quiz 只用于教学自检，diff 只展示学员已有改写。
 
