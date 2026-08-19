@@ -11,29 +11,14 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/drift.dart';
+import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 
-/// 引用项（UNION ALL 查询结果）
-class ReferencedItem {
-  final String refId;
-  final String refType; // 'manuscript' | 'chapter' | 'file'
-  final int isPrimary;
-  final String title;
-  final String? manuscriptId;
-
-  /// 批次5（5.5）：选段范围 JSON（如 {"start":100,"end":320}），chapter 引用专用
-  final String? excerptRange;
-
-  const ReferencedItem({
-    required this.refId,
-    required this.refType,
-    required this.isPrimary,
-    required this.title,
-    this.manuscriptId,
-    this.excerptRange,
-  });
-}
+// ReferencedItem 已上移至契约层（依赖倒置），此处 re-export 维持旧有
+// 「从本文件导入 ReferencedItem」的调用方（chat_service_observers / reference_bar）不变。
+export 'package:writingcoach/contracts/reference_capability.dart'
+    show ReferencedItem;
 
 /// 附加文件（file-dao.getAttachedFile 等价物）
 class AttachedFileRow {
@@ -56,10 +41,15 @@ class AttachedFileRow {
   });
 }
 
-class ReferenceRepository {
+class ReferenceRepository implements ReferenceCapability {
   final AppDatabase _db;
 
   ReferenceRepository(this._db);
+
+  /// 契约方法：列出会话的所有引用（别名 → listReferencesOfSession）
+  @override
+  Future<List<ReferencedItem>> listReferences(String sessionId) =>
+      listReferencesOfSession(sessionId);
 
   /// 列出会话的所有引用（UNION ALL manuscripts/chapters/attached_files）
   /// 复刻 reference-dao.ts listReferencesOfSession
@@ -288,6 +278,7 @@ class ReferenceRepository {
   /// refType 支持 'manuscript' | 'chapter' | 'file'（批次7 D2：v21 CHECK 已扩；
   /// file 仅作次引用，不可设主，setPrimaryReference 有 ArgumentError 防御）
   /// isPrimary=true 时切换主引用（清掉其它 primary + 同步 sessions 缓存）
+  @override
   Future<String> addReference(
     String sessionId,
     String refType,
@@ -331,6 +322,7 @@ class ReferenceRepository {
   /// 不静默）。语义上仅对主引用 chapter 有消费方
   /// （chat_context_builder 主引用锚点窗口），但存储层不做类型限制，
   /// 与 addReference 的 excerptRange 参数口径一致。
+  @override
   Future<bool> updateExcerptRange(
     String sessionId,
     String refType,
@@ -358,6 +350,7 @@ class ReferenceRepository {
   ///
   /// 若删掉的是主引用，自动另选最早的一条作为新主引用；
   /// 若没有其它引用，清空 sessions.manuscript_id/chapter_id 缓存
+  @override
   Future<void> removeReference(
     String sessionId,
     String refType,
@@ -419,6 +412,7 @@ class ReferenceRepository {
   /// 事务内：清掉同 session 所有 is_primary → 设目标为 1 →
   /// 同步 sessions.manuscript_id/chapter_id 冗余缓存
   /// chapter 主引用时自动回填其所属 manuscript_id
+  @override
   Future<void> setPrimaryReference(
     String sessionId,
     String refType,

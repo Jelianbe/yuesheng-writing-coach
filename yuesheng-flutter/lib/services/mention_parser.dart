@@ -8,39 +8,15 @@
 //     （降级为普通文本，不崩溃）
 // ─────────────────────────────────────────────────────────────
 
+import '../contracts/mention_capability.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/reference_repository.dart';
 
-/// 解析出的单条引用
-class ParsedMention {
-  final String raw;
-  final String refType; // 'manuscript' | 'chapter' | 'file'
-  final String refId;
-  final String title;
-
-  /// 所属作品 ID（manuscript/chapter/file 均填；批次71 @ 引用可视化跳转用）
-  final String? manuscriptId;
-
-  const ParsedMention({
-    required this.raw,
-    required this.refType,
-    required this.refId,
-    required this.title,
-    this.manuscriptId,
-  });
-}
-
-/// 解析结果
-class ParseResult {
-  final List<ParsedMention> mentions;
-
-  /// 清理后的文本（移除已解析成功的 @ 引用）
-  final String cleanedText;
-
-  const ParseResult({required this.mentions, required this.cleanedText});
-}
+// ParseResult / ParsedMention 已上移至契约层（依赖倒置），此处 re-export
+// 维持旧有「从本文件导入」的调用方（editor/reviewer/teacher_parser 等）不变。
+export '../contracts/mention_capability.dart' show ParsedMention, ParseResult;
 
 /// 判断标题后是否为边界（空白、标点、行尾）
 /// 非边界时不应匹配（如 "@书一开始" 不应匹配到 "书一"）
@@ -54,7 +30,7 @@ bool _isTitleBoundary(String after) {
 final RegExp _kMarkerRegExp = RegExp(r'^\[([a-z]+):([^\]]+)\]');
 
 /// @ 引用解析服务
-class MentionParser {
+class MentionParser implements MentionCapability {
   final ManuscriptRepository _msRepo;
   final ChapterRepository _chRepo;
   final ReferenceRepository _refRepo;
@@ -65,6 +41,7 @@ class MentionParser {
   ///
   /// 格式：@作品标题 或 @作品标题/章节标题
   /// 用标题库做前缀匹配（长度降序），标题后必须是边界或 /
+  @override
   Future<ParseResult> parseMentions(String text) async {
     final mentions = <ParsedMention>[];
     final manuscripts = await _msRepo.listManuscripts();
