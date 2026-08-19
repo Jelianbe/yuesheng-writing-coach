@@ -9,17 +9,17 @@ import 'dart:convert';
 import '../types/teaching_types.dart';
 import 'fact_parser.dart';
 import 'outline_parser.dart';
+import 'package:writingcoach/contracts/diagnosis_capability.dart';
+import 'diagnosis_validator.dart';
+import 'chat_training_parser.dart';
+
+export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
 /// 诊断块分隔符
 const String kDiagnosisStart = '[YS_DIAGNOSIS]';
 const String kDiagnosisEnd = '[/YS_DIAGNOSIS]';
 
-/// 解析结果
-class ParseResult {
-  final String displayContent;
-  final ParsedDiagnosis? diagnosis;
-  const ParseResult({required this.displayContent, this.diagnosis});
-}
+/// 解析结果（DTO 已上移至 contracts/diagnosis_capability.dart）
 
 const List<String> _kValidSeverities = ['L1', 'L2', 'L3'];
 const List<String> _kValidPhases = [
@@ -265,4 +265,46 @@ int getPendingMarkerPrefix(String fullContent) {
     }
   }
   return 0;
+}
+
+// ─── 诊断能力实现（选项 B 依赖倒置）────────────────────────────
+//
+// 委托到既有纯函数 parseDiagnosis / validateDiagnosisOutput /
+// parseTrainingResult，自身无状态；UI 经 DiagnosisCapability 消费，
+// 不直接依赖具体解析器。
+//
+// 三个方法名与顶层纯函数同名——方法体内同名标识符优先解析为实例成员，
+// 故必须用私有别名委托到顶层函数，否则会无限自递归（Stack Overflow）。
+// 见 2026-08-19 修复（GenUi 同款坑）。
+
+/// 顶层实现别名：parseDiagnosis 委托
+ParseResult _parseDiagnosisImpl(String rawText) => parseDiagnosis(rawText);
+
+/// 顶层实现别名：validateDiagnosisOutput 委托
+FullValidationResult _validateDiagnosisOutputImpl(
+  String displayContent,
+  Map<String, dynamic> rawJson,
+) =>
+    validateDiagnosisOutput(displayContent, rawJson);
+
+/// 顶层实现别名：parseTrainingResult 委托
+TrainingResult? _parseTrainingResultImpl(String content) =>
+    parseTrainingResult(content);
+
+class DiagnosisCapabilityImpl implements DiagnosisCapability {
+  const DiagnosisCapabilityImpl();
+
+  @override
+  ParseResult parseDiagnosis(String rawText) => _parseDiagnosisImpl(rawText);
+
+  @override
+  FullValidationResult validateDiagnosisOutput(
+    String displayContent,
+    Map<String, dynamic> rawJson,
+  ) =>
+      _validateDiagnosisOutputImpl(displayContent, rawJson);
+
+  @override
+  TrainingResult? parseTrainingResult(String content) =>
+      _parseTrainingResultImpl(content);
 }

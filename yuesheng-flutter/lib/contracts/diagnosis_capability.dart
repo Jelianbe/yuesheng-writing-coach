@@ -2,20 +2,86 @@
 // 能力契约层 — 诊断能力接口
 //
 // 架构评审（2026-08-18）选项 A：能力契约层骨架。
-// 纯接口定义，不改任何现有实现。UI/编排层只依赖契约，实现可替换。
+// 选项 B（依赖倒置）：DiagnosisCapability 自持诊断 DTO（ParseResult /
+// FullValidationResult / DiagnosisValidationResult / NlValidationResult /
+// ValidationError / NlFix），不 import 任何实现文件，避免契约↔实现的
+// 循环依赖（门禁 3）。
 //
-// 当前实现映射：
-//   parseDiagnosis      → lib/services/diagnosis_parser.dart
-//   validateDiagnosis   → lib/services/diagnosis_validator.dart
-//   commitDiagnosis     → lib/services/diagnosis_service.dart
-//   parseTrainingResult → lib/services/chat_training_parser.dart
+// 实现映射（Dependency Inversion）：
+//   class DiagnosisCapabilityImpl (lib/services/diagnosis_parser.dart)
+//   implements DiagnosisCapability，委托到既有纯函数
+//   parseDiagnosis / validateDiagnosisOutput / parseTrainingResult。
 //
 // ADR: docs/ADR-capability-contracts.md
 // ─────────────────────────────────────────────────────────────
 
-import '../services/diagnosis_parser.dart';
-import '../services/diagnosis_validator.dart';
 import '../types/teaching_types.dart';
+
+/// 校验错误
+class ValidationError {
+  final String field;
+  final String message;
+  const ValidationError({required this.field, required this.message});
+}
+
+/// JSON schema 校验结果
+class DiagnosisValidationResult {
+  final bool valid;
+  final List<ValidationError> errors;
+
+  /// warning 级提示（互斥症候同命中，不阻断，先观察误伤率）
+  final List<String> warnings;
+  final Map<String, dynamic>? data;
+  const DiagnosisValidationResult({
+    required this.valid,
+    required this.errors,
+    this.warnings = const [],
+    this.data,
+  });
+}
+
+/// 自然语言校验修复项
+class NlFix {
+  final String type; // V-01 | V-02 | V-03 | V-04
+  final String original;
+  final String replacement;
+  const NlFix({required this.type, required this.original, required this.replacement});
+}
+
+/// 自然语言校验结果
+class NlValidationResult {
+  final bool valid;
+  final List<NlFix> fixes;
+  final String cleaned;
+  const NlValidationResult({
+    required this.valid,
+    required this.fixes,
+    required this.cleaned,
+  });
+}
+
+/// 完整校验结果
+class FullValidationResult {
+  final bool passed;
+  final String displayContent;
+  final ParsedDiagnosis? diagnosis;
+  final DiagnosisValidationResult jsonValidation;
+  final NlValidationResult nlValidation;
+  const FullValidationResult({
+    required this.passed,
+    required this.displayContent,
+    required this.diagnosis,
+    required this.jsonValidation,
+    required this.nlValidation,
+  });
+}
+
+/// 诊断解析结果（DTO 上移至契约层，原定义于 diagnosis_parser.dart）
+class ParseResult {
+  final String displayContent;
+  final ParsedDiagnosis? diagnosis;
+  const ParseResult({required this.displayContent, this.diagnosis});
+}
 
 /// 诊断能力契约
 ///

@@ -1,11 +1,11 @@
 // ─────────────────────────────────────────────────────────────
 // 契约测试 — 诊断能力
 //
-// 验证 DiagnosisCapability 接口可被现有实现满足，
-// 且方法签名（返回类型/参数类型）与实际调用一致。
+// 验证 DiagnosisCapability 接口可被现有实现 DiagnosisCapabilityImpl 满足
+//（编译期 implements 断言 + 实例方法行为校验，天然规避同名方法自递归）。
 //
 // 这不是行为测试——行为由 test/services/diagnosis_*_test.dart 覆盖。
-// 契约测试只验证「接口形状」稳定，为后续依赖倒置提供安全网。
+// 契约测试只验证「接口形状」稳定，为依赖倒置提供安全网。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -25,59 +25,37 @@ void main() {
       );
     });
 
-    test('parseDiagnosis 返回 ParseResult', () {
-      final result = parseDiagnosis('无诊断块的普通文本');
-      expect(result, isA<ParseResult>());
-      expect(result.displayContent, '无诊断块的普通文本');
-      expect(result.diagnosis, isNull);
-    });
-
-    test('validateDiagnosisOutput 返回 FullValidationResult', () {
-      final result = validateDiagnosisOutput('文本', {});
-      expect(result, isA<FullValidationResult>());
-    });
-
-    test('parseTrainingResult 返回 TrainingResult?', () {
-      final result = parseTrainingResult('你的练习已达标');
-      expect(result, isA<TrainingResult?>());
-      expect(result, TrainingResult.passed);
-    });
-
-    test('接口可被实现（implements 编译验证）', () {
-      final impl = _DiagnosisContractAdapter();
+    test('DiagnosisCapabilityImpl 满足契约（编译期 implements 断言 + 行为）', () {
+      final impl = DiagnosisCapabilityImpl();
       expect(impl, isA<DiagnosisCapability>());
+
+      // parseDiagnosis：经契约实例方法消费，委托到顶层函数，不自递归
+      final parsed = impl.parseDiagnosis('无诊断块的普通文本');
+      expect(parsed, isA<ParseResult>());
+      expect(parsed.displayContent, '无诊断块的普通文本');
+      expect(parsed.diagnosis, isNull);
+
+      // validateDiagnosisOutput：空 JSON → 不通过，但返回结构化结果
+      final validated = impl.validateDiagnosisOutput('文本', {});
+      expect(validated, isA<FullValidationResult>());
+      expect(validated.passed, isFalse);
+
+      // parseTrainingResult：委托到顶层函数，不自递归
+      final trained = impl.parseTrainingResult('你的练习已达标');
+      expect(trained, isA<TrainingResult?>());
+      expect(trained, TrainingResult.passed);
+    });
+
+    test('顶层纯函数行为（向后兼容）', () {
+      final parsed = parseDiagnosis('无诊断块的普通文本');
+      expect(parsed, isA<ParseResult>());
+      expect(parsed.diagnosis, isNull);
+
+      final validated = validateDiagnosisOutput('文本', {});
+      expect(validated, isA<FullValidationResult>());
+
+      final trained = parseTrainingResult('你的练习已达标');
+      expect(trained, TrainingResult.passed);
     });
   });
 }
-
-/// 最小适配器：将现有函数包装为 DiagnosisCapability 实现。
-///
-/// 此类的存在即证明接口可被满足——如果接口签名与现有实现冲突，
-/// 编译期就会报错，无需运行时发现。
-class _DiagnosisContractAdapter implements DiagnosisCapability {
-  @override
-  ParseResult parseDiagnosis(String rawText) => parseDiagnosisRaw(rawText);
-
-  @override
-  FullValidationResult validateDiagnosisOutput(
-    String displayContent,
-    Map<String, dynamic> rawJson,
-  ) =>
-      validateDiagnosisOutputRaw(displayContent, rawJson);
-
-  @override
-  TrainingResult? parseTrainingResult(String content) =>
-      parseTrainingResultRaw(content);
-}
-
-// 顶层函数别名，避免与接口方法名冲突
-ParseResult parseDiagnosisRaw(String rawText) => parseDiagnosis(rawText);
-
-FullValidationResult validateDiagnosisOutputRaw(
-  String displayContent,
-  Map<String, dynamic> rawJson,
-) =>
-    validateDiagnosisOutput(displayContent, rawJson);
-
-TrainingResult? parseTrainingResultRaw(String content) =>
-    parseTrainingResult(content);
