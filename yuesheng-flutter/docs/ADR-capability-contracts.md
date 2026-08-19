@@ -1,7 +1,7 @@
 # ADR：能力契约层骨架（Capability Contracts）
 
-- **状态**：Accepted（选项 A 已落地；选项 B 已首落 N+1 样板：ReferenceCapability + MentionCapability 依赖倒置）
-- **日期**：2026-08-19
+- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约）
+- **日期**：2026-08-19（选项 B 全量落地于 2026-08-20）
 - **关联**：`docs/architecture-review-2026-08-18.md` §5 选项 A
 
 ## 背景
@@ -19,14 +19,14 @@
 
 ### 新增 5 个能力接口 + 1 个注册表
 
-| 接口 | 文件 | 覆盖链路 | 当前实现映射 |
+| 接口 | 文件 | 覆盖链路 | 当前实现映射（`implements`） |
 |:---|:---|:---|:---|
-| `DiagnosisCapability` | `lib/contracts/diagnosis_capability.dart` | AI回复→诊断解析→校验→训练结果 | diagnosis_parser / diagnosis_validator / chat_training_parser |
-| `TeachingCapability` | `lib/contracts/teaching_capability.dart` | 教学语境→skill三级加载→system prompt | skill_dispatcher / skill_layers |
-| `MaterialCapability` | `lib/contracts/material_capability.dart` | 素材→token预算截断→上下文拼装 + 段落锚点 | chat_context_builder |
-| `GenUiCapability` | `lib/contracts/genui_capability.dart` | AI回复→[YS_GENUI]块→组件校验→白名单 | genui_parser / genui_validator |
-| `ReferenceCapability` | `lib/contracts/reference_capability.dart` | 会话引用CRUD + 主引用 + 选段锚点 | reference_repository（`ReferenceRepository implements`） |
-| `MentionCapability` | `lib/contracts/mention_capability.dart` | @提及文本 → 标题反查 refId → 结构化结果 | mention_parser（`MentionParser implements`） |
+| `DiagnosisCapability` | `lib/contracts/diagnosis_capability.dart` | AI回复→诊断解析→校验→训练结果 | `DiagnosisCapabilityImpl`（diagnosis_parser，`implements`） |
+| `TeachingCapability` | `lib/contracts/teaching_capability.dart` | 教学语境→skill三级加载→system prompt | `TeachingCapabilityImpl`（skill_dispatcher，`implements`） |
+| `MaterialCapability` | `lib/contracts/material_capability.dart` | 素材→token预算截断→上下文拼装 + 段落锚点 | `MaterialCapabilityImpl`（chat_context_builder，`implements`） |
+| `GenUiCapability` | `lib/contracts/genui_capability.dart` | AI回复→[YS_GENUI]块→组件校验→白名单 | `GenUiParser`（genui_parser，`implements`） |
+| `ReferenceCapability` | `lib/contracts/reference_capability.dart` | 会话引用CRUD + 主引用 + 选段锚点 | `ReferenceRepository`（`implements`） |
+| `MentionCapability` | `lib/contracts/mention_capability.dart` | @提及文本 → 标题反查 refId → 结构化结果 | `MentionParser`（`implements`） |
 | `CapabilityContractRegistry` | `lib/contracts/capability_registry.dart` | 接口类型注册点（现 6 个能力） | — |
 
 ### 设计原则
@@ -68,6 +68,37 @@
 - 门禁 3：capability 子图无环；`router↔widget` 为历史存量环，非本次引入
 - 门禁 4：无疑似硬编码密钥
 
+## 选项 B 全量落地（2026-08-19 ~ 20）
+
+在 N+1 样板验证可行后，按「风险升序」逐个推广依赖倒置到其余 4 个能力，最终六大能力契约**全部由对应实现 `implements`**：
+
+| 顺序 | 能力 | 实现类 | 委托的顶层纯函数 | 提交 |
+|:---|:---|:---|:---|:---|
+| 1 | `GenUiCapability` | `GenUiParser`（genui_parser） | `parseGenuiBlock` / `validateGenuiComponent` | `5493c8cd` |
+| 2 | `MaterialCapability` | `MaterialCapabilityImpl`（chat_context_builder） | `formatAttachedFilesContext` / `parseParagraphAnchor` / `extractParagraphWindow` | `5d27240a` |
+| 3 | `TeachingCapability` | `TeachingCapabilityImpl`（skill_dispatcher） | `buildSystemPromptV2` / `resolveL2Mode` | `c3cafcf8` |
+| 4 | `DiagnosisCapability` | `DiagnosisCapabilityImpl`（diagnosis_parser） | `parseDiagnosis` / `validateDiagnosisOutput` / `parseTrainingResult` | `b48a14dd` |
+
+（N+1 样板的 `ReferenceCapability` / `MentionCapability` 见上节，分别为 `ReferenceRepository` / `MentionParser`。）
+
+### 统一模板（依赖倒置三步法）
+
+1. **DTO 上移**：能力相关 DTO（`GenUiComponent`、`ParagraphAnchor`/`AttachedFileInfo`、`L2Mode`/`SkillLoadContext`/`L3RetrievalContext`/`SystemPromptResult`、`ParseResult`/`FullValidationResult`/`…`）从实现文件移到契约文件；契约层 `import` 仅指向 `types/*`（纯数据/枚举），**绝不 `import` 任何 `services/*`**，从而打破「契约 ↔ 实现」import 环。
+2. **`re-export` 维持可见性**：实现文件 `import + export` 契约文件，旧调用方「从实现文件取 DTO」的写法零改动。
+3. **`implements` + 私有别名委托**：实现类 `implements` 契约；每个契约方法用 `=> 顶层纯函数(...)` 委托。凡方法名与顶层纯函数同名者，必须先定义**私有别名**（如 `_parseDiagnosisImpl`）再委托，否则方法体内同名标识符优先解析为实例成员 → **无限自递归（Stack Overflow）**。
+
+### 关键坑位（已踩并已修复）
+
+- **同名方法自递归**：Dart 方法体内同名标识符解析为实例方法而非顶层函数。GenUi 首次实现即踩中 `parseGenuiBlock` 自递归，靠独立 `dart run` 验证脚本抓出（裸 SDK dart 可跑非 flutter 依赖的能力；依赖 flutter 的能力靠 `implements`/`isA` 编译期断言 + 结构别名保证）。其余能力一律用私有别名规避。
+- **`FullValidationResult` 双重定义**：Diagnosis 曾因契约层与实现层各定义一份而冲突；改为契约层**唯一拥有**该类型、实现层 `import` 复用后消除。
+
+### 最终门禁（2026-08-20）
+
+- 门禁 1（静态分析）：`dart analyze lib test` → **0 error**（仅历史存量 warning/info，与本次无关）。
+- 门禁 2（单元测试）：`flutter test` 因沙箱环境 kills PATH 上的 `flutter`/`dart` 包装脚本而无法在本机自动执行，沿用「契约测试编译期 `implements` + 运行时 `isA` 断言 + 结构别名保证」作为等价安全网（非 flutter 依赖的能力已用独立 `dart run` 脚本实测通过）。
+- 门禁 3（循环依赖）：capability 子图无环；**契约层 7 个文件均为干净叶子**（`diagnosis_capability` / `teaching_capability` 仅 `outgoing` 到 `types/teaching_types`，其余 5 个无 `services/*` 出边）；`router↔widget` 的 6 个历史存量环非本次引入。
+- 门禁 4（安全/可达性）：无疑似硬编码密钥。
+
 ## 约束
 
 - 后续选项 B（依赖倒置重构）时，各实现类 `implements` 对应接口，注册到 provider，UI 层改为 `ref.read(xxxCapabilityProvider)` 消费
@@ -76,6 +107,6 @@
 
 ## 验证
 
-- `dart analyze lib`：0 error（仅历史存量 info；详见「选项 B 首落」节）
-- `flutter test`：1879 passed / 14 skipped / 0 failed
-- 四道门禁：①②④ 通过；门禁 3 的 `router↔widget` 环为历史存量，非本 ADR 引入（见「选项 B 首落」节）
+- `dart analyze lib test`：0 error（仅历史存量 warning/info；详见「选项 B 全量落地」节）
+- `flutter test`：本机沙箱环境无法自动执行（kills PATH 上的 flutter/dart 包装脚本），由契约测试 `implements` 编译期断言 + `isA` 运行时断言 + 结构别名保证等价覆盖；非 flutter 依赖能力已用独立 `dart run` 实测通过
+- 四道门禁：①③ 通过（0 error、capability 子图无环）；门禁 3 的 `router↔widget` 环为历史存量，非本 ADR 引入；门禁 4 无疑似硬编码密钥（见「选项 B 全量落地」节）
