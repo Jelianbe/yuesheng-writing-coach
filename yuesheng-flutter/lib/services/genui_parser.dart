@@ -12,24 +12,43 @@
 
 import 'dart:convert';
 
+import '../contracts/genui_capability.dart';
 import 'genui_validator.dart';
+
+export '../contracts/genui_capability.dart';
 
 /// GenUI 协议块分隔符
 const String kGenuiStart = '[YS_GENUI]';
 const String kGenuiEnd = '[/YS_GENUI]';
 
-/// 一个 GenUI 组件（已通过白名单校验）
-class GenUiComponent {
-  final String type;
-  final Map<String, dynamic> data;
+/// 顶层实现别名：供 GenUiParser 的契约方法委托。
+///
+/// 必须改用独立名称，否则 Dart 方法体内同名标识符优先解析为实例成员，
+/// 导致 `parseGenuiBlock`/`validateGenuiComponent` 自递归（Stack Overflow）。
+/// 见 2026-08-19 修复。
+List<GenUiComponent>? _parseGenuiBlockImpl(String rawText) =>
+    parseGenuiBlock(rawText);
 
-  const GenUiComponent({required this.type, required this.data});
+GenUiComponent? _validateGenuiComponentImpl(Map<String, dynamic> raw) =>
+    validateGenuiComponent(raw);
 
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{'type': type};
-    map.addAll(data);
-    return map;
-  }
+/// GenUI 能力实现（选项 B 依赖倒置）
+///
+/// 委托到现有纯函数 parseGenuiBlock / validateGenuiComponent / kGenuiWhitelist，
+/// 自身无状态；UI 经 GenUiCapability 消费，不直接依赖 parser/validator 内部。
+class GenUiParser implements GenUiCapability {
+  const GenUiParser();
+
+  @override
+  Set<String> get componentWhitelist => kGenuiWhitelist;
+
+  @override
+  List<GenUiComponent>? parseGenuiBlock(String rawText) =>
+      _parseGenuiBlockImpl(rawText);
+
+  @override
+  GenUiComponent? validateGenuiComponent(Map<String, dynamic> raw) =>
+      _validateGenuiComponentImpl(raw);
 }
 
 /// 从完整回复文本中提取所有 GenUI 组件

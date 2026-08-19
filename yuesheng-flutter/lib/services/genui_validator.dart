@@ -6,6 +6,7 @@
 // 模型输出错格式不崩 UI，只降级。
 // ─────────────────────────────────────────────────────────────
 
+import '../contracts/genui_capability.dart';
 import 'genui_parser.dart';
 
 /// GenUI 组件白名单（首版 5 种教学刚需组件）

@@ -1,11 +1,10 @@
 // ─────────────────────────────────────────────────────────────
 // 契约测试 — GenUI 组件能力
 //
-// 验证 GenUiCapability 接口可被现有实现满足。
+// 验证 GenUiCapability 接口可被现有实现 GenUiParser 满足（编译期 implements 断言）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/contracts/genui_capability.dart';
 import 'package:writingcoach/contracts/capability_registry.dart';
 import 'package:writingcoach/services/genui_parser.dart';
 import 'package:writingcoach/services/genui_validator.dart';
@@ -21,7 +20,10 @@ void main() {
 
     test('componentWhitelist 包含 5 种类型', () {
       expect(kGenuiWhitelist.length, 5);
-      expect(kGenuiWhitelist, containsAll(['diff', 'quiz', 'stat', 'progress', 'timeline']));
+      expect(
+        kGenuiWhitelist,
+        containsAll(['diff', 'quiz', 'stat', 'progress', 'timeline']),
+      );
     });
 
     test('parseGenuiBlock 无块时返回 null', () {
@@ -30,7 +32,8 @@ void main() {
     });
 
     test('parseGenuiBlock 有合法块返回组件列表', () {
-      const text = '[YS_GENUI]{"type":"diff","title":"对比","before":"旧","after":"新"}[/YS_GENUI]';
+      const text =
+          '[YS_GENUI]{"type":"diff","title":"对比","before":"旧","after":"新"}[/YS_GENUI]';
       final result = parseGenuiBlock(text);
       expect(result, isNotNull);
       expect(result!.length, 1);
@@ -50,28 +53,16 @@ void main() {
       expect(invalid, isNull);
     });
 
-    test('接口可被实现（implements 编译验证）', () {
-      final impl = _GenUiContractAdapter();
+    test('GenUiParser 满足 GenUiCapability（编译期 implements 断言）', () {
+      final impl = GenUiParser();
       expect(impl, isA<GenUiCapability>());
+      // 经契约消费，行为等价既有纯函数
+      expect(impl.componentWhitelist, kGenuiWhitelist);
+      expect(impl.parseGenuiBlock('无块文本'), isNull);
+      expect(
+        impl.validateGenuiComponent({'type': 'unknown_type'}),
+        isNull,
+      );
     });
   });
 }
-
-class _GenUiContractAdapter implements GenUiCapability {
-  @override
-  Set<String> get componentWhitelist => kGenuiWhitelist;
-
-  @override
-  List<GenUiComponent>? parseGenuiBlock(String rawText) =>
-      parseGenuiBlockRaw(rawText);
-
-  @override
-  GenUiComponent? validateGenuiComponent(Map<String, dynamic> raw) =>
-      validateGenuiComponentRaw(raw);
-}
-
-List<GenUiComponent>? parseGenuiBlockRaw(String rawText) =>
-    parseGenuiBlock(rawText);
-
-GenUiComponent? validateGenuiComponentRaw(Map<String, dynamic> raw) =>
-    validateGenuiComponent(raw);
