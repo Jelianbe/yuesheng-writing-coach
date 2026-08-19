@@ -94,22 +94,122 @@ void main() {
     });
   });
 
-  group('占位组件', () {
-    testWidgets('stat 类型诚实渲染暂未支持', (tester) async {
-      final id = await insertGenuiMsg({
-        'components': [
-          {'type': 'stat', 'title': '能力维度'}
-        ]
-      });
+  group('stat 组件', () {
+    testWidgets('渲染维度标签和进度条', (tester) async {
       final content = jsonEncode({
         'components': [
-          {'type': 'stat', 'title': '能力维度'}
+          {
+            'type': 'stat',
+            'title': '文笔画像',
+            'items': [
+              {'label': '画面感', 'value': 75, 'max': 100},
+              {'label': '节奏感', 'value': 60, 'max': 100},
+            ]
+          }
         ]
       });
-      await tester.pumpWidget(buildHost(content, id));
+      await tester.pumpWidget(buildHost(content, 'msg-stat-1'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('将在后续版本支持'), findsOneWidget);
+      expect(find.text('文笔画像'), findsOneWidget);
+      expect(find.text('画面感'), findsOneWidget);
+      expect(find.text('节奏感'), findsOneWidget);
+      expect(find.text('75'), findsOneWidget);
+      expect(find.text('60'), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNWidgets(2));
+    });
+
+    testWidgets('空 items → 占位提示', (tester) async {
+      final content = jsonEncode({
+        'components': [
+          {'type': 'stat', 'title': '空画像'}
+        ]
+      });
+      await tester.pumpWidget(buildHost(content, 'msg-stat-2'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('空画像'), findsOneWidget);
+      expect(find.text('（无维度数据）'), findsOneWidget);
+    });
+  });
+
+  group('progress 组件', () {
+    testWidgets('渲染步骤标签和节点状态', (tester) async {
+      final content = jsonEncode({
+        'components': [
+          {
+            'type': 'progress',
+            'title': '训练进度',
+            'steps': [
+              {'label': '诊断', 'status': 'done'},
+              {'label': '教学', 'status': 'current'},
+              {'label': '练习', 'status': 'pending'},
+            ]
+          }
+        ]
+      });
+      await tester.pumpWidget(buildHost(content, 'msg-prog-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('训练进度'), findsOneWidget);
+      expect(find.text('诊断'), findsOneWidget);
+      expect(find.text('教学'), findsOneWidget);
+      expect(find.text('练习'), findsOneWidget);
+      // done 节点显示 check 图标
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
+
+    testWidgets('空 steps → 占位提示', (tester) async {
+      final content = jsonEncode({
+        'components': [
+          {'type': 'progress', 'title': '空进度'}
+        ]
+      });
+      await tester.pumpWidget(buildHost(content, 'msg-prog-2'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('空进度'), findsOneWidget);
+      expect(find.text('（无步骤数据）'), findsOneWidget);
+    });
+  });
+
+  group('timeline 组件', () {
+    testWidgets('渲染日期标题和描述', (tester) async {
+      final content = jsonEncode({
+        'components': [
+          {
+            'type': 'timeline',
+            'title': '成长记录',
+            'events': [
+              {'date': '2026-08-01', 'title': '首次诊断', 'desc': '识别出3个症候'},
+              {'date': '2026-08-10', 'title': '画面感突破', 'desc': '从L1提升到L2'},
+            ]
+          }
+        ]
+      });
+      await tester.pumpWidget(buildHost(content, 'msg-tl-1'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('成长记录'), findsOneWidget);
+      expect(find.text('2026-08-01'), findsOneWidget);
+      expect(find.text('首次诊断'), findsOneWidget);
+      expect(find.text('识别出3个症候'), findsOneWidget);
+      expect(find.text('2026-08-10'), findsOneWidget);
+      expect(find.text('画面感突破'), findsOneWidget);
+      expect(find.text('从L1提升到L2'), findsOneWidget);
+    });
+
+    testWidgets('空 events → 占位提示', (tester) async {
+      final content = jsonEncode({
+        'components': [
+          {'type': 'timeline', 'title': '空时间线'}
+        ]
+      });
+      await tester.pumpWidget(buildHost(content, 'msg-tl-2'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('空时间线'), findsOneWidget);
+      expect(find.text('（无成长记录）'), findsOneWidget);
     });
   });
 

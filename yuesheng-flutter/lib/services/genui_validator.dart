@@ -23,7 +23,9 @@ const Set<String> kGenuiWhitelist = {
 /// - type 必须为字符串且在白名单内
 /// - diff：必须含 before / after（字符串）
 /// - quiz：必须含 items 数组，每项含 q + options(≥2) + answer(int)
-/// - stat/progress/timeline：宽松接受（占位卡片处理缺失字段）
+/// - stat：必须含 items 数组，每项含 label（字符串）+ value（num）+ max（num）
+/// - progress：必须含 steps 数组，每项含 label（字符串）+ status（字符串）
+/// - timeline：必须含 events 数组，每项含 date（字符串）+ title（字符串）
 GenUiComponent? validateGenuiComponent(Map<String, dynamic> raw) {
   final type = raw['type'];
   if (type is! String) return null;
@@ -45,10 +47,33 @@ GenUiComponent? validateGenuiComponent(Map<String, dynamic> raw) {
         if (m['answer'] is! int) return null;
       }
     case 'stat':
+      final items = raw['items'];
+      if (items is! List || items.isEmpty) return null;
+      for (final it in items) {
+        if (it is! Map) return null;
+        final m = Map<String, dynamic>.from(it);
+        if (m['label'] is! String) return null;
+        if (m['value'] is! num) return null;
+        if (m['max'] is! num) return null;
+      }
     case 'progress':
+      final steps = raw['steps'];
+      if (steps is! List || steps.isEmpty) return null;
+      for (final it in steps) {
+        if (it is! Map) return null;
+        final m = Map<String, dynamic>.from(it);
+        if (m['label'] is! String) return null;
+        if (m['status'] is! String) return null;
+      }
     case 'timeline':
-      // 占位卡片处理，宽松接受（title/items 缺失时占位渲染）
-      break;
+      final events = raw['events'];
+      if (events is! List || events.isEmpty) return null;
+      for (final it in events) {
+        if (it is! Map) return null;
+        final m = Map<String, dynamic>.from(it);
+        if (m['date'] is! String) return null;
+        if (m['title'] is! String) return null;
+      }
   }
   return GenUiComponent(type: type, data: Map<String, dynamic>.from(raw));
 }
