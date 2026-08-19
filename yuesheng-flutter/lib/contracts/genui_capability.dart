@@ -2,17 +2,32 @@
 // 能力契约层 — GenUI 组件能力接口
 //
 // 架构评审（2026-08-18）选项 A：能力契约层骨架。
-// 纯接口定义，不改任何现有实现。
+// 选项 B（依赖倒置）：GenUiCapability 自持 DTO（GenUiComponent），
+// 不 import 任何实现文件，避免契约↔实现的循环依赖（门禁 3）。
 //
-// 当前实现映射：
-//   parseBlock      → lib/services/genui_parser.dart parseGenuiBlock
-//   validateComponent → lib/services/genui_validator.dart validateGenuiComponent
-//   whitelist       → lib/services/genui_validator.dart kGenuiWhitelist
+// 实现映射（Dependency Inversion）：
+//   class GenUiParser (lib/services/genui_parser.dart) implements GenUiCapability
+//   委托到现有纯函数 parseGenuiBlock / validateGenuiComponent / kGenuiWhitelist。
 //
 // ADR: docs/ADR-capability-contracts.md
 // ─────────────────────────────────────────────────────────────
 
-import '../services/genui_parser.dart';
+/// 一个 GenUI 组件（已通过白名单校验）
+///
+/// DTO 上移至契约层（选项 B）：原定义于 lib/services/genui_parser.dart，
+/// 由 genui_parser.dart re-export 以维持既有调用方可见性。
+class GenUiComponent {
+  final String type;
+  final Map<String, dynamic> data;
+
+  const GenUiComponent({required this.type, required this.data});
+
+  Map<String, dynamic> toJson() {
+    final map = <String, dynamic>{'type': type};
+    map.addAll(data);
+    return map;
+  }
+}
 
 /// GenUI 组件能力契约
 ///

@@ -7,6 +7,7 @@
 // 选项 B（依赖倒置重构）已首落：N+1 样板以 ReferenceCapability 打头，
 // 其实现 ReferenceRepository 直接 `implements`，契约层自持 DTO（无 import 环）；
 // 因 parseMentions 实现反向依赖仓库，独立拆出 MentionCapability（MentionParser 实现）。
+// 已落地：ReferenceCapability / MentionCapability(MentionParser) / GenUiCapability(GenUiParser)。
 // 后续逐能力推广：各实现类 `implements` 对应接口并登记于此。
 //
 // 纪律（R-010 最小范围）：暂不抽 provider、不改 widget 调用链，
