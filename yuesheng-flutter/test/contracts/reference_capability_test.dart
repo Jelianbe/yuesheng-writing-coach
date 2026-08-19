@@ -1,17 +1,19 @@
 // ─────────────────────────────────────────────────────────────
 // 契约测试 — 引用能力
 //
-// 验证 ReferenceCapability 接口可被现有实现满足。
-// 注意：ReferenceRepository 的方法需要 Database 实例，
-// 此测试只验证接口签名兼容性（implements 编译验证），
-// 行为由 test/reference_repository_test.dart 覆盖。
+// 验证 ReferenceCapability 接口与实现（ReferenceRepository）的满足关系。
+// 依赖倒置：ReferenceRepository 直接 implements ReferenceCapability，
+// 方法签名一致性由 dart analyze（门禁 1）保证；本测试做编译期子类型断言 + 注册表断言。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/contracts/capability_registry.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
-import 'package:writingcoach/services/mention_parser.dart';
+
+// 编译期子类型断言：若 ReferenceRepository 未正确 implements ReferenceCapability，
+// 本文件无法通过 dart analyze（门禁 1）。运行期无需实例化（避免依赖 DB）。
+ReferenceCapability _referenceImplIsCapability(ReferenceRepository repo) => repo;
 
 void main() {
   group('ReferenceCapability 契约', () {
@@ -39,64 +41,9 @@ void main() {
       expect(item.excerptRange, isNotNull);
     });
 
-    test('ParseResult (MentionParser) 类型存在且字段正确', () {
-      // 验证 MentionParser.ParseResult 类型可被引用（编译期检查）
-      const result = ParseResult(mentions: [], cleanedText: '文本');
-      expect(result.mentions, isEmpty);
-      expect(result.cleanedText, '文本');
-    });
-
-    test('接口可被实现（implements 编译验证）', () {
-      // 编译期验证：接口方法签名与 ReferenceRepository/MentionParser 兼容
-      // _ReferenceContractAdapterShim 的定义即证明签名匹配
-      expect(ReferenceCapability, isA<Type>());
+    test('ReferenceRepository 编译期满足 ReferenceCapability', () {
+      // 经 _referenceImplIsCapability 的类型签名保证 implements 成立。
+      expect(_referenceImplIsCapability, isA<Function>());
     });
   });
-}
-
-/// 适配器类型定义（不实例化，仅编译期验证签名兼容）
-///
-/// 如果 ReferenceCapability 接口方法签名与 ReferenceRepository/MentionParser
-/// 不兼容，此类的定义将导致编译失败。
-// ignore: unused_element
-class _ReferenceContractAdapterShim implements ReferenceCapability {
-  @override
-  Future<List<ReferencedItem>> listReferences(String sessionId) async => [];
-
-  @override
-  Future<String> addReference(
-    String sessionId,
-    String refType,
-    String refId, {
-    bool isPrimary = false,
-    ({String chapterId, int startPara, int endPara})? excerptRange,
-  }) async =>
-      '';
-
-  @override
-  Future<void> removeReference(
-    String sessionId,
-    String refType,
-    String refId,
-  ) async {}
-
-  @override
-  Future<void> setPrimaryReference(
-    String sessionId,
-    String refType,
-    String refId,
-  ) async {}
-
-  @override
-  Future<bool> updateExcerptRange(
-    String sessionId,
-    String refType,
-    String refId,
-    ({String chapterId, int startPara, int endPara})? anchor,
-  ) async =>
-      false;
-
-  @override
-  Future<ParseResult> parseMentions(String text) async =>
-      ParseResult(mentions: [], cleanedText: text);
 }
