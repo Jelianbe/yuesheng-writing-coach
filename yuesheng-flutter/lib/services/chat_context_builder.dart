@@ -21,6 +21,9 @@ import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+import 'package:writingcoach/contracts/material_capability.dart';
+
+export 'package:writingcoach/contracts/material_capability.dart';
 
 // ─── 智能截断 ─────────────────────────────────────────────────
 
@@ -50,19 +53,6 @@ String smartTruncate(String text, int maxChars) {
 }
 
 // ─── 附属文件上下文 ───────────────────────────────────────────
-
-/// 附属文件信息
-class AttachedFileInfo {
-  final String fileName;
-  final String fileRole; // outline | material | normal
-  final String content;
-
-  const AttachedFileInfo({
-    required this.fileName,
-    required this.fileRole,
-    required this.content,
-  });
-}
 
 /// 附属文件上下文格式化（V3.1 — A-1 token 止血）。
 ///
@@ -483,15 +473,6 @@ class ReferenceItem {
   });
 }
 
-/// A-3：段落锚点（chapterId + startPara/endPara，0-based 闭区间）
-/// 段落以换行 `\n` 分段为基线，编辑漂移从字符级降到段落级。
-class ParagraphAnchor {
-  final String chapterId;
-  final int startPara;
-  final int endPara;
-  const ParagraphAnchor(this.chapterId, this.startPara, this.endPara);
-}
-
 /// A-3：解析段落锚点 JSON（{"chapterId":..,"startPara":..,"endPara":..}），非法返回 null。
 /// 旧版 {"start","end"} 字符偏移格式已废弃，返回 null（安全降级）。
 ParagraphAnchor? parseParagraphAnchor(String? json) {
@@ -520,6 +501,35 @@ String extractParagraphWindow(String content, int startPara, int endPara) {
   final s = startPara.clamp(0, paras.length - 1);
   final e = endPara.clamp(s, paras.length - 1);
   return paras.sublist(s, e + 1).join('\n');
+}
+
+/// 素材能力实现（选项 B 依赖倒置）
+///
+/// 委托到既有纯函数 formatAttachedFilesContext / parseParagraphAnchor /
+/// extractParagraphWindow，自身无状态；UI 经 MaterialCapability 消费。
+
+/// 顶层实现别名：供 MaterialCapabilityImpl 委托，避免同名实例方法自递归
+///（Dart 方法体内同名标识符优先解析为实例成员）。见 2026-08-19 修复。
+ParagraphAnchor? _parseParagraphAnchorImpl(String? json) =>
+    parseParagraphAnchor(json);
+
+String _extractParagraphWindowImpl(String content, int startPara, int endPara) =>
+    extractParagraphWindow(content, startPara, endPara);
+
+class MaterialCapabilityImpl implements MaterialCapability {
+  const MaterialCapabilityImpl();
+
+  @override
+  String? formatAttachedFiles(List<AttachedFileInfo> files) =>
+      formatAttachedFilesContext(files);
+
+  @override
+  ParagraphAnchor? parseParagraphAnchor(String? excerptRangeJson) =>
+      _parseParagraphAnchorImpl(excerptRangeJson);
+
+  @override
+  String extractParagraphWindow(String content, int startPara, int endPara) =>
+      _extractParagraphWindowImpl(content, startPara, endPara);
 }
 
 /// 引用内容解析后的详情（manuscript 类型需要聚合章节信息）

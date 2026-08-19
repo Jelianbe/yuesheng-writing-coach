@@ -2,18 +2,39 @@
 // 能力契约层 — 素材能力接口
 //
 // 架构评审（2026-08-18）选项 A：能力契约层骨架。
-// 纯接口定义，不改任何现有实现。
+// 选项 B（依赖倒置）：MaterialCapability 自持 DTO（AttachedFileInfo /
+// ParagraphAnchor），不 import 任何实现文件，避免契约↔实现的循环依赖（门禁 3）。
 //
-// 当前实现映射：
-//   formatAttachedFiles → lib/services/chat_context_builder.dart formatAttachedFilesContext
-//   formatReferenceCtx  → lib/services/chat_context_builder.dart buildReferenceContext
-//   extractWindow       → lib/services/chat_context_builder.dart extractParagraphWindow
-//   parseAnchor         → lib/services/chat_context_builder.dart parseParagraphAnchor
+// 实现映射（Dependency Inversion）：
+//   class MaterialCapabilityImpl (lib/services/chat_context_builder.dart)
+//   implements MaterialCapability，委托到既有纯函数
+//   formatAttachedFilesContext / parseParagraphAnchor / extractParagraphWindow。
 //
 // ADR: docs/ADR-capability-contracts.md
 // ─────────────────────────────────────────────────────────────
 
-import '../services/chat_context_builder.dart';
+/// 附属文件信息（DTO 上移至契约层，原定义于 chat_context_builder.dart）
+class AttachedFileInfo {
+  final String fileName;
+  final String fileRole; // outline | material | normal
+  final String content;
+
+  const AttachedFileInfo({
+    required this.fileName,
+    required this.fileRole,
+    required this.content,
+  });
+}
+
+/// A-3：段落锚点（chapterId + startPara/endPara，0-based 闭区间）
+/// 段落以换行 `\n` 分段为基线，编辑漂移从字符级降到段落级。
+/// DTO 上移至契约层（选项 B），原定义于 chat_context_builder.dart。
+class ParagraphAnchor {
+  final String chapterId;
+  final int startPara;
+  final int endPara;
+  const ParagraphAnchor(this.chapterId, this.startPara, this.endPara);
+}
 
 /// 素材能力契约
 ///

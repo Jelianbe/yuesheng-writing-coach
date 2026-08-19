@@ -1,13 +1,14 @@
 // ─────────────────────────────────────────────────────────────
 // 契约测试 — 素材能力
 //
-// 验证 MaterialCapability 接口可被现有实现满足。
+// 验证 MaterialCapability 接口可被现有实现 MaterialCapabilityImpl 满足
+//（编译期 implements 断言 + 实例方法行为校验，天然规避同名方法自递归）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
 import 'package:writingcoach/contracts/capability_registry.dart';
-import 'package:writingcoach/services/chat_context_builder.dart' as ctx;
+import 'package:writingcoach/services/chat_context_builder.dart';
 
 void main() {
   group('MaterialCapability 契约', () {
@@ -18,55 +19,40 @@ void main() {
       );
     });
 
-    test('parseParagraphAnchor 返回 ParagraphAnchor?', () {
-      final anchor = ctx.parseParagraphAnchor(
+    test('MaterialCapabilityImpl 满足契约（编译期 implements 断言 + 行为）', () {
+      final impl = MaterialCapabilityImpl();
+      expect(impl, isA<MaterialCapability>());
+
+      // parseParagraphAnchor：经契约实例方法消费，不自递归
+      expect(impl.parseParagraphAnchor(null), isNull);
+      final anchor = impl.parseParagraphAnchor(
         '{"chapterId":"ch1","startPara":1,"endPara":2}',
       );
-      expect(anchor, isA<ctx.ParagraphAnchor?>());
+      expect(anchor, isNotNull);
       expect(anchor!.chapterId, 'ch1');
       expect(anchor.startPara, 1);
       expect(anchor.endPara, 2);
-    });
 
-    test('parseParagraphAnchor null 输入返回 null', () {
-      final anchor = ctx.parseParagraphAnchor(null);
-      expect(anchor, isNull);
-    });
-
-    test('extractParagraphWindow 返回 String', () {
-      final content = '第一段。\n第二段。\n第三段。';
-      // 0-based: startPara=0 → 第一段, endPara=1 → 第二段
-      final window = ctx.extractParagraphWindow(content, 0, 1);
-      expect(window, isA<String>());
+      // extractParagraphWindow：0-based 闭区间
+      final window = impl.extractParagraphWindow(
+        '第一段。\n第二段。\n第三段。',
+        0,
+        1,
+      );
       expect(window, contains('第一段'));
+      expect(window, contains('第二段'));
+
+      // formatAttachedFiles：空列表 → null
+      expect(impl.formatAttachedFiles([]), isNull);
     });
 
-    test('formatAttachedFilesContext 返回 nullable String', () {
-      final result = ctx.formatAttachedFilesContext([]);
-      expect(result, isA<String?>());
-    });
-
-    test('接口可被实现（implements 编译验证）', () {
-      final impl = _MaterialContractAdapter();
-      expect(impl, isA<MaterialCapability>());
+    test('顶层纯函数行为（向后兼容）', () {
+      final anchor = parseParagraphAnchor(
+        '{"chapterId":"ch1","startPara":1,"endPara":2}',
+      );
+      expect(anchor, isA<ParagraphAnchor?>());
+      expect(anchor!.chapterId, 'ch1');
+      expect(extractParagraphWindow('a\nb\nc', 0, 1), contains('a'));
     });
   });
-}
-
-class _MaterialContractAdapter implements MaterialCapability {
-  @override
-  String? formatAttachedFiles(List<ctx.AttachedFileInfo> files) =>
-      ctx.formatAttachedFilesContext(files);
-
-  @override
-  ctx.ParagraphAnchor? parseParagraphAnchor(String? excerptRangeJson) =>
-      ctx.parseParagraphAnchor(excerptRangeJson);
-
-  @override
-  String extractParagraphWindow(
-    String content,
-    int startPara,
-    int endPara,
-  ) =>
-      ctx.extractParagraphWindow(content, startPara, endPara);
 }
