@@ -10,7 +10,13 @@
 library;
 
 import 'package:writingcoach/types/teaching_types.dart';
+import 'package:writingcoach/contracts/teaching_capability.dart'; // 2026-08-19 选项B：L2Mode/SkillLoadContext/L3RetrievalContext 上移至契约层
 import 'syndrome_registry.dart'; // kSyndromeIds（b9 真源）
+
+/// 保持旧调用方经 skill_layers 取得教学 DTO（L2Mode / SkillLoadContext /
+/// L3RetrievalContext / SystemPromptResult / TeachingCapability）。
+/// 2026-08-19 选项B 依赖倒置：这些类型已上移至 contracts/teaching_capability.dart。
+export 'package:writingcoach/contracts/teaching_capability.dart';
 
 // ─── L1 常驻层 ───────────────────────────────────────────────
 
@@ -30,24 +36,7 @@ const List<String> l1SkillIds = [
 
 // ─── L2 按需层 ───────────────────────────────────────────────
 
-/// L2 加载模式：决定注入哪组 skill
-enum L2Mode {
-  beginner,
-  diagnosis,
-  training,
-  advanced,
-  outline,
-  none;
-
-  static L2Mode fromString(String? s) {
-    if (s == null) return L2Mode.none;
-    for (final v in L2Mode.values) {
-      if (v.name == s) return v;
-    }
-    return L2Mode.none;
-  }
-}
-
+/// L2 加载模式：决定注入哪组 skill（类型定义已上移至 contracts/teaching_capability.dart）
 /// L2 各组 skill ID 映射
 const Map<L2Mode, List<String>> l2SkillMap = {
   L2Mode.none: [],
@@ -141,22 +130,7 @@ List<String> getL2SkillIds(L2Mode mode) {
 
 // ─── L2 决议逻辑 ─────────────────────────────────────────────
 
-/// Skill 加载上下文
-class SkillLoadContext {
-  final TeachingPhase phase;
-  final AttitudeLevel attitude;
-  final TeachingSubphase? subphase;
-  final bool isBeginner;
-  final bool isOutlineContext;
-
-  const SkillLoadContext({
-    required this.phase,
-    required this.attitude,
-    this.subphase,
-    this.isBeginner = false,
-    this.isOutlineContext = false,
-  });
-}
+/// Skill 加载上下文（类型定义已上移至 contracts/teaching_capability.dart）
 
 /// 根据教学语境决议应加载的 L2 组。
 ///
@@ -215,16 +189,7 @@ L2Mode resolveL2Mode(SkillLoadContext ctx) {
 /// H001/H002 已合并至 P013；批次15 加 P023-P027，批次23-26 加 P028-P031）
 final List<String> syndromeIds = kSyndromeIds;
 
-/// L3 检索上下文：驱动按需检索特定症候/技法详细内容
-class L3RetrievalContext {
-  /// 当前活跃/锁定的症候 ID 列表（用于检索对应技法）
-  final List<String>? activeSyndromeIds;
-
-  /// 当前训练聚焦的技法 ID（用于检索完整技法内容）
-  final List<String>? focusedTechniqueIds;
-
-  const L3RetrievalContext({this.activeSyndromeIds, this.focusedTechniqueIds});
-}
+/// L3 检索上下文：驱动按需检索特定症候/技法详细内容（类型定义已上移至 contracts/teaching_capability.dart）
 
 /// L3 检索结果
 class L3RetrievalResult {

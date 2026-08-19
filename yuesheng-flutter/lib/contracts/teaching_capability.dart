@@ -2,17 +2,96 @@
 // 能力契约层 — 教学能力接口
 //
 // 架构评审（2026-08-18）选项 A：能力契约层骨架。
-// 纯接口定义，不改任何现有实现。
+// 选项 B（依赖倒置）：TeachingCapability 自持教学 DTO（L2Mode /
+// SkillLoadContext / L3RetrievalContext / SystemPromptResult），
+// 不 import 任何实现文件，避免契约↔实现的循环依赖（门禁 3）。
 //
-// 当前实现映射：
-//   buildSystemPrompt → lib/services/skill_dispatcher.dart buildSystemPromptV2
-//   resolveL2Mode     → lib/services/skill_layers.dart resolveL2Mode
+// 实现映射（Dependency Inversion）：
+//   class TeachingCapabilityImpl (lib/services/skill_dispatcher.dart)
+//   implements TeachingCapability，委托到既有纯函数
+//   buildSystemPromptV2 / resolveL2Mode。
 //
 // ADR: docs/ADR-capability-contracts.md
 // ─────────────────────────────────────────────────────────────
 
-import '../services/skill_dispatcher.dart';
-import '../services/skill_layers.dart';
+import '../types/teaching_types.dart';
+
+/// L2 加载模式：决定注入哪组 skill（DTO 上移至契约层，原定义于 skill_layers.dart）
+enum L2Mode {
+  beginner,
+  diagnosis,
+  training,
+  advanced,
+  outline,
+  none;
+
+  static L2Mode fromString(String? s) {
+    if (s == null) return L2Mode.none;
+    for (final v in L2Mode.values) {
+      if (v.name == s) return v;
+    }
+    return L2Mode.none;
+  }
+}
+
+/// Skill 加载上下文（DTO 上移至契约层，原定义于 skill_layers.dart）
+class SkillLoadContext {
+  final TeachingPhase phase;
+  final AttitudeLevel attitude;
+  final TeachingSubphase? subphase;
+  final bool isBeginner;
+  final bool isOutlineContext;
+
+  const SkillLoadContext({
+    required this.phase,
+    required this.attitude,
+    this.subphase,
+    this.isBeginner = false,
+    this.isOutlineContext = false,
+  });
+}
+
+/// L3 检索上下文：驱动按需检索特定症候/技法详细内容
+///（DTO 上移至契约层，原定义于 skill_layers.dart）
+class L3RetrievalContext {
+  final List<String>? activeSyndromeIds;
+  final List<String>? focusedTechniqueIds;
+
+  const L3RetrievalContext({
+    this.activeSyndromeIds,
+    this.focusedTechniqueIds,
+  });
+}
+
+/// buildSystemPromptV2 返回的结构化结果
+///（DTO 上移至契约层，原定义于 skill_dispatcher.dart）
+class SystemPromptResult {
+  /// L1 + L2 拼接后的完整 system prompt（可直接传给 LLM）
+  final String systemPrompt;
+
+  /// 当前生效的 L2 模式（供调用方了解加载了哪些技能组）
+  final L2Mode l2Mode;
+
+  /// 已加载的 skill ID 列表（含 L1 + L2，用于调试和 token 核算）
+  final List<String> loadedSkillIds;
+
+  /// 估算的 token 数（基于字符数 × 中文 token 比例）
+  final int estimatedTokens;
+
+  /// L3 检索注入函数。
+  ///
+  /// 调用方在确定了活跃症候/聚焦技法后调用此函数，
+  /// 返回应追加到 system prompt 末尾的详细内容。
+  final String Function(L3RetrievalContext ctx) injectL3;
+
+  const SystemPromptResult({
+    required this.systemPrompt,
+    required this.l2Mode,
+    required this.loadedSkillIds,
+    required this.estimatedTokens,
+    required this.injectL3,
+  });
+}
 
 /// 教学能力契约
 ///

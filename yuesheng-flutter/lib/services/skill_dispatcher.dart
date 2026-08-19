@@ -15,6 +15,29 @@ import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/config/shared_constants.dart';
+import 'package:writingcoach/contracts/teaching_capability.dart';
+
+export 'package:writingcoach/contracts/teaching_capability.dart';
+
+/// 教学能力实现（选项 B 依赖倒置）
+///
+/// 委托到既有纯函数 buildSystemPromptV2 / resolveL2Mode，自身无状态；
+/// UI 经 TeachingCapability 消费，不直接依赖 skill 注册表内部。
+
+/// 顶层实现别名：供 TeachingCapabilityImpl 委托，避免同名实例方法自递归
+///（Dart 方法体内同名标识符优先解析为实例成员）。见 2026-08-19 修复。
+L2Mode _resolveL2ModeImpl(SkillLoadContext ctx) => resolveL2Mode(ctx);
+
+class TeachingCapabilityImpl implements TeachingCapability {
+  const TeachingCapabilityImpl();
+
+  @override
+  SystemPromptResult buildSystemPrompt(SkillLoadContext ctx) =>
+      buildSystemPromptV2(ctx);
+
+  @override
+  L2Mode resolveL2Mode(SkillLoadContext ctx) => _resolveL2ModeImpl(ctx);
+}
 
 // ─── 常量 ─────────────────────────────────────────────────────
 
@@ -51,35 +74,6 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 4. 不要对不适用于当前位置的症候进行诊断（如不要在中段诊断"开篇钩子"）''';
 
 // ─── 接口 ─────────────────────────────────────────────────────
-
-/// buildSystemPromptV2 返回的结构化结果
-class SystemPromptResult {
-  /// L1 + L2 拼接后的完整 system prompt（可直接传给 LLM）
-  final String systemPrompt;
-
-  /// 当前生效的 L2 模式（供调用方了解加载了哪些技能组）
-  final L2Mode l2Mode;
-
-  /// 已加载的 skill ID 列表（含 L1 + L2，用于调试和 token 核算）
-  final List<String> loadedSkillIds;
-
-  /// 估算的 token 数（基于字符数 × 中文 token 比例）
-  final int estimatedTokens;
-
-  /// L3 检索注入函数。
-  ///
-  /// 调用方在确定了活跃症候/聚焦技法后调用此函数，
-  /// 返回应追加到 system prompt 末尾的详细内容。
-  final String Function(L3RetrievalContext ctx) injectL3;
-
-  const SystemPromptResult({
-    required this.systemPrompt,
-    required this.l2Mode,
-    required this.loadedSkillIds,
-    required this.estimatedTokens,
-    required this.injectL3,
-  });
-}
 
 // ─── V2 三级加载引擎（无状态）────────────────────────────────
 
