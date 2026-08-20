@@ -25,7 +25,6 @@ import '../data/repositories/subplot_fact_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/editor_observation_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
-import '../data/repositories/reference_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../data/repositories/teacher_suggestion_repository.dart';
@@ -108,7 +107,7 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     stateRepo: TeachingStateRepository(db),
     diagnosisRepo: DiagnosisRepository(db),
     studentModelRepo: StudentModelRepository(db),
-    referenceRepo: ReferenceRepository(db),
+    referenceRepo: ref.read(referenceRepositoryProvider),
     chapterRepo: ChapterRepository(db),
     manuscriptRepo: ManuscriptRepository(db),
     llmClient: ref.watch(llmClientProvider),

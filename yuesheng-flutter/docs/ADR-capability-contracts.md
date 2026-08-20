@@ -1,6 +1,6 @@
 # ADR：能力契约层骨架（Capability Contracts）
 
-- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成；Reference 契约扩张 + widget 类型收敛——阶段 2 完成）
+- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成；Reference 契约扩张 + widget 类型收敛——阶段 2 完成；Reference 实例化全收敛——阶段 3 完成）
 - **日期**：2026-08-19（选项 B 全量落地于 2026-08-20）
 - **关联**：`docs/architecture-review-2026-08-18.md` §5 选项 A
 
@@ -191,10 +191,25 @@
 - 门禁 3：capability 子图无新增环；契约层仍为干净叶子。
 - 门禁 4：无疑似硬编码密钥。
 
+### 阶段 3：Reference 实例化收敛（2026-08-20）
+
+收口 Reference 实例化：`ReferenceRepository` 的唯一实例化源收敛到 `referenceRepositoryProvider`（`capability_providers.dart`），消除 provider 层其余 3 处散落实例化。
+
+#### 做法
+
+1. `chatServiceProvider`（`session_providers.dart`）：`referenceRepo: ReferenceRepository(db)` → `ref.read(referenceRepositoryProvider)`。
+2. `workImportServiceProvider` / `mentionParserProvider`（`work_import_providers.dart`）：构造参数 `ReferenceRepository(db)` → `ref.read(referenceRepositoryProvider)`（`mentionParserProvider` 传实现到 `MentionParser(ReferenceCapability)` 参数，隐式向上转型）。
+3. 两文件 `reference_repository.dart` import 因 `ReferenceRepository` 符号零残留成孤儿，按最小必要范围移除。
+
+#### 验证
+
+- 门禁 1：改动文件 0 issue；全项目 `dart analyze` 0 error（剩余 warning 全在 test/tool 预存文件）。
+- 门禁 3：provider 层不再有任何 `ReferenceRepository(` 直构（`reference_repository.dart` 内为构造器定义本身），capability 子图无新增环。
+
 ### 遗留（后续阶段）
 
 - `chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用与 `excerpt_picker_sheet.dart:68` 的 Material 能力 widget 调用点，可纳入「Material 消费层收敛」独立批次统一处理。
-- 服务层（`chat_service` 系列）的 `_referenceRepo` 仍为 `ReferenceRepository` 具体类型，`chatServiceProvider` 内 `ReferenceRepository(db)` 直构未收敛——待后续批次统一走 provider（现行为等价，仅 DI 一致性待收口）。
+- 服务层（`chat_service` 系列）的 `_referenceRepo` 仍为 `ReferenceRepository` 具体类型——DI 类型收敛的最后一环，现行为等价，可待后续批次统一收口（届时 service 构造点需同步改类型）。
 
 ## 约束
 
