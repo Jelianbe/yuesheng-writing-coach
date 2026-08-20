@@ -1,6 +1,5 @@
 // 临时验证脚本：检查设备数据库中的演示数据（用完即删）
 // 用法：dart run tool/inspect_device_db.dart <db路径>
-import 'dart:io';
 import 'package:sqlite3/sqlite3.dart';
 
 void main(List<String> args) {
