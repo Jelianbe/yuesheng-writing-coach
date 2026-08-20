@@ -12,6 +12,12 @@ import 'technique_knowledge_base.dart'; // techniqueNameOf
 
 // ─── P3 数据分片（数据/逻辑分离；知识文本在 part 文件）───
 part 'syndrome_kb_content.dart';
+part 'syndrome_kb_content_manual_1.dart';
+part 'syndrome_kb_content_manual_2.dart';
+part 'syndrome_kb_content_manual_3.dart';
+part 'syndrome_kb_content_manual_4.dart';
+part 'syndrome_kb_content_manual_5.dart';
+part 'syndrome_kb_content_manual_6.dart';
 
 
 /// 从完整手册中按症候 ID 提取单个症候的完整定义（复刻 RN extractSyndromeSection）
