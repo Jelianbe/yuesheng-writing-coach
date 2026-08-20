@@ -37,7 +37,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/router/app_router.dart';
+import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/providers/chat_store.dart';
 import 'package:writingcoach/providers/practice_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';

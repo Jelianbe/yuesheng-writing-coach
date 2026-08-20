@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:writingcoach/router/app_router.dart';
+import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';

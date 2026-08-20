@@ -29,7 +29,7 @@ import '../providers/evaluation_providers.dart';
 import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
 import '../providers/writing_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../services/chat_service.dart';
 import '../services/progressive_diagnosis.dart';
 import '../services/phase_transition.dart';

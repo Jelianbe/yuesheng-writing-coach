@@ -19,7 +19,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/router/app_router.dart' show AppRoutes;
+import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/widgets/bookshelf_page.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 import 'package:writingcoach/widgets/growth_detail_page.dart';

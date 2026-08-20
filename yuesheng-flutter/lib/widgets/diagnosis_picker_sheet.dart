@@ -17,7 +17,7 @@ import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 
 /// 章节选择回调（manuscriptId + 章节）
 typedef DiagnosisChapterCallback =

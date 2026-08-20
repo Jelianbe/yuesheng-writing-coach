@@ -25,6 +25,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_router.dart';
+import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/widgets/settings_page.dart';

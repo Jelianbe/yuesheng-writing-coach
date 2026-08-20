@@ -9,6 +9,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_router.dart';
+import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/widgets/growth_page.dart';
 
 void main() {

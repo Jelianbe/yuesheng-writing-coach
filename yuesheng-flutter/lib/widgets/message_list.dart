@@ -20,7 +20,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/practice_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../types/display_types.dart';
 import '../types/teaching_types.dart';
 import 'message_bubble.dart';

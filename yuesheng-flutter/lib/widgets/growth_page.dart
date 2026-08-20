@@ -24,7 +24,7 @@ import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/growth_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
 import 'observation_audit_card.dart';
