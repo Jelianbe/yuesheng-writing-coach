@@ -9,10 +9,10 @@
 // ─────────────────────────────────────────────────────────────
 
 import '../contracts/mention_capability.dart';
+import '../contracts/reference_capability.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
-import '../data/repositories/reference_repository.dart';
 
 // ParseResult / ParsedMention 已上移至契约层（依赖倒置），此处 re-export
 // 维持旧有「从本文件导入」的调用方（editor/reviewer/teacher_parser 等）不变。
@@ -33,7 +33,10 @@ final RegExp _kMarkerRegExp = RegExp(r'^\[([a-z]+):([^\]]+)\]');
 class MentionParser implements MentionCapability {
   final ManuscriptRepository _msRepo;
   final ChapterRepository _chRepo;
-  final ReferenceRepository _refRepo;
+
+  /// 附属文件读取经契约注入（阶段 2 收敛：不再依赖具体 ReferenceRepository，
+  /// 解除「MentionCapability 实现反向依赖 Reference 具体实现」的耦合）。
+  final ReferenceCapability _refRepo;
 
   MentionParser(this._msRepo, this._chRepo, this._refRepo);
 

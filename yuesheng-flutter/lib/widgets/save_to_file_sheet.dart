@@ -92,7 +92,7 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
     }
     setState(() => _saving = true);
     try {
-      final refRepo = ref.read(referenceRepositoryProvider);
+      final refRepo = ref.read(referenceCapabilityProvider);
       final file = await refRepo.createAttachedFile(
         bookId: widget.bookId,
         fileName: _nameController.text.trim().isEmpty

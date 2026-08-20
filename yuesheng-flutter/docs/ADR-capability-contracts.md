@@ -1,6 +1,6 @@
 # ADR：能力契约层骨架（Capability Contracts）
 
-- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成）
+- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成；Reference 契约扩张 + widget 类型收敛——阶段 2 完成）
 - **日期**：2026-08-19（选项 B 全量落地于 2026-08-20）
 - **关联**：`docs/architecture-review-2026-08-18.md` §5 选项 A
 
@@ -167,10 +167,34 @@
 - 门禁 3：capability 子图无新增环；契约层仍为干净叶子。
 - 门禁 4：无疑似硬编码密钥。
 
+### 阶段 2：Reference 契约扩张 + widget 类型收敛（2026-08-20）
+
+延续阶段 1 的 DI 接缝，把 Reference 消费层从「具体仓库类型」收敛为「契约类型」：契约补齐附属文件 CRUD 面，`AttachedFileRow` DTO 上移，widget 全部经 `referenceCapabilityProvider` 消费。
+
+#### 做法
+
+1. **契约扩 6 方法**：`ReferenceCapability` 新增 `listAttachedFiles` / `getAttachedFile` / `getAttachedFilesByIds` / `createAttachedFile` / `updateAttachedFile` / `deleteAttachedFile`（`getAttachedFilesByIds` 为 `chat_service_observers` 引用预加载所用；`listAttachedFilesByRole` 零外部消费方，不入契约——YAGNI）。
+2. **`AttachedFileRow` DTO 上移契约层**：与 `ReferencedItem` 同一模式——契约层自持 DTO，`reference_repository.dart` re-export（`show ReferencedItem, AttachedFileRow`）维持旧调用方「从实现文件导入 DTO」的可见性，零调用方改动。
+3. **`listReferencesOfSession` 不入契约**：契约已有 `listReferences`（实现侧本就是它的别名）。若再塞入 `listReferencesOfSession` 会造成「同一行为两个方法」的重复 API，违反 R-010。改为把 3 处 widget 调用点（`chat_reference` / `chat_teaching` / `reference_bar`）改名 `listReferences`，行为零差异；service 层 4 处调用点保持具体类型不变（R-010 范围边界）。
+4. **MentionParser 依赖收敛**：`_refRepo` 字段类型从 `ReferenceRepository` 改为 `ReferenceCapability`，import 从 `data/repositories/reference_repository.dart` 改为 `contracts/reference_capability.dart`。解除「MentionCapability 实现反向依赖 Reference 具体实现」的耦合（契约层与实现层本无 import 环，此处收敛为类型层面的一致性）。
+5. **12 处 widget 调用点收敛**：8 个 widget（`chat_reference`×2 / `chat_teaching` / `file_section`×2 / `file_viewer_modal`×3 / `material_upload_sheet` / `reference_bar` / `reference_picker` / `save_to_file_sheet`）从 `ref.read(referenceRepositoryProvider)` 切到 `ref.read(referenceCapabilityProvider)`；`reference_bar` 的 `_repo` getter 显式类型收敛为 `ReferenceCapability`。widget 局部变量全部经 `final refRepo = ref.read(...)` 推断为契约类型，编译期即验证只调用契约方法。
+
+#### 范围边界（R-010）
+
+- **不做**：`chat_service` 系列 service 层 `_referenceRepo` 保持 `ReferenceRepository` 具体类型（其构造点 `chatServiceProvider` 的 `ReferenceRepository(db)` 直构亦不动）；`chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用与 `excerpt_picker_sheet.dart:68` 的 Material 能力调用（属 Material 消费层，非本阶段 Reference 收敛范畴）。
+- **附带清理**：`chat_page.dart` 的 `reference_repository` import（part 文件收敛后成孤儿）与 `file_section.dart` 的 `app_providers` import（028e44e0 收敛遗留，与 af00080f 同类的漏网项）按最小必要范围移除。
+
+#### 验证
+
+- 门禁 1：`dart analyze`（全项目）→ 0 error；lib 层零 warning；改动文件仅 1 条预存 info（`reference_bar:144` 的 unnecessary_this，非本次引入）。
+- 门禁 2：沙箱无法跑 `flutter test`；安全网 = 契约方法签名与实现逐一 `@override` 编译期验证 + widget 局部变量契约类型推断（越界方法调用直接编译失败）+ 既有 `test/contracts/reference_capability_test.dart` / `mention` 契约测试编译通过。
+- 门禁 3：capability 子图无新增环；契约层仍为干净叶子。
+- 门禁 4：无疑似硬编码密钥。
+
 ### 遗留（后续阶段）
 
-- 附属文件 CRUD 方法（`listAttachedFiles` / `getAttachedFile` / `createAttachedFile` / `updateAttachedFile` / `deleteAttachedFile`）及 `listReferencesOfSession` 纳入 `ReferenceCapability` 契约（并把 `AttachedFileRow` DTO 上移）后，widget 可进一步从 `referenceRepositoryProvider` 切换到 `referenceCapabilityProvider` 并改类型为契约。注意 `MentionParser`（MentionCapability impl）反向依赖 ReferenceRepository 契约外方法，是该阶段最棘手的依赖点。
-- `chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用与 `excerpt_picker_sheet.dart:68` widget 调用可纳入阶段 2 统一收敛。
+- `chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用与 `excerpt_picker_sheet.dart:68` 的 Material 能力 widget 调用点，可纳入「Material 消费层收敛」独立批次统一处理。
+- 服务层（`chat_service` 系列）的 `_referenceRepo` 仍为 `ReferenceRepository` 具体类型，`chatServiceProvider` 内 `ReferenceRepository(db)` 直构未收敛——待后续批次统一走 provider（现行为等价，仅 DI 一致性待收口）。
 
 ## 约束
 

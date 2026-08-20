@@ -26,7 +26,6 @@ import '../config/shared_constants.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
-import '../data/repositories/reference_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';

@@ -203,8 +203,8 @@ extension _ChatTeaching on _ChatPageState {
     var autoPrimaryAssigned = false;
     try {
       final result = await ref.read(mentionParserProvider).parseMentions(text);
-      final refRepo = ref.read(referenceRepositoryProvider);
-      final existing = await refRepo.listReferencesOfSession(
+      final refRepo = ref.read(referenceCapabilityProvider);
+      final existing = await refRepo.listReferences(
         bootstrap.sessionId,
       );
       final hasPrimary = existing.any((r) => r.isPrimary == 1);
