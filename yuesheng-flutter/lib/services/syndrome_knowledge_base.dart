@@ -61,6 +61,8 @@ String _typeLookupRow(SyndromeRecord s) =>
 
 /// 类型速查表：按类型分组（枚举声明序），组内按注册表 ID 升序，
 /// 与手写表逐字一致（motivation → expressive → structural → commercial）。
+/// 前置换行：前接 _syndromeManualBody6 的表头分隔行（无尾换行），
+/// 缺此行首行（P009）会与分隔行粘连，导致类型速查行数少 1（测试 #12 曾捕获）。
 String _typeLookupTable() {
   final buffer = StringBuffer();
   for (final t in SyndromeType.values) {
@@ -68,7 +70,7 @@ String _typeLookupTable() {
       if (s.type == t) buffer.writeln(_typeLookupRow(s));
     }
   }
-  return buffer.toString().trimRight();
+  return '\n' + buffer.toString().trimRight();
 }
 
 /// 手册内嵌技法映射表行：| ID 症候名(shortName) | 首选技法 技法名 |
