@@ -11,6 +11,9 @@ import 'syndrome_registry.dart';
 
 // ─── P3 数据分片（数据/逻辑分离；知识文本在 part 文件）───
 part 'technique_kb_content.dart';
+part 'technique_kb_content_lib_1.dart';
+part 'technique_kb_content_lib_2.dart';
+part 'technique_kb_content_lib_3.dart';
 
 
 /// 症候 → 推荐技法 ID 列表（复刻 RN TECHNIQUE_BY_SYNDROME；b9 批次29 由注册表派生）

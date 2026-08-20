@@ -12,6 +12,10 @@ import 'syndrome_registry.dart'; // kSyndromeIds（b9 真源）
 
 // ─── P3 数据分片（数据/逻辑分离；知识文本在 part 文件）───
 part 'training_kb_content.dart';
+part 'training_kb_content_1.dart';
+part 'training_kb_content_2.dart';
+part 'training_kb_content_3.dart';
+part 'training_kb_content_4.dart';
 
 
 /// 症候 ID 列表（b9 真源化：由 syndrome_registry 派生，不再手写；
