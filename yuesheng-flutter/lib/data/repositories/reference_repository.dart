@@ -15,31 +15,10 @@ import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 
-// ReferencedItem 已上移至契约层（依赖倒置），此处 re-export 维持旧有
-// 「从本文件导入 ReferencedItem」的调用方（chat_service_observers / reference_bar）不变。
+// ReferencedItem / AttachedFileRow 已上移至契约层（依赖倒置），此处
+// re-export 维持旧有「从本文件导入 DTO」的调用方（widget / service）不变。
 export 'package:writingcoach/contracts/reference_capability.dart'
-    show ReferencedItem;
-
-/// 附加文件（file-dao.getAttachedFile 等价物）
-class AttachedFileRow {
-  final String id;
-  final String bookId;
-  final String fileName;
-  final String fileRole;
-  final String mimeType;
-  final String content;
-  final int byteSize;
-
-  const AttachedFileRow({
-    required this.id,
-    required this.bookId,
-    required this.fileName,
-    required this.fileRole,
-    required this.mimeType,
-    required this.content,
-    required this.byteSize,
-  });
-}
+    show ReferencedItem, AttachedFileRow;
 
 class ReferenceRepository implements ReferenceCapability {
   final AppDatabase _db;
@@ -112,6 +91,7 @@ class ReferenceRepository implements ReferenceCapability {
 
   /// 获取单个附加文件内容
   /// 复刻 file-dao.ts getAttachedFile
+  @override
   Future<AttachedFileRow?> getAttachedFile(String fileId) async {
     final row = await (_db.select(
       _db.attachedFiles,
@@ -130,6 +110,7 @@ class ReferenceRepository implements ReferenceCapability {
 
   /// 按 id 集合批量取附属文件（A-3 遗留 N+1 消除：引用预加载用）
   /// 语义对齐 getAttachedFile：仅按 id 过滤，字段映射一致。空列表守卫避免 `IN ()` 非法 SQL。
+  @override
   Future<List<AttachedFileRow>> getAttachedFilesByIds(
     List<String> ids,
   ) async {
@@ -154,6 +135,7 @@ class ReferenceRepository implements ReferenceCapability {
 
   /// 列出书籍下所有附属文件
   /// 复刻 file-dao.ts listAttachedFiles
+  @override
   Future<List<AttachedFileRow>> listAttachedFiles(String bookId) async {
     final rows =
         await (_db.select(_db.attachedFiles)
@@ -185,6 +167,7 @@ class ReferenceRepository implements ReferenceCapability {
 
   /// 创建附属文件，返回完整记录
   /// 复刻 file-dao.ts createAttachedFile
+  @override
   Future<AttachedFileRow> createAttachedFile({
     required String bookId,
     required String fileName,
@@ -228,6 +211,7 @@ class ReferenceRepository implements ReferenceCapability {
   /// 更新附属文件（部分字段）
   /// 复刻 file-dao.ts updateAttachedFile
   /// 若更新 content 则同步刷新 byte_size
+  @override
   Future<void> updateAttachedFile(
     String fileId, {
     String? fileName,
@@ -257,6 +241,7 @@ class ReferenceRepository implements ReferenceCapability {
   ///
   /// 注意：session_reference.ref_type CHECK 约束仅允许 manuscript|chapter，
   /// file 类型不会出现在 session_reference 中，此清理为防御性 no-op。
+  @override
   Future<void> deleteAttachedFile(String fileId) async {
     await _db.transaction(() async {
       // 防御性清理（file 类型不在 session_reference，实际 no-op）

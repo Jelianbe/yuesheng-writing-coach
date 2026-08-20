@@ -152,7 +152,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
       _progressText = '正在保存...';
     });
     try {
-      final refRepo = ref.read(referenceRepositoryProvider);
+      final refRepo = ref.read(referenceCapabilityProvider);
       final file = await refRepo.createAttachedFile(
         bookId: widget.bookId,
         fileName: _nameController.text.trim().isEmpty

@@ -46,7 +46,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
   }
 
   Future<void> _load() async {
-    final refRepo = ref.read(referenceRepositoryProvider);
+    final refRepo = ref.read(referenceCapabilityProvider);
     final file = await refRepo.getAttachedFile(widget.fileId);
     if (mounted) {
       setState(() {
@@ -89,7 +89,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final refRepo = ref.read(referenceRepositoryProvider);
+      final refRepo = ref.read(referenceCapabilityProvider);
       await refRepo.updateAttachedFile(file.id, fileRole: nextRole);
       setState(
         () => _file = AttachedFileRow(
@@ -135,7 +135,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final refRepo = ref.read(referenceRepositoryProvider);
+      final refRepo = ref.read(referenceCapabilityProvider);
       await refRepo.deleteAttachedFile(file.id);
       widget.onDeleted?.call();
       if (mounted) Navigator.of(context).pop();

@@ -63,7 +63,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Future<void> _load() async {
     final db = ref.read(appDatabaseProvider);
     final msRepo = ManuscriptRepository(db);
-    final refRepo = ref.read(referenceRepositoryProvider);
+    final refRepo = ref.read(referenceCapabilityProvider);
 
     final msList = await msRepo.listManuscripts();
 

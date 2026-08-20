@@ -15,7 +15,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/reference_repository.dart';
-import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 import 'file_viewer_modal.dart';
 import 'material_upload_sheet.dart';
@@ -50,7 +49,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
   }
 
   Future<void> _load() async {
-    final refRepo = ref.read(referenceRepositoryProvider);
+    final refRepo = ref.read(referenceCapabilityProvider);
     final files = await refRepo.listAttachedFiles(widget.manuscriptId);
     if (mounted) setState(() => _files = files);
   }
@@ -88,7 +87,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
     if (confirmed != true) return;
 
     try {
-      final refRepo = ref.read(referenceRepositoryProvider);
+      final refRepo = ref.read(referenceCapabilityProvider);
       await refRepo.deleteAttachedFile(file.id);
       _load();
     } catch (_) {

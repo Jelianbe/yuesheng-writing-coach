@@ -10,7 +10,7 @@
 //   - 非多选且引用 >1：全选按钮
 //   - 「+ 添加引用」虚线按钮（onPressPicker）
 //
-// 数据：ReferenceRepository.listReferencesOfSession（带 title 三段 UNION）
+// 数据：ReferenceCapability.listReferences（带 title 三段 UNION）
 // 变更反馈：组件内 SnackBar（message_card_service 无引用变更卡片类型，
 // 以提示条代替 RN 的 onReferencesChanged 卡片插入）
 // ─────────────────────────────────────────────────────────────
@@ -20,8 +20,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
+import '../contracts/reference_capability.dart';
 import '../data/repositories/chapter_repository.dart';
-import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 import 'excerpt_picker_sheet.dart';
@@ -55,8 +55,8 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   final Set<String> _selectedRefs = {};
   List<ReferencedItem> _references = [];
 
-  ReferenceRepository get _repo =>
-      ref.read(referenceRepositoryProvider);
+  ReferenceCapability get _repo =>
+      ref.read(referenceCapabilityProvider);
 
   @override
   void initState() {
@@ -78,7 +78,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
 
   Future<void> _loadReferences() async {
     try {
-      final refs = await _repo.listReferencesOfSession(widget.sessionId);
+      final refs = await _repo.listReferences(widget.sessionId);
       if (!mounted) return;
       setState(() => _references = refs);
     } catch (_) {
