@@ -805,7 +805,8 @@ extension ChatServiceSend on ChatService {
           final suggestion = routeStyleTechniques(
             styleProfile: latestStyleProfile,
             activeProblems: activeSyndromeViews,
-            // TODO：症候级 teaching_state=mastered → 技法集合派生接入后启用过滤
+            // 症候级 mastered → 技法集合派生（active_problem.teaching_state）
+            masteredTechniqueIds: deriveMasteredTechniqueIds(activeProblems),
             focusSyndromeId: focusResult.activatedFocusId,
           );
           styleTechniqueSection = formatStyleTechniqueSection(suggestion);
