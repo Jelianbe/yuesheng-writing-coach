@@ -133,6 +133,20 @@
 - 门禁 1：`dart analyze lib` → 0 error（新文件 `No issues found!`）。
 - 门禁 3：无文件反向 import 本 provider，capability 子图无新增环；`router↔widget` 历史存量环未触及。
 
+### Reference 消费层收敛（2026-08-20）
+
+按既定低风险路线，先收敛 Reference 实例化（**不动类型、不扩契约**）：
+
+- 新增 `referenceRepositoryProvider = Provider<ReferenceRepository>((ref) => ReferenceRepository(ref.watch(appDatabaseProvider)))` 作为唯一实例化源；`referenceCapabilityProvider` 改为委托到它（隐式向上转型，保证同一实例，避免双实例化）。
+- 12 处 widget 散落实例化（`ReferenceRepository(ref.read(appDatabaseProvider))` 与 `ReferenceRepository(db)`）统一改为 `ref.read(referenceRepositoryProvider)`，局部变量类型保持 `ReferenceRepository` 不变。原因：widget 仍需附属文件 CRUD（`listAttachedFiles` / `getAttachedFile` / `createAttachedFile` / `updateAttachedFile` / `deleteAttachedFile`）等仓库专属方法，这些不在 `ReferenceCapability` 契约内，故不强改契约类型（否则编译失败）。
+- 涉及文件：`chat_page.dart`（加 import，覆盖 `chat_reference` / `chat_teaching` 两个 `part of` 扩展）、`file_section` / `file_viewer_modal` / `material_upload_sheet` / `save_to_file_sheet` / `reference_bar` / `reference_picker`。
+- 验证：`dart analyze lib` → 0 error，无新增 lint；capability 子图无新增环。
+
+### 遗留（后续阶段）
+
+- 纯能力（GenUi / Material / Teaching / Diagnosis）的四个实现类仍无调用方，行为走底层纯函数——需将底层纯函数调用点迁移到对应 capability provider（涉及 `chat_service` / `chat_context_builder` / `diagnosis_parser` / `skill_dispatcher` 等核心 service 层，且沙箱无法自动跑 `flutter test`，需单独确认范围）。
+- 附属文件 CRUD 方法纳入 `ReferenceCapability` 契约（并把 `AttachedFileRow` DTO 上移）后，widget 可进一步从 `referenceRepositoryProvider` 切换到 `referenceCapabilityProvider` 并改类型为契约。
+
 ## 约束
 
 - 能力 provider 已建立（`lib/providers/capability_providers.dart`，六大契约均契约类型化 `Provider<XxxCapability>`）；下一步将 UI/编排层从底层纯函数调用迁移为 `ref.watch(xxxCapabilityProvider)` 消费（见「接入 Riverpod provider」节）。一次性读取用 `ref.read`、随依赖变化消费用 `ref.watch`，沿用现有 provider 约定。

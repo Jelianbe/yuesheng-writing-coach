@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/capability_providers.dart';
 import '../services/file_parser.dart';
 
 /// 素材类型（对齐 RN FileRole：general/outline/material）
@@ -152,7 +153,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
       _progressText = '正在保存...';
     });
     try {
-      final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+      final refRepo = ref.read(referenceRepositoryProvider);
       final file = await refRepo.createAttachedFile(
         bookId: widget.bookId,
         fileName: _nameController.text.trim().isEmpty

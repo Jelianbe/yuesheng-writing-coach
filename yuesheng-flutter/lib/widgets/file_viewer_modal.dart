@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/capability_providers.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',
@@ -46,7 +47,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
   }
 
   Future<void> _load() async {
-    final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+    final refRepo = ref.read(referenceRepositoryProvider);
     final file = await refRepo.getAttachedFile(widget.fileId);
     if (mounted) {
       setState(() {
@@ -89,7 +90,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+      final refRepo = ref.read(referenceRepositoryProvider);
       await refRepo.updateAttachedFile(file.id, fileRole: nextRole);
       setState(
         () => _file = AttachedFileRow(
@@ -135,7 +136,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
     if (confirmed != true || !mounted) return;
 
     try {
-      final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+      final refRepo = ref.read(referenceRepositoryProvider);
       await refRepo.deleteAttachedFile(file.id);
       widget.onDeleted?.call();
       if (mounted) Navigator.of(context).pop();

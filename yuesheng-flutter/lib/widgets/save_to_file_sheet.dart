@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/capability_providers.dart';
 
 /// 文件角色（对齐 RN FileRole：general/outline/material）
 const List<({String key, String label})> _fileRoles = [
@@ -92,7 +93,7 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
     }
     setState(() => _saving = true);
     try {
-      final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+      final refRepo = ref.read(referenceRepositoryProvider);
       final file = await refRepo.createAttachedFile(
         bookId: widget.bookId,
         fileName: _nameController.text.trim().isEmpty
