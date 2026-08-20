@@ -94,10 +94,13 @@ abstract class DiagnosisCapability {
 
   /// 对解析出的诊断 JSON 做 schema 校验 + 自然语言修复。
   /// 返回 FullValidationResult（含 JSON 校验 + NL 修复 + 最终诊断）。
+  ///
+  /// [attitude] 透传到 NL 校验（影响修复策略），与原顶层纯函数签名对齐。
   FullValidationResult validateDiagnosisOutput(
     String displayContent,
-    Map<String, dynamic> rawJson,
-  );
+    Map<String, dynamic> rawJson, {
+    AttitudeLevel? attitude,
+  });
 
   /// 从 AI 回复中解析训练结果（passed/partial/failed）。
   /// 纯函数无 IO 依赖。

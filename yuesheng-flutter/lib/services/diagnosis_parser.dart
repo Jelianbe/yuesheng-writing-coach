@@ -283,9 +283,10 @@ ParseResult _parseDiagnosisImpl(String rawText) => parseDiagnosis(rawText);
 /// 顶层实现别名：validateDiagnosisOutput 委托
 FullValidationResult _validateDiagnosisOutputImpl(
   String displayContent,
-  Map<String, dynamic> rawJson,
-) =>
-    validateDiagnosisOutput(displayContent, rawJson);
+  Map<String, dynamic> rawJson, {
+  AttitudeLevel? attitude,
+}) =>
+    validateDiagnosisOutput(displayContent, rawJson, attitude: attitude);
 
 /// 顶层实现别名：parseTrainingResult 委托
 TrainingResult? _parseTrainingResultImpl(String content) =>
@@ -300,9 +301,10 @@ class DiagnosisCapabilityImpl implements DiagnosisCapability {
   @override
   FullValidationResult validateDiagnosisOutput(
     String displayContent,
-    Map<String, dynamic> rawJson,
-  ) =>
-      _validateDiagnosisOutputImpl(displayContent, rawJson);
+    Map<String, dynamic> rawJson, {
+    AttitudeLevel? attitude,
+  }) =>
+      _validateDiagnosisOutputImpl(displayContent, rawJson, attitude: attitude);
 
   @override
   TrainingResult? parseTrainingResult(String content) =>
