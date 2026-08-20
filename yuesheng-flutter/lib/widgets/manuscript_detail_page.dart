@@ -32,7 +32,7 @@ import '../providers/chapter_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/manuscript_providers.dart';
 import '../providers/app_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../services/export_service.dart';
 import '../utils/chapter_title.dart';
 import '../utils/volume_group.dart';

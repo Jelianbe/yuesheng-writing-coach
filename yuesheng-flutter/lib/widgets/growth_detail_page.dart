@@ -28,7 +28,7 @@ import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/growth_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../services/growth_service.dart';
 import '../services/progress_service.dart';
 import '../types/teaching_types.dart';

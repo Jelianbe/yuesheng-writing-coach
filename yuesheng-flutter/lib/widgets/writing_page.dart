@@ -26,7 +26,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/manuscript_providers.dart';
 import '../providers/writing_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../services/suggestion_adoption_service.dart';
 import '../utils/chapter_title.dart';
 import '../utils/paragraph_format.dart';

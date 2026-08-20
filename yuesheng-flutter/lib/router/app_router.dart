@@ -34,22 +34,7 @@ import '../widgets/progress_detail_page.dart';
 import '../widgets/project_settings_page.dart';
 import '../widgets/settings_page.dart';
 import '../widgets/writing_page.dart';
-
-/// 路由名称常量
-class AppRoutes {
-  static const String bookshelf = '/bookshelf';
-  static const String writing = '/';
-  static const String growth = '/growth';
-  static const String growthDetail = '/growth-detail';
-  static const String chat = '/chat';
-  static const String manuscriptDetail = '/manuscript-detail';
-  static const String writingChapter = '/writing/:chapterId';
-  static const String settings = '/settings';
-  static const String appendChapters = '/append-chapters';
-  static const String projectSettings = '/project-settings';
-  static const String progressDetail = '/progress-detail';
-  static const String chapterRecycleBin = '/chapter-recycle-bin';
-}
+import 'app_routes.dart';
 
 /// go_router 配置
 final GoRouter appRouter = GoRouter(

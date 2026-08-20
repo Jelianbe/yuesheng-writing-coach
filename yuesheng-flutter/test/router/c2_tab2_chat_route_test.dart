@@ -18,6 +18,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/router/app_router.dart';
+import 'package:writingcoach/router/app_routes.dart';
 
 import '../helpers/mock_last_session_storage.dart';
 

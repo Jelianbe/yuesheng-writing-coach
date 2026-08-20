@@ -34,7 +34,7 @@ import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
 import '../providers/work_import_providers.dart';
 import '../providers/capability_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../services/attitude_advisor.dart';
 import '../services/chat_service.dart';
 import '../services/message_card_service.dart';

@@ -20,7 +20,7 @@ import 'package:go_router/go_router.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
-import '../router/app_router.dart';
+import '../router/app_routes.dart';
 import '../services/llm_client.dart';
 import '../services/llm_config_storage.dart';
 import '../services/progress_service.dart';
