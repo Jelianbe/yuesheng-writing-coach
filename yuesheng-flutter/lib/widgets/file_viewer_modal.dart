@@ -13,7 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
-import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 
 const Map<String, String> _roleLabels = {
