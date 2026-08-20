@@ -13,6 +13,8 @@
 //   - 全本地纯 Dart 判定，零 LLM 调用
 // ─────────────────────────────────────────────────────────────
 
+import 'package:writingcoach/data/repositories/diagnosis_repository.dart'
+    show ActiveProblemView;
 import 'package:writingcoach/services/chat_context_builder.dart'
     show ActiveSyndromeView;
 import 'package:writingcoach/services/technique_knowledge_base.dart';
@@ -68,6 +70,22 @@ bool _isProseDominantSyndrome(String syndromeId) {
     if (kTechniqueLayers[t] == TechniqueLayer.prose) proseCount++;
   }
   return proseCount * 2 > techniques.length;
+}
+
+/// 症候级 mastered → 技法集合派生。
+///
+/// 当前 schema 无按技法粒度的掌握表（teaching_state 按症候粒度挂在
+/// active_problem 上，见设计 §3.5 的降级 TODO），故症候 mastered 时视其
+/// 映射技法全部已掌握，门控 4 据此排除——已掌握技法不再重复作候选。
+Set<String> deriveMasteredTechniqueIds(Iterable<ActiveProblemView> problems) {
+  final mastered = <String>{};
+  for (final p in problems) {
+    if (TeachingState.fromString(p.teachingState) != TeachingState.mastered) {
+      continue;
+    }
+    mastered.addAll(kTechniquesBySyndrome[p.syndromeId] ?? const []);
+  }
+  return mastered;
 }
 
 /// 文笔画像 → 技法旁路路由

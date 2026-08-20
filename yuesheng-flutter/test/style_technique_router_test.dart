@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
 import 'package:writingcoach/services/style_technique_router.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
@@ -35,6 +36,15 @@ ActiveSyndromeView _view(
   syndromeName: name,
   severity: severity,
 );
+
+ActiveProblemView _problem(String id, {String? teachingState}) =>
+    ActiveProblemView(
+      syndromeId: id,
+      syndromeName: '症候$id',
+      severity: 'L1',
+      confirmationStatus: 'confirmed',
+      teachingState: teachingState,
+    );
 
 void main() {
   group('kTechniqueLayers 完备性', () {
@@ -207,6 +217,50 @@ void main() {
       final c = s.candidates.single;
       expect(c.techniqueId, 'T029');
       expect(c.crossLayer, isTrue);
+    });
+  });
+
+  group('deriveMasteredTechniqueIds（症候级 mastered → 技法集合派生）', () {
+    test('mastered 症候 → 派生其全部映射技法（P007 → T019/T023/T025）', () {
+      final ids = deriveMasteredTechniqueIds([
+        _problem('P007', teachingState: TeachingState.mastered.value),
+      ]);
+      expect(ids, {'T019', 'T023', 'T025'});
+    });
+
+    test('非 mastered 状态（identified/in_progress/consolidating）→ 不派生', () {
+      for (final s in TeachingState.values) {
+        if (s == TeachingState.mastered) continue;
+        final ids = deriveMasteredTechniqueIds([
+          _problem('P007', teachingState: s.value),
+        ]);
+        expect(ids, isEmpty, reason: '${s.value} 不应派生技法');
+      }
+    });
+
+    test('teachingState 为 null（历史症候未写教学态）→ 不派生', () {
+      final ids = deriveMasteredTechniqueIds([_problem('P007')]);
+      expect(ids, isEmpty);
+    });
+
+    test('未知症候 mastered（映射表无此症候）→ 空集合不崩', () {
+      final ids = deriveMasteredTechniqueIds([
+        _problem('s1', teachingState: TeachingState.mastered.value),
+      ]);
+      expect(ids, isEmpty);
+    });
+
+    test('组合：mastered 派生的集合传入路由 → 候选被排除', () {
+      final ids = deriveMasteredTechniqueIds([
+        _problem('P007', teachingState: TeachingState.mastered.value),
+      ]);
+      final s = routeStyleTechniques(
+        styleProfile: _profile(rhythm: RhythmPreference.long),
+        activeProblems: const [],
+        masteredTechniqueIds: ids,
+      );
+      // rhythm=long 候选 T023 已被 P007 mastered 派生覆盖 → 无候选
+      expect(s.isEmpty, isTrue);
     });
   });
 
