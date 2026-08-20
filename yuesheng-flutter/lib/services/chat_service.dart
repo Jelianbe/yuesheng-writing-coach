@@ -35,6 +35,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
+import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/services/token_budget_guard.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
@@ -44,7 +45,6 @@ import 'package:writingcoach/data/repositories/subplot_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
-import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
@@ -147,7 +147,7 @@ class ChatService {
   final TeachingStateRepository _stateRepo;
   final DiagnosisRepository _diagnosisRepo;
   final StudentModelRepository _studentModelRepo;
-  final ReferenceRepository _referenceRepo;
+  final ReferenceCapability _referenceRepo;
   final ChapterRepository _chapterRepo;
   final ManuscriptRepository _manuscriptRepo;
   final LlmClient _llmClient;
@@ -255,7 +255,7 @@ class ChatService {
     required TeachingStateRepository stateRepo,
     required DiagnosisRepository diagnosisRepo,
     required StudentModelRepository studentModelRepo,
-    required ReferenceRepository referenceRepo,
+    required ReferenceCapability referenceRepo,
     required ChapterRepository chapterRepo,
     required ManuscriptRepository manuscriptRepo,
     required LlmClient llmClient,

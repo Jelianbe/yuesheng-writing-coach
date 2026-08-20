@@ -179,7 +179,7 @@ extension ChatServiceSend on ChatService {
       // 同时记录 primaryRef 供 5.2 附属文件注入使用
       ReferenceItem? primaryRef;
       try {
-        final refs = await _referenceRepo.listReferencesOfSession(sessionId);
+        final refs = await _referenceRepo.listReferences(sessionId);
         if (refs.isNotEmpty) {
           final referenceItems = refs
               .map(

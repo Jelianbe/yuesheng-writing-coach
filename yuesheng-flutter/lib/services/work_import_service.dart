@@ -8,10 +8,10 @@
 //   3. importWork：事务内建稿件 + 逐章建章节 + 建主引用
 // ─────────────────────────────────────────────────────────────
 
+import '../contracts/reference_capability.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
-import '../data/repositories/reference_repository.dart';
 import 'file_parser.dart';
 
 /// 导入结果（对齐 RN onUploadComplete 的 meta 参数）
@@ -36,7 +36,7 @@ class WorkImportService {
   final AppDatabase _db;
   final ManuscriptRepository _manuscriptRepo;
   final ChapterRepository _chapterRepo;
-  final ReferenceRepository _referenceRepo;
+  final ReferenceCapability _referenceRepo;
 
   WorkImportService(
     this._db,
