@@ -16,12 +16,39 @@ import 'syndrome_registry.dart';
 import 'technique_knowledge_base.dart';
 
 // ─── P3 数据分片（数据/逻辑分离；Skill 常量在各 skills_*.dart part 文件）──
+// 二级拆分（R-019 ≤300 行）：超限分片的 Skill 对象字面量进一步拆至 skills_*_pN.dart
 part 'skills_l1_core.dart';
+part 'skills_l1_core_p1.dart';
+part 'skills_l1_core_p2.dart';
+part 'skills_l1_core_p3.dart';
+part 'skills_l1_core_p4.dart';
 part 'skills_attitude.dart';
 part 'skills_beginner.dart';
+part 'skills_beginner_p1.dart';
+part 'skills_beginner_p2.dart';
+part 'skills_beginner_p3.dart';
+part 'skills_beginner_p4.dart';
+part 'skills_beginner_p5.dart';
+part 'skills_beginner_p6.dart';
+part 'skills_beginner_p7.dart';
+part 'skills_beginner_p8.dart';
 part 'skills_diagnosis.dart';
+part 'skills_diagnosis_p1.dart';
+part 'skills_diagnosis_p2.dart';
+part 'skills_diagnosis_p3.dart';
 part 'skills_training.dart';
+part 'skills_training_p1.dart';
+part 'skills_training_p2.dart';
+part 'skills_training_p3.dart';
+part 'skills_training_p4.dart';
+part 'skills_training_p5.dart';
 part 'skills_advanced_outline.dart';
+part 'skills_advanced_outline_p1.dart';
+part 'skills_advanced_outline_p2.dart';
+part 'skills_advanced_outline_p3.dart';
+part 'skills_advanced_outline_p4.dart';
+part 'skills_advanced_outline_p5.dart';
+part 'skills_advanced_outline_p6.dart';
 part 'skills_reply_voice.dart';
 
 // ─── Skill 元数据与实体 ───────────────────────────────────────
