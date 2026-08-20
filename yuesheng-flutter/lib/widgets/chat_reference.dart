@@ -80,7 +80,7 @@ extension _ChatReference on _ChatPageState {
   Future<void> _handleSaveToFile(Message message) async {
     final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
     if (bootstrap == null || !mounted) return;
-    final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+    final refRepo = ref.read(referenceRepositoryProvider);
     final refs = await refRepo.listReferencesOfSession(bootstrap.sessionId);
     // 主引用优先；无主引用（@ 附加引用场景）回退到第一条章节/作品引用
     final primary =
@@ -156,7 +156,7 @@ extension _ChatReference on _ChatPageState {
   void _openPickerFromReferencesSheet(String sessionId) {
     if (!mounted) return;
     Navigator.of(context).pop(); // 关闭引用管理弹层
-    final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+    final refRepo = ref.read(referenceRepositoryProvider);
     showYueModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,

@@ -23,6 +23,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/capability_providers.dart';
 import 'excerpt_picker_sheet.dart';
 import 'yue_sheet.dart';
 
@@ -55,7 +56,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   List<ReferencedItem> _references = [];
 
   ReferenceRepository get _repo =>
-      ReferenceRepository(ref.read(appDatabaseProvider));
+      ref.read(referenceRepositoryProvider);
 
   @override
   void initState() {

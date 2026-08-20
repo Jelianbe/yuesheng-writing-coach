@@ -22,6 +22,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/capability_providers.dart';
 import '../services/mention_parser.dart';
 
 class ReferencePicker extends ConsumerStatefulWidget {
@@ -62,7 +63,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Future<void> _load() async {
     final db = ref.read(appDatabaseProvider);
     final msRepo = ManuscriptRepository(db);
-    final refRepo = ReferenceRepository(db);
+    final refRepo = ref.read(referenceRepositoryProvider);
 
     final msList = await msRepo.listManuscripts();
 

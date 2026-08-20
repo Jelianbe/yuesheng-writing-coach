@@ -55,9 +55,17 @@ final diagnosisCapabilityProvider = Provider<DiagnosisCapability>(
   (_) => const DiagnosisCapabilityImpl(),
 );
 
-/// 引用能力（依赖全局 DB 单例）
-final referenceCapabilityProvider = Provider<ReferenceCapability>(
+/// 引用仓库（具体类型，单例来源）——供仍需完整仓库 API（附属文件 CRUD 等）
+/// 的调用方使用。referenceCapabilityProvider 委托到此，确保同一实例。
+final referenceRepositoryProvider = Provider<ReferenceRepository>(
   (ref) => ReferenceRepository(ref.watch(appDatabaseProvider)),
+);
+
+/// 引用能力（契约类型）——委托到 referenceRepositoryProvider 的同一实例，
+/// 隐式向上转型，无需强制转换。UI 经契约消费；需要仓库专属方法时退回
+/// referenceRepositoryProvider。
+final referenceCapabilityProvider = Provider<ReferenceCapability>(
+  (ref) => ref.watch(referenceRepositoryProvider),
 );
 
 /// @提及解析能力（契约类型别名，复用既有 mentionParserProvider）

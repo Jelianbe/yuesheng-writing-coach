@@ -16,6 +16,7 @@ import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/capability_providers.dart';
 import 'file_viewer_modal.dart';
 import 'material_upload_sheet.dart';
 
@@ -49,7 +50,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
   }
 
   Future<void> _load() async {
-    final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+    final refRepo = ref.read(referenceRepositoryProvider);
     final files = await refRepo.listAttachedFiles(widget.manuscriptId);
     if (mounted) setState(() => _files = files);
   }
@@ -87,7 +88,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
     if (confirmed != true) return;
 
     try {
-      final refRepo = ReferenceRepository(ref.read(appDatabaseProvider));
+      final refRepo = ref.read(referenceRepositoryProvider);
       await refRepo.deleteAttachedFile(file.id);
       _load();
     } catch (_) {
