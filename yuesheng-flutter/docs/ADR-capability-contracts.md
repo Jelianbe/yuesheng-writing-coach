@@ -1,6 +1,6 @@
 # ADR：能力契约层骨架（Capability Contracts）
 
-- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成；Reference 契约扩张 + widget 类型收敛——阶段 2 完成；Reference 实例化全收敛——阶段 3 完成）
+- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成；Reference 契约扩张 + widget 类型收敛——阶段 2 完成；Reference 实例化全收敛——阶段 3 完成；Material 消费层收敛 + 服务层类型收敛——阶段 4 完成，五大能力依赖倒置收口全链路闭合）
 - **日期**：2026-08-19（选项 B 全量落地于 2026-08-20）
 - **关联**：`docs/architecture-review-2026-08-18.md` §5 选项 A
 
@@ -206,10 +206,34 @@
 - 门禁 1：改动文件 0 issue；全项目 `dart analyze` 0 error（剩余 warning 全在 test/tool 预存文件）。
 - 门禁 3：provider 层不再有任何 `ReferenceRepository(` 直构（`reference_repository.dart` 内为构造器定义本身），capability 子图无新增环。
 
-### 遗留（后续阶段）
+### 阶段 4：Material 消费层收敛 + 服务层类型收敛（2026-08-20）
 
-- `chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用与 `excerpt_picker_sheet.dart:68` 的 Material 能力 widget 调用点，可纳入「Material 消费层收敛」独立批次统一处理。
-- 服务层（`chat_service` 系列）的 `_referenceRepo` 仍为 `ReferenceRepository` 具体类型——DI 类型收敛的最后一环，现行为等价，可待后续批次统一收口（届时 service 构造点需同步改类型）。
+五大能力依赖倒置的收口两环：把最后一个 Material widget 消费点迁到能力契约，并把 service 层 `_referenceRepo` 的具体类型收敛为契约类型——至此所有消费方（widget / service）只依赖契约，实现层仅剩 `referenceRepositoryProvider` 唯一实例化源。
+
+#### 做法（两提交）
+
+1. **Material 消费层收敛**（提交 `adcb79d3`）：
+   - `excerpt_picker_sheet.dart` 从顶层纯函数 `parseParagraphAnchor` 迁到 `materialCapabilityProvider`（widget 改 `ConsumerStatefulWidget`，`initState` 中 `ref.read`）。
+   - 测试 `excerpt_picker_sheet_test.dart` 补 `ProviderScope` 包裹（provider 解析前提，否则测试运行时报 UnsupportedError）。
+2. **服务层类型收敛**（提交 `a5f7c5fc`）：
+   - `ChatService._referenceRepo` / `WorkImportService._referenceRepo` 字段与构造参数类型 `ReferenceRepository` → `ReferenceCapability`（构造点 `chatServiceProvider` / `workImportServiceProvider` / `mentionParserProvider` 同步改注入 `referenceCapabilityProvider`）。
+   - service 层 4 处 `listReferencesOfSession` 改名契约别名 `listReferences`（阶段 2 已确认实现侧 `listReferences` 委托 `listReferencesOfSession`，行为零差异）；`chat_service_observers` 的 `getAttachedFilesByIds`、`chat_service_send` 的 `listAttachedFiles`、`work_import_service` 的 `addReference` 均已在契约内，无需改名。
+   - import 收敛：`chat_service.dart` / `work_import_service.dart` 的 `reference_repository` import 换成 `contracts/reference_capability.dart`。
+
+#### 范围边界（R-010）
+
+- **不做**：`chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用（impl 内部细节，impl 本就依赖底层纯函数，经契约自调用无收益）；`ReferenceRepository` 具体类上 `listReferencesOfSession` 等非契约方法保留（测试与未来新增消费方仍可经具体类型访问）。
+- 测试构造点（`referenceRepo: ReferenceRepository(db)` 等约 40 处）经 `ReferenceRepository implements ReferenceCapability` 子类型兼容，**零改动**。
+
+#### 验证
+
+- 门禁 1：`dart analyze`（全项目）→ 0 error；lib 层零 warning（剩余 5 个 warning 全在 test/tool 预存文件，与本次无关）。
+- 门禁 2：沙箱无法跑 `flutter test`；安全网 = 契约类型推断（service 层只经契约方法调用，越界调用编译失败）+ `listReferences` 别名实现侧委托验证 + 测试构造点子类型兼容编译通过。
+- 门禁 3：service / widget 层不再有 `ReferenceRepository` 类型引用（仅实现定义、provider 装配点与注释残留），capability 子图无新增环。
+
+### 收口完成
+
+五大能力依赖倒置全链路闭合：契约层自持 DTO 无实现出边 → 六个实现类 `implements` 契约 → 全部消费方（widget / service）仅依赖契约类型 → `ReferenceRepository` 实例化唯一源 = `referenceRepositoryProvider`。后续新增能力复用同一模板（DTO 上移 + `implements` + provider 契约类型化 + 消费层收敛）。
 
 ## 约束
 
