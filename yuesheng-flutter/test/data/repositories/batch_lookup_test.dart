@@ -76,9 +76,9 @@ void main() {
       final msA = await msRepo.createManuscript(title: 'A');
       final msB = await msRepo.createManuscript(title: 'B');
       // 显式 sortOrder，验证跨稿件 ORDER BY sortOrder 升序：a1(0) < a2(1) < b1(2)
-      final a1 = await chRepo.createChapter(msA, title: 'A1', sortOrder: 0);
-      final a2 = await chRepo.createChapter(msA, title: 'A2', sortOrder: 1);
-      final b1 = await chRepo.createChapter(msB, title: 'B1', sortOrder: 2);
+      await chRepo.createChapter(msA, title: 'A1', sortOrder: 0);
+      await chRepo.createChapter(msA, title: 'A2', sortOrder: 1);
+      await chRepo.createChapter(msB, title: 'B1', sortOrder: 2);
 
       final result = await chRepo.listChaptersForManuscripts([msA, msB]);
       // 全局按 sortOrder 升序：a1 < a2 < b1

@@ -13,7 +13,6 @@
 // 会话总是挂在已存在的稿件/章节上）。
 // ─────────────────────────────────────────────────────────────
 
-import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
