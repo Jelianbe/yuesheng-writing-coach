@@ -99,9 +99,43 @@
 - 门禁 3（循环依赖）：capability 子图无环；**契约层 7 个文件均为干净叶子**（`diagnosis_capability` / `teaching_capability` 仅 `outgoing` 到 `types/teaching_types`，其余 5 个无 `services/*` 出边）；`router↔widget` 的 6 个历史存量环非本次引入。
 - 门禁 4（安全/可达性）：无疑似硬编码密钥。
 
+## 接入 Riverpod provider（2026-08-20）
+
+选项 B 落地时 `capability_registry.dart` 按 R-010 最小范围刻意递延了「抽 provider、改 widget 调用链」。本步越过该递延线，建立集中的能力 provider 模块，作为依赖倒置的收口接入点。
+
+### 新增文件
+
+- `lib/providers/capability_providers.dart`：以**契约接口类型**对外暴露六大能力的 Riverpod Provider，沿用现有手动 `Provider<T>` 范式（对齐 `app_providers.dart` / `session_providers.dart`）。
+
+| Provider | 类型 | 实现 | 构造 |
+|:---|:---|:---|:---|
+| `genUiCapabilityProvider` | `GenUiCapability` | `const GenUiParser()` | 无参 |
+| `materialCapabilityProvider` | `MaterialCapability` | `const MaterialCapabilityImpl()` | 无参 |
+| `teachingCapabilityProvider` | `TeachingCapability` | `const TeachingCapabilityImpl()` | 无参 |
+| `diagnosisCapabilityProvider` | `DiagnosisCapability` | `const DiagnosisCapabilityImpl()` | 无参 |
+| `referenceCapabilityProvider` | `ReferenceCapability` | `ReferenceRepository(db)` | 依赖 `appDatabaseProvider` |
+| `mentionCapabilityProvider` | `MentionCapability` | 复用 `mentionParserProvider` | 契约类型别名，避免重复实例化 |
+
+### 设计要点
+
+1. **契约类型化暴露**：Provider 返回类型一律是抽象契约而非具体 impl，UI/编排层只认契约——实现可在 provider 内一处替换而不波及消费者（DIP 收益点）。
+2. **纯能力无状态**：GenUi / Material / Teaching / Diagnosis 四个实现均为 `const`、无参、委托到既有纯函数，provider 直接返回单例常量。
+3. **Reference 复用 DB 单例**：`referenceCapabilityProvider` 经 `ref.watch(appDatabaseProvider)` 构造，与 `chatServiceProvider` / `bootstrapServiceProvider` 同一接入方式。
+4. **Mention 不重复**：`MentionParser` 此前已在 `work_import_providers.dart` 有 `mentionParserProvider`（具体类型），此处以 `Provider<MentionCapability>` 契约别名复用，单一实例化源。
+
+### 当前状态与下一步
+
+- 现状：四大纯能力实现类（`GenUiParser` / `MaterialCapabilityImpl` / `TeachingCapabilityImpl` / `DiagnosisCapabilityImpl`）**已落地但尚无调用方**——当前行为仍走底层纯函数（`buildSystemPromptV2` / `parseDiagnosis` / `formatAttachedFilesContext` / `resolveL2Mode` …）。本模块先建立 DI 接缝。
+- 下一步（UI 消费层迁移，单独确认范围）：将底层纯函数调用点与 widget 中 `ReferenceRepository(ref.read(appDatabaseProvider))` 等散落实例化，统一改为 `ref.watch(xxxCapabilityProvider)` 消费。该迁移涉及核心模块（`chat_service` / `chat_context_builder` / `diagnosis_parser` / `skill_dispatcher` 及约 9 处 widget），且沙箱无法自动跑 `flutter test` 验证，故列为独立阶段、确认广度后再动。
+
+### 验证（本步）
+
+- 门禁 1：`dart analyze lib` → 0 error（新文件 `No issues found!`）。
+- 门禁 3：无文件反向 import 本 provider，capability 子图无新增环；`router↔widget` 历史存量环未触及。
+
 ## 约束
 
-- 后续选项 B（依赖倒置重构）时，各实现类 `implements` 对应接口，注册到 provider，UI 层改为 `ref.read(xxxCapabilityProvider)` 消费
+- 能力 provider 已建立（`lib/providers/capability_providers.dart`，六大契约均契约类型化 `Provider<XxxCapability>`）；下一步将 UI/编排层从底层纯函数调用迁移为 `ref.watch(xxxCapabilityProvider)` 消费（见「接入 Riverpod provider」节）。一次性读取用 `ref.read`、随依赖变化消费用 `ref.watch`，沿用现有 provider 约定。
 - 新增能力只需实现接口并注册，UI 经契约消费，无需改动（类比现有 `message_card_dispatcher` 分派模式）
 - 跨端共享只共享契约/协议（`[YS_*]` 块、JSON schema），不共享实现
 
