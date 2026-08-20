@@ -6,10 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
-import '../data/repositories/reference_repository.dart';
 import '../services/mention_parser.dart';
 import '../services/work_import_service.dart';
 import 'app_providers.dart';
+import 'capability_providers.dart';
 
 /// 作品导入服务（依赖全局 DB 单例，测试可 override appDatabaseProvider）
 final workImportServiceProvider = Provider<WorkImportService>((ref) {
@@ -18,7 +18,7 @@ final workImportServiceProvider = Provider<WorkImportService>((ref) {
     db,
     ManuscriptRepository(db),
     ChapterRepository(db),
-    ReferenceRepository(db),
+    ref.read(referenceRepositoryProvider),
   );
 });
 
@@ -28,6 +28,6 @@ final mentionParserProvider = Provider<MentionParser>((ref) {
   return MentionParser(
     ManuscriptRepository(db),
     ChapterRepository(db),
-    ReferenceRepository(db),
+    ref.read(referenceRepositoryProvider),
   );
 });
