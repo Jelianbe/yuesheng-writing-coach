@@ -14,6 +14,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/paragraph_selection.dart';
 import 'package:writingcoach/widgets/excerpt_picker_sheet.dart';
@@ -31,30 +32,32 @@ Future<Object? Function()> pumpSheet(
 }) async {
   Object? popped;
   await tester.pumpWidget(
-    MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (ctx) => ElevatedButton(
-            onPressed: () async {
-              popped = await Navigator.of(ctx).push<Object?>(
-                MaterialPageRoute<Object?>(
-                  // 生产环境经 showYueModalBottomSheet 提供 Material 祖先，
-                  // 这里等价补一层
-                  builder: (_) => Scaffold(
-                    body: Material(
-                      child: ExcerptPickerSheet(
-                        chapterId: 'ch-1',
-                        chapterTitle: '第一章 风雪',
-                        content: content,
-                        initialAnchorJson: initialAnchorJson,
+    ProviderScope(
+      child: MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (ctx) => ElevatedButton(
+              onPressed: () async {
+                popped = await Navigator.of(ctx).push<Object?>(
+                  MaterialPageRoute<Object?>(
+                    // 生产环境经 showYueModalBottomSheet 提供 Material 祖先，
+                    // 这里等价补一层
+                    builder: (_) => Scaffold(
+                      body: Material(
+                        child: ExcerptPickerSheet(
+                          chapterId: 'ch-1',
+                          chapterTitle: '第一章 风雪',
+                          content: content,
+                          initialAnchorJson: initialAnchorJson,
+                        ),
                       ),
                     ),
+                    fullscreenDialog: true,
                   ),
-                  fullscreenDialog: true,
-                ),
-              );
-            },
-            child: const Text('open'),
+                );
+              },
+              child: const Text('open'),
+            ),
           ),
         ),
       ),

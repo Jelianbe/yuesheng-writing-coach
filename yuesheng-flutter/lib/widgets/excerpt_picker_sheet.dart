@@ -18,9 +18,10 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
-import '../services/chat_context_builder.dart';
+import '../providers/capability_providers.dart';
 import '../services/paragraph_selection.dart';
 
 /// 选段确认结果（区分「清除选段」与「取消关闭」——两者 pop 值不能同为 null）
@@ -31,7 +32,7 @@ class ExcerptPickResult {
   const ExcerptPickResult(this.anchor);
 }
 
-class ExcerptPickerSheet extends StatefulWidget {
+class ExcerptPickerSheet extends ConsumerStatefulWidget {
   /// 章节主键（锚点 chapterId 来源，即 session_reference.ref_id）
   final String chapterId;
 
@@ -52,10 +53,10 @@ class ExcerptPickerSheet extends StatefulWidget {
   });
 
   @override
-  State<ExcerptPickerSheet> createState() => _ExcerptPickerSheetState();
+  ConsumerState<ExcerptPickerSheet> createState() => _ExcerptPickerSheetState();
 }
 
-class _ExcerptPickerSheetState extends State<ExcerptPickerSheet> {
+class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
   List<String> _paras = const [];
   int? _selStart;
   int? _selEnd;
@@ -65,7 +66,10 @@ class _ExcerptPickerSheetState extends State<ExcerptPickerSheet> {
     super.initState();
     _paras = widget.content.isEmpty ? const <String>[] : widget.content.split('\n');
     // 预选：已有锚点且指向本章节时回显（越界 clamp 由展示层兜底）
-    final anchor = parseParagraphAnchor(widget.initialAnchorJson);
+    // 消费层经 materialCapabilityProvider 注入能力，不直接依赖顶层纯函数。
+    final anchor = ref
+        .read(materialCapabilityProvider)
+        .parseParagraphAnchor(widget.initialAnchorJson);
     if (anchor != null && anchor.chapterId == widget.chapterId) {
       if (anchor.startPara < _paras.length) {
         _selStart = anchor.startPara;
