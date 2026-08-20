@@ -89,7 +89,13 @@ import 'package:writingcoach/services/teacher_service.dart';
 import 'package:writingcoach/services/teacher_validator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 part 'chat_service_diagnosis.dart';
+part 'chat_service_send_diagnosis_lock.dart';
+part 'chat_service_send_inject.dart';
+part 'chat_service_send_observations.dart';
 part 'chat_service_observers.dart';
+part 'chat_service_send_parse.dart';
+part 'chat_service_send_persist.dart';
+part 'chat_service_send_run.dart';
 part 'chat_service_send.dart';
 
 /// 批次64（B62f）：诊断请求标记——章节诊断 prompt 的特征子串，
