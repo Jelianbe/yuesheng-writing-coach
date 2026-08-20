@@ -1,6 +1,6 @@
 # ADR：能力契约层骨架（Capability Contracts）
 
-- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约）
+- **状态**：Accepted（选项 A 已落地；选项 B 五大能力依赖倒置已全部完成：Reference / Mention / GenUi / Material / Teaching / Diagnosis 均 `implements` 对应契约；四大纯能力消费层已迁移到 capability provider——阶段 1 完成）
 - **日期**：2026-08-19（选项 B 全量落地于 2026-08-20）
 - **关联**：`docs/architecture-review-2026-08-18.md` §5 选项 A
 
@@ -142,10 +142,35 @@
 - 涉及文件：`chat_page.dart`（加 import，覆盖 `chat_reference` / `chat_teaching` 两个 `part of` 扩展）、`file_section` / `file_viewer_modal` / `material_upload_sheet` / `save_to_file_sheet` / `reference_bar` / `reference_picker`。
 - 验证：`dart analyze lib` → 0 error，无新增 lint；capability 子图无新增环。
 
+### 阶段 1：四大纯能力消费层迁移（2026-08-20）
+
+延续「接入 Riverpod provider」建立的 DI 接缝，将四大纯能力（GenUi / Material / Teaching / Diagnosis）的底层纯函数调用点从 ChatService 内迁移到对应 capability 方法，使四个 provider 从「存在但无调用方」变为「经 chatServiceProvider 消费」。impl 均为纯委托，行为零变更。
+
+#### 做法
+
+1. **ChatService 构造器接入能力**：新增 4 个能力参数（`GenUiCapability genUi = const GenUiParser()` 等，带 `const` 默认值），存为私有字段 `_genUi` / `_material` / `_teaching` / `_diagnosis`。默认值策略使测试替身 `_FakeChatService`（override `sendMessage` 整体、不触达 `_sendMessageCore`）的 `super(...)` 无需改动。
+2. **chatServiceProvider 经 provider 注入**：`session_providers.dart` 的 `chatServiceProvider` 改为 `ref.watch(genUiCapabilityProvider)` 等 4 个 capability provider 传入，生产侧走 DI 接缝。
+3. **8 处调用点迁移**：
+   - `chat_service_send.dart`（6 处）：`buildSystemPromptV2` → `_teaching.buildSystemPrompt`；`formatAttachedFilesContext` → `_material.formatAttachedFiles`；`parseDiagnosis` / `validateDiagnosisOutput` / `parseTrainingResult` → `_diagnosis.*`；`parseGenuiBlock` → `_genUi.parseGenuiBlock`。
+   - `chat_service_diagnosis.dart`（2 处）：`parseDiagnosis` / `validateDiagnosisOutput` → `_diagnosis.*`。
+4. **契约签名补齐**：迁移中发现 `DiagnosisCapability.validateDiagnosisOutput` 契约缺 `attitude` 命名参数，而原顶层纯函数有（`AttitudeLevel? attitude`，透传到 NL 校验）。impl 静默丢弃会导致行为回归，故补 `attitude` 到契约 + impl + 私有别名（`_validateDiagnosisOutputImpl`），保持行为等价。
+
+#### 范围边界（R-010）
+
+- **不做**：`chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用（同文件纯函数互调，非外部消费点）；`excerpt_picker_sheet.dart:68` widget 调用（widget 消费层，留到阶段 2 统一）；`chatServiceProvider` 中 `ReferenceRepository(db)` 直构（属阶段 2 Reference 契约收敛范畴）。
+- **附带清理**：迁移使 `chat_training_parser.dart`（原供 `parseTrainingResult`）与 `diagnosis_validator.dart`（原供 `validateDiagnosisOutput`）两个 import 成为孤儿，按最小必要范围移除。
+
+#### 验证
+
+- 门禁 1：`dart analyze`（全项目）→ 0 error；改动文件零新增 issue（仅 2 条预存 unnecessary_import info：`chat_service` 的 `skill_layers`、`diagnosis_parser` 的 `diagnosis_capability`，均非本次引入）。
+- 门禁 2：沙箱无法跑 `flutter test`；安全网 = impl 纯委托（行为等价）+ `_FakeChatService` 绕过 `_sendMessageCore`（不触达迁移点）+ 既有 `test/contracts/diagnosis_capability_test.dart` 契约测试编译通过。
+- 门禁 3：capability 子图无新增环；契约层仍为干净叶子。
+- 门禁 4：无疑似硬编码密钥。
+
 ### 遗留（后续阶段）
 
-- 纯能力（GenUi / Material / Teaching / Diagnosis）的四个实现类仍无调用方，行为走底层纯函数——需将底层纯函数调用点迁移到对应 capability provider（涉及 `chat_service` / `chat_context_builder` / `diagnosis_parser` / `skill_dispatcher` 等核心 service 层，且沙箱无法自动跑 `flutter test`，需单独确认范围）。
-- 附属文件 CRUD 方法纳入 `ReferenceCapability` 契约（并把 `AttachedFileRow` DTO 上移）后，widget 可进一步从 `referenceRepositoryProvider` 切换到 `referenceCapabilityProvider` 并改类型为契约。
+- 附属文件 CRUD 方法（`listAttachedFiles` / `getAttachedFile` / `createAttachedFile` / `updateAttachedFile` / `deleteAttachedFile`）及 `listReferencesOfSession` 纳入 `ReferenceCapability` 契约（并把 `AttachedFileRow` DTO 上移）后，widget 可进一步从 `referenceRepositoryProvider` 切换到 `referenceCapabilityProvider` 并改类型为契约。注意 `MentionParser`（MentionCapability impl）反向依赖 ReferenceRepository 契约外方法，是该阶段最棘手的依赖点。
+- `chat_context_builder.dart` 内部 `parseParagraphAnchor` / `extractParagraphWindow` 自调用与 `excerpt_picker_sheet.dart:68` widget 调用可纳入阶段 2 统一收敛。
 
 ## 约束
 

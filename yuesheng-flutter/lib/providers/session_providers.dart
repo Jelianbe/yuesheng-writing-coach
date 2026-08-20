@@ -38,6 +38,7 @@ import '../services/llm_client.dart';
 import '../services/onboarding_service.dart';
 import '../services/realtime_observation_service.dart';
 import 'app_providers.dart';
+import 'capability_providers.dart';
 
 /// Session bootstrap 状态（record）
 ///
@@ -113,6 +114,12 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     llmClient: ref.watch(llmClientProvider),
     teacherSuggestionRepo: TeacherSuggestionRepository(db),
     editorObservationRepo: EditorObservationRepository(db),
+    // 阶段 1（选项 B 依赖倒置）：四大纯能力经 capability provider 注入，
+    // 生产侧走 DI 接缝；impl 为纯委托，行为与原顶层纯函数等价。
+    genUi: ref.watch(genUiCapabilityProvider),
+    material: ref.watch(materialCapabilityProvider),
+    teaching: ref.watch(teachingCapabilityProvider),
+    diagnosis: ref.watch(diagnosisCapabilityProvider),
     // 批次66（B62i）：人物知识仓储装配，启用时序矛盾观察
     characterFactRepo: CharacterFactRepository(db),
     // 批次67（B62j）：事件/支线知识仓储装配，启用 F07 因果链 + F11 情节闭环观察

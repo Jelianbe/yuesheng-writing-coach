@@ -61,10 +61,8 @@ import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
-import 'package:writingcoach/services/chat_training_parser.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
-import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/services/evaluation_service.dart'
     show EvaluationService;
 import 'package:writingcoach/services/focus_resolver.dart' as focus;
@@ -156,6 +154,15 @@ class ChatService {
   final DiagnosisService _diagnosisService;
   final TeacherSuggestionRepository _teacherSuggestionRepo;
   final EditorObservationRepository _editorObservationRepo;
+
+  // ─── 四大纯能力（选项 B 依赖倒置：经 capability provider 注入，默认 const impl） ───
+  // 阶段 1：消费层从顶层纯函数迁移到能力方法；impl 为纯委托，行为零变更。
+  // 生产侧经 chatServiceProvider 读 capability provider 注入；测试替身
+  // （_FakeChatService）override sendMessage 整体、不触达本字段，默认值无害。
+  final GenUiCapability _genUi;
+  final MaterialCapability _material;
+  final TeachingCapability _teaching;
+  final DiagnosisCapability _diagnosis;
 
   /// 批次66（B62i）：人物知识仓储（可选——不装配则跳过时序矛盾观察）
   final CharacterFactRepository? _characterFactRepo;
@@ -254,6 +261,10 @@ class ChatService {
     required LlmClient llmClient,
     required TeacherSuggestionRepository teacherSuggestionRepo,
     required EditorObservationRepository editorObservationRepo,
+    GenUiCapability genUi = const GenUiParser(),
+    MaterialCapability material = const MaterialCapabilityImpl(),
+    TeachingCapability teaching = const TeachingCapabilityImpl(),
+    DiagnosisCapability diagnosis = const DiagnosisCapabilityImpl(),
     CharacterFactRepository? characterFactRepo,
     EventFactRepository? eventFactRepo,
     SubplotFactRepository? subplotFactRepo,
@@ -272,6 +283,10 @@ class ChatService {
        ),
        _teacherSuggestionRepo = teacherSuggestionRepo,
        _editorObservationRepo = editorObservationRepo,
+       _genUi = genUi,
+       _material = material,
+       _teaching = teaching,
+       _diagnosis = diagnosis,
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
        _subplotFactRepo = subplotFactRepo,

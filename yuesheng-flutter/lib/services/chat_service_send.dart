@@ -89,7 +89,7 @@ extension ChatServiceSend on ChatService {
         subphase: currentSubphase,
         isBeginner: isBeginner,
       );
-      final promptResult = buildSystemPromptV2(skillCtx);
+      final promptResult = _teaching.buildSystemPrompt(skillCtx);
 
       final messages = <ChatMessage>[
         ChatMessage(role: 'system', content: promptResult.systemPrompt),
@@ -575,7 +575,7 @@ extension ChatServiceSend on ChatService {
                   ),
                 )
                 .toList();
-            final fileContext = formatAttachedFilesContext(fileInfos);
+            final fileContext = _material.formatAttachedFiles(fileInfos);
             if (fileContext != null && fileContext.isNotEmpty) {
               markStage(BudgetStageNames.attachedFiles);
               messages.add(ChatMessage(role: 'system', content: fileContext));
@@ -1083,7 +1083,7 @@ extension ChatServiceSend on ChatService {
       );
 
       // 9. 解析 + 第二层后置校验
-      final rawParse = parseDiagnosis(fullContent);
+      final rawParse = _diagnosis.parseDiagnosis(fullContent);
       debugPrint(
         '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}',
       );
@@ -1119,7 +1119,7 @@ extension ChatServiceSend on ChatService {
               .trim();
           try {
             final rawJson = jsonDecode(jsonStr);
-            final validation = validateDiagnosisOutput(
+            final validation = _diagnosis.validateDiagnosisOutput(
               rawParse.displayContent,
               rawJson,
               attitude: options.attitude,
@@ -1140,7 +1140,7 @@ extension ChatServiceSend on ChatService {
       // B-1：剥离 [YS_GENUI] 协议块（GenUI 组件块，独立于诊断/事实）
       displayContent = stripGenuiBlock(displayContent);
       // B-1：解析 GenUI 组件（用于后续确定性插入 genui 卡片）
-      final genuiComponents = parseGenuiBlock(fullContent);
+      final genuiComponents = _genUi.parseGenuiBlock(fullContent);
 
       // B1：诊断成败记录 → 连续失败达阈值插诊断失败卡。
       // attempted 仅当 AI 确实输出了 [YS_DIAGNOSIS] 块（inDiagnosisBlock），
@@ -1395,7 +1395,7 @@ extension ChatServiceSend on ChatService {
         // 约束源为 skill 指令（skill_registry.dart 阶段3），非代码强制；
         // 仅 debug 留痕观测回复是否按顺序走全三步，不改变行为。
         _observeEvaluationOrder(displayContent);
-        final trainingResult = parseTrainingResult(displayContent);
+        final trainingResult = _diagnosis.parseTrainingResult(displayContent);
         if (trainingResult != null) {
           try {
             if (trainingSyndromeId != null) {

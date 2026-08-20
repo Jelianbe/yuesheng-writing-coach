@@ -92,7 +92,7 @@ extension ChatServiceDiagnosis on ChatService {
     required String fullContent,
   }) async {
     // 步骤 9: 解析诊断
-    final rawParse = parseDiagnosis(fullContent);
+    final rawParse = _diagnosis.parseDiagnosis(fullContent);
     String displayContent = rawParse.displayContent;
     ParsedDiagnosis? diagnosis = rawParse.diagnosis;
 
@@ -108,7 +108,7 @@ extension ChatServiceDiagnosis on ChatService {
             .trim();
         try {
           final rawJson = jsonDecode(jsonStr);
-          final validation = validateDiagnosisOutput(
+          final validation = _diagnosis.validateDiagnosisOutput(
             rawParse.displayContent,
             rawJson,
           );
