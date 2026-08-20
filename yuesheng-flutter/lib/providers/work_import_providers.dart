@@ -18,7 +18,7 @@ final workImportServiceProvider = Provider<WorkImportService>((ref) {
     db,
     ManuscriptRepository(db),
     ChapterRepository(db),
-    ref.read(referenceRepositoryProvider),
+    ref.read(referenceCapabilityProvider),
   );
 });
 
@@ -28,6 +28,6 @@ final mentionParserProvider = Provider<MentionParser>((ref) {
   return MentionParser(
     ManuscriptRepository(db),
     ChapterRepository(db),
-    ref.read(referenceRepositoryProvider),
+    ref.read(referenceCapabilityProvider),
   );
 });

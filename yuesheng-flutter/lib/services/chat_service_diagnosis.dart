@@ -160,7 +160,7 @@ extension ChatServiceDiagnosis on ChatService {
       String? d4TargetRefType;
       String? d4TargetRefId;
       try {
-        final refs = await _referenceRepo.listReferencesOfSession(sessionId);
+        final refs = await _referenceRepo.listReferences(sessionId);
         if (refs.isNotEmpty) {
           final primary = refs.firstWhere(
             (r) => r.isPrimary == 1,
@@ -537,7 +537,7 @@ extension ChatServiceDiagnosis on ChatService {
     ReferenceItem? pRef = primaryRef;
     if (pRef == null) {
       try {
-        final refs = await _referenceRepo.listReferencesOfSession(sessionId);
+        final refs = await _referenceRepo.listReferences(sessionId);
         if (refs.isNotEmpty) {
           final items = refs
               .map(
@@ -629,7 +629,7 @@ extension ChatServiceDiagnosis on ChatService {
     ReferenceItem? pRef = primaryRef;
     if (pRef == null) {
       try {
-        final refs = await _referenceRepo.listReferencesOfSession(sessionId);
+        final refs = await _referenceRepo.listReferences(sessionId);
         if (refs.isNotEmpty) {
           final items = refs
               .map(

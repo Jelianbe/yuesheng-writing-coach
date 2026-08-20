@@ -107,7 +107,7 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     stateRepo: TeachingStateRepository(db),
     diagnosisRepo: DiagnosisRepository(db),
     studentModelRepo: StudentModelRepository(db),
-    referenceRepo: ref.read(referenceRepositoryProvider),
+    referenceRepo: ref.read(referenceCapabilityProvider),
     chapterRepo: ChapterRepository(db),
     manuscriptRepo: ManuscriptRepository(db),
     llmClient: ref.watch(llmClientProvider),
