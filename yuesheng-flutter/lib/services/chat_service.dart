@@ -64,7 +64,7 @@ import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/evaluation_service.dart'
-    show EvaluationService;
+    show EvaluationService, EvaluationPassRateExtension;
 import 'package:writingcoach/services/focus_resolver.dart' as focus;
 import 'package:writingcoach/services/style_technique_router.dart';
 import 'package:writingcoach/services/llm_client.dart';
