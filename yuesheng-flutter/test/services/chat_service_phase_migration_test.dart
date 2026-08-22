@@ -41,10 +41,12 @@ class FakeLlmClient extends LlmClient {
   /// 记录每次 streamChat 收到的 messages（批次6 M2 断言用）
   final List<List<ChatMessage>> calls = [];
 
-  FakeLlmClient(this._fullResponse,
-      {int chunkSize = 10, String? subsequentResponse})
-      : _chunkSize = chunkSize,
-        _subsequentResponse = subsequentResponse;
+  FakeLlmClient(
+    this._fullResponse, {
+    int chunkSize = 10,
+    String? subsequentResponse,
+  }) : _chunkSize = chunkSize,
+       _subsequentResponse = subsequentResponse;
 
   @override
   Future<void> streamChat(
@@ -57,14 +59,9 @@ class FakeLlmClient extends LlmClient {
         ? _fullResponse
         : (_subsequentResponse ?? _fullResponse);
     for (int i = 0; i < body.length; i += _chunkSize) {
-      final end = i + _chunkSize < body.length
-          ? _chunkSize
-          : body.length - i;
+      final end = i + _chunkSize < body.length ? _chunkSize : body.length - i;
       callback(
-        LlmStreamResponse(
-          content: body.substring(i, i + end),
-          isDone: false,
-        ),
+        LlmStreamResponse(content: body.substring(i, i + end), isDone: false),
       );
     }
     callback(const LlmStreamResponse(content: '', isDone: true));
@@ -143,11 +140,7 @@ void main() {
         sessionId: sessionId,
         messageId: msgId,
         syndromes: [
-          {
-            'syndrome_id': syndromeId,
-            'name': '叙事含糊',
-            'severity': 'L2',
-          },
+          {'syndrome_id': syndromeId, 'name': '叙事含糊', 'severity': 'L2'},
         ],
         suggestedActions: const [],
         confidence: 0.8,
@@ -186,9 +179,7 @@ void main() {
       );
 
       final chatService = buildChatService(
-        FakeLlmClient(
-          buildDiagnosisResponse(suggestedPhase: 'P4_REVIEW'),
-        ),
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P4_REVIEW')),
       );
 
       await chatService.sendMessage(
@@ -217,9 +208,7 @@ void main() {
       );
 
       final chatService = buildChatService(
-        FakeLlmClient(
-          buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING'),
-        ),
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING')),
       );
 
       await chatService.sendMessage(
@@ -248,9 +237,7 @@ void main() {
       );
 
       final chatService = buildChatService(
-        FakeLlmClient(
-          buildDiagnosisResponse(suggestedPhase: 'P0_ENGAGE'),
-        ),
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P0_ENGAGE')),
       );
 
       await chatService.sendMessage(
@@ -474,8 +461,7 @@ void main() {
       // 直接调用 commitDiagnosisFromContent（模拟超长章节分块诊断完成后的落库）
       await chatService.commitDiagnosisFromContent(
         sessionId: sessionId,
-        fullContent:
-            buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING'),
+        fullContent: buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING'),
       );
 
       final ts = await stateRepo.getTeachingState(sessionId);
@@ -636,7 +622,8 @@ void main() {
       );
 
       // 响应同时携带 [YS_DIAGNOSIS] 与 [YS_ENTITY] 块（对齐真实 AI 输出）
-      final response = '诊断完成。'
+      final response =
+          '诊断完成。'
           '\n[YS_DIAGNOSIS]'
           '\n{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"测试"}],"suggested_actions":[],"confidence":0.8}'
           '\n[/YS_DIAGNOSIS]'
@@ -679,11 +666,9 @@ void main() {
 
       // 大纲实体 + 印象落库（懒加载服务走通即证明装配即可用）
       final entities = await outlineRepo.listEntities(manuscriptId);
-      expect(entities, isNotEmpty,
-          reason: 'O2: 懒加载服务下大纲提取应正常落库');
+      expect(entities, isNotEmpty, reason: 'O2: 懒加载服务下大纲提取应正常落库');
       final imps = await outlineRepo.listImpressions(entities.first.id);
-      expect(imps, isNotEmpty,
-          reason: 'O2: 实体印象应一并落库');
+      expect(imps, isNotEmpty, reason: 'O2: 实体印象应一并落库');
       // 展示层不含协议原文（[YS_ENTITY] 块已剥离）
       expect(finalDisplay, isNot(contains('[YS_ENTITY]')));
       expect(finalDisplay, isNot(contains('[/YS_ENTITY]')));
@@ -708,7 +693,8 @@ void main() {
       );
 
       // 与 #12 相同的协议响应，但 ChatService 不装配 outlineRepo
-      final response = '诊断完成。'
+      final response =
+          '诊断完成。'
           '\n[YS_DIAGNOSIS]'
           '\n{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"测试"}],"suggested_actions":[],"confidence":0.8}'
           '\n[/YS_DIAGNOSIS]'
@@ -751,8 +737,7 @@ void main() {
 
       // 未装配时实体不应落库（静默跳过），主流程不受影响
       final entities = await OutlineRepository(db).listEntities(manuscriptId);
-      expect(entities, isEmpty,
-          reason: 'O2: 未装配 outlineRepo 时应静默跳过提取');
+      expect(entities, isEmpty, reason: 'O2: 未装配 outlineRepo 时应静默跳过提取');
       expect(finalDisplay, isNotNull);
     });
   });

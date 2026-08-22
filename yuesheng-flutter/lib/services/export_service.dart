@@ -41,9 +41,7 @@ String buildChapterExportText(
   switch (format) {
     case ExportFormat.txt:
       final head = chapterNo == null ? title : '第$chapterNo章 $title';
-      return content.isEmpty
-          ? '$head\n（本章暂无正文）'
-          : '$head\n──────\n$content';
+      return content.isEmpty ? '$head\n（本章暂无正文）' : '$head\n──────\n$content';
     case ExportFormat.markdown:
       return content.isEmpty
           ? '### $title\n\n（本章暂无正文）'
@@ -62,11 +60,8 @@ String buildVolumeExportText(
     ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   final body = sorted.indexed
       .map(
-        (e) => buildChapterExportText(
-          e.$2,
-          format: format,
-          chapterNo: e.$1 + 1,
-        ),
+        (e) =>
+            buildChapterExportText(e.$2, format: format, chapterNo: e.$1 + 1),
       )
       .join('\n\n');
 
@@ -88,7 +83,9 @@ String buildManuscriptExportText(
   final bookTitle = manuscript.title.trim().isEmpty
       ? '未命名作品'
       : manuscript.title.trim();
-  final groups = volumes.isEmpty ? const <VolumeGroup>[] : groupChaptersByVolume(volumes, chapters);
+  final groups = volumes.isEmpty
+      ? const <VolumeGroup>[]
+      : groupChaptersByVolume(volumes, chapters);
 
   String body;
   if (groups.isEmpty) {
@@ -97,11 +94,8 @@ String buildManuscriptExportText(
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     body = sorted.indexed
         .map(
-          (e) => buildChapterExportText(
-            e.$2,
-            format: format,
-            chapterNo: e.$1 + 1,
-          ),
+          (e) =>
+              buildChapterExportText(e.$2, format: format, chapterNo: e.$1 + 1),
         )
         .join('\n\n');
   } else {
@@ -120,11 +114,7 @@ String buildManuscriptExportText(
                     ),
                   )
                   .join('\n\n')
-            : buildVolumeExportText(
-                v,
-                group.chapters,
-                format: format,
-              ),
+            : buildVolumeExportText(v, group.chapters, format: format),
       );
     }
     body = parts.where((s) => s.isNotEmpty).join('\n\n');
@@ -140,9 +130,7 @@ String buildManuscriptExportText(
 
 /// 生成安全文件名（去除路径非法字符）
 String exportFileName(String base, ExportFormat format) {
-  final safe = base
-      .replaceAll(RegExp(r'[\\/:*?"<>|]'), '')
-      .trim();
+  final safe = base.replaceAll(RegExp(r'[\\/:*?"<>|]'), '').trim();
   final name = safe.isEmpty ? '导出' : safe;
   return '$name.${format.extension}';
 }

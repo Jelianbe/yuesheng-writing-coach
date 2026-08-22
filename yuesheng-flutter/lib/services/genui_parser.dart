@@ -71,9 +71,7 @@ List<GenUiComponent>? parseGenuiBlock(String rawText) {
       _tryAddComponents(components, jsonStr);
       break; // 无结束标记，保守终止
     } else {
-      jsonStr = rawText
-          .substring(start + kGenuiStart.length, end)
-          .trim();
+      jsonStr = rawText.substring(start + kGenuiStart.length, end).trim();
       _tryAddComponents(components, jsonStr);
       searchFrom = end + kGenuiEnd.length;
     }

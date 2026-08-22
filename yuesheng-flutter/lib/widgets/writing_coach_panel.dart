@@ -201,7 +201,6 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
       ),
     );
   }
-
 }
 
 /// D5-A：思考/诊断中占位 — 竹青头像 + 转圈 + 文案

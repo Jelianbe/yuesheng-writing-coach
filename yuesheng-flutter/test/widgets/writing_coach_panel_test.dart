@@ -478,10 +478,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final stateRepo = TeachingStateRepository(db);
-      final sid = await SessionRepository(db).getOrCreateSessionForChapter(
-        msId,
-        chapterId,
-      );
+      final sid = await SessionRepository(
+        db,
+      ).getOrCreateSessionForChapter(msId, chapterId);
       // 模拟学员已进入 P2 训练阶段（FSM 单调前进的中间态）
       await stateRepo.updatePhase(sid, 'P2_PRACTICE_LOOP');
 
@@ -503,10 +502,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final stateRepo = TeachingStateRepository(db);
-      final sid = await SessionRepository(db).getOrCreateSessionForChapter(
-        msId,
-        chapterId,
-      );
+      final sid = await SessionRepository(
+        db,
+      ).getOrCreateSessionForChapter(msId, chapterId);
       // 初始 P0（createBlankSession 默认）
 
       await tester.tap(find.text('诊断本章'));
@@ -705,7 +703,10 @@ void main() {
   group('批次74 教练面板消息长按删除', () {
     testWidgets('B74-1 长按普通气泡 → 确认删除 → DB 删除 + 列表刷新', (tester) async {
       final sessionRepo = SessionRepository(db);
-      final sid = await sessionRepo.getOrCreateSessionForChapter(msId, chapterId);
+      final sid = await sessionRepo.getOrCreateSessionForChapter(
+        msId,
+        chapterId,
+      );
       await sessionRepo.addMessage(sid, 'user', '待删除的教练消息');
 
       await tester.pumpWidget(buildPanel());
@@ -730,7 +731,10 @@ void main() {
 
     testWidgets('B74-2 长按卡片消息 → 确认删除 → 卡片消失', (tester) async {
       final sessionRepo = SessionRepository(db);
-      final sid = await sessionRepo.getOrCreateSessionForChapter(msId, chapterId);
+      final sid = await sessionRepo.getOrCreateSessionForChapter(
+        msId,
+        chapterId,
+      );
       await sessionRepo.addMessage(
         sid,
         'system',
@@ -770,7 +774,10 @@ void main() {
 
     testWidgets('B74-3 长按 → 取消不删除', (tester) async {
       final sessionRepo = SessionRepository(db);
-      final sid = await sessionRepo.getOrCreateSessionForChapter(msId, chapterId);
+      final sid = await sessionRepo.getOrCreateSessionForChapter(
+        msId,
+        chapterId,
+      );
       await sessionRepo.addMessage(sid, 'user', '保留这条消息');
 
       await tester.pumpWidget(buildPanel());
@@ -813,7 +820,10 @@ void main() {
       practice.skipPractice();
 
       final sessionRepo = SessionRepository(db);
-      final sid = await sessionRepo.getOrCreateSessionForChapter(msId, chapterId);
+      final sid = await sessionRepo.getOrCreateSessionForChapter(
+        msId,
+        chapterId,
+      );
       await sessionRepo.addMessage(
         sid,
         'assistant',
@@ -841,7 +851,10 @@ void main() {
     testWidgets('diagnosis_failed「继续对话」→ 聚焦输入栏', (tester) async {
       enlargeViewport(tester);
       final sessionRepo = SessionRepository(db);
-      final sid = await sessionRepo.getOrCreateSessionForChapter(msId, chapterId);
+      final sid = await sessionRepo.getOrCreateSessionForChapter(
+        msId,
+        chapterId,
+      );
       await sessionRepo.addMessage(
         sid,
         'assistant',
@@ -859,12 +872,13 @@ void main() {
       expect(editable.focusNode.hasFocus, isTrue);
     });
 
-    testWidgets('partial_agreement 提交反馈 → 用户消息进列表（杜绝静默清空）', (
-      tester,
-    ) async {
+    testWidgets('partial_agreement 提交反馈 → 用户消息进列表（杜绝静默清空）', (tester) async {
       enlargeViewport(tester);
       final sessionRepo = SessionRepository(db);
-      final sid = await sessionRepo.getOrCreateSessionForChapter(msId, chapterId);
+      final sid = await sessionRepo.getOrCreateSessionForChapter(
+        msId,
+        chapterId,
+      );
       await sessionRepo.addMessage(
         sid,
         'assistant',
@@ -892,10 +906,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 反馈作为用户消息真实进入消息列表（非静默清空）
-      expect(
-        find.textContaining('我对刚才的诊断结果有不同看法：我觉得问题不严重'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('我对刚才的诊断结果有不同看法：我觉得问题不严重'), findsOneWidget);
     });
   });
 }

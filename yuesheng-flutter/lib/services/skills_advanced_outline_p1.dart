@@ -174,7 +174,6 @@ const Skill _revisionMethodology = Skill(
 - 已修改 ≥3 处（防过度修订——改得越多不等于越好，有时会破坏原文的自然感）''',
 );
 
-
 const Skill _advancedPhases = Skill(
   meta: SkillMeta(
     id: 'advanced-phases',
@@ -183,7 +182,6 @@ const Skill _advancedPhases = Skill(
   ),
   content: _advancedPhasesBody1 + _advancedPhasesBody2,
 );
-
 
 const Skill _outlineDiagnosis = Skill(
   meta: SkillMeta(

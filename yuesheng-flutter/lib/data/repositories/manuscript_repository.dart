@@ -63,9 +63,7 @@ class ManuscriptRepository {
   /// 语义对齐 getManuscript：仅按 id 过滤，不过滤 status。空列表守卫避免 `IN ()` 非法 SQL。
   Future<List<Manuscript>> getManuscriptsByIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
-    return (_db.select(_db.manuscripts)
-          ..where((t) => t.id.isIn(ids)))
-        .get();
+    return (_db.select(_db.manuscripts)..where((t) => t.id.isIn(ids))).get();
   }
 
   /// 解析稿件 tags JSON（容错：非法 JSON / 非数组 → 空列表，批次94-5）

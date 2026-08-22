@@ -5,10 +5,7 @@ void main() {
   group('ReplyReceiptGuard.sanitize', () {
     test('无回执时把「已X」降级为「建议X」', () {
       const input = '我已经帮你把这段润色好了，已保存到你的作品里。';
-      final r = ReplyReceiptGuard.sanitize(
-        input,
-        receipts: const {},
-      );
+      final r = ReplyReceiptGuard.sanitize(input, receipts: const {});
       expect(r.text, '我已经帮你把这段润色好了，建议保存到你的作品里。');
       expect(r.status, ReceiptStatus.humanReviewPending);
       expect(r.downgraded, contains(ReceiptAction.saved));
@@ -34,7 +31,10 @@ void main() {
       // ADR-P0：降级规则为「已X」→「建议X」，不做主语改写（保守优先）；
       // 「已应用/已修改」属替正文改动的动作，永不进 receipts，即使有其它回执也降级。
       expect(r.text, '我建议应用到全文，并建议修改了三个段落。');
-      expect(r.downgraded, containsAll([ReceiptAction.applied, ReceiptAction.modified]));
+      expect(
+        r.downgraded,
+        containsAll([ReceiptAction.applied, ReceiptAction.modified]),
+      );
     });
 
     test('多动作混合：仅降级无回执者', () {
@@ -44,7 +44,10 @@ void main() {
         receipts: {ReceiptAction.exported},
       );
       expect(r.text, '已导出，建议应用，建议修改。');
-      expect(r.downgraded, containsAll([ReceiptAction.applied, ReceiptAction.modified]));
+      expect(
+        r.downgraded,
+        containsAll([ReceiptAction.applied, ReceiptAction.modified]),
+      );
       expect(r.downgraded, isNot(contains(ReceiptAction.exported)));
     });
 
@@ -53,7 +56,10 @@ void main() {
       expect(r1.text, '');
       expect(r1.status, ReceiptStatus.receiptOk);
 
-      final r2 = ReplyReceiptGuard.sanitize('请参考上面的建议自行调整。', receipts: const {});
+      final r2 = ReplyReceiptGuard.sanitize(
+        '请参考上面的建议自行调整。',
+        receipts: const {},
+      );
       expect(r2.text, '请参考上面的建议自行调整。');
       expect(r2.status, ReceiptStatus.receiptOk);
     });

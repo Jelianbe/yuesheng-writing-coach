@@ -26,16 +26,19 @@ class VolumeRepository {
     final now = nowSec();
     int order = sortOrder ?? 0;
     if (sortOrder == null) {
-      final maxOrder = await (_db.selectOnly(_db.volumes)
-            ..addColumns([_db.volumes.sortOrder.max()])
-            ..where(_db.volumes.manuscriptId.equals(manuscriptId)))
-          .getSingleOrNull();
+      final maxOrder =
+          await (_db.selectOnly(_db.volumes)
+                ..addColumns([_db.volumes.sortOrder.max()])
+                ..where(_db.volumes.manuscriptId.equals(manuscriptId)))
+              .getSingleOrNull();
       order = (maxOrder?.read(_db.volumes.sortOrder.max()) ?? -1) + 1;
     }
     final resolvedTitle = title?.trim().isNotEmpty == true
         ? title!.trim()
         : nextVolumeTitle(await listVolumes(manuscriptId));
-    await _db.into(_db.volumes).insert(
+    await _db
+        .into(_db.volumes)
+        .insert(
           VolumesCompanion.insert(
             id: id,
             manuscriptId: manuscriptId,
@@ -58,8 +61,9 @@ class VolumeRepository {
 
   /// 批次95-4：读取单卷（写作页面包屑按 volumeId 取卷名）
   Future<Volume?> getVolume(String volumeId) async {
-    return (_db.select(_db.volumes)..where((t) => t.id.equals(volumeId)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.volumes,
+    )..where((t) => t.id.equals(volumeId))).getSingleOrNull();
   }
 
   /// 删除卷（批次96-4：事务内先软删卷内全部章节进回收站，再删卷）
@@ -68,10 +72,9 @@ class VolumeRepository {
   /// 恢复后落入「散落」组，符合「卷已删除」的事实。
   Future<void> deleteVolume(String volumeId) async {
     await _db.transaction(() async {
-      await (_db.update(_db.chapters)
-            ..where(
-              (t) => t.volumeId.equals(volumeId) & t.status.equals('draft'),
-            ))
+      await (_db.update(_db.chapters)..where(
+            (t) => t.volumeId.equals(volumeId) & t.status.equals('draft'),
+          ))
           .write(
             ChaptersCompanion(
               status: const Value('archived'),
@@ -84,11 +87,11 @@ class VolumeRepository {
 
   /// 设置章节所属卷（volumeId null = 移出卷 → 未分卷）
   Future<void> setChapterVolume(String chapterId, String? volumeId) async {
-    await (_db.update(_db.chapters)..where((t) => t.id.equals(chapterId)))
-        .write(ChaptersCompanion(
-          volumeId: Value(volumeId),
-          updatedAt: Value(nowSec()),
-        ));
+    await (_db.update(
+      _db.chapters,
+    )..where((t) => t.id.equals(chapterId))).write(
+      ChaptersCompanion(volumeId: Value(volumeId), updatedAt: Value(nowSec())),
+    );
   }
 
   /// 批次96-1：移动章节到目标卷末尾（跨卷归属调整）
@@ -102,31 +105,36 @@ class VolumeRepository {
     String? volumeId,
   ) async {
     await _db.transaction(() async {
-      final maxOrder = await (_db.selectOnly(_db.chapters)
-            ..addColumns([_db.chapters.sortOrder.max()])
-            ..where(
-              volumeId == null
-                  ? _db.chapters.volumeId.isNull()
-                  : _db.chapters.volumeId.equals(volumeId),
-            ))
-          .getSingleOrNull();
+      final maxOrder =
+          await (_db.selectOnly(_db.chapters)
+                ..addColumns([_db.chapters.sortOrder.max()])
+                ..where(
+                  volumeId == null
+                      ? _db.chapters.volumeId.isNull()
+                      : _db.chapters.volumeId.equals(volumeId),
+                ))
+              .getSingleOrNull();
       final order = (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
-      await (_db.update(_db.chapters)..where((t) => t.id.equals(chapterId)))
-          .write(ChaptersCompanion(
-            volumeId: Value(volumeId),
-            sortOrder: Value(order),
-            updatedAt: Value(nowSec()),
-          ));
+      await (_db.update(
+        _db.chapters,
+      )..where((t) => t.id.equals(chapterId))).write(
+        ChaptersCompanion(
+          volumeId: Value(volumeId),
+          sortOrder: Value(order),
+          updatedAt: Value(nowSec()),
+        ),
+      );
     });
   }
 
   /// 批次92-2：重命名卷（鱼写作长按驱动模型——长按卷头 → 重命名）
   Future<void> updateVolumeTitle(String volumeId, String title) async {
-    await (_db.update(_db.volumes)..where((t) => t.id.equals(volumeId)))
-        .write(VolumesCompanion(
-          title: Value(title.trim().isEmpty ? '未命名卷' : title.trim()),
-          updatedAt: Value(nowSec()),
-        ));
+    await (_db.update(_db.volumes)..where((t) => t.id.equals(volumeId))).write(
+      VolumesCompanion(
+        title: Value(title.trim().isEmpty ? '未命名卷' : title.trim()),
+        updatedAt: Value(nowSec()),
+      ),
+    );
   }
 
   /// 计算新建卷的自动标题（「第X卷」，按当前卷数 +1）

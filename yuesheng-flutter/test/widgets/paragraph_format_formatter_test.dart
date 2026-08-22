@@ -27,10 +27,7 @@ void main() {
     });
 
     test('已有缩进的行不再重复补', () {
-      final out = f.formatEditUpdate(
-        _v('第一段。'),
-        _v('第一段。\n\u3000第二段'),
-      );
+      final out = f.formatEditUpdate(_v('第一段。'), _v('第一段。\n\u3000第二段'));
       expect(out.text, '第一段。\n\u3000第二段');
     });
 

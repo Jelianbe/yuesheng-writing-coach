@@ -323,9 +323,7 @@ class LlmClient {
   void _logFirstToken(Stopwatch watch, bool alreadyLogged) {
     if (!kDebugMode || alreadyLogged) return;
     watch.stop();
-    debugPrint(
-      '[批次55 TTFT] 首个 token 到达 ${watch.elapsedMilliseconds}ms（仅观测）',
-    );
+    debugPrint('[批次55 TTFT] 首个 token 到达 ${watch.elapsedMilliseconds}ms（仅观测）');
   }
 
   String _buildDioError(DioException e) {

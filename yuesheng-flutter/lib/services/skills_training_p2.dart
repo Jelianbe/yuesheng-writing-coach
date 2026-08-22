@@ -196,7 +196,6 @@ rating:       基于评估结果映射
 | context | 已用次数 + 连续达标数 | 供阶段迁移决策 |''',
 );
 
-
 const Skill _timedRewrite = Skill(
   meta: SkillMeta(
     id: 'timed-rewrite',

@@ -3,6 +3,7 @@
 // 轮次评估 extension：computeRoundEvaluation。迁移自 evaluation_service.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'evaluation_service.dart';
+
 extension EvaluationRoundExtension on EvaluationService {
   /// 计算某轮评估数据（无诊断历史时返回 null）
   Future<EvaluationData?> computeRoundEvaluation(
@@ -115,5 +116,4 @@ extension EvaluationRoundExtension on EvaluationService {
       return null;
     }
   }
-
 }

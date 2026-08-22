@@ -55,14 +55,8 @@ void main() {
 
     test('轻量转场时长收敛为 220ms（route 时长随 builder 全局生效）', () {
       const builder = YueFadeSlidePageTransitionsBuilder();
-      expect(
-        builder.transitionDuration,
-        AppMotion.durationTransition,
-      );
-      expect(
-        builder.transitionDuration,
-        const Duration(milliseconds: 220),
-      );
+      expect(builder.transitionDuration, AppMotion.durationTransition);
+      expect(builder.transitionDuration, const Duration(milliseconds: 220));
     });
   });
 }

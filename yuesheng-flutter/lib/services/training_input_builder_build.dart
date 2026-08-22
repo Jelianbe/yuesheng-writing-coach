@@ -3,6 +3,7 @@
 // 输入构建：ActiveProblemMeta/buildTrainingInputForActiveSyndrome。迁移自 training_input_builder.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'training_input_builder.dart';
+
 /// 活跃症候的元信息（外部传入，来自 active_problem 表）
 class ActiveProblemMeta {
   final Severity currentSeverity;
@@ -39,8 +40,9 @@ Future<EvaluationSummaryInput?> buildTrainingInputForActiveSyndrome(
         history.where((r) => r['type'] == 'diagnosis').where((r) {
           final syndromes = r['syndromes'];
           if (syndromes is! List) return false;
-          return syndromes.any((id) =>
-              id is String && effectiveSyndromeId(id) == syndromeId);
+          return syndromes.any(
+            (id) => id is String && effectiveSyndromeId(id) == syndromeId,
+          );
         }).toList()..sort((a, b) {
           final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
           final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
@@ -56,8 +58,7 @@ Future<EvaluationSummaryInput?> buildTrainingInputForActiveSyndrome(
               (r) =>
                   r['type'] == 'training' &&
                   r['syndromeId'] is String &&
-                  effectiveSyndromeId(r['syndromeId'] as String) ==
-                      syndromeId,
+                  effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
             )
             .toList()
           ..sort((a, b) {
@@ -181,7 +182,10 @@ Future<EvaluationSummaryInput?> buildTrainingInputForActiveSyndrome(
     //   实现单调累积，正向迁移可完整走 identified→in_progress→consolidating→mastered。
     TeachingState startingTeachingState;
     if (diagnosisRepo != null) {
-      final activeRow = await diagnosisRepo.getActiveProblem(sessionId, syndromeId);
+      final activeRow = await diagnosisRepo.getActiveProblem(
+        sessionId,
+        syndromeId,
+      );
       final persisted = activeRow?.teachingState;
       if (persisted != null && persisted.isNotEmpty) {
         final parsed = TeachingState.fromString(persisted);

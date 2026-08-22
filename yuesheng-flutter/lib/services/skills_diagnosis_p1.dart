@@ -184,7 +184,6 @@ const Skill _genreGuide = Skill(
 - 跨界作品的诊断阈值取两者的"更严格"值——因为需要同时满足两类读者的预期''',
 );
 
-
 const Skill _diagnosisConfirmation = Skill(
   meta: SkillMeta(
     id: 'diagnosis-confirmation',

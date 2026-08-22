@@ -186,9 +186,9 @@ class TeacherSuggestionRepository {
   /// 不影响本判定）。
   Future<bool> isDismissed(String suggestionId) async {
     if (suggestionId.isEmpty) return false;
-    final row = await (_db.select(_db.teacherSuggestions)
-          ..where((t) => t.id.equals(suggestionId)))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.teacherSuggestions,
+    )..where((t) => t.id.equals(suggestionId))).getSingleOrNull();
     if (row == null) return false;
     return row.status == 'resolved' && row.dismissedAt != null;
   }

@@ -27,32 +27,17 @@ void main() {
     });
 
     test('三对互斥规则均生效（P015/P012、P009/P018）', () {
-      expect(
-        validateSyndromeMutexWarnings(['P015', 'P012']),
-        hasLength(1),
-      );
-      expect(
-        validateSyndromeMutexWarnings(['P009', 'P018']),
-        hasLength(1),
-      );
+      expect(validateSyndromeMutexWarnings(['P015', 'P012']), hasLength(1));
+      expect(validateSyndromeMutexWarnings(['P009', 'P018']), hasLength(1));
     });
 
     test('非互斥组合 → 无 warning', () {
-      expect(
-        validateSyndromeMutexWarnings(['P006', 'P003']),
-        isEmpty,
-      );
-      expect(
-        validateSyndromeMutexWarnings(['P006']),
-        isEmpty,
-      );
+      expect(validateSyndromeMutexWarnings(['P006', 'P003']), isEmpty);
+      expect(validateSyndromeMutexWarnings(['P006']), isEmpty);
     });
 
     test('互斥对仅一侧命中 → 无 warning', () {
-      expect(
-        validateSyndromeMutexWarnings(['P021', 'P004']),
-        isEmpty,
-      );
+      expect(validateSyndromeMutexWarnings(['P021', 'P004']), isEmpty);
     });
   });
 
@@ -112,10 +97,7 @@ void main() {
 
     test('非判决句 → 无 V-02', () {
       final result = validateNaturalLanguage('这一段的人物动机可以再明确一点');
-      expect(
-        result.fixes.any((f) => f.type == 'V-02'),
-        isFalse,
-      );
+      expect(result.fixes.any((f) => f.type == 'V-02'), isFalse);
     });
   });
 }

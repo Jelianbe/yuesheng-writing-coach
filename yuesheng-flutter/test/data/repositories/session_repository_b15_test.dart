@@ -29,16 +29,18 @@ void main() {
     final sessionId = await sessionRepo.createBlankSession(title: 'orphan');
 
     // 2. 模拟"切态度"写入 student_model 行（无消息 → 孤儿）
-    await db.into(db.studentModels).insert(
-      StudentModelsCompanion.insert(
-        id: 'sm-b15',
-        sessionId: sessionId,
-        attitudePreference: const Value('豆包'),
-        teachingHistory: const Value('[]'),
-        createdAt: Value(DateTime.now().millisecondsSinceEpoch),
-        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-      ),
-    );
+    await db
+        .into(db.studentModels)
+        .insert(
+          StudentModelsCompanion.insert(
+            id: 'sm-b15',
+            sessionId: sessionId,
+            attitudePreference: const Value('豆包'),
+            teachingHistory: const Value('[]'),
+            createdAt: Value(DateTime.now().millisecondsSinceEpoch),
+            updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+          ),
+        );
 
     // 3. 清缓存：修复前此处抛
     //    NOT NULL constraint failed: student_model.session_id
@@ -46,9 +48,9 @@ void main() {
     expect(deleted, 1);
 
     // 4. student_model 死数据行应被同步删（不再残留）
-    final remaining = await (db.select(db.studentModels)
-          ..where((t) => t.sessionId.equals(sessionId)))
-        .get();
+    final remaining = await (db.select(
+      db.studentModels,
+    )..where((t) => t.sessionId.equals(sessionId))).get();
     expect(remaining, isEmpty);
   });
 }

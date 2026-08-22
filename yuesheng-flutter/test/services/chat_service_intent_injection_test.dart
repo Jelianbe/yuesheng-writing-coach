@@ -106,12 +106,7 @@ void main() {
     final llm = _CaptureLlmClient();
     final service = buildChatService(llm);
 
-    await service.sendMessage(
-      sessionId,
-      '这段对话怎么改更好？',
-      callbacks(),
-      options(),
-    );
+    await service.sendMessage(sessionId, '这段对话怎么改更好？', callbacks(), options());
 
     expect(hasIntentNote(llm.systemContents, '询问'), true);
     expect(llm.systemContents.join('\n'), contains('不要展开新的诊断'));
@@ -121,12 +116,7 @@ void main() {
     final llm = _CaptureLlmClient();
     final service = buildChatService(llm);
 
-    await service.sendMessage(
-      sessionId,
-      '把这段对话改成动作描写',
-      callbacks(),
-      options(),
-    );
+    await service.sendMessage(sessionId, '把这段对话改成动作描写', callbacks(), options());
 
     expect(hasIntentNote(llm.systemContents, '修改'), true);
     final joined = llm.systemContents.join('\n');

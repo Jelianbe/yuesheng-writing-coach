@@ -54,32 +54,23 @@ void main() {
     });
 
     test('#O3 空 entities 数组 → valid（空提取）', () {
-      final result = validateOutlineSchema({
-        'entities': <dynamic>[],
-      });
+      final result = validateOutlineSchema({'entities': <dynamic>[]});
       expect(result.valid, isTrue);
       expect(result.data!.entities, isEmpty);
     });
 
     test('#O4 非法 type → invalid，且数据不产出（严格整体丢弃）', () {
       final result = validateOutlineSchema({
-        'entities': [
-          validEntity(type: 'theme', key: '林晚'),
-        ],
+        'entities': [validEntity(type: 'theme', key: '林晚')],
       });
       expect(result.valid, isFalse);
       expect(result.data, isNull);
-      expect(
-        result.errors.any((e) => e.field == 'entities[0].type'),
-        isTrue,
-      );
+      expect(result.errors.any((e) => e.field == 'entities[0].type'), isTrue);
     });
 
     test('#O5 空 key → invalid', () {
       final result = validateOutlineSchema({
-        'entities': [
-          validEntity(key: '   '),
-        ],
+        'entities': [validEntity(key: '   ')],
       });
       expect(result.valid, isFalse);
       expect(result.data, isNull);
@@ -87,18 +78,14 @@ void main() {
 
     test('#O6 matched_entity_id 非字符串（数字）→ invalid', () {
       final result = validateOutlineSchema({
-        'entities': [
-          validEntity(matchedEntityId: 123),
-        ],
+        'entities': [validEntity(matchedEntityId: 123)],
       });
       expect(result.valid, isFalse);
     });
 
     test('#O7 impressions 非数组 → invalid', () {
       final result = validateOutlineSchema({
-        'entities': [
-          validEntity(impressions: '不是数组'),
-        ],
+        'entities': [validEntity(impressions: '不是数组')],
       });
       expect(result.valid, isFalse);
     });
@@ -106,9 +93,11 @@ void main() {
     test('#O8 印象 text 为空 → invalid', () {
       final result = validateOutlineSchema({
         'entities': [
-          validEntity(impressions: [
-            {'text': '', 'conflict_with': null},
-          ]),
+          validEntity(
+            impressions: [
+              {'text': '', 'conflict_with': null},
+            ],
+          ),
         ],
       });
       expect(result.valid, isFalse);
@@ -117,9 +106,11 @@ void main() {
     test('#O9 conflict_with 非字符串 → invalid', () {
       final result = validateOutlineSchema({
         'entities': [
-          validEntity(impressions: [
-            {'text': '印象', 'conflict_with': 42},
-          ]),
+          validEntity(
+            impressions: [
+              {'text': '印象', 'conflict_with': 42},
+            ],
+          ),
         ],
       });
       expect(result.valid, isFalse);

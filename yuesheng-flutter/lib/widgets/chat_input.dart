@@ -106,10 +106,9 @@ class ChatInputState extends State<ChatInput> {
     widget.onSend(text);
   }
 
-  String get _placeholder =>
-      widget.entryPoint == 'manuscript'
-          ? '描述你遇到的写作问题…输入 @ 引用作品'
-          : '和月笙聊聊…输入 @ 引用作品';
+  String get _placeholder => widget.entryPoint == 'manuscript'
+      ? '描述你遇到的写作问题…输入 @ 引用作品'
+      : '和月笙聊聊…输入 @ 引用作品';
 
   /// 检测用户是否刚刚输入了 "@" 字符
   /// 返回 true 时表示触发引用选择器

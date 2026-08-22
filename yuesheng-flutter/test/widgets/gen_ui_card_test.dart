@@ -65,23 +65,13 @@ void main() {
     testWidgets('渲染原文/改写与标题', (tester) async {
       final id = await insertGenuiMsg({
         'components': [
-          {
-            'type': 'diff',
-            'title': '改写对比',
-            'before': '他很愤怒',
-            'after': '指节收紧',
-          }
-        ]
+          {'type': 'diff', 'title': '改写对比', 'before': '他很愤怒', 'after': '指节收紧'},
+        ],
       });
       final content = jsonEncode({
         'components': [
-          {
-            'type': 'diff',
-            'title': '改写对比',
-            'before': '他很愤怒',
-            'after': '指节收紧',
-          }
-        ]
+          {'type': 'diff', 'title': '改写对比', 'before': '他很愤怒', 'after': '指节收紧'},
+        ],
       });
       await tester.pumpWidget(buildHost(content, id));
       await tester.pumpAndSettle();
@@ -104,9 +94,9 @@ void main() {
             'items': [
               {'label': '画面感', 'value': 75, 'max': 100},
               {'label': '节奏感', 'value': 60, 'max': 100},
-            ]
-          }
-        ]
+            ],
+          },
+        ],
       });
       await tester.pumpWidget(buildHost(content, 'msg-stat-1'));
       await tester.pumpAndSettle();
@@ -122,8 +112,8 @@ void main() {
     testWidgets('空 items → 占位提示', (tester) async {
       final content = jsonEncode({
         'components': [
-          {'type': 'stat', 'title': '空画像'}
-        ]
+          {'type': 'stat', 'title': '空画像'},
+        ],
       });
       await tester.pumpWidget(buildHost(content, 'msg-stat-2'));
       await tester.pumpAndSettle();
@@ -144,9 +134,9 @@ void main() {
               {'label': '诊断', 'status': 'done'},
               {'label': '教学', 'status': 'current'},
               {'label': '练习', 'status': 'pending'},
-            ]
-          }
-        ]
+            ],
+          },
+        ],
       });
       await tester.pumpWidget(buildHost(content, 'msg-prog-1'));
       await tester.pumpAndSettle();
@@ -162,8 +152,8 @@ void main() {
     testWidgets('空 steps → 占位提示', (tester) async {
       final content = jsonEncode({
         'components': [
-          {'type': 'progress', 'title': '空进度'}
-        ]
+          {'type': 'progress', 'title': '空进度'},
+        ],
       });
       await tester.pumpWidget(buildHost(content, 'msg-prog-2'));
       await tester.pumpAndSettle();
@@ -183,9 +173,9 @@ void main() {
             'events': [
               {'date': '2026-08-01', 'title': '首次诊断', 'desc': '识别出3个症候'},
               {'date': '2026-08-10', 'title': '画面感突破', 'desc': '从L1提升到L2'},
-            ]
-          }
-        ]
+            ],
+          },
+        ],
       });
       await tester.pumpWidget(buildHost(content, 'msg-tl-1'));
       await tester.pumpAndSettle();
@@ -202,8 +192,8 @@ void main() {
     testWidgets('空 events → 占位提示', (tester) async {
       final content = jsonEncode({
         'components': [
-          {'type': 'timeline', 'title': '空时间线'}
-        ]
+          {'type': 'timeline', 'title': '空时间线'},
+        ],
       });
       await tester.pumpWidget(buildHost(content, 'msg-tl-2'));
       await tester.pumpAndSettle();
@@ -225,10 +215,10 @@ void main() {
               'options': ['展示而非告知', '视角一致'],
               'answer': 0,
               'explanation': '情绪直接命名',
-            }
-          ]
-        }
-      ]
+            },
+          ],
+        },
+      ],
     };
 
     testWidgets('提交正确选项 → 显示答对并持久化', (tester) async {
@@ -247,9 +237,9 @@ void main() {
       expect(find.textContaining('答对 1 / 1'), findsOneWidget);
 
       // 持久化：DB 中该 genui 消息 content 含 answered=true + userAnswers
-      final rows = await (db.select(db.messages)
-            ..where((t) => t.id.equals(id)))
-          .get();
+      final rows = await (db.select(
+        db.messages,
+      )..where((t) => t.id.equals(id))).get();
       expect(rows.length, 1);
       final stored = jsonDecode(rows.first.content) as Map<String, dynamic>;
       final comp = (stored['components'] as List).first as Map;

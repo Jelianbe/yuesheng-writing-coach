@@ -111,13 +111,11 @@ class ReferenceRepository implements ReferenceCapability {
   /// 按 id 集合批量取附属文件（A-3 遗留 N+1 消除：引用预加载用）
   /// 语义对齐 getAttachedFile：仅按 id 过滤，字段映射一致。空列表守卫避免 `IN ()` 非法 SQL。
   @override
-  Future<List<AttachedFileRow>> getAttachedFilesByIds(
-    List<String> ids,
-  ) async {
+  Future<List<AttachedFileRow>> getAttachedFilesByIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
-    final rows = await (_db.select(_db.attachedFiles)
-          ..where((t) => t.id.isIn(ids)))
-        .get();
+    final rows = await (_db.select(
+      _db.attachedFiles,
+    )..where((t) => t.id.isIn(ids))).get();
     return rows
         .map(
           (row) => AttachedFileRow(
@@ -315,13 +313,12 @@ class ReferenceRepository implements ReferenceCapability {
     ({String chapterId, int startPara, int endPara})? anchor,
   ) async {
     final count =
-        await (_db.update(_db.sessionReferences)
-              ..where(
-                (t) =>
-                    t.sessionId.equals(sessionId) &
-                    t.refType.equals(refType) &
-                    t.refId.equals(refId),
-              ))
+        await (_db.update(_db.sessionReferences)..where(
+              (t) =>
+                  t.sessionId.equals(sessionId) &
+                  t.refType.equals(refType) &
+                  t.refId.equals(refId),
+            ))
             .write(
               SessionReferencesCompanion(
                 excerptRange: Value(_encodeExcerpt(anchor)),

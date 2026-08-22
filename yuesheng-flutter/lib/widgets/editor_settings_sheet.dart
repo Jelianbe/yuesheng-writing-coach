@@ -87,7 +87,8 @@ class EditorSettingsSheet extends ConsumerWidget {
   final VoidCallback? onResetFabPosition;
 
   /// 批次88-4：把当前段落格式批量应用到全文（按开关状态补/移除缩进、加/去空行）
-  final void Function(bool applyIndent, bool applyBlankLine)? onApplyParagraphFormat;
+  final void Function(bool applyIndent, bool applyBlankLine)?
+  onApplyParagraphFormat;
 
   const EditorSettingsSheet({
     super.key,
@@ -101,7 +102,8 @@ class EditorSettingsSheet extends ConsumerWidget {
     BuildContext context, {
     required String chapterId,
     VoidCallback? onResetFabPosition,
-    void Function(bool applyIndent, bool applyBlankLine)? onApplyParagraphFormat,
+    void Function(bool applyIndent, bool applyBlankLine)?
+    onApplyParagraphFormat,
   }) {
     return showYueModalBottomSheet<void>(
       context: context,
@@ -126,78 +128,78 @@ class EditorSettingsSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          const Text(
-            '排版设置',
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+            const Text(
+              '排版设置',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildSliderRow(
-            label: '字号',
-            value: state.fontSize,
-            min: 14,
-            max: 24,
-            divisions: 10,
-            display: '${state.fontSize.round()}',
-            onChanged: store.setFontSize,
-            onChangeEnd: (_) => store.persistEditorSettings(),
-          ),
-          const SizedBox(height: 6),
-          _buildSliderRow(
-            label: '行距',
-            value: state.lineSpacing,
-            min: 1.2,
-            max: 2.0,
-            divisions: 8,
-            display: state.lineSpacing.toStringAsFixed(1),
-            onChanged: store.setLineSpacing,
-            onChangeEnd: (_) => store.persistEditorSettings(),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            '背景',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+            const SizedBox(height: 16),
+            _buildSliderRow(
+              label: '字号',
+              value: state.fontSize,
+              min: 14,
+              max: 24,
+              divisions: 10,
+              display: '${state.fontSize.round()}',
+              onChanged: store.setFontSize,
+              onChangeEnd: (_) => store.persistEditorSettings(),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              for (final preset in editorBackgroundPresets) ...[
-                _BackgroundOption(
-                  preset: preset,
-                  selected: state.editorBackground == preset.key,
-                  onTap: () {
-                    store.setEditorBackground(preset.key);
-                    store.persistEditorSettings();
-                  },
-                ),
-                const SizedBox(width: 12),
+            const SizedBox(height: 6),
+            _buildSliderRow(
+              label: '行距',
+              value: state.lineSpacing,
+              min: 1.2,
+              max: 2.0,
+              divisions: 8,
+              display: state.lineSpacing.toStringAsFixed(1),
+              onChanged: store.setLineSpacing,
+              onChangeEnd: (_) => store.persistEditorSettings(),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              '背景',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                for (final preset in editorBackgroundPresets) ...[
+                  _BackgroundOption(
+                    preset: preset,
+                    selected: state.editorBackground == preset.key,
+                    onTap: () {
+                      store.setEditorBackground(preset.key);
+                      store.persistEditorSettings();
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                ],
               ],
-            ],
-          ),
-          const SizedBox(height: 14),
-          // 批次88-4：段落格式——自动首行缩进 / 段间空行（开关即时生效 + 全文批量应用）
-          _buildParagraphSection(store, state),
-          const SizedBox(height: 14),
-          // 批次96-9：三个开关从 ⋮ 菜单移入排版设置（reactive SwitchListTile）
-          _buildTogglesSection(store, state),
-          const SizedBox(height: 14),
-          // 批次86-2：自定义工具栏——标点栏隐藏/排序
-          const _PunctuationBarConfigSection(),
-          // 批次88-2：对话按钮可见性开关 + 位置恢复（批次96-9：开关从菜单移入）
-          const SizedBox(height: 14),
-          _buildFabSection(store, state),
-        ],
+            ),
+            const SizedBox(height: 14),
+            // 批次88-4：段落格式——自动首行缩进 / 段间空行（开关即时生效 + 全文批量应用）
+            _buildParagraphSection(store, state),
+            const SizedBox(height: 14),
+            // 批次96-9：三个开关从 ⋮ 菜单移入排版设置（reactive SwitchListTile）
+            _buildTogglesSection(store, state),
+            const SizedBox(height: 14),
+            // 批次86-2：自定义工具栏——标点栏隐藏/排序
+            const _PunctuationBarConfigSection(),
+            // 批次88-2：对话按钮可见性开关 + 位置恢复（批次96-9：开关从菜单移入）
+            const SizedBox(height: 14),
+            _buildFabSection(store, state),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   /// 批次96-9：三个开关从 ⋮ 菜单移入排版设置——行段聚焦 / 智能标点
   /// （reactive SwitchListTile，store setter 即时生效 + persistEditorSettings 落库）
@@ -423,10 +425,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           child: Text(
             display,
             textAlign: TextAlign.right,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textTertiary,
-            ),
+            style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
           ),
         ),
       ],
@@ -535,7 +534,10 @@ class _PunctuationBarConfigSectionState
 
   void _hide(String id) {
     final visible = _visibleIds ?? defaultPunctuationIds;
-    _save([for (final v in visible) if (v != id) v]);
+    _save([
+      for (final v in visible)
+        if (v != id) v,
+    ]);
   }
 
   void _restore(String id) {
@@ -571,9 +573,7 @@ class _PunctuationBarConfigSectionState
           controller: controller,
           autofocus: true,
           maxLength: 8,
-          decoration: const InputDecoration(
-            hintText: '输入标点或短语，如 「」、『』',
-          ),
+          decoration: const InputDecoration(hintText: '输入标点或短语，如 「」、『』'),
         ),
         actions: [
           TextButton(
@@ -593,22 +593,28 @@ class _PunctuationBarConfigSectionState
     if (trimmed.isEmpty) return;
 
     // 去重（内置 + 已添加的自定义）
-    final exists = punctuationItems.any((it) => it.display == trimmed) ||
+    final exists =
+        punctuationItems.any((it) => it.display == trimmed) ||
         _customItems.any((it) => it.display == trimmed);
     if (exists) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-          content: Text('这个标点已经在工具栏里了'),
-          duration: Duration(seconds: 2),
-        ));
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('这个标点已经在工具栏里了'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       return;
     }
 
     final nextId =
         'custom_${(_customItems.length + 1).toString().padLeft(2, '0')}';
-    await _saveCustom([..._customItems, PunctuationItem(nextId, trimmed, trimmed)]);
+    await _saveCustom([
+      ..._customItems,
+      PunctuationItem(nextId, trimmed, trimmed),
+    ]);
     final visible = _visibleIds ?? defaultPunctuationIds;
     await _save([...visible, nextId]);
   }
@@ -620,7 +626,10 @@ class _PunctuationBarConfigSectionState
         if (it.id != id) it,
     ]);
     final visible = _visibleIds ?? defaultPunctuationIds;
-    await _save([for (final v in visible) if (v != id) v]);
+    await _save([
+      for (final v in visible)
+        if (v != id) v,
+    ]);
   }
 
   @override

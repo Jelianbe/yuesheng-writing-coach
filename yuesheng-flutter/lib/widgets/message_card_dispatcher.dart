@@ -150,7 +150,9 @@ Widget? dispatchMessageCard({
   }
 
   // T4：评估报告（assistant 消息 + reports 命中 → 渲染评估报告面板）
-  if (!isStreamingBubble && msg.role == 'assistant' && evaluationReport != null) {
+  if (!isStreamingBubble &&
+      msg.role == 'assistant' &&
+      evaluationReport != null) {
     return Padding(
       padding: verticalPadding,
       child: EvaluationReportPanel(

@@ -172,14 +172,14 @@ const Skill _trainingEvaluationV2 = Skill(
 **输出位置**：协议块放在回复末尾，不在正文中展示给学员。若本回合不是练习反馈（学员还在提问/讨论），不输出此块。''',
 );
 
-
 final Skill _trainingLoopV2 = Skill(
   meta: SkillMeta(
     id: 'training-loop-v2',
     group: 'training',
     estimatedTokens: 900,
   ),
-  content: '''# SKILL: 训练循环指南
+  content:
+      '''# SKILL: 训练循环指南
 
 > **定位**: 为 AI 提供训练阶段的教学原则和参考框架。不是必须执行的脚本。
 > **设计理念**: AI 自主决定何时教什么、怎么教、怎么评。以下原则是底线，不是流程。

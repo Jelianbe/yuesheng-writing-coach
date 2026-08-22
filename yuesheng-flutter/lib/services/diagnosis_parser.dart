@@ -73,9 +73,7 @@ ParseResult parseDiagnosis(String rawText) {
   final suffix = endIndex == -1
       ? ''
       : stripFactBlock(
-          stripOutlineBlock(
-            rawText.substring(endIndex + kDiagnosisEnd.length),
-          ),
+          stripOutlineBlock(rawText.substring(endIndex + kDiagnosisEnd.length)),
         ).trimLeft();
 
   final displayContent = _concatDiagnosisDisplay(prefix, suffix);
@@ -285,8 +283,7 @@ FullValidationResult _validateDiagnosisOutputImpl(
   String displayContent,
   Map<String, dynamic> rawJson, {
   AttitudeLevel? attitude,
-}) =>
-    validateDiagnosisOutput(displayContent, rawJson, attitude: attitude);
+}) => validateDiagnosisOutput(displayContent, rawJson, attitude: attitude);
 
 /// 顶层实现别名：parseTrainingResult 委托
 TrainingResult? _parseTrainingResultImpl(String content) =>

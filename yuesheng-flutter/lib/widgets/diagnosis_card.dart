@@ -432,9 +432,9 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     if (tracked == null) {
       // 批次80 M2：新症候无跨轮次追踪数据 → 轻提示而非静默（修复前点击无反应）
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('暂无该症候的追踪记录')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('暂无该症候的追踪记录')));
       }
       return;
     }

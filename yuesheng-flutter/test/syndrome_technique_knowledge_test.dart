@@ -28,8 +28,18 @@ void main() {
     });
 
     test('手册含批次15 新症候 P023-P027 完整定义', () {
-      for (final name in ['P023 爽点乏力症', 'P024 期待感断裂症', 'P025 黄金三章失效症', 'P026 章节钩子缺失症', 'P027 追读动力不足症']) {
-        expect(kSyndromeManualContent, contains('### $name'), reason: '手册缺 $name');
+      for (final name in [
+        'P023 爽点乏力症',
+        'P024 期待感断裂症',
+        'P025 黄金三章失效症',
+        'P026 章节钩子缺失症',
+        'P027 追读动力不足症',
+      ]) {
+        expect(
+          kSyndromeManualContent,
+          contains('### $name'),
+          reason: '手册缺 $name',
+        );
       }
       final content = getSyndromeContent(['P023']);
       expect(content, contains('### P023 爽点乏力症'));

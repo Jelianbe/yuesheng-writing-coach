@@ -231,20 +231,21 @@ class ManuscriptStats {
 /// 批次93-1（B27 修复）：一次性批量统计所有作品的章节数 + 总字数。
 /// 监听 manuscriptStoreProvider，作品列表变化时自动重算；以单条 GROUP BY
 /// 查询替代原先每张卡片单独 manuscriptStatsProvider 的 N+1 查询。
-final allManuscriptStatsProvider =
-    FutureProvider<Map<String, ManuscriptStats>>((ref) async {
-  final store = ref.watch(manuscriptStoreProvider);
-  final ids = store.manuscripts.map((m) => m.id).toList();
-  final db = ref.watch(appDatabaseProvider);
-  final stats = await ChapterRepository(db).statsForManuscripts(ids);
-  return {
-    for (final e in stats.entries)
-      e.key: ManuscriptStats(
-        chapterCount: e.value.chapterCount,
-        totalWords: e.value.totalWords,
-      ),
-  };
-});
+final allManuscriptStatsProvider = FutureProvider<Map<String, ManuscriptStats>>(
+  (ref) async {
+    final store = ref.watch(manuscriptStoreProvider);
+    final ids = store.manuscripts.map((m) => m.id).toList();
+    final db = ref.watch(appDatabaseProvider);
+    final stats = await ChapterRepository(db).statsForManuscripts(ids);
+    return {
+      for (final e in stats.entries)
+        e.key: ManuscriptStats(
+          chapterCount: e.value.chapterCount,
+          totalWords: e.value.totalWords,
+        ),
+    };
+  },
+);
 
 /// 批次83：大纲边写边看——一次加载作品全部实体 + 各自印象
 /// entityId → impressions 映射；读取失败由 repo 保守降级返回空

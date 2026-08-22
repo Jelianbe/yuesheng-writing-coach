@@ -101,6 +101,7 @@ extension ChatServiceSend on ChatService {
       void markStage(String stage) {
         (stageIndexes[stage] ??= []).add(messages.length);
       }
+
       // 5.0-5.2 上下文注入（R-019 三级拆分：步骤块提取至 chat_service_send_*.dart）
       await _injectProfileAndIntents(
         sessionId: sessionId,
@@ -144,10 +145,7 @@ extension ChatServiceSend on ChatService {
       //（Flutter 曾缺失：三档态度 skill 表达密度小节 + 本约束，批次 41 补齐）
       // 示范规则以当前态度档位为准：doubao/yuesheng 最小示范，sensei 零示范（只给方向）
       messages.add(
-        ChatMessage(
-          role: 'system',
-          content: kLiveOutputConstraints,
-        ),
+        ChatMessage(role: 'system', content: kLiveOutputConstraints),
       );
 
       // 7. 追加历史消息

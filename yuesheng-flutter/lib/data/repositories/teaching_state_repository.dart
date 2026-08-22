@@ -25,16 +25,19 @@ class TeachingStateRepository {
     final now = nowSec();
     await _db.transaction(() async {
       // 1. teaching_state（Upsert：先 update，受影响 0 行再 insert）
-      final affected = await (_db.update(
-        _db.teachingState,
-      )..where((t) => t.sessionId.equals(sessionId))).write(
+      final affected =
+          await (_db.update(
+            _db.teachingState,
+          )..where((t) => t.sessionId.equals(sessionId))).write(
             TeachingStateCompanion(
               attitudeLevel: Value(attitude),
               updatedAt: Value(now),
             ),
           );
       if (affected == 0) {
-        await _db.into(_db.teachingState).insert(
+        await _db
+            .into(_db.teachingState)
+            .insert(
               TeachingStateCompanion.insert(
                 id: generateUuid(),
                 sessionId: sessionId,
@@ -81,16 +84,19 @@ class TeachingStateRepository {
   /// 原实现仅 update，session 未走 createBlankSession 时静默失败。
   Future<void> updatePhase(String sessionId, String phase) async {
     final now = nowSec();
-    final affected = await (_db.update(
-      _db.teachingState,
-    )..where((t) => t.sessionId.equals(sessionId))).write(
+    final affected =
+        await (_db.update(
+          _db.teachingState,
+        )..where((t) => t.sessionId.equals(sessionId))).write(
           TeachingStateCompanion(
             currentPhase: Value(phase),
             updatedAt: Value(now),
           ),
         );
     if (affected == 0) {
-      await _db.into(_db.teachingState).insert(
+      await _db
+          .into(_db.teachingState)
+          .insert(
             TeachingStateCompanion.insert(
               id: generateUuid(),
               sessionId: sessionId,
@@ -116,16 +122,19 @@ class TeachingStateRepository {
     String beginnerLevel,
   ) async {
     final now = nowSec();
-    final affected = await (_db.update(
-      _db.teachingState,
-    )..where((t) => t.sessionId.equals(sessionId))).write(
+    final affected =
+        await (_db.update(
+          _db.teachingState,
+        )..where((t) => t.sessionId.equals(sessionId))).write(
           TeachingStateCompanion(
             beginnerLevel: Value(beginnerLevel),
             updatedAt: Value(now),
           ),
         );
     if (affected == 0) {
-      await _db.into(_db.teachingState).insert(
+      await _db
+          .into(_db.teachingState)
+          .insert(
             TeachingStateCompanion.insert(
               id: generateUuid(),
               sessionId: sessionId,
@@ -142,16 +151,19 @@ class TeachingStateRepository {
   /// **A2 修复**：同步 upsert，无行时自动建行。
   Future<void> updateSubphase(String sessionId, String? subphase) async {
     final now = nowSec();
-    final affected = await (_db.update(
-      _db.teachingState,
-    )..where((t) => t.sessionId.equals(sessionId))).write(
+    final affected =
+        await (_db.update(
+          _db.teachingState,
+        )..where((t) => t.sessionId.equals(sessionId))).write(
           TeachingStateCompanion(
             currentSubphase: Value(subphase),
             updatedAt: Value(now),
           ),
         );
     if (affected == 0) {
-      await _db.into(_db.teachingState).insert(
+      await _db
+          .into(_db.teachingState)
+          .insert(
             TeachingStateCompanion.insert(
               id: generateUuid(),
               sessionId: sessionId,

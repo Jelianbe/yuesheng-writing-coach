@@ -72,9 +72,11 @@ AttitudeSuggestion? suggestAttitudeAdjustment({
       currentPhase == TeachingPhase.p3Training;
 
   final positiveFeedbackEnough =
-      consecutivePositiveFeedback >= AttitudeThresholds.positiveFeedbackUpgradeCount;
+      consecutivePositiveFeedback >=
+      AttitudeThresholds.positiveFeedbackUpgradeCount;
   final negativeFeedbackEnough =
-      consecutiveNegativeFeedback >= AttitudeThresholds.negativeFeedbackDowngradeCount;
+      consecutiveNegativeFeedback >=
+      AttitudeThresholds.negativeFeedbackDowngradeCount;
 
   // 升级（当前档位非最高）：问题多且严重，或学员积极跟上（正反馈）
   if (currentIndex < attitudeOrder.length - 1) {
@@ -150,8 +152,9 @@ int computeAttitudeDowngradeSignal(
     }
   }
 
-  final latestUser =
-      messages.reversed.where((m) => m.role == 'user').firstOrNull;
+  final latestUser = messages.reversed
+      .where((m) => m.role == 'user')
+      .firstOrNull;
   if (latestUser != null && isSafetyWordRequest(latestUser.content)) {
     consecutiveNegative = AttitudeThresholds.negativeFeedbackDowngradeCount;
   }

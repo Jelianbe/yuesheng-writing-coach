@@ -8,7 +8,4 @@ part of 'training_knowledge_base.dart';
 /// 核心本质 / 教学要点 / 常见误区 / 严重度判断参考 / 教学素材库
 /// 真源：training-templates-v2.ts content（29 条症候）
 const String kTrainingFullKnowledge =
-    _trainingBody1 +
-    _trainingBody2 +
-    _trainingBody3 +
-    _trainingBody4;
+    _trainingBody1 + _trainingBody2 + _trainingBody3 + _trainingBody4;

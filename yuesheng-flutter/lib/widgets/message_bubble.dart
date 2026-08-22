@@ -33,7 +33,7 @@ class MessageBubble extends StatelessWidget {
 
   /// 批次71：点击引用徽章跳转（manuscript→作品详情 / chapter→章节写作 / file→所属作品详情）
   final void Function(String refType, String refId, String? manuscriptId)?
-      onMentionTap;
+  onMentionTap;
 
   const MessageBubble({
     super.key,
@@ -302,7 +302,7 @@ class MessageBubble extends StatelessWidget {
 class _ReferencesBadges extends StatelessWidget {
   final List<Map<String, dynamic>> references;
   final void Function(String refType, String refId, String? manuscriptId)?
-      onMentionTap;
+  onMentionTap;
 
   const _ReferencesBadges({required this.references, this.onMentionTap});
 
@@ -316,7 +316,8 @@ class _ReferencesBadges extends StatelessWidget {
         runSpacing: 4,
         alignment: WrapAlignment.end,
         children: [
-          for (final ref in references) _ReferenceBadge(ref: ref, onMentionTap: onMentionTap),
+          for (final ref in references)
+            _ReferenceBadge(ref: ref, onMentionTap: onMentionTap),
         ],
       ),
     );
@@ -327,7 +328,7 @@ class _ReferencesBadges extends StatelessWidget {
 class _ReferenceBadge extends StatelessWidget {
   final Map<String, dynamic> ref;
   final void Function(String refType, String refId, String? manuscriptId)?
-      onMentionTap;
+  onMentionTap;
 
   const _ReferenceBadge({required this.ref, this.onMentionTap});
 

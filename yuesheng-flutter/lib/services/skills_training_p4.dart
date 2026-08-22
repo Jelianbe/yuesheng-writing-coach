@@ -160,7 +160,6 @@ const Skill _demonstration = Skill(
 - 学生回答都是"差不多""还行" → 降低难度，换更短/更明显的示范片段''',
 );
 
-
 final Skill _coachingActionsV2 = Skill(
   meta: SkillMeta(
     id: 'coaching-actions-v2',

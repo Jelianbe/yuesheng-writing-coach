@@ -45,7 +45,11 @@ class NlFix {
   final String type; // V-01 | V-02 | V-03 | V-04
   final String original;
   final String replacement;
-  const NlFix({required this.type, required this.original, required this.replacement});
+  const NlFix({
+    required this.type,
+    required this.original,
+    required this.replacement,
+  });
 }
 
 /// 自然语言校验结果

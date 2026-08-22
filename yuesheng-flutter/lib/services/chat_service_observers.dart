@@ -109,8 +109,9 @@ extension ChatServiceObservers on ChatService {
     // 作品引用：manuscripts 单次取全 + 其章节单次取全（2 查询替代 2N）
     if (manuscriptIds.isNotEmpty) {
       try {
-        final manuscripts = await _manuscriptRepo
-            .getManuscriptsByIds(manuscriptIds);
+        final manuscripts = await _manuscriptRepo.getManuscriptsByIds(
+          manuscriptIds,
+        );
         final msById = {for (final m in manuscripts) m.id: m};
 
         final chapters = await _chapterRepo.listChaptersForManuscripts(

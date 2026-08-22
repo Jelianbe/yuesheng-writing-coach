@@ -38,9 +38,7 @@ List<VolumeGroup> groupChaptersByVolume(
 
   final groups = <VolumeGroup>[];
   for (final v in sortedVolumes) {
-    final inVolume = chapters
-        .where((c) => c.volumeId == v.id)
-        .toList()
+    final inVolume = chapters.where((c) => c.volumeId == v.id).toList()
       ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     groups.add(VolumeGroup(volume: v, chapters: inVolume));
   }
@@ -64,11 +62,10 @@ class ChapterSection {
   final List<Chapter> chapters;
 
   const ChapterSection.loose(Chapter this.looseChapter)
-      : volume = null,
-        chapters = const [];
+    : volume = null,
+      chapters = const [];
 
-  ChapterSection.volume(this.volume, this.chapters)
-      : looseChapter = null;
+  ChapterSection.volume(this.volume, this.chapters) : looseChapter = null;
 }
 
 /// 批次96-4：按「全局顺序」构建渲染段——散落章节直接平铺（无卷头），
@@ -107,9 +104,7 @@ List<ChapterSection> buildChapterSections(
   }
 
   // 空卷追尾（按卷序）
-  final emptyVolumes = volumes
-      .where((v) => !started.contains(v.id))
-      .toList()
+  final emptyVolumes = volumes.where((v) => !started.contains(v.id)).toList()
     ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   for (final v in emptyVolumes) {
     sections.add(ChapterSection.volume(v, const []));

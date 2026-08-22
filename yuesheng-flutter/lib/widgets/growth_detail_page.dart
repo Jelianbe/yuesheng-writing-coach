@@ -41,7 +41,6 @@ import 'writing_curve_chart.dart';
 part 'growth_nav.dart';
 part 'growth_content.dart';
 
-
 /// 成长详情页
 class GrowthDetailPage extends ConsumerStatefulWidget {
   const GrowthDetailPage({super.key});
@@ -92,13 +91,8 @@ class _GrowthDetailPageState extends ConsumerState<GrowthDetailPage> {
     );
   }
 
-
-
-
   // 批次53c：写作风格五维中文标签见顶层函数 _sensoryLabel 等（批次57 提升为
   // 模块级，供 State 与 _StyleCorrectionSheet 复用）
-
-
 }
 
 // ─────────────────────────────────────────────────────────────

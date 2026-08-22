@@ -25,19 +25,14 @@ void main() {
     final p = kTeacherSkillContent;
 
     test('注入提示禁止固定话术模板并教原理而非标准答案', () {
-      expect(p, contains('不使用固定话术模板'),
-          reason: '注入提示必须禁止固定话术模板（话术由 AI 现场生成）');
-      expect(p, contains('标准答案'),
-          reason: '注入提示必须教原理而非标准答案');
-      expect(p, contains('自主组织话术'),
-          reason: '注入提示必须要求 AI 自主组织话术');
+      expect(p, contains('不使用固定话术模板'), reason: '注入提示必须禁止固定话术模板（话术由 AI 现场生成）');
+      expect(p, contains('标准答案'), reason: '注入提示必须教原理而非标准答案');
+      expect(p, contains('自主组织话术'), reason: '注入提示必须要求 AI 自主组织话术');
     });
 
     test('注入提示明示话术由 AI 现场生成、无标准回复可照搬', () {
-      expect(p, contains('AI 现场生成'),
-          reason: '应明示话术由 AI 现场生成');
-      expect(p, contains('标准回复'),
-          reason: '应明示不存在可照搬的标准回复');
+      expect(p, contains('AI 现场生成'), reason: '应明示话术由 AI 现场生成');
+      expect(p, contains('标准回复'), reason: '应明示不存在可照搬的标准回复');
     });
   });
 }

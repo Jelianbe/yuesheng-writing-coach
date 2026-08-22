@@ -96,7 +96,11 @@ class PunctuationBar extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 44),
         height: 36,
         alignment: Alignment.center,
-        child: Icon(icon, size: 18, color: actionColor ?? AppColors.textTertiary),
+        child: Icon(
+          icon,
+          size: 18,
+          color: actionColor ?? AppColors.textTertiary,
+        ),
       ),
     );
   }

@@ -64,7 +64,9 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
   @override
   void initState() {
     super.initState();
-    _paras = widget.content.isEmpty ? const <String>[] : widget.content.split('\n');
+    _paras = widget.content.isEmpty
+        ? const <String>[]
+        : widget.content.split('\n');
     // 预选：已有锚点且指向本章节时回显（越界 clamp 由展示层兜底）
     // 消费层经 materialCapabilityProvider 注入能力，不直接依赖顶层纯函数。
     final anchor = ref
@@ -96,14 +98,13 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
   }
 
   void _handleConfirm() {
-    final anchor =
-        _hasSelection
-            ? (
-              chapterId: widget.chapterId,
-              startPara: _selStart!,
-              endPara: _selEnd!,
-            )
-            : null;
+    final anchor = _hasSelection
+        ? (
+            chapterId: widget.chapterId,
+            startPara: _selStart!,
+            endPara: _selEnd!,
+          )
+        : null;
     Navigator.of(context).pop(ExcerptPickResult(anchor));
   }
 
@@ -146,24 +147,24 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           Flexible(
             child: _paras.isEmpty
                 ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Text(
-                    '本章暂无内容',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.disabledText),
-                  ),
-                )
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: Text(
+                      '本章暂无内容',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.disabledText),
+                    ),
+                  )
                 : SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < _paras.length; i++)
-                        _buildParaRow(i),
-                      const SizedBox(height: 8),
-                    ],
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < _paras.length; i++)
+                          _buildParaRow(i),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
-                ),
           ),
           const Divider(height: 1, color: AppColors.borderSoft),
           Padding(
@@ -246,10 +247,9 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                 style: TextStyle(
                   fontSize: 14,
                   height: 1.5,
-                  color:
-                      text.isEmpty
-                          ? AppColors.disabledText
-                          : AppColors.textPrimary,
+                  color: text.isEmpty
+                      ? AppColors.disabledText
+                      : AppColors.textPrimary,
                 ),
               ),
             ),

@@ -17,8 +17,11 @@ void main() {
       expect(kSyndromeSkillLevels.length, kSyndromeRegistry.length);
       // 逐症候断言（b9 真源化：从注册表派生）
       for (final s in kSyndromeRegistry) {
-        expect(skillLevelOf(s.id), s.level,
-            reason: 'skillLevelOf(${s.id}) 应为 ${s.level.value}');
+        expect(
+          skillLevelOf(s.id),
+          s.level,
+          reason: 'skillLevelOf(${s.id}) 应为 ${s.level.value}',
+        );
       }
       // 抽验分布
       expect(skillLevelOf('P003'), SkillLevel.l1); // 情绪标签化 → 基础表达

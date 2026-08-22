@@ -219,17 +219,17 @@ String createV12LegacyDbFile() {
 
 void main() {
   tearDown(() {
-    for (final f in Directory.systemTemp
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.contains('yuesheng_v12_migration_'))) {
+    for (final f in Directory.systemTemp.listSync().whereType<File>().where(
+      (f) => f.path.contains('yuesheng_v12_migration_'),
+    )) {
       f.deleteSync();
     }
   });
 
   test('#1 v12 → v25 升级：全链路迁移 + 存量数据零丢失', () async {
-    final db =
-        AppDatabase.forTesting(NativeDatabase(File(createV12LegacyDbFile())));
+    final db = AppDatabase.forTesting(
+      NativeDatabase(File(createV12LegacyDbFile())),
+    );
     addTearDown(db.close);
 
     // 1. user_version 升到 25
@@ -239,49 +239,65 @@ void main() {
     // 2. manuscripts 存量保留 + tags 列补齐
     final m = await db
         .customSelect(
-            "SELECT title, status, tags FROM manuscripts WHERE id = 'm1'")
+          "SELECT title, status, tags FROM manuscripts WHERE id = 'm1'",
+        )
         .getSingle();
     expect(m.read<String>('title'), '存量测试稿');
     expect(m.read<String>('status'), 'active');
-    expect(m.read<String>('tags'), '[]',
-        reason: 'v25 新增 tags 默认空数组');
+    expect(m.read<String>('tags'), '[]', reason: 'v25 新增 tags 默认空数组');
 
     // 3. chapters 存量保留 + volume_id 列补齐（默认未分卷）
     final c = await db
         .customSelect(
-            "SELECT title, content, previous_content, volume_id FROM chapters WHERE id = 'c1'")
+          "SELECT title, content, previous_content, volume_id FROM chapters WHERE id = 'c1'",
+        )
         .getSingle();
     expect(c.read<String>('title'), '第一章');
     expect(c.read<String>('content'), '存量正文');
     expect(c.read<String?>('previous_content'), '旧稿');
-    expect(c.read<String?>('volume_id'), isNull,
-        reason: 'v23 新增 volume_id 默认 NULL');
+    expect(
+      c.read<String?>('volume_id'),
+      isNull,
+      reason: 'v23 新增 volume_id 默认 NULL',
+    );
 
     // 4. messages 存量保留 + references_json 列补齐
     final msg = await db
         .customSelect(
-            "SELECT content, message_type, references_json FROM messages WHERE id = 'msg1'")
+          "SELECT content, message_type, references_json FROM messages WHERE id = 'msg1'",
+        )
         .getSingle();
     expect(msg.read<String>('content'), '帮我看看这章');
     expect(msg.read<String>('message_type'), 'chat');
-    expect(msg.read<String?>('references_json'), isNull,
-        reason: 'v22 新增 references_json 默认 NULL');
+    expect(
+      msg.read<String?>('references_json'),
+      isNull,
+      reason: 'v22 新增 references_json 默认 NULL',
+    );
 
     // 5. student_model 存量保留 + style_profile/style_fingerprint 列补齐
     final sm = await db
         .customSelect(
-            "SELECT attitude_preference, style_profile, style_fingerprint FROM student_model WHERE id = 'sm1'")
+          "SELECT attitude_preference, style_profile, style_fingerprint FROM student_model WHERE id = 'sm1'",
+        )
         .getSingle();
     expect(sm.read<String?>('attitude_preference'), '温和');
-    expect(sm.read<String?>('style_profile'), isNull,
-        reason: 'v13 新增 style_profile 默认 NULL');
-    expect(sm.read<String?>('style_fingerprint'), isNull,
-        reason: 'v15 新增 style_fingerprint 默认 NULL');
+    expect(
+      sm.read<String?>('style_profile'),
+      isNull,
+      reason: 'v13 新增 style_profile 默认 NULL',
+    );
+    expect(
+      sm.read<String?>('style_fingerprint'),
+      isNull,
+      reason: 'v15 新增 style_fingerprint 默认 NULL',
+    );
 
     // 6. teaching_state 存量保留 + beginner_level 已在 v12 存在
     final ts = await db
         .customSelect(
-            "SELECT current_phase, beginner_level FROM teaching_state WHERE id = 'ts1'")
+          "SELECT current_phase, beginner_level FROM teaching_state WHERE id = 'ts1'",
+        )
         .getSingle();
     expect(ts.read<String>('current_phase'), 'P0_ENGAGE');
     expect(ts.read<String?>('beginner_level'), 'N1_ELEMENTS');
@@ -289,36 +305,52 @@ void main() {
     // 7. active_problem 存量保留 + teaching_state/updated_at 列补齐
     final ap = await db
         .customSelect(
-            "SELECT syndrome_id, teaching_state, updated_at FROM active_problem WHERE id = 'ap1'")
+          "SELECT syndrome_id, teaching_state, updated_at FROM active_problem WHERE id = 'ap1'",
+        )
         .getSingle();
     expect(ap.read<String>('syndrome_id'), 'P007');
-    expect(ap.read<String?>('teaching_state'), isNull,
-        reason: 'v19 新增 teaching_state 默认 NULL');
-    expect(ap.read<int?>('updated_at'), isNull,
-        reason: 'v20 新增 updated_at 默认 NULL');
+    expect(
+      ap.read<String?>('teaching_state'),
+      isNull,
+      reason: 'v19 新增 teaching_state 默认 NULL',
+    );
+    expect(
+      ap.read<int?>('updated_at'),
+      isNull,
+      reason: 'v20 新增 updated_at 默认 NULL',
+    );
 
     // 8. teacher_suggestion 存量保留 + adopted_at/dismissed_at 列补齐
     final tsg = await db
         .customSelect(
-            "SELECT task_type, adopted_at, dismissed_at FROM teacher_suggestion WHERE id = 'tsg1'")
+          "SELECT task_type, adopted_at, dismissed_at FROM teacher_suggestion WHERE id = 'tsg1'",
+        )
         .getSingle();
     expect(tsg.read<String>('task_type'), 'rewrite');
-    expect(tsg.read<int?>('adopted_at'), isNull,
-        reason: 'v14 新增 adopted_at 默认 NULL');
-    expect(tsg.read<int?>('dismissed_at'), isNull,
-        reason: 'v14 新增 dismissed_at 默认 NULL');
+    expect(
+      tsg.read<int?>('adopted_at'),
+      isNull,
+      reason: 'v14 新增 adopted_at 默认 NULL',
+    );
+    expect(
+      tsg.read<int?>('dismissed_at'),
+      isNull,
+      reason: 'v14 新增 dismissed_at 默认 NULL',
+    );
   });
 
   test('#2 v12 → v25：v16+ 新建表存在且可写', () async {
-    final db =
-        AppDatabase.forTesting(NativeDatabase(File(createV12LegacyDbFile())));
+    final db = AppDatabase.forTesting(
+      NativeDatabase(File(createV12LegacyDbFile())),
+    );
     addTearDown(db.close);
 
     // volumes（v23）可写可读
     await db.customStatement(
       "INSERT INTO volumes (id, manuscript_id, title) VALUES ('v1', 'm1', '第一卷')",
     );
-    final volCount = await db.customSelect('SELECT COUNT(*) AS n FROM volumes')
+    final volCount = await db
+        .customSelect('SELECT COUNT(*) AS n FROM volumes')
         .getSingle();
     expect(volCount.read<int>('n'), 1);
 
@@ -332,11 +364,14 @@ void main() {
     await db.customStatement(
       "INSERT INTO subplot_fact (id, manuscript_id, name) VALUES ('sf1', 'm1', '钥匙的秘密')",
     );
-    final cf = await db.customSelect('SELECT COUNT(*) AS n FROM character_fact')
+    final cf = await db
+        .customSelect('SELECT COUNT(*) AS n FROM character_fact')
         .getSingle();
-    final ef = await db.customSelect('SELECT COUNT(*) AS n FROM event_fact')
+    final ef = await db
+        .customSelect('SELECT COUNT(*) AS n FROM event_fact')
         .getSingle();
-    final sf = await db.customSelect('SELECT COUNT(*) AS n FROM subplot_fact')
+    final sf = await db
+        .customSelect('SELECT COUNT(*) AS n FROM subplot_fact')
         .getSingle();
     expect(cf.read<int>('n'), 1);
     expect(ef.read<int>('n'), 1);
@@ -346,7 +381,8 @@ void main() {
     await db.customStatement(
       "INSERT INTO outline_entity (id, manuscript_id, entity_type, entity_key) VALUES ('oe1', 'm1', 'character', '王建国')",
     );
-    final oe = await db.customSelect('SELECT COUNT(*) AS n FROM outline_entity')
+    final oe = await db
+        .customSelect('SELECT COUNT(*) AS n FROM outline_entity')
         .getSingle();
     expect(oe.read<int>('n'), 1);
 
@@ -355,8 +391,7 @@ void main() {
       "INSERT INTO session_reference (id, session_id, ref_type, ref_id, is_primary) VALUES ('sr1', 's1', 'file', 'f1', 0)",
     );
     final sr = await db
-        .customSelect(
-            "SELECT ref_type FROM session_reference WHERE id = 'sr1'")
+        .customSelect("SELECT ref_type FROM session_reference WHERE id = 'sr1'")
         .getSingle();
     expect(sr.read<String>('ref_type'), 'file');
   });

@@ -48,9 +48,5 @@ abstract class MaterialCapability {
   ParagraphAnchor? parseParagraphAnchor(String? excerptRangeJson);
 
   /// 从章节内容中按段落锚点提取窗口文本。
-  String extractParagraphWindow(
-    String content,
-    int startPara,
-    int endPara,
-  );
+  String extractParagraphWindow(String content, int startPara, int endPara);
 }

@@ -72,7 +72,8 @@ void main() {
   test('#7 长文本高频连接词（≥3 次）→ 观察项', () {
     // 构造 ≥200 字且「然后」出现 ≥3 次
     final filler = '他穿过空荡荡的街道，看着昏黄的路灯一盏盏亮起，远处的山影在暮色里渐渐模糊。';
-    final text = '然后他走进巷子。然后他停在门前。然后他敲了敲门。'
+    final text =
+        '然后他走进巷子。然后他停在门前。然后他敲了敲门。'
         '$filler$filler$filler$filler$filler';
     expect(text.length, greaterThanOrEqualTo(200));
     final result = detectGrammarLexicalIssues(text);

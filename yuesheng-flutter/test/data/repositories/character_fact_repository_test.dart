@@ -123,8 +123,7 @@ void main() {
     expect(assertions.length, 1, reason: '同三元组去重');
   });
 
-  test('#2c 重复 upsert 不覆盖 firstSeenChapter/firstSeenAt（批次3-D2）',
-      () async {
+  test('#2c 重复 upsert 不覆盖 firstSeenChapter/firstSeenAt（批次3-D2）', () async {
     await repo.upsertCharacter(
       manuscriptId: manuscriptId,
       name: '阿禾',

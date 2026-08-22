@@ -5,4 +5,3 @@
 // 二级拆分（R-019 ≤300 行）：Skill 对象字面量已移至以下分片：
 //   skills_training_p1.dart, skills_training_p2.dart, skills_training_p3.dart, skills_training_p4.dart, skills_training_p5.dart
 part of 'skill_registry.dart';
-

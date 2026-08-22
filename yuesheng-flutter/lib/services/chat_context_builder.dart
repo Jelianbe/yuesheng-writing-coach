@@ -40,7 +40,8 @@ String? formatAttachedFilesContext(List<AttachedFileInfo> files) {
   if (files.isEmpty) return null;
 
   const summaryLen = 200;
-  const header = '\n## 当前书籍文件（摘要）\n\n'
+  const header =
+      '\n## 当前书籍文件（摘要）\n\n'
       '以下是你所关联书籍下的参考文件清单及开头摘要。'
       '需要某文件完整内容时，请引导用户通过 @ 引用该文件，而非在此全量展开。\n\n';
 
@@ -62,4 +63,3 @@ String? formatAttachedFilesContext(List<AttachedFileInfo> files) {
   final bodyStr = body.toString();
   return bodyStr.isNotEmpty ? '$header$bodyStr' : null;
 }
-

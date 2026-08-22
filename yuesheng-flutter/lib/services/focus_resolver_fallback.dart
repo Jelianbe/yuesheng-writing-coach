@@ -3,6 +3,7 @@
 // Fallback 优先级表：_selectFallback/_isFrequentSwitching。迁移自 focus_resolver.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'focus_resolver.dart';
+
 /// Fallback 优先级表（5.4.2）
 /// rejected / ignored / resolved 症候永远不进入候选池
 ({String? id, String reason}) _selectFallback(
@@ -95,4 +96,3 @@ bool _isFrequentSwitching(
   final uniqueIds = ids.toSet();
   return ids.length == uniqueIds.length;
 }
-

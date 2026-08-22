@@ -398,9 +398,7 @@ void main() {
         TeachingSubphase.feedback.value,
       );
 
-      final chatService = buildChatService(
-        FakeLlmClient('很好，本次练习达标了！'),
-      );
+      final chatService = buildChatService(FakeLlmClient('很好，本次练习达标了！'));
 
       // 第一轮：subphase=feedback 提交练习作答 → 命中训练结果解析
       await chatService.sendMessage(
@@ -417,8 +415,11 @@ void main() {
 
       // 训练轮终结 → DB 子阶段被重置为 null
       final ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentSubphase, isNull,
-          reason: '训练轮终结后应重置子阶段，防止 feedback 残留');
+      expect(
+        ts?.currentSubphase,
+        isNull,
+        reason: '训练轮终结后应重置子阶段，防止 feedback 残留',
+      );
 
       // 第二轮：普通消息（不带 subphase），AI 回复仍含「达标」→ 不应再写入训练记录
       final before = await studentModelRepo.getTeachingHistory(sessionId);
@@ -437,8 +438,11 @@ void main() {
       );
       final after = await studentModelRepo.getTeachingHistory(sessionId);
       final trainingAfter = after.where((r) => r['type'] == 'training').length;
-      expect(trainingAfter, trainingBefore,
-          reason: '子阶段已重置，普通消息不应再被误归属为旧训练轮结果');
+      expect(
+        trainingAfter,
+        trainingBefore,
+        reason: '子阶段已重置，普通消息不应再被误归属为旧训练轮结果',
+      );
     });
 
     test('#S2 新诊断提交 → 子阶段重置为 null（新诊断=旧训练轮终结）', () async {
@@ -470,8 +474,7 @@ void main() {
       );
 
       final ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentSubphase, isNull,
-          reason: '新诊断提交 = 旧训练轮终结，应重置子阶段');
+      expect(ts?.currentSubphase, isNull, reason: '新诊断提交 = 旧训练轮终结，应重置子阶段');
     });
 
     test('#S3 D4-A 分块诊断路径提交新诊断 → 子阶段同样重置为 null', () async {
@@ -492,8 +495,7 @@ void main() {
       );
 
       final ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentSubphase, isNull,
-          reason: 'D4-A 新诊断提交同样终结旧训练轮，应重置子阶段');
+      expect(ts?.currentSubphase, isNull, reason: 'D4-A 新诊断提交同样终结旧训练轮，应重置子阶段');
     });
   });
 
@@ -511,7 +513,9 @@ void main() {
       // → [YS_DIAGNOSIS] 的「[YS_DIAGN」先到，末尾为未完成前缀
       const llmResponse =
           '正文节奏不错。\n[YS_DIAGNOSIS]\n{"syndromes":[]}\n[/YS_DIAGNOSIS]';
-      final diagService = buildChatService(FakeLlmClient(llmResponse, chunkSize: 8));
+      final diagService = buildChatService(
+        FakeLlmClient(llmResponse, chunkSize: 8),
+      );
 
       final streamedDeltas = <String>[];
       String? completeContent;
@@ -543,7 +547,9 @@ void main() {
     test('#V2 事实标记跨 chunk 拆分 → onStream 不泄漏半截标记', () async {
       // chunkSize=4：`正文。\n`（4 字符）+ `[YS_`（4 字符）拆开
       const llmResponse = '正文。\n[YS_FACT]\n{"events":[]}\n[/YS_FACT]';
-      final factService = buildChatService(FakeLlmClient(llmResponse, chunkSize: 4));
+      final factService = buildChatService(
+        FakeLlmClient(llmResponse, chunkSize: 4),
+      );
 
       final streamedDeltas = <String>[];
 

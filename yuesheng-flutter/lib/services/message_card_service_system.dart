@@ -268,8 +268,8 @@ class GenuiCardPayload {
   }
 
   Map<String, dynamic> toJson() => {
-        'components': components.map((c) => c.toJson()).toList(),
-      };
+    'components': components.map((c) => c.toJson()).toList(),
+  };
 }
 
 /// GenUI 组件解析落库后，确定性插入 GenUI 卡片消息（B-1）

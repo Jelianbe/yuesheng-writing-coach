@@ -130,8 +130,11 @@ void main() {
           previousStability: 1.0,
         ),
       );
-      expect(r, ComprehensiveJudgment.worsening,
-          reason: '恶化无条件恶化置顶，即使达标率/稳定度向好也不改判');
+      expect(
+        r,
+        ComprehensiveJudgment.worsening,
+        reason: '恶化无条件恶化置顶，即使达标率/稳定度向好也不改判',
+      );
     });
 
     test('#A2 严重度不变 + 很低达标率（pr<0.2）+ 稳定度下降 → 恶化趋势（规则7 可达）', () {
@@ -144,8 +147,11 @@ void main() {
           previousStability: 2.0,
         ),
       );
-      expect(r, ComprehensiveJudgment.worseningTrend,
-          reason: '规则7（pr<0.2）必须先于规则8（pr<=0.4）命中，否则被遮蔽成死代码');
+      expect(
+        r,
+        ComprehensiveJudgment.worseningTrend,
+        reason: '规则7（pr<0.2）必须先于规则8（pr<=0.4）命中，否则被遮蔽成死代码',
+      );
     });
 
     test('#A3 严重度不变 + 低达标率（0.2<=pr<=0.4）+ 稳定度下降 → 可能恶化（规则8）', () {

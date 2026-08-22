@@ -132,7 +132,6 @@ const String _teachingStrategyBody2 = '''
 syndrome 对象字段：
 - syndrome_id (string): 症候内部编号（如 ''';
 
-
 const Skill _teachingModes = Skill(
   meta: SkillMeta(
     id: 'teaching-modes',
@@ -232,7 +231,6 @@ const Skill _teachingModes = Skill(
    - 否，且自信地做错 → 认知冲突（制造认知落差）
 4. **犹豫不决时** → 优先用镜像反馈（最低风险，学员始终能接受）''',
 );
-
 
 const Skill _coreIronTriangle = Skill(
   meta: SkillMeta(

@@ -45,11 +45,7 @@ String _truncateToOneLine(String text, int maxLen) {
 /// 定位 keyword 所在段落（以 `\n` 分段），返回该段落片段：以关键词为锚做句子级截断，
 /// 上限 [maxLen]。漂移从字符级降到段落级——编辑前文不影响定位。
 /// 未命中 / 关键词为空 / 正文为空 → 返回 null（降级安全，调用方不输出摘录）。
-String? findKeywordExcerpt(
-  String content,
-  String keyword, {
-  int maxLen = 120,
-}) {
+String? findKeywordExcerpt(String content, String keyword, {int maxLen = 120}) {
   if (keyword.isEmpty || content.isEmpty) return null;
   final paras = content.split('\n');
   for (final p in paras) {
@@ -88,4 +84,3 @@ String _excerptSuffix(String? excerpt) {
   if (excerpt == null || excerpt.isEmpty) return '';
   return '（原文：「$excerpt」）';
 }
-

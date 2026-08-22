@@ -208,7 +208,6 @@ const Skill _comparison = Skill(
 - 学生说"我还是写不出来" → 降低练习难度（从"改一段"降为"改一句"）''',
 );
 
-
 const Skill _textSurgeryV2 = Skill(
   meta: SkillMeta(
     id: 'text-surgery-v2',
@@ -254,14 +253,14 @@ const Skill _textSurgeryV2 = Skill(
 即使降到最低级（教练完整演示），演示也必须基于学员原文的角色、场景和语境，不用通用例句。''',
 );
 
-
 final Skill _trainingTemplatesIndex = Skill(
   meta: SkillMeta(
     id: 'training-templates-index',
     group: 'training',
     estimatedTokens: 1500,
   ),
-  content: '''# SKILL: 写作问题教学知识索引（v2）
+  content:
+      '''# SKILL: 写作问题教学知识索引（v2）
 
 > **定位**: 训练阶段的教学知识入口。仅含 ${kSyndromeIds.length} 条症候的索引级信息（ID + 名称 + 核心本质一句话）。
 > **设计理念**: 知识而非脚本。AI 根据索引定位焦点，再结合 L3 注入的完整知识自主组织教学语言和练习方式。

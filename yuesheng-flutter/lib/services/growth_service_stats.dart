@@ -3,6 +3,7 @@
 // 成长统计 extension：getGrowthOverview/getWritingCurve/_formatUtcDate/getLatestStyleProfile。迁移自 growth_service.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'growth_service.dart';
+
 extension GrowthStatsExtension on GrowthService {
   /// 成长总览（复刻 RN getGrowthOverview）
   Future<GrowthOverview> getGrowthOverview() async {

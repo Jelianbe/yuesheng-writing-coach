@@ -88,7 +88,6 @@ P2_PRACTICE_LOOP 下分为 DIAGNOSIS（诊断）→ PRACTICE（练习）→ FEED
 
 > "聊几句——你现在在写什么？卡在哪里了？"''';
 
-
 const Skill _coreProductIdentity = Skill(
   meta: SkillMeta(
     id: 'core-product-identity',
@@ -169,10 +168,10 @@ const Skill _coreProductIdentity = Skill(
 - 学员对 AI 输出不满意 → "这是 AI 的天花板——我能帮你看到差距，但跨越这个 gap 需要你自己的练习。"''',
 );
 
-
 final Skill _validationRules = Skill(
   meta: SkillMeta(id: 'validation-rules', group: 'core', estimatedTokens: 1700),
-  content: '''# SKILL: 输出验证
+  content:
+      '''# SKILL: 输出验证
 
 > **来源**: yuesheng-prompt-v5.md §八
 > **loadWhen**: 所有 phase 必加载（合规校验是硬约束）
@@ -238,7 +237,6 @@ final Skill _validationRules = Skill(
   - ✅ 学员触发以上场景时，必须使用 SKILL-SCENARIO 对应的标准拒绝话术
   - **检测标准**: 触发关键词（"帮我写""续写""润色""合作""发平台"）时，回复中必须包含边界重申或转向诊断/训练''',
 );
-
 
 const Skill _writingAnchors = Skill(
   meta: SkillMeta(id: 'writing-anchors', group: 'core', estimatedTokens: 450),

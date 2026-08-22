@@ -40,9 +40,7 @@ void main() {
     var tapped = false;
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: ChatWelcome(onStartWriting: () => tapped = true),
-        ),
+        home: Scaffold(body: ChatWelcome(onStartWriting: () => tapped = true)),
       ),
     );
 

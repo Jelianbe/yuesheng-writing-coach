@@ -160,19 +160,13 @@ void main() {
       await store.buildEvaluationReport(sessionId, messageId);
 
       // DB 有记录
-      var report = await appStateRepo.getEvaluationReport(
-        sessionId,
-        messageId,
-      );
+      var report = await appStateRepo.getEvaluationReport(sessionId, messageId);
       expect(report, isNotNull);
 
       await store.dismissEvaluationReport(messageId);
 
       // DB 记录已删除
-      report = await appStateRepo.getEvaluationReport(
-        sessionId,
-        messageId,
-      );
+      report = await appStateRepo.getEvaluationReport(sessionId, messageId);
       expect(report, isNull);
     });
 

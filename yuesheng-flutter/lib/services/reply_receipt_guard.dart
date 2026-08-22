@@ -18,7 +18,7 @@ enum ReceiptAction {
   saved('保存'), // 保存（稿件 / 诊断 / 草稿）
   exported('导出'), // 导出
   applied('应用'), // 把修改应用到正文
-  modified('修改'), // 修改正文内容
+  modified('修改') // 修改正文内容
   ;
 
   /// 命中短语：即「已 + 动作」形式（如「已保存」）。
@@ -32,7 +32,7 @@ enum ReceiptAction {
 /// 回执判定结果。
 enum ReceiptStatus {
   receiptOk('receipt_ok'), // 回复中无任何未支撑的「已X」声明
-  humanReviewPending('human_review_pending'), // 存在未支撑声明，已降级，需人工复核
+  humanReviewPending('human_review_pending') // 存在未支撑声明，已降级，需人工复核
   ;
 
   final String value;
@@ -76,9 +76,14 @@ class ReplyReceiptGuard {
         downgraded.add(action);
       }
     }
-    final status =
-        downgraded.isEmpty ? ReceiptStatus.receiptOk : ReceiptStatus.humanReviewPending;
-    return ReceiptGuardResult(text: result, status: status, downgraded: downgraded);
+    final status = downgraded.isEmpty
+        ? ReceiptStatus.receiptOk
+        : ReceiptStatus.humanReviewPending;
+    return ReceiptGuardResult(
+      text: result,
+      status: status,
+      downgraded: downgraded,
+    );
   }
 
   /// 便捷判断：回复是否包含任意「已X」声明（不论是否有回执）。

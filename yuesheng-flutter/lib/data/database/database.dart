@@ -623,9 +623,9 @@ class AppDatabase extends _$AppDatabase {
                 updated_at    INTEGER NOT NULL DEFAULT (unixepoch())
               )
             ''');
-        final colNames = (await customSelect('PRAGMA table_info(chapters)').get())
-            .map((r) => r.read<String>('name'))
-            .toSet();
+        final colNames = (await customSelect(
+          'PRAGMA table_info(chapters)',
+        ).get()).map((r) => r.read<String>('name')).toSet();
         if (!colNames.contains('volume_id')) {
           await customStatement(
             'ALTER TABLE chapters ADD COLUMN volume_id TEXT DEFAULT NULL REFERENCES volumes(id) ON DELETE SET NULL',

@@ -98,15 +98,11 @@ void main() {
           '[/YS_FACT]';
       final result = parseFactExtraction(raw);
       expect(result, isNotNull);
-      expect(result!.events.single.causeEventName, isNull,
-          reason: '空字符串视为无前因');
+      expect(result!.events.single.causeEventName, isNull, reason: '空字符串视为无前因');
     });
 
     test('#4 非法 JSON → null', () {
-      expect(
-        parseFactExtraction('[YS_FACT]{not-json}[/YS_FACT]'),
-        isNull,
-      );
+      expect(parseFactExtraction('[YS_FACT]{not-json}[/YS_FACT]'), isNull);
     });
 
     test('#5 字段校验失败 → 跳过非法条目保留合法条目', () {
@@ -186,8 +182,7 @@ void main() {
     });
 
     test('#11 完整块 → 整块移除，前后文本拼接', () {
-      const raw =
-          '诊断完成。\n[YS_FACT]{"characters":[]}\n[/YS_FACT]\n明天继续。';
+      const raw = '诊断完成。\n[YS_FACT]{"characters":[]}\n[/YS_FACT]\n明天继续。';
       expect(stripFactBlock(raw), '诊断完成。\n明天继续。');
     });
 
@@ -197,8 +192,7 @@ void main() {
     });
 
     test('#13 块在开头 → 移除后返回尾部', () {
-      const raw =
-          '[YS_FACT]{"events":[]}[/YS_FACT]\n这是诊断。';
+      const raw = '[YS_FACT]{"events":[]}[/YS_FACT]\n这是诊断。';
       expect(stripFactBlock(raw), '这是诊断。');
     });
   });

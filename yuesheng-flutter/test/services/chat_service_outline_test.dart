@@ -200,7 +200,11 @@ void main() {
 
     // 实体落库（sendMessage 未调用，应仅来自 commitDiagnosisFromContent）
     final entities = await outlineRepo.listEntities(manuscriptId);
-    expect(entities.length, 1, reason: 'D4-A 也应走 applyOutlineExtraction 落库 1 个实体');
+    expect(
+      entities.length,
+      1,
+      reason: 'D4-A 也应走 applyOutlineExtraction 落库 1 个实体',
+    );
     expect(entities.single.entityKey, '王叔');
     expect(entities.single.status, 'pending');
     expect(OutlineRepository.parseAliases(entities.single.aliases), ['王师傅']);

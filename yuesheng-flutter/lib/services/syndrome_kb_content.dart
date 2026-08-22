@@ -6,7 +6,8 @@ part of 'syndrome_knowledge_base.dart';
 
 /// L2 索引：写作问题→症候 ID 映射表（对应 RN SYNDROME_INDEX_CONTENT）
 /// 映射表行由注册表渲染（b9 批次28），输出与手写逐字一致。
-final String kSyndromeIndexContent = r'''# SKILL: 写作问题→症候 ID 映射表
+final String kSyndromeIndexContent =
+    r'''# SKILL: 写作问题→症候 ID 映射表
 
 > 定位：你已凭认知锚点识别出写作问题后，用此表为问题标注症候 ID。
 > 这是"名分"映射，不是诊断标准——你的判断在前，ID 在后。
@@ -23,7 +24,12 @@ final String kSyndromeIndexContent = r'''# SKILL: 写作问题→症候 ID 映�
 
 | 症候 ID | 问题类型关键词 | 一句话描述 |
 |---------|--------------|-----------|
-''' + kSyndromeRegistry.where((s) => s.retired != true).map(_syndromeIndexRow).join('\n') + r'''
+''' +
+    kSyndromeRegistry
+        .where((s) => s.retired != true)
+        .map(_syndromeIndexRow)
+        .join('\n') +
+    r'''
 ## 严重度三维标定
 
 - L1 轻微：局部/不影响理解/改几句即可
@@ -101,7 +107,8 @@ final String kSyndromeIndexContent = r'''# SKILL: 写作问题→症候 ID 映�
 
 /// L3 完整手册：症候诊断手册（对应 RN content，含 P003-P041 完整定义）
 /// 头部「症候图谱」计数由注册表派生（b9 批次28），正文段落保留人工编写。
-final String kSyndromeManualContent = r'''# SKILL: 症候诊断手册
+final String kSyndromeManualContent =
+    r'''# SKILL: 症候诊断手册
 
 > **来源**: yuesheng-prompt-v5.md §二 + syndrome-action-map.json
 > **loadWhen**: P1+ 必加载（P0 不诊断，节省 token）
@@ -119,7 +126,8 @@ final String kSyndromeManualContent = r'''# SKILL: 症候诊断手册
     _syndromeManualBody4 +
     _syndromeManualBody5 +
     _syndromeManualBody6 +
-    _typeLookupTable() + r'''
+    _typeLookupTable() +
+    r'''
 
 ---
 
@@ -143,7 +151,12 @@ final String kSyndromeManualContent = r'''# SKILL: 症候诊断手册
 
 | 症候 | 推荐技法 |
 |------|---------|
-''' + kSyndromeRegistry.where((s) => s.retired != true).map(_techniqueMapRow).join('\n') + r'''
+''' +
+    kSyndromeRegistry
+        .where((s) => s.retired != true)
+        .map(_techniqueMapRow)
+        .join('\n') +
+    r'''
 
 ---
 

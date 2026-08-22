@@ -276,7 +276,10 @@ class SessionDrawer extends StatelessWidget {
   }
 
   /// 删除会话确认（批次73）：确认后关抽屉 → 回调 onDelete
-  Future<void> _confirmDelete(BuildContext context, SessionWithPhase item) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    SessionWithPhase item,
+  ) async {
     final title = item.session.title.isEmpty ? '新建会话' : item.session.title;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -304,10 +307,7 @@ class SessionDrawer extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             child: const Text(
               '取消',
@@ -324,10 +324,7 @@ class SessionDrawer extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             child: const Text(
               '删除',

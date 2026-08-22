@@ -197,9 +197,7 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
     });
 
-    testWidgets('批次82 点击"排版设置" → onOpenSettings 触发 + sheet 关闭', (
-      tester,
-    ) async {
+    testWidgets('批次82 点击"排版设置" → onOpenSettings 触发 + sheet 关闭', (tester) async {
       bool settingsCalled = false;
       await pumpSheet(
         tester,
@@ -251,9 +249,7 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
     });
 
-    testWidgets('批次83 点击"大纲" → onOpenOutline 触发 + sheet 关闭', (
-      tester,
-    ) async {
+    testWidgets('批次83 点击"大纲" → onOpenOutline 触发 + sheet 关闭', (tester) async {
       bool outlineCalled = false;
       await pumpSheet(
         tester,
@@ -361,11 +357,7 @@ void main() {
     });
 
     testWidgets('批次85-2 点击"行段聚焦" → 已移入排版设置，菜单不再渲染开关', (tester) async {
-      await pumpSheet(
-        tester,
-        lastSavedAt: null,
-        onDiagnose: () {},
-      );
+      await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
 
       // 批次96-9：开关移入排版设置，菜单不渲染（防止误点击开关类项）
       expect(find.text('行段聚焦'), findsNothing);

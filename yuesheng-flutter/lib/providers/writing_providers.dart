@@ -51,26 +51,35 @@ class WritingState {
   final int wordCount;
   final double fontSize;
   final double lineSpacing;
+
   /// 批次82：编辑器背景预设（editorBgPaper 等）
   final String editorBackground;
+
   /// 批次88-4：自动首行缩进（回车换行自动补两格全角空格；默认开）
   final bool indentParagraph;
+
   /// 批次88-4：段间空行（段落之间自动留空行；默认关）
   final bool blankLineBetween;
+
   /// 批次96-9：行段聚焦（淡化当前段以外内容；默认关；原 WritingPage 私有字段移入 store）
   final bool focusMode;
+
   /// 批次96-9：智能标点（输入「自动补全；默认开；原 WritingPage 私有字段移入 store）
   final bool smartPunctOn;
+
   /// 批次96-9：对话按钮(FAB)可见性（默认显示；原 WritingPage 私有字段移入 store）
   final bool fabVisible;
+
   /// 批次82：单章写作目标字数（0 = 未设置）
   final int goalWords;
   final bool isAiPanelOpen;
   final DateTime? lastSavedAt;
   final bool isLoading;
   final bool isSaving;
+
   /// 加载/整体错误（触发整页错误视图 + 重试）
   final String? error;
+
   /// 批次60：保存错误（仅状态条 + SnackBar 提示，不切换整页错误视图）
   final String? saveError;
   final bool isOffline;
@@ -413,7 +422,11 @@ class WritingStore extends StateNotifier<WritingState> {
   Future<void> saveNow() async {
     _saveTimer?.cancel();
     _saveTimer = null;
-    state = state.copyWith(isSaving: true, clearError: true, clearSaveError: true);
+    state = state.copyWith(
+      isSaving: true,
+      clearError: true,
+      clearSaveError: true,
+    );
     try {
       if (state.isOffline) {
         final appStateRepo = AppStateRepository(_db);
@@ -521,9 +534,9 @@ class WritingStore extends StateNotifier<WritingState> {
   /// 批次82：从 app_state 加载单章写作目标（章节级，0 = 未设置）
   Future<void> loadGoalWords() async {
     try {
-      final raw = await AppStateRepository(_db).getValue(
-        'chapter_goal:$chapterId',
-      );
+      final raw = await AppStateRepository(
+        _db,
+      ).getValue('chapter_goal:$chapterId');
       final goal = int.tryParse(raw ?? '') ?? 0;
       state = state.copyWith(goalWords: goal < 0 ? 0 : goal);
     } catch (_) {
@@ -535,10 +548,9 @@ class WritingStore extends StateNotifier<WritingState> {
   Future<void> setGoalWords(int goal) async {
     final safe = goal < 0 ? 0 : goal;
     state = state.copyWith(goalWords: safe);
-    await AppStateRepository(_db).setValue(
-      'chapter_goal:$chapterId',
-      safe.toString(),
-    );
+    await AppStateRepository(
+      _db,
+    ).setValue('chapter_goal:$chapterId', safe.toString());
   }
 
   /// 批次82：跨 200 字边界 → 落一章版本快照（时光机留痕）
@@ -549,16 +561,18 @@ class WritingStore extends StateNotifier<WritingState> {
     _nextSnapshotWords =
         (wc ~/ AppStateRepository.chapterVersionInterval + 1) *
         AppStateRepository.chapterVersionInterval;
-    await AppStateRepository(_db).addChapterVersion(chapterId, state.localContent);
-    debugPrint(
-      '[WritingStore] 版本快照已落: chapterId=$chapterId wordCount=$wc',
-    );
+    await AppStateRepository(
+      _db,
+    ).addChapterVersion(chapterId, state.localContent);
+    debugPrint('[WritingStore] 版本快照已落: chapterId=$chapterId wordCount=$wc');
   }
 
   /// 批次82：时光机恢复版本
   /// 恢复前先把当前内容存为新版本（恢复可逆，不丢当前稿）
   Future<void> restoreVersion(String content) async {
-    await AppStateRepository(_db).addChapterVersion(chapterId, state.localContent);
+    await AppStateRepository(
+      _db,
+    ).addChapterVersion(chapterId, state.localContent);
     state = state.copyWith(localContent: content, wordCount: content.length);
     // B7：恢复版本 → 重置历史栈（版本内容为新编辑基线）
     _resetHistory(content);
@@ -615,13 +629,11 @@ class WritingStore extends StateNotifier<WritingState> {
   Future<void> loadEditorSettings() async {
     try {
       final repo = AppStateRepository(_db);
-      final fontSize = double.tryParse(
-            await repo.getValue('editor_font_size') ?? '',
-          ) ??
+      final fontSize =
+          double.tryParse(await repo.getValue('editor_font_size') ?? '') ??
           state.fontSize;
-      final lineSpacing = double.tryParse(
-            await repo.getValue('editor_line_spacing') ?? '',
-          ) ??
+      final lineSpacing =
+          double.tryParse(await repo.getValue('editor_line_spacing') ?? '') ??
           state.lineSpacing;
       final background =
           await repo.getValue('editor_background') ?? state.editorBackground;

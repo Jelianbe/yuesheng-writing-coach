@@ -3,6 +3,7 @@
 // 教学建议类卡片：TeacherSuggestionCardPayload/insertTeacherSuggestionCard/OutlineConfirmationPayload/OutlineImpressionPayload/insertOutlineConfirmationCard。逐字迁移自 message_card_service.dart，零行为变更。
 // ─────────────────────────────────────────────────────────────
 part of 'message_card_service.dart';
+
 /// Teacher 建议卡片 Payload（D6）
 ///
 /// 真源：message-card-service.ts TeacherSuggestionCardPayload
@@ -177,4 +178,3 @@ Future<String> insertOutlineConfirmationCard(
   );
   return messageId;
 }
-

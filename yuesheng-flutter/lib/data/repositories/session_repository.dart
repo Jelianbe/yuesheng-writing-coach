@@ -19,25 +19,29 @@ class SessionRepository {
     final id = generateUuid();
     final now = nowSec();
     await _db.transaction(() async {
-      await _db.into(_db.sessions).insert(
-        SessionsCompanion.insert(
-          id: id,
-          title: Value(title ?? '新建会话'),
-          preview: const Value(''),
-          diagnosisSummary: const Value('{}'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
+      await _db
+          .into(_db.sessions)
+          .insert(
+            SessionsCompanion.insert(
+              id: id,
+              title: Value(title ?? '新建会话'),
+              preview: const Value(''),
+              diagnosisSummary: const Value('{}'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
       // 同步创建 teaching_state 行（INSERT OR IGNORE，默认 P0_ENGAGE）
-      await _db.into(_db.teachingState).insertOnConflictUpdate(
-        TeachingStateCompanion.insert(
-          id: generateUuid(),
-          sessionId: id,
-          currentPhase: const Value('P0_ENGAGE'),
-          updatedAt: Value(now),
-        ),
-      );
+      await _db
+          .into(_db.teachingState)
+          .insertOnConflictUpdate(
+            TeachingStateCompanion.insert(
+              id: generateUuid(),
+              sessionId: id,
+              currentPhase: const Value('P0_ENGAGE'),
+              updatedAt: Value(now),
+            ),
+          );
     });
     return id;
   }
@@ -69,12 +73,12 @@ class SessionRepository {
       final sid = await createBlankSession(title: '新建会话');
 
       // 写入冗余缓存 + 主引用
-      await (_db.update(
-        _db.sessions,
-      )..where((t) => t.id.equals(sid))).write(
+      await (_db.update(_db.sessions)..where((t) => t.id.equals(sid))).write(
         SessionsCompanion(
           manuscriptId: Value(manuscriptId),
-          chapterId: chapterId != null ? Value(chapterId) : const Value.absent(),
+          chapterId: chapterId != null
+              ? Value(chapterId)
+              : const Value.absent(),
           updatedAt: Value(nowSec()),
         ),
       );
@@ -139,9 +143,9 @@ class SessionRepository {
     // 标题为空回退「章节会话」；章节查询失败不影响会话创建）
     String chapterTitle = '';
     try {
-      final chapter = await (_db.select(_db.chapters)
-            ..where((t) => t.id.equals(chapterId)))
-          .getSingleOrNull();
+      final chapter = await (_db.select(
+        _db.chapters,
+      )..where((t) => t.id.equals(chapterId))).getSingleOrNull();
       chapterTitle = chapter?.title ?? '';
     } catch (_) {}
     // 新建会话（建会话 + 建 teaching_state + 建冗余缓存 + 建引用，整体包事务，避免半完成态）
@@ -151,9 +155,7 @@ class SessionRepository {
       );
 
       // 写入冗余缓存
-      await (_db.update(
-        _db.sessions,
-      )..where((t) => t.id.equals(sid))).write(
+      await (_db.update(_db.sessions)..where((t) => t.id.equals(sid))).write(
         SessionsCompanion(
           manuscriptId: Value(manuscriptId),
           chapterId: Value(chapterId),
@@ -349,8 +351,7 @@ class SessionRepository {
   /// 更新消息内容（quiz 答题状态内联持久化，按 messageId 关联）
   /// 仅重写 content 列；不更新 preview/sessions（卡片类消息不污染列表预览）。
   Future<void> updateMessageContent(String messageId, String content) async {
-    await (_db.update(_db.messages)
-          ..where((t) => t.id.equals(messageId)))
+    await (_db.update(_db.messages)..where((t) => t.id.equals(messageId)))
         .write(MessagesCompanion(content: Value(content)));
   }
 
@@ -388,17 +389,18 @@ class SessionRepository {
   ///     （对齐 deleteOrphanSessions 的批次5 5.4 处理）
   Future<void> deleteSession(String sessionId) async {
     await _db.transaction(() async {
-      await (_db.delete(_db.studentModels)
-            ..where((t) => t.sessionId.equals(sessionId)))
-          .go();
-      await (_db.delete(_db.appStates)
-            ..where((t) => t.key.like('eval_report:$sessionId:%')))
-          .go();
-      await (_db.delete(_db.appStates)
-            ..where((t) => t.key.equals('eval_round:$sessionId')))
-          .go();
-      await (_db.delete(_db.sessions)..where((t) => t.id.equals(sessionId)))
-          .go();
+      await (_db.delete(
+        _db.studentModels,
+      )..where((t) => t.sessionId.equals(sessionId))).go();
+      await (_db.delete(
+        _db.appStates,
+      )..where((t) => t.key.like('eval_report:$sessionId:%'))).go();
+      await (_db.delete(
+        _db.appStates,
+      )..where((t) => t.key.equals('eval_round:$sessionId'))).go();
+      await (_db.delete(
+        _db.sessions,
+      )..where((t) => t.id.equals(sessionId))).go();
     });
   }
 
@@ -421,17 +423,18 @@ class SessionRepository {
       )..where((t) => t.sessionId.equals(s.id))).get().then((l) => l.length);
       if (msgCount == 0) {
         await _db.transaction(() async {
-          await (_db.delete(_db.studentModels)
-                ..where((t) => t.sessionId.equals(s.id)))
-              .go();
-          await (_db.delete(_db.sessions)..where((t) => t.id.equals(s.id)))
-              .go();
-          await (_db.delete(_db.appStates)
-                ..where((t) => t.key.like('eval_report:${s.id}:%')))
-              .go();
-          await (_db.delete(_db.appStates)
-                ..where((t) => t.key.equals('eval_round:${s.id}')))
-              .go();
+          await (_db.delete(
+            _db.studentModels,
+          )..where((t) => t.sessionId.equals(s.id))).go();
+          await (_db.delete(
+            _db.sessions,
+          )..where((t) => t.id.equals(s.id))).go();
+          await (_db.delete(
+            _db.appStates,
+          )..where((t) => t.key.like('eval_report:${s.id}:%'))).go();
+          await (_db.delete(
+            _db.appStates,
+          )..where((t) => t.key.equals('eval_round:${s.id}'))).go();
         });
         deleted++;
       }

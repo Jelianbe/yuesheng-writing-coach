@@ -23,6 +23,7 @@ import '../types/teaching_types.dart';
 part 'growth_service_dto.dart';
 part 'growth_service_stats.dart';
 part 'growth_service_ability.dart';
+
 /// 成长数据服务（用户级，无 sessionId 维度）
 class GrowthService {
   final AppDatabase _db;
@@ -85,5 +86,4 @@ class GrowthService {
       description: description,
     );
   }
-
 }

@@ -75,10 +75,7 @@ abstract final class TokenBudgetGuard {
   }
 
   /// 排除 [exclude] 索引后的总估算
-  static int _estimateExcluding(
-    List<ChatMessage> messages,
-    Set<int> exclude,
-  ) {
+  static int _estimateExcluding(List<ChatMessage> messages, Set<int> exclude) {
     var sum = 0;
     for (var i = 0; i < messages.length; i++) {
       if (exclude.contains(i)) continue;

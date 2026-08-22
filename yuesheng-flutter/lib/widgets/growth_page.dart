@@ -111,9 +111,9 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
       final sessions = await sessionRepo.listSessions(); // updated_at DESC
       if (sessions.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('还没有写作会话，先写一章吧')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('还没有写作会话，先写一章吧')));
         }
         return;
       }

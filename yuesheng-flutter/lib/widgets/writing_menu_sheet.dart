@@ -84,122 +84,122 @@ class WritingMenuSheet {
         expand: false,
         builder: (ctx, scrollController) =>
             NotificationListener<DraggableScrollableNotification>(
-          onNotification: (n) {
-            // 松手/吸附到位后上报当前高度占比，由调用方持久化
-            if ((n.extent - lastReported).abs() >= 0.005) {
-              lastReported = n.extent;
-              onHeightChanged?.call(n.extent);
-            }
-            return false;
-          },
-          child: SingleChildScrollView(
-            controller: scrollController,
-            child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            _SaveStatusRow(lastSavedAt: lastSavedAt),
-            const Divider(height: 20),
-            // ─── 写作工具 ───
-            const _SectionHeader(label: '写作工具'),
-            _MenuItem(
-              label: '章节列表',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenChapterTree?.call();
+              onNotification: (n) {
+                // 松手/吸附到位后上报当前高度占比，由调用方持久化
+                if ((n.extent - lastReported).abs() >= 0.005) {
+                  lastReported = n.extent;
+                  onHeightChanged?.call(n.extent);
+                }
+                return false;
               },
+              child: SingleChildScrollView(
+                controller: scrollController,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _SaveStatusRow(lastSavedAt: lastSavedAt),
+                      const Divider(height: 20),
+                      // ─── 写作工具 ───
+                      const _SectionHeader(label: '写作工具'),
+                      _MenuItem(
+                        label: '章节列表',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenChapterTree?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '大纲',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenOutline?.call();
+                        },
+                      ),
+                      // 批次96-11：全文搜索（整本作品章节搜索，命中片段+高亮+跳转定位）
+                      _MenuItem(
+                        label: '全文搜索',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenFullTextSearch?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '查找替换',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenFindReplace?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '回收板',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenRecycleBin?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '快捷短语',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenQuickPhrases?.call();
+                        },
+                      ),
+                      // ─── 教学 ───
+                      const _SectionHeader(label: '教学'),
+                      _MenuItem(
+                        label: '当前文风',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenStyleProfile?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '写作统计',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenWritingStats?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '打开教练面板',
+                        textColor: AppColors.primary,
+                        bold: true,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onDiagnose();
+                        },
+                      ),
+                      // ─── 设置 ───
+                      const _SectionHeader(label: '设置'),
+                      _MenuItem(
+                        label: '排版设置',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenSettings?.call();
+                        },
+                      ),
+                      _MenuItem(
+                        label: '版本时光机',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenVersions?.call();
+                        },
+                      ),
+                      // 批次96-5：菜单末尾「取消」——菜单近全屏时遮罩仅剩顶部窄条，
+                      // 仅靠点遮罩/下滑关闭不直观，需显式关闭入口（对齐详情页更多菜单）
+                      const Divider(height: 20),
+                      _MenuItem(
+                        label: '取消',
+                        textColor: AppColors.textSecondary,
+                        onTap: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            _MenuItem(
-              label: '大纲',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenOutline?.call();
-              },
-            ),
-            // 批次96-11：全文搜索（整本作品章节搜索，命中片段+高亮+跳转定位）
-            _MenuItem(
-              label: '全文搜索',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenFullTextSearch?.call();
-              },
-            ),
-            _MenuItem(
-              label: '查找替换',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenFindReplace?.call();
-              },
-            ),
-            _MenuItem(
-              label: '回收板',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenRecycleBin?.call();
-              },
-            ),
-            _MenuItem(
-              label: '快捷短语',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenQuickPhrases?.call();
-              },
-            ),
-            // ─── 教学 ───
-            const _SectionHeader(label: '教学'),
-            _MenuItem(
-              label: '当前文风',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenStyleProfile?.call();
-              },
-            ),
-            _MenuItem(
-              label: '写作统计',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenWritingStats?.call();
-              },
-            ),
-            _MenuItem(
-              label: '打开教练面板',
-              textColor: AppColors.primary,
-              bold: true,
-              onTap: () {
-                Navigator.pop(ctx);
-                onDiagnose();
-              },
-            ),
-            // ─── 设置 ───
-            const _SectionHeader(label: '设置'),
-            _MenuItem(
-              label: '排版设置',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenSettings?.call();
-              },
-            ),
-            _MenuItem(
-              label: '版本时光机',
-              onTap: () {
-                Navigator.pop(ctx);
-                onOpenVersions?.call();
-              },
-            ),
-            // 批次96-5：菜单末尾「取消」——菜单近全屏时遮罩仅剩顶部窄条，
-            // 仅靠点遮罩/下滑关闭不直观，需显式关闭入口（对齐详情页更多菜单）
-            const Divider(height: 20),
-            _MenuItem(
-              label: '取消',
-              textColor: AppColors.textSecondary,
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ],
-          ),
-        ),
-        ),
-      ),
       ),
     );
   }

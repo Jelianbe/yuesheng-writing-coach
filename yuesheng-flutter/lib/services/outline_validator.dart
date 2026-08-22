@@ -96,10 +96,7 @@ OutlineValidationResult validateOutlineSchema(Object? raw) {
     final e = entitiesRaw[i];
     if (e is! Map<String, dynamic>) {
       errors.add(
-        OutlineValidationError(
-          field: 'entities[$i]',
-          message: '必须是对象',
-        ),
+        OutlineValidationError(field: 'entities[$i]', message: '必须是对象'),
       );
       continue;
     }
@@ -118,10 +115,7 @@ OutlineValidationResult validateOutlineSchema(Object? raw) {
     final key = e['key'];
     if (key is! String || key.trim().isEmpty) {
       errors.add(
-        OutlineValidationError(
-          field: 'entities[$i].key',
-          message: '必须为非空字符串',
-        ),
+        OutlineValidationError(field: 'entities[$i].key', message: '必须为非空字符串'),
       );
       continue;
     }

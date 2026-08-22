@@ -54,7 +54,10 @@ GoRouter _buildRouter(Widget child) {
   return GoRouter(
     initialLocation: '/',
     routes: [
-      GoRoute(path: '/', builder: (_, _) => Scaffold(body: child)),
+      GoRoute(
+        path: '/',
+        builder: (_, _) => Scaffold(body: child),
+      ),
       GoRoute(
         path: '/writing/:chapterId',
         builder: (_, _) => const Scaffold(body: Text('WRITING_PAGE')),
@@ -352,9 +355,7 @@ void main() {
       expect(continued, isTrue);
     });
 
-    testWidgets('partial_agreement 提交反馈/快速选项/跳过 → 透传到宿主回调', (
-      tester,
-    ) async {
+    testWidgets('partial_agreement 提交反馈/快速选项/跳过 → 透传到宿主回调', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       String? submittedFeedback;
@@ -492,9 +493,7 @@ void main() {
     testWidgets('长按普通气泡 → 确认弹窗 → 确认后回调 onDelete', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
-      final messages = [
-        _msg(id: 'm1', role: 'user', content: '你好'),
-      ];
+      final messages = [_msg(id: 'm1', role: 'user', content: '你好')];
       String? deletedId;
       await _pumpList(
         tester,
@@ -516,9 +515,7 @@ void main() {
     testWidgets('未传 onDelete 时卡片长按不弹窗', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
-      final messages = [
-        _msg(id: 'm1', role: 'user', content: '你好'),
-      ];
+      final messages = [_msg(id: 'm1', role: 'user', content: '你好')];
       await _pumpList(tester, db, messages: messages);
 
       await tester.longPress(find.text('你好'));

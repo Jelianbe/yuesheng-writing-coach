@@ -59,10 +59,7 @@ void main() {
       // 经契约消费，行为等价既有纯函数
       expect(impl.componentWhitelist, kGenuiWhitelist);
       expect(impl.parseGenuiBlock('无块文本'), isNull);
-      expect(
-        impl.validateGenuiComponent({'type': 'unknown_type'}),
-        isNull,
-      );
+      expect(impl.validateGenuiComponent({'type': 'unknown_type'}), isNull);
     });
   });
 }

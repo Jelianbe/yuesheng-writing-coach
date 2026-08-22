@@ -14,6 +14,7 @@ import 'syndrome_skill_levels.dart';
 
 part 'focus_resolver_fallback.dart';
 part 'focus_resolver_resolve.dart';
+
 /// 批次6（6.4 O5）：静默跳过 debug 计数器——沉淀「断链」可见性，
 /// 不改跳过行为（focus 未激活 = 教学断链，便于排查为什么没注入 L3）。
 int _silentSkipCount = 0;
@@ -109,4 +110,3 @@ FocusProblem _preferLevelAppropriate(
   }).toList();
   return (appropriate.isNotEmpty ? appropriate : sorted).first;
 }
-

@@ -65,7 +65,11 @@ class TaskPanel extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 批次66：✅ emoji → Material 图标（taste 审核：UI 图标走图标库）
-            Icon(Icons.check_circle_outline, size: 40, color: AppColors.primary),
+            Icon(
+              Icons.check_circle_outline,
+              size: 40,
+              color: AppColors.primary,
+            ),
             SizedBox(height: 10),
             Text(
               '暂无活跃问题',

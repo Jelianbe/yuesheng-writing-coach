@@ -184,10 +184,7 @@ void main() {
       await tester.tap(find.text('删除项目'));
       await tester.pumpAndSettle();
       // 批次59：确认文案对齐真实软删语义
-      expect(
-        find.text('确定删除《测试作品》吗？删除后将不再显示，章节和诊断记录会保留。'),
-        findsOneWidget,
-      );
+      expect(find.text('确定删除《测试作品》吗？删除后将不再显示，章节和诊断记录会保留。'), findsOneWidget);
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
       var m = await ManuscriptRepository(db).getManuscript(manuscriptId);
@@ -210,10 +207,9 @@ void main() {
   group('批次94-5 标签落库 + 热门Chip', () {
     testWidgets('#1 落库标签优先加载（不再回退 genre）', (tester) async {
       // 预置落库标签（genre 仍为奇幻）
-      await ManuscriptRepository(db).updateManuscript(
-        manuscriptId,
-        tags: ['重生', '系统'],
-      );
+      await ManuscriptRepository(
+        db,
+      ).updateManuscript(manuscriptId, tags: ['重生', '系统']);
 
       await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
@@ -258,10 +254,9 @@ void main() {
     });
 
     testWidgets('#4 已含标签的热门Chip 不显示', (tester) async {
-      await ManuscriptRepository(db).updateManuscript(
-        manuscriptId,
-        tags: ['重生'],
-      );
+      await ManuscriptRepository(
+        db,
+      ).updateManuscript(manuscriptId, tags: ['重生']);
 
       await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();

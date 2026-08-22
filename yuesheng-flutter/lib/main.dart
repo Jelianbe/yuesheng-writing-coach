@@ -209,11 +209,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
           content: '夜行的人，影子被月光拉得很长。',
           volumeId: v1,
         );
-        await chRepo.createChapter(
-          msId,
-          title: '散章',
-          content: '一段尚未分卷的随想。',
-        );
+        await chRepo.createChapter(msId, title: '散章', content: '一段尚未分卷的随想。');
         debugPrint('[SEED_DEMO] 演示数据已注入（山月记 + 2 卷 + 3 章）');
       } else {
         // 已有作品无卷 → 补卷让分组效果立即可见

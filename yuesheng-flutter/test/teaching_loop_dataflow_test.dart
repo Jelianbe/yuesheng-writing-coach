@@ -62,9 +62,7 @@ class SequenceFakeLlmClient extends LlmClient {
     _callIndex++;
     for (int i = 0; i < r.length; i += 12) {
       final end = i + 12 < r.length ? i + 12 : r.length;
-      callback(
-        LlmStreamResponse(content: r.substring(i, end), isDone: false),
-      );
+      callback(LlmStreamResponse(content: r.substring(i, end), isDone: false));
     }
     callback(const LlmStreamResponse(content: '', isDone: true));
   }
@@ -82,9 +80,7 @@ class SingleFakeLlmClient extends LlmClient {
     CancelToken? cancelToken,
   }) async {
     for (int i = 0; i < _fullResponse.length; i += 12) {
-      final end = i + 12 < _fullResponse.length
-          ? i + 12
-          : _fullResponse.length;
+      final end = i + 12 < _fullResponse.length ? i + 12 : _fullResponse.length;
       callback(
         LlmStreamResponse(
           content: _fullResponse.substring(i, end),
@@ -145,107 +141,123 @@ void main() {
   );
 
   group('教学闭环·数据流（真实 ChatService + 内存库 + 模拟 LLM 语料）', () {
-    test(
-      '主路径（P041/P012 冲突）：问→写→诊→教→练→评 全链路数据正确流转',
-      () async {
-        // ── 第 1 轮：问 + 写 + 诊 + 教 ──
-        final (diagResp, teacherResp) = splitFixture('corpus_B6_p041_p012.txt');
-        final service = build(SequenceFakeLlmClient([diagResp, teacherResp]));
+    test('主路径（P041/P012 冲突）：问→写→诊→教→练→评 全链路数据正确流转', () async {
+      // ── 第 1 轮：问 + 写 + 诊 + 教 ──
+      final (diagResp, teacherResp) = splitFixture('corpus_B6_p041_p012.txt');
+      final service = build(SequenceFakeLlmClient([diagResp, teacherResp]));
 
-        String? assistantContent;
-        await service.sendMessage(
-          sessionId,
-          '决战那一刻，反派放下能一剑杀主角的机会，开始长篇独白讲述身世。',
-          SendMessageCallbacks(
-            onStream: (_) {},
-            onComplete: (content, _) => assistantContent = content,
-            onError: (e) => fail('诊断轮 onError: $e'),
-          ),
-          defaultOptions,
-        );
+      String? assistantContent;
+      await service.sendMessage(
+        sessionId,
+        '决战那一刻，反派放下能一剑杀主角的机会，开始长篇独白讲述身世。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (content, _) => assistantContent = content,
+          onError: (e) => fail('诊断轮 onError: $e'),
+        ),
+        defaultOptions,
+      );
 
-        // ── 诊：诊断落库，主症 P041 排第一，无凭空症候 ──
-        final active = await diagRepo.listActiveProblems(sessionId);
-        final hitIds = active.map((p) => p.syndromeId).toList();
-        print('[诊] 活跃症候: ${hitIds.join(", ")}');
-        expect(hitIds, contains('P041'), reason: '应命中主症 P041');
-        expect(hitIds, contains('P012'), reason: '应命中次症 P012');
-        expect(hitIds.first, equals('P041'),
-            reason: 'P041 应排 syndromes[0]（冲突优先级裁决）');
-        expect(hitIds.length, 2, reason: '不应凭空造症候（误诊/误报）');
+      // ── 诊：诊断落库，主症 P041 排第一，无凭空症候 ──
+      final active = await diagRepo.listActiveProblems(sessionId);
+      final hitIds = active.map((p) => p.syndromeId).toList();
+      print('[诊] 活跃症候: ${hitIds.join(", ")}');
+      expect(hitIds, contains('P041'), reason: '应命中主症 P041');
+      expect(hitIds, contains('P012'), reason: '应命中次症 P012');
+      expect(
+        hitIds.first,
+        equals('P041'),
+        reason: 'P041 应排 syndromes[0]（冲突优先级裁决）',
+      );
+      expect(hitIds.length, 2, reason: '不应凭空造症候（误诊/误报）');
 
-        // 用户可见内容不得泄漏协议标记与症候编号
-        expect(assistantContent, isNotNull);
-        expect(assistantContent!, isNot(contains('[YS_DIAGNOSIS]')),
-            reason: '诊断块标记泄漏到用户可见内容');
-        expect(assistantContent!, isNot(contains('[YS_TEACHER]')),
-            reason: '教学块标记泄漏到用户可见内容');
-        expect(RegExp(r'P0\d{2}').hasMatch(assistantContent!), isFalse,
-            reason: '自然语言泄漏症候编号');
+      // 用户可见内容不得泄漏协议标记与症候编号
+      expect(assistantContent, isNotNull);
+      expect(
+        assistantContent!,
+        isNot(contains('[YS_DIAGNOSIS]')),
+        reason: '诊断块标记泄漏到用户可见内容',
+      );
+      expect(
+        assistantContent!,
+        isNot(contains('[YS_TEACHER]')),
+        reason: '教学块标记泄漏到用户可见内容',
+      );
+      expect(
+        RegExp(r'P0\d{2}').hasMatch(assistantContent!),
+        isFalse,
+        reason: '自然语言泄漏症候编号',
+      );
 
-        // ── 教：教学建议落库，decision=train 且 training_task 锁定主症 ──
-        final suggestions = await teacherSuggestionRepo.getActiveSuggestions(
-          sessionId,
-        );
-        expect(suggestions, hasLength(1), reason: '应落库 1 条教学建议');
-        final sug = suggestions.first;
-        print('[教] decision=${sug.teachingDecision} '
-            'target=${sug.targetSyndromeId} taskType=${sug.taskType}');
-        expect(sug.teachingDecision, equals('train'),
-            reason: 'L2 症候应决策为 train');
-        expect(sug.targetSyndromeId, equals('P041'),
-            reason: 'training_task 应锁定主症 P041（非次症 P012）');
-        expect(sug.taskType, equals('rewrite'),
-            reason: 'B6 训练任务应为 rewrite');
-        expect(sug.difficulty, equals('medium'));
+      // ── 教：教学建议落库，decision=train 且 training_task 锁定主症 ──
+      final suggestions = await teacherSuggestionRepo.getActiveSuggestions(
+        sessionId,
+      );
+      expect(suggestions, hasLength(1), reason: '应落库 1 条教学建议');
+      final sug = suggestions.first;
+      print(
+        '[教] decision=${sug.teachingDecision} '
+        'target=${sug.targetSyndromeId} taskType=${sug.taskType}',
+      );
+      expect(sug.teachingDecision, equals('train'), reason: 'L2 症候应决策为 train');
+      expect(
+        sug.targetSyndromeId,
+        equals('P041'),
+        reason: 'training_task 应锁定主症 P041（非次症 P012）',
+      );
+      expect(sug.taskType, equals('rewrite'), reason: 'B6 训练任务应为 rewrite');
+      expect(sug.difficulty, equals('medium'));
 
-        // 诊断轮应写入 teaching_history（type=diagnosis）
-        final diagHistory =
-            (await studentModelRepo.getTeachingHistory(sessionId))
-                .where((r) => r['type'] == 'diagnosis')
-                .toList();
-        expect(diagHistory, isNotEmpty, reason: '诊断应写入教学历史');
+      // 诊断轮应写入 teaching_history（type=diagnosis）
+      final diagHistory = (await studentModelRepo.getTeachingHistory(
+        sessionId,
+      )).where((r) => r['type'] == 'diagnosis').toList();
+      expect(diagHistory, isNotEmpty, reason: '诊断应写入教学历史');
 
-        // ── 第 2 轮：练 + 评（subphase=feedback，学员提交改写 + 达标）──
-        final feedbackService =
-            build(SingleFakeLlmClient('很好，本次练习达标了！'));
-        TrainingResult? trainingResult;
-        await feedbackService.sendMessage(
-          sessionId,
-          '他攥紧拳头，指节发白，牙关绷紧——这是他三年来第一次离仇人这么近。',
-          SendMessageCallbacks(
-            onStream: (_) {},
-            onComplete: (_, __) {},
-            onError: (e) => fail('反馈轮 onError: $e'),
-            onTrainingResult: (r) => trainingResult = r,
-          ),
-          defaultOptions,
-          subphase: TeachingSubphase.feedback,
-        );
+      // ── 第 2 轮：练 + 评（subphase=feedback，学员提交改写 + 达标）──
+      final feedbackService = build(SingleFakeLlmClient('很好，本次练习达标了！'));
+      TrainingResult? trainingResult;
+      await feedbackService.sendMessage(
+        sessionId,
+        '他攥紧拳头，指节发白，牙关绷紧——这是他三年来第一次离仇人这么近。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (e) => fail('反馈轮 onError: $e'),
+          onTrainingResult: (r) => trainingResult = r,
+        ),
+        defaultOptions,
+        subphase: TeachingSubphase.feedback,
+      );
 
-        // ── 评：onTrainingResult 触发且为 passed ──
-        expect(trainingResult, equals(TrainingResult.passed),
-            reason: '达标回复应触发 onTrainingResult(passed)');
+      // ── 评：onTrainingResult 触发且为 passed ──
+      expect(
+        trainingResult,
+        equals(TrainingResult.passed),
+        reason: '达标回复应触发 onTrainingResult(passed)',
+      );
 
-        // 训练历史落库，关联活跃症候，结果=passed
-        final trainingHistory =
-            (await studentModelRepo.getTeachingHistory(sessionId))
-                .where((r) => r['type'] == 'training')
-                .toList();
-        expect(trainingHistory, isNotEmpty, reason: '训练结果应写入教学历史');
-        final trainEntry = trainingHistory.last;
-        print('[评] 训练历史: syndromeId=${trainEntry['syndromeId']} '
-            'result=${trainEntry['result']}');
-        expect(trainEntry['result'], equals('passed'));
-        expect(['P041', 'P012'].contains(trainEntry['syndromeId']), isTrue,
-            reason: '训练应关联本会话活跃症候之一');
+      // 训练历史落库，关联活跃症候，结果=passed
+      final trainingHistory = (await studentModelRepo.getTeachingHistory(
+        sessionId,
+      )).where((r) => r['type'] == 'training').toList();
+      expect(trainingHistory, isNotEmpty, reason: '训练结果应写入教学历史');
+      final trainEntry = trainingHistory.last;
+      print(
+        '[评] 训练历史: syndromeId=${trainEntry['syndromeId']} '
+        'result=${trainEntry['result']}',
+      );
+      expect(trainEntry['result'], equals('passed'));
+      expect(
+        ['P041', 'P012'].contains(trainEntry['syndromeId']),
+        isTrue,
+        reason: '训练应关联本会话活跃症候之一',
+      );
 
-        // 训练轮终结 → 子阶段重置为 null（防 feedback 残留）
-        final ts = await stateRepo.getTeachingState(sessionId);
-        expect(ts?.currentSubphase, isNull,
-            reason: '训练轮终结后子阶段应重置，防 feedback 残留');
-      },
-    );
+      // 训练轮终结 → 子阶段重置为 null（防 feedback 残留）
+      final ts = await stateRepo.getTeachingState(sessionId);
+      expect(ts?.currentSubphase, isNull, reason: '训练轮终结后子阶段应重置，防 feedback 残留');
+    });
 
     test(
       '未达标分支（P003 单症候）：反馈轮未达标 → onTrainingResult(failed) 且历史 result=failed',
@@ -268,8 +280,9 @@ void main() {
         final active = await diagRepo.listActiveProblems(sessionId);
         expect(active.map((p) => p.syndromeId).toList(), contains('P003'));
         // 教：train 锁定 P003
-        final sug =
-            (await teacherSuggestionRepo.getActiveSuggestions(sessionId)).first;
+        final sug = (await teacherSuggestionRepo.getActiveSuggestions(
+          sessionId,
+        )).first;
         expect(sug.targetSyndromeId, equals('P003'));
 
         // 反馈轮：未达标
@@ -290,18 +303,19 @@ void main() {
           subphase: TeachingSubphase.feedback,
         );
 
-        expect(trainingResult, equals(TrainingResult.failed),
-            reason: '未达标回复应触发 onTrainingResult(failed)');
-        final trainingHistory =
-            (await studentModelRepo.getTeachingHistory(sessionId))
-                .where((r) => r['type'] == 'training')
-                .toList();
+        expect(
+          trainingResult,
+          equals(TrainingResult.failed),
+          reason: '未达标回复应触发 onTrainingResult(failed)',
+        );
+        final trainingHistory = (await studentModelRepo.getTeachingHistory(
+          sessionId,
+        )).where((r) => r['type'] == 'training').toList();
         expect(trainingHistory, isNotEmpty);
         expect(trainingHistory.last['result'], equals('failed'));
 
         final ts = await stateRepo.getTeachingState(sessionId);
-        expect(ts?.currentSubphase, isNull,
-            reason: '训练轮终结后子阶段应重置');
+        expect(ts?.currentSubphase, isNull, reason: '训练轮终结后子阶段应重置');
       },
     );
   });

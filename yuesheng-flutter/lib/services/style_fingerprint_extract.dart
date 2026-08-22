@@ -144,4 +144,3 @@ StyleFingerprint? extractStyleFingerprint(String text) {
     sentencesCount: sentences.length,
   );
 }
-

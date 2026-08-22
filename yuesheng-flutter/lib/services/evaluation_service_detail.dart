@@ -3,6 +3,7 @@
 // 症候明细 extension：_buildSyndromeDetail。迁移自 evaluation_service.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'evaluation_service.dart';
+
 extension EvaluationDetailExtension on EvaluationService {
   /// 构建单个症候的评估明细（training-evaluator 真实数据优先，fallback 独立计算）
   Future<SyndromeEvaluationDetail?> _buildSyndromeDetail(
@@ -41,10 +42,9 @@ extension EvaluationDetailExtension on EvaluationService {
             // 避免学员在评估面板看到「已掌握」后，症候仍在活跃列表停留到下次诊断。
             if (summary.teachingState == TeachingState.mastered) {
               try {
-                await _diagnosisRepo.resolveSyndromesBatch(
-                  sessionId,
-                  [problem.syndromeId],
-                );
+                await _diagnosisRepo.resolveSyndromesBatch(sessionId, [
+                  problem.syndromeId,
+                ]);
               } catch (_) {
                 // 解锁失败不阻断评估报告继续返回（下一次诊断提交时会重试）
               }
@@ -104,5 +104,4 @@ extension EvaluationDetailExtension on EvaluationService {
           : EvaluationTrend.worsening,
     );
   }
-
 }

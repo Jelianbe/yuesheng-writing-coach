@@ -21,6 +21,7 @@ import 'training_input_builder.dart';
 part 'evaluation_service_round.dart';
 part 'evaluation_service_detail.dart';
 part 'evaluation_service_passrate.dart';
+
 /// 评估阈值（真源：shared-constants.ts EVALUATION_THRESHOLDS）
 class EvaluationThresholds {
   static const double passRateImproving = 0.7;

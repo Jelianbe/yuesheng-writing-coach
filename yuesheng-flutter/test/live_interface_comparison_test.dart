@@ -123,10 +123,11 @@ Map<String, dynamic> _extractJson(String raw, String tag) {
 GroundTruth _deriveGroundTruth(String fixture) {
   final raw = File('test/fixtures/$fixture').readAsStringSync();
   final diag = _extractJson(raw, 'YS_DIAGNOSIS');
-  final syndromeList =
-      (diag['syndromes'] as List? ?? []).cast<Map<String, dynamic>>();
-  final syndromes =
-      syndromeList.map((s) => s['syndrome_id'] as String).toList();
+  final syndromeList = (diag['syndromes'] as List? ?? [])
+      .cast<Map<String, dynamic>>();
+  final syndromes = syndromeList
+      .map((s) => s['syndrome_id'] as String)
+      .toList();
   final primary = syndromeList.isEmpty
       ? null
       : syndromeList.first['syndrome_id'] as String;
@@ -161,38 +162,60 @@ Future<void> _assertComparison(
   }
   // 主症排第一
   if (gt.primary != null) {
-    expect(hitIds.first, equals(gt.primary),
-        reason: '主症 ${gt.primary} 应排 syndromes[0]');
+    expect(
+      hitIds.first,
+      equals(gt.primary),
+      reason: '主症 ${gt.primary} 应排 syndromes[0]',
+    );
   }
   // 误诊率：自检精确匹配；真实容 ≤1 额外症候
   if (exact) {
-    expect(hitIds, unorderedEquals(gt.syndromes),
-        reason: '自检应精确匹配金标准症候集');
+    expect(hitIds, unorderedEquals(gt.syndromes), reason: '自检应精确匹配金标准症候集');
   } else {
-    expect(hitIds.length, lessThanOrEqualTo(gt.syndromes.length + 1),
-        reason: '真实 LLM 不应大量凭空造症候（误诊）');
+    expect(
+      hitIds.length,
+      lessThanOrEqualTo(gt.syndromes.length + 1),
+      reason: '真实 LLM 不应大量凭空造症候（误诊）',
+    );
   }
 
   // 用户可见内容不泄漏协议标记 / 编号
-  expect(assistantContent, isNot(contains('[YS_DIAGNOSIS]')),
-      reason: '诊断块标记泄漏到用户可见内容');
-  expect(assistantContent, isNot(contains('[YS_TEACHER]')),
-      reason: '教学块标记泄漏到用户可见内容');
-  expect(RegExp(r'P0\d{2}').hasMatch(assistantContent), isFalse,
-      reason: '自然语言泄漏症候编号');
+  expect(
+    assistantContent,
+    isNot(contains('[YS_DIAGNOSIS]')),
+    reason: '诊断块标记泄漏到用户可见内容',
+  );
+  expect(
+    assistantContent,
+    isNot(contains('[YS_TEACHER]')),
+    reason: '教学块标记泄漏到用户可见内容',
+  );
+  expect(
+    RegExp(r'P0\d{2}').hasMatch(assistantContent),
+    isFalse,
+    reason: '自然语言泄漏症候编号',
+  );
 
   // 教：教学建议落库与决策
   final sugs = await teacherSuggestionRepo.getActiveSuggestions(sessionId);
   if (gt.decision == 'train' || gt.decision == 'guide') {
     expect(sugs, isNotEmpty, reason: 'L2 应落库教学建议');
     final sug = sugs.first;
-    print('[教] decision=${sug.teachingDecision} '
-        'target=${sug.targetSyndromeId} taskType=${sug.taskType}');
-    expect(sug.teachingDecision, equals(gt.decision),
-        reason: '决策应为 ${gt.decision}');
+    print(
+      '[教] decision=${sug.teachingDecision} '
+      'target=${sug.targetSyndromeId} taskType=${sug.taskType}',
+    );
+    expect(
+      sug.teachingDecision,
+      equals(gt.decision),
+      reason: '决策应为 ${gt.decision}',
+    );
     if (gt.taskSyndrome != null) {
-      expect(sug.targetSyndromeId, equals(gt.taskSyndrome),
-          reason: 'training_task 应锁定主症 ${gt.taskSyndrome}');
+      expect(
+        sug.targetSyndromeId,
+        equals(gt.taskSyndrome),
+        reason: 'training_task 应锁定主症 ${gt.taskSyndrome}',
+      );
       expect(sug.taskType, isNotEmpty, reason: '训练任务类型不应为空');
     }
     // 注：natural_language 不落库（仅展示文本）；其一致性（无判决词/无 P0xx
@@ -201,8 +224,10 @@ Future<void> _assertComparison(
     // 负样本：关键是不误诊（上面已断言 hitIds 空）；教学建议可空或同决策无 task
     expect(
       sugs.isEmpty ||
-          sugs.every((s) =>
-              s.teachingDecision == gt.decision && s.targetSyndromeId == null),
+          sugs.every(
+            (s) =>
+                s.teachingDecision == gt.decision && s.targetSyndromeId == null,
+          ),
       isTrue,
       reason: '负样本不应产生 train/guide 建议（不误诊）',
     );
@@ -212,20 +237,41 @@ Future<void> _assertComparison(
 void main() {
   // 8 个代表性案例：单症候 L2 ×4 / 冲突 ×2 / 负样本 ×2
   const cases = <CaseSpec>[
-    CaseSpec('A1', 'corpus_A1_p003.txt',
-        '她很难过。她很孤独。她觉得很无助。她一个人坐在窗边，心里满满的都是悲伤。'),
-    CaseSpec('A5', 'corpus_A5_p012.txt',
-        '主角提剑冲入敌阵，每个敌人都像纸糊的一样，一刀一个倒下，没费什么力气就清了全场。他又连破三关，守军毫无还手之力，胜负来得轻飘飘的。'),
-    CaseSpec('A8', 'corpus_A8_p028.txt',
-        '她很难过。生活失去了意义。她决定离开这个城市。她默默收拾了行李，准备去一个没人认识她的地方重新开始。'),
-    CaseSpec('A19', 'corpus_A19_p019.txt',
-        '母亲上午刚下葬，下午他就兴高采烈地约朋友撸串，笑着说终于清净了，她活着的时候天天管着他，现在可算自由了。'),
-    CaseSpec('B6', 'corpus_B6_p041_p012.txt',
-        '反派布下精密杀局，把主角逼入绝境，读者都以为这一剑必落。可就在能一剑杀掉主角的瞬间，他放下剑，开始发表十分钟演讲讲述自己的身世与理想。读者丝毫感觉不到张力，胜负仿佛成了儿戏。'),
-    CaseSpec('B2', 'corpus_B2_p028_p003.txt',
-        '她感到非常难过。生活让她觉得很绝望。一切都没有意义。她的眼神十分冷漠，内心充满悲伤，仿佛整个世界都抛弃了她。'),
-    CaseSpec('C1', 'corpus_C1_good.txt',
-        '雾把整个城市泡软了。路灯的光晕在湿漉漉的地面上化开，远处钟楼的轮廓若隐若现。他站在雾里，手里的伞没有打开。'),
+    CaseSpec(
+      'A1',
+      'corpus_A1_p003.txt',
+      '她很难过。她很孤独。她觉得很无助。她一个人坐在窗边，心里满满的都是悲伤。',
+    ),
+    CaseSpec(
+      'A5',
+      'corpus_A5_p012.txt',
+      '主角提剑冲入敌阵，每个敌人都像纸糊的一样，一刀一个倒下，没费什么力气就清了全场。他又连破三关，守军毫无还手之力，胜负来得轻飘飘的。',
+    ),
+    CaseSpec(
+      'A8',
+      'corpus_A8_p028.txt',
+      '她很难过。生活失去了意义。她决定离开这个城市。她默默收拾了行李，准备去一个没人认识她的地方重新开始。',
+    ),
+    CaseSpec(
+      'A19',
+      'corpus_A19_p019.txt',
+      '母亲上午刚下葬，下午他就兴高采烈地约朋友撸串，笑着说终于清净了，她活着的时候天天管着他，现在可算自由了。',
+    ),
+    CaseSpec(
+      'B6',
+      'corpus_B6_p041_p012.txt',
+      '反派布下精密杀局，把主角逼入绝境，读者都以为这一剑必落。可就在能一剑杀掉主角的瞬间，他放下剑，开始发表十分钟演讲讲述自己的身世与理想。读者丝毫感觉不到张力，胜负仿佛成了儿戏。',
+    ),
+    CaseSpec(
+      'B2',
+      'corpus_B2_p028_p003.txt',
+      '她感到非常难过。生活让她觉得很绝望。一切都没有意义。她的眼神十分冷漠，内心充满悲伤，仿佛整个世界都抛弃了她。',
+    ),
+    CaseSpec(
+      'C1',
+      'corpus_C1_good.txt',
+      '雾把整个城市泡软了。路灯的光晕在湿漉漉的地面上化开，远处钟楼的轮廓若隐若现。他站在雾里，手里的伞没有打开。',
+    ),
     CaseSpec('C2', 'corpus_C2_short.txt', '你好。'),
   ];
 
@@ -250,17 +296,17 @@ void main() {
   tearDown(() => db.close());
 
   ChatService build(LlmClient llmClient) => ChatService(
-        sessionRepo: sessionRepo,
-        stateRepo: stateRepo,
-        diagnosisRepo: diagRepo,
-        studentModelRepo: studentModelRepo,
-        referenceRepo: ReferenceRepository(db),
-        chapterRepo: ChapterRepository(db),
-        manuscriptRepo: ManuscriptRepository(db),
-        llmClient: llmClient,
-        teacherSuggestionRepo: teacherSuggestionRepo,
-        editorObservationRepo: EditorObservationRepository(db),
-      );
+    sessionRepo: sessionRepo,
+    stateRepo: stateRepo,
+    diagnosisRepo: diagRepo,
+    studentModelRepo: studentModelRepo,
+    referenceRepo: ReferenceRepository(db),
+    chapterRepo: ChapterRepository(db),
+    manuscriptRepo: ManuscriptRepository(db),
+    llmClient: llmClient,
+    teacherSuggestionRepo: teacherSuggestionRepo,
+    editorObservationRepo: EditorObservationRepository(db),
+  );
 
   (String, String) splitFixture(String fileName) {
     final raw = File('test/fixtures/$fileName').readAsStringSync();
@@ -296,9 +342,18 @@ void main() {
       test('[${c.id}] 金标准链路复现，断言逻辑自洽', () async {
         final gt = _deriveGroundTruth(c.fixture);
         final (diagResp, teacherResp) = splitFixture(c.fixture);
-        final content =
-            await runDiagnosis(_SequenceFakeLlmClient([diagResp, teacherResp]), c.inputText);
-        await _assertComparison(diagRepo, teacherSuggestionRepo, content, gt, true, sessionId);
+        final content = await runDiagnosis(
+          _SequenceFakeLlmClient([diagResp, teacherResp]),
+          c.inputText,
+        );
+        await _assertComparison(
+          diagRepo,
+          teacherSuggestionRepo,
+          content,
+          gt,
+          true,
+          sessionId,
+        );
       });
     }
   });
@@ -357,7 +412,14 @@ void main() {
           }
           final gt = _deriveGroundTruth(c.fixture);
           final content = await runDiagnosis(LlmClient(), c.inputText);
-          await _assertComparison(diagRepo, teacherSuggestionRepo, content, gt, false, sessionId);
+          await _assertComparison(
+            diagRepo,
+            teacherSuggestionRepo,
+            content,
+            gt,
+            false,
+            sessionId,
+          );
         },
         tags: const ['live'],
         timeout: const Timeout(Duration(seconds: 120)),

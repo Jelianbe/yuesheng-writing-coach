@@ -145,4 +145,3 @@ const Skill _attitudeSensei = Skill(
 - 训练阶段需要高密度技术反馈
 - 用户陷入幻觉或反复辩解''',
 );
-

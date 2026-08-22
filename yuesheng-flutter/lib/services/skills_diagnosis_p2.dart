@@ -174,7 +174,6 @@ const Skill _readerAwareness = Skill(
 **原则**: 先当读者，再当教练。用户需要先被"读到"，然后才被"指导"。''',
 );
 
-
 const Skill _feedbackCognition = Skill(
   meta: SkillMeta(
     id: 'feedback-cognition',

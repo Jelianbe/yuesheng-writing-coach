@@ -58,9 +58,7 @@ List<String> parseSelectionVersions(String raw) {
   }
 
   // 2. 编号行切分（1. 2. 3. / 1、2、3、）
-  final numbered = text.split(
-    RegExp(r'^\s*[1-3][.、]\s*', multiLine: true),
-  );
+  final numbered = text.split(RegExp(r'^\s*[1-3][.、]\s*', multiLine: true));
   final numberedParts = numbered
       .map((s) => s.trim())
       .where((s) => s.isNotEmpty)
@@ -112,7 +110,8 @@ class _SelectionAiSheetContent extends ConsumerStatefulWidget {
       _SelectionAiSheetContentState();
 }
 
-class _SelectionAiSheetContentState extends ConsumerState<_SelectionAiSheetContent> {
+class _SelectionAiSheetContentState
+    extends ConsumerState<_SelectionAiSheetContent> {
   bool _loading = false;
   String? _error;
   List<String> _versions = const [];
@@ -132,7 +131,10 @@ class _SelectionAiSheetContentState extends ConsumerState<_SelectionAiSheetConte
     try {
       final llm = ref.read(llmClientProvider);
       final raw = await llm.chatCompletion([
-        ChatMessage(role: 'user', content: _buildPrompt(widget.mode, widget.selectedText)),
+        ChatMessage(
+          role: 'user',
+          content: _buildPrompt(widget.mode, widget.selectedText),
+        ),
       ]);
       final versions = parseSelectionVersions(raw);
       if (!mounted) return;
@@ -240,7 +242,10 @@ class _SelectionAiSheetContentState extends ConsumerState<_SelectionAiSheetConte
                   SizedBox(height: 10),
                   Text(
                     '正在帮你写几个版本…',
-                    style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
                   ),
                 ],
               ),

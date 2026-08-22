@@ -189,7 +189,12 @@ void main() {
 
   testWidgets('#6 mention 模式：显示路径徽章 + 选择回调 @路径', (tester) async {
     final msId = await msRepo.createManuscript(title: '测试小说');
-    final chId = await chRepo.createChapter(msId, title: '第一章', content: '正文', sortOrder: 0);
+    final chId = await chRepo.createChapter(
+      msId,
+      title: '第一章',
+      content: '正文',
+      sortOrder: 0,
+    );
     String? gotPath;
     String? gotTitle;
 

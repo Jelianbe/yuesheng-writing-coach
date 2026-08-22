@@ -75,8 +75,9 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
   }
 
   Future<void> _remove(String phrase) async {
-    await AppStateRepository(ref.read(appDatabaseProvider))
-        .removeQuickPhrase(phrase);
+    await AppStateRepository(
+      ref.read(appDatabaseProvider),
+    ).removeQuickPhrase(phrase);
     await _load();
   }
 

@@ -184,18 +184,12 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
             const SizedBox(height: 12),
             const Text(
               '回收站是空的',
-              style: TextStyle(
-                fontSize: 15,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               '删除的章节会先进入这里，可恢复或永久删除',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textTertiary,
-              ),
+              style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
             ),
           ],
         ),
@@ -204,10 +198,8 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: _items.length,
-      separatorBuilder: (_, _) => const Divider(
-        height: 1,
-        color: AppColors.divider,
-      ),
+      separatorBuilder: (_, _) =>
+          const Divider(height: 1, color: AppColors.divider),
       itemBuilder: (context, index) {
         final c = _items[index];
         final title = c.title.trim().isEmpty ? '未命名章节' : c.title.trim();

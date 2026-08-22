@@ -47,14 +47,14 @@ class SyndromeEvaluationDetail {
 
   /// 批次4-M3：序列化为 JSON（用于持久化到 app_state）
   Map<String, dynamic> toJson() => {
-        'syndromeId': syndromeId,
-        'syndromeName': syndromeName,
-        'currentSeverity': currentSeverity.value,
-        'teachingState': teachingState.value,
-        'passCount': passCount,
-        'totalCount': totalCount,
-        'trend': trend.value,
-      };
+    'syndromeId': syndromeId,
+    'syndromeName': syndromeName,
+    'currentSeverity': currentSeverity.value,
+    'teachingState': teachingState.value,
+    'passCount': passCount,
+    'totalCount': totalCount,
+    'trend': trend.value,
+  };
 
   /// 批次4-M3：从 JSON 反序列化
   static SyndromeEvaluationDetail? fromJson(Map<String, dynamic> json) {
@@ -113,16 +113,15 @@ class EvaluationData {
 
   /// 批次4-M3：序列化为 JSON 字符串（用于持久化到 app_state）
   String toJsonString() => jsonEncode({
-        'round': round,
-        'trend': trend.value,
-        'trainingCount': trainingCount,
-        'passRate': passRate,
-        'severityDelta': severityDelta,
-        'summaryText': summaryText,
-        'syndromeDetails':
-            syndromeDetails.map((d) => d.toJson()).toList(),
-        'generatedAt': generatedAt,
-      });
+    'round': round,
+    'trend': trend.value,
+    'trainingCount': trainingCount,
+    'passRate': passRate,
+    'severityDelta': severityDelta,
+    'summaryText': summaryText,
+    'syndromeDetails': syndromeDetails.map((d) => d.toJson()).toList(),
+    'generatedAt': generatedAt,
+  });
 
   /// 批次4-M3：从 JSON 字符串反序列化
   static EvaluationData? fromJsonString(String? json) {

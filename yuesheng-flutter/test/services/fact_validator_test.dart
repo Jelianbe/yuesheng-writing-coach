@@ -14,7 +14,12 @@ void main() {
           {
             'name': '林晚',
             'assertions': [
-              {'attribute': '性格', 'value': '冷静', 'chapter': 1, 'timestamp': 100},
+              {
+                'attribute': '性格',
+                'value': '冷静',
+                'chapter': 1,
+                'timestamp': 100,
+              },
             ],
           },
         ],
@@ -105,11 +110,7 @@ void main() {
     test('#F6 event_type/eventType 双键 + 空 cause → null', () {
       final camel = validateFactSchema({
         'events': [
-          {
-            'name': '聚会',
-            'eventType': 'social',
-            'causeEventName': '',
-          },
+          {'name': '聚会', 'eventType': 'social', 'causeEventName': ''},
         ],
       });
       expect(camel.valid, isTrue);
@@ -120,11 +121,7 @@ void main() {
     test('#F7 subplot snake/camel 双键章节 + description 缺省空串', () {
       final result = validateFactSchema({
         'subplots': [
-          {
-            'name': '副线',
-            'introducedChapter': 5,
-            'resolvedChapter': 8,
-          },
+          {'name': '副线', 'introducedChapter': 5, 'resolvedChapter': 8},
         ],
       });
       expect(result.valid, isTrue);

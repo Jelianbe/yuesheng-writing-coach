@@ -293,4 +293,3 @@ EditorObservation? _parseObservation(
     intentAlignment: intentAlignment!,
   );
 }
-

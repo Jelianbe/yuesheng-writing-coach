@@ -3,6 +3,7 @@
 // 教学状态迁移 + 最小数据量检查（transitionTeachingState/checkMinimumData 及相关类型/常量）。逐字迁移自 training_evaluator.dart，零行为变更。
 // ─────────────────────────────────────────────────────────────
 part of 'training_evaluator.dart';
+
 class StateTransitionInput {
   final bool trainingStarted;
   final int consecutiveLowSeverity;
@@ -107,11 +108,12 @@ StateTransitionResult transitionTeachingState(
   // consolidating → mastered
   if (s == TeachingState.consolidating) {
     // FSRS 路径（未来启用）：间隔达标 + 巩固观察充足
-    final fsrsReady = input.fsrsIntervalDays >= 14 &&
-        input.consolidationObservations >= 3;
+    final fsrsReady =
+        input.fsrsIntervalDays >= 14 && input.consolidationObservations >= 3;
     // 非 FSRS 降级路径：FSRS 未启用时代理规则
     // 要求巩固观察 ≥5 + 连续低严重度 ≥3 + 连续通过 ≥3
-    final proxyReady = input.consolidationObservations >= 5 &&
+    final proxyReady =
+        input.consolidationObservations >= 5 &&
         input.consecutiveLowSeverity >= 3 &&
         input.consecutivePasses >= 3;
     // 批次1（O2）：毕业复核——长时间无新观察 + 历史达标率达标 → 直接确认掌握。
@@ -124,9 +126,7 @@ StateTransitionResult transitionTeachingState(
     if (fsrsReady || proxyReady || graduationReady) {
       return StateTransitionResult(
         newState: TeachingState.mastered,
-        reason: graduationReady
-            ? '长时间无复发且历史达标，毕业复核确认掌握'
-            : '巩固期表现稳定，确认掌握',
+        reason: graduationReady ? '长时间无复发且历史达标，毕业复核确认掌握' : '巩固期表现稳定，确认掌握',
       );
     }
   }
@@ -192,4 +192,3 @@ MinDataResult checkMinimumData(MinDataCheckInput input) {
     fallbackPhrases: fallbackPhrases,
   );
 }
-

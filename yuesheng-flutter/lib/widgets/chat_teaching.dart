@@ -2,7 +2,6 @@
 part of 'chat_page.dart';
 
 extension _ChatTeaching on _ChatPageState {
-
   /// 批次 13 自动诊断：成长页「写作诊断」选章后进入对话页触发（startDiagnosis 语义）
   ///
   /// 对齐 RN sendDiagnosisMessage：读章节 → 长度校验 → 超长走分块
@@ -26,7 +25,9 @@ extension _ChatTeaching on _ChatPageState {
       return;
     }
 
-    ref.read(chatStoreProvider.notifier).setStreaming(
+    ref
+        .read(chatStoreProvider.notifier)
+        .setStreaming(
           true,
           // 批次49：自动诊断阶段标签（分块/单次均适用）
           stageLabel: '正在诊断本章…',
@@ -132,7 +133,10 @@ extension _ChatTeaching on _ChatPageState {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消', style: TextStyle(color: AppColors.textPrimary)),
+            child: const Text(
+              '取消',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -142,7 +146,10 @@ extension _ChatTeaching on _ChatPageState {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
-            child: const Text('移除', style: TextStyle(color: AppColors.onPrimary)),
+            child: const Text(
+              '移除',
+              style: TextStyle(color: AppColors.onPrimary),
+            ),
           ),
         ],
       ),
@@ -204,9 +211,7 @@ extension _ChatTeaching on _ChatPageState {
     try {
       final result = await ref.read(mentionParserProvider).parseMentions(text);
       final refRepo = ref.read(referenceCapabilityProvider);
-      final existing = await refRepo.listReferences(
-        bootstrap.sessionId,
-      );
+      final existing = await refRepo.listReferences(bootstrap.sessionId);
       final hasPrimary = existing.any((r) => r.isPrimary == 1);
       for (var i = 0; i < result.mentions.length; i++) {
         final mention = result.mentions[i];
@@ -260,15 +265,14 @@ extension _ChatTeaching on _ChatPageState {
       final feedback = autoPrimaryTitle != null
           ? '已引用：${addedTitles.join('、')}（$autoPrimaryTitle 已自动设为主引用）'
           : '已引用：${addedTitles.join('、')}';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(feedback)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(feedback)));
     }
 
-    ref.read(chatStoreProvider.notifier).setStreaming(
-          true,
-          stageLabel: stageLabel,
-        );
+    ref
+        .read(chatStoreProvider.notifier)
+        .setStreaming(true, stageLabel: stageLabel);
 
     final chatService = ref.read(chatServiceProvider);
     // 本次发送的取消令牌：供「停止生成」按钮在流式中段中止（避免卡死时无出口）

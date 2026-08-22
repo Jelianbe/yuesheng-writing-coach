@@ -282,7 +282,10 @@ class _OutlineConfirmationCardState
             ),
             const SizedBox(height: 6),
           ],
-          Text(im.text, style: TextStyle(fontSize: 13, height: 1.4, color: baseColor)),
+          Text(
+            im.text,
+            style: TextStyle(fontSize: 13, height: 1.4, color: baseColor),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [

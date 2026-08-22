@@ -3,6 +3,7 @@
 // 五类规则观察上下文：buildConflictObservationsContext/buildCausalityBreakContext/buildSubplotClosureContext/buildGrammarLexicalContext/buildDialogueTagContext。逐字迁移自 chat_context_builder.dart，零行为变更。
 // ─────────────────────────────────────────────────────────────
 part of 'chat_context_builder.dart';
+
 /// 时序矛盾观察上下文（批次66 B62i，A6 首步，挂 F05/P018 补充）
 ///
 /// 输入 conflict_detector 输出的观察项（同属性不同值，带章节/时间维度）。
@@ -112,4 +113,3 @@ String? buildDialogueTagContext(List<DialogueTagIssue> issues) {
       '温和指出位置与原文片段，提示可尝试用动作/表情替代标签（只定位，不代改正文）。\n\n'
       '$lines';
 }
-

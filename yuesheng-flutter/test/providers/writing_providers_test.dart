@@ -500,13 +500,18 @@ void main() {
       await notifier.loadChapter(); // 初始 4 字 → 快照阈值 200
 
       // 初始无快照
-      expect(await AppStateRepository(db).listChapterVersions(chapterId), isEmpty);
+      expect(
+        await AppStateRepository(db).listChapterVersions(chapterId),
+        isEmpty,
+      );
 
       // 更新到 205 字 → saveNow → 跨 200 边界 → 快照
       notifier.updateContent(longContent(205));
       await notifier.saveNow();
 
-      final versions = await AppStateRepository(db).listChapterVersions(chapterId);
+      final versions = await AppStateRepository(
+        db,
+      ).listChapterVersions(chapterId);
       expect(versions.length, 1);
       expect(versions.first.wordCount, 205);
       expect(versions.first.content, longContent(205));
@@ -576,7 +581,9 @@ void main() {
       expect(state.wordCount, '恢复到的旧版本内容'.length);
 
       // 恢复前内容已存为新版本（最新在前）
-      final versions = await AppStateRepository(db).listChapterVersions(chapterId);
+      final versions = await AppStateRepository(
+        db,
+      ).listChapterVersions(chapterId);
       expect(versions.first.content, '当前正在写的新内容');
     });
   });
@@ -594,13 +601,19 @@ void main() {
       notifier.scheduleSave();
 
       // 窗口未到 → 尚未保存
-      expect(container.read(writingStoreProvider(chapterId)).lastSavedAt, isNull);
+      expect(
+        container.read(writingStoreProvider(chapterId)).lastSavedAt,
+        isNull,
+      );
       final chRepo = ChapterRepository(db);
       expect((await chRepo.getChapter(chapterId))!.content, '初始内容');
 
       // 等待 300ms debounce → 落库一次（内容为最后值）
       await Future<void>.delayed(const Duration(milliseconds: 350));
-      expect(container.read(writingStoreProvider(chapterId)).lastSavedAt, isNotNull);
+      expect(
+        container.read(writingStoreProvider(chapterId)).lastSavedAt,
+        isNotNull,
+      );
       expect((await chRepo.getChapter(chapterId))!.content, '第一段第二段');
     });
 
@@ -631,7 +644,10 @@ void main() {
       await notifier.saveNow();
 
       // 保存完成但历史尚未提交（用户仍在输入 → 无历史点）
-      expect(container.read(writingStoreProvider(chapterId)).lastSavedAt, isNotNull);
+      expect(
+        container.read(writingStoreProvider(chapterId)).lastSavedAt,
+        isNotNull,
+      );
       expect(container.read(writingStoreProvider(chapterId)).canUndo, isFalse);
 
       // 停输入 1.5s → 历史提交
@@ -657,7 +673,10 @@ void main() {
       expect(state.canUndo, isTrue);
       // 撤销一次即可回到「初始内容」（仅一次提交点，未耗尽 10 条上限）
       notifier.undo();
-      expect(container.read(writingStoreProvider(chapterId)).localContent, '初始内容');
+      expect(
+        container.read(writingStoreProvider(chapterId)).localContent,
+        '初始内容',
+      );
       expect(container.read(writingStoreProvider(chapterId)).canUndo, isFalse);
     });
   });

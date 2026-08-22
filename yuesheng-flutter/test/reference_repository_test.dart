@@ -631,19 +631,23 @@ void main() {
     test('不影响 is_primary 与其它引用（仅更新目标行）', () async {
       final seed = await seedManuscriptAndSession();
       final chId = await chRepo.createChapter(seed.manuscriptId, title: '第一章');
-      await refRepo.addReference(seed.sessionId, 'chapter', chId, isPrimary: true);
+      await refRepo.addReference(
+        seed.sessionId,
+        'chapter',
+        chId,
+        isPrimary: true,
+      );
       await refRepo.addReference(
         seed.sessionId,
         'manuscript',
         seed.manuscriptId,
       );
 
-      await refRepo.updateExcerptRange(
-        seed.sessionId,
-        'chapter',
-        chId,
-        (chapterId: chId, startPara: 0, endPara: 0),
-      );
+      await refRepo.updateExcerptRange(seed.sessionId, 'chapter', chId, (
+        chapterId: chId,
+        startPara: 0,
+        endPara: 0,
+      ));
 
       final refs = await refRepo.listReferencesOfSession(seed.sessionId);
       final chapter = refs.firstWhere((r) => r.refType == 'chapter');
@@ -663,21 +667,20 @@ void main() {
         chId,
         excerptRange: (chapterId: chId, startPara: 1, endPara: 2),
       );
-      final viaAdd = (await refRepo.listReferencesOfSession(seed.sessionId))
-          .first
-          .excerptRange;
+      final viaAdd = (await refRepo.listReferencesOfSession(
+        seed.sessionId,
+      )).first.excerptRange;
 
       // 清除后经 updateExcerptRange 重新写入同一锚点
       await refRepo.updateExcerptRange(seed.sessionId, 'chapter', chId, null);
-      await refRepo.updateExcerptRange(
+      await refRepo.updateExcerptRange(seed.sessionId, 'chapter', chId, (
+        chapterId: chId,
+        startPara: 1,
+        endPara: 2,
+      ));
+      final viaUpdate = (await refRepo.listReferencesOfSession(
         seed.sessionId,
-        'chapter',
-        chId,
-        (chapterId: chId, startPara: 1, endPara: 2),
-      );
-      final viaUpdate = (await refRepo.listReferencesOfSession(seed.sessionId))
-          .first
-          .excerptRange;
+      )).first.excerptRange;
 
       expect(viaAdd, isNotNull);
       expect(viaAdd, viaUpdate); // 两条写入路径字节级一致

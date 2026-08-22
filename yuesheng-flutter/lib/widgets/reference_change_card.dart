@@ -130,7 +130,9 @@ class ReferenceChangeCard extends StatelessWidget {
                                     ),
                                     decoration: BoxDecoration(
                                       color: AppColors.borderSoft,
-                                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadius.xs,
+                                      ),
                                     ),
                                     child: Text(
                                       _typeLabel,

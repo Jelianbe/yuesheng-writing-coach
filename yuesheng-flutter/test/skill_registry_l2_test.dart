@@ -91,8 +91,11 @@ void main() {
       expect(skill, isNotNull);
       for (final s in kSyndromeRegistry) {
         final name = s.id == 'P022' ? '重复用词/基础语病症' : s.shortName;
-        expect(skill!.content, contains('| ${s.id} | $name |'),
-            reason: '索引缺 ${s.id}');
+        expect(
+          skill!.content,
+          contains('| ${s.id} | $name |'),
+          reason: '索引缺 ${s.id}',
+        );
       }
       // 头部声明的症候数为注册表派生计数
       expect(skill!.content, contains('仅含 ${kSyndromeRegistry.length} 条症候'));

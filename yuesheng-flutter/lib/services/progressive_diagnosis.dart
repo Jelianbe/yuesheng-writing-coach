@@ -20,6 +20,7 @@ import 'llm_client.dart';
 part 'progressive_diagnosis_chunking.dart';
 part 'progressive_diagnosis_json_merge.dart';
 part 'progressive_diagnosis_entry.dart';
+
 // ── 常量（对齐 RN shared-constants.ts DIAGNOSIS_CHUNK）──
 /// 触发分块诊断的字符阈值
 const int kDiagnosisChunkThreshold = 4000;
@@ -75,4 +76,3 @@ class ProgressiveResult {
     required this.failedChunks,
   });
 }
-

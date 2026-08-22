@@ -145,7 +145,8 @@ echo "--> 门禁 4/4: 安全/可达性扫描"
 {
   issues=0
   # R-029: 密钥零硬编码 — 扫描疑似明文密钥/令牌
-  matches=$(grep -rnE "(apiKey|api_key|secret|token|password|accessKey|sk-)[[:space:]]*[:=][[:space:]]*['\"][A-Za-z0-9+/_.-]{12,}" lib --include='*.dart' 2>/dev/null | grep -vE "(test|_test|example|sample|mock|dummy|placeholder|your_|xxx|TODO)" || true)
+  # 白名单说明: llm_config_storage.dart 存放 SecureStorage 专用的"键名常量"（不是真实 API 密钥值）
+  matches=$(grep -rnE "(apiKey|api_key|secret|token|password|accessKey|sk-)[[:space:]]*[:=][[:space:]]*['\"][A-Za-z0-9+/_.-]{12,}" lib --include='*.dart' 2>/dev/null | grep -vE "(test|_test|example|sample|mock|dummy|placeholder|your_|xxx|TODO|llm_config_storage\.dart)" || true)
   if [ -n "$matches" ]; then
     echo "  [WARN] 疑似硬编码密钥/令牌:"
     echo "$matches" | sed 's/^/    /'

@@ -3,6 +3,7 @@
 // 评估摘要聚合：EvaluationSummary/EvaluationSummaryInput/buildEvaluationSummary。逐字迁移自 training_evaluator.dart，零行为变更。
 // ─────────────────────────────────────────────────────────────
 part of 'training_evaluator.dart';
+
 class EvaluationSummary {
   final String syndromeId;
   final Severity currentSeverity;

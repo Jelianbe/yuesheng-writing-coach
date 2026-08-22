@@ -27,7 +27,9 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = VolumeRepository(db);
     chapterRepo = ChapterRepository(db);
-    manuscriptId = await ManuscriptRepository(db).createManuscript(title: '测试稿');
+    manuscriptId = await ManuscriptRepository(
+      db,
+    ).createManuscript(title: '测试稿');
   });
 
   tearDown(() async => db.close());
@@ -64,8 +66,11 @@ void main() {
 
   test('#4 章节移入卷；删卷 → 卷内章节一并删除（批次96-4，不再散落）', () async {
     final volumeId = await repo.createVolume(manuscriptId, title: '第一卷');
-    final chapterId =
-        await chapterRepo.createChapter(manuscriptId, title: '第一章', content: '内容');
+    final chapterId = await chapterRepo.createChapter(
+      manuscriptId,
+      title: '第一章',
+      content: '内容',
+    );
 
     // 初始未分卷
     expect((await chapterRepo.getChapter(chapterId))!.volumeId, isNull);
@@ -84,7 +89,10 @@ void main() {
 
   test('#5 setChapterVolume(null) 移出卷', () async {
     final volumeId = await repo.createVolume(manuscriptId, title: '第一卷');
-    final chapterId = await chapterRepo.createChapter(manuscriptId, title: '第一章');
+    final chapterId = await chapterRepo.createChapter(
+      manuscriptId,
+      title: '第一章',
+    );
 
     await repo.setChapterVolume(chapterId, volumeId);
     expect((await chapterRepo.getChapter(chapterId))!.volumeId, volumeId);
@@ -94,8 +102,9 @@ void main() {
   });
 
   test('#6 卷按作品隔离', () async {
-    final otherManuscriptId =
-        await ManuscriptRepository(db).createManuscript(title: '另一稿');
+    final otherManuscriptId = await ManuscriptRepository(
+      db,
+    ).createManuscript(title: '另一稿');
     await repo.createVolume(manuscriptId, title: '本稿第一卷');
     await repo.createVolume(otherManuscriptId, title: '另一稿第一卷');
 

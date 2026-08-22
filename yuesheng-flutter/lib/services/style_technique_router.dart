@@ -114,7 +114,8 @@ StyleTechniqueSuggestion routeStyleTechniques({
   const severityRank = {Severity.l3: 3, Severity.l2: 2, Severity.l1: 1};
   final hasContentPriority = activeProblems.any(
     (p) =>
-        (severityRank[p.severity] ?? 0) >= 2 && !_isProseDominantSyndrome(p.syndromeId),
+        (severityRank[p.severity] ?? 0) >= 2 &&
+        !_isProseDominantSyndrome(p.syndromeId),
   );
   if (hasContentPriority) {
     return const StyleTechniqueSuggestion(gatedBy: 'content_priority');
@@ -139,9 +140,7 @@ StyleTechniqueSuggestion routeStyleTechniques({
     'narrativeDistance:${styleProfile.narrativeDistance.value}',
     'structure:${styleProfile.structure.value}',
   ];
-  final byKey = {
-    for (final m in kStyleDimensionTechniques) m.dimensionKey: m,
-  };
+  final byKey = {for (final m in kStyleDimensionTechniques) m.dimensionKey: m};
 
   final candidates = <StyleTechniqueCandidate>[];
   final seen = <String>{};

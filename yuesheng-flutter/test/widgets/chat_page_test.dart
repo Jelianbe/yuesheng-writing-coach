@@ -347,9 +347,7 @@ void main() {
       expect(find.text('对话'), findsNothing);
     });
 
-    testWidgets('#B5-3 批次73 长按删除当前会话 → DB 删除 + 切到剩余会话 + 消息清空', (
-      tester,
-    ) async {
+    testWidgets('#B5-3 批次73 长按删除当前会话 → DB 删除 + 切到剩余会话 + 消息清空', (tester) async {
       final appStateRepo = AppStateRepository(db);
       await appStateRepo.setQuestionnaireCompleted(true);
       final sessionRepo = SessionRepository(db);
@@ -1610,9 +1608,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
     }
 
-    testWidgets('#R1 更多菜单 → 引用管理 → ReferenceBar 弹层渲染（含主引用）', (
-      tester,
-    ) async {
+    testWidgets('#R1 更多菜单 → 引用管理 → ReferenceBar 弹层渲染（含主引用）', (tester) async {
       await seedPrimaryReference();
       await pumpChat(tester);
 
@@ -1625,9 +1621,7 @@ void main() {
       expect(find.text('第一章：启程'), findsOneWidget);
     });
 
-    testWidgets('#R2 移除引用 → 落库删除 + reference_change 卡片写入', (
-      tester,
-    ) async {
+    testWidgets('#R2 移除引用 → 落库删除 + reference_change 卡片写入', (tester) async {
       await seedPrimaryReference();
       await pumpChat(tester);
 
@@ -1655,9 +1649,7 @@ void main() {
       expect(messages.last.content, contains('"action":"remove"'));
     });
 
-    testWidgets('#R3 添加引用 → 引用落库 + reference_change 卡片写入', (
-      tester,
-    ) async {
+    testWidgets('#R3 添加引用 → 引用落库 + reference_change 卡片写入', (tester) async {
       // 预置：无引用（空会话 + 待引用作品）
       final appStateRepo = AppStateRepository(db);
       await appStateRepo.setQuestionnaireCompleted(true);
@@ -1695,9 +1687,7 @@ void main() {
   });
 
   group('批次78：画像入口死路由修复', () {
-    testWidgets('#H1 更多菜单点「画像」→ 跳转成长详情（不再 pushNamed 死入口）', (
-      tester,
-    ) async {
+    testWidgets('#H1 更多菜单点「画像」→ 跳转成长详情（不再 pushNamed 死入口）', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -1900,10 +1890,7 @@ void main() {
       final sessionId = (await sRepo.listSessions()).single.id;
       final msgs = await sRepo.listMessages(sessionId);
       final userMsg = msgs.where((m) => m.role == 'user').last;
-      expect(
-        userMsg.content,
-        contains('我对刚才的诊断结果有不同看法：我觉得问题不严重'),
-      );
+      expect(userMsg.content, contains('我对刚才的诊断结果有不同看法：我觉得问题不严重'));
       // 卡片输入框已清空（反馈已送出）
       expect(
         tester
@@ -1919,9 +1906,7 @@ void main() {
       );
     });
 
-    testWidgets('#B81-5 partial_agreement 跳过 → 用户消息请求重新诊断', (
-      tester,
-    ) async {
+    testWidgets('#B81-5 partial_agreement 跳过 → 用户消息请求重新诊断', (tester) async {
       await seedCardMessage(
         'partial_agreement',
         jsonEncode({

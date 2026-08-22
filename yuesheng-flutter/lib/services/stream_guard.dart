@@ -23,7 +23,8 @@ Stream<String> guardStream(
   Duration? connectTimeout,
   Duration? idleTimeout,
 }) {
-  final connect = connectTimeout ??
+  final connect =
+      connectTimeout ??
       Duration(milliseconds: LlmConfig.streamConnectTimeoutMs);
   final idle =
       idleTimeout ?? Duration(milliseconds: LlmConfig.streamIdleTimeoutMs);

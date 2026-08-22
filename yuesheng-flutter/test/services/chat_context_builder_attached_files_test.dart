@@ -17,11 +17,7 @@ void main() {
     test('大文件被截断为 200 字摘要，不再全量注入', () {
       final big = '月笙如歌' * 1000; // 4000 字
       final out = formatAttachedFilesContext([
-        AttachedFileInfo(
-          fileName: '大纲.txt',
-          fileRole: 'outline',
-          content: big,
-        ),
+        AttachedFileInfo(fileName: '大纲.txt', fileRole: 'outline', content: big),
       ]);
       expect(out, isNotNull);
       expect(out, contains('大纲.txt'));

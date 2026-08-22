@@ -3,6 +3,7 @@
 // DTO：GrowthOverview/AbilityScore/WritingDataPoint/SyndromeHistoryEvent/SyndromeRecurrence。迁移自 growth_service.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'growth_service.dart';
+
 /// 成长总览（复刻 RN GrowthOverview）
 class GrowthOverview {
   final int totalWords;
@@ -105,4 +106,3 @@ class SyndromeRecurrence {
     required this.rate,
   });
 }
-

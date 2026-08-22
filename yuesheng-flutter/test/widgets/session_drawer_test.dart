@@ -158,9 +158,7 @@ void main() {
     expect(created, 1);
   });
 
-  testWidgets('批次73：长按会话 → 确认弹窗 → 点删除 → onDelete 回调 + 抽屉关闭', (
-    tester,
-  ) async {
+  testWidgets('批次73：长按会话 → 确认弹窗 → 点删除 → onDelete 回调 + 抽屉关闭', (tester) async {
     final sessions = [makeSession(id: 's1', title: '会话一')];
     String? deletedId;
     await tester.pumpWidget(

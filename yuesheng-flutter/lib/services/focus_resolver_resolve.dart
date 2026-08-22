@@ -3,6 +3,7 @@
 // 主入口：resolveTeachingFocus（6 项状态校验门控）。迁移自 focus_resolver.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'focus_resolver.dart';
+
 /// 6 项状态校验门控 + fallback 优先级表
 ///
 /// 校验顺序（5.7.1）：

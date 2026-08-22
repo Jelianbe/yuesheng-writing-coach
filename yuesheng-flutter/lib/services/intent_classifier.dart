@@ -207,7 +207,8 @@ UserIntent classifyUserIntent(String text) {
   if (t.length <= kSmalltalkMaxLength) {
     for (final s in _smalltalkSignals) {
       if (t.contains(s)) {
-        final hasAskSignal = t.contains('？') ||
+        final hasAskSignal =
+            t.contains('？') ||
             t.endsWith('?') ||
             _askSignals.any((a) => a.length >= 2 && t.contains(a));
         if (hasAskSignal) return UserIntent.ask;

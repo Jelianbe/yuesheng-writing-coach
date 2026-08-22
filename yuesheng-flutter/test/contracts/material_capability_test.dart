@@ -34,11 +34,7 @@ void main() {
       expect(anchor.endPara, 2);
 
       // extractParagraphWindow：0-based 闭区间
-      final window = impl.extractParagraphWindow(
-        '第一段。\n第二段。\n第三段。',
-        0,
-        1,
-      );
+      final window = impl.extractParagraphWindow('第一段。\n第二段。\n第三段。', 0, 1);
       expect(window, contains('第一段'));
       expect(window, contains('第二段'));
 

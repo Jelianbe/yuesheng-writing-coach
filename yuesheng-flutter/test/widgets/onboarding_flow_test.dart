@@ -15,9 +15,7 @@ import 'package:writingcoach/widgets/onboarding_flow.dart';
 
 void main() {
   Widget buildFlow({required VoidCallback onComplete}) {
-    return MaterialApp(
-      home: OnboardingFlow(onComplete: onComplete),
-    );
+    return MaterialApp(home: OnboardingFlow(onComplete: onComplete));
   }
 
   testWidgets('#1 第1页渲染 + 下一步 → 第2页', (tester) async {

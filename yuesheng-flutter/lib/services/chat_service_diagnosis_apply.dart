@@ -218,5 +218,4 @@ extension ChatServiceDiagnosisApply on ChatService {
       debugPrint('[SafeRun] 事实提取三表落库失败: $e');
     }
   }
-
 }

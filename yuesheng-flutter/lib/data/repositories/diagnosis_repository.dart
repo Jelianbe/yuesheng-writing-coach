@@ -427,8 +427,7 @@ class DiagnosisRepository {
   Future<void> removeProblem(String sessionId, String syndromeId) async {
     await (_db.delete(_db.activeProblems)..where(
           (t) =>
-              t.sessionId.equals(sessionId) &
-              t.syndromeId.equals(syndromeId),
+              t.sessionId.equals(sessionId) & t.syndromeId.equals(syndromeId),
         ))
         .go();
     await _updateDiagnosisSummary(sessionId);
@@ -437,11 +436,9 @@ class DiagnosisRepository {
   /// M6 修复：跨 session 聚合已解决的症候（迁移环节源数据）
   /// 查 status='resolved' 的记录，按 syndrome_id 去重取最新
   Future<List<ActiveProblemView>> listAllResolvedProblems() async {
-    final rows =
-        await (_db.select(_db.activeProblems)..where(
-              (t) => t.status.equals('resolved'),
-            ))
-            .get();
+    final rows = await (_db.select(
+      _db.activeProblems,
+    )..where((t) => t.status.equals('resolved'))).get();
     final grouped = <String, ActiveProblem>{};
     for (final r in rows) {
       final existing = grouped[r.syndromeId];
@@ -469,14 +466,15 @@ class DiagnosisRepository {
   /// 配合 D1 永久毕业制：同 (session, syndrome) 的 resolved 症候不会被 UPSERT 复活，
   /// 故「当前 active + 存在历史 resolved」⇒ 本轮诊断是跨 session 复发，介入级别应回退脚手架。
   Future<bool> hasResolvedHistory(String syndromeId) async {
-    final row = await (_db.select(_db.activeProblems)
-          ..where(
-            (t) =>
-                t.status.equals('resolved') &
-                t.syndromeId.equals(syndromeId),
-          )
-          ..limit(1))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(_db.activeProblems)
+              ..where(
+                (t) =>
+                    t.status.equals('resolved') &
+                    t.syndromeId.equals(syndromeId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
     return row != null;
   }
 
@@ -537,14 +535,14 @@ class DiagnosisRepository {
     String sessionId,
     String syndromeId,
   ) async {
-    final rows = await (_db.select(_db.activeProblems)
-          ..where(
-            (t) =>
-                t.sessionId.equals(sessionId) &
-                t.syndromeId.equals(syndromeId) &
-                t.status.equals('active'),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.activeProblems)..where(
+              (t) =>
+                  t.sessionId.equals(sessionId) &
+                  t.syndromeId.equals(syndromeId) &
+                  t.status.equals('active'),
+            ))
+            .get();
     if (rows.isEmpty) return null;
     return rows.first;
   }
@@ -557,12 +555,10 @@ class DiagnosisRepository {
     String teachingStateValue,
   ) async {
     await _db.transaction(() async {
-      await (_db.update(_db.activeProblems)
-            ..where(
-              (t) =>
-                  t.sessionId.equals(sessionId) &
-                  t.syndromeId.equals(syndromeId),
-            ))
+      await (_db.update(_db.activeProblems)..where(
+            (t) =>
+                t.sessionId.equals(sessionId) & t.syndromeId.equals(syndromeId),
+          ))
           .write(
             ActiveProblemsCompanion(
               teachingState: Value(teachingStateValue),

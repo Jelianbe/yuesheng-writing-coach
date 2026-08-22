@@ -63,7 +63,6 @@ part 'chat_session.dart';
 part 'chat_reference.dart';
 part 'chat_messages.dart';
 
-
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
 
@@ -121,50 +120,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     _loadSessions();
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // ════════════ 批次81：三卡回调接线（H1-H3）════════════
-
-
-
-
-
-
-
-
-
 
   @override
   Widget build(BuildContext context) {

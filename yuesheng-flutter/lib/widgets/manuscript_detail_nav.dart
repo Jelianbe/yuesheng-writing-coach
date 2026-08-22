@@ -66,9 +66,7 @@ extension _ManuscriptDetailNav on _ManuscriptDetailPageState {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('删除作品'),
-        content: Text(
-          '确定删除《$title》吗？删除后将不再显示，章节和诊断记录会保留。',
-        ),
+        content: Text('确定删除《$title》吗？删除后将不再显示，章节和诊断记录会保留。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),

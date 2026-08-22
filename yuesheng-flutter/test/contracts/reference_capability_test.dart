@@ -13,7 +13,8 @@ import 'package:writingcoach/data/repositories/reference_repository.dart';
 
 // 编译期子类型断言：若 ReferenceRepository 未正确 implements ReferenceCapability，
 // 本文件无法通过 dart analyze（门禁 1）。运行期无需实例化（避免依赖 DB）。
-ReferenceCapability _referenceImplIsCapability(ReferenceRepository repo) => repo;
+ReferenceCapability _referenceImplIsCapability(ReferenceRepository repo) =>
+    repo;
 
 void main() {
   group('ReferenceCapability 契约', () {

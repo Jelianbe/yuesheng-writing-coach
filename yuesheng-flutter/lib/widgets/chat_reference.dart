@@ -2,7 +2,6 @@
 part of 'chat_page.dart';
 
 extension _ChatReference on _ChatPageState {
-
   /// + 按钮：打开作品导入弹层（对齐 RN chat.tsx onUploadFile → showUploadModal）
   Future<void> _handleUploadFile() async {
     final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;

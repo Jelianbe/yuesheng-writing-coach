@@ -89,19 +89,20 @@ void main() {
       // 从 ParsedDiagnosis 重建一份协议 JSON（仅取契约关心的字段）
       final rebuilt = {
         'syndromes': first.syndromes
-            .map((s) => {
-                  'syndrome_id': s.syndromeId,
-                  'name': s.name,
-                  'severity': s.severity.value,
-                  'evidence': s.evidence,
-                  'explanation': s.explanation,
-                })
+            .map(
+              (s) => {
+                'syndrome_id': s.syndromeId,
+                'name': s.name,
+                'severity': s.severity.value,
+                'evidence': s.evidence,
+                'explanation': s.explanation,
+              },
+            )
             .toList(),
         'suggested_actions': first.suggestedActions,
         'confidence': first.confidence,
       };
-      final second =
-          parseDiagnosis(buildRaw(jsonEncode(rebuilt))).diagnosis!;
+      final second = parseDiagnosis(buildRaw(jsonEncode(rebuilt))).diagnosis!;
 
       expect(second.syndromes.length, first.syndromes.length);
       expect(

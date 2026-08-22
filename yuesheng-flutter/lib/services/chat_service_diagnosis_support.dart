@@ -239,5 +239,4 @@ extension ChatServiceDiagnosisSupport on ChatService {
 
     return '';
   }
-
 }

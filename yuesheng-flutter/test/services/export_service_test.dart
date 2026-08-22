@@ -93,24 +93,18 @@ void main() {
 
   group('buildVolumeExportText', () {
     test('卷内章节按 sortOrder 排序拼接', () {
-      final text = buildVolumeExportText(
-        _volume('v1', '第一卷'),
-        [
-          _chapter('第二章', 'B', volumeId: 'v1', sortOrder: 1),
-          _chapter('第一章', 'A', volumeId: 'v1', sortOrder: 0),
-        ],
-        format: ExportFormat.txt,
-      );
+      final text = buildVolumeExportText(_volume('v1', '第一卷'), [
+        _chapter('第二章', 'B', volumeId: 'v1', sortOrder: 1),
+        _chapter('第一章', 'A', volumeId: 'v1', sortOrder: 0),
+      ], format: ExportFormat.txt);
       expect(text, contains('《第一卷》'));
       expect(text.indexOf('第一章'), lessThan(text.indexOf('第二章')));
     });
 
     test('Markdown 卷标题为 ##', () {
-      final text = buildVolumeExportText(
-        _volume('v1', '第一卷'),
-        [_chapter('第一章', 'A', volumeId: 'v1')],
-        format: ExportFormat.markdown,
-      );
+      final text = buildVolumeExportText(_volume('v1', '第一卷'), [
+        _chapter('第一章', 'A', volumeId: 'v1'),
+      ], format: ExportFormat.markdown);
       expect(text, startsWith('## 第一卷'));
     });
   });
@@ -119,10 +113,7 @@ void main() {
     test('有卷：书名 + 卷分组 + 未分卷置末', () {
       final text = buildManuscriptExportText(
         _manuscript('山月记'),
-        [
-          _volume('v1', '第一卷'),
-          _volume('v2', '第二卷'),
-        ],
+        [_volume('v1', '第一卷'), _volume('v2', '第二卷')],
         [
           _chapter('散章', '未分卷内容', sortOrder: 5),
           _chapter('第一章', '卷一内容', volumeId: 'v1', sortOrder: 0),
@@ -139,15 +130,10 @@ void main() {
     });
 
     test('无卷：章节按顺序平铺（不出现《卷名》）', () {
-      final text = buildManuscriptExportText(
-        _manuscript('山月记'),
-        const [],
-        [
-          _chapter('第二章', 'B', sortOrder: 1),
-          _chapter('第一章', 'A', sortOrder: 0),
-        ],
-        format: ExportFormat.txt,
-      );
+      final text = buildManuscriptExportText(_manuscript('山月记'), const [], [
+        _chapter('第二章', 'B', sortOrder: 1),
+        _chapter('第一章', 'A', sortOrder: 0),
+      ], format: ExportFormat.txt);
       expect(text.indexOf('第一章'), lessThan(text.indexOf('第二章')));
       expect(text, isNot(contains('《第一卷》')));
     });
@@ -163,22 +149,16 @@ void main() {
     });
 
     test('Markdown 整书以 # 书名开头', () {
-      final text = buildManuscriptExportText(
-        _manuscript('山月记'),
-        const [],
-        [_chapter('第一章', 'A')],
-        format: ExportFormat.markdown,
-      );
+      final text = buildManuscriptExportText(_manuscript('山月记'), const [], [
+        _chapter('第一章', 'A'),
+      ], format: ExportFormat.markdown);
       expect(text, startsWith('# 山月记'));
     });
   });
 
   group('exportFileName', () {
     test('清洗 Windows/Unix 非法字符', () {
-      expect(
-        exportFileName('山/月\\记:*?"<>|', ExportFormat.txt),
-        '山月记.txt',
-      );
+      expect(exportFileName('山/月\\记:*?"<>|', ExportFormat.txt), '山月记.txt');
     });
     test('全非法字符回退「导出」', () {
       expect(exportFileName('///\\\\', ExportFormat.markdown), '导出.md');

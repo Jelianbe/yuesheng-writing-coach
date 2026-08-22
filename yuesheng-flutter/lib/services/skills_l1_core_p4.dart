@@ -69,12 +69,15 @@ const Skill _scenarioRules = Skill(
 **场景6（要求改写）**：只给示范不给改写。坚持则按档位回应——豆包："我先给你示范方法"；月笙："学的是方法，不是这一段"。''',
 );
 
-
 final Skill _teachingStrategy = Skill(
   meta: SkillMeta(
     id: 'teaching-strategy',
     group: 'core',
     estimatedTokens: 3300,
   ),
-  content: _teachingStrategyBody1 + _teachingStrategyBody2 + _syndromeIdRange + _teachingStrategyBody3,
+  content:
+      _teachingStrategyBody1 +
+      _teachingStrategyBody2 +
+      _syndromeIdRange +
+      _teachingStrategyBody3,
 );

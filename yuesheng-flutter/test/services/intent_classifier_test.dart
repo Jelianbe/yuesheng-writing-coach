@@ -73,21 +73,12 @@ void main() {
 
     test('#9 批次4（4.7 O3）：社交词短句含实质疑问 → ask（不吞为闲聊）', () {
       // "谢谢，你觉得我今天写得怎么样" 含社交词（谢谢）但实为教学提问
-      expect(
-        classifyUserIntent('谢谢，你觉得我今天写得怎么样'),
-        UserIntent.ask,
-      );
-      expect(
-        classifyUserIntent('好的，那这个开头你觉得怎么样？'),
-        UserIntent.ask,
-      );
+      expect(classifyUserIntent('谢谢，你觉得我今天写得怎么样'), UserIntent.ask);
+      expect(classifyUserIntent('好的，那这个开头你觉得怎么样？'), UserIntent.ask);
     });
 
     test('#10 批次4（4.7 O3）：社交词短句含修改信号 → revise', () {
-      expect(
-        classifyUserIntent('谢谢，我改成动作描写试试'),
-        UserIntent.revise,
-      );
+      expect(classifyUserIntent('谢谢，我改成动作描写试试'), UserIntent.revise);
     });
 
     test('#11 批次4（4.7 O3）：纯闲聊短句仍判 smalltalk', () {
@@ -167,10 +158,7 @@ void main() {
 
     test('#17 压缩信号优先于展开信号', () {
       // "长话短说"（压缩）先命中，即使后文含"详细"
-      expect(
-        detectReplyDetail('长话短说，但再详细点'),
-        ReplyDetail.concise,
-      );
+      expect(detectReplyDetail('长话短说，但再详细点'), ReplyDetail.concise);
     });
   });
 
