@@ -46,5 +46,7 @@ jobs:
         run: flutter analyze lib
 
       - name: Run tests
-        # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时自动 skip（见 flutter-llm-coach-validation skill），无需密钥。
-        run: flutter test
+        # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时会 markTestSkipped（见 flutter-llm-coach-validation skill），
+        # 无需密钥。此处额外 --exclude-tags 做双保险（B2-5 方案）：即使某条 live 测试 markTestSkipped 位置没提前到
+        # LlmClient() 构造之前，也不会触发出站 LLM/External 网络调用，直接跳过整个标签组，从根源避免 CI 因外网静默 hang。
+        run: flutter test --exclude-tags live,external
