@@ -9,7 +9,6 @@ import 'dart:convert';
 import '../types/teaching_types.dart';
 import 'fact_parser.dart';
 import 'outline_parser.dart';
-import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'diagnosis_validator.dart';
 import 'chat_training_parser.dart';
 

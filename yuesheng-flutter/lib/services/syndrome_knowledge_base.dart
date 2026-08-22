@@ -69,7 +69,7 @@ String _typeLookupTable() {
       if (s.type == t) buffer.writeln(_typeLookupRow(s));
     }
   }
-  return '\n' + buffer.toString().trimRight();
+  return '\n${buffer.toString().trimRight()}';
 }
 
 /// 手册内嵌技法映射表行：| ID 症候名(shortName) | 首选技法 技法名 |
