@@ -73,7 +73,6 @@ import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/services/phase_mapper_resolver.dart';
 import 'package:writingcoach/services/phase_transition.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
-import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/services/student_profile.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/services/training_input_builder.dart';

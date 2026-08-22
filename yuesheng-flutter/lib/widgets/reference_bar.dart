@@ -140,7 +140,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   /// 确认后写入/清除 session_reference.excerpt_range（段落锚点）。
   /// 取消（含下滑关闭）不写库；章节已删除时提示并中止。
   Future<void> _handlePickExcerpt(ReferencedItem item) async {
-    final db = this.ref.read(appDatabaseProvider);
+    final db = ref.read(appDatabaseProvider);
     final chapter = await ChapterRepository(db).getChapter(item.refId);
     if (!mounted) return;
     if (chapter == null) {

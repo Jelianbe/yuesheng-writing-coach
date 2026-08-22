@@ -15,7 +15,6 @@ import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/config/shared_constants.dart';
-import 'package:writingcoach/contracts/teaching_capability.dart';
 
 export 'package:writingcoach/contracts/teaching_capability.dart';
 
