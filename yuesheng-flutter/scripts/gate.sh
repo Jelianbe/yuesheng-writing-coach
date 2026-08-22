@@ -64,7 +64,19 @@ fi
 
 # ---------- 门禁 3: 循环依赖 ----------
 echo "--> 门禁 3/4: 循环依赖扫描 (lib import 图)"
-python3 - "$ROOT" > "$CIRCULAR_LOG" 2>&1 <<'PY'
+# Windows 兼容：优先 python3，若不可用（Microsoft Store shim 或未装）则 fallback 到 python
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
+  PY_BIN=python3
+elif command -v python >/dev/null 2>&1; then
+  PY_BIN=python
+else
+  echo "  [WARN] 未找到 python3 也未找到 python，跳过循环依赖扫描（非阻断，建议本地装 Python 3.10+）"
+  echo "OK: (SKIPPED) python not available - 循环依赖扫描已跳过，建议本地装 Python 3.10+" > "$CIRCULAR_LOG"
+  log_result "循环依赖扫描(跳过)" 0
+  :
+fi
+if [ -n "${PY_BIN:-}" ]; then
+  "$PY_BIN" - "$ROOT" > "$CIRCULAR_LOG" 2>&1 <<'PY'
 import os, re, sys
 root = sys.argv[1]
 lib = os.path.join(root, 'lib')
@@ -138,6 +150,7 @@ if [ $? -eq 0 ]; then
 else
   log_result "循环依赖扫描" 1
   cat "$CIRCULAR_LOG"
+fi
 fi
 
 # ---------- 门禁 4: 安全 / 可达性 ----------
