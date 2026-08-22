@@ -49,4 +49,25 @@ jobs:
         # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时会 markTestSkipped（见 flutter-llm-coach-validation skill），
         # 无需密钥。此处额外 --exclude-tags 做双保险（B2-5 方案）：即使某条 live 测试 markTestSkipped 位置没提前到
         # LlmClient() 构造之前，也不会触发出站 LLM/External 网络调用，直接跳过整个标签组，从根源避免 CI 因外网静默 hang。
-        run: flutter test --exclude-tags live,external
+        run: flutter test --exclude-tags live,external --coverage
+      - name: Verify coverage artifact
+        # 仅做存在性+大小校验；防止 --coverage 没生效（test 全 PASS 但 coverage 生成失败时能立即暴露），
+        # 不做行覆盖率阈值断言（阈值策略单独立项）。
+        run: |
+          if [ ! -f coverage/lcov.info ]; then
+            echo "❌ coverage/lcov.info not generated"
+            exit 1
+          fi
+          echo "✅ coverage/lcov.info exists"
+          wc -l coverage/lcov.info
+          ls -lh coverage/lcov.info
+
+      - name: Upload coverage artifact
+        # 上传到 GitHub Actions Artifacts（免费 90 天保存），便于手动下载 lcov.info 本地查看 / 后续接入 codecov.io。
+        # 注意 artifacts 不提供行覆盖率百分比数值面板；如需可视化覆盖率报告，后续补 genhtml / Coveralls / codecov 独立 step。
+        uses: actions/upload-artifact@v4
+        with:
+          name: yuesheng-flutter-coverage-${{ github.sha }}
+          path: yuesheng-flutter/coverage/lcov.info
+          if-no-files-found: error
+          retention-days: 90
