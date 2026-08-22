@@ -136,8 +136,9 @@ class _TimelineItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isResolved = event.eventType == 'resolved';
-    final accentColor =
-        isResolved ? AppColors.success : _severityColor(event.severity);
+    final accentColor = isResolved
+        ? AppColors.success
+        : _severityColor(event.severity);
 
     return IntrinsicHeight(
       child: Row(

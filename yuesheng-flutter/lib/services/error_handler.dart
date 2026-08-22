@@ -149,8 +149,9 @@ class ErrorHandler {
         ? null
         : {
             for (final e in context.entries)
-              e.key:
-                  e.value is String ? _redactSensitive(e.value as String) : e.value,
+              e.key: e.value is String
+                  ? _redactSensitive(e.value as String)
+                  : e.value,
           };
     // 归一化到 error_logs 的 CHECK 白名单（category/level），防非法值被 DB 约束吞掉
     final normalized = _kAllowedCategories.contains(category)
@@ -160,8 +161,14 @@ class ErrorHandler {
     final repo = _repo;
     if (repo != null) {
       unawaited(
-        _persist(repo, level: normalizedLevel, category: normalized,
-            message: safeMessage, stack: safeStack, context: safeContext),
+        _persist(
+          repo,
+          level: normalizedLevel,
+          category: normalized,
+          message: safeMessage,
+          stack: safeStack,
+          context: safeContext,
+        ),
       );
       return;
     }

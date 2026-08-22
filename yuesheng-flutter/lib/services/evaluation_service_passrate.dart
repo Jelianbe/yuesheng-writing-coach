@@ -3,8 +3,8 @@
 // 阶段迁移达标率 extension：computePassRateForPhaseMigration/_generateSummaryText。迁移自 evaluation_service.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'evaluation_service.dart';
-extension EvaluationPassRateExtension on EvaluationService {
 
+extension EvaluationPassRateExtension on EvaluationService {
   /// M4-C：阶段迁移达标率计算（只读，无副作用）
   ///
   /// 从 teaching_history 的 confirmation 记录聚合达标率：

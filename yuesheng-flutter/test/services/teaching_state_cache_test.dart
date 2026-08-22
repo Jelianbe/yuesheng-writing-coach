@@ -35,10 +35,7 @@ void main() {
       addTearDown(db.close);
 
       final sessionId = await SessionRepository(db).createBlankSession();
-      writeCachedTeachingStates(
-        sessionId,
-        {'S001': TeachingState.identified},
-      );
+      writeCachedTeachingStates(sessionId, {'S001': TeachingState.identified});
       expect(readCachedTeachingStates(sessionId), isNotNull);
 
       await DiagnosisRepository(db).commitDiagnosis(

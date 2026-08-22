@@ -3,6 +3,7 @@
 // 训练统计：countTrainingForSyndrome/TrainingPerformance/computeTrainingPerformance。迁移自 training_input_builder.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'training_input_builder.dart';
+
 /// 批次60：统计指定症候的已训练次数（type='training' 记录数）。
 ///
 /// 独立于 buildTrainingInputForActiveSyndrome（后者在诊断数 < 2 时返回 null），
@@ -15,10 +16,12 @@ Future<int> countTrainingForSyndrome(
   try {
     final history = await studentModelRepo.getTeachingHistory(sessionId);
     return history
-        .where((r) =>
-            r['type'] == 'training' &&
-            r['syndromeId'] is String &&
-            effectiveSyndromeId(r['syndromeId'] as String) == syndromeId)
+        .where(
+          (r) =>
+              r['type'] == 'training' &&
+              r['syndromeId'] is String &&
+              effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+        )
         .length;
   } catch (_) {
     return 0;
@@ -59,17 +62,20 @@ Future<TrainingPerformance?> computeTrainingPerformance(
 ) async {
   try {
     final history = await studentModelRepo.getTeachingHistory(sessionId);
-    final records = history
-        .where((r) =>
-            r['type'] == 'training' &&
-            r['syndromeId'] is String &&
-            effectiveSyndromeId(r['syndromeId'] as String) == syndromeId)
-        .toList()
-      ..sort((a, b) {
-        final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
-        final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
-        return ta.compareTo(tb); // ASC（与训练输入构建器一致）
-      });
+    final records =
+        history
+            .where(
+              (r) =>
+                  r['type'] == 'training' &&
+                  r['syndromeId'] is String &&
+                  effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+            )
+            .toList()
+          ..sort((a, b) {
+            final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
+            final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
+            return ta.compareTo(tb); // ASC（与训练输入构建器一致）
+          });
     if (records.isEmpty) return null;
 
     final passCount = records.where((r) => r['result'] == 'passed').length;
@@ -94,4 +100,3 @@ Future<TrainingPerformance?> computeTrainingPerformance(
     return null;
   }
 }
-

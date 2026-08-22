@@ -38,8 +38,11 @@ void main() {
       message: '错误B：平台异常',
       context: {'code': 500},
     );
-    expect(await repo.queryErrorLogs(), isEmpty,
-        reason: 'DB ready 前不直接写库（先入队列防丢）');
+    expect(
+      await repo.queryErrorLogs(),
+      isEmpty,
+      reason: 'DB ready 前不直接写库（先入队列防丢）',
+    );
 
     // attach → 异步 flush
     ErrorHandler.instance.attachRepository(repo);

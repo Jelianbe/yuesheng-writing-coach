@@ -482,9 +482,17 @@ void main() {
 
       // 稿 + 2 章：1500 + 800 = 2,300 字
       final msId = await msRepo.createManuscript(title: 'A3测试稿');
-      final ch1Id = await chRepo.createChapter(msId, title: '第一章：巷口', sortOrder: 1);
+      final ch1Id = await chRepo.createChapter(
+        msId,
+        title: '第一章：巷口',
+        sortOrder: 1,
+      );
       await chRepo.saveChapterContent(ch1Id, 'a' * 1500);
-      final ch2Id = await chRepo.createChapter(msId, title: '第二章：院门', sortOrder: 2);
+      final ch2Id = await chRepo.createChapter(
+        msId,
+        title: '第二章：院门',
+        sortOrder: 2,
+      );
       await chRepo.saveChapterContent(ch2Id, 'b' * 800);
 
       Future<void> insertProblem({
@@ -496,7 +504,9 @@ void main() {
         required String confirmationStatus,
         required int ts,
       }) async {
-        await db.into(db.activeProblems).insert(
+        await db
+            .into(db.activeProblems)
+            .insert(
               ActiveProblemsCompanion.insert(
                 id: generateUuid(),
                 sessionId: sid,
@@ -511,15 +521,29 @@ void main() {
       }
 
       // 诊断 1（2 天前）：情绪标签化 L2 + 信息倾泻 L3
-      await db.into(db.diagnosisResults).insert(
+      await db
+          .into(db.diagnosisResults)
+          .insert(
             DiagnosisResultsCompanion.insert(
               id: generateUuid(),
               sessionId: s,
               messageId: 'msg-1',
-              syndromes: Value(jsonEncode([
-                {'syndrome_id': 'P001', 'name': '情绪标签化', 'severity': 'L2', 'evidence': ['e1']},
-                {'syndrome_id': 'P002', 'name': '信息倾泻', 'severity': 'L3', 'evidence': ['e2']},
-              ])),
+              syndromes: Value(
+                jsonEncode([
+                  {
+                    'syndrome_id': 'P001',
+                    'name': '情绪标签化',
+                    'severity': 'L2',
+                    'evidence': ['e1'],
+                  },
+                  {
+                    'syndrome_id': 'P002',
+                    'name': '信息倾泻',
+                    'severity': 'L3',
+                    'evidence': ['e2'],
+                  },
+                ]),
+              ),
               suggestedActions: const Value('["动作化情绪"]'),
               confidence: const Value(0.9),
               timestamp: Value(base - 86400 * 2),
@@ -527,18 +551,47 @@ void main() {
             ),
           );
       // 诊断 2（今天）：5 症候 → 时间线 +2 后缀
-      await db.into(db.diagnosisResults).insert(
+      await db
+          .into(db.diagnosisResults)
+          .insert(
             DiagnosisResultsCompanion.insert(
               id: generateUuid(),
               sessionId: s,
               messageId: 'msg-2',
-              syndromes: Value(jsonEncode([
-                {'syndrome_id': 'P001', 'name': '情绪标签化', 'severity': 'L1', 'evidence': ['e3']},
-                {'syndrome_id': 'P007', 'name': '句式节奏单一', 'severity': 'L2', 'evidence': ['e4']},
-                {'syndrome_id': 'P010', 'name': '逻辑断裂', 'severity': 'L2', 'evidence': ['e5']},
-                {'syndrome_id': 'P011', 'name': '叙事拖沓', 'severity': 'L1', 'evidence': ['e6']},
-                {'syndrome_id': 'P012', 'name': '视角飘移', 'severity': 'L3', 'evidence': ['e7']},
-              ])),
+              syndromes: Value(
+                jsonEncode([
+                  {
+                    'syndrome_id': 'P001',
+                    'name': '情绪标签化',
+                    'severity': 'L1',
+                    'evidence': ['e3'],
+                  },
+                  {
+                    'syndrome_id': 'P007',
+                    'name': '句式节奏单一',
+                    'severity': 'L2',
+                    'evidence': ['e4'],
+                  },
+                  {
+                    'syndrome_id': 'P010',
+                    'name': '逻辑断裂',
+                    'severity': 'L2',
+                    'evidence': ['e5'],
+                  },
+                  {
+                    'syndrome_id': 'P011',
+                    'name': '叙事拖沓',
+                    'severity': 'L1',
+                    'evidence': ['e6'],
+                  },
+                  {
+                    'syndrome_id': 'P012',
+                    'name': '视角飘移',
+                    'severity': 'L3',
+                    'evidence': ['e7'],
+                  },
+                ]),
+              ),
               suggestedActions: const Value('[]'),
               confidence: const Value(0.95),
               timestamp: Value(base),
@@ -548,23 +601,37 @@ void main() {
 
       // active_problems：2 活跃 + 1 resolved（信息倾泻 P002）
       await insertProblem(
-        sid: s, syndromeId: 'P001', syndromeName: '情绪标签化',
-        severity: 'L1', status: 'active', confirmationStatus: 'confirmed', ts: base,
+        sid: s,
+        syndromeId: 'P001',
+        syndromeName: '情绪标签化',
+        severity: 'L1',
+        status: 'active',
+        confirmationStatus: 'confirmed',
+        ts: base,
       );
       await insertProblem(
-        sid: s, syndromeId: 'P007', syndromeName: '句式节奏单一',
-        severity: 'L2', status: 'active', confirmationStatus: 'suspected', ts: base,
+        sid: s,
+        syndromeId: 'P007',
+        syndromeName: '句式节奏单一',
+        severity: 'L2',
+        status: 'active',
+        confirmationStatus: 'suspected',
+        ts: base,
       );
       await insertProblem(
-        sid: s, syndromeId: 'P002', syndromeName: '信息倾泻',
-        severity: 'L3', status: 'resolved', confirmationStatus: 'confirmed', ts: base - 3600,
+        sid: s,
+        syndromeId: 'P002',
+        syndromeName: '信息倾泻',
+        severity: 'L3',
+        status: 'resolved',
+        confirmationStatus: 'confirmed',
+        ts: base - 3600,
       );
       // diagRepo 未使用：保留引用避免静态分析 unused_import 告警（在需要时可用于验证）
       diagRepo.hashCode;
     }
 
-    testWidgets('A3-1 成长总览卡 + 写作总览数字匹配 seed DB（SUM + COUNT）',
-        (tester) async {
+    testWidgets('A3-1 成长总览卡 + 写作总览数字匹配 seed DB（SUM + COUNT）', (tester) async {
       tester.view.physicalSize = const Size(800, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -574,14 +641,23 @@ void main() {
       await tester.pumpAndSettle();
 
       // 总览卡 + 写作总览网格中可能都显示 2,300字（= 1500 + 800）
-      expect(find.text('2,300字'), findsWidgets,
-          reason: '累计创作 = SUM(chapters.word_count) = 2300，概览卡必显示');
+      expect(
+        find.text('2,300字'),
+        findsWidgets,
+        reason: '累计创作 = SUM(chapters.word_count) = 2300，概览卡必显示',
+      );
       // 诊断次数 2（总览卡中「诊断次数」）
-      expect(find.text('2'), findsWidgets,
-          reason: '诊断次数 = COUNT(diagnosis_results) = 2');
+      expect(
+        find.text('2'),
+        findsWidgets,
+        reason: '诊断次数 = COUNT(diagnosis_results) = 2',
+      );
       // 已解决 1（总览卡中「已解决问题」或写作总览中「已解决」格）
-      expect(find.text('1'), findsWidgets,
-          reason: '已解决问题 = COUNT(active_problems.status=resolved) = 1');
+      expect(
+        find.text('1'),
+        findsWidgets,
+        reason: '已解决问题 = COUNT(active_problems.status=resolved) = 1',
+      );
 
       // 写作总览 6 格关键标题
       expect(find.text('已解决'), findsOneWidget);
@@ -589,8 +665,9 @@ void main() {
       expect(find.text('写作天数'), findsOneWidget);
     });
 
-    testWidgets('A3-2 症候分布列表：严重度徽章 L1/L2 + 状态分组（identified/suspected）',
-        (tester) async {
+    testWidgets('A3-2 症候分布列表：严重度徽章 L1/L2 + 状态分组（identified/suspected）', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -611,8 +688,7 @@ void main() {
       expect(find.text('句式节奏单一'), findsWidgets);
     });
 
-    testWidgets('A3-3 诊断历史时间线：按时间倒序（新在上）+ 症候名 + 置信度',
-        (tester) async {
+    testWidgets('A3-3 诊断历史时间线：按时间倒序（新在上）+ 症候名 + 置信度', (tester) async {
       tester.view.physicalSize = const Size(800, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -623,16 +699,24 @@ void main() {
 
       // 两次诊断：今天（置信度 95%）和 2 天前（置信度 90%）
       // 症候名「情绪标签化」在时间线里出现（近期 2 条诊断都有此症候）
-      expect(find.text('置信度 95%'), findsOneWidget,
-          reason: '新诊断应在时间线头部，置信度 = 0.95');
-      expect(find.text('置信度 90%'), findsOneWidget,
-          reason: '旧诊断时间线条目应存在');
+      expect(
+        find.text('置信度 95%'),
+        findsOneWidget,
+        reason: '新诊断应在时间线头部，置信度 = 0.95',
+      );
+      expect(find.text('置信度 90%'), findsOneWidget, reason: '旧诊断时间线条目应存在');
 
       // 症候名显示（最多 3 条 +N 后缀）：第二条诊断 5 症候 → "情绪标签化 · 句式节奏单一 · 逻辑断裂 · +2"
-      expect(find.textContaining('+2'), findsOneWidget,
-          reason: '第二诊 5 症候，截断显示 3 条后应带 +2 后缀');
-      expect(find.textContaining('情绪标签化 · 句式节奏单一'), findsOneWidget,
-          reason: '症候名按 · 拼接展示');
+      expect(
+        find.textContaining('+2'),
+        findsOneWidget,
+        reason: '第二诊 5 症候，截断显示 3 条后应带 +2 后缀',
+      );
+      expect(
+        find.textContaining('情绪标签化 · 句式节奏单一'),
+        findsOneWidget,
+        reason: '症候名按 · 拼接展示',
+      );
     });
   });
 

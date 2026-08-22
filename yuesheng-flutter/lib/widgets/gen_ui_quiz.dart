@@ -50,7 +50,10 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
     super.initState();
     final rawItems = widget.data['items'];
     _items = (rawItems is List)
-        ? rawItems.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList()
+        ? rawItems
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList()
         : <Map<String, dynamic>>[];
     final restored = widget.data['userAnswers'];
     _selected = (_items.asMap().keys).map((i) {
@@ -69,11 +72,9 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
     }).toList();
   }
 
-  bool get _allAnswered =>
-      _selected.every((s) => s != null);
+  bool get _allAnswered => _selected.every((s) => s != null);
 
-  int get _correctCount =>
-      _results.where((r) => r).length;
+  int get _correctCount => _results.where((r) => r).length;
 
   void _onSubmit() {
     if (!_allAnswered) return;
@@ -173,13 +174,21 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
               }
             }
             return GestureDetector(
-              onTap: _submitted ? null : () => setState(() => _selected[itemIdx] = optIdx),
+              onTap: _submitted
+                  ? null
+                  : () => setState(() => _selected[itemIdx] = optIdx),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
-                  color: tileColor ??
-                      (isChosen ? AppColors.primarySoft : AppColors.surfaceWhite),
+                  color:
+                      tileColor ??
+                      (isChosen
+                          ? AppColors.primarySoft
+                          : AppColors.surfaceWhite),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: isChosen ? AppColors.primary : AppColors.border,
@@ -225,9 +234,13 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
       return Row(
         children: [
           Icon(
-            _correctCount == total ? Icons.emoji_events : Icons.lightbulb_outline,
+            _correctCount == total
+                ? Icons.emoji_events
+                : Icons.lightbulb_outline,
             size: 16,
-            color: _correctCount == total ? AppColors.success : AppColors.textTertiary,
+            color: _correctCount == total
+                ? AppColors.success
+                : AppColors.textTertiary,
           ),
           const SizedBox(width: 6),
           Text(
@@ -235,7 +248,9 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: _correctCount == total ? AppColors.success : AppColors.textPrimary,
+              color: _correctCount == total
+                  ? AppColors.success
+                  : AppColors.textPrimary,
             ),
           ),
         ],

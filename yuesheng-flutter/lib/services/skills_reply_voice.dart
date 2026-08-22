@@ -9,11 +9,7 @@ part of 'skill_registry.dart';
 /// 回复语气 skill（批次 65：提炼 humanizer-zh 通用「去 AI 生成痕迹」模式，
 /// 适配月笙教练语境——回复要像真人老师当面随口聊几句）
 const Skill _replyVoice = Skill(
-  meta: SkillMeta(
-    id: 'reply-voice',
-    group: 'core',
-    estimatedTokens: 300,
-  ),
+  meta: SkillMeta(id: 'reply-voice', group: 'core', estimatedTokens: 300),
   content: '''# SKILL: 回复语气（教练口语化 · 去 AI 味）
 
 > **来源**: 提炼自 humanizer-zh（op7418/Humanizer-zh）通用「去除 AI 生成痕迹」模式，适配月笙教练语境
@@ -41,4 +37,3 @@ const Skill _replyVoice = Skill(
 - 出现「此外/总而言之/不仅……更是」？删掉重写
 - 读起来像能对学员当面说出口的话？过关''',
 );
-

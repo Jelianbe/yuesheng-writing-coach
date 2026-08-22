@@ -254,5 +254,4 @@ extension ChatServiceDiagnosis on ChatService {
 
     return messageId;
   }
-
 }

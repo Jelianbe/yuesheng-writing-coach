@@ -76,8 +76,7 @@ class FactExtraction {
     required this.subplots,
   });
 
-  bool get isEmpty =>
-      characters.isEmpty && events.isEmpty && subplots.isEmpty;
+  bool get isEmpty => characters.isEmpty && events.isEmpty && subplots.isEmpty;
 }
 
 /// 校验结果
@@ -139,7 +138,9 @@ List<CharacterFactUpdate> _parseCharacters(
   for (var i = 0; i < raw.length; i++) {
     final c = raw[i];
     if (c is! Map<String, dynamic>) {
-      errors.add(FactValidationError(field: 'characters[$i]', message: '必须是对象'));
+      errors.add(
+        FactValidationError(field: 'characters[$i]', message: '必须是对象'),
+      );
       continue;
     }
     final name = c['name'];
@@ -152,7 +153,10 @@ List<CharacterFactUpdate> _parseCharacters(
     final assertionsRaw = c['assertions'];
     if (assertionsRaw is! List) {
       errors.add(
-        FactValidationError(field: 'characters[$i].assertions', message: '必须是数组'),
+        FactValidationError(
+          field: 'characters[$i].assertions',
+          message: '必须是数组',
+        ),
       );
       continue;
     }
@@ -208,7 +212,10 @@ List<EventFactUpdate> _parseEvents(
     final chapter = (e['chapter'] as num?)?.toInt();
     final participantsRaw = e['participants'];
     final participants = participantsRaw is List
-        ? participantsRaw.whereType<String>().where((p) => p.isNotEmpty).toList()
+        ? participantsRaw
+              .whereType<String>()
+              .where((p) => p.isNotEmpty)
+              .toList()
         : const <String>[];
     final description = (e['description'] as String?) ?? '';
     // 批次3-D4：解析触发事件名（支持 cause_event_name / causeEventName 两种键）
@@ -250,9 +257,11 @@ List<SubplotFactUpdate> _parseSubplots(
       );
       continue;
     }
-    final introduced = (s['introduced_chapter'] as num?)?.toInt() ??
+    final introduced =
+        (s['introduced_chapter'] as num?)?.toInt() ??
         (s['introducedChapter'] as num?)?.toInt();
-    final resolved = (s['resolved_chapter'] as num?)?.toInt() ??
+    final resolved =
+        (s['resolved_chapter'] as num?)?.toInt() ??
         (s['resolvedChapter'] as num?)?.toInt();
     final description = (s['description'] as String?) ?? '';
 

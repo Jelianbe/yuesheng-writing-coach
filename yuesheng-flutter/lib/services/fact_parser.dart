@@ -30,10 +30,7 @@ FactExtraction? parseFactExtraction(String rawText) {
   final startIndex = rawText.indexOf(kFactStart);
   if (startIndex == -1) return null;
 
-  final endIndex = rawText.indexOf(
-    kFactEnd,
-    startIndex + kFactStart.length,
-  );
+  final endIndex = rawText.indexOf(kFactEnd, startIndex + kFactStart.length);
 
   // S6 容错：有起始标记无结束标记 → 取到文本末尾
   final String jsonStr;
@@ -66,10 +63,7 @@ String stripFactBlock(String rawText) {
   final startIndex = rawText.indexOf(kFactStart);
   if (startIndex == -1) return rawText;
 
-  final endIndex = rawText.indexOf(
-    kFactEnd,
-    startIndex + kFactStart.length,
-  );
+  final endIndex = rawText.indexOf(kFactEnd, startIndex + kFactStart.length);
   final before = rawText.substring(0, startIndex).trimRight();
   if (endIndex == -1) return before;
 

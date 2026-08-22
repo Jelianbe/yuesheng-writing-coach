@@ -44,11 +44,8 @@ class Chapters extends Table {
   TextColumn get manuscriptId =>
       text().references(Manuscripts, #id, onDelete: KeyAction.cascade)();
   // 批次89：卷归属（可空 = 未分卷；删卷时 SET NULL 回未分卷）
-  TextColumn get volumeId => text().nullable().references(
-    Volumes,
-    #id,
-    onDelete: KeyAction.setNull,
-  )();
+  TextColumn get volumeId =>
+      text().nullable().references(Volumes, #id, onDelete: KeyAction.setNull)();
   TextColumn get title => text().withDefault(const Constant(''))();
   TextColumn get content => text().withDefault(const Constant(''))();
   TextColumn get previousContent => text().nullable()(); // v7 新增
@@ -56,7 +53,9 @@ class Chapters extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   TextColumn get status => text()
       .withDefault(const Constant('draft'))
-      .check(status.isIn(const ['draft', 'revising', 'complete', 'archived']))();
+      .check(
+        status.isIn(const ['draft', 'revising', 'complete', 'archived']),
+      )();
   IntColumn get lastDiagnosedAt => integer().nullable()(); // v2 新增
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
@@ -250,14 +249,14 @@ class ActiveProblems extends Table {
           'ignored',
         ]),
       )();
-  TextColumn get teachingState => text()
-      .nullable()
-      .check(teachingState.isIn(const [
-        'identified',
-        'in_progress',
-        'consolidating',
-        'mastered',
-      ]))();
+  TextColumn get teachingState => text().nullable().check(
+    teachingState.isIn(const [
+      'identified',
+      'in_progress',
+      'consolidating',
+      'mastered',
+    ]),
+  )();
   IntColumn get confirmedAt => integer().nullable()();
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
@@ -315,8 +314,8 @@ class SessionReferences extends Table {
   TextColumn get id => text()();
   TextColumn get sessionId =>
       text().references(Sessions, #id, onDelete: KeyAction.cascade)();
-  TextColumn get refType => text()
-      .check(refType.isIn(const ['manuscript', 'chapter', 'file']))();
+  TextColumn get refType =>
+      text().check(refType.isIn(const ['manuscript', 'chapter', 'file']))();
   TextColumn get refId => text()(); // 软引用
   IntColumn get isPrimary => integer()
       .withDefault(const Constant(0))

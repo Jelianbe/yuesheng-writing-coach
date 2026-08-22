@@ -117,8 +117,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 controller: _controller,
                 itemCount: _pages.length,
                 onPageChanged: (index) => setState(() => _page = index),
-                itemBuilder: (context, index) =>
-                    _buildPage(_pages[index]),
+                itemBuilder: (context, index) => _buildPage(_pages[index]),
               ),
             ),
             // 进度指示点
@@ -151,7 +150,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: isLast ? widget.onComplete : () => _goToPage(_page + 1),
+                  onPressed: isLast
+                      ? widget.onComplete
+                      : () => _goToPage(_page + 1),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,
@@ -170,8 +171,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                       ),
                       if (!isLast) ...[
                         const SizedBox(width: 6),
-                        const Icon(Icons.arrow_forward,
-                            size: 18, color: AppColors.onPrimary),
+                        const Icon(
+                          Icons.arrow_forward,
+                          size: 18,
+                          color: AppColors.onPrimary,
+                        ),
                       ],
                     ],
                   ),

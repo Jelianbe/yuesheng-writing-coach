@@ -72,86 +72,84 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          Row(
-            children: [
-              const Text(
-                '写作统计',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textInk,
+            Row(
+              children: [
+                const Text(
+                  '写作统计',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textInk,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                color: AppColors.textTertiary,
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          // 批次87-3：统计窗口切换（近 7/14/30 天）
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (final d in const [7, 14, 30]) ...[
-                ChoiceChip(
-                  label: Text(
-                    '近$d天',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _days == d
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                  selected: _days == d,
-                  showCheckmark: false,
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: AppColors.surface,
-                  selectedColor: AppColors.primarySoft,
-                  side: BorderSide(
-                    color: _days == d
-                        ? AppColors.primary
-                        : AppColors.border,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  onSelected: (_) => _switchDays(d),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  color: AppColors.textTertiary,
+                  onPressed: () => Navigator.pop(context),
                 ),
-                const SizedBox(width: 8),
               ],
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (!_loaded)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              ),
-            )
-          else if (_points.isEmpty)
-            const _StatsEmpty()
-          else ...[
-            WritingCurveChart(points: _points),
-            const SizedBox(height: AppSpacing.md),
-            const Text(
-              '每天进步一点点，成长看得见。',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
             ),
+            const SizedBox(height: 4),
+            // 批次87-3：统计窗口切换（近 7/14/30 天）
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (final d in const [7, 14, 30]) ...[
+                  ChoiceChip(
+                    label: Text(
+                      '近$d天',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _days == d
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                    selected: _days == d,
+                    showCheckmark: false,
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: AppColors.surface,
+                    selectedColor: AppColors.primarySoft,
+                    side: BorderSide(
+                      color: _days == d ? AppColors.primary : AppColors.border,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    onSelected: (_) => _switchDays(d),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (!_loaded)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_points.isEmpty)
+              const _StatsEmpty()
+            else ...[
+              WritingCurveChart(points: _points),
+              const SizedBox(height: AppSpacing.md),
+              const Text(
+                '每天进步一点点，成长看得见。',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
-    ),
-  );
+    );
   }
 }
 
@@ -165,7 +163,11 @@ class _StatsEmpty extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Column(
         children: [
-          const Icon(Icons.trending_up, size: 40, color: AppColors.textTertiary),
+          const Icon(
+            Icons.trending_up,
+            size: 40,
+            color: AppColors.textTertiary,
+          ),
           const SizedBox(height: AppSpacing.sm),
           const Text(
             '还没有写作记录',
@@ -179,10 +181,7 @@ class _StatsEmpty extends StatelessWidget {
           Text(
             '多写几天，这里会展示你的成长轨迹',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
           ),
         ],
       ),

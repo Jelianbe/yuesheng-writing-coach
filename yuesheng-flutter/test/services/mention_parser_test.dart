@@ -88,8 +88,10 @@ void main() {
       final r = await parser.parseMentions('@我的小说 和 @[chapter:$chId]');
       expect(r.mentions.length, 2);
       expect(r.mentions.any((m) => m.refType == 'manuscript'), isTrue);
-      expect(r.mentions.any((m) => m.refType == 'chapter' && m.refId == chId),
-          isTrue);
+      expect(
+        r.mentions.any((m) => m.refType == 'chapter' && m.refId == chId),
+        isTrue,
+      );
     });
 
     test('非法 refType 标记降级为字面文本', () async {

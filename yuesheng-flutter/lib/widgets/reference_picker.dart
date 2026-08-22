@@ -243,9 +243,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     }
 
     return Column(
-      children: [
-        for (final m in _manuscripts) _buildManuscriptTile(m),
-      ],
+      children: [for (final m in _manuscripts) _buildManuscriptTile(m)],
     );
   }
 
@@ -423,8 +421,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     return Column(
       children: [
         for (final m in _manuscripts)
-          if ((_filesMap[m.id] ?? const []).isNotEmpty)
-            _buildFileGroup(m),
+          if ((_filesMap[m.id] ?? const []).isNotEmpty) _buildFileGroup(m),
       ],
     );
   }

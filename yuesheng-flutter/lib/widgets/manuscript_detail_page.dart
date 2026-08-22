@@ -39,12 +39,10 @@ import '../utils/volume_group.dart';
 import 'file_section.dart';
 import 'related_sessions_tab.dart';
 
-
 part 'manuscript_detail_export.dart';
 part 'manuscript_detail_volume.dart';
 part 'manuscript_detail_chapter.dart';
 part 'manuscript_detail_nav.dart';
-
 
 /// 章节状态 → 中文标签 + 矿物色配色
 class _ChapterStatusConfig {
@@ -165,10 +163,9 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
   void _snack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
   }
 
   /// 整书导出
@@ -213,7 +210,9 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
     final chapters = chapterState.chapters;
     final ms = _manuscript;
     // 批次92-1：详情页接入卷分组（读取作品卷列表，无卷走扁平列表）
-    final volumesAsync = ref.watch(volumeListProvider(widget.args.manuscriptId));
+    final volumesAsync = ref.watch(
+      volumeListProvider(widget.args.manuscriptId),
+    );
     final volumes = volumesAsync.value ?? const <Volume>[];
 
     return Scaffold(
@@ -316,8 +315,7 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
                                 onImport: _openAppendChapters,
                                 chapterCount: chapters.length,
                                 onRenameChapter: _handleRenameChapter,
-                                onQuickCreateChapter:
-                                    _handleQuickCreateChapter,
+                                onQuickCreateChapter: _handleQuickCreateChapter,
                                 // 批次92-1/92-4/92-5：卷分组 + 折叠 + 吸顶 + 卷操作
                                 collapsedVolumes: _collapsedVolumes,
                                 onToggleVolume: _toggleVolumeCollapsed,
@@ -709,10 +707,7 @@ class _NewChapterRow extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 '新建章节',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textTertiary,
-                ),
+                style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
               ),
             ],
           ),
@@ -829,9 +824,7 @@ class _DetailVolumeHeader extends StatelessWidget {
               // 左侧 3dp 色条（卷 → 竹青；未分卷 → 弱化灰）
               Container(
                 width: 3,
-                color: isUnassigned
-                    ? AppColors.placeholder
-                    : AppColors.primary,
+                color: isUnassigned ? AppColors.placeholder : AppColors.primary,
               ),
               const SizedBox(width: 10),
               Icon(
@@ -845,7 +838,9 @@ class _DetailVolumeHeader extends StatelessWidget {
                     ? Icons.notes_outlined
                     : Icons.collections_bookmark_outlined,
                 size: 16,
-                color: isUnassigned ? AppColors.textTertiary : AppColors.primary,
+                color: isUnassigned
+                    ? AppColors.textTertiary
+                    : AppColors.primary,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -944,10 +939,7 @@ class _ChapterListHeader extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$chapterCount 章',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
           ),
           const Spacer(),
           InkWell(

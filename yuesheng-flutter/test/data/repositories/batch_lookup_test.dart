@@ -66,10 +66,7 @@ void main() {
 
   group('ChapterRepository.listChaptersForManuscripts', () {
     test('空列表守卫 → 返回空', () async {
-      expect(
-        await chRepo.listChaptersForManuscripts(const []),
-        isEmpty,
-      );
+      expect(await chRepo.listChaptersForManuscripts(const []), isEmpty);
     });
 
     test('跨多稿件批量取章节，按 sortOrder 排序', () async {

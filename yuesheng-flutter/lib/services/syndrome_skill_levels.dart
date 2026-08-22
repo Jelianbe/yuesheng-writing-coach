@@ -111,8 +111,8 @@ InterventionLevel interventionLevelForTrainingCount(
   final base = trainingCount >= 4
       ? InterventionLevel.youDo
       : trainingCount >= 2
-          ? InterventionLevel.weDo
-          : InterventionLevel.iDo;
+      ? InterventionLevel.weDo
+      : InterventionLevel.iDo;
 
   // 7.2（批次16）：无表现数据 → 维持次数分级
   if (performance == null) return base;

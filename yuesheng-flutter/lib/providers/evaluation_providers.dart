@@ -47,7 +47,7 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
   String? _currentSessionId;
 
   EvaluationReportsStore(this._service, this._appStateRepo)
-      : super(const EvaluationReportsState());
+    : super(const EvaluationReportsState());
 
   /// 批次4-M3：会话启动时从 DB 恢复 reports + currentRound
   /// 在 ChatPage 会话 bootstrap 后调用
@@ -56,10 +56,7 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
     try {
       final round = await _appStateRepo.getEvaluationRound(sessionId);
       final reports = await _appStateRepo.listEvaluationReports(sessionId);
-      state = EvaluationReportsState(
-        reports: reports,
-        currentRound: round,
-      );
+      state = EvaluationReportsState(reports: reports, currentRound: round);
     } catch (e) {
       debugPrint('[EvalStore] restoreForSession 失败: $e');
     }
@@ -87,10 +84,7 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
         messageId,
         evaluation,
       );
-      await _appStateRepo.setEvaluationRound(
-        sessionId,
-        state.currentRound,
-      );
+      await _appStateRepo.setEvaluationRound(sessionId, state.currentRound);
     } catch (e) {
       debugPrint('[EvalStore] buildEvaluationReport 失败: $e');
     }

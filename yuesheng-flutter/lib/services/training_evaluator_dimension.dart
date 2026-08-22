@@ -170,4 +170,3 @@ ComprehensiveJudgment comprehensiveJudgment(ComprehensiveJudgmentInput input) {
 
   return ComprehensiveJudgment.stable;
 }
-

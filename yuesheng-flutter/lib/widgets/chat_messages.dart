@@ -2,7 +2,6 @@
 part of 'chat_page.dart';
 
 extension _ChatMessages on _ChatPageState {
-
   /// 更多菜单「画像」：跳转能力画像页（对齐 RN onOpenProfile → StudentProfilePanel）
   /// 批次78：pushNamed 误用（go_router 路由不注册 Navigator 命名表，点击必失败）→ context.push
   void _handleOpenProfile() {
@@ -27,7 +26,9 @@ extension _ChatMessages on _ChatPageState {
   /// 以用户消息发给教练并请求调整诊断（杜绝静默清空：反馈已真实落库为消息）
   void _handlePartialAgreementSubmit(String feedback, String? quickOption) {
     if (ref.read(chatStoreProvider).isStreaming) return;
-    final detail = quickOption != null ? quickOptionLabel(quickOption) : feedback;
+    final detail = quickOption != null
+        ? quickOptionLabel(quickOption)
+        : feedback;
     if (detail.trim().isEmpty) return;
     _handleSend('我对刚才的诊断结果有不同看法：$detail。请根据我的反馈调整诊断。');
   }

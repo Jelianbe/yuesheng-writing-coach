@@ -39,7 +39,12 @@ List<int> computeMatches(String text, String query) {
 }
 
 /// 批次96-11：命中片段——以首处匹配为中心截取 [radius] 字上下文，截断处补「…」
-String buildSnippet(String text, int matchStart, int matchLen, {int radius = 20}) {
+String buildSnippet(
+  String text,
+  int matchStart,
+  int matchLen, {
+  int radius = 20,
+}) {
   if (text.isEmpty) return '';
   final start = matchStart - radius < 0 ? 0 : matchStart - radius;
   final end = matchStart + matchLen + radius > text.length
@@ -53,17 +58,23 @@ String buildSnippet(String text, int matchStart, int matchLen, {int radius = 20}
 class SearchReplaceSheet extends ConsumerStatefulWidget {
   /// 打开时的正文快照（模态期间正文不可编辑，替换后走 onApply 同步）
   final String initialText;
+
   /// 所属作品（全书搜索用；null/空则隐藏全书入口）
   final String? manuscriptId;
+
   /// 批次96-11：当前章节 ID（全书结果点击判断"当前章直接定位 vs 跨章跳转"）
   final String currentChapterId;
+
   /// 替换落稿（newText + 建议光标偏移）
   final void Function(String newText, int cursorOffset) onApply;
+
   /// 查找定位（start/end → 页面设 selection）
   final void Function(int start, int end) onLocate;
+
   /// 全书结果点击 → 跳转章节（批次96-11：cursorOffset = 首处命中偏移，跨章定位用）
   final void Function(String chapterId, String chapterTitle, int? cursorOffset)?
   onJumpToChapter;
+
   /// 批次96-11：true = 打开即全书搜索视图（独立「全文搜索」入口用）
   final bool initialBookView;
 
@@ -106,8 +117,7 @@ class SearchReplaceSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<SearchReplaceSheet> createState() =>
-      _SearchReplaceSheetState();
+  ConsumerState<SearchReplaceSheet> createState() => _SearchReplaceSheetState();
 }
 
 class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
@@ -121,9 +131,19 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
 
   /// true = 全书搜索视图（本章查找替换视图 = false）
   bool _viewAllBook = false;
+
   /// 全书搜索结果（null = 未加载 / 加载中）
-  List<({String chapterId, String title, int count, int firstOffset, String snippet})>?
+  List<
+    ({
+      String chapterId,
+      String title,
+      int count,
+      int firstOffset,
+      String snippet,
+    })
+  >?
   _bookResults;
+
   /// 批次96-11：全书视图防抖定时器（输入即搜，300ms 合并）
   Timer? _bookSearchTimer;
 
@@ -239,7 +259,16 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
     final repo = ChapterRepository(ref.read(appDatabaseProvider));
     final chapters = await repo.listChapters(msId);
     if (!mounted) return;
-    final results = <({String chapterId, String title, int count, int firstOffset, String snippet})>[];
+    final results =
+        <
+          ({
+            String chapterId,
+            String title,
+            int count,
+            int firstOffset,
+            String snippet,
+          })
+        >[];
     for (final ch in chapters) {
       // 批次96-11：标题 + 正文都参与匹配（标题命中无正文命中时 snippet 用标题）
       final contentMatches = computeMatches(ch.content, q);
@@ -310,7 +339,9 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
           const SizedBox(height: 8),
           SizedBox(
             height: 400,
-            child: _viewAllBook ? _buildBookResults() : _buildChapterView(countText, hasMatches),
+            child: _viewAllBook
+                ? _buildBookResults()
+                : _buildChapterView(countText, hasMatches),
           ),
         ],
       ),
@@ -456,15 +487,21 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
           ],
         ),
         const SizedBox(height: 8),
-        Expanded(
-          child: _buildBookResultList(results, q),
-        ),
+        Expanded(child: _buildBookResultList(results, q)),
       ],
     );
   }
 
   Widget _buildBookResultList(
-    List<({String chapterId, String title, int count, int firstOffset, String snippet})>?
+    List<
+      ({
+        String chapterId,
+        String title,
+        int count,
+        int firstOffset,
+        String snippet,
+      })
+    >?
     results,
     String q,
   ) {
@@ -485,11 +522,18 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.search_off, size: 36, color: AppColors.placeholder),
+            const Icon(
+              Icons.search_off,
+              size: 36,
+              color: AppColors.placeholder,
+            ),
             const SizedBox(height: 8),
             Text(
               q.trim().isEmpty ? '输入关键词搜索全书章节' : '全书没有找到相关内容',
-              style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textTertiary,
+              ),
             ),
           ],
         ),

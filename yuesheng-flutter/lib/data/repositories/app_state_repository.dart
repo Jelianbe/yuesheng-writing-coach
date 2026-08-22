@@ -154,9 +154,9 @@ class AppStateRepository {
 
   /// 读取会话的当前评估轮次（无记录返回 0）
   Future<int> getEvaluationRound(String sessionId) async {
-    final row = await (_db.select(_db.appStates)
-          ..where((t) => t.key.equals('eval_round:$sessionId')))
-        .getSingleOrNull();
+    final row = await (_db.select(
+      _db.appStates,
+    )..where((t) => t.key.equals('eval_round:$sessionId'))).getSingleOrNull();
     return int.tryParse(row?.value ?? '') ?? 0;
   }
 
@@ -171,10 +171,7 @@ class AppStateRepository {
     String messageId,
     EvaluationData data,
   ) async {
-    await setValue(
-      'eval_report:$sessionId:$messageId',
-      data.toJsonString(),
-    );
+    await setValue('eval_report:$sessionId:$messageId', data.toJsonString());
   }
 
   /// 读取单条评估报告（无记录返回 null）
@@ -191,9 +188,9 @@ class AppStateRepository {
     String sessionId,
   ) async {
     final prefix = 'eval_report:$sessionId:';
-    final rows = await (_db.select(_db.appStates)
-          ..where((t) => t.key.like('$prefix%')))
-        .get();
+    final rows = await (_db.select(
+      _db.appStates,
+    )..where((t) => t.key.like('$prefix%'))).get();
     final result = <String, EvaluationData>{};
     for (final row in rows) {
       final messageId = row.key.substring(prefix.length);
@@ -208,20 +205,20 @@ class AppStateRepository {
     String sessionId,
     String messageId,
   ) async {
-    await (_db.delete(_db.appStates)
-          ..where((t) => t.key.equals('eval_report:$sessionId:$messageId')))
-        .go();
+    await (_db.delete(
+      _db.appStates,
+    )..where((t) => t.key.equals('eval_report:$sessionId:$messageId'))).go();
   }
 
   /// 清空会话全部评估报告（会话切换时调用）
   Future<void> clearEvaluationReports(String sessionId) async {
     final prefix = 'eval_report:$sessionId:';
-    await (_db.delete(_db.appStates)
-          ..where((t) => t.key.like('$prefix%')))
-        .go();
-    await (_db.delete(_db.appStates)
-          ..where((t) => t.key.equals('eval_round:$sessionId')))
-        .go();
+    await (_db.delete(
+      _db.appStates,
+    )..where((t) => t.key.like('$prefix%'))).go();
+    await (_db.delete(
+      _db.appStates,
+    )..where((t) => t.key.equals('eval_round:$sessionId'))).go();
   }
 
   // ════════════ 章节版本快照（批次82 P0 四件套之③ 时光机） ════════════
@@ -251,9 +248,7 @@ class AppStateRepository {
     }
     await setValue(
       'chapter_versions:$chapterId',
-      jsonEncode(
-        versions.map((v) => v.toJson()).toList(),
-      ),
+      jsonEncode(versions.map((v) => v.toJson()).toList()),
     );
   }
 
@@ -475,7 +470,10 @@ class AppStateRepository {
   /// 过滤超龄条目（保留时长内）
   List<RecycleBinItem> _filterFresh(List<RecycleBinItem> items) {
     final cutoff = nowSec() - recycleBinMaxAgeDays * 24 * 3600;
-    return [for (final it in items) if (it.deletedAt >= cutoff) it];
+    return [
+      for (final it in items)
+        if (it.deletedAt >= cutoff) it,
+    ];
   }
 
   /// 写入回收板数组
@@ -556,13 +554,7 @@ class AppStateRepository {
       'punctuation_custom_items',
       jsonEncode(
         items
-            .map(
-              (e) => {
-                'id': e.id,
-                'display': e.display,
-                'insert': e.insert,
-              },
-            )
+            .map((e) => {'id': e.id, 'display': e.display, 'insert': e.insert})
             .toList(),
       ),
     );
@@ -631,11 +623,11 @@ class AppStateRepository {
   }
 
   /// 保存作品下已折叠的卷 key 集合（空集也会写入，保证可清空）
-  Future<void> setCollapsedVolumes(String manuscriptId, Set<String> keys) async {
-    await setValue(
-      'volume_collapsed_$manuscriptId',
-      jsonEncode(keys.toList()),
-    );
+  Future<void> setCollapsedVolumes(
+    String manuscriptId,
+    Set<String> keys,
+  ) async {
+    await setValue('volume_collapsed_$manuscriptId', jsonEncode(keys.toList()));
   }
 }
 
@@ -684,6 +676,7 @@ class ChapterDraft {
 class WritingInspiration {
   final String id;
   final String content;
+
   /// 来源作品（写作页记灵感时带上；null = 随手记未关联作品）
   final String? manuscriptId;
   final String? chapterId;
@@ -723,10 +716,7 @@ class RecycleBinItem {
 
   const RecycleBinItem({required this.content, required this.deletedAt});
 
-  Map<String, dynamic> toJson() => {
-    'content': content,
-    'deletedAt': deletedAt,
-  };
+  Map<String, dynamic> toJson() => {'content': content, 'deletedAt': deletedAt};
 
   static RecycleBinItem fromJson(Map<String, dynamic> json) {
     return RecycleBinItem(

@@ -15,9 +15,9 @@ part 'technique_kb_content_lib_1.dart';
 part 'technique_kb_content_lib_2.dart';
 part 'technique_kb_content_lib_3.dart';
 
-
 /// 症候 → 推荐技法 ID 列表（复刻 RN TECHNIQUE_BY_SYNDROME；b9 批次29 由注册表派生）
-Map<String, List<String>> get kTechniquesBySyndrome => kTechniquesBySyndromeDerived;
+Map<String, List<String>> get kTechniquesBySyndrome =>
+    kTechniquesBySyndromeDerived;
 
 /// 从完整技法库中按技法 ID 提取单个技法的完整内容（复刻 RN extractTechniqueSection）
 String _extractTechniqueSection(String raw, String id) {

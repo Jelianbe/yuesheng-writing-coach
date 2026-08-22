@@ -10,7 +10,8 @@ final Skill _beginnerPath = Skill(
     group: 'teaching',
     estimatedTokens: 3200,
   ),
-  content: '''# SKILL: 零基础教学路径（N0-N4）
+  content:
+      '''# SKILL: 零基础教学路径（N0-N4）
 
 > **来源**: 多领域从零教学体系调研（Drawabox/Suzuki/The Artist's Way/The Odin Project/Khan Academy/Writing Workshop）
 > **loadWhen**: P0+ 检查学员能力基线。仅当学员处于"从未动笔/写过但写不下去/信心低"状态时全量激活。否则仅加载 N0生成式入口备用。

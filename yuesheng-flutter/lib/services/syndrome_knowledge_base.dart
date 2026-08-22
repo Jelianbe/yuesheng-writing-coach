@@ -19,7 +19,6 @@ part 'syndrome_kb_content_manual_4.dart';
 part 'syndrome_kb_content_manual_5.dart';
 part 'syndrome_kb_content_manual_6.dart';
 
-
 /// 从完整手册中按症候 ID 提取单个症候的完整定义（复刻 RN extractSyndromeSection）
 String _extractSyndromeSection(String raw, String id) {
   final pattern = RegExp('### $id ');

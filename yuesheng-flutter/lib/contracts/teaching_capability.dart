@@ -57,10 +57,7 @@ class L3RetrievalContext {
   final List<String>? activeSyndromeIds;
   final List<String>? focusedTechniqueIds;
 
-  const L3RetrievalContext({
-    this.activeSyndromeIds,
-    this.focusedTechniqueIds,
-  });
+  const L3RetrievalContext({this.activeSyndromeIds, this.focusedTechniqueIds});
 }
 
 /// buildSystemPromptV2 返回的结构化结果

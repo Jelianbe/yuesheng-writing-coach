@@ -170,10 +170,7 @@ class _MessageListState extends ConsumerState<MessageList> {
     }
     context.push(
       AppRoutes.manuscriptDetail,
-      extra: <String, dynamic>{
-        'manuscriptId': ms.id,
-        'title': ms.title,
-      },
+      extra: <String, dynamic>{'manuscriptId': ms.id, 'title': ms.title},
     );
   }
 
@@ -416,7 +413,9 @@ class _MessageListState extends ConsumerState<MessageList> {
                     if (hasThinkingIndicator && index == renderItems.length) {
                       return RepaintBoundary(
                         key: const ValueKey('msg-item-thinking'),
-                        child: ThinkingIndicator(label: widget.streamStageLabel),
+                        child: ThinkingIndicator(
+                          label: widget.streamStageLabel,
+                        ),
                       );
                     }
 
@@ -448,8 +447,8 @@ class _MessageListState extends ConsumerState<MessageList> {
                       onTeachPrinciple: widget.onTeachPrinciple,
                       onDismissEvaluationReport:
                           widget.onDismissEvaluationReport != null
-                              ? () => widget.onDismissEvaluationReport!(msg.id)
-                              : null,
+                          ? () => widget.onDismissEvaluationReport!(msg.id)
+                          : null,
                       // 批次81：三卡回调透传（H1-H3）
                       onContinueTraining: widget.onContinueTraining,
                       onViewProfile: widget.onViewProfile,
@@ -552,7 +551,10 @@ class ThinkingIndicator extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label ?? '正在思考…',
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

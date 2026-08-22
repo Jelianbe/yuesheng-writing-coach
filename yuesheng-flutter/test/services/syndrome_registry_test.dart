@@ -20,8 +20,12 @@ void main() {
       final ids = kSyndromeIds;
       expect(ids.length, kSyndromeRegistry.length);
       for (int i = 0; i < ids.length; i++) {
-        expect(ids[i], 'P${(3 + i).toString().padLeft(3, '0')}',
-            reason: '症候 ID 应连续递增，第 ${i + 1} 个应为 P${(3 + i).toString().padLeft(3, '0')}');
+        expect(
+          ids[i],
+          'P${(3 + i).toString().padLeft(3, '0')}',
+          reason:
+              '症候 ID 应连续递增，第 ${i + 1} 个应为 P${(3 + i).toString().padLeft(3, '0')}',
+        );
       }
     });
 
@@ -37,15 +41,30 @@ void main() {
 
     test('#R3 层级 / 分组 / position 合法', () {
       const validPositions = {
-        'chapter', 'serial', 'global', 'beginning', 'middle', 'end', 'local',
+        'chapter',
+        'serial',
+        'global',
+        'beginning',
+        'middle',
+        'end',
+        'local',
       };
       for (final s in kSyndromeRegistry) {
-        expect(SkillLevel.values.contains(s.level), true,
-            reason: '${s.id} 非法层级');
-        expect(MaxAttemptsGroup.values.contains(s.group), true,
-            reason: '${s.id} 非法 maxAttempts 分组');
-        expect(validPositions.contains(s.position), true,
-            reason: '${s.id} 非法 position: ${s.position}');
+        expect(
+          SkillLevel.values.contains(s.level),
+          true,
+          reason: '${s.id} 非法层级',
+        );
+        expect(
+          MaxAttemptsGroup.values.contains(s.group),
+          true,
+          reason: '${s.id} 非法 maxAttempts 分组',
+        );
+        expect(
+          validPositions.contains(s.position),
+          true,
+          reason: '${s.id} 非法 position: ${s.position}',
+        );
       }
     });
 
@@ -53,8 +72,11 @@ void main() {
       for (final s in kSyndromeRegistry) {
         expect(s.techniques, isNotEmpty, reason: '${s.id} 无推荐技法');
         for (final t in s.techniques) {
-          expect(kTechniqueLibraryContent, contains('### $t '),
-              reason: '${s.id} 引用技法 $t 无完整条目');
+          expect(
+            kTechniqueLibraryContent,
+            contains('### $t '),
+            reason: '${s.id} 引用技法 $t 无完整条目',
+          );
         }
       }
     });
@@ -63,21 +85,31 @@ void main() {
       for (final s in kSyndromeRegistry) {
         expect(s.actions, isNotEmpty, reason: '${s.id} 无推荐动作');
         for (final a in s.actions) {
-          expect(RegExp(r'^A0(0\d|1[0-6])$').hasMatch(a), true,
-              reason: '${s.id} 引用非法动作 $a（应为 A001-A016）');
+          expect(
+            RegExp(r'^A0(0\d|1[0-6])$').hasMatch(a),
+            true,
+            reason: '${s.id} 引用非法动作 $a（应为 A001-A016）',
+          );
         }
       }
     });
 
     test('#R6 派生映射与手写 API 一致（kSyndromeSkillLevels 兼容）', () {
       final derived = kSyndromeSkillLevelsDerived;
-      expect(derived.keys.toSet(), kSyndromeIds.toSet(),
-          reason: '派生层级键集应与注册表 ID 集一致');
+      expect(
+        derived.keys.toSet(),
+        kSyndromeIds.toSet(),
+        reason: '派生层级键集应与注册表 ID 集一致',
+      );
       // 与既有 API 双写一致（kSyndromeSkillLevels 现由注册表派生）
       expect(kSyndromeSkillLevels, derived);
       // skillLevelOf 逐个命中
       for (final s in kSyndromeRegistry) {
-        expect(skillLevelOf(s.id), s.level, reason: 'skillLevelOf(${s.id}) 与注册表不一致');
+        expect(
+          skillLevelOf(s.id),
+          s.level,
+          reason: 'skillLevelOf(${s.id}) 与注册表不一致',
+        );
       }
     });
 
@@ -94,23 +126,29 @@ void main() {
       // 活跃与退役不重叠，且并集 = 全部 ID
       final active = kSyndromeIds.toSet();
       final retired = kRetiredSyndromeIds.toSet();
-      expect(active.intersection(retired), isEmpty,
-          reason: '活跃与退役集合重叠');
-      expect({...active, ...retired}, kAllSyndromeIds.toSet(),
-          reason: '活跃+退役应等于全部 ID 集合');
+      expect(active.intersection(retired), isEmpty, reason: '活跃与退役集合重叠');
+      expect(
+        {...active, ...retired},
+        kAllSyndromeIds.toSet(),
+        reason: '活跃+退役应等于全部 ID 集合',
+      );
 
       // retired=true 必须有退役原因；merged 必须有并入目标且指向活跃症候
       for (final s in kSyndromeRegistry.where((s) => s.retired == true)) {
-        expect(s.retiredReason, isNotNull,
-            reason: '${s.id} retired 但无退役原因');
+        expect(s.retiredReason, isNotNull, reason: '${s.id} retired 但无退役原因');
         if (s.retiredReason == SyndromeRetiredReason.merged) {
-          expect(s.mergedInto, isNotNull,
-              reason: '${s.id} merged 但无并入目标');
-          expect(active.contains(s.mergedInto), true,
-              reason: '${s.id} mergedInto ${s.mergedInto} 非活跃症候');
+          expect(s.mergedInto, isNotNull, reason: '${s.id} merged 但无并入目标');
+          expect(
+            active.contains(s.mergedInto),
+            true,
+            reason: '${s.id} mergedInto ${s.mergedInto} 非活跃症候',
+          );
         } else {
-          expect(s.mergedInto, isNull,
-              reason: '${s.id} 非 merged 不应有 mergedInto');
+          expect(
+            s.mergedInto,
+            isNull,
+            reason: '${s.id} 非 merged 不应有 mergedInto',
+          );
         }
       }
       // 活跃症候不应带退役标记
@@ -121,13 +159,18 @@ void main() {
 
       // 合并映射：value 均为活跃症候；effectiveSyndromeId 归一正确
       for (final entry in kSyndromeMergeMap.entries) {
-        expect(active.contains(entry.value), true,
-            reason: '合并映射 ${entry.key} → ${entry.value} 目标非活跃症候');
-        expect(effectiveSyndromeId(entry.key), entry.value,
-            reason: 'effectiveSyndromeId(${entry.key}) 未归一');
+        expect(
+          active.contains(entry.value),
+          true,
+          reason: '合并映射 ${entry.key} → ${entry.value} 目标非活跃症候',
+        );
+        expect(
+          effectiveSyndromeId(entry.key),
+          entry.value,
+          reason: 'effectiveSyndromeId(${entry.key}) 未归一',
+        );
       }
-      expect(effectiveSyndromeId('P034'), 'P034',
-          reason: '非映射 ID 应原样返回');
+      expect(effectiveSyndromeId('P034'), 'P034', reason: '非映射 ID 应原样返回');
     });
   });
 }

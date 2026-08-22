@@ -153,9 +153,14 @@ void main() {
           .widgetList<Text>(find.byType(Text))
           .map((t) => t.data)
           .toList();
-      expect(texts, defaultPunctuationIds
-          .map((id) => punctuationItems.firstWhere((it) => it.id == id).display)
-          .toList());
+      expect(
+        texts,
+        defaultPunctuationIds
+            .map(
+              (id) => punctuationItems.firstWhere((it) => it.id == id).display,
+            )
+            .toList(),
+      );
     });
 
     testWidgets('批次88-5 customItems 追加渲染（含在可见列表尾部）', (tester) async {

@@ -765,8 +765,11 @@ void main() {
       );
       final row2 = await (db.select(db.activeProblems)).getSingle();
       expect(row2.updatedAt, isNotNull);
-      expect(row2.updatedAt, greaterThanOrEqualTo(row1.updatedAt!),
-          reason: 'UPDATE 时应刷新 updated_at');
+      expect(
+        row2.updatedAt,
+        greaterThanOrEqualTo(row1.updatedAt!),
+        reason: 'UPDATE 时应刷新 updated_at',
+      );
 
       // 解决后 updated_at 同步（resolveSyndromesBatch）
       await diagRepo.resolveSyndromesBatch(sessionId, ['P001']);
@@ -785,7 +788,9 @@ void main() {
 
     setUp(() async {
       outlineRepo = OutlineRepository(db);
-      manuscriptId = await ManuscriptRepository(db).createManuscript(title: '大纲流转稿');
+      manuscriptId = await ManuscriptRepository(
+        db,
+      ).createManuscript(title: '大纲流转稿');
     });
 
     Future<String> seedPending({
@@ -808,26 +813,25 @@ void main() {
       );
     }
 
-    test('A5-1 approveImpression（新实体）→ 印象 active + 实体 pending→active',
-        () async {
-      final impId = await seedPending(
-        entityKey: '王建国',
-        impression: '攥紧拳头，是来复仇的',
-      );
+    test(
+      'A5-1 approveImpression（新实体）→ 印象 active + 实体 pending→active',
+      () async {
+        final impId = await seedPending(
+          entityKey: '王建国',
+          impression: '攥紧拳头，是来复仇的',
+        );
 
-      await outlineRepo.approveImpression(impId);
+        await outlineRepo.approveImpression(impId);
 
-      final imp = await outlineRepo.getImpressionById(impId);
-      expect(imp!.status, 'active');
-      final ent = (await outlineRepo.listEntities(manuscriptId)).single;
-      expect(ent.status, 'active', reason: '接受首条印象时实体也应转正');
-    });
+        final imp = await outlineRepo.getImpressionById(impId);
+        expect(imp!.status, 'active');
+        final ent = (await outlineRepo.listEntities(manuscriptId)).single;
+        expect(ent.status, 'active', reason: '接受首条印象时实体也应转正');
+      },
+    );
 
     test('A5-2 rejectImpression → 印象 rejected，实体仍 pending', () async {
-      final impId = await seedPending(
-        entityKey: '王叔',
-        impression: '左眼有一道刀疤',
-      );
+      final impId = await seedPending(entityKey: '王叔', impression: '左眼有一道刀疤');
 
       await outlineRepo.rejectImpression(impId);
 
@@ -837,40 +841,48 @@ void main() {
       expect(ent.status, 'pending', reason: '没有被接受的印象，实体不应转正');
     });
 
-    test('A5-3 approveImpression 带 conflict_with → 旧印象置 superseded（二选一）',
-        () async {
-      // 先建旧 active 印象（模拟第一轮 accept 过）
-      await outlineRepo.insertEntity(
-        manuscriptId: manuscriptId,
-        entityType: 'character',
-        entityKey: '林小芸',
-      );
-      final ent = (await outlineRepo.listEntities(manuscriptId)).single;
-      // 手动 approve 旧印象（实体也 active）
-      final oldImpId = await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '在二楼远远观望巷口',
-      );
-      await outlineRepo.approveImpression(oldImpId);
-      expect((await outlineRepo.getImpressionById(oldImpId))!.status, 'active');
-      expect((await outlineRepo.getEntityById(ent.id))!.status, 'active');
+    test(
+      'A5-3 approveImpression 带 conflict_with → 旧印象置 superseded（二选一）',
+      () async {
+        // 先建旧 active 印象（模拟第一轮 accept 过）
+        await outlineRepo.insertEntity(
+          manuscriptId: manuscriptId,
+          entityType: 'character',
+          entityKey: '林小芸',
+        );
+        final ent = (await outlineRepo.listEntities(manuscriptId)).single;
+        // 手动 approve 旧印象（实体也 active）
+        final oldImpId = await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '在二楼远远观望巷口',
+        );
+        await outlineRepo.approveImpression(oldImpId);
+        expect(
+          (await outlineRepo.getImpressionById(oldImpId))!.status,
+          'active',
+        );
+        expect((await outlineRepo.getEntityById(ent.id))!.status, 'active');
 
-      // 第二轮产出新印象，冲突旧印象
-      final newImpId = await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '冲下二楼与王建国并肩对峙',
-        conflictWith: oldImpId,
-      );
+        // 第二轮产出新印象，冲突旧印象
+        final newImpId = await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '冲下二楼与王建国并肩对峙',
+          conflictWith: oldImpId,
+        );
 
-      await outlineRepo.approveImpression(newImpId);
+        await outlineRepo.approveImpression(newImpId);
 
-      final oldImp = await outlineRepo.getImpressionById(oldImpId);
-      final newImp = await outlineRepo.getImpressionById(newImpId);
-      expect(newImp!.status, 'active', reason: '新印象被接受');
-      expect(oldImp!.status, 'superseded',
-          reason: '冲突的旧印象应置 superseded（二选一）');
-      expect((await outlineRepo.getEntityById(ent.id))!.status, 'active');
-    });
+        final oldImp = await outlineRepo.getImpressionById(oldImpId);
+        final newImp = await outlineRepo.getImpressionById(newImpId);
+        expect(newImp!.status, 'active', reason: '新印象被接受');
+        expect(
+          oldImp!.status,
+          'superseded',
+          reason: '冲突的旧印象应置 superseded（二选一）',
+        );
+        expect((await outlineRepo.getEntityById(ent.id))!.status, 'active');
+      },
+    );
 
     test('A5-4 reject 冲突印象 → 旧印象保留（不做二选一清退）', () async {
       await outlineRepo.insertEntity(
@@ -899,73 +911,68 @@ void main() {
       expect(oldImp!.status, 'active', reason: '拒绝新认知 → 旧认知保留');
     });
 
-    test('A5-5 buildEntityIndexContext 只回显 active 印象（过滤 pending/rejected/superseded）',
-        () async {
-      // 建稿 + 章节（outlineService 组装索引时按章查稿）
-      final chapterRepo = ChapterRepository(db);
-      await chapterRepo.createChapter(
-        manuscriptId,
-        title: '第一章',
-        content: '...',
-      );
-      final outlineService = OutlineService(outlineRepo);
+    test(
+      'A5-5 buildEntityIndexContext 只回显 active 印象（过滤 pending/rejected/superseded）',
+      () async {
+        // 建稿 + 章节（outlineService 组装索引时按章查稿）
+        final chapterRepo = ChapterRepository(db);
+        await chapterRepo.createChapter(
+          manuscriptId,
+          title: '第一章',
+          content: '...',
+        );
+        final outlineService = OutlineService(outlineRepo);
 
-      // 林小芸：active / pending / rejected / superseded 各一条
-      await outlineRepo.insertEntity(
-        manuscriptId: manuscriptId,
-        entityType: 'character',
-        entityKey: '林小芸',
-      );
-      final ent = (await outlineRepo.listEntities(manuscriptId)).single;
-      final activeId = await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '握银色小手枪',
-      );
-      await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '先松后紧',
-      );
-      final rejectedId = await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '冷眼旁观',
-      );
-      // 先 approve 一条再标 superseded，模拟被新认知替代
-      final supersededId = await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '在二楼观望',
-      );
-      await outlineRepo.approveImpression(activeId);
-      await outlineRepo.approveImpression(supersededId);
-      // 用冲突 approve 方式把 supersededId 推成 superseded（再建新印象冲突它）
-      final newerId = await outlineRepo.insertImpression(
-        entityId: ent.id,
-        impression: '站在王建国身边',
-        conflictWith: supersededId,
-      );
-      await outlineRepo.approveImpression(newerId);
-      // 手动拒绝一条
-      await outlineRepo.rejectImpression(rejectedId);
+        // 林小芸：active / pending / rejected / superseded 各一条
+        await outlineRepo.insertEntity(
+          manuscriptId: manuscriptId,
+          entityType: 'character',
+          entityKey: '林小芸',
+        );
+        final ent = (await outlineRepo.listEntities(manuscriptId)).single;
+        final activeId = await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '握银色小手枪',
+        );
+        await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '先松后紧',
+        );
+        final rejectedId = await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '冷眼旁观',
+        );
+        // 先 approve 一条再标 superseded，模拟被新认知替代
+        final supersededId = await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '在二楼观望',
+        );
+        await outlineRepo.approveImpression(activeId);
+        await outlineRepo.approveImpression(supersededId);
+        // 用冲突 approve 方式把 supersededId 推成 superseded（再建新印象冲突它）
+        final newerId = await outlineRepo.insertImpression(
+          entityId: ent.id,
+          impression: '站在王建国身边',
+          conflictWith: supersededId,
+        );
+        await outlineRepo.approveImpression(newerId);
+        // 手动拒绝一条
+        await outlineRepo.rejectImpression(rejectedId);
 
-      // 调用 buildEntityIndexContext，验证回显过滤
-      final ctx = await outlineService.buildEntityIndexContext(manuscriptId);
-      expect(ctx, isNotNull, reason: '应有 active 印象产出索引行');
-      expect(ctx, contains('林小芸'));
-      expect(ctx, contains('握银色小手枪'), reason: 'active 印象必须回显');
-      expect(ctx, contains('站在王建国身边'), reason: '新 active 印象必须回显');
-      expect(ctx!.contains('先松后紧'), false,
-          reason: 'pending 印象不应泄漏给索引上下文');
-      expect(ctx.contains('冷眼旁观'), false,
-          reason: 'rejected 印象不应泄漏给索引上下文');
-      expect(ctx.contains('在二楼观望'), false,
-          reason: 'superseded 印象不应再回显');
-    });
+        // 调用 buildEntityIndexContext，验证回显过滤
+        final ctx = await outlineService.buildEntityIndexContext(manuscriptId);
+        expect(ctx, isNotNull, reason: '应有 active 印象产出索引行');
+        expect(ctx, contains('林小芸'));
+        expect(ctx, contains('握银色小手枪'), reason: 'active 印象必须回显');
+        expect(ctx, contains('站在王建国身边'), reason: '新 active 印象必须回显');
+        expect(ctx!.contains('先松后紧'), false, reason: 'pending 印象不应泄漏给索引上下文');
+        expect(ctx.contains('冷眼旁观'), false, reason: 'rejected 印象不应泄漏给索引上下文');
+        expect(ctx.contains('在二楼观望'), false, reason: 'superseded 印象不应再回显');
+      },
+    );
 
-    test('B5-1 批次5（5.2）：approveImpression 非 pending 印象不覆盖（防陈旧确认卡）',
-        () async {
-      final impId = await seedPending(
-        entityKey: '老张',
-        impression: '年轻时是个镖师',
-      );
+    test('B5-1 批次5（5.2）：approveImpression 非 pending 印象不覆盖（防陈旧确认卡）', () async {
+      final impId = await seedPending(entityKey: '老张', impression: '年轻时是个镖师');
       // 先清理为 expired（负窗口 → 立即全部过期，模拟超时清理后陈旧确认卡仍存在）
       await outlineRepo.cleanupPendingImpressions(maxAgeDays: -1);
       expect((await outlineRepo.getImpressionById(impId))!.status, 'expired');
@@ -975,14 +982,12 @@ void main() {
       expect((await outlineRepo.getImpressionById(impId))!.status, 'expired');
     });
 
-    test('B5-2 批次5（5.2）：cleanupPendingImpressions 清理超时 + 归档作品来源',
-        () async {
-      final impId = await seedPending(
-        entityKey: '赵四',
-        impression: '爱抽旱烟',
-      );
+    test('B5-2 批次5（5.2）：cleanupPendingImpressions 清理超时 + 归档作品来源', () async {
+      final impId = await seedPending(entityKey: '赵四', impression: '爱抽旱烟');
       // 超时清理（负窗口 → 全部 pending 过期）
-      final cleaned = await outlineRepo.cleanupPendingImpressions(maxAgeDays: -1);
+      final cleaned = await outlineRepo.cleanupPendingImpressions(
+        maxAgeDays: -1,
+      );
       expect(cleaned, greaterThanOrEqualTo(1));
       expect((await outlineRepo.getImpressionById(impId))!.status, 'expired');
 
@@ -1015,8 +1020,9 @@ void main() {
         entityType: 'character',
         entityKey: '钱五',
       );
-      final ent = (await outlineRepo.listEntities(manuscriptId))
-          .lastWhere((e) => e.entityKey == '钱五');
+      final ent = (await outlineRepo.listEntities(
+        manuscriptId,
+      )).lastWhere((e) => e.entityKey == '钱五');
       final oldId = await outlineRepo.insertImpression(
         entityId: ent.id,
         impression: '沉默寡言',
@@ -1036,10 +1042,16 @@ void main() {
       // 拒绝 A1 → A1 与 A2（同冲突指向）一并 rejected，旧印象 B 保持 active
       await outlineRepo.rejectImpression(a1);
       expect((await outlineRepo.getImpressionById(a1))!.status, 'rejected');
-      expect((await outlineRepo.getImpressionById(a2))!.status, 'rejected',
-          reason: '同冲突指向的其它 pending 应批量拒绝');
-      expect((await outlineRepo.getImpressionById(oldId))!.status, 'active',
-          reason: '拒绝即保留旧认知');
+      expect(
+        (await outlineRepo.getImpressionById(a2))!.status,
+        'rejected',
+        reason: '同冲突指向的其它 pending 应批量拒绝',
+      );
+      expect(
+        (await outlineRepo.getImpressionById(oldId))!.status,
+        'active',
+        reason: '拒绝即保留旧认知',
+      );
     });
   });
 
@@ -1107,13 +1119,14 @@ void main() {
       expect(state!.attitudeLevel, 'sensei');
     });
 
-    test('A2 persistAttitude（无 teaching_state 行 → Upsert 自动建行+双写一致）',
-        () async {
+    test('A2 persistAttitude（无 teaching_state 行 → Upsert 自动建行+双写一致）', () async {
       // 不走 createBlankSession，直接插入 session 行，不建 teaching_state
       final dbObj = db;
       final sessionId = generateUuid();
       final now = nowSec();
-      await dbObj.into(dbObj.sessions).insert(
+      await dbObj
+          .into(dbObj.sessions)
+          .insert(
             SessionsCompanion.insert(
               id: sessionId,
               title: const Value('孤行 session'),
@@ -1123,10 +1136,9 @@ void main() {
               updatedAt: Value(now),
             ),
           );
-      final preState =
-          await (dbObj.select(dbObj.teachingState)
-                ..where((t) => t.sessionId.equals(sessionId)))
-              .getSingleOrNull();
+      final preState = await (dbObj.select(
+        dbObj.teachingState,
+      )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
       expect(preState, isNull, reason: '前置：该 session 未建 teaching_state 行');
 
       final tsRepo = TeachingStateRepository(dbObj);
@@ -1137,39 +1149,47 @@ void main() {
       expect(state!.attitudeLevel, 'doubao');
       expect(state.currentPhase, 'P0_ENGAGE', reason: '默认值回退为 P0_ENGAGE');
 
-      final model = await (dbObj.select(dbObj.studentModels)
-            ..where((t) => t.sessionId.equals(sessionId)))
-          .getSingleOrNull();
+      final model = await (dbObj.select(
+        dbObj.studentModels,
+      )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
       expect(model, isNotNull);
-      expect(model!.attitudePreference, 'doubao', reason: '双写：student_model 一致');
+      expect(
+        model!.attitudePreference,
+        'doubao',
+        reason: '双写：student_model 一致',
+      );
     });
 
-    test('A2 updatePhase/updateBeginnerLevel/updateSubphase（无行时自动建行）',
-        () async {
-      final dbObj = db;
-      final sessionId = generateUuid();
-      await dbObj.into(dbObj.sessions).insert(
-            SessionsCompanion.insert(
-              id: sessionId,
-              title: const Value('孤行 session2'),
-              preview: const Value(''),
-              diagnosisSummary: const Value('{}'),
-              createdAt: Value(nowSec()),
-              updatedAt: Value(nowSec()),
-            ),
-          );
+    test(
+      'A2 updatePhase/updateBeginnerLevel/updateSubphase（无行时自动建行）',
+      () async {
+        final dbObj = db;
+        final sessionId = generateUuid();
+        await dbObj
+            .into(dbObj.sessions)
+            .insert(
+              SessionsCompanion.insert(
+                id: sessionId,
+                title: const Value('孤行 session2'),
+                preview: const Value(''),
+                diagnosisSummary: const Value('{}'),
+                createdAt: Value(nowSec()),
+                updatedAt: Value(nowSec()),
+              ),
+            );
 
-      final tsRepo = TeachingStateRepository(dbObj);
-      await tsRepo.updatePhase(sessionId, 'P1_WORLD');
-      await tsRepo.updateBeginnerLevel(sessionId, 'N2_SCENE');
-      await tsRepo.updateSubphase(sessionId, 'showing_syndrome');
+        final tsRepo = TeachingStateRepository(dbObj);
+        await tsRepo.updatePhase(sessionId, 'P1_WORLD');
+        await tsRepo.updateBeginnerLevel(sessionId, 'N2_SCENE');
+        await tsRepo.updateSubphase(sessionId, 'showing_syndrome');
 
-      final state = await tsRepo.getTeachingState(sessionId);
-      expect(state, isNotNull);
-      expect(state!.currentPhase, 'P1_WORLD');
-      expect(state.beginnerLevel, 'N2_SCENE');
-      expect(state.currentSubphase, 'showing_syndrome');
-    });
+        final state = await tsRepo.getTeachingState(sessionId);
+        expect(state, isNotNull);
+        expect(state!.currentPhase, 'P1_WORLD');
+        expect(state.beginnerLevel, 'N2_SCENE');
+        expect(state.currentSubphase, 'showing_syndrome');
+      },
+    );
   });
 
   // ════════════════════════════════════════════════════════════
@@ -1363,12 +1383,21 @@ void main() {
 
       final deleted = await sesRepo.deleteOrphanSessions();
       expect(deleted, 1);
-      expect(await appRepo.getValue('eval_round:$orphanId'), isNull,
-          reason: '孤儿会话的 eval_round 键应随会话删除');
-      expect(await appRepo.listEvaluationReports(orphanId), isEmpty,
-          reason: '孤儿会话的 eval_report 键应随会话删除');
-      expect(await appRepo.getValue('eval_round:$aliveId'), '2',
-          reason: '非孤儿会话的键不受影响');
+      expect(
+        await appRepo.getValue('eval_round:$orphanId'),
+        isNull,
+        reason: '孤儿会话的 eval_round 键应随会话删除',
+      );
+      expect(
+        await appRepo.listEvaluationReports(orphanId),
+        isEmpty,
+        reason: '孤儿会话的 eval_report 键应随会话删除',
+      );
+      expect(
+        await appRepo.getValue('eval_round:$aliveId'),
+        '2',
+        reason: '非孤儿会话的键不受影响',
+      );
     });
   });
 

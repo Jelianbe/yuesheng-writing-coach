@@ -56,12 +56,12 @@ extension _ManuscriptDetailExport on _ManuscriptDetailPageState {
     if (format == null || !mounted || ms == null) return;
     try {
       final db = ref.read(appDatabaseProvider);
-      final chapters = await ChapterRepository(db).listChapters(
-        widget.args.manuscriptId,
-      );
-      final volumes = await VolumeRepository(db).listVolumes(
-        widget.args.manuscriptId,
-      );
+      final chapters = await ChapterRepository(
+        db,
+      ).listChapters(widget.args.manuscriptId);
+      final volumes = await VolumeRepository(
+        db,
+      ).listVolumes(widget.args.manuscriptId);
       final text = buildManuscriptExportText(
         ms,
         volumes,
@@ -70,11 +70,7 @@ extension _ManuscriptDetailExport on _ManuscriptDetailPageState {
       );
       final fileName = exportFileName('${ms.title}_整书', format);
       _snack('正在导出《${ms.title}》…');
-      await shareTextExport(
-        text: text,
-        fileName: fileName,
-        subject: ms.title,
-      );
+      await shareTextExport(text: text, fileName: fileName, subject: ms.title);
     } catch (e) {
       debugPrint('[ManuscriptDetail] 整书导出失败: $e');
       if (!mounted) return;
@@ -107,9 +103,9 @@ extension _ManuscriptDetailExport on _ManuscriptDetailPageState {
     if (format == null || !mounted) return;
     try {
       final db = ref.read(appDatabaseProvider);
-      final all = await ChapterRepository(db).listChapters(
-        widget.args.manuscriptId,
-      );
+      final all = await ChapterRepository(
+        db,
+      ).listChapters(widget.args.manuscriptId);
       final chapters = all.where((c) => c.volumeId == volume.id).toList();
       final text = buildVolumeExportText(volume, chapters, format: format);
       final ms = _manuscript;

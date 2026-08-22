@@ -66,8 +66,11 @@ String extractParagraphWindow(String content, int startPara, int endPara) {
 ParagraphAnchor? _parseParagraphAnchorImpl(String? json) =>
     parseParagraphAnchor(json);
 
-String _extractParagraphWindowImpl(String content, int startPara, int endPara) =>
-    extractParagraphWindow(content, startPara, endPara);
+String _extractParagraphWindowImpl(
+  String content,
+  int startPara,
+  int endPara,
+) => extractParagraphWindow(content, startPara, endPara);
 
 class MaterialCapabilityImpl implements MaterialCapability {
   const MaterialCapabilityImpl();
@@ -193,10 +196,18 @@ String buildReferencesContext(
         parts.add('### $tag 章节：${ref.title}（${chapter.wordCount}字）');
         // A-3：主引用带段落锚点 → 优先展开锚点窗口（替代整章）；无锚点则全章截断
         final anchor = parseParagraphAnchor(ref.excerptRange);
-        if (ref.isPrimary == 1 && anchor != null && anchor.chapterId == ref.refId) {
+        if (ref.isPrimary == 1 &&
+            anchor != null &&
+            anchor.chapterId == ref.refId) {
           parts.add('【选段诊断】以下为主引用章节中的选中片段（段落锚点截取）');
           parts.add('```');
-          parts.add(extractParagraphWindow(chapter.content, anchor.startPara, anchor.endPara));
+          parts.add(
+            extractParagraphWindow(
+              chapter.content,
+              anchor.startPara,
+              anchor.endPara,
+            ),
+          );
           parts.add('```');
           parts.add('');
         } else {

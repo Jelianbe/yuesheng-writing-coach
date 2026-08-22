@@ -24,10 +24,14 @@ void main() {
     final hit = d.syndromes
         .where((s) => s.syndromeId == 'P006' && s.severity == Severity.l2)
         .toList();
-    print('[诊断] 命中症候: '
-        '${d.syndromes.map((s) => "${s.syndromeId}/${s.severity}").join(", ")}');
-    print('[诊断] confidence=${d.confidence}  '
-        'suggested_actions=${d.suggestedActions.length}');
+    print(
+      '[诊断] 命中症候: '
+      '${d.syndromes.map((s) => "${s.syndromeId}/${s.severity}").join(", ")}',
+    );
+    print(
+      '[诊断] confidence=${d.confidence}  '
+      'suggested_actions=${d.suggestedActions.length}',
+    );
     expect(hit, isNotEmpty, reason: '应命中 P006 L2（ground truth）');
 
     // ── 教学层 ──
@@ -39,16 +43,24 @@ void main() {
     print('[教学] natural_language=${t.naturalLanguage}');
     print('[教学] location_marks=${t.locationMarks}');
     final cons = checkTeacherConsistency(t);
-    print('[教学] consistency.passed=${cons.passed}  '
-        'violations=${cons.violations.map((v) => "${v.severity}:${v.rule}").join(", ")}');
+    print(
+      '[教学] consistency.passed=${cons.passed}  '
+      'violations=${cons.violations.map((v) => "${v.severity}:${v.rule}").join(", ")}',
+    );
 
     // 硬约束断言（教练不是评判器）
-    expect(cons.passed, isTrue,
-        reason: '一致性应通过：无判决词/无P0xx泄漏/guide-train必带task');
+    expect(
+      cons.passed,
+      isTrue,
+      reason: '一致性应通过：无判决词/无P0xx泄漏/guide-train必带task',
+    );
     expect(t.teachingDecision, equals('train'), reason: 'L2 症候 → train');
     expect(t.trainingTask, isNotNull, reason: 'train 必带 training_task');
     expect(t.trainingTask!.taskType, equals('rewrite'));
-    expect(RegExp(r'P0\d{2}').hasMatch(t.naturalLanguage), isFalse,
-        reason: 'natural_language 不得泄漏症候ID');
+    expect(
+      RegExp(r'P0\d{2}').hasMatch(t.naturalLanguage),
+      isFalse,
+      reason: 'natural_language 不得泄漏症候ID',
+    );
   });
 }

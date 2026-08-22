@@ -82,7 +82,10 @@ void main() {
 
   /// 批次92-3：带 GoRouter 的最小详情页（新建章节成功后需 push 写作页）
   /// /writing/:chapterId 用 Marker 占位（断言「创建后立即跳写作页」）
-  Future<void> pumpDetailWithRouter(WidgetTester tester, {String? title}) async {
+  Future<void> pumpDetailWithRouter(
+    WidgetTester tester, {
+    String? title,
+  }) async {
     final router = GoRouter(
       initialLocation: '/detail',
       routes: [
@@ -97,9 +100,8 @@ void main() {
         ),
         GoRoute(
           path: '/writing/:chapterId',
-          builder: (context, state) => const SizedBox(
-            key: Key('writing-marker'),
-          ),
+          builder: (context, state) =>
+              const SizedBox(key: Key('writing-marker')),
         ),
       ],
     );
@@ -143,11 +145,13 @@ void main() {
       expect(find.textContaining('字'), findsWidgets);
       // 批次90：序号色块已移除 → 不再有纯数字 1/2 的节点
       expect(
-        find.byWidgetPredicate((w) =>
-            w is Container &&
-            w.constraints?.maxWidth == 36 &&
-            w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).color != null),
+        find.byWidgetPredicate(
+          (w) =>
+              w is Container &&
+              w.constraints?.maxWidth == 36 &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color != null,
+        ),
         findsNothing,
       );
     });
@@ -355,10 +359,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 二次确认弹窗（批次59：对齐真实软删语义）
-      expect(
-        find.text('确定删除《测试作品》吗？删除后将不再显示，章节和诊断记录会保留。'),
-        findsOneWidget,
-      );
+      expect(find.text('确定删除《测试作品》吗？删除后将不再显示，章节和诊断记录会保留。'), findsOneWidget);
       await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
 
@@ -814,14 +815,15 @@ void main() {
   });
 
   group('批次92：详情页卷分组闭环', () {
-    testWidgets('#92-1 有卷 → 卷分组渲染（卷头 + 卷内章 + 未分卷组 + 卷总字数）', (
-      tester,
-    ) async {
+    testWidgets('#92-1 有卷 → 卷分组渲染（卷头 + 卷内章 + 未分卷组 + 卷总字数）', (tester) async {
       final vRepo = VolumeRepository(db);
       final vid = await vRepo.createVolume(manuscriptId, title: '第一卷');
-      await ChapterRepository(
-        db,
-      ).createChapter(manuscriptId, title: '卷一之章', content: '字' * 50, volumeId: vid);
+      await ChapterRepository(db).createChapter(
+        manuscriptId,
+        title: '卷一之章',
+        content: '字' * 50,
+        volumeId: vid,
+      );
       await ChapterRepository(db).createChapter(manuscriptId, title: '散章');
 
       await tester.pumpWidget(buildDetailPage());
@@ -838,7 +840,9 @@ void main() {
       expect(find.text('50字'), findsNWidgets(2));
       // 卷头吸顶（批次92-5：SliverPersistentHeader pinned）
       final headers = tester
-          .widgetList<SliverPersistentHeader>(find.byType(SliverPersistentHeader))
+          .widgetList<SliverPersistentHeader>(
+            find.byType(SliverPersistentHeader),
+          )
           .toList();
       expect(headers, isNotEmpty);
       expect(headers.first.pinned, isTrue);
@@ -964,9 +968,7 @@ void main() {
       expect(find.text('删除项目'), findsOneWidget);
     });
 
-    testWidgets('#94-1 点「导出整书」→ 弹出「导出为」格式选择（TXT/Markdown）', (
-      tester,
-    ) async {
+    testWidgets('#94-1 点「导出整书」→ 弹出「导出为」格式选择（TXT/Markdown）', (tester) async {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
@@ -981,11 +983,9 @@ void main() {
     });
 
     testWidgets('#94-1 长按章节 → 操作菜单出现「导出本章」', (tester) async {
-      await ChapterRepository(db).createChapter(
-        manuscriptId,
-        title: '第一章：启程',
-        content: '正文',
-      );
+      await ChapterRepository(
+        db,
+      ).createChapter(manuscriptId, title: '第一章：启程', content: '正文');
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
@@ -998,12 +998,9 @@ void main() {
     testWidgets('#94-1 长按卷头 → 操作菜单出现「导出本卷」', (tester) async {
       final volRepo = VolumeRepository(db);
       final v1 = await volRepo.createVolume(manuscriptId, title: '第一卷');
-      await ChapterRepository(db).createChapter(
-        manuscriptId,
-        title: '第一章',
-        content: '正文',
-        volumeId: v1,
-      );
+      await ChapterRepository(
+        db,
+      ).createChapter(manuscriptId, title: '第一章', content: '正文', volumeId: v1);
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
@@ -1025,9 +1022,7 @@ void main() {
       expect(find.text('回收站'), findsOneWidget);
     });
 
-    testWidgets('#94-2 软删章节 → 列表消失 + 进回收站（DB status=archived）', (
-      tester,
-    ) async {
+    testWidgets('#94-2 软删章节 → 列表消失 + 进回收站（DB status=archived）', (tester) async {
       final repo = ChapterRepository(db);
       await repo.createChapter(manuscriptId, title: '软删章');
       await repo.createChapter(manuscriptId, title: '保留章');
@@ -1361,8 +1356,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final chs = await cRepo.listChapters(manuscriptId);
-      final existingOrder =
-          chs.firstWhere((c) => c.id == existing).sortOrder;
+      final existingOrder = chs.firstWhere((c) => c.id == existing).sortOrder;
       final movingOrder = chs.firstWhere((c) => c.id == moving).sortOrder;
       expect(movingOrder, greaterThan(existingOrder));
     });
@@ -1370,16 +1364,17 @@ void main() {
 
   group('批次96-2：列表级新建章节入口 + 卷折叠持久化', () {
     testWidgets('#96-2 无卷有章节 → 列表末尾显示「新建章节」行', (tester) async {
-      await ChapterRepository(
-        db,
-      ).createChapter(manuscriptId, title: '第一章');
+      await ChapterRepository(db).createChapter(manuscriptId, title: '第一章');
 
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
       expect(find.text('第一章'), findsOneWidget);
       // 列表末尾「新建章节」行（无卷 → 未分卷）
-      expect(find.byKey(const ValueKey('new-chapter-row-unassigned')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('new-chapter-row-unassigned')),
+        findsOneWidget,
+      );
       expect(find.text('新建章节'), findsOneWidget);
     });
 

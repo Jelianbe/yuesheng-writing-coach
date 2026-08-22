@@ -55,7 +55,8 @@ class _ProtocolLlmClient extends LlmClient {
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
   }) async {
-    const body = '王建国这个人物目前的塑造偏单薄，情绪表达直接。\n'
+    const body =
+        '王建国这个人物目前的塑造偏单薄，情绪表达直接。\n'
         '[YS_DIAGNOSIS]\n'
         '{"syndromes":[{"syndrome_id":"P001","name":"情绪标签化","severity":"L2",'
         '"evidence":["王建国很生气"],"explanation":"情绪直接点破，未转化为动作"}],'
@@ -161,9 +162,7 @@ void main() {
   }
 
   group('UI 端到端：确认卡对话流全链路', () {
-    testWidgets('E2E-1 发送 → 确认卡渲染 → 点「接受」→ 落库 active + 卡片收起', (
-      tester,
-    ) async {
+    testWidgets('E2E-1 发送 → 确认卡渲染 → 点「接受」→ 落库 active + 卡片收起', (tester) async {
       await seedSessionWithChapter();
       await pumpChatPage(tester);
 
@@ -193,9 +192,7 @@ void main() {
       expect(find.text('拒绝'), findsNothing);
     });
 
-    testWidgets('E2E-2 发送 → 确认卡渲染 → 点「拒绝」→ 落库 rejected + 卡片收起', (
-      tester,
-    ) async {
+    testWidgets('E2E-2 发送 → 确认卡渲染 → 点「拒绝」→ 落库 rejected + 卡片收起', (tester) async {
       await seedSessionWithChapter();
       await pumpChatPage(tester);
 

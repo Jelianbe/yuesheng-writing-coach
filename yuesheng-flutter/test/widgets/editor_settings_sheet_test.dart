@@ -71,9 +71,7 @@ void main() {
       find.ancestor(of: find.text('。'), matching: find.byType(Row)).first;
 
   group('批次86-②：自定义工具栏（标点栏配置节）', () {
-    testWidgets('#86-2 打开排版设置 → 标点栏配置节渲染 15 个可见标点', (
-      tester,
-    ) async {
+    testWidgets('#86-2 打开排版设置 → 标点栏配置节渲染 15 个可见标点', (tester) async {
       await pumpSheet(tester);
 
       await reveal(tester, find.text('标点栏'));
@@ -115,7 +113,10 @@ void main() {
 
       await reveal(tester, periodRow());
       await tester.tap(
-        find.descendant(of: periodRow(), matching: find.byIcon(Icons.arrow_upward)),
+        find.descendant(
+          of: periodRow(),
+          matching: find.byIcon(Icons.arrow_upward),
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -205,9 +206,7 @@ void main() {
   });
 
   group('批次88-5：标点栏自定义增删', () {
-    testWidgets('#88-5 添加自定义标点 → 列表出现 + 落库（custom + 可见列表）', (
-      tester,
-    ) async {
+    testWidgets('#88-5 添加自定义标点 → 列表出现 + 落库（custom + 可见列表）', (tester) async {
       await pumpSheet(tester);
 
       await reveal(tester, find.text('添加标点'));
@@ -248,14 +247,10 @@ void main() {
 
     testWidgets('#88-5 删除自定义标点 → 行移除 + 落库清空', (tester) async {
       final repo = AppStateRepository(db);
-      await repo.setPunctuationCustomItems(
-        const [PunctuationItem('custom_01', '『', '『')],
-      );
-      await repo.setPunctuationBarConfig([
-        'comma',
-        'period',
-        'custom_01',
+      await repo.setPunctuationCustomItems(const [
+        PunctuationItem('custom_01', '『', '『'),
       ]);
+      await repo.setPunctuationBarConfig(['comma', 'period', 'custom_01']);
 
       await pumpSheet(tester);
 
@@ -278,9 +273,9 @@ void main() {
 
     testWidgets('#88-5 恢复默认 → 清空自定义项', (tester) async {
       final repo = AppStateRepository(db);
-      await repo.setPunctuationCustomItems(
-        const [PunctuationItem('custom_01', '『', '『')],
-      );
+      await repo.setPunctuationCustomItems(const [
+        PunctuationItem('custom_01', '『', '『'),
+      ]);
       await repo.setPunctuationBarConfig(['comma', 'custom_01']);
 
       await pumpSheet(tester);
@@ -311,10 +306,7 @@ void main() {
         find.widgetWithText(SwitchListTile, '行段聚焦'),
       );
       expect(sw2.value, isTrue);
-      expect(
-        await AppStateRepository(db).getValue('editor_focus_mode'),
-        '1',
-      );
+      expect(await AppStateRepository(db).getValue('editor_focus_mode'), '1');
     });
 
     testWidgets('#96-9 智能标点开关：默认开 → 点击关闭 + 落库', (tester) async {

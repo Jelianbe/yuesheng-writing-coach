@@ -92,10 +92,7 @@ void main() {
 
   group('tags 落库读写（批次94-5）', () {
     test('#5 createManuscript(tags:) → 读回一致', () async {
-      final id = await repo.createManuscript(
-        title: '测试稿',
-        tags: ['重生', '系统'],
-      );
+      final id = await repo.createManuscript(title: '测试稿', tags: ['重生', '系统']);
       final m = await repo.getManuscript(id);
       expect(ManuscriptRepository.parseTags(m!), ['重生', '系统']);
     });
@@ -108,10 +105,7 @@ void main() {
     });
 
     test('#7 未传 tags 的 update 不清空既有 tags', () async {
-      final id = await repo.createManuscript(
-        title: '测试稿',
-        tags: ['甜宠'],
-      );
+      final id = await repo.createManuscript(title: '测试稿', tags: ['甜宠']);
       await repo.updateManuscript(id, title: '改名');
       final m = await repo.getManuscript(id);
       expect(ManuscriptRepository.parseTags(m!), ['甜宠']);

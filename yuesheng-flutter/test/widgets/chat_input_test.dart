@@ -247,10 +247,7 @@ void main() {
       );
 
       final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(
-        textField.decoration?.hintText,
-        '描述你遇到的写作问题…输入 @ 引用作品',
-      );
+      expect(textField.decoration?.hintText, '描述你遇到的写作问题…输入 @ 引用作品');
     });
 
     testWidgets('默认 entryPoint → 全局占位符「和月笙聊聊…输入 @ 引用作品」', (tester) async {

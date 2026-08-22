@@ -243,7 +243,6 @@ const Skill _writerPsychology = Skill(
 **注意**: 建议休息 ≠ 放弃。要给学员明确的"我们会回来"的信号。''',
 );
 
-
 const Skill _coachingRhythm = Skill(
   meta: SkillMeta(
     id: 'coaching-rhythm',
@@ -252,7 +251,6 @@ const Skill _coachingRhythm = Skill(
   ),
   content: _coachingRhythmBody1 + _coachingRhythmBody2,
 );
-
 
 const Skill _narrativeDesign = Skill(
   meta: SkillMeta(

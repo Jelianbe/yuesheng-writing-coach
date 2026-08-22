@@ -8,16 +8,16 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/utils/chapter_title.dart';
 
 Chapter _chapter(String title) => Chapter(
-      id: 'id-$title',
-      manuscriptId: 'ms',
-      title: title,
-      content: '',
-      wordCount: 0,
-      sortOrder: 0,
-      status: 'draft',
-      createdAt: 0,
-      updatedAt: 0,
-    );
+  id: 'id-$title',
+  manuscriptId: 'ms',
+  title: title,
+  content: '',
+  wordCount: 0,
+  sortOrder: 0,
+  status: 'draft',
+  createdAt: 0,
+  updatedAt: 0,
+);
 
 void main() {
   group('chineseNumberToInt', () {
@@ -84,13 +84,7 @@ void main() {
     });
 
     test('取最大序号 +1（存在缺号）', () {
-      expect(
-        nextChapterTitle([
-          _chapter('第一章'),
-          _chapter('第三章'),
-        ]),
-        '第四章',
-      );
+      expect(nextChapterTitle([_chapter('第一章'), _chapter('第三章')]), '第四章');
     });
 
     test('阿拉伯数字序号兼容', () {
@@ -99,17 +93,11 @@ void main() {
     });
 
     test('无序号标题 → 按章节数量 +1', () {
-      expect(
-        nextChapterTitle([_chapter('引子'), _chapter('序言')]),
-        '第三章',
-      );
+      expect(nextChapterTitle([_chapter('引子'), _chapter('序言')]), '第三章');
     });
 
     test('混合：带序号取最大，无序号作保底', () {
-      expect(
-        nextChapterTitle([_chapter('引子'), _chapter('第二章：夜行')]),
-        '第三章',
-      );
+      expect(nextChapterTitle([_chapter('引子'), _chapter('第二章：夜行')]), '第三章');
     });
 
     test('第十 → 十一、二十 → 二十一（进位）', () {

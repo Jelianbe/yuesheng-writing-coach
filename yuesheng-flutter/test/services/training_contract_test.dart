@@ -29,26 +29,17 @@ void main() {
     test('「完成度不错，但还需要重新处理」→ partial（不虚报达标）', () {
       // 同时含「完成」(passed 关键词) 与「还需要」(partial 关键词)，
       // partial 必须优先命中，避免对未完成练习虚报达标。
-      expect(
-        parseTrainingResult('完成度不错，但还需要重新处理'),
-        TrainingResult.partial,
-      );
+      expect(parseTrainingResult('完成度不错，但还需要重新处理'), TrainingResult.partial);
     });
     test('「方向对了，但还需要打磨」→ partial', () {
-      expect(
-        parseTrainingResult('方向对了，但还需要打磨'),
-        TrainingResult.partial,
-      );
+      expect(parseTrainingResult('方向对了，但还需要打磨'), TrainingResult.partial);
     });
     test('「达标，但部分达标」→ partial（精确短语优先于关键词）', () {
       expect(parseTrainingResult('整体达标，但部分达标'), TrainingResult.partial);
     });
     test('「不太对，需要重新来」→ failed', () {
       // 「不太对」(failed 关键词) 命中，优先于任何 passed 关键词。
-      expect(
-        parseTrainingResult('这个不太对，需要重新来'),
-        TrainingResult.failed,
-      );
+      expect(parseTrainingResult('这个不太对，需要重新来'), TrainingResult.failed);
     });
     test('「很好，写得不错」→ passed', () {
       expect(parseTrainingResult('很好，写得不错'), TrainingResult.passed);

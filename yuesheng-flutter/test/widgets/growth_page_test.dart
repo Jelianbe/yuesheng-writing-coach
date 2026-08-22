@@ -114,9 +114,7 @@ void main() {
       expect(find.text('诊断次数'), findsOneWidget);
     });
 
-    testWidgets('#V5c 批次78 无会话 → 点击「学习进度」→ SnackBar 轻提示，不跳转', (
-      tester,
-    ) async {
+    testWidgets('#V5c 批次78 无会话 → 点击「学习进度」→ SnackBar 轻提示，不跳转', (tester) async {
       tester.view.physicalSize = const Size(800, 3000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);

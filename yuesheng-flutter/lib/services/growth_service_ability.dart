@@ -3,6 +3,7 @@
 // 能力评估 extension：getAbilityScores/getSyndromeHistory/getSyndromeRecurrences。迁移自 growth_service.dart，行为零变更。
 // ─────────────────────────────────────────────────────────────
 part of 'growth_service.dart';
+
 extension GrowthAbilityExtension on GrowthService {
   /// 六大能力维度评分（复刻 RN getAbilityScores）
   ///
@@ -19,7 +20,8 @@ extension GrowthAbilityExtension on GrowthService {
     if (rows.isEmpty) return const [];
 
     final dimensionMap = <String, ({int detected, int resolved})>{
-      for (final dim in GrowthService.abilityDimensions) dim.key: (detected: 0, resolved: 0),
+      for (final dim in GrowthService.abilityDimensions)
+        dim.key: (detected: 0, resolved: 0),
     };
 
     for (final row in rows) {
@@ -148,5 +150,4 @@ extension GrowthAbilityExtension on GrowthService {
     });
     return result;
   }
-
 }

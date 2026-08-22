@@ -18,7 +18,8 @@ void main() {
     });
 
     test('单个 quiz 组件解析', () {
-      const text = '这是反馈\n[YS_GENUI]{"type":"quiz","title":"t",'
+      const text =
+          '这是反馈\n[YS_GENUI]{"type":"quiz","title":"t",'
           '"items":[{"q":"q1","options":["a","b"],"answer":0}]}[/YS_GENUI]';
       final comps = parseGenuiBlock(text);
       expect(comps, isNotNull);
@@ -28,7 +29,8 @@ void main() {
     });
 
     test('components 数组信封', () {
-      const text = '[YS_GENUI]{"components":['
+      const text =
+          '[YS_GENUI]{"components":['
           '{"type":"diff","before":"x","after":"y"},'
           '{"type":"quiz","items":[{"q":"q","options":["a","b"],"answer":1}]}'
           ']}[/YS_GENUI]';
@@ -55,7 +57,8 @@ void main() {
     });
 
     test('quiz 缺 answer → 丢弃', () {
-      const text = '[YS_GENUI]{"type":"quiz",'
+      const text =
+          '[YS_GENUI]{"type":"quiz",'
           '"items":[{"q":"q","options":["a","b"]}]}[/YS_GENUI]';
       expect(parseGenuiBlock(text), isNull);
     });
@@ -70,7 +73,8 @@ void main() {
 
   group('stripGenuiBlock', () {
     test('移除完整块并拼接前后文本', () {
-      const text = '前面内容\n[YS_GENUI]{"type":"diff","before":"a","after":"b"}'
+      const text =
+          '前面内容\n[YS_GENUI]{"type":"diff","before":"a","after":"b"}'
           '[/YS_GENUI]\n后面内容';
       final stripped = stripGenuiBlock(text);
       expect(stripped.contains('[YS_GENUI]'), isFalse);
@@ -89,8 +93,12 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'quiz',
         'items': [
-          {'q': 'q', 'options': ['a', 'b'], 'answer': 0}
-        ]
+          {
+            'q': 'q',
+            'options': ['a', 'b'],
+            'answer': 0,
+          },
+        ],
       });
       expect(c, isNotNull);
       expect(c!.type, 'quiz');
@@ -100,8 +108,12 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'quiz',
         'items': [
-          {'q': 'q', 'options': ['a'], 'answer': 0}
-        ]
+          {
+            'q': 'q',
+            'options': ['a'],
+            'answer': 0,
+          },
+        ],
       });
       expect(c, isNull);
     });
@@ -110,8 +122,8 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'stat',
         'items': [
-          {'label': '画面感', 'value': 75, 'max': 100}
-        ]
+          {'label': '画面感', 'value': 75, 'max': 100},
+        ],
       });
       expect(c, isNotNull);
       expect(c!.type, 'stat');
@@ -121,8 +133,8 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'stat',
         'items': [
-          {'label': '画面感', 'max': 100}
-        ]
+          {'label': '画面感', 'max': 100},
+        ],
       });
       expect(c, isNull);
     });
@@ -132,8 +144,8 @@ void main() {
         'type': 'progress',
         'steps': [
           {'label': '诊断', 'status': 'done'},
-          {'label': '教学', 'status': 'current'}
-        ]
+          {'label': '教学', 'status': 'current'},
+        ],
       });
       expect(c, isNotNull);
       expect(c!.type, 'progress');
@@ -143,8 +155,8 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'progress',
         'steps': [
-          {'label': '诊断'}
-        ]
+          {'label': '诊断'},
+        ],
       });
       expect(c, isNull);
     });
@@ -153,8 +165,8 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'timeline',
         'events': [
-          {'date': '2026-08-01', 'title': '首次诊断'}
-        ]
+          {'date': '2026-08-01', 'title': '首次诊断'},
+        ],
       });
       expect(c, isNotNull);
       expect(c!.type, 'timeline');
@@ -164,8 +176,8 @@ void main() {
       final c = validateGenuiComponent({
         'type': 'timeline',
         'events': [
-          {'date': '2026-08-01'}
-        ]
+          {'date': '2026-08-01'},
+        ],
       });
       expect(c, isNull);
     });
@@ -181,8 +193,12 @@ void main() {
             data: {
               'title': 't',
               'items': [
-                {'q': 'q', 'options': ['a', 'b'], 'answer': 1}
-              ]
+                {
+                  'q': 'q',
+                  'options': ['a', 'b'],
+                  'answer': 1,
+                },
+              ],
             },
           ),
         ],

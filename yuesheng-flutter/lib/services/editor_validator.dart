@@ -127,4 +127,3 @@ List<String> detectVerdictWords(String text) {
   }
   return hits;
 }
-

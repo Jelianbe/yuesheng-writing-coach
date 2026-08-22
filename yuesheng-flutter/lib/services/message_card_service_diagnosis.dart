@@ -3,6 +3,7 @@
 // 诊断类卡片：DiagnosisResultCardPayload/DiagnosisSyndromeCard/insertDiagnosisResultCard/DiagnosisFailedCardPayload/insertDiagnosisFailedCard。逐字迁移自 message_card_service.dart，零行为变更。
 // ─────────────────────────────────────────────────────────────
 part of 'message_card_service.dart';
+
 /// 诊断结果卡片 Payload
 /// 真源：message-card-service.ts DiagnosisResultCardPayload
 class DiagnosisResultCardPayload {
@@ -129,12 +130,11 @@ Future<String> insertDiagnosisFailedCard(
   String sessionId,
   int failureCount,
 ) async {
-      final messageId = await sessionRepo.addMessage(
-        sessionId,
-        'assistant',
-        jsonEncode(DiagnosisFailedCardPayload(failureCount: failureCount).toJson()),
-        messageType: 'diagnosis_failed',
-      );
-      return messageId;
-    }
-
+  final messageId = await sessionRepo.addMessage(
+    sessionId,
+    'assistant',
+    jsonEncode(DiagnosisFailedCardPayload(failureCount: failureCount).toJson()),
+    messageType: 'diagnosis_failed',
+  );
+  return messageId;
+}

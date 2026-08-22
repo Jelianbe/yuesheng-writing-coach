@@ -30,9 +30,9 @@ import 'package:writingcoach/types/teaching_types.dart';
 
 part 'training_input_builder_count.dart';
 part 'training_input_builder_build.dart';
+
 /// 数据不足阈值：少于 2 条诊断无法判断趋势（无 previousSeverity 可比对）
 const int _kMinDiagnosisCountForTrend = 2;
 
 /// 一天的秒数（teaching_history 时间戳为秒级）
 const int _kSecondsPerDay = 86400;
-

@@ -35,6 +35,7 @@ const Set<String> _visibleStatuses = {'pending', 'active'};
 class OutlineDrawer extends ConsumerWidget {
   /// 所属作品 ID（null/空 = 无法加载，走空态）
   final String? manuscriptId;
+
   /// 右上角关闭按钮（由 WritingPage 关闭 endDrawer）
   final VoidCallback onClose;
 
@@ -110,11 +111,21 @@ class OutlineDrawer extends ConsumerWidget {
                           ? const _OutlineEmpty()
                           : _OutlineList(
                               view: view,
-                              onConfirmEntity: _confirmEntity(context, ref, msId),
-                              onConfirmImpression:
-                                  _confirmImpression(context, ref, msId),
-                              onRejectImpression:
-                                  _rejectImpression(context, ref, msId),
+                              onConfirmEntity: _confirmEntity(
+                                context,
+                                ref,
+                                msId,
+                              ),
+                              onConfirmImpression: _confirmImpression(
+                                context,
+                                ref,
+                                msId,
+                              ),
+                              onRejectImpression: _rejectImpression(
+                                context,
+                                ref,
+                                msId,
+                              ),
                             ),
                     ),
             ),
@@ -132,9 +143,8 @@ class OutlineDrawer extends ConsumerWidget {
     String msId,
   ) {
     return (id) => _act(context, ref, msId, () async {
-          await OutlineRepository(ref.read(appDatabaseProvider))
-              .approveEntity(id);
-        }, '已确认该设定');
+      await OutlineRepository(ref.read(appDatabaseProvider)).approveEntity(id);
+    }, '已确认该设定');
   }
 
   ValueChanged<String> _confirmImpression(
@@ -143,9 +153,10 @@ class OutlineDrawer extends ConsumerWidget {
     String msId,
   ) {
     return (id) => _act(context, ref, msId, () async {
-          await OutlineRepository(ref.read(appDatabaseProvider))
-              .approveImpression(id);
-        }, '已确认这条梗概');
+      await OutlineRepository(
+        ref.read(appDatabaseProvider),
+      ).approveImpression(id);
+    }, '已确认这条梗概');
   }
 
   ValueChanged<String> _rejectImpression(
@@ -154,9 +165,10 @@ class OutlineDrawer extends ConsumerWidget {
     String msId,
   ) {
     return (id) => _act(context, ref, msId, () async {
-          await OutlineRepository(ref.read(appDatabaseProvider))
-              .rejectImpression(id);
-        }, '已拒绝这条梗概');
+      await OutlineRepository(
+        ref.read(appDatabaseProvider),
+      ).rejectImpression(id);
+    }, '已拒绝这条梗概');
   }
 
   Future<void> _act(
@@ -171,16 +183,16 @@ class OutlineDrawer extends ConsumerWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
   }
 }
 
 /// 实体分组列表：人物 → 设定 → 情节（固定顺序，组内按 updatedAt 倒序）
 class _OutlineList extends StatelessWidget {
   final OutlineView view;
+
   /// 批次87-4：快速确认/拒绝回调（id 参数）
   final ValueChanged<String> onConfirmEntity;
   final ValueChanged<String> onConfirmImpression;
@@ -203,14 +215,18 @@ class _OutlineList extends StatelessWidget {
           .toList();
       if (entities.isEmpty) continue;
       children.add(_TypeSection(label: group.label, count: entities.length));
-      children.addAll(entities.map((e) => _EntityCard(
+      children.addAll(
+        entities.map(
+          (e) => _EntityCard(
             entity: e,
             impressions:
                 view.impressionsByEntity[e.id] ?? const <OutlineImpression>[],
             onConfirm: () => onConfirmEntity(e.id),
             onConfirmImpression: onConfirmImpression,
             onRejectImpression: onRejectImpression,
-          )));
+          ),
+        ),
+      );
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -255,8 +271,10 @@ class _TypeSection extends StatelessWidget {
 class _EntityCard extends StatelessWidget {
   final OutlineEntity entity;
   final List<OutlineImpression> impressions;
+
   /// 批次87-4：pending 实体快速确认回调
   final VoidCallback onConfirm;
+
   /// 批次87-4：印象确认/拒绝回调（id 参数，每印象行包闭包）
   final ValueChanged<String> onConfirmImpression;
   final ValueChanged<String> onRejectImpression;
@@ -361,6 +379,7 @@ class _EntityCard extends StatelessWidget {
 /// 印象行：来源章节 tag + 一句话梗概（pending 带「待确认」标记 + 快速确认/拒绝）
 class _ImpressionRow extends StatelessWidget {
   final OutlineImpression impression;
+
   /// 批次87-4：确认/拒绝回调（仅 pending 时显示按钮）
   final VoidCallback onConfirm;
   final VoidCallback onReject;
@@ -462,10 +481,7 @@ class _Tag extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 10, color: fg),
-      ),
+      child: Text(label, style: TextStyle(fontSize: 10, color: fg)),
     );
   }
 }

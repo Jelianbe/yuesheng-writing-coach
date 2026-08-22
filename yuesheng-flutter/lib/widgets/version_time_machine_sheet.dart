@@ -185,8 +185,10 @@ List<DiffSegment> _charDiff(String removed, String added) {
 
 class VersionTimeMachineSheet extends ConsumerStatefulWidget {
   final String chapterId;
+
   /// 当前编辑器内容（差异对比基准；批次84-3）
   final String currentContent;
+
   /// 恢复回调（入参为要恢复的版本全文）
   final ValueChanged<String> onRestore;
 
@@ -305,7 +307,9 @@ class _VersionTimeMachineSheetState
   Widget _buildDetail(ChapterVersion v) {
     // 批次84-3：相对当前内容计算差异（版本内容为空时无对比可做，直接占位）
     final hasContent = v.content.isNotEmpty;
-    final segments = hasContent ? diffText(widget.currentContent, v.content) : const <DiffSegment>[];
+    final segments = hasContent
+        ? diffText(widget.currentContent, v.content)
+        : const <DiffSegment>[];
     final hasDiff = segments.any((s) => s.kind != DiffKind.same);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,7 +347,10 @@ class _VersionTimeMachineSheetState
                   ? _buildDiffBody(segments)
                   : const Text(
                       '（空内容）',
-                      style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textTertiary,
+                      ),
                     ),
             ),
           ),
@@ -376,7 +383,11 @@ class _VersionTimeMachineSheetState
   Widget _buildDiffBody(List<DiffSegment> segments) {
     return RichText(
       text: TextSpan(
-        style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textBody),
+        style: const TextStyle(
+          fontSize: 13,
+          height: 1.5,
+          color: AppColors.textBody,
+        ),
         children: [
           for (final s in segments)
             switch (s.kind) {

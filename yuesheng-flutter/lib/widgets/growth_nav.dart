@@ -2,7 +2,6 @@
 part of 'growth_detail_page.dart';
 
 extension _GrowthNav on _GrowthDetailPageState {
-
   /// 批次77：学习进度入口——查最新会话并传 sessionId（对齐 growth_page 正确实现）。
   /// 修复旧实现 `context.go(progressDetail)` 不传参 → 落入「未提供会话 ID」占位死页。
   Future<void> _openProgressDetail() async {
@@ -11,9 +10,9 @@ extension _GrowthNav on _GrowthDetailPageState {
       final sessions = await sessionRepo.listSessions(); // updated_at DESC
       if (sessions.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('还没有写作会话，先写一章吧')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('还没有写作会话，先写一章吧')));
         }
         return;
       }

@@ -79,7 +79,10 @@ class GrowthOverviewCard extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     '写作提升中',
-                    style: TextStyle(fontSize: 12, color: AppColors.onPrimaryDim),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.onPrimaryDim,
+                    ),
                   ),
                 ],
               ),

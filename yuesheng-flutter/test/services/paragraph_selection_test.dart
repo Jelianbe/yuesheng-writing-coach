@@ -48,8 +48,7 @@ void main() {
     });
 
     test('多段：段长求和 + 段间换行数', () {
-      final textLen =
-          '第一段'.length + '第二段内容'.length + '三'.length;
+      final textLen = '第一段'.length + '第二段内容'.length + '三'.length;
       expect(selectionCharCount(paras, 0, 2), textLen + 2); // 2 个段间换行
     });
 

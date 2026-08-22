@@ -55,8 +55,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   final Set<String> _selectedRefs = {};
   List<ReferencedItem> _references = [];
 
-  ReferenceCapability get _repo =>
-      ref.read(referenceCapabilityProvider);
+  ReferenceCapability get _repo => ref.read(referenceCapabilityProvider);
 
   @override
   void initState() {
@@ -179,9 +178,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       } else if (anchor.startPara == anchor.endPara) {
         _notify('已选段：第 ${anchor.startPara + 1} 段');
       } else {
-        _notify(
-          '已选段：第 ${anchor.startPara + 1}–${anchor.endPara + 1} 段',
-        );
+        _notify('已选段：第 ${anchor.startPara + 1}–${anchor.endPara + 1} 段');
       }
     } catch (_) {
       _notify('操作失败，请稍后再试');

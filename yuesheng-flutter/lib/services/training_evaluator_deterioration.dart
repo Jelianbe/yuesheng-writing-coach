@@ -3,6 +3,7 @@
 // 恶化检测：detectDeterioration + DeteriorationCheckInput/DeteriorationResult。逐字迁移自 training_evaluator.dart，零行为变更。
 // ─────────────────────────────────────────────────────────────
 part of 'training_evaluator.dart';
+
 class DeteriorationCheckInput {
   final String syndromeId;
   final Severity currentSeverity;
@@ -89,4 +90,3 @@ DeteriorationResult detectDeterioration(DeteriorationCheckInput input) {
 
   return const DeteriorationResult(signal: null, intervention: '');
 }
-

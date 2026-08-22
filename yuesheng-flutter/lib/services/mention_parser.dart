@@ -121,13 +121,15 @@ class MentionParser implements MentionCapability {
 
         if (ch != null) {
           final raw = '@${ms.title}/${ch.title}';
-          mentions.add(ParsedMention(
-            raw: raw,
-            refType: 'chapter',
-            refId: ch.id,
-            title: '${ms.title} · ${ch.title}',
-            manuscriptId: ms.id,
-          ));
+          mentions.add(
+            ParsedMention(
+              raw: raw,
+              refType: 'chapter',
+              refId: ch.id,
+              title: '${ms.title} · ${ch.title}',
+              manuscriptId: ms.id,
+            ),
+          );
           idx = atIdx + raw.length;
           continue;
         }
@@ -146,13 +148,15 @@ class MentionParser implements MentionCapability {
           if (subPart.startsWith(f.fileName) &&
               _isTitleBoundary(subPart.substring(f.fileName.length))) {
             final raw = '@${ms.title}/${f.fileName}';
-            mentions.add(ParsedMention(
-              raw: raw,
-              refType: 'file',
-              refId: f.id,
-              title: '【素材】${f.fileName}',
-              manuscriptId: ms.id,
-            ));
+            mentions.add(
+              ParsedMention(
+                raw: raw,
+                refType: 'file',
+                refId: f.id,
+                title: '【素材】${f.fileName}',
+                manuscriptId: ms.id,
+              ),
+            );
             idx = atIdx + raw.length;
             matched = true;
             break;
@@ -163,13 +167,15 @@ class MentionParser implements MentionCapability {
       } else {
         // 只有作品引用
         final raw = '@${ms.title}';
-        mentions.add(ParsedMention(
-          raw: raw,
-          refType: 'manuscript',
-          refId: ms.id,
-          title: ms.title,
-          manuscriptId: ms.id,
-        ));
+        mentions.add(
+          ParsedMention(
+            raw: raw,
+            refType: 'manuscript',
+            refId: ms.id,
+            title: ms.title,
+            manuscriptId: ms.id,
+          ),
+        );
         idx = atIdx + raw.length;
       }
     }
@@ -228,8 +234,9 @@ class MentionParser implements MentionCapability {
 
   /// 解析单个 @ 引用（如 "@我的小说/第三章"）
   Future<ParsedMention?> resolveMention(String mentionText) async {
-    final path =
-        mentionText.startsWith('@') ? mentionText.substring(1) : mentionText;
+    final path = mentionText.startsWith('@')
+        ? mentionText.substring(1)
+        : mentionText;
     final parts = path.split('/');
 
     final workTitle = parts[0];

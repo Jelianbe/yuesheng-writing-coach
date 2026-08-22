@@ -25,11 +25,7 @@ Volume _v(String id, {String title = '', int sortOrder = 0}) {
   );
 }
 
-Chapter _c(
-  String id, {
-  String? volumeId,
-  int sortOrder = 0,
-}) {
+Chapter _c(String id, {String? volumeId, int sortOrder = 0}) {
   return Chapter(
     id: id,
     manuscriptId: 'm1',
@@ -48,10 +44,10 @@ Chapter _c(
 
 void main() {
   test('#1 无卷 → 空分组（UI 走扁平列表）', () {
-    final groups = groupChaptersByVolume(
-      const [],
-      [_c('c1', sortOrder: 0), _c('c2', sortOrder: 1)],
-    );
+    final groups = groupChaptersByVolume(const [], [
+      _c('c1', sortOrder: 0),
+      _c('c2', sortOrder: 1),
+    ]);
     expect(groups, isEmpty);
   });
 
@@ -109,10 +105,10 @@ void main() {
   });
 
   test('#6 卷按 sort_order 排序展示', () {
-    final groups = groupChaptersByVolume(
-      [_v('v3', title: '第三卷', sortOrder: 3), _v('v1', title: '第一卷', sortOrder: 1)],
-      [],
-    );
+    final groups = groupChaptersByVolume([
+      _v('v3', title: '第三卷', sortOrder: 3),
+      _v('v1', title: '第一卷', sortOrder: 1),
+    ], []);
     expect(groups.map((g) => g.volume!.id).toList(), ['v1', 'v3']);
   });
 
@@ -158,7 +154,10 @@ void main() {
 
     test('#S3 空卷追尾（无章节的卷按卷序追加末尾）', () {
       final sections = buildChapterSections(
-        [_v('v1', title: '空卷', sortOrder: 2), _v('v2', title: '有章卷', sortOrder: 1)],
+        [
+          _v('v1', title: '空卷', sortOrder: 2),
+          _v('v2', title: '有章卷', sortOrder: 1),
+        ],
         [_c('in1', volumeId: 'v2', sortOrder: 0)],
       );
       expect(sections.length, 2);

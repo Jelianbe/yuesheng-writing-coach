@@ -310,9 +310,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               await Clipboard.setData(ClipboardData(text: _feedbackEmail));
               if (ctx.mounted) Navigator.pop(ctx);
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('邮箱已复制')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('邮箱已复制')));
               }
             },
             child: const Text('复制邮箱'),

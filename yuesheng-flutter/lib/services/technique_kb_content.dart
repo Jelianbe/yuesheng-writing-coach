@@ -6,7 +6,8 @@ part of 'technique_knowledge_base.dart';
 
 /// L2 索引：写作技法速查表（对应 RN TECHNIQUE_INDEX_CONTENT）
 /// 「症候→技法映射表」行由注册表渲染（b9 批次29），输出与手写逐字一致。
-final String kTechniqueIndexContent = r'''# SKILL: 写作技法速查表（精简版）
+final String kTechniqueIndexContent =
+    r'''# SKILL: 写作技法速查表（精简版）
 
 > **定位**: 训练环节的快速参考。包含技法索引表、症候→技法映射表和用法说明。
 > **注意**: 完整技法内容（含核心原理、示范对比、练习模板、关联教学动作）在 L3 检索层按需加载。
@@ -51,7 +52,12 @@ final String kTechniqueIndexContent = r'''# SKILL: 写作技法速查表（精�
 
 | 症候 | 首选技法 | 备选技法 |
 |------|---------|---------|
-''' + kSyndromeRegistry.where((s) => s.retired != true).map(_l2TechniqueMapRow).join('\n') + r'''
+''' +
+    kSyndromeRegistry
+        .where((s) => s.retired != true)
+        .map(_l2TechniqueMapRow)
+        .join('\n') +
+    r'''
 
 ## 用法说明
 
@@ -62,6 +68,4 @@ final String kTechniqueIndexContent = r'''# SKILL: 写作技法速查表（精�
 
 /// L3 完整技法库：31 种技法（对应 RN content）
 const String kTechniqueLibraryContent =
-    _techniqueLib1 +
-    _techniqueLib2 +
-    _techniqueLib3;
+    _techniqueLib1 + _techniqueLib2 + _techniqueLib3;

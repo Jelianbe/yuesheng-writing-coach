@@ -40,10 +40,13 @@ const Map<String, _StatusConfig> _statusConfig = {
 
 class ChapterTreeDrawer extends ConsumerStatefulWidget {
   final String currentChapterId;
+
   /// 所属作品 ID（null/空 = 无法加载列表，走空态）
   final String? manuscriptId;
+
   /// 点击某章 → 快速跳转（由 WritingPage 执行）
   final void Function(String chapterId, String title) onJumpToChapter;
+
   /// 点击「新建章节」（由 WritingPage 执行）
   final VoidCallback onCreateChapter;
 
@@ -69,12 +72,14 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     final chaptersAsync = msId.isEmpty
         ? null
         : ref.watch(chapterListProvider(msId));
-    final volumesAsync =
-        msId.isEmpty ? null : ref.watch(volumeListProvider(msId));
+    final volumesAsync = msId.isEmpty
+        ? null
+        : ref.watch(volumeListProvider(msId));
     final chapters = chaptersAsync?.value ?? const <Chapter>[];
     final volumes = volumesAsync?.value ?? const <Volume>[];
     final loading =
-        (chaptersAsync?.isLoading ?? false) || (volumesAsync?.isLoading ?? false);
+        (chaptersAsync?.isLoading ?? false) ||
+        (volumesAsync?.isLoading ?? false);
 
     return Drawer(
       backgroundColor: AppColors.background,
@@ -230,10 +235,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
   void _snack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ));
+      ..showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
   }
 
   /// 修复3：重命名章节（铅笔图标 + 操作弹层均走这里）
@@ -343,9 +347,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           controller: controller,
           autofocus: true,
           maxLength: 12,
-          decoration: const InputDecoration(
-            hintText: '留空自动命名「第一卷/第二卷…」',
-          ),
+          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
         ),
         actions: [
           TextButton(
@@ -366,10 +368,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       final db = ref.read(appDatabaseProvider);
       final repo = VolumeRepository(db);
       await repo.createVolume(_msId, title: trimmed);
-      final title =
-          trimmed.isNotEmpty ? trimmed : repo.nextVolumeTitle(
-            await repo.listVolumes(_msId),
-          );
+      final title = trimmed.isNotEmpty
+          ? trimmed
+          : repo.nextVolumeTitle(await repo.listVolumes(_msId));
       ref.invalidate(volumeListProvider(_msId));
       ref.invalidate(chapterListProvider(_msId));
       if (!mounted) return;
@@ -413,8 +414,14 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
               onTap: () => Navigator.pop(ctx, 'rename'),
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-              title: const Text('删除卷', style: TextStyle(color: AppColors.danger)),
+              leading: const Icon(
+                Icons.delete_outline,
+                color: AppColors.danger,
+              ),
+              title: const Text(
+                '删除卷',
+                style: TextStyle(color: AppColors.danger),
+              ),
               subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
               onTap: () => Navigator.pop(ctx, 'delete'),
             ),
@@ -759,10 +766,7 @@ class _ChapterTreeItem extends StatelessWidget {
             if (status != null) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: status.bgColor,
                   borderRadius: BorderRadius.circular(AppRadius.xs),

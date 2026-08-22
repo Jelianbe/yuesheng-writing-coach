@@ -144,7 +144,6 @@ N4 创作  | 使用 P      | 使用 P     | 使用 P        | 使用 P      | �
 - 完成练习后进入 FEEDBACK，反馈后进入 DIAGNOSIS 准备下一轮''',
 );
 
-
 const String _teachingStrategyBody1 = '''
 # SKILL: 教学策略
 

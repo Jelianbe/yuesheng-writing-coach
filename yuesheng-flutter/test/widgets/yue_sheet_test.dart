@@ -13,7 +13,8 @@ Widget _host(Widget Function(BuildContext) triggerBuilder) {
   return MaterialApp(
     theme: buildAppTheme(),
     home: Builder(
-      builder: (context) => Scaffold(body: Center(child: triggerBuilder(context))),
+      builder: (context) =>
+          Scaffold(body: Center(child: triggerBuilder(context))),
     ),
   );
 }

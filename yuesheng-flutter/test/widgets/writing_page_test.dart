@@ -58,15 +58,13 @@ import 'package:writingcoach/widgets/editing/focus_aware_editing_controller.dart
 class FakeLlmClient extends LlmClient {
   final String fullResponse;
   final Exception? error;
+
   /// 非流式响应队列（择选生成按调用次数依次取，取尽后复用最后一条）
   final List<String> chatResponses;
   int _chatCallCount = 0;
 
-  FakeLlmClient(
-    this.fullResponse, {
-    this.error,
-    List<String>? chatResponses,
-  }) : chatResponses = chatResponses ?? const [];
+  FakeLlmClient(this.fullResponse, {this.error, List<String>? chatResponses})
+    : chatResponses = chatResponses ?? const [];
 
   @override
   Future<String> chatCompletion(List<ChatMessage> messages) async {
@@ -520,18 +518,16 @@ void main() {
       final failingContainer = ProviderContainer(
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
-          writingStoreProvider(chapterId).overrideWith(
-            (ref) => _FailingSaveStore(db, chapterId),
-          ),
+          writingStoreProvider(
+            chapterId,
+          ).overrideWith((ref) => _FailingSaveStore(db, chapterId)),
         ],
       );
       addTearDown(failingContainer.dispose);
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: failingContainer,
-          child: MaterialApp(
-            home: WritingPage(chapterId: chapterId),
-          ),
+          child: MaterialApp(home: WritingPage(chapterId: chapterId)),
         ),
       );
       await tester.pumpAndSettle();
@@ -629,9 +625,11 @@ void main() {
       );
       Future<int> diagnoseCount() => sessionRepo
           .listMessages(sessionId)
-          .then((msgs) => msgs
-              .where((m) => m.content.contains('请对以下选中文本进行写作诊断分析'))
-              .length);
+          .then(
+            (msgs) => msgs
+                .where((m) => m.content.contains('请对以下选中文本进行写作诊断分析'))
+                .length,
+          );
 
       expect(await diagnoseCount(), 1, reason: '首次划词诊断应触发 1 条选段诊断');
 
@@ -655,9 +653,7 @@ void main() {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定在编辑器容器内）
     Finder editorTextField() => find.byKey(const Key('chapterContentField'));
 
-    testWidgets('#82-1 更多菜单 →「排版设置」→ 弹层出现（标题 + 背景预设）', (
-      tester,
-    ) async {
+    testWidgets('#82-1 更多菜单 →「排版设置」→ 弹层出现（标题 + 背景预设）', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
@@ -753,9 +749,7 @@ void main() {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定在编辑器容器内）
     Finder editorTextField() => find.byKey(const Key('chapterContentField'));
 
-    testWidgets('#82-5 点击字数 → 设置目标 → 显示「当前/目标」+ 进度条 + 章节级落库', (
-      tester,
-    ) async {
+    testWidgets('#82-5 点击字数 → 设置目标 → 显示「当前/目标」+ 进度条 + 章节级落库', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
@@ -788,9 +782,7 @@ void main() {
       expect(await repo.getValue('chapter_goal:$chapterId'), '100');
     });
 
-    testWidgets('#82-6 跨过目标线 → SnackBar「目标达成」提示一次，降回线下可再提示', (
-      tester,
-    ) async {
+    testWidgets('#82-6 跨过目标线 → SnackBar「目标达成」提示一次，降回线下可再提示', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
@@ -810,7 +802,11 @@ void main() {
       await tester.pumpAndSettle(); // 进入动画完成（此后自动关闭定时器才开始计时）
       await tester.pump(const Duration(seconds: 3)); // 触发自动关闭 → 退场动画开始
       await tester.pumpAndSettle(); // 退场动画完成 → SnackBar 移除
-      expect(find.byType(SnackBar), findsNothing, reason: '第一条 SnackBar 应已自动关闭');
+      expect(
+        find.byType(SnackBar),
+        findsNothing,
+        reason: '第一条 SnackBar 应已自动关闭',
+      );
 
       // 仍在目标线上继续输入 → 不重复提示（_goalCelebrated 已置位）
       await tester.enterText(editorTextField(), '这是一个大雪纷飞的夜晚。雪雪');
@@ -888,9 +884,7 @@ void main() {
       expect(find.textContaining('还没有版本记录'), findsOneWidget);
     });
 
-    testWidgets('#82-9 预置版本 → 时光机显示 → 恢复 → 编辑器内容更新 + 落库', (
-      tester,
-    ) async {
+    testWidgets('#82-9 预置版本 → 时光机显示 → 恢复 → 编辑器内容更新 + 落库', (tester) async {
       // 预置两个版本（最新在前：版本二，其次版本一）
       final repo = AppStateRepository(db);
       await repo.addChapterVersion(chapterId, '版本一：他站在雪地里。');
@@ -963,7 +957,9 @@ void main() {
       expect(find.byType(WritingCoachPanel), findsOneWidget);
       expect(editorTextField(), findsOneWidget);
       // 面板位于编辑器右侧
-      final editorRect = tester.getRect(find.byKey(const Key('editorContainer')));
+      final editorRect = tester.getRect(
+        find.byKey(const Key('editorContainer')),
+      );
       final panelRect = tester.getRect(find.byType(WritingCoachPanel));
       expect(panelRect.left, greaterThanOrEqualTo(editorRect.right - 1));
     });
@@ -1004,9 +1000,7 @@ void main() {
       expect(find.text('扩写这段'), findsOneWidget);
     });
 
-    testWidgets('#82-14 点击「改写这段」→ 择选弹层打开（3 个版本 + 换一换）', (
-      tester,
-    ) async {
+    testWidgets('#82-14 点击「改写这段」→ 择选弹层打开（3 个版本 + 换一换）', (tester) async {
       // 预置长章（≥20 字选中）
       final msRepo = ManuscriptRepository(db);
       final chRepo = ChapterRepository(db);
@@ -1014,8 +1008,7 @@ void main() {
       final longChapterId = await chRepo.createChapter(
         msId,
         title: '长章',
-        content:
-            '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
+        content: '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
       );
 
       final c = buildSelectionContainer([_v1s]);
@@ -1047,17 +1040,14 @@ void main() {
       expect(find.byType(WritingCoachPanel), findsNothing);
     });
 
-    testWidgets('#82-15 点击「续写这段」→ 择选弹层打开（续写版本 + 换一换）', (
-      tester,
-    ) async {
+    testWidgets('#82-15 点击「续写这段」→ 择选弹层打开（续写版本 + 换一换）', (tester) async {
       final msRepo = ManuscriptRepository(db);
       final chRepo = ChapterRepository(db);
       final msId = await msRepo.createManuscript(title: '续写测试');
       final longChapterId = await chRepo.createChapter(
         msId,
         title: '长章',
-        content:
-            '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
+        content: '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
       );
 
       final c = buildSelectionContainer([_v1s]);
@@ -1133,17 +1123,11 @@ void main() {
 
       // 抽屉标题 + 章节条目（限定在抽屉内，排除 AppBar 标题 TextField）
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('章节列表'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('章节列表')),
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一章：启程'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
         findsOneWidget,
       );
       // 当前章高亮标记
@@ -1164,24 +1148,15 @@ void main() {
       await openChapterTree(tester);
 
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一章：启程'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第二章：夜行'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第二章：夜行')),
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第三章：重逢'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第三章：重逢')),
         findsOneWidget,
       );
       // 仅当前章带高亮标记
@@ -1211,10 +1186,7 @@ void main() {
       await openChapterTree(tester);
 
       await tester.tap(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第二章：夜行'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第二章：夜行')),
       );
       await tester.pumpAndSettle();
 
@@ -1244,9 +1216,9 @@ void main() {
     });
 
     testWidgets('#83-5 无章节作品 → 抽屉显示空态引导', (tester) async {
-      final emptyMs = await ManuscriptRepository(db).createManuscript(
-        title: '空作品',
-      );
+      final emptyMs = await ManuscriptRepository(
+        db,
+      ).createManuscript(title: '空作品');
       // 直接渲染抽屉组件（无章节作品的空态路径）
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -1290,11 +1262,7 @@ void main() {
       final v2 = await volRepo.createVolume(manuscriptId, title: '第二卷');
       // 当前章移入 v1；另建 v2 章节 + 未分卷章节
       await volRepo.setChapterVolume(chapterId, v1);
-      await chRepo.createChapter(
-        manuscriptId,
-        title: '第二卷之章',
-        volumeId: v2,
-      );
+      await chRepo.createChapter(manuscriptId, title: '第二卷之章', volumeId: v2);
       await chRepo.createChapter(manuscriptId, title: '散章');
 
       await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
@@ -1303,10 +1271,12 @@ void main() {
 
       // 卷头顺序：第一卷 → 第二卷（散落章节平铺，不再有「未分卷」组头）
       final headerTitles = tester
-          .widgetList<Text>(find.descendant(
-            of: find.byType(Drawer),
-            matching: find.byType(Text),
-          ))
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(Drawer),
+              matching: find.byType(Text),
+            ),
+          )
           .map((t) => t.data ?? '')
           .toList();
       final v1Idx = headerTitles.indexOf('第一卷');
@@ -1317,24 +1287,15 @@ void main() {
 
       // 各组章节可见（默认展开）
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一章：启程'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第二卷之章'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第二卷之章')),
         findsOneWidget,
       );
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('散章'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('散章')),
         findsOneWidget,
       );
     });
@@ -1349,34 +1310,22 @@ void main() {
       await openChapterTree(tester);
 
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一章：启程'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
         findsOneWidget,
       );
 
       // 点击卷头 → 组内章节隐藏
       await tester.tap(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一卷'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一卷')),
       );
       await tester.pumpAndSettle();
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一章：启程'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
         findsNothing,
       );
       // 卷头仍在
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一卷'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一卷')),
         findsOneWidget,
       );
     });
@@ -1461,10 +1410,7 @@ void main() {
       expect(volumes.length, 1);
       expect(volumes.first.title, '风起篇');
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('风起篇'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('风起篇')),
         findsOneWidget,
       );
       expect(find.textContaining('已创建《风起篇》'), findsOneWidget);
@@ -1485,10 +1431,7 @@ void main() {
       expect(volumes.length, 1);
       expect(volumes.first.title, '第一卷');
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一卷'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一卷')),
         findsOneWidget,
       );
       await dismissSnack(tester);
@@ -1505,10 +1448,7 @@ void main() {
 
       // 长按卷头 → 卷操作弹层 → 删除卷
       await tester.longPress(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一卷'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一卷')),
       );
       await tester.pumpAndSettle();
       await tester.tap(find.text('删除卷'));
@@ -1525,17 +1465,11 @@ void main() {
 
       // 抽屉刷新：卷头消失；卷内章节一并从列表消失
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一卷'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一卷')),
         findsNothing,
       );
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('第一章：启程'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
         findsNothing,
       );
       await dismissSnack(tester);
@@ -1545,10 +1479,7 @@ void main() {
       final volRepo = VolumeRepository(db);
       final v1 = await volRepo.createVolume(manuscriptId, title: '第一卷');
       final chRepo = ChapterRepository(db);
-      final looseId = await chRepo.createChapter(
-        manuscriptId,
-        title: '散章',
-      );
+      final looseId = await chRepo.createChapter(manuscriptId, title: '散章');
 
       await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
       await tester.pumpAndSettle();
@@ -1556,10 +1487,7 @@ void main() {
 
       // 批次90 修复3：长按「散章」→ 首先弹操作菜单（重命名 / 移动到卷）
       await tester.longPress(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('散章'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('散章')),
       );
       await tester.pumpAndSettle();
       // 从操作菜单里选「移动到卷」
@@ -1614,18 +1542,17 @@ void main() {
       );
       // 列表内「新建章节」行唯一存在
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('新建章节'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('新建章节')),
         findsOneWidget,
       );
       // 位于列表末尾（Drawer 内最后一个文本）
       final texts = tester
-          .widgetList<Text>(find.descendant(
-            of: find.byType(Drawer),
-            matching: find.byType(Text),
-          ))
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(Drawer),
+              matching: find.byType(Text),
+            ),
+          )
           .map((t) => t.data ?? '')
           .toList();
       expect(texts.last, '新建章节');
@@ -1641,26 +1568,25 @@ void main() {
       await openChapterTree(tester);
 
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('新建章节'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('新建章节')),
         findsOneWidget,
       );
       final texts = tester
-          .widgetList<Text>(find.descendant(
-            of: find.byType(Drawer),
-            matching: find.byType(Text),
-          ))
+          .widgetList<Text>(
+            find.descendant(
+              of: find.byType(Drawer),
+              matching: find.byType(Text),
+            ),
+          )
           .map((t) => t.data ?? '')
           .toList();
       expect(texts.last, '新建章节');
     });
 
     testWidgets('#89-4-3 空态：引导 + 新建章节入口可点击（触发新建）', (tester) async {
-      final emptyMs = await ManuscriptRepository(db).createManuscript(
-        title: '空作品',
-      );
+      final emptyMs = await ManuscriptRepository(
+        db,
+      ).createManuscript(title: '空作品');
       var createTapped = 0;
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -1684,18 +1610,12 @@ void main() {
 
       expect(find.text('还没有章节'), findsOneWidget);
       expect(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('新建章节'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('新建章节')),
         findsOneWidget,
       );
 
       await tester.tap(
-        find.descendant(
-          of: find.byType(Drawer),
-          matching: find.text('新建章节'),
-        ),
+        find.descendant(of: find.byType(Drawer), matching: find.text('新建章节')),
       );
       await tester.pumpAndSettle();
       expect(createTapped, 1, reason: '空态下列表项应可触发新建');
@@ -1718,15 +1638,10 @@ void main() {
       await openOutline(tester);
 
       expect(find.text('还没有大纲'), findsOneWidget);
-      expect(
-        find.textContaining('去教练面板做次诊断'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('去教练面板做次诊断'), findsOneWidget);
     });
 
-    testWidgets('#83-7 有实体 → 抽屉按类型分组展示 + 印象 + 第N章标签', (
-      tester,
-    ) async {
+    testWidgets('#83-7 有实体 → 抽屉按类型分组展示 + 印象 + 第N章标签', (tester) async {
       final repo = OutlineRepository(db);
       await repo.insertEntity(
         manuscriptId: manuscriptId,
@@ -1835,8 +1750,7 @@ void main() {
       final chapterId = await chRepo.createChapter(
         msId,
         title: '长章',
-        content:
-            '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
+        content: '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
       );
       return (msId: msId, chapterId: chapterId);
     }
@@ -1867,7 +1781,12 @@ void main() {
     testWidgets('#83-10 改写 → 用这个 → 替换选区 + 落库', (tester) async {
       final preset = await presetLongChapter();
       final c = buildSelectionContainer([_v1s]);
-      await pumpWithContainer(tester, c, id: preset.chapterId, msId: preset.msId);
+      await pumpWithContainer(
+        tester,
+        c,
+        id: preset.chapterId,
+        msId: preset.msId,
+      );
       await selectText(tester, end: 20);
 
       await tester.tap(find.text('改写这段'));
@@ -1891,7 +1810,12 @@ void main() {
     testWidgets('#83-11 续写 → 用这个 → 插入到选中文本之后', (tester) async {
       final preset = await presetLongChapter();
       final c = buildSelectionContainer([_v1s]);
-      await pumpWithContainer(tester, c, id: preset.chapterId, msId: preset.msId);
+      await pumpWithContainer(
+        tester,
+        c,
+        id: preset.chapterId,
+        msId: preset.msId,
+      );
       await selectText(tester, end: 20);
 
       await tester.tap(find.text('续写这段'));
@@ -1911,7 +1835,12 @@ void main() {
     testWidgets('#83-12 扩写 → 用这个 → 替换选区 + 落库', (tester) async {
       final preset = await presetLongChapter();
       final c = buildSelectionContainer([_v2s]);
-      await pumpWithContainer(tester, c, id: preset.chapterId, msId: preset.msId);
+      await pumpWithContainer(
+        tester,
+        c,
+        id: preset.chapterId,
+        msId: preset.msId,
+      );
       await selectText(tester, end: 20);
 
       await tester.tap(find.text('扩写这段'));
@@ -1923,10 +1852,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final editable = tester.state<EditableTextState>(editorEditable());
-      expect(
-        editable.textEditingValue.text,
-        startsWith('北风里，旅人的围巾被吹得猎猎作响。'),
-      );
+      expect(editable.textEditingValue.text, startsWith('北风里，旅人的围巾被吹得猎猎作响。'));
       final chapter = await ChapterRepository(db).getChapter(preset.chapterId);
       expect(chapter!.content, startsWith('北风里，旅人的围巾'));
       await settleSnackBar(tester);
@@ -1935,7 +1861,12 @@ void main() {
     testWidgets('#83-13 换一换 → 重新生成一批版本', (tester) async {
       final preset = await presetLongChapter();
       final c = buildSelectionContainer([_v1s, _v2s]);
-      await pumpWithContainer(tester, c, id: preset.chapterId, msId: preset.msId);
+      await pumpWithContainer(
+        tester,
+        c,
+        id: preset.chapterId,
+        msId: preset.msId,
+      );
       await selectText(tester, end: 20);
 
       await tester.tap(find.text('改写这段'));
@@ -1962,7 +1893,12 @@ void main() {
         ],
       );
       addTearDown(failing.dispose);
-      await pumpWithContainer(tester, failing, id: preset.chapterId, msId: preset.msId);
+      await pumpWithContainer(
+        tester,
+        failing,
+        id: preset.chapterId,
+        msId: preset.msId,
+      );
       await selectText(tester, end: 20);
 
       await tester.tap(find.text('改写这段'));
@@ -1974,17 +1910,11 @@ void main() {
 
   group('批次83：parseSelectionVersions 解析', () {
     test('按【版本N】标记切分', () {
-      expect(
-        parseSelectionVersions('【版本一】A\n【版本二】B\n【版本三】C'),
-        ['A', 'B', 'C'],
-      );
+      expect(parseSelectionVersions('【版本一】A\n【版本二】B\n【版本三】C'), ['A', 'B', 'C']);
     });
 
     test('兜底：编号行切分', () {
-      expect(
-        parseSelectionVersions('1. A\n2. B\n3. C'),
-        ['A', 'B', 'C'],
-      );
+      expect(parseSelectionVersions('1. A\n2. B\n3. C'), ['A', 'B', 'C']);
     });
 
     test('兜底：整段当一个版本', () {
@@ -2003,8 +1933,10 @@ void main() {
       of: find.byType(BottomSheet),
       matching: find.byType(TextField),
     );
+
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
     Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+
     /// 当前编辑器选区（定位断言用）
     TextSelection editorSelection(WidgetTester tester) =>
         tester.widget<TextField>(editorTextField()).controller!.selection;
@@ -2026,9 +1958,7 @@ void main() {
       expect(computeMatches('aaaa', 'aa'), [0, 2]);
     });
 
-    testWidgets('#84-6 ⋮ 菜单 → 查找替换 → 弹层打开（标题 + 查找/替换输入 + 提示）', (
-      tester,
-    ) async {
+    testWidgets('#84-6 ⋮ 菜单 → 查找替换 → 弹层打开（标题 + 查找/替换输入 + 提示）', (tester) async {
       await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
       await tester.pumpAndSettle();
 
@@ -2200,8 +2130,10 @@ void main() {
       of: find.byType(BottomSheet),
       matching: find.byType(TextField),
     );
+
     /// 编辑器正文 TextField
     Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+
     /// 当前编辑器选区
     TextSelection editorSelection(WidgetTester tester) =>
         tester.widget<TextField>(editorTextField()).controller!.selection;
@@ -2222,10 +2154,7 @@ void main() {
 
     test('buildSnippet 命中片段截取 + 省略号', () {
       // 短文本：首处命中前后各 20 字，不超界 → 不补省略号
-      expect(
-        buildSnippet('这是一个大雪纷飞的夜晚。', 4, 2),
-        '这是一个大雪纷飞的夜晚。',
-      );
+      expect(buildSnippet('这是一个大雪纷飞的夜晚。', 4, 2), '这是一个大雪纷飞的夜晚。');
       // 长文本：命中在中间 → 前后截断 + 省略号 + 命中词完整保留
       final long = '${'甲' * 30}命中词${'乙' * 30}';
       final s = buildSnippet(long, 30, 3);
@@ -2238,9 +2167,7 @@ void main() {
       expect(head, contains('命中词'));
     });
 
-    testWidgets('#96-11 ⋮ 菜单「全文搜索」→ 打开即全书视图（标题 + 查询框）', (
-      tester,
-    ) async {
+    testWidgets('#96-11 ⋮ 菜单「全文搜索」→ 打开即全书视图（标题 + 查询框）', (tester) async {
       await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
       await tester.pumpAndSettle();
 
@@ -2366,37 +2293,35 @@ void main() {
 
     test('diffText：两版相同 → 整段 same', () {
       final segs = diffText('ABC', 'ABC');
-      expect(
-        segs.map((s) => (s.text, s.kind)).toList(),
-        [('ABC', DiffKind.same)],
-      );
+      expect(segs.map((s) => (s.text, s.kind)).toList(), [
+        ('ABC', DiffKind.same),
+      ]);
     });
 
     test('diffText：版本尾部新增 → same + added', () {
       final segs = diffText('AB', 'ABC');
-      expect(
-        segs.map((s) => (s.text, s.kind)).toList(),
-        [('AB', DiffKind.same), ('C', DiffKind.added)],
-      );
+      expect(segs.map((s) => (s.text, s.kind)).toList(), [
+        ('AB', DiffKind.same),
+        ('C', DiffKind.added),
+      ]);
     });
 
     test('diffText：版本删词 → same + removed + same', () {
       final segs = diffText('你好世界', '你世界');
-      expect(
-        segs.map((s) => (s.text, s.kind)).toList(),
-        [('你', DiffKind.same), ('好', DiffKind.removed), ('世界', DiffKind.same)],
-      );
+      expect(segs.map((s) => (s.text, s.kind)).toList(), [
+        ('你', DiffKind.same),
+        ('好', DiffKind.removed),
+        ('世界', DiffKind.same),
+      ]);
     });
 
     test('diffText：当前为空 → 整段 added；版本为空 → 整段 removed', () {
-      expect(
-        diffText('', '新内容').map((s) => (s.text, s.kind)).toList(),
-        [('新内容', DiffKind.added)],
-      );
-      expect(
-        diffText('旧内容', '').map((s) => (s.text, s.kind)).toList(),
-        [('旧内容', DiffKind.removed)],
-      );
+      expect(diffText('', '新内容').map((s) => (s.text, s.kind)).toList(), [
+        ('新内容', DiffKind.added),
+      ]);
+      expect(diffText('旧内容', '').map((s) => (s.text, s.kind)).toList(), [
+        ('旧内容', DiffKind.removed),
+      ]);
     });
 
     test('diffText：换行保留 + 无损重建（跳过 removed 得版本，跳过 added 得当前）', () {
@@ -2405,9 +2330,11 @@ void main() {
       final segs = diffText(current, version);
       String rebuild({required bool skipAdded, required bool skipRemoved}) =>
           segs
-              .where((s) =>
-                  !(skipAdded && s.kind == DiffKind.added) &&
-                  !(skipRemoved && s.kind == DiffKind.removed))
+              .where(
+                (s) =>
+                    !(skipAdded && s.kind == DiffKind.added) &&
+                    !(skipRemoved && s.kind == DiffKind.removed),
+              )
               .map((s) => s.text)
               .join();
       expect(rebuild(skipAdded: true, skipRemoved: false), current);
@@ -2438,17 +2365,14 @@ void main() {
       // 差异正文 = 含「他裹紧了衣领」片段的 RichText（Text 内部也是 RichText，需按内容定位）
       final diffRich = tester
           .widgetList<RichText>(find.byType(RichText))
-          .firstWhere(
-            (r) {
-              final buf = StringBuffer();
-              r.text.visitChildren((span) {
-                if (span is TextSpan && span.text != null) buf.write(span.text);
-                return true;
-              });
-              return buf.toString().contains('他裹紧了衣领');
-            },
-            orElse: () => fail('未找到差异富文本'),
-          );
+          .firstWhere((r) {
+            final buf = StringBuffer();
+            r.text.visitChildren((span) {
+              if (span is TextSpan && span.text != null) buf.write(span.text);
+              return true;
+            });
+            return buf.toString().contains('他裹紧了衣领');
+          }, orElse: () => fail('未找到差异富文本'));
       // 新增段带绿底（successBg），且新增内容完整保留
       var addedText = '';
       diffRich.text.visitChildren((span) {
@@ -2487,6 +2411,7 @@ void main() {
   group('批次85：完成度徽标（P2 效率组①）', () {
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
     Finder editorTextField() => find.byKey(const Key('chapterContentField'));
+
     /// 完成度徽标内的文本（AppBar 标题 EditableText 可能与徽标同文 → 限定徽标内）
     Finder badgeText(String label) => find.descendant(
       of: find.byKey(const Key('completionBadge')),
@@ -2586,9 +2511,7 @@ void main() {
       expect(currentSegmentRange(text, 99), (start: 10, end: 14));
     });
 
-    testWidgets('#85-6 排版设置 →「行段聚焦」开关 → 开启 + 控制器同步', (
-      tester,
-    ) async {
+    testWidgets('#85-6 排版设置 →「行段聚焦」开关 → 开启 + 控制器同步', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
@@ -2613,9 +2536,9 @@ void main() {
         find.widgetWithText(SwitchListTile, '行段聚焦'),
       );
       expect(sw2.value, isTrue);
-      final ctrl = tester
-              .widget<TextField>(editorTextField())
-              .controller! as FocusAwareEditingController;
+      final ctrl =
+          tester.widget<TextField>(editorTextField()).controller!
+              as FocusAwareEditingController;
       expect(ctrl.focusMode, isTrue);
       expect(ctrl.text, '这是一个大雪纷飞的夜晚。');
     });
@@ -2644,12 +2567,14 @@ void main() {
         title: '多段',
         content: '第一段。\n第二段。\n第三段。',
       );
-      await tester.pumpWidget(buildWritingPage(id: multiId, msId: manuscriptId));
+      await tester.pumpWidget(
+        buildWritingPage(id: multiId, msId: manuscriptId),
+      );
       await tester.pumpAndSettle();
 
-      final ctrl = tester
-              .widget<TextField>(editorTextField())
-              .controller! as FocusAwareEditingController;
+      final ctrl =
+          tester.widget<TextField>(editorTextField()).controller!
+              as FocusAwareEditingController;
       ctrl.focusMode = true;
       // 光标在第二段内
       ctrl.selection = const TextSelection.collapsed(offset: 6);
@@ -2663,17 +2588,11 @@ void main() {
       expect(children.length, 3);
       // 前缀/后缀淡化（alpha 0.32），当前段正常
       expect(children[0].text, '第一段。\n');
-      expect(
-        children[0].style?.color,
-        Colors.black.withValues(alpha: 0.32),
-      );
+      expect(children[0].style?.color, Colors.black.withValues(alpha: 0.32));
       expect(children[1].text, '第二段。');
       expect(children[1].style?.color, isNull);
       expect(children[2].text, '\n第三段。');
-      expect(
-        children[2].style?.color,
-        Colors.black.withValues(alpha: 0.32),
-      );
+      expect(children[2].style?.color, Colors.black.withValues(alpha: 0.32));
     });
   });
 
@@ -2683,6 +2602,7 @@ void main() {
       of: find.byType(BottomSheet),
       matching: find.byType(TextField),
     );
+
     /// 编辑器正文 TextField（AppBar 标题也是 TextField，需限定编辑器容器内）
     Finder editorTextField() => find.byKey(const Key('chapterContentField'));
 
@@ -2694,9 +2614,7 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('#85-9 ⋮ 菜单 → 快捷短语 → 弹层打开（标题 + 输入框 + 空态）', (
-      tester,
-    ) async {
+    testWidgets('#85-9 ⋮ 菜单 → 快捷短语 → 弹层打开（标题 + 输入框 + 空态）', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
       await openQuickPhrases(tester);
@@ -2732,10 +2650,7 @@ void main() {
 
       // 光标默认在文末 → 追加；即时保存到 store
       final field = tester.widget<TextField>(editorTextField());
-      expect(
-        field.controller!.text,
-        '这是一个大雪纷飞的夜晚。他紧了紧衣领。',
-      );
+      expect(field.controller!.text, '这是一个大雪纷飞的夜晚。他紧了紧衣领。');
       expect(
         container.read(writingStoreProvider(chapterId).notifier).currentContent,
         '这是一个大雪纷飞的夜晚。他紧了紧衣领。',
@@ -2788,9 +2703,7 @@ void main() {
 
     testWidgets('#85-14 预置画像 → summary + 五维标签 + 置信度', (tester) async {
       // student_model.session_id 外键需先有 session
-      final sid = await SessionRepository(db).createBlankSession(
-        title: '文风测试',
-      );
+      final sid = await SessionRepository(db).createBlankSession(title: '文风测试');
       await StudentModelRepository(db).updateStyleProfile(
         sid,
         WritingStyleProfile(
@@ -2844,11 +2757,7 @@ void main() {
       final msRepo2 = ManuscriptRepository(db2);
       final chRepo2 = ChapterRepository(db2);
       final ms2 = await msRepo2.createManuscript(title: '空作品');
-      final ch2 = await chRepo2.createChapter(
-        ms2,
-        title: '空章',
-        content: '',
-      );
+      final ch2 = await chRepo2.createChapter(ms2, title: '空章', content: '');
 
       await pumpWithContainer(tester, container2, id: ch2);
       await openWritingStats(tester);
@@ -2908,9 +2817,8 @@ void main() {
       await tester.pumpAndSettle();
       await openWritingStats(tester);
 
-      ChoiceChip chip(int d) => tester.widget<ChoiceChip>(
-        find.widgetWithText(ChoiceChip, '近$d天'),
-      );
+      ChoiceChip chip(int d) =>
+          tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, '近$d天'));
 
       // 默认近 14 天选中
       expect(chip(14).selected, isTrue);
@@ -3118,10 +3026,7 @@ void main() {
         find.descendant(of: bar, matching: find.text('。')),
         findsOneWidget,
       );
-      expect(
-        find.descendant(of: bar, matching: find.text('？')),
-        findsNothing,
-      );
+      expect(find.descendant(of: bar, matching: find.text('？')), findsNothing);
     });
 
     testWidgets('#86-2 未配置 → 标点栏渲染默认 15 项', (tester) async {
@@ -3314,10 +3219,7 @@ void main() {
       final repo = AppStateRepository(db);
       // 版本一相对当前（当前=初始正文「这是一个大雪纷飞的夜晚。」）新增「，雪很大」
       // （字符级 LCS 把句号匹配为 same）→ +4
-      await repo.addChapterVersion(
-        chapterId,
-        '这是一个大雪纷飞的夜晚，雪很大。',
-      );
+      await repo.addChapterVersion(chapterId, '这是一个大雪纷飞的夜晚，雪很大。');
       // 版本二与当前一致 → 无角标
       await repo.addChapterVersion(chapterId, '这是一个大雪纷飞的夜晚。');
 
@@ -3421,9 +3323,7 @@ void main() {
       expect(sw2.value, isFalse);
     });
 
-    testWidgets('#88-2 预置隐藏 → 页面无 FAB；排版设置「显示对话按钮」→ 恢复', (
-      tester,
-    ) async {
+    testWidgets('#88-2 预置隐藏 → 页面无 FAB；排版设置「显示对话按钮」→ 恢复', (tester) async {
       await AppStateRepository(db).setFabVisible(false);
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
@@ -3471,9 +3371,7 @@ void main() {
       final saved = await AppStateRepository(db).getFabPosition();
       expect(saved, isNotNull);
       final positioned = tester.widget<Positioned>(
-        find
-            .ancestor(of: fabFinder, matching: find.byType(Positioned))
-            .first,
+        find.ancestor(of: fabFinder, matching: find.byType(Positioned)).first,
       );
       expect(positioned.left, closeTo(saved!.dx, 1));
       expect(positioned.top, closeTo(saved.dy, 1));
@@ -3559,9 +3457,7 @@ void main() {
         '0',
       );
       // 关闭弹层后回车不再补缩进
-      Navigator.of(
-        tester.element(find.byType(BottomSheet)),
-      ).pop();
+      Navigator.of(tester.element(find.byType(BottomSheet))).pop();
       await tester.pumpAndSettle();
 
       await tester.enterText(editorFinder(), '第一段。\n');
@@ -3578,9 +3474,7 @@ void main() {
       await tester.tap(find.text('段间空行'));
       await tester.pumpAndSettle();
       expect(await AppStateRepository(db).getValue('editor_blank_line'), '1');
-      Navigator.of(
-        tester.element(find.byType(BottomSheet)),
-      ).pop();
+      Navigator.of(tester.element(find.byType(BottomSheet))).pop();
       await tester.pumpAndSettle();
 
       await tester.enterText(editorFinder(), '第一段。\n');
@@ -3999,10 +3893,7 @@ void main() {
       final field = tester.widget<TextField>(
         find.byKey(const Key('chapterContentField')),
       );
-      expect(
-        field.controller!.text,
-        '\u3000\u3000第一段。\n\u3000\u3000第二段。',
-      );
+      expect(field.controller!.text, '\u3000\u3000第一段。\n\u3000\u3000第二段。');
       expect(find.text('已应用到全文'), findsOneWidget);
       // 已落库
       final saved = await chRepo.getChapter(id);
@@ -4017,5 +3908,3 @@ void main() {
     });
   });
 }
-
-

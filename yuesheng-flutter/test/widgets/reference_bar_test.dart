@@ -297,11 +297,9 @@ void main() {
   testWidgets('#11 主引用章节行显示「选段」按钮，非主引用/作品不显示', (tester) async {
     await newSession();
     final msId = await msRepo.createManuscript(title: '测试小说', genre: '小说');
-    final chId = await ChapterRepository(db).createChapter(
-      msId,
-      title: '第一章',
-      content: '第一段。\n第二段。',
-    );
+    final chId = await ChapterRepository(
+      db,
+    ).createChapter(msId, title: '第一章', content: '第一段。\n第二段。');
     await refRepo.addReference(sessionId, 'chapter', chId, isPrimary: true);
     await refRepo.addReference(sessionId, 'manuscript', msId);
 
@@ -343,7 +341,10 @@ void main() {
 
     // DB 验证：锚点 = 第 2 段（0-based 1）
     final refs = await refRepo.listReferencesOfSession(sessionId);
-    expect(refs.first.excerptRange, '{"chapterId":"$chId","startPara":1,"endPara":1}');
+    expect(
+      refs.first.excerptRange,
+      '{"chapterId":"$chId","startPara":1,"endPara":1}',
+    );
     // SnackBar
     expect(find.text('已选段：第 2 段'), findsOneWidget);
   });

@@ -2,7 +2,6 @@
 part of 'chat_page.dart';
 
 extension _ChatAttitude on _ChatPageState {
-
   /// 切换态度：乐观更新 → persistAttitude 双写 → 失败回滚（对齐 RN setAttitude）
   Future<void> _handleAttitudeChange(AttitudeLevel attitude) async {
     if (attitude == _attitude) return;

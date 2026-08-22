@@ -131,4 +131,3 @@ String _escapeJsonString(String s) {
       .replaceAll('\r', r'\r')
       .replaceAll('\t', r'\t');
 }
-

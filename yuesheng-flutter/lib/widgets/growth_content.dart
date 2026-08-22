@@ -2,7 +2,6 @@
 part of 'growth_detail_page.dart';
 
 extension _GrowthContent on _GrowthDetailPageState {
-
   String _cognitiveStyleLabel(CognitiveStyle style) {
     switch (style) {
       case CognitiveStyle.analytical:

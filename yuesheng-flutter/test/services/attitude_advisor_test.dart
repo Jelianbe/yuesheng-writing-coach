@@ -288,10 +288,7 @@ void main() {
     });
 
     test('最新用户消息是安全词「轻一点」→ 强制达到降档阈值', () {
-      final messages = [
-        msg('user', '老师你说话轻一点'),
-        msg('assistant', '好的'),
-      ];
+      final messages = [msg('user', '老师你说话轻一点'), msg('assistant', '好的')];
       expect(
         computeAttitudeDowngradeSignal(messages),
         AttitudeThresholds.negativeFeedbackDowngradeCount,

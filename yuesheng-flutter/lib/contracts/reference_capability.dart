@@ -123,11 +123,7 @@ abstract class ReferenceCapability {
   });
 
   /// 移除引用（若删主引用则自动另选）。
-  Future<void> removeReference(
-    String sessionId,
-    String refType,
-    String refId,
-  );
+  Future<void> removeReference(String sessionId, String refType, String refId);
 
   /// 设主引用。
   Future<void> setPrimaryReference(

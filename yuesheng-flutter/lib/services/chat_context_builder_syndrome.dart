@@ -198,4 +198,3 @@ String buildStructuredSyndromeContext(
   }
   return '$body\n\n---\n\n$styleTechniqueSection';
 }
-

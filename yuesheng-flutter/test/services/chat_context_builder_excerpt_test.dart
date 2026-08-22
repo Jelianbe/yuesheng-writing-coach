@@ -33,7 +33,9 @@ ChapterBrief _chapter({String? content}) {
 void main() {
   group('parseParagraphAnchor（A-3）', () {
     test('合法 JSON → 解析 chapterId/startPara/endPara', () {
-      final r = parseParagraphAnchor('{"chapterId":"ch-1","startPara":2,"endPara":5}');
+      final r = parseParagraphAnchor(
+        '{"chapterId":"ch-1","startPara":2,"endPara":5}',
+      );
       expect(r, isNotNull);
       expect(r!.chapterId, 'ch-1');
       expect(r.startPara, 2);
@@ -48,8 +50,14 @@ void main() {
     test('非法 JSON / 缺字段 / start>end / 负数 → null', () {
       expect(parseParagraphAnchor('not-json'), isNull);
       expect(parseParagraphAnchor('{"chapterId":"x"}'), isNull);
-      expect(parseParagraphAnchor('{"chapterId":"x","startPara":5,"endPara":2}'), isNull);
-      expect(parseParagraphAnchor('{"chapterId":"x","startPara":-1,"endPara":10}'), isNull);
+      expect(
+        parseParagraphAnchor('{"chapterId":"x","startPara":5,"endPara":2}'),
+        isNull,
+      );
+      expect(
+        parseParagraphAnchor('{"chapterId":"x","startPara":-1,"endPara":10}'),
+        isNull,
+      );
       // 旧版字符偏移格式 {"start","end"} 已废弃 → null
       expect(parseParagraphAnchor('{"start":100,"end":320}'), isNull);
     });
@@ -95,58 +103,51 @@ void main() {
     }
 
     test('主引用 chapter + excerptRange → 输出选段诊断提示（不含整章）', () {
-      final ctx = buildReferencesContext(
-        [
-          ReferenceItem(
-            refType: 'chapter',
-            refId: 'ch-1',
-            title: '第一章',
-            isPrimary: 1,
-            manuscriptId: 'ms-1',
-            excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
-          ),
-        ],
-        resolvers: resolvers(),
-      );
+      final ctx = buildReferencesContext([
+        ReferenceItem(
+          refType: 'chapter',
+          refId: 'ch-1',
+          title: '第一章',
+          isPrimary: 1,
+          manuscriptId: 'ms-1',
+          excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
+        ),
+      ], resolvers: resolvers());
       expect(ctx, contains('【选段诊断】'));
       expect(ctx, contains('选中片段'));
-      expect(ctx, isNot(contains('【位置提示】请根据内容判断这是原文章节的开头/中段/结尾')),
-          reason: '带选段范围时不再走整章位置提示');
+      expect(
+        ctx,
+        isNot(contains('【位置提示】请根据内容判断这是原文章节的开头/中段/结尾')),
+        reason: '带选段范围时不再走整章位置提示',
+      );
     });
 
     test('主引用 chapter 无 excerptRange → 回退整章路径', () {
-      final ctx = buildReferencesContext(
-        [
-          ReferenceItem(
-            refType: 'chapter',
-            refId: 'ch-1',
-            title: '第一章',
-            isPrimary: 1,
-            manuscriptId: 'ms-1',
-          ),
-        ],
-        resolvers: resolvers(),
-      );
+      final ctx = buildReferencesContext([
+        ReferenceItem(
+          refType: 'chapter',
+          refId: 'ch-1',
+          title: '第一章',
+          isPrimary: 1,
+          manuscriptId: 'ms-1',
+        ),
+      ], resolvers: resolvers());
       expect(ctx, contains('【位置提示】请根据内容判断这是原文章节的开头/中段/结尾'));
       expect(ctx, isNot(contains('【选段诊断】')));
     });
 
     test('次要引用 chapter 带 excerptRange → 不展开选段（仅主引用优先）', () {
-      final ctx = buildReferencesContext(
-        [
-          ReferenceItem(
-            refType: 'chapter',
-            refId: 'ch-1',
-            title: '第一章',
-            isPrimary: 0,
-            manuscriptId: 'ms-1',
-            excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
-          ),
-        ],
-        resolvers: resolvers(),
-      );
-      expect(ctx, isNot(contains('【选段诊断】')),
-          reason: '选段展开仅限主引用');
+      final ctx = buildReferencesContext([
+        ReferenceItem(
+          refType: 'chapter',
+          refId: 'ch-1',
+          title: '第一章',
+          isPrimary: 0,
+          manuscriptId: 'ms-1',
+          excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
+        ),
+      ], resolvers: resolvers());
+      expect(ctx, isNot(contains('【选段诊断】')), reason: '选段展开仅限主引用');
     });
   });
 
@@ -175,10 +176,7 @@ void main() {
     });
 
     test('多段落正文 → 只返回关键词所在段落（不含其它段落）', () {
-      final r = findKeywordExcerpt(
-        '第一段包含目标词。\n第二段没有。\n第三段也没有。',
-        '目标词',
-      );
+      final r = findKeywordExcerpt('第一段包含目标词。\n第二段没有。\n第三段也没有。', '目标词');
       expect(r, isNotNull);
       expect(r, contains('目标词'));
       expect(r, isNot(contains('第二段')));

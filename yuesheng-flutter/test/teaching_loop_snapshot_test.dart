@@ -85,7 +85,8 @@ Map<String, dynamic> _snapshotCase(String id, String file) {
   final diag = parseDiagnosis(raw);
   final d = diag.diagnosis;
   final allIds = d?.syndromes.map((s) => s.syndromeId).toList() ?? <String>[];
-  final l2Ids = d?.syndromes
+  final l2Ids =
+      d?.syndromes
           .where((s) => s.severity == Severity.l2)
           .map((s) => s.syndromeId)
           .toList() ??
@@ -121,9 +122,7 @@ Map<String, dynamic> _snapshotCase(String id, String file) {
       'passed': cons?.passed ?? false,
       'violationCount': cons?.violations.length ?? 0,
     },
-    'compliance': {
-      'naturalLanguageLeakP0xx': leak,
-    },
+    'compliance': {'naturalLanguageLeakP0xx': leak},
   };
 }
 
@@ -131,21 +130,20 @@ Map<String, dynamic> _snapshotCase(String id, String file) {
 List<String> _diff(String path, dynamic a, dynamic b) {
   final out = <String>[];
   if (a is Map && b is Map) {
-    final keys = <String>{
-      ...a.keys.cast<String>(),
-      ...b.keys.cast<String>(),
-    };
+    final keys = <String>{...a.keys.cast<String>(), ...b.keys.cast<String>()};
     for (final k in keys) {
       out.addAll(_diff('$path.$k', a[k], b[k]));
     }
   } else if (a is List && b is List) {
     final n = a.length > b.length ? a.length : b.length;
     for (var i = 0; i < n; i++) {
-      out.addAll(_diff(
-        '$path[$i]',
-        i < a.length ? a[i] : null,
-        i < b.length ? b[i] : null,
-      ));
+      out.addAll(
+        _diff(
+          '$path[$i]',
+          i < a.length ? a[i] : null,
+          i < b.length ? b[i] : null,
+        ),
+      );
     }
   } else if (a != b) {
     out.add('$path: ${a ?? '∅'} → ${b ?? '∅'}');
@@ -155,8 +153,7 @@ List<String> _diff(String path, dynamic a, dynamic b) {
 
 void main() {
   test('教学闭环结构化决策快照回归', () {
-    final updating =
-        (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
+    final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
 
     // 计算当前全部 47 例的结构化快照
     final currentCases = <String, dynamic>{};
@@ -181,10 +178,11 @@ void main() {
         ..writeAsStringSync(
           const JsonEncoder.withIndent('  ').convert(current),
         );
-      print('[snapshot] ${updating ? "已重生成" : "已生成"}基线 → $kSnapshotPath '
-          '(${_corpus.length} 例)');
-      expect(currentCases, isNotEmpty,
-          reason: '基线不应为空（生成模式）');
+      print(
+        '[snapshot] ${updating ? "已重生成" : "已生成"}基线 → $kSnapshotPath '
+        '(${_corpus.length} 例)',
+      );
+      expect(currentCases, isNotEmpty, reason: '基线不应为空（生成模式）');
       return;
     }
 
@@ -193,8 +191,11 @@ void main() {
     final stored = jsonDecode(storedRaw) as Map<String, dynamic>;
     final storedCases = stored['cases'] as Map<String, dynamic>;
 
-    expect(storedCases.length, equals(currentCases.length),
-        reason: '案例数量变化（新增/删除 fixture 需同步更新清单与快照）');
+    expect(
+      storedCases.length,
+      equals(currentCases.length),
+      reason: '案例数量变化（新增/删除 fixture 需同步更新清单与快照）',
+    );
 
     final diffs = <String>[];
     for (final id in currentCases.keys) {
@@ -219,8 +220,10 @@ void main() {
         print('  ... 其余 ${diffs.length - 40} 处省略');
       }
       print('[snapshot] 若漂移为预期改动，请运行：');
-      print('  UPDATE_SNAPSHOTS=true flutter test '
-          'test/teaching_loop_snapshot_test.dart');
+      print(
+        '  UPDATE_SNAPSHOTS=true flutter test '
+        'test/teaching_loop_snapshot_test.dart',
+      );
       fail('教学闭环结构化决策发生漂移（${diffs.length} 处），见上方 diff。');
     }
 

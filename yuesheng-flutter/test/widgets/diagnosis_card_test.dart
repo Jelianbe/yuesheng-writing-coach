@@ -388,9 +388,7 @@ void main() {
       expect(find.text('认同'), findsNothing);
     });
 
-    testWidgets('D5B-5 点击「部分认同」→ 插入 partial_agreement 卡片（B1）', (
-      tester,
-    ) async {
+    testWidgets('D5B-5 点击「部分认同」→ 插入 partial_agreement 卡片（B1）', (tester) async {
       await tester.pumpWidget(
         wrapWithSession(SingleChildScrollView(child: cardWithSession())),
       );

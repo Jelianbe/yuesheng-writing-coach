@@ -64,8 +64,9 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
   }
 
   Future<void> _removeAt(int index) async {
-    await AppStateRepository(ref.read(appDatabaseProvider))
-        .removeRecycleBinItemAt(index);
+    await AppStateRepository(
+      ref.read(appDatabaseProvider),
+    ).removeRecycleBinItemAt(index);
     await _load();
   }
 
@@ -76,8 +77,9 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
 
   void _toggleRemoveOnRestore(bool on) {
     setState(() => _removeOnRestore = on);
-    AppStateRepository(ref.read(appDatabaseProvider))
-        .setRecycleBinRemoveOnRestore(on);
+    AppStateRepository(
+      ref.read(appDatabaseProvider),
+    ).setRecycleBinRemoveOnRestore(on);
   }
 
   /// 点击条目 → 关闭 + 回调页面恢复（开关开启时先移除该条）

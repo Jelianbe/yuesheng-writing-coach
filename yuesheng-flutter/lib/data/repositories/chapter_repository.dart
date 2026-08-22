@@ -106,9 +106,7 @@ class ChapterRepository {
   /// 与单条 getChapter 一致地返回）。空列表守卫避免 `IN ()` 非法 SQL。
   Future<List<Chapter>> getChaptersByIds(List<String> ids) async {
     if (ids.isEmpty) return const [];
-    return (_db.select(_db.chapters)
-          ..where((t) => t.id.isIn(ids)))
-        .get();
+    return (_db.select(_db.chapters)..where((t) => t.id.isIn(ids))).get();
   }
 
   /// 列出稿件下所有章节（按 sort_order 排序）
@@ -152,7 +150,8 @@ class ChapterRepository {
                 t.status.equals('archived'),
           )
           ..orderBy([
-            (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+            (t) =>
+                OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
           ]))
         .get();
   }
@@ -311,16 +310,10 @@ class ChapterRepository {
       if (a == null || b == null) return;
       final now = nowSec();
       await (_db.update(_db.chapters)..where((t) => t.id.equals(aId))).write(
-        ChaptersCompanion(
-          sortOrder: Value(b.sortOrder),
-          updatedAt: Value(now),
-        ),
+        ChaptersCompanion(sortOrder: Value(b.sortOrder), updatedAt: Value(now)),
       );
       await (_db.update(_db.chapters)..where((t) => t.id.equals(bId))).write(
-        ChaptersCompanion(
-          sortOrder: Value(a.sortOrder),
-          updatedAt: Value(now),
-        ),
+        ChaptersCompanion(sortOrder: Value(a.sortOrder), updatedAt: Value(now)),
       );
     });
   }
@@ -328,7 +321,9 @@ class ChapterRepository {
   /// 更新章节 sort_order（批次96-1：跨卷移动时置入目标卷末位用）
   /// volumeId 由 VolumeRepository.setChapterVolume 负责，本方法仅改顺序。
   Future<void> updateChapterSortOrder(String chapterId, int sortOrder) async {
-    await (_db.update(_db.chapters)..where((t) => t.id.equals(chapterId))).write(
+    await (_db.update(
+      _db.chapters,
+    )..where((t) => t.id.equals(chapterId))).write(
       ChaptersCompanion(
         sortOrder: Value(sortOrder),
         updatedAt: Value(nowSec()),
@@ -343,16 +338,17 @@ class ChapterRepository {
     List<String> manuscriptIds,
   ) async {
     if (manuscriptIds.isEmpty) return const {};
-    final chapters = await (_db.select(_db.chapters)
-          ..where(
-            (t) =>
-                t.manuscriptId.isIn(manuscriptIds) &
-                t.status.isNotValue('archived'),
-          ))
-        .get();
+    final chapters =
+        await (_db.select(_db.chapters)..where(
+              (t) =>
+                  t.manuscriptId.isIn(manuscriptIds) &
+                  t.status.isNotValue('archived'),
+            ))
+            .get();
     final result = <String, ChapterStat>{};
     for (final c in chapters) {
-      final prev = result[c.manuscriptId] ??
+      final prev =
+          result[c.manuscriptId] ??
           const ChapterStat(chapterCount: 0, totalWords: 0);
       result[c.manuscriptId] = ChapterStat(
         chapterCount: prev.chapterCount + 1,

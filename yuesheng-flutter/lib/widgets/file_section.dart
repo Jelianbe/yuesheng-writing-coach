@@ -261,7 +261,9 @@ class _FileSectionState extends ConsumerState<FileSection> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: AppColors.primarySoft,
-                                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.sm,
+                                    ),
                                   ),
                                   child: Text(
                                     _roleLabels[file.fileRole] ?? file.fileRole,

@@ -24,9 +24,12 @@ void main() {
       m(20000), // systemPrompt（保底，不标记）
       m(8000), // 历史
     ];
-    final report = TokenBudgetGuard.apply(messages, stageIndexes: {
-      BudgetStageNames.history: [1],
-    });
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.history: [1],
+      },
+    );
 
     expect(report.triggered, false);
     expect(report.overWarning, false);
@@ -41,9 +44,12 @@ void main() {
       m(1000), // 画像
     ];
     // 合计 106000：超 warning(102400 = 128000×0.8) 但未超上限
-    final report = TokenBudgetGuard.apply(messages, stageIndexes: {
-      BudgetStageNames.studentProfile: [1],
-    });
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.studentProfile: [1],
+      },
+    );
 
     expect(report.totalBefore > warning, true);
     expect(report.totalBefore <= maxBudget, true);
@@ -62,23 +68,23 @@ void main() {
       m(4000), // idx5 历史2
     ];
     // 合计 143000 > 128000
-    final report = TokenBudgetGuard.apply(messages, stageIndexes: {
-      BudgetStageNames.studentProfile: [1],
-      BudgetStageNames.references: [2],
-      BudgetStageNames.l3Structure: [3],
-      BudgetStageNames.history: [4, 5],
-    });
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.studentProfile: [1],
+        BudgetStageNames.references: [2],
+        BudgetStageNames.l3Structure: [3],
+        BudgetStageNames.history: [4, 5],
+      },
+    );
 
     expect(report.triggered, true);
     // 降级顺序：L3(2) → 画像(5) → 引用(6)；历史(8) 最后裁，此处裁完引用已达标
-    expect(
-      report.droppedStages,
-      [
-        BudgetStageNames.l3Structure,
-        BudgetStageNames.studentProfile,
-        BudgetStageNames.references,
-      ],
-    );
+    expect(report.droppedStages, [
+      BudgetStageNames.l3Structure,
+      BudgetStageNames.studentProfile,
+      BudgetStageNames.references,
+    ]);
     expect(report.droppedMessageCount, 3);
     expect(report.totalAfter <= maxBudget, true);
     // 保底 systemPrompt 与历史保留
@@ -95,9 +101,12 @@ void main() {
       m(5000), // 附属文件
     ];
     // 合计 129000 超限；标记了 引用(未实际注入，索引无效 99)
-    final report = TokenBudgetGuard.apply(messages, stageIndexes: {
-      BudgetStageNames.references: [99], // 无效索引 → 跳过
-    });
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.references: [99], // 无效索引 → 跳过
+      },
+    );
 
     expect(report.overBudget, true); // 超限
     expect(report.triggered, false); // 但无可裁阶段 → 未实际裁剪

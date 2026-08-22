@@ -23,10 +23,7 @@ void main() {
 
     await expectLater(
       guarded,
-      emitsInOrder([
-        equals('你好'),
-        emitsError(isA<TimeoutException>()),
-      ]),
+      emitsInOrder([equals('你好'), emitsError(isA<TimeoutException>())]),
     );
     await src.close();
   });

@@ -24,6 +24,7 @@ const _p2 = '第二段：风雪扑面而来。';
 const _p4 = '第四段：他握紧了手中的剑。';
 const _content = '$_p1\n$_p2\n\n$_p4';
 final _paras = _content.split('\n');
+
 /// 弹层内动作完成后，用返回的 getter 读取 pop 结果
 Future<Object? Function()> pumpSheet(
   WidgetTester tester, {

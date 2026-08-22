@@ -87,16 +87,17 @@ String createV23LegacyDbFile() {
 
 void main() {
   tearDown(() {
-    for (final f in Directory.systemTemp
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.contains('yuesheng_v23_migration_'))) {
+    for (final f in Directory.systemTemp.listSync().whereType<File>().where(
+      (f) => f.path.contains('yuesheng_v23_migration_'),
+    )) {
       f.deleteSync();
     }
   });
 
   test('#1 v23 → v25 升级：status CHECK 扩 archived + 存量保留（含卷归属）', () async {
-    final db = AppDatabase.forTesting(NativeDatabase(File(createV23LegacyDbFile())));
+    final db = AppDatabase.forTesting(
+      NativeDatabase(File(createV23LegacyDbFile())),
+    );
     addTearDown(db.close);
 
     // 1. user_version 升到 25
@@ -117,9 +118,11 @@ void main() {
     expect(archived.map((c) => c.id), contains('c1'));
 
     // 4. manuscripts.tags 列已补（v25 标签落库）
-    final tagsCols = await db.customSelect(
-      "SELECT name FROM pragma_table_info('manuscripts') WHERE name='tags'",
-    ).get();
+    final tagsCols = await db
+        .customSelect(
+          "SELECT name FROM pragma_table_info('manuscripts') WHERE name='tags'",
+        )
+        .get();
     expect(tagsCols.length, 1, reason: 'manuscripts 表缺少 tags 列');
   });
 

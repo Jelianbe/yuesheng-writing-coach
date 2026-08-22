@@ -2,7 +2,6 @@
 part of 'chat_page.dart';
 
 extension _ChatSession on _ChatPageState {
-
   /// 重新从 DB 加载消息列表（导入作品建立主引用后刷新上下文）
   Future<void> _reloadMessages() async {
     final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
@@ -69,8 +68,9 @@ extension _ChatSession on _ChatPageState {
     await _loadSessions();
     if (bootstrap == null || bootstrap.sessionId != sessionId) return;
     _resetSessionScopedState();
-    final remaining =
-        _sessions.where((s) => s.session.id != sessionId).toList();
+    final remaining = _sessions
+        .where((s) => s.session.id != sessionId)
+        .toList();
     if (remaining.isEmpty) {
       await ref.read(sessionBootstrapProvider.notifier).createNew();
     } else {

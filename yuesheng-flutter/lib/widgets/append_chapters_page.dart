@@ -307,7 +307,11 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // 批次66：📁 emoji → Material 图标（taste 审核：UI 图标走图标库）
-                      Icon(Icons.folder_open, size: 20, color: AppColors.primary),
+                      Icon(
+                        Icons.folder_open,
+                        size: 20,
+                        color: AppColors.primary,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         '选择文件',

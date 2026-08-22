@@ -584,7 +584,11 @@ void main() {
       // 无体裁作品封面用弱化灰 #858B92（textTertiary）
       for (final container in blocks) {
         final deco = container.decoration as BoxDecoration;
-        expect(deco.color, const Color(0xFF858B92), reason: '无体裁封面用弱化灰，不再统一竹青图标');
+        expect(
+          deco.color,
+          const Color(0xFF858B92),
+          reason: '无体裁封面用弱化灰，不再统一竹青图标',
+        );
       }
     });
 
@@ -785,7 +789,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('custom-genre-field')), findsOneWidget);
 
-      await tester.enterText(find.byKey(const Key('custom-genre-field')), '克苏鲁');
+      await tester.enterText(
+        find.byKey(const Key('custom-genre-field')),
+        '克苏鲁',
+      );
       await tester.enterText(find.byType(TextField).first, '自定义体裁作品');
       await tester.pumpAndSettle();
       await tester.tap(find.text('创建'));
@@ -816,11 +823,7 @@ void main() {
 
     testWidgets('#93-7 置顶：长按 → 置顶 → sortOrder 最小', (tester) async {
       final repo = ManuscriptRepository(db);
-      await repo.createManuscript(
-        title: '置顶前',
-        genre: '奇幻',
-        sortOrder: 0,
-      );
+      await repo.createManuscript(title: '置顶前', genre: '奇幻', sortOrder: 0);
       final bId = await repo.createManuscript(
         title: '置顶对象',
         genre: '奇幻',
@@ -888,7 +891,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.arrow_back).first);
       await tester.pumpAndSettle();
       // 确实回到书架（详情页已销毁，其 AppBar 标题「刷新作品」仅剩书架卡片一处）
-      expect(find.byType(ManuscriptDetailPage), findsNothing, reason: '详情页应已 pop 销毁');
+      expect(
+        find.byType(ManuscriptDetailPage),
+        findsNothing,
+        reason: '详情页应已 pop 销毁',
+      );
 
       // 章节数已刷新（push().then 触发 _refreshBookshelf + stats 重新加载）
       expect(find.text('1 章 · 0字'), findsOneWidget);

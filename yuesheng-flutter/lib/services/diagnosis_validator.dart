@@ -50,9 +50,7 @@ List<String> validateSyndromeMutexWarnings(List<String> syndromeIds) {
   final warnings = <String>[];
   for (final pair in _kMutexSyndromePairs) {
     if (idSet.contains(pair[0]) && idSet.contains(pair[1])) {
-      warnings.add(
-        '症候互斥 ${pair[0]}/${pair[1]} 同时命中（互斥规则见知识库，warning 级仅记录）',
-      );
+      warnings.add('症候互斥 ${pair[0]}/${pair[1]} 同时命中（互斥规则见知识库，warning 级仅记录）');
     }
   }
   return warnings;

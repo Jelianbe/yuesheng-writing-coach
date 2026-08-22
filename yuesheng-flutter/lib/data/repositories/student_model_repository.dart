@@ -183,11 +183,13 @@ class StudentModelRepository {
   /// M2 修复：跨 session 获取最新写作风格画像
   /// 供 buildStudentContext 注入 LLM，让 AI 了解学员五维风格坐标
   Future<WritingStyleProfile?> getLatestStyleProfile() async {
-    final rows = await _db.customSelect(
-      "SELECT style_profile FROM student_model "
-      "WHERE style_profile IS NOT NULL AND style_profile != '' "
-      'ORDER BY updated_at DESC, rowid DESC LIMIT 1',
-    ).get();
+    final rows = await _db
+        .customSelect(
+          "SELECT style_profile FROM student_model "
+          "WHERE style_profile IS NOT NULL AND style_profile != '' "
+          'ORDER BY updated_at DESC, rowid DESC LIMIT 1',
+        )
+        .get();
     if (rows.isEmpty) return null;
     final raw = rows.first.read<String?>('style_profile');
     if (raw == null) return null;

@@ -157,9 +157,7 @@ void main() {
     expect(find.text('请补充不符合的地方'), findsOneWidget);
   });
 
-  testWidgets('#7 批次81 未接 onSubmit 提交反馈 → 保留文本（杜绝静默清空）', (
-    tester,
-  ) async {
+  testWidgets('#7 批次81 未接 onSubmit 提交反馈 → 保留文本（杜绝静默清空）', (tester) async {
     await tester.pumpWidget(
       buildCard(
         const PartialAgreementCard(

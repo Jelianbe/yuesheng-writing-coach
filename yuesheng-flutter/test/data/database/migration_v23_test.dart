@@ -74,16 +74,17 @@ String createV22LegacyDbFile() {
 void main() {
   tearDown(() {
     // 清理测试生成的临时库文件
-    for (final f in Directory.systemTemp
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.contains('yuesheng_v22_migration_'))) {
+    for (final f in Directory.systemTemp.listSync().whereType<File>().where(
+      (f) => f.path.contains('yuesheng_v22_migration_'),
+    )) {
       f.deleteSync();
     }
   });
 
   test('#1 v22 → v25 升级：volumes 建表 + chapters.volume_id + 存量保留', () async {
-    final db = AppDatabase.forTesting(NativeDatabase(File(createV22LegacyDbFile())));
+    final db = AppDatabase.forTesting(
+      NativeDatabase(File(createV22LegacyDbFile())),
+    );
     addTearDown(db.close);
 
     // 1. user_version 升到 25（v23 卷分组 + v24 回收站 CHECK + v25 标签列一并迁移）

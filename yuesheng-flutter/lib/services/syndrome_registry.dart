@@ -161,11 +161,13 @@ final List<SyndromeRecord> kSyndromeRegistry = List.unmodifiable([
 /// 活跃症候 ID 有序列表（过滤退役；替代 skill_layers.syndromeIds 与
 /// training_knowledge_base.kTrainingSyndromeIds 的手写列表）
 List<String> get kSyndromeIds => List.unmodifiable(
-    kSyndromeRegistry.where((s) => s.retired != true).map((s) => s.id));
+  kSyndromeRegistry.where((s) => s.retired != true).map((s) => s.id),
+);
 
 /// 退役症候 ID 有序列表（b11：历史说明白名单 / 排查用）
 List<String> get kRetiredSyndromeIds => List.unmodifiable(
-    kSyndromeRegistry.where((s) => s.retired == true).map((s) => s.id));
+  kSyndromeRegistry.where((s) => s.retired == true).map((s) => s.id),
+);
 
 /// 全部症候 ID（活跃 + 退役，保序；四库 #9 历史引用白名单用）
 List<String> get kAllSyndromeIds =>
@@ -185,15 +187,15 @@ String effectiveSyndromeId(String id) => kSyndromeMergeMap[id] ?? id;
 /// 症候 → 技能层级映射（活跃症候；替代 syndrome_skill_levels.kSyndromeSkillLevels
 /// 手写 Map；四库一致性测试的权威集合来源）
 Map<String, SkillLevel> get kSyndromeSkillLevelsDerived => {
-      for (final s in kSyndromeRegistry)
-        if (s.retired != true) s.id: s.level,
-    };
+  for (final s in kSyndromeRegistry)
+    if (s.retired != true) s.id: s.level,
+};
 
 /// 症候 → 推荐技法映射（活跃症候；替代 technique_knowledge_base.kTechniquesBySyndrome）
 Map<String, List<String>> get kTechniquesBySyndromeDerived => {
-      for (final s in kSyndromeRegistry)
-        if (s.retired != true) s.id: s.techniques,
-    };
+  for (final s in kSyndromeRegistry)
+    if (s.retired != true) s.id: s.techniques,
+};
 
 /// 按 ID 查注册表记录（未知 → null）
 SyndromeRecord? syndromeRecordOf(String? id) {

@@ -23,11 +23,7 @@ class GenUICard extends StatelessWidget {
   final String content;
   final String? messageId;
 
-  const GenUICard.fromMessageContent(
-    this.content, {
-    this.messageId,
-    super.key,
-  });
+  const GenUICard.fromMessageContent(this.content, {this.messageId, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -49,8 +45,8 @@ class GenUICard extends StatelessWidget {
           const _GenUiHeader(),
           const SizedBox(height: 8),
           ...payload.components.asMap().entries.map(
-                (e) => _renderComponent(e.value, payload, e.key),
-              ),
+            (e) => _renderComponent(e.value, payload, e.key),
+          ),
         ],
       ),
     );
@@ -65,7 +61,11 @@ class GenUICard extends StatelessWidget {
     }
   }
 
-  Widget _renderComponent(GenUiComponent c, GenuiCardPayload payload, int index) {
+  Widget _renderComponent(
+    GenUiComponent c,
+    GenuiCardPayload payload,
+    int index,
+  ) {
     switch (c.type) {
       case 'diff':
         return _GenUiDiff(data: c.data);
@@ -142,9 +142,13 @@ class _GenUiDiff extends StatelessWidget {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: _DiffPanel(label: '原文', text: before)),
+            Expanded(
+              child: _DiffPanel(label: '原文', text: before),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _DiffPanel(label: '改写', text: after, emphasis: true)),
+            Expanded(
+              child: _DiffPanel(label: '改写', text: after, emphasis: true),
+            ),
           ],
         ),
         if (note != null && note.isNotEmpty) ...[
@@ -195,7 +199,11 @@ class _DiffPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             text.isEmpty ? '（空）' : text,
-            style: const TextStyle(fontSize: 13, height: 1.5, color: AppColors.textPrimary),
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
@@ -218,7 +226,10 @@ class _GenUiStat extends StatelessWidget {
     final title = data['title'] as String?;
     final rawItems = data['items'];
     final items = (rawItems is List)
-        ? rawItems.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList()
+        ? rawItems
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList()
         : <Map<String, dynamic>>[];
 
     return Column(
@@ -241,11 +252,13 @@ class _GenUiStat extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
           )
         else
-          ...items.map((m) => _StatBar(
-                label: (m['label'] as String?) ?? '',
-                value: (m['value'] as num?)?.toDouble() ?? 0,
-                max: (m['max'] as num?)?.toDouble() ?? 100,
-              )),
+          ...items.map(
+            (m) => _StatBar(
+              label: (m['label'] as String?) ?? '',
+              value: (m['value'] as num?)?.toDouble() ?? 0,
+              max: (m['max'] as num?)?.toDouble() ?? 100,
+            ),
+          ),
       ],
     );
   }
@@ -269,7 +282,10 @@ class _StatBar extends StatelessWidget {
             width: 72,
             child: Text(
               label,
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -319,7 +335,10 @@ class _GenUiProgress extends StatelessWidget {
     final title = data['title'] as String?;
     final rawSteps = data['steps'];
     final steps = (rawSteps is List)
-        ? rawSteps.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList()
+        ? rawSteps
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList()
         : <Map<String, dynamic>>[];
 
     return Column(
@@ -388,13 +407,13 @@ class _ProgressNode extends StatelessWidget {
     final color = isDone
         ? AppColors.success
         : isCurrent
-            ? AppColors.primary
-            : AppColors.textTertiary;
+        ? AppColors.primary
+        : AppColors.textTertiary;
     final bgColor = isDone
         ? AppColors.successBg
         : isCurrent
-            ? AppColors.primarySoft
-            : AppColors.surface;
+        ? AppColors.primarySoft
+        : AppColors.surface;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -410,10 +429,7 @@ class _ProgressNode extends StatelessWidget {
           alignment: Alignment.center,
           child: isDone
               ? Icon(Icons.check, size: 16, color: color)
-              : Text(
-                  '',
-                  style: TextStyle(fontSize: 12, color: color),
-                ),
+              : Text('', style: TextStyle(fontSize: 12, color: color)),
         ),
         const SizedBox(height: 4),
         SizedBox(
@@ -466,7 +482,10 @@ class _GenUiTimeline extends StatelessWidget {
     final title = data['title'] as String?;
     final rawEvents = data['events'];
     final events = (rawEvents is List)
-        ? rawEvents.whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList()
+        ? rawEvents
+              .whereType<Map>()
+              .map((m) => Map<String, dynamic>.from(m))
+              .toList()
         : <Map<String, dynamic>>[];
 
     return Column(
@@ -489,12 +508,14 @@ class _GenUiTimeline extends StatelessWidget {
             style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
           )
         else
-          ...events.asMap().entries.map((e) => _TimelineEntry(
-                isLast: e.key == events.length - 1,
-                date: (e.value['date'] as String?) ?? '',
-                title: (e.value['title'] as String?) ?? '',
-                desc: e.value['desc'] as String?,
-              )),
+          ...events.asMap().entries.map(
+            (e) => _TimelineEntry(
+              isLast: e.key == events.length - 1,
+              date: (e.value['date'] as String?) ?? '',
+              title: (e.value['title'] as String?) ?? '',
+              desc: e.value['desc'] as String?,
+            ),
+          ),
       ],
     );
   }
@@ -579,7 +600,10 @@ class _TimelineEntry extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       desc!,
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ],

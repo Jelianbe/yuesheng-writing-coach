@@ -114,7 +114,9 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
   /// （章节数/总字数来自 manuscriptStatsProvider，缓存不失效则卡片信息陈旧）
   void _refreshBookshelf() {
     final store = ref.read(manuscriptStoreProvider);
-    debugPrint('[Bookshelf] _refreshBookshelf: books=${store.manuscripts.length}');
+    debugPrint(
+      '[Bookshelf] _refreshBookshelf: books=${store.manuscripts.length}',
+    );
     // B27：章节统计改为单一批量 provider，随 manuscriptStoreProvider 自动重算
     ref.invalidate(allManuscriptStatsProvider);
     ref.read(manuscriptStoreProvider.notifier).loadManuscripts();
@@ -127,18 +129,6 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
     _genreController.dispose();
     super.dispose();
   }
-
-
-
-
-
-
-
-
-
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -193,10 +183,12 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
               // 切换排序时提示（不学纯纯「分卷仅在手动排序启用」的坑）
               ScaffoldMessenger.of(context)
                 ..hideCurrentSnackBar()
-                ..showSnackBar(SnackBar(
-                  content: Text('已按「${mode.label}」排序（卷分组不受排序影响）'),
-                  duration: const Duration(seconds: 2),
-                ));
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text('已按「${mode.label}」排序（卷分组不受排序影响）'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
             },
             itemBuilder: (context) => [
               for (final mode in _SortMode.values)
@@ -254,7 +246,6 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage> {
       bottomNavigationBar: null, // 由 _AppShell 管理
     );
   }
-
 }
 
 /// 加载中视图
@@ -352,11 +343,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 48,
-              color: AppColors.danger,
-            ),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
             const SizedBox(height: 16),
             Text(
               message,
@@ -369,9 +356,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onRetry,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('重试'),
             ),
@@ -395,11 +380,7 @@ class _NoSearchResult extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 120),
-        const Icon(
-          Icons.search_off,
-          size: 48,
-          color: AppColors.textTertiary,
-        ),
+        const Icon(Icons.search_off, size: 48, color: AppColors.textTertiary),
         const SizedBox(height: 12),
         const Center(
           child: Text(
@@ -411,10 +392,7 @@ class _NoSearchResult extends StatelessWidget {
         Center(
           child: Text(
             searching ? '换个书名试试吧' : '',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textTertiary,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
           ),
         ),
       ],

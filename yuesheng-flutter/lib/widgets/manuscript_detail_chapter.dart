@@ -7,10 +7,9 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
     final msId = widget.args.manuscriptId;
     final chapters = ref.read(chapterStoreProvider(msId)).chapters;
     // 同卷章节（按 sort_order 排序）中找相邻目标
-    final sameVolume = chapters
-        .where((c) => c.volumeId == chapter.volumeId)
-        .toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final sameVolume =
+        chapters.where((c) => c.volumeId == chapter.volumeId).toList()
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     final idx = sameVolume.indexWhere((c) => c.id == chapter.id);
     final targetIdx = idx + delta;
     if (idx < 0 || targetIdx < 0 || targetIdx >= sameVolume.length) {
@@ -115,9 +114,7 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
           controller: controller,
           autofocus: true,
           maxLength: 30,
-          decoration: const InputDecoration(
-            hintText: '输入章节标题',
-          ),
+          decoration: const InputDecoration(hintText: '输入章节标题'),
         ),
         actions: [
           TextButton(
@@ -156,10 +153,7 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
     final title = nextChapterTitle(chapters);
     final id = await ref
         .read(chapterStoreProvider(msId).notifier)
-        .createChapter(
-          title: title,
-          volumeId: volumeId,
-        );
+        .createChapter(title: title, volumeId: volumeId);
     if (id != null && mounted) {
       ref.invalidate(chapterListProvider(msId));
       _snack('已创建《$title》');
@@ -181,9 +175,7 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
           // 批次96-4：写作页返回后重载章节列表——标题/字数等编辑结果同步回列表
           if (mounted) {
             ref
-                .read(
-                  chapterStoreProvider(chapter.manuscriptId).notifier,
-                )
+                .read(chapterStoreProvider(chapter.manuscriptId).notifier)
                 .loadChapters();
           }
         });

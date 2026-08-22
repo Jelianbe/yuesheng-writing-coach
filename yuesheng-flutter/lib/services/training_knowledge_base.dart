@@ -17,7 +17,6 @@ part 'training_kb_content_2.dart';
 part 'training_kb_content_3.dart';
 part 'training_kb_content_4.dart';
 
-
 /// 症候 ID 列表（b9 真源化：由 syndrome_registry 派生，不再手写；
 /// 与 skill_layers syndromeIds 一致；批次15 加 P023-P027，批次23-26 加 P028-P031）
 final List<String> kTrainingSyndromeIds = kSyndromeIds;

@@ -69,8 +69,9 @@ class DiagnosisService {
       if (r['type'] != 'confirmation') return false;
       final syndromes = r['syndromes'];
       if (syndromes is! List) return false;
-      return syndromes.any((id) =>
-          id is String && effectiveSyndromeId(id) == syndromeId);
+      return syndromes.any(
+        (id) => id is String && effectiveSyndromeId(id) == syndromeId,
+      );
     }).toList();
 
     // 筛选目标症候的 TrainingRecord（按时间正序）
@@ -80,8 +81,7 @@ class DiagnosisService {
               (r) =>
                   r['type'] == 'training' &&
                   r['syndromeId'] is String &&
-                  effectiveSyndromeId(r['syndromeId'] as String) ==
-                      syndromeId,
+                  effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
             )
             .toList()
           ..sort((a, b) {
@@ -295,15 +295,18 @@ class DiagnosisService {
     try {
       await _diagnosisRepo.commitDiagnosis(input);
     } catch (e) {
-      debugPrint('[Diagnosis] commitDiagnosis 失败 session=${input.sessionId}: $e');
+      debugPrint(
+        '[Diagnosis] commitDiagnosis 失败 session=${input.sessionId}: $e',
+      );
       return;
     }
 
     // 2. 追加 teaching_history
     final historyRecord = <String, dynamic>{
       'type': 'diagnosis',
-      'syndromes':
-          input.syndromes.map((s) => s['syndrome_id'] as String).toList(),
+      'syndromes': input.syndromes
+          .map((s) => s['syndrome_id'] as String)
+          .toList(),
       'maxSeverity': maxSeverity,
       'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'sessionId': input.sessionId,

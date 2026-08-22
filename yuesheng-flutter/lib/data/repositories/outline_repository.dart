@@ -137,14 +137,14 @@ class OutlineRepository {
   Future<void> approveEntity(String entityId) async {
     final entity = await getEntityById(entityId);
     if (entity == null || entity.status != 'pending') return;
-    await (_db.update(_db.outlineEntities)
-          ..where((t) => t.id.equals(entityId)))
-        .write(
-          OutlineEntitiesCompanion(
-            status: const Value('active'),
-            updatedAt: Value(nowSec()),
-          ),
-        );
+    await (_db.update(
+      _db.outlineEntities,
+    )..where((t) => t.id.equals(entityId))).write(
+      OutlineEntitiesCompanion(
+        status: const Value('active'),
+        updatedAt: Value(nowSec()),
+      ),
+    );
   }
 
   /// 确认印象（确认卡「接受」按钮）
@@ -197,14 +197,15 @@ class OutlineRepository {
             ..where((t) => t.id.equals(impressionId)))
           .write(const OutlineImpressionsCompanion(status: Value('rejected')));
       if (imp.conflictWith != null) {
-        await (_db.update(_db.outlineImpressions)
-              ..where(
-                (t) =>
-                    t.entityId.equals(imp.entityId) &
-                    t.status.equals('pending') &
-                    t.conflictWith.equals(imp.conflictWith!),
-              ))
-            .write(const OutlineImpressionsCompanion(status: Value('rejected')));
+        await (_db.update(_db.outlineImpressions)..where(
+              (t) =>
+                  t.entityId.equals(imp.entityId) &
+                  t.status.equals('pending') &
+                  t.conflictWith.equals(imp.conflictWith!),
+            ))
+            .write(
+              const OutlineImpressionsCompanion(status: Value('rejected')),
+            );
       }
     });
   }
@@ -221,32 +222,34 @@ class OutlineRepository {
     var cleaned = 0;
 
     // 1. 超时未确认 → expired
-    cleaned += await (_db.update(_db.outlineImpressions)
-          ..where(
-            (t) =>
-                t.status.equals('pending') &
-                t.createdAt.isSmallerThanValue(cutoff),
-          ))
-        .write(const OutlineImpressionsCompanion(status: Value('expired')));
+    cleaned +=
+        await (_db.update(_db.outlineImpressions)..where(
+              (t) =>
+                  t.status.equals('pending') &
+                  t.createdAt.isSmallerThanValue(cutoff),
+            ))
+            .write(const OutlineImpressionsCompanion(status: Value('expired')));
 
     // 2. 归档作品下的 pending 印象 → expired（印象经实体挂作品）
-    final archivedManuscripts = await (_db.select(_db.manuscripts)
-          ..where((t) => t.status.equals('archived')))
-        .get();
+    final archivedManuscripts = await (_db.select(
+      _db.manuscripts,
+    )..where((t) => t.status.equals('archived'))).get();
     if (archivedManuscripts.isNotEmpty) {
       final archivedIds = archivedManuscripts.map((m) => m.id).toList();
-      final orphanEntities = await (_db.select(_db.outlineEntities)
-            ..where((t) => t.manuscriptId.isIn(archivedIds)))
-          .get();
+      final orphanEntities = await (_db.select(
+        _db.outlineEntities,
+      )..where((t) => t.manuscriptId.isIn(archivedIds))).get();
       final orphanEntityIds = orphanEntities.map((e) => e.id).toList();
       if (orphanEntityIds.isNotEmpty) {
-        cleaned += await (_db.update(_db.outlineImpressions)
-              ..where(
-                (t) =>
-                    t.entityId.isIn(orphanEntityIds) &
-                    t.status.equals('pending'),
-              ))
-            .write(const OutlineImpressionsCompanion(status: Value('expired')));
+        cleaned +=
+            await (_db.update(_db.outlineImpressions)..where(
+                  (t) =>
+                      t.entityId.isIn(orphanEntityIds) &
+                      t.status.equals('pending'),
+                ))
+                .write(
+                  const OutlineImpressionsCompanion(status: Value('expired')),
+                );
       }
     }
 

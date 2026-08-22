@@ -304,10 +304,7 @@ void main() {
         isFalse,
       );
       expect(
-        validatePhaseTransition(
-          TeachingPhase.p4Review,
-          TeachingPhase.p0Engage,
-        ),
+        validatePhaseTransition(TeachingPhase.p4Review, TeachingPhase.p0Engage),
         isFalse,
       );
     });
@@ -346,7 +343,10 @@ void main() {
       );
 
       expect(passRate, 1.0);
-      expect(passRate, greaterThanOrEqualTo(EvaluationThresholds.phasePassRate));
+      expect(
+        passRate,
+        greaterThanOrEqualTo(EvaluationThresholds.phasePassRate),
+      );
     });
 
     test('全部 disputed → passRate = 0.0（< phaseFailRate 拦截迁移）', () async {
@@ -424,7 +424,10 @@ void main() {
       );
 
       expect(passRate, 0.75);
-      expect(passRate, greaterThanOrEqualTo(EvaluationThresholds.phasePassRate));
+      expect(
+        passRate,
+        greaterThanOrEqualTo(EvaluationThresholds.phasePassRate),
+      );
     });
 
     test('非 confirmation 类型的历史记录不计入', () async {
@@ -460,15 +463,15 @@ void main() {
   // 否则顺序一翻、趋势就反。以下用例不依赖 slice 巧合，直接锁定方向。
   group('A11 取数方向断言：最新/最旧不靠 slice 巧合', () {
     DiagnosisRow _diag(String id, String severity) => DiagnosisRow(
-          id: id,
-          sessionId: 's',
-          messageId: 'm$id',
-          syndromes: '[{"severity":"$severity"}]',
-          suggestedActions: '[]',
-          confidence: 0.8,
-          timestamp: 0,
-          createdAt: 0,
-        );
+      id: id,
+      sessionId: 's',
+      messageId: 'm$id',
+      syndromes: '[{"severity":"$severity"}]',
+      suggestedActions: '[]',
+      confidence: 0.8,
+      timestamp: 0,
+      createdAt: 0,
+    );
 
     test('ASC [旧L2→新L1] 趋势=improving（当前取最新一轮）', () {
       final list = [_diag('a', 'L2'), _diag('b', 'L1')];

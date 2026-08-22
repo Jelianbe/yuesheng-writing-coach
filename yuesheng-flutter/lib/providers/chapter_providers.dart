@@ -270,7 +270,9 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
         chapters: state.chapters.where((c) => c.id != chapterId).toList(),
         clearError: true,
       );
-      debugPrint('[ChapterListStore] softDeleteChapter 成功: chapterId=$chapterId');
+      debugPrint(
+        '[ChapterListStore] softDeleteChapter 成功: chapterId=$chapterId',
+      );
       return true;
     } catch (e) {
       debugPrint(

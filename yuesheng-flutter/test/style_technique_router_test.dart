@@ -27,15 +27,8 @@ WritingStyleProfile _profile({
   );
 }
 
-ActiveSyndromeView _view(
-  String id,
-  String name,
-  Severity severity,
-) => ActiveSyndromeView(
-  syndromeId: id,
-  syndromeName: name,
-  severity: severity,
-);
+ActiveSyndromeView _view(String id, String name, Severity severity) =>
+    ActiveSyndromeView(syndromeId: id, syndromeName: name, severity: severity);
 
 ActiveProblemView _problem(String id, {String? teachingState}) =>
     ActiveProblemView(
@@ -102,8 +95,9 @@ void main() {
     });
 
     test('唯一跨层条目 structure:fragmented 显式标注 crossLayer', () {
-      final cross =
-          kStyleDimensionTechniques.where((m) => m.crossLayer).toList();
+      final cross = kStyleDimensionTechniques
+          .where((m) => m.crossLayer)
+          .toList();
       expect(cross.length, 1);
       expect(cross.single.dimensionKey, 'structure:fragmented');
       expect(
@@ -266,7 +260,10 @@ void main() {
 
   group('formatStyleTechniqueSection', () {
     test('无候选 → null（零注入成本）', () {
-      expect(formatStyleTechniqueSection(const StyleTechniqueSuggestion()), isNull);
+      expect(
+        formatStyleTechniqueSection(const StyleTechniqueSuggestion()),
+        isNull,
+      );
     });
 
     test('有候选 → 含旁路标题/技法名/不并行教学约束', () {
@@ -285,19 +282,18 @@ void main() {
 
   group('buildStructuredSyndromeContext 旁路段接入', () {
     test('传 styleTechniqueSection → 追加在症候段之后', () {
-      final text = buildStructuredSyndromeContext(
-        [_view('P007', '句式节奏单一', Severity.l1)],
-        styleTechniqueSection: '### ✒️ 文笔精修候选（画像旁路）\n- T023 句速控制法',
-      );
+      final text = buildStructuredSyndromeContext([
+        _view('P007', '句式节奏单一', Severity.l1),
+      ], styleTechniqueSection: '### ✒️ 文笔精修候选（画像旁路）\n- T023 句速控制法');
       expect(text, contains('P007'));
       expect(text, contains('✒️ 文笔精修候选'));
       expect(text.indexOf('P007'), lessThan(text.indexOf('✒️')));
     });
 
     test('不传（null）→ 行为与旧版一致，无旁路段', () {
-      final text = buildStructuredSyndromeContext(
-        [_view('P006', '节奏停滞', Severity.l2)],
-      );
+      final text = buildStructuredSyndromeContext([
+        _view('P006', '节奏停滞', Severity.l2),
+      ]);
       expect(text, contains('P006'));
       expect(text, isNot(contains('✒️')));
     });

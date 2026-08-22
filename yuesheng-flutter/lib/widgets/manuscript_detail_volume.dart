@@ -14,9 +14,7 @@ extension _ManuscriptDetailVolume on _ManuscriptDetailPageState {
           controller: controller,
           autofocus: true,
           maxLength: 12,
-          decoration: const InputDecoration(
-            hintText: '留空自动命名「第一卷/第二卷…」',
-          ),
+          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
         ),
         actions: [
           TextButton(
@@ -39,7 +37,9 @@ extension _ManuscriptDetailVolume on _ManuscriptDetailPageState {
       await repo.createVolume(widget.args.manuscriptId, title: trimmed);
       final title = trimmed.isNotEmpty
           ? trimmed
-          : repo.nextVolumeTitle(await repo.listVolumes(widget.args.manuscriptId));
+          : repo.nextVolumeTitle(
+              await repo.listVolumes(widget.args.manuscriptId),
+            );
       ref.invalidate(volumeListProvider(widget.args.manuscriptId));
       if (!mounted) return;
       _snack('已创建《$title》');
@@ -135,11 +135,11 @@ extension _ManuscriptDetailVolume on _ManuscriptDetailPageState {
                 size: 18,
                 color: AppColors.danger,
               ),
-              title: const Text('删除卷', style: TextStyle(color: AppColors.danger)),
-              subtitle: const Text(
-                '卷内章节将一并删除',
-                style: TextStyle(fontSize: 12),
+              title: const Text(
+                '删除卷',
+                style: TextStyle(color: AppColors.danger),
               ),
+              subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
               onTap: () => Navigator.pop(ctx, 'delete'),
             ),
             const SizedBox(height: 8),

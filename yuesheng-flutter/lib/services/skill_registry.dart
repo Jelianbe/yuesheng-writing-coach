@@ -154,8 +154,7 @@ Skill? getSkill(String id) => skillRegistry[id];
 // ── b9 批次30：注册表行渲染（输出与手写逐字一致）────────────────
 
 /// 症候 ID 范围（如 P003-P031），提示文本派生用
-String get _syndromeIdRange =>
-    '${kSyndromeIds.first}-${kSyndromeIds.last}';
+String get _syndromeIdRange => '${kSyndromeIds.first}-${kSyndromeIds.last}';
 
 /// 动作精简名真源（A001-A016，动作名稳定；动作映射表渲染取用）
 const Map<String, String> kActionShortNames = {
@@ -178,8 +177,7 @@ const Map<String, String> kActionShortNames = {
 };
 
 /// 动作精简名查询（真源：kActionShortNames）。未知 ID 返回 null。
-String? actionNameOf(String? id) =>
-    id == null ? null : kActionShortNames[id];
+String? actionNameOf(String? id) => id == null ? null : kActionShortNames[id];
 
 /// 动作映射表行（v1/v2 共用格式）：
 ///   | 症候 | 推荐动作 | 可选动作 |

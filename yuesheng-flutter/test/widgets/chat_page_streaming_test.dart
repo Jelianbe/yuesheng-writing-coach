@@ -102,9 +102,7 @@ void main() {
       expect(find.byType(ThinkingIndicator), findsNothing);
     });
 
-    testWidgets('批次51 诊断阶段流式（已有流式内容）→ 显示诊断占位而非流式文本', (
-      tester,
-    ) async {
+    testWidgets('批次51 诊断阶段流式（已有流式内容）→ 显示诊断占位而非流式文本', (tester) async {
       // 诊断阶段：即使 streamingContent 非空（协议块拦截后的前导文本），
       // 也应隐藏文本统一走占位，避免「先长文本后变卡片」跳变
       await tester.pumpWidget(
