@@ -77,7 +77,7 @@ jobs:
             --t2 "lib/services/evaluation_service.dart:85" \
             --t2 "lib/data/repositories/diagnosis_repository.dart:85" \
             --t2 "lib/services/chat_service.dart:85" \
-            --t2 "lib/services/focus_resolver.dart:40"
+            --t2 "lib/services/focus_resolver.dart:85"
 
       - name: Upload coverage artifact
         # 上传到 GitHub Actions Artifacts（免费 90 天保存），便于手动下载 lcov.info 本地查看 / 后续接入 codecov.io。
