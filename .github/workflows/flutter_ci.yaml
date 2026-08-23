@@ -51,8 +51,8 @@ jobs:
         # LlmClient() 构造之前，也不会触发出站 LLM/External 网络调用，直接跳过整个标签组，从根源避免 CI 因外网静默 hang。
         run: flutter test --exclude-tags live,external --coverage
       - name: Verify coverage artifact
-        # 仅做存在性+大小校验；防止 --coverage 没生效（test 全 PASS 但 coverage 生成失败时能立即暴露），
-        # 不做行覆盖率阈值断言（阈值策略单独立项）。
+        # 仅做存在性+大小校验；防止 --coverage 没生效（test 全 PASS 但 coverage 生成失败时能立即暴露）。
+        # 行覆盖率阈值断言放在下一个独立 step "Enforce coverage thresholds"，职责分离。
         run: |
           if [ ! -f coverage/lcov.info ]; then
             echo "❌ coverage/lcov.info not generated"
@@ -61,6 +61,23 @@ jobs:
           echo "✅ coverage/lcov.info exists"
           wc -l coverage/lcov.info
           ls -lh coverage/lcov.info
+
+      - name: Enforce coverage thresholds (T1 overall soft + T2 core hard)
+        # X-026-COV 阈值策略落地：
+        #   T1 整体行覆盖率（软门槛）：target ≥65%，±2% 容差 → <63% 才 FAIL，[63,65) WARN 不阻断（容忍小幅抖动）。
+        #   T2 核心文件（硬门槛）：核心机制层不能退化，任一跌破直接 FAIL CI。
+        #     • 3 文件 85% 愿景级门槛（training_evaluator / evaluation_service / diagnosis_repository，当前均已达标）
+        #     • chat_service.dart 75% 临时基线（当前 75.24%，差 0.24% 即触线，需立项补异常/归档路径分支测试上提至 85%）
+        #     • focus_resolver.dart 40% 地板线（当前 42.15%，仅保证不回退，需立刻立项补 skip/fallback 分支：阶段目标 ≥60% → 最终 ≥85%）
+        run: |
+          python3 scripts/check_coverage.py \
+            --lcov coverage/lcov.info \
+            --t1-target 65.0 --t1-margin 2.0 \
+            --t2 "lib/services/training_evaluator.dart:85" \
+            --t2 "lib/services/evaluation_service.dart:85" \
+            --t2 "lib/data/repositories/diagnosis_repository.dart:85" \
+            --t2 "lib/services/chat_service.dart:75" \
+            --t2 "lib/services/focus_resolver.dart:40"
 
       - name: Upload coverage artifact
         # 上传到 GitHub Actions Artifacts（免费 90 天保存），便于手动下载 lcov.info 本地查看 / 后续接入 codecov.io。
