@@ -76,7 +76,7 @@ jobs:
             --t2 "lib/services/training_evaluator.dart:85" \
             --t2 "lib/services/evaluation_service.dart:85" \
             --t2 "lib/data/repositories/diagnosis_repository.dart:85" \
-            --t2 "lib/services/chat_service.dart:75" \
+            --t2 "lib/services/chat_service.dart:85" \
             --t2 "lib/services/focus_resolver.dart:40"
 
       - name: Upload coverage artifact
