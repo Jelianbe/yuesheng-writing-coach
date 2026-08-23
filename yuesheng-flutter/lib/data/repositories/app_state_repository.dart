@@ -268,69 +268,6 @@ class AppStateRepository {
     }
   }
 
-  // ════════════ 灵感随笔（批次84-1 灵感随笔） ════════════
-  // 对标橙瓜「灵感随笔」：随手记不跳出写作上下文。
-  // key 规约：inspirations → JSON 数组（时间倒序存，最新在前）
-  //   [{"id":"<uuid>","content":"<文本>","manuscriptId":"<可选>",
-  //     "chapterId":"<可选>","createdAt":<unixSec>}, ...]
-
-  /// 灵感上限（超出丢弃最旧）
-  static const int maxInspirations = 100;
-
-  /// 写入一条灵感（最新在前，超出上限丢弃最旧）
-  Future<void> addInspiration({
-    required String content,
-    String? manuscriptId,
-    String? chapterId,
-  }) async {
-    final trimmed = content.trim();
-    if (trimmed.isEmpty) return;
-    final inspirations = await listInspirations();
-    inspirations.insert(
-      0,
-      WritingInspiration(
-        id: generateUuid(),
-        content: trimmed,
-        manuscriptId: manuscriptId,
-        chapterId: chapterId,
-        createdAt: nowSec(),
-      ),
-    );
-    if (inspirations.length > maxInspirations) {
-      inspirations.removeRange(maxInspirations, inspirations.length);
-    }
-    await setValue(
-      'inspirations',
-      jsonEncode(inspirations.map((v) => v.toJson()).toList()),
-    );
-  }
-
-  /// 读取全部灵感（新→旧）
-  Future<List<WritingInspiration>> listInspirations() async {
-    final json = await getValue('inspirations');
-    if (json == null || json.isEmpty) return [];
-    try {
-      final decoded = jsonDecode(json);
-      if (decoded is! List) return [];
-      return decoded
-          .whereType<Map<String, dynamic>>()
-          .map((e) => WritingInspiration.fromJson(e))
-          .toList();
-    } catch (_) {
-      return [];
-    }
-  }
-
-  /// 删除一条灵感（批次87-4：灵感列表行尾删除）
-  Future<void> removeInspiration(String id) async {
-    final inspirations = await listInspirations();
-    inspirations.removeWhere((e) => e.id == id);
-    await setValue(
-      'inspirations',
-      jsonEncode(inspirations.map((v) => v.toJson()).toList()),
-    );
-  }
-
   // ════════════ 快捷短语（批次85-3 快捷短语） ════════════
   // 对标起点/笔落/灯果「快捷短语/常用语」：常用语管理 + 光标一键插入。
   // key 规约：quick_phrases → JSON 字符串数组（插入顺序，新加在末尾）
@@ -670,43 +607,6 @@ class ChapterDraft {
     required this.content,
     required this.savedAt,
   });
-}
-
-/// 灵感随笔（批次84-1）
-class WritingInspiration {
-  final String id;
-  final String content;
-
-  /// 来源作品（写作页记灵感时带上；null = 随手记未关联作品）
-  final String? manuscriptId;
-  final String? chapterId;
-  final int createdAt; // unix 秒
-
-  const WritingInspiration({
-    required this.id,
-    required this.content,
-    this.manuscriptId,
-    this.chapterId,
-    required this.createdAt,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'content': content,
-    'manuscriptId': manuscriptId,
-    'chapterId': chapterId,
-    'createdAt': createdAt,
-  };
-
-  static WritingInspiration fromJson(Map<String, dynamic> json) {
-    return WritingInspiration(
-      id: json['id'] as String? ?? '',
-      content: json['content'] as String? ?? '',
-      manuscriptId: json['manuscriptId'] as String?,
-      chapterId: json['chapterId'] as String?,
-      createdAt: json['createdAt'] as int? ?? 0,
-    );
-  }
 }
 
 /// 回收板条目（批次86-1 回收板）
