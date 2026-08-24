@@ -9,17 +9,27 @@ Usage:
         --t2 "lib/services/training_evaluator.dart:85" \
         --t2 "lib/services/evaluation_service.dart:85" \
         --t2 "lib/data/repositories/diagnosis_repository.dart:85" \
-        --t2 "lib/services/chat_service.dart:75" \
-        --t2 "lib/services/focus_resolver.dart:40"
+        --t2 "lib/services/chat_service.dart:85" \
+        --t2 "lib/services/focus_resolver.dart:85" \
+        [--warn-event-file coverage/warn-event.json]
 
 Exit code:
     0  -> T1 is PASS or WARN (within tolerance) AND all T2 pass.
     1  -> T1 FAIL (below target - margin) OR any T2 fails / missing.
+
+Structured event (X-029-T1WARN):
+    When --warn-event-file is given, a JSON event is written for CI tracking:
+      {"event":"pass|warn|fail","t1_rate":67.03,"t1_target":65.0,"t1_floor":63.0,
+       "t1_verdict":"PASS|WARN|FAIL","t2_pass_count":5,"t2_total":5,"timestamp": "..."}
+    Cross-run WARN counter is maintained by the CI step (gh CLI + Issue tracker),
+    not by this script — keeps Python side single-responsibility (parse + report).
 """
 
 from __future__ import annotations
 
 import argparse
+import datetime
+import json
 import os
 import sys
 from dataclasses import dataclass
@@ -93,6 +103,8 @@ def main(argv: List[str]) -> int:
     ap.add_argument("--t1-target", type=float, default=65.0)
     ap.add_argument("--t1-margin", type=float, default=2.0)
     ap.add_argument("--t2", action="append", default=[])
+    ap.add_argument("--warn-event-file", default=None,
+                    help="optional path to write a JSON event for CI WARN tracker")
     args = ap.parse_args(argv)
 
     t1_target = args.t1_target
@@ -187,6 +199,36 @@ def main(argv: List[str]) -> int:
         print()
 
     t1_fails_job = (t1_verdict == "FAIL")
+
+    # X-029-T1WARN: emit structured JSON event for CI WARN tracker.
+    # Cross-run counter is maintained by the CI step (gh CLI + Issue), not here.
+    if args.warn_event_file:
+        if t1_verdict == "FAIL" or any_t2_bad:
+            event_type = "fail"
+        elif t1_verdict == "WARN":
+            event_type = "warn"
+        else:
+            event_type = "pass"
+        event = {
+            "event": event_type,
+            "t1_rate": round(t1_rate, 2),
+            "t1_target": t1_target,
+            "t1_floor": t1_floor,
+            "t1_verdict": t1_verdict,
+            "t2_pass_count": t2_pass_cnt,
+            "t2_total": t2_total,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        try:
+            parent = os.path.dirname(args.warn_event_file)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
+            with open(args.warn_event_file, "w", encoding="utf-8") as fh:
+                json.dump(event, fh, ensure_ascii=False, indent=2)
+        except OSError as exc:
+            print(f"{C.YELLOW}WARN{C.RESET}: failed to write warn-event file "
+                  f"{args.warn_event_file!r}: {exc}", file=sys.stderr)
+
     if t1_verdict == "WARN" and not any_t2_bad:
         print(f"{C.YELLOW}{C.BOLD}T1 SOFT WARNING:{C.RESET} "
               f"overall {t1_rate:.2f}% is below target {t1_target:.1f}% but within +/-{args.t1_margin:.1f}% tolerance "

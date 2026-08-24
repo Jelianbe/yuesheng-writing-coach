@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  issues: write  # X-029-T1WARN: Track step 需要 gh CLI 更新 coverage-tracker issue
 
 jobs:
   flutter-verify:
@@ -63,12 +64,11 @@ jobs:
           ls -lh coverage/lcov.info
 
       - name: Enforce coverage thresholds (T1 overall soft + T2 core hard)
-        # X-026-COV 阈值策略落地：
+        # X-026-COV 阈值策略落地（X-027/X-028 已补完 T2 缺口，X-029-T1WARN 加 WARN 计数）：
         #   T1 整体行覆盖率（软门槛）：target ≥65%，±2% 容差 → <63% 才 FAIL，[63,65) WARN 不阻断（容忍小幅抖动）。
-        #   T2 核心文件（硬门槛）：核心机制层不能退化，任一跌破直接 FAIL CI。
-        #     • 3 文件 85% 愿景级门槛（training_evaluator / evaluation_service / diagnosis_repository，当前均已达标）
-        #     • chat_service.dart 75% 临时基线（当前 75.24%，差 0.24% 即触线，需立项补异常/归档路径分支测试上提至 85%）
-        #     • focus_resolver.dart 40% 地板线（当前 42.15%，仅保证不回退，需立刻立项补 skip/fallback 分支：阶段目标 ≥60% → 最终 ≥85%）
+        #   T2 核心文件（硬门槛）：5 文件全部 85%，任一跌破直接 FAIL CI（实测：training_evaluator 96.03% / evaluation_service 89.47% / diagnosis_repository 92.50% / chat_service 90.07% / focus_resolver 95.87%）。
+        # X-029-T1WARN: --warn-event-file 生成结构化 JSON 事件供下一步 Track 解析，
+        #   跨 run WARN 累计计数由 Track step（gh CLI + Issue tracker）维护，Python 脚本保持单一职责。
         run: |
           python3 scripts/check_coverage.py \
             --lcov coverage/lcov.info \
@@ -77,7 +77,67 @@ jobs:
             --t2 "lib/services/evaluation_service.dart:85" \
             --t2 "lib/data/repositories/diagnosis_repository.dart:85" \
             --t2 "lib/services/chat_service.dart:85" \
-            --t2 "lib/services/focus_resolver.dart:85"
+            --t2 "lib/services/focus_resolver.dart:85" \
+            --warn-event-file coverage/warn-event.json
+
+      - name: Track T1 WARN (cross-run counter via Issue)
+        # X-029-T1WARN: T1 软门槛 WARN 不阻断 CI，但连续 3 次 WARN 需人工审查。
+        # 用 GitHub Issue 作为跨 run 状态载体（不污染 git 历史）。
+        # 仅在 Enforce step 通过（exit 0 = T1 PASS 或 WARN + T2 全 PASS）时执行；FAIL 由 Enforce step 阻断，不进累计。
+        # Issue 标签: coverage-tracker。Issue body 第一行维护计数：`count: N`。
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WARN_THRESHOLD: "3"
+        run: |
+          set -euo pipefail
+          if [ ! -f coverage/warn-event.json ]; then
+            echo "warn-event.json not found, skip tracking"
+            exit 0
+          fi
+
+          EVENT=$(python3 -c "import json; print(json.load(open('coverage/warn-event.json'))['event'])")
+          RATE=$(python3 -c "import json; print(json.load(open('coverage/warn-event.json'))['t1_rate'])")
+          echo "T1 event: $EVENT (rate=$RATE%)"
+
+          # 查找 open 的 coverage-tracker issue
+          ISSUE_NUMBER=$(gh issue list --label "coverage-tracker" --state open --json number --jq '.[0].number // empty' || echo "")
+
+          if [ "$EVENT" = "warn" ]; then
+            if [ -z "$ISSUE_NUMBER" ]; then
+              # 首次 WARN：创建 issue
+              ISSUE_NUMBER=$(gh issue create \
+                --label "coverage-tracker" \
+                --title "Coverage WARN tracker (auto)" \
+                --body "count: 1
+          last_rate: $RATE
+          last_time: $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --json number --jq '.number')
+              echo "Created coverage-tracker issue #$ISSUE_NUMBER (count: 1/$WARN_THRESHOLD)"
+            else
+              # 后续 WARN：解析 body 计数 +1
+              BODY=$(gh issue view "$ISSUE_NUMBER" --json body --jq '.body')
+              COUNT=$(echo "$BODY" | grep -oP '^count: \K\d+' || echo "0")
+              NEW_COUNT=$((COUNT + 1))
+              gh issue edit "$ISSUE_NUMBER" --body "count: $NEW_COUNT
+          last_rate: $RATE
+          last_time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              echo "Updated coverage-tracker issue #$ISSUE_NUMBER (count: $NEW_COUNT/$WARN_THRESHOLD)"
+              if [ "$NEW_COUNT" -ge "$WARN_THRESHOLD" ]; then
+                echo "::warning::T1 WARN count reached $NEW_COUNT (threshold $WARN_THRESHOLD), please investigate coverage drift"
+                gh issue comment "$ISSUE_NUMBER" --body "⚠️ T1 coverage WARN reached $NEW_COUNT/$WARN_THRESHOLD consecutive runs (latest rate: $RATE%). Please investigate coverage drift and consider tightening tolerance to ±1% or adding targeted tests."
+              fi
+            fi
+          elif [ "$EVENT" = "pass" ]; then
+            if [ -n "$ISSUE_NUMBER" ]; then
+              # PASS：重置计数 + 关闭 issue
+              gh issue comment "$ISSUE_NUMBER" --body "✅ T1 coverage PASS (rate: $RATE%), counter reset."
+              gh issue close "$ISSUE_NUMBER"
+              echo "Closed coverage-tracker issue #$ISSUE_NUMBER (counter reset)"
+            else
+              echo "T1 PASS, no open tracker issue to close"
+            fi
+          fi
 
       - name: Upload coverage artifact
         # 上传到 GitHub Actions Artifacts（免费 90 天保存），便于手动下载 lcov.info 本地查看 / 后续接入 codecov.io。
