@@ -3,8 +3,8 @@
 // 复刻 yuesheng-android/src/services/chat-service.ts 的 sendMessage 主链路
 //
 // 简化范围（"先主路核心"原则）：
-//   - Reviewer 门控 / Editor / Teacher 分支已实现（批次 1-7 补齐，
-//     见步骤 5.1.1 Reviewer 门控 + chat_gates.dart 触发与持久化）
+//   - Editor / Teacher 分支已实现（批次 1-7 补齐，
+//     见 chat_gates.dart 触发与持久化）
 //   - onTrainingResult 回调已接线（SendMessageCallbacks.onTrainingResult，
 //     步骤 11 解析训练结果后触发，UI 侧 WritingCoachPanel/ChatPage 消费）
 //
@@ -81,9 +81,6 @@ import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/services/style_fingerprint.dart';
-import 'package:writingcoach/services/editor_service.dart';
-import 'package:writingcoach/services/reviewer_service.dart';
-import 'package:writingcoach/services/reviewer_validator.dart';
 import 'package:writingcoach/services/teacher_service.dart';
 import 'package:writingcoach/services/teacher_validator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -149,7 +146,6 @@ class ChatService {
   final LlmClient _llmClient;
   final DiagnosisService _diagnosisService;
   final TeacherSuggestionRepository _teacherSuggestionRepo;
-  final EditorObservationRepository _editorObservationRepo;
 
   // ─── 四大纯能力（选项 B 依赖倒置：经 capability provider 注入，默认 const impl） ───
   // 阶段 1：消费层从顶层纯函数迁移到能力方法；impl 为纯委托，行为零变更。
@@ -278,7 +274,6 @@ class ChatService {
          studentModelRepo: studentModelRepo,
        ),
        _teacherSuggestionRepo = teacherSuggestionRepo,
-       _editorObservationRepo = editorObservationRepo,
        _genUi = genUi,
        _material = material,
        _teaching = teaching,
@@ -1588,12 +1583,10 @@ extension ChatServiceSendInject on ChatService {
   Future<
     ({
       ReferenceItem? primaryRef,
-      bool reviewerPassed,
-      bool reviewerNeedsEditor,
       String? chapterContent,
     })
   >
-  _injectReferencesAndReviewer({
+  _injectReferences({
     required String sessionId,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
@@ -1655,53 +1648,9 @@ extension ChatServiceSendInject on ChatService {
       debugPrint('[SafeRun] 引用内容注入失败不阻断主流程: $e');
     }
 
-    // 5.1.1 Reviewer 门控（P4-007 批 1）
-    // 真源：chat-service.ts L256-309
-    // 触发条件：ENABLED + 主引用是 chapter + 章节内容 >= MIN_TEXT_LENGTH
-    // FAIL → 追加 matched_signals 提示 system message
-    // PASS + needs_editor=true → 供后续 Editor 分支使用
-    List<String>? reviewerMatchedSignals;
-    bool reviewerPassed = false;
-    bool reviewerNeedsEditor = false;
-    String? chapterContent;
-    if (ReviewerGate.enabled && primaryRef?.refType == 'chapter') {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null &&
-            chapter.content.length >= ReviewerGate.minTextLength) {
-          chapterContent = chapter.content;
-          final review = await callReviewer(_llmClient, chapter.content);
-          if (review != null) {
-            if (review.verdict == ReviewVerdict.fail) {
-              reviewerMatchedSignals = review.matchedSignals;
-            } else {
-              reviewerPassed = true;
-              reviewerNeedsEditor = review.needsEditor;
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] Reviewer 失败降级走现有流程: $e');
-      }
-    }
-
-    // Reviewer FAIL 时追加命中信号提示（不破坏 buildSystemPromptV2 输出）
-    if (reviewerMatchedSignals != null && reviewerMatchedSignals.isNotEmpty) {
-      messages.add(
-        ChatMessage(
-          role: 'system',
-          content:
-              '# 审稿人门控提示\n\n审稿人已判定此文本"存在写作技术问题"（FAIL）。\n'
-              '**命中信号**：${reviewerMatchedSignals.join('；')}\n\n'
-              '请基于这些信号识别具体写作问题。',
-        ),
-      );
-    }
     return (
       primaryRef: primaryRef,
-      reviewerPassed: reviewerPassed,
-      reviewerNeedsEditor: reviewerNeedsEditor,
-      chapterContent: chapterContent,
+      chapterContent: null,
     );
   }
 
@@ -2613,120 +2562,6 @@ extension ChatServiceSendPersist on ChatService {
 }
 
 extension ChatServiceSendRun on ChatService {
-  Future<bool> _runEditorBranch({
-    required String sessionId,
-    required ReferenceItem? primaryRef,
-    required bool reviewerPassed,
-    required bool reviewerNeedsEditor,
-    required String? chapterContent,
-    required bool rapidFire,
-    required SendMessageCallbacks callbacks,
-    required SendMessageOptions options,
-  }) async {
-    // 7.1 Editor 分支（Reviewer PASS + needs_editor=true）
-    // 真源：chat-service.ts L464-562
-    // R1：Editor observation 总是入库（即使 Teacher 未触发），便于审计阈值校准
-    // R6：Teacher suggestion 写入抽到 chat_gates.dart，消除两分支重复
-    if (reviewerPassed && reviewerNeedsEditor && chapterContent != null) {
-      final editorResult = await callEditorStream(
-        _llmClient,
-        chapterContent,
-        callbacks.onStream,
-        cancelToken: options.cancelToken,
-      );
-
-      // R1：计算 Teacher 触发判断中间状态（pronounced/against 计数 + 触发标志）
-      bool teacherTriggered = false;
-      int pronouncedCount = 0;
-      int againstCount = 0;
-      if (editorResult.observation != null) {
-        pronouncedCount = editorResult.observation!.observations
-            .where((o) => o.observationVisibility == 'pronounced')
-            .length;
-        againstCount = editorResult.observation!.observations
-            .where((o) => o.intentAlignment == 'against')
-            .length;
-        teacherTriggered = shouldTriggerTeacherForEditor(
-          editorResult.observation!,
-        );
-      }
-
-      // Editor → Teacher 条件触发（追加教学反馈）
-      String teacherDisplayContent = '';
-      TeacherResult? teacherResult;
-      if (teacherTriggered && editorResult.observation != null) {
-        try {
-          final teacherStream = await callTeacherStream(
-            _llmClient,
-            TeacherEditorInput(
-              editorResult: editorResult.observation!,
-              chapterContent: chapterContent,
-            ),
-            callbacks.onStream,
-            cancelToken: options.cancelToken,
-          );
-          teacherDisplayContent = teacherStream.displayContent;
-          teacherResult = teacherStream.teacher;
-        } catch (e) {
-          debugPrint('[SafeRun] Teacher 失败不影响 Editor 已有输出: $e');
-        }
-      }
-
-      // 合并 Editor + Teacher 输出
-      final combinedContent =
-          editorResult.displayContent +
-          (teacherDisplayContent.isNotEmpty
-              ? '\n\n$teacherDisplayContent'
-              : '');
-
-      if (combinedContent.trim().isEmpty) {
-        callbacks.onError('AI 返回为空');
-        return true;
-      }
-
-      final messageId = await _sessionRepo.addMessage(
-        sessionId,
-        'assistant',
-        combinedContent,
-      );
-
-      // R1：Editor observation 持久化（总是写入，便于审计阈值）
-      if (editorResult.observation != null) {
-        try {
-          await _editorObservationRepo.insertEditorObservation(
-            InsertEditorObservationParams(
-              sessionId: sessionId,
-              messageId: messageId,
-              editorResult: editorResult.observation!,
-              teacherTriggered: teacherTriggered,
-              pronouncedCount: pronouncedCount,
-              againstCount: againstCount,
-              targetRefType: primaryRef?.refType,
-              targetRefId: primaryRef?.refId,
-            ),
-          );
-        } catch (e) {
-          debugPrint('[SafeRun] DB 写入失败不影响 Editor/Teacher 已有输出: $e');
-        }
-      }
-
-      // R6：Teacher suggestion 写入（两分支复用 persistTeacherSuggestion）
-      if (teacherResult != null) {
-        await persistTeacherSuggestion(
-          _teacherSuggestionRepo,
-          teacherResult,
-          sessionId,
-          messageId,
-          'editor',
-          isRapidFire: rapidFire,
-        );
-      }
-
-      await callbacks.onComplete(combinedContent, messageId);
-      return true; // Editor 分支提前结束，不走主流 Diagnosis streamChat
-    }
-    return false;
-  }
 
   Future<({String fullContent, bool inDiagnosisBlock})> _streamLlm({
     required List<ChatMessage> messages,
@@ -2924,14 +2759,12 @@ extension ChatServiceSend on ChatService {
         messages: messages,
         markStage: markStage,
       );
-      final refCtx = await _injectReferencesAndReviewer(
+      final refCtx = await _injectReferences(
         sessionId: sessionId,
         messages: messages,
         markStage: markStage,
       );
       final primaryRef = refCtx.primaryRef;
-      final reviewerPassed = refCtx.reviewerPassed;
-      final reviewerNeedsEditor = refCtx.reviewerNeedsEditor;
       final chapterContent = refCtx.chapterContent;
       await _injectChapterObservations(
         sessionId: sessionId,
@@ -3002,20 +2835,6 @@ extension ChatServiceSend on ChatService {
         '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${messages.length}（含 system + history）',
       );
 
-      // 7.1 Editor 分支（R-019：步骤块提取，返回 true 表示已处理并提前结束）
-      if (reviewerPassed && reviewerNeedsEditor && chapterContent != null) {
-        final handled = await _runEditorBranch(
-          sessionId: sessionId,
-          primaryRef: primaryRef,
-          reviewerPassed: reviewerPassed,
-          reviewerNeedsEditor: reviewerNeedsEditor,
-          chapterContent: chapterContent,
-          rapidFire: rapidFire,
-          callbacks: callbacks,
-          options: options,
-        );
-        if (handled) return;
-      }
 
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
