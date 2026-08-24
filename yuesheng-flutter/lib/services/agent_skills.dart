@@ -4,7 +4,8 @@
 //
 // 内容 100% 保留，仅从 TS 模板字符串转为 Dart raw string。
 // 不注册到 skill_registry（这三个是 Agent 专用 system prompt，
-// 由 reviewer_service / editor_service / teacher_service 直接引用，
+// 由 editor_service / teacher_service 直接引用，
+// reviewer skill 内容保留作 P4 V2 方向 2 历史资产，reviewer_service 已移除，
 // 不参与 L1-L3 分层注入）。
 // ─────────────────────────────────────────────────────────────
 

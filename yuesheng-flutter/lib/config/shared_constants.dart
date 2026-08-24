@@ -111,15 +111,6 @@ class TokenEstimate {
   static const double warningRatio = 0.8;
 }
 
-/// Reviewer 门控配置（默认关闭）
-class ReviewerGate {
-  const ReviewerGate._();
-  static const bool enabled = false;
-  static const int minTextLength = 500;
-  static const double reviewerTemperature = 0.2;
-  static const int reviewerMaxTokens = 800;
-}
-
 /// Teacher 门控配置（已启用）
 class TeacherGate {
   const TeacherGate._();
