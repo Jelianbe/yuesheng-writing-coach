@@ -74,7 +74,9 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  // X-039-Batch1：16→lg / 12→md
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             ),
             child: const Text(
               '取消',
@@ -84,6 +86,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
               ),
             ),
           ),
+          const SizedBox(width: 12),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
@@ -91,7 +94,9 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  // X-039-Batch1：16→lg / 12→md
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             ),
             child: const Text(
               '删除',

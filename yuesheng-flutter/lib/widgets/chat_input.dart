@@ -178,10 +178,11 @@ class ChatInputState extends State<ChatInput> {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        16 + MediaQuery.of(context).padding.bottom,
+        // X-039-Batch1：16→lg / 8→sm / 16→lg（+MediaQuery bottom 动态，不令牌）
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.lg + MediaQuery.of(context).padding.bottom,
       ),
       decoration: const BoxDecoration(
         color: AppColors.background,
@@ -219,12 +220,14 @@ class ChatInputState extends State<ChatInput> {
                 border: OutlineInputBorder(
                   // pill shape：半径取大值，由引擎 clamp 到实际高度一半，
                   // 保证单行/多行均为完全圆角药丸形
-                  borderRadius: BorderRadius.circular(100),
+                  // X-039-Batch1：100→pill
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
                   borderSide: BorderSide.none,
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+                  // X-039-Batch1：16→lg / 10→smx
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.smx,
                 ),
               ),
               style: const TextStyle(

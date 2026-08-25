@@ -60,7 +60,10 @@ extension _WritingPageStatusBuilders on _WritingPageState {
     return Container(
       width: double.infinity,
       color: AppColors.warningBg,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding:
+          // X-039-Batch1：16→lg / 10→smx
+          const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg, vertical: AppSpacing.smx),
       child: const Row(
         children: [
           Icon(Icons.cloud_off, size: 16, color: AppColors.warning),
@@ -113,7 +116,9 @@ extension _WritingPageStatusBuilders on _WritingPageState {
     return Container(
       width: double.infinity,
       color: barBg,
-      padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+      // X-039-Batch1：16→lg / 2→xxs / 4→xs
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.xxs, AppSpacing.lg, AppSpacing.xs),
       child: Align(alignment: Alignment.centerRight, child: content),
     );
   }
@@ -185,9 +190,12 @@ extension _WritingPageStatusBuilders on _WritingPageState {
     }
     return InkWell(
       onTap: _showGoalDialog,
-      borderRadius: BorderRadius.circular(4),
+      // X-039-Batch1：4→xs
+      borderRadius: BorderRadius.circular(AppRadius.xs),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        // X-039-Batch1：8→sm / 8→sm
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -225,10 +233,13 @@ extension _WritingPageStatusBuilders on _WritingPageState {
     }
     return Container(
       key: const Key('completionBadge'),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      // X-039-Batch1：6→xsm / 2→xxs
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
+        // X-039-Batch1：8→sm
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(label, style: TextStyle(fontSize: 10, color: fg)),
     );
