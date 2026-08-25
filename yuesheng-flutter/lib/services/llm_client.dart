@@ -164,9 +164,7 @@ class LlmClient {
 
     if (!await checkNetwork()) throw Exception('网络不可用');
 
-    final fallbacks = parseFallbacks(
-      await _configStorage.getLlmFallbacksRaw(),
-    );
+    final fallbacks = parseFallbacks(await _configStorage.getLlmFallbacksRaw());
     final endpoints = expandEndpoints(
       cfg,
       fallbacks,
@@ -224,9 +222,7 @@ class LlmClient {
 
     if (!await checkNetwork()) throw Exception('网络不可用');
 
-    final fallbacks = parseFallbacks(
-      await _configStorage.getLlmFallbacksRaw(),
-    );
+    final fallbacks = parseFallbacks(await _configStorage.getLlmFallbacksRaw());
     final endpoints = expandEndpoints(
       cfg,
       fallbacks,
@@ -264,7 +260,9 @@ class LlmClient {
                 'Authorization': 'Bearer ${c.apiKey}',
                 'Accept': 'text/event-stream',
               },
-              sendTimeout: const Duration(milliseconds: LlmConfig.streamTimeoutMs),
+              sendTimeout: const Duration(
+                milliseconds: LlmConfig.streamTimeoutMs,
+              ),
               receiveTimeout: const Duration(
                 milliseconds: LlmConfig.streamTimeoutMs,
               ),
@@ -353,9 +351,7 @@ class LlmClient {
                 _logFirstToken(ttftWatch, firstTokenLogged);
                 firstTokenLogged = true;
                 hasEmittedToken = true;
-                callback(
-                  LlmStreamResponse(content: content, isDone: false),
-                );
+                callback(LlmStreamResponse(content: content, isDone: false));
               }
             }
           } catch (_) {

@@ -149,7 +149,9 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
             controller: _scrollController,
             // X-039-Batch1：12→md / 8→sm
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
             itemCount:
                 chatState.messages.length + (chatState.isStreaming ? 1 : 0),
             itemBuilder: (context, index) {
@@ -192,7 +194,9 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
                         Padding(
                           // X-039-Batch1：12→md / 2→xxs
                           padding: const EdgeInsets.only(
-                              left: AppSpacing.md, bottom: AppSpacing.xxs),
+                            left: AppSpacing.md,
+                            bottom: AppSpacing.xxs,
+                          ),
                           child: Text(
                             _streamStageLabel!,
                             style: const TextStyle(
@@ -273,7 +277,11 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
     return Container(
       // X-039-Batch1：16→lg / 8→sm / +bottomInset（动态值，不令牌）
       padding: EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm + bottomInset),
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.sm + bottomInset,
+      ),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.borderLight)),
       ),
