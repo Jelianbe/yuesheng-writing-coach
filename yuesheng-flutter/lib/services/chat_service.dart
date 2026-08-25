@@ -1580,12 +1580,7 @@ extension ChatServiceSendInject on ChatService {
     }
   }
 
-  Future<
-    ({
-      ReferenceItem? primaryRef,
-      String? chapterContent,
-    })
-  >
+  Future<({ReferenceItem? primaryRef, String? chapterContent})>
   _injectReferences({
     required String sessionId,
     required List<ChatMessage> messages,
@@ -1648,10 +1643,7 @@ extension ChatServiceSendInject on ChatService {
       debugPrint('[SafeRun] 引用内容注入失败不阻断主流程: $e');
     }
 
-    return (
-      primaryRef: primaryRef,
-      chapterContent: null,
-    );
+    return (primaryRef: primaryRef, chapterContent: null);
   }
 
   Future<void> _injectOutlineFactsAndFiles({
@@ -2562,7 +2554,6 @@ extension ChatServiceSendPersist on ChatService {
 }
 
 extension ChatServiceSendRun on ChatService {
-
   Future<({String fullContent, bool inDiagnosisBlock})> _streamLlm({
     required List<ChatMessage> messages,
     required SendMessageCallbacks callbacks,
@@ -2834,7 +2825,6 @@ extension ChatServiceSend on ChatService {
       debugPrint(
         '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${messages.length}（含 system + history）',
       );
-
 
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
