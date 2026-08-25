@@ -38,9 +38,8 @@ import '../services/error_handler.dart';
 import 'app_providers.dart';
 
 /// 编辑器背景预设 key（批次82：排版设置）
-/// 'paper' 米纸（默认） | 'warm' 暖白 | 'green' 护眼绿 | 'dark' 暗夜
+/// 'paper' 米纸（默认） | 'green' 护眼绿 | 'dark' 暗夜
 const String editorBgPaper = 'paper';
-const String editorBgWarm = 'warm';
 const String editorBgGreen = 'green';
 const String editorBgDark = 'dark';
 

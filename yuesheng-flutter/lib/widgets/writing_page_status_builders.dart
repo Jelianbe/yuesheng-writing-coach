@@ -78,11 +78,11 @@ extension _WritingPageStatusBuilders on _WritingPageState {
 
   /// 批次60：保存状态条——编辑器底部轻量指示「保存中… / 已保存 HH:MM / 保存失败」
   /// 让用户直观确认内容已落库（数据安全感），失败时给出可见但温和的提示
-  /// 批次94-4：暗夜编辑器背景联动取反
+  /// 批次 X-037-P0-1 H2/C1：暗夜保存状态条联动走 AppColors.editorDark* 令牌（消除硬编码；muted 用 editorDarkMuted 4.56:1 达 AA）
   Widget _buildSaveStatusBar(WritingState state) {
     final darkUi = isDarkEditorPreset(state.editorBackground);
-    final muted = darkUi ? const Color(0xFF9AA0A6) : AppColors.textTertiary;
-    final barBg = darkUi ? const Color(0xFF26282B) : AppColors.background;
+    final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textTertiary;
+    final barBg = darkUi ? AppColors.editorDarkPanel : AppColors.background;
     final Widget content;
     if (state.isSaving) {
       content = Row(

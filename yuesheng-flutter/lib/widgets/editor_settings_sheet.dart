@@ -14,71 +14,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
+import '../config/editor_background_presets.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/writing_providers.dart';
 import 'punctuation_bar.dart';
 import 'yue_sheet.dart';
-
-/// 背景预设（key 与 WritingState.editorBackground 对应）
-class EditorBackgroundPreset {
-  final String key;
-  final String label;
-  final Color color;
-  final Color textColor;
-  const EditorBackgroundPreset({
-    required this.key,
-    required this.label,
-    required this.color,
-    required this.textColor,
-  });
-}
-
-/// 编辑器背景预设列表（批次82）
-const List<EditorBackgroundPreset> editorBackgroundPresets = [
-  EditorBackgroundPreset(
-    key: editorBgPaper,
-    label: '米纸',
-    color: Color(0xFFF5F1E8),
-    textColor: Color(0xFF1A1A1A),
-  ),
-  EditorBackgroundPreset(
-    key: editorBgWarm,
-    label: '暖白',
-    color: Color(0xFFFFFBF0),
-    textColor: Color(0xFF1A1A1A),
-  ),
-  EditorBackgroundPreset(
-    key: editorBgGreen,
-    label: '护眼',
-    color: Color(0xFFE6F0E9),
-    textColor: Color(0xFF1A1A1A),
-  ),
-  EditorBackgroundPreset(
-    key: editorBgDark,
-    label: '暗夜',
-    color: Color(0xFF26282B),
-    textColor: Color(0xFFE8EAED),
-  ),
-];
-
-/// key → 预设（未命中回退米纸）
-EditorBackgroundPreset editorBackgroundPresetOf(String key) {
-  for (final preset in editorBackgroundPresets) {
-    if (preset.key == key) return preset;
-  }
-  return editorBackgroundPresets.first;
-}
-
-/// 编辑器背景色（供 WritingPage 渲染正文底）
-Color editorBackgroundColorFor(String key) =>
-    editorBackgroundPresetOf(key).color;
-
-/// 编辑器文字色（暗夜背景用浅色，其余墨色）
-Color editorTextColorFor(String key) => editorBackgroundPresetOf(key).textColor;
-
-/// 批次94-4：是否为暗夜背景预设（写作页周边 UI 取反联动判断）
-bool isDarkEditorPreset(String key) => key == editorBgDark;
 
 class EditorSettingsSheet extends ConsumerWidget {
   final String chapterId;
