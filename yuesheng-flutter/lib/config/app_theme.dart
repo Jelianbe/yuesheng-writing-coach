@@ -75,8 +75,8 @@ abstract final class AppColors {
   static const Color editorDarkSurface = Color(0xFF1E2126); // AppBar/工具条暗夜底
   static const Color editorDarkPanel = Color(0xFF26282B); // 暗夜正文底（与预设「暗夜」一致）
   static const Color editorDarkText = Color(0xFFE8EAED); // 暗夜主文字
-  static const Color editorDarkMuted = Color(0xFFB4B9BE); // 暗夜次级文字（批次 M2 修复：原 9AA0A6 对比度 2.85→4.56 达标 AA）
-  static const Color editorDarkDeepMuted = Color(0xFF3A3F45); // 暗夜输入框/分隔底（更深的暗灰）
+  static const Color editorDarkMuted = Color(0xFFB4B9BE); // 暗夜次级文字
+  static const Color editorDarkDeepMuted = Color(0xFF3A3F45); // 暗夜输入框/分隔底（深灰）
 
   // ── 正向色（成功/已解决，矿物色系延伸，批次22）──
   static const Color success = Color(0xFF3E7C5B); // 正向绿（深青偏绿，与竹青同色调系）
