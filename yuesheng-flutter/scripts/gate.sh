@@ -62,120 +62,31 @@ else
   tail -n 40 "$TEST_LOG"
 fi
 
-# ---------- 门禁 3: 循环依赖 ----------
+# ---------- 门禁 3: 循环依赖（调用独立脚本 scripts/check_circular.py）----------
 echo "--> 门禁 3/4: 循环依赖扫描 (lib import 图)"
-# Windows 兼容：优先 python3，若不可用（Microsoft Store shim 或未装）则 fallback 到 python
+# Windows 兼容：优先 python3，fallback python
 if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
   PY_BIN=python3
 elif command -v python >/dev/null 2>&1; then
   PY_BIN=python
 else
-  echo "  [WARN] 未找到 python3 也未找到 python，跳过循环依赖扫描（非阻断，建议本地装 Python 3.10+）"
-  echo "OK: (SKIPPED) python not available - 循环依赖扫描已跳过，建议本地装 Python 3.10+" > "$CIRCULAR_LOG"
+  echo "  [WARN] 未找到 python3 / python，跳过循环依赖扫描（建议本地装 Python 3.10+）"
+  echo "OK: (SKIPPED) python not available" > "$CIRCULAR_LOG"
   log_result "循环依赖扫描(跳过)" 0
-  :
+  PY_BIN=""
 fi
 if [ -n "${PY_BIN:-}" ]; then
-  "$PY_BIN" - "$ROOT" > "$CIRCULAR_LOG" 2>&1 <<'PY'
-import os, re, sys
-root = sys.argv[1]
-lib = os.path.join(root, 'lib')
-if not os.path.isdir(lib):
-    print('SKIP: lib not found'); sys.exit(0)
-
-# 收集所有 dart 文件，建立 package:writingcoach 与相对 import 的模块映射
-files = []
-for dirpath, _, fnames in os.walk(lib):
-    for f in fnames:
-        if f.endswith('.dart'):
-            files.append(os.path.join(dirpath, f))
-
-def mod_of(path):
-    rel = os.path.relpath(path, lib).replace(os.sep, '/')
-    rel = rel[:-5]  # strip .dart
-    return 'package:writingcoach/' + rel
-
-import_re = re.compile(r"^import\s+'([^']+)'", re.M)
-graph = {}
-for path in files:
-    src = mod_of(path)
-    deps = []
-    with open(path, encoding='utf-8') as fh:
-        for line in fh:
-            m = import_re.match(line.strip())
-            if not m:
-                continue
-            dep = m.group(1)
-            if dep.startswith('package:writingcoach/'):
-                deps.append(dep)
-            elif dep.startswith('./') or dep.startswith('../'):
-                # 相对导入 -> 解析到绝对 package 模块
-                base = os.path.dirname(path)
-                resolved = os.path.normpath(os.path.join(base, dep)).replace(os.sep, '/')
-                rel = os.path.relpath(resolved, lib).replace(os.sep, '/')
-                rel = rel[:-5] if rel.endswith('.dart') else rel
-                deps.append('package:writingcoach/' + rel)
-    graph[src] = deps
-
-WHITE, GRAY, BLACK = 0, 1, 2
-color = {k: WHITE for k in graph}
-cycles = []
-def dfs(node, stack):
-    color[node] = GRAY
-    for dep in graph.get(node, []):
-        if dep not in graph:
-            continue
-        if color[dep] == GRAY:
-            # 找到环
-            idx = stack.index(dep) if dep in stack else 0
-            cycles.append(stack[idx:] + [dep])
-        elif color[dep] == WHITE:
-            dfs(dep, stack + [dep])
-    color[node] = BLACK
-
-for node in sorted(graph):
-    if color[node] == WHITE:
-        dfs(node, [node])
-
-if cycles:
-    print('FAIL: 检测到 %d 个循环依赖:' % len(cycles))
-    for c in cycles[:20]:
-        print('  -> ' + ' -> '.join(c))
-    sys.exit(1)
-print('OK: 未检测到 lib 内循环依赖 (共 %d 模块)' % len(graph))
-sys.exit(0)
-PY
-if [ $? -eq 0 ]; then
-  log_result "循环依赖扫描" 0
-else
-  log_result "循环依赖扫描" 1
-  cat "$CIRCULAR_LOG"
-fi
+  if "$PY_BIN" scripts/check_circular.py "$ROOT" > "$CIRCULAR_LOG" 2>&1; then
+    log_result "循环依赖扫描" 0
+  else
+    log_result "循环依赖扫描" 1
+    cat "$CIRCULAR_LOG"
+  fi
 fi
 
-# ---------- 门禁 4: 安全 / 可达性 ----------
+# ---------- 门禁 4: 安全 / 可达性（调用独立脚本 scripts/check_secrets.sh）----------
 echo "--> 门禁 4/4: 安全/可达性扫描"
-{
-  issues=0
-  # R-029: 密钥零硬编码 — 扫描疑似明文密钥/令牌
-  # 白名单说明: llm_config_storage.dart 存放 SecureStorage 专用的"键名常量"（不是真实 API 密钥值）
-  matches=$(grep -rnE "(apiKey|api_key|secret|token|password|accessKey|sk-)[[:space:]]*[:=][[:space:]]*['\"][A-Za-z0-9+/_.-]{12,}" lib --include='*.dart' 2>/dev/null | grep -vE "(test|_test|example|sample|mock|dummy|placeholder|your_|xxx|TODO|llm_config_storage\.dart)" || true)
-  if [ -n "$matches" ]; then
-    echo "  [WARN] 疑似硬编码密钥/令牌:"
-    echo "$matches" | sed 's/^/    /'
-    issues=$((issues + 1))
-  fi
-  # 可达性基础: 是否存在非空 Semantics / 文本对比度提示（轻量、仅统计缺失）
-  missing_semantics=$(grep -rnE "Tooltip\(" lib --include='*.dart' 2>/dev/null | wc -l)
-  echo "  [info] Tooltip 使用计数: $missing_semantics (可达性正向信号，非阻断)"
-  if [ "$issues" -gt 0 ]; then
-    echo "FAIL: 安全扫描发现疑似密钥硬编码"
-    exit 1
-  fi
-  echo "OK: 安全扫描通过 (未发现疑似硬编码密钥)"
-  exit 0
-} > "$SECURITY_LOG" 2>&1
-if [ $? -eq 0 ]; then
+if bash scripts/check_secrets.sh "$ROOT" > "$SECURITY_LOG" 2>&1; then
   log_result "安全/可达性扫描" 0
 else
   log_result "安全/可达性扫描" 1
