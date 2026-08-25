@@ -43,6 +43,11 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Check formatting (Gate 0)
+        # 宪法 §二.2：dart format --set-exit-if-changed 通过。
+        # X-034-FORMAT 基线 commit 3c95534c 之后，任何格式漂移都会被阻断。基线：276 文件 0 变动。
+        run: dart format --set-exit-if-changed -o none lib
+
       - name: Static analysis
         run: flutter analyze lib
 

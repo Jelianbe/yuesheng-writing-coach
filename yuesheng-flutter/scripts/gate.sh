@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================
-# 月笙写作教练 Flutter 端 — 四道门禁 (R-027 四道代码质量门禁)
+# 月笙写作教练 Flutter 端 — 五道门禁 (R-027 + 宪法 §二)
 #
+# 门禁 0: 代码格式 (dart format --set-exit-if-changed lib) — 宪法 §二.2
 # 门禁 1: 静态分析 (dart analyze lib) — 类型检查 + Lint
 # 门禁 2: 单元测试 (flutter test)
-# 门禁 3: 循环依赖扫描 (lib 内 import 图 DFS 检测环)
-# 门禁 4: 安全/可达性扫描 (R-029 密钥零硬编码 / 基础可达性)
+# 门禁 3: 循环依赖扫描 (scripts/check_circular.py) — 宪法 §二.4 / R-020
+# 门禁 4: 安全/密钥扫描 (scripts/check_secrets.sh) — R-029
 #
 # 用法:  bash scripts/gate.sh
 # 退出码: 任一门禁 FAIL 则非 0 (可接入 CI / 提交前自检)
@@ -19,7 +20,8 @@ OUT_DIR="$ROOT/outputs/gate"
 mkdir -p "$OUT_DIR"
 REPORT="$OUT_DIR/gate-report.md"
 
-# 日志落盘（保留历史产物，类似旧机制 _typecheck.txt/_test.txt/_circular.txt/_a11y.txt）
+# 日志落盘
+FORMAT_LOG="$OUT_DIR/format.txt"
 TYPECHECK_LOG="$OUT_DIR/typecheck.txt"
 TEST_LOG="$OUT_DIR/test.txt"
 CIRCULAR_LOG="$OUT_DIR/circular.txt"
@@ -41,11 +43,20 @@ log_result() {
 }
 
 echo "=================================================="
-echo "月笙 Flutter 四道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
+echo "月笙 Flutter 五道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================="
 
+# ---------- 门禁 0: 格式（宪法 §二.2）----------
+echo "--> 门禁 0/5: 格式校验 (dart format --set-exit-if-changed lib)"
+if dart format --set-exit-if-changed -o none lib > "$FORMAT_LOG" 2>&1; then
+  log_result "格式校验 (dart format)" 0
+else
+  log_result "格式校验 (dart format)" 1
+  tail -n 40 "$FORMAT_LOG"
+fi
+
 # ---------- 门禁 1: 静态分析 ----------
-echo "--> 门禁 1/4: 静态分析 (dart analyze lib)"
+echo "--> 门禁 1/5: 静态分析 (dart analyze lib)"
 if dart analyze lib > "$TYPECHECK_LOG" 2>&1; then
   log_result "静态分析 (analyze lib)" 0
 else
@@ -54,7 +65,7 @@ else
 fi
 
 # ---------- 门禁 2: 测试 ----------
-echo "--> 门禁 2/ 4: 单元测试 (flutter test)"
+echo "--> 门禁 2/5: 单元测试 (flutter test)"
 if flutter test > "$TEST_LOG" 2>&1; then
   log_result "单元测试 (flutter test)" 0
 else
@@ -63,7 +74,7 @@ else
 fi
 
 # ---------- 门禁 3: 循环依赖（调用独立脚本 scripts/check_circular.py）----------
-echo "--> 门禁 3/4: 循环依赖扫描 (lib import 图)"
+echo "--> 门禁 3/5: 循环依赖扫描 (lib import 图)"
 # Windows 兼容：优先 python3，fallback python
 if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys; sys.exit(0)' >/dev/null 2>&1; then
   PY_BIN=python3
@@ -84,32 +95,34 @@ if [ -n "${PY_BIN:-}" ]; then
   fi
 fi
 
-# ---------- 门禁 4: 安全 / 可达性（调用独立脚本 scripts/check_secrets.sh）----------
-echo "--> 门禁 4/4: 安全/可达性扫描"
+# ---------- 门禁 4: 安全 / 密钥（调用独立脚本 scripts/check_secrets.sh）----------
+echo "--> 门禁 4/5: 安全/密钥扫描"
 if bash scripts/check_secrets.sh "$ROOT" > "$SECURITY_LOG" 2>&1; then
-  log_result "安全/可达性扫描" 0
+  log_result "安全/密钥扫描" 0
 else
-  log_result "安全/可达性扫描" 1
+  log_result "安全/密钥扫描" 1
   cat "$SECURITY_LOG"
 fi
 
 # ---------- 汇总报告 ----------
 cat > "$REPORT" <<EOF
-# 四道门禁报告
+# 五道门禁报告
 
 - 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
 
 | 门禁 | 结果 |
 |------|------|
+| 格式校验 (dart format) | $(grep -q 'Formatted.*0 changed' "$FORMAT_LOG" 2>/dev/null && echo PASS || (grep -q 'Changed' "$FORMAT_LOG" 2>/dev/null && echo FAIL || echo PASS)) |
 | 静态分析 (dart analyze lib) | $([ -s "$TYPECHECK_LOG" ] && grep -q ' error ' "$TYPECHECK_LOG" && echo FAIL || echo PASS) |
 | 单元测试 (flutter test) | $([ -s "$TEST_LOG" ] && grep -qE 'Some tests failed|FAIL' "$TEST_LOG" && echo FAIL || echo PASS) |
 | 循环依赖扫描 | $(grep -q 'OK:' "$CIRCULAR_LOG" && echo PASS || echo FAIL) |
-| 安全/可达性扫描 | $(grep -q 'OK:' "$SECURITY_LOG" && echo PASS || echo FAIL) |
+| 安全/密钥扫描 | $(grep -q 'OK:' "$SECURITY_LOG" 2>/dev/null && echo PASS || echo FAIL) |
 
 汇总: ${pass} 通过 / ${fail} 失败
 
 ## 详细日志
+- 格式: outputs/gate/format.txt
 - 静态分析: outputs/gate/typecheck.txt
 - 测试: outputs/gate/test.txt
 - 循环依赖: outputs/gate/circular.txt

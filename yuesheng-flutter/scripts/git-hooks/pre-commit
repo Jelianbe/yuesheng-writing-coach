@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================================
-# 月笙写作教练 — git pre-commit hook（四道门禁本地拦截）
+# 月笙写作教练 — git pre-commit hook（五道门禁本地拦截）
 #
 # 行为：
-#   - 仅当本次 staged 变更触及 yuesheng-flutter/ 或 flutter_ci.yaml 时运行四闸
+#   - 仅当本次 staged 变更触及 yuesheng-flutter/ 或 flutter_ci.yaml 时运行五闸
 #   - 若本地缺 dart/flutter 工具链，警告但不阻断（CI 仍会事后拦截）
 #   - 紧急跳过：    SKIP_GIT_GATE=1 git commit ...
 #
@@ -36,14 +36,14 @@ if printf '%s\n' "$staged" | grep -qE '^\.github/workflows/flutter_ci\.yaml$'; t
 fi
 
 if [ "$hit" -eq 0 ]; then
-  # 本次改动不涉及 Flutter，四闸跳过（节省 ~5 分钟等待）
-  echo "[pre-commit] ⏭  未触及 yuesheng-flutter/ 或 flutter_ci.yaml，跳过四闸"
+  # 本次改动不涉及 Flutter，五闸跳过（节省 ~5 分钟等待）
+  echo "[pre-commit] ⏭  未触及 yuesheng-flutter/ 或 flutter_ci.yaml，跳过五闸"
   exit 0
 fi
 
 echo ""
 echo "======================================================================"
-echo "[pre-commit] 🚦 检测到 Flutter / CI 变更，触发本地四道门禁..."
+echo "[pre-commit] 🚦 检测到 Flutter / CI 变更，触发本地五道门禁..."
 echo "              （耗时约 4~6 分钟；紧急提交用 SKIP_GIT_GATE=1 跳过）"
 echo "======================================================================"
 
@@ -74,12 +74,12 @@ fi
 cd "$FLUTTER_DIR" || exit 1
 if bash scripts/gate.sh; then
   echo ""
-  echo "[pre-commit] ✅ 四道门禁全部通过，允许提交"
+  echo "[pre-commit] ✅ 五道门禁全部通过，允许提交"
   exit 0
 else
   echo ""
   echo "======================================================================"
-  echo "[pre-commit] ❌ 四道门禁未通过，提交被拦截。"
+  echo "[pre-commit] ❌ 五道门禁未通过，提交被拦截。"
   echo ""
   echo "  👉 请修复上方 FAIL 的门禁后再次提交；"
   echo "     或查看 yuesheng-flutter/outputs/gate/gate-report.md 获取报告。"
