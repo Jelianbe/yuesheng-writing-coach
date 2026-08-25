@@ -24,12 +24,25 @@
 - 测试：widget/unit/integration 三级；E2E 用 Maestro（可复用 RN 版的 YAML 流程思路）。
 - 工程质量门禁（git commit 前必须全绿，缺一不可）：
   1. `flutter analyze` 0 问题
-  2. `dart format --set-exit-if-changed` 通过
+  2. `dart format --set-exit-if-changed` 通过（X-034-FORMAT 基线 commit 3c95534c 之后 CI + pre-commit 双强制）
   3. 受影响测试全绿
-  4. **架构分层检查（机器强制）**：分层规则必须进 analyze/lint 或独立脚本，禁止只写进文档（⚠️ 未落地：现 analyze 仅通用 lint，分层规则待进 analyze/独立脚本）
-  5. **测试覆盖率门槛**：新代码行覆盖率 ≥ 80%，DAO/Store/Hook 等价层**不允许无测试提交**（❌ 未落地，待对应批次）
-  6. 依赖审计：`flutter pub outdated` + 安全审计，**高危漏洞不清零不允许发布**（❌ 未落地，待对应批次）
-  - **落地机制**：门禁 = 本地四闸（命令链见 `flutter-sandbox-run` skill）；CI 未建，发布/交接前必须人工全量四闸。
+  4. **架构分层检查（机器强制）**：循环依赖零容忍（R-020）+ 密钥硬编码零容忍（R-029）。✅ **已落地（X-033-GATE34）**：`scripts/check_circular.py` 做 lib 内 import 图 DFS（0 环必过），`scripts/check_secrets.sh` 做密钥正则扫描（`llm_config_storage.dart` 键名常量白名单豁免），CI step + pre-commit gate.sh 三方行为一致
+  5. **测试覆盖率门槛（X-026-COV 方案 A 务实落地，批次 X-026/027/028/029 已执行）**：
+     - **T1（整库行覆盖率，软门槛）**：target ≥65%，±2% 容差 → <63% 才 FAIL CI，[63,65) WARN 不阻断（容忍小幅抖动）；连续 3 次 WARN 由 X-029-T1WARN Issue 追踪器触发人工审查，必要时收紧容差至 ±1%
+     - **T2（核心文件硬门槛）**：核心文件统一 ≥85%，任一跌破直接 FAIL CI
+       - 现阶段清单（5 项，均已通过最新实测）：
+         - `lib/services/training_evaluator.dart`（实测 96.03%）
+         - `lib/services/evaluation_service.dart`（实测 89.47%）
+         - `lib/services/chat_service.dart`（实测 90.07%）
+         - `lib/services/focus_resolver.dart`（实测 95.87%）
+         - `lib/data/repositories/diagnosis_repository.dart`（实测 92.50%，数据等价层代表）
+       - **"DAO/Store/Hook 等价层禁无测试"落地规则**：未来新增任何 `lib/data/`（DAO / Repository / Store 等价层）文件，须同步扩展 T2 清单并通过 ≥85% 硬门槛，才允许合入 main
+     - **远期 aspirational 目标（不阻断当前 CI）**：增量覆盖率工具链（diff_cover / lcov-diff 等）立项接入后，新增/修改代码行覆盖率 ≥80%。该目标单独立项、单独批次推进
+  6. 依赖审计：`dart pub outdated` + 安全审计，**高危漏洞不清零不允许发布**
+     - **"发布"语义澄清（R-008 同步）**：本条阻断时机仅限 **release build**（`flutter build apk / ipa / appbundle`）前人工审查；push 到 main / PR 合入只做 `dart pub outdated --json` 非阻断告警（不允许因上游 CVE 修复排期未知永久阻塞 main 分支合入）
+     - 高危豁免规则：评估确证漏洞代码路径本项目永不触发时，凭书面 D# 决策 + 豁免清单登记跳过阻断
+     - ❌ 未落地：CI step 待建（exit code 解析 + 工具选型 + 豁免机制落地）
+  - **落地机制**：门禁 = 本地五闸（`bash scripts/gate.sh`，闸0 格式→闸1 analyze→闸2 test→闸3 循环依赖→闸4 密钥扫描）；GitHub Actions `flutter_ci.yaml` 同序覆盖；SSH push 后上游 CI 为最终机器兜底。
 
 ## 三、四条教训级铁律（来自 RN 版 31 天实跑）
 
