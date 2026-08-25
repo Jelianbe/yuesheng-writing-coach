@@ -158,8 +158,9 @@ extension _WritingPageStatusBuilders on _WritingPageState {
       child: LinearProgressIndicator(
         value: value,
         minHeight: 2,
+        // 批次 X-037-P0-1 H2：进度条暗夜底走 editorDarkDeepMuted 令牌（消除 0xFF3A3F45 硬编码）
         backgroundColor: darkUi
-            ? const Color(0xFF3A3F45)
+            ? AppColors.editorDarkDeepMuted
             : AppColors.placeholder,
         valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
       ),
