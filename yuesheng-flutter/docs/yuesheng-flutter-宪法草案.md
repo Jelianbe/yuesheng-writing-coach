@@ -38,11 +38,15 @@
          - `lib/data/repositories/diagnosis_repository.dart`（实测 92.50%，数据等价层代表）
        - **"DAO/Store/Hook 等价层禁无测试"落地规则**：未来新增任何 `lib/data/`（DAO / Repository / Store 等价层）文件，须同步扩展 T2 清单并通过 ≥85% 硬门槛，才允许合入 main
      - **远期 aspirational 目标（不阻断当前 CI）**：增量覆盖率工具链（diff_cover / lcov-diff 等）立项接入后，新增/修改代码行覆盖率 ≥80%。该目标单独立项、单独批次推进
-  6. 依赖审计：`dart pub outdated` + 安全审计，**高危漏洞不清零不允许发布**
+  6. 依赖审计：`dart pub outdated --json`（Flutter 3.x CLI 更名，原 `flutter pub outdated` 废弃）+ 安全审计，**高危漏洞不清零不允许发布**
      - **"发布"语义澄清（R-008 同步）**：本条阻断时机仅限 **release build**（`flutter build apk / ipa / appbundle`）前人工审查；push 到 main / PR 合入只做 `dart pub outdated --json` 非阻断告警（不允许因上游 CVE 修复排期未知永久阻塞 main 分支合入）
      - 高危豁免规则：评估确证漏洞代码路径本项目永不触发时，凭书面 D# 决策 + 豁免清单登记跳过阻断
-     - ❌ 未落地：CI step 待建（exit code 解析 + 工具选型 + 豁免机制落地）
-  - **落地机制**：门禁 = 本地五闸（`bash scripts/gate.sh`，闸0 格式→闸1 analyze→闸2 test→闸3 循环依赖→闸4 密钥扫描）；GitHub Actions `flutter_ci.yaml` 同序覆盖；SSH push 后上游 CI 为最终机器兜底。
+     - ✅ 已落地（X-036-DEP-AUDIT）：
+       - GitHub Actions Gate 5 step 接入：同脚本 `scripts/check_outdated.py --mode push` 非阻断告警；release 前同一脚本加 `--mode release` 跑人工审查（CRITICAL 命中 → exit 1 阻断）
+       - 分级判定：CRITICAL = `isCurrentAffectedByAdvisory=true`（官方安全公告命中当前版本）；HIGH = isDiscontinued / isCurrentRetracted（停更/撤回）；MEDIUM = 直接依赖主版本落后；LOW = 其他 outdated
+       - 豁免登记：`scripts/dependency_exemptions.json`（schema：`{package, until_date, reason, d: D#编号}`），until_date 过期自动失效
+       - CI 注解：CRITICAL/HIGH 通过 ::warning 注解在 Actions UI 标红
+  - **落地机制**：CI 六闸（Gate0 格式→Gate1 analyze→Gate2 循环依赖→Gate3 密钥→Gate4 依赖健康 advisory→Gate5 test + 覆盖率 T1/T2），本地 `bash scripts/gate.sh` 五闸（无 Gate4 依赖健康——因需要外网 pub.dev 调用，不强制阻塞 pre-commit，按需要手动 `dart pub outdated --json | python3 scripts/check_outdated.py --mode release` 复查）；GitHub Actions `flutter_ci.yaml` 同序覆盖；SSH push 后上游 CI 为最终机器兜底。
 
 ## 三、四条教训级铁律（来自 RN 版 31 天实跑）
 
