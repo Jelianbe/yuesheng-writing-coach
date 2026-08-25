@@ -66,16 +66,15 @@ List<LlmConfigValues> expandEndpoints(
   List<LlmFallbackEntry> fallbacks,
   int maxAttempts,
 ) {
-  final merged =
-      fallbacks
-          .map(
-            (f) => LlmConfigValues(
-              baseUrl: f.baseUrl,
-              model: f.model ?? primary.model,
-              apiKey: f.apiKey ?? primary.apiKey,
-            ),
-          )
-          .toList();
+  final merged = fallbacks
+      .map(
+        (f) => LlmConfigValues(
+          baseUrl: f.baseUrl,
+          model: f.model ?? primary.model,
+          apiKey: f.apiKey ?? primary.apiKey,
+        ),
+      )
+      .toList();
   final sequence = <LlmConfigValues>[primary, ...merged, primary, primary];
   return sequence.take(maxAttempts).toList();
 }

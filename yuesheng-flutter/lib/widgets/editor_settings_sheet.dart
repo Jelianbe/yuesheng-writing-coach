@@ -66,7 +66,11 @@ class EditorSettingsSheet extends ConsumerWidget {
       child: Padding(
         // X-039-Batch1：20→section / 16→lg / 24→xl
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.section, AppSpacing.lg, AppSpacing.section, AppSpacing.xl),
+          AppSpacing.section,
+          AppSpacing.lg,
+          AppSpacing.section,
+          AppSpacing.xl,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +242,9 @@ class EditorSettingsSheet extends ConsumerWidget {
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                  ),
                 ),
                 child: const Text('恢复右下角位置', style: TextStyle(fontSize: 12)),
               ),

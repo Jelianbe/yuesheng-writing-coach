@@ -882,7 +882,9 @@ class _WritingPageState extends ConsumerState<WritingPage> {
       child: Padding(
         // X-039-Batch1：12→md / 8→sm
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -959,7 +961,11 @@ class _WritingPageState extends ConsumerState<WritingPage> {
                 Padding(
                   // X-039-Batch1：20→section / 28（非标准= section+sm / 16→lg）— 28 为标题专属垂直大间距，保留字面（无法映射），后续如需令牌化单独补 largeV=28
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.section, AppSpacing.section + AppSpacing.sm, AppSpacing.section, AppSpacing.lg),
+                    AppSpacing.section,
+                    AppSpacing.section + AppSpacing.sm,
+                    AppSpacing.section,
+                    AppSpacing.lg,
+                  ),
                   child: TextField(
                     key: const Key('chapterTitleField'),
                     controller: _titleController,
@@ -990,7 +996,9 @@ class _WritingPageState extends ConsumerState<WritingPage> {
                 // 标题/正文分隔线（竹青细描边）
                 Padding(
                   // X-039-Batch1：20→section
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.section),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.section,
+                  ),
                   child: Divider(
                     height: 1,
                     thickness: 0.6,
@@ -1002,7 +1010,11 @@ class _WritingPageState extends ConsumerState<WritingPage> {
                   child: Padding(
                     // X-039-Batch1：20→section / 16→lg
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.section, AppSpacing.lg, AppSpacing.section, AppSpacing.lg),
+                      AppSpacing.section,
+                      AppSpacing.lg,
+                      AppSpacing.section,
+                      AppSpacing.lg,
+                    ),
                     child: Stack(
                       key: _editorStackKey, // 批次95-1：划词菜单位置反查用
                       children: [

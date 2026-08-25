@@ -75,8 +75,10 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               padding: const EdgeInsets.symmetric(
-                  // X-039-Batch1：16→lg / 12→md
-                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                // X-039-Batch1：16→lg / 12→md
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
             ),
             child: const Text(
               '取消',
@@ -95,8 +97,10 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               padding: const EdgeInsets.symmetric(
-                  // X-039-Batch1：16→lg / 12→md
-                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+                // X-039-Batch1：16→lg / 12→md
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
             ),
             child: const Text(
               '删除',

@@ -43,8 +43,9 @@ class LlmRetryPolicy {
   /// 计算值 = min(maxDelayMs, base * factor^(retryIndex-1)) + jitter。
   int delayMsFor(int retryIndex, {math.Random? random}) {
     final raw = baseDelayMs * math.pow(factor, retryIndex - 1).toInt();
-    final capped =
-        (maxDelayMs != null && raw > maxDelayMs!) ? maxDelayMs! : raw;
+    final capped = (maxDelayMs != null && raw > maxDelayMs!)
+        ? maxDelayMs!
+        : raw;
     if (jitterMs <= 0) return capped;
     final r = random ?? math.Random();
     return capped + r.nextInt(jitterMs);

@@ -63,7 +63,9 @@ extension _WritingPageStatusBuilders on _WritingPageState {
       padding:
           // X-039-Batch1：16→lg / 10→smx
           const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg, vertical: AppSpacing.smx),
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.smx,
+          ),
       child: const Row(
         children: [
           Icon(Icons.cloud_off, size: 16, color: AppColors.warning),
@@ -118,7 +120,11 @@ extension _WritingPageStatusBuilders on _WritingPageState {
       color: barBg,
       // X-039-Batch1：16→lg / 2→xxs / 4→xs
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg, AppSpacing.xxs, AppSpacing.lg, AppSpacing.xs),
+        AppSpacing.lg,
+        AppSpacing.xxs,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
       child: Align(alignment: Alignment.centerRight, child: content),
     );
   }
@@ -195,7 +201,9 @@ extension _WritingPageStatusBuilders on _WritingPageState {
       child: Padding(
         // X-039-Batch1：8→sm / 8→sm
         padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm, vertical: AppSpacing.sm),
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.sm,
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -235,7 +243,9 @@ extension _WritingPageStatusBuilders on _WritingPageState {
       key: const Key('completionBadge'),
       // X-039-Batch1：6→xsm / 2→xxs
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: bg,
         // X-039-Batch1：8→sm
