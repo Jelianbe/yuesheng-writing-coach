@@ -10,6 +10,9 @@ const String _kKeyApiKey = 'yuesheng_api_key';
 const String _kKeyApiBaseUrl = 'yuesheng_api_base_url';
 const String _kKeyApiModel = 'yuesheng_api_model';
 
+/// B1-1 备选端点链（JSON 数组，可选配置；未配置 = 无 fallback）
+const String _kKeyApiFallbacks = 'yuesheng_api_fallbacks';
+
 /// LLM 配置（API Key / Base URL / Model）
 class LlmConfigValues {
   final String apiKey;
@@ -61,5 +64,16 @@ class LlmConfigStorage {
       _storage.delete(key: _kKeyApiBaseUrl),
       _storage.delete(key: _kKeyApiModel),
     ]);
+  }
+
+  /// 读取备选端点链原始 JSON（B1-1）；键不存在返回 null。
+  /// 解析容错见 parseFallbacks（llm_fallback.dart）。
+  Future<String?> getLlmFallbacksRaw() async {
+    return _storage.read(key: _kKeyApiFallbacks);
+  }
+
+  /// 保存备选端点链（JSON 数组字符串，由调用方序列化）
+  Future<void> saveLlmFallbacksRaw(String rawJson) async {
+    await _storage.write(key: _kKeyApiFallbacks, value: rawJson);
   }
 }
