@@ -15,6 +15,8 @@ import 'package:flutter/foundation.dart';
 
 import '../config/shared_constants.dart';
 import 'llm_config_storage.dart';
+import 'llm_fallback.dart';
+import 'llm_retry.dart';
 import 'network_check.dart';
 import 'stream_guard.dart';
 
@@ -153,38 +155,52 @@ class LlmClient {
   }
 
   /// 非流式对话（chatCompletion）
+  ///
+  /// B1-2/B1-1：可重试错误（超时/连接/5xx/429）指数退避重试；
+  /// 配置了备选端点（yuesheng_api_fallbacks）时按序轮换。
   Future<String> chatCompletion(List<ChatMessage> messages) async {
     final cfg = await _configStorage.getLlmConfig();
     if (cfg == null) throw Exception('API 配置未设置');
 
     if (!await checkNetwork()) throw Exception('网络不可用');
 
-    final url = '${cfg.baseUrl}/chat/completions';
-    try {
-      final response = await _dio.post<dynamic>(
-        url,
-        data: jsonEncode({
-          'model': cfg.model,
-          'messages': messages.map((m) => m.toJson()).toList(),
-          'stream': false,
-          'temperature': LlmConfig.chatTemperature,
-          'max_tokens': LlmConfig.chatMaxTokens,
-        }),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${cfg.apiKey}',
-          },
-          sendTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
-          receiveTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
-        ),
-      );
+    final fallbacks = parseFallbacks(
+      await _configStorage.getLlmFallbacksRaw(),
+    );
+    final endpoints = expandEndpoints(
+      cfg,
+      fallbacks,
+      LlmRetryPolicy.standard.maxAttempts,
+    );
 
-      final json = response.data is String
-          ? jsonDecode(response.data as String) as Map<String, dynamic>
-          : response.data as Map<String, dynamic>;
-      final content = json['choices']?[0]?['message']?['content'] ?? '';
-      return content as String;
+    try {
+      return await executeWithRetry((attemptIndex) async {
+        final c = endpoints[attemptIndex - 1];
+        final response = await _dio.post<dynamic>(
+          '${c.baseUrl}/chat/completions',
+          data: jsonEncode({
+            'model': c.model,
+            'messages': messages.map((m) => m.toJson()).toList(),
+            'stream': false,
+            'temperature': LlmConfig.chatTemperature,
+            'max_tokens': LlmConfig.chatMaxTokens,
+          }),
+          options: Options(
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ${c.apiKey}',
+            },
+            sendTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
+            receiveTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
+          ),
+        );
+
+        final json = response.data is String
+            ? jsonDecode(response.data as String) as Map<String, dynamic>
+            : response.data as Map<String, dynamic>;
+        final content = json['choices']?[0]?['message']?['content'] ?? '';
+        return content as String;
+      });
     } on DioException catch (e) {
       throw Exception(_buildDioError(e));
     }
@@ -194,6 +210,10 @@ class LlmClient {
   ///
   /// [callback] 每收到一个增量 token 或 [DONE] 时回调。
   /// [cancelToken] 可用于取消请求。
+  ///
+  /// B1-2/B1-1：仅在「零 token」阶段失败才重试（建连超时/断流发生在
+  /// 首个 token 前，重试安全）；一旦向 UI 输出过 token，后续失败直接
+  /// 抛出——重试会导致同段回答重复输出。备选端点轮换同 chatCompletion。
   Future<void> streamChat(
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
@@ -204,116 +224,150 @@ class LlmClient {
 
     if (!await checkNetwork()) throw Exception('网络不可用');
 
-    final url = '${cfg.baseUrl}/chat/completions';
-    final body = jsonEncode({
-      'model': cfg.model,
-      'messages': messages.map((m) => m.toJson()).toList(),
-      'stream': true,
-      'temperature': LlmConfig.streamTemperature,
-    });
+    final fallbacks = parseFallbacks(
+      await _configStorage.getLlmFallbacksRaw(),
+    );
+    final endpoints = expandEndpoints(
+      cfg,
+      fallbacks,
+      LlmRetryPolicy.standard.maxAttempts,
+    );
 
-    // 批次55：TTFT（time-to-first-token）观测——请求发出到首个内容 token 到达。
-    // 仅 debug 留痕不干预，建「流式首字延迟」基线（真实设备采集）。
-    final ttftWatch = Stopwatch()..start();
-    var firstTokenLogged = false;
-
-    Response<ResponseBody> response;
     try {
-      response = await _dio.post<ResponseBody>(
-        url,
-        data: body,
-        options: Options(
-          responseType: ResponseType.stream,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${cfg.apiKey}',
-            'Accept': 'text/event-stream',
-          },
-          sendTimeout: const Duration(milliseconds: LlmConfig.streamTimeoutMs),
-          receiveTimeout: const Duration(
-            milliseconds: LlmConfig.streamTimeoutMs,
-          ),
-        ),
-        cancelToken: cancelToken,
-      );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) {
-        throw LlmRequestCancelledException();
-      }
-      throw Exception(_buildDioError(e));
-    }
+      await executeWithRetry((attemptIndex) async {
+        final c = endpoints[attemptIndex - 1];
+        final body = jsonEncode({
+          'model': c.model,
+          'messages': messages.map((m) => m.toJson()).toList(),
+          'stream': true,
+          'temperature': LlmConfig.streamTemperature,
+        });
 
-    final stream = response.data!.stream;
-    String buffer = '';
+        // 批次55：TTFT（time-to-first-token）观测——请求发出到首个内容 token 到达。
+        // 仅 debug 留痕不干预，建「流式首字延迟」基线（真实设备采集）。
+        // B1：挪入重试闭包，每次尝试独立计时。
+        final ttftWatch = Stopwatch()..start();
+        var firstTokenLogged = false;
 
-    // 流内空闲超时守卫：防止网络静默断流导致 await for 永久阻塞（UI 卡死）。
-    // 同时覆盖 Teacher/Editor/Progressive/Realtime 等所有走 streamChat 的链路。
-    await for (final text in guardStream(
-      stream.cast<List<int>>().transform(utf8.decoder),
-    )) {
-      buffer += text;
+        // B1：本次尝试是否已向 UI 输出过 token（决定失败后能否安全重试）
+        var hasEmittedToken = false;
 
-      final lines = buffer.split('\n');
-      // 保留最后可能不完整的行
-      buffer = lines.removeLast();
-
-      for (final line in lines) {
-        final trimmed = line.trim();
-        if (trimmed.isEmpty || !trimmed.startsWith('data: ')) continue;
-
-        final data = trimmed.substring(6); // 'data: '.length == 6
-        if (data == '[DONE]') {
-          callback(const LlmStreamResponse(content: '', isDone: true));
-          return;
+        Response<ResponseBody> response;
+        try {
+          response = await _dio.post<ResponseBody>(
+            '${c.baseUrl}/chat/completions',
+            data: body,
+            options: Options(
+              responseType: ResponseType.stream,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${c.apiKey}',
+                'Accept': 'text/event-stream',
+              },
+              sendTimeout: const Duration(milliseconds: LlmConfig.streamTimeoutMs),
+              receiveTimeout: const Duration(
+                milliseconds: LlmConfig.streamTimeoutMs,
+              ),
+            ),
+            cancelToken: cancelToken,
+          );
+        } on DioException catch (e) {
+          if (e.type == DioExceptionType.cancel) {
+            throw LlmRequestCancelledException();
+          }
+          rethrow; // 建连阶段失败（零 token）→ 交 executeWithRetry 分类
         }
+
+        final stream = response.data!.stream;
+        String buffer = '';
 
         try {
-          final json = jsonDecode(data) as Map<String, dynamic>;
-          final choices = json['choices'] as List<dynamic>?;
-          if (choices != null && choices.isNotEmpty) {
-            final delta = choices[0]['delta'] as Map<String, dynamic>?;
-            final content = delta?['content'];
-            if (content is String && content.isNotEmpty) {
-              _logFirstToken(ttftWatch, firstTokenLogged);
-              firstTokenLogged = true;
-              callback(LlmStreamResponse(content: content, isDone: false));
+          // 流内空闲超时守卫：防止网络静默断流导致 await for 永久阻塞（UI 卡死）。
+          // 同时覆盖 Teacher/Editor/Progressive/Realtime 等所有走 streamChat 的链路。
+          await for (final text in guardStream(
+            stream.cast<List<int>>().transform(utf8.decoder),
+          )) {
+            buffer += text;
+
+            final lines = buffer.split('\n');
+            // 保留最后可能不完整的行
+            buffer = lines.removeLast();
+
+            for (final line in lines) {
+              final trimmed = line.trim();
+              if (trimmed.isEmpty || !trimmed.startsWith('data: ')) continue;
+
+              final data = trimmed.substring(6); // 'data: '.length == 6
+              if (data == '[DONE]') {
+                callback(const LlmStreamResponse(content: '', isDone: true));
+                return;
+              }
+
+              try {
+                final json = jsonDecode(data) as Map<String, dynamic>;
+                final choices = json['choices'] as List<dynamic>?;
+                if (choices != null && choices.isNotEmpty) {
+                  final delta = choices[0]['delta'] as Map<String, dynamic>?;
+                  final content = delta?['content'];
+                  if (content is String && content.isNotEmpty) {
+                    _logFirstToken(ttftWatch, firstTokenLogged);
+                    firstTokenLogged = true;
+                    hasEmittedToken = true;
+                    callback(
+                      LlmStreamResponse(content: content, isDone: false),
+                    );
+                  }
+                }
+              } catch (_) {
+                // 忽略无法解析的行
+                continue;
+              }
             }
           }
-        } catch (_) {
-          // 忽略无法解析的行
-          continue;
+        } catch (e) {
+          // 已输出 token：重试会导致同段回答重复输出 → 语义性不可重试
+          if (hasEmittedToken) throw LlmNonRetryableException(e);
+          rethrow; // 零 token 阶段失败（断流/超时）→ 可安全重试
         }
-      }
-    }
 
-    // 流正常结束但被取消：Dio 取消时底层流可能干净关闭而非抛错，
-    // 此处补一道取消判定，确保统一走取消分支而非静默成功。
-    if (cancelToken?.isCancelled ?? false) {
-      throw LlmRequestCancelledException();
-    }
+        // 流正常结束但被取消：Dio 取消时底层流可能干净关闭而非抛错，
+        // 此处补一道取消判定，确保统一走取消分支而非静默成功。
+        if (cancelToken?.isCancelled ?? false) {
+          throw LlmRequestCancelledException();
+        }
 
-    // 处理缓冲区中剩余的最后一块
-    if (buffer.trim().startsWith('data: ')) {
-      final data = buffer.trim().substring(6);
-      if (data == '[DONE]') {
-        callback(const LlmStreamResponse(content: '', isDone: true));
-        return;
-      }
-      try {
-        final json = jsonDecode(data) as Map<String, dynamic>;
-        final choices = json['choices'] as List<dynamic>?;
-        if (choices != null && choices.isNotEmpty) {
-          final delta = choices[0]['delta'] as Map<String, dynamic>?;
-          final content = delta?['content'];
-          if (content is String && content.isNotEmpty) {
-            _logFirstToken(ttftWatch, firstTokenLogged);
-            firstTokenLogged = true;
-            callback(LlmStreamResponse(content: content, isDone: false));
+        // 处理缓冲区中剩余的最后一块
+        if (buffer.trim().startsWith('data: ')) {
+          final data = buffer.trim().substring(6);
+          if (data == '[DONE]') {
+            callback(const LlmStreamResponse(content: '', isDone: true));
+            return;
+          }
+          try {
+            final json = jsonDecode(data) as Map<String, dynamic>;
+            final choices = json['choices'] as List<dynamic>?;
+            if (choices != null && choices.isNotEmpty) {
+              final delta = choices[0]['delta'] as Map<String, dynamic>?;
+              final content = delta?['content'];
+              if (content is String && content.isNotEmpty) {
+                _logFirstToken(ttftWatch, firstTokenLogged);
+                firstTokenLogged = true;
+                hasEmittedToken = true;
+                callback(
+                  LlmStreamResponse(content: content, isDone: false),
+                );
+              }
+            }
+          } catch (_) {
+            // 忽略
           }
         }
-      } catch (_) {
-        // 忽略
-      }
+      });
+    } on LlmNonRetryableException catch (wrapped) {
+      // 解包：断流/超时等原始错误原样冒泡（调用方已有对应处理链路）
+      throw wrapped.cause;
+    } on DioException catch (e) {
+      throw Exception(_buildDioError(e));
     }
   }
 
