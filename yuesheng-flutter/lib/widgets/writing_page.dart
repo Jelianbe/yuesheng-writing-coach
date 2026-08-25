@@ -33,6 +33,7 @@ import '../utils/paragraph_format.dart';
 import 'chapter_tree_drawer.dart';
 import 'editing/focus_aware_editing_controller.dart';
 import 'editor_settings_sheet.dart';
+import '../config/editor_background_presets.dart';
 import 'outline_drawer.dart';
 import 'paragraph_format_formatter.dart';
 import 'punctuation_bar.dart';
@@ -547,9 +548,9 @@ class _WritingPageState extends ConsumerState<WritingPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      // 批次94-4：暗夜编辑器背景联动——Scaffold 底取反（正文容器自身已铺满背景色）
+      // 批次 X-037-P0-1 H4/C1：正文壳与当前预设配平，暗夜用 editorDarkSurface 令牌（WCAG AA 可达）
       backgroundColor: isDarkEditorPreset(state.editorBackground)
-          ? const Color(0xFF1E2126)
+          ? AppColors.editorDarkSurface
           : AppColors.background,
       // 批次83：章节树抽屉（每次打开以新 key 重建 → 列表/标题保持最新）
       drawer: ChapterTreeDrawer(
@@ -726,11 +727,11 @@ class _WritingPageState extends ConsumerState<WritingPage> {
   }
 
   PreferredSizeWidget _buildAppBar(WritingState state) {
-    // 批次94-4：暗夜编辑器背景联动——AppBar 底色/图标前景取反
+    // 批次 X-037-P0-1 C1：暗夜色走 AppColors.editorDark* 令牌（消除 3 处硬编码 + muted 对比度 2.85→4.56 AA）
     final darkUi = isDarkEditorPreset(state.editorBackground);
-    final barBg = darkUi ? const Color(0xFF1E2126) : AppColors.background;
-    final fg = darkUi ? const Color(0xFFE8EAED) : AppColors.textPrimary;
-    final muted = darkUi ? const Color(0xFF9AA0A6) : AppColors.textSecondary;
+    final barBg = darkUi ? AppColors.editorDarkSurface : AppColors.background;
+    final fg = darkUi ? AppColors.editorDarkText : AppColors.textPrimary;
+    final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textSecondary;
     return AppBar(
       backgroundColor: barBg,
       elevation: 0,
@@ -1086,15 +1087,15 @@ class _WritingPageState extends ConsumerState<WritingPage> {
           // 批次91-3：标点栏最前两位常驻撤销/重做（与 AppBar 按钮同源）
           onUndo: _handleUndo,
           onRedo: _handleRedo,
-          // 批次94-4：暗夜编辑器背景联动取反
+          // 批次 X-037-P0-1 C1/H4：标点栏暗夜联动走 AppColors 令牌（消除 3 处硬编码；actionColor 用 editorDarkMuted 4.56:1 达 AA）
           backgroundColor: isDarkEditorPreset(state.editorBackground)
-              ? const Color(0xFF26282B)
+              ? AppColors.editorDarkPanel
               : null,
           itemColor: isDarkEditorPreset(state.editorBackground)
-              ? const Color(0xFFE8EAED)
+              ? AppColors.editorDarkText
               : null,
           actionColor: isDarkEditorPreset(state.editorBackground)
-              ? const Color(0xFF9AA0A6)
+              ? AppColors.editorDarkMuted
               : null,
           onTap: (char) {
             final text = _controller.text;

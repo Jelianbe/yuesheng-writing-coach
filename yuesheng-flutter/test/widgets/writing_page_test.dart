@@ -670,9 +670,8 @@ void main() {
       expect(find.text('字号'), findsOneWidget);
       expect(find.text('行距'), findsOneWidget);
       expect(find.text('背景'), findsOneWidget);
-      // 4 个背景预设
+      // 3 个背景预设（批次 X-037-P0-1 H1：暖白伪选项已移除）
       expect(find.text('米纸'), findsOneWidget);
-      expect(find.text('暖白'), findsOneWidget);
       expect(find.text('护眼'), findsOneWidget);
       expect(find.text('暗夜'), findsOneWidget);
     });
@@ -720,10 +719,10 @@ void main() {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
-      // 设置为暖白背景 + 行距 2.0（直接经 store，模拟设置后关闭）
+      // 设置为护眼背景 + 行距 2.0（直接经 store，模拟设置后关闭；批次 X-037-P0-1 H1：暖白已移除，改测护眼）
       container
           .read(writingStoreProvider(chapterId).notifier)
-          .setEditorBackground('warm');
+          .setEditorBackground('green');
       container
           .read(writingStoreProvider(chapterId).notifier)
           .setLineSpacing(2.0);
@@ -739,7 +738,7 @@ void main() {
       final editor = tester.widget<Container>(
         find.byKey(const Key('editorContainer')),
       );
-      expect(editor.color, const Color(0xFFFFFBF0), reason: '暖白背景应恢复');
+      expect(editor.color, const Color(0xFFE6F0E9), reason: '护眼背景应恢复');
       final field = tester.widget<TextField>(editorTextField());
       expect(field.style?.height, 2.0, reason: '行距应恢复');
     });
