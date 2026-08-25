@@ -46,6 +46,16 @@ jobs:
       - name: Static analysis
         run: flutter analyze lib
 
+      - name: Check circular dependencies (Gate 3)
+        # 宪法 §二.4 + R-020 循环依赖零容忍：lib 内 import 图 DFS，0 环必过。
+        # 与本地 gate.sh / pre-commit 调用同一脚本 scripts/check_circular.py，行为一致。
+        run: python3 scripts/check_circular.py
+
+      - name: Check hardcoded secrets (Gate 4)
+        # 宪法 §六 密钥零硬编码 + R-029：扫描 lib/*.dart 的疑似密钥，llm_config_storage.dart 白名单豁免。
+        # 与本地 gate.sh / pre-commit 调用同一脚本 scripts/check_secrets.sh，行为一致。
+        run: bash scripts/check_secrets.sh
+
       - name: Run tests
         # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时会 markTestSkipped（见 flutter-llm-coach-validation skill），
         # 无需密钥。此处额外 --exclude-tags 做双保险（B2-5 方案）：即使某条 live 测试 markTestSkipped 位置没提前到
