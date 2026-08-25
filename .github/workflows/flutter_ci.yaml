@@ -61,6 +61,14 @@ jobs:
         # 与本地 gate.sh / pre-commit 调用同一脚本 scripts/check_secrets.sh，行为一致。
         run: bash scripts/check_secrets.sh
 
+      - name: Check dependency health (Gate 5 — advisory, non-blocking for push/main)
+        # 宪法 §二.6 依赖审计：dart pub outdated --json 解析（CLI 更名）。
+        # 分级：CRITICAL（命中官方安全公告 isCurrentAffectedByAdvisory）/ HIGH（停更/撤回）/ MEDIUM / LOW。
+        # push/main 模式 = 仅告警不阻断（exit 0），CRITICAL/HIGH 通过 ::warning 注解在 Actions UI 标红。
+        # release build 前人工审查 = 同一脚本加 --mode release，CRITICAL 直接 exit 1 阻断。
+        # 高危豁免：scripts/dependency_exemptions.json（until_date + D# 决策号登记，过期自动失效）。
+        run: dart pub outdated --json --no-dependency-overrides | python3 scripts/check_outdated.py --mode push
+
       - name: Run tests
         # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时会 markTestSkipped（见 flutter-llm-coach-validation skill），
         # 无需密钥。此处额外 --exclude-tags 做双保险（B2-5 方案）：即使某条 live 测试 markTestSkipped 位置没提前到
