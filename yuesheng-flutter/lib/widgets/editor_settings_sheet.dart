@@ -64,7 +64,9 @@ class EditorSettingsSheet extends ConsumerWidget {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        // X-039-Batch1：20→section / 16→lg / 24→xl
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.section, AppSpacing.lg, AppSpacing.section, AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,7 +238,7 @@ class EditorSettingsSheet extends ConsumerWidget {
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                 ),
                 child: const Text('恢复右下角位置', style: TextStyle(fontSize: 12)),
               ),
@@ -272,7 +274,7 @@ class EditorSettingsSheet extends ConsumerWidget {
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
               child: const Text('应用到全文', style: TextStyle(fontSize: 12)),
             ),
@@ -390,7 +392,7 @@ class _BackgroundOption extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -604,7 +606,7 @@ class _PunctuationBarConfigSectionState
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
               icon: const Icon(Icons.add, size: 16),
               label: const Text('添加标点', style: TextStyle(fontSize: 12)),
@@ -614,7 +616,7 @@ class _PunctuationBarConfigSectionState
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
               child: const Text('恢复默认', style: TextStyle(fontSize: 12)),
             ),
@@ -732,7 +734,7 @@ class _ConfigRow extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textTertiary,
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
               child: const Text('隐藏', style: TextStyle(fontSize: 12)),
             ),
@@ -742,7 +744,7 @@ class _ConfigRow extends StatelessWidget {
             style: TextButton.styleFrom(
               foregroundColor: AppColors.primary,
               visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             ),
             child: const Text('恢复', style: TextStyle(fontSize: 12)),
           ),

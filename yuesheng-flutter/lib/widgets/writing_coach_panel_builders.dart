@@ -17,7 +17,8 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
   Widget _buildButtonRow(bool isStreaming) {
     // 批次82 P0-④：侧栏宽度受限 → 收紧按钮内边距，避免窄屏溢出
     final btnStyle = TextButton.styleFrom(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      // X-039-Batch1：8→sm
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       minimumSize: const Size(0, 36),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
@@ -63,7 +64,8 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
   Widget _buildErrorBanner(ChatState chatState) {
     return Container(
       color: AppColors.dangerBg,
-      padding: const EdgeInsets.all(12),
+      // X-039-Batch1：12→md
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
           const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
@@ -145,7 +147,9 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            // X-039-Batch1：12→md / 8→sm
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             itemCount:
                 chatState.messages.length + (chatState.isStreaming ? 1 : 0),
             itemBuilder: (context, index) {
@@ -186,7 +190,9 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(left: 12, bottom: 2),
+                          // X-039-Batch1：12→md / 2→xxs
+                          padding: const EdgeInsets.only(
+                              left: AppSpacing.md, bottom: AppSpacing.xxs),
                           child: Text(
                             _streamStageLabel!,
                             style: const TextStyle(
@@ -265,7 +271,9 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
     // 否则输入栏会被键盘完全顶出可视区。
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + bottomInset),
+      // X-039-Batch1：16→lg / 8→sm / +bottomInset（动态值，不令牌）
+      padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.sm + bottomInset),
       decoration: const BoxDecoration(
         border: Border(top: BorderSide(color: AppColors.borderLight)),
       ),
@@ -280,11 +288,13 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
               decoration: InputDecoration(
                 hintText: '问教练...',
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  // X-039-Batch1：24→xl
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+                  // X-039-Batch1：16→lg / 10→smx
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.smx,
                 ),
               ),
             ),
