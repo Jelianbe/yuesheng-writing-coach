@@ -4,6 +4,8 @@
 > 源材料 = `yuesheng-android/锐评清单现状核对-2026-08-16.md`（RN 版 31 天实跑证据）。
 > 用途：纳入工程 `docs/`（本项目是主仓库 `yuesheng-flutter/` 子目录，归入 docs 较根目录 `AGENTS.md` 更契合），作为 `AGENTS.md` 的核心依据；历史项目（yuesheng-android）已废弃，其代码/文档仅作模式证据。
 > 建议落地日期：2026-08-16
+>
+> **【流程前置声明 · 永久生效】** 本宪法（含未来所有版本）的新增条款、修订、评审标注、定稿状态，**凡由 AI 自行标注「评审通过 / 定稿 / 有效」而未经用户（拍板人）在独立会话中书面确认者，一律视为草稿，不具有最高规则效力，不得作为后续工程决策的约束依据。** 用户确认形式为：在变更后的宪法文件的提交信息 / PR comment / 台账记录中，明确写出「本人确认 §X.X 生效」或语义等价的句子；AI 转述的「用户已同意」不算，必须有用户原始发言可溯源。
 
 ---
 
@@ -56,17 +58,18 @@
 - **命名即合同**：测试文件名必须与源文件同名同目录（RN 版 `design-002-e2e.test.ts` 命名不一致导致健康检查误判"缺测试"）；检测工具与命名规范对齐后再宣布"覆盖达标"。
 
 ### 4.1 决策记录（D#）
-方向性决策（产品/机制/语义/迁移）必须登记为 D#（日期、选项、选择、理由、落点文件）。无 D# 登记视为未决策；已决策不得私自改向。先例：《待办执行清单》D1–D9（2026-08-11）。
+方向性决策（产品/机制/语义/迁移）必须登记为 D#（日期、选项、选择、理由、落点文件）。无 D# 登记视为未决策；已决策不得私自改向。先例：《待办执行清单》D1–D10（2026-08-11 至 2026-08-17，本文件 §10.5 登记 D10）。
 
 ### 4.2 目录责任与核心 Owner（最小集）
 新增代码按此归位；归类不清时停下询问，禁止自创目录。
 
-| 概念 | Owner 文件 |
-|---|---|
-| 诊断链 | `lib/services/diagnosis_service.dart`（+ parser/validator）+ `lib/data/repositories/diagnosis_repository.dart` |
-| 成长链 | `lib/services/growth_service.dart` / `progress_service.dart` / `student_profile*.dart` |
-| 对话链 | `lib/services/chat_service.dart`（含 `_send`/`_diagnosis`/`_observers` 拆分） |
-| 数据层 | `lib/data/**`（drift 表/迁移/repositories，单一真源） |
+**当前布防（2026-08-25 现状核验，X-025-ARCH 伪拆分回退后）**：
+- 诊断链 → `lib/services/diagnosis_service.dart`（+ parser/validator）+ `lib/data/repositories/diagnosis_repository.dart`
+- 成长链 → `lib/services/growth_service.dart` / `progress_service.dart` / `student_profile*.dart`
+- 对话链 → `lib/services/chat_service.dart`（单体实现，X-025-ARCH 回退后禁止 part/extension 拆服务层）
+- 数据层 → `lib/data/**`（drift 表 / 迁移 / repositories，单一真源）
+
+**注意**：以上 Owner 映射仅作新代码归类参考。文件被合并/重命名/迁移后，应在变更批次同步刷新本段，禁止保留已过时的 Owner 指向（避免「说一套做一套」的文档债务）。
 
 ## 五、安全红线
 
@@ -102,11 +105,12 @@
 
 ### 7.1 文档层级（原则 > 执行 > 操作）
 
-| 层 | 文件 | 职责 |
+| 层 | 文件 / 位置 | 职责 |
 |---|---|---|
 | 原则层 | 本文（宪法） | 不可妥协的红线；冲突时以本文与真源优先级（§四）为准 |
-| 执行层 | `docs/待办执行清单.md` | 批次执行纪律（四闸/独立提交/保守原则/决策项跳过）；**不得与宪法冲突** |
-| 操作层 | `.workbuddy/skills/*` | 操作手法（flutter-state-split / flutter-sandbox-run / flutter-llm-coach-validation） |
+| AI 入口层 | `AGENTS.md`（仓库根 `.trae/rules/` 规则体系）| AI 会话启动第一站：技术栈、核心禁止事项、四闸、IPC/Store 规范、规则索引；**不与宪法冲突，且每次启动时自动加载宪法核心约束** |
+| 执行层 | `docs/待办执行清单.md` | 批次执行纪律（四闸 / 独立提交 / 保守原则 / 决策项跳过）；**不得与宪法冲突** |
+| 操作层 | Skills 体系（`.trae/skills/*` 及 TRAE 内置技能映射） | 操作手法；旧 `.workbuddy/skills/*` 路径已停用（2026-08-25 核验仅剩 memory 子目录） |
 
 任一文件修订时，检查相邻层是否需同步（避免两套纪律漂移）。
 
@@ -151,11 +155,11 @@
 
 ### 10.1 项目谱系（三份代码，勿混淆）
 
-| 工程 | 路径 | 状态 | 关系 |
+| 工程 | 路径（均以 D:\ai-teacher 为仓库根）| 状态 | 关系 |
 |---|---|---|---|
-| Flutter 版（本工程） | `D:\ai-teacher\yuesheng-flutter` | 🟢 **唯一真源**（本宪法适用） | 产品未来；96-25 批次自旧位迁入（commit `f93e24d8`）；**所有新功能 / 架构演进只进本工程，Web 版不再承接**（决策 D10，2026-08-17） |
-| RN 版 | `D:\teacher\yuesheng-android` | ⚫ 已废弃（2026-08-11，DEPRECATED.md） | 仅作模式证据 / 教训收割，**不再开发** |
-| Web 版 | `D:\ai-teacher\yuesheng-writing-coach` | 🟡 **维护模式**（决策 D10，2026-08-17） | Electron/Capacitor Web；**仅修 bug、不再加新功能**；新能力一律进 Flutter，待其追平后退役（见该工程 `MAINTENANCE.md`） |
+| Flutter 版（本工程）| `yuesheng-flutter/` | 🟢 **唯一真源**（本宪法适用）| 产品未来；96-25 批次自旧位迁入（commit `f93e24d8`）；**所有新功能 / 架构演进只进本工程，Web 版不再承接**（决策 D10，2026-08-17）|
+| RN 版（已废弃）| 旧位 `D:\teacher\yuesheng-android\`（原 yuesheng-android 仓库位）| ⚫ 已废弃（2026-08-11，DEPRECATED.md） | 仅作模式证据 / 教训收割，**不再开发**；内容可只读参考，不可作为代码路径归位依据 |
+| Web 版（维护模式）| `yuesheng-writing-coach/` | 🟡 **维护模式**（决策 D10，2026-08-17） | Electron / Capacitor Web；**仅修 bug、依赖更新、安全补丁，禁止新增功能**；新能力一律进 Flutter，待 Flutter 功能追平后退役（见该工程根 `MAINTENANCE.md`）|
 
 ### 10.2 为什么迁移（背景说明，非决策理由重述）
 
@@ -163,17 +167,19 @@ RN 版 31 天实跑暴露"治理文档与代码现实脱节"：健康体检 0/10
 
 ### 10.3 交接索引（新对话 / 新成员先读）
 
-| 想找什么 | 去哪 |
+> 维护策略：本条为**指针式索引**（轻量、不记录批次号 / 日期 / 文件名等易过期字段）。具体实时真源请以各入口文件为准，避免索引自身因推进滞后再次过时（2026-08-25 重写）。
+
+| 想找什么 | 去哪（入口 / 指针） |
 |---|---|
-| 原则 / 红线 / 避坑清单 | 本文（宪法）§一 ~ §八 |
-| 当前要执行的批次与决策 | `docs/待办执行清单.md`（批次 1-89，决策 D1–D9；阶段 0 含未决项【需决策】） |
-| 项目现状与体检 | `docs/Flutter版现状报告-2026-08-16.md` |
-| 宪法评审结论 | `docs/宪法草案评审报告-2026-08-16.md` |
-| 智力资产清单（症候/技法/训练库） | `docs/教学诊断训练资产清单.md` |
-| 代码分层 | `lib/`：data（drift 表/迁移/repositories）→ services → providers → widgets；router / types / utils / config |
-| 操作手法 | `.workbuddy/skills/`：flutter-state-split（拆大文件）、flutter-sandbox-run（沙箱跑四闸）、flutter-llm-coach-validation |
-| 冒烟 / 集成验证 | `integration_test/`：closed_loop_smoke_test.dart、editor_walkthrough_test.dart |
-| 历史教训（只读参考） | `D:\teacher\yuesheng-android\代码层审计报告-2026-08-16.md`、`锐评清单现状核对-2026-08-16.md` |
+| 原则 / 红线 / 避坑清单 | 本文 §一 ~ §八 |
+| 当前要执行的批次 / 决策 / 阶段进度 | `docs/待办执行清单.md`（批次号 / D# 决策号以实际文档为准） |
+| 项目现状与体检快照 | `docs/` 下以「现状报告 / 健康快照」命名的最新版本 |
+| 宪法评审 / 决策记录 | `docs/` 下以「评审报告 / 决策登记」命名的记录 |
+| 教学诊断训练智力资产 | `docs/教学诊断训练资产清单.md` |
+| 代码分层约定 | §4.2「目录责任与核心 Owner」+ 仓库 `AGENTS.md` 技术栈节 |
+| 操作手法 / AI 协作规则 | 仓库根 `AGENTS.md`（技能映射 / GStack 工作流 / 规则索引）+ `.trae/rules/` 体系 |
+| 冒烟 / 集成验证 | `integration_test/`（closed_loop_smoke_test.dart、editor_walkthrough_test.dart 等）|
+| 历史教训（只读参考） | RN 审计报告：`D:\teacher\yuesheng-android\` 下对应文件（内容参考，不作为路径/代码归位依据）|
 
 ### 10.4 交接铁律
 
