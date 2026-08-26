@@ -26,11 +26,11 @@ extension _GrowthContent on _GrowthDetailPageState {
     // 空状态：无诊断 + 无画像
     if (!hasDiagnoses && (profile == null || profile.totalSessions == 0)) {
       return ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           _Card(
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppSpacing.xl),
               child: Column(
                 children: [
                   const Icon(
@@ -55,7 +55,7 @@ extension _GrowthContent on _GrowthDetailPageState {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         // 批次 51c：成长总览卡（对齐 RN GrowthOverviewCard）
         if (state.overview != null)
@@ -74,7 +74,7 @@ extension _GrowthContent on _GrowthDetailPageState {
         // 能力画像卡片
         _Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -114,7 +114,7 @@ extension _GrowthContent on _GrowthDetailPageState {
         if (state.styleProfile != null) ...[
           _Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -133,7 +133,9 @@ extension _GrowthContent on _GrowthDetailPageState {
                       TextButton(
                         onPressed: () => _openStyleCorrection(context),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                          ),
                           minimumSize: const Size(0, 32),
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
@@ -192,7 +194,10 @@ extension _GrowthContent on _GrowthDetailPageState {
         // 症候分布列表（批次 48：按教学状态分组，对齐 RN StudentProfilePanel syndromeGroups）
         if (state.activeProblems.isNotEmpty) ...[
           const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 8),
+            padding: EdgeInsets.only(
+              left: AppSpacing.xs,
+              bottom: AppSpacing.sm,
+            ),
             child: Text(
               '症候分布',
               style: TextStyle(
@@ -208,7 +213,11 @@ extension _GrowthContent on _GrowthDetailPageState {
         // 批次65（B62h）：同类症候复发率（「出现→好转→再犯」聚合）
         if (recurrences.isNotEmpty) ...[
           const Padding(
-            padding: EdgeInsets.only(left: 4, top: 4, bottom: 8),
+            padding: EdgeInsets.only(
+              left: AppSpacing.xs,
+              top: AppSpacing.xs,
+              bottom: AppSpacing.sm,
+            ),
             child: Text(
               '同类症候复发率',
               style: TextStyle(
@@ -220,7 +229,7 @@ extension _GrowthContent on _GrowthDetailPageState {
           ),
           _Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -245,7 +254,10 @@ extension _GrowthContent on _GrowthDetailPageState {
         // 诊断历史时间线
         if (state.diagnosisHistory.isNotEmpty) ...[
           const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 8),
+            padding: EdgeInsets.only(
+              left: AppSpacing.xs,
+              bottom: AppSpacing.sm,
+            ),
             child: Text(
               '诊断历史',
               style: TextStyle(
@@ -257,7 +269,7 @@ extension _GrowthContent on _GrowthDetailPageState {
           ),
           _Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: _Timeline(items: state.diagnosisHistory),
             ),
           ),
@@ -312,7 +324,11 @@ extension _GrowthContent on _GrowthDetailPageState {
       if (items.isEmpty) continue;
       widgets.add(
         Padding(
-          padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          padding: const EdgeInsets.only(
+            left: AppSpacing.xs,
+            top: AppSpacing.xs,
+            bottom: AppSpacing.sm,
+          ),
           child: Text(
             titles[ts]!,
             style: const TextStyle(
@@ -326,10 +342,10 @@ extension _GrowthContent on _GrowthDetailPageState {
       for (final problem in items) {
         widgets.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: _Card(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Row(
                   children: [
                     Expanded(
@@ -358,7 +374,7 @@ extension _GrowthContent on _GrowthDetailPageState {
                     // 教学状态徽章（画像聚合：profile.syndromeProfile[症候ID]）
                     if (profile?.syndromeProfile[problem.syndromeId] != null)
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
                         child: TeachingStateBadge(
                           state: profile!
                               .syndromeProfile[problem.syndromeId]!

@@ -289,8 +289,8 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
                             : chapters.isEmpty
                             ? ListView(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
+                                  horizontal: AppSpacing.lg,
+                                  vertical: AppSpacing.sm,
                                 ),
                                 children: [
                                   _ChapterListHeader(
@@ -358,7 +358,12 @@ class _ManuscriptMetaBar extends StatelessWidget {
     final genre = manuscript.genre.trim();
     if (genre.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.xs,
+      ),
       child: Row(
         children: [
           const Icon(
@@ -404,7 +409,7 @@ class _ManuscriptNotFoundView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -435,11 +440,11 @@ class _ManuscriptNotFoundView extends StatelessWidget {
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: const Text('返回书架'),
@@ -460,7 +465,7 @@ class _EmptyChaptersState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -491,11 +496,11 @@ class _EmptyChaptersState extends StatelessWidget {
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.md,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: const Text('新建章节'),
@@ -559,7 +564,7 @@ class _ChapterList extends StatelessWidget {
 
   Widget _buildChapterCard(Chapter chapter, int index) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: _ChapterCard(
         chapter: chapter,
         index: index,
@@ -595,7 +600,10 @@ class _ChapterList extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(child: header),
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.xs,
+            ),
             sliver: _chapterSliver(chapters),
           ),
           // 批次96-2：列表末尾「新建章节」入口（无卷 → 未分卷）
@@ -618,7 +626,10 @@ class _ChapterList extends StatelessWidget {
         // 散落章节：无卷头，直接平铺（不参与折叠）
         slivers.add(
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.xs,
+            ),
             sliver: SliverToBoxAdapter(child: _buildChapterCard(loose, 0)),
           ),
         );
@@ -641,7 +652,10 @@ class _ChapterList extends StatelessWidget {
       if (collapsedVolumes.contains(key)) continue;
       slivers.add(
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
           sliver: sec.chapters.isEmpty
               ? const SliverToBoxAdapter(child: _DetailEmptyVolumeHint())
               : _chapterSliver(sec.chapters),
@@ -680,7 +694,10 @@ class _NewChapterRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xs,
+      ),
       child: InkWell(
         key: ValueKey(
           targetVolumeId == null
@@ -877,9 +894,12 @@ class _DetailVolumeHeader extends StatelessWidget {
                 // 批次92-2：卷头铅笔图标 → 直接重命名
                 InkWell(
                   onTap: onRename,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                   child: const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                      vertical: AppSpacing.xxs,
+                    ),
                     child: Icon(
                       Icons.edit_outlined,
                       size: 14,
@@ -904,7 +924,12 @@ class _DetailEmptyVolumeHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(8, 4, 8, 8),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.sm,
+        AppSpacing.xs,
+        AppSpacing.sm,
+        AppSpacing.sm,
+      ),
       child: Text(
         '暂无章节',
         style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
@@ -925,7 +950,7 @@ class _ChapterListHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
       child: Row(
         children: [
           const Text(
@@ -946,7 +971,10 @@ class _ChapterListHeader extends StatelessWidget {
             onTap: onImport,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xsm,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.primarySoft,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -998,10 +1026,10 @@ class _MoreMenuSheet extends StatelessWidget {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 12),
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
             // 批次77：移除「导出项目」「分享」开发中死菜单项（对齐写作页 E3 清理，
@@ -1085,7 +1113,10 @@ class _MenuActionItem extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             Icon(icon, size: 20, color: iconColor),
@@ -1146,12 +1177,12 @@ class _ChapterCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.surfaceWhite,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.divider),
           ),
           child: Row(
@@ -1178,12 +1209,12 @@ class _ChapterCard extends StatelessWidget {
                         // 状态标签
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xxs,
                           ),
                           decoration: BoxDecoration(
                             color: statusCfg.bgColor,
-                            borderRadius: BorderRadius.circular(100),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             statusCfg.label,
