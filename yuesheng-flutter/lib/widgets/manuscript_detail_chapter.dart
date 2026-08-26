@@ -44,7 +44,12 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.section,
+              AppSpacing.sm,
+            ),
             child: Text(
               '移动《${chapter.title.isEmpty ? '未命名章节' : chapter.title}》到',
               style: const TextStyle(
@@ -201,10 +206,10 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
               Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
               // 修复3：重命名章节（铅笔图标入口之外的第二入口）
@@ -216,8 +221,8 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
@@ -249,8 +254,8 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
@@ -282,8 +287,8 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
@@ -315,8 +320,8 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
@@ -348,8 +353,8 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
@@ -380,8 +385,8 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 14,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [

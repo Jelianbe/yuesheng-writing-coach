@@ -217,9 +217,9 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
 
     // 卡片：#F2F4F2 + 左 4dp 竹青条
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.surface,
@@ -244,7 +244,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                         ),
                         alignment: Alignment.topCenter,
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            0,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                          ),
                           child: Column(
                             children: [
                               const Divider(height: 1, color: AppColors.border),
@@ -276,7 +281,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       child: InkWell(
         onTap: _toggleExpanded,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.smx,
+          ),
           child: Row(
             children: [
               const Icon(
@@ -333,14 +343,22 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   Widget _buildTagRow() {
     if (widget.syndromes.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          AppSpacing.md,
+        ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.smx,
+                vertical: AppSpacing.xs,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.l1,
-                borderRadius: BorderRadius.circular(100),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: const Text(
                 _CardText.emptyHint,
@@ -357,7 +375,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -373,12 +396,15 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             onTap: widget.sessionId != null
                 ? () => _openSyndromeDetail(s)
                 : null,
-            borderRadius: BorderRadius.circular(100),
+            borderRadius: BorderRadius.circular(AppRadius.pill),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.smx,
+                vertical: AppSpacing.xs,
+              ),
               decoration: BoxDecoration(
                 color: cfg.bgColor,
-                borderRadius: BorderRadius.circular(100),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -386,7 +412,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                   Container(
                     width: 6,
                     height: 6,
-                    margin: const EdgeInsets.only(right: 6),
+                    margin: const EdgeInsets.only(right: AppSpacing.xsm),
                     decoration: BoxDecoration(
                       color: dotColor,
                       shape: BoxShape.circle,
@@ -449,7 +475,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   Widget _buildSyndromesDetail() {
     if (widget.syndromes.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Text(
           _CardText.emptyHint,
           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
@@ -488,7 +514,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               Container(width: 4, color: AppColors.primary),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -506,7 +532,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                           padding: EdgeInsets.only(
                             bottom: i == widget.suggestedActions.length - 1
                                 ? 0
-                                : 6,
+                                : AppSpacing.xsm,
                           ),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -564,7 +590,7 @@ class _SyndromeBlock extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: cfg.bgColor,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
         const SizedBox(width: 12),
@@ -574,7 +600,10 @@ class _SyndromeBlock extends StatelessWidget {
             children: [
               // 症候名小 chip
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xxs,
+                ),
                 decoration: BoxDecoration(
                   color: cfg.bgColor,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -711,7 +740,7 @@ class _SyndromeConfirmationBarState
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -778,7 +807,7 @@ class _SyndromeConfirmationBarState
           foregroundColor: fg,
           side: border != null ? BorderSide(color: border) : null,
           minimumSize: const Size(70, 36),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         child: _submitting && label == '认同'
