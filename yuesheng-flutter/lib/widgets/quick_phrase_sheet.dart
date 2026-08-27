@@ -171,7 +171,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
           const SizedBox(height: 4),
           const Text(
             '最多记 30 条，点击短语就会插入到光标位置',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           const SizedBox(height: 8),
           SizedBox(height: 300, child: _buildList()),

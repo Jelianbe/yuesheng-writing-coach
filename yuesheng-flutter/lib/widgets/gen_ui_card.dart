@@ -249,7 +249,7 @@ class _GenUiStat extends StatelessWidget {
         if (items.isEmpty)
           Text(
             '（无维度数据）',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           )
         else
           ...items.map(
@@ -358,7 +358,7 @@ class _GenUiProgress extends StatelessWidget {
         if (steps.isEmpty)
           Text(
             '（无步骤数据）',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           )
         else
           _ProgressRow(steps: steps),
@@ -505,7 +505,7 @@ class _GenUiTimeline extends StatelessWidget {
         if (events.isEmpty)
           Text(
             '（无成长记录）',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           )
         else
           ...events.asMap().entries.map(
