@@ -308,9 +308,10 @@ coverage: flutter-end-only  # 截止 2026-08-26，Flutter 端为唯一真源
   - **Batch2（2026-08-27, commit 718fc166）**：manuscript_detail_page.dart 第二批 TextStyle 替换（15 处）
   - **Batch3（2026-08-27, commit b3dc9f44）**：新增 AppBoxStyles（standardInput）+ AppButtonStyles（primary/secondary）+ 7 处示范替换
   - **Batch4（2026-08-27, commit 59a092ef）**：settings_page.dart (8) + editor_settings_sheet.dart (7) + progress_detail_page.dart (6) 共 21 处替换，全部匹配现有令牌无新增（R-019 防通胀）。无逻辑变化，无新增 import。四道门禁：analyze 0 issues / widgets 目录无对应测试 / 0 循环依赖 / 0 密钥命中
-  - **累计替换**：≥57 处 TextStyle 字面量 → AppTextStyles 令牌
+  - **Batch5（2026-08-27, commit 745f95af）**：syndrome_history_list (4 caption) + ability_chart (3 caption) + outline_drawer (5 = caption×3+titleMd+body) + chapter_tree_drawer (5 = caption×3+titleMd+body) 共 17 处替换，全部匹配现有令牌无新增（R-019 防通胀）。无逻辑变化，无新增 import。四道门禁：analyze 0 issues (4.2s) / widgets 目录无对应测试 / 0 循环依赖 / 0 密钥命中
+  - **累计替换**：≥74 处 TextStyle 字面量 → AppTextStyles 令牌
   - **非标值保留**（R-019 防通胀）：fontSize 13/15/16/11 + w700 等组合不强行新增令牌，保留硬编码
-  - **下次候选**：syndrome_history_list (caption×4) / ability_chart (caption×3) / outline_drawer (titleMd+body+caption×3) / chapter_tree_drawer (titleMd+body+caption×3) 等高匹配文件
+  - **下次候选**：onboarding_questionnaire (titleLg×2+body) / session_drawer (titleLg+body) / diagnosis_picker_sheet (titleLg+body) / placeholder_page (titleLg+body) / writing_coach_panel_teaching (titleLg+body) / search_replace_sheet (titleMd+caption×2) 等小文件批次，累计约 12-15 处替换
 - **体系角色**：**跨所有 UI 的视觉一致性层**。它不直接参与教学闭环，但它是"产品感觉是否专业统一"的决定性模块；令牌化后未来改视觉风格（如改圆角风格）只需改 app_theme.dart 一行。
 
 ---
