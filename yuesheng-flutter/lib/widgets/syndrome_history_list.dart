@@ -57,10 +57,7 @@ class SyndromeHistoryList extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         '问题发现与解决的时间线',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
-                        ),
+                        style: AppTextStyles.caption,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       if (displayed.isEmpty)
@@ -82,10 +79,7 @@ class SyndromeHistoryList extends StatelessWidget {
                             child: Center(
                               child: Text(
                                 '共 ${events.length} 条记录',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textTertiary,
-                                ),
+                                style: AppTextStyles.caption,
                               ),
                             ),
                           ),
@@ -228,10 +222,7 @@ class _TimelineItem extends StatelessWidget {
                       const SizedBox(width: AppSpacing.md),
                       Text(
                         _formatTime(event.timestamp),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
-                        ),
+                        style: AppTextStyles.caption,
                       ),
                     ],
                   ),
@@ -276,7 +267,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),
