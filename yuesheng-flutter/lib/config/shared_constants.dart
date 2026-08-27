@@ -34,6 +34,16 @@ class ContextBudget {
   static const int minPerFileBudget = 200;
   static const int manuscriptPreviewChapterCount = 2;
   static const int minPreviewBudget = 200;
+
+  // X-043 P1：症候/技法段独立 token 预算（T-06 Lorebook 独立预算）
+  //
+  // 焦点症候完整 L3 定义 + 技法约 1500-2000 chars；非焦点摘要池 1500 chars。
+  // charToTokenRatio=1.0，故 chars≈tokens。3500 tokens 占 maxBudget 128K 的 2.7%，
+  // 低于 T-06 建议的 15-20%（19200-25600）但实际够用且更可控，避免预算过度占用。
+  // 预算耗尽时按优先级截断：focus 完整 > 非 focus 摘要 > 非 focus 极简列表 > 跳过。
+  static const int syndromeSectionBudget = 3500;
+  static const int focusSyndromeBudget = 2000;
+  static const int nonFocusSummaryPoolBudget = 1500;
 }
 
 /// 诊断锁定阈值
