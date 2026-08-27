@@ -68,7 +68,10 @@ class SyndromeDetailModal extends StatelessWidget {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.smx),
+              margin: const EdgeInsets.only(
+                top: AppSpacing.md,
+                bottom: AppSpacing.smx,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.borderLight,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -77,7 +80,12 @@ class SyndromeDetailModal extends StatelessWidget {
             ),
             // 头部：症候 chip + 关闭
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xs),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                0,
+                AppSpacing.lg,
+                AppSpacing.xs,
+              ),
               child: Row(
                 children: [
                   _buildSyndromeTag(sev),
@@ -98,7 +106,12 @@ class SyndromeDetailModal extends StatelessWidget {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xl),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                  AppSpacing.lg,
+                  AppSpacing.xl,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -120,7 +133,10 @@ class SyndromeDetailModal extends StatelessWidget {
   // ── 症候名 chip（对齐 RN SyndromeTag）──
   Widget _buildSyndromeTag(_SeverityTheme sev) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xsm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xsm,
+      ),
       decoration: BoxDecoration(
         color: sev.bg,
         borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -206,10 +222,7 @@ class SyndromeDetailModal extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: AppTextStyles.caption,
-          ),
+          Text(label, style: AppTextStyles.caption),
         ],
       ),
     );

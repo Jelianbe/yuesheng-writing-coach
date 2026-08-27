@@ -96,7 +96,10 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           if (widget.task.syndromeName != null &&
               widget.task.syndromeName!.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.smx,
+                vertical: AppSpacing.xs,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.l1,
                 borderRadius: BorderRadius.circular(AppRadius.pill),

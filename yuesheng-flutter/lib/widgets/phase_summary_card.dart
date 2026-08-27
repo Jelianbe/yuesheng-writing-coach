@@ -211,10 +211,7 @@ class PhaseSummaryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: AppTextStyles.microCaption,
-            ),
+            Text(label, style: AppTextStyles.microCaption),
           ],
         ),
       );

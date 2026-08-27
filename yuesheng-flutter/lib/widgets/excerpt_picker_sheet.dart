@@ -124,7 +124,12 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xs),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.xs,
+            ),
             child: Text(
               '选段：${widget.chapterTitle}',
               maxLines: 1,
@@ -155,7 +160,9 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                     ),
                   )
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -168,7 +175,12 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           ),
           const Divider(height: 1, color: AppColors.borderSoft),
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.smx, AppSpacing.lg, AppSpacing.md),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.smx,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -222,7 +234,10 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.smx,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: selected ? AppColors.primarySoft : null,
           borderRadius: BorderRadius.circular(AppRadius.sm),

@@ -123,7 +123,10 @@ class AttitudeIndicator extends StatelessWidget {
       onTap: () => _showSheet(context),
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.xsm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.smx,
+          vertical: AppSpacing.xsm,
+        ),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -182,7 +185,10 @@ class _AttitudeOption extends StatelessWidget {
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: isActive ? AppColors.l1 : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),

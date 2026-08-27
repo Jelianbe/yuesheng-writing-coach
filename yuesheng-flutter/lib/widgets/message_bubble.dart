@@ -118,7 +118,10 @@ class MessageBubble extends StatelessWidget {
               GestureDetector(
                 onTap: () => onRetry!(message.id),
                 child: const Padding(
-                  padding: EdgeInsets.only(top: AppSpacing.xxs, bottom: AppSpacing.xs),
+                  padding: EdgeInsets.only(
+                    top: AppSpacing.xxs,
+                    bottom: AppSpacing.xs,
+                  ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -165,7 +168,10 @@ class MessageBubble extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            margin: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.xs),
+            margin: const EdgeInsets.only(
+              right: AppSpacing.sm,
+              top: AppSpacing.xs,
+            ),
             decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
@@ -352,7 +358,10 @@ class _ReferenceBadge extends StatelessWidget {
     return GestureDetector(
       onTap: canTap ? () => onMentionTap!(refType, refId, manuscriptId) : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: 3,
+        ),
         decoration: BoxDecoration(
           color: AppColors.primarySoft,
           borderRadius: BorderRadius.circular(AppRadius.sm),

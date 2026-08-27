@@ -187,10 +187,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
               style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
-            Text(
-              '删除的章节会先进入这里，可恢复或永久删除',
-              style: AppTextStyles.subCaption,
-            ),
+            Text('删除的章节会先进入这里，可恢复或永久删除', style: AppTextStyles.subCaption),
           ],
         ),
       );

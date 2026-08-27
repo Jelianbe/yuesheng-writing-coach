@@ -116,7 +116,10 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
+              margin: const EdgeInsets.only(
+                top: AppSpacing.md,
+                bottom: AppSpacing.md,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -261,7 +264,10 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
     final chapters = _chaptersMap[manuscriptId] ?? const <Chapter>[];
     if (chapters.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         child: Text(
           '暂无章节',
           style: TextStyle(fontSize: 13, color: AppColors.disabledText),

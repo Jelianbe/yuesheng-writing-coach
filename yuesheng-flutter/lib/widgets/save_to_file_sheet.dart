@@ -276,7 +276,10 @@ class _RoleChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.sm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: AppSpacing.sm,
+        ),
         decoration: BoxDecoration(
           color: active ? AppColors.primarySoft : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),

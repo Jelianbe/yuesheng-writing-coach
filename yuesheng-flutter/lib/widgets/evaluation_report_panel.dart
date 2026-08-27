@@ -77,7 +77,10 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: AppSpacing.md,
+              ),
               child: Row(
                 children: [
                   Icon(trend.icon, size: 22, color: trend.color),
@@ -125,7 +128,10 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
           if (_expanded) ...[
             Container(height: 1, color: AppColors.borderLight),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: AppSpacing.md,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -236,10 +242,7 @@ class _StatItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTextStyles.caption,
-          ),
+          Text(label, style: AppTextStyles.caption),
         ],
       ),
     );

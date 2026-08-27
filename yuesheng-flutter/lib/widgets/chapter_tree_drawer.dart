@@ -89,7 +89,12 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           children: [
             // ── 头部：标题 + 章节数 ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
               child: Row(
                 children: [
                   const Icon(
@@ -119,10 +124,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
                       color: AppColors.primary,
                     ),
                   ),
-                  Text(
-                    '${chapters.length} 章',
-                    style: AppTextStyles.caption,
-                  ),
+                  Text('${chapters.length} 章', style: AppTextStyles.caption),
                 ],
               ),
             ),
@@ -158,7 +160,10 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       // 空态：引导提示 + 末尾「新建章节」行（底部无独立按钮）
       children.add(
         const Padding(
-          padding: EdgeInsets.only(top: AppSpacing.xxl + AppSpacing.xl, bottom: AppSpacing.sm),
+          padding: EdgeInsets.only(
+            top: AppSpacing.xxl + AppSpacing.xl,
+            bottom: AppSpacing.sm,
+          ),
           child: _EmptyChapters(),
         ),
       );
@@ -290,7 +295,12 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.lg, AppSpacing.section, AppSpacing.sm),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.section,
+                AppSpacing.sm,
+              ),
               child: Text(
                 chapter.title.trim().isEmpty ? '未命名章节' : chapter.title.trim(),
                 style: const TextStyle(
@@ -390,7 +400,12 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.lg, AppSpacing.section, AppSpacing.sm),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.section,
+                AppSpacing.sm,
+              ),
               child: Text(
                 volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
                 style: const TextStyle(
@@ -527,7 +542,12 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.lg, AppSpacing.section, AppSpacing.sm),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.section,
+              AppSpacing.sm,
+            ),
             child: const Text(
               '移动到卷',
               style: TextStyle(
@@ -614,7 +634,10 @@ class _VolumeHeader extends StatelessWidget {
       onLongPress: onLongPress,
       child: Container(
         color: AppColors.background,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.smx),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.smx,
+        ),
         child: Row(
           children: [
             Icon(
@@ -644,7 +667,10 @@ class _VolumeHeader extends StatelessWidget {
                 onTap: onRename,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs,
+                    vertical: AppSpacing.xxs,
+                  ),
                   child: Icon(
                     Icons.edit_outlined,
                     size: 14,
@@ -652,10 +678,7 @@ class _VolumeHeader extends StatelessWidget {
                   ),
                 ),
               ),
-            Text(
-              '$count 章',
-              style: AppTextStyles.microCaption,
-            ),
+            Text('$count 章', style: AppTextStyles.microCaption),
           ],
         ),
       ),
@@ -670,7 +693,12 @@ class _EmptyVolumeHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(AppSpacing.xxl + AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.sm),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xxl + AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
       child: Text('暂无章节', style: AppTextStyles.caption),
     );
   }
@@ -711,7 +739,10 @@ class _ChapterTreeItem extends StatelessWidget {
       onLongPress: onLongPress,
       child: Container(
         color: isCurrent ? AppColors.primarySoft : Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.smx),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.smx,
+        ),
         child: Row(
           children: [
             Expanded(
@@ -731,7 +762,10 @@ class _ChapterTreeItem extends StatelessWidget {
               onTap: onRename,
               borderRadius: BorderRadius.circular(AppRadius.xs),
               child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xxs,
+                ),
                 child: Icon(
                   Icons.edit_outlined,
                   size: 14,
@@ -750,7 +784,10 @@ class _ChapterTreeItem extends StatelessWidget {
             if (status != null) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xsm,
+                  vertical: AppSpacing.xxs,
+                ),
                 decoration: BoxDecoration(
                   color: status.bgColor,
                   borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -786,10 +823,7 @@ class _EmptyChapters extends StatelessWidget {
           SizedBox(height: 12),
           Text('还没有章节', style: AppTextStyles.body),
           SizedBox(height: 4),
-          Text(
-            '点下面的「新建章节」开个头吧',
-            style: AppTextStyles.caption,
-          ),
+          Text('点下面的「新建章节」开个头吧', style: AppTextStyles.caption),
         ],
       ),
     );
@@ -808,7 +842,10 @@ class _NewChapterRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             const Icon(

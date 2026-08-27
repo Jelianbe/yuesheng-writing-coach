@@ -200,7 +200,10 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.xs),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.smx,
+            vertical: AppSpacing.xs,
+          ),
           decoration: BoxDecoration(
             color: severity.bg,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -221,7 +224,10 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
   /// 症候名 chip（对齐 RN brandSoft 底色）
   Widget _buildSyndromeName() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -292,7 +298,9 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
                   onTap: () => _handleQuickOption(option.value),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: AppColors.surface,

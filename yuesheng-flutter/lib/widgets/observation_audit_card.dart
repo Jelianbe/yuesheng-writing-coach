@@ -161,18 +161,12 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
           ),
           if (_expanded) ...[
             const SizedBox(height: 8),
-            const Text(
-              'Editor 对你写作的叙事层观察记录',
-              style: AppTextStyles.caption,
-            ),
+            const Text('Editor 对你写作的叙事层观察记录', style: AppTextStyles.caption),
             const SizedBox(height: 12),
             if (!hasSession)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text(
-                  '无当前会话',
-                  style: AppTextStyles.subBody,
-                ),
+                child: Text('无当前会话', style: AppTextStyles.subBody),
               )
             else if (_error != null)
               Text(
@@ -189,10 +183,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
             else if (_total == null)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text(
-                  '暂无数据',
-                  style: AppTextStyles.subBody,
-                ),
+                child: Text('暂无数据', style: AppTextStyles.subBody),
               )
             else ...[
               // 统计行
@@ -207,15 +198,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
               ),
               const SizedBox(height: 12),
               if (_total == 0)
-                const Text(
-                  '暂无 observation 数据',
-                  style: AppTextStyles.subBody,
-                )
+                const Text('暂无 observation 数据', style: AppTextStyles.subBody)
               else if (_recent.isEmpty)
-                const Text(
-                  '暂无最近 observation',
-                  style: AppTextStyles.subBody,
-                )
+                const Text('暂无最近 observation', style: AppTextStyles.subBody)
               else
                 ..._recent.map((obs) {
                   final triggerTag = obs.teacherTriggered == 1 ? '触发' : '未触发';
@@ -226,7 +211,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                       ? '${impression.substring(0, 60)}...'
                       : impression;
                   return Container(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.sm,
+                    ),
                     decoration: const BoxDecoration(
                       border: Border(
                         bottom: BorderSide(color: AppColors.divider),
@@ -264,7 +251,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primarySoft),
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.smx,
+                    ),
                   ),
                 ),
               ),

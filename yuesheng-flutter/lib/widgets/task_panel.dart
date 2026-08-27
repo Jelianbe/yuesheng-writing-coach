@@ -60,7 +60,10 @@ class TaskPanel extends StatelessWidget {
       return Container(
         color: AppColors.background,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 28),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: 28,
+        ),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -97,7 +100,10 @@ class TaskPanel extends StatelessWidget {
         children: [
           // Header：练习任务 + N 个问题徽标
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Row(
               children: [
                 const Expanded(

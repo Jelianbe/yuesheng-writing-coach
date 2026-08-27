@@ -168,8 +168,7 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
                       else
                         for (int i = 0; i < _stats.length; i++) ...[
                           _StatsRow(stat: _stats[i]),
-                          if (i < _stats.length - 1)
-                            const SizedBox(height: 10),
+                          if (i < _stats.length - 1) const SizedBox(height: 10),
                         ],
                     ],
                   ),

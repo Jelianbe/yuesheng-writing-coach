@@ -693,8 +693,8 @@ class TrainingResults extends Table {
     taskType.isIn(const ['rewrite', 'analyze', 'compare', 'generate']),
   )();
   TextColumn get userContent => text()(); // 用户提交的练习内容
-  TextColumn get result => text()
-      .check(result.isIn(const ['passed', 'partial', 'failed']))();
+  TextColumn get result =>
+      text().check(result.isIn(const ['passed', 'partial', 'failed']))();
   TextColumn get feedbackJson => text().nullable()(); // AI 评分反馈 JSON
   RealColumn get score => real().nullable()(); // 0.0-1.0 评分
   IntColumn get createdAt =>

@@ -433,20 +433,14 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                     style: BorderStyle.solid,
                   ),
                 ),
-                child: const Text(
-                  '+ 添加标签',
-                  style: AppTextStyles.subCaption,
-                ),
+                child: const Text('+ 添加标签', style: AppTextStyles.subCaption),
               ),
             ),
           ],
         ),
         // 批次94-5：热门标签预设（点击即加入，已含不再显示）
         const SizedBox(height: 14),
-        const Text(
-          '热门标签',
-          style: AppTextStyles.subCaption,
-        ),
+        const Text('热门标签', style: AppTextStyles.subCaption),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -469,10 +463,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       border: Border.all(color: AppColors.divider),
                     ),
-                    child: Text(
-                      '+ $preset',
-                      style: AppTextStyles.subBody,
-                    ),
+                    child: Text('+ $preset', style: AppTextStyles.subBody),
                   ),
                 ),
           ],
@@ -565,7 +556,10 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: const BorderSide(color: AppColors.primary),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.smx),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.smx,
+      ),
     );
   }
 }

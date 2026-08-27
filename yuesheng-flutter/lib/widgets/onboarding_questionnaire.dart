@@ -172,7 +172,12 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
       child: Row(
         children: [
           if (_step > 0)
@@ -302,7 +307,12 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
 
   Widget _buildFooter(bool isLastStep) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.md, AppSpacing.section, AppSpacing.xl),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.xl,
+      ),
       child: Row(
         children: [
           if (_step > 0)
@@ -365,19 +375,18 @@ class _QuestionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.sm, AppSpacing.section, AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.sm,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: AppTextStyles.titleLg,
-          ),
+          Text(title, style: AppTextStyles.titleLg),
           const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: AppTextStyles.body,
-          ),
+          Text(subtitle, style: AppTextStyles.body),
           const SizedBox(height: 20),
           child,
         ],

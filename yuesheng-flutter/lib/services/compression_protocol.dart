@@ -69,11 +69,7 @@ class CompressionRule {
   ];
 
   /// 可裁剪要素（仅 concise 级别裁剪）
-  static const List<String> kDroppableElements = [
-    '铺垫/寒暄',
-    '重复解释',
-    '详细理论背景',
-  ];
+  static const List<String> kDroppableElements = ['铺垫/寒暄', '重复解释', '详细理论背景'];
 }
 
 /// 根据压缩级别返回压缩规则（纯函数，可单测）

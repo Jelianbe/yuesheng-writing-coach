@@ -523,9 +523,9 @@ extension GrowthAbilityExtension on GrowthService {
     if (days == null) {
       return repo.aggregateBySyndrome();
     }
-    final since = DateTime.now()
-        .subtract(Duration(days: days))
-        .millisecondsSinceEpoch ~/ 1000;
+    final since =
+        DateTime.now().subtract(Duration(days: days)).millisecondsSinceEpoch ~/
+        1000;
     return repo.aggregateBySyndrome(sinceSec: since);
   }
 }

@@ -159,9 +159,7 @@ class DiagnosisFailedCard extends StatelessWidget {
         children: [
           Text(
             '建议：',
-            style: AppTextStyles.subBody.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
           for (final suggestion in _displaySuggestions)
             Padding(

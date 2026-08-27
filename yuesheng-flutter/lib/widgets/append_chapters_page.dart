@@ -467,10 +467,7 @@ class _SelectAction extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        child: Text(
-          text,
-          style: AppTextStyles.subBody,
-        ),
+        child: Text(text, style: AppTextStyles.subBody),
       ),
     );
   }
@@ -569,10 +566,7 @@ class _ChapterRow extends StatelessWidget {
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
-                  child: const Text(
-                    '已存在',
-                    style: AppTextStyles.microCaption,
-                  ),
+                  child: const Text('已存在', style: AppTextStyles.microCaption),
                 ),
             ],
           ),

@@ -235,7 +235,12 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                 ),
                 // 底部操作
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                  ),
                   child: Row(
                     children: [
                       Expanded(

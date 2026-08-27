@@ -43,8 +43,7 @@ class GrowthState {
   final List<SyndromeHistoryEvent> syndromeHistory;
   final WritingStyleProfile? styleProfile; // 批次53c：最新写作风格画像
   final List<SyndromeRecurrence> syndromeRecurrences; // 批次65 B62h：同类症候复发率
-  final List<SyndromeTrainingStats>
-  trainingStats; // X-041b：症候-训练通过率聚合（近 30 天）
+  final List<SyndromeTrainingStats> trainingStats; // X-041b：症候-训练通过率聚合（近 30 天）
   final String? error;
 
   const GrowthState({

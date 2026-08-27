@@ -166,7 +166,10 @@ class _FileSectionState extends ConsumerState<FileSection> {
 
         if (_files.isEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl, horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.xxl,
+              horizontal: AppSpacing.lg,
+            ),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),

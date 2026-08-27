@@ -1450,9 +1450,7 @@ extension ChatServiceSendDiagnosisLock on ChatService {
             // 无对应示例的症候返回空字符串（不报错，作为防御性兜底）
             final fewShot = getTrainingFewShot([focusSyndromeId]);
             if (fewShot.isNotEmpty) {
-              messages.add(
-                ChatMessage(role: 'system', content: fewShot),
-              );
+              messages.add(ChatMessage(role: 'system', content: fewShot));
             }
           } catch (e) {
             debugPrint('[SafeRun] 知识库注入失败不阻断主流程: $e');
@@ -2865,7 +2863,8 @@ extension ChatServiceSend on ChatService {
       messages.add(
         ChatMessage(
           role: 'system',
-          content: '# 回复纪律（最后提醒）\n\n'
+          content:
+              '# 回复纪律（最后提醒）\n\n'
               '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
               '1. 不替用户写句子、不替用户做决定；\n'
               '2. 一次只抛一个点，删掉铺垫；\n'
@@ -2912,7 +2911,8 @@ extension ChatServiceSend on ChatService {
           messages.add(
             ChatMessage(
               role: 'system',
-              content: '# 素材缺失提示（X-040 PHI）\n\n'
+              content:
+                  '# 素材缺失提示（X-040 PHI）\n\n'
                   '由于本轮 token 预算超限，已裁掉以下用户素材：${materialStages.join('、')}。\n'
                   '回复时：\n'
                   '1. 不得假定素材内容直接给出诊断结论；\n'

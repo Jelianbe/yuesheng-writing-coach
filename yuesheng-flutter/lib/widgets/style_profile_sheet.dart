@@ -185,10 +185,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
           ),
         ),
         const SizedBox(height: 12),
-        const Text(
-          '你的文风五维',
-          style: AppTextStyles.noteCaption,
-        ),
+        const Text('你的文风五维', style: AppTextStyles.noteCaption),
         const SizedBox(height: 6),
         _dimensionRow('感官偏好', _sensoryLabel(p.sensory)),
         _dimensionRow('句子节奏', _rhythmLabel(p.rhythm)),
@@ -215,15 +212,12 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: Row(
         children: [
-          SizedBox(
-            width: 72,
-            child: Text(
-              name,
-              style: AppTextStyles.subBody,
-            ),
-          ),
+          SizedBox(width: 72, child: Text(name, style: AppTextStyles.subBody)),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 3,
+            ),
             decoration: BoxDecoration(
               color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(10),

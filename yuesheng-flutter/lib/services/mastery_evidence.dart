@@ -59,11 +59,7 @@ class MasteryEvidence {
   final ConfidenceEvidence? confidence;
   final NearTransferEvidence? nearTransfer;
 
-  const MasteryEvidence({
-    this.explanation,
-    this.confidence,
-    this.nearTransfer,
-  });
+  const MasteryEvidence({this.explanation, this.confidence, this.nearTransfer});
 }
 
 /// 多证据评估结果

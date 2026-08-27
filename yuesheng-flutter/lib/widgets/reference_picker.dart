@@ -115,7 +115,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   /// mention 模式下的路径徽章
   Widget _mentionBadge(String path) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -138,7 +141,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
           Container(
             width: 36,
             height: 4,
-            margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
+            margin: const EdgeInsets.only(
+              top: AppSpacing.md,
+              bottom: AppSpacing.md,
+            ),
             decoration: BoxDecoration(
               color: AppColors.borderSoft,
               borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -197,7 +203,12 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
 
           // 取消
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
             child: OutlinedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
@@ -255,7 +266,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         InkWell(
           onTap: () => _toggleExpand(m.id),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -289,7 +303,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                     buildMentionPath(m.title),
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xxs,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.primarySoft,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -434,7 +451,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
             expanded ? _filesExpanded.remove(m.id) : _filesExpanded.add(m.id);
           }),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
             child: Row(
               children: [
                 Expanded(
