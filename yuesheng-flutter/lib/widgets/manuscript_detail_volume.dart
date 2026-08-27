@@ -100,7 +100,12 @@ extension _ManuscriptDetailVolume on _ManuscriptDetailPageState {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.section,
+                AppSpacing.sm,
+              ),
               child: Text(
                 volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
                 style: const TextStyle(

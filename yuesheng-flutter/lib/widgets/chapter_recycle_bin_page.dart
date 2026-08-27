@@ -196,7 +196,10 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       );
     }
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       itemCount: _items.length,
       separatorBuilder: (_, _) =>
           const Divider(height: 1, color: AppColors.divider),
@@ -204,7 +207,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
         final c = _items[index];
         final title = c.title.trim().isEmpty ? '未命名章节' : c.title.trim();
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
           child: Row(
             children: [
               Expanded(

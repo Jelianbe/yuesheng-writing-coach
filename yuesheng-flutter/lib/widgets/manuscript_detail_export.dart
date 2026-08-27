@@ -14,7 +14,12 @@ extension _ManuscriptDetailExport on _ManuscriptDetailPageState {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.section,
+                AppSpacing.lg,
+                AppSpacing.section,
+                AppSpacing.sm,
+              ),
               child: Text(
                 '导出为',
                 style: TextStyle(
