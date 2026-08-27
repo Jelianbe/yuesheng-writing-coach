@@ -172,7 +172,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.lg, AppSpacing.md, AppSpacing.sm),
       child: Row(
         children: [
           if (_step > 0)
@@ -220,14 +220,14 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
 
   Widget _buildProgress() {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(_totalSteps, (i) {
           final isActive = i == _step;
           final isCompleted = i < _step;
           return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             width: isActive ? 24 : 8,
             height: 8,
             decoration: BoxDecoration(
@@ -306,7 +306,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
 
   Widget _buildFooter(bool isLastStep) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.md, AppSpacing.section, AppSpacing.xl),
       child: Row(
         children: [
           if (_step > 0)
@@ -314,10 +314,10 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
               child: OutlinedButton(
                 onPressed: () => _goToStep(_step - 1),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   side: const BorderSide(color: AppColors.placeholder),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                 ),
                 child: const Text('上一题'),
@@ -335,9 +335,9 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.onPrimary,
                 disabledBackgroundColor: AppColors.disabled,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
               ),
               child: Text(
@@ -369,7 +369,7 @@ class _QuestionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.section, AppSpacing.sm, AppSpacing.section, AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -413,19 +413,19 @@ class _RadioCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: selected
                 ? AppColors
                       .l1 // 竹青浅
                 : AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
               color: selected ? AppColors.primary : Colors.transparent,
               width: 2,
@@ -438,7 +438,7 @@ class _RadioCard extends StatelessWidget {
               Container(
                 width: 22,
                 height: 22,
-                margin: const EdgeInsets.only(top: 2),
+                margin: const EdgeInsets.only(top: AppSpacing.xxs),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
@@ -513,16 +513,16 @@ class _CheckCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             color: selected ? AppColors.l1 : AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
               color: selected ? AppColors.primary : Colors.transparent,
               width: 2,

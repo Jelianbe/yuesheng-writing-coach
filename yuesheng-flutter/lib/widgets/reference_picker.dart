@@ -115,7 +115,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   /// mention 模式下的路径徽章
   Widget _mentionBadge(String path) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -138,10 +138,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
           Container(
             width: 36,
             height: 4,
-            margin: const EdgeInsets.only(top: 12, bottom: 12),
+            margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
             decoration: BoxDecoration(
               color: AppColors.borderSoft,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
             ),
             alignment: Alignment.center,
           ),
@@ -164,8 +164,8 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
 
           // Tab 切换
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(3),
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.xxs),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -197,14 +197,14 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
 
           // 取消
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg),
             child: OutlinedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
                 side: const BorderSide(color: AppColors.borderSoft),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: const Text(
@@ -222,7 +222,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Widget _buildWorksTab() {
     if (_manuscripts.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl + AppSpacing.lg),
         child: Column(
           children: [
             Icon(
@@ -255,7 +255,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         InkWell(
           onTap: () => _toggleExpand(m.id),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             child: Row(
               children: [
                 Expanded(
@@ -289,10 +289,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                     buildMentionPath(m.title),
                   ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
                     decoration: BoxDecoration(
                       color: AppColors.primarySoft,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -328,7 +325,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     final chapters = _chaptersMap[m.id] ?? const <Chapter>[];
     if (chapters.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
         child: Text(
           '暂无章节',
           textAlign: TextAlign.center,
@@ -348,10 +345,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
             ),
             child: Padding(
               padding: const EdgeInsets.only(
-                left: 28,
-                right: 16,
-                top: 10,
-                bottom: 10,
+                left: AppSpacing.section + AppSpacing.sm,
+                right: AppSpacing.lg,
+                top: AppSpacing.smx,
+                bottom: AppSpacing.smx,
               ),
               child: Row(
                 children: [
@@ -401,7 +398,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     final hasFiles = _filesMap.values.any((files) => files.isNotEmpty);
     if (!hasFiles) {
       return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 48),
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl + AppSpacing.lg),
         child: Column(
           children: [
             Icon(Icons.attach_file, size: 40, color: AppColors.disabledText),
@@ -437,7 +434,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
             expanded ? _filesExpanded.remove(m.id) : _filesExpanded.add(m.id);
           }),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             child: Row(
               children: [
                 Expanded(
@@ -474,10 +471,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
               ),
               child: Padding(
                 padding: const EdgeInsets.only(
-                  left: 28,
-                  right: 16,
-                  top: 10,
-                  bottom: 10,
+                  left: AppSpacing.section + AppSpacing.sm,
+                  right: AppSpacing.lg,
+                  top: AppSpacing.smx,
+                  bottom: AppSpacing.smx,
                 ),
                 child: Row(
                   children: [
@@ -527,12 +524,12 @@ class _TabButton extends StatelessWidget {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
             color: active ? AppColors.surfaceWhite : null,
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           alignment: Alignment.center,
           child: Text(
