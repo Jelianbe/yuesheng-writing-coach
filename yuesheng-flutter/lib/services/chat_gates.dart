@@ -125,6 +125,33 @@ bool isHelpSeekingText(String? text) {
   return kHelpSeekingKeywords.any(text.contains);
 }
 
+/// FT-22 越界输出抑制关键词——学员消息含以下任一关键词
+/// 视为「只诊断不要改/不要建议」的明确边界声明，
+/// 命中时跳过 teacher stream 调用与 teacher_suggestion 落库，
+/// 避免在学员只想要诊断结论时强行塞入修改建议。
+///
+/// 设计参考：架构真源 §4.4 FT-22 输出边界控制
+/// 触发例：「只诊断就好」「不要给建议」「只要找出问题」「先别改」
+const Set<String> kDiagnosisOnlyKeywords = {
+  '只诊断',
+  '只找问题',
+  '只要诊断',
+  '不要建议',
+  '不要给建议',
+  '不要改',
+  '先别改',
+  '先不改',
+  '不用改',
+  '不用建议',
+};
+
+/// FT-22：判断消息文本是否声明「只要诊断不要建议」边界。
+/// null / 空文本 → false（无边界声明，走默认行为）。
+bool isDiagnosisOnlyRequest(String? text) {
+  if (text == null || text.isEmpty) return false;
+  return kDiagnosisOnlyKeywords.any(text.contains);
+}
+
 /// 持久化 Teacher suggestion（guide/train 档位且有 training_task 时写入）。
 ///
 /// 真源：chat-gates.ts persistTeacherSuggestion
