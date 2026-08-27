@@ -197,7 +197,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       body: bootstrapAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           // P2-7：release 构建中不向用户展示 stack trace 技术细节
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -278,8 +278,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.smx,
                   ),
                   decoration: const BoxDecoration(
                     color: AppColors.background,
@@ -369,8 +369,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             if (chatState.error != null)
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.sm,
                 ),
                 color: AppColors.dangerBg,
                 child: Row(

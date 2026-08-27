@@ -81,10 +81,10 @@ class MessageBubble extends StatelessWidget {
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.80,
                 ),
-                margin: const EdgeInsets.only(bottom: 4),
+                margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 10,
+                  vertical: AppSpacing.smx,
                 ),
                 decoration: BoxDecoration(
                   color: isFailed ? AppColors.dangerBg : AppColors.primary,
@@ -92,10 +92,10 @@ class MessageBubble extends StatelessWidget {
                       ? Border.all(color: AppColors.dangerBorder)
                       : null,
                   borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
-                    bottomRight: Radius.circular(4),
+                    topLeft: Radius.circular(AppRadius.md),
+                    topRight: Radius.circular(AppRadius.md),
+                    bottomLeft: Radius.circular(AppRadius.md),
+                    bottomRight: Radius.circular(AppRadius.xs),
                   ),
                 ),
                 child: Text(
@@ -118,7 +118,7 @@ class MessageBubble extends StatelessWidget {
               GestureDetector(
                 onTap: () => onRetry!(message.id),
                 child: const Padding(
-                  padding: EdgeInsets.only(top: 2, bottom: 4),
+                  padding: EdgeInsets.only(top: AppSpacing.xxs, bottom: AppSpacing.xs),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -157,7 +157,7 @@ class MessageBubble extends StatelessWidget {
   /// AI 消息气泡：左对齐 + 头像 + 灰白底 + 左下尖角 + 外部时间戳
   Widget _buildAssistantBubble(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -165,7 +165,7 @@ class MessageBubble extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            margin: const EdgeInsets.only(right: 8, top: 4),
+            margin: const EdgeInsets.only(right: AppSpacing.sm, top: AppSpacing.xs),
             decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
@@ -201,16 +201,16 @@ class MessageBubble extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 10,
+                        vertical: AppSpacing.smx,
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.surface,
                         border: Border.all(color: AppColors.borderSoft),
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                          bottomLeft: Radius.circular(4),
-                          bottomRight: Radius.circular(12),
+                          topLeft: Radius.circular(AppRadius.md),
+                          topRight: Radius.circular(AppRadius.md),
+                          bottomLeft: Radius.circular(AppRadius.xs),
+                          bottomRight: Radius.circular(AppRadius.md),
                         ),
                       ),
                       child: GptMarkdown(
@@ -310,7 +310,7 @@ class _ReferencesBadges extends StatelessWidget {
   Widget build(BuildContext context) {
     if (references.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: AppSpacing.xsm),
       child: Wrap(
         spacing: 6,
         runSpacing: 4,
@@ -352,10 +352,10 @@ class _ReferenceBadge extends StatelessWidget {
     return GestureDetector(
       onTap: canTap ? () => onMentionTap!(refType, refId, manuscriptId) : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
         decoration: BoxDecoration(
           color: AppColors.primarySoft,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
