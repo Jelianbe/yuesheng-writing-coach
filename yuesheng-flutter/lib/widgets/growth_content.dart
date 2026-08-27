@@ -368,10 +368,7 @@ extension _GrowthContent on _GrowthDetailPageState {
                           const SizedBox(height: 4),
                           Text(
                             '严重度 ${problem.severity}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
+                            style: AppTextStyles.noteCaption,
                           ),
                         ],
                       ),

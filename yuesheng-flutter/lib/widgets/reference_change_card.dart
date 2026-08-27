@@ -149,10 +149,7 @@ class ReferenceChangeCard extends StatelessWidget {
                                 subtitle,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                ),
+                                style: AppTextStyles.noteCaption,
                               ),
                             ],
                           ),

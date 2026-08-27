@@ -220,7 +220,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
             const SizedBox(height: 6),
             Text(
               '解析：$explanation',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: AppTextStyles.noteCaption,
             ),
           ],
         ],

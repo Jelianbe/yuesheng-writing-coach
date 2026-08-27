@@ -227,10 +227,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
                     const SizedBox(height: 4),
                     Text(
                       '${c.wordCount} 字 · ${_relativeTime(c.updatedAt)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: AppTextStyles.noteCaption,
                     ),
                   ],
                 ),

@@ -566,11 +566,7 @@ class _ManuscriptCard extends ConsumerWidget {
                                     manuscript.description,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      height: 1.4,
-                                      color: AppColors.textSecondary,
-                                    ),
+                                    style: AppTextStyles.noteCaption.copyWith(height: 1.4),
                                   ),
                                 ],
                                 const SizedBox(height: 6),
