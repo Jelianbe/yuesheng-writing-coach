@@ -270,6 +270,20 @@ class DiagnosisRepository {
         .get();
   }
 
+  /// 获取所有完整诊断记录（跨会话，含 syndromes JSON / feedbackSummary / confidence 等全字段）
+  /// T-09 教学档案导出专用：返回 DiagnosisRow 列表，时间升序（旧→新）
+  /// 与 getAllDiagnoses 区别：后者返回扁平症候条目（每症候一行），本方法返回完整诊断行
+  Future<List<DiagnosisRow>> getAllDiagnosisRows({String? sessionId}) async {
+    final query = _db.select(_db.diagnosisResults);
+    if (sessionId != null) {
+      query.where((t) => t.sessionId.equals(sessionId));
+    }
+    query.orderBy([
+      (t) => OrderingTerm(expression: t.timestamp, mode: OrderingMode.asc),
+    ]);
+    return query.get();
+  }
+
   /// 获取所有诊断的扁平症候条目（跨会话）
   /// 复刻 getAllDiagnoses(sessionId?)
   /// 注意：时间升序（ASC，旧→新）——对齐 RN 真源 ORDER BY timestamp ASC。
