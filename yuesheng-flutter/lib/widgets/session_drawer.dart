@@ -288,16 +288,12 @@ class SessionDrawer extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text(
           '删除会话',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleLg,
         ),
         content: Text(
           '删除「$title」？该会话的全部对话记录将一并删除，此操作不可撤销。',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: AppTextStyles.body,
         ),
         actions: [
           TextButton(

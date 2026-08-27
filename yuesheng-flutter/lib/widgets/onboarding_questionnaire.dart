@@ -191,11 +191,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
             child: Center(
               child: Text(
                 _step == 0 ? '写作偏好问卷' : '第 ${_step + 1}/$_totalSteps 题',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+                style: AppTextStyles.titleLg,
               ),
             ),
           ),
@@ -375,19 +371,12 @@ class _QuestionPage extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleLg,
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.body,
           ),
           const SizedBox(height: 20),
           child,
