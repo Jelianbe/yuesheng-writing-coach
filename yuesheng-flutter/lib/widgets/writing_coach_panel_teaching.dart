@@ -55,16 +55,12 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       builder: (ctx) => AlertDialog(
         title: const Text(
           '删除消息',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleLg,
         ),
         content: const Text(
           '确定要删除这条消息吗？此操作不可撤销。',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: AppTextStyles.body,
         ),
         actions: [
           TextButton(

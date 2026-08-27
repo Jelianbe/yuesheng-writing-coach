@@ -425,7 +425,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         const SizedBox(height: 4),
         const Text(
           '查找会在正文里标出位置，替换后即时保存',
-          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          style: AppTextStyles.caption,
         ),
       ],
     );
