@@ -527,9 +527,9 @@ coverage: flutter-end-only  # 截止 2026-08-26，Flutter 端为唯一真源
 | FT-16 | 巨型知识地图 | 给学员输出"从字词句段到篇章结构到文学批评"的完整体系 | 知识地图构建器 + 输出格式 | L2 索引只给 LLM"可诊断范围清单"不给学员 | ✅ 已守护 |
 | FT-18 | 错误下一步 | 还没掌握句子通顺就教复杂长句修辞 | 学习路径选择器 | `skillLevel` 分层 + training_kb 按等级匹配 | ✅ 已守护 |
 | FT-20 | 信号忽略 | 学员说"我没学过修辞"仍输出专业术语密集的诊断 | 触发矩阵 + 教学模式选择 | 三档态度（豆包/月笙如歌/sensei）适配 | ✅ 已守护 |
-| FT-21 | 重复解释 | 学员没理解"过渡句"概念，系统重复同样定义 | 多轮协议 + 无状态恢复 | **缺：多轮去重机制** | ⚠️ 部分守护 |
+| FT-21 | 重复解释 | 学员没理解"过渡句"概念，系统重复同样定义 | 多轮协议 + 无状态恢复 | ✅ 已落地（2026-08-27，概念去重基础设施） | 新建 `concept_dedup.dart` 独立模块：① `ConceptRegistry` 概念注册表（追踪已解释概念 + 过期清理，默认窗口 5 轮）；② `detectDuplicateConcepts` 纯函数检测即将解释的概念是否重复，返回 `ConceptDedupResult`（newConcepts + duplicateConcepts）。**与现有 `chat_gates.dart` 教学建议去重互补**：chat_gates 防同症候重复推送建议，本模块防同概念重复解释。**保守原则**：不修改现有 chat_service（向后兼容），概念去重作为可选叠加层，未来在上下文构建中注入"已解释概念"标记。7 个单测覆盖空注册表/注册/过期/空入参/全重复/混合/窗口边界 |
 | FT-22 | 越界输出 | 用户要"只给诊断不要修改建议"，系统仍输出完整改写 | 停止点 + 互动节奏 | diagnosis_validator 禁止整句替换；FT-22 关键词检测（`isDiagnosisOnlyRequest` + 10 个边界声明词）+ `_parseAndPersist` 跳过 teacher stream，避免越界输出修改建议 | ✅ 已守护（2026-08-27） |
-| FT-23 | 过度压缩高级响应 | 高级学员请求压缩诊断，结果只给"结构有问题"无细节 | 标准/高级模式压缩 | sensei 档位面向老手；**缺：显式压缩协议** | ⚠️ 部分守护 |
+| FT-23 | 过度压缩高级响应 | 高级学员请求压缩诊断，结果只给"结构有问题"无细节 | 标准/高级模式压缩 | ✅ 已落地（2026-08-27，显式压缩协议基础设施） | 新建 `compression_protocol.dart` 独立模块：① `CompressionLevel` 三档枚举（concise 压缩 / standard 标准 / detailed 详细），`fromString` 防御性解析（未知值降级 standard）；② `CompressionRule` 保留要素 + 可裁剪要素 + 铺垫允许行数；③ `getCompressionRule` 纯函数按级别返回规则；④ `buildCompressionDirective` 生成指令文本（用于 prompt 注入）。**核心原则**：三档都必须保留三要素（问题点+改善方向+证据），仅 concise 裁剪铺垫/重复/理论背景且铺垫 0 行。**与现有颗粒度机制互补**：现有 standard/concise/detailed 颗粒度只发信号，本模块定义信号下的保留/裁剪规则。**保守原则**：不修改现有 chat_service（向后兼容），未来在 prompt 注入中按级别追加压缩规则。10 个单测覆盖 fromString 解析+降级 / getCompressionRule 三档规则 / buildCompressionDirective 指令生成 |
 | FT-24 | 协议泄漏 | 诊断报告中暴露"根据 diagnosis_engine_v2.json 规则..." | 无泄漏 + 学生面向协议 | GenUI/消息卡分派器对学员隐藏协议块标记 | ✅ 已守护 |
 | FT-27 | 资源堆砌 | 只给"参考这 10 篇范文"不做任何分析 | 资源编排教学 | **缺：参考素材嵌入式分析** | ❌ 缺口 |
 | FT-28 | 资源过度使用 | 简单病句修改也强制引用外部语法书 | 资源协议 | token_budget_guard 按优先级裁剪；**缺：场景级资源必要性判断** | ⚠️ 部分守护 |
