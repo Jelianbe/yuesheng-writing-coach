@@ -171,10 +171,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
                   '无当前会话',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.subBody,
                 ),
               )
             else if (_error != null)
@@ -194,10 +191,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
                   '暂无数据',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.subBody,
                 ),
               )
             else ...[
@@ -215,18 +209,12 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
               if (_total == 0)
                 const Text(
                   '暂无 observation 数据',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.subBody,
                 )
               else if (_recent.isEmpty)
                 const Text(
                   '暂无最近 observation',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.subBody,
                 )
               else
                 ..._recent.map((obs) {

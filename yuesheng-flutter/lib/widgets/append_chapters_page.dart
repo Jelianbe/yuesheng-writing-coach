@@ -469,7 +469,7 @@ class _SelectAction extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: AppTextStyles.subBody,
         ),
       ),
     );

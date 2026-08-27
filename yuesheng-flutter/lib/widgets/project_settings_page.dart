@@ -471,10 +471,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                     ),
                     child: Text(
                       '+ $preset',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: AppTextStyles.subBody,
                     ),
                   ),
                 ),

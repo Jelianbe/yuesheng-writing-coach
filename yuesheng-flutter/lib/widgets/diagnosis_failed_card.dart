@@ -157,12 +157,10 @@ class DiagnosisFailedCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '建议：',
-            style: TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.subBody.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
             ),
           ),
           for (final suggestion in _displaySuggestions)
@@ -183,11 +181,7 @@ class DiagnosisFailedCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       suggestion,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: AppTextStyles.subBody.copyWith(height: 1.4),
                     ),
                   ),
                 ],

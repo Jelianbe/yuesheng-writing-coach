@@ -143,10 +143,8 @@ class AttitudeIndicator extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               meta.label,
-              style: const TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.subBody.copyWith(
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(width: 2),

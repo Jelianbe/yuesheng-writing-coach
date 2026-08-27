@@ -41,10 +41,7 @@ class ThinkingPlaceholder extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(
             label ?? (isDiagnosing ? '诊断中…' : '思考中…'),
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.subBody,
           ),
         ],
       ),

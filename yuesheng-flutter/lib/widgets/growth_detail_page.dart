@@ -227,10 +227,8 @@ class _StyleCorrectionSheetState extends State<_StyleCorrectionSheet> {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.subBody.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
           ),
         ),
         const SizedBox(height: 6),
@@ -575,7 +573,7 @@ class _InfoRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: AppTextStyles.subBody,
         ),
         const Spacer(),
         Text(

@@ -458,20 +458,14 @@ class _VersionTimeMachineSheetState
                   width: 92,
                   child: Text(
                     _formatTime(v.savedAt),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTextStyles.subBody,
                   ),
                 ),
                 SizedBox(
                   width: 48,
                   child: Text(
                     '${v.wordCount}字',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTextStyles.subBody,
                   ),
                 ),
                 Expanded(

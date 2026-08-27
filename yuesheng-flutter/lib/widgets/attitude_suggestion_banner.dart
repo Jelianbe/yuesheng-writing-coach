@@ -71,11 +71,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                   suggestion.reason,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
+                  style: AppTextStyles.subBody.copyWith(height: 1.4),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -119,10 +115,8 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                         ),
                         child: Text(
                           '暂不',
-                          style: const TextStyle(
-                            fontSize: 13,
+                          style: AppTextStyles.subBody.copyWith(
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),

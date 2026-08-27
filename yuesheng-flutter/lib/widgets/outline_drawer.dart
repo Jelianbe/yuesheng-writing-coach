@@ -250,10 +250,8 @@ class _TypeSection extends StatelessWidget {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.subBody.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(width: 6),

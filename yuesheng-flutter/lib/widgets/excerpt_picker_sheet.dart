@@ -175,10 +175,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                 Text(
                   _statusLabel,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.subBody,
                 ),
                 const SizedBox(height: 8),
                 Row(

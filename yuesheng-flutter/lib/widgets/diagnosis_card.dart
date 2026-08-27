@@ -306,20 +306,14 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               const Spacer(),
               Text(
                 '${widget.syndromeCount}${_CardText.problemSuffix}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.subBody,
               ),
               const SizedBox(width: 6),
               const Text('·', style: TextStyle(color: AppColors.textTertiary)),
               const SizedBox(width: 6),
               Text(
                 '$confPct${_CardText.confidenceSuffix}',
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.subBody,
               ),
               const SizedBox(width: 8),
               RotationTransition(
@@ -478,7 +472,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Text(
           _CardText.emptyHint,
-          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: AppTextStyles.subBody,
         ),
       );
     }

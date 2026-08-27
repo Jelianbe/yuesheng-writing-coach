@@ -114,12 +114,10 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           ],
           // ── 任务描述 ──
           if (widget.task.taskDescription.isNotEmpty) ...[
-            const Text(
+            Text(
               '任务描述',
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.subBody.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 4),
@@ -135,12 +133,10 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           ],
           // ── 练习目标 ──
           if (widget.task.taskGoal.isNotEmpty) ...[
-            const Text(
+            Text(
               '练习目标',
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.subBody.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 4),
