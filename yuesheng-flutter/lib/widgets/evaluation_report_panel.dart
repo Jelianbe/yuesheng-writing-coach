@@ -244,7 +244,7 @@ class _StatItem extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),
@@ -314,7 +314,7 @@ class _SyndromeItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '达标 ${detail.passCount}/${detail.totalCount} · 严重度 ${detail.currentSeverity.value}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),

@@ -119,16 +119,12 @@ extension _ChatTeaching on _ChatPageState {
       builder: (ctx) => AlertDialog(
         title: const Text(
           '移除问题',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
+          style: AppTextStyles.titleLg,
         ),
         content: const Text(
           '确定要从练习任务中移除这个问题吗？\n移除后需重新诊断才会再次出现。',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: AppTextStyles.body,
         ),
         actions: [
           TextButton(
