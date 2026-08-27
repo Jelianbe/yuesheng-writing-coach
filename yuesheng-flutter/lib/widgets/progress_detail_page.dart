@@ -176,21 +176,12 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
                         color: AppColors.textTertiary,
                       ),
                       SizedBox(height: 8),
-                      Text(
-                        '暂无症候追踪',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                      Text('暂无症候追踪', style: AppTextStyles.body),
                       SizedBox(height: 4),
                       Text(
                         '完成几次诊断后，这里会显示你的问题变化趋势',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
-                        ),
+                        style: AppTextStyles.caption,
                       ),
                     ],
                   ),
@@ -314,10 +305,7 @@ class _SummaryItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
-        ),
+        Text(label, style: AppTextStyles.caption),
       ],
     );
   }
@@ -368,10 +356,7 @@ class _DiagnosisHistory extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           '置信度 ${(records[i].confidence * 100).round()}%',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textTertiary,
-                          ),
+                          style: AppTextStyles.caption,
                         ),
                       ],
                     ),
@@ -625,7 +610,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
           child: Text(
             '共 ${widget.problems.length} 条诊断 · $resolved 已处理 · $active 待处理',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ),
       ],
@@ -844,13 +829,7 @@ class _ErrorView extends StatelessWidget {
             color: AppColors.textTertiary,
           ),
           const SizedBox(height: 12),
-          Text(
-            message,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
+          Text(message, style: AppTextStyles.body),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: onRetry,

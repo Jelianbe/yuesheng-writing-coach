@@ -204,18 +204,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
-          '清空配置',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        title: const Text('清空配置', style: AppTextStyles.titleLg),
         content: const Text(
           '确定清空所有 API 配置吗？',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: AppTextStyles.body,
         ),
         actions: [
           TextButton(
@@ -251,18 +244,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
-          '清除缓存',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        title: const Text('清除缓存', style: AppTextStyles.titleLg),
         content: const Text(
           '这将清除所有本地缓存数据（不包括作品和章节内容）。确定继续吗？',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: AppTextStyles.body,
         ),
         actions: [
           TextButton(
@@ -291,18 +277,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text(
-          '反馈',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        title: const Text('反馈', style: AppTextStyles.titleLg),
         content: Text(
           '遇到问题或有建议？请通过以下方式联系我们：\n\n邮箱：$_feedbackEmail',
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+          style: AppTextStyles.body,
         ),
         actions: [
           TextButton(
@@ -691,13 +670,7 @@ class _AboutRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
+            child: Text(label, style: AppTextStyles.body),
           ),
           Text(
             value,
@@ -762,13 +735,7 @@ class _ProgressSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    '完成度',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
+                  const Text('完成度', style: AppTextStyles.caption),
                 ],
               ),
             ],
@@ -861,19 +828,9 @@ class _ProgressStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          Text(value, style: AppTextStyles.titleLg),
           const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
-          ),
+          Text(label, style: AppTextStyles.caption),
         ],
       ),
     );
