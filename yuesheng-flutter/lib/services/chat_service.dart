@@ -2147,6 +2147,7 @@ extension ChatServiceSendParse on ChatService {
     required String? chapterContent,
     required SendMessageCallbacks callbacks,
     required SendMessageOptions options,
+    bool diagnosisOnly = false,
   }) async {
     // 9. 解析 + 第二层后置校验
     final rawParse = _diagnosis.parseDiagnosis(fullContent);
@@ -2219,10 +2220,13 @@ extension ChatServiceSendParse on ChatService {
 
     // Diagnosis → Teacher 条件触发（C3）
     // 真源：chat-service.ts L626-655
+    // FT-22：学员声明「只诊断不要建议」时跳过 teacher stream 调用，
+    // 让 AI 仅输出诊断结论，不强行塞入修改建议（避免越界输出）。
     String teacherDisplayContent = '';
     TeacherResult? teacherResult;
     if (diagnosis != null &&
-        shouldTriggerTeacherForDiagnosis(diagnosis.syndromes)) {
+        shouldTriggerTeacherForDiagnosis(diagnosis.syndromes) &&
+        !diagnosisOnly) {
       try {
         final teacherStream = await callTeacherStream(
           _llmClient,
@@ -2922,6 +2926,11 @@ extension ChatServiceSend on ChatService {
       final inDiagnosisBlock = streamResult.inDiagnosisBlock;
 
       // 9-10. 解析 + 校验 + 落库（R-019：提取为 _parseAndPersist）
+      // FT-22：检测用户「只诊断不要建议」边界声明，命中则跳过 teacher stream
+      final diagnosisOnly = isDiagnosisOnlyRequest(content);
+      if (diagnosisOnly) {
+        debugPrint('[ChatService] FT-22: 检测到「只诊断」边界声明，跳过 teacher 建议');
+      }
       final parsed = await _parseAndPersist(
         sessionId: sessionId,
         fullContent: fullContent,
@@ -2930,6 +2939,7 @@ extension ChatServiceSend on ChatService {
         chapterContent: chapterContent,
         callbacks: callbacks,
         options: options,
+        diagnosisOnly: diagnosisOnly,
       );
       // 步骤 10 空响应提前结束（onError 已触发，等价原 return）
       if (parsed.aborted) return;

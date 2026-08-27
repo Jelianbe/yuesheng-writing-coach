@@ -690,5 +690,48 @@ void main() {
       expect(isHelpSeekingText(null), false);
       expect(isHelpSeekingText(''), false);
     });
+
+    // ─── FT-22 越界输出抑制（架构真源 §4.4 FT-22） ───────────────
+    group('FT-22 isDiagnosisOnlyRequest 边界声明检测', () {
+      test('#F1 命中「只诊断」', () {
+        expect(isDiagnosisOnlyRequest('只诊断就好'), true);
+        expect(isDiagnosisOnlyRequest('这章只诊断'), true);
+      });
+
+      test('#F2 命中「不要建议/不要改/先别改」', () {
+        expect(isDiagnosisOnlyRequest('不要给建议'), true);
+        expect(isDiagnosisOnlyRequest('不要建议'), true);
+        expect(isDiagnosisOnlyRequest('不要改我的文字'), true);
+        expect(isDiagnosisOnlyRequest('先别改'), true);
+        expect(isDiagnosisOnlyRequest('先不改'), true);
+      });
+
+      test('#F3 命中「不用改/不用建议」', () {
+        expect(isDiagnosisOnlyRequest('不用改了'), true);
+        expect(isDiagnosisOnlyRequest('不用建议'), true);
+      });
+
+      test('#F4 命中「只找问题/只要诊断」', () {
+        expect(isDiagnosisOnlyRequest('只找问题就行'), true);
+        expect(isDiagnosisOnlyRequest('只要诊断结论'), true);
+      });
+
+      test('#F5 普通诊断请求不误判（边界声明不出现）', () {
+        expect(isDiagnosisOnlyRequest('帮我看看这章哪里有问题'), false);
+        expect(isDiagnosisOnlyRequest('诊断一下吧'), false);
+        expect(isDiagnosisOnlyRequest('找找症候'), false);
+        expect(isDiagnosisOnlyRequest('请诊断这章'), false);
+      });
+
+      test('#F6 null / 空文本 → false', () {
+        expect(isDiagnosisOnlyRequest(null), false);
+        expect(isDiagnosisOnlyRequest(''), false);
+      });
+
+      test('#F7 关键词集合可扩展且不为空', () {
+        expect(kDiagnosisOnlyKeywords, isNotEmpty);
+        expect(kDiagnosisOnlyKeywords.length, greaterThanOrEqualTo(8));
+      });
+    });
   });
 }
