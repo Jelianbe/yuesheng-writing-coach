@@ -50,18 +50,19 @@ void main() {
         'outline_impression',
         'volumes',
       };
-      expect(tableNames.length, 20, reason: '应有 20 张业务表');
+      expect(tableNames.length, 21, reason: '应有 21 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
 
-      // 2. 验证 user_version = 25（drift schemaVersion；批次89 → 23，批次94-2 → 24
-      // chapters.status CHECK 扩 'archived'；批次94-5 → 25 manuscripts.tags 列）
+      // 2. 验证 user_version = 26（drift schemaVersion；批次89 → 23，批次94-2 → 24
+      // chapters.status CHECK 扩 'archived'；批次94-5 → 25 manuscripts.tags 列；
+      // 批次96+ → 26 新增 volumes 之外的 schema bump）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        25,
-        reason: 'schemaVersion 应为 25',
+        26,
+        reason: 'schemaVersion 应为 26',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在
