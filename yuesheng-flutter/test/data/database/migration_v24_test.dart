@@ -100,9 +100,9 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 25
+    // 1. user_version 升到 26
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 25);
+    expect(version.read<int>('user_version'), 26);
 
     // 2. 存量章节保留（含 volume_id）
     final chapter = await ChapterRepository(db).getChapter('c1');
@@ -126,19 +126,19 @@ void main() {
     expect(tagsCols.length, 1, reason: 'manuscripts 表缺少 tags 列');
   });
 
-  test('#2 幂等：v25 库二次打开不重复迁移', () async {
+  test('#2 幂等：v26 库二次打开不重复迁移', () async {
     final path = createV23LegacyDbFile();
 
     final db1 = AppDatabase.forTesting(NativeDatabase(File(path)));
     await db1.customSelect('PRAGMA user_version').getSingle();
     await db1.close();
 
-    // 第二次打开同一库（已是 v25），重建迁移不再触发，不应报「表已存在」类错误
+    // 第二次打开同一库（已是 v26），重建迁移不再触发，不应报「表已存在」类错误
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final chapter = await ChapterRepository(db2).getChapter('c1');
     expect(chapter!.status, 'draft');
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 25);
+    expect(version.read<int>('user_version'), 26);
   });
 }

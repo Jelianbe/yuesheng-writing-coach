@@ -232,9 +232,9 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 25
+    // 1. user_version 升到 26
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 25);
+    expect(version.read<int>('user_version'), 26);
 
     // 2. manuscripts 存量保留 + tags 列补齐
     final m = await db

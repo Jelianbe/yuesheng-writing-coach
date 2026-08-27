@@ -87,9 +87,9 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 25（v23 卷分组 + v24 回收站 CHECK + v25 标签列一并迁移）
+    // 1. user_version 升到 26（v23 卷分组 + v24 回收站 CHECK + v25 标签列 + v26 schema bump 一并迁移）
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 25);
+    expect(version.read<int>('user_version'), 26);
 
     // 2. chapters 新增 volume_id，存量章节未分卷
     final chapter = await ChapterRepository(db).getChapter('c1');
