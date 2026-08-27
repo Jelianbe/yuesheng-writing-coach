@@ -2822,6 +2822,33 @@ extension ChatServiceSend on ChatService {
           ' > ${(TokenEstimate.maxBudget * TokenEstimate.warningRatio).round()}',
         );
       }
+      // X-040 PHI 迁移 P1：素材缺失提示注入
+      // guard 裁掉 references/attachedFiles/fact 任一素材阶段时，
+      // 在末尾追加 PHI 提醒，告知 LLM 不要假定素材内容直接诊断；
+      // 完整 L1 核心约束 PHI 迁移作为后续 P2（影响面大需独立评估）。
+      if (guardReport.dropped) {
+        final materialStages = guardReport.droppedStages
+            .where(
+              (s) =>
+                  s == BudgetStageNames.references ||
+                  s == BudgetStageNames.attachedFiles ||
+                  s == BudgetStageNames.fact,
+            )
+            .toList();
+        if (materialStages.isNotEmpty) {
+          messages.add(
+            ChatMessage(
+              role: 'system',
+              content: '# 素材缺失提示（X-040 PHI）\n\n'
+                  '由于本轮 token 预算超限，已裁掉以下用户素材：${materialStages.join('、')}。\n'
+                  '回复时：\n'
+                  '1. 不得假定素材内容直接给出诊断结论；\n'
+                  '2. 若回复需这些内容支撑，明确告知用户需重新提供或简化提供；\n'
+                  '3. 可基于现有上下文（活跃症候 + 历史对话）做方向性引导。',
+            ),
+          );
+        }
+      }
       debugPrint(
         '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${messages.length}（含 system + history）',
       );
