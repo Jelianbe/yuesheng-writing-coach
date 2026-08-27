@@ -270,7 +270,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         const Spacer(),
         const Text(
           '训练建议',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: AppTextStyles.noteCaption,
         ),
       ],
     );

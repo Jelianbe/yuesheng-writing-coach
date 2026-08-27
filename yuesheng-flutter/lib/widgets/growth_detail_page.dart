@@ -284,14 +284,10 @@ class _StyleCorrectionSheetState extends State<_StyleCorrectionSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 '风格由 AI 从你的文本自动识别。如判断有误，可在此纠正坐标；'
                 '下次诊断仍会按你的新文本重新识别。',
-                style: TextStyle(
-                  fontSize: 12,
-                  height: 1.5,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.noteCaption.copyWith(height: 1.5),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -731,10 +727,7 @@ class _TimelineItem extends StatelessWidget {
                   children: [
                     Text(
                       dateStr,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: AppTextStyles.noteCaption,
                     ),
                     const SizedBox(width: 8),
                     Text(

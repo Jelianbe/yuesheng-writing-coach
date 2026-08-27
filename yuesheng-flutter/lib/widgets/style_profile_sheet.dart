@@ -187,7 +187,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
         const SizedBox(height: 12),
         const Text(
           '你的文风五维',
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: AppTextStyles.noteCaption,
         ),
         const SizedBox(height: 6),
         _dimensionRow('感官偏好', _sensoryLabel(p.sensory)),

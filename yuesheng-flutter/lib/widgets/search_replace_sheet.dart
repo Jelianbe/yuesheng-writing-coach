@@ -390,10 +390,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
               child: Text(
                 countText,
                 textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                style: AppTextStyles.noteCaption,
               ),
             ),
           ],
@@ -669,11 +666,7 @@ class _BookResultTile extends StatelessWidget {
               _buildSnippetSpan(),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
+              style: AppTextStyles.noteCaption.copyWith(height: 1.5),
             ),
           ],
         ),

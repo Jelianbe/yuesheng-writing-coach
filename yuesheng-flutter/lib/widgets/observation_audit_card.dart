@@ -250,10 +250,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                           preview,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
+                          style: AppTextStyles.noteCaption,
                         ),
                       ],
                     ),

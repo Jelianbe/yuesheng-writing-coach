@@ -142,6 +142,14 @@ abstract final class AppTextStyles {
     color: AppColors.textTertiary,
   );
 
+  /// 次级说明文字 / noteCaption（fontSize:12 / textSecondary，比 caption 颜色深一档）
+  /// 用于需要 secondary 级可读性的 12px 说明文字（比 caption 的 tertiary 更重要）。
+  /// 变体用 .copyWith(fontWeight/height) 扩展。频次 23 处（20 纯形 + 3 变体），2026-08-27 新增。
+  static const TextStyle noteCaption = TextStyle(
+    fontSize: 12,
+    color: AppColors.textSecondary,
+  );
+
   /// 次级辅助文字 / subCaption（fontSize:13 / textTertiary，比 caption 大一档）
   /// 用于操作说明、辅助提示等略大于 caption 的弱化文字。频次 15 处，2026-08-27 新增。
   static const TextStyle subCaption = TextStyle(

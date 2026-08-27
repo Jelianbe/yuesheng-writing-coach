@@ -625,10 +625,7 @@ class _SyndromeBlock extends StatelessWidget {
               if (syndrome.evidenceCount == 0)
                 const Text(
                   _CardText.noEvidence,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppTextStyles.noteCaption,
                 )
               else
                 // 批次80 M1：原文案承诺「跳转原文查看」但实际打开统计详情弹层，
@@ -863,7 +860,7 @@ class _SyndromeConfirmationBarState
         Text(
           hint,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: AppTextStyles.noteCaption,
         ),
       ],
     );

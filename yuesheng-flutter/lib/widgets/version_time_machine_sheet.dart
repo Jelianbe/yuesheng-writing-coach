@@ -294,7 +294,7 @@ class _VersionTimeMachineSheetState
             const SizedBox(height: 4),
             const Text(
               '每 200 字自动保存一个版本，最多保留 50 个',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: AppTextStyles.noteCaption,
             ),
           ],
           const SizedBox(height: 12),
@@ -321,7 +321,7 @@ class _VersionTimeMachineSheetState
       children: [
         Text(
           '${_formatTime(v.savedAt)} · ${v.wordCount}字',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: AppTextStyles.noteCaption,
         ),
         const SizedBox(height: 6),
         const Text(

@@ -155,7 +155,7 @@ class _GenUiDiff extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             note,
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: AppTextStyles.noteCaption,
           ),
         ],
       ],
@@ -282,10 +282,7 @@ class _StatBar extends StatelessWidget {
             width: 72,
             child: Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.noteCaption,
             ),
           ),
           const SizedBox(width: 8),
@@ -600,10 +597,7 @@ class _TimelineEntry extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       desc!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: AppTextStyles.noteCaption,
                     ),
                   ],
                 ],
@@ -642,7 +636,7 @@ class _GenUiPlaceholder extends StatelessWidget {
           Expanded(
             child: Text(
               '「$type」组件${title != null ? '（$title）' : ''}将在后续版本支持',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: AppTextStyles.noteCaption,
             ),
           ),
         ],
