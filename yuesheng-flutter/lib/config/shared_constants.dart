@@ -109,12 +109,32 @@ class EvaluationThresholds {
 /// Token 估算与预算
 class TokenEstimate {
   const TokenEstimate._();
-  // B26：预算上限随中文口径再标定。原 50000 按 0.4 英文口径标定；改为 1.0 后
-  // systemPrompt 本体实测 56k–68k tokens（2026-08-18 token_measure_temp 实测，
-  // diagnosis 68010 / p1 67923 / training 63795 / beginner 56618），50000 下
-  // 常态即超限、闸门永久触发。128000 锚定主流 128k 上下文模型，保持
-  // 「常态不超（~70–90k）、最坏超限（预算表合计 145250）」的闸门语义。
-  static const int maxBudget = 128000;
+
+  /// T-07：LLM 上下文总限额（context_limit）。
+  ///
+  /// 锚定主流 128k 上下文模型；将来切换模型时改本常量即可，下游 [maxBudget]
+  /// 公式自动跟随。
+  static const int contextLimit = 128000;
+
+  /// T-07：为 Assistant 回复预留的 token 数。
+  ///
+  /// 公式：上下文预算 = [contextLimit] − [reservedForReply]。
+  /// 取 [LlmConfig.chatMaxTokens] 上界 4096（chat completion 与 stream 共用）。
+  /// stream 输出长诊断实际约 1500-2000 tokens，用上界保留充足余量，防输出
+  /// 被截断导致 JSON 字段缺失。
+  static const int reservedForReply = LlmConfig.chatMaxTokens;
+
+  /// B26 + T-07：预算上限公式 = [contextLimit] − [reservedForReply]。
+  ///
+  /// 旧值硬编码 128000（B26 修订）→ 公式化（T-07 落地），为 Assistant 回复
+  /// 显式预留 token，避免「上下文塞满 → 输出被截断 → JSON 字段缺失」故障。
+  ///
+  /// systemPrompt 本体实测 56k–68k tokens（2026-08-18 token_measure_temp 实测，
+  /// diagnosis 68010 / p1 67923 / training 63795 / beginner 56618），
+  /// [maxBudget] 下常态不超（~70–90k）、最坏超限（预算表合计 145250）→
+  /// 闸门语义保留。
+  static const int maxBudget = contextLimit - reservedForReply;
+
   // B26：中文口径。1 个中文字符 ≈ 1 token（原 0.4 为英文口径，导致中文严重低估、
   // 预算闸门几乎不触发）。估算公式为 length × charToTokenRatio。
   static const double charToTokenRatio = 1.0;

@@ -43,7 +43,7 @@ void main() {
       m(105000), // 保底
       m(1000), // 画像
     ];
-    // 合计 106000：超 warning(102400 = 128000×0.8) 但未超上限
+    // 合计 106000：超 warning(99123 = 123904×0.8) 但未超上限(123904)
     final report = TokenBudgetGuard.apply(
       messages,
       stageIndexes: {
@@ -60,14 +60,14 @@ void main() {
 
   test('超上限：按 degradePriority 顺序整段裁剪，保底与后序阶段保留', () {
     final messages = [
-      m(120000), // idx0 systemPrompt（保底，不标记）
+      m(115000), // idx0 systemPrompt（保底，不标记）
       m(3000), // idx1 画像
       m(10000), // idx2 引用
       m(2000), // idx3 L3 结构
       m(4000), // idx4 历史1
       m(4000), // idx5 历史2
     ];
-    // 合计 143000 > 128000
+    // 合计 138000 > maxBudget(123904)；裁 L3+画像+引用 = 15000 后剩 123000 ≤ 123904
     final report = TokenBudgetGuard.apply(
       messages,
       stageIndexes: {
