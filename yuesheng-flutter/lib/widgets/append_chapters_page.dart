@@ -328,7 +328,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
         if (_error != null) ...[
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
               color: AppColors.dangerBg,
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -415,8 +415,8 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
                 backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.disabled,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 12,
+                  horizontal: AppSpacing.xxl,
+                  vertical: AppSpacing.md,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -459,7 +459,10 @@ class _SelectAction extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xsm,
+        ),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -497,7 +500,7 @@ class _ChapterRow extends StatelessWidget {
       child: Opacity(
         opacity: isDisabled ? 0.5 : 1,
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.surfaceWhite,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -559,8 +562,8 @@ class _ChapterRow extends StatelessWidget {
               if (isDisabled)
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
