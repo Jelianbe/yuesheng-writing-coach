@@ -76,7 +76,7 @@ void main() {
   });
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
-    test('#7 覆盖 16 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3）', () {
+    test('#7 覆盖 19 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3 + 第五批 3）', () {
       // 首批 5 个
       expect(kTrainingFewShotLibrary.keys, contains('P003'));
       expect(kTrainingFewShotLibrary.keys, contains('P004'));
@@ -97,7 +97,21 @@ void main() {
       expect(kTrainingFewShotLibrary.keys, contains('P015'));
       expect(kTrainingFewShotLibrary.keys, contains('P016'));
       expect(kTrainingFewShotLibrary.keys, contains('P017'));
-      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(16));
+      // 第五批 3 个（2026-08-27 扩容）
+      expect(kTrainingFewShotLibrary.keys, contains('P018'));
+      expect(kTrainingFewShotLibrary.keys, contains('P020'));
+      expect(kTrainingFewShotLibrary.keys, contains('P021'));
+      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(19));
+    });
+
+    test('#7d 第五批 P018/P020/P021 few-shot 命中检索（独有原文片段）', () {
+      // 用各症候独有原文片段断言命中
+      expect(getTrainingFewShot(['P018']), contains('握刀'));
+      expect(getTrainingFewShot(['P018']), contains('刀身还是凉的'));
+      expect(getTrainingFewShot(['P020']), contains('镜头一转'));
+      expect(getTrainingFewShot(['P020']), contains('铁锤声'));
+      expect(getTrainingFewShot(['P021']), contains('三个月后'));
+      expect(getTrainingFewShot(['P021']), contains('茶棚'));
     });
 
     test('#7a 第二批 P005-P010 few-shot 命中检索（独有原文片段）', () {
