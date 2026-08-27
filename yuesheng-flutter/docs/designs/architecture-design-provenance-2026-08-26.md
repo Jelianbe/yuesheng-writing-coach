@@ -516,7 +516,7 @@ coverage: flutter-end-only  # 截止 2026-08-26，Flutter 端为唯一真源
 | FT-03 | 解释不足 | 诊断报告过于简略，学员看不懂"结构松散"具体指什么 | 解释压缩控制 + 输出格式 | ParsedDiagnosis.feedbackSummary 有总结字段；**缺：最低详细度门槛** | ⚠️ 部分守护 |
 | FT-04 | 维度混淆 | 把文风偏差误诊为结构问题（五维交叉污染） | 领域诊断 + 知识体系映射 | 五维正交设计 + L2 症候索引限定范围 | ✅ 已守护 |
 | FT-05 | 缺口误诊 | 把词汇量不足误诊为逻辑思维能力弱 | 知识缺口分类法 | L2/L3 症候表有类型分类（structural/expressive/motivational/commercial） | ✅ 已守护 |
-| FT-06 | 假掌握 | 学员写出一个好比喻就认为掌握了整体修辞能力 | 掌握信号多证据 + 复习/推进门控 | `reply_receipt_guard.dart` + masteryThreshold 连续 X 次；**缺：多证据要求** | ⚠️ 部分守护 |
+| FT-06 | 假掌握 | 学员写出一个好比喻就认为掌握了整体修辞能力 | 掌握信号多证据 + 复习/推进门控 | ✅ 已落地（2026-08-27，多证据基础设施） | 新建 `mastery_evidence.dart` 独立模块，定义三维度证据：① `ExplanationEvidence`（解释证据，阈值 ≥2 条有效解释）；② `ConfidenceEvidence`（信心证据，阈值 ≥3 分）；③ `NearTransferEvidence`（近迁移证据，阈值 ≥1 个不同场景）。`evaluateMasteryEvidence` 纯函数评估三维度是否充分，返回 `MasteryEvidenceVerdict`（passed + missingDimensions）。防御性 null 降级（null 维度视为缺失）。**保守原则**：不修改 `transitionTeachingState`（向后兼容），多证据作为可选叠加门控，未来在 `consolidating → mastered` 迁移中集成。7 个单测覆盖空证据/部分证据/完整证据/三维度边界/单独缺失组合 |
 | FT-07 | 练习脱靶 | 诊断出"过渡生硬"却给学员布置无关的描写练习 | 练习生成与症候 ID 绑定 | `training_knowledge_base.dart` 按症候 ID × 等级匹配 | ✅ 已守护 |
 | FT-08 | 评分空洞 | 只说"这段不好"而不指出哪句好、哪句坏、为什么 | 答案评分结构化 + 错误分析 | GenUI quiz 有 explain 字段；**诊断卡片缺：逐句标注** | ⚠️ 部分守护 |
 | FT-09 | 过早推进 | 学员刚改对一个病句就推进到篇章结构 | 准备度门槛 + 掌握信号 | `teaching_state_machine` AWAITING_REFLECTION 门控 | ✅ 已守护 |
