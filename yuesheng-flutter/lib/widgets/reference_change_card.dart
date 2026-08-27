@@ -74,7 +74,7 @@ class ReferenceChangeCard extends StatelessWidget {
     final (icon, title, subtitle) = _content;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
