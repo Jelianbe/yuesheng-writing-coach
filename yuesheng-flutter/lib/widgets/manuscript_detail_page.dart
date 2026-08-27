@@ -844,19 +844,13 @@ class _DetailVolumeHeader extends StatelessWidget {
               if (totalWords > 0) ...[
                 Text(
                   _formatWords(totalWords),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                  ),
+                  style: AppTextStyles.microCaption,
                 ),
                 const SizedBox(width: 8),
               ],
               Text(
                 '$count 章',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textTertiary,
-                ),
+                style: AppTextStyles.microCaption,
               ),
               if (onRename != null) ...[
                 const SizedBox(width: 4),

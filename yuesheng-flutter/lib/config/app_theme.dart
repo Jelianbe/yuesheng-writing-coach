@@ -136,6 +136,13 @@ abstract final class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
+  /// 微型元信息 / microCaption（fontSize:11 / textTertiary，比 caption 小一档）
+  /// 用于徽章、计数、时间戳等最小号辅助文字。100% 纯形无变体。频次 23 处，2026-08-27 新增。
+  static const TextStyle microCaption = TextStyle(
+    fontSize: 11,
+    color: AppColors.textTertiary,
+  );
+
   /// 弱化辅助文字 / caption（fontSize:12 / textTertiary）
   static const TextStyle caption = TextStyle(
     fontSize: 12,

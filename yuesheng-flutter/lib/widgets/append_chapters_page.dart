@@ -571,10 +571,7 @@ class _ChapterRow extends StatelessWidget {
                   ),
                   child: const Text(
                     '已存在',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textTertiary,
-                    ),
+                    style: AppTextStyles.microCaption,
                   ),
                 ),
             ],

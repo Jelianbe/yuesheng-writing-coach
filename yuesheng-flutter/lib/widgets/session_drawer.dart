@@ -237,10 +237,7 @@ class SessionDrawer extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         formatRelativeTime(item.session.updatedAt),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textTertiary,
-                        ),
+                        style: AppTextStyles.microCaption,
                       ),
                     ],
                   ),

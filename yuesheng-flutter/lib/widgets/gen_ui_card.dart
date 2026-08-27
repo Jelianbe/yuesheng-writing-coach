@@ -579,10 +579,7 @@ class _TimelineEntry extends StatelessWidget {
                   if (date.isNotEmpty)
                     Text(
                       date,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textTertiary,
-                      ),
+                      style: AppTextStyles.microCaption,
                     ),
                   const SizedBox(height: 2),
                   Text(

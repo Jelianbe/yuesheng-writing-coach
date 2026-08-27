@@ -339,10 +339,7 @@ class _EntityCard extends StatelessWidget {
               '别名：${aliases.join('、')}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textTertiary,
-              ),
+              style: AppTextStyles.microCaption,
             ),
           ],
           if (visibleImps.isEmpty)

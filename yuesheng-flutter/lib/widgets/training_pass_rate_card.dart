@@ -238,10 +238,7 @@ class _StatsRow extends StatelessWidget {
                   Text(
                     '通过 ${stat.passed} · 部分通过 ${stat.partial} · '
                     '未过 ${stat.failed}',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textTertiary,
-                    ),
+                    style: AppTextStyles.microCaption,
                   ),
                 ],
               ),

@@ -203,7 +203,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
                 '识别置信度 ${(p.confidence! * 100).round()}%',
               if (p.updatedAt != null) '更新于 ${_formatTime(p.updatedAt!)}',
             ].join(' · '),
-            style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+            style: AppTextStyles.microCaption,
           ),
         ],
       ],

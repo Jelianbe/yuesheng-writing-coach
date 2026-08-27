@@ -273,7 +273,7 @@ class _SummaryItem extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+            style: AppTextStyles.microCaption,
           ),
         ],
       ),
@@ -308,7 +308,7 @@ class _LegendItem extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+          style: AppTextStyles.microCaption,
         ),
       ],
     );

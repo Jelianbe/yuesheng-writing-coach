@@ -136,10 +136,7 @@ class ReferenceChangeCard extends StatelessWidget {
                                     ),
                                     child: Text(
                                       _typeLabel,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textTertiary,
-                                      ),
+                                      style: AppTextStyles.microCaption,
                                     ),
                                   ),
                                 ],
