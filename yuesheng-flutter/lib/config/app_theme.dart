@@ -218,12 +218,22 @@ abstract final class AppButtonStyles {
     ),
   );
 
-  /// 次按钮（TextButton 灰白底）
+  /// 次按钮（TextButton 灰白底 + 矩形 md 圆角 + lg/md padding）
+  ///
+  /// 用于 AlertDialog 取消按钮等高频重复场景。Batch3 凭空定义为
+  /// `padding(vertical md only)`，但全库实际高频模式是
+  /// `padding(lg, md)`（session_drawer / message_list /
+  /// writing_coach_panel_teaching 3 处 AlertDialog 取消按钮完全一致，
+  /// bookshelf_page 第 820 行原 padding(lg, md) 被 Batch3 替换时丢失
+  /// 引入回归）。本修正恢复 padding 至 (lg, md)，2026-08-27 落地。
   static ButtonStyle get secondary => TextButton.styleFrom(
     backgroundColor: AppColors.surface,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(AppRadius.md),
     ),
-    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.lg,
+      vertical: AppSpacing.md,
+    ),
   );
 }

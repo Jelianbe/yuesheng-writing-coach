@@ -65,17 +65,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              padding: const EdgeInsets.symmetric(
-                // X-039-Batch1：16→lg / 12→md
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-            ),
+            style: AppButtonStyles.secondary,
             child: const Text(
               '取消',
               style: TextStyle(
