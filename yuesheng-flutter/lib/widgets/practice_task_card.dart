@@ -96,7 +96,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           if (widget.task.syndromeName != null &&
               widget.task.syndromeName!.isNotEmpty) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.xs),
               decoration: BoxDecoration(
                 color: AppColors.l1,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -146,7 +146,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
             const SizedBox(height: 4),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(AppSpacing.smx),
               decoration: BoxDecoration(
                 color: AppColors.l1,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -199,7 +199,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 borderSide: const BorderSide(color: AppColors.primary),
               ),
-              contentPadding: const EdgeInsets.all(12),
+              contentPadding: const EdgeInsets.all(AppSpacing.md),
             ),
             style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
           ),
@@ -213,7 +213,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
                 style: TextButton.styleFrom(
                   backgroundColor: AppColors.surface,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                    horizontal: AppSpacing.lg,
                     vertical: 9,
                   ),
                   shape: RoundedRectangleBorder(
@@ -236,7 +236,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
                   backgroundColor: AppColors.primary,
                   disabledBackgroundColor: AppColors.disabled,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    horizontal: AppSpacing.section,
                     vertical: 9,
                   ),
                   shape: RoundedRectangleBorder(

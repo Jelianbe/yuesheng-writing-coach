@@ -162,7 +162,7 @@ class _TimelineItem extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 1,
-                      margin: const EdgeInsets.only(top: 2),
+                      margin: const EdgeInsets.only(top: AppSpacing.xxs),
                       color: AppColors.border,
                     ),
                   ),
@@ -259,7 +259,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
           Icon(icon, size: 40, color: AppColors.textTertiary),

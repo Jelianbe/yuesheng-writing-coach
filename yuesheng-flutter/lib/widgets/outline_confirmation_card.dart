@@ -145,9 +145,9 @@ class _OutlineConfirmationCardState
     final pending = p.impressions.where((i) => !_processed.contains(i.id));
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.background,
@@ -161,7 +161,7 @@ class _OutlineConfirmationCardState
                 Container(width: 4, color: AppColors.primary),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -199,7 +199,7 @@ class _OutlineConfirmationCardState
         ),
         const SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
           decoration: BoxDecoration(
             color: AppColors.primarySoft,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -211,7 +211,7 @@ class _OutlineConfirmationCardState
         ),
         const SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
           decoration: BoxDecoration(
             color: p.isNewEntity
                 ? AppColors.primarySoft
@@ -250,13 +250,13 @@ class _OutlineConfirmationCardState
     final isStale = _isStale(im.id);
     final baseColor = isStale ? AppColors.disabledText : AppColors.textPrimary;
     return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: isConflict
             ? AppColors.warningBg
             : (isStale ? AppColors.background : AppColors.surface),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
