@@ -79,15 +79,15 @@ class PhaseUpgradeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.surfaceWhite,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
               // 庆祝图标（对齐 RN resultBg.partial 圆底）
@@ -117,8 +117,8 @@ class PhaseUpgradeCard extends StatelessWidget {
               // 阶段名（对齐 RN phaseContainer）
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
+                  horizontal: AppSpacing.section,
+                  vertical: AppSpacing.sm,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primarySoft,

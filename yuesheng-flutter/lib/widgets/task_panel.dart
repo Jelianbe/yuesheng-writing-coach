@@ -60,7 +60,7 @@ class TaskPanel extends StatelessWidget {
       return Container(
         color: AppColors.background,
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 28),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -97,7 +97,7 @@ class TaskPanel extends StatelessWidget {
         children: [
           // Header：练习任务 + N 个问题徽标
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             child: Row(
               children: [
                 const Expanded(
@@ -112,7 +112,7 @@ class TaskPanel extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
+                    horizontal: AppSpacing.smx,
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
@@ -151,7 +151,7 @@ class TaskPanel extends StatelessWidget {
         children: [
           // severity 色左边框（3dp）+ 圆点（8dp）
           Container(
-            padding: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
             decoration: BoxDecoration(
               border: Border(left: BorderSide(color: severity.text, width: 3)),
               borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -195,15 +195,15 @@ class TaskPanel extends StatelessWidget {
           if (onMarkComplete != null)
             InkWell(
               onTap: () => onMarkComplete!(problem.syndromeId),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: const Text(
                   '完成',
@@ -220,15 +220,15 @@ class TaskPanel extends StatelessWidget {
             // 批次75：移除按钮——学员主观不再追踪该条目（物理删行）
             InkWell(
               onTap: () => onRemove!(problem.syndromeId),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.danger),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: const Text(
                   '移除',
