@@ -2550,18 +2550,33 @@ extension ChatServiceSendPersist on ChatService {
           // X-041c：training_results 持久化（可选——未装配则跳过）
           // 真源：PracticeStore.trainingResult 仅存内存态；此处补全落库
           // 数据源 GrowthStore.trainingStats（症候-训练通过率看板）
-          // 字段说明：
-          //   - suggestionId 暂留 null（自主训练，X-041d 补追溯）
-          //   - taskType 暂用 'rewrite' 默认（chat_service 不区分 task 类型，X-041d 补全）
+          // X-041d 增强：
+          //   - suggestionId 通过 _teacherSuggestionRepo.getLatestActiveBySyndrome
+          //     追溯触发当前训练轮的建议（取最近一条 active/resolved）
+          //   - taskType 取该建议的 taskType（rewrite/analyze/compare/generate），
+          //     无建议时 fallback 'rewrite'（自主训练场景）
           //   - feedback 存 displayContent（AI 反馈原文，供复盘回看）
           //   - score 暂留 null（trainingResult 是枚举，无具体分数）
           if (_trainingResultRepo != null && trainingSyndromeId != null) {
             try {
+              String? tracedSuggestionId;
+              String tracedTaskType = 'rewrite';
+              try {
+                final latestSuggestion = await _teacherSuggestionRepo
+                    .getLatestActiveBySyndrome(sessionId, trainingSyndromeId);
+                if (latestSuggestion != null) {
+                  tracedSuggestionId = latestSuggestion.id;
+                  tracedTaskType = latestSuggestion.taskType;
+                }
+              } catch (e) {
+                debugPrint('[SafeRun] suggestion 追溯失败 fallback: $e');
+              }
               await _trainingResultRepo.insertTrainingResult(
                 InsertTrainingResultParams(
                   sessionId: sessionId,
                   syndromeId: trainingSyndromeId,
-                  taskType: 'rewrite',
+                  suggestionId: tracedSuggestionId,
+                  taskType: tracedTaskType,
                   userContent: userContent,
                   result: trainingResult.value,
                   feedback: {'displayContent': displayContent},
