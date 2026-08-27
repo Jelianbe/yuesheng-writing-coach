@@ -32,11 +32,11 @@ class GenUICard extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -177,10 +177,10 @@ class _DiffPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: emphasis ? AppColors.primarySoft : AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
           color: emphasis ? AppColors.primary : AppColors.border,
         ),
@@ -275,7 +275,7 @@ class _StatBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ratio = max > 0 ? (value / max).clamp(0.0, 1.0) : 0.0;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         children: [
           SizedBox(
@@ -291,7 +291,7 @@ class _StatBar extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
               child: LinearProgressIndicator(
                 value: ratio,
                 minHeight: 8,
@@ -462,7 +462,7 @@ class _ProgressConnector extends StatelessWidget {
     return Container(
       width: 20,
       height: 2,
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: AppSpacing.section),
       color: done ? AppColors.success : AppColors.borderSoft,
     );
   }
@@ -548,7 +548,7 @@ class _TimelineEntry extends StatelessWidget {
                 Container(
                   width: 10,
                   height: 10,
-                  margin: const EdgeInsets.only(top: 4),
+                  margin: const EdgeInsets.only(top: AppSpacing.xs),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
@@ -559,7 +559,7 @@ class _TimelineEntry extends StatelessWidget {
                     child: Container(
                       width: 2,
                       color: AppColors.borderSoft,
-                      margin: const EdgeInsets.only(top: 2),
+                      margin: const EdgeInsets.only(top: AppSpacing.xxs),
                     ),
                   ),
               ],
@@ -569,11 +569,11 @@ class _TimelineEntry extends StatelessWidget {
           // 右侧内容卡片
           Expanded(
             child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(10),
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.smx),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(color: AppColors.borderSoft),
               ),
               child: Column(
@@ -629,10 +629,10 @@ class _GenUiPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = data['title'] as String?;
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.borderSoft),
       ),
       child: Row(

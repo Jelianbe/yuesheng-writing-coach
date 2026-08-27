@@ -124,7 +124,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xs),
             child: Text(
               '选段：${widget.chapterTitle}',
               maxLines: 1,
@@ -137,7 +137,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
             ),
           ),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               '点击段落选择重点分析范围：点区间外扩展，点区间内重选',
               style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
@@ -147,7 +147,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           Flexible(
             child: _paras.isEmpty
                 ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
                     child: Text(
                       '本章暂无内容',
                       textAlign: TextAlign.center,
@@ -155,7 +155,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                     ),
                   )
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -168,7 +168,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           ),
           const Divider(height: 1, color: AppColors.borderSoft),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.smx, AppSpacing.lg, AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -222,13 +222,13 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
     final text = _paras[index];
     return InkWell(
       onTap: () => _handleTap(index),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        margin: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: selected ? AppColors.primarySoft : null,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

@@ -139,11 +139,11 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
     final isCorrect = _results.length > itemIdx ? _results[itemIdx] : false;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.smx),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: AppColors.borderSoft),
       ),
       child: Column(
@@ -178,9 +178,9 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
                   ? null
                   : () => setState(() => _selected[itemIdx] = optIdx),
               child: Container(
-                margin: const EdgeInsets.only(bottom: 4),
+                margin: const EdgeInsets.only(bottom: AppSpacing.xs),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
+                  horizontal: AppSpacing.smx,
                   vertical: 7,
                 ),
                 decoration: BoxDecoration(
@@ -265,7 +265,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
           foregroundColor: AppColors.onPrimary,
           disabledBackgroundColor: AppColors.disabled,
           disabledForegroundColor: AppColors.disabledText,
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
         ),
         child: Text(_allAnswered ? '提交' : '请完成所有题目'),
       ),
