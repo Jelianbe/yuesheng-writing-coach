@@ -76,7 +76,7 @@ void main() {
   });
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
-    test('#7 覆盖 10 个高频症候（首批 5 + 第二批 5）', () {
+    test('#7 覆盖 13 个高频症候（首批 5 + 第二批 5 + 第三批 3）', () {
       // 首批 5 个
       expect(kTrainingFewShotLibrary.keys, contains('P003'));
       expect(kTrainingFewShotLibrary.keys, contains('P004'));
@@ -89,7 +89,11 @@ void main() {
       expect(kTrainingFewShotLibrary.keys, contains('P007'));
       expect(kTrainingFewShotLibrary.keys, contains('P009'));
       expect(kTrainingFewShotLibrary.keys, contains('P010'));
-      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(10));
+      // 第三批 3 个（2026-08-27 扩容）
+      expect(kTrainingFewShotLibrary.keys, contains('P012'));
+      expect(kTrainingFewShotLibrary.keys, contains('P013'));
+      expect(kTrainingFewShotLibrary.keys, contains('P014'));
+      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(13));
     });
 
     test('#7a 第二批 P005-P010 few-shot 命中检索（独有原文片段）', () {
@@ -99,6 +103,13 @@ void main() {
       expect(getTrainingFewShot(['P007']), contains('他站起来'));
       expect(getTrainingFewShot(['P009']), contains('去北方'));
       expect(getTrainingFewShot(['P010']), contains('剪短了三寸'));
+    });
+
+    test('#7b 第三批 P012-P014 few-shot 命中检索（独有原文片段）', () {
+      // 用各症候独有原文片段断言命中
+      expect(getTrainingFewShot(['P012']), contains('卷刃'));
+      expect(getTrainingFewShot(['P013']), contains('断手'));
+      expect(getTrainingFewShot(['P014']), contains('雨停了'));
     });
 
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {
