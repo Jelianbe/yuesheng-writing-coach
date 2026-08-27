@@ -550,7 +550,9 @@ class _ProblemStatsState extends State<_ProblemStats> {
                               color: _filter == f
                                   ? AppColors.primarySoft
                                   : AppColors.surface,
-                              borderRadius: BorderRadius.circular(AppRadius.pill),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.pill,
+                              ),
                               border: Border.all(
                                 color: _filter == f
                                     ? AppColors.primary
@@ -642,7 +644,10 @@ class _ProblemRow extends StatelessWidget {
         children: [
           // 状态标签（对齐 RN problemStatus）
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xxs,
+            ),
             decoration: BoxDecoration(
               color: isResolved ? AppColors.primarySoft : AppColors.l3,
               borderRadius: BorderRadius.circular(AppRadius.xs),

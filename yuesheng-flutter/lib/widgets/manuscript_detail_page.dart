@@ -462,10 +462,7 @@ class _EmptyChaptersState extends StatelessWidget {
               color: AppColors.textTertiary,
             ),
             const SizedBox(height: 16),
-            const Text(
-              '还没有章节',
-              style: AppTextStyles.titleLg,
-            ),
+            const Text('还没有章节', style: AppTextStyles.titleLg),
             const SizedBox(height: 8),
             const Text(
               '点击「新建章节」开始你的第一篇',
@@ -848,10 +845,7 @@ class _DetailVolumeHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Text(
-                '$count 章',
-                style: AppTextStyles.microCaption,
-              ),
+              Text('$count 章', style: AppTextStyles.microCaption),
               if (onRename != null) ...[
                 const SizedBox(width: 4),
                 // 批次92-2：卷头铅笔图标 → 直接重命名
@@ -893,10 +887,7 @@ class _DetailEmptyVolumeHint extends StatelessWidget {
         AppSpacing.sm,
         AppSpacing.sm,
       ),
-      child: Text(
-        '暂无章节',
-        style: AppTextStyles.caption,
-      ),
+      child: Text('暂无章节', style: AppTextStyles.caption),
     );
   }
 }
@@ -925,10 +916,7 @@ class _ChapterListHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Text(
-            '$chapterCount 章',
-            style: AppTextStyles.caption,
-          ),
+          Text('$chapterCount 章', style: AppTextStyles.caption),
           const Spacer(),
           InkWell(
             onTap: onImport,

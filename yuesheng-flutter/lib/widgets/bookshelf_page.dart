@@ -285,10 +285,7 @@ class _EmptyState extends StatelessWidget {
                     color: AppColors.textTertiary,
                   ),
                   const SizedBox(height: 20),
-                  const Text(
-                    '还没有作品',
-                    style: AppTextStyles.titleLg,
-                  ),
+                  const Text('还没有作品', style: AppTextStyles.titleLg),
                   const SizedBox(height: 8),
                   const Text(
                     '点击「新建」创建你的第一部作品',
@@ -370,10 +367,7 @@ class _NoSearchResult extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Center(
-          child: Text(
-            searching ? '换个书名试试吧' : '',
-            style: AppTextStyles.caption,
-          ),
+          child: Text(searching ? '换个书名试试吧' : '', style: AppTextStyles.caption),
         ),
       ],
     );
@@ -566,7 +560,9 @@ class _ManuscriptCard extends ConsumerWidget {
                                     manuscript.description,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: AppTextStyles.noteCaption.copyWith(height: 1.4),
+                                    style: AppTextStyles.noteCaption.copyWith(
+                                      height: 1.4,
+                                    ),
                                   ),
                                 ],
                                 const SizedBox(height: 6),
@@ -709,18 +705,13 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                   style: AppTextStyles.titleLg,
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  '标题',
-                  style: AppTextStyles.formLabel,
-                ),
+                const Text('标题', style: AppTextStyles.formLabel),
                 const SizedBox(height: 6),
                 TextField(
                   controller: widget.titleController,
                   autofocus: true,
                   enabled: !_isLoading,
-                  decoration: AppBoxStyles.standardInput(
-                    hintText: '输入作品标题',
-                  ),
+                  decoration: AppBoxStyles.standardInput(hintText: '输入作品标题'),
                 ),
                 const SizedBox(height: 14),
                 const Text(
@@ -736,9 +727,7 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                   controller: widget.descController,
                   maxLines: 3,
                   enabled: !_isLoading,
-                  decoration: AppBoxStyles.standardInput(
-                    hintText: '一句话介绍你的作品',
-                  ),
+                  decoration: AppBoxStyles.standardInput(hintText: '一句话介绍你的作品'),
                 ),
                 const SizedBox(height: 14),
                 const Text(

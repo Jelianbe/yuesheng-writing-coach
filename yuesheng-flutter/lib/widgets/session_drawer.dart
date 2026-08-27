@@ -67,7 +67,10 @@ class SessionDrawer extends StatelessWidget {
           children: [
             // ── 头部 ──
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: 14,
+              ),
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
               ),
@@ -189,7 +192,10 @@ class SessionDrawer extends StatelessWidget {
           ? () => _confirmDelete(context, item)
           : null,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             // 月字头像
@@ -283,10 +289,7 @@ class SessionDrawer extends StatelessWidget {
       barrierDismissible: true,
       barrierColor: AppColors.overlay,
       builder: (ctx) => AlertDialog(
-        title: const Text(
-          '删除会话',
-          style: AppTextStyles.titleLg,
-        ),
+        title: const Text('删除会话', style: AppTextStyles.titleLg),
         content: Text(
           '删除「$title」？该会话的全部对话记录将一并删除，此操作不可撤销。',
           textAlign: TextAlign.center,
@@ -311,7 +314,10 @@ class SessionDrawer extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
             ),
             child: const Text(
               '删除',
@@ -333,7 +339,10 @@ class SessionDrawer extends StatelessWidget {
   /// 阶段标签（月色竹青：竹青淡底 + 竹青字）
   Widget _phaseTag(String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),

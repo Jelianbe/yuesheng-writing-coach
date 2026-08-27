@@ -208,10 +208,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 color: AppColors.danger,
               ),
               const SizedBox(height: 8),
-              const Text(
-                '初始化失败，请重试',
-                style: AppTextStyles.body,
-              ),
+              const Text('初始化失败，请重试', style: AppTextStyles.body),
               const SizedBox(height: 4),
               if (kDebugMode)
                 Text(

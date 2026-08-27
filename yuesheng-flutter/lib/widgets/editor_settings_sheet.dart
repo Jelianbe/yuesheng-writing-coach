@@ -154,9 +154,7 @@ class EditorSettingsSheet extends ConsumerWidget {
       children: [
         Text(
           '辅助',
-          style: AppTextStyles.subBody.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         SwitchListTile(
           dense: true,
@@ -183,10 +181,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '智能标点',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text(
-            '输入「自动补全对应右符',
-            style: AppTextStyles.caption,
-          ),
+          subtitle: const Text('输入「自动补全对应右符', style: AppTextStyles.caption),
           value: state.smartPunctOn,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -205,9 +200,7 @@ class EditorSettingsSheet extends ConsumerWidget {
       children: [
         Text(
           '对话按钮',
-          style: AppTextStyles.subBody.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         SwitchListTile(
           dense: true,
@@ -285,10 +278,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '自动首行缩进',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text(
-            '回车换行时自动补两格缩进',
-            style: AppTextStyles.caption,
-          ),
+          subtitle: const Text('回车换行时自动补两格缩进', style: AppTextStyles.caption),
           value: state.indentParagraph,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -303,10 +293,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '段间空行',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text(
-            '段落之间留出空行',
-            style: AppTextStyles.caption,
-          ),
+          subtitle: const Text('段落之间留出空行', style: AppTextStyles.caption),
           value: state.blankLineBetween,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -335,9 +322,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           width: 40,
           child: Text(
             label,
-            style: AppTextStyles.subBody.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         Expanded(
@@ -637,10 +622,7 @@ class _PunctuationBarConfigSectionState
           ),
         if (hidden.isNotEmpty) ...[
           const Divider(height: 16),
-          const Text(
-            '已隐藏',
-            style: AppTextStyles.caption,
-          ),
+          const Text('已隐藏', style: AppTextStyles.caption),
           for (final it in hidden)
             _ConfigRow(
               item: it,

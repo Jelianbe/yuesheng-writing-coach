@@ -241,7 +241,12 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         children: [
           // 批次76：标题 + 引用数徽章（弹层可发现性——入口意义一目了然）
           Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.xs),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.xs,
+            ),
             child: Row(
               children: [
                 const Text(
@@ -254,7 +259,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xxs,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -276,7 +284,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.smx),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.smx,
+              ),
               child: Row(
                 children: [
                   const Icon(
@@ -329,7 +340,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                   if (otherCount > 0) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primarySoft,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -362,7 +376,12 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
             const Divider(height: 1, color: AppColors.borderSoft),
             Container(
               color: AppColors.surface,
-              padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -397,7 +416,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   // ── 多选操作条（对齐 RN actionBar）──
   Widget _buildActionBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xsm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xsm,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -434,7 +456,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
           InkWell(
             onTap: _handleDeleteSelected,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xsm),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xsm,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.dangerBg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -554,21 +579,24 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
 
   Widget _refTypeTag(String refType) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.borderSoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(
-        _typeLabel(refType),
-        style: AppTextStyles.microCaption,
-      ),
+      child: Text(_typeLabel(refType), style: AppTextStyles.microCaption),
     );
   }
 
   Widget _primaryBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),

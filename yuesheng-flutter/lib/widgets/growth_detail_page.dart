@@ -227,9 +227,7 @@ class _StyleCorrectionSheetState extends State<_StyleCorrectionSheet> {
       children: [
         Text(
           title,
-          style: AppTextStyles.subBody.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         Wrap(
@@ -290,10 +288,7 @@ class _StyleCorrectionSheetState extends State<_StyleCorrectionSheet> {
                 style: AppTextStyles.noteCaption.copyWith(height: 1.5),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'AI 描述',
-                style: AppTextStyles.caption,
-              ),
+              const Text('AI 描述', style: AppTextStyles.caption),
               const SizedBox(height: 4),
               Text(
                 widget.profile.summary,
@@ -474,10 +469,7 @@ class _GridItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: AppTextStyles.microCaption,
-        ),
+        Text(label, style: AppTextStyles.microCaption),
       ],
     );
   }
@@ -567,10 +559,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          label,
-          style: AppTextStyles.subBody,
-        ),
+        Text(label, style: AppTextStyles.subBody),
         const Spacer(),
         Text(
           value,
@@ -722,10 +711,7 @@ class _TimelineItem extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      dateStr,
-                      style: AppTextStyles.noteCaption,
-                    ),
+                    Text(dateStr, style: AppTextStyles.noteCaption),
                     const SizedBox(width: 8),
                     Text(
                       '置信度 ${(item.confidence * 100).round()}%',
@@ -793,10 +779,7 @@ class _ErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
             const SizedBox(height: 8),
-            const Text(
-              '加载失败',
-              style: AppTextStyles.body,
-            ),
+            const Text('加载失败', style: AppTextStyles.body),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onRetry,

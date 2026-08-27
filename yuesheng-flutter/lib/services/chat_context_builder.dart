@@ -213,8 +213,11 @@ String buildStructuredSyndromeContext(
     } else if (hasActiveFocus) {
       // 非 focus 症候（分级注入模式）：按剩余预算决定粒度
       // X-043 P1：剩余预算 = min(总预算 - 已用, 非焦点摘要池上限)
-      final remainingForNonFocus = (ContextBudget.syndromeSectionBudget - usedBudget)
-          .clamp(0, ContextBudget.nonFocusSummaryPoolBudget);
+      final remainingForNonFocus =
+          (ContextBudget.syndromeSectionBudget - usedBudget).clamp(
+            0,
+            ContextBudget.nonFocusSummaryPoolBudget,
+          );
       if (remainingForNonFocus >= 100) {
         // 完整摘要：ID + 名称 + severity + 确认状态 + 一句诊断理由
         final evidence = evidenceMap?[p.syndromeId];

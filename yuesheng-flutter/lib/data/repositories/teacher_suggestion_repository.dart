@@ -152,10 +152,7 @@ class TeacherSuggestionRepository {
       ..where((t) => t.targetSyndromeId.equals(syndromeId))
       ..where((t) => t.status.isIn(const ['active', 'resolved']))
       ..orderBy([
-        (t) => OrderingTerm(
-          expression: t.createdAt,
-          mode: OrderingMode.desc,
-        ),
+        (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
       ])
       ..limit(1);
     return stmt.getSingleOrNull();

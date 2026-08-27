@@ -190,10 +190,7 @@ class _MessageListState extends ConsumerState<MessageList> {
       barrierColor: AppColors.overlay,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text(
-            '确认删除',
-            style: AppTextStyles.titleLg,
-          ),
+          title: const Text('确认删除', style: AppTextStyles.titleLg),
           content: const Text(
             '确定要删除这条消息吗？此操作不可撤销。',
             textAlign: TextAlign.center,
@@ -353,7 +350,9 @@ class _MessageListState extends ConsumerState<MessageList> {
                 widget.emptyWidget ??
                     const Center(
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xxl,
+                        ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -520,7 +519,10 @@ class ThinkingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
@@ -533,10 +535,7 @@ class ThinkingIndicator extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            label ?? '正在思考…',
-            style: AppTextStyles.subBody,
-          ),
+          Text(label ?? '正在思考…', style: AppTextStyles.subBody),
         ],
       ),
     );

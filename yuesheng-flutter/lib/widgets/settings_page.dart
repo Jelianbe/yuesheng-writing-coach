@@ -349,7 +349,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           if (hasConfig)
             Container(
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.smx),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.smx,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.dangerBg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -389,7 +392,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
@@ -416,7 +421,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
@@ -474,7 +481,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           if (_connResult != null)
             Container(
               margin: const EdgeInsets.only(top: AppSpacing.sm),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.smx),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.smx,
+              ),
               decoration: BoxDecoration(
                 color: _connResult!.success
                     ? AppColors.primarySoft
@@ -537,7 +547,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       hintStyle: const TextStyle(color: AppColors.placeholder),
       filled: true,
       fillColor: AppColors.surface,
-      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.md,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: const BorderSide(color: AppColors.border),
@@ -611,12 +624,13 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xsm),
+      padding: const EdgeInsets.only(
+        top: AppSpacing.md,
+        bottom: AppSpacing.xsm,
+      ),
       child: Text(
         text,
-        style: AppTextStyles.subBody.copyWith(
-          fontWeight: FontWeight.w500,
-        ),
+        style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -667,9 +681,7 @@ class _AboutRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label, style: AppTextStyles.body),
-          ),
+          Expanded(child: Text(label, style: AppTextStyles.body)),
           Text(
             value,
             style: const TextStyle(fontSize: 14, color: AppColors.textTertiary),
@@ -706,7 +718,10 @@ class _ProgressSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.smx,
+                  vertical: AppSpacing.xs,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primarySoft,
                   borderRadius: BorderRadius.circular(AppRadius.sm),

@@ -265,7 +265,9 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
                   label: const Text('撤销上次采纳'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.textSecondary,
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.smx,
+                    ),
                   ),
                 ),
               ),

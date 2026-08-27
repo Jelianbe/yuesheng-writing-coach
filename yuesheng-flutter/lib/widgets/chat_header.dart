@@ -95,7 +95,12 @@ class ChatHeader extends StatelessWidget {
       backgroundColor: AppColors.background,
       builder: (sheetCtx) => SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xl),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.xl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,7 +296,10 @@ class ChatHeader extends StatelessWidget {
             ),
             const SizedBox(width: AppSpacing.sm),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xxs,
+              ),
               decoration: BoxDecoration(
                 color: _isManuscriptEntry ? AppColors.l2 : AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -355,7 +363,10 @@ class _AttitudeChip extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xsm),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xsm,
+        ),
         decoration: BoxDecoration(
           color: active ? AppColors.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.pill),

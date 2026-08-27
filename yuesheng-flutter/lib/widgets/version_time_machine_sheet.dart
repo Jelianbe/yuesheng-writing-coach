@@ -463,10 +463,7 @@ class _VersionTimeMachineSheetState
                 ),
                 SizedBox(
                   width: 48,
-                  child: Text(
-                    '${v.wordCount}字',
-                    style: AppTextStyles.subBody,
-                  ),
+                  child: Text('${v.wordCount}字', style: AppTextStyles.subBody),
                 ),
                 Expanded(
                   child: Text(

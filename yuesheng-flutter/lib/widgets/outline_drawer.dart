@@ -60,7 +60,12 @@ class OutlineDrawer extends ConsumerWidget {
           children: [
             // ── 头部：标题 + 关闭 ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.sm, AppSpacing.md),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.md,
+              ),
               child: Row(
                 children: [
                   const Icon(
@@ -229,7 +234,12 @@ class _OutlineList extends StatelessWidget {
       );
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
       children: children,
     );
   }
@@ -245,14 +255,15 @@ class _TypeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xsm),
+      padding: const EdgeInsets.only(
+        top: AppSpacing.md,
+        bottom: AppSpacing.xsm,
+      ),
       child: Row(
         children: [
           Text(
             label,
-            style: AppTextStyles.subBody.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 6),
           Text('$count', style: AppTextStyles.caption),
@@ -292,7 +303,12 @@ class _EntityCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.smx, AppSpacing.md, AppSpacing.smx),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.smx,
+        AppSpacing.md,
+        AppSpacing.smx,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -325,7 +341,9 @@ class _EntityCard extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xsm,
+                    ),
                     minimumSize: const Size(0, 24),
                   ),
                   child: const Text('确认', style: TextStyle(fontSize: 12)),
@@ -427,7 +445,9 @@ class _ImpressionRow extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.success,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xsm,
+                    ),
                     minimumSize: const Size(0, 24),
                   ),
                   child: const Text('确认', style: TextStyle(fontSize: 12)),
@@ -437,7 +457,9 @@ class _ImpressionRow extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.textTertiary,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xsm,
+                    ),
                     minimumSize: const Size(0, 24),
                   ),
                   child: const Text('拒绝', style: TextStyle(fontSize: 12)),
@@ -461,7 +483,10 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.xs),

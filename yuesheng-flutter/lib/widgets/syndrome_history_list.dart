@@ -55,10 +55,7 @@ class SyndromeHistoryList extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        '问题发现与解决的时间线',
-                        style: AppTextStyles.caption,
-                      ),
+                      const Text('问题发现与解决的时间线', style: AppTextStyles.caption),
                       const SizedBox(height: AppSpacing.md),
                       if (displayed.isEmpty)
                         const _EmptyState(

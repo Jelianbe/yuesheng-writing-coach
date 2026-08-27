@@ -221,7 +221,9 @@ class _SectionHeader extends StatelessWidget {
         width: double.infinity,
         child: Text(
           label,
-          style: AppTextStyles.noteCaption.copyWith(fontWeight: FontWeight.w600),
+          style: AppTextStyles.noteCaption.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -288,10 +290,7 @@ class _SaveStatusRow extends StatelessWidget {
       width: double.infinity,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          text,
-          style: AppTextStyles.noteCaption,
-        ),
+        child: Text(text, style: AppTextStyles.noteCaption),
       ),
     );
   }

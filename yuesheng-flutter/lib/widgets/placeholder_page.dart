@@ -37,15 +37,9 @@ class PlaceholderPage extends StatelessWidget {
               color: AppColors.textTertiary,
             ),
             const SizedBox(height: 16),
-            Text(
-              title,
-              style: AppTextStyles.titleLg,
-            ),
+            Text(title, style: AppTextStyles.titleLg),
             const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: AppTextStyles.body,
-            ),
+            Text(subtitle, style: AppTextStyles.body),
           ],
         ),
       ),

@@ -41,7 +41,9 @@ class ConceptRegistry {
 
   /// 注册一个已解释概念
   void register(String conceptId, int turn) {
-    _concepts.add(ExplainedConcept(conceptId: conceptId, explainedAtTurn: turn));
+    _concepts.add(
+      ExplainedConcept(conceptId: conceptId, explainedAtTurn: turn),
+    );
   }
 
   /// 清理过期概念（超过去重窗口的记录）
@@ -50,11 +52,14 @@ class ConceptRegistry {
   }
 
   /// 查询某概念是否在去重窗口内已解释过
-  bool isRecentlyExplained(String conceptId, int currentTurn, {int window = kDedupWindowTurns}) {
+  bool isRecentlyExplained(
+    String conceptId,
+    int currentTurn, {
+    int window = kDedupWindowTurns,
+  }) {
     return _concepts.any(
       (c) =>
-          c.conceptId == conceptId &&
-          currentTurn - c.explainedAtTurn < window,
+          c.conceptId == conceptId && currentTurn - c.explainedAtTurn < window,
     );
   }
 

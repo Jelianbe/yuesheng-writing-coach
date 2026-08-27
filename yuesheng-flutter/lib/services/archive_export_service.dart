@@ -125,10 +125,7 @@ Map<String, dynamic> _safeJsonDecodeMap(String? raw) {
 ///   "diagnoses": [...]
 /// }
 /// ```
-String buildArchiveJson(
-  ArchiveExportInput input, {
-  int? exportedAt,
-}) {
+String buildArchiveJson(ArchiveExportInput input, {int? exportedAt}) {
   final now = exportedAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
   final archive = {
     'meta': {

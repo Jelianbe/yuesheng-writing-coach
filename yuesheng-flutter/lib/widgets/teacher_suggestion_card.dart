@@ -234,7 +234,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 3,
+          ),
           decoration: BoxDecoration(
             color: AppColors.l1,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -252,7 +255,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         if (difficulty.isNotEmpty) ...[
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 3,
+            ),
             decoration: BoxDecoration(
               color: AppColors.l2,
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -268,10 +274,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           ),
         ],
         const Spacer(),
-        const Text(
-          '训练建议',
-          style: AppTextStyles.noteCaption,
-        ),
+        const Text('训练建议', style: AppTextStyles.noteCaption),
       ],
     );
   }

@@ -22,17 +22,23 @@ import 'package:writingcoach/data/database/utils.dart';
 /// 新增 Training Result 入参
 class InsertTrainingResultParams {
   final String sessionId;
+
   /// 关联建议（可空：无建议触发的自主训练）
   final String? suggestionId;
   final String syndromeId;
+
   /// 'rewrite' | 'analyze' | 'compare' | 'generate'
   final String taskType;
+
   /// 用户提交的练习内容
   final String userContent;
+
   /// 'passed' | 'partial' | 'failed'
   final String result;
+
   /// AI 评分反馈（nullable，Map → JSON string 落库）
   final Map<String, dynamic>? feedback;
+
   /// 0.0-1.0 评分（nullable）
   final double? score;
 
@@ -55,32 +61,32 @@ class TrainingResultRepository {
   /// 新增训练结果记录，返回 id
   ///
   /// 真源：PracticeStore.setTrainingResult 的持久化对应
-  Future<String> insertTrainingResult(
-    InsertTrainingResultParams params,
-  ) async {
+  Future<String> insertTrainingResult(InsertTrainingResultParams params) async {
     final id = generateUuid();
     final now = nowSec();
 
-    await _db.into(_db.trainingResults).insert(
-      TrainingResultsCompanion.insert(
-        id: id,
-        sessionId: params.sessionId,
-        suggestionId: params.suggestionId == null
-            ? const Value.absent()
-            : Value(params.suggestionId),
-        syndromeId: params.syndromeId,
-        taskType: params.taskType,
-        userContent: params.userContent,
-        result: params.result,
-        feedbackJson: params.feedback == null
-            ? const Value.absent()
-            : Value(jsonEncode(params.feedback)),
-        score: params.score == null
-            ? const Value.absent()
-            : Value(params.score),
-        createdAt: Value(now),
-      ),
-    );
+    await _db
+        .into(_db.trainingResults)
+        .insert(
+          TrainingResultsCompanion.insert(
+            id: id,
+            sessionId: params.sessionId,
+            suggestionId: params.suggestionId == null
+                ? const Value.absent()
+                : Value(params.suggestionId),
+            syndromeId: params.syndromeId,
+            taskType: params.taskType,
+            userContent: params.userContent,
+            result: params.result,
+            feedbackJson: params.feedback == null
+                ? const Value.absent()
+                : Value(jsonEncode(params.feedback)),
+            score: params.score == null
+                ? const Value.absent()
+                : Value(params.score),
+            createdAt: Value(now),
+          ),
+        );
 
     return id;
   }
@@ -118,9 +124,9 @@ class TrainingResultRepository {
 
   /// 单条查询：按 id 精确定位（用于回写关联）
   Future<TrainingResultRow?> getById(String id) async {
-    return (_db.select(_db.trainingResults)
-          ..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.trainingResults,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// 按症候聚合统计训练通过率（X-041b：症候-训练通过率看板数据源）
@@ -159,9 +165,7 @@ class TrainingResultRepository {
         totalExpr,
       ])
       ..groupBy([_db.trainingResults.syndromeId])
-      ..orderBy([
-        OrderingTerm(expression: totalExpr, mode: OrderingMode.desc),
-      ]);
+      ..orderBy([OrderingTerm(expression: totalExpr, mode: OrderingMode.desc)]);
 
     if (sinceSec != null) {
       stmt.where(_db.trainingResults.createdAt.isBiggerOrEqualValue(sinceSec));
@@ -169,12 +173,14 @@ class TrainingResultRepository {
 
     final rows = await stmt.get();
     return rows
-        .map((r) => SyndromeTrainingStats(
-              syndromeId: r.read(_db.trainingResults.syndromeId)!,
-              passed: r.read(passedExpr) ?? 0,
-              partial: r.read(partialExpr) ?? 0,
-              failed: r.read(failedExpr) ?? 0,
-            ))
+        .map(
+          (r) => SyndromeTrainingStats(
+            syndromeId: r.read(_db.trainingResults.syndromeId)!,
+            passed: r.read(passedExpr) ?? 0,
+            partial: r.read(partialExpr) ?? 0,
+            failed: r.read(failedExpr) ?? 0,
+          ),
+        )
         .toList();
   }
 }
@@ -200,7 +206,5 @@ class SyndromeTrainingStats {
   int get total => passed + partial + failed;
 
   /// 通过率 [0.0, 1.0]，passed=1.0 / partial=0.5 / failed=0.0
-  double get passRate =>
-      total == 0 ? 0.0 : (passed + partial * 0.5) / total;
+  double get passRate => total == 0 ? 0.0 : (passed + partial * 0.5) / total;
 }
-

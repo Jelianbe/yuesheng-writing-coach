@@ -470,10 +470,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     if (widget.syndromes.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Text(
-          _CardText.emptyHint,
-          style: AppTextStyles.subBody,
-        ),
+        child: Text(_CardText.emptyHint, style: AppTextStyles.subBody),
       );
     }
 
