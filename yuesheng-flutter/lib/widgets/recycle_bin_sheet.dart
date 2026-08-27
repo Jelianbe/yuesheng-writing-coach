@@ -109,7 +109,12 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
   Widget build(BuildContext context) {
     final items = _items;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -204,7 +209,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
         return InkWell(
           onTap: () => _restore(index),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
             child: Row(
               children: [
                 Expanded(

@@ -63,7 +63,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
     }
     if (_sessions.isEmpty) return _buildEmpty(context);
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       itemCount: _sessions.length,
       separatorBuilder: (_, _) =>
           const Divider(height: 1, color: AppColors.borderSoft),
@@ -74,7 +74,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
   Widget _buildEmpty(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -109,7 +109,10 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
     return InkWell(
       onTap: () => widget.onOpenSession(item.session.id),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         child: Row(
           children: [
             // 月字头像
@@ -156,12 +159,12 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                            horizontal: AppSpacing.xsm,
+                            vertical: AppSpacing.xxs,
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(100),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
                           ),
                           child: Text(
                             phaseLabel,
