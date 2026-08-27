@@ -596,7 +596,7 @@ coverage: flutter-end-only  # 截止 2026-08-26，Flutter 端为唯一真源
 | **T-06** | **World Info 独立预算 + 优先级排序** | WI 有独立 token 预算（百分比或绝对值），预算耗尽时即使关键词匹配也不注入 | 知识库无独立预算 | ✅ 高价值 | L2/L3 设独立 token 预算，预算耗尽时按优先级截断而非全量保留。与 T-02 配合使用 |
 | **T-07** | **为 Assistant 回复预留 token** | 预算公式 = `max_context − max_tokens`，显式为回复预留 | ✅ 已落地（2026-08-27） | ✅ 基础常识 | TokenEstimate 新增 `contextLimit=128000` + `reservedForReply=LlmConfig.chatMaxTokens(4096)` 两个常量；`maxBudget` 从硬编码 128000 改为公式 `contextLimit − reservedForReply` = 123904，为 Assistant 回复显式预留 token，防「上下文塞满 → 输出被截断 → JSON 字段缺失」故障。详见待办执行清单「T-07 token 预留公式化」条目 |
 | **T-08** | **四级记忆作用域** | ST-Copilot：Global / Character / Chat / Session 四层 | 单一全局画像 | ✅ 中价值 | 引入分层画像：Global（学员基础五维画像）/ Skill-specific（某文体专项画像）/ Session（本次会话临时调整） |
-| **T-09** | **数据导出/导入 + 零遥测** | 所有数据本地文件化，完整导出导入，无遥测，隐私靠架构（本地）而非加密 | SQLite 持久化，无导出 | ⚠️ 部分借鉴 | 增加"导出教学档案"功能（五维画像+历史诊断→加密 JSON），保留 SQLite 但增加便携格式 |
+| **T-09** | **数据导出/导入 + 零遥测** | 所有数据本地文件化，完整导出导入，无遥测，隐私靠架构（本地）而非加密 | SQLite 持久化，无导出 | ✅ 已落地（2026-08-27，导出教学档案 JSON 便携格式） | 新建 `archive_export_service.dart` 独立模块，借鉴 `export_service.dart` 分层模式：① `buildArchiveJson` 纯函数组装学员画像（teachingHistory/onboardingData/styleProfile/styleFingerprint）+ 历史诊断（DiagnosisRow 全字段）为 JSON 字符串；② `shareArchiveExport` 写临时目录后 SharePlus 分享。`DiagnosisRepository` 新增 `getAllDiagnosisRows` 返回完整诊断行（与 `getAllDiagnoses` 扁平条目互补）。防御性 JSON 解码（非法时降级空值）。8 个单测覆盖空数据/有画像无诊断/有诊断无画像/完整数据/非法 JSON/文件名生成 |
 | **T-10** | **非破坏性 Ghost 模式** | 被裁剪的上下文对 LLM 隐藏但用户仍可见，可随时恢复 | 直接删除低优先级上下文 | ⚠️ 远期价值 | token_budget_guard 裁剪后保留原始数据在 DB/UI，标记"已对 LLM 隐藏"，支持用户回溯 |
 
 #### 综合推荐（两份报告共识 + 我的判断）
