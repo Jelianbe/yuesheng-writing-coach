@@ -140,7 +140,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               '点击段落选择重点分析范围：点区间外扩展，点区间内重选',
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+              style: AppTextStyles.caption,
             ),
           ),
           const SizedBox(height: 8),

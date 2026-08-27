@@ -543,7 +543,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           child: Text(
             // 批次78 L2：与删除确认框（批次59）软删语义对齐，不再宣称「不可恢复」
             '删除后作品将不再显示，章节和诊断记录会保留',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ),
       ],

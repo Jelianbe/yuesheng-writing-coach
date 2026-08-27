@@ -514,7 +514,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               '加载失败',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: AppTextStyles.body,
             ),
             const SizedBox(height: 16),
             FilledButton(

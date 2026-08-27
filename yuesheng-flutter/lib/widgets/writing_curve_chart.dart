@@ -346,7 +346,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),

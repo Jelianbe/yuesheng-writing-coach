@@ -298,7 +298,7 @@ class _StyleCorrectionSheetState extends State<_StyleCorrectionSheet> {
               const SizedBox(height: 12),
               const Text(
                 'AI 描述',
-                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                style: AppTextStyles.caption,
               ),
               const SizedBox(height: 4),
               Text(
@@ -807,7 +807,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               '加载失败',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: AppTextStyles.body,
             ),
             const SizedBox(height: 16),
             FilledButton(

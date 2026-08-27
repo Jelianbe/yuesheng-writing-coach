@@ -154,7 +154,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
           const SizedBox(height: 4),
           const Text(
             '删掉或剪切的长文本会留在这里，点一下就能找回',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           // 批次87-2：恢复后自动移除开关
           SwitchListTile(

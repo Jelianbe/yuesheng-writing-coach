@@ -148,7 +148,7 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
               const Text(
                 '每天进步一点点，成长看得见。',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                style: AppTextStyles.caption,
               ),
             ],
           ],
@@ -186,7 +186,7 @@ class _StatsEmpty extends StatelessWidget {
           Text(
             '多写几天，这里会展示你的成长轨迹',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),
