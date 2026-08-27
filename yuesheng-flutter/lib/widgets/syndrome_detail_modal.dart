@@ -68,16 +68,16 @@ class SyndromeDetailModal extends StatelessWidget {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(top: 12, bottom: 10),
+              margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.smx),
               decoration: BoxDecoration(
                 color: AppColors.borderLight,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
             ),
             // 头部：症候 chip + 关闭
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.xs),
               child: Row(
                 children: [
                   _buildSyndromeTag(sev),
@@ -98,7 +98,7 @@ class SyndromeDetailModal extends StatelessWidget {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xl),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -120,10 +120,10 @@ class SyndromeDetailModal extends StatelessWidget {
   // ── 症候名 chip（对齐 RN SyndromeTag）──
   Widget _buildSyndromeTag(_SeverityTheme sev) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xsm),
       decoration: BoxDecoration(
         color: sev.bg,
-        borderRadius: BorderRadius.circular(100),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -131,7 +131,7 @@ class SyndromeDetailModal extends StatelessWidget {
           Container(
             width: 7,
             height: 7,
-            margin: const EdgeInsets.only(right: 6),
+            margin: const EdgeInsets.only(right: AppSpacing.xsm),
             decoration: BoxDecoration(color: sev.fg, shape: BoxShape.circle),
           ),
           Text(
@@ -158,10 +158,10 @@ class SyndromeDetailModal extends StatelessWidget {
   // ── 统计行：出现次数 / 趋势 / 首次发现（对齐 RN statsRow）──
   Widget _buildStatsRow() {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         children: [
@@ -232,10 +232,10 @@ class SyndromeDetailModal extends StatelessWidget {
         const SizedBox(height: 10),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.section),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: points.isEmpty
               ? const Center(
@@ -290,10 +290,10 @@ class SyndromeDetailModal extends StatelessWidget {
         if (points.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 24),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: const Center(
               child: Text(
@@ -313,7 +313,7 @@ class SyndromeDetailModal extends StatelessWidget {
     final sev = _sev(point.severity);
     final label = _severityLabel[point.severity] ?? point.severity;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
       decoration: BoxDecoration(
         border: Border(
           bottom: isLast
@@ -326,7 +326,7 @@ class SyndromeDetailModal extends StatelessWidget {
           Container(
             width: 10,
             height: 10,
-            margin: const EdgeInsets.only(right: 12),
+            margin: const EdgeInsets.only(right: AppSpacing.md),
             decoration: BoxDecoration(
               color: sev.bg,
               shape: BoxShape.circle,

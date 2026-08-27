@@ -177,7 +177,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,10 +186,10 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.borderSoft,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
             ),
@@ -206,7 +206,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
 
             if (_uploading)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: Column(
                   children: [
                     const SizedBox(
@@ -287,13 +287,10 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                     filled: true,
                     fillColor: AppColors.surface,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.md),
                   ),
                 ),
               ],
@@ -301,10 +298,10 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
               if (_error != null) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
                     color: AppColors.dangerBg,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     _error!,
@@ -328,7 +325,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                       minimumSize: const Size.fromHeight(44),
                       side: const BorderSide(color: AppColors.borderSoft),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: const Text(
@@ -346,7 +343,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                         minimumSize: const Size.fromHeight(44),
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text(
@@ -383,12 +380,12 @@ class _OptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
@@ -441,12 +438,12 @@ class _RoleChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           color: active ? AppColors.primarySoft : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: active ? AppColors.primary : AppColors.borderSoft,
           ),

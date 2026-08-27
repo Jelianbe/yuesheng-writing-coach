@@ -96,10 +96,10 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
     final hasSession = widget.sessionId != null && widget.sessionId!.isNotEmpty;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.divider),
       ),
       child: Column(
@@ -115,9 +115,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                 _load();
               }
             },
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
               child: Row(
                 children: [
                   const Icon(
@@ -168,7 +168,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
             const SizedBox(height: 12),
             if (!hasSession)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
                   '无当前会话',
                   style: TextStyle(
@@ -184,14 +184,14 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
               )
             else if (_loading)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 ),
               )
             else if (_total == null)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                 child: Text(
                   '暂无数据',
                   style: TextStyle(
@@ -238,7 +238,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                       ? '${impression.substring(0, 60)}...'
                       : impression;
                   return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     decoration: const BoxDecoration(
                       border: Border(
                         bottom: BorderSide(color: AppColors.divider),
@@ -282,7 +282,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primarySoft),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
                   ),
                 ),
               ),
@@ -305,7 +305,7 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
           color: AppColors.primarySoft,
           borderRadius: BorderRadius.circular(AppRadius.md),
