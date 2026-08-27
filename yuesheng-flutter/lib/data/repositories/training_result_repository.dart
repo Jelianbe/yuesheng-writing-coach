@@ -122,4 +122,85 @@ class TrainingResultRepository {
           ..where((t) => t.id.equals(id)))
         .getSingleOrNull();
   }
+
+  /// 按症候聚合统计训练通过率（X-041b：症候-训练通过率看板数据源）
+  ///
+  /// SQL 等价：
+  ///   SELECT syndrome_id,
+  ///          SUM(CASE WHEN result='passed'  THEN 1 ELSE 0 END) AS passed,
+  ///          SUM(CASE WHEN result='partial' THEN 1 ELSE 0 END) AS partial,
+  ///          SUM(CASE WHEN result='failed'  THEN 1 ELSE 0 END) AS failed
+  ///   FROM training_results
+  ///   [WHERE created_at >= sinceSec]
+  ///   GROUP BY syndrome_id
+  ///
+  /// [sinceSec] 可选时间窗（unix 秒，含），用于「近 N 天」筛选
+  /// 返回值按 total DESC 排序（练习次数多的症候在前）
+  Future<List<SyndromeTrainingStats>> aggregateBySyndrome({
+    int? sinceSec,
+  }) async {
+    final passedExpr = CustomExpression<int>(
+      "SUM(CASE WHEN result = 'passed' THEN 1 ELSE 0 END)",
+    );
+    final partialExpr = CustomExpression<int>(
+      "SUM(CASE WHEN result = 'partial' THEN 1 ELSE 0 END)",
+    );
+    final failedExpr = CustomExpression<int>(
+      "SUM(CASE WHEN result = 'failed' THEN 1 ELSE 0 END)",
+    );
+    final totalExpr = CustomExpression<int>("COUNT(*)");
+
+    final stmt = _db.selectOnly(_db.trainingResults)
+      ..addColumns([
+        _db.trainingResults.syndromeId,
+        passedExpr,
+        partialExpr,
+        failedExpr,
+        totalExpr,
+      ])
+      ..groupBy([_db.trainingResults.syndromeId])
+      ..orderBy([
+        OrderingTerm(expression: totalExpr, mode: OrderingMode.desc),
+      ]);
+
+    if (sinceSec != null) {
+      stmt.where(_db.trainingResults.createdAt.isBiggerOrEqualValue(sinceSec));
+    }
+
+    final rows = await stmt.get();
+    return rows
+        .map((r) => SyndromeTrainingStats(
+              syndromeId: r.read(_db.trainingResults.syndromeId)!,
+              passed: r.read(passedExpr) ?? 0,
+              partial: r.read(partialExpr) ?? 0,
+              failed: r.read(failedExpr) ?? 0,
+            ))
+        .toList();
+  }
 }
+
+/// 单症候训练通过率统计（X-041b 看板值对象）
+///
+/// 通过率口径：passed 计 1.0，partial 计 0.5，failed 计 0.0，
+/// 总通过率 = (passed + partial*0.5) / total。
+/// total=0 时通过率记 0（避免除零）。
+class SyndromeTrainingStats {
+  final String syndromeId;
+  final int passed;
+  final int partial;
+  final int failed;
+
+  const SyndromeTrainingStats({
+    required this.syndromeId,
+    required this.passed,
+    required this.partial,
+    required this.failed,
+  });
+
+  int get total => passed + partial + failed;
+
+  /// 通过率 [0.0, 1.0]，passed=1.0 / partial=0.5 / failed=0.0
+  double get passRate =>
+      total == 0 ? 0.0 : (passed + partial * 0.5) / total;
+}
+

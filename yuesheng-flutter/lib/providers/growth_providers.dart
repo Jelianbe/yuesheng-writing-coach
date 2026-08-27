@@ -18,6 +18,7 @@ import '../data/database/database.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/student_model_repository.dart';
+import '../data/repositories/training_result_repository.dart';
 import '../services/growth_service.dart';
 import '../services/student_profile.dart';
 import '../types/teaching_types.dart';
@@ -42,6 +43,8 @@ class GrowthState {
   final List<SyndromeHistoryEvent> syndromeHistory;
   final WritingStyleProfile? styleProfile; // 批次53c：最新写作风格画像
   final List<SyndromeRecurrence> syndromeRecurrences; // 批次65 B62h：同类症候复发率
+  final List<SyndromeTrainingStats>
+  trainingStats; // X-041b：症候-训练通过率聚合（近 30 天）
   final String? error;
 
   const GrowthState({
@@ -55,6 +58,7 @@ class GrowthState {
     this.syndromeHistory = const [],
     this.styleProfile,
     this.syndromeRecurrences = const [],
+    this.trainingStats = const [],
     this.error,
   });
 
@@ -69,6 +73,7 @@ class GrowthState {
     List<SyndromeHistoryEvent>? syndromeHistory,
     WritingStyleProfile? styleProfile,
     List<SyndromeRecurrence>? syndromeRecurrences,
+    List<SyndromeTrainingStats>? trainingStats,
     String? error,
     bool clearError = false,
   }) {
@@ -83,6 +88,7 @@ class GrowthState {
       syndromeHistory: syndromeHistory ?? this.syndromeHistory,
       styleProfile: styleProfile ?? this.styleProfile,
       syndromeRecurrences: syndromeRecurrences ?? this.syndromeRecurrences,
+      trainingStats: trainingStats ?? this.trainingStats,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -96,7 +102,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
 
   /// 加载成长数据（全局聚合）
   ///
-  /// 并行加载九项（批次 51c 对齐 RN growth-detail 四数据源 + 批次65 B62h）：
+  /// 并行加载十项（批次 51c 对齐 RN growth-detail 四数据源 + 批次65 B62h + X-041b）：
   ///   1. 能力画像（buildStudentContext(sessionId: null) 全局聚合）
   ///   2. 跨 session 活跃问题（listAllActiveProblems）
   ///   3. 最近 10 条诊断历史（跨 session，按 timestamp DESC）
@@ -106,6 +112,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
   ///   7. 症候历史（GrowthService.getSyndromeHistory，30 天）
   ///   8. 最新写作风格画像（GrowthService.getLatestStyleProfile）
   ///   9. 同类症候复发率（GrowthService.getSyndromeRecurrences）
+  ///   10. 症候-训练通过率聚合（GrowthService.getSyndromeTrainingStats，X-041b）
   Future<void> loadGrowthData() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -114,7 +121,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
       final studentModelRepo = StudentModelRepository(_db);
       final growthService = GrowthService(_db);
 
-      // 并行加载九项数据
+      // 并行加载十项数据
       final results = await Future.wait([
         // 1. 能力画像（全局聚合，sessionId: null）
         buildStudentContext(
@@ -139,6 +146,8 @@ class GrowthStore extends StateNotifier<GrowthState> {
         growthService.getLatestStyleProfile(),
         // 9. 同类症候复发率（批次65 B62h）
         growthService.getSyndromeRecurrences(),
+        // 10. 症候-训练通过率聚合（X-041b，近 30 天）
+        growthService.getSyndromeTrainingStats(),
       ]);
 
       final profileResult = results[0] as ProfileTextResult;
@@ -150,6 +159,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
       final syndromeHistory = results[6] as List<SyndromeHistoryEvent>;
       final styleProfile = results[7] as WritingStyleProfile?;
       final syndromeRecurrences = results[8] as List<SyndromeRecurrence>;
+      final trainingStats = results[9] as List<SyndromeTrainingStats>;
 
       state = GrowthState(
         isLoading: false,
@@ -162,6 +172,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
         syndromeHistory: syndromeHistory,
         styleProfile: styleProfile,
         syndromeRecurrences: syndromeRecurrences,
+        trainingStats: trainingStats,
       );
     } catch (e) {
       debugPrint('[GrowthStore] loadGrowthData 失败: $e');

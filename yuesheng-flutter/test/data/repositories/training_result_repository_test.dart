@@ -10,9 +10,11 @@
 //   6. score 可空往返
 // ─────────────────────────────────────────────────────────────
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/training_result_repository.dart';
 
@@ -168,5 +170,116 @@ void main() {
       limit: 2,
     );
     expect(limited.length, 2);
+  });
+
+  // ── X-041b 聚合查询 ───────────────────────────────────────────
+
+  test('#8 aggregateBySyndrome 三态计数 + 通过率口径', () async {
+    final s = await sessionRepo.createBlankSession(title: '会话G');
+    // syn-A: 2 passed + 1 partial + 1 failed → 通过率 (2+0.5)/4=0.625
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-A', result: 'passed'),
+    );
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-A', result: 'passed'),
+    );
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-A', result: 'partial'),
+    );
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-A', result: 'failed'),
+    );
+    // syn-B: 1 passed → 通过率 1.0
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-B', result: 'passed'),
+    );
+
+    final stats = await repo.aggregateBySyndrome();
+    expect(stats.length, 2);
+
+    // 按 total DESC 排序：syn-A(4) 在前，syn-B(1) 在后
+    expect(stats.first.syndromeId, 'syn-A');
+    expect(stats.first.passed, 2);
+    expect(stats.first.partial, 1);
+    expect(stats.first.failed, 1);
+    expect(stats.first.total, 4);
+    expect(stats.first.passRate, closeTo(0.625, 1e-9));
+
+    expect(stats.last.syndromeId, 'syn-B');
+    expect(stats.last.passed, 1);
+    expect(stats.last.partial, 0);
+    expect(stats.last.failed, 0);
+    expect(stats.last.passRate, 1.0);
+  });
+
+  test('#9 aggregateBySyndrome sinceSec 时间窗过滤', () async {
+    final s = await sessionRepo.createBlankSession(title: '会话H');
+    // 早期记录（t-100s）
+    final old = nowSec() - 100;
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-old', result: 'passed'),
+    );
+    // 手动改 created_at 模拟历史时间
+    await (db.update(db.trainingResults)
+          ..where((t) => t.syndromeId.equals('syn-old')))
+        .write(TrainingResultsCompanion(createdAt: Value(old)));
+
+    // 近期记录（默认 created_at=now）
+    await repo.insertTrainingResult(
+      mkParams(sessionId: s, syndromeId: 'syn-new', result: 'failed'),
+    );
+
+    // sinceSec = now-50：只剩 syn-new
+    final recent = await repo.aggregateBySyndrome(sinceSec: nowSec() - 50);
+    expect(recent.length, 1);
+    expect(recent.first.syndromeId, 'syn-new');
+    expect(recent.first.failed, 1);
+
+    // 不加时间窗：两条都返回
+    final all = await repo.aggregateBySyndrome();
+    expect(all.length, 2);
+  });
+
+  test('#10 aggregateBySyndrome 空库 → 空列表', () async {
+    final stats = await repo.aggregateBySyndrome();
+    expect(stats, isEmpty);
+  });
+
+  test('#11 SyndromeTrainingStats 通过率口径边界', () {
+    // 全 passed → 1.0
+    const allPassed = SyndromeTrainingStats(
+      syndromeId: 'x',
+      passed: 5,
+      partial: 0,
+      failed: 0,
+    );
+    expect(allPassed.passRate, 1.0);
+
+    // 全 failed → 0.0
+    const allFailed = SyndromeTrainingStats(
+      syndromeId: 'x',
+      passed: 0,
+      partial: 0,
+      failed: 3,
+    );
+    expect(allFailed.passRate, 0.0);
+
+    // 全 partial → 0.5
+    const allPartial = SyndromeTrainingStats(
+      syndromeId: 'x',
+      passed: 0,
+      partial: 4,
+      failed: 0,
+    );
+    expect(allPartial.passRate, 0.5);
+
+    // 零记录 → 0.0（避免除零）
+    const empty = SyndromeTrainingStats(
+      syndromeId: 'x',
+      passed: 0,
+      partial: 0,
+      failed: 0,
+    );
+    expect(empty.passRate, 0.0);
   });
 }

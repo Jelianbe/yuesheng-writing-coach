@@ -210,6 +210,11 @@ extension _GrowthContent on _GrowthDetailPageState {
           ..._buildSyndromeGroups(state, profile),
         ],
         const SizedBox(height: 12),
+        // X-041b：症候-训练通过率看板（近 30 天聚合，跨会话）
+        if (state.trainingStats.isNotEmpty) ...[
+          TrainingPassRateCard(stats: state.trainingStats),
+          const SizedBox(height: 12),
+        ],
         // 批次65（B62h）：同类症候复发率（「出现→好转→再犯」聚合）
         if (recurrences.isNotEmpty) ...[
           const Padding(

@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../data/database/database.dart';
+import '../data/repositories/training_result_repository.dart';
 import '../types/teaching_types.dart';
 
 /// 成长数据服务（用户级，无 sessionId 维度）
@@ -504,5 +505,27 @@ extension GrowthAbilityExtension on GrowthService {
       return b.occurrences.compareTo(a.occurrences);
     });
     return result;
+  }
+
+  /// X-041b：症候-训练通过率聚合（用户级全局，跨会话）
+  ///
+  /// 数据源 training_results 表（X-041a P0 持久化）。返回每个症候的
+  /// passed/partial/failed 三态计数 + 通过率，按 total DESC 排序。
+  ///
+  /// UI 用途：成长详情页「训练通过率」区块，反映用户在各症候上的
+  /// 练习投入量与掌握程度，作为长期进步曲线的补充维度。
+  ///
+  /// [days] 时间窗（默认近 30 天）；null 表示全量
+  Future<List<SyndromeTrainingStats>> getSyndromeTrainingStats({
+    int? days = 30,
+  }) async {
+    final repo = TrainingResultRepository(_db);
+    if (days == null) {
+      return repo.aggregateBySyndrome();
+    }
+    final since = DateTime.now()
+        .subtract(Duration(days: days))
+        .millisecondsSinceEpoch ~/ 1000;
+    return repo.aggregateBySyndrome(sinceSec: since);
   }
 }
