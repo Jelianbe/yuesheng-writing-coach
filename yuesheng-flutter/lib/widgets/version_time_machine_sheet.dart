@@ -272,7 +272,12 @@ class _VersionTimeMachineSheetState
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.lg,
+        AppSpacing.section,
+        AppSpacing.xl,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,10 +342,10 @@ class _VersionTimeMachineSheetState
         Expanded(
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(AppSpacing.smx),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: SingleChildScrollView(
               child: hasContent
@@ -446,7 +451,7 @@ class _VersionTimeMachineSheetState
         return InkWell(
           onTap: () => setState(() => _selected = v),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
             child: Row(
               children: [
                 SizedBox(

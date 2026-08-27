@@ -461,8 +461,8 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xsm,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,

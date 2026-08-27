@@ -143,9 +143,9 @@ extension _BookshelfActions on _BookshelfPageState {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
-            12,
+            AppSpacing.md,
             AppSpacing.lg,
-            24,
+            AppSpacing.xl,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -154,14 +154,19 @@ extension _BookshelfActions on _BookshelfPageState {
               Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
+                margin: const EdgeInsets.only(bottom: AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  0,
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                ),
                 child: Text(
                   title,
                   maxLines: 1,
