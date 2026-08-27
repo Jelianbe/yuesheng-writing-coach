@@ -90,7 +90,12 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,8 +141,8 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
                     ),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
+                      horizontal: AppSpacing.smx,
+                      vertical: AppSpacing.sm,
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -209,7 +214,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
         return InkWell(
           onTap: () => _insert(phrase),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
             child: Row(
               children: [
                 Expanded(
