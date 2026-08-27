@@ -152,7 +152,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
   Widget _buildContent() {
     final summary = _summary;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         if (summary != null) ...[
           _ProgressSummaryCard(summary: summary),
@@ -167,7 +167,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
           title: '症候趋势追踪',
           child: _trends.isEmpty
               ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   child: Column(
                     children: [
                       Icon(
@@ -267,7 +267,7 @@ class _ProgressSummaryCard extends StatelessWidget {
     final phaseLabel =
         progressPhaseLabels[summary.currentPhase] ?? summary.currentPhase.value;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -343,7 +343,7 @@ class _DiagnosisHistory extends StatelessWidget {
         children: [
           for (var i = 0; i < records.length; i++)
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               decoration: BoxDecoration(
                 border: i == records.length - 1
                     ? null
@@ -472,10 +472,10 @@ class _TrendRow extends StatelessWidget {
                   Container(
                     width: 6,
                     height: 18,
-                    margin: const EdgeInsets.only(right: 3),
+                    margin: const EdgeInsets.only(right: AppSpacing.xxs),
                     decoration: BoxDecoration(
                       color: _severityColor(p.severity),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                   ),
                 const SizedBox(width: 8),
@@ -552,20 +552,20 @@ class _ProblemStatsState extends State<_ProblemStats> {
                   children: [
                     for (final f in _filters)
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: AppSpacing.sm),
                         child: InkWell(
                           onTap: () => setState(() => _filter = f),
-                          borderRadius: BorderRadius.circular(100),
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.xsm,
                             ),
                             decoration: BoxDecoration(
                               color: _filter == f
                                   ? AppColors.primarySoft
                                   : AppColors.surface,
-                              borderRadius: BorderRadius.circular(100),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                               border: Border.all(
                                 color: _filter == f
                                     ? AppColors.primary
@@ -592,7 +592,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
               // 批次78 L5：筛选后无匹配项时渲染空态提示（原为空白）
               if (_filtered.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   child: Center(
                     child: Text(
                       '该档暂无问题',
@@ -615,8 +615,8 @@ class _ProblemStatsState extends State<_ProblemStats> {
         // 底部汇总（对齐 RN summaryFooter）
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.only(top: 12),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(top: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -657,7 +657,7 @@ class _ProblemRow extends StatelessWidget {
         children: [
           // 状态标签（对齐 RN problemStatus）
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
             decoration: BoxDecoration(
               color: isResolved ? AppColors.primarySoft : AppColors.l3,
               borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -777,7 +777,7 @@ class _ProgressReportView extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: SelectableText(
             report,
             style: const TextStyle(
@@ -802,7 +802,7 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),

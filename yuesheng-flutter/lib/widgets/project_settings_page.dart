@@ -320,8 +320,8 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                 borderRadius: BorderRadius.circular(AppRadius.pill),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.sm,
                   ),
                   decoration: BoxDecoration(
                     color: _genre == g
@@ -382,10 +382,10 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
             for (var i = 0; i < _tags.length; i++)
               Container(
                 padding: const EdgeInsets.only(
-                  left: 12,
-                  right: 4,
-                  top: 4,
-                  bottom: 4,
+                  left: AppSpacing.md,
+                  right: AppSpacing.xs,
+                  top: AppSpacing.xs,
+                  bottom: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primarySoft,
@@ -406,7 +406,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                       onTap: _saving ? null : () => _handleRemoveTag(i),
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: const Padding(
-                        padding: EdgeInsets.all(5),
+                        padding: EdgeInsets.all(AppSpacing.xsm),
                         child: Icon(
                           Icons.close,
                           size: 13,
@@ -423,8 +423,8 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
               borderRadius: BorderRadius.circular(AppRadius.pill),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -568,7 +568,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: const BorderSide(color: AppColors.primary),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.smx),
     );
   }
 }
@@ -582,7 +582,7 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: AppSpacing.smx),
       child: Text(
         text,
         style: TextStyle(
