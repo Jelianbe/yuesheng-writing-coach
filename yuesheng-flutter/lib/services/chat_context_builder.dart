@@ -126,6 +126,18 @@ class ActiveSyndromeView {
 ///
 /// 2026-08-18 批次（文笔画像→技法旁路路由）：新增可选 [styleTechniqueSection]，
 /// 由调用方经 style_technique_router 产出后传入，追加在症候段之后（null=不注入）。
+///
+/// 2026-08-27 X-043：症候/技法段独立预算 + 优先级截断（T-06 Lorebook 独立预算）。
+/// focus 症候完整注入不可裁；非 focus 按剩余预算决定粒度（完整摘要/极简列表/跳过）。
+///
+/// 设计哲学：X-043 P2 关键词触发扫描已评估后取消。月笙症候知识是「诊断结果驱动」
+/// （detector 扫描写作文本 → activeProblems → 注入教学知识），不是酒馆 Lorebook 的
+/// 「主题词驱动」（用户提主题词 → 注入世界观知识）。两者语义结构不匹配：
+/// - 用户聊天中不会说症候名（如「情绪标签化」），子串匹配命中率低且易误命中
+/// - 即使命中会造成 activeProblems 与注入知识不一致，违反「输出即契约」哲学
+/// - L1 常驻层已含 40 份原子化 Skill，LLM 可自主调用，不需要 Lorebook 预注入
+/// - 违反「AI 自主判断能力 > 刻板规则」的设计哲学
+/// 详见架构真源 §4.7 T-02 借鉴价值评估 + X-043 台账记录。
 String buildStructuredSyndromeContext(
   List<ActiveSyndromeView> problems, {
   Map<String, SyndromeEvidence>? evidenceMap,
