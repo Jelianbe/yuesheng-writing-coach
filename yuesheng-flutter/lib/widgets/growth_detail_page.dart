@@ -37,6 +37,7 @@ import 'growth_overview_card.dart';
 import 'proficiency_ring.dart';
 import 'syndrome_history_list.dart';
 import 'teaching_state_badge.dart';
+import 'training_pass_rate_card.dart';
 import 'writing_curve_chart.dart';
 part 'growth_nav.dart';
 part 'growth_content.dart';
