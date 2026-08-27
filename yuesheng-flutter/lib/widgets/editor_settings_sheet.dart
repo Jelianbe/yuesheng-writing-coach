@@ -171,7 +171,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           ),
           subtitle: const Text(
             '淡化当前段以外的内容，专注当前行段',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           value: state.focusMode,
           activeTrackColor: AppColors.primary,
@@ -189,7 +189,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           ),
           subtitle: const Text(
             '输入「自动补全对应右符',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           value: state.smartPunctOn,
           activeTrackColor: AppColors.primary,
@@ -224,7 +224,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           ),
           subtitle: const Text(
             '底部悬浮的 AI 对话入口，长按可拖动位置',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           value: state.fabVisible,
           activeTrackColor: AppColors.primary,
@@ -295,7 +295,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           ),
           subtitle: const Text(
             '回车换行时自动补两格缩进',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           value: state.indentParagraph,
           activeTrackColor: AppColors.primary,
@@ -313,7 +313,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           ),
           subtitle: const Text(
             '段落之间留出空行',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           value: state.blankLineBetween,
           activeTrackColor: AppColors.primary,
@@ -631,7 +631,7 @@ class _PunctuationBarConfigSectionState
         const SizedBox(height: 4),
         const Text(
           '隐藏不常用的，把常用的排在前面；也可以添加自己的常用标点',
-          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          style: AppTextStyles.caption,
         ),
         const SizedBox(height: 6),
         for (var i = 0; i < visible.length; i++)
@@ -651,7 +651,7 @@ class _PunctuationBarConfigSectionState
           const Divider(height: 16),
           const Text(
             '已隐藏',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           for (final it in hidden)
             _ConfigRow(
