@@ -477,17 +477,13 @@ class _EmptyChaptersState extends StatelessWidget {
             const SizedBox(height: 16),
             const Text(
               '还没有章节',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+              style: AppTextStyles.titleLg,
             ),
             const SizedBox(height: 8),
             const Text(
               '点击「新建章节」开始你的第一篇',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: AppTextStyles.body,
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -865,11 +861,7 @@ class _DetailVolumeHeader extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textInk,
-                  ),
+                  style: AppTextStyles.titleMd,
                 ),
               ),
               if (totalWords > 0) ...[
@@ -932,7 +924,7 @@ class _DetailEmptyVolumeHint extends StatelessWidget {
       ),
       child: Text(
         '暂无章节',
-        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        style: AppTextStyles.caption,
       ),
     );
   }
@@ -964,7 +956,7 @@ class _ChapterListHeader extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$chapterCount 章',
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
           const Spacer(),
           InkWell(
