@@ -142,6 +142,13 @@ abstract final class AppTextStyles {
     color: AppColors.textTertiary,
   );
 
+  /// 次级辅助文字 / subCaption（fontSize:13 / textTertiary，比 caption 大一档）
+  /// 用于操作说明、辅助提示等略大于 caption 的弱化文字。频次 15 处，2026-08-27 新增。
+  static const TextStyle subCaption = TextStyle(
+    fontSize: 13,
+    color: AppColors.textTertiary,
+  );
+
   /// 表单标签 / 列表项标签（fontSize:14 / w500 / textBody）
   static const TextStyle formLabel = TextStyle(
     fontSize: 14,

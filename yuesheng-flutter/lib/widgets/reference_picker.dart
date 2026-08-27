@@ -158,7 +158,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
           const Text(
             '选择要分析的作品或章节',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+            style: AppTextStyles.subCaption,
           ),
           const SizedBox(height: 12),
 

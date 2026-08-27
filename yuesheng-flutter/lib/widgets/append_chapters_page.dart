@@ -278,7 +278,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
         const SizedBox(height: 4),
         Text(
           '将新章节追加到「${widget.manuscriptTitle}」',
-          style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+          style: AppTextStyles.subCaption,
         ),
         const SizedBox(height: 12),
         // 选择文件按钮（虚线边框，对齐 RN fileBtn）
@@ -371,7 +371,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
         const SizedBox(height: 6),
         Text(
           '已存在的章节会被标记，默认不选中（共 ${_chapters.length} 章，$_newChapterCount 章新增）',
-          style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+          style: AppTextStyles.subCaption,
         ),
         const SizedBox(height: 8),
         for (var i = 0; i < _chapters.length; i++) ...[
