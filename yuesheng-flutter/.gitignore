@@ -48,6 +48,7 @@ app.*.map.json
 # 调试/临时产物（本地开发资产，不入库）
 tmp_*
 screenshots_*.png
+screen_*.png
 /lib/main_dev.dart
 /lib/preview/
 
