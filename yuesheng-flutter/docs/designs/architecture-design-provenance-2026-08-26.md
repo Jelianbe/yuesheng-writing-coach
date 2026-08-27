@@ -303,6 +303,14 @@ coverage: flutter-end-only  # 截止 2026-08-26，Flutter 端为唯一真源
   - 非标准近似规则：BR:2→xs、EI:3→xxs、EI:14→md — 每次替换须在批次台账登记，不悄悄吞差异
 - **代码真源**：[app_theme.dart](file:///D:/ai-teacher/yuesheng-flutter/lib/config/app_theme.dart#L85-L108)（令牌定义，含 X-039 补位注释）
 - **守护方式**：每批 6 文件替换完 → dart analyze 0 error → 相关家族 test 全绿 → 批次独立 commit → 推送 GitHub Actions；截至 2026-08-26 已完成 Batch1+Batch2（12 文件），12 批待执行
+- **UI 样式族令牌化进展**（AppTextStyles / AppBoxStyles / AppButtonStyles 三族，独立于 P0-2 的 AppRadius/AppSpacing）：
+  - **Batch1（2026-08-27, commit 23e605b6）**：新增 AppTextStyles 5 令牌（titleLg 18/w600/textPrimary、titleMd 14/w600/textInk、body 14/textSecondary、caption 12/textTertiary、formLabel 14/w500/textBody）+ bookshelf_page.dart 示范替换（14 处）
+  - **Batch2（2026-08-27, commit 718fc166）**：manuscript_detail_page.dart 第二批 TextStyle 替换（15 处）
+  - **Batch3（2026-08-27, commit b3dc9f44）**：新增 AppBoxStyles（standardInput）+ AppButtonStyles（primary/secondary）+ 7 处示范替换
+  - **Batch4（2026-08-27, commit 59a092ef）**：settings_page.dart (8) + editor_settings_sheet.dart (7) + progress_detail_page.dart (6) 共 21 处替换，全部匹配现有令牌无新增（R-019 防通胀）。无逻辑变化，无新增 import。四道门禁：analyze 0 issues / widgets 目录无对应测试 / 0 循环依赖 / 0 密钥命中
+  - **累计替换**：≥57 处 TextStyle 字面量 → AppTextStyles 令牌
+  - **非标值保留**（R-019 防通胀）：fontSize 13/15/16/11 + w700 等组合不强行新增令牌，保留硬编码
+  - **下次候选**：syndrome_history_list (caption×4) / ability_chart (caption×3) / outline_drawer (titleMd+body+caption×3) / chapter_tree_drawer (titleMd+body+caption×3) 等高匹配文件
 - **体系角色**：**跨所有 UI 的视觉一致性层**。它不直接参与教学闭环，但它是"产品感觉是否专业统一"的决定性模块；令牌化后未来改视觉风格（如改圆角风格）只需改 app_theme.dart 一行。
 
 ---
