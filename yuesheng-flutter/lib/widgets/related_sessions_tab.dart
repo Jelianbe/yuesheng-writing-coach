@@ -192,10 +192,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                       item.session.preview,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                      ),
+                      style: AppTextStyles.subBody,
                     ),
                   ],
                 ],

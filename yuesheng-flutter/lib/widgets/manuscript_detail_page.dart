@@ -377,10 +377,7 @@ class _ManuscriptMetaBar extends StatelessWidget {
               genre,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.subBody,
             ),
           ),
         ],
@@ -430,7 +427,7 @@ class _ManuscriptNotFoundView extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               '可能已被删除，请返回书架查看',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: AppTextStyles.subBody,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),

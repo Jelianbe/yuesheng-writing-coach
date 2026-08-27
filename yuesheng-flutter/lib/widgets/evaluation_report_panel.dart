@@ -168,21 +168,15 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                   const SizedBox(height: 10),
                   Text(
                     evaluation.summaryText,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTextStyles.subBody.copyWith(height: 1.5),
                   ),
                   // ── 症候明细 ──
                   if (evaluation.syndromeDetails.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       '症候明细',
-                      style: TextStyle(
-                        fontSize: 13,
+                      style: AppTextStyles.subBody.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),

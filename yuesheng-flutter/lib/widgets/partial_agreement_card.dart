@@ -301,10 +301,8 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
                     ),
                     child: Text(
                       option.label,
-                      style: const TextStyle(
-                        fontSize: 13,
+                      style: AppTextStyles.subBody.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),

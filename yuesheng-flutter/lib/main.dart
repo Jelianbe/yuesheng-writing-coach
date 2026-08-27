@@ -92,7 +92,7 @@ ThemeData buildAppTheme() {
         color: AppColors.textPrimary,
       ),
       bodyMedium: TextStyle(fontSize: 15, color: AppColors.textPrimary),
-      bodySmall: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+      bodySmall: AppTextStyles.subBody,
     ),
   );
 }

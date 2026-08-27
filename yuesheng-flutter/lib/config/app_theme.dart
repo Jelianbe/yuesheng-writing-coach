@@ -149,6 +149,14 @@ abstract final class AppTextStyles {
     color: AppColors.textTertiary,
   );
 
+  /// 次级正文 / subBody（fontSize:13 / textSecondary，比 body 小一档但同色）
+  /// 用于次级说明、诊断描述、设置项说明等需要 secondary 级可读性的 13px 文字。
+  /// 变体用 .copyWith(fontWeight/height) 扩展。频次 42 处（24 纯形 + 18 变体），2026-08-27 新增。
+  static const TextStyle subBody = TextStyle(
+    fontSize: 13,
+    color: AppColors.textSecondary,
+  );
+
   /// 表单标签 / 列表项标签（fontSize:14 / w500 / textBody）
   static const TextStyle formLabel = TextStyle(
     fontSize: 14,

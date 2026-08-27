@@ -162,7 +162,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
             contentPadding: EdgeInsets.zero,
             title: const Text(
               '恢复后自动移除该条',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: AppTextStyles.subBody,
             ),
             value: _removeOnRestore,
             activeTrackColor: AppColors.primary,

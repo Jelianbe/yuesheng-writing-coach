@@ -538,10 +538,7 @@ class ThinkingIndicator extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label ?? '正在思考…',
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.subBody,
           ),
         ],
       ),

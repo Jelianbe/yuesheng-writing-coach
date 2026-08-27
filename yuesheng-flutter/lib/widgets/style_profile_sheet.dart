@@ -219,10 +219,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
             width: 72,
             child: Text(
               name,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.subBody,
             ),
           ),
           Container(

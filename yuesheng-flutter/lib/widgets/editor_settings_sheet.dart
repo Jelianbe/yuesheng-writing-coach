@@ -106,12 +106,10 @@ class EditorSettingsSheet extends ConsumerWidget {
               onChangeEnd: (_) => store.persistEditorSettings(),
             ),
             const SizedBox(height: 14),
-            const Text(
+            Text(
               '背景',
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.subBody.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 10),
@@ -154,12 +152,10 @@ class EditorSettingsSheet extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '辅助',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.subBody.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
           ),
         ),
         SwitchListTile(
@@ -207,12 +203,10 @@ class EditorSettingsSheet extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '对话按钮',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.subBody.copyWith(
             fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
           ),
         ),
         SwitchListTile(
@@ -261,12 +255,10 @@ class EditorSettingsSheet extends ConsumerWidget {
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               '段落',
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.subBody.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
               ),
             ),
             const Spacer(),
@@ -343,10 +335,8 @@ class EditorSettingsSheet extends ConsumerWidget {
           width: 40,
           child: Text(
             label,
-            style: const TextStyle(
-              fontSize: 13,
+            style: AppTextStyles.subBody.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
             ),
           ),
         ),
@@ -597,12 +587,10 @@ class _PunctuationBarConfigSectionState
       children: [
         Row(
           children: [
-            const Text(
+            Text(
               '标点栏',
-              style: TextStyle(
-                fontSize: 13,
+              style: AppTextStyles.subBody.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
               ),
             ),
             const Spacer(),

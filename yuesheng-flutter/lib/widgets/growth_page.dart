@@ -279,10 +279,7 @@ class _GrowthContent extends StatelessWidget {
                 Center(
                   child: Text(
                     '共 $totalSessions 次写作会话',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTextStyles.subBody,
                   ),
                 ),
               ],
@@ -413,7 +410,7 @@ class _GrowthContent extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               '完成第一次写作后，这里会展示你的能力画像',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: AppTextStyles.subBody,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
