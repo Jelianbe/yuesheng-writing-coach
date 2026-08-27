@@ -131,7 +131,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
             const Text(
               '选择一个章节进行写作分析',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+              style: AppTextStyles.subCaption,
             ),
             const SizedBox(height: 12),
             Flexible(

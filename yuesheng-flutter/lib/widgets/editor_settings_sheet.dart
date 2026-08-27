@@ -374,7 +374,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           child: Text(
             display,
             textAlign: TextAlign.right,
-            style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+            style: AppTextStyles.subCaption,
           ),
         ),
       ],

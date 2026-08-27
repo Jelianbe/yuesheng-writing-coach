@@ -157,7 +157,7 @@ class SessionDrawer extends StatelessWidget {
           const Text(
             '发起你的第一次对话，开始写作诊断之旅',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+            style: AppTextStyles.subCaption,
           ),
           const SizedBox(height: 20),
           FilledButton(

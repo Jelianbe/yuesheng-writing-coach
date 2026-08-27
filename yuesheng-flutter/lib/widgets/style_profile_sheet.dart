@@ -160,7 +160,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
             Text(
               '还没有文风画像\n完成一次「诊断本章」后，就能看到你的写作风格',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+              style: AppTextStyles.subCaption,
             ),
           ],
         ),

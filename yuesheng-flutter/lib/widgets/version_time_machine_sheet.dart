@@ -435,7 +435,7 @@ class _VersionTimeMachineSheetState
             Text(
               '还没有版本记录\n写到 200 字时会自动保存一个版本',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+              style: AppTextStyles.subCaption,
             ),
           ],
         ),

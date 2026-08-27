@@ -96,7 +96,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
             const Text(
               '通过本书发起对话，或在对话中引用本书内容后，\n对话会按活跃度显示在这里',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+              style: AppTextStyles.subCaption,
             ),
           ],
         ),

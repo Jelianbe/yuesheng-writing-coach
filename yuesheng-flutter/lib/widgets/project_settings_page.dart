@@ -435,7 +435,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                 ),
                 child: const Text(
                   '+ 添加标签',
-                  style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+                  style: AppTextStyles.subCaption,
                 ),
               ),
             ),
@@ -445,7 +445,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         const SizedBox(height: 14),
         const Text(
           '热门标签',
-          style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
+          style: AppTextStyles.subCaption,
         ),
         const SizedBox(height: 8),
         Wrap(
