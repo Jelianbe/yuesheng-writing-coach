@@ -130,6 +130,37 @@ class TeacherSuggestionRepository {
         .get();
   }
 
+  /// X-041d：按 syndromeId 查最近一条 suggestion（追溯训练来源）
+  ///
+  /// 用途：_handleTrainingResult 命中训练结果时，把触发当前训练轮
+  /// 的建议 id + taskType 一并落到 training_results，补全追溯链。
+  ///
+  /// 取数规则（按 [createdAt] 倒序首条）：
+  /// - status IN ('active','resolved')：覆盖未采纳 + 已采纳两种情况
+  ///   （markAdopted/markResolved/markDismissed 都置 'resolved'，
+  ///   仅靠 status 无法区分采纳/跳过；本查询只关心"是否曾经作为
+  ///   该症候的训练触发建议"，故两者都纳入候选）
+  /// - 无匹配返回 null（自主训练场景，suggestionId 留空）
+  ///
+  /// 注意：跨会话不查（训练轮只在本 session 内追溯触发建议）
+  Future<TeacherSuggestionRow?> getLatestActiveBySyndrome(
+    String sessionId,
+    String syndromeId,
+  ) async {
+    final stmt = _db.select(_db.teacherSuggestions)
+      ..where((t) => t.sessionId.equals(sessionId))
+      ..where((t) => t.targetSyndromeId.equals(syndromeId))
+      ..where((t) => t.status.isIn(const ['active', 'resolved']))
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.createdAt,
+          mode: OrderingMode.desc,
+        ),
+      ])
+      ..limit(1);
+    return stmt.getSingleOrNull();
+  }
+
   /// 标记 suggestion 已解决（D6：卡片「跳过此建议」按钮）
   ///
   /// 真源：teacher-suggestion-dao.ts markResolved
