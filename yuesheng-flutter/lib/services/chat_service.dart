@@ -78,6 +78,7 @@ import 'package:writingcoach/services/student_profile.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/services/training_input_builder.dart';
 import 'package:writingcoach/services/training_knowledge_base.dart';
+import 'package:writingcoach/services/training_few_shot_library.dart';
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
@@ -1442,6 +1443,15 @@ extension ChatServiceSendDiagnosisLock on ChatService {
               markStage(BudgetStageNames.trainingKnowledge);
               messages.add(
                 ChatMessage(role: 'system', content: trainingKnowledge),
+              );
+            }
+            // T-04 few-shot 借鉴：追加当前症候的好/坏写作片段对比示例
+            // 复用 trainingKnowledge 阶段（不新增 BudgetStage，避免改 token 预算表）
+            // 无对应示例的症候返回空字符串（不报错，作为防御性兜底）
+            final fewShot = getTrainingFewShot([focusSyndromeId]);
+            if (fewShot.isNotEmpty) {
+              messages.add(
+                ChatMessage(role: 'system', content: fewShot),
               );
             }
           } catch (e) {
