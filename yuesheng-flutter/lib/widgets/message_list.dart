@@ -486,10 +486,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                               ),
                               child: Text(
                                 widget.streamStageLabel!,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textTertiary,
-                                ),
+                                style: AppTextStyles.microCaption,
                               ),
                             ),
                             streamBubble,

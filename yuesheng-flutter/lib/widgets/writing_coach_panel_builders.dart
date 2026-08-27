@@ -199,10 +199,7 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
                           ),
                           child: Text(
                             _streamStageLabel!,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textTertiary,
-                            ),
+                            style: AppTextStyles.microCaption,
                           ),
                         ),
                         streamBubble,

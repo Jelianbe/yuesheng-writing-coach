@@ -240,10 +240,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                           'pronounced ${obs.pronouncedCount} / against ${obs.againstCount}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textTertiary,
-                          ),
+                          style: AppTextStyles.microCaption,
                         ),
                         const SizedBox(height: 2),
                         Text(

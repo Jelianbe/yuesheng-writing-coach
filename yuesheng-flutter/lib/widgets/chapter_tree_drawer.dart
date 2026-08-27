@@ -654,10 +654,7 @@ class _VolumeHeader extends StatelessWidget {
               ),
             Text(
               '$count 章',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textTertiary,
-              ),
+              style: AppTextStyles.microCaption,
             ),
           ],
         ),
@@ -747,10 +744,7 @@ class _ChapterTreeItem extends StatelessWidget {
                 padding: const EdgeInsets.only(left: AppSpacing.xs),
                 child: Text(
                   '${_formatNum(chapter.wordCount)}字',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                  ),
+                  style: AppTextStyles.microCaption,
                 ),
               ),
             if (status != null) ...[

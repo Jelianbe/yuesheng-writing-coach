@@ -561,7 +561,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       ),
       child: Text(
         _typeLabel(refType),
-        style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+        style: AppTextStyles.microCaption,
       ),
     );
   }

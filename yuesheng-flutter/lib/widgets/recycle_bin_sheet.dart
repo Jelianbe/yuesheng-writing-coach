@@ -228,10 +228,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
                       const SizedBox(height: 2),
                       Text(
                         '${item.content.length} 字 · ${_formatTime(item.deletedAt)}',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textTertiary,
-                        ),
+                        style: AppTextStyles.microCaption,
                       ),
                     ],
                   ),

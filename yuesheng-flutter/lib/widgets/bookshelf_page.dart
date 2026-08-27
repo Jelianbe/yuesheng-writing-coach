@@ -585,18 +585,12 @@ class _ManuscriptCard extends ConsumerWidget {
                                     ],
                                     Text(
                                       '$chapterCount 章 · ${_formatWords(totalWords)}',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textTertiary,
-                                      ),
+                                      style: AppTextStyles.microCaption,
                                     ),
                                     const Spacer(),
                                     Text(
                                       _relativeTime(manuscript.updatedAt),
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textTertiary,
-                                      ),
+                                      style: AppTextStyles.microCaption,
                                     ),
                                   ],
                                 ),

@@ -476,7 +476,7 @@ class _GridItem extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+          style: AppTextStyles.microCaption,
         ),
       ],
     );
@@ -611,10 +611,7 @@ class _RecurrenceRow extends StatelessWidget {
               Text(
                 '出现 ${recurrence.occurrences} 次 · 好转 ${recurrence.recovered} 次 · '
                 '再犯 ${recurrence.recurrences} 次',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textTertiary,
-                ),
+                style: AppTextStyles.microCaption,
               ),
             ],
           ),
