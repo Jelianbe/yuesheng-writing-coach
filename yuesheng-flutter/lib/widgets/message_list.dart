@@ -212,8 +212,8 @@ class _MessageListState extends ConsumerState<MessageList> {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
                 ),
               ),
               child: const Text(
@@ -232,8 +232,8 @@ class _MessageListState extends ConsumerState<MessageList> {
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
                 ),
               ),
               child: const Text(
@@ -366,7 +366,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                 widget.emptyWidget ??
                     const Center(
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 32),
+                        padding: EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -401,8 +401,8 @@ class _MessageListState extends ConsumerState<MessageList> {
                 ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.sm,
                   ),
                   itemCount:
                       renderItems.length +
@@ -494,8 +494,8 @@ class _MessageListState extends ConsumerState<MessageList> {
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(
-                                left: 12,
-                                bottom: 2,
+                                left: AppSpacing.md,
+                                bottom: AppSpacing.xxs,
                               ),
                               child: Text(
                                 widget.streamStageLabel!,
@@ -536,7 +536,7 @@ class ThinkingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [

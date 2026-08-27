@@ -133,9 +133,9 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
     final severity = _severityColors(widget.severity);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.surfaceWhite,
@@ -200,7 +200,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.smx, vertical: AppSpacing.xs),
           decoration: BoxDecoration(
             color: severity.bg,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -221,10 +221,10 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
   /// 症候名 chip（对齐 RN brandSoft 底色）
   Widget _buildSyndromeName() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         widget.syndromeName,
@@ -251,7 +251,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
         hintStyle: const TextStyle(fontSize: 14, color: AppColors.disabledText),
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.all(10),
+        contentPadding: const EdgeInsets.all(AppSpacing.smx),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: const BorderSide(color: AppColors.borderSoft),
@@ -290,13 +290,13 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
               for (final option in widget.quickOptions) ...[
                 InkWell(
                   onTap: () => _handleQuickOption(option.value),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(color: AppColors.borderSoft),
                     ),
                     child: Text(

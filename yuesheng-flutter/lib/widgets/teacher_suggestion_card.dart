@@ -183,9 +183,9 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     final p = widget.payload;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           decoration: const BoxDecoration(
             color: AppColors.background,
@@ -199,7 +199,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 Container(width: 4, color: AppColors.primary),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -234,7 +234,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
           decoration: BoxDecoration(
             color: AppColors.l1,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -252,7 +252,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         if (difficulty.isNotEmpty) ...[
           const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
             decoration: BoxDecoration(
               color: AppColors.l2,
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -428,10 +428,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
   /// 批次63（B62d）：位置清单块——段落位置 + 原文摘录，供学员自查修改（AI 不代改）
   Widget _buildLocations(List<String> locations) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: AppColors.l1,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,7 +447,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           const SizedBox(height: 6),
           for (var i = 0; i < locations.length; i++)
             Padding(
-              padding: const EdgeInsets.only(bottom: 2),
+              padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -483,10 +483,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         ? ''
         : (_taskTypeText[p.taskType] ?? p.taskType);
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: AppColors.l1,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,7 +535,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
             const SizedBox(height: 4),
             for (var i = 0; i < p.evaluationCriteria.length; i++)
               Padding(
-                padding: const EdgeInsets.only(bottom: 2),
+                padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
