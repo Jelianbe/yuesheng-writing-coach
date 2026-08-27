@@ -287,20 +287,13 @@ class _EmptyState extends StatelessWidget {
                   const SizedBox(height: 20),
                   const Text(
                     '还没有作品',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+                    style: AppTextStyles.titleLg,
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     '点击「新建」创建你的第一部作品',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
+                    style: AppTextStyles.body,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
@@ -348,10 +341,7 @@ class _ErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.body,
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
@@ -392,7 +382,7 @@ class _NoSearchResult extends StatelessWidget {
         Center(
           child: Text(
             searching ? '换个书名试试吧' : '',
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ),
       ],
@@ -736,20 +726,12 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                 const Text(
                   '新建作品',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
+                  style: AppTextStyles.titleLg,
                 ),
                 const SizedBox(height: 20),
                 const Text(
                   '标题',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textBody,
-                  ),
+                  style: AppTextStyles.formLabel,
                 ),
                 const SizedBox(height: 6),
                 TextField(
