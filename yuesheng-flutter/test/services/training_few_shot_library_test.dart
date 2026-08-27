@@ -66,23 +66,39 @@ void main() {
       final r1 = getTrainingFewShot(['P003', 'P008']);
       final r2 = getTrainingFewShot(['P008', 'P003']);
       // 用各症候独有原文片段判定顺序
-      final idxP003_r1 = r1.indexOf('她很难过');
-      final idxP008_r1 = r1.indexOf('晨曦的金色光辉');
-      expect(idxP003_r1 < idxP008_r1, true, reason: 'r1 应 P003 在前');
-      final idxP003_r2 = r2.indexOf('她很难过');
-      final idxP008_r2 = r2.indexOf('晨曦的金色光辉');
-      expect(idxP008_r2 < idxP003_r2, true, reason: 'r2 应 P008 在前');
+      final idxP003R1 = r1.indexOf('她很难过');
+      final idxP008R1 = r1.indexOf('晨曦的金色光辉');
+      expect(idxP003R1 < idxP008R1, true, reason: 'r1 应 P003 在前');
+      final idxP003R2 = r2.indexOf('她很难过');
+      final idxP008R2 = r2.indexOf('晨曦的金色光辉');
+      expect(idxP008R2 < idxP003R2, true, reason: 'r2 应 P008 在前');
     });
   });
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
-    test('#7 首批覆盖 5 个高频症候', () {
+    test('#7 覆盖 10 个高频症候（首批 5 + 第二批 5）', () {
+      // 首批 5 个
       expect(kTrainingFewShotLibrary.keys, contains('P003'));
       expect(kTrainingFewShotLibrary.keys, contains('P004'));
       expect(kTrainingFewShotLibrary.keys, contains('P008'));
       expect(kTrainingFewShotLibrary.keys, contains('P011'));
       expect(kTrainingFewShotLibrary.keys, contains('P019'));
-      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(5));
+      // 第二批 5 个（2026-08-27 扩容）
+      expect(kTrainingFewShotLibrary.keys, contains('P005'));
+      expect(kTrainingFewShotLibrary.keys, contains('P006'));
+      expect(kTrainingFewShotLibrary.keys, contains('P007'));
+      expect(kTrainingFewShotLibrary.keys, contains('P009'));
+      expect(kTrainingFewShotLibrary.keys, contains('P010'));
+      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(10));
+    });
+
+    test('#7a 第二批 P005-P010 few-shot 命中检索（独有原文片段）', () {
+      // 用各症候独有原文片段断言命中
+      expect(getTrainingFewShot(['P005']), contains('他不知道的是'));
+      expect(getTrainingFewShot(['P006']), contains('淅淅沥沥'));
+      expect(getTrainingFewShot(['P007']), contains('他站起来'));
+      expect(getTrainingFewShot(['P009']), contains('去北方'));
+      expect(getTrainingFewShot(['P010']), contains('剪短了三寸'));
     });
 
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {
