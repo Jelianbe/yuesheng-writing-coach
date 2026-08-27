@@ -396,8 +396,28 @@ class LlmClient {
       final preview = data.length > LlmConfig.errorPreviewLengthLong
           ? data.substring(0, LlmConfig.errorPreviewLengthLong)
           : data;
-      msg += ': $preview';
+      // B22/R-029：防御性脱敏——OpenAI 错误响应通常不含 Authorization，
+      // 但代理/网关可能 echo 请求头到错误响应体；此层作为防御纵深。
+      msg += ': ${_redactAuth(preview)}';
     }
     return msg;
+  }
+
+  /// R-029 安全：脱敏可能泄露的 Authorization / Bearer 凭证
+  ///
+  /// 覆盖两种形式：
+  ///   1. `Bearer xxx`（OAuth 2.0 标准格式，含 JWT）
+  ///   2. `Authorization: xxx` / `"Authorization":"xxx"`（头部键值形式）
+  ///
+  /// 不影响其他无关字段；保留请求头名以方便排查，仅屏蔽值。
+  String _redactAuth(String text) {
+    final bearerRe = RegExp(r'[Bb]earer\s+[A-Za-z0-9_\-\.]+');
+    final headerRe = RegExp(
+      r'''["']?Authorization["']?\s*[:=]\s*["']?[A-Za-z0-9_\-\.]+''',
+      caseSensitive: false,
+    );
+    return text
+        .replaceAll(bearerRe, 'Bearer ***')
+        .replaceAll(headerRe, 'Authorization=***');
   }
 }
