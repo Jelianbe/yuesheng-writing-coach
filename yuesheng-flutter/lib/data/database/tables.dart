@@ -666,3 +666,40 @@ class OutlineImpressions extends Table {
     {entityId, impression},
   ];
 }
+
+/// ============================================================
+/// 20. training_results — 训练结果（X-041a P0：训练结果持久化）
+/// 会话级（session_id 维度），记录每次练习尝试的结果
+/// 关联 teacher_suggestion（可空，SET NULL：删建议不删训练历史）
+/// 关联 syndrome_id（软引用，无外键，症候 ID 永不复用）
+/// 真源：PracticeStore.trainingResult 当前仅存内存 state，本表补全持久化路径
+/// ============================================================
+@DataClassName('TrainingResultRow')
+class TrainingResults extends Table {
+  @override
+  String get tableName => 'training_results';
+
+  TextColumn get id => text()();
+  TextColumn get sessionId =>
+      text().references(Sessions, #id, onDelete: KeyAction.cascade)();
+  // 关联建议（可空：无建议触发的自主训练）— 删建议时 SET NULL 保留训练历史
+  TextColumn get suggestionId => text().nullable().references(
+    TeacherSuggestions,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  TextColumn get syndromeId => text()(); // 软引用，无外键
+  TextColumn get taskType => text().check(
+    taskType.isIn(const ['rewrite', 'analyze', 'compare', 'generate']),
+  )();
+  TextColumn get userContent => text()(); // 用户提交的练习内容
+  TextColumn get result => text()
+      .check(result.isIn(const ['passed', 'partial', 'failed']))();
+  TextColumn get feedbackJson => text().nullable()(); // AI 评分反馈 JSON
+  RealColumn get score => real().nullable()(); // 0.0-1.0 评分
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
