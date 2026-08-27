@@ -109,13 +109,7 @@ class _AbilityRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
+                    Text(description, style: AppTextStyles.caption),
                   ],
                 ),
               ),
@@ -208,13 +202,7 @@ class _Section extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        description,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
+                      Text(description, style: AppTextStyles.caption),
                       const SizedBox(height: AppSpacing.md),
                       child,
                     ],
@@ -260,7 +248,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),

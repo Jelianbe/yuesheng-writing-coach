@@ -121,10 +121,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
                   ),
                   Text(
                     '${chapters.length} 章',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
+                    style: AppTextStyles.caption,
                   ),
                 ],
               ),
@@ -639,11 +636,7 @@ class _VolumeHeader extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textInk,
-                ),
+                style: AppTextStyles.titleMd,
               ),
             ),
             if (onRename != null)
@@ -681,10 +674,7 @@ class _EmptyVolumeHint extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Padding(
       padding: EdgeInsets.fromLTRB(AppSpacing.xxl + AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.sm),
-      child: Text(
-        '暂无章节',
-        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
-      ),
+      child: Text('暂无章节', style: AppTextStyles.caption),
     );
   }
 }
@@ -800,14 +790,11 @@ class _EmptyChapters extends StatelessWidget {
             color: AppColors.placeholder,
           ),
           SizedBox(height: 12),
-          Text(
-            '还没有章节',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-          ),
+          Text('还没有章节', style: AppTextStyles.body),
           SizedBox(height: 4),
           Text(
             '点下面的「新建章节」开个头吧',
-            style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: AppTextStyles.caption,
           ),
         ],
       ),

@@ -257,10 +257,7 @@ class _TypeSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Text(
-            '$count',
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
-          ),
+          Text('$count', style: AppTextStyles.caption),
         ],
       ),
     );
@@ -313,11 +310,7 @@ class _EntityCard extends StatelessWidget {
                   entity.entityKey,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textInk,
-                  ),
+                  style: AppTextStyles.titleMd,
                 ),
               ),
               if (isPendingEntity) ...[
@@ -357,10 +350,7 @@ class _EntityCard extends StatelessWidget {
           if (visibleImps.isEmpty)
             const Padding(
               padding: EdgeInsets.only(top: AppSpacing.xsm),
-              child: Text(
-                '还没有梗概',
-                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
-              ),
+              child: Text('还没有梗概', style: AppTextStyles.caption),
             )
           else
             ...visibleImps.map(
@@ -504,15 +494,12 @@ class _OutlineEmpty extends StatelessWidget {
               color: AppColors.placeholder,
             ),
             SizedBox(height: 12),
-            Text(
-              '还没有大纲',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
+            Text('还没有大纲', style: AppTextStyles.body),
             SizedBox(height: 4),
             Text(
               '写一段后去教练面板做次诊断，AI 会帮你记住人物、设定和情节梗概',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+              style: AppTextStyles.caption,
             ),
           ],
         ),
