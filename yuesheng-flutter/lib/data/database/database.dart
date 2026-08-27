@@ -40,6 +40,8 @@ part 'database.g.dart';
     OutlineEntities,
     OutlineImpressions,
     Volumes,
+    // X-041a P0：训练结果持久化（PracticeStore.trainingResult 落库）
+    TrainingResults,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -49,7 +51,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -147,6 +149,13 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_chapters_volume ON chapters(volume_id)',
       );
+      // X-041a P0：训练结果索引（会话级查询 + 症候级追溯）
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_training_results_session ON training_results(session_id, created_at DESC)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_training_results_syndrome ON training_results(syndrome_id, created_at DESC)',
+      );
     },
 
     onUpgrade: (m, from, to) async {
@@ -164,7 +173,8 @@ class AppDatabase extends _$AppDatabase {
       // 批次89：守卫上移到 23（v23 块对 from=22 存量库可达，幂等）
       // 批次94-2：守卫上移到 24（v24 块对 from=23 存量库可达，幂等）
       // 批次94-5：守卫上移到 25（v25 块对 from=24 存量库可达，幂等）
-      if (from >= 25) return;
+      // X-041a：守卫上移到 26（v26 块对 from=25 存量库可达，幂等）
+      if (from >= 26) return;
 
       // v2: add_last_diagnosed_at_to_chapters
       if (from < 2) {
@@ -687,6 +697,34 @@ class AppDatabase extends _$AppDatabase {
             "ALTER TABLE manuscripts ADD COLUMN tags TEXT DEFAULT '[]'",
           );
         }
+      }
+
+      // v26: add_training_results_table（X-041a P0：训练结果持久化）
+      // 会话级（session_id 维度），记录每次练习尝试的结果。
+      // 关联 teacher_suggestion（可空，SET NULL：删建议不删训练历史）。
+      // syndrome_id 软引用（无外键，症候 ID 永不复用）。
+      // 真源：PracticeStore.trainingResult 当前仅存内存 state，本表补全持久化路径。
+      if (from < 26) {
+        await customStatement('''
+              CREATE TABLE IF NOT EXISTS training_results (
+                id             TEXT PRIMARY KEY,
+                session_id     TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                suggestion_id  TEXT DEFAULT NULL REFERENCES teacher_suggestion(id) ON DELETE SET NULL,
+                syndrome_id    TEXT NOT NULL,
+                task_type      TEXT NOT NULL CHECK(task_type IN ('rewrite','analyze','compare','generate')),
+                user_content   TEXT NOT NULL,
+                result         TEXT NOT NULL CHECK(result IN ('passed','partial','failed')),
+                feedback_json  TEXT DEFAULT NULL,
+                score          REAL DEFAULT NULL,
+                created_at     INTEGER NOT NULL DEFAULT (unixepoch())
+              )
+            ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_training_results_session ON training_results(session_id, created_at DESC)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_training_results_syndrome ON training_results(syndrome_id, created_at DESC)',
+        );
       }
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，
