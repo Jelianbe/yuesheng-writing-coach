@@ -67,7 +67,7 @@ class SessionDrawer extends StatelessWidget {
           children: [
             // ── 头部 ──
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
               ),
@@ -189,7 +189,7 @@ class SessionDrawer extends StatelessWidget {
           ? () => _confirmDelete(context, item)
           : null,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         child: Row(
           children: [
             // 月字头像
@@ -307,7 +307,7 @@ class SessionDrawer extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             ),
             child: const Text(
               '取消',
@@ -324,7 +324,7 @@ class SessionDrawer extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
             ),
             child: const Text(
               '删除',
@@ -346,10 +346,10 @@ class SessionDrawer extends StatelessWidget {
   /// 阶段标签（月色竹青：竹青淡底 + 竹青字）
   Widget _phaseTag(String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         label,

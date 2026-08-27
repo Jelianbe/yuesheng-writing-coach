@@ -101,7 +101,12 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -165,7 +170,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
       children: [
         // 一句话风格
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
             color: AppColors.primarySoft,
             borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -207,7 +212,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
 
   Widget _dimensionRow(String name, String label) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: Row(
         children: [
           SizedBox(
@@ -221,7 +226,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
             decoration: BoxDecoration(
               color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(10),

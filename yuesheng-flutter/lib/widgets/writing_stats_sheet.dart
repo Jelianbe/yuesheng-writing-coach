@@ -67,7 +67,12 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.section,
+          AppSpacing.md,
+          AppSpacing.section,
+          AppSpacing.lg,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -126,7 +131,7 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
             const SizedBox(height: 8),
             if (!_loaded)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
                 child: Center(
                   child: SizedBox(
                     width: 20,
@@ -160,7 +165,7 @@ class _StatsEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 32),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Column(
         children: [
           const Icon(

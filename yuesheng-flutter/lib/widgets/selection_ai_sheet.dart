@@ -177,7 +177,12 @@ class _SelectionAiSheetContentState
   Widget build(BuildContext context) {
     final title = selectionAiModeTitle(widget.mode);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -208,7 +213,7 @@ class _SelectionAiSheetContentState
           const SizedBox(height: 8),
           // ── 原文预览 ──
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(AppSpacing.smx),
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -252,7 +257,7 @@ class _SelectionAiSheetContentState
             )
           else if (_error != null)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
               child: Column(
                 children: [
                   Text(
@@ -313,7 +318,12 @@ class _SelectionAiSheetContentState
     required String version,
   }) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.smx,
+        AppSpacing.md,
+        AppSpacing.smx,
+      ),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),

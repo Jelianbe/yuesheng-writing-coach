@@ -299,7 +299,12 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         ? ''
         : '${_current + 1}/${_matches.length} 处';
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -440,7 +445,10 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         hintText: hint,
         hintStyle: const TextStyle(fontSize: 13, color: AppColors.hintText),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.smx,
+          vertical: AppSpacing.sm,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: AppColors.borderSoft),
@@ -617,7 +625,7 @@ class _BookResultTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
