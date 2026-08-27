@@ -60,7 +60,7 @@ class OutlineDrawer extends ConsumerWidget {
           children: [
             // ── 头部：标题 + 关闭 ──
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 8, 12),
+              padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.sm, AppSpacing.md),
               child: Row(
                 children: [
                   const Icon(
@@ -229,7 +229,7 @@ class _OutlineList extends StatelessWidget {
       );
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.lg),
       children: children,
     );
   }
@@ -245,7 +245,7 @@ class _TypeSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 6),
+      padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xsm),
       child: Row(
         children: [
           Text(
@@ -296,8 +296,8 @@ class _EntityCard extends StatelessWidget {
     final isPendingEntity = entity.status == 'pending';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.smx, AppSpacing.md, AppSpacing.smx),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -334,7 +334,7 @@ class _EntityCard extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
                     minimumSize: const Size(0, 24),
                   ),
                   child: const Text('确认', style: TextStyle(fontSize: 12)),
@@ -356,7 +356,7 @@ class _EntityCard extends StatelessWidget {
           ],
           if (visibleImps.isEmpty)
             const Padding(
-              padding: EdgeInsets.only(top: 6),
+              padding: EdgeInsets.only(top: AppSpacing.xsm),
               child: Text(
                 '还没有梗概',
                 style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
@@ -394,7 +394,7 @@ class _ImpressionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPending = impression.status == 'pending';
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -422,7 +422,7 @@ class _ImpressionRow extends StatelessWidget {
               if (isPending) ...[
                 const SizedBox(width: 6),
                 Padding(
-                  padding: const EdgeInsets.only(top: 2),
+                  padding: const EdgeInsets.only(top: AppSpacing.xxs),
                   child: _Tag(
                     label: '待确认',
                     bg: AppColors.warningBg,
@@ -442,7 +442,7 @@ class _ImpressionRow extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.success,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
                     minimumSize: const Size(0, 24),
                   ),
                   child: const Text('确认', style: TextStyle(fontSize: 12)),
@@ -452,7 +452,7 @@ class _ImpressionRow extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.textTertiary,
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
                     minimumSize: const Size(0, 24),
                   ),
                   child: const Text('拒绝', style: TextStyle(fontSize: 12)),
@@ -476,7 +476,7 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -494,7 +494,7 @@ class _OutlineEmpty extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [

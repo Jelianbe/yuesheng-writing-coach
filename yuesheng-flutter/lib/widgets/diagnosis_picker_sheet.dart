@@ -107,7 +107,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,10 +116,10 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
             Container(
               width: 40,
               height: 4,
-              margin: const EdgeInsets.only(top: 12, bottom: 12),
+              margin: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.md),
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
             const Text(
@@ -155,15 +155,15 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
             const SizedBox(height: 8),
             // 取消按钮
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.textSecondary,
                   side: const BorderSide(color: AppColors.border),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
                 child: const Text(
@@ -181,7 +181,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
   /// 空库：引导去书架创建
   Widget _buildEmpty() {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -221,8 +221,8 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                 onTap: () => _toggleExpand(m.id),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
@@ -265,7 +265,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
     final chapters = _chaptersMap[manuscriptId] ?? const <Chapter>[];
     if (chapters.isEmpty) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
         child: Text(
           '暂无章节',
           style: TextStyle(fontSize: 13, color: AppColors.disabledText),
@@ -290,8 +290,8 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
               onTap: () => _handleSelect(manuscriptId, ch),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.smx,
                 ),
                 child: Row(
                   children: [
@@ -334,7 +334,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
             InkWell(
               onTap: () => _loadMore(manuscriptId),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 child: Text(
                   '加载更多（${chapters.length - visibleCount} 章未显示）',
                   textAlign: TextAlign.center,
