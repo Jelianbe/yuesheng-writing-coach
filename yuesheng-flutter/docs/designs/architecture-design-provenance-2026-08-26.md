@@ -309,9 +309,10 @@ coverage: flutter-end-only  # 截止 2026-08-26，Flutter 端为唯一真源
   - **Batch3（2026-08-27, commit b3dc9f44）**：新增 AppBoxStyles（standardInput）+ AppButtonStyles（primary/secondary）+ 7 处示范替换
   - **Batch4（2026-08-27, commit 59a092ef）**：settings_page.dart (8) + editor_settings_sheet.dart (7) + progress_detail_page.dart (6) 共 21 处替换，全部匹配现有令牌无新增（R-019 防通胀）。无逻辑变化，无新增 import。四道门禁：analyze 0 issues / widgets 目录无对应测试 / 0 循环依赖 / 0 密钥命中
   - **Batch5（2026-08-27, commit 745f95af）**：syndrome_history_list (4 caption) + ability_chart (3 caption) + outline_drawer (5 = caption×3+titleMd+body) + chapter_tree_drawer (5 = caption×3+titleMd+body) 共 17 处替换，全部匹配现有令牌无新增（R-019 防通胀）。无逻辑变化，无新增 import。四道门禁：analyze 0 issues (4.2s) / widgets 目录无对应测试 / 0 循环依赖 / 0 密钥命中
-  - **累计替换**：≥74 处 TextStyle 字面量 → AppTextStyles 令牌
+  - **Batch6（2026-08-27, in progress）**：writing_coach_panel_teaching (titleLg+body) + placeholder_page (titleLg+body) + onboarding_questionnaire (titleLg×2+body) + session_drawer (titleLg+body) + diagnosis_picker_sheet (titleLg) + search_replace_sheet (caption) 共 10 处替换，全部匹配现有令牌无新增（R-019 防通胀）。原计划 14 处，实际：diagnosis_picker_sheet 与 search_replace_sheet 剩余 4 处为非标值（fontSize 13/15/16 + w700、不同语义颜色），按 R-019 保留硬编码。无逻辑变化，无新增 import。四道门禁：analyze 0 issues (2.0s) / widgets 784 全绿 / 0 循环依赖（286 模块） / 0 密钥命中
+  - **累计替换**：≥84 处 TextStyle 字面量 → AppTextStyles 令牌
   - **非标值保留**（R-019 防通胀）：fontSize 13/15/16/11 + w700 等组合不强行新增令牌，保留硬编码
-  - **下次候选**：onboarding_questionnaire (titleLg×2+body) / session_drawer (titleLg+body) / diagnosis_picker_sheet (titleLg+body) / placeholder_page (titleLg+body) / writing_coach_panel_teaching (titleLg+body) / search_replace_sheet (titleMd+caption×2) 等小文件批次，累计约 12-15 处替换
+  - **下次候选**：剩余 widgets 文件中可替换的硬编码已基本扫清，后续如需继续可在 services/ 与 pages/ 中扫描，或评估新增 formTitle/numericCaption 等小家族令牌的 ROI
 - **体系角色**：**跨所有 UI 的视觉一致性层**。它不直接参与教学闭环，但它是"产品感觉是否专业统一"的决定性模块；令牌化后未来改视觉风格（如改圆角风格）只需改 app_theme.dart 一行。
 
 ---
