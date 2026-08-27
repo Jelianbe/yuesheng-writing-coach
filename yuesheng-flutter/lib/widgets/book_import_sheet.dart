@@ -68,7 +68,12 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.lg,
+          AppSpacing.xl,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,10 +82,10 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
                 color: AppColors.borderSoft,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
             ),
@@ -103,7 +108,7 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
 
             if (_uploading)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: Center(
                   child: SizedBox(
                     width: 24,
@@ -126,10 +131,10 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
             if (_error != null) ...[
               const SizedBox(height: 12),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
                   color: AppColors.dangerBg,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
                   _error!,
@@ -146,7 +151,7 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
                 minimumSize: const Size.fromHeight(44),
                 side: const BorderSide(color: AppColors.borderSoft),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: const Text(
@@ -179,12 +184,12 @@ class _OptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [

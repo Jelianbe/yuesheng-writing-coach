@@ -50,7 +50,12 @@ class ImportSuccessSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xl,
+          AppSpacing.md,
+          AppSpacing.xl,
+          AppSpacing.section + AppSpacing.sm,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -59,10 +64,10 @@ class ImportSuccessSheet extends StatelessWidget {
             Container(
               width: 36,
               height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
+              margin: const EdgeInsets.only(bottom: AppSpacing.section),
               decoration: BoxDecoration(
                 color: AppColors.border,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
             ),
@@ -70,7 +75,7 @@ class ImportSuccessSheet extends StatelessWidget {
             Container(
               width: 56,
               height: 56,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: const BoxDecoration(
                 color: AppColors.primary,
                 shape: BoxShape.circle,
@@ -120,7 +125,7 @@ class ImportSuccessSheet extends StatelessWidget {
                 minimumSize: const Size.fromHeight(46),
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: Text(
@@ -144,7 +149,7 @@ class ImportSuccessSheet extends StatelessWidget {
                   minimumSize: const Size.fromHeight(46),
                   side: const BorderSide(color: AppColors.border),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
                 child: const Text(
