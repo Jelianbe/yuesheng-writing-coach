@@ -95,7 +95,7 @@ class WritingMenuSheet {
               child: SingleChildScrollView(
                 controller: scrollController,
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(AppSpacing.section),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -213,7 +213,10 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      padding: const EdgeInsets.only(
+        top: AppSpacing.xs,
+        bottom: AppSpacing.xxs,
+      ),
       child: SizedBox(
         width: double.infinity,
         child: Text(

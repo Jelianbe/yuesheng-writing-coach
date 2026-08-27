@@ -69,8 +69,8 @@ class PracticeResultIndicator extends StatelessWidget {
     final cfg = _resultConfig(result);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: cfg.bg,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -115,8 +115,8 @@ class PracticeResultIndicator extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.l3Text,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.xsm,
                     ),
                   ),
                   child: const Text(
@@ -131,8 +131,8 @@ class PracticeResultIndicator extends StatelessWidget {
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.textTertiary,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xsm,
                   ),
                 ),
                 child: const Text(
