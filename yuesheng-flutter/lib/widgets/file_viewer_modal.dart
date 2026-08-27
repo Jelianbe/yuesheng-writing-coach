@@ -185,14 +185,14 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                 // 头部
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
                   ),
                   child: Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
+                          horizontal: AppSpacing.smx,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
@@ -222,7 +222,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                 // 内容
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: SelectableText(
                       _file!.content,
                       style: const TextStyle(
@@ -235,7 +235,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                 ),
                 // 底部操作
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.lg),
                   child: Row(
                     children: [
                       Expanded(
@@ -245,7 +245,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                             minimumSize: const Size.fromHeight(44),
                             side: const BorderSide(color: AppColors.borderSoft),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: const Text(
@@ -263,7 +263,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                             backgroundColor: AppColors.dangerBg,
                             foregroundColor: AppColors.danger,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: const Text('删除文件'),

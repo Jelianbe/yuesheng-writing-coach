@@ -133,15 +133,15 @@ class _FileSectionState extends ConsumerState<FileSection> {
             ),
             InkWell(
               onTap: _openUpload,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: AppSpacing.smx,
+                  vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceWhite,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(color: AppColors.borderSoft),
                 ),
                 child: const Row(
@@ -166,10 +166,10 @@ class _FileSectionState extends ConsumerState<FileSection> {
 
         if (_files.isEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl, horizontal: AppSpacing.lg),
             decoration: BoxDecoration(
               color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Column(
               children: [
@@ -206,7 +206,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                 ),
@@ -216,7 +216,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
         else
           for (final file in _files)
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: GestureDetector(
                 onTap: () => _openViewer(file),
                 onLongPress: () => _delete(file),
@@ -224,7 +224,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: AppColors.borderSoft),
                   ),
                   child: Row(
@@ -256,8 +256,8 @@ class _FileSectionState extends ConsumerState<FileSection> {
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
+                                    horizontal: AppSpacing.sm,
+                                    vertical: AppSpacing.xxs,
                                   ),
                                   decoration: BoxDecoration(
                                     color: AppColors.primarySoft,

@@ -63,7 +63,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
     final passRatePercent = (evaluation.passRate * 100).round();
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -77,15 +77,15 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
               child: Row(
                 children: [
                   Icon(trend.icon, size: 22, color: trend.color),
                   const SizedBox(width: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: AppSpacing.smx,
+                      vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
@@ -125,7 +125,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
           if (_expanded) ...[
             Container(height: 1, color: AppColors.borderLight),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -197,8 +197,8 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                       style: TextButton.styleFrom(
                         foregroundColor: AppColors.textTertiary,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
+                          horizontal: AppSpacing.lg,
+                          vertical: AppSpacing.xsm,
                         ),
                       ),
                       child: const Text(
@@ -273,8 +273,8 @@ class _SyndromeItem extends StatelessWidget {
     final trend = _trendConfig(detail.trend);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
