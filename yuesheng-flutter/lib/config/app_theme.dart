@@ -107,3 +107,45 @@ abstract final class AppSpacing {
   static const double xxl = 32; // X-039-Batch1 补：大区块/大标题内边距，全库 17 次 EI:32
   static const double page = 16; // 页面水平边距
 }
+
+/// 月色竹青文字样式令牌
+///
+/// 仅收敛全库高频重复且语义稳定的 TextStyle。非标组合（如 fontSize:13、
+/// 字重与颜色变体不齐整的边缘用法）按 R-019「非标值保留」约定继续原样
+/// 保留，避免令牌膨胀。
+abstract final class AppTextStyles {
+  // ── 标题族 ──
+  /// 大标题 / 空状态主文字（fontSize:18 / w600 / textPrimary，全库多处重复）
+  static const TextStyle titleLg = TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+
+  /// 章节标题 / 卡片标题（fontSize:14 / w600 / textInk）
+  static const TextStyle titleMd = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textInk,
+  );
+
+  // ── 正文族 ──
+  /// 次级说明文字（fontSize:14 / textSecondary，最高频重复）
+  static const TextStyle body = TextStyle(
+    fontSize: 14,
+    color: AppColors.textSecondary,
+  );
+
+  /// 弱化辅助文字 / caption（fontSize:12 / textTertiary）
+  static const TextStyle caption = TextStyle(
+    fontSize: 12,
+    color: AppColors.textTertiary,
+  );
+
+  /// 表单标签 / 列表项标签（fontSize:14 / w500 / textBody）
+  static const TextStyle formLabel = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textBody,
+  );
+}
