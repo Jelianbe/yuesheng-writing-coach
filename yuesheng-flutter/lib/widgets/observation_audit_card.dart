@@ -95,7 +95,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
   Widget build(BuildContext context) {
     final hasSession = widget.sessionId != null && widget.sessionId!.isNotEmpty;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surfaceWhite,

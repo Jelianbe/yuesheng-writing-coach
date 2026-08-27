@@ -81,7 +81,7 @@ class DiagnosisFailedCard extends StatelessWidget {
     final showHint = failureCount >= UILimits.failureWarningThreshold;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -89,7 +89,7 @@ class DiagnosisFailedCard extends StatelessWidget {
             color: AppColors.surfaceWhite,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
               // 搜索图标圆底（对齐 RN iconContainer bgTint）
@@ -149,7 +149,7 @@ class DiagnosisFailedCard extends StatelessWidget {
   Widget _buildSuggestions() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -167,7 +167,7 @@ class DiagnosisFailedCard extends StatelessWidget {
           ),
           for (final suggestion in _displaySuggestions)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
+              padding: const EdgeInsets.only(top: AppSpacing.xsm),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

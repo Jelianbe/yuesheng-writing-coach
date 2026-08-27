@@ -18,7 +18,7 @@ class ThinkingPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       child: Row(
         children: [
           Container(
@@ -38,7 +38,7 @@ class ThinkingPlaceholder extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Text(
             label ?? (isDiagnosing ? '诊断中…' : '思考中…'),
             style: const TextStyle(

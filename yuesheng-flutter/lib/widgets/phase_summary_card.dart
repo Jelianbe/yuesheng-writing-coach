@@ -140,7 +140,7 @@ class PhaseSummaryCard extends StatelessWidget {
     final config = _resultConfig(result);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -148,7 +148,7 @@ class PhaseSummaryCard extends StatelessWidget {
             color: AppColors.surfaceWhite,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             children: [
               // 结果图标圆底（对齐 RN iconContainer）
@@ -263,7 +263,7 @@ class PhaseSummaryCard extends StatelessWidget {
         const SizedBox(height: 6),
         for (final change in changes) ...[
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(color: AppColors.divider, width: 0.5),
