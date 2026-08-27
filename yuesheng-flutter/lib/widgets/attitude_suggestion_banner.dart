@@ -33,11 +33,16 @@ class AttitudeSuggestionBanner extends StatelessWidget {
     final iconColor = isUpgrade ? AppColors.warning : AppColors.primary;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        0,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: borderColor),
       ),
       child: Row(
@@ -78,7 +83,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                     // 接受：切换到目标档位
                     InkWell(
                       onTap: onAccept,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -86,7 +91,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.textPrimary,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           '切换到$targetLabel',
@@ -102,7 +107,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                     // 暂不：关闭横幅
                     InkWell(
                       onTap: onDismiss,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -110,7 +115,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.onPrimary.withValues(alpha: 0.5),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           '暂不',

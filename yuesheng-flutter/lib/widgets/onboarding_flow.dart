@@ -98,7 +98,12 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             Align(
               alignment: Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 12, AppSpacing.lg, 0),
+                padding: const EdgeInsets.fromLTRB(
+                  0,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  0,
+                ),
                 child: TextButton(
                   onPressed: widget.onComplete,
                   child: const Text(
