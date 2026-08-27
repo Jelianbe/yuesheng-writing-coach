@@ -76,7 +76,7 @@ void main() {
   });
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
-    test('#7 覆盖 19 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3 + 第五批 3）', () {
+    test('#7 覆盖 29 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3 + 第五批 3 + 第六批 3 + 第七批 3 + 第八批 4，全覆盖收官）', () {
       // 首批 5 个
       expect(kTrainingFewShotLibrary.keys, contains('P003'));
       expect(kTrainingFewShotLibrary.keys, contains('P004'));
@@ -101,7 +101,55 @@ void main() {
       expect(kTrainingFewShotLibrary.keys, contains('P018'));
       expect(kTrainingFewShotLibrary.keys, contains('P020'));
       expect(kTrainingFewShotLibrary.keys, contains('P021'));
-      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(19));
+      // 第六批 3 个（2026-08-27 扩容）
+      expect(kTrainingFewShotLibrary.keys, contains('P022'));
+      expect(kTrainingFewShotLibrary.keys, contains('P023'));
+      expect(kTrainingFewShotLibrary.keys, contains('P024'));
+      // 第七批 3 个（2026-08-27 扩容）
+      expect(kTrainingFewShotLibrary.keys, contains('P025'));
+      expect(kTrainingFewShotLibrary.keys, contains('P026'));
+      expect(kTrainingFewShotLibrary.keys, contains('P027'));
+      // 第八批 4 个（2026-08-27 扩容，收官）
+      expect(kTrainingFewShotLibrary.keys, contains('P028'));
+      expect(kTrainingFewShotLibrary.keys, contains('P029'));
+      expect(kTrainingFewShotLibrary.keys, contains('P030'));
+      expect(kTrainingFewShotLibrary.keys, contains('P031'));
+      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(29));
+    });
+
+    test('#7e 第六批 P022/P023/P024 few-shot 命中检索（独有原文片段）', () {
+      // 用各症候独有原文片段断言命中
+      expect(getTrainingFewShot(['P022']), contains('往事往事'));
+      expect(getTrainingFewShot(['P022']), contains('。。'));
+      expect(getTrainingFewShot(['P023']), contains('保护费'));
+      expect(getTrainingFewShot(['P023']), contains('哪只手打断的'));
+      expect(getTrainingFewShot(['P024']), contains('改变一切'));
+      expect(getTrainingFewShot(['P024']), contains('母亲'));
+    });
+
+    test('#7f 第七批 P025/P026/P027 few-shot 命中检索（独有原文片段）', () {
+      // 用各症候独有原文片段断言命中
+      expect(getTrainingFewShot(['P025']), contains('玄渊大陆'));
+      expect(getTrainingFewShot(['P025']), contains('碎瓷片'));
+      expect(getTrainingFewShot(['P025']), contains('四件套'));
+      expect(getTrainingFewShot(['P026']), contains('大家早点休息'));
+      expect(getTrainingFewShot(['P026']), contains('乱葬岗'));
+      expect(getTrainingFewShot(['P027']), contains('四十章没提了'));
+      expect(getTrainingFewShot(['P027']), contains('别找我'));
+    });
+
+    test('#7g 第八批 P028/P029/P030/P031 few-shot 命中检索（独有原文片段，收官）', () {
+      // 用各症候独有原文片段断言命中
+      expect(getTrainingFewShot(['P028']), contains('很悲伤地离开'));
+      expect(getTrainingFewShot(['P028']), contains('豆腐摔了一地'));
+      expect(getTrainingFewShot(['P028']), contains('碗边缺了一块瓷'));
+      expect(getTrainingFewShot(['P029']), contains('三百字无分段'));
+      expect(getTrainingFewShot(['P029']), contains('文字墙'));
+      expect(getTrainingFewShot(['P030']), contains('铺垫十章'));
+      expect(getTrainingFewShot(['P030']), contains('断流'));
+      expect(getTrainingFewShot(['P030']), contains('跪在师父面前'));
+      expect(getTrainingFewShot(['P031']), contains('筑基不能飞行'));
+      expect(getTrainingFewShot(['P031']), contains('破境丹'));
     });
 
     test('#7d 第五批 P018/P020/P021 few-shot 命中检索（独有原文片段）', () {
