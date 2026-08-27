@@ -1,8 +1,15 @@
 // ─────────────────────────────────────────────────────────────
 // TrainingPassRateCard — X-041b 训练通过率看板
 //
-// 数据源：GrowthState.trainingStats（来自 training_results 表聚合）
+// 数据源：GrowthService.getSyndromeTrainingStats（来自 training_results 表聚合）
 // UI 位置：growth_detail_page「症候分布」之后、「同类症候复发率」之前
+//
+// X-041c 增强：
+// - 卡片改为 ConsumerStatefulWidget，内部自管理时间窗状态
+// - 标题行右侧 SegmentedButton：7 天 / 30 天 / 全部
+// - 切换时调用 growthService.getSyndromeTrainingStats(days: X) 局部刷新
+//   不触发 GrowthStore 整体重载（最小侵入）
+// - 初始值用 widget.stats（来自 store 加载的近 30 天），避免重复查询
 //
 // 设计意图：
 // - 反映用户在各症候上的练习投入量与掌握程度
@@ -10,30 +17,81 @@
 // - 通过率口径：passed=1.0 / partial=0.5 / failed=0.0
 //
 // 视觉规范（月色竹青，对齐 GrowthDetailPage._Card）：
-//   卡片         #F2F4F2 + 左侧 4dp 竹青条 + AppRadius.md 圆角
+//   卡片         surface + 左侧 4dp 竹青条 + AppRadius.md 圆角
 //   通过率色    ≥80% primary / 50-80% warning / <50% danger
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
 import '../data/repositories/training_result_repository.dart';
+import '../providers/growth_providers.dart';
+import '../services/growth_service.dart';
 import '../services/syndrome_registry.dart';
 
-/// 训练通过率看板卡片
-class TrainingPassRateCard extends StatelessWidget {
+/// 训练通过率看板卡片（X-041c：支持时间窗切换）
+class TrainingPassRateCard extends ConsumerStatefulWidget {
+  /// 初始 stats（来自 GrowthStore.trainingStats，近 30 天）
+  /// 若为空则卡片渲染 SizedBox.shrink
   final List<SyndromeTrainingStats> stats;
 
   const TrainingPassRateCard({super.key, required this.stats});
 
   @override
-  Widget build(BuildContext context) {
-    if (stats.isEmpty) return const SizedBox.shrink();
+  ConsumerState<TrainingPassRateCard> createState() =>
+      _TrainingPassRateCardState();
+}
 
-    final totalPractices = stats.fold<int>(0, (s, r) => s + r.total);
-    final totalPassed = stats.fold<int>(0, (s, r) => s + r.passed);
-    final totalPartial = stats.fold<int>(0, (s, r) => s + r.partial);
-    // 整体通过率（加权：passed=1.0 / partial=0.5）
+class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
+  /// 时间窗：7 / 30 / null（全部）。默认 30（与 GrowthStore 一致）
+  int? _days = 30;
+
+  /// 当前展示的 stats。初始用 widget.stats，切换后由 service 重新加载
+  late List<SyndromeTrainingStats> _stats;
+
+  /// 是否正在加载（切换时间窗时为 true）
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _stats = widget.stats;
+  }
+
+  /// 切换时间窗并重新查询
+  Future<void> _switchWindow(int? days) async {
+    if (days == _days) return;
+    setState(() {
+      _days = days;
+      _loading = true;
+    });
+    try {
+      final service = ref.read(growthServiceProvider);
+      final fresh = await service.getSyndromeTrainingStats(days: days);
+      if (!mounted) return;
+      setState(() {
+        _stats = fresh;
+        _loading = false;
+      });
+    } catch (e) {
+      // 失败不阻断 UI，保留旧数据 + 控制台日志
+      debugPrint('[TrainingPassRateCard] 时间窗切换失败: $e');
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 空数据：渲染 SizedBox.shrink（与 X-041b 行为一致）
+    if (widget.stats.isEmpty && _stats.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final totalPractices = _stats.fold<int>(0, (s, r) => s + r.total);
+    final totalPassed = _stats.fold<int>(0, (s, r) => s + r.passed);
+    final totalPartial = _stats.fold<int>(0, (s, r) => s + r.partial);
     final overallRate = totalPractices == 0
         ? 0.0
         : (totalPassed + totalPartial * 0.5) / totalPractices;
@@ -56,17 +114,25 @@ class TrainingPassRateCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '训练通过率',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
+                      // 标题行：左标题 + 右时间窗切换
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              '训练通过率',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                          _buildWindowSelector(),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${stats.length} 个症候 · 共 $totalPractices 次练习 · '
+                        '${_stats.length} 个症候 · 共 $totalPractices 次练习 · '
                         '整体通过率 ${(overallRate * 100).round()}%',
                         style: const TextStyle(
                           fontSize: 12,
@@ -74,11 +140,37 @@ class TrainingPassRateCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      for (int i = 0; i < stats.length; i++) ...[
-                        _StatsRow(stat: stats[i]),
-                        if (i < stats.length - 1)
-                          const SizedBox(height: 10),
-                      ],
+                      if (_loading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (_stats.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Text(
+                            '该时段暂无训练记录',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        )
+                      else
+                        for (int i = 0; i < _stats.length; i++) ...[
+                          _StatsRow(stat: _stats[i]),
+                          if (i < _stats.length - 1)
+                            const SizedBox(height: 10),
+                        ],
                     ],
                   ),
                 ),
@@ -87,6 +179,28 @@ class TrainingPassRateCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// 时间窗切换器：7 天 / 30 天 / 全部
+  Widget _buildWindowSelector() {
+    return SegmentedButton<int?>(
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        textStyle: WidgetStateProperty.all(const TextStyle(fontSize: 11)),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      segments: const [
+        ButtonSegment(value: 7, label: Text('7天')),
+        ButtonSegment(value: 30, label: Text('30天')),
+        ButtonSegment(value: null, label: Text('全部')),
+      ],
+      selected: {_days},
+      onSelectionChanged: (Set<int?> newSelection) {
+        final picked = newSelection.first;
+        _switchWindow(picked);
+      },
+      showSelectedIcon: false,
     );
   }
 }

@@ -28,6 +28,7 @@ import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../data/repositories/teacher_suggestion_repository.dart';
+import '../data/repositories/training_result_repository.dart';
 import '../data/repositories/teaching_state_repository.dart';
 import '../services/bootstrap_service.dart';
 import '../services/chat_service.dart';
@@ -113,6 +114,8 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     llmClient: ref.watch(llmClientProvider),
     teacherSuggestionRepo: TeacherSuggestionRepository(db),
     editorObservationRepo: EditorObservationRepository(db),
+    // X-041c：训练结果持久化仓储装配，启用 training_results 落库
+    trainingResultRepo: TrainingResultRepository(db),
     // 阶段 1（选项 B 依赖倒置）：四大纯能力经 capability provider 注入，
     // 生产侧走 DI 接缝；impl 为纯委托，行为与原顶层纯函数等价。
     genUi: ref.watch(genUiCapabilityProvider),

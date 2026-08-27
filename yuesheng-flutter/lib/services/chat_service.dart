@@ -49,6 +49,7 @@ import 'package:writingcoach/data/repositories/editor_observation_repository.dar
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
+import 'package:writingcoach/data/repositories/training_result_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
 import 'package:writingcoach/services/reply_receipt_guard.dart';
@@ -146,6 +147,12 @@ class ChatService {
   final LlmClient _llmClient;
   final DiagnosisService _diagnosisService;
   final TeacherSuggestionRepository _teacherSuggestionRepo;
+
+  /// X-041c：训练结果持久化仓储（可选——不装配则跳过 training_results 落库）
+  /// 真源：PracticeStore.trainingResult 仅存内存态；装配后训练轮反馈命中时
+  /// 同步写入 training_results 表，补全 GrowthStore.trainingStats 数据源。
+  /// 设计为可选参数：避免破坏 30+ 处现有测试构造（默认 null 跳过回写）。
+  final TrainingResultRepository? _trainingResultRepo;
 
   // ─── 四大纯能力（选项 B 依赖倒置：经 capability provider 注入，默认 const impl） ───
   // 阶段 1：消费层从顶层纯函数迁移到能力方法；impl 为纯委托，行为零变更。
@@ -253,6 +260,8 @@ class ChatService {
     required LlmClient llmClient,
     required TeacherSuggestionRepository teacherSuggestionRepo,
     required EditorObservationRepository editorObservationRepo,
+    // X-041c：可选装配，不传则跳过 training_results 落库（不破坏现有测试构造）
+    TrainingResultRepository? trainingResultRepo,
     GenUiCapability genUi = const GenUiParser(),
     MaterialCapability material = const MaterialCapabilityImpl(),
     TeachingCapability teaching = const TeachingCapabilityImpl(),
@@ -274,6 +283,7 @@ class ChatService {
          studentModelRepo: studentModelRepo,
        ),
        _teacherSuggestionRepo = teacherSuggestionRepo,
+       _trainingResultRepo = trainingResultRepo,
        _genUi = genUi,
        _material = material,
        _teaching = teaching,
@@ -2458,6 +2468,7 @@ extension ChatServiceSendPersist on ChatService {
     required String sessionId,
     required TeachingSubphase? currentSubphase,
     required String displayContent,
+    required String userContent,
     required String? trainingSyndromeId,
     required List<ActiveProblemView> activeProblems,
     required SendMessageCallbacks callbacks,
@@ -2534,6 +2545,30 @@ extension ChatServiceSendPersist on ChatService {
               }
             } catch (e) {
               debugPrint('[SafeRun] 重评估失败不阻断主流程: $e');
+            }
+          }
+          // X-041c：training_results 持久化（可选——未装配则跳过）
+          // 真源：PracticeStore.trainingResult 仅存内存态；此处补全落库
+          // 数据源 GrowthStore.trainingStats（症候-训练通过率看板）
+          // 字段说明：
+          //   - suggestionId 暂留 null（自主训练，X-041d 补追溯）
+          //   - taskType 暂用 'rewrite' 默认（chat_service 不区分 task 类型，X-041d 补全）
+          //   - feedback 存 displayContent（AI 反馈原文，供复盘回看）
+          //   - score 暂留 null（trainingResult 是枚举，无具体分数）
+          if (_trainingResultRepo != null && trainingSyndromeId != null) {
+            try {
+              await _trainingResultRepo.insertTrainingResult(
+                InsertTrainingResultParams(
+                  sessionId: sessionId,
+                  syndromeId: trainingSyndromeId,
+                  taskType: 'rewrite',
+                  userContent: userContent,
+                  result: trainingResult.value,
+                  feedback: {'displayContent': displayContent},
+                ),
+              );
+            } catch (e) {
+              debugPrint('[SafeRun] training_results 持久化失败: $e');
             }
           }
         } catch (e) {
@@ -2909,6 +2944,7 @@ extension ChatServiceSend on ChatService {
         sessionId: sessionId,
         currentSubphase: currentSubphase,
         displayContent: parsed.displayContent,
+        userContent: content,
         trainingSyndromeId: trainingSyndromeId,
         activeProblems: activeProblems,
         callbacks: callbacks,
