@@ -57,7 +57,7 @@ Widget? dispatchMessageCard({
   void Function(String feedback, String? quickOption)? onPartialAgreementSubmit,
   VoidCallback? onPartialAgreementSkip,
 }) {
-  const verticalPadding = EdgeInsets.symmetric(vertical: 2);
+  const verticalPadding = EdgeInsets.symmetric(vertical: AppSpacing.xxs);
 
   // D3：diagnosis_result → DiagnosisCard（结构化卡片，不包裹进气泡）
   if (!isStreamingBubble && msg.messageType == 'diagnosis_result') {
@@ -174,11 +174,11 @@ Widget? dispatchMessageCard({
       children: [
         MessageBubble(message: msg),
         Padding(
-          padding: const EdgeInsets.only(left: 40, bottom: 8),
+          padding: const EdgeInsets.only(left: 40, bottom: AppSpacing.sm),
           child: TextButton(
             onPressed: onAdoptSuggestion,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               minimumSize: const Size(0, 28),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

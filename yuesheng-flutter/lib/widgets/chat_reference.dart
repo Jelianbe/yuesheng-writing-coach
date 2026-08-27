@@ -139,7 +139,10 @@ extension _ChatReference on _ChatPageState {
       backgroundColor: AppColors.background,
       builder: (_) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          padding: const EdgeInsets.only(
+            top: AppSpacing.sm,
+            bottom: AppSpacing.sm,
+          ),
           child: ReferenceBar(
             sessionId: bootstrap.sessionId,
             onPressPicker: () =>
