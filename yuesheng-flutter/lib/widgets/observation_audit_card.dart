@@ -163,7 +163,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
             const SizedBox(height: 8),
             const Text(
               'Editor 对你写作的叙事层观察记录',
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+              style: AppTextStyles.caption,
             ),
             const SizedBox(height: 12),
             if (!hasSession)

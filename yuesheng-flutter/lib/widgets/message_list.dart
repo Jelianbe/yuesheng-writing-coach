@@ -192,16 +192,12 @@ class _MessageListState extends ConsumerState<MessageList> {
         return AlertDialog(
           title: const Text(
             '确认删除',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
+            style: AppTextStyles.titleLg,
           ),
           content: const Text(
             '确定要删除这条消息吗？此操作不可撤销。',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: AppTextStyles.body,
           ),
           actions: [
             TextButton(
