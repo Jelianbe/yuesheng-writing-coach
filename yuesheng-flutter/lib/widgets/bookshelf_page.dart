@@ -298,17 +298,7 @@ class _EmptyState extends StatelessWidget {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: onCreate,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.onPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl,
-                        vertical: AppSpacing.md,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
+                    style: AppButtonStyles.primary,
                     child: const Text('新建作品'),
                   ),
                 ],
@@ -738,27 +728,8 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                   controller: widget.titleController,
                   autofocus: true,
                   enabled: !_isLoading,
-                  decoration: InputDecoration(
+                  decoration: AppBoxStyles.standardInput(
                     hintText: '输入作品标题',
-                    hintStyle: const TextStyle(color: AppColors.textTertiary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.smx,
-                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -775,27 +746,8 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                   controller: widget.descController,
                   maxLines: 3,
                   enabled: !_isLoading,
-                  decoration: InputDecoration(
+                  decoration: AppBoxStyles.standardInput(
                     hintText: '一句话介绍你的作品',
-                    hintStyle: const TextStyle(color: AppColors.textTertiary),
-                    filled: true,
-                    fillColor: AppColors.background,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.border),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.primary),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.smx,
-                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -853,28 +805,9 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                       // 输入非空时用输入值，留空回退「其他」
                       if (v.trim().isNotEmpty) _genre = v.trim();
                     },
-                    decoration: InputDecoration(
+                    decoration: AppBoxStyles.standardInput(
                       hintText: '输入自定义类型',
-                      hintStyle: const TextStyle(color: AppColors.textTertiary),
-                      filled: true,
-                      fillColor: AppColors.background,
                       isDense: true,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        borderSide: const BorderSide(color: AppColors.primary),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.smx,
-                      ),
                     ),
                   ),
                 ],
@@ -884,15 +817,7 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                     Expanded(
                       child: TextButton(
                         onPressed: _isLoading ? null : widget.onCancel,
-                        style: TextButton.styleFrom(
-                          backgroundColor: AppColors.surface,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md,
-                          ),
-                        ),
+                        style: AppButtonStyles.secondary,
                         child: const Text(
                           '取消',
                           style: TextStyle(

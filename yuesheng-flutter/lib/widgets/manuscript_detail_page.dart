@@ -436,17 +436,7 @@ class _ManuscriptNotFoundView extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => context.go('/bookshelf'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.md,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
+              style: AppButtonStyles.primary,
               child: const Text('返回书架'),
             ),
           ],
@@ -488,17 +478,7 @@ class _EmptyChaptersState extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: onCreate,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.md,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
+              style: AppButtonStyles.primary,
               child: const Text('新建章节'),
             ),
           ],

@@ -149,3 +149,74 @@ abstract final class AppTextStyles {
     color: AppColors.textBody,
   );
 }
+
+/// 月色竹青容器样式令牌
+///
+/// 仅收敛高频重复的容器/输入框装饰组合。特殊形状（pill 药丸、
+/// 圆形首字封面等）按 R-019 保留原样，避免令牌膨胀。
+abstract final class AppBoxStyles {
+  /// 标准输入框装饰（form 场景高频重复）
+  ///
+  /// 提供统一的 filled + 矩形 border + contentPadding 配置。
+  /// 调用方只需传 hintText 等动态参数，无需重复书写完整结构。
+  static InputDecoration standardInput({
+    required String hintText,
+    String? helperText,
+    Widget? suffixIcon,
+    Widget? prefixIcon,
+    bool isDense = false,
+  }) => InputDecoration(
+    hintText: hintText,
+    hintStyle: const TextStyle(color: AppColors.textTertiary),
+    helperText: helperText,
+    suffixIcon: suffixIcon,
+    prefixIcon: prefixIcon,
+    filled: true,
+    fillColor: AppColors.background,
+    isDense: isDense,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderSide: const BorderSide(color: AppColors.border),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderSide: const BorderSide(color: AppColors.border),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderSide: const BorderSide(color: AppColors.primary),
+    ),
+    contentPadding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.smx,
+    ),
+  );
+}
+
+/// 月色竹青按钮样式令牌
+///
+/// 仅收敛高频重复的按钮 styleFrom 组合。特殊按钮（胶囊药丸、
+/// 自定义图标按钮等）按 R-019 保留原样，避免令牌膨胀。
+abstract final class AppButtonStyles {
+  /// 主按钮（ElevatedButton 竹青主色填充，全库多处重复）
+  static ButtonStyle get primary => ElevatedButton.styleFrom(
+    backgroundColor: AppColors.primary,
+    foregroundColor: AppColors.onPrimary,
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.xl,
+      vertical: AppSpacing.md,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+    ),
+  );
+
+  /// 次按钮（TextButton 灰白底）
+  static ButtonStyle get secondary => TextButton.styleFrom(
+    backgroundColor: AppColors.surface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+    ),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+  );
+}
