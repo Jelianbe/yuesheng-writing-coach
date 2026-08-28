@@ -9,6 +9,7 @@ import 'dart:ui' show Offset;
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import '../../services/decode_guard.dart';
 import '../../types/display_types.dart';
 import '../../widgets/punctuation_bar.dart';
 
@@ -109,7 +110,9 @@ class AppStateRepository {
           savedAt: decoded['savedAt'] as int? ?? row.updatedAt,
         );
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(field: 'app_state.chapter_draft', error: e, stack: st);
+    }
     return null;
   }
 
@@ -526,7 +529,9 @@ class AppStateRepository {
           return Offset(dx.toDouble(), dy.toDouble());
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(field: 'app_state.fab_position', error: e, stack: st);
+    }
     return null;
   }
 
@@ -555,7 +560,13 @@ class AppStateRepository {
       if (decoded is List) {
         return decoded.whereType<String>().toSet();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'app_state.volume_collapsed',
+        error: e,
+        stack: st,
+      );
+    }
     return {};
   }
 

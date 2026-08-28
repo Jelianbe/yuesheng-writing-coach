@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import '../../services/decode_guard.dart';
 import '../../services/style_fingerprint.dart';
 import '../../types/teaching_types.dart';
 
@@ -57,7 +58,13 @@ class StudentModelRepository {
       try {
         final decoded = jsonDecode(model.teachingHistory);
         if (decoded is List) history = decoded;
-      } catch (_) {}
+      } catch (e, st) {
+        logDecodeFailure(
+          field: 'student_model.teachingHistory',
+          error: e,
+          stack: st,
+        );
+      }
 
       // 追加新记录
       history.add(record);
@@ -88,7 +95,13 @@ class StudentModelRepository {
       if (decoded is List) {
         return decoded.whereType<Map<String, dynamic>>().toList();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'student_model.teachingHistory',
+        error: e,
+        stack: st,
+      );
+    }
     return [];
   }
 
@@ -123,7 +136,13 @@ class StudentModelRepository {
     try {
       final decoded = jsonDecode(model!.onboardingData!);
       if (decoded is Map<String, dynamic>) return decoded;
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'student_model.onboardingData',
+        error: e,
+        stack: st,
+      );
+    }
     return null;
   }
 
@@ -176,7 +195,13 @@ class StudentModelRepository {
       if (decoded is Map<String, dynamic>) {
         return WritingStyleProfile.fromJson(decoded);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'student_model.styleProfile',
+        error: e,
+        stack: st,
+      );
+    }
     return null;
   }
 
@@ -198,7 +223,13 @@ class StudentModelRepository {
       if (decoded is Map<String, dynamic>) {
         return WritingStyleProfile.fromJson(decoded);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'student_model.styleProfile(latest)',
+        error: e,
+        stack: st,
+      );
+    }
     return null;
   }
 
@@ -233,7 +264,13 @@ class StudentModelRepository {
       if (decoded is Map<String, dynamic>) {
         return StyleFingerprint.tryFromJson(decoded);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'student_model.styleFingerprint',
+        error: e,
+        stack: st,
+      );
+    }
     return null;
   }
 

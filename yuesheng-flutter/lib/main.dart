@@ -233,7 +233,18 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
     try {
       final db = ref.read(appDatabaseProvider);
       await AppStateRepository(db).setOnboardingCompleted(true);
-    } catch (_) {}
+    } catch (e, st) {
+      // 降级行为保留：标记写入失败也继续进入主页（否则用户会卡在引导页）。
+      // 代价是下次启动仍会看到引导页——此前静默吞掉，无从追溯。
+      debugPrint('[Intro] 引导完成标记写入失败，下次启动将重复引导: $e');
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: '引导完成标记写入失败，下次启动将重复引导',
+        context: {'error': '$e'},
+        stack: '$st',
+      );
+    }
     if (!mounted) return;
     setState(() => _introDone = true);
   }
