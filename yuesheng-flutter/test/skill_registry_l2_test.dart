@@ -209,6 +209,33 @@ void main() {
       expect(r.systemPrompt, contains('大纲结构诊断'));
     });
 
+    test('Phase 2：共享本体按组注入 contextHint，且不串组', () {
+      final diagnosis = buildSystemPromptV2(
+        const SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.yuesheng,
+          subphase: TeachingSubphase.diagnosis,
+        ),
+      );
+      // 同一共享本体在 diagnosis 组挂自己的语境指令
+      expect(diagnosis.systemPrompt, contains('诊断语境：把症候映射到推荐动作卡'));
+      expect(diagnosis.systemPrompt, contains('诊断语境：审视读者视角漏洞'));
+      // 其它组的语境指令不应混入
+      expect(diagnosis.systemPrompt, isNot(contains('训练语境：动作卡直接执行指引')));
+      expect(diagnosis.systemPrompt, isNot(contains('大纲语境：大纲层面的读者体验预判')));
+
+      final training = buildSystemPromptV2(
+        const SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.yuesheng,
+          subphase: TeachingSubphase.practice,
+        ),
+      );
+      // reader-awareness 同一本体，在 training 组换成训练语境
+      expect(training.systemPrompt, contains('训练语境：聚焦反馈恐惧与读者视角的刻意练习'));
+      expect(training.systemPrompt, isNot(contains('诊断语境：审视读者视角漏洞')));
+    });
+
     test('token 估算在预算内且 validatePrompt 通过', () {
       final r = buildSystemPromptV2(
         const SkillLoadContext(

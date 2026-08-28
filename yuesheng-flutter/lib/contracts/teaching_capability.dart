@@ -60,6 +60,18 @@ class L3RetrievalContext {
   const L3RetrievalContext({this.activeSyndromeIds, this.focusedTechniqueIds});
 }
 
+/// L2 组内挂载引用（ADR-skill-orthogonal-model.md Phase 2 方案 A）。
+///
+/// 共享本体只存一份 content；各组挂载时通过 [contextHint] 附加「语境适配指令」
+/// （50-150 tokens），描述该组场景下如何使用该 skill，避免为每组复制整块内容。
+/// [contextHint] 为 null 时退化为纯 skillId 语义（与旧 `List<String>` 等价）。
+class SkillRef {
+  final String skillId;
+  final String? contextHint;
+
+  const SkillRef(this.skillId, [this.contextHint]);
+}
+
 /// buildSystemPromptV2 返回的结构化结果
 ///（DTO 上移至契约层，原定义于 skill_dispatcher.dart）
 class SystemPromptResult {
