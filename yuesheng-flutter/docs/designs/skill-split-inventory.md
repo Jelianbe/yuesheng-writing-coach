@@ -374,4 +374,73 @@
 
 ---
 
-*核验基准：`estimatedTokens` 取自 `lib/services/skills_*.dart`（`SkillMeta.estimatedTokens`），覆盖时间为 2026-08-28。Phase 0 自查完成于 2026-08-28；Phase 1/2 执行完成于 2026-08-28；完整性自查完成于 2026-08-28。*
+## 10. Phase 3 执行结论（2026-08-28）
+
+### 10.1 Phase 3-A advanced-phases（phase 裁剪）已完成
+
+**改动**：`Skill` 增可选字段 `contentForPhase`（`skill_registry.dart:82`）；dispatcher 注入改走
+`contentForPhase?.call(ctx.phase) ?? skill.content`（`skill_dispatcher.dart:125`），37 个未挂钩子的
+本体行为不变；切片实现落在新增 `skills_advanced_outline_p7.dart`（88 行，切片全为原文子串，零编辑漂移）。
+
+**实测（advanced 档）**：P3 档 54374 → 51602（-5.1%）、P4 档 -6.9%；其余六个锚点上下文零漂移。
+新增锚点 `advanced_p4_yuesheng`（50638）补齐 P4 × 月笙档组合。
+
+**性质声明（与索引化有别）**：本次是「默认注入 + 按信号裁剪」，**不是零知识丢失**。
+P5 段（`TeachingPhase` 无枚举值，任何 prompt 中都不可达）与已发生的迁移在对应档位不注入。
+判断安全，但语义不同于索引化——索引化的失败模式是**知识永久丢失**，本方案的失败模式是**退化回全量**。
+
+**门禁**：format 0 changed / analyze No issues / test 2027 全通过 / circular OK（287 modules）。
+**提交**：`65ecdfeb`（7 文件，+256/-25）。
+
+### 10.2 「大块索引化降至 <800 tokens」不成立
+
+**根因**：全仓唯一的 L3 触发信号是 `focusSyndromeId`（症候专属），六块无对应探测器；
+`injectL3` 在生产代码**零调用点**；生产侧 L3 注入仅由 `chat_service.dart:1441` 驱动；
+X-043 已否决关键词扫描补信号。→ **拆到 L3 等于删知识**。
+
+**这不是方案盲区，须如实记录**：方案 §5 风险栏已标注「若检索不触发则 AI 失去知识」（高），
+ADR §3.3 风险表亦已列（中）。但缓解措施瞄的是「复用 syndrome/technique 已验证的检索链路」——
+**链路不是瓶颈，信号源才是**；复用链路无法凭空生产出链路的输入。
+
+**Phase 3 重分组**（2026-08-28 舰长确认）：
+
+| 组 | 对象 | 驱动信号 | 处置 |
+|:--|:--|:--|:------|
+| A | advanced-phases | `ctx.phase` | ✅ 已做（`65ecdfeb`） |
+| A | coaching-rhythm | `ctx.phase` | 待做 |
+| A | genre-guide | `work.genre` | 待做 |
+| B | plot-design / narrative-design / outline-diagnosis | 无 | **移出 Phase 3**，不索引化 |
+
+**量化口径修正**：方案 §5 的 token 目标一律改为「待实测」，验收只认改造后实测值。
+与 §9.2 同性质——这是**第二次**因同一根因（改造前估算、而非改造后实测）修正目标。
+
+**新增 ADR**：以上结论已固化为 `docs/ADR-knowledge-injection-driver-model.md`
+（补充性 ADR，确立「默认注入 + 按信号裁剪」与裁剪准入三问）。
+
+### 10.3 完整性自查（2026-08-28）
+
+| 检查项 | 方法 | 结果 |
+|--------|------|------|
+| 改动集合 | `git status` / `git diff --stat` | 7 文件，与预期一致，无多余 |
+| R-019 行数 | `wc -l` | 全部 ≤300（最大 `skill_prompt_anchor_test.dart` 261） |
+| R-019 `as` 断言 | diff 新增行扫描 | 无 |
+| R-020 循环依赖 | `check_circular.py` | OK（287 modules） |
+| 锚点漂移 | 7 prompt + 6 原文 + 4 L3 | 仅 `advanced_sensei` 变（预期内），其余全零 |
+| lint | `flutter analyze` 限定改动文件 | No issues |
+
+**自查发现并修复 1 个执行偏差**：跑门禁时把 `dart format lib` 擅自扩成 `dart format lib test`，
+连带格式化了 **11 个范围外的既有未格式化测试文件**，违反 R-010/R-021。已用 `git checkout --`
+逐个回退，提交集合恢复为 7 个文件，未污染提交历史。
+
+⚠️ **该坑上一轮已识别并规避过**——§9.3 自查表明文记录「未触碰任何范围外文件（含 11 个既有未格式化
+测试文件）」。本轮重犯，说明「文档记录了 ≠ 执行时会查」，特此固化门禁命令纪律（见下）。
+
+**门禁命令纪律（防止再犯）**：`dart format` 与 `flutter analyze` 的门禁参数**只能是 `lib`**，
+不得扩到 `test`（方案 §8 原文即如此）。确需格式化自己新增的测试文件时，逐个列文件路径，
+不得用目录参数。
+
+**§9.3 末尾「未提交」状态已解决**：当日补提交 Phase 1 `a865c788` / Phase 2 `4fc44e55` /
+文档 `8468f2c2`；锚点冻结 `a30523ad`；Phase 3-A `65ecdfeb`。至 2026-08-28 23:09，
+HEAD = `65ecdfeb`，工作区干净，ahead 0 / behind 0（已推送 upstream）。
+
+*核验基准：`estimatedTokens` 取自 `lib/services/skills_*.dart`（`SkillMeta.estimatedTokens`），覆盖时间为 2026-08-28。Phase 0 自查完成于 2026-08-28；Phase 1/2 执行完成于 2026-08-28；Phase 3-A advanced-phases 执行完成于 2026-08-28（提交 `65ecdfeb`）；完整性自查完成于 2026-08-28。*
