@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 
@@ -162,7 +163,12 @@ class ErrorLogRepository {
       try {
         final decoded = jsonDecode(raw);
         if (decoded is Map<String, dynamic>) return decoded;
-      } catch (_) {}
+      } catch (e) {
+        // ⚠️ 刻意不走 ErrorHandler / decode_guard：本文件就是 error_logs 的
+        // 写入方，此处调用会形成「记日志失败 → 再记日志」的递归。
+        // 降级行为保留（context 视为空），仅以 debugPrint 留下痕迹。
+        debugPrint('[ErrorLogRepo] context 字段解析失败，按空 context 处理: $e');
+      }
       return null;
     }
 

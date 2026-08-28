@@ -4,8 +4,10 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import '../../services/error_handler.dart';
 
 class SessionRepository {
   final AppDatabase _db;
@@ -147,7 +149,18 @@ class SessionRepository {
         _db.chapters,
       )..where((t) => t.id.equals(chapterId))).getSingleOrNull();
       chapterTitle = chapter?.title ?? '';
-    } catch (_) {}
+    } catch (e, st) {
+      // 降级行为保留：标题取不到 → 会话名回退「章节会话」，不影响会话创建。
+      // 此前为空 catch，会话名异常时无从追溯，此处补可观测性。
+      debugPrint('[SessionRepo] 章节标题查询失败，会话名回退: error=$e');
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: '章节标题查询失败，会话名回退为「章节会话」',
+        context: {'chapterId': chapterId, 'error': '$e'},
+        stack: '$st',
+      );
+    }
     // 新建会话（建会话 + 建 teaching_state + 建冗余缓存 + 建引用，整体包事务，避免半完成态）
     final sessionId = await _db.transaction(() async {
       final sid = await createBlankSession(

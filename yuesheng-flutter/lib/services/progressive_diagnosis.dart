@@ -15,6 +15,7 @@
 
 import 'dart:convert';
 
+import 'decode_guard.dart';
 import 'llm_client.dart';
 
 // ── 常量（对齐 RN shared-constants.ts DIAGNOSIS_CHUNK）──
@@ -414,6 +415,15 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
           )
           .toList();
     }
-  } catch (_) {}
+  } catch (e, st) {
+    // LLM 返回结构不符预期 → 本块诊断结果降级为空（原行为保留）。
+    // 此前静默吞掉，用户表现为「诊断结果少了/没有」且无从追溯。
+    logDecodeFailure(
+      field: 'progressive_diagnosis.chunk_notes',
+      error: e,
+      stack: st,
+      category: 'api',
+    );
+  }
   return const [];
 }

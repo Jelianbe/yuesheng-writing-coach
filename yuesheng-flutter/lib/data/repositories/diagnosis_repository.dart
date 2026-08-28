@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import '../../services/decode_guard.dart';
 import '../../services/teaching_state_cache.dart';
 
 /// 诊断落库入参（复刻 DiagnosisResult 类型）
@@ -646,7 +647,9 @@ class DiagnosisRepository {
       if (decoded is List) {
         return decoded.whereType<Map<String, dynamic>>().toList();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      logDecodeFailure(field: 'diagnosis.syndromes', error: e, stack: st);
+    }
     return [];
   }
 }

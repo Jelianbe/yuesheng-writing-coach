@@ -18,6 +18,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../data/database/database.dart';
+import 'decode_guard.dart';
 
 /// 诊断记录 DTO（导出专用，不依赖 drift 类型，便于纯函数单测）
 class DiagnosisExportEntry {
@@ -96,7 +97,9 @@ List<dynamic> _safeJsonDecodeList(String? raw) {
   try {
     final decoded = jsonDecode(raw);
     if (decoded is List) return decoded;
-  } catch (_) {}
+  } catch (e, st) {
+    logDecodeFailure(field: 'archive_export.json_list', error: e, stack: st);
+  }
   return [];
 }
 
@@ -106,7 +109,9 @@ Map<String, dynamic> _safeJsonDecodeMap(String? raw) {
   try {
     final decoded = jsonDecode(raw);
     if (decoded is Map<String, dynamic>) return decoded;
-  } catch (_) {}
+  } catch (e, st) {
+    logDecodeFailure(field: 'archive_export.json_map', error: e, stack: st);
+  }
   return {};
 }
 

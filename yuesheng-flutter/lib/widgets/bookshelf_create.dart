@@ -44,7 +44,15 @@ extension _BookshelfCreate on _BookshelfPageState {
     if (mounted) {
       try {
         Navigator.of(context, rootNavigator: true).pop();
-      } catch (_) {}
+      } catch (e, st) {
+        // 弹栈失败 → 保持当前页面（原行为保留）。此前静默，无法追溯。
+        logDecodeFailure(
+          field: 'bookshelf.create_modal.pop',
+          error: e,
+          stack: st,
+          category: 'render',
+        );
+      }
     }
   }
 
