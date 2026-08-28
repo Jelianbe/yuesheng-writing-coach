@@ -117,11 +117,15 @@ SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
   final l2Mode = resolveL2Mode(ctx);
   final l2SkillIds = getL2SkillIds(l2Mode);
 
-  for (final skillId in l2SkillIds) {
-    final skill = getSkill(skillId);
+  for (final ref in l2SkillIds) {
+    final skill = getSkill(ref.skillId);
     if (skill != null) {
+      // 共享本体 content 只注入一次，各组语义差异由 contextHint 承载
       chunks.add(skill.content);
-      loadedIds.add(skillId);
+      loadedIds.add(ref.skillId);
+      if (ref.contextHint != null) {
+        chunks.add(ref.contextHint!);
+      }
     }
     // 未注册的 skill 静默跳过（后续补齐后自动生效）
   }

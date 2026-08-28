@@ -171,13 +171,13 @@ void main() {
       }
 
       // L2 diagnosis 组：已注册项必须出现
-      for (final id in getL2SkillIds(L2Mode.diagnosis)) {
-        final skill = getSkill(id);
+      for (final ref in getL2SkillIds(L2Mode.diagnosis)) {
+        final skill = getSkill(ref.skillId);
         if (skill != null) {
           expect(
             result.systemPrompt.contains(skill.content),
             isTrue,
-            reason: 'L2 diagnosis skill 缺失: $id',
+            reason: 'L2 diagnosis skill 缺失: ${ref.skillId}',
           );
         }
       }

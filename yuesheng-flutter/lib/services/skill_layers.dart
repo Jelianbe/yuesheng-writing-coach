@@ -37,59 +37,63 @@ const List<String> l1SkillIds = [
 // ─── L2 按需层 ───────────────────────────────────────────────
 
 /// L2 加载模式：决定注入哪组 skill（类型定义已上移至 contracts/teaching_capability.dart）
-/// L2 各组 skill ID 映射
-const Map<L2Mode, List<String>> l2SkillMap = {
+/// L2 各组 skill 挂载（SkillRef：共享本体单实例 + contextHint 语境适配）
+const Map<L2Mode, List<SkillRef>> l2SkillMap = {
   L2Mode.none: [],
   L2Mode.beginner: [
-    'beginner-path',
-    'gap-detector',
-    'coaching-rhythm', // ~3500 tokens (P0会话节奏 + 从零构建引导)
-    'narrative-design', // ~4200 tokens (世界观 + 角色构建方法论 + 卡片系统连接)
-    'plot-design', // ~3400 tokens (情节与结构设计方法论)
-    'writer-psychology', // ~3200 tokens (新手心理支持：完美主义瘫痪、空白页恐惧)
+    SkillRef('beginner-path'),
+    SkillRef('gap-detector'),
+    SkillRef('coaching-rhythm', '新手语境：用「确认→选择→倾听→梳理→循环」节奏扶着走，少评判多给台阶'),
+    SkillRef('narrative-design', '新手语境：只推世界观差异与角色第一层，不追深度地层'),
+    SkillRef('plot-design', '新手语境：先讲清因果链，不急着铺情节'),
+    SkillRef('writer-psychology'), // ~3200 tokens (新手心理支持：完美主义瘫痪、空白页恐惧)
   ],
   L2Mode.diagnosis: [
-    'syndrome-diagnosis-index', // 仅症候索引+通用规则 (~1800 tokens)
-    'coaching-actions', // ~2200 tokens
-    'coaching-rhythm', // ~3500 tokens (P1暴露问题 + Layer 2认知桥接)
-    'narrative-design', // ~3800 tokens (P1世界/角色构建深化)
-    'plot-design', // ~3400 tokens (P1情节/结构设计深化)
-    'reader-awareness', // ~2200 tokens (读者意识/受众视角)
-    'genre-guide', // ~3500 tokens (体裁感知诊断调整)
-    'writing-style', // ~2800 tokens (正向风格识别，与症候诊断互补)
-    'diagnosis-confirmation', // ~700 tokens (↓ from 1800, FSM code-fied)
-    'feedback-cognition', // ~900 tokens
+    SkillRef('syndrome-diagnosis-index'), // 仅症候索引+通用规则 (~1800 tokens)
+    SkillRef('coaching-actions', '诊断语境：把症候映射到推荐动作卡'),
+    SkillRef('coaching-rhythm', '诊断语境：P1 暴露差距，Layer2 认知桥接，先确认当下卡点'),
+    SkillRef('narrative-design', '诊断语境：核对世界观/角色构建是否薄弱，给可操作重建步骤'),
+    SkillRef('plot-design', '诊断语境：定位情节断裂/张力缺失，给因果链追问工具'),
+    SkillRef('reader-awareness', '诊断语境：审视读者视角漏洞（信息/情绪/认知）'),
+    SkillRef('genre-guide'), // ~3500 tokens (体裁感知诊断调整)
+    SkillRef('writing-style'), // ~2800 tokens (正向风格识别，与症候诊断互补)
+    SkillRef(
+      'diagnosis-confirmation',
+    ), // ~700 tokens (↓ from 1800, FSM code-fied)
+    SkillRef('feedback-cognition'), // ~900 tokens
   ],
   L2Mode.training: [
-    'technique-library-index', // 仅技法索引+映射表 (~900 tokens)
-    'training-loop', // ~180 tokens
-    'training-templates', // V2 时替换为 training-templates-index（~1500 tokens 索引，完整知识走 L3）
-    'training-evaluation', // ~80 tokens
-    'text-surgery', // ~1250 tokens
-    'coaching-actions', // ~1400 tokens (V2: 教学动作方法目录，诊断侧 suggested_actions 的执行指引)
-    'demonstration', // ~470 tokens
-    'comparison', // ~540 tokens
-    'timed-rewrite', // ~1600 tokens (2026-08-11 批次17 新训练形态：限时重写)
-    'model-rewrite', // ~1800 tokens (2026-08-11 批次17 新训练形态：范文对照改写)
-    'revision-methodology', // ~1970 tokens (章级修改/修订方法论)
-    'reader-awareness', // ~1930 tokens (训练中的读者视角)
-    'writer-psychology', // ~2690 tokens (训练疲劳、比较焦虑、反馈恐惧)
+    SkillRef('technique-library-index'), // 仅技法索引+映射表 (~900 tokens)
+    SkillRef('training-loop'), // ~180 tokens
+    SkillRef(
+      'training-templates',
+    ), // V2 时替换为 training-templates-index（~1500 tokens 索引，完整知识走 L3）
+    SkillRef('training-evaluation'), // ~80 tokens
+    SkillRef('text-surgery'), // ~1250 tokens
+    SkillRef('coaching-actions', '训练语境：动作卡直接执行指引'),
+    SkillRef('demonstration'), // ~470 tokens
+    SkillRef('comparison'), // ~540 tokens
+    SkillRef('timed-rewrite'), // ~1600 tokens (2026-08-11 批次17 新训练形态：限时重写)
+    SkillRef('model-rewrite'), // ~1800 tokens (2026-08-11 批次17 新训练形态：范文对照改写)
+    SkillRef('revision-methodology'), // ~1970 tokens (章级修改/修订方法论)
+    SkillRef('reader-awareness', '训练语境：聚焦反馈恐惧与读者视角的刻意练习'),
+    SkillRef('writer-psychology'), // ~2690 tokens (训练疲劳、比较焦虑、反馈恐惧)
   ],
   L2Mode.advanced: [
-    'advanced-phases', // ~4200 tokens (P3/P4/P5 完整指引)
-    'training-loop', // ~3500 tokens (训练执行框架)
-    'coaching-actions', // ~3900 tokens (教学动作 → P3 专项训练)
-    'revision-methodology', // ~2600 tokens (深度修订)
-    'reader-awareness', // ~2200 tokens (P4复盘/P5共读中的读者视角)
-    'writing-style', // ~2800 tokens (P3/P4 风格深化)
-    'genre-guide', // ~3500 tokens (P3 体裁专项突破)
+    SkillRef('advanced-phases'), // ~4200 tokens (P3/P4/P5 完整指引)
+    SkillRef('training-loop'), // ~3500 tokens (训练执行框架)
+    SkillRef('coaching-actions', '进阶语境：P3 专项训练的动作编排'),
+    SkillRef('revision-methodology'), // ~2600 tokens (深度修订)
+    SkillRef('reader-awareness', '进阶语境：P4 复盘/P5 共读中的读者视角深化'),
+    SkillRef('writing-style'), // ~2800 tokens (P3/P4 风格深化)
+    SkillRef('genre-guide'), // ~3500 tokens (P3 体裁专项突破)
   ],
   L2Mode.outline: [
-    'plot-design', // ~3400 tokens (情节与结构设计方法论)
-    'narrative-design', // ~3800 tokens (世界观 + 角色构建方法论)
-    'outline-diagnosis', // ~4200 tokens (大纲结构诊断)
-    'coaching-actions', // ~2200 tokens (A005阶段拆分 / A001缩小范围)
-    'reader-awareness', // ~2200 tokens (读者视角)
+    SkillRef('plot-design', '大纲语境：对齐情节结构与因果链，检测引擎是否成立'),
+    SkillRef('narrative-design', '大纲语境：把角色/世界观设定与大纲结构对齐，检测交织'),
+    SkillRef('outline-diagnosis'), // ~4200 tokens (大纲结构诊断)
+    SkillRef('coaching-actions', '大纲语境：动作卡辅助大纲场景处理（A005阶段拆分 / A001缩小范围）'),
+    SkillRef('reader-awareness', '大纲语境：大纲层面的读者体验预判'),
   ],
 };
 
@@ -120,12 +124,20 @@ const Map<String, String> v2SkillReplacements = {
 ///
 /// 当 [useTrainingV2Pilot] 为 true 时，将 v1 训练相关 skill 替换为 v2 版本。
 /// 这是 skill-dispatcher 获取 L2 skill 列表的唯一入口。
-List<String> getL2SkillIds(L2Mode mode) {
-  final baseIds = l2SkillMap[mode] ?? const [];
+List<SkillRef> getL2SkillIds(L2Mode mode) {
+  final baseRefs = l2SkillMap[mode] ?? const <SkillRef>[];
   if (!useTrainingV2Pilot) {
-    return List.unmodifiable(baseIds);
+    return List.unmodifiable(baseRefs);
   }
-  return List.unmodifiable(baseIds.map((id) => v2SkillReplacements[id] ?? id));
+  // V2 替换：保留 contextHint，仅替换 skillId
+  return List.unmodifiable(
+    baseRefs.map(
+      (ref) => SkillRef(
+        v2SkillReplacements[ref.skillId] ?? ref.skillId,
+        ref.contextHint,
+      ),
+    ),
+  );
 }
 
 // ─── L2 决议逻辑 ─────────────────────────────────────────────
