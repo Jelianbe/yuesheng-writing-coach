@@ -34,6 +34,7 @@ part 'skills_beginner_p5.dart';
 part 'skills_beginner_p6.dart';
 part 'skills_beginner_p7.dart';
 part 'skills_beginner_p8.dart';
+part 'skills_beginner_p9.dart';
 part 'skills_diagnosis.dart';
 part 'skills_diagnosis_p1.dart';
 part 'skills_diagnosis_p2.dart';

@@ -38,7 +38,7 @@ const List<String> kPhase3Skills = [
 
 /// 锚点用例：上下文均 const，保证可复现；选取与 skill_registry_l2_test
 /// 的组装断言同源（beginner/diagnosis/training/advanced/outline 五模式），
-/// beginner 额外覆盖三个态度档位。
+/// beginner 额外覆盖三个态度档位，并补 P1 档（coaching-rhythm 阶段裁剪生效档）。
 class PromptCase {
   final String name;
   final SkillLoadContext ctx;
@@ -67,6 +67,14 @@ const List<PromptCase> kPromptCases = [
     SkillLoadContext(
       phase: TeachingPhase.p0Engage,
       attitude: AttitudeLevel.sensei,
+      isBeginner: true,
+    ),
+  ),
+  PromptCase(
+    'beginner_p1_yuesheng',
+    SkillLoadContext(
+      phase: TeachingPhase.p1World,
+      attitude: AttitudeLevel.yuesheng,
       isBeginner: true,
     ),
   ),

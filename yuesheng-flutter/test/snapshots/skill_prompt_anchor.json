@@ -1,27 +1,33 @@
 {
   "meta": {
     "note": "Phase 3 行为锚点基线（字节级：长度 + FNV-1a 指纹）",
-    "promptCases": "beginner_doubao,beginner_yuesheng,beginner_sensei,diagnosis_yuesheng,training_yuesheng,advanced_sensei,advanced_p4_yuesheng,outline_yuesheng",
+    "promptCases": "beginner_doubao,beginner_yuesheng,beginner_sensei,beginner_p1_yuesheng,diagnosis_yuesheng,training_yuesheng,advanced_sensei,advanced_p4_yuesheng,outline_yuesheng",
     "phase3Skills": "narrative-design,plot-design,coaching-rhythm,advanced-phases,outline-diagnosis,genre-guide"
   },
   "prompt": {
     "beginner_doubao": {
-      "len": 56717,
-      "fnv": "5047ac3d7c00d3b2",
-      "tokens": 56717,
+      "len": 55317,
+      "fnv": "71110a43688bc17c",
+      "tokens": 55317,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-doubao,beginner-path,gap-detector,coaching-rhythm,narrative-design,plot-design,writer-psychology"
     },
     "beginner_yuesheng": {
-      "len": 56804,
-      "fnv": "1ac75925eabd02f3",
-      "tokens": 56804,
+      "len": 55404,
+      "fnv": "15c20ca88209b1",
+      "tokens": 55404,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,beginner-path,gap-detector,coaching-rhythm,narrative-design,plot-design,writer-psychology"
     },
     "beginner_sensei": {
-      "len": 56762,
-      "fnv": "42e17b5c1c606a58",
-      "tokens": 56762,
+      "len": 55362,
+      "fnv": "2bb7850ab6262846",
+      "tokens": 55362,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-sensei,beginner-path,gap-detector,coaching-rhythm,narrative-design,plot-design,writer-psychology"
+    },
+    "beginner_p1_yuesheng": {
+      "len": 55143,
+      "fnv": "449cd32c596f03d9",
+      "tokens": 55143,
+      "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,beginner-path,gap-detector,coaching-rhythm,narrative-design,plot-design,writer-psychology"
     },
     "diagnosis_yuesheng": {
       "len": 68169,
