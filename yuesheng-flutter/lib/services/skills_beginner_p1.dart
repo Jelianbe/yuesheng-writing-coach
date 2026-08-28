@@ -250,6 +250,8 @@ const Skill _coachingRhythm = Skill(
     estimatedTokens: 3500,
   ),
   content: _coachingRhythmBody1 + _coachingRhythmBody2,
+  // Phase 3 A 组：按 ctx.phase 二选一裁 P0/P1 段（非 P0/P1 返回原文）
+  contentForPhase: coachingRhythmContentFor,
 );
 
 const Skill _narrativeDesign = Skill(
