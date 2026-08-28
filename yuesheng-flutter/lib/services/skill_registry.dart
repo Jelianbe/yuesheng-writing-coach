@@ -111,12 +111,9 @@ final Map<String, Skill> skillRegistry = {
   'diagnosis-confirmation': _diagnosisConfirmation,
   'feedback-cognition': _feedbackCognition,
   // L2 按需层 — training 组（2026-08-08 批次 17）
-  'training-loop': _trainingLoop,
   'training-loop-v2': _trainingLoopV2,
   'training-templates-index': _trainingTemplatesIndex,
-  'training-evaluation': _trainingEvaluation,
   'training-evaluation-v2': _trainingEvaluationV2,
-  'text-surgery': _textSurgery,
   'text-surgery-v2': _textSurgeryV2,
   'coaching-actions-v2': _coachingActionsV2,
   'demonstration': _demonstration,

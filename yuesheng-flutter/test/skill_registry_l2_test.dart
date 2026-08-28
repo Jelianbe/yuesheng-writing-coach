@@ -3,7 +3,7 @@
 // 2026-08-08 批次 17：L2 五组内容搬运入 skill_registry（真源 RN skills/*.ts）
 //
 // 验证目标：
-//   1. skillRegistry 注册完整性（L1 9 + 态度 3 + L2 30 = 42）
+//   1. skillRegistry 注册完整性（L1 9 + 态度 3 + L2 25 = 37；v1 训练三件套已退役）
 //   2. buildSystemPromptV2 各 L2 模式实际加载断言
 //   3. 虚拟索引 skill（syndrome-diagnosis-index / technique-library-index）
 //      在 dispatcher 中静默跳过、不报错
@@ -34,7 +34,7 @@ void main() {
       }
     });
 
-    test('L2 五组 28 个 skill 全部注册（含 v2 变体）', () {
+    test('L2 五组 25 个 skill 全部注册（v1 训练三件套已退役）', () {
       const expected = {
         // beginner 组
         'beginner-path',
@@ -50,13 +50,10 @@ void main() {
         'writing-style',
         'diagnosis-confirmation',
         'feedback-cognition',
-        // training 组
-        'training-loop',
+        // training 组（v1 training-loop/training-evaluation/text-surgery 已退役，仅保留 v2 变体）
         'training-loop-v2',
         'training-templates-index',
-        'training-evaluation',
         'training-evaluation-v2',
-        'text-surgery',
         'text-surgery-v2',
         'coaching-actions-v2',
         'demonstration',
