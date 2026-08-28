@@ -20,7 +20,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/contracts/teaching_capability.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -40,14 +39,14 @@ const List<String> kPhase3Skills = [
 /// 锚点用例：上下文均 const，保证可复现；选取与 skill_registry_l2_test
 /// 的组装断言同源（beginner/diagnosis/training/advanced/outline 五模式），
 /// beginner 额外覆盖三个态度档位。
-class _PromptCase {
+class PromptCase {
   final String name;
   final SkillLoadContext ctx;
-  const _PromptCase(this.name, this.ctx);
+  const PromptCase(this.name, this.ctx);
 }
 
-const List<_PromptCase> kPromptCases = [
-  _PromptCase(
+const List<PromptCase> kPromptCases = [
+  PromptCase(
     'beginner_doubao',
     SkillLoadContext(
       phase: TeachingPhase.p0Engage,
@@ -55,7 +54,7 @@ const List<_PromptCase> kPromptCases = [
       isBeginner: true,
     ),
   ),
-  _PromptCase(
+  PromptCase(
     'beginner_yuesheng',
     SkillLoadContext(
       phase: TeachingPhase.p0Engage,
@@ -63,7 +62,7 @@ const List<_PromptCase> kPromptCases = [
       isBeginner: true,
     ),
   ),
-  _PromptCase(
+  PromptCase(
     'beginner_sensei',
     SkillLoadContext(
       phase: TeachingPhase.p0Engage,
@@ -71,7 +70,7 @@ const List<_PromptCase> kPromptCases = [
       isBeginner: true,
     ),
   ),
-  _PromptCase(
+  PromptCase(
     'diagnosis_yuesheng',
     SkillLoadContext(
       phase: TeachingPhase.p2PracticeLoop,
@@ -79,7 +78,7 @@ const List<_PromptCase> kPromptCases = [
       subphase: TeachingSubphase.diagnosis,
     ),
   ),
-  _PromptCase(
+  PromptCase(
     'training_yuesheng',
     SkillLoadContext(
       phase: TeachingPhase.p2PracticeLoop,
@@ -87,14 +86,21 @@ const List<_PromptCase> kPromptCases = [
       subphase: TeachingSubphase.practice,
     ),
   ),
-  _PromptCase(
+  PromptCase(
     'advanced_sensei',
     SkillLoadContext(
       phase: TeachingPhase.p3Training,
       attitude: AttitudeLevel.sensei,
     ),
   ),
-  _PromptCase(
+  PromptCase(
+    'advanced_p4_yuesheng',
+    SkillLoadContext(
+      phase: TeachingPhase.p4Review,
+      attitude: AttitudeLevel.yuesheng,
+    ),
+  ),
+  PromptCase(
     'outline_yuesheng',
     SkillLoadContext(
       phase: TeachingPhase.p2PracticeLoop,
@@ -105,26 +111,26 @@ const List<_PromptCase> kPromptCases = [
 ];
 
 /// L3 注入用例（injectL3 不依赖 L2 模式，统一取 diagnosis 结果调用）
-class _L3Case {
+class L3Case {
   final String name;
   final L3RetrievalContext ctx;
-  const _L3Case(this.name, this.ctx);
+  const L3Case(this.name, this.ctx);
 }
 
-const List<_L3Case> kL3Cases = [
-  _L3Case('syndrome_P003', L3RetrievalContext(activeSyndromeIds: ['P003'])),
-  _L3Case(
+const List<L3Case> kL3Cases = [
+  L3Case('syndrome_P003', L3RetrievalContext(activeSyndromeIds: ['P003'])),
+  L3Case(
     'technique_T001_T008',
     L3RetrievalContext(focusedTechniqueIds: ['T001', 'T008']),
   ),
-  _L3Case(
+  L3Case(
     'both_P003_P007_T001',
     L3RetrievalContext(
       activeSyndromeIds: ['P003', 'P007'],
       focusedTechniqueIds: ['T001'],
     ),
   ),
-  _L3Case('empty', L3RetrievalContext()),
+  L3Case('empty', L3RetrievalContext()),
 ];
 
 /// FNV-1a 64 位指纹（VM 原生 int 乘法回绕，输出恒为正；任一字节变化
@@ -219,7 +225,7 @@ void main() {
       file
         ..createSync(recursive: true)
         ..writeAsStringSync(
-          const JsonEncoder.withIndent('  ').convert(current) + '\n',
+          '${const JsonEncoder.withIndent('  ').convert(current)}\n',
         );
       print('[anchor] 基线已生成: $kAnchorPath');
       expect(file.existsSync(), isTrue);
