@@ -7,6 +7,7 @@
 //   - 新库走 onCreate 直接建最终形态（v13）
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -653,6 +654,19 @@ class AppDatabase extends _$AppDatabase {
       // chapters.status CHECK 扩 'archived'（软删态）。SQLite 不支持 ALTER CHECK，
       // 走「建新表 → 复制 → 删旧 → 改名」标准流程，幂等保护见下。
       if (from < 24) {
+        // ABN-02 FIX：确保 chapters.volume_id 列在重建表 SELECT 前存在。
+        // 当 from=23 时 v23 迁移块（if from<23）会被跳过，但 v24 重建 SQL 的
+        //   INSERT INTO chapters_new SELECT ... volume_id ... FROM chapters
+        // 需要旧 chapters 已有 volume_id 列。复用 v23 块同款幂等 ALTER 防御，
+        // 天然覆盖 from=12 / from=22 / from=23 三类存量库。
+        final chapterCols24 = (await customSelect(
+          'PRAGMA table_info(chapters)',
+        ).get()).map((r) => r.read<String>('name')).toSet();
+        if (!chapterCols24.contains('volume_id')) {
+          await customStatement(
+            'ALTER TABLE chapters ADD COLUMN volume_id TEXT DEFAULT NULL REFERENCES volumes(id) ON DELETE SET NULL',
+          );
+        }
         await customStatement('''
               CREATE TABLE chapters_new (
                 id                TEXT PRIMARY KEY,
@@ -747,6 +761,29 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'yuesheng.db'));
-    return NativeDatabase.createInBackground(file);
+    // ABN-02 FIX：Windows release 下 NativeDatabase.createInBackground() 会在
+    // 后台 Isolate 线程中执行 DynamicLibrary.open(sqlite3.dll)，当 Windows
+    // release build 打包的 DLL 搜索路径 / 用户权限不足时，Isolate 崩溃但错误
+    // 被 LazyDatabase + runZonedGuarded 两级捕获并静默降级为"DB 未初始化"，
+    // 后续任何 INSERT（如新建作品）都会以"创建失败，请稍后再试"告终。
+    //
+    // 修复策略：
+    //   1) 默认退回到主线程同步 NativeDatabase(file)——Drift 的所有操作已经是
+    //      async query executor 包装，实际 DB IO 不阻塞 Flutter UI（只跑 microtasks）。
+    //   2) 初始化阶段显式 try-catch：如果 sqlite3.dll 无法加载 / 文件目录写不了，
+    //      把详细错误打到 debugPrint 并 rethrow（阻止静默吞错误后下游报模糊失败）。
+    //   3) 保留 createInBackground 为 future 可选开关（数据库 > 200MB / 移动端
+    //      低端机场景后续可配置化，本次 R-010 最小化不新增配置项）。
+    try {
+      return NativeDatabase(file);
+    } catch (e, s) {
+      log(
+        '[AppDatabase][FATAL] 打开数据库失败: path=${file.path}, error=$e',
+        name: 'yuesheng.db',
+        error: e,
+        stackTrace: s,
+      );
+      rethrow;
+    }
   });
 }
