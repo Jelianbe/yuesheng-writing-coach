@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "Phase 3 行为锚点基线（字节级：长度 + FNV-1a 指纹）",
-    "promptCases": "beginner_doubao,beginner_yuesheng,beginner_sensei,diagnosis_yuesheng,training_yuesheng,advanced_sensei,outline_yuesheng",
+    "promptCases": "beginner_doubao,beginner_yuesheng,beginner_sensei,diagnosis_yuesheng,training_yuesheng,advanced_sensei,advanced_p4_yuesheng,outline_yuesheng",
     "phase3Skills": "narrative-design,plot-design,coaching-rhythm,advanced-phases,outline-diagnosis,genre-guide"
   },
   "prompt": {
@@ -36,10 +36,16 @@
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,technique-library-index,training-loop-v2,training-templates-index,training-evaluation-v2,text-surgery-v2,coaching-actions-v2,demonstration,comparison,timed-rewrite,model-rewrite,revision-methodology,reader-awareness,writer-psychology"
     },
     "advanced_sensei": {
-      "len": 54374,
-      "fnv": "6c2d7faa0e64e6ce",
-      "tokens": 54374,
+      "len": 51602,
+      "fnv": "22b22348e270b81e",
+      "tokens": 51602,
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-sensei,advanced-phases,training-loop-v2,coaching-actions-v2,revision-methodology,reader-awareness,writing-style,genre-guide"
+    },
+    "advanced_p4_yuesheng": {
+      "len": 50638,
+      "fnv": "72104a95bf9df8f9",
+      "tokens": 50638,
+      "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,advanced-phases,training-loop-v2,coaching-actions-v2,revision-methodology,reader-awareness,writing-style,genre-guide"
     },
     "outline_yuesheng": {
       "len": 51233,

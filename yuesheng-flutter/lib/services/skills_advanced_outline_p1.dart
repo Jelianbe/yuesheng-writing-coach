@@ -181,6 +181,8 @@ const Skill _advancedPhases = Skill(
     estimatedTokens: 4200,
   ),
   content: _advancedPhasesBody1 + _advancedPhasesBody2,
+  // Phase 3 A 组：按 ctx.phase 裁掉非当前阶段分段（非 P3/P4 返回原文）
+  contentForPhase: advancedPhasesContentFor,
 );
 
 const Skill _outlineDiagnosis = Skill(

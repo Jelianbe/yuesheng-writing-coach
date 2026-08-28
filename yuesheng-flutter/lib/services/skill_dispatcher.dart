@@ -121,7 +121,8 @@ SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
     final skill = getSkill(ref.skillId);
     if (skill != null) {
       // 共享本体 content 只注入一次，各组语义差异由 contextHint 承载
-      chunks.add(skill.content);
+      // Phase 3 A 组：块内按教学阶段裁剪（无裁剪钩子时退化为完整 content）
+      chunks.add(skill.contentForPhase?.call(ctx.phase) ?? skill.content);
       loadedIds.add(ref.skillId);
       if (ref.contextHint != null) {
         chunks.add(ref.contextHint!);

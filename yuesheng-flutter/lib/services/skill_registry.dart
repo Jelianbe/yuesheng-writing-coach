@@ -11,6 +11,8 @@
 ///     索引内容来自 L3 知识库文件，完整知识由 L3 检索注入）
 library;
 
+import 'package:writingcoach/types/teaching_types.dart';
+
 import 'syndrome_knowledge_base.dart';
 import 'syndrome_registry.dart';
 import 'technique_knowledge_base.dart';
@@ -49,6 +51,7 @@ part 'skills_advanced_outline_p3.dart';
 part 'skills_advanced_outline_p4.dart';
 part 'skills_advanced_outline_p5.dart';
 part 'skills_advanced_outline_p6.dart';
+part 'skills_advanced_outline_p7.dart';
 part 'skills_reply_voice.dart';
 
 // ─── Skill 元数据与实体 ───────────────────────────────────────
@@ -72,7 +75,17 @@ class Skill {
   final SkillMeta meta;
   final String content;
 
-  const Skill({required this.meta, required this.content});
+  /// 按教学阶段裁剪内容的钩子（Phase 3 A 组：状态驱动裁剪）。
+  ///
+  /// 为 null 时退化为完整 [content]（与历史行为一致）。
+  /// 切片必须返回 [content] 的原文子串，确保零编辑漂移。
+  final String Function(TeachingPhase phase)? contentForPhase;
+
+  const Skill({
+    required this.meta,
+    required this.content,
+    this.contentForPhase,
+  });
 }
 
 // ─── Skill 注册表 ─────────────────────────────────────────────
