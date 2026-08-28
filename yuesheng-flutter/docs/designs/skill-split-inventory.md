@@ -443,4 +443,66 @@ ADR §3.3 风险表亦已列（中）。但缓解措施瞄的是「复用 syndro
 文档 `8468f2c2`；锚点冻结 `a30523ad`；Phase 3-A `65ecdfeb`。至 2026-08-28 23:09，
 HEAD = `65ecdfeb`，工作区干净，ahead 0 / behind 0（已推送 upstream）。
 
-*核验基准：`estimatedTokens` 取自 `lib/services/skills_*.dart`（`SkillMeta.estimatedTokens`），覆盖时间为 2026-08-28。Phase 0 自查完成于 2026-08-28；Phase 1/2 执行完成于 2026-08-28；Phase 3-A advanced-phases 执行完成于 2026-08-28（提交 `65ecdfeb`）；完整性自查完成于 2026-08-28。*
+### 10.4 Phase 3-A coaching-rhythm 已完成；genre-guide 经侦察移入 B 组
+
+**coaching-rhythm（phase 裁剪）** — 提交 `7515116c`
+
+按 ctx.phase 二选一裁 P0/P1 段：切片实现落在新增 `skills_beginner_p9.dart`（66 行），
+`Skill.contentForPhase` 挂 `coachingRhythmContentFor`。
+
+| 项 | 处置 | 论证（ADR §2.2 三问） |
+|:--|:--|:--|
+| §二 P0_ENGAGE | P1 档裁 | 其行为入口是 phase == p0Engage，P1 档下不存在 |
+| §三 P1_WORLD | P0 档裁 | 对称，P0 档下不存在 |
+| §一 总览 | 全阶段保留 | P0→P1→P2 旅程地图；裁掉细节段后 AI 仍知道其他阶段存在 |
+| §四~§七 | 全阶段保留 | 与 phase 无关（从零构建 / Layer 2 桥接 / 分工边界 / 贯穿 P0-P2） |
+| P2 及以外 | 完整原文 | 退化回全量（第 2 问强制要求） |
+
+**实测**：beginner 三档各 -1400 字符（**-2.47%**，完整 prompt 口径）；诊断档（P2）
+**零变化**（走完整原文）。新增锚点 `beginner_p1_yuesheng`（55143）补齐 P1 档覆盖。
+锚点 diff 仅 4 项 prompt 变化（+16/-10），其余 15 项（含 6 个大块原文、4 个 L3）全零漂移。
+
+**genre-guide 经侦察移入 B 组，不做裁剪** — 否决理由（ADR §2.4）：
+
+1. `manuscripts.genre` 是自由文本（`tables.dart:20`，`text().withDefault('')`，
+   无枚举约束、无 CHECK），用户可填任意值且默认为空 → 取值不确定。
+2. genre-guide §四 要求体裁**在对话中确认**（"如果学员不确定体裁，常见于新手"），
+   而非从 DB 读取 → DB 值只是初始猜测，可能错。
+3. §四 规定混体作品「以主体裁为诊断基准，**副体裁为参考**」→ 非主体裁段落
+   **确定会被使用**，第 3 问直接不成立。
+
+补充：§一「体裁容忍度矩阵」本身即跨体裁对照表，与单体裁裁剪思路冲突。
+
+**Phase 3 A/B 终态**：A 组两块（advanced-phases `65ecdfeb` ✅ / coaching-rhythm
+`7515116c` ✅）；B 组四块（genre-guide + plot-design / narrative-design /
+outline-diagnosis）不索引化、不裁剪。方案 §5 的「六块索引化」目标，最终只有两块
+以「状态驱动裁剪」形式落地。
+
+### 10.5 环境坑：flutter_tools 临时目录损坏（2026-08-28 首次遇到）
+
+中断测试进程（TaskStop）后，`%TEMP%\flutter_tools.*` 残留会导致后续 `flutter test`
+在编译期崩溃：
+
+```
+FileSystemException: Cannot copy file to
+'...\flutter_tools.<hash>\flutter_test_listener.<hash>\listener.dart.dill'
+(OS Error: 操作成功完成。, errno = 0)
+```
+
+表现为「测试卡住不结束」（实测挂起 16 分钟无输出），实为编译期异常。
+
+**解法（不删除任何用户文件）**：把 TEMP 重定向到工程内已忽略目录即可绕开——
+
+```bash
+mkdir -p .dart_tool/flutter_tmp   # .gitignore:29 已忽略
+export TEMP="D:/ai-teacher/yuesheng-flutter/.dart_tool/flutter_tmp" \
+       TMP="D:/ai-teacher/yuesheng-flutter/.dart_tool/flutter_tmp"
+flutter test --exclude-tags live,external --no-pub
+```
+
+重定向后恢复正常耗时（2m19s / 2035 用例全通过）。
+
+**教训**：`flutter test` 的输出不要用 `| tail`，管道缓冲会掩盖进度与崩溃信息；
+改用 `> .test_run.log 2>&1` 后可直接查看进度。
+
+*核验基准：`estimatedTokens` 取自 `lib/services/skills_*.dart`（`SkillMeta.estimatedTokens`），覆盖时间为 2026-08-28。Phase 0 自查完成于 2026-08-28；Phase 1/2 执行完成于 2026-08-28；Phase 3-A advanced-phases 执行完成于 2026-08-28（`65ecdfeb`）；Phase 3-A coaching-rhythm 执行完成于 2026-08-28（`7515116c`）；genre-guide 侦察否决于 2026-08-28；完整性自查完成于 2026-08-28。*
