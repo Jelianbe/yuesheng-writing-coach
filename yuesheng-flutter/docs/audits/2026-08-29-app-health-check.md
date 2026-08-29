@@ -119,7 +119,12 @@ try {
 
 ---
 
-## P2 · 文件超 R-019 行数上限（76 个）
+## P2 · R-019 超限
+
+### P2-A · 文件超 300 行（76 个）
+
+⚠️ **本节初版建议「只处理 `chat_service.dart`，按用例拆分」已撤回**——该建议
+基于对 R-019 的误读，见 §P2-C 修正。以下仅为客观统计。
 
 `find lib -name "*.dart" | xargs wc -l | awk '$1>300'` → **76 个文件**（上限 300 行）
 
@@ -148,10 +153,46 @@ try {
 ### 说明
 
 - `database.g.dart` 为 drift 生成文件，不应计入债务。
-- `chat_service.dart` 是**唯一有实质影响**的：52 个内部依赖，改任何业务流都要碰它，
-  这是「改业务必动多处」的真实来源。其余多为 UI 页面文件，影响局限于该页面内部。
-- 此项成本高（76 个文件），且大部分收益有限，建议**只处理 `chat_service.dart`**，
-  按用例拆分（见模块化构想文档 §6）。
+- 其余多为 UI 页面文件，影响局限在页面内部。
+- ⚠️ 初版写的「建议只处理 `chat_service.dart`，按用例拆分」**已撤回**，理由见 §P2-C。
+
+### P2-B · 函数超 50 行（`chat_service.dart` 实测）
+
+R-019 的**硬上限是函数 ≤50 行**，这才是真正超标处：
+
+| 行数 | 方法 | 倍数 |
+|--:|:--|--:|
+| 293 | `_sendMessageCore` | 5.9× |
+| 278 | `_preloadReferenceDetails` | 5.6× |
+| 271 | `_injectDiagnosisLock` | 5.4× |
+| 243 | `_injectChapterObservations` | 4.9× |
+| 232 | `_handleTrainingResult` | 4.6× |
+| 177 | `_applyPhaseMigration` | 3.5× |
+| 175 | `commitDiagnosisFromContent` | 3.5× |
+| 150 | `_commitDiagnosisAndSuggestions` | 3.0× |
+| 140 | `_injectProfileAndIntents` | 2.8× |
+| 128 | `_applyFactExtractionFromContent` | 2.6× |
+| 88 / 86 | `_injectOutlineFactsAndFiles` / `_applyOutlineEntitiesFromContent` | 1.8× / 1.7× |
+
+### P2-C · ⚠️ 对 R-019 的理解修正（2026-08-29 深夜，初版误读）
+
+初版把 R-019 简化为「单文件 ≤300 行」并据此提出拆分方案，**该理解错误**。
+据 `待办执行清单.md` 批次 **X-025-ARCH（2026-08-22）** 的既有决策：
+
+1. **R-019 的硬上限是「函数 ≤50 行」**；「文件 ≤300 行」对服务层并非硬约束。
+2. **服务层超限需走 ADR 决策**，不是直接动手拆。
+3. **禁止用 `part`/`extension` 机械搬运凑行数**——项目曾将 12 个服务拆成 41 个
+   part，被定性为**伪拆分**并全部回退（13 个 commit）。实证代价：
+   `ChatService.sendMessage` 迁至 extension 后，测试替身 `_FakeChatService`
+   的 `@override` 失效（契约断裂），调用真实 LLM API 触发 9 例
+   `pumpAndSettle` 超时。
+4. **真分解** = 独立类 / 显式接口 / 依赖注入 / 职责级重构。
+5. **A 类纯常量知识库豁免**：part 拆分可保留（边界与内容领域边界一致，
+   无逻辑耦合、无 override 契约）。
+
+**结论**：`chat_service.dart` 的 3004 行是 X-025-ARCH 回退后的**有意单体**，
+不是疏漏。若要处理，正道是缩短那 12 个超长函数（真分解），或走 ADR 登记
+为已知债务——**不得**再用 part/extension 拆文件。
 
 ---
 
