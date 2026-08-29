@@ -93,29 +93,79 @@ enforcement: "不符合工程规范的 Prompt 在合并/重构时必须先整改
 
 ## 输出契约（Output Contract）
 
-对于需要结构化输出的 Prompt（如 Diagnosis Agent），必须定义 JSON Schema：
+对于需要结构化输出的 Prompt（如诊断链路），必须有明确的解析契约：
 
-```typescript
-// Diagnosis Agent 输出契约
-interface DiagnosisOutput {
-  syndromes: Array<{
-    id: string;           // 症候编号，如 "P001"
-    name: string;          // 症候名称
-    severity: 'low' | 'medium' | 'high';  // 严重度
-    evidence: string;      // 文本证据（原文摘录）
-    rootCause: string;     // 根因分析
-  }>;
-  confidence: number;      // 综合置信度 0-1
-  suggestedAction: string; // 建议的教学动作
-  requiresHumanReview: boolean; // 是否需要人工复核
+```dart
+// 诊断链路输出契约（示意）
+class DiagnosisOutput {
+  /// 症候列表
+  final List<SyndromeOutput> syndromes;
+
+  /// 综合置信度 0-1
+  final double confidence;
+
+  /// 建议的教学动作
+  final String suggestedAction;
+
+  /// 是否需要人工复核
+  final bool requiresHumanReview;
+
+  const DiagnosisOutput({
+    required this.syndromes,
+    required this.confidence,
+    required this.suggestedAction,
+    required this.requiresHumanReview,
+  });
+
+  factory DiagnosisOutput.fromJson(Map<String, dynamic> json) {
+    // 字段缺失按降级处理，不得直接抛异常打断用户流程（R-028）
+    return DiagnosisOutput(
+      syndromes: (json['syndromes'] as List? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(SyndromeOutput.fromJson)
+          .toList(),
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
+      suggestedAction: json['suggestedAction'] as String? ?? '',
+      requiresHumanReview: json['requiresHumanReview'] as bool? ?? false,
+    );
+  }
+}
+
+class SyndromeOutput {
+  /// 症候编号，如 "P001"
+  final String id;
+  final String name;
+
+  /// 严重度：low / medium / high
+  final String severity;
+
+  /// 文本证据（原文摘录）
+  final String evidence;
+  final String rootCause;
+
+  const SyndromeOutput({
+    required this.id,
+    required this.name,
+    required this.severity,
+    required this.evidence,
+    required this.rootCause,
+  });
+
+  factory SyndromeOutput.fromJson(Map<String, dynamic> json) => SyndromeOutput(
+        id: json['id'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        severity: json['severity'] as String? ?? 'low',
+        evidence: json['evidence'] as String? ?? '',
+        rootCause: json['rootCause'] as String? ?? '',
+      );
 }
 ```
 
 **校验要求**：
-- IPC 层接收输出后做 schema 校验
-- `strict: true` — 不允许额外字段
-- `required` — 标记必填字段
-- 校验失败 → 重试一次 → 仍失败则返回空诊断并记录错误日志
+- 输出接收后按契约解析（对应各 `*_parser.dart` / `*_validator.dart`）
+- 必填字段缺失 → 按字段降级，不得整段丢弃
+- 未知字段忽略，不因多余字段判为失败
+- 整段解析失败 → 重试一次 → 仍失败则返回空结果并**记录错误日志**（R-028）
 
 ## 检查清单
 
