@@ -96,9 +96,11 @@ Set<String> deriveMasteredTechniqueIds(Iterable<ActiveProblemView> problems) {
 /// 3. 焦点症候的技法已含 prose 层 → 空（主路由已覆盖，不重复）
 /// 4. 通过 → 五维非健康值映射候选，排除已 mastered，去重后取前 2 条
 ///
-/// [masteredTechniqueIds] 技法掌握集合。当前 schema 无按技法粒度的掌握表
-/// （teaching_state 按症候粒度），首版调用方传空集跳过过滤（TODO：症候级
-/// mastered → 技法集合的派生接入后启用）。
+/// [masteredTechniqueIds] 技法掌握集合。schema 无按技法粒度的掌握表
+/// （teaching_state 按症候粒度），故由 [deriveMasteredTechniqueIds] 自症候
+/// 级 mastered 派生。已接入：chat_service.dart:1487 传入派生结果，专项测试
+/// 见 style_technique_router_test.dart「deriveMasteredTechniqueIds」组。
+/// （原 TODO 已完成，注释同步更新——该 TODO 曾让人误以为功能缺失。）
 StyleTechniqueSuggestion routeStyleTechniques({
   required WritingStyleProfile? styleProfile,
   List<ActiveSyndromeView> activeProblems = const [],

@@ -5,10 +5,12 @@
 // 类型对外暴露。UI / 编排层经契约消费，不直接依赖 impl；实现可在此一处
 // 替换而不波及消费者（依赖倒置收益点）。
 //
-// 现状（2026-08-20）：GenUi / Material / Teaching / Diagnosis 四个纯能力
-// 实现类已落地但尚无调用方——当前行为仍走底层纯函数（buildSystemPromptV2 /
-// parseDiagnosis / formatAttachedFilesContext …）。本文件先建立 DI 接缝，
-// 调用方（UI 消费层）迁移列为下一阶段，详见 ADR。
+// 现状（2026-08-29 更正）：四个纯能力 provider 均已接入生产链路——
+// session_providers.dart:121-124 在 chatServiceProvider 内 watch 全部四个，
+// 由 ChatService 经契约注入使用；widget 层则经 chatServiceProvider 消费。
+//
+// 更正说明：此处原本写的是「已落地但尚无调用方」（2026-08-20），与现状不
+// 符——该描述曾导致对「dispatcher 是否在生产链路」的误判，故同步更正。
 //
 // 说明：capability_registry.dart 此前按 R-010 最小范围刻意递延了「抽
 // provider / 改 widget 调用链」，此处为首落 provider 接入；MentionParser
