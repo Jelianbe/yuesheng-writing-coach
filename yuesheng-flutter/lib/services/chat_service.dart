@@ -2769,6 +2769,24 @@ extension ChatServiceSend on ChatService {
       final activeProblems = await _diagnosisRepo.listActiveProblems(sessionId);
       debugPrint('[ChatService] 步骤4: 活跃症候 ${activeProblems.length} 个');
 
+      // 观测：训练阶段进入（Layer 2 认知桥接应在此发生）。
+      //
+      // 背景：桥接由 coaching-rhythm §五 以 Skill 文本驱动 LLM 输出——
+      // 无代码强制、无结构化标记（项目其余环节均有 [YS_*] 标记块，
+      // 唯独桥接没有）。因此「是否真的桥接了」系统本身无从得知，
+      // 用户若没收到桥接，就会「被推着练、不知道自己走在哪条路上」，
+      // 而日志里不会有任何痕迹。
+      //
+      // 此处先记录「应当桥接的时刻」，供事后按 sessionId 抽查这些轮次的
+      // 实际回复，验证桥接是否真的发生。不阻断、不改行为。
+      if (currentSubphase == TeachingSubphase.practice) {
+        debugPrint(
+          '[Bridge] 训练阶段进入 | sessionId=$sessionId '
+          '| phase=${effectivePhase.value} | subphase=practice '
+          '| activeProblems=${activeProblems.length}',
+        );
+      }
+
       // 批次1（O1）：Teacher 升级阀——慢性/重度症候绕过心流窗口，让建议出得来
       final flowBypassed = await _shouldBypassFlowWindow(
         sessionId,
