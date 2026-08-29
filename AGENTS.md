@@ -117,17 +117,19 @@ flutter test --exclude-tags live,external --no-pub
 
 | 文档 | 路径 |
 |:--|:--|
+| **文档总索引（README）** | **`yuesheng-flutter/docs/README.md`** |
 | 待办执行清单 / 批次台账 | `yuesheng-flutter/docs/待办执行清单.md` |
 | 启动提示词 | `yuesheng-flutter/docs/启动提示词.md` |
 | 宪法草案 | `yuesheng-flutter/docs/yuesheng-flutter-宪法草案.md` |
 | 设计文档 | `yuesheng-flutter/docs/designs/` |
 | 体检 / 审计报告 | `yuesheng-flutter/docs/audits/` |
-
-> ⚠️ Flutter 侧**尚无 README 索引文档**（Electron 版的
-> `yuesheng-writing-coach/dev-docs/README.md` 不适用于此）。已登记为待办。
+| Skill 速查表 | `yuesheng-flutter/docs/tasks/SKILLS-QUICKREF.md` |
+| 反馈报告模板 | `yuesheng-flutter/docs/tasks/FEEDBACK-REPORT-TEMPLATE.md` |
+| 代码审查清单 | `yuesheng-flutter/docs/standards/CODE_REVIEW_CHECKLIST_V1.0.md` |
 
 ## 最后更新
 
 2026-08-29 — V4：技术栈由 Electron 迁移至 Flutter，工作目录改至
 `yuesheng-flutter/`；门禁改为四道 Flutter 命令；移除整节 IPC 规范；
 补入函数 50 行硬上限与 part/extension 伪拆分禁令；文档索引指向 Flutter 真源侧。
+（V4.1：补入文档总索引与 R-030 三份流程模板的路径，原缺口已补齐。）
