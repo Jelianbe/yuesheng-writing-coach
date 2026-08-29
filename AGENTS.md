@@ -1,0 +1,133 @@
+# 月笙写作教练 — AI 协作规则入口
+
+> 本文档遵循 R-024（AGENTS.md 机制），是 AI 工具接入项目的第一站。
+> 详细规则见 `.trae/rules/` 对应 R-XXX 文件。
+> **最后更新：2026-08-29（V4）** — 技术栈已迁移至 Flutter，本文件同步重写。
+
+---
+
+## ⚠️ 动手前先确认：你在对的项目里
+
+| 目录 | 状态 | 说明 |
+|:--|:--:|:--|
+| **`yuesheng-flutter/`** | ✅ **唯一活跃真源** | Flutter + Dart，**所有开发在这里** |
+| `yuesheng-writing-coach/` | 归档维护 | Electron+React+TS，**已不再开发**，勿在此改代码 |
+| `yuesheng-android/` | 已废弃 | — |
+
+工作目录：`yuesheng-flutter/`
+
+> 历史版本的本文件曾整篇描述 Electron 技术栈并指向 `yuesheng-writing-coach/`，
+> 与真源完全脱节。若你看到其它文档仍指向 Electron 目录，以本文件为准。
+
+---
+
+## 技术栈
+
+- **框架**：Flutter + Dart
+- **状态管理**：Riverpod
+- **持久化**：drift（SQLite）。生成文件 `database.g.dart` 勿手改
+- **测试**：`flutter test`（当前基线 **2035 用例全绿**）
+- **样式**：设计令牌（`lib/config/app_theme.dart` 的 `AppTextStyles` / `AppColors`），不写裸字面量
+- **Prompt 真源**：`lib/services/skill_registry.dart` + 各 `skills_*.dart`（不是任何 .md 文件）
+
+## 核心禁止事项
+
+1. 不替用户写句子或做决定（R-009 用户主权，产品定位，最高优先）
+2. 不顺手格式化 / 重构任务范围外的文件（R-010）
+3. 不新增 A→B 静态映射表
+4. 不硬编码 API Key 或敏感配置（R-029）
+5. 不私造业务语义（Widget 内不得直接操作全局状态，须经 Provider）
+6. 不引入当前未使用的新框架或第三方库
+
+## 代码硬上限（R-019）
+
+- **函数 ≤ 50 行**——这是**硬上限**，比文件行数更重要
+- 文件 ≤ 300 行（现 76 个文件超限，已登记债务）
+- **禁止用 `part` / `extension` 机械拆分服务层凑行数**
+  → 批次 X-025-ARCH 已定性为**伪拆分**并回退 13 个 commit。
+  实证代价：`ChatService.sendMessage` 迁至 extension 后，测试替身
+  `_FakeChatService` 的 `@override` 契约断裂，触发 9 例 `pumpAndSettle` 超时。
+  真分解 = 独立类 / 显式接口 / 依赖注入 / 职责级重构。
+- 服务层超 300 行需走 **ADR 决策**，不得直接动手拆
+
+## 边界防御（R-028）
+
+- **边界层**（Repository / LLM Client / 平台通道 / 表单）：必须校验与 try/catch
+- **内部层**（Provider 之间、纯函数之间）：不做防御性包装，信任类型系统
+- **禁止空 catch**；确需静默降级必须留痕，用 `lib/services/decode_guard.dart`
+- 例外：`error_log_repository.dart` 是日志写入方，内部不得调 `captureError`（会递归）
+
+## 构建与测试（四道门禁，R-027）
+
+声称完成前**四道必须全绿**：
+
+```bash
+# 1 格式 —— 只带本次改动的具体文件（禁止对整个目录跑）
+dart format --set-exit-if-changed -o none <改动文件>
+
+# 2 静态分析 —— 全 lib（import 变化可能影响其他文件）
+flutter analyze lib --no-pub
+
+# 3 循环依赖
+python scripts/check_circular.py
+
+# 4 全量测试（排除需真实 API Key 的用例）
+flutter test --exclude-tags live,external --no-pub
+```
+
+> Windows 注意：`flutter test` 需保证系统 TEMP 所在盘有足够空间
+> （编译产物数百 MB）；磁盘满会报 `errno = 112`。
+
+## Prompt 入口规则
+
+- 教练定位：不替写、不替决定、找根因
+- 态度档位：豆包（默认）/ 月笙如歌 / sensei
+- 安全词："轻一点"无条件降档
+- 真源：`lib/services/skills_attitude.dart`
+- 改 Skill 内容 = 改注入 prompt，会改变 AI 行为 → 属高风险，需人工确认（R-027 门禁 4）
+
+## 不确定时的默认行为
+
+- 风格冲突 → 沿用目标文件已有风格
+- 多种实现方式 → 选最简单的那一个
+- 改动范围有争议 → 只改最小必要范围
+- 未验证的功能 → 必须明确声明"未验证"
+- 涉及核心模块（诊断 / Skill 注入 / 教学状态机 / DB schema）→ 必须先写 ADR
+
+## 规则索引
+
+| 编号 | 主题 | 层级 | 文件 |
+|:----:|------|:----:|------|
+| **R-009** | **用户主权（兜底条款）** | **L1** | `.trae/rules/R-009-用户主权.md` |
+| **R-029** | **安全与隐私（密钥零硬编码）** | **L1** | `.trae/rules/R-029-安全与隐私.md` |
+| R-019 | 代码规范标准（硬上限） | L1 | `.trae/rules/R-019-代码规范标准.md` |
+| R-016 | Git 提交规范 | L1 | `.trae/rules/R-016-Git提交规范.md` |
+| **R-027** | **AI 代码质量门禁（四道）** | L3 | `.trae/rules/R-027-AI代码质量门禁.md` |
+| R-013 | 测试覆盖率要求 | L3 | `.trae/rules/R-013-测试覆盖率要求.md` |
+| R-021 | AI 行为边界 | L3 | `.trae/rules/R-021-AI行为边界.md` |
+| R-010 | 最小化范围 | L3 | `.trae/rules/R-010-最小化范围.md` |
+| R-017 | 文档与报告管理 | L2 | `.trae/rules/R-017-文档与报告管理规范.md` |
+| R-024 | AGENTS.md 机制（本文档） | L3 | `.trae/rules/R-024-AGENTS.md机制.md` |
+| R-020 | 循环依赖零容忍 | L3 | `.trae/rules/R-020-循环依赖零容忍.md` |
+| R-028 | 防御性编码 | L3 | `.trae/rules/R-028-防御性编码.md` |
+| R-006 | 回退机制规范 | L2 | `.trae/rules/R-006-回退机制规范.md` |
+| 完整清单 | 全部活跃规则 | - | `.trae/rules/月笙项目开发规则汇总.md` |
+
+## 项目文档（Flutter 真源侧）
+
+| 文档 | 路径 |
+|:--|:--|
+| 待办执行清单 / 批次台账 | `yuesheng-flutter/docs/待办执行清单.md` |
+| 启动提示词 | `yuesheng-flutter/docs/启动提示词.md` |
+| 宪法草案 | `yuesheng-flutter/docs/yuesheng-flutter-宪法草案.md` |
+| 设计文档 | `yuesheng-flutter/docs/designs/` |
+| 体检 / 审计报告 | `yuesheng-flutter/docs/audits/` |
+
+> ⚠️ Flutter 侧**尚无 README 索引文档**（Electron 版的
+> `yuesheng-writing-coach/dev-docs/README.md` 不适用于此）。已登记为待办。
+
+## 最后更新
+
+2026-08-29 — V4：技术栈由 Electron 迁移至 Flutter，工作目录改至
+`yuesheng-flutter/`；门禁改为四道 Flutter 命令；移除整节 IPC 规范；
+补入函数 50 行硬上限与 part/extension 伪拆分禁令；文档索引指向 Flutter 真源侧。

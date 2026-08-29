@@ -3,6 +3,11 @@
 !.trae/
 !.vscode/
 !.gitignore
+
+# AGENTS.md：AI 协作规则入口（R-024）。它是团队/多机共享的项目约束摘要，
+# 若随根目录 /* 一并被忽略，则本地改动无法同步与回溯，故显式放行。
+!AGENTS.md
+
 !yuesheng-writing-coach/
 !yuesheng-flutter/
 !.github/
