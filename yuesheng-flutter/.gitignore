@@ -52,6 +52,11 @@ screen_*.png
 /lib/main_dev.dart
 /lib/preview/
 
+# Prompt 行为验证导出的 system prompt 全文（每份约 7 万字符，可随时重导）
+# 由 buildSystemPromptV2 导出，属一次性验证产物，不入库。
+# 第 2 批（桥接模板收敛）回归对比尚需使用，届时再清理。
+/docs/audits/_prompt_dump/
+
 # 沙箱隔离用的 Gradle 缓存（非项目依赖，禁止入库）
 .gradle_home/
 
