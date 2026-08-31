@@ -1,0 +1,147 @@
+{
+  "fixed-format": [
+    [
+      "lib\\services\\skills_advanced_outline_p3.dart",
+      51,
+      "每次大纲诊断的完整回应应遵循以下格式："
+    ],
+    [
+      "lib\\services\\skills_beginner_p4.dart",
+      114,
+      "格式："
+    ],
+    [
+      "lib\\services\\skills_beginner_p4.dart",
+      122,
+      "格式："
+    ],
+    [
+      "lib\\services\\skills_beginner_p4.dart",
+      130,
+      "格式："
+    ],
+    [
+      "lib\\services\\skills_l1_core_p3.dart",
+      50,
+      "中的\"学员画像（三步推理）\"段落，用自然语言转述。格式：先肯定进步 → 再指出 1-2 个最需要关注的症候"
+    ]
+  ],
+  "assert-conclude": [
+    [
+      "lib\\services\\skills_beginner_p3.dart",
+      194,
+      "- ❌ 不直接说出症候名称（\"你的问题是情绪标签化\"——说太早了）"
+    ],
+    [
+      "lib\\services\\skills_beginner_p4.dart",
+      115,
+      "> 我注意到你在[具体表现]方面有一个[问题模式]。我觉得可以试"
+    ],
+    [
+      "lib\\services\\skills_beginner_p4.dart",
+      118,
+      "> \"我注意到你的对话总是 A 说 B 说 A 说 B 说——每句"
+    ],
+    [
+      "lib\\services\\skills_diagnosis_p2.dart",
+      205,
+      "我注意到你在[具体表现]方面有一个[问题描述]的模式。"
+    ],
+    [
+      "lib\\services\\skills_l1_core_p1.dart",
+      131,
+      "安排训练前告诉用户为什么练这个——\"我注意到你在[具体表现]方面有一个[问题描述]的模式，我觉得"
+    ],
+    [
+      "lib\\services\\skills_l1_core_p3.dart",
+      207,
+      "- ✅ \"我注意到你在用大量说明来交代背景——这其实是在'告诉读者而不"
+    ]
+  ],
+  "force-trigger": [
+    [
+      "lib\\services\\skills_beginner_p4.dart",
+      112,
+      "#### 训练开始前的桥接（必须输出）"
+    ],
+    [
+      "lib\\services\\skills_diagnosis_p1.dart",
+      213,
+      "### 2.1 诊断后必须追加确认提问"
+    ]
+  ],
+  "report-tone": [
+    [
+      "lib\\services\\skills_l1_core_p2.dart",
+      103,
+      "- confidence (number): 诊断置信度，0.0-1.0，0.7+ 为高置信"
+    ],
+    [
+      "lib\\services\\skills_l1_core_p2.dart",
+      127,
+      "fidence (number|null): 识别置信度 0-1"
+    ],
+    [
+      "lib\\services\\skills_l1_core_p3.dart",
+      57,
+      "） | 确认诊断 | 系统会自动记录确认并强化症候置信度。你只需在自然语言中确认收到了认可（\"好的，那我们"
+    ]
+  ],
+  "cross-dup": [
+    [
+      "(跨文件)",
+      116,
+      "\"读者在这一章结尾时，最想知道什么… (另见于 skills_advanced_outline_p3.dart)"
+    ],
+    [
+      "(跨文件)",
+      102,
+      "至少一个症候达标率≥60%（或教学状态已进入巩固/已掌握）… (另见于 skills_advanced_outline_p5.dart)"
+    ],
+    [
+      "(跨文件)",
+      84,
+      "✅如果用户已有设定稿，先让用户展示，再帮用户找到\"从哪里开始写\"… (另见于 skills_l1_core_p2.dart)"
+    ],
+    [
+      "(跨文件)",
+      152,
+      "强调\"进展起伏是正常过程\"的支持感，而非竞争感… (另见于 skills_diagnosis_p2.dart)"
+    ],
+    [
+      "(跨文件)",
+      150,
+      "只展示学员自身的相对进步（如\"比上周多了\"）… (另见于 skills_diagnosis_p2.dart)"
+    ],
+    [
+      "(跨文件)",
+      81,
+      "❌不要替用户构思——用户的世界观、角色、故事是用户的… (另见于 skills_l1_core_p2.dart)"
+    ],
+    [
+      "(跨文件)",
+      221,
+      "鼓励用户自评（\"你觉得这次练得怎么样… (另见于 skills_l1_core_p1.dart)"
+    ],
+    [
+      "(跨文件)",
+      219,
+      "不评分、不贴标签（只描述、不评判）… (另见于 skills_l1_core_p1.dart)"
+    ],
+    [
+      "(跨文件)",
+      220,
+      "原因是具体的、基于用户文本的，而非模板化的… (另见于 skills_l1_core_p1.dart)"
+    ],
+    [
+      "(跨文件)",
+      105,
+      "P4→P2允许回退（下一训练周期重新进入）… (另见于 skills_l1_core_p3.dart)"
+    ],
+    [
+      "(跨文件)",
+      104,
+      "P0→P1→P2→P3→P4单向递进… (另见于 skills_l1_core_p3.dart)"
+    ]
+  ]
+}
