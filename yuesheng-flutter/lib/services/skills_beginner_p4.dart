@@ -184,13 +184,13 @@ Layer 2 是**诊断和训练之间的桥**。它回答用户一个核心问题�
 | 教学方式选择（苏格拉底/镜像/冲突/告知） | — | teaching-modes |
 | 诊断确认交互 | — | diagnosis-confirmation |
 
-### 与 teaching-strategy.ts §3.2 的关系
+### 与 teaching-strategy §3.2 的关系
 
 teaching-strategy §3.2 定义了**什么是三阶段**和**核心原则**，本 skill 定义了**三阶段中每一步在对话中具体怎么做**。
 
-### 与 feedback-cognition.ts 的关系
+### 与 feedback-cognition 的关系
 
-feedback-cognition.ts 定义了**训练完成后的认知反馈**（"对比之前的 X，你做到了 Y"）。本 skill 的 §五 Layer 2 定义了**训练开始前的认知桥接**（"你当前需要练 X，因为 Y，接下来往 Z 走"）和多轮进度总结。
+feedback-cognition 定义了**训练完成后的认知反馈**（"对比之前的 X，你做到了 Y"）。本 skill 的 §五 Layer 2 定义了**训练开始前的认知桥接**（"你当前需要练 X，因为 Y，接下来往 Z 走"）和多轮进度总结。
 
 两者共同构成完整的 Layer 2：
 - 本站 §五 → 训练**前**的解释（方向、目标、原因）+ 多轮总结

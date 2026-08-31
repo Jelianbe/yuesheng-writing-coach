@@ -30,7 +30,7 @@ const String _narrativeDesignBody1 = '''
 
 ### 1.2 不用本 skill 的场景
 
-- 用户正在做生成式写作练习（N0-N2 elementary 练习）→ 用 beginner-path.ts
+- 用户正在做生成式写作练习（N0-N2 elementary 练习）→ 用 beginner-path
 - 用户文本已有明确症候且正在训练中（P2 PRACTICE）→ 用 technique-library + coaching-actions
 - 用户已经在执行具体写作动作 → 不打断
 
