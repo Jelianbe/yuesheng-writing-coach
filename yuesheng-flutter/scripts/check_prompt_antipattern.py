@@ -43,6 +43,34 @@ SENT_SPLIT = re.compile(r"[。！？\n]")
 MIN_DUP_LEN = 16
 
 
+def _diff_by_text(base, cur):
+    """按 (文件, 文本) 计数比对，**行号不参与身份判定**。
+
+    行号不能作身份：prompt 里插入或删除几行，其后所有命中的行号会整体位移，
+    于是既有命中全部被误报成"新增"。实测改动 V-03 与 §3.9 两处措辞
+    （分别 +6 / +2 行）后，4 条既有命中因位移被报为新增，文本一字未变。
+
+    改为按文本计数：同一文本在当前比基线多出几条，就报几条。行号只用于展示。
+    """
+    def multiset(groups):
+        out = {}
+        for _rule, entries in groups.items():
+            for rel, lineno, ctx in entries:
+                out.setdefault((rel, ctx), []).append(lineno)
+        return out
+
+    base_items = multiset(base)
+    cur_items = multiset(cur)
+    added, removed = [], []
+    for key, lines in cur_items.items():
+        for lineno in sorted(lines)[len(base_items.get(key, ())):]:
+            added.append((key[0], lineno, key[1]))
+    for key, lines in base_items.items():
+        for lineno in sorted(lines)[len(cur_items.get(key, ())):]:
+            removed.append((key[0], lineno, key[1]))
+    return sorted(added), sorted(removed)
+
+
 def is_comment(line: str) -> bool:
     """跳过开发者注释——它们不注入 prompt。"""
     s = line.lstrip()
@@ -171,10 +199,7 @@ def main() -> int:
             return 1
         with open(BASELINE, encoding="utf-8") as f:
             base = json.load(f)
-        base_keys = {tuple(x) for v in base.values() for x in v}
-        cur_keys = {tuple(x) for v in findings.values() for x in v}
-        added = sorted(cur_keys - base_keys)
-        removed = base_keys - cur_keys
+        added, removed = _diff_by_text(base, findings)
         if not added:
             print(f"[prompt-lint] 相对基线无新增 ✓（同时消失 {len(removed)} 条，可 --update-baseline 同步）")
             return 0
