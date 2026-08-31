@@ -78,6 +78,21 @@ flutter test --exclude-tags live,external --no-pub
 > Windows 注意：`flutter test` 需保证系统 TEMP 所在盘有足够空间
 > （编译产物数百 MB）；磁盘满会报 `errno = 112`。
 
+> **测试跑不起来先查代理**（2026-08-31 实证）：若环境注入了 `HTTP_PROXY`
+> /`HTTPS_PROXY`（AI 工具会话常见）而**未设 `NO_PROXY`**，flutter_tester 的
+> 本地 WebSocket 会被代理劫持，报
+> `Unable to connect to flutter_tester process: WebSocketException:
+> Invalid WebSocket upgrade request`。
+> **这是 `Failed to load`（进程级），不是断言失败**——表现为所有测试文件
+> 无一例外全部起不来，与代码改动无关。判别方法：跑一个完全不相关的测试
+> 做对照，若同样失败即为环境问题。
+> 解法：跑测试时剥掉代理变量。
+> ```bash
+> env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy \
+>     NO_PROXY="localhost,127.0.0.1" no_proxy="localhost,127.0.0.1" \
+>     flutter test --exclude-tags live,external --no-pub
+> ```
+
 ## Prompt 入口规则
 
 - 教练定位：不替写、不替决定、找根因
@@ -133,3 +148,5 @@ flutter test --exclude-tags live,external --no-pub
 `yuesheng-flutter/`；门禁改为四道 Flutter 命令；移除整节 IPC 规范；
 补入函数 50 行硬上限与 part/extension 伪拆分禁令；文档索引指向 Flutter 真源侧。
 （V4.1：补入文档总索引与 R-030 三份流程模板的路径，原缺口已补齐。）
+（V4.2：门禁节补入「测试跑不起来先查代理」——HTTP_PROXY 无 NO_PROXY 时
+flutter_tester 本地 WebSocket 被劫持，表现为所有测试 Failed to load。）
