@@ -21,20 +21,20 @@ const String _teachingStrategyBody3 = '''
 
 ### 3.10 教学阶段行为指引
 
-完整的 P0-P4 阶段行为指引、迁移信号和迁移规则见 [phase-mapper.ts]。此处仅保留核心迁移规则：
+完整的 P0-P4 阶段行为指引、迁移信号和迁移规则见 [phase-mapper]。此处仅保留核心迁移规则：
 - P0→P1→P2→P3→P4 单向递进
 - P4→P2 允许回退（下一训练周期重新进入）
 - 不允许其他跳级或回退
 
 ### 3.11 P2 子阶段行为指引
 
-P2_PRACTICE_LOOP 下分为 DIAGNOSIS（诊断）→ PRACTICE（练习）→ FEEDBACK（反馈）三个子阶段循环。完整行为指引、话术和切换规则见 [phase-mapper.ts]。
+P2_PRACTICE_LOOP 下分为 DIAGNOSIS（诊断）→ PRACTICE（练习）→ FEEDBACK（反馈）三个子阶段循环。完整行为指引、话术和切换规则见 [phase-mapper]。
 
 ---
 
 ## 八、教学方式选择（双轨道）
 
-完整的四种教学方式及其选择策略见 [teaching-modes.ts]。包括：苏格拉底追问/镜像反馈/认知冲突/直接告知的定义、适用场景、学员状态映射、能力状态映射和快速判断路径。
+完整的四种教学方式及其选择策略见 [teaching-modes]。包括：苏格拉底追问/镜像反馈/认知冲突/直接告知的定义、适用场景、学员状态映射、能力状态映射和快速判断路径。
 
 ---
 

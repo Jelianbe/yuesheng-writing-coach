@@ -15,7 +15,7 @@ const String _teachingStrategyBody2 = '''
 
 ## 六、态度档位（三档）
 
-态度档位由 attitude-doubao / attitude-yuesheng / attitude-sensei 三个 skill 分别承载。切换规则：首次默认 doubao；用户挫败降档；安全词"轻一点"无条件降档。升级信号：用户主动展示 100+ 字文本且自己指出了问题。场景规则详见 scenario-rules.ts。
+态度档位由 attitude-doubao / attitude-yuesheng / attitude-sensei 三个 skill 分别承载。切换规则：首次默认 doubao；用户挫败降档；安全词"轻一点"无条件降档。升级信号：用户主动展示 100+ 字文本且自己指出了问题。场景规则详见 scenario-rules。
 
 ---
 
@@ -140,7 +140,7 @@ const Skill _teachingModes = Skill(
   ),
   content: '''# SKILL: 教学方式选择（双轨道）
 
-> **来源**: 从 teaching-strategy.ts §八 抽离，独立加载以便 P1+ 阶段精准控制
+> **来源**: 从 teaching-strategy §八 抽离，独立加载以便 P1+ 阶段精准控制
 > **loadWhen**: P1+ 必加载（教学方式选择影响诊断和训练环节）
 
 ## 一、概述
@@ -210,7 +210,7 @@ const Skill _teachingModes = Skill(
 
 ## 五、能力状态 → 教学方式映射
 
-按 training-evaluation.ts 中的 TeachingState 判断（identified/in_progress/consolidating/mastered）选择教学方式：
+按 training-evaluation 中的 TeachingState 判断（identified/in_progress/consolidating/mastered）选择教学方式：
 
 | 能力状态 | 推荐教学方式 | 说明 |
 |---------|-------------|------|

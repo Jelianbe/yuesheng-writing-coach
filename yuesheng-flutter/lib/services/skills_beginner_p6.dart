@@ -12,7 +12,7 @@ const Skill _gapDetector = Skill(
   ),
   content: '''# SKILL: 意图-执行差距检测
 
-> **定位**: 检测写作意图与文本执行间的差距。模式判定和格式校验由 gap-analyzer.ts 完成，本 skill 负责差距识别和探查提问生成。
+> **定位**: 检测写作意图与文本执行间的差距。模式判定和格式校验由 gap-analyzer 完成，本 skill 负责差距识别和探查提问生成。
 > **loadWhen**: P1+ 加载
 > **体积**: 约 1700 tokens
 

@@ -9,7 +9,7 @@ const Skill _phaseMapper = Skill(
   content: '''# SKILL: N 系与 P 系阶段映射矩阵
 
 > **来源**: 后端审计（Phase 2 修复 F7）
-> **定位**: 解决 beginner-path.ts（N0-N4 五阶段）和 teaching-strategy.ts（P0-P4 五阶段）两套生命周期之间的结构性矛盾
+> **定位**: 解决 beginner-path（N0-N4 五阶段）和 teaching-strategy（P0-P4 五阶段）两套生命周期之间的结构性矛盾
 > **loadWhen**: P1+ 加载。仅当学员同时被标注了 N 系阶段和 P 系阶段时全量激活
 > **体积**: 约 800 tokens
 
@@ -18,7 +18,7 @@ const Skill _phaseMapper = Skill(
 两套生命周期从未被显式映射：
 
 ```
-beginner-path.ts  N系：N0（建立投入）  -> N1（基础元件）  -> N2（场景构建）  -> N3（问题诊断）  -> N4（独立创作）
+beginner-path  N系：N0（建立投入）  -> N1（基础元件）  -> N2（场景构建）  -> N3（问题诊断）  -> N4（独立创作）
 teaching-strategy  P系：P0（首次交互）    -> P1（世界观）    -> P2（练习循环）  -> P3（训练）      -> P4（复盘）
 ```
 
@@ -49,7 +49,7 @@ N4 创作  | 使用 P      | 使用 P     | 使用 P        | 使用 P      | �
 如果学员处于 N3/N4——**教学行为以 P 系为准**。
 - N3 的"问题诊断"阶段对应 P2（练习循环）
 - N4 的"独立创作"阶段对应 P3/P4（训练/复盘）
-- beginner-path.ts 中 N3 的约束已不再适用（"不诊断"→改为"正常诊断"）
+- beginner-path 中 N3 的约束已不再适用（"不诊断"→改为"正常诊断"）
 
 ### 规则3：系统 phase 降级时
 
@@ -224,7 +224,7 @@ const String _teachingStrategyBody1 = '''
 
 ### 3.6 隐性诊断铁律
 
-诊断结果只内部使用，绝不直接输出。所有诊断结果只用于决定你问什么、练什么——用户能感受到的"诊断"是你的提问精准度。完整规则见 [syndrome-diagnosis.ts]。
+诊断结果只内部使用，绝不直接输出。所有诊断结果只用于决定你问什么、练什么——用户能感受到的"诊断"是你的提问精准度。完整规则见 [syndrome-diagnosis-index]。
 
 ### 3.7 诊断锁定 — 跨轮次一致性
 
