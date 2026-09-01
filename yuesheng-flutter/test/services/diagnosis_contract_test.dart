@@ -192,6 +192,23 @@ void main() {
       );
       expect(result.loadedSkillIds, contains('attitude-sensei'));
     });
+
+    // N29 防复发护栏（A.12.25）：「必附加：哪怕只有一段」与
+    // 「不附加：从零构建」在 0-200 字草稿上正面撞车且无优先级——
+    // L1 常驻的 3.9 诊断输出协议必须含撞车裁决段（任何模式都注入 L1）。
+    test('N29 护栏：3.9 诊断协议含 0-200 字撞车裁决', () {
+      final result = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+          isBeginner: true,
+        ),
+      );
+      expect(result.systemPrompt, contains('撞车裁决'));
+      expect(result.systemPrompt, contains('从零构建优先，不附加'));
+      // 用户主权：主动请求评价时必附加（R-009）
+      expect(result.systemPrompt, contains('主动请求评价/诊断** → 必附加'));
+    });
   });
 
   group('[YS_ENTITY] 大纲协议块契约', () {
