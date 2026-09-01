@@ -267,6 +267,24 @@ void main() {
       );
     });
 
+    test('P4 唯一出口契约（C56/ADR-C54 §9.5 前提锁定）', () {
+      // P4 无下一阶段——递进链终点，代码侧自动迁移在 P4 永不触发
+      expect(
+        nextPhase(TeachingPhase.p4Review),
+        isNull,
+        reason: 'P4 无下一阶段（phase_transition.dart）——P4 出口只能是 AI 填 P2',
+      );
+      // P4→P2 是 P4 的唯一出口（prompt 已按 ADR-C54 §9-D 显式指向 P2）
+      expect(
+        validatePhaseTransition(
+          TeachingPhase.p4Review,
+          TeachingPhase.p2PracticeLoop,
+        ),
+        isTrue,
+        reason: 'P4→P2 是 P4 的唯一出口',
+      );
+    });
+
     test('跳级 → 非法', () {
       expect(
         validatePhaseTransition(
