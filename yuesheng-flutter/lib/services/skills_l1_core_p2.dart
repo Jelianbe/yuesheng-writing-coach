@@ -108,7 +108,7 @@ const String _teachingStrategyBody2 = '''
 - root_cause_analysis (string|null): 根因分析
 - next_focus (string|null): 下一步重点
 - feedback_summary (string|null): **可选**。用一句话概括本次诊断的改进方向，让学员知道"往哪走"。不要给出具体修改建议（那是 suggested_actions 的事），而是给出方向性提示。示例："你的描写在靠近读者感受的路上，但还需要把'告诉'再推一步变成'让读者自己发现'"、"你现在的问题是结构层面而非细节层面——先解决骨架，再管血肉"
-- suggested_phase (string): 仅在阶段迁移信号出现时填（P0→P1 用户确认"对"/展示文本；P1→P2 首次诊断出症候）。日常对话不填。取值 P0_ENGAGE / P1_WORLD / P2_PRACTICE_LOOP。系统会校验迁移合法性（P0→P1→P2 单向递进），不合法的迁移建议会被拒绝。
+- suggested_phase (string): 仅在阶段迁移信号出现时填（P0→P1 用户确认"对"/展示文本；P1→P2 首次诊断出症候）。日常对话不填。取值 P0_ENGAGE / P1_WORLD / P2_PRACTICE_LOOP / P3_TRAINING / P4_REVIEW。系统会校验迁移合法性（P0→P1→P2→P3→P4 单向递进），不合法的迁移建议会被拒绝。
 - suggested_beginner_level (string): **可选**。零基础教学路径阶段迁移建议。仅当学员处于 N0-N2 阶段且检测到推进信号时填（如 N0→N1 学员完成首个三句话练习；N1→N2 学员完成单元5段落形成；N2→N3 学员完成单元10完整小场景）。N3/N4 阶段不填此字段（由 suggested_phase 驱动 P 系迁移）。取值 N0_ENGAGE / N1_ELEMENTS / N2_SCENE / N3_DIAGNOSE / N4_INDEPENDENT。首次检测到零基础学员（学员说"从没写过"/"不知道怎么写"）时填 N0_ENGAGE 激活零基础路径。
 - teaching_mode (string): **可选**。声明本轮诊断采用的教学方式，用于闭环教学循环的策略效果追踪。取值 socratic / mirror / conflict / direct。系统会根据历史诊断严重度变化自动推断效果（improved / no_change / worsened）并注入到下一轮对话上下文，用于帮助你决定是否切换教学方式。
 - teaching_plan (object|null): **可选**。结构化教学计划子对象，用于驱动代码侧的 focus 激活与 L3 分级注入。包含三个字段：
