@@ -1127,10 +1127,36 @@ extension ChatServiceDiagnosisSupport on ChatService {
               }
             }
           } else {
-            debugPrint(
-              '[SafeRun] M4-B: 阶段迁移非法已拦截 '
-              '$currentPhaseForValidation → $effectivePhase',
+            // C54 方案 C（C-2，ADR-C54 §4-C-2）：早期跨一格的非法建议
+            // 确定性降级为相邻递进，而非整轮丢弃——首诊双信号场景
+            // （P0→P1 与 P1→P2 同时成立）不再依赖 AI 采样选择
+            final fallback = clampEarlyPhaseSkip(
+              currentPhaseForValidation,
+              effectivePhase,
             );
+            if (fallback != null) {
+              await _stateRepo.updatePhase(sessionId, fallback.value);
+              path1Migrated = true;
+              // M4-D: 阶段迁移时重置子阶段，避免上一阶段子阶段残留
+              await _stateRepo.updateSubphase(sessionId, null);
+              try {
+                await insertPhaseUpgradeCard(
+                  _sessionRepo,
+                  sessionId,
+                  PhaseUpgradeCardPayload(
+                    from: prevPhaseValue ?? TeachingPhase.p0Engage.value,
+                    to: fallback.value,
+                  ),
+                );
+              } catch (e) {
+                debugPrint('[SafeRun] 卡片插入失败不影响阶段迁移: $e');
+              }
+            } else {
+              debugPrint(
+                '[SafeRun] M4-B: 阶段迁移非法已拦截 '
+                '$currentPhaseForValidation → $effectivePhase',
+              );
+            }
           }
         }
         if (resolverResult.effectiveBeginnerLevel != null) {

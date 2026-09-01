@@ -328,6 +328,69 @@ void main() {
     });
   });
 
+  // ── C54 方案 C（C-1）：clampEarlyPhaseSkip 早期跨一格降级 ──
+
+  group('clampEarlyPhaseSkip（C54 C-1）', () {
+    test('P0→P2（C54 首诊双信号）→ 降级 P1', () {
+      expect(
+        clampEarlyPhaseSkip(
+          TeachingPhase.p0Engage,
+          TeachingPhase.p2PracticeLoop,
+        ),
+        TeachingPhase.p1World,
+      );
+    });
+
+    test('P1→P3（首诊后一轮仍跨级）→ 降级 P2', () {
+      expect(
+        clampEarlyPhaseSkip(TeachingPhase.p1World, TeachingPhase.p3Training),
+        TeachingPhase.p2PracticeLoop,
+      );
+    });
+
+    test('P2→P4 → null（收窄条件排除，保住既有 #1 拦截语义）', () {
+      expect(
+        clampEarlyPhaseSkip(
+          TeachingPhase.p2PracticeLoop,
+          TeachingPhase.p4Review,
+        ),
+        isNull,
+      );
+    });
+
+    test('P0→P3 / P0→P4（跨超过一格）→ null', () {
+      expect(
+        clampEarlyPhaseSkip(TeachingPhase.p0Engage, TeachingPhase.p3Training),
+        isNull,
+      );
+      expect(
+        clampEarlyPhaseSkip(TeachingPhase.p0Engage, TeachingPhase.p4Review),
+        isNull,
+      );
+    });
+
+    test('回退（P2→P0、P4→P0）→ null', () {
+      expect(
+        clampEarlyPhaseSkip(
+          TeachingPhase.p2PracticeLoop,
+          TeachingPhase.p0Engage,
+        ),
+        isNull,
+      );
+      expect(
+        clampEarlyPhaseSkip(TeachingPhase.p4Review, TeachingPhase.p0Engage),
+        isNull,
+      );
+    });
+
+    test('P0→P1（合法相邻）→ null（不干扰原合法路径）', () {
+      expect(
+        clampEarlyPhaseSkip(TeachingPhase.p0Engage, TeachingPhase.p1World),
+        isNull,
+      );
+    });
+  });
+
   // ── 批次5 M4-C：computePassRateForPhaseMigration 达标率计算 ──
 
   group('computePassRateForPhaseMigration（M4-C）', () {
