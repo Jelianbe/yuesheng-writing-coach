@@ -80,6 +80,28 @@ void main() {
       expect(p0.length, lessThan(_raw.length));
       expect(p1.length, lessThan(_raw.length));
     });
+
+    // C57 防复发护栏（A.12.25）：裁剪后保留段不得留悬空引用。
+    // §六 分工表两行引用另一阶段的章节（P0 档引 §三 / P1 档引 §二），
+    // 须有裁剪说明兜底；§2.3 的 §三 引用须自含「P1 阶段才加载」说明。
+    test('C57 护栏：两档切片均含裁剪说明，悬空引用有兜底', () {
+      const noteKeyword = '按学员当前阶段裁剪注入';
+      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage);
+      final p1 = coachingRhythmContentFor(TeachingPhase.p1World);
+
+      // §六 分工表在两档都保留 → 裁剪说明必须在两档都出现
+      expect(p0, contains('## 六、与本模块其他 Skill 的分工边界'));
+      expect(p1, contains('## 六、与本模块其他 Skill 的分工边界'));
+      expect(p0, contains(noteKeyword), reason: 'P0 档缺裁剪说明（C57 回归）');
+      expect(p1, contains(noteKeyword), reason: 'P1 档缺裁剪说明（C57 回归）');
+
+      // P0 档含 §2.3（引用 §三 的唯一保留位），其引用必须自含加载时机说明
+      expect(
+        p0,
+        contains('§三 的暴露引导在 P1 阶段才加载'),
+        reason: 'P0 档 §2.3 退回裸引用 §三（C57 回归）',
+      );
+    });
   });
 
   group('dispatcher 按阶段注入', () {
