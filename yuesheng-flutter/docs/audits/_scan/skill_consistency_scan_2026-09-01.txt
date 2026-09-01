@@ -1,0 +1,101 @@
+[skill-consistency-scan] 扫描 7428 行 prompt 文本，真源: 白名单 17 值 / 症候 39 / 技法 16 / skill 37 —— 共 52 条候选
+
+── enum-doc (2) ──
+  skills_l1_core_p2.dart:111  「取值」文档只列 ['P0_ENGAGE', 'P1_WORLD', 'P2_PRACTICE_LOOP']，白名单还有 P3_TRAINING 未列入——模型不知道可以填（N21 同型）
+  skills_l1_core_p2.dart:111  「取值」文档只列 ['P0_ENGAGE', 'P1_WORLD', 'P2_PRACTICE_LOOP']，白名单还有 P4_REVIEW 未列入——模型不知道可以填（N21 同型）
+
+── enum-token (7) ──
+  skills_l1_core_p3.dart:16  症候 ID P001 是历史合并 ID（已并入 P004），prompt 仍在引用旧号
+  skills_l1_core_p3.dart:81  症候 ID P001 是历史合并 ID（已并入 P004），prompt 仍在引用旧号
+  skills_l1_core_p3.dart:222  症候 ID P001 是历史合并 ID（已并入 P004），prompt 仍在引用旧号
+  syndrome_kb_content_manual_1.dart:87  症候 ID P001 是历史合并 ID（已并入 P004），prompt 仍在引用旧号
+  syndrome_kb_content_manual_1.dart:87  症候 ID P002 是历史合并 ID（已并入 P009），prompt 仍在引用旧号
+  syndrome_kb_content_manual_1.dart:87  症候 ID P001 是历史合并 ID（已并入 P004），prompt 仍在引用旧号
+  syndrome_kb_content_manual_1.dart:87  症候 ID P002 是历史合并 ID（已并入 P009），prompt 仍在引用旧号
+
+── threshold (35) ──
+  skills_attitude.dart:130; skills_attitude.dart:83; skills_attitude.dart:30  主题「上限」单位「个」存在 3 个不同值: 1个 ×1 @ skills_attitude.dart:130 | 2个 ×1 @ skills_attitude.dart:83 | 3个 ×1 @ skills_attitude.dart:30 ——需人工裁决是否冲突或有意分层
+  skills_training_p1.dart:47; skills_training_p4.dart:242; syndrome_kb_content.dart:66  主题「原文」单位「字」存在 3 个不同值: 100-300字 ×3 @ skills_training_p1.dart:47 等 3 处 | 200字 ×1 @ skills_training_p4.dart:242 | 5-20字 ×3 @ syndrome_kb_content.dart:66 等 3 处 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p3.dart:48; skills_diagnosis_p3.dart:58  主题「字数」单位「字」存在 2 个不同值: 200字 ×1 @ skills_beginner_p3.dart:48 | 500字 ×1 @ skills_diagnosis_p3.dart:58 ——需人工裁决是否冲突或有意分层
+  technique_kb_content_lib_2.dart:141; syndrome_kb_content_manual_2.dart:136  主题「对话」单位「句」存在 2 个不同值: 2-3句 ×1 @ technique_kb_content_lib_2.dart:141 | 6句 ×1 @ syndrome_kb_content_manual_2.dart:136 ——需人工裁决是否冲突或有意分层
+  technique_kb_content_lib_2.dart:128; skills_beginner_p5.dart:110; technique_kb_content_lib_2.dart:128; skills_beginner_p4.dart:77  主题「对话」单位「字」存在 4 个不同值: 10-15字 ×1 @ technique_kb_content_lib_2.dart:128 | 150字 ×1 @ skills_beginner_p5.dart:110 | 3-5字 ×1 @ technique_kb_content_lib_2.dart:128 | 50字 ×1 @ skills_beginner_p4.dart:77 ——需人工裁决是否冲突或有意分层
+  syndrome_kb_content_manual_2.dart:123; skills_beginner_p5.dart:112  主题「对话」单位「次」存在 2 个不同值: 2次 ×1 @ syndrome_kb_content_manual_2.dart:123 | 3次 ×1 @ skills_beginner_p5.dart:112 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p7.dart:106; skills_advanced_outline_p3.dart:103  主题「对话」单位「轮」存在 2 个不同值: 3轮 ×1 @ skills_beginner_p7.dart:106 | 4轮 ×2 @ skills_advanced_outline_p3.dart:103 等 2 处 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p4.dart:21; skills_l1_core_p2.dart:18; syndrome_kb_content_manual_2.dart:192; skills_beginner_p3.dart:48  主题「展示」单位「字」存在 4 个不同值: 0-200字 ×1 @ skills_beginner_p4.dart:21 | 100字 ×1 @ skills_l1_core_p2.dart:18 | 1000字 ×1 @ syndrome_kb_content_manual_2.dart:192 | 200字 ×5 @ skills_beginner_p3.dart:48 等 5 处 ——需人工裁决是否冲突或有意分层
+  syndrome_kb_content.dart:46; skills_l1_core_p3.dart:214  主题「引用」单位「字」存在 2 个不同值: 5-20字 ×1 @ syndrome_kb_content.dart:46 | 50字 ×1 @ skills_l1_core_p3.dart:214 ——需人工裁决是否冲突或有意分层
+  technique_kb_content_lib_2.dart:141; syndrome_kb_content_manual_1.dart:121  主题「描写」单位「句」存在 2 个不同值: 2-3句 ×1 @ technique_kb_content_lib_2.dart:141 | 5句 ×1 @ syndrome_kb_content_manual_1.dart:121 ——需人工裁决是否冲突或有意分层
+  syndrome_kb_content_manual_2.dart:32; skills_beginner_p4.dart:77; syndrome_kb_content_manual_2.dart:190  主题「描写」单位「字」存在 3 个不同值: 300字 ×1 @ syndrome_kb_content_manual_2.dart:32 | 50字 ×1 @ skills_beginner_p4.dart:77 | 500字 ×1 @ syndrome_kb_content_manual_2.dart:190 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p8.dart:128; skills_beginner_p3.dart:48; syndrome_kb_content.dart:165; syndrome_kb_content.dart:46; skills_beginner_p5.dart:91; skills_beginner_p5.dart:155  主题「文本」单位「字」存在 6 个不同值: 100字 ×2 @ skills_beginner_p8.dart:128 等 2 处 | 200字 ×4 @ skills_beginner_p3.dart:48 等 4 处 | 4000字 ×1 @ syndrome_kb_content.dart:165 | 5-20字 ×1 @ syndrome_kb_content.dart:46 | 50字 ×2 @ skills_beginner_p5.dart:91 等 2 处 | 500字 ×1 @ skills_beginner_p5.dart:155 ——需人工裁决是否冲突或有意分层
+  syndrome_kb_content_manual_2.dart:122; skills_beginner_p5.dart:174  主题「段落」单位「%」存在 2 个不同值: 20-30% ×1 @ syndrome_kb_content_manual_2.dart:122 | 50% ×1 @ skills_beginner_p5.dart:174 ——需人工裁决是否冲突或有意分层
+  skills_l1_core_p3.dart:56; skills_advanced_outline_p1.dart:60  主题「段落」单位「个」存在 2 个不同值: 1-2个 ×1 @ skills_l1_core_p3.dart:56 | 3个 ×1 @ skills_advanced_outline_p1.dart:60 ——需人工裁决是否冲突或有意分层
+  technique_kb_content_lib_3.dart:19; skills_diagnosis_p3.dart:58  主题「段落」单位「字」存在 2 个不同值: 200字 ×1 @ technique_kb_content_lib_3.dart:19 | 500字 ×1 @ skills_diagnosis_p3.dart:58 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p1.dart:60; skills_training_p3.dart:242  主题「段落」单位「次」存在 2 个不同值: 2次 ×1 @ skills_advanced_outline_p1.dart:60 | 5次 ×1 @ skills_training_p3.dart:242 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p1.dart:41; syndrome_kb_content_manual_4.dart:272  主题「段落」单位「段」存在 2 个不同值: 1段 ×1 @ skills_advanced_outline_p1.dart:41 | 5段 ×1 @ syndrome_kb_content_manual_4.dart:272 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p4.dart:158; skills_advanced_outline_p4.dart:47; skills_advanced_outline_p4.dart:71  主题「症候」单位「%」存在 3 个不同值: 40-79% ×1 @ skills_advanced_outline_p4.dart:158 | 60% ×5 @ skills_advanced_outline_p4.dart:47 等 5 处 | 80% ×2 @ skills_advanced_outline_p4.dart:71 等 2 处 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p5.dart:125; skills_attitude.dart:77; skills_advanced_outline_p4.dart:111  主题「症候」单位「个」存在 3 个不同值: 1个 ×2 @ skills_advanced_outline_p5.dart:125 等 2 处 | 1-2个 ×4 @ skills_attitude.dart:77 等 4 处 | 2个 ×3 @ skills_advanced_outline_p4.dart:111 等 3 处 ——需人工裁决是否冲突或有意分层
+  skills_training_p5.dart:40; skills_beginner_p5.dart:155  主题「症候」单位「字」存在 2 个不同值: 100-200字 ×1 @ skills_training_p5.dart:40 | 500字 ×1 @ skills_beginner_p5.dart:155 ——需人工裁决是否冲突或有意分层
+  syndrome_kb_content.dart:150; skills_l1_core_p3.dart:56  主题「症候」单位「条」存在 2 个不同值: 1-2条 ×2 @ syndrome_kb_content.dart:150 等 2 处 | 2-3条 ×1 @ skills_l1_core_p3.dart:56 ——需人工裁决是否冲突或有意分层
+  skills_diagnosis_p1.dart:225; skills_beginner_p5.dart:157  主题「症候」单位「次」存在 2 个不同值: 2次 ×1 @ skills_diagnosis_p1.dart:225 | 3次 ×1 @ skills_beginner_p5.dart:157 ——需人工裁决是否冲突或有意分层
+  skills_l1_core_p1.dart:245; skills_training_p1.dart:36  主题「症候」单位「轮」存在 2 个不同值: 2轮 ×2 @ skills_l1_core_p1.dart:245 等 2 处 | 3轮 ×1 @ skills_training_p1.dart:36 ——需人工裁决是否冲突或有意分层
+  skills_training_p3.dart:247; skills_training_p1.dart:36  主题「练习」单位「轮」存在 2 个不同值: 2轮 ×1 @ skills_training_p3.dart:247 | 3轮 ×1 @ skills_training_p1.dart:36 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p4.dart:21; skills_l1_core_p2.dart:28  主题「草稿」单位「字」存在 2 个不同值: 0-200字 ×1 @ skills_beginner_p4.dart:21 | 200字 ×1 @ skills_l1_core_p2.dart:28 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p4.dart:158; skills_advanced_outline_p4.dart:47; skills_advanced_outline_p4.dart:71  主题「训练」单位「%」存在 3 个不同值: 40-79% ×1 @ skills_advanced_outline_p4.dart:158 | 60% ×3 @ skills_advanced_outline_p4.dart:47 等 3 处 | 80% ×2 @ skills_advanced_outline_p4.dart:71 等 2 处 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p4.dart:99; skills_advanced_outline_p5.dart:133  主题「训练」单位「个」存在 2 个不同值: 3个 ×2 @ skills_advanced_outline_p4.dart:99 等 2 处 | 6个 ×1 @ skills_advanced_outline_p5.dart:133 ——需人工裁决是否冲突或有意分层
+  skills_training_p3.dart:73; skills_beginner_p5.dart:157  主题「训练」单位「次」存在 2 个不同值: 2次 ×1 @ skills_training_p3.dart:73 | 3次 ×2 @ skills_beginner_p5.dart:157 等 2 处 ——需人工裁决是否冲突或有意分层
+  skills_attitude.dart:130; skills_attitude.dart:77; skills_attitude.dart:83; skills_attitude.dart:30  主题「轮」单位「个」存在 4 个不同值: 1个 ×1 @ skills_attitude.dart:130 | 1-2个 ×1 @ skills_attitude.dart:77 | 2个 ×2 @ skills_attitude.dart:83 等 2 处 | 3个 ×1 @ skills_attitude.dart:30 ——需人工裁决是否冲突或有意分层
+  skills_diagnosis_p1.dart:225; skills_training_p3.dart:243  主题「轮」单位「次」存在 2 个不同值: 2次 ×1 @ skills_diagnosis_p1.dart:225 | 5次 ×1 @ skills_training_p3.dart:243 ——需人工裁决是否冲突或有意分层
+  skills_advanced_outline_p3.dart:82; skills_advanced_outline_p3.dart:88; skills_beginner_p3.dart:187; skills_beginner_p4.dart:105; skills_advanced_outline_p3.dart:103  主题「轮」单位「轮」存在 5 个不同值: 1轮 ×1 @ skills_advanced_outline_p3.dart:82 | 1-2轮 ×3 @ skills_advanced_outline_p3.dart:88 等 3 处 | 2轮 ×8 @ skills_beginner_p3.dart:187 等 8 处 | 3轮 ×5 @ skills_beginner_p4.dart:105 等 5 处 | 4轮 ×2 @ skills_advanced_outline_p3.dart:103 等 2 处 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p4.dart:58; skills_l1_core_p2.dart:51  主题「追问」单位「轮」存在 2 个不同值: 1-2轮 ×1 @ skills_beginner_p4.dart:58 | 2轮 ×1 @ skills_l1_core_p2.dart:51 ——需人工裁决是否冲突或有意分层
+  skills_attitude.dart:130; skills_attitude.dart:77; skills_attitude.dart:83; skills_attitude.dart:30  主题「问题」单位「个」存在 4 个不同值: 1个 ×2 @ skills_attitude.dart:130 等 2 处 | 1-2个 ×2 @ skills_attitude.dart:77 等 2 处 | 2个 ×2 @ skills_attitude.dart:83 等 2 处 | 3个 ×1 @ skills_attitude.dart:30 ——需人工裁决是否冲突或有意分层
+  skills_l1_core_p2.dart:18; syndrome_kb_content_manual_1.dart:37; syndrome_kb_content_manual_4.dart:111; syndrome_kb_content.dart:46; skills_l1_core_p2.dart:182  主题「问题」单位「字」存在 5 个不同值: 100字 ×1 @ skills_l1_core_p2.dart:18 | 300字 ×2 @ syndrome_kb_content_manual_1.dart:37 等 2 处 | 3000字 ×1 @ syndrome_kb_content_manual_4.dart:111 | 5-20字 ×1 @ syndrome_kb_content.dart:46 | 500字 ×1 @ skills_l1_core_p2.dart:182 ——需人工裁决是否冲突或有意分层
+  skills_beginner_p4.dart:58; skills_beginner_p3.dart:187; skills_l1_core_p2.dart:214  主题「问题」单位「轮」存在 3 个不同值: 1-2轮 ×1 @ skills_beginner_p4.dart:58 | 2轮 ×4 @ skills_beginner_p3.dart:187 等 4 处 | 3轮 ×1 @ skills_l1_core_p2.dart:214 ——需人工裁决是否冲突或有意分层
+
+── copy-drift (4) ──
+  skills_beginner_p4.dart:81 ↔ skills_l1_core_p2.dart:60  规则句逐字重复: - ❌ 不要替用户构思——用户的世界观、角色、故事是用户的
+  skills_l1_core_p1.dart:106 ↔ skills_l1_core_p3.dart:33  规则句逐字重复: - 不允许其他跳级或回退
+  skills_advanced_outline_p3.dart:72 ↔ skills_beginner_p6.dart:130
+      规则句近似重复（相似度 97%，V-05 家族特征）:
+        A: （若将来要接结构化输出，schema 已记录在审阅报告 **C51**，接线前不要输出。）
+        B: （若将来要接结构化输出，schema 已记录在审阅报告 **C52**，接线前不要输出。）
+  skills_beginner_p4.dart:161 ↔ skills_diagnosis_p2.dart:235
+      规则句近似重复（相似度 88%，V-05 家族特征）:
+        A: - 练习次数这类数字只能来自系统注入的训练记录，**不要自己估算**
+        B: 数字只能来自系统注入的训练记录，**不要自己估算**。
+
+── ref-integrity (0) ──
+
+── schema-field (0) ──
+
+── conflict-pair (4) ──
+  skills_l1_core_p1.dart:74 / skills_l1_core_p1.dart:81 / skills_l1_core_p1.dart:122 / skills_l1_core_p2.dart:111
+      主题「suggested_phase」同时存在相反极性指令（需人工裁决）:
+        [neg/cond] skills_l1_core_p1.dart:122: - **输出要求**：自然语言描述练习任务，不填 suggested_phase
+        [neg/cond] skills_l1_core_p2.dart:111: - suggested_phase (string): 仅在阶段迁移信号出现时填（P0→P1 用户确认"对"/
+        [neg/cond] skills_l1_core_p2.dart:112: - suggested_beginner_level (string): **可选**。零基础教学路径阶段迁移
+        [pos] skills_l1_core_p1.dart:74: - **迁移动作**：在诊断块中填 `"suggested_phase": "P1_WORLD"`
+        [pos] skills_l1_core_p1.dart:81: - **迁移动作**：在诊断块中填 `"suggested_phase": "P2_PRACTICE_LOOP
+        [pos] skills_l1_core_p1.dart:88: - **P2->P3 迁移动作**：在诊断块中填 suggested_phase 为 P3_TRAINING
+        [pos] skills_l1_core_p1.dart:95: - **P3->P4 迁移动作**：在诊断块中填 suggested_phase 为 P4_REVIEW
+  skills_advanced_outline_p4.dart:111 / skills_beginner_p4.dart:145 / skills_l1_core_p1.dart:235 / skills_l1_core_p2.dart:115
+      主题「症候」同时存在相反极性指令（需人工裁决）:
+        [neg/cond] skills_advanced_outline_p4.dart:111: - 不要同时复习超过 2 个到期症候——一次聚焦一个，避免学员负担过重
+        [neg/cond] skills_beginner_p4.dart:145: - ❌ 不要用"症候""技法编号"这类内部词（遵循 V-03 与 §5.4）
+        [neg/cond] skills_beginner_p6.dart:136: 3. 同一根因时只讲症候诊断，不要换个说法再讲一遍差距
+        [neg/cond] skills_diagnosis_p2.dart:155: 不要只报告症候，加上**读者影响**：
+        [pos] skills_l1_core_p1.dart:235: 一旦你完成初始诊断（识别了用户的核心症候），这些诊断结果会被"锁定"。在后续对话轮次中，你必须继续围绕锁定的症
+        [pos] skills_l1_core_p2.dart:115: - current_teaching_focus_id (string|null): 当前教学焦点的症候 ID
+        [pos] skills_training_p3.dart:239: 同一症候的单轮对话训练尝试上限按难度分级：
+        [pos] syndrome_kb_content.dart:99: - **current_teaching_focus_id**: 当前教学焦点症候 ID（如 P019）。必须
+  skills_l1_core_p1.dart:74 / skills_l1_core_p1.dart:81 / skills_l1_core_p3.dart:20
+      主题「诊断块」同时存在相反极性指令（需人工裁决）:
+        [neg/cond] skills_l1_core_p3.dart:20: **这不是禁止你输出诊断块。** 系统会在展示前把整个块取走解析，学员看到的
+        [pos] skills_l1_core_p1.dart:74: - **迁移动作**：在诊断块中填 `"suggested_phase": "P1_WORLD"`
+        [pos] skills_l1_core_p1.dart:81: - **迁移动作**：在诊断块中填 `"suggested_phase": "P2_PRACTICE_LOOP
+        [pos] skills_l1_core_p1.dart:88: - **P2->P3 迁移动作**：在诊断块中填 suggested_phase 为 P3_TRAINING
+        [pos] skills_l1_core_p1.dart:95: - **P3->P4 迁移动作**：在诊断块中填 suggested_phase 为 P4_REVIEW
+  skills_l1_core_p2.dart:76 / skills_l1_core_p2.dart:81 / skills_l1_core_p3.dart:23
+      主题「附加」同时存在相反极性指令（需人工裁决）:
+        [neg/cond] skills_l1_core_p2.dart:81: **不附加**（非诊断场景）：
+        [neg/cond] skills_l1_core_p3.dart:23: **§3.9 判定"必附加"的场景就必须附加**——因为这条红线而不输出，
+        [pos] skills_l1_core_p2.dart:76: **必附加**（诊断场景）：
+
