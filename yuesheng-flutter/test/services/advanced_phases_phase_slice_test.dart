@@ -94,6 +94,42 @@ void main() {
       expect(p4, contains('"suggested_phase": "P2_PRACTICE_LOOP"'));
     });
 
+    test('防复发：P4 教学流程须带示例标注与数据兜底（C59/C61/C66）', () {
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      // C61：台词必须标注「示例，不是台词」（B-23 已给 beginner 侧加过，
+      // advanced 侧漏加，而这些台词还预设了症候名与解决状态，风险更高）
+      expect(p4, contains('示例，不是台词'));
+      // C59：五步全都依赖历史数据，必须写明「没有时怎么办」
+      expect(p4, contains('数据兜底'));
+      expect(p4, contains('没有可比的两稿'));
+      expect(p4, contains('没有症候严重度变化记录'));
+      // C66：与 V-10（🔴 致命）冲突时 V-10 优先（B-22 家族第 3 次）
+      expect(p4, contains('V-10 优先'));
+      expect(p4, contains('不产进步'));
+    });
+
+    test('防复发：P4 输出要求的示例数值须声明来源（C60）', () {
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      expect(p4, contains('数值同样是示例'));
+      expect(p4, contains('指不出来源的数字不要'));
+    });
+
+    test('防复发：P4→P2 迁移信号为 OR 且停留 P4 是正常态（C62）', () {
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      expect(p4, contains('满足任一即可'));
+      expect(p4, contains('停留在 P4 是正常状态'));
+      // AND 版三条件不得回归——它每轮判定为假会把学员永久留在 P4
+      expect(p4, isNot(contains('仍有 L2 以上的症候需要系统训练')));
+    });
+
+    test('防复发：复习调度不得「上限 2」与「一次聚焦一个」并存（B-22 家族第 4 次）', () {
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
+      expect(p3, contains('一次聚焦一个到期症候'));
+      expect(p3, contains('至多 2 个'));
+      // 旧写法把上限与聚焦并列、未说清什么情况下可以用满 2 个
+      expect(p3, isNot(contains('不要同时复习超过 2 个到期症候')));
+    });
+
     test('裁剪确实降低体积（两档均小于原文）', () {
       final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
       final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
@@ -117,6 +153,25 @@ void main() {
       expect(r.systemPrompt, contains('### P3 教学重点'));
       expect(r.systemPrompt, isNot(contains('### P4 教学重点')));
       expect(r.systemPrompt, contains('进阶阶段指引'));
+    });
+
+    test('P4 场景下 P4 档与 L1 常驻层信号同源（V-05 第 7 对 + C63/C64）', () {
+      final r = buildSystemPromptV2(
+        const SkillLoadContext(
+          phase: TeachingPhase.p4Review,
+          attitude: AttitudeLevel.yuesheng,
+        ),
+      );
+      final p = r.systemPrompt;
+      // V-05 第 7 对：两处 P4→P2 信号必须同为 OR
+      // （此前 L1 常驻侧是 OR、advanced 侧是 AND 三条件，逻辑运算符相反）
+      expect(p, contains('满足任一即可'));
+      expect(p, contains('学员完成复盘，或携带新的文本'));
+      // C63：P4「不引入新训练任务」让位于学员主动提出的目标（R-009 用户主权）
+      expect(p, contains('学员主动提出新目标时以学员为准'));
+      // C64：§3.6 隐性诊断铁律与 §9.1 自然语言转述的调和说明
+      expect(p, contains('与 §9.1'));
+      expect(p, contains('暴露内部编号（V-03）'));
     });
 
     test('非 advanced 模式不受裁剪影响', () {
