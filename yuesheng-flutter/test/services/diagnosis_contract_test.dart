@@ -267,6 +267,47 @@ void main() {
       // 旧的「仅在阶段迁移信号出现时填」弱措辞不得回归
       expect(result.systemPrompt, isNot(contains('仅在阶段迁移信号出现时填')));
     });
+
+    // E.3 防复发护栏（A.12.28）：L1 常驻新增「冲突时的裁决顺序」元规则。
+    // 本轮审阅确认的 6 处跨 Skill 冲突（C2/C35/C36/C45 + teaching-strategy
+    // §3.6 vs §3.8）此前无一处定义优先级；而 C63/C64/C66/N29 的修法其实都已
+    // 隐式应用了这套顺序——现在显式化为元规则，并补上 E.3 原文漏列的 V-10。
+    test('E.3 护栏：L1 常驻含冲突裁决顺序元规则且顺序不可重排', () {
+      final result = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.yuesheng,
+        ),
+      );
+      final p = result.systemPrompt;
+      expect(p, contains('冲突时的裁决顺序'));
+      // 第 1 条产品底线——含 E.3 原文漏列的 V-10（C66 的裁决依据就是它）
+      expect(p, contains('V-10 判断必须锚定学员原文'));
+      // 第 2 条用户主权（C63 / N29 的裁决依据）
+      expect(p, contains('用户主权（R-009）'));
+      // 第 6 条示例不是格式（26 条 P1 里有 12 条的根因在此）
+      expect(p, contains('都不是格式要求'));
+
+      // 顺序断言：序号小的必须出现在序号大的之前——防止有人重排优先级
+      final order = [
+        p.indexOf('产品底线'),
+        p.indexOf('用户主权（R-009）'),
+        p.indexOf('当前阶段规则'),
+        p.indexOf('L2 当前组的 Skill'),
+        p.indexOf('建议级条目'),
+        p.indexOf('示例话术'),
+      ];
+      for (var i = 0; i < order.length; i++) {
+        expect(order[i], greaterThan(-1), reason: '第 ${i + 1} 条缺失');
+      }
+      for (var i = 1; i < order.length; i++) {
+        expect(
+          order[i - 1],
+          lessThan(order[i]),
+          reason: '第 $i 条必须排在第 ${i + 1} 条之前',
+        );
+      }
+    });
   });
 
   group('[YS_ENTITY] 大纲协议块契约', () {
