@@ -366,6 +366,7 @@ TeachingPhase? clampEarlyPhaseSkip(TeachingPhase current, TeachingPhase suggeste
 > N1~N6 已在该台账 A.12.9 登记（指向 `chat_service.dart` 的诊断静默丢弃 / 换症候绕过锁定 /
 > 孤儿阶段字段等 6 条）。本 ADR 撰写时原按 N1~N6 编号，与台账撞车，故顺延为 N7~N12。
 > **其中 N11 与台账已登记的 C58 是同一问题的两个观察面**（见 N11 附注）。
+> **§9（C56 / P5 幽灵阶段）核实阶段的新发现接续本列表，编号从 N13 起，见 §9.6。**
 
 **N7 — `resolvePhaseMapper` 零单测。**
 `test/` 下 grep `resolvePhaseMapper|phase_mapper_resolver` 仅命中一行注释（`chat_service_phase_migration_test.dart:5`）。该纯函数承载 4 条决策规则 + N 系递进校验，且规则 3 会**改写 AI 意图**（`phase_mapper_resolver.dart:155`），却没有任何测试守护。建议独立补测（见 §7.2），与 C54 是否采纳无关。
@@ -390,6 +391,322 @@ TeachingPhase? clampEarlyPhaseSkip(TeachingPhase current, TeachingPhase suggeste
 
 **N12 — 规则 3 与设计意图相反（已在 §4-C-3 登记为修复项，非纯登记项）。**
 `phase_mapper_resolver.dart:152-161` 在 current=P0 时把合法的 P0→P1 信号改写成非法的 P0→P2，与 reason 文本（`:158`）「P1 世界观对 N3 学员太浅，按 P2 处理」的意图相悖——在 P0 时学员**还没到** P1，不存在「P1 太浅」的问题。
+
+---
+
+## 9. C56：P5 幽灵阶段（prompt 承诺了枚举里不存在的阶段）
+
+> 台账编号 **C56 / P1**。本章为后补章节，追加在文末（不重编号 §1–§8）——
+> 既有外部文档已引用 `ADR §7.2`（resolver 补测）与 `ADR §8`（N 系列登记），
+> 重编号会让这些引用失效。本章体例与 §4/§5/§6/§7 对齐。
+>
+> 同构先例：**第 4 批 C52（`gap-detector` 幽灵链路）**，按 A.9.5 方案 A 止血——
+> 「删虚构的协作层与输出契约，把模式判定交还模型并配兜底，同时保留真实的识别能力」
+> （`docs/audits/Skill话术与提示词-综合审阅（合并版）-2026-08-30.md:19`、`:798`、`:1853`）。
+> C56 与 C52 的差别：C52 承诺一个**机制**，C56 承诺一个**阶段**
+> （同上文档 `:1449-1451`：「区别只是 C52 承诺一个"机制"、P5 承诺一个"阶段"」）。
+
+### 9.1 核实结果（五问逐条）
+
+**Q1 — `TeachingPhase` 枚举到底有几个值？**
+
+`lib/types/teaching_types.dart:6-11`（**注意：不是 `lib/models/`，本项目无 `lib/models/` 目录**）：
+
+```dart
+enum TeachingPhase {
+  p0Engage('P0_ENGAGE'),
+  p1World('P1_WORLD'),
+  p2PracticeLoop('P2_PRACTICE_LOOP'),
+  p3Training('P3_TRAINING'),
+  p4Review('P4_REVIEW');   // :11  分号收尾，无第 6 个值
+}
+```
+
+→ **5 个值，p4 之后没有 p5。属实。**
+
+**Q2 — 代码某处是否有对 P5 的分支处理？**
+
+全量 grep（`lib/`、`test/`、`docs/designs|plans|tasks`）结果：
+
+| 搜索 | 命中 |
+|:--|:--|
+| `P5_` in `lib/`（排除 `skills_*.dart`） | **0** |
+| `P5_` in `test/` | **0** |
+| `P5_` in `docs/designs\|plans\|tasks` | **0** |
+| `p5Engage` / `p5[A-Z]` in `lib/` | **0** |
+| `P5` in `lib/`（全量） | 仅 **3 个 prompt 文本文件 + 1 处注释**：`skills_advanced_outline_p5.dart`（11 行）、`skills_advanced_outline_p7.dart`（切片锚点常量 + 注释，5 行）、`skills_diagnosis_p3.dart`（2 行）、`skill_layers.dart:83`（注释） |
+
+→ **P5 纯在 prompt 文本里，代码侧零分支、零枚举、零测试。属实。**
+
+**Q3 — 这段 P5 内容有没有被注入生产 system prompt？在哪个 skill 下？受不受 `contentForPhase` 裁剪影响？**
+
+三个独立结论，其中**第三个推翻了「删掉就不用管」的直觉**：
+
+**(a) 挂在 `advanced-phases` 下。** `skills_advanced_outline_p1.dart:177-186`：`const Skill _advancedPhases = Skill(meta: SkillMeta(id: 'advanced-phases', group: 'advanced', ...), content: _advancedPhasesBody1 + _advancedPhasesBody2, contentForPhase: advancedPhasesContentFor)`。P5 文本位于 `_advancedPhasesBody2`（`skills_advanced_outline_p5.dart:7`）。
+
+**(b) 只在 P3/P4 注入。** 装载链路：`advanced-phases` 仅挂在 `L2Mode.advanced`（`skill_layers.dart:83`）；`resolveL2Mode` 只在 `phase == p3Training || phase == p4Review`（且非 isBeginner）时返回 `L2Mode.advanced`（`skill_layers.dart:189-191`）。P0 → `L2Mode.none`（`:194-195`），P1 → `diagnosis`（`:184-186`），P2 → `diagnosis`/`training`（`:173-180`）——**P0/P1/P2 根本不加载这个 skill**。
+
+> 这一条**收窄了影响面**：P5 不是「常驻注入给所有人」，只在 P3/P4 出现。
+> 但它同时**放大了危害**：恰恰是在 P4，注入的正是「P4→P5 条件 + 动作：填 suggested_phase」那一段。
+
+**(c) 裁剪结果：P5「段」被裁掉了，但「迁往 P5 的指令」被注入了。**
+
+`advancedPhasesContentFor`（`skills_advanced_outline_p7.dart:57-88`）：
+- 非 P3/P4 → 返回**完整原文**（`:61-63`）——但此时该 skill 根本不被加载，无实际影响。
+- P4 档：main = `_apHead4.._apHead5`（`:70-72`），attitude = `_apAttitude4.._apAttitude5`（`:73-75`），moveNext = `_apMoveP4Out.._apMoveP5Back`（`:78`），moveConstraint = `_apMoveConstraint` 至文末（`:79`，**P3/P4 两档都追加**）。
+
+代入 `skills_advanced_outline_p5.dart` 的行号：
+
+| 内容 | 行号 | P3 档 | P4 档 |
+|:--|:--|:--:|:--:|
+| P5 段（核心定位/教学模式/退出策略） | `:57-90` | ❌ 不注入 | ❌ 不注入 |
+| P5 态度策略 | `:110-116` | ❌ 不注入 | ❌ 不注入 |
+| **P4→P2 或 P5 段（含「**P4 → P5 条件**」`:146-150` 与「**动作**：在诊断块中填 suggested_phase: 下一个阶段」`:152`）** | `:139-152` | ❌ | ✅ **注入** |
+| P5 → P2/P3（回退） | `:154-156` | ❌ | ❌ |
+| **迁移约束**（含 `:162`「P4→P5 允许进入持续陪伴模式」、`:163`「P5→P2/P3 允许回退」） | `:158-164` | ✅ **注入** | ✅ **注入** |
+
+→ **P4 学员的 AI 被明确告知：满足 4 个条件就在诊断块填 suggested_phase 进入 P5；而迁移约束明文写着「P4→P5 允许」。**
+→ 切片实现方的意图是清楚的——`skills_advanced_outline_p7.dart:17-18` 注释写着「P5 段为远期规划且 `TeachingPhase` 无 P5 枚举值（**不可达**），两档均不注入」。**但只裁掉了「段」，没裁掉「通往它的指令」。**
+
+**Q4 — 是否存在「学员走到 P4 之后就无处可去」？**
+
+需要分开回答，两半都不是你想的那个答案：
+
+**(a) P4 是递进链的终点，但不是教学闭环的终点。**
+- `nextPhase` 在 P4 返回 null：`phase_transition.dart:21-25`，`if (idx == -1 || idx >= _kPhaseOrder.length - 1) return null;`（P4 的 idx=4，`length-1=4`）。`:19-20` 注释明示「**P4 无下一阶段返回 null**」。
+- 但 P4 有回环出口：`validatePhaseTransition` 放行 P4→P2（`phase_transition.dart:41-43`），prompt 定义为「下一个训练周期重新进入」（`skills_l1_core_p1.dart:89`、`:100-101`）。
+→ **递进链终点站 = 是；教学闭环终点站 = 不是。设计上 P4→P2 就是它的出口。**
+
+**(b) 但这个出口是「AI 独占」的，代码侧在 P4 永不兜底——配上 P5 指令就成了死锁。**
+
+逐点核实：
+1. 代码侧自动迁移在 P4 永不生效：`chat_service.dart:1171` `final next = nextPhase(currentPhase);` → null → `:1173` `if (next != null && validatePhaseTransition(...))` → false → **不迁移**。（另两重前提 `:1155-1156` 症候全 resolved、`:1170` passRate≥0.7 即便都满足，也卡在 `next == null`。）
+2. 所以 P4 的唯一出口是 AI 在诊断块填 `suggested_phase: "P2_PRACTICE_LOOP"`。
+3. 而 P4 档 prompt **同时**提供了 P5 出口（`skills_advanced_outline_p5.dart:146-152` + `:162`），与 L1 的「P4→P2」指令（`skills_l1_core_p1.dart:100-101`）**并行注入、无裁决规则**。
+4. AI 若选 P5 → `diagnosis_parser.dart:181` `if (sp is String && _kValidPhases.contains(sp))`，而 `_kValidPhases`（`:24-30`）**无 P5** → `suggestedPhase` 静默为 null。
+5. 于是 `chat_service.dart:1038-1040` 的 `suggestedPhase != null || suggestedBeginnerLevel != null` 不成立 → 路径 1 整体跳过 → 路径 2 在 P4 又因 `nextPhase == null` 必然空转。
+6. → **该轮零迁移。若 AI 持续选 P5，P4 学员永久停留。**
+
+**这是 C56 真正的危害等级：不是「描述了一个不存在的阶段」（措辞问题），而是「在 P4 出口制造了一次与 L1 的信号撞车，且撞车的那一支是死路」。** 与 C54 同构性比台账描述更强——C54 的撞车至少两支都合法（P0→P1、P1→P2），只是只能选一支；C56 的撞车有一支是**不可达的**。
+
+> 附注：第 4 步的「静默」是关键——`suggested_phase` 被白名单丢弃时**没有任何日志**（`diagnosis_parser.dart:179-183` 无 else 分支），与 §8-N8 记的另一条路径不一致问题同源。
+
+**Q5 — 一处转述精度修正**
+
+台账写「`skills_advanced_outline_p5.dart:57-146` 用**整节（约 90 行）**描述了 P5」（同上审计文档 `:1444-1446`）。行号区间属实，但 **57-146 这一段并非全是 P5**：中间穿插了「进阶阶段态度调整」总标题（`:92`）、P3 态度策略（`:94-100`）、P4 态度策略（`:102-108`）、阶段迁移规则总标题（`:120`）、P2→P3（`:122-129`）、P3→P4（`:131-137`）——这些都是**真实存在、必须保留**的内容。
+
+真正讲 P5 的行（改动作用域）：
+
+| 内容 | 行号 | 行数 |
+|:--|:--|:--:|
+| P5 段（核心定位 `:61-65` / 教学模式 `:67-82` / 退出策略 `:84-88`） | `:57-90` | 34 |
+| P5 态度策略 | `:110-116` | 7 |
+| P4 → P5 条件 | `:146-150` | 5 |
+| P5 → P2/P3（回退） | `:154-156` | 3 |
+| 迁移约束中的 P5 两行 | `:162-163` | 2 |
+| **合计** | | **51** |
+| （需连带重写）P4→P2 或 P5 段标题与「动作」行 | `:139`、`:152` | 2 |
+
+→ 改动跨度 `:57-163`，但**删减量约 51 行，不是 90 行**。这直接影响方案的工作量估算。
+
+### 9.2 决策驱动因素（承接 §3）
+
+1. **与 C52 处置范式保持一致**：删虚构契约、保留真实能力。第 4 批已就此达成结论，C56 不应另起一套判准。
+2. **P4 已有设计出口（P4→P2）**，删 P5 不产生能力真空——删的是**承诺**，不是**能力**。
+3. **不得引入 DB schema 变更**（§3.2）：`teaching_state.currentPhase` 有 CHECK 约束（`tables.dart:191-201`），真实现 P5 属表重建级迁移，需独立 ADR。
+4. **P5 的产品形态超出当前架构能力**：P5 要求「连续 3 个月没有求助，教练主动发送问候」（`skills_advanced_outline_p5.dart:87`）——这是**主动触达**能力。当前是否为纯响应式对话架构，**未验证**（未排查是否存在推送/定时任务/后台调度）。
+5. **影响面按阶段收窄**：P5 只在 P3/P4 出现（§9.1-b），不是全量用户的紧急问题——支持**独立排期**而非与 C54 捆绑。
+
+### 9.3 候选方案
+
+#### 方案 D：删 P5，承认 P4→P2 是唯一出口
+
+**改什么（5 处文件）**
+1. `skills_advanced_outline_p5.dart`：删 `:57-90`（P5 段）、`:110-116`（P5 态度）、`:154-156`（P5 回退）、`:162-163`（迁移约束 P5 两行）；把 `:139` 标题改为 `### P4 → P2（重新开始）`，`:146-150` 的「P4 → P5 条件」整块删除（该块 4 个条件均专为 P5 而设），`:152`「动作」行改为显式「在诊断块中填 `"suggested_phase": "P2_PRACTICE_LOOP"`」。
+2. `skills_advanced_outline_p7.dart`：**必须同步删锚点常量** `_apHead5`（`:25`）、`_apAttitude5`（`:32`）、`_apMoveP5Back`（`:35`）——否则 `_apSlice`（`:39-44`）的 end 锚点 `_apMoveP5Back` 失配会 `e < 0` → `raw.substring(s)` 取到文末，把 P5 回退段重新带回 P4 档，造成**静默行为漂移**；`:78` 的 moveNext 切片 end 需改为文末或新锚点；`:15`、`:17-18` 注释同步更新。
+3. `skills_diagnosis_p3.dart`：`:110` 表格行「| **P5 持续陪伴** | 风格深化是 P5 的核心工作之一… |」删除；`:151`「P4/P5 阶段的核心工作是**风格深化**」改为「P4 阶段…」。
+4. `skill_layers.dart:83` 注释「(P3/P4/**P5** 完整指引)」改为「(P3/P4 完整指引)」。
+5. 新增防复发断言（见 §9.5）。
+
+**对 prompt 侧的影响**：advanced-phases 与 writing-style 两个 skill 文本变化。
+**对代码侧的影响**：**零。**
+
+**锚点快照影响**（按 `skill_prompt_anchor_test.dart:168-202` 的取锚方式推算）：
+
+| 锚点 | 是否变 | 依据 |
+|:--|:--:|:--|
+| `skillContent['advanced-phases']` | ✅ 变 | `:180` 取 `skill.content`（**完整原文，非切片**），故 57-90 虽不注入也算进指纹 |
+| `prompt['advanced_sensei']`（P3） | ✅ 变 | 迁移约束 `:158-164` 在 P3 档（p7.dart:79） |
+| `prompt['advanced_p4_yuesheng']`（P4） | ✅ 变 | `:139-152` 与 `:158-164` 均在 P4 档 |
+| `prompt['diagnosis_yuesheng']`（P2-diagn） | ✅ 变 | writing-style 挂在 `L2Mode.diagnosis`（`skill_layers.dart:59`），改了 `:110/:151` |
+| 其余 5 个 prompt 指纹 | ❌ 不变 | 其余用例的 L2 mode 均不含这两个 skill（`resolveL2Mode`，`skill_layers.dart:155-196`） |
+| 其余 5 个 `skillContent` 指纹 | ❌ 不变 | 另外 5 块未改 |
+
+→ **「3 个变、11 个不变」是方案 D 改动被收窄在 P3/P4/diagnosis 档的硬证据**（见 §9.5）。
+
+**影响既有测试**：`test/services/advanced_phases_phase_slice_test.dart` **两处必挂**——
+- `:62` `expect(p4, contains('### P4 → P2（重新开始）或 P5（进入持续陪伴）'))`（标题被改）
+- `:75` `expect(p4, contains(_slice('### P4 态度策略', '### P5 态度策略')))`（`_slice` 内部 `:23` 的 `expect(s, greaterThanOrEqualTo(0), reason: '原文缺锚点')` 会因 `### P5 态度策略` 被删而失败）
+另 `:53`（P3 档不含 `## P5 持续创作陪伴`）删除后仍为绿，可保留作护栏。
+
+**同轮双跳风险**：无（纯文本改动，不涉及迁移逻辑）。
+**回滚成本**：**低**（文本还原 + 锚点重生成）。
+**落地工作量**：**中**（5 个文件 + 2 处测试断言 + 锚点重生成 + 人工复查 diff）。
+
+**风险**：丢掉「持续创作陪伴」这段产品设想。缓解：该设想代码侧从未存在（`_kValidPhases`/枚举/DB CHECK 三处皆无），删的是不可达承诺；如未来真要实现，按 §9.3 方案 F 走独立 ADR + DB 迁移，届时本文 §9 可作为需求底稿。
+
+---
+
+#### 方案 E：把 P5 内容改造为 P4 内部的形态（不引入新阶段）
+
+**改什么**：把 P5 的三种模式——定期共读（`skills_advanced_outline_p5.dart:69-72`）/ 瓶颈研讨（`:74-77`）/ 风格深化（`:79-82`）——改写为 P4 复盘后的**三条下一周期可选路线**，挂进 P4 段（`skills_advanced_outline_p4.dart:129-160`）或作为 P4→P2 的分支指引。
+
+**语义冲突（本方案的主要成本）**：P4 的定位是「**周期收尾**」——进步可视化 / 经验总结 / 问题归档 / **目标设定** / 能力地图（`skills_advanced_outline_p4.dart:133-139`），第五步是「下一阶段你想重点解决什么问题？设定一个具体的目标」（`:152-153`）。而 P5 的定位是「**终身陪伴，不设毕业**」（`skills_advanced_outline_p5.dart:86-88`：「P5 不设"毕业"——写作是终身的」）。两者硬塞进同一段，会让 P4 同时说「设定下一个周期目标」和「不设毕业」。
+
+**对 prompt 侧的影响**：advanced-phases 的 P4 段 + P5 段整体重写，约 90 行。
+**对代码侧的影响**：零。
+
+**锚点快照影响**：`skillContent['advanced-phases']` + `prompt['advanced_p4_yuesheng']` + `prompt['advanced_sensei']`（若 P3 档也动）+ `prompt['diagnosis_yuesheng']`（若改 writing-style）。与方案 D 同量级或略大。
+
+**影响既有测试**：同方案 D 的两处，另加 P4 段内容重写后 `:73` `expect(p4, contains(_slice('### P4 教学重点', '### P4 教学流程')))` 需复查。
+
+**同轮双跳风险**：无。
+**回滚成本**：**中**（文本可还原，但重写量大，回滚后需重新确认语义等价）。
+**落地工作量**：**大**——内容重写 + 语义等价确认，属 `ADR-skill-orthogonal-model.md` §3.2 明列的「大工程，必须立项，不能顺手做」。
+
+**风险**：**中高**。教学行为会被实质改变（P4 从「收尾设定目标」变成「收尾 + 提供三条长期陪伴路线」），需 LLM 实测确认 AI 不会在 P4 阶段就进入「终身陪伴」语气而跳过目标设定。
+
+---
+
+#### 方案 F：真实现 P5（代码侧加枚举 + 迁移链）
+
+**改什么（清单，逐点核实）**
+| 层 | 位置 | 改动 |
+|:--|:--|:--|
+| 枚举 | `lib/types/teaching_types.dart:6-11` | 加 `p5Companion('P5_COMPANION')` |
+| 递进表 | `phase_transition.dart:9-15` | `_kPhaseOrder` 加值；`:21-25` `nextPhase` 自动跟随（P4→P5 变合法递进，P5 无下一阶段） |
+| 解析白名单 | `diagnosis_parser.dart:24-30` | 加 `'P5_COMPANION'` |
+| **DB schema** | `tables.dart:191-201` | **`currentPhase` 的 CHECK 约束只允许 P0–P4，需表重建级迁移**（drift 需新 `MigrationStrategy` + 建新表/拷数据/改名） |
+| UI 标签 | `progress_service.dart:98-104` | `progressPhaseLabels` 加 P5 条目 |
+| UI 消费 | `growth_detail_page.dart:374`、`progress_detail_page.dart:259`、`settings_page.dart:708` | 三处均走 `progressPhaseLabels[...] ?? ...`，加条目后自动跟随（**未逐一验证三处的渲染是否有阶段数假设**） |
+| N 系门禁 | `phase_mapper_resolver.dart:152-206` | P5 在 N 系下归哪一档、走规则 1 还是规则 2，**当前无任何设计，需新决策** |
+| 注入管线 | `skills_advanced_outline_p7.dart:61` | `phase != p3Training && phase != p4Review` 的裁剪判断需加 P5 档；`_apHead5`/`_apAttitude5`/`_apMoveP5Back` 锚点需改为「P5 档注入 P5 段」 |
+| L2 路由 | `skill_layers.dart:189-191` | P5 走 `L2Mode.advanced` 还是新 mode，**未设计** |
+| 子阶段 | `chat_service.dart:1115`、`:1175` | P5 是否重置 subphase，**未设计** |
+
+**对 prompt 侧的影响**：无需删改（P5 描述变真实），但需新增 P5 档的注入规则。
+**对代码侧的影响**：**核心模块（教学状态机 + DB schema）双改动**，按 AGENTS.md L110 需**独立 ADR**。
+
+**锚点快照影响**：新增 P5 档 → `advancedPhasesContentFor` 的 P3/P4 分支不变（若只加 P5 分支），故 `prompt['advanced_sensei']` / `prompt['advanced_p4_yuesheng']` **可能不变**；但 `skillContent['advanced-phases']` 若因锚点调整而动则变。**是否新增 P5 prompt case 需与舰长确认**（新增会改变 `meta.promptCases`，属基线结构变更）。
+
+**影响既有测试**：`evaluation_service_test.dart:225-310`（`validatePhaseTransition` 用例组：P4→P5 从非法变合法，需改断言；P5→P2/P3 需新增用例）、`chat_service_phase_migration_test.dart`（需补 P4→P5 / P5→P2 路径）、`advanced_phases_phase_slice_test.dart`（需加 P5 档断言）。
+
+**同轮双跳风险**：**中**——P4→P5 变合法递进后，`chat_service.dart:1171-1173` 的自动迁移在 P4 将从「永不触发」变为「可触发」，需重新评估与 `path1Migrated`（`:1036`/`:1148`）的互斥，避免 P4→P5→P2 链式双跳。
+
+**回滚成本**：**高**——代码可还原，但 DB 需**反向迁移**，且已落库 `currentPhase = 'P5_COMPANION'` 的会话要清理/降级。
+
+**落地工作量**：**很大**，且含表重建级 DB 迁移。
+
+**风险**：**高**。除工作量外还有两个未决项：① P5 要求主动触达（`skills_advanced_outline_p5.dart:87`），当前架构是否支持**未验证**；② P5 在 N 系的归属无设计，而 N 系门禁是 P 系迁移的前置（`chat_service.dart:1088-1096`），设计缺失会直接导致 P5 不可达——**即方案 F 可能修完仍走不通**。
+
+### 9.4 方案对比与推荐
+
+| 维度 | **D（删 P5）** | E（改造进 P4） | F（真实现 P5） |
+|:--|:--|:--|:--|
+| 消除 P4 出口死锁（§9.1-b） | ✅ | ✅ | ✅（但见下方风险） |
+| 与 C52 处置范式一致 | ✅ | ❌（另起炉灶） | ❌ |
+| DB schema 变更 | **无** | 无 | **有（表重建级迁移）** |
+| 需独立 ADR | 否 | 否 | **是（AGENTS.md L110）** |
+| 代码侧改动 | **零** | 零 | 核心模块多文件 |
+| 语义冲突 | 无 | **有**（周期收尾 vs 终身陪伴） | 无 |
+| 锚点快照影响 | 3 变 / 11 不变 | 3–4 变 / 10–11 不变 | 0–1 变（+可能的结构变更） |
+| 影响既有测试 | 2 处断言必改 | 2–3 处必改 | 3 个测试文件需补/改 |
+| 同轮双跳风险 | 无 | 无 | **中**（`:1171-1173` 从永不触发变可触发） |
+| 回滚成本 | **低** | 中 | **高**（含 DB 反向迁移） |
+| 落地工作量 | 中 | 大 | 很大 |
+| 遗留风险 | 丢掉产品设想（可留作底稿） | 教学行为实质改变 | N 系归属未设计 → 可能修完仍不可达 |
+
+**推荐：方案 D。**
+
+**一句话理由**：P5 在代码侧的**三个门槛**（`TeachingPhase` 枚举 `teaching_types.dart:6-11`、解析白名单 `diagnosis_parser.dart:24-30`、DB CHECK `tables.dart:191-201`）**全部不存在**，而 P4 已有设计出口 P4→P2（`phase_transition.dart:41-43`）——所以正确动作是删掉这个不可达承诺（与 C52 同范式），而不是为一段 prompt 文本去改 DB schema。
+
+**是否需要与 C54 方案 C 合并实施：否，独立排期；但共享一次锚点重生成，且建议 D 先落地。**
+
+理由：
+1. **改动面不重叠**：C54 方案 C 是**纯代码侧**（`phase_transition.dart` 加纯函数 + `chat_service.dart` 分支 + resolver 规则 3 收窄），**不动任何 skill 文本，锚点零影响**；C56 方案 D 是**纯 prompt 侧**（5 个 skill/配置文件），**不改任何代码**。合并实施没有共享的改动点，没有收益。
+2. **但可共享一次锚点流程**：方案 D 必破锚点，需 `UPDATE_SNAPSHOTS=true` 重生成 + 人工复查 diff（`skill_prompt_anchor_test.dart:16`）。若 C54 最终也采纳了可选 prompt 澄清（§4-C 末尾），两次重生成可并为一轮复查。
+3. **建议 D 先于 C54 的 LLM 实测**：方案 D 落地后，`suggested_phase` 的取值域从「prompt 说可填 P5 / 代码只认 P0–P4」收敛为一致，C54 §7.5 的实测不再需要考虑 P5 分支，判定更干净。
+
+### 9.5 验证方式
+
+**锚点（硬判据）**
+`flutter test test/services/skill_prompt_anchor_test.dart` 重生成后，diff 必须**恰好**是以下 3 项，多一项少一项都说明改动溢出：
+```
+prompt.advanced_sensei.len / .fnv
+prompt.advanced_p4_yuesheng.len / .fnv
+prompt.diagnosis_yuesheng.len / .fnv
+skillContent.'advanced-phases'.len / .fnv
+```
+其余 11 个锚点（5 个 prompt + 5 个 skillContent + `l3Inject` 4 条）**必须一字不变**。
+
+**防复发护栏（新增，成本低）**
+在 `test/services/advanced_phases_phase_slice_test.dart` 增加两条原文级断言：
+```dart
+expect(_raw, isNot(contains('P5')), reason: 'advanced-phases 不得再出现幽灵阶段 P5（C56）');
+expect(skillRegistry['writing-style']!.content, isNot(contains('P5')), reason: 'writing-style 不得再出现幽灵阶段 P5（C56）');
+```
+并在 `test/services/skill_prompt_anchor_test.dart` 之外补一条 grep 型守护（或 CI 脚本）：`lib/` 下 `P5_` 出现次数必须为 0。
+
+**切片测试同步**
+- `:62` 断言改为 `expect(p4, contains('### P4 → P2（重新开始）'))`
+- `:75` 改为 `expect(p4, contains(_slice('### P4 态度策略', '### 迁移约束')))`（或改用新的文末锚点）
+- `:53` 保留（P3 档不含 P5 段）——删除 P5 后天然为绿，作为护栏
+- 新增：P3/P4 两档 `expect(x, isNot(contains('P5')))`
+
+**代码侧前提锁定（方案 D 不改代码，但应把死锁前提钉进测试）**
+在 `test/services/evaluation_service_test.dart` 的 `validatePhaseTransition（M4-B）` 组（`:225`）补两条，把「P4 唯一出口」变成可执行契约：
+```dart
+expect(nextPhase(TeachingPhase.p4Review), isNull,
+    reason: 'P4 无下一阶段（phase_transition.dart:23）——P4 出口只能是 AI 填 P2');
+expect(validatePhaseTransition(TeachingPhase.p4Review, TeachingPhase.p2PracticeLoop), isTrue,
+    reason: 'P4→P2 是 P4 的唯一出口（phase_transition.dart:41-43）');
+```
+
+**LLM 实测（复用导出件）**
+用 `docs/audits/_prompt_dump/advanced_p4_yuesheng.txt`（或重新导出 P4 档）构造场景：「P4 复盘完成 + 所有核心症候 ≤L1 + 学员说『我想自己写，但希望有人看』」（即 `skills_advanced_outline_p5.dart:146-150` 的 4 个条件全部满足）。多次采样，断言：
+> ① AI 输出中**不出现** `P5` / `P5_` 字样；
+> ② 若输出 `suggested_phase`，取值**必须**是 `P2_PRACTICE_LOOP`（P4 唯一合法出口）。
+
+实测前（改动前）同一场景应能复现「AI 填 P5 或含糊其辞」——若复现不了，说明 §9.1-b 的死锁推断需要降级为「理论风险」。**这是 §9.1-b 唯一尚未被实测验证的一环，建议实施前先做一次前测。**
+
+**回归范围**
+`flutter test` 全绿，重点：`advanced_phases_phase_slice_test.dart`、`skill_prompt_anchor_test.dart`、`evaluation_service_test.dart:225-310`；`chat_service_phase_migration_test.dart` 与 `writing_coach_panel_test.dart:496` 不受影响（方案 D 不改代码）。
+
+### 9.6 本次核实的新发现（接续 §8，编号 N13 起，均未做任何修改）
+
+**N13 — P4 出口存在死锁路径（方案 D 之外也应单独登记）。**
+P4 的唯一出口是 AI 填 `P2_PRACTICE_LOOP`（`phase_transition.dart:41-43`），代码侧自动迁移在 P4 **永不触发**（`nextPhase` 返回 null，`phase_transition.dart:23`；`chat_service.dart:1171-1173` 的 `next != null` 守卫）。同时 P4 档 prompt 提供 P5 出口（`skills_advanced_outline_p5.dart:146-152`、`:162`），AI 若选 P5 则被 `diagnosis_parser.dart:181` 白名单**静默丢弃**（无日志），该轮零迁移。详见 §9.1-b。
+
+**N14 — 切片逻辑自相矛盾：裁掉了 P5「段」，却注入了通往 P5 的「指令」。**
+`skills_advanced_outline_p7.dart:17-18` 注释称 P5 段「不可达，两档均不注入」，但 `:78` 的 P4 moveNext 切片 `_apMoveP4Out.._apMoveP5Back` **包含 P4→P5 条件与填字段动作**（`skills_advanced_outline_p5.dart:146-152`），`:79` 的 moveConstraint（两档都追加）明文「P4→P5 允许进入持续陪伴模式」（`:162`）。且 `advanced_phases_phase_slice_test.dart:62` 已把这条**锁进断言**——修复时必须同步改测试，否则改不动。
+
+**N15 — P5 引用不止 `advanced-phases` 一处，且另一处暴露面更广。**
+`skills_diagnosis_p3.dart:110`（writing-style 表格行「| **P5 持续陪伴** | 风格深化是 P5 的核心工作之一… |」）与 `:151`（「P4/P5 阶段的核心工作是**风格深化**」）。`writing-style` 挂在 `L2Mode.diagnosis`（`skill_layers.dart:59`）与 `L2Mode.advanced`（`:88`），即 **P1 / P2-diagnosis / P3 / P4 均注入**——比 `advanced-phases`（仅 P3/P4）更广。且 writing-style **不在** phase3 六块锚点内（`skill_prompt_anchor_test.dart:30-37`），故改它不破 `skillContent`，只破 `prompt`。
+
+**N16 — 真实现 P5 的硬门槛是 DB CHECK 约束。**
+`tables.dart:191-201` 的 `currentPhase` CHECK 只允许 `'P0_ENGAGE'…'P4_REVIEW'` 五个值 → 需表重建级 drift 迁移。另 `progressPhaseLabels`（`progress_service.dart:98-104`）需加条目，其消费点在 `growth_detail_page.dart:374`、`progress_detail_page.dart:259`、`settings_page.dart:708` 三处（三处的**渲染逻辑是否有阶段数假设未逐一验证**）。
+
+**N17 — P3 档也会收到 P4→P5 与 P5→P2/P3 的迁移约束。**
+`skills_advanced_outline_p7.dart:79` 的 moveConstraint 是**无条件**追加（P3/P4 两档都加），故 P3 学员的 AI 已被告知一个不存在的阶段及其回退规则（`skills_advanced_outline_p5.dart:162-163`）。危害低于 P4 档（P3 档不含「填 suggested_phase 进 P5」的动作行），但同属幽灵引用。
+
+**N18 — `skill_layers.dart:83` 的注释与切片实现方的判断不一致。**
+该行注释写「`SkillRef('advanced-phases'), // ~4200 tokens (P3/P4/**P5** 完整指引)`」，而 `skills_advanced_outline_p7.dart:17` 已判定 P5「不可达」。两处对同一事实给出相反描述，是文档内部不一致（也说明 P5 幽灵状态**早已被实现方识别，但只做了局部处理**）。
+
+**N19 — 与台账 C58 构成「双向偏差」，建议反向验证双向做。**
+本 ADR §8-N11 记的是「prompt 的 `suggested_phase` 取值只列 P0/P1/P2，代码允许 P3/P4」（`skills_l1_core_p2.dart:111` vs `diagnosis_parser.dart:24-30`）；台账 C58 记的是同一处（`docs/audits/Skill话术与提示词-综合审阅（合并版）-2026-08-30.md:1471-1483`），并已点明方向性：「**C58 是 prompt 比代码窄**（误导 AI 不敢填）；**C56（P5）是 prompt 比代码宽**（承诺了不存在的阶段）。两个方向都会出错，反向验证必须双向做」（同文档 `:1488-1491`）。→ **建议把「枚举一致性」作为一项独立的双向校验加入验收**：prompt 声明的取值集合与 `_kValidPhases` 必须**双向相等**，而不是单向包含。
+
+**N20 — 迁移约束里有一句是准确的，不要误删。**
+`skills_advanced_outline_p5.dart:164`「不允许跳过（**P2→P4 或 P2→P5 会被拒绝**）」与代码一致（`validatePhaseTransition` 只放行 +1，`phase_transition.dart:39`）。改动 `:158-164` 时这一行应**保留**（P5 提法或需改写为「P2→P4 会被拒绝」）。这说明 `skills_advanced_outline_p5.dart` 的 P5 相关内容**并非全错**，需逐行甄别，不可整段删除。
 
 ---
 
