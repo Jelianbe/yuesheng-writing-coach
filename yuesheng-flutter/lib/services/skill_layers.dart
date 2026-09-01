@@ -80,11 +80,11 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     SkillRef('writer-psychology'), // ~2690 tokens (训练疲劳、比较焦虑、反馈恐惧)
   ],
   L2Mode.advanced: [
-    SkillRef('advanced-phases'), // ~4200 tokens (P3/P4/P5 完整指引)
+    SkillRef('advanced-phases'), // P3/P4 完整指引（P5 幽灵段已删，C56/ADR-C54 §9-D）
     SkillRef('training-loop'), // ~3500 tokens (训练执行框架)
     SkillRef('coaching-actions', '进阶语境：P3 专项训练的动作编排'),
     SkillRef('revision-methodology'), // ~2600 tokens (深度修订)
-    SkillRef('reader-awareness', '进阶语境：P4 复盘/P5 共读中的读者视角深化'),
+    SkillRef('reader-awareness', '进阶语境：P4 复盘中的读者视角深化'),
     SkillRef('writing-style'), // ~2800 tokens (P3/P4 风格深化)
     SkillRef('genre-guide'), // ~3500 tokens (P3 体裁专项突破)
   ],

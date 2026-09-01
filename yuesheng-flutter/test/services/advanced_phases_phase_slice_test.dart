@@ -59,7 +59,7 @@ void main() {
       final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
       expect(p4, contains('### P4 教学重点'));
       expect(p4, contains('### P4 态度策略'));
-      expect(p4, contains('### P4 → P2（重新开始）或 P5（进入持续陪伴）'));
+      expect(p4, contains('### P4 → P2（重新开始）'));
       expect(p4, isNot(contains('### P3 教学重点')));
       expect(p4, isNot(contains('### P3 态度策略')));
       expect(p4, isNot(contains('### P3 → P4')));
@@ -72,7 +72,26 @@ void main() {
       expect(p3, contains(_slice('### P3 教学重点', '### P3 教学流程')));
       expect(p4, contains(_slice('### P4 教学重点', '### P4 教学流程')));
       expect(p3, contains(_slice('### P3 态度策略', '### P4 态度策略')));
-      expect(p4, contains(_slice('### P4 态度策略', '### P5 态度策略')));
+      expect(p4, contains(_slice('### P4 态度策略', '## 阶段迁移规则')));
+    });
+
+    test('防复发：P5 幽灵阶段不得回归（C56/ADR-C54 §9-D）', () {
+      expect(
+        _raw,
+        isNot(contains('P5')),
+        reason: 'advanced-phases 不得再出现幽灵阶段 P5（C56）',
+      );
+      expect(
+        skillRegistry['writing-style']!.content,
+        isNot(contains('P5')),
+        reason: 'writing-style 不得再出现幽灵阶段 P5（C56）',
+      );
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      expect(p3, isNot(contains('P5')));
+      expect(p4, isNot(contains('P5')));
+      // P4 唯一出口的动作行必须显式指向 P2（不再有「下一个阶段」的含糊提法）
+      expect(p4, contains('"suggested_phase": "P2_PRACTICE_LOOP"'));
     });
 
     test('裁剪确实降低体积（两档均小于原文）', () {
