@@ -44,3 +44,28 @@ bool validatePhaseTransition(TeachingPhase current, TeachingPhase suggested) {
   }
   return false;
 }
+
+/// 早期阶段（P0/P1）跨一格迁移的确定性降级目标（C-1，ADR-C54 §4-C-1）
+///
+/// C54 首诊场景：P0→P1 与 P1→P2 两个迁移信号同时成立，但 suggested_phase
+/// 是单值——AI 无论填哪个都可能跨级（P0+P2）。本函数把「早期恰好跨一格」
+/// 的非法建议降级为相邻递进目标，其余情况返回 null（维持原拦截）。
+///
+/// 边界（收窄条件，验证见 test/services/evaluation_service_test.dart）：
+/// - P0→P2（C54 首诊）→ 降级 P1
+/// - P1→P3 → 降级 P2
+/// - P2→P4 → null（c>1，维持拦截——保住既有用例 #1 的拦截语义）
+/// - P0→P3 / P0→P4 → null（跨超过一格）
+/// - 任何回退 → null
+/// - P0→P1（合法相邻）→ null（走 validatePhaseTransition 原合法路径）
+TeachingPhase? clampEarlyPhaseSkip(
+  TeachingPhase current,
+  TeachingPhase suggested,
+) {
+  final c = _kPhaseOrder.indexOf(current);
+  final s = _kPhaseOrder.indexOf(suggested);
+  if (c < 0 || s < 0) return null;
+  if (c > 1) return null; // 仅 P0(0) / P1(1)
+  if (s != c + 2) return null; // 仅恰好跨一格
+  return _kPhaseOrder[c + 1]; // 降级为相邻递进
+}

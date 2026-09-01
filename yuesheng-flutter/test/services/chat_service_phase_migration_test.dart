@@ -260,6 +260,148 @@ void main() {
     });
   });
 
+  // ── C54 方案 C：首诊双信号确定性降级（ADR-C54 §7.3）──
+  //
+  // 背景：首诊（首次展示文本 + 首次诊断出症候）时 P0→P1 与 P1→P2 信号
+  // 同时成立，suggested_phase 单值只能填一个——4 个模型实例实测证明
+  // 采样决定教学路径。方案 C 让代码确定性降级，无论 AI 填哪个，
+  // P0 首诊落库恒为 P1_WORLD。
+
+  group('C54 方案 C：首诊双信号', () {
+    test('#C1 P0 + N3 + suggested_phase=P2 → 降级落库 P1（C-2 clamp）', () async {
+      await setTeachingState(
+        phase: TeachingPhase.p0Engage,
+        level: BeginnerLevel.n3Diagnose,
+      );
+
+      final chatService = buildChatService(
+        FakeLlmClient(
+          buildDiagnosisResponse(suggestedPhase: 'P2_PRACTICE_LOOP'),
+        ),
+      );
+
+      await chatService.sendMessage(
+        sessionId,
+        '帮我诊断',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+        ),
+      );
+
+      final ts = await stateRepo.getTeachingState(sessionId);
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p1World.value,
+        reason: 'C-2：P0→P2 跨一格应确定性降级为 P0→P1，而非整轮丢弃',
+      );
+    });
+
+    test('#C2 P0 + N3 + suggested_phase=P1 → 透传落库 P1（C-3 收窄）', () async {
+      await setTeachingState(
+        phase: TeachingPhase.p0Engage,
+        level: BeginnerLevel.n3Diagnose,
+      );
+
+      final chatService = buildChatService(
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P1_WORLD')),
+      );
+
+      await chatService.sendMessage(
+        sessionId,
+        '帮我诊断',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+        ),
+      );
+
+      final ts = await stateRepo.getTeachingState(sessionId);
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p1World.value,
+        reason:
+            'C-3：current 未越过 P1 时 N3+P1 不提升——'
+            '修复前会被规则 3 改写成 P2 再被拦截，P0 学员整轮不动',
+      );
+    });
+
+    test('#C3 P0 + N0 + 任意 suggested_phase → 保持 P0（规则1 挂起，既有设计）', () async {
+      await setTeachingState(
+        phase: TeachingPhase.p0Engage,
+        level: BeginnerLevel.n0Engage,
+      );
+
+      final chatService = buildChatService(
+        FakeLlmClient(
+          buildDiagnosisResponse(suggestedPhase: 'P2_PRACTICE_LOOP'),
+        ),
+      );
+
+      await chatService.sendMessage(
+        sessionId,
+        '帮我诊断',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+        ),
+      );
+
+      final ts = await stateRepo.getTeachingState(sessionId);
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p0Engage.value,
+        reason: '规则1（N0-N2 P 系虚拟挂起）是刻意设计，C54 不得误改',
+      );
+    });
+
+    test('#C4 回归守卫：P2 + N3 + P4 → 保持 P2（收窄条件不得放宽到 P2+）', () async {
+      await setTeachingState(
+        phase: TeachingPhase.p2PracticeLoop,
+        level: BeginnerLevel.n3Diagnose,
+      );
+
+      final chatService = buildChatService(
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P4_REVIEW')),
+      );
+
+      await chatService.sendMessage(
+        sessionId,
+        '帮我诊断',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        p2Options,
+      );
+
+      final ts = await stateRepo.getTeachingState(sessionId);
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p2PracticeLoop.value,
+        reason:
+            'clampEarlyPhaseSkip 仅覆盖 P0/P1；P2→P4 跨级维持拦截'
+            '（与 #1 双重锁定）',
+      );
+    });
+  });
+
   // ── M4-C：自动迁移达标率校验 ──
 
   group('M4-C phasePassRate', () {

@@ -148,9 +148,18 @@ PhaseMapperOutput resolvePhaseMapper(PhaseMapperInput input) {
     );
   }
 
-  // 规则3 特例
+  // 规则3 特例（N3+P1→P2 提升）
+  // C-3 收窄（ADR-C54 §4-C-3）：current 尚未越过 P1（null 或 P0）时不提升。
+  // 此时 P0→P1 是合法相邻递进，提升会把一个合法信号改写成非法的 P0→P2
+  // 被 validatePhaseTransition 拦截——与规则 3 的设计意图（「P1 世界观对
+  // N3 学员太浅」）相反：P0 学员还没到 P1，不存在「太浅」的问题。
+  // 收窄后该场景走规则 2 原样透传 P1。
+  final notPastP1 =
+      input.currentPhase == null ||
+      input.currentPhase == TeachingPhase.p0Engage;
   if (resolverBeginnerLevel == BeginnerLevel.n3Diagnose &&
-      suggestedPhase == TeachingPhase.p1World) {
+      suggestedPhase == TeachingPhase.p1World &&
+      !notPastP1) {
     return PhaseMapperOutput(
       effectivePhase: TeachingPhase.p2PracticeLoop,
       effectiveBeginnerLevel: outputBeginnerLevel,
