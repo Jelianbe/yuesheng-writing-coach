@@ -1168,6 +1168,26 @@ extension ChatServiceDiagnosisSupport on ChatService {
       } catch (e) {
         debugPrint('[SafeRun] resolver 失败不阻断主流程: $e');
       }
+    } else if (diagnosis != null && diagnosis.syndromes.isNotEmpty) {
+      // N38 可观测性：诊断块识别到症候、却没有 suggested_phase → 上面的入口
+      // 守卫不成立，路径 1 整条被跳过，本轮不发生迁移且全程无痕。这是实测过的
+      // 失败模式（gp-13 三次全漏填，把「可选字段」当成了可填可不填）。
+      // 此处只记录、不改行为——代码侧不代填迁移，避免越权改动教学状态机。
+      // 仅在 P0/P1 告警：这两个阶段「诊断出症候」本身就是迁移信号，属于确凿
+      // 漏填；P2 及以后每轮有症候是常态，不告警以免日志噪声。
+      try {
+        final n38State = await _stateRepo.getTeachingState(sessionId);
+        final n38Phase = TeachingPhase.fromString(n38State?.currentPhase);
+        if (n38Phase == TeachingPhase.p0Engage ||
+            n38Phase == TeachingPhase.p1World) {
+          debugPrint(
+            '[N38] ${n38Phase!.value} 阶段诊断块含 ${diagnosis.syndromes.length} 个症候'
+            '（迁移信号已成立）但无 suggested_phase → 本轮不发生阶段迁移',
+          );
+        }
+      } catch (e) {
+        debugPrint('[SafeRun] N38 可观测读取教学状态失败: $e');
+      }
     }
 
     // 批次1（C5/H3）：路径1 已成功迁移 → 直接返回，路径2 仅当路径1 无有效迁移时评估

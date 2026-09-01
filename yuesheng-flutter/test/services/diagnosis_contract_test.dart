@@ -209,6 +209,64 @@ void main() {
       // 用户主权：主动请求评价时必附加（R-009）
       expect(result.systemPrompt, contains('主动请求评价/诊断** → 必附加'));
     });
+
+    // N30 防复发护栏（A.12.27）：P1 阶段诊断块怎么办，两处表述打架——
+    // L1 常驻说「可开始隐性诊断（诊断块中附 syndromes）」，beginner 侧却说
+    // 「不给诊断块」，且「隐性标注」全文无定义 → 模型只能猜。
+    // 现在统一为：诊断块照常附加、只填 syndromes，且「隐性诊断」带可操作定义。
+    test('N30 护栏：隐性诊断有定义，且不再要求不给诊断块', () {
+      final result = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p1World,
+          attitude: AttitudeLevel.doubao,
+          isBeginner: true,
+        ),
+      );
+      expect(result.systemPrompt, contains('隐性诊断'));
+      // 「不给诊断块」与 §3.9 必附加正面冲突，不得回归
+      expect(result.systemPrompt, isNot(contains('不给诊断块')));
+      // 定义必须可操作：说清只填 syndromes、不训练
+      expect(result.systemPrompt, contains('只填 `syndromes`'));
+    });
+
+    // N34 防复发护栏（A.12.27）：跳阶段阈值三处打架——旧文案
+    // 「用户主动请求评价时可跳过前两阶段」无条件跳两级，与 beginner 侧
+    // 「200+ 字并请求评价才跳过 P0」条件与目标阶段都不一致；态度档位侧的
+    // 「100+ 字」则被混为同一维度（实际是 doubao→yuesheng 的升档信号）。
+    test('N34 护栏：跳级裁决分级 + 态度档位维度已区分', () {
+      final result = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+          isBeginner: true,
+        ),
+      );
+      // 无条件跳过两级 / 跳过阶段二的旧措辞不得回归
+      expect(result.systemPrompt, isNot(contains('可跳过前两阶段')));
+      expect(result.systemPrompt, contains('任何情况下都不跳过'));
+      // 分级裁决：有 200+ 字或自带明确问题 → 可进 P2；否则停在 P1
+      expect(result.systemPrompt, contains('停在阶段二，用提问引导帮学员自己发现问题'));
+      // 态度档位（100+ 字）与阶段跳级（200+ 字）维度区分
+      expect(result.systemPrompt, contains('维度区分'));
+      expect(result.systemPrompt, contains('不要拿它判断阶段迁移'));
+    });
+
+    // N38 防复发护栏（A.12.27）：suggested_phase 挂在「可选字段」标题下，
+    // 与「迁移动作」的必做身份冲突——gp-13 三次全按可选项处理而漏填，
+    // 且代码侧入口守卫因此整条迁移路径都不进入，迁移静默丢失无任何痕迹。
+    test('N38 护栏：suggested_phase 声明为条件必填', () {
+      final result = buildSystemPromptV2(
+        SkillLoadContext(
+          phase: TeachingPhase.p1World,
+          attitude: AttitudeLevel.doubao,
+        ),
+      );
+      expect(result.systemPrompt, contains('条件必填'));
+      // 「系统不会替你补」——同时封住 beginner_p3 侧「phase-mapper 会标记」的误导
+      expect(result.systemPrompt, contains('系统只校验你填的值，不会替你补'));
+      // 旧的「仅在阶段迁移信号出现时填」弱措辞不得回归
+      expect(result.systemPrompt, isNot(contains('仅在阶段迁移信号出现时填')));
+    });
   });
 
   group('[YS_ENTITY] 大纲协议块契约', () {

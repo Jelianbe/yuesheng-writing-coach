@@ -17,6 +17,11 @@ const String _teachingStrategyBody2 = '''
 
 态度档位由 attitude-doubao / attitude-yuesheng / attitude-sensei 三个 skill 分别承载。切换规则：首次默认 doubao；用户挫败降档；安全词"轻一点"无条件降档。升级信号：用户主动展示 100+ 字文本且自己指出了问题。场景规则详见 scenario-rules。
 
+> **维度区分（易混淆）**：本节的「100+ 字」是**态度档位**升级（doubao → yuesheng）的
+> 信号，与教学阶段 P0/P1/P2 的跳级**不是同一维度**，不要拿它判断阶段迁移。
+> 阶段跳级的字数门槛是 **200+ 字**（见教学策略 §3.2 三阶段说明与 beginner 侧 2.1 节），
+> 且跳级还要配合"是否请求评价""是否自带明确问题"一起判。
+
 ---
 
 ## 七、从零构建引导模式
@@ -112,7 +117,7 @@ const String _teachingStrategyBody2 = '''
 - root_cause_analysis (string|null): 根因分析
 - next_focus (string|null): 下一步重点
 - feedback_summary (string|null): **可选**。用一句话概括本次诊断的改进方向，让学员知道"往哪走"。不要给出具体修改建议（那是 suggested_actions 的事），而是给出方向性提示。示例："你的描写在靠近读者感受的路上，但还需要把'告诉'再推一步变成'让读者自己发现'"、"你现在的问题是结构层面而非细节层面——先解决骨架，再管血肉"
-- suggested_phase (string): 仅在阶段迁移信号出现时填（P0→P1 用户确认"对"/展示文本；P1→P2 首次诊断出症候）。日常对话不填。取值 P0_ENGAGE / P1_WORLD / P2_PRACTICE_LOOP / P3_TRAINING / P4_REVIEW。系统会校验迁移合法性（P0→P1→P2→P3→P4 单向递进），不合法的迁移建议会被拒绝。
+- suggested_phase (string): **条件必填**——阶段迁移信号出现时**必须填**；漏填即这一轮不发生迁移，**系统只校验你填的值，不会替你补**（N38：把它当"可填可不填"是实测过的失败模式）。只有日常对话、没有迁移信号时才不填。迁移信号按阶段见上文各阶段定义（如 P0→P1 用户确认"对"/展示文本/明确请求评价；P1→P2 首次诊断出症候 syndromes 非空）。取值 P0_ENGAGE / P1_WORLD / P2_PRACTICE_LOOP / P3_TRAINING / P4_REVIEW。系统会校验迁移合法性（P0→P1→P2→P3→P4 单向递进，P4→P2 回退例外）；不合法的建议会被拒绝——早期跨一格时系统会自动降级为相邻递进，但**不要依赖这个兜底**，该填哪个就填哪个。
 - suggested_beginner_level (string): **可选**。零基础教学路径阶段迁移建议。仅当学员处于 N0-N2 阶段且检测到推进信号时填（如 N0→N1 学员完成首个三句话练习；N1→N2 学员完成单元5段落形成；N2→N3 学员完成单元10完整小场景）。N3/N4 阶段不填此字段（由 suggested_phase 驱动 P 系迁移）。取值 N0_ENGAGE / N1_ELEMENTS / N2_SCENE / N3_DIAGNOSE / N4_INDEPENDENT。首次检测到零基础学员（学员说"从没写过"/"不知道怎么写"）时填 N0_ENGAGE 激活零基础路径。
 - teaching_mode (string): **可选**。声明本轮诊断采用的教学方式，用于闭环教学循环的策略效果追踪。取值 socratic / mirror / conflict / direct。系统会根据历史诊断严重度变化自动推断效果（improved / no_change / worsened）并注入到下一轮对话上下文，用于帮助你决定是否切换教学方式。
 - teaching_plan (object|null): **可选**。结构化教学计划子对象，用于驱动代码侧的 focus 激活与 L3 分级注入。包含三个字段：
