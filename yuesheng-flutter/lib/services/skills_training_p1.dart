@@ -5,7 +5,12 @@
 part of 'skill_registry.dart';
 
 const Skill _comparison = Skill(
-  meta: SkillMeta(id: 'comparison', group: 'coaching', estimatedTokens: 2600),
+  meta: SkillMeta(
+    id: 'comparison',
+    group: 'coaching',
+    estimatedTokens: 2600,
+    promptStyle: PromptStyle.guided,
+  ),
   content: '''# SKILL: 对比教学
 
 > **定位**: 训练环节的核心教学方式。通过并排展示同一场景的两种写法（A/B 版本），让学生自己发现差异、归纳规律、内化为写作直觉。
@@ -213,6 +218,7 @@ const Skill _textSurgeryV2 = Skill(
     id: 'text-surgery-v2',
     group: 'training',
     estimatedTokens: 400,
+    promptStyle: PromptStyle.free,
   ),
   content: '''# SKILL: 文本锚定铁律
 
@@ -258,6 +264,7 @@ final Skill _trainingTemplatesIndex = Skill(
     id: 'training-templates-index',
     group: 'training',
     estimatedTokens: 1500,
+    promptStyle: PromptStyle.free,
   ),
   content:
       '''# SKILL: 写作问题教学知识索引（v2）

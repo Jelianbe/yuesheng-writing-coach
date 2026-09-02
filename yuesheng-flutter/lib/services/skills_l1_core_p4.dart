@@ -5,7 +5,12 @@
 part of 'skill_registry.dart';
 
 const Skill _scenarioRules = Skill(
-  meta: SkillMeta(id: 'scenario-rules', group: 'core', estimatedTokens: 1100),
+  meta: SkillMeta(
+    id: 'scenario-rules',
+    group: 'core',
+    estimatedTokens: 1100,
+    promptStyle: PromptStyle.guided,
+  ),
   content: '''# SKILL: 场景规则扩展
 
 > **来源**: yuesheng-prompt-v5.md §十一
@@ -92,6 +97,7 @@ final Skill _teachingStrategy = Skill(
     id: 'teaching-strategy',
     group: 'core',
     estimatedTokens: 3300,
+    promptStyle: PromptStyle.strict,
   ),
   content:
       _teachingStrategyBody1 +

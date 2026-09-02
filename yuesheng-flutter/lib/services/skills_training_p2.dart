@@ -9,6 +9,7 @@ const Skill _timedRewrite = Skill(
     id: 'timed-rewrite',
     group: 'coaching',
     estimatedTokens: 1600,
+    promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 限时重写
 

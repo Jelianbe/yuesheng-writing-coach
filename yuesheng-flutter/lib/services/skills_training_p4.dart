@@ -9,6 +9,7 @@ const Skill _demonstration = Skill(
     id: 'demonstration',
     group: 'coaching',
     estimatedTokens: 2400,
+    promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 示范教学
 
@@ -165,6 +166,7 @@ final Skill _coachingActionsV2 = Skill(
     id: 'coaching-actions-v2',
     group: 'coaching',
     estimatedTokens: 1400,
+    promptStyle: PromptStyle.free,
   ),
   content: '''# SKILL: 教学方法目录
 

@@ -9,6 +9,7 @@ final Skill _beginnerPath = Skill(
     id: 'beginner-path',
     group: 'teaching',
     estimatedTokens: 3200,
+    promptStyle: PromptStyle.guided,
   ),
   content:
       '''# SKILL: 零基础教学路径（N0-N4）
