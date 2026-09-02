@@ -99,18 +99,44 @@ def read(rel: str) -> str:
 
 # ───────────────────────── 代码侧真源解析 ─────────────────────────
 
+#: (扫描器内部族名, diagnosis_parser.dart 常量名, 基线取值个数)
+#:
+#: 常量名**前缀下划线可选**：N19 把 phase / beginner 两组由 `_kValidXxx`
+#: 改为公开 `kValidXxx`（供 test/services/enum_consistency_test.dart 引用），
+#: 扫描器必须同时认两种写法，否则该族白名单会被**静默**解析成空集。
+WHITELIST_KEYS = [
+    ("phase", "kValidPhases", 5),
+    ("beginner", "kValidBeginnerLevels", 5),
+    ("mode", "kValidTeachingModes", 4),
+    ("severity", "kValidSeverities", 3),
+]
+
+
 def parse_whitelists():
-    """从 diagnosis_parser.dart 解析四组枚举白名单。"""
+    """从 diagnosis_parser.dart 解析四组枚举白名单。
+
+    任一族解析为空集时**直接中止**（raise SystemExit），不静默降级。
+    静默降级会让 enum-token 把全部合法取值报成「不在白名单」，
+    比不扫描更糟。N19 落地时真实踩过一次：改名后本函数解析不到 phase /
+    beginner 两族，白名单总数由 19 掉到 7，enum-token 一次性冒出 45 条
+    假阳性，而脚本仍 exit 0 —— 这就是为什么这里改成硬失败。数字对账：
+    正常 17 值（5 phase + 5 beginner + 4 mode + 3 severity），踩坑时掉到 7。
+    """
     src = read("diagnosis_parser.dart")
     wl = {}
-    for name, key in [
-        ("phase", "_kValidPhases"),
-        ("beginner", "_kValidBeginnerLevels"),
-        ("mode", "_kValidTeachingModes"),
-        ("severity", "_kValidSeverities"),
-    ]:
-        m = re.search(key + r"\s*=\s*\[(.*?)\]", src, re.DOTALL)
-        wl[name] = set(re.findall(r"'([^']+)'", m.group(1))) if m else set()
+    for name, key, expect in WHITELIST_KEYS:
+        m = re.search(r"_{0,1}" + key + r"\s*=\s*\[(.*?)\]", src, re.DOTALL)
+        values = set(re.findall(r"'([^']+)'", m.group(1))) if m else set()
+        if not values:
+            raise SystemExit(
+                f"[skill-consistency-scan] FATAL: 白名单 {key} 解析为空集。"
+                "diagnosis_parser.dart 里该常量改名或改结构了？"
+                "（本工具虽为 advisory，但白名单缺失会造成大面积假阳性，故中止）"
+            )
+        if expect and len(values) != expect:
+            print(f"[skill-consistency-scan] WARN: {key} 取值 {len(values)} 个，"
+                  f"基线为 {expect} 个：{sorted(values)}")
+        wl[name] = values
     return wl
 
 

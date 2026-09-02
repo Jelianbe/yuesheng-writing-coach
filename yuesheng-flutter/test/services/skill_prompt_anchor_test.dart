@@ -6,10 +6,19 @@
 // ADR：docs/ADR-skill-orthogonal-model.md
 //
 // 目的：把 buildSystemPromptV2 的完整输出（L1 + 态度 + L2 + 语境头 +
-//      位置引导）、六个大块 skill 的原文内容、L3 检索注入输出，冻结为
+//      位置引导）、全部注册 skill 的原文内容、L3 检索注入输出，冻结为
 //      字节级基线（长度 + FNV-1a 64 位指纹）。Phase 3 的「纯搬移」步骤
 //      （内容迁移至 *_kb_content.dart）不得改变任何锚点；有意的行为
 //      变更（大块 → 索引版）须经舰长确认后重生成基线并复查 diff。
+//
+// E.11（台账 §E.11）两处加强：
+//   ① diff 粒度：逐 Skill 指纹由原 6 个 Phase 3 大块扩到注册表**全部**
+//      skill。改一个 skill 后，diff 会直接指名是哪个 skill 变了，而不是
+//      只能在 9→13 个 prompt 指纹里看到「全变」却无法确认是否只改了预期处。
+//   ② 用例覆盖：补齐 4 个原本缺位的可达组合——
+//      P0+零基础=false（L2Mode.none）/ P1+零基础=false（diagnosis 组）/
+//      P3+零基础（beginner 组）/ P4+零基础（beginner 组）。
+//      原 9 个用例里 L2Mode.none 组**一个都没有**，等于该组从未被锚定。
 //
 // 用法：
 //   flutter test test/services/skill_prompt_anchor_test.dart
@@ -21,24 +30,25 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
+import 'package:writingcoach/services/skill_layers.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
 const String kAnchorPath = 'test/snapshots/skill_prompt_anchor.json';
 
-/// Phase 3 索引化对象（六个大块；方案 §5，teaching-strategy 单列决策不在此列）
-const List<String> kPhase3Skills = [
-  'narrative-design',
-  'plot-design',
-  'coaching-rhythm',
-  'advanced-phases',
-  'outline-diagnosis',
-  'genre-guide',
-];
+/// 逐 Skill 指纹覆盖的全部 skill（E.11 ①）
+///
+/// 原为 Phase 3 六个大块（narrative-design / plot-design / coaching-rhythm /
+/// advanced-phases / outline-diagnosis / genre-guide）；扩到注册表全部后，
+/// 任何一个 skill 的正文被改动都会在 diff 里被指名。
+/// 排序取 registry key，保证快照键序稳定、可复现。
+List<String> get kAnchoredSkillIds => skillRegistry.keys.toList()..sort();
 
 /// 锚点用例：上下文均 const，保证可复现；选取与 skill_registry_l2_test
 /// 的组装断言同源（beginner/diagnosis/training/advanced/outline 五模式），
 /// beginner 额外覆盖三个态度档位，并补 P1 档（coaching-rhythm 阶段裁剪生效档）。
+///
+/// E.11 ②：补齐四个可达组合，使六个 L2Mode 全部至少有一个锚点。
 class PromptCase {
   final String name;
   final SkillLoadContext ctx;
@@ -46,6 +56,15 @@ class PromptCase {
 }
 
 const List<PromptCase> kPromptCases = [
+  // ── L2Mode.none（P0 + 非零基础：无任何 L2 组注入）── E.11 ② 新增
+  PromptCase(
+    'none_p0_yuesheng',
+    SkillLoadContext(
+      phase: TeachingPhase.p0Engage,
+      attitude: AttitudeLevel.yuesheng,
+    ),
+  ),
+  // ── L2Mode.beginner ──
   PromptCase(
     'beginner_doubao',
     SkillLoadContext(
@@ -78,6 +97,34 @@ const List<PromptCase> kPromptCases = [
       isBeginner: true,
     ),
   ),
+  // P3/P4 + 零基础 → resolveL2Mode 规则 4 走 beginner 组；
+  // 原用例集里这两档只覆盖了非零基础分支。E.11 ② 新增
+  PromptCase(
+    'beginner_p3_yuesheng',
+    SkillLoadContext(
+      phase: TeachingPhase.p3Training,
+      attitude: AttitudeLevel.yuesheng,
+      isBeginner: true,
+    ),
+  ),
+  PromptCase(
+    'beginner_p4_yuesheng',
+    SkillLoadContext(
+      phase: TeachingPhase.p4Review,
+      attitude: AttitudeLevel.yuesheng,
+      isBeginner: true,
+    ),
+  ),
+  // ── L2Mode.diagnosis ──
+  // P1 + 非零基础（无子阶段）也会落到 diagnosis 组；原用例只有 P2+diagnosis
+  // 子阶段一种，P1 这条独立分支从未被锚定。E.11 ② 新增
+  PromptCase(
+    'diagnosis_p1_yuesheng',
+    SkillLoadContext(
+      phase: TeachingPhase.p1World,
+      attitude: AttitudeLevel.yuesheng,
+    ),
+  ),
   PromptCase(
     'diagnosis_yuesheng',
     SkillLoadContext(
@@ -86,6 +133,7 @@ const List<PromptCase> kPromptCases = [
       subphase: TeachingSubphase.diagnosis,
     ),
   ),
+  // ── L2Mode.training ──
   PromptCase(
     'training_yuesheng',
     SkillLoadContext(
@@ -94,6 +142,7 @@ const List<PromptCase> kPromptCases = [
       subphase: TeachingSubphase.practice,
     ),
   ),
+  // ── L2Mode.advanced ──
   PromptCase(
     'advanced_sensei',
     SkillLoadContext(
@@ -108,6 +157,7 @@ const List<PromptCase> kPromptCases = [
       attitude: AttitudeLevel.yuesheng,
     ),
   ),
+  // ── L2Mode.outline ──
   PromptCase(
     'outline_yuesheng',
     SkillLoadContext(
@@ -164,18 +214,19 @@ Map<String, Object> _promptAnchor(SystemPromptResult r) => {
   'skills': r.loadedSkillIds.join(','),
 };
 
-/// 汇总当前全部锚点（prompt / 大块原文 / L3 注入）
+/// 汇总当前全部锚点（prompt / 全部 skill 原文 / L3 注入）
 Map<String, Object> _buildCurrent() {
   final promptAnchors = <String, Object>{};
   for (final c in kPromptCases) {
     promptAnchors[c.name] = _promptAnchor(buildSystemPromptV2(c.ctx));
   }
 
+  // E.11 ①：由 6 个大块扩到注册表全部 skill
   final skillAnchors = <String, Object>{};
-  for (final id in kPhase3Skills) {
+  for (final id in kAnchoredSkillIds) {
     final skill = skillRegistry[id];
     if (skill == null) {
-      throw StateError('Phase 3 大块 skill 未注册: $id');
+      throw StateError('注册表中的 skill 消失: $id');
     }
     skillAnchors[id] = _textAnchor(skill.content);
   }
@@ -194,7 +245,7 @@ Map<String, Object> _buildCurrent() {
     'meta': {
       'note': 'Phase 3 行为锚点基线（字节级：长度 + FNV-1a 指纹）',
       'promptCases': kPromptCases.map((c) => c.name).join(','),
-      'phase3Skills': kPhase3Skills.join(','),
+      'anchoredSkillCount': kAnchoredSkillIds.length,
     },
     'prompt': promptAnchors,
     'skillContent': skillAnchors,
@@ -216,14 +267,48 @@ List<String> _diff(String path, dynamic a, dynamic b) {
   return out;
 }
 
+/// 按顶层分节统计漂移条数（E.11 ① 配套：先看清是哪一节在动）
+///
+/// 输出形如 `prompt 3 / skillContent 2`；对 skillContent 还会进一步点名
+/// 具体是哪几个 skill（这正是本次加强的目的）。
+String _driftSummary(List<String> diffs) {
+  final sections = <String, int>{};
+  final touchedSkills = <String>[];
+  for (final d in diffs) {
+    final parts = d.split('.');
+    final sec = parts.first;
+    sections[sec] = (sections[sec] ?? 0) + 1;
+    if (sec == 'skillContent' && parts.length >= 2) {
+      final id = parts[1];
+      if (!touchedSkills.contains(id)) touchedSkills.add(id);
+    }
+  }
+  final head = sections.entries.map((e) => '${e.key} ${e.value}').join(' / ');
+  if (touchedSkills.isEmpty) return head;
+  final shown = touchedSkills.take(12).join(', ');
+  final rest = touchedSkills.length > 12 ? ' 等 ${touchedSkills.length} 个' : '';
+  return '$head\n  skillContent 命中: $shown$rest';
+}
+
 void main() {
-  test('Phase 3 锚点：prompt / 大块原文 / L3 注入字节级不变', () {
+  test('Phase 3 锚点：prompt / skill 原文 / L3 注入字节级不变', () {
     final updating = (Platform.environment['UPDATE_SNAPSHOTS'] ?? '') == 'true';
 
     // 组装确定性自检：同一上下文连跑两遍，输出必须完全一致
     final first = buildSystemPromptV2(kPromptCases[0].ctx);
     final second = buildSystemPromptV2(kPromptCases[0].ctx);
     expect(first.systemPrompt, second.systemPrompt, reason: '组装非确定性');
+
+    // E.11 ② 配套自检：六个 L2Mode 必须全部被锚点覆盖，否则某组改动会漏网
+    final coveredModes = kPromptCases.map((c) => resolveL2Mode(c.ctx)).toSet();
+    expect(
+      coveredModes.length,
+      L2Mode.values.length,
+      reason:
+          '锚点用例未覆盖全部 L2Mode：'
+          '已覆盖 ${coveredModes.map((m) => m.name).join(',')}，'
+          '共 ${L2Mode.values.length} 组',
+    );
 
     final current = _buildCurrent();
     final file = File(kAnchorPath);
@@ -236,6 +321,11 @@ void main() {
           '${const JsonEncoder.withIndent('  ').convert(current)}\n',
         );
       print('[anchor] 基线已生成: $kAnchorPath');
+      print(
+        '[anchor] prompt 用例 ${kPromptCases.length} 个 / '
+        '逐 skill 指纹 ${kAnchoredSkillIds.length} 个 / '
+        'L3 用例 ${kL3Cases.length} 个',
+      );
       expect(file.existsSync(), isTrue);
       return;
     }
@@ -249,6 +339,7 @@ void main() {
 
     if (diffs.isNotEmpty) {
       print('[anchor] 检测到 ${diffs.length} 处字节级漂移：');
+      print('[anchor] 分布：${_driftSummary(diffs)}');
       for (final d in diffs.take(40)) {
         print('  - $d');
       }
@@ -263,7 +354,11 @@ void main() {
       fail('Phase 3 行为锚点发生字节级漂移（${diffs.length} 处），见上方 diff。');
     }
 
-    print('[anchor] 比对通过：prompt / 大块原文 / L3 注入与基线字节级一致 ✓');
+    print('[anchor] 比对通过：prompt / skill 原文 / L3 注入与基线字节级一致 ✓');
+    print(
+      '[anchor] 覆盖：${kPromptCases.length} 个 prompt 用例 / '
+      '${kAnchoredSkillIds.length} 个 skill 指纹 / ${kL3Cases.length} 个 L3 用例',
+    );
     expect(diffs, isEmpty);
   });
 }

@@ -20,15 +20,29 @@ const String kDiagnosisEnd = '[/YS_DIAGNOSIS]';
 
 /// 解析结果（DTO 已上移至 contracts/diagnosis_capability.dart）
 
+/// 解析白名单 —— 枚举一致性（N19）的四份真源之一。
+///
+/// 四份真源必须**双向相等**，由 test/services/enum_consistency_test.dart 守护：
+///   1. 本文件的解析白名单（下两处常量）
+///   2. types/teaching_types.dart 的 TeachingPhase / BeginnerLevel 枚举值
+///   3. data/database/tables.dart 的 DB CHECK 约束（表重建级变更）
+///   4. services/skills_*.dart 里全部注册 skill 正文的声明取值
+///
+/// 去掉下划线前缀是为了让护栏可引用（N19）；内部仍按只读常量使用，
+/// 不要在业务代码里就地增删元素——改枚举、改 DB、改 prompt 要四处同步。
 const List<String> _kValidSeverities = ['L1', 'L2', 'L3'];
-const List<String> _kValidPhases = [
+
+/// 教学阶段取值白名单（P 系）。与 TeachingPhase / DB CHECK / prompt 声明四向一致。
+const List<String> kValidPhases = [
   'P0_ENGAGE',
   'P1_WORLD',
   'P2_PRACTICE_LOOP',
   'P3_TRAINING',
   'P4_REVIEW',
 ];
-const List<String> _kValidBeginnerLevels = [
+
+/// 零基础等级取值白名单（N 系）。与 BeginnerLevel / DB CHECK / prompt 声明四向一致。
+const List<String> kValidBeginnerLevels = [
   'N0_ENGAGE',
   'N1_ELEMENTS',
   'N2_SCENE',
@@ -178,13 +192,13 @@ ParsedDiagnosis? _validateDiagnosis(dynamic raw) {
 
   TeachingPhase? suggestedPhase;
   final sp = obj['suggested_phase'];
-  if (sp is String && _kValidPhases.contains(sp)) {
+  if (sp is String && kValidPhases.contains(sp)) {
     suggestedPhase = TeachingPhase.fromString(sp);
   }
 
   BeginnerLevel? suggestedBeginnerLevel;
   final sbl = obj['suggested_beginner_level'];
-  if (sbl is String && _kValidBeginnerLevels.contains(sbl)) {
+  if (sbl is String && kValidBeginnerLevels.contains(sbl)) {
     suggestedBeginnerLevel = BeginnerLevel.fromString(sbl);
   }
 
