@@ -352,7 +352,22 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   String? currentTeachingFocusId;
   if (teachingPlan != null) {
     final ctf = teachingPlan['current_teaching_focus_id'];
-    if (ctf is String) currentTeachingFocusId = ctf;
+    if (ctf is String) {
+      // N3-a（ADR-C65）：prompt 三处明写「必须从本轮 syndromes 中选取」
+      //（skills_l1_core_p2.dart:124 / syndrome_kb_content.dart:77、99）。
+      // 越界值置 null → 走 focus-resolver fallback，这是 prompt 自己声明的
+      // 既有行为（同 :124「缺失时走 fallback 优先级表」），不是新造路径。
+      //
+      // 为什么必须拦：越界 id 会绕过诊断锁定。落库后下轮
+      // getLatestTeachingFocus 取出它，focus-resolver 校验 1「在池中」只看
+      // active_problem 池——而 commitDiagnosis 已把本轮症候 UPSERT 进池，
+      // 校验先于落库不成立，拦不住。详见 ADR-C65 §3.3。
+      if (syndromes.any((s) => s.syndromeId == ctf)) {
+        currentTeachingFocusId = ctf;
+      } else {
+        notes.add('focus_not_in_syndromes');
+      }
+    }
   }
 
   String? focusReason;

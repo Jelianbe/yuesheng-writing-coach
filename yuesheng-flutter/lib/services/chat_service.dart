@@ -2337,17 +2337,25 @@ extension ChatServiceSendParse on ChatService {
         (teacherDisplayContent.isNotEmpty ? '\n\n$teacherDisplayContent' : '');
 
     // 10. 写入 assistant 消息
-    // 批次74：仅大纲装配的章节诊断才放宽空判断：
-    //   - diagnosis 解析成功 或 已落库实体 → 说明可能被协议块（YS_DIAGNOSIS/YS_ENTITY）
-    //     占据首位，拦截器 displayLength=0 导致 combinedContent 空 → 给默认文案「诊断完成。」继续。
-    //   - 无大纲装配 或 三空齐发（说明空+诊断空+实体空）→ 维持 RN 原语义，onError。
+    // 放宽空判断（协议块占据首位时 displayLength=0，combinedContent 会为空）：
+    //   - diagnosis 解析成功 → 诊断块确实产出了，给默认文案「诊断完成。」继续。
+    //   - 已落库实体 > 0 → 同属「有实质产出」，继续。
+    //   - 三空齐发（说明空+诊断空+实体空）→ 维持 RN 原语义，onError。
+    //
+    // N2（ADR-C65）：原实现给 diagnosis != null 也加了「装配大纲 + 章节主引用」
+    // 两个前置条件——诊断能否落库与有没有装配大纲服务毫无关系，且与上面注释
+    // 声明的意图直接矛盾。原路径下 aborted=true 会让步骤 11 的
+    // commitDiagnosisWithHistory 被整个跳过（调用方 :3051 提前 return），
+    // 诊断非 null 却永久丢失、用户收到「AI 返回为空」。
+    //
+    // 现按注释原意拆开：diagnosis 非空即放宽；实体计数分支保留原前置条件
+    //（primaryRef!.refId 依赖 primaryRef != null，由 refType=='chapter' 保证）。
     bool treatAsValid = false;
-    if (combinedContent.trim().isEmpty &&
-        _ensureOutlineService() != null &&
-        primaryRef?.refType == 'chapter') {
+    if (combinedContent.trim().isEmpty) {
       if (diagnosis != null) {
         treatAsValid = true;
-      } else {
+      } else if (_ensureOutlineService() != null &&
+          primaryRef?.refType == 'chapter') {
         final c = await _readOutlineEntityCount(primaryRef!.refId);
         if (c > 0) treatAsValid = true;
       }

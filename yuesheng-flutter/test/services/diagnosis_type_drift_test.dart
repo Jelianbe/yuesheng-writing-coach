@@ -258,8 +258,11 @@ void main() {
         ..['suggested_phase'] = 'P2_PRACTICE_LOOP'
         ..['suggested_beginner_level'] = 'N2_SCENE'
         ..['teaching_mode'] = 'socratic'
+        // N3-a（ADR-C65）：必须是本轮 syndromes 中的 id（此处 P012）。
+        // 原用 'F001'——类型合法但成员越界，加校验后会被置 null，
+        // 就测不到「合法 String 不被误判为漂移」了。换合规值保留原意图。
         ..['teaching_plan'] = {
-          'current_teaching_focus_id': 'F001',
+          'current_teaching_focus_id': 'P012',
           'focus_reason': '原因',
         };
       final r = validateDiagnosisOutput(_kLeakyText, j);
@@ -272,7 +275,7 @@ void main() {
       expect(d.suggestedPhase, TeachingPhase.p2PracticeLoop);
       expect(d.suggestedBeginnerLevel, BeginnerLevel.n2Scene);
       expect(d.teachingMode, TeachingMode.socratic);
-      expect(d.currentTeachingFocusId, 'F001');
+      expect(d.currentTeachingFocusId, 'P012');
       expect(d.focusReason, '原因');
     });
 
