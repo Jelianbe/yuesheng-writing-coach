@@ -75,6 +75,26 @@ python scripts/check_circular.py
 flutter test --exclude-tags live,external --no-pub
 ```
 
+> **CRLF 核验的口径陷阱（2026-09-02 实证，V4.4）**：项目要求「CRLF = 0」，
+> 但这个 0 指的是**提交进仓库的内容（blob / 索引）**，**不是工作区文件字节**。
+>
+> 本仓库 `core.autocrlf = true`：add 时 CRLF→LF，checkout 时 LF→CRLF。
+> 因此全仓 **721 个受版本控制文件里有 259 个工作区文件是 CRLF**（另有 4 个
+> mixed）——这是配置的正常结果，**不是违规**。
+>
+> 直接读工作区字节去数 `\r\n` 会得到**假警报**：2026-09-02 我就据此误判
+> 「本批引入了 145 / 460 处 CRLF」，实际 `git diff --cached --stat` 显示
+> 只是 35 / 218 行的内容级改动，blob 始终是全 LF。
+>
+> **正确做法**——用 `git ls-files --eol`，看 **`i/` 列**（索引）：
+> ```bash
+> git ls-files --eol -- <改动文件>     # i/lf = 合规；i/crlf = 违规
+> ```
+> 判别口诀：**看 `i/` 不看 `w/`，看 blob 不看工作区。**
+>
+> 反过来说，也**不要**因为工作区是 CRLF 就去批量转 LF——`autocrlf=true`
+> 下下次 checkout 又会变回 CRLF，纯属无效churn。
+
 > Windows 注意：`flutter test` 需保证系统 TEMP 所在盘有足够空间
 > （编译产物数百 MB）；磁盘满会报 `errno = 112`。
 
