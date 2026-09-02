@@ -331,6 +331,15 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
   final focusIdRaw = teachingPlan?['current_teaching_focus_id'];
   final focusReasonRaw = teachingPlan?['focus_reason'];
 
+  // N3-a（ADR-C65）：与 parser 侧同款校验——prompt 三处明写「必须从本轮
+  // syndromes 中选取」。两条解析路径必须一致，否则重演 N8（parser 白名单 /
+  // validator 不校验）的老问题。越界置 null → 走 focus-resolver fallback，
+  // 这是 prompt 自己声明的既有行为，不是新造路径。
+  final syndromeIds = syndromes.map((s) => s.syndromeId).toSet();
+  final focusId = focusIdRaw is String && syndromeIds.contains(focusIdRaw)
+      ? focusIdRaw
+      : null;
+
   return ParsedDiagnosis(
     syndromes: syndromes,
     suggestedActions: suggestedActions,
@@ -346,7 +355,7 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
       levelRaw is String ? levelRaw : null,
     ),
     teachingMode: TeachingMode.fromString(modeRaw is String ? modeRaw : null),
-    currentTeachingFocusId: focusIdRaw is String ? focusIdRaw : null,
+    currentTeachingFocusId: focusId,
     focusReason: focusReasonRaw is String ? focusReasonRaw : null,
     styleProfile: _parseStyleProfile(data),
   );
@@ -385,10 +394,14 @@ List<String> _collectOptionalFieldDrifts(Map<String, dynamic> data) {
 
   // syndromes[].reader_impact（Syndrome.fromJson 消费，schema 不校验其类型）
   final syndromesRaw = data['syndromes'];
+  final syndromeIdSet = <String>{};
   if (syndromesRaw is List) {
     for (var i = 0; i < syndromesRaw.length; i++) {
       if (syndromesRaw[i] is! Map<String, dynamic>) continue;
-      final ri = (syndromesRaw[i] as Map<String, dynamic>)['reader_impact'];
+      final syndrome = syndromesRaw[i] as Map<String, dynamic>;
+      final sid = syndrome['syndrome_id'];
+      if (sid is String) syndromeIdSet.add(sid);
+      final ri = syndrome['reader_impact'];
       if (ri != null && ri is! String) {
         drifts.add(
           '可选字段 syndromes[$i].reader_impact 类型漂移'
@@ -412,6 +425,17 @@ List<String> _collectOptionalFieldDrifts(Map<String, dynamic> data) {
 
     checkPlan('current_teaching_focus_id');
     checkPlan('focus_reason');
+
+    // N3-a（ADR-C65）：类型合法但**越界**（不在本轮 syndromes 中）是另一类
+    // 违规——checkPlan 只管类型，管不了成员关系。越界值会被置 null 走向
+    // focus-resolver fallback，必须留痕，否则又是「静默丢弃且不留痕」。
+    final ctf = teachingPlan['current_teaching_focus_id'];
+    if (ctf is String && !syndromeIdSet.contains(ctf)) {
+      drifts.add(
+        'teaching_plan.current_teaching_focus_id = $ctf 不在本轮 syndromes 中，'
+        '已按缺失处理（走 fallback 优先级表）',
+      );
+    }
   }
 
   return drifts;
