@@ -162,6 +162,18 @@ class Syndrome {
   };
 
   factory Syndrome.fromJson(Map<String, dynamic> json) {
+    // ⚠️ 前 5 处 cast 依赖 validateDiagnosisSchema 的必填校验
+    // （diagnosis_validator.dart:80-137）。schema 当前保证：syndromes 是非空
+    // List、元素是 Map、syndrome_id/name 非空 String、severity ∈ L1/L2/L3、
+    // evidence 是 List、explanation 是 String。
+    // 若未来放宽 schema 的必填校验，这 5 处会变成崩溃点——放宽时须同步
+    // 改为安全读取。见 ADR-C64 §2.3。
+    //
+    // reader_impact 是可选字段，schema 不校验其类型（ADR-C64 §2.2 #9），
+    // 故此字段必须安全读取：非 String 按缺失处理。硬 cast 会抛 TypeError，
+    // 而抛错点在 validateDiagnosisOutput 返回之前，会连带丢掉已经算好的
+    // NL 清洗结果——后果是 V-03 编号泄漏拦截失效（ADR-C64 §1.2 实测）。
+    final readerImpact = json['reader_impact'];
     return Syndrome(
       syndromeId: json['syndrome_id'] as String,
       name: json['name'] as String,
@@ -172,7 +184,7 @@ class Syndrome {
               .toList() ??
           const [],
       explanation: json['explanation'] as String? ?? '',
-      readerImpact: json['reader_impact'] as String?,
+      readerImpact: readerImpact is String ? readerImpact : null,
     );
   }
 }
