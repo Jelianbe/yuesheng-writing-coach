@@ -92,6 +92,20 @@ flutter test --exclude-tags live,external --no-pub
 >     NO_PROXY="localhost,127.0.0.1" no_proxy="localhost,127.0.0.1" \
 >     flutter test --exclude-tags live,external --no-pub
 > ```
+>
+> **⚠️ 反向陷阱（2026-09-02 实证，比上一条更危险）**：上面这条命令**只在
+> 环境里确实有代理变量时**才成立。当前会话已无代理变量（AI 工具会话不注入
+> 是常态），此时 `env -u HTTP_PROXY ...` 在 Git Bash / Windows 下会让整条
+> 命令**静默失效——exit 0、stdout 与 stderr 全空**。
+> 这比 `Failed to load` 危险得多：后者会报错，前者看起来像"测试全部通过"。
+> 实证形态：`flutter test <任意文件>` 有输出，加上 `env -u ...` 前缀后变成
+> 零输出；连 `env -u ... dart --version` 都不打印版本号。
+> **正确做法**：先确认再决定要不要剥——
+> ```bash
+> echo "[$HTTP_PROXY][$HTTPS_PROXY][$http_proxy]"   # 全空就直接跑，不加 env -u
+> flutter test --exclude-tags live,external --no-pub
+> ```
+> 判别口诀：**有输出在跑，零输出先查是不是被 `env -u` 吃掉了。**
 
 ## Prompt 入口规则
 
@@ -150,3 +164,5 @@ flutter test --exclude-tags live,external --no-pub
 （V4.1：补入文档总索引与 R-030 三份流程模板的路径，原缺口已补齐。）
 （V4.2：门禁节补入「测试跑不起来先查代理」——HTTP_PROXY 无 NO_PROXY 时
 flutter_tester 本地 WebSocket 被劫持，表现为所有测试 Failed to load。）
+（V4.3：同节补入反向陷阱——**没有**代理变量时 `env -u` 会让命令静默失效，
+exit 0 且零输出，看起来像"测试全过"。先 `echo $HTTP_PROXY` 再决定要不要剥。）
