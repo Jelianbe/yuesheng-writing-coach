@@ -196,6 +196,30 @@ class ChatService {
   ///
   /// 连续失败达 UILimits.failureWarningThreshold 时插入诊断失败卡，
   /// failureCount 传入当前连续失败次数（与卡片 UI 的额外提示阈值对齐）。
+  /// 诊断块被拒 / 字段静默丢弃的日志片段（ADR-C63，N1 / N26）。
+  ///
+  /// 返回空串表示无异常，不污染正常路径的日志。
+  ///
+  /// 这段信息此前**完全丢失**：`parseDiagnosis` 返回 null 但没人知道为什么，
+  /// 只能看到「diagnosis=无」。这是 C53「查不到根因」的直接成因，
+  /// 也是 N26「模型以为有反馈回路、实际没有 → 每一轮都静默失败」的放大器。
+  ///
+  /// 特别注意 [ParseResult.notes]：它标记的是**整块仍然通过**、但可选字段被
+  /// 白名单静默置 null 的情形（如模型填 `P5_COMPANION` → `suggested_phase` 变 null）。
+  /// 此时诊断照常显示、UI 毫无异样，唯独阶段迁移永远不发生——
+  /// 比整块丢弃更隐蔽（N13 的确切机制）。
+  String _diagnosisDropLog(ParseResult r) {
+    if (r.rejectReason == null && r.notes.isEmpty) return '';
+    final parts = <String>[];
+    if (r.rejectReason != null) {
+      parts.add('被拒原因=${r.rejectReason}');
+    }
+    if (r.notes.isNotEmpty) {
+      parts.add('静默丢弃=${r.notes.join(",")}');
+    }
+    return ' | ${parts.join(" | ")}';
+  }
+
   Future<void> _recordDiagnosisOutcome(
     String sessionId, {
     required bool attempted,
@@ -541,6 +565,12 @@ extension ChatServiceDiagnosis on ChatService {
   }) async {
     // 步骤 9: 解析诊断
     final rawParse = _diagnosis.parseDiagnosis(fullContent);
+    // ADR-C63：这条路径此前**完全没有解析日志**，块被拒时全程静默。
+    // 只在有异常时输出，正常路径不增加噪声（A-1 预算止血的精神同样适用于日志）。
+    final dropLog = _diagnosisDropLog(rawParse);
+    if (dropLog.isNotEmpty) {
+      debugPrint('[ChatService] commitDiagnosisFromContent 解析诊断$dropLog');
+    }
     String displayContent = rawParse.displayContent;
     ParsedDiagnosis? diagnosis = rawParse.diagnosis;
 
@@ -2206,7 +2236,9 @@ extension ChatServiceSendParse on ChatService {
     // 9. 解析 + 第二层后置校验
     final rawParse = _diagnosis.parseDiagnosis(fullContent);
     debugPrint(
-      '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}',
+      '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
+      // ADR-C63：补上此前完全缺失的「为什么没有诊断」。
+      '${_diagnosisDropLog(rawParse)}',
     );
 
     String displayContent = rawParse.displayContent;
