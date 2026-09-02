@@ -95,6 +95,30 @@ flutter test --exclude-tags live,external --no-pub
 > 反过来说，也**不要**因为工作区是 CRLF 就去批量转 LF——`autocrlf=true`
 > 下下次 checkout 又会变回 CRLF，纯属无效churn。
 
+> **⚠️ format 门禁的退出码陷阱（2026-09-02 实证，V4.5）**：两件事会让
+> 格式门禁**假绿**，且都不报任何错误：
+>
+> 1. **管道后取 `$?` 拿到的是管道最后一条命令的退出码**——
+>    ```bash
+>    dart format --set-exit-if-changed -o none lib | tail -3; echo $?
+>    # ↑ 这是 tail 的退出码，恒为 0，与 dart format 完全无关。
+>    #   实测：文件确实需要格式化（exit 1），屏幕上却打出 FORMAT_EXIT=0。
+>    ```
+>    正确做法——重定向到文件再取退出码：
+>    ```bash
+>    dart format --set-exit-if-changed -o none lib > /tmp/fmt.txt 2>&1
+>    echo "FORMAT_EXIT=$?"; cat /tmp/fmt.txt
+>    ```
+>    同理适用于任何 `cmd | tail` / `cmd | grep` 之后取 `$?` 的场景。
+>
+> 2. **`--set-exit-if-changed -o none` 只检查、不写入**。它返回 1 时文件
+>    并未被修改，需要先跑一次不带 `--set-exit-if-changed` 的
+>    `dart format <file>` 写入，再重新校验——否则门禁会一直红。
+>    ```bash
+>    dart format <file>                                  # 先写入
+>    dart format --set-exit-if-changed -o none <file>    # 再校验
+>    ```
+
 > Windows 注意：`flutter test` 需保证系统 TEMP 所在盘有足够空间
 > （编译产物数百 MB）；磁盘满会报 `errno = 112`。
 
@@ -186,3 +210,9 @@ flutter test --exclude-tags live,external --no-pub
 flutter_tester 本地 WebSocket 被劫持，表现为所有测试 Failed to load。）
 （V4.3：同节补入反向陷阱——**没有**代理变量时 `env -u` 会让命令静默失效，
 exit 0 且零输出，看起来像"测试全过"。先 `echo $HTTP_PROXY` 再决定要不要剥。）
+（V4.4：CRLF 核验的口径陷阱——要求「CRLF=0」指提交进仓库的 blob，不是工作区
+字节；本仓 `autocrlf=true`，721 个文件里 259 个工作区文件本就是 CRLF。
+正确口径是 `git ls-files --eol` 的 `i/` 列。口诀：看 `i/` 不看 `w/`。）
+（V4.5：format 门禁的退出码陷阱——① `cmd | tail` 之后取 `$?` 拿到的是 tail
+的退出码，会让红门禁显示为绿；② `--set-exit-if-changed -o none` 只检查不写入，
+需先 `dart format` 写入再校验。）
