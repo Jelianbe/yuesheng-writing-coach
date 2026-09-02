@@ -148,6 +148,7 @@ const Skill _teachingModes = Skill(
     id: 'teaching-modes',
     group: 'coaching',
     estimatedTokens: 1800,
+    promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 教学方式选择（双轨道）
 
@@ -253,6 +254,7 @@ const Skill _coreIronTriangle = Skill(
     id: 'core-iron-triangle',
     group: 'core',
     estimatedTokens: 600,
+    promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 铁三角（核心子集）
 

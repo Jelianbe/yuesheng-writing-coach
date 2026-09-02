@@ -9,6 +9,7 @@ const Skill _writingStyle = Skill(
     id: 'writing-style',
     group: 'teaching',
     estimatedTokens: 2800,
+    promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 写作风格分析
 

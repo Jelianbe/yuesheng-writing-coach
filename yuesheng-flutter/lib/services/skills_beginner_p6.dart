@@ -9,6 +9,7 @@ const Skill _gapDetector = Skill(
     id: 'gap-detector',
     group: 'diagnosis',
     estimatedTokens: 1700,
+    promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 意图-执行差距检测
 

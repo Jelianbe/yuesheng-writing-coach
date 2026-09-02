@@ -9,6 +9,7 @@ const Skill _trainingEvaluationV2 = Skill(
     id: 'training-evaluation-v2',
     group: 'training',
     estimatedTokens: 700,
+    promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 训练评估指南
 
@@ -177,6 +178,7 @@ final Skill _trainingLoopV2 = Skill(
     id: 'training-loop-v2',
     group: 'training',
     estimatedTokens: 900,
+    promptStyle: PromptStyle.free,
   ),
   content:
       '''# SKILL: 训练循环指南

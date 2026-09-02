@@ -5,7 +5,12 @@
 part of 'skill_registry.dart';
 
 const Skill _genreGuide = Skill(
-  meta: SkillMeta(id: 'genre-guide', group: 'teaching', estimatedTokens: 3500),
+  meta: SkillMeta(
+    id: 'genre-guide',
+    group: 'teaching',
+    estimatedTokens: 3500,
+    promptStyle: PromptStyle.guided,
+  ),
   content: '''# SKILL: 体裁专项指南
 
 > **定位**: 体裁感知的诊断与教学调整——同一个症候在不同体裁中可能需要完全不同的处理方式
@@ -189,6 +194,7 @@ const Skill _diagnosisConfirmation = Skill(
     id: 'diagnosis-confirmation',
     group: 'teaching',
     estimatedTokens: 700,
+    promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 诊断确认机制
 

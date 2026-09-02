@@ -5,7 +5,12 @@
 part of 'skill_registry.dart';
 
 const Skill _plotDesign = Skill(
-  meta: SkillMeta(id: 'plot-design', group: 'teaching', estimatedTokens: 3400),
+  meta: SkillMeta(
+    id: 'plot-design',
+    group: 'teaching',
+    estimatedTokens: 3400,
+    promptStyle: PromptStyle.guided,
+  ),
   content: '''# SKILL: 情节与结构设计引导
 
 > **定位**: 教练如何通过提问帮用户**构建故事的情节与结构**——叙事铁三角的第三角（世界观 / 角色 / 情节）。

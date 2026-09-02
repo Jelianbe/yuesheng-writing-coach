@@ -5,7 +5,12 @@
 part of 'skill_registry.dart';
 
 const Skill _phaseMapper = Skill(
-  meta: SkillMeta(id: 'phase-mapper', group: 'core', estimatedTokens: 2200),
+  meta: SkillMeta(
+    id: 'phase-mapper',
+    group: 'core',
+    estimatedTokens: 2200,
+    promptStyle: PromptStyle.strict,
+  ),
   content: '''# SKILL: N 系与 P 系阶段映射矩阵
 
 > **来源**: 后端审计（Phase 2 修复 F7）

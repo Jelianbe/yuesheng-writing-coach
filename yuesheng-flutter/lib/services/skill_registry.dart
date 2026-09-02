@@ -57,6 +57,40 @@ part 'skills_reply_voice.dart';
 
 // ─── Skill 元数据与实体 ───────────────────────────────────────
 
+/// Skill 正文的表述风格标签（E.8）
+///
+/// 决定 skill 正文里的示例 / 话术应当被当作「格式照做」还是「参考自组织」。
+/// 服务于 E.3 元规则第 6 条——让「示例不是格式」可被机器识别，
+/// 供 E.6 Prompt Lint 与「内容增减规范」消费。
+///
+/// 判据（改动档位前先对照）：
+/// - strict：正文含输出契约（格式模板 / JSON 字段说明 / 协议）
+///   或铁律级硬约束清单，须逐条执行。示例若存在，仅用于说明格式。
+/// - guided：正文含示例话术或示例文本，且示例为参考——
+///   说法由教练自行组织。文本内通常已自述「不是句式模板 / 不是台词 /
+///   说法自定 / 不照念 / 由你自己组织」。
+/// - free：只有原则、底线或索引，无输出契约、无可照搬的示例。
+///
+/// 两条使用约定（E.8(a) 落地时实测得出，改动档位前先看）：
+///
+/// 1. **档位是整体定性，不是逐条判决。** 一个 skill 完全可以「约束是硬的、
+///    示例是软的」——典型如 validation-rules：明写「10 条是硬性约束，违反
+///    任何一条都必须重写回复」，同时又写「❌/✅ 都是示例，不是必须套用的
+///    句式」。此时按主体约束强度定为 strict，示例的软性由正文自述保证。
+/// 2. **正文的局部自述优先级高于档位。** 若正文某处已明说「以下是示例，不是
+///    模板」（advanced-phases / feedback-cognition / gap-detector 等都有），
+///    以正文为准——档位供机器粗筛，局部自述供模型精判。
+enum PromptStyle {
+  /// 硬约束：输出契约或铁律，须逐条执行。
+  strict,
+
+  /// 参考示例：示例不是格式，说法自行组织。
+  guided,
+
+  /// 纯原则：无契约、无示例。
+  free,
+}
+
 /// Skill 元数据
 class SkillMeta {
   final String id;
@@ -64,10 +98,15 @@ class SkillMeta {
   group; // core | attitude | coaching | diagnosis | training | etc.
   final int estimatedTokens;
 
+  /// 正文表述风格（E.8）。必填——新增 skill 时强制显式声明档位，
+  /// 不给默认值：默认值会让漏标静默滑过，与 N19 的教训同源。
+  final PromptStyle promptStyle;
+
   const SkillMeta({
     required this.id,
     required this.group,
     required this.estimatedTokens,
+    required this.promptStyle,
   });
 }
 
@@ -146,6 +185,7 @@ final Map<String, Skill> skillRegistry = {
       id: 'syndrome-diagnosis-index',
       group: 'diagnosis',
       estimatedTokens: 1800,
+      promptStyle: PromptStyle.strict,
     ),
     content: kSyndromeIndexContent,
   ),
@@ -154,6 +194,7 @@ final Map<String, Skill> skillRegistry = {
       id: 'technique-library-index',
       group: 'training',
       estimatedTokens: 900,
+      promptStyle: PromptStyle.free,
     ),
     content: kTechniqueIndexContent,
   ),

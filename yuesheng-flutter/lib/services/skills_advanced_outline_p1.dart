@@ -9,6 +9,7 @@ const Skill _revisionMethodology = Skill(
     id: 'revision-methodology',
     group: 'teaching',
     estimatedTokens: 2600,
+    promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 修订方法论（章级修改与迭代）
 
@@ -179,6 +180,7 @@ const Skill _advancedPhases = Skill(
     id: 'advanced-phases',
     group: 'advanced',
     estimatedTokens: 4200,
+    promptStyle: PromptStyle.guided,
   ),
   content: _advancedPhasesBody1 + _advancedPhasesBody2,
   // Phase 3 A 组：按 ctx.phase 裁掉非当前阶段分段（非 P3/P4 返回原文）
@@ -190,6 +192,7 @@ const Skill _outlineDiagnosis = Skill(
     id: 'outline-diagnosis',
     group: 'diagnosis',
     estimatedTokens: 4200,
+    promptStyle: PromptStyle.guided,
   ),
   content: _outlineDiagnosisBody1 + _outlineDiagnosisBody2,
 );

@@ -9,6 +9,7 @@ const Skill _writerPsychology = Skill(
     id: 'writer-psychology',
     group: 'coaching',
     estimatedTokens: 3200,
+    promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 写作心理支持
 
@@ -276,6 +277,7 @@ const Skill _coachingRhythm = Skill(
     id: 'coaching-rhythm',
     group: 'coaching',
     estimatedTokens: 3500,
+    promptStyle: PromptStyle.guided,
   ),
   content: _coachingRhythmBody1 + _coachingRhythmBody2,
   // Phase 3 A 组：按 ctx.phase 二选一裁 P0/P1 段（非 P0/P1 返回原文）
@@ -287,6 +289,7 @@ const Skill _narrativeDesign = Skill(
     id: 'narrative-design',
     group: 'teaching',
     estimatedTokens: 3800,
+    promptStyle: PromptStyle.guided,
   ),
   content: _narrativeDesignBody1 + _narrativeDesignBody2,
 );

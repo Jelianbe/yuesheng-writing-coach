@@ -99,6 +99,7 @@ const Skill _coreProductIdentity = Skill(
     id: 'core-product-identity',
     group: 'core',
     estimatedTokens: 1200,
+    promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 产品身份与底线
 
@@ -182,7 +183,12 @@ const Skill _coreProductIdentity = Skill(
 );
 
 final Skill _validationRules = Skill(
-  meta: SkillMeta(id: 'validation-rules', group: 'core', estimatedTokens: 1700),
+  meta: SkillMeta(
+    id: 'validation-rules',
+    group: 'core',
+    estimatedTokens: 1700,
+    promptStyle: PromptStyle.strict,
+  ),
   content:
       '''# SKILL: 输出验证
 
@@ -267,7 +273,12 @@ final Skill _validationRules = Skill(
 );
 
 const Skill _writingAnchors = Skill(
-  meta: SkillMeta(id: 'writing-anchors', group: 'core', estimatedTokens: 450),
+  meta: SkillMeta(
+    id: 'writing-anchors',
+    group: 'core',
+    estimatedTokens: 450,
+    promptStyle: PromptStyle.free,
+  ),
   content: '''# SKILL: 写作认知锚点
 
 > 来源: P4 批 5 新增（调研报告 §4.3 + §6.8）
