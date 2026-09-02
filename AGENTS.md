@@ -216,3 +216,9 @@ exit 0 且零输出，看起来像"测试全过"。先 `echo $HTTP_PROXY` 再决
 （V4.5：format 门禁的退出码陷阱——① `cmd | tail` 之后取 `$?` 拿到的是 tail
 的退出码，会让红门禁显示为绿；② `--set-exit-if-changed -o none` 只检查不写入，
 需先 `dart format` 写入再校验。）
+（V4.6：抽测文件名凭记忆写的假失败陷阱——`flutter test` 对不存在的路径报
+`Failed to load "..." : Does not exist`，红得很像真实回归失败，实际只是文件名
+猜错了。本仓测试命名多为 `<被测对象>_<修饰>_test.dart`（如
+`focus_resolver_coverage_test.dart`），凭记忆补后缀极易错。
+**抽测前先 `ls test/ -R | grep -i <关键词>` 确认真实文件名**，别直接把猜测的路径
+喂给 flutter test。判别：报错信息里带 `Does not exist` 的一律先查路径。）
