@@ -95,9 +95,11 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
     Navigator.of(context).pop();
     // 对齐 RN：内容过短先提示，不发诊断
     if (chapter.content.trim().length < UILimits.diagnosisWordThreshold) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('章节内容少于 100 字，请先编辑章节')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('章节内容少于 ${UILimits.diagnosisWordThreshold} 字，请先编辑章节'),
+        ),
+      );
       return;
     }
     widget.onSelect(manuscriptId, chapter);

@@ -242,13 +242,19 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     if (sid == null) return;
 
     // 字数校验：实时观察要求至少 50 字（短文本观察无意义）
+    //
+    // ADR-C66：门槛取自 UILimits，与诊断门槛同理（避免常量与文案双份维护）。
     final writingState = ref.read(writingStoreProvider(widget.chapterId));
     final content = writingState.localContent;
-    if (content.trim().length < 50) {
+    if (content.trim().length < UILimits.quickObservationWordThreshold) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请至少写 50 字后再快速观察')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '请至少写 ${UILimits.quickObservationWordThreshold} 字后再快速观察',
+          ),
+        ),
+      );
       return;
     }
 
@@ -324,13 +330,19 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     final title = writingState.chapter?.title ?? widget.chapterTitle;
 
     // 前置 2：字数校验（选段 ≥20 字 / 整章 ≥100 字，对齐 RN）
-    final minLength = isSelection ? 20 : 100;
+    //
+    // ADR-C66：两档阈值统一取自 UILimits，避免此处硬编码与常量各说一套。
+    final minLength = isSelection
+        ? UILimits.diagnosisSelectionWordThreshold
+        : UILimits.diagnosisWordThreshold;
     if (content.trim().length < minLength) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            isSelection ? '请至少选择 20 字以上的文本进行诊断' : '请至少输入 100 字后再提交诊断',
+            isSelection
+                ? '请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上的文本进行诊断'
+                : '请至少输入 ${UILimits.diagnosisWordThreshold} 字后再提交诊断',
           ),
         ),
       );

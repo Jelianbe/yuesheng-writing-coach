@@ -77,6 +77,19 @@ class UILimits {
   /// 诊断最短章节字数（<100 字提示先编辑）
   static const int diagnosisWordThreshold = 100;
 
+  /// 选段诊断最短字数（<20 字提示先扩选）
+  ///
+  /// 真源：RN handleDiagnoseSelection 的选段下限。此前散落在
+  /// writing_coach_panel_teaching / writing_page_selection_ai 两处硬编码，
+  /// ADR-C66 收敛至此。
+  static const int diagnosisSelectionWordThreshold = 20;
+
+  /// 快速观察最短正文字数（<50 字提示继续写）
+  static const int quickObservationWordThreshold = 50;
+
+  /// 划词「改写 / 续写 / 扩写」择选弹层最短字数（<10 字拦截）
+  static const int selectionAiWordThreshold = 10;
+
   /// PhaseSummaryCard 症候变化列表最大展示条数（真源 UI_LIMITS.MAX_SYNDROME_CHANGES）
   static const int maxSyndromeChanges = 5;
 
