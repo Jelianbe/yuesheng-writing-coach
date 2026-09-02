@@ -264,15 +264,30 @@ FullValidationResult validateDiagnosisOutput(
   final passed = jsonValidation.valid && nlValidation.valid;
 
   ParsedDiagnosis? diagnosis;
+  // ADR-C64：漂移 warning 合并进既有 jsonValidation.warnings。
+  // 不动 valid —— 判错会丢弃整块诊断，与 N5 裁决冲突（见
+  // _collectOptionalFieldDrifts 注释）。无漂移时 jsonResult 与
+  // jsonValidation 完全等价，既有行为逐字节不变。
+  var jsonResult = jsonValidation;
   if (jsonValidation.valid && jsonValidation.data != null) {
-    diagnosis = _mapToParsedDiagnosis(jsonValidation.data!);
+    final data = jsonValidation.data!;
+    final drifts = _collectOptionalFieldDrifts(data);
+    diagnosis = _mapToParsedDiagnosis(data);
+    if (drifts.isNotEmpty) {
+      jsonResult = DiagnosisValidationResult(
+        valid: jsonValidation.valid,
+        errors: jsonValidation.errors,
+        warnings: [...jsonValidation.warnings, ...drifts],
+        data: jsonValidation.data,
+      );
+    }
   }
 
   return FullValidationResult(
     passed: passed,
     displayContent: nlValidation.cleaned,
     diagnosis: diagnosis,
-    jsonValidation: jsonValidation,
+    jsonValidation: jsonResult,
     nlValidation: nlValidation,
   );
 }
@@ -297,27 +312,109 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
     teachingPlanNextStep = teachingPlan['next_step'] as String;
   }
 
-  final nextFocus = data['next_focus'] as String? ?? teachingPlanNextStep;
+  // ADR-C64：以下可选字段 schema **不校验类型**（validateDiagnosisSchema 的
+  // 校验在 :154 就结束了，只覆盖 syndromes / suggested_actions / confidence）。
+  // 这些字段原本是硬 cast，模型把 next_focus 输出成数字即抛 TypeError；
+  // 而抛错点在 validateDiagnosisOutput 返回之前（:268 早于 :273），
+  // 会**连带丢掉 validateNaturalLanguage 已算好的清洗结果**——
+  // 后果是 V-03 编号泄漏拦截失效、用户直接看到 P012 这类裸编号
+  // （ADR-C64 §1.2 实测）。
+  //
+  // 改安全读取：非 String 一律按缺失处理。漂移本身不静默消失，
+  // 由 _collectOptionalFieldDrifts 产出 warning。
+  final nextFocusRaw = data['next_focus'];
+  final rootCauseRaw = data['root_cause_analysis'];
+  final feedbackRaw = data['feedback_summary'];
+  final phaseRaw = data['suggested_phase'];
+  final levelRaw = data['suggested_beginner_level'];
+  final modeRaw = data['teaching_mode'];
+  final focusIdRaw = teachingPlan?['current_teaching_focus_id'];
+  final focusReasonRaw = teachingPlan?['focus_reason'];
 
   return ParsedDiagnosis(
     syndromes: syndromes,
     suggestedActions: suggestedActions,
     confidence: (data['confidence'] as num).toDouble(),
-    rootCauseAnalysis: data['root_cause_analysis'] as String?,
-    nextFocus: nextFocus,
-    feedbackSummary: data['feedback_summary'] as String?,
+    rootCauseAnalysis: rootCauseRaw is String ? rootCauseRaw : null,
+    // 漂移时回退到 teachingPlan.next_step——与 next_focus 缺失时行为一致
+    nextFocus: nextFocusRaw is String ? nextFocusRaw : teachingPlanNextStep,
+    feedbackSummary: feedbackRaw is String ? feedbackRaw : null,
     suggestedPhase: TeachingPhase.fromString(
-      data['suggested_phase'] as String?,
+      phaseRaw is String ? phaseRaw : null,
     ),
     suggestedBeginnerLevel: BeginnerLevel.fromString(
-      data['suggested_beginner_level'] as String?,
+      levelRaw is String ? levelRaw : null,
     ),
-    teachingMode: TeachingMode.fromString(data['teaching_mode'] as String?),
-    currentTeachingFocusId:
-        teachingPlan?['current_teaching_focus_id'] as String?,
-    focusReason: teachingPlan?['focus_reason'] as String?,
+    teachingMode: TeachingMode.fromString(modeRaw is String ? modeRaw : null),
+    currentTeachingFocusId: focusIdRaw is String ? focusIdRaw : null,
+    focusReason: focusReasonRaw is String ? focusReasonRaw : null,
     styleProfile: _parseStyleProfile(data),
   );
+}
+
+/// 可选字段类型漂移检测（ADR-C64）
+///
+/// `validateDiagnosisSchema` 只校验必填三项，可选字段的类型完全不校验。
+/// 这些字段在 `_mapToParsedDiagnosis` 中原为硬 cast，类型漂移会抛 TypeError，
+/// 连带丢掉已算好的 NL 清洗结果（V-03 失效，见 ADR-C64 §1.2 实测）。
+/// 改安全读取后崩溃消失，但漂移本身不能无声消失。
+///
+/// **为什么不判为 error**：判错会让 `jsonValidation.valid` 变 false，
+/// `validateDiagnosisOutput:267` 的条件不成立 → `diagnosis = null`，
+/// 整块诊断被丢弃，放大「输出了但不落库」，与 N5「只观测不拦截」的裁决
+/// 同向恶化。故只产出 warning，由调用方决定是否上报。
+///
+/// 字段清单与 `_mapToParsedDiagnosis` 的安全读取**必须同步修改**——
+/// 新增可选字段时两边都要加，否则会出现「静默丢弃且不留痕」。
+List<String> _collectOptionalFieldDrifts(Map<String, dynamic> data) {
+  final drifts = <String>[];
+
+  void check(String field) {
+    final v = data[field];
+    if (v != null && v is! String) {
+      drifts.add('可选字段 $field 类型漂移（${v.runtimeType}），已按缺失处理');
+    }
+  }
+
+  check('next_focus');
+  check('root_cause_analysis');
+  check('feedback_summary');
+  check('suggested_phase');
+  check('suggested_beginner_level');
+  check('teaching_mode');
+
+  // syndromes[].reader_impact（Syndrome.fromJson 消费，schema 不校验其类型）
+  final syndromesRaw = data['syndromes'];
+  if (syndromesRaw is List) {
+    for (var i = 0; i < syndromesRaw.length; i++) {
+      if (syndromesRaw[i] is! Map<String, dynamic>) continue;
+      final ri = (syndromesRaw[i] as Map<String, dynamic>)['reader_impact'];
+      if (ri != null && ri is! String) {
+        drifts.add(
+          '可选字段 syndromes[$i].reader_impact 类型漂移'
+          '（${ri.runtimeType}），已按缺失处理',
+        );
+      }
+    }
+  }
+
+  final teachingPlan = data['teaching_plan'];
+  if (teachingPlan is Map<String, dynamic>) {
+    void checkPlan(String field) {
+      final v = teachingPlan[field];
+      if (v != null && v is! String) {
+        drifts.add(
+          '可选字段 teaching_plan.$field 类型漂移'
+          '（${v.runtimeType}），已按缺失处理',
+        );
+      }
+    }
+
+    checkPlan('current_teaching_focus_id');
+    checkPlan('focus_reason');
+  }
+
+  return drifts;
 }
 
 /// 解析可选 style_profile（批次53；缺失/非法返回 null，不阻断诊断）
