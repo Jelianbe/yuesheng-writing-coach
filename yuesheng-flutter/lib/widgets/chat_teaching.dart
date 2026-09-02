@@ -19,9 +19,11 @@ extension _ChatTeaching on _ChatPageState {
 
     // 对齐 RN：内容过短提示先编辑（Alert 语义落为 SnackBar）
     if (chapter.content.trim().length < UILimits.diagnosisWordThreshold) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('章节内容少于 100 字，请先编辑章节')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('章节内容少于 ${UILimits.diagnosisWordThreshold} 字，请先编辑章节'),
+        ),
+      );
       return;
     }
 

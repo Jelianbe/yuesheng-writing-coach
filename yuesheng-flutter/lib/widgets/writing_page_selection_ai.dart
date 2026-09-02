@@ -93,10 +93,15 @@ extension _WritingPageSelectionAi on _WritingPageState {
       setState(() => _showSelectionMenu = false);
       return;
     }
-    if (text.length < 20) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请至少选择 20 字以上的文本进行诊断')));
+    // ADR-C66：选段下限统一取自 UILimits（与写作面板的选段诊断同源）
+    if (text.length < UILimits.diagnosisSelectionWordThreshold) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上的文本进行诊断',
+          ),
+        ),
+      );
       setState(() => _showSelectionMenu = false);
       return;
     }
@@ -125,10 +130,13 @@ extension _WritingPageSelectionAi on _WritingPageState {
       setState(() => _showSelectionMenu = false);
       return;
     }
-    if (text.length < 10) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('请至少选择 10 字以上的文本')));
+    // ADR-C66：门槛取自 UILimits
+    if (text.length < UILimits.selectionAiWordThreshold) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请至少选择 ${UILimits.selectionAiWordThreshold} 字以上的文本'),
+        ),
+      );
       setState(() => _showSelectionMenu = false);
       return;
     }

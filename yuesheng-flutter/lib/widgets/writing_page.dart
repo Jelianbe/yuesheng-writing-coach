@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_theme.dart';
+import '../config/shared_constants.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
