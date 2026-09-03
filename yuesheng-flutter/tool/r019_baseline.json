@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 289,
+  "fileCount": 288,
   "violations": [
     {
       "file": "lib/services/chat_service.dart",
@@ -291,13 +291,6 @@
       "lines": 137
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 8528,
-      "end": 8663,
-      "lines": 136
-    },
-    {
       "file": "lib/services/phase_mapper_resolver.dart",
       "func": "resolvePhaseMapper",
       "start": 81,
@@ -312,13 +305,6 @@
       "lines": 136
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 7584,
-      "end": 7718,
-      "lines": 135
-    },
-    {
       "file": "lib/data/repositories/diagnosis_repository.dart",
       "func": "commitDiagnosis",
       "start": 101,
@@ -331,13 +317,6 @@
       "start": 152,
       "end": 283,
       "lines": 132
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 2925,
-      "end": 3055,
-      "lines": 131
     },
     {
       "file": "lib/widgets/bookshelf_page.dart",
@@ -627,13 +606,6 @@
       "lines": 96
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 4363,
-      "end": 4457,
-      "lines": 95
-    },
-    {
       "file": "lib/widgets/gen_ui_quiz.dart",
       "func": "_buildItem",
       "start": 132,
@@ -646,13 +618,6 @@
       "start": 64,
       "end": 158,
       "lines": 95
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 9902,
-      "end": 9995,
-      "lines": 94
     },
     {
       "file": "lib/services/outline_service.dart",
@@ -725,13 +690,6 @@
       "lines": 92
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 1168,
-      "end": 1257,
-      "lines": 90
-    },
-    {
       "file": "lib/services/attitude_advisor.dart",
       "func": "suggestAttitudeAdjustment",
       "start": 44,
@@ -779,13 +737,6 @@
       "start": 484,
       "end": 570,
       "lines": 87
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 12262,
-      "end": 12347,
-      "lines": 86
     },
     {
       "file": "lib/data/repositories/session_repository.dart",
@@ -935,25 +886,11 @@
       "lines": 79
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 5058,
-      "end": 5135,
-      "lines": 78
-    },
-    {
       "file": "lib/services/chat_service.dart",
       "func": "_applyOutlineEntitiesFromContent",
       "start": 743,
       "end": 820,
       "lines": 78
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 10560,
-      "end": 10636,
-      "lines": 77
     },
     {
       "file": "lib/widgets/chat_header.dart",
@@ -1033,13 +970,6 @@
       "lines": 75
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 11664,
-      "end": 11737,
-      "lines": 74
-    },
-    {
       "file": "lib/widgets/chapter_tree_drawer.dart",
       "func": "_showMoveToVolumeSheet",
       "start": 531,
@@ -1110,13 +1040,6 @@
       "lines": 71
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 141,
-      "end": 210,
-      "lines": 70
-    },
-    {
       "file": "lib/services/teacher_service.dart",
       "func": "callTeacherStream",
       "start": 60,
@@ -1138,39 +1061,11 @@
       "lines": 70
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "map",
-      "start": 3064,
-      "end": 3132,
-      "lines": 69
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 6917,
-      "end": 6985,
-      "lines": 69
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "map",
-      "start": 7723,
-      "end": 7791,
-      "lines": 69
-    },
-    {
       "file": "lib/widgets/chapter_tree_drawer.dart",
       "func": "build",
       "start": 70,
       "end": 138,
       "lines": 69
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 9333,
-      "end": 9400,
-      "lines": 68
     },
     {
       "file": "lib/services/growth_service.dart",
@@ -1278,13 +1173,6 @@
       "lines": 66
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "map",
-      "start": 8672,
-      "end": 8736,
-      "lines": 65
-    },
-    {
       "file": "lib/services/diagnosis_validator.dart",
       "func": "_collectOptionalFieldDrifts",
       "start": 378,
@@ -1304,13 +1192,6 @@
       "start": 180,
       "end": 244,
       "lines": 65
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 11137,
-      "end": 11200,
-      "lines": 64
     },
     {
       "file": "lib/services/chat_service.dart",
@@ -1348,13 +1229,6 @@
       "lines": 64
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 3795,
-      "end": 3857,
-      "lines": 63
-    },
-    {
       "file": "lib/widgets/progress_detail_page.dart",
       "func": "build",
       "start": 327,
@@ -1381,20 +1255,6 @@
       "start": 109,
       "end": 170,
       "lines": 62
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 1834,
-      "end": 1894,
-      "lines": 61
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 2334,
-      "end": 2394,
-      "lines": 61
     },
     {
       "file": "lib/services/style_fingerprint.dart",
@@ -1495,13 +1355,6 @@
       "lines": 59
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 5627,
-      "end": 5684,
-      "lines": 58
-    },
-    {
       "file": "lib/services/progressive_diagnosis.dart",
       "func": "splitContent",
       "start": 87,
@@ -1528,20 +1381,6 @@
       "start": 512,
       "end": 569,
       "lines": 58
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "toColumns",
-      "start": 3594,
-      "end": 3650,
-      "lines": 57
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "validateIntegrity",
-      "start": 6375,
-      "end": 6431,
-      "lines": 57
     },
     {
       "file": "lib/data/repositories/session_repository.dart",
@@ -1642,13 +1481,6 @@
       "lines": 56
     },
     {
-      "file": "lib/data/database/database.g.dart",
-      "func": "toColumns",
-      "start": 8236,
-      "end": 8290,
-      "lines": 55
-    },
-    {
       "file": "lib/widgets/chapter_tree_drawer.dart",
       "func": "_showChapterActionsSheet",
       "start": 289,
@@ -1698,13 +1530,6 @@
       "lines": 54
     },
     {
-      "file": "lib/providers/writing_providers.dart",
-      "func": "saveNow",
-      "start": 421,
-      "end": 474,
-      "lines": 54
-    },
-    {
       "file": "lib/widgets/diagnosis_picker_sheet.dart",
       "func": "_buildList",
       "start": 210,
@@ -1717,20 +1542,6 @@
       "start": 214,
       "end": 267,
       "lines": 54
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "map",
-      "start": 1262,
-      "end": 1314,
-      "lines": 53
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "map",
-      "start": 4466,
-      "end": 4518,
-      "lines": 53
     },
     {
       "file": "lib/services/export_service.dart",
@@ -1759,13 +1570,6 @@
       "start": 132,
       "end": 184,
       "lines": 53
-    },
-    {
-      "file": "lib/data/database/database.g.dart",
-      "func": "toColumns",
-      "start": 9143,
-      "end": 9194,
-      "lines": 52
     },
     {
       "file": "lib/data/repositories/reference_repository.dart",
@@ -1807,13 +1611,6 @@
       "func": "_updateDiagnosisSummary",
       "start": 590,
       "end": 640,
-      "lines": 51
-    },
-    {
-      "file": "lib/providers/writing_providers.dart",
-      "func": "loadChapter",
-      "start": 247,
-      "end": 297,
       "lines": 51
     },
     {

@@ -254,17 +254,7 @@ class WritingStore extends StateNotifier<WritingState> {
         return;
       }
 
-      // 草稿检测（对齐 RN chapter-editor.tsx#L118-L138）
-      final appStateRepo = AppStateRepository(_db);
-      final draft = await appStateRepo.getChapterDraft(chapterId);
-      var hasDraft = false;
-      if (draft != null && draft.savedAt > chapter.updatedAt) {
-        _pendingDraft = draft;
-        hasDraft = true;
-      } else if (draft != null) {
-        // 草稿已过期（章节已保存更新）→ 清除陈旧草稿
-        await appStateRepo.clearChapterDraft(chapterId);
-      }
+      final hasDraft = await _resolvePendingDraft(chapter);
 
       state = state.copyWith(
         chapter: chapter,
@@ -277,10 +267,7 @@ class WritingStore extends StateNotifier<WritingState> {
       // B7：加载新章节 → 重置历史栈（对齐 RN useEffect [initialValue]）
       _resetHistory(chapter.content);
       // 批次82：播种版本快照阈值（避免存量长文首次输入即连拍快照）
-      _nextSnapshotWords =
-          (chapter.content.length ~/ AppStateRepository.chapterVersionInterval +
-              1) *
-          AppStateRepository.chapterVersionInterval;
+      _seedSnapshotThreshold(chapter.content.length);
       // 批次82：加载排版设置（字号/行距/背景，用户级持久化）
       await loadEditorSettings();
       // 批次82：加载单章写作目标（章节级持久化）
@@ -294,6 +281,32 @@ class WritingStore extends StateNotifier<WritingState> {
       );
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  /// 草稿检测（对齐 RN chapter-editor.tsx#L118-L138）。
+  ///
+  /// 副作用：命中有效草稿时写入 [_pendingDraft]；草稿已过期（章节已保存更新）
+  /// 时清除陈旧草稿。返回本次是否命中有效草稿。
+  ///
+  /// R-019：由 [loadChapter] 抽出，主流程只保留编排（51 → 25 行）。
+  Future<bool> _resolvePendingDraft(Chapter chapter) async {
+    final appStateRepo = AppStateRepository(_db);
+    final draft = await appStateRepo.getChapterDraft(chapterId);
+    if (draft == null) return false;
+    if (draft.savedAt > chapter.updatedAt) {
+      _pendingDraft = draft;
+      return true;
+    }
+    // 草稿已过期（章节已保存更新）→ 清除陈旧草稿
+    await appStateRepo.clearChapterDraft(chapterId);
+    return false;
+  }
+
+  /// 播种版本快照阈值（批次82）：避免存量长文首次输入即连拍快照。
+  void _seedSnapshotThreshold(int contentLength) {
+    _nextSnapshotWords =
+        (contentLength ~/ AppStateRepository.chapterVersionInterval + 1) *
+        AppStateRepository.chapterVersionInterval;
   }
 
   /// 更新编辑器内容（同步 wordCount）
@@ -428,23 +441,7 @@ class WritingStore extends StateNotifier<WritingState> {
     );
     try {
       if (state.isOffline) {
-        final appStateRepo = AppStateRepository(_db);
-        final title = state.chapter?.title ?? '';
-        await appStateRepo.saveChapterDraft(
-          chapterId,
-          title,
-          state.localContent,
-        );
-        state = state.copyWith(
-          isSaving: false,
-          hasDraft: true,
-          clearError: true,
-        );
-        // 批次82：跨 200 字边界 → 落版本快照（离线草稿同样留痕）
-        await _maybeSnapshot();
-        debugPrint(
-          '[WritingStore] saveNow 离线草稿已存: chapterId=$chapterId contentLength=${state.localContent.length}',
-        );
+        await _saveDraftOffline();
         return;
       }
       final repo = ChapterRepository(_db);
@@ -471,6 +468,21 @@ class WritingStore extends StateNotifier<WritingState> {
       // 保存失败只标记 saveError（状态条 + SnackBar 提示），不切换整页错误视图
       state = state.copyWith(isSaving: false, saveError: '$e');
     }
+  }
+
+  /// 离线分支：正文存为草稿而非直接落库。
+  ///
+  /// R-019：由 [saveNow] 抽出，主流程只保留在线分支与异常兜底（54 → 32 行）。
+  Future<void> _saveDraftOffline() async {
+    final appStateRepo = AppStateRepository(_db);
+    final title = state.chapter?.title ?? '';
+    await appStateRepo.saveChapterDraft(chapterId, title, state.localContent);
+    state = state.copyWith(isSaving: false, hasDraft: true, clearError: true);
+    // 批次82：跨 200 字边界 → 落版本快照（离线草稿同样留痕）
+    await _maybeSnapshot();
+    debugPrint(
+      '[WritingStore] saveNow 离线草稿已存: chapterId=$chapterId contentLength=${state.localContent.length}',
+    );
   }
 
   /// 更新离线状态

@@ -257,14 +257,29 @@ def main():
         help='基线 JSON；给出后**只报基线之外的新增项**（债务止血模式：'
              '不追溯存量，只阻止继续恶化）。key 取 `file:func`，'
              '不取行号，避免无关改动导致行号漂移而误报。')
+    ap.add_argument(
+        '--include-generated', action='store_true',
+        help='把生成文件（*.g.dart / *.freezed.dart）也计入。默认**排除**——'
+             '它们由 build_runner 产出，改了会被重新生成覆盖，'
+             'R-019 约束的是人工代码，计入只会让债务数字虚高且永不可清偿。')
     args = ap.parse_args()
+
+    # 生成文件后缀：Drift / Freezed / json_serializable 的产物。
+    # 本仓实测 lib/data/database/database.g.dart 一个文件就贡献 27 条超限，
+    # 占基线 262 条的 10%，且**永远无法通过重构消除**——不排除它，
+    # 「清偿完毕后去掉 --baseline 转全量卡口」这个目标就永远无法达成。
+    GEN_SUFFIXES = ('.g.dart', '.freezed.dart')
 
     all_hits = []
     file_count = 0
+    gen_skipped = 0
     for root, dirs, files in os.walk(args.dir):
         dirs[:] = [d for d in dirs if d not in ('.git', 'build', '.dart_tool')]
         for fn in files:
             if not fn.endswith('.dart'):
+                continue
+            if not args.include_generated and fn.endswith(GEN_SUFFIXES):
+                gen_skipped += 1
                 continue
             file_count += 1
             if file_count % 100 == 0:
@@ -313,6 +328,8 @@ def main():
     print('=' * 68)
     print('R-019 函数行数扫描：目录=%s  阈值=%d 行  文件数=%d'
           % (args.dir, args.limit, file_count))
+    if gen_skipped:
+        print('已排除生成文件 %d 个（--include-generated 可计入）' % gen_skipped)
     print('模式：%s' % mode)
     print('=' * 68)
     if not all_hits:
