@@ -341,17 +341,7 @@ class ReferenceRepository implements ReferenceCapability {
     final now = nowSec();
     await _db.transaction(() async {
       // 查是否是主引用
-      final wasPrimary =
-          await (_db.selectOnly(_db.sessionReferences)
-                ..addColumns([_db.sessionReferences.isPrimary])
-                ..where(
-                  _db.sessionReferences.sessionId.equals(sessionId) &
-                      _db.sessionReferences.refType.equals(refType) &
-                      _db.sessionReferences.refId.equals(refId),
-                ))
-              .getSingleOrNull();
-      final wasPrimaryVal =
-          wasPrimary?.read(_db.sessionReferences.isPrimary) ?? 0;
+      final wasPrimaryVal = await _readPrimaryFlag(sessionId, refType, refId);
 
       // 删除引用
       await (_db.delete(_db.sessionReferences)..where(
@@ -364,28 +354,56 @@ class ReferenceRepository implements ReferenceCapability {
 
       // 若删的是主引用，另选最早的
       if (wasPrimaryVal == 1) {
-        final next =
-            await (_db.select(_db.sessionReferences)
-                  ..where((t) => t.sessionId.equals(sessionId))
-                  ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
-                  ..limit(1))
-                .getSingleOrNull();
-        if (next != null) {
-          await _setPrimaryInTx(sessionId, next.refType, next.refId, now);
-        } else {
-          // 没有其它引用，清空缓存
-          await (_db.update(
-            _db.sessions,
-          )..where((t) => t.id.equals(sessionId))).write(
-            SessionsCompanion(
-              manuscriptId: const Value(null),
-              chapterId: const Value(null),
-              updatedAt: Value(now),
-            ),
-          );
-        }
+        await _electNextPrimary(sessionId, now);
       }
     });
+  }
+
+  /// 读取目标引用的 is_primary 标记（未命中行视为 0）。
+  ///
+  /// R-019：由 [removeReference] 抽出（54 → 24 行）。
+  Future<int> _readPrimaryFlag(
+    String sessionId,
+    String refType,
+    String refId,
+  ) async {
+    final row =
+        await (_db.selectOnly(_db.sessionReferences)
+              ..addColumns([_db.sessionReferences.isPrimary])
+              ..where(
+                _db.sessionReferences.sessionId.equals(sessionId) &
+                    _db.sessionReferences.refType.equals(refType) &
+                    _db.sessionReferences.refId.equals(refId),
+              ))
+            .getSingleOrNull();
+    return row?.read(_db.sessionReferences.isPrimary) ?? 0;
+  }
+
+  /// 主引用被删后的补位：另选最早的一条为新主引用；
+  /// 若已无其它引用，清空 sessions 冗余缓存。
+  ///
+  /// R-019：由 [removeReference] 抽出。
+  Future<void> _electNextPrimary(String sessionId, int now) async {
+    final next =
+        await (_db.select(_db.sessionReferences)
+              ..where((t) => t.sessionId.equals(sessionId))
+              ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+              ..limit(1))
+            .getSingleOrNull();
+    if (next != null) {
+      await _setPrimaryInTx(sessionId, next.refType, next.refId, now);
+      return;
+    }
+    // 没有其它引用，清空缓存
+    await (_db.update(
+      _db.sessions,
+    )..where((t) => t.id.equals(sessionId))).write(
+      SessionsCompanion(
+        manuscriptId: const Value(null),
+        chapterId: const Value(null),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   /// 设置主引用（file 类型禁止）
@@ -431,6 +449,19 @@ class ReferenceRepository implements ReferenceCapability {
         .write(const SessionReferencesCompanion(isPrimary: Value(1)));
 
     // 同步冗余缓存：主引用是章节则连带回填其所属作品
+    await _syncPrimaryCache(sessionId, refType, refId, now);
+  }
+
+  /// 同步 sessions.manuscript_id / chapter_id 冗余缓存：
+  /// chapter 主引用连带回填其所属作品，manuscript 主引用清空 chapter_id。
+  ///
+  /// R-019：由 [_setPrimaryInTx] 抽出（52 → 20 行）。
+  Future<void> _syncPrimaryCache(
+    String sessionId,
+    String refType,
+    String refId,
+    int now,
+  ) async {
     if (refType == 'chapter') {
       final ch =
           await (_db.selectOnly(_db.chapters)

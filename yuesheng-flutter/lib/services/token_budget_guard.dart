@@ -95,28 +95,60 @@ abstract final class TokenBudgetGuard {
     final maxBudget = TokenEstimate.maxBudget;
     final warning = (maxBudget * TokenEstimate.warningRatio).round();
 
-    var total = _estimateAll(messages);
-    final totalBefore = total;
+    final total = _estimateAll(messages);
     final overBudget = total > maxBudget;
     final overWarning = total > warning;
 
     if (total <= maxBudget) {
-      return BudgetGuardReport(
+      return _untrimmedReport(total, overWarning);
+    }
+
+    // 超上限：按降级顺序整段裁掉已标记阶段，边裁边估算
+    final plan = _planRemovals(messages, stageIndexes, maxBudget, total);
+    if (plan.toRemove.isNotEmpty) {
+      _applyRemovals(messages, plan.toRemove);
+    }
+
+    return BudgetGuardReport(
+      overBudget: overBudget,
+      triggered: plan.droppedStages.isNotEmpty,
+      overWarning: overWarning,
+      totalBefore: total,
+      totalAfter: _estimateAll(messages),
+      droppedStages: plan.droppedStages,
+      droppedMessageCount: plan.toRemove.length,
+    );
+  }
+
+  /// 未超预算：原样报告（before == after、无裁剪）。
+  ///
+  /// R-019：由 [apply] 抽出（60 → 31 行）。
+  static BudgetGuardReport _untrimmedReport(int total, bool overWarning) =>
+      BudgetGuardReport(
         overBudget: false,
         triggered: false,
         overWarning: overWarning,
-        totalBefore: totalBefore,
+        totalBefore: total,
         totalAfter: total,
         droppedStages: const [],
         droppedMessageCount: 0,
       );
-    }
 
-    // 超上限：按降级顺序整段裁掉已标记阶段，边裁边估算
+  /// 按 [TokenBudgetTable.planDegradation] 顺序整段裁掉已标记阶段，
+  /// 边裁边估算，直到总估算回到 [maxBudget] 内。
+  ///
+  /// R-019：由 [apply] 抽出。只做规划，不修改 [messages]。
+  static ({Set<int> toRemove, List<String> droppedStages}) _planRemovals(
+    List<ChatMessage> messages,
+    Map<String, List<int>> stageIndexes,
+    int maxBudget,
+    int total,
+  ) {
     final toRemove = <int>{};
     final droppedStages = <String>[];
+    var current = total;
     for (final stage in TokenBudgetTable.planDegradation()) {
-      if (total <= maxBudget) break;
+      if (current <= maxBudget) break;
       final idxs = stageIndexes[stage.name] ?? const <int>[];
       final valid = idxs
           .where((i) => i < messages.length && !toRemove.contains(i))
@@ -124,28 +156,22 @@ abstract final class TokenBudgetGuard {
       if (valid.isEmpty) continue; // 未标记 / 已被裁 → 跳过
       toRemove.addAll(valid);
       droppedStages.add(stage.name);
-      total = _estimateExcluding(messages, toRemove);
+      current = _estimateExcluding(messages, toRemove);
     }
+    return (toRemove: toRemove, droppedStages: droppedStages);
+  }
 
-    if (toRemove.isNotEmpty) {
-      final kept = <ChatMessage>[];
-      for (var i = 0; i < messages.length; i++) {
-        if (toRemove.contains(i)) continue;
-        kept.add(messages[i]);
-      }
-      messages
-        ..clear()
-        ..addAll(kept);
+  /// 原地剔除 [toRemove] 索引对应的消息。
+  ///
+  /// R-019：由 [apply] 抽出。
+  static void _applyRemovals(List<ChatMessage> messages, Set<int> toRemove) {
+    final kept = <ChatMessage>[];
+    for (var i = 0; i < messages.length; i++) {
+      if (toRemove.contains(i)) continue;
+      kept.add(messages[i]);
     }
-
-    return BudgetGuardReport(
-      overBudget: overBudget,
-      triggered: droppedStages.isNotEmpty,
-      overWarning: overWarning,
-      totalBefore: totalBefore,
-      totalAfter: _estimateAll(messages),
-      droppedStages: droppedStages,
-      droppedMessageCount: toRemove.length,
-    );
+    messages
+      ..clear()
+      ..addAll(kept);
   }
 }

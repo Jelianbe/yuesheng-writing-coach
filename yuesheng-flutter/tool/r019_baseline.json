@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 288,
+  "fileCount": 289,
   "violations": [
     {
       "file": "lib/services/chat_service.dart",
@@ -111,8 +111,8 @@
     {
       "file": "lib/widgets/chat_page.dart",
       "func": "_buildBody",
-      "start": 230,
-      "end": 416,
+      "start": 229,
+      "end": 415,
       "lines": 187
     },
     {
@@ -503,8 +503,8 @@
     {
       "file": "lib/widgets/chat_page.dart",
       "func": "build",
-      "start": 126,
-      "end": 228,
+      "start": 125,
+      "end": 227,
       "lines": 103
     },
     {
@@ -1292,13 +1292,6 @@
       "lines": 61
     },
     {
-      "file": "lib/services/token_budget_guard.dart",
-      "func": "apply",
-      "start": 91,
-      "end": 150,
-      "lines": 60
-    },
-    {
       "file": "lib/widgets/chapter_tree_drawer.dart",
       "func": "build",
       "start": 627,
@@ -1523,13 +1516,6 @@
       "lines": 55
     },
     {
-      "file": "lib/data/repositories/reference_repository.dart",
-      "func": "removeReference",
-      "start": 310,
-      "end": 363,
-      "lines": 54
-    },
-    {
       "file": "lib/widgets/diagnosis_picker_sheet.dart",
       "func": "_buildList",
       "start": 210,
@@ -1542,13 +1528,6 @@
       "start": 214,
       "end": 267,
       "lines": 54
-    },
-    {
-      "file": "lib/services/export_service.dart",
-      "func": "buildManuscriptExportText",
-      "start": 77,
-      "end": 129,
-      "lines": 53
     },
     {
       "file": "lib/widgets/message_list.dart",
@@ -1570,13 +1549,6 @@
       "start": 132,
       "end": 184,
       "lines": 53
-    },
-    {
-      "file": "lib/data/repositories/reference_repository.dart",
-      "func": "_setPrimaryInTx",
-      "start": 387,
-      "end": 438,
-      "lines": 52
     },
     {
       "file": "lib/providers/writing_providers.dart",
@@ -1616,8 +1588,8 @@
     {
       "file": "lib/services/genui_validator.dart",
       "func": "validateGenuiComponent",
-      "start": 30,
-      "end": 80,
+      "start": 33,
+      "end": 83,
       "lines": 51
     },
     {
@@ -1630,8 +1602,8 @@
     {
       "file": "lib/services/syndrome_skill_levels.dart",
       "func": "interventionLevelForTrainingCount",
-      "start": 100,
-      "end": 150,
+      "start": 93,
+      "end": 143,
       "lines": 51
     },
     {
