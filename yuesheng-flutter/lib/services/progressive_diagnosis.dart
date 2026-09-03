@@ -17,6 +17,7 @@ import 'dart:convert';
 
 import 'decode_guard.dart';
 import 'llm_client.dart';
+import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
 
 // ── 常量（对齐 RN shared-constants.ts DIAGNOSIS_CHUNK）──
 /// 触发分块诊断的字符阈值
@@ -143,16 +144,43 @@ List<String> splitContent(String content) {
 }
 
 // ── 单块系统提示词（对齐 RN CHUNK_SYSTEM_PROMPT）──
-const String kChunkSystemPrompt = '''你是一个专业的写作诊断助手。请阅读以下文本片段，识别其中存在的写作问题。
+//
+// ADR-C69：症候清单原为硬编码 P003-P021（19 条），而注册表已有 39 条
+// （P003-P041），导致分块路径漏掉后段 20 个症候——且 anchor 测试覆盖不到本
+// 文件（不在 skill_registry 内），缺陷潜伏至今。现改由注册表派生，扩容自动
+// 跟随；一致性由 progressive_chunk_syndrome_coverage_test.dart 兜底。
 
-症候类型参考（仅用于标注，不要强行匹配）：
-- P003 情绪标签化 / P004 信息倾泻症 / P005 视角漂移 / P006 节奏停滞
-- P007 句式节奏单一 / P008 语言堆砌 / P009 角色动机缺失 / P010 OC平面化
-- P011 对话疲劳症 / P012 张力不足症 / P013 开篇平庸症 / P014 结尾乏力症
-- P015 高潮疲软症 / P016 情节巧合过多症 / P017 伏笔失效症 / P018 人设崩塌症
-- P019 情感失真症 / P020 过渡生硬症 / P021 跳跃叙事/过度概括症
+/// 注册表内全部未退役症候，按 ID 升序，形如 `P003 情绪标签化`。
+List<String> _activeSyndromeLabels() {
+  final rows =
+      kSyndromeRegistry
+          .where((s) => s.retired != true)
+          .map((s) => '${s.id} ${s.name}')
+          .toList()
+        ..sort();
+  return rows;
+}
 
-例外情况指引（以下场景通常不应判定为症候）：
+/// 症候 ID 的连续范围说明，形如 `P003-P041`。
+///
+/// ADR-C69：merge prompt 原硬编码「P003-P027」，与注册表（P003-P041）不符，
+/// 会压制后段症候的输出。改由同一真源派生，杜绝两套范围。
+String _syndromeIdRange() {
+  final ids =
+      kSyndromeRegistry
+          .where((s) => s.retired != true)
+          .map((s) => s.id)
+          .toList()
+        ..sort();
+  if (ids.isEmpty) return '（无可用症候）';
+  return '${ids.first}-${ids.last}';
+}
+
+/// 例外情况指引（RN 移植，逐字保留）。
+///
+/// 末条为 ADR-C69 新增的兜底：这些例外只覆盖 P003-P021，注册表扩到 P041 后
+/// 后段症候没有对应例外，补一句通用兜底避免"零例外"导致的过度诊断。
+const String _kChunkExceptionGuide = '''例外情况指引（以下场景通常不应判定为症候）：
 - P003例外：隐喻表达（"冰冷的眼神""心头一热"）、有具体动作支撑的情绪词、紧凑叙事中的快速过渡
 - P004例外：角色的内心自省（角色在评价自己，非作者补设定）、角色对地点/势力的随口判断
 - P005例外：角色对自己所处环境的评价、角色对自身经历的回忆、有明确标记的视角切换
@@ -167,8 +195,10 @@ const String kChunkSystemPrompt = '''你是一个专业的写作诊断助手。�
 - P018例外：角色因重大事件（如创伤、顿悟）导致的刻意转变，且有明确铺垫
 - P019例外：非人类/非常规思维的角色设定
 - P020例外：蒙太奇/意识流/碎片化叙事手法
+- 上面未列出的症候：例外情况以症候诊断手册为准；判定尺度与上述一致——只在读者体验确实会受损时才算症候''';
 
-请输出JSON格式的笔记，不要包含markdown代码块标记，只输出纯JSON对象：
+/// 单块输出格式（纯静态，与症候清单分离）。
+const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包含markdown代码块标记，只输出纯JSON对象：
 {
   "notes": [
     {
@@ -179,6 +209,29 @@ const String kChunkSystemPrompt = '''你是一个专业的写作诊断助手。�
     }
   ]
 }''';
+
+/// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
+///
+/// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
+String _buildChunkSystemPrompt() {
+  final labels = _activeSyndromeLabels();
+  final listBlock = <String>[];
+  for (var i = 0; i < labels.length; i += 4) {
+    final end = i + 4 > labels.length ? labels.length : i + 4;
+    listBlock.add('- ${labels.sublist(i, end).join(' / ')}');
+  }
+  return '''你是一个专业的写作诊断助手。请阅读以下文本片段，识别其中存在的写作问题。
+
+症候类型参考（仅用于标注，不要强行匹配）：
+${listBlock.join('\n')}
+
+$_kChunkExceptionGuide
+
+$_kChunkOutputFormat''';
+}
+
+/// 单块系统提示词：症候清单由注册表派生，调用处无需感知（ADR-C69）。
+final String kChunkSystemPrompt = _buildChunkSystemPrompt();
 
 // ── JSON 提取（对齐 RN extractJson：优先 code block，否则按括号平衡）──
 
@@ -269,7 +322,7 @@ ${allNotesJson.join('\n\n')}
 3. 更基础的问题优先（如 P003 情绪标签化优先于 P008 语言堆砌）
 
 syndrome 对象格式要求：
-- syndrome_id (string): 症候编号 P003-P027
+- syndrome_id (string): 症候编号 ${_syndromeIdRange()}（由注册表派生，ADR-C69）
 - name (string): 症候名称
 - severity (L1|L2|L3): 严重度
 - evidence (string[]): 原文证据片段，每条症候至少 1 条证据
@@ -348,7 +401,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   for (var i = 0; i < chunks.length; i++) {
     try {
       final response = await llmClient.chatCompletion([
-        const ChatMessage(role: 'system', content: kChunkSystemPrompt),
+        // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉
+        ChatMessage(role: 'system', content: kChunkSystemPrompt),
         ChatMessage(
           role: 'user',
           content:
