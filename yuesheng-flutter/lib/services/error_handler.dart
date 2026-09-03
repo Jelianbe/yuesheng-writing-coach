@@ -136,28 +136,14 @@ class ErrorHandler {
     String? stack,
     Map<String, dynamic>? context,
   }) {
-    // A12 安全红线（宪法 §八）：错误体可能带回显的 API Key
-    // （如 `Authorization: Bearer <key>`）。落库/上报前统一脱敏，
-    // 防 Key 经 error_logs / UI 泄漏。所有入口（FlutterError、
-    // PlatformDispatcher、直接调用）收口于此，单点防护。
-    final safeMessage = _redactSensitive(message);
-    // 注意：stack 为可空列，缺失时必须保留 null，不得经 _redactSensitive
-    // 的 `?? ''` 路径被 coerce 成空串（否则 error_logs.stack 会写入 '' 而非 NULL）。
-    // A12 脱敏只针对非空 stack，空栈原样置 null。
-    final safeStack = stack == null ? null : _redactSensitive(stack);
-    final safeContext = context == null
-        ? null
-        : {
-            for (final e in context.entries)
-              e.key: e.value is String
-                  ? _redactSensitive(e.value as String)
-                  : e.value,
-          };
+    final safe = _redactAll(message: message, stack: stack, context: context);
+
     // 归一化到 error_logs 的 CHECK 白名单（category/level），防非法值被 DB 约束吞掉
     final normalized = _kAllowedCategories.contains(category)
         ? category
         : 'general';
     final normalizedLevel = _kAllowedLevels.contains(level) ? level : 'error';
+
     final repo = _repo;
     if (repo != null) {
       unawaited(
@@ -165,23 +151,70 @@ class ErrorHandler {
           repo,
           level: normalizedLevel,
           category: normalized,
-          message: safeMessage,
-          stack: safeStack,
-          context: safeContext,
+          message: safe.message,
+          stack: safe.stack,
+          context: safe.context,
         ),
       );
       return;
     }
+    _enqueue(
+      level: normalizedLevel,
+      category: normalized,
+      message: safe.message,
+      stack: safe.stack,
+      context: safe.context,
+    );
+  }
+
+  /// A12 安全红线（宪法 §八）：错误体可能带回显的 API Key
+  /// （如 `Authorization: Bearer <key>`）。落库/上报前统一脱敏，
+  /// 防 Key 经 error_logs / UI 泄漏。所有入口（FlutterError、
+  /// PlatformDispatcher、直接调用）收口于此，单点防护。
+  ///
+  /// R-019：由 [captureError] 抽出（56 → 27 行）。
+  ({String message, String? stack, Map<String, dynamic>? context}) _redactAll({
+    required String message,
+    String? stack,
+    Map<String, dynamic>? context,
+  }) {
+    return (
+      message: _redactSensitive(message),
+      // 注意：stack 为可空列，缺失时必须保留 null，不得经 _redactSensitive
+      // 的 `?? ''` 路径被 coerce 成空串（否则 error_logs.stack 会写入 '' 而非 NULL）。
+      // A12 脱敏只针对非空 stack，空栈原样置 null。
+      stack: stack == null ? null : _redactSensitive(stack),
+      context: context == null
+          ? null
+          : {
+              for (final e in context.entries)
+                e.key: e.value is String
+                    ? _redactSensitive(e.value as String)
+                    : e.value,
+            },
+    );
+  }
+
+  /// DB 未就绪时入内存队列（超上限丢弃最旧，内存有界）。
+  ///
+  /// R-019：由 [captureError] 抽出。
+  void _enqueue({
+    required String level,
+    required String category,
+    required String message,
+    String? stack,
+    Map<String, dynamic>? context,
+  }) {
     if (_queue.length >= _maxQueueLength) {
       _queue.removeAt(0); // 队列溢出：丢弃最旧
     }
     _queue.add(
       _PendingError(
-        level: normalizedLevel,
-        category: normalized,
-        message: safeMessage,
-        stack: safeStack,
-        context: safeContext,
+        level: level,
+        category: category,
+        message: message,
+        stack: stack,
+        context: context,
       ),
     );
   }

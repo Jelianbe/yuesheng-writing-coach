@@ -8,7 +8,8 @@
         --func apply --pad 45
 
 按 V4.10：改源码做验证的脚本必须 try/finally 恢复，且收尾人工 git diff 复核。
-按 V4.4 延伸：工作区是 CRLF，读写一律 newline=''，锚点统一转 CRLF。
+按 V4.4 延伸：锚点/pad 行尾自适应源文件主导行尾（仓库工作区大多 CRLF，
+但个别文件入库即 LF，如 realtime_observation_service.dart，硬编码 CRLF 会锚点落空）。
 """
 import argparse
 import io
@@ -34,11 +35,13 @@ def main():
     ap.add_argument('--baseline', default=BASE)
     args = ap.parse_args()
 
-    anchor = (args.anchor + '\n').replace('\n', '\r\n')
-    pad = ''.join('    // V4.14 验证用填充行 %d\r\n' % i for i in range(args.pad))
-
     with io.open(args.src, encoding='utf-8', newline='') as f:
         original = f.read()
+
+    # 行尾自适应：源文件 CRLF 占多则用 CRLF，否则 LF（V4.17 同源教训）
+    eol = '\r\n' if original.count('\r\n') >= original.count('\n') / 2 else '\n'
+    anchor = args.anchor + eol
+    pad = ''.join('    // V4.14 验证用填充行 %d%s' % (i, eol) for i in range(args.pad))
 
     if anchor not in original:
         print('INJECT-FAILED: 锚点未找到（源码未做任何改动）')

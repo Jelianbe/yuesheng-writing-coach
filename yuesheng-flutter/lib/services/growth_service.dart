@@ -472,31 +472,9 @@ extension GrowthAbilityExtension on GrowthService {
       ));
     }
 
-    final result = <SyndromeRecurrence>[];
-    for (final entry in groups.entries) {
-      final records = entry.value;
-      var recovered = 0;
-      var recurrences = 0;
-      var wasResolved = false;
-      for (final rec in records) {
-        // 之前一条已好转 → 本次出现计为复发（V1.0 原则4：同症候反复）
-        if (wasResolved) recurrences++;
-        final isResolved = rec.status == 'resolved';
-        if (isResolved) recovered++;
-        wasResolved = isResolved;
-      }
-      final occurrences = records.length;
-      result.add(
-        SyndromeRecurrence(
-          syndromeId: entry.key,
-          syndromeName: records.first.name,
-          occurrences: occurrences,
-          recovered: recovered,
-          recurrences: recurrences,
-          rate: occurrences <= 1 ? 0 : recurrences / (occurrences - 1),
-        ),
-      );
-    }
+    final result = groups.entries
+        .map((e) => _buildRecurrence(e.key, e.value))
+        .toList();
 
     // 复发率降序，同率按出现次数降序（高频问题优先）
     result.sort((a, b) {
@@ -505,6 +483,34 @@ extension GrowthAbilityExtension on GrowthService {
       return b.occurrences.compareTo(a.occurrences);
     });
     return result;
+  }
+
+  /// 统计单个症候的出现 / 好转 / 复发次数并算复发率。
+  ///
+  /// R-019：由 [getSyndromeRecurrences] 抽出（52 → 28 行）。
+  SyndromeRecurrence _buildRecurrence(
+    String syndromeId,
+    List<({String name, String status, int createdAt})> records,
+  ) {
+    var recovered = 0;
+    var recurrences = 0;
+    var wasResolved = false;
+    for (final rec in records) {
+      // 之前一条已好转 → 本次出现计为复发（V1.0 原则4：同症候反复）
+      if (wasResolved) recurrences++;
+      final isResolved = rec.status == 'resolved';
+      if (isResolved) recovered++;
+      wasResolved = isResolved;
+    }
+    final occurrences = records.length;
+    return SyndromeRecurrence(
+      syndromeId: syndromeId,
+      syndromeName: records.first.name,
+      occurrences: occurrences,
+      recovered: recovered,
+      recurrences: recurrences,
+      rate: occurrences <= 1 ? 0 : recurrences / (occurrences - 1),
+    );
   }
 
   /// X-041b：症候-训练通过率聚合（用户级全局，跨会话）
