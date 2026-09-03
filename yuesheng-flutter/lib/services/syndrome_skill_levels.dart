@@ -10,21 +10,14 @@
 
 import '../types/teaching_types.dart';
 import 'syndrome_registry.dart'; // kSyndromeRegistry / kSyndromeSkillLevelsDerived（b9 真源）
+import 'syndrome_skill_types.dart'; // SkillLevel（ADR-C70：类型层抽离以解环）
 import 'training_input_builder.dart'; // TrainingPerformance（7.2 performance_gate）
 
-/// 技能层级（V2.0 §2.1：基础表达 → 叙事节奏 → 角色塑造 → 情节结构 → 风格声线）
-enum SkillLevel {
-  l1('L1', '基础表达'),
-  l2('L2', '叙事节奏'),
-  l3('L3', '角色塑造'),
-  l4('L4', '情节结构'),
-  l5('L5', '风格声线');
-
-  final String value;
-  final String label;
-
-  const SkillLevel(this.value, this.label);
-}
+// ADR-C70：SkillLevel 已迁至 syndrome_skill_types.dart。
+// 此处 export 是为了**保持对外 API 不变**——既有的
+// `import 'syndrome_skill_levels.dart';` 仍可直接使用 SkillLevel，
+// 因此 4 处 lib + 3 处 test 的引用一行都不用改。
+export 'syndrome_skill_types.dart';
 
 /// 症候 → 技能层级映射（b9 真源化：由 syndrome_registry 派生，不再手写）
 ///
