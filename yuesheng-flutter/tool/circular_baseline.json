@@ -1,0 +1,24 @@
+{
+  "cycles": [
+    "package:writingcoach/services/syndrome_registry|package:writingcoach/services/syndrome_skill_levels",
+    "package:writingcoach/services/genui_parser|package:writingcoach/services/genui_validator",
+    "package:writingcoach/providers/capability_providers|package:writingcoach/providers/work_import_providers"
+  ],
+  "detail": [
+    [
+      "package:writingcoach/services/syndrome_registry",
+      "package:writingcoach/services/syndrome_skill_levels",
+      "package:writingcoach/services/syndrome_registry"
+    ],
+    [
+      "package:writingcoach/services/genui_parser",
+      "package:writingcoach/services/genui_validator",
+      "package:writingcoach/services/genui_parser"
+    ],
+    [
+      "package:writingcoach/providers/work_import_providers",
+      "package:writingcoach/providers/capability_providers",
+      "package:writingcoach/providers/work_import_providers"
+    ]
+  ]
+}
