@@ -6,6 +6,8 @@
 //   2. attachRepository → 队列 flush 写入 error_logs
 //   3. attach 后 captureError → 直接写库
 //   4. 队列溢出（>200）→ 丢弃最旧，内存有界
+//   5. A12 安全红线：错误体中的凭据落库前脱敏（宪法 §八）
+//   6. context 为 null → 落库保持 null；非字符串值原样保留
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/native.dart';
@@ -102,5 +104,54 @@ void main() {
     expect(logs.any((e) => e.message == '溢出测试#0'), false);
     expect(logs.any((e) => e.message == '溢出测试#5'), true);
     expect(logs.any((e) => e.message == '溢出测试#204'), true);
+  });
+
+  test('#5 A12 安全红线：错误体中的凭据落库前已脱敏', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = ErrorLogRepository(db);
+    ErrorHandler.instance.attachRepository(repo);
+
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'network',
+      message: '请求失败 Authorization: Bearer sk-abcdef123456',
+      stack: 'at client.dart:12 api_key=live_secret_789',
+      context: {'url': 'https://api.example.com', 'retry': 2},
+    );
+    await pumpEventQueue();
+
+    final logs = await repo.queryErrorLogs();
+    expect(logs.length, 1);
+    final log = logs.first;
+
+    // 核心断言：裸凭据一律不得出现在任何落库字段里
+    expect(log.message, isNot(contains('sk-abcdef123456')));
+    expect(log.stack, isNot(contains('live_secret_789')));
+    expect(log.message, contains('***'));
+    expect(log.stack, contains('***'));
+    // 无敏感信息的 context 应原样保留（非字符串值不被脱敏碰到）
+    expect(log.context?['url'], 'https://api.example.com');
+    expect(log.context?['retry'], 2);
+  });
+
+  test('#6 A12：context 为 null 时落库保持 null（不被 coerce 成空 Map）', () async {
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+    final repo = ErrorLogRepository(db);
+    ErrorHandler.instance.attachRepository(repo);
+
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'general',
+      message: '无上下文错误',
+      // context 与 stack 均不传
+    );
+    await pumpEventQueue();
+
+    final logs = await repo.queryErrorLogs();
+    expect(logs.length, 1);
+    expect(logs.first.context, isNull);
+    expect(logs.first.stack, isNull);
   });
 }
