@@ -9,6 +9,14 @@ import 'package:writingcoach/services/token_budget_guard.dart';
 /// 构造一条 token 数≈[tokens] 的 system 消息（length × charToTokenRatio(1.0) 取整）
 ChatMessage m(int tokens) => ChatMessage(role: 'system', content: 'x' * tokens);
 
+/// 同 [m]，但用 [tag] 填充，便于**区分裁剪后留下的是哪几条**。
+///
+/// 存在的理由：若所有消息都用同一个字符填充，就只能断言剩余条数，
+/// 无法断言「留下的是不是该留的」——索引剔除逻辑出错也测不出来。
+/// [tag] 必须是单字符，否则长度不等于 [tokens]，估算会偏。
+ChatMessage mt(int tokens, String tag) =>
+    ChatMessage(role: 'system', content: tag * tokens);
+
 void main() {
   final maxBudget = TokenEstimate.maxBudget;
   final warning = (maxBudget * TokenEstimate.warningRatio).round();
@@ -113,5 +121,99 @@ void main() {
     expect(report.droppedStages, isEmpty);
     expect(report.droppedMessageCount, 0);
     expect(messages.length, 3); // 一条未删（全部保底/无效标记）
+  });
+
+  test('边界：总量恰好等于 maxBudget 时走 no-op（判据是 <= 而非 <）', () {
+    final messages = [
+      m(maxBudget - 1000), // 保底
+      m(1000), // 历史
+    ];
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.history: [1],
+      },
+    );
+
+    expect(report.totalBefore, maxBudget);
+    expect(report.overBudget, false);
+    expect(report.overWarning, true); // 越过 warning 线，但仍不裁剪
+    expect(report.triggered, false);
+    expect(messages.length, 2); // 恰好等于上限也不裁
+    // no-op 分支的 before/after 必须一致（_untrimmedReport 的语义）
+    expect(report.totalAfter, maxBudget);
+    expect(report.totalAfter, report.totalBefore);
+  });
+
+  test('裁剪剔除的是被裁阶段的索引，保留项逐条一致', () {
+    // 内容可区分：S=保底 / A=画像 / B=引用 / C=L3 / D,E=历史
+    final messages = [
+      mt(115000, 'S'), // idx0 systemPrompt（保底，不标记）
+      mt(3000, 'A'), // idx1 画像
+      mt(10000, 'B'), // idx2 引用
+      mt(2000, 'C'), // idx3 L3 结构
+      mt(4000, 'D'), // idx4 历史1
+      mt(4000, 'E'), // idx5 历史2
+    ];
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.studentProfile: [1],
+        BudgetStageNames.references: [2],
+        BudgetStageNames.l3Structure: [3],
+        BudgetStageNames.history: [4, 5],
+      },
+    );
+
+    expect(report.droppedStages, [
+      BudgetStageNames.l3Structure,
+      BudgetStageNames.studentProfile,
+      BudgetStageNames.references,
+    ]);
+    // 关键：删掉的必须是 idx1/2/3（A/B/C），留下的必须是 idx0/4/5（S/D/E）。
+    // 只看 length 是测不出来的——删错位置同样剩 3 条。
+    expect(messages.map((e) => e.content).toList(), [
+      'S' * 115000,
+      'D' * 4000,
+      'E' * 4000,
+    ]);
+  });
+
+  test('中途达标即停：更低优先级阶段完整保留，totalAfter 与重算一致', () {
+    // 合计 128000 > maxBudget(123904)
+    // 裁 L3(2000) → 126000 仍超；再裁画像(3000) → 123000 达标即停
+    final messages = [
+      mt(115000, 'S'), // idx0 保底
+      mt(3000, 'A'), // idx1 画像
+      mt(2000, 'C'), // idx2 L3 结构
+      mt(4000, 'D'), // idx3 历史1
+      mt(4000, 'E'), // idx4 历史2
+    ];
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.studentProfile: [1],
+        BudgetStageNames.l3Structure: [2],
+        BudgetStageNames.history: [3, 4],
+      },
+    );
+
+    expect(report.droppedStages, [
+      BudgetStageNames.l3Structure,
+      BudgetStageNames.studentProfile,
+    ]);
+    // 历史降级优先级最低，达标时应当一条未动
+    expect(messages.map((e) => e.content).toList(), [
+      'S' * 115000,
+      'D' * 4000,
+      'E' * 4000,
+    ]);
+    // totalAfter 必须等于裁剪后重新估算的结果，而非沿用循环中的中间值
+    final expectedAfter = messages.fold<int>(
+      0,
+      (sum, e) => sum + TokenBudgetGuard.estimate(e.content),
+    );
+    expect(report.totalAfter, expectedAfter);
+    expect(report.totalAfter <= maxBudget, true);
   });
 }
