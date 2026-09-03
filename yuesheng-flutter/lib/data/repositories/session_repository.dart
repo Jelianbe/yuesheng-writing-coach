@@ -256,6 +256,16 @@ class SessionRepository {
   Future<List<SessionWithPhase>> listRelatedSessions(
     String manuscriptId,
   ) async {
+    final hitIds = await _collectRelatedSessionIds(manuscriptId);
+    if (hitIds.isEmpty) return const [];
+    return _querySessionsWithPhase(hitIds);
+  }
+
+  /// 汇总「与本书相关」的会话 id：章节直接归属 + session_reference 命中
+  /// （manuscript 直引 / chapter 归属本书）+ manuscript_id 冗余缓存兜底。
+  ///
+  /// R-019：由 [listRelatedSessions] 抽出（57 → 6 行）。
+  Future<Set<String>> _collectRelatedSessionIds(String manuscriptId) async {
     // 1. 本书章节 id 集合
     final chapters = await (_db.select(
       _db.chapters,
@@ -281,10 +291,15 @@ class SessionRepository {
     for (final s in cached) {
       hitIds.add(s.id);
     }
+    return hitIds;
+  }
 
-    if (hitIds.isEmpty) return const [];
-
-    // 4. 查会话 + 教学阶段，按活跃度（updated_at DESC）排序
+  /// 按 [hitIds] 查会话并左连接教学阶段，按活跃度（updated_at 降序）返回。
+  ///
+  /// R-019：由 [listRelatedSessions] 抽出。
+  Future<List<SessionWithPhase>> _querySessionsWithPhase(
+    Set<String> hitIds,
+  ) async {
     final query =
         _db.select(_db.sessions).join([
             leftOuterJoin(
