@@ -7,7 +7,10 @@
 // ─────────────────────────────────────────────────────────────
 
 import '../contracts/genui_capability.dart';
-import 'genui_parser.dart';
+
+// 注：原第 10 行曾有 `import 'genui_parser.dart';`，是冗余依赖——
+// GenUiComponent 定义于上面的 contracts，本文件未使用 parser 的任何符号。
+// ADR-C70：删除该 import 即解开 `genui_parser ↔ genui_validator` 循环。
 
 /// GenUI 组件白名单（首版 5 种教学刚需组件）
 const Set<String> kGenuiWhitelist = {

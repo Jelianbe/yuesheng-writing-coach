@@ -8,7 +8,10 @@
 // 内容型段落（手册正文/训练知识/重叠规则）不在此处，保留各库人工编写。
 // ─────────────────────────────────────────────────────────────
 
-import 'syndrome_skill_levels.dart'; // SkillLevel
+// ADR-C70：原本 import 的是 syndrome_skill_levels.dart，但那边反过来依赖
+// 本文件的 kSyndromeSkillLevelsDerived，形成循环。这里只需要 SkillLevel
+// 这个类型，改指向类型层文件即解开——依赖变为 registry → types（单向）。
+import 'syndrome_skill_types.dart'; // SkillLevel
 
 // ─── R-019 数据分片（≤300 行）：39 条 kSyndromeRegistry 记录字面量
 // 按 13/13/13 拆至 syndrome_registry_p1/p2/p3.dart（const 列表分段，宿主拼接）

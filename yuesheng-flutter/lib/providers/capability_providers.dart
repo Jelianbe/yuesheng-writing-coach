@@ -14,8 +14,11 @@
 //
 // 说明：capability_registry.dart 此前按 R-010 最小范围刻意递延了「抽
 // provider / 改 widget 调用链」，此处为首落 provider 接入；MentionParser
-// 已有 work_import_providers.dart 的 mentionParserProvider，本文件以契约
-// 类型别名复用，避免重复实例化。
+// 以契约类型别名复用 mentionParserProvider，避免重复实例化。
+//
+// ADR-C70：mentionParserProvider 原先定义在 work_import_providers.dart，
+// 而它又需要本文件的 referenceCapabilityProvider，两边互引成环。现已将其
+// 迁入本文件（见下方定义），依赖方向变为 work_import → capability（单向）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,13 +29,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // reference / mention 两个契约未被 impl 文件 re-export，需显式 import。
 import '../contracts/mention_capability.dart';
 import '../contracts/reference_capability.dart';
+import '../data/repositories/chapter_repository.dart';
+import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/chat_context_builder.dart';
 import '../services/diagnosis_parser.dart';
 import '../services/genui_parser.dart';
+import '../services/mention_parser.dart';
 import '../services/skill_dispatcher.dart';
-import 'work_import_providers.dart';
+
+// 注：原第 35 行的 `import 'work_import_providers.dart';` 已删除——
+// mentionParserProvider 现定义于本文件（ADR-C70），不再需要反向引用。
 
 /// GenUI 组件能力（纯函数委托，无状态）
 final genUiCapabilityProvider = Provider<GenUiCapability>(
@@ -70,7 +78,24 @@ final referenceCapabilityProvider = Provider<ReferenceCapability>(
   (ref) => ref.watch(referenceRepositoryProvider),
 );
 
-/// @提及解析能力（契约类型别名，复用既有 mentionParserProvider）
+/// @ 引用解析服务（具体类型）——ADR-C70 由 work_import_providers.dart 迁入。
+///
+/// 迁入理由：它依赖本文件的 referenceCapabilityProvider，说明在依赖层次上
+/// 位于 capability 装配之下；原放在 work_import_providers 导致该文件反向
+/// import 本文件，形成循环。顺依赖箭头搬过来即可解开，且调用方
+/// （chat_page.dart 及其 part）本就同时 import 了两个文件，零调用点改动。
+///
+/// 构造参数与迁入前**完全一致**，行为不变。
+final mentionParserProvider = Provider<MentionParser>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return MentionParser(
+    ManuscriptRepository(db),
+    ChapterRepository(db),
+    ref.read(referenceCapabilityProvider),
+  );
+});
+
+/// @提及解析能力（契约类型别名，复用 mentionParserProvider）
 final mentionCapabilityProvider = Provider<MentionCapability>(
   (ref) => ref.watch(mentionParserProvider),
 );

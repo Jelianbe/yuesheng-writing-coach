@@ -32,8 +32,7 @@ import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
 import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
-import '../providers/work_import_providers.dart';
-import '../providers/capability_providers.dart';
+import '../providers/capability_providers.dart'; // mentionParserProvider（ADR-C70 迁入此文件）
 import '../router/app_routes.dart';
 import '../services/attitude_advisor.dart';
 import '../services/chat_service.dart';
