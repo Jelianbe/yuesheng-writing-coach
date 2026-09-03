@@ -6,8 +6,8 @@
 # 门禁 1: 静态分析 (dart analyze lib) — 类型检查 + Lint
 # 门禁 2: 单元测试 (flutter test)
 # 门禁 3: 循环依赖扫描 (scripts/check_circular.py) — 宪法 §二.4 / R-020
-#         止血模式：以 tool/circular_baseline.json 为基线（存量 3 环），只卡新增
-#         ⚠️ 本门禁曾长期假绿（路径不可解析 + lib 缺失时 return 0 放行、
+#         **全量卡口**：2026-09-03 ADR-C70 解开全部 3 个存量环后已撤除豁免基线
+#         ⚠️ 本门禁曾长期假绿（路径不可解析 + lib 缺失时 return 0 放行 +
 #            裸相对导入不进图），2026-09-03 修复，详见下方门禁 3 注释
 # 门禁 4: 安全/密钥扫描 (scripts/check_secrets.sh) — R-029
 # 门禁 5: R-019 函数行数 (tool/check_r019.py --baseline) — 宪法 §二.3 硬上限
@@ -103,13 +103,18 @@ log_result "单元测试 (flutter test)" "$RC_TEST"
 #
 # ⚠️ 修好后的第二层问题：建图时**裸相对导入**（`import 'x.dart';`）不进图，
 #    而本项目有 177 条这样的边（占内部边 21.7%）——等于在缺了五分之一边的
-#    图上做环检测。修复后立刻暴露出 3 个真实存量环（Dart 允许循环 import，
-#    故此前从未出过问题）。它们位于核心模块，需先写 ADR 才能动，
-#    故先走止血模式：存量登记进 tool/circular_baseline.json，只卡新增。
-echo "--> 门禁 3/6: 循环依赖扫描 (lib import 图)"
+#    图上做环检测。修复后暴露出 3 个真实存量环（Dart 允许循环 import，
+#    故此前从未出过问题）。
+#
+# ✅ 2026-09-03 ADR-C70：3 个存量环已全部解开，**转为全量卡口**
+#    （去掉 --baseline，任何环一律拦截）。这正是 V4.14 设定的终点——
+#    豁免基线只是让门禁先落地的过渡手段，债务清零后就必须撤掉，
+#    否则门禁会一直停留在「只卡新增」的弱化状态。
+#    tool/circular_baseline.json 已重生成空数组并保留在库中，
+#    供将来确需临时豁免时按同一格式使用（届时必须同时登记清偿计划）。
+echo "--> 门禁 3/6: 循环依赖扫描 (lib import 图，全量卡口)"
 if [ -n "$PY_BIN" ]; then
-  if "$PY_BIN" scripts/check_circular.py . \
-      --baseline tool/circular_baseline.json > "$CIRCULAR_LOG" 2>&1; then
+  if "$PY_BIN" scripts/check_circular.py . > "$CIRCULAR_LOG" 2>&1; then
     RC_CIRCULAR=0
   else
     RC_CIRCULAR=1
