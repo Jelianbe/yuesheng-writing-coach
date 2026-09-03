@@ -25,57 +25,83 @@ class TeachingStateRepository {
     final now = nowSec();
     await _db.transaction(() async {
       // 1. teaching_state（Upsert：先 update，受影响 0 行再 insert）
-      final affected =
-          await (_db.update(
-            _db.teachingState,
-          )..where((t) => t.sessionId.equals(sessionId))).write(
-            TeachingStateCompanion(
+      await _upsertTeachingState(sessionId, attitude, now);
+
+      // 2. student_model：不存在则创建，否则更新 attitude_preference
+      await _upsertStudentModel(sessionId, attitude, now);
+    });
+  }
+
+  /// teaching_state 的 Upsert：先 update，受影响 0 行再 insert。
+  ///
+  /// **A2 修复**：兼容 teaching_state 行缺失的边界场景（race/迁移/未走
+  /// createBlankSession）。原实现仅 update，行不存在时静默 0 行写入 →
+  /// attitudeLevel 为空但 student_model 已写入 → 两表不一致。
+  ///
+  /// R-019：由 [persistAttitude] 抽出（56 → 10 行）。
+  Future<void> _upsertTeachingState(
+    String sessionId,
+    String attitude,
+    int now,
+  ) async {
+    final affected =
+        await (_db.update(
+          _db.teachingState,
+        )..where((t) => t.sessionId.equals(sessionId))).write(
+          TeachingStateCompanion(
+            attitudeLevel: Value(attitude),
+            updatedAt: Value(now),
+          ),
+        );
+    if (affected == 0) {
+      await _db
+          .into(_db.teachingState)
+          .insert(
+            TeachingStateCompanion.insert(
+              id: generateUuid(),
+              sessionId: sessionId,
+              currentPhase: const Value('P0_ENGAGE'),
               attitudeLevel: Value(attitude),
               updatedAt: Value(now),
             ),
           );
-      if (affected == 0) {
-        await _db
-            .into(_db.teachingState)
-            .insert(
-              TeachingStateCompanion.insert(
-                id: generateUuid(),
-                sessionId: sessionId,
-                currentPhase: const Value('P0_ENGAGE'),
-                attitudeLevel: Value(attitude),
-                updatedAt: Value(now),
-              ),
-            );
-      }
+    }
+  }
 
-      // 2. student_model：不存在则创建，否则更新 attitude_preference
-      final existing = await (_db.select(
+  /// student_model 的 Upsert：不存在则创建，否则更新 attitude_preference。
+  ///
+  /// R-019：由 [persistAttitude] 抽出。
+  Future<void> _upsertStudentModel(
+    String sessionId,
+    String attitude,
+    int now,
+  ) async {
+    final existing = await (_db.select(
+      _db.studentModels,
+    )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
+    if (existing == null) {
+      await _db
+          .into(_db.studentModels)
+          .insert(
+            StudentModelsCompanion.insert(
+              id: generateUuid(),
+              sessionId: sessionId,
+              attitudePreference: Value(attitude),
+              teachingHistory: const Value('[]'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+    } else {
+      await (_db.update(
         _db.studentModels,
-      )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
-      if (existing == null) {
-        await _db
-            .into(_db.studentModels)
-            .insert(
-              StudentModelsCompanion.insert(
-                id: generateUuid(),
-                sessionId: sessionId,
-                attitudePreference: Value(attitude),
-                teachingHistory: const Value('[]'),
-                createdAt: Value(now),
-                updatedAt: Value(now),
-              ),
-            );
-      } else {
-        await (_db.update(
-          _db.studentModels,
-        )..where((t) => t.sessionId.equals(sessionId))).write(
-          StudentModelsCompanion(
-            attitudePreference: Value(attitude),
-            updatedAt: Value(now),
-          ),
-        );
-      }
-    });
+      )..where((t) => t.sessionId.equals(sessionId))).write(
+        StudentModelsCompanion(
+          attitudePreference: Value(attitude),
+          updatedAt: Value(now),
+        ),
+      );
+    }
   }
 
   /// 更新会话的当前教学阶段

@@ -1376,13 +1376,6 @@
       "lines": 58
     },
     {
-      "file": "lib/data/repositories/session_repository.dart",
-      "func": "listRelatedSessions",
-      "start": 256,
-      "end": 312,
-      "lines": 57
-    },
-    {
       "file": "lib/services/fact_validator.dart",
       "func": "_parseEvents",
       "start": 183,
@@ -1416,20 +1409,6 @@
       "start": 315,
       "end": 371,
       "lines": 57
-    },
-    {
-      "file": "lib/data/repositories/event_fact_repository.dart",
-      "func": "upsertEvent",
-      "start": 16,
-      "end": 71,
-      "lines": 56
-    },
-    {
-      "file": "lib/data/repositories/teaching_state_repository.dart",
-      "func": "persistAttitude",
-      "start": 24,
-      "end": 79,
-      "lines": 56
     },
     {
       "file": "lib/services/error_handler.dart",

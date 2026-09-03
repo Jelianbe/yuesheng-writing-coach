@@ -26,48 +26,100 @@ class EventFactRepository {
     final now = nowSec();
     final encodedParticipants = stringifyJson(participants);
     await _db.transaction(() async {
-      final existing =
-          await (_db.select(_db.eventFacts)..where(
-                (t) =>
-                    t.manuscriptId.equals(manuscriptId) & t.name.equals(name),
-              ))
-              .getSingleOrNull();
-
+      final existing = await _findEventByName(manuscriptId, name);
       if (existing == null) {
-        await _db
-            .into(_db.eventFacts)
-            .insert(
-              EventFactsCompanion.insert(
-                id: generateUuid(),
-                manuscriptId: manuscriptId,
-                name: name,
-                chapter: Value(chapter),
-                eventType: eventType,
-                causeEventId: Value(causeEventId),
-                effectEventId: Value(effectEventId),
-                participants: Value(encodedParticipants),
-                description: Value(description),
-                createdAt: Value(now),
-                updatedAt: Value(now),
-              ),
-            );
+        await _insertEvent(
+          manuscriptId: manuscriptId,
+          name: name,
+          chapter: chapter,
+          eventType: eventType,
+          causeEventId: causeEventId,
+          effectEventId: effectEventId,
+          participants: encodedParticipants,
+          description: description,
+          now: now,
+        );
       } else {
-        await (_db.update(
-          _db.eventFacts,
-        )..where((t) => t.id.equals(existing.id))).write(
-          EventFactsCompanion(
-            name: Value(name),
-            chapter: Value(chapter),
-            eventType: Value(eventType),
-            causeEventId: Value(causeEventId),
-            effectEventId: Value(effectEventId),
-            participants: Value(encodedParticipants),
-            description: Value(description),
-            updatedAt: Value(now),
-          ),
+        await _updateEvent(
+          existing.id,
+          name: name,
+          chapter: chapter,
+          eventType: eventType,
+          causeEventId: causeEventId,
+          effectEventId: effectEventId,
+          participants: encodedParticipants,
+          description: description,
+          now: now,
         );
       }
     });
+  }
+
+  /// 按作品 + 名称查既有事件（UNIQUE(manuscript_id, name)）。
+  ///
+  /// R-019：由 [upsertEvent] 抽出（56 → 30 行）。
+  Future<EventFact?> _findEventByName(String manuscriptId, String name) async {
+    return (_db.select(_db.eventFacts)..where(
+          (t) => t.manuscriptId.equals(manuscriptId) & t.name.equals(name),
+        ))
+        .getSingleOrNull();
+  }
+
+  /// 新建事件。R-019：由 [upsertEvent] 抽出。
+  Future<void> _insertEvent({
+    required String manuscriptId,
+    required String name,
+    required String eventType,
+    required String participants, // 已序列化
+    required String description,
+    required int now,
+    int? chapter,
+    String? causeEventId,
+    String? effectEventId,
+  }) async {
+    await _db
+        .into(_db.eventFacts)
+        .insert(
+          EventFactsCompanion.insert(
+            id: generateUuid(),
+            manuscriptId: manuscriptId,
+            name: name,
+            chapter: Value(chapter),
+            eventType: eventType,
+            causeEventId: Value(causeEventId),
+            effectEventId: Value(effectEventId),
+            participants: Value(participants),
+            description: Value(description),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  /// 更新既有事件（不含 createdAt）。R-019：由 [upsertEvent] 抽出。
+  Future<void> _updateEvent(
+    String id, {
+    required String name,
+    required String eventType,
+    required String participants, // 已序列化
+    required String description,
+    required int now,
+    int? chapter,
+    String? causeEventId,
+    String? effectEventId,
+  }) async {
+    await (_db.update(_db.eventFacts)..where((t) => t.id.equals(id))).write(
+      EventFactsCompanion(
+        name: Value(name),
+        chapter: Value(chapter),
+        eventType: Value(eventType),
+        causeEventId: Value(causeEventId),
+        effectEventId: Value(effectEventId),
+        participants: Value(participants),
+        description: Value(description),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   /// 列出作品下全部事件（按章节排序，null 排最后；同章节按名称）
