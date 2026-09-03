@@ -91,38 +91,17 @@ class RealtimeObservationService {
     );
 
     // displayContent 写为 assistant 消息（observation 入库需 messageId 关联）
-    String? messageId;
-    if (editorResult.displayContent.trim().isNotEmpty) {
-      messageId = await _sessionRepo.addMessage(
-        sessionId,
-        'assistant',
-        editorResult.displayContent,
-      );
-    }
+    final messageId = await _writeAssistantMessage(sessionId, editorResult);
 
     // R1：observation 总是入库（解析/校验成功才入；失败不入）
     if (editorResult.observation != null && messageId != null) {
-      final observations = editorResult.observation!.observations;
-      try {
-        await _editorObservationRepo.insertEditorObservation(
-          InsertEditorObservationParams(
-            sessionId: sessionId,
-            messageId: messageId,
-            editorResult: editorResult.observation!,
-            teacherTriggered: false,
-            pronouncedCount: observations
-                .where((o) => o.observationVisibility == 'pronounced')
-                .length,
-            againstCount: observations
-                .where((o) => o.intentAlignment == 'against')
-                .length,
-            targetRefType: targetRefType,
-            targetRefId: targetRefId,
-          ),
-        );
-      } catch (_) {
-        // 入库失败不影响展示内容
-      }
+      await _persistObservation(
+        sessionId: sessionId,
+        messageId: messageId,
+        editorResult: editorResult.observation!,
+        targetRefType: targetRefType,
+        targetRefId: targetRefId,
+      );
     }
 
     return RealtimeObservationResult(
@@ -130,5 +109,56 @@ class RealtimeObservationService {
       observation: editorResult.observation,
       messageId: messageId,
     );
+  }
+
+  /// displayContent 写为 assistant 消息，返回消息 id。
+  ///
+  /// 兜底文案（LLM 失败）也走此路径，保证用户可见；displayContent
+  /// 为空白时不写消息、返回 null（observation 入库需要非空关联键）。
+  Future<String?> _writeAssistantMessage(
+    String sessionId,
+    EditorStreamResult editorResult,
+  ) async {
+    if (editorResult.displayContent.trim().isNotEmpty) {
+      return _sessionRepo.addMessage(
+        sessionId,
+        'assistant',
+        editorResult.displayContent,
+      );
+    }
+    return null;
+  }
+
+  /// observation 入库（R1：观察结果总是入库，便于审计阈值校准）。
+  ///
+  /// 入库失败被吞掉：不影响已写入的展示内容（失败兜底不抛出语义）。
+  Future<void> _persistObservation({
+    required String sessionId,
+    required String messageId,
+    required EditorResult editorResult,
+    String? targetRefType,
+    String? targetRefId,
+  }) async {
+    final observations = editorResult.observations;
+    try {
+      await _editorObservationRepo.insertEditorObservation(
+        InsertEditorObservationParams(
+          sessionId: sessionId,
+          messageId: messageId,
+          editorResult: editorResult,
+          teacherTriggered: false,
+          pronouncedCount: observations
+              .where((o) => o.observationVisibility == 'pronounced')
+              .length,
+          againstCount: observations
+              .where((o) => o.intentAlignment == 'against')
+              .length,
+          targetRefType: targetRefType,
+          targetRefId: targetRefId,
+        ),
+      );
+    } catch (_) {
+      // 入库失败不影响展示内容
+    }
   }
 }

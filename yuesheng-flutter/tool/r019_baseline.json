@@ -1313,13 +1313,6 @@
       "lines": 60
     },
     {
-      "file": "lib/services/realtime_observation_service.dart",
-      "func": "observe",
-      "start": 68,
-      "end": 126,
-      "lines": 59
-    },
-    {
       "file": "lib/services/training_evaluator.dart",
       "func": "buildEvaluationSummary",
       "start": 518,
@@ -1409,13 +1402,6 @@
       "start": 315,
       "end": 371,
       "lines": 57
-    },
-    {
-      "file": "lib/services/error_handler.dart",
-      "func": "captureError",
-      "start": 132,
-      "end": 187,
-      "lines": 56
     },
     {
       "file": "lib/services/student_profile.dart",
@@ -1534,13 +1520,6 @@
       "func": "copyWith",
       "start": 116,
       "end": 167,
-      "lines": 52
-    },
-    {
-      "file": "lib/services/growth_service.dart",
-      "func": "getSyndromeRecurrences",
-      "start": 457,
-      "end": 508,
       "lines": 52
     },
     {
