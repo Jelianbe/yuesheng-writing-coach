@@ -170,8 +170,11 @@ def main() -> int:
         return 1
     if args.json:
         _dump(args.json, graph)
-    extra = f'，基线豁免 {len(baseline_keys)} 个存量环' if args.baseline else ''
-    print(f'OK: no new circular imports in lib ({len(graph)} modules{extra})')
+    if args.baseline:
+        print('OK: no new circular imports in lib '
+              f'({len(graph)} modules，基线豁免 {len(baseline_keys)} 个存量环)')
+    else:
+        print(f'OK: no circular imports in lib ({len(graph)} modules，全量卡口)')
     return 0
 
 
