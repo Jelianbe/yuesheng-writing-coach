@@ -86,39 +86,7 @@ String buildManuscriptExportText(
   final groups = volumes.isEmpty
       ? const <VolumeGroup>[]
       : groupChaptersByVolume(volumes, chapters);
-
-  String body;
-  if (groups.isEmpty) {
-    // 无卷：章节顺序平铺
-    final sorted = [...chapters]
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    body = sorted.indexed
-        .map(
-          (e) =>
-              buildChapterExportText(e.$2, format: format, chapterNo: e.$1 + 1),
-        )
-        .join('\n\n');
-  } else {
-    final parts = <String>[];
-    for (final group in groups) {
-      final v = group.volume;
-      parts.add(
-        v == null
-            // 未分卷组
-            ? group.chapters.indexed
-                  .map(
-                    (e) => buildChapterExportText(
-                      e.$2,
-                      format: format,
-                      chapterNo: e.$1 + 1,
-                    ),
-                  )
-                  .join('\n\n')
-            : buildVolumeExportText(v, group.chapters, format: format),
-      );
-    }
-    body = parts.where((s) => s.isNotEmpty).join('\n\n');
-  }
+  final body = _buildBody(groups, chapters, format);
 
   switch (format) {
     case ExportFormat.txt:
@@ -126,6 +94,48 @@ String buildManuscriptExportText(
     case ExportFormat.markdown:
       return body.isEmpty ? '# $bookTitle\n\n（暂无章节）' : '# $bookTitle\n\n$body';
   }
+}
+
+/// 组装整书正文：无卷时章节平铺，有卷时按卷分组（未分卷组置末）。
+///
+/// R-019：由 [buildManuscriptExportText] 抽出，主函数只保留标题解析与
+/// 格式包装（53 → 18 行）。分组策略本身未改，仅移动到此处。
+String _buildBody(
+  List<VolumeGroup> groups,
+  List<Chapter> chapters,
+  ExportFormat format,
+) {
+  if (groups.isEmpty) {
+    // 无卷：章节顺序平铺
+    final sorted = [...chapters]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return sorted.indexed
+        .map(
+          (e) =>
+              buildChapterExportText(e.$2, format: format, chapterNo: e.$1 + 1),
+        )
+        .join('\n\n');
+  }
+
+  final parts = <String>[];
+  for (final group in groups) {
+    final v = group.volume;
+    parts.add(
+      v == null
+          // 未分卷组
+          ? group.chapters.indexed
+                .map(
+                  (e) => buildChapterExportText(
+                    e.$2,
+                    format: format,
+                    chapterNo: e.$1 + 1,
+                  ),
+                )
+                .join('\n\n')
+          : buildVolumeExportText(v, group.chapters, format: format),
+    );
+  }
+  return parts.where((s) => s.isNotEmpty).join('\n\n');
 }
 
 /// 生成安全文件名（去除路径非法字符）
