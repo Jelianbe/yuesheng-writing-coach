@@ -28,6 +28,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -88,6 +89,9 @@ void main() {
   tearDown(() async => db.close());
 
   /// 构造 ChatService
+  ///
+  /// ADR-C74 K-2：阶段迁移已迁至 DiagnosisCommitter.applyPhaseMigration，
+  /// 构造时必须装 DiagnosisCommitter 否则 sendMessage 链路退化为不调迁移。
   ChatService buildChatService(LlmClient llmClient) {
     return ChatService(
       sessionRepo: sessionRepo,
@@ -100,6 +104,12 @@ void main() {
       llmClient: llmClient,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
       editorObservationRepo: EditorObservationRepository(db),
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: sessionRepo,
+        stateRepo: stateRepo,
+        diagnosisRepo: diagnosisRepo,
+        studentModelRepo: studentModelRepo,
+      ),
     );
   }
 
