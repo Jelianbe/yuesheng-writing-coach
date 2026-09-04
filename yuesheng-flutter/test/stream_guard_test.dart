@@ -80,4 +80,43 @@ void main() {
 
     await expectLater(guarded, emitsInOrder([equals('x'), equals('y')]));
   });
+
+  // ── 批次 J-A：补 V4.21 真覆盖（错误透传 + cancelOnError: false 契约）──
+
+  test('#G5 source 抛错 → guarded 透传同一错误（含 stackTrace）', () async {
+    final src = StreamController<String>();
+    final guarded = guardStream(
+      src.stream,
+      connectTimeout: kShort,
+      idleTimeout: kShort,
+    );
+
+    final boom = StateError('模拟服务端 RPC 失败');
+    src.addError(boom);
+
+    await expectLater(guarded, emitsError(predicate((Object e) => e == boom)));
+    await src.close();
+  });
+
+  test(
+    '#G6 错误后 source 仍能 add 数据 → guarded 继续透传（cancelOnError: false 生效）',
+    () async {
+      final src = StreamController<String>();
+      final guarded = guardStream(
+        src.stream,
+        connectTimeout: kShort,
+        idleTimeout: kShort,
+      );
+
+      src.addError(StateError('首错'));
+      // cancelOnError: false → 错误后 source 仍可继续 add，guard 不应自动断开
+      src.add('错误后还能收到');
+
+      await expectLater(
+        guarded,
+        emitsInOrder([emitsError(isA<StateError>()), equals('错误后还能收到')]),
+      );
+      await src.close();
+    },
+  );
 }
