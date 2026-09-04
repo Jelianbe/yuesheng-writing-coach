@@ -401,10 +401,20 @@ TrainingTask? _parseTrainingTask(
 
 // ─── 一致性检查 ────────────────────────────────────────────────
 
+/// 教学输出一致性检查主入口：决策↔任务一致性 + 语言洁净度（判决词/症候 ID）。
 TeacherConsistencyResult checkTeacherConsistency(TeacherResult result) {
   final violations = <TeacherConsistencyViolation>[];
+  _checkDecisionTaskConsistency(result, violations);
+  _checkLanguageHygiene(result, violations);
+  final hasError = violations.any((v) => v.severity == 'error');
+  return TeacherConsistencyResult(passed: !hasError, violations: violations);
+}
 
-  // decision ↔ task 一致性
+/// decision ↔ training_task 一致性（encourage/defer 不带 task；guide/train 必须带）。
+void _checkDecisionTaskConsistency(
+  TeacherResult result,
+  List<TeacherConsistencyViolation> violations,
+) {
   if (result.teachingDecision == 'encourage' ||
       result.teachingDecision == 'defer') {
     if (result.trainingTask != null) {
@@ -429,8 +439,13 @@ TeacherConsistencyResult checkTeacherConsistency(TeacherResult result) {
       );
     }
   }
+}
 
-  // natural_language 判决词
+/// natural_language 洁净度（判决词 + 症候 ID 泄漏检查）。
+void _checkLanguageHygiene(
+  TeacherResult result,
+  List<TeacherConsistencyViolation> violations,
+) {
   final verdictHits = detectTeacherVerdictWords(result.naturalLanguage);
   if (verdictHits.isNotEmpty) {
     violations.add(
@@ -441,8 +456,6 @@ TeacherConsistencyResult checkTeacherConsistency(TeacherResult result) {
       ),
     );
   }
-
-  // natural_language 症候 ID 泄漏
   final syndromeHits = detectSyndromeIdLeak(result.naturalLanguage);
   if (syndromeHits.isNotEmpty) {
     violations.add(
@@ -453,9 +466,6 @@ TeacherConsistencyResult checkTeacherConsistency(TeacherResult result) {
       ),
     );
   }
-
-  final hasError = violations.any((v) => v.severity == 'error');
-  return TeacherConsistencyResult(passed: !hasError, violations: violations);
 }
 
 // ─── 完整校验入口 ──────────────────────────────────────────────
