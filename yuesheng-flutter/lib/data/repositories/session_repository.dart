@@ -17,9 +17,14 @@ class SessionRepository {
 
   /// 创建空白会话，返回 id
   /// 复刻 createBlankSession(title?)
+  ///
+  /// ADR-C71 §3.3：beginnerLevel 是用户级学习属性（N 系课程进度坐标），
+  /// 新会话继承全库最新非空值，否则零基础学员每段新对话都要重新赌
+  /// LLM 块回填（N-1）。phase/subphase/attitudeLevel 维持会话级，不继承。
   Future<String> createBlankSession({String? title}) async {
     final id = generateUuid();
     final now = nowSec();
+    final inheritedLevel = await _latestBeginnerLevel();
     await _db.transaction(() async {
       await _db
           .into(_db.sessions)
@@ -41,11 +46,31 @@ class SessionRepository {
               id: generateUuid(),
               sessionId: id,
               currentPhase: const Value('P0_ENGAGE'),
+              // ADR-C71 §3.3：beginnerLevel 用户级继承
+              beginnerLevel: inheritedLevel == null
+                  ? const Value.absent()
+                  : Value(inheritedLevel),
               updatedAt: Value(now),
             ),
           );
     });
     return id;
+  }
+
+  /// 全库最新非空 beginnerLevel（ADR-C71；无任何历史时返回 null）
+  Future<String?> _latestBeginnerLevel() async {
+    final row =
+        await (_db.select(_db.teachingState)
+              ..where((t) => t.beginnerLevel.isNotNull())
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.updatedAt,
+                  mode: OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    return row?.beginnerLevel;
   }
 
   /// 获取或创建稿件/章节关联会话

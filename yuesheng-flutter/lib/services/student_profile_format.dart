@@ -91,6 +91,13 @@ String formatProfileText(
       '- 学习偏好：${_cognitiveStyleLabel(onboarding.cognitiveStyle)}（${_cognitiveStyleDesc(onboarding.cognitiveStyle)}）',
     );
     sections.add('- 写作目标：${onboarding.writingGoal}');
+    // ADR-C71 §3.4：此前本节只陈述不消费——补一段明确的教学加权指令。
+    // 保持通用（不建静态映射表）；R-009 优先级显式写明：当轮请求压过问卷画像。
+    sections.add(
+      '- 教学加权（系统指令）：选择练习类型与举例素材时优先倾向「关注领域」，'
+      '按「学习偏好」调整讲解与练习的密度配比；'
+      '与学员当轮的明确请求冲突时，一律以当轮为准',
+    );
     sections.add('');
   }
 
@@ -160,7 +167,10 @@ String formatProfileText(
   sections.add('依据：$profReason');
   sections.add('');
 
-  if (profile.cognitiveStyle != null) {
+  // ADR-C71 §3.4：onboarding 存在时，认知风格与上方「学习偏好」同源同值，
+  // 重复输出且「依据」行会失实（声称关键词推断，实为问卷自报）——跳过本段，
+  // 仅在画像来自关键词推断时展示。
+  if (profile.cognitiveStyle != null && onboarding == null) {
     final styleLabel = _cognitiveStyleLabel(profile.cognitiveStyle!.style);
     sections.add(
       '认知风格：$styleLabel（置信度 ${(profile.cognitiveStyle!.confidence * 100).toStringAsFixed(0)}%）',
