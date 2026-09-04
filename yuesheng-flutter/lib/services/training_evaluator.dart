@@ -526,12 +526,48 @@ EvaluationSummary buildEvaluationSummary(
     inputs.stateTransitionInput,
   );
   final minData = checkMinimumData(inputs.minDataInput);
+  final passRate = _computePassRate(inputs.passRateInput);
 
-  final passRate = inputs.passRateInput.totalCount > 0
-      ? inputs.passRateInput.passCount / inputs.passRateInput.totalCount
-      : 0.0;
+  return EvaluationSummary(
+    syndromeId: syndromeId,
+    currentSeverity: inputs.severityInput.currentSeverity,
+    previousSeverity: inputs.severityInput.previousSeverity,
+    trend: severityTrend,
+    comprehensiveJudgment: comprehensiveResult,
+    teachingState: stateTransition.newState,
+    trainingCount: inputs.passRateInput.totalCount,
+    passRate: passRate,
+    deteriorationSignal: deterioration.signal,
+    minData: minData,
+    contextInjection: _buildContextInjection(
+      syndromeId: syndromeId,
+      inputs: inputs,
+      severityTrend: severityTrend,
+      comprehensiveResult: comprehensiveResult,
+      deterioration: deterioration,
+      stateTransition: stateTransition,
+      minData: minData,
+      passRate: passRate,
+    ),
+  );
+}
 
-  // 构建上下文注入文本
+/// 批次 J-A：达标率计算 + totalCount=0 除零保护（挡 NaN 进 prompt）
+double _computePassRate(PassRateInput input) {
+  return input.totalCount > 0 ? input.passCount / input.totalCount : 0.0;
+}
+
+/// 批次 J-A：组装注入 prompt 的可读上下文（按条件追加干预建议 / 表述约束）
+String _buildContextInjection({
+  required String syndromeId,
+  required EvaluationSummaryInput inputs,
+  required TrendJudgment severityTrend,
+  required ComprehensiveJudgment comprehensiveResult,
+  required DeteriorationResult deterioration,
+  required StateTransitionResult stateTransition,
+  required MinDataResult minData,
+  required double passRate,
+}) {
   final lines = <String>[
     '[训练评估（代码计算）]',
     '症候: $syndromeId',
@@ -552,18 +588,5 @@ EvaluationSummary buildEvaluationSummary(
     }
   }
   lines.add('[/训练评估]');
-
-  return EvaluationSummary(
-    syndromeId: syndromeId,
-    currentSeverity: inputs.severityInput.currentSeverity,
-    previousSeverity: inputs.severityInput.previousSeverity,
-    trend: severityTrend,
-    comprehensiveJudgment: comprehensiveResult,
-    teachingState: stateTransition.newState,
-    trainingCount: inputs.passRateInput.totalCount,
-    passRate: passRate,
-    deteriorationSignal: deterioration.signal,
-    minData: minData,
-    contextInjection: lines.join('\n'),
-  );
+  return lines.join('\n');
 }
