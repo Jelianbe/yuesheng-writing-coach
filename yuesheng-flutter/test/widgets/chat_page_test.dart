@@ -43,6 +43,7 @@ import 'package:writingcoach/providers/practice_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/bootstrap_service.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
@@ -1943,6 +1944,15 @@ class _FakeChatService extends ChatService {
         llmClient: LlmClient(),
         teacherSuggestionRepo: TeacherSuggestionRepository(_db),
         editorObservationRepo: EditorObservationRepository(_db),
+        // ADR-C74 K-5：诊断提交编排器收紧为 required
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: SessionRepository(_db),
+          stateRepo: TeachingStateRepository(_db),
+          diagnosisRepo: DiagnosisRepository(_db),
+          studentModelRepo: StudentModelRepository(_db),
+          referenceRepo: ReferenceRepository(_db),
+          chapterRepo: ChapterRepository(_db),
+        ),
       );
 
   final AppDatabase _db;

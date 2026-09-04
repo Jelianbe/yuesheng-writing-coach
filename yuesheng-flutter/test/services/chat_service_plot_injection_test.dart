@@ -25,6 +25,7 @@ import 'package:writingcoach/data/repositories/subplot_fact_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -111,6 +112,17 @@ void main() {
       editorObservationRepo: EditorObservationRepository(db),
       eventFactRepo: eventRepo,
       subplotFactRepo: subplotRepo,
+      // ADR-C74 K-5：诊断提交编排器收紧为 required
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: sessionRepo,
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        eventFactRepo: eventRepo,
+        subplotFactRepo: subplotRepo,
+      ),
     );
   }
 

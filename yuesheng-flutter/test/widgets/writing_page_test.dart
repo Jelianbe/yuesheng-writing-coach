@@ -39,6 +39,7 @@ import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -577,6 +578,15 @@ void main() {
               llmClient: FakeLlmClient('诊断完成。本章结构清晰。'),
               teacherSuggestionRepo: TeacherSuggestionRepository(db),
               editorObservationRepo: EditorObservationRepository(db),
+              // ADR-C74 K-5：诊断提交编排器收紧为 required
+              diagnosisCommitter: DiagnosisCommitter(
+                sessionRepo: SessionRepository(db),
+                stateRepo: TeachingStateRepository(db),
+                diagnosisRepo: DiagnosisRepository(db),
+                studentModelRepo: StudentModelRepository(db),
+                referenceRepo: ReferenceRepository(db),
+                chapterRepo: ChapterRepository(db),
+              ),
             );
           }),
           realtimeObservationServiceProvider.overrideWith((ref) {

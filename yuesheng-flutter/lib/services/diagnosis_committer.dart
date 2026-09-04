@@ -44,7 +44,8 @@ import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/message_card_service.dart';
 import 'package:writingcoach/services/outline_parser.dart';
 import 'package:writingcoach/services/outline_service.dart';
-import 'package:writingcoach/services/chat_context_builder.dart' show ReferenceItem;
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show ReferenceItem;
 import 'package:writingcoach/services/phase_mapper_resolver.dart';
 import 'package:writingcoach/services/phase_transition.dart';
 import 'package:writingcoach/data/database/utils.dart';
@@ -176,7 +177,6 @@ class DiagnosisCommitter {
   ///   2. effectivePhase → M4-B validatePhaseTransition 校验 → updatePhase + 子阶段重置 + 升级卡片
   ///   3. effectiveBeginnerLevel → updateBeginnerLevel
   ///   4. 所有活跃症候已 resolved → M4-A 自动迁移（M4-C 达标率 ≥ phasePassRate 才放行）
-  @visibleForTesting
   Future<void> applyPhaseMigration({
     required String sessionId,
     required ParsedDiagnosis? diagnosis,
@@ -407,7 +407,6 @@ class DiagnosisCommitter {
   // ─────────────────────────────────────────────────────────────
 
   /// 批次64（B62f）：声线漂移提示上下文——引导 AI 以提问方式温和指出其中一条
-  @visibleForTesting
   String buildDriftHintContext(List<String> hints) {
     return '## 声线漂移检测（L3→L1 实时反馈）\n\n'
         '检测到写作特征与既有风格基线出现明显偏差。\n'
@@ -422,7 +421,6 @@ class DiagnosisCommitter {
   /// 指导 AI 在诊断回复中附加 [YS_FACT] 块，提取人物/事件/支线三类结构化事实，
   /// 供系统 upsert 到 TKG 三表，驱动时序矛盾/因果链/情节闭环检测。
   /// 与 [YS_DIAGNOSIS]、[YS_ENTITY] 并列独立，输出顺序排在最后。
-  @visibleForTesting
   String buildFactProtocolContext() {
     return '## 时序知识图谱事实沉淀（输出顺序约束）\n\n'
         '【输出顺序】若同时输出诊断块、实体块与事实块，**必须严格按此顺序**：\n'
@@ -483,7 +481,6 @@ class DiagnosisCommitter {
   /// 失败/未装配/无大纲块/非章节主引用 → 静默跳过不抛。
   /// 优先使用入参传入的 primaryRef（sendMessage 路径）；
   /// 若未传（commitDiagnosisFromContent 路径）则从 session 的当前引用取。
-  @visibleForTesting
   Future<void> applyOutlineEntitiesFromContent({
     required String sessionId,
     required String fullContent,
@@ -570,7 +567,6 @@ class DiagnosisCommitter {
   /// 失败/未装配/无事实块/非章节 → 静默跳过不抛。
   /// 优先使用入参 primaryRef（sendMessage 路径）；
   /// 若未传（commitDiagnosisFromContent 路径）则从 session 引用取。
-  @visibleForTesting
   Future<void> applyFactExtractionFromContent({
     required String sessionId,
     required String fullContent,

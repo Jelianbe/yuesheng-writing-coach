@@ -43,6 +43,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -226,6 +227,16 @@ void main() {
           teacherSuggestionRepo: TeacherSuggestionRepository(db),
           editorObservationRepo: EditorObservationRepository(db),
           outlineRepo: outlineRepo,
+          // ADR-C74 K-5：诊断提交编排器收紧为 required
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+            stateRepo: TeachingStateRepository(db),
+            diagnosisRepo: DiagnosisRepository(db),
+            studentModelRepo: StudentModelRepository(db),
+            referenceRepo: refRepo,
+            chapterRepo: chRepo,
+            outlineRepo: outlineRepo,
+          ),
         );
 
         // 对齐 UI 层诊断触发（写作诊断分析 + 章节名/内容 + [YS_DIAGNOSIS] 输出指令）
