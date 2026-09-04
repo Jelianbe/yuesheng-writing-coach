@@ -142,6 +142,22 @@ ProficiencyInference inferProficiency(List<Severity> history) {
   final l3Count = history.where((s) => s == Severity.l3).length;
   final l2Count = history.where((s) => s == Severity.l2).length;
 
+  final beginner = _beginnerInference(l3Count, l2Count, total);
+  if (beginner != null) return beginner;
+
+  final advanced = _advancedInference(history);
+  if (advanced != null) return advanced;
+
+  return ProficiencyInference(
+    level: ProficiencyLevel.intermediate,
+    confidence: _intermediateConfidence(total),
+  );
+}
+
+/// l3 / l2 重度占比达标 → beginner；否则返回 null 交由后续档位判定。
+///
+/// 两条分支各自用自己的常量对（真源 student-profile-compute.ts 同构）。
+ProficiencyInference? _beginnerInference(int l3Count, int l2Count, int total) {
   if (l3Count >= ProficiencyThresholds.beginnerL3CountThreshold) {
     return ProficiencyInference(
       level: ProficiencyLevel.beginner,
@@ -160,7 +176,13 @@ ProficiencyInference inferProficiency(List<Severity> history) {
       ),
     );
   }
+  return null;
+}
 
+/// 近期窗口（长度 `advancedRecentWindow`）内全为 l1 且样本数达标 → advanced。
+///
+/// 样本不足窗口长度时取整条历史（不足 `advancedRecentMin` 会被判据挡下）。
+ProficiencyInference? _advancedInference(List<Severity> history) {
   final windowSize = ProficiencyThresholds.advancedRecentWindow;
   final recent5 = history.length > windowSize
       ? history.sublist(history.length - windowSize)
@@ -172,19 +194,18 @@ ProficiencyInference inferProficiency(List<Severity> history) {
       confidence: ProficiencyThresholds.advancedConfidence,
     );
   }
+  return null;
+}
 
-  double confidence;
+/// 未命中 beginner / advanced 时，按样本量分档给出 intermediate 置信度。
+double _intermediateConfidence(int total) {
   if (total < ProficiencyThresholds.intermediateLowSampleThreshold) {
-    confidence = ProficiencyThresholds.lowSampleConfidence;
-  } else if (total < ProficiencyThresholds.intermediateMidSampleThreshold) {
-    confidence = ProficiencyThresholds.midSampleConfidence;
-  } else {
-    confidence = ProficiencyThresholds.highSampleConfidence;
+    return ProficiencyThresholds.lowSampleConfidence;
   }
-  return ProficiencyInference(
-    level: ProficiencyLevel.intermediate,
-    confidence: confidence,
-  );
+  if (total < ProficiencyThresholds.intermediateMidSampleThreshold) {
+    return ProficiencyThresholds.midSampleConfidence;
+  }
+  return ProficiencyThresholds.highSampleConfidence;
 }
 
 /// 症候优先级排序
