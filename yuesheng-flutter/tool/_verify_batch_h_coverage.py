@@ -28,7 +28,9 @@ import subprocess
 import sys
 
 FLUTTER = (
-    shutil.which('flutter.bat')
+    shutil.which('flutter_env.bat')
+    or r'C:\Users\NewName\flutter_env.bat'
+    or shutil.which('flutter.bat')
     or shutil.which('flutter')
     or r'D:\flutter\bin\flutter.bat'
 )
@@ -117,6 +119,23 @@ MUTATIONS = [
      "if (content.length <= kDiagnosisChunkSize) {",
      "if (content.length < kDiagnosisChunkSize) {",
      '恰等于阈值 → 单块（拦 #5，挂死形式）', PROG_TESTS),
+
+    # ── H-5: splitContent 单段原子性（死循环修复，ADR-C73 §2）──
+    # 同样以**同步死循环**挂死形式拦截——把强制推进 startIndex 那行
+    # 注释掉，还原批次 H 侦察时的死循环形态。run_tests 240s 兜底。
+    ('H5-V1 单段原子', PROG_SRC,
+     "if (endIndex == startIndex) {\n"
+     "      chunks.add(paragraphs[startIndex]);\n"
+     "      startIndex = startIndex + 1;\n"
+     "      continue;\n"
+     "    }",
+     "if (endIndex == startIndex) {\n"
+     "      chunks.add(paragraphs[startIndex]);\n"
+     "      // startIndex = startIndex + 1;  // 变异：禁用推进\n"
+     "      continue;\n"
+     "    }",
+     '首段即超阈值 → 整段成块 + 推进 startIndex（拦 #6/#7，挂死形式）',
+     PROG_TESTS),
 ]
 
 PROCESS_TIMEOUT_MARK = '__PROCESS_TIMEOUT__'
