@@ -41,6 +41,7 @@ import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 
@@ -122,6 +123,19 @@ void main() {
       eventFactRepo: EventFactRepository(db),
       subplotFactRepo: SubplotFactRepository(db),
       outlineRepo: OutlineRepository(db),
+      // ADR-C74 K-4：实体/事实落库辅助需要 DiagnosisCommitter
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: SessionRepository(db),
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        characterFactRepo: CharacterFactRepository(db),
+        eventFactRepo: EventFactRepository(db),
+        subplotFactRepo: SubplotFactRepository(db),
+        outlineRepo: OutlineRepository(db),
+      ),
     );
   }
 
