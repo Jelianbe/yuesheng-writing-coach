@@ -43,6 +43,7 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/providers/evaluation_providers.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/evaluation_service.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -207,6 +208,19 @@ void main() {
         characterFactRepo: charFactRepo,
         eventFactRepo: eventFactRepo,
         subplotFactRepo: subplotFactRepo,
+        // ADR-C74 K-5：诊断提交编排器收紧为 required
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: stateRepo,
+          diagnosisRepo: diagRepo,
+          studentModelRepo: studentModelRepo,
+          referenceRepo: refRepo,
+          chapterRepo: chapterRepo,
+          outlineRepo: outlineRepo,
+          characterFactRepo: charFactRepo,
+          eventFactRepo: eventFactRepo,
+          subplotFactRepo: subplotFactRepo,
+        ),
       );
 
       // ── 环节 1 + 2：诊断 + 沉淀（真实 LLM）──
@@ -430,6 +444,19 @@ void main() {
         characterFactRepo: charFactRepo,
         eventFactRepo: eventFactRepo,
         subplotFactRepo: subplotFactRepo,
+        // ADR-C74 K-5：诊断提交编排器收紧为 required
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: stateRepo,
+          diagnosisRepo: diagRepo,
+          studentModelRepo: studentModelRepo,
+          referenceRepo: refRepo,
+          chapterRepo: chapterRepo,
+          outlineRepo: outlineRepo,
+          characterFactRepo: charFactRepo,
+          eventFactRepo: eventFactRepo,
+          subplotFactRepo: subplotFactRepo,
+        ),
       );
       await migrationService.sendMessage(
         sessionId,

@@ -32,6 +32,7 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -131,6 +132,15 @@ void main() {
           llmClient: LlmClient(),
           teacherSuggestionRepo: TeacherSuggestionRepository(db),
           editorObservationRepo: EditorObservationRepository(db),
+          // ADR-C74 K-5：诊断提交编排器收紧为 required
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+            stateRepo: TeachingStateRepository(db),
+            diagnosisRepo: diagRepo,
+            studentModelRepo: StudentModelRepository(db),
+            referenceRepo: ReferenceRepository(db),
+            chapterRepo: ChapterRepository(db),
+          ),
         );
 
         // 学员文本（对齐 promptfoo TC-01 平淡叙事：无冲突、情绪标签）

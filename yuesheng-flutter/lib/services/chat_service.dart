@@ -187,7 +187,7 @@ class ChatService {
   /// K-1 阶段：nullable + ChatService 不消费，仅证明「独立类 + DI」路径
   /// 可行（X-025-ARCH 教训复盘）。K-2 ~ K-5 阶段随方法迁入时逐步收紧为
   /// non-null + required；K-5 收尾时本字段升级。
-  final DiagnosisCommitter? _diagnosisCommitter;
+  final DiagnosisCommitter _diagnosisCommitter;
 
   /// B1：诊断连续失败计数（内存态，按 session 隔离）。
   /// 用于诊断失败卡阈值门控——连续失败达 UILimits.failureWarningThreshold 才插卡，
@@ -304,7 +304,7 @@ class ChatService {
     SubplotFactRepository? subplotFactRepo,
     OutlineRepository? outlineRepo,
     // ADR-C74 K-1：诊断提交编排器，K-1 阶段 nullable（不破坏现有 30+ 测试构造）
-    DiagnosisCommitter? diagnosisCommitter,
+    required DiagnosisCommitter diagnosisCommitter,
   }) : _sessionRepo = sessionRepo,
        _stateRepo = stateRepo,
        _diagnosisRepo = diagnosisRepo,
@@ -553,13 +553,13 @@ extension ChatServiceDiagnosis on ChatService {
     // （commitDiagnosisFromContent 不传 primaryRef，内部会从 session 查当前章节主引用；
     //   无装配/无大纲块/非章节 → 静默跳过）
     // ADR-C74 K-4：实体/事实落库辅助已迁至 DiagnosisCommitter
-    await _diagnosisCommitter?.applyOutlineEntitiesFromContent(
+    await _diagnosisCommitter.applyOutlineEntitiesFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
     );
 
     // A6：D4-A 路径也沉淀事实到 TKG 三表
-    await _diagnosisCommitter?.applyFactExtractionFromContent(
+    await _diagnosisCommitter.applyFactExtractionFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
     );
@@ -668,7 +668,7 @@ extension ChatServiceDiagnosis on ChatService {
         // 批次6 D1：分块诊断路径复用阶段迁移（resolver + M4-A 自动迁移 + M4-C 达标率校验），
         // 与 sendMessage 单次诊断路径行为一致，超长章节诊断完成后也能推进阶段/升级卡片
         // ADR-C74 K-2：阶段迁移已迁至 DiagnosisCommitter.applyPhaseMigration
-        await _diagnosisCommitter?.applyPhaseMigration(
+        await _diagnosisCommitter.applyPhaseMigration(
           sessionId: sessionId,
           diagnosis: diagnosis,
         );
@@ -687,6 +687,7 @@ extension ChatServiceDiagnosis on ChatService {
     return messageId;
   }
 }
+
 extension ChatServiceDiagnosisFocus on ChatService {
   /// 批次1（O1）：Teacher 升级阀——某症候严重度达阈值或诊断次数达阈值时，
   /// 绕过心流窗口（持续写作学员「编辑器活跃 120s」恒真 → 建议永远出不来 →
@@ -1296,7 +1297,7 @@ extension ChatServiceSendInject on ChatService {
         // ADR-C74 K-3：协议块字符串构造已迁至 DiagnosisCommitter
         ChatMessage(
           role: 'system',
-          content: _diagnosisCommitter?.buildFactProtocolContext() ?? '',
+          content: _diagnosisCommitter.buildFactProtocolContext(),
         ),
       );
     }
@@ -1374,8 +1375,7 @@ extension ChatServiceSendObservations on ChatService {
                 ChatMessage(
                   // ADR-C74 K-3：协议块字符串构造已迁至 DiagnosisCommitter
                   role: 'system',
-                  content:
-                      _diagnosisCommitter?.buildDriftHintContext(hints) ?? '',
+                  content: _diagnosisCommitter.buildDriftHintContext(hints),
                 ),
               );
             }
@@ -1761,7 +1761,7 @@ extension ChatServiceSendParse on ChatService {
     // 步骤 9.1：大纲提取落库（批次72，独立 OUTLINE 块，失败/未装配不阻断）
     // 批次73：落库后为含 pending 印象的实体写入确认卡片
     // ADR-C74 K-4：迁至 DiagnosisCommitter
-    await _diagnosisCommitter?.applyOutlineEntitiesFromContent(
+    await _diagnosisCommitter.applyOutlineEntitiesFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
       primaryRef: primaryRef,
@@ -1769,7 +1769,7 @@ extension ChatServiceSendParse on ChatService {
 
     // 步骤 9.2：A6 事实提取落库（时序知识图谱写入路径，失败不阻断）
     // ADR-C74 K-4：迁至 DiagnosisCommitter
-    await _diagnosisCommitter?.applyFactExtractionFromContent(
+    await _diagnosisCommitter.applyFactExtractionFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
       primaryRef: primaryRef,
@@ -1983,7 +1983,7 @@ extension ChatServiceSendPersist on ChatService {
         // phase-mapper resolver 接线 + M4-A/M4-B/M4-C 阶段迁移（批次6 D1 抽取为共享方法）
         // 供 sendMessage 与 commitDiagnosisFromContent 复用，保证两条诊断路径行为一致
         // ADR-C74 K-2：阶段迁移已迁至 DiagnosisCommitter.applyPhaseMigration
-        await _diagnosisCommitter?.applyPhaseMigration(
+        await _diagnosisCommitter.applyPhaseMigration(
           sessionId: sessionId,
           diagnosis: diagnosis,
         );
