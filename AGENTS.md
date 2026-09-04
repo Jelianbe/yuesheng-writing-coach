@@ -247,6 +247,10 @@ python tool/check_r019.py --baseline tool/r019_baseline.json
 新增安全 / 密钥扫描与 R-019 函数行数，编号 0–5，见「构建与测试」节）；
 移除整节 IPC 规范；
 补入函数 50 行硬上限与 part/extension 伪拆分禁令；文档索引指向 Flutter 真源侧。
+**2026-09-04 补丁** — V4.22：沙箱会话缺 `PROGRAMFILES(X86)` 致 `flutter test`
+静默假绿——新增 `scripts/_run_flutter_test.sh` wrapper，`gate.sh` 门禁 2 改走它。
+附 E2E 测试 `test/services/progressive_diagnosis_e2e_test.dart`（5 用例，
+真实诊断文本切片场景真机复核）。
 （V4.1：补入文档总索引与 R-030 三份流程模板的路径，原缺口已补齐。）
 （V4.2：门禁节补入「测试跑不起来先查代理」——HTTP_PROXY 无 NO_PROXY 时
 flutter_tester 本地 WebSocket 被劫持，表现为所有测试 Failed to load。）
@@ -436,3 +440,38 @@ max、progress 缺 label、timeline 缺 date、quiz answer 类型。漏掉是因
 代理**，否则门禁会在某些会话环境下集体假红（错误行同样带 `[E]`，会让变异判据
 假绿），本次直接修了 `gate.sh` 内联 `env HTTP_PROXY= HTTPS_PROXY= ... flutter test`
 调用——此前的「单跑命令清代理、跑门禁失败」的根因就是 `gate.sh` 自身没清。）
+
+（V4.22：**沙箱会话缺 `PROGRAMFILES(X86)` 会让 `flutter test` 静默假绿**——
+2026-09-04 批次 I 实证。AI 工具沙箱会话可能不注入 Windows 标准环境变量，
+flutter.bat 内部调用 `internal/update_engine_version.ps1` 检查
+`Test-Path env:PROGRAMFILES(X86)` 失败后报错退出：
+
+```
+%PROGRAMFILES(X86)% environment variable not found.
+```
+
+**故障表现格外阴险**：
+
+1. `flutter --version` **能正常输出**——它走 `internal/shared.sh`（Bash 路径），
+   不经过 `update_engine_version.ps1`，让你以为「flutter 工作正常」。
+2. `flutter test` 走 `flutter.bat` 链，触发 `update_engine_version.ps1`，
+   报错后**测试零输出 / 假绿**。
+3. 用 `flutter test ... | tail -20; echo $?` 取退出码时，拿到的是 **tail 的 0**，
+   与 dart 完全无关（V4.5 陷阱的再变种）——看起来一切正常，实质门禁没跑。
+
+**判别口诀**：「`flutter --version` 通 ≠ `flutter test` 通」。
+`sandbox` 环境下必须实际跑一次 `flutter test <已知全绿的文件>` 验证加载是否正常，
+否则门禁假绿无人察觉。
+
+**解法**：`scripts/_run_flutter_test.sh`（sandbox-aware wrapper）。
+原值优先（`${VAR:-default}`），仅缺时注入 Windows 标准值；其他环境完全不变。
+`scripts/gate.sh` 门禁 2 已统一改走 wrapper，**一行 `bash scripts/gate.sh` 即过**。
+手跑测试也用：
+
+```bash
+bash scripts/_run_flutter_test.sh test/<file>.dart --exclude-tags live,external --no-pub
+```
+
+若日后 wrapper 自身出问题（例如 Flutter SDK 升级加了新的环境变量依赖），
+保留「先实跑一个不相关测试做对照」的诊断口诀；零输出即视为环境问题，
+不要凭「退出码 0」判断测试通过。
