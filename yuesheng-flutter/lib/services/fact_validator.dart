@@ -192,50 +192,64 @@ List<EventFactUpdate> _parseEvents(
       errors.add(FactValidationError(field: 'events[$i]', message: '必须是对象'));
       continue;
     }
-    final name = e['name'];
-    if (name is! String || name.trim().isEmpty) {
-      errors.add(
-        FactValidationError(field: 'events[$i].name', message: '必须为非空字符串'),
-      );
-      continue;
-    }
-    final eventType = e['event_type'] ?? e['eventType'];
-    if (eventType is! String || eventType.trim().isEmpty) {
-      errors.add(
-        FactValidationError(
-          field: 'events[$i].event_type',
-          message: '必须为非空字符串（支持 event_type/eventType 双键）',
-        ),
-      );
-      continue;
-    }
-    final chapter = (e['chapter'] as num?)?.toInt();
-    final participantsRaw = e['participants'];
-    final participants = participantsRaw is List
-        ? participantsRaw
-              .whereType<String>()
-              .where((p) => p.isNotEmpty)
-              .toList()
-        : const <String>[];
-    final description = (e['description'] as String?) ?? '';
-    // 批次3-D4：解析触发事件名（支持 cause_event_name / causeEventName 两种键）
-    final causeEventName =
-        (e['cause_event_name'] as String? ?? e['causeEventName'] as String?)
-            ?.trim();
-    final cause = (causeEventName?.isEmpty ?? true) ? null : causeEventName;
-
-    result.add(
-      EventFactUpdate(
-        name: name,
-        eventType: eventType,
-        chapter: chapter,
-        participants: participants,
-        description: description,
-        causeEventName: cause,
-      ),
-    );
+    final update = _extractEventFields(i, e, errors);
+    if (update != null) result.add(update);
   }
   return result;
+}
+
+EventFactUpdate? _extractEventFields(
+  int i,
+  Map<String, dynamic> e,
+  List<FactValidationError> errors,
+) {
+  final name = e['name'];
+  if (name is! String || name.trim().isEmpty) {
+    errors.add(
+      FactValidationError(field: 'events[$i].name', message: '必须为非空字符串'),
+    );
+    return null;
+  }
+  final eventType = e['event_type'] ?? e['eventType'];
+  if (eventType is! String || eventType.trim().isEmpty) {
+    errors.add(
+      FactValidationError(
+        field: 'events[$i].event_type',
+        message: '必须为非空字符串（支持 event_type/eventType 双键）',
+      ),
+    );
+    return null;
+  }
+  final meta = _extractEventMetadata(e);
+  return EventFactUpdate(
+    name: name,
+    eventType: eventType,
+    chapter: meta.chapter,
+    participants: meta.participants,
+    description: meta.description,
+    causeEventName: meta.cause,
+  );
+}
+
+({int? chapter, List<String> participants, String description, String? cause})
+_extractEventMetadata(Map<String, dynamic> e) {
+  final chapter = (e['chapter'] as num?)?.toInt();
+  final participantsRaw = e['participants'];
+  final participants = participantsRaw is List
+      ? participantsRaw.whereType<String>().where((p) => p.isNotEmpty).toList()
+      : const <String>[];
+  final description = (e['description'] as String?) ?? '';
+  // 批次3-D4：解析触发事件名（支持 cause_event_name / causeEventName 两种键）
+  final causeEventName =
+      (e['cause_event_name'] as String? ?? e['causeEventName'] as String?)
+          ?.trim();
+  final cause = (causeEventName?.isEmpty ?? true) ? null : causeEventName;
+  return (
+    chapter: chapter,
+    participants: participants,
+    description: description,
+    cause: cause,
+  );
 }
 
 List<SubplotFactUpdate> _parseSubplots(
