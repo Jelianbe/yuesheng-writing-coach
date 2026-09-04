@@ -38,6 +38,58 @@ StateTransitionInput _input({
   );
 }
 
+/// 批次 G：构造 buildEvaluationSummary 最小合法输入。
+/// 默认值不触发恶化信号、数据充足（无表述约束）、教学状态维持 inProgress；
+/// 各参数可覆盖以触达组装层的条件分支。
+EvaluationSummaryInput _summaryInput({
+  int passCount = 8,
+  int totalCount = 10,
+  Severity currentSeverity = Severity.l2,
+  Severity previousSeverity = Severity.l2,
+  bool wasResolvedToL1 = false,
+  int minDiagnosisCount = 2,
+  int minTrainingCount = 3,
+  int minConsolidationObservations = 3,
+}) {
+  return EvaluationSummaryInput(
+    severityInput: SeverityTrendInput(
+      currentSeverity: currentSeverity,
+      previousSeverity: previousSeverity,
+      occurrenceCount: 1,
+    ),
+    passRateInput: PassRateInput(passCount: passCount, totalCount: totalCount),
+    fsrsStability: const FsrsStabilityInput(
+      currentStability: 2.0,
+      previousStability: 1.0,
+    ),
+    deteriorationInput: DeteriorationCheckInput(
+      syndromeId: 'test-syndrome',
+      currentSeverity: currentSeverity,
+      previousSeverity: previousSeverity,
+      wasResolvedToL1: wasResolvedToL1,
+      consecutiveFailures: 0,
+      reboundPattern: false,
+      gapDays: 0,
+      newConcurrentSyndromes: 0,
+    ),
+    teachingState: TeachingState.inProgress,
+    stateTransitionInput: const StateTransitionInput(
+      trainingStarted: false,
+      consecutiveLowSeverity: 0,
+      consecutivePasses: 0,
+      fsrsIntervalDays: 0,
+      consolidationObservations: 0,
+      relapseDetected: false,
+      studentAbandoned: false,
+    ),
+    minDataInput: MinDataCheckInput(
+      diagnosisCount: minDiagnosisCount,
+      trainingCount: minTrainingCount,
+      consolidationObservations: minConsolidationObservations,
+    ),
+  );
+}
+
 void main() {
   group('批次1（O2）consolidating 毕业复核', () {
     test('#1 consolidating + 距末次观察≥14天 + 达标率≥0.7 → mastered', () {
@@ -229,6 +281,84 @@ void main() {
       );
       expect(r, isNot(ComprehensiveJudgment.improving));
       expect(r, isNot(ComprehensiveJudgment.significantImprovement));
+    });
+  });
+
+  // ── 批次 G：buildEvaluationSummary（组装层 + 除零保护）──
+  // 此前 test/ 零直接引用（V4.20 真空函数），输出 contextInjection 直接入 prompt。
+  // 子函数（comprehensiveJudgment / detectDeterioration / FSM / minData）已有各自
+  // 测试，此处只锚组装契约与条件分支，不重复覆盖子函数内部规则。
+
+  group('批次 G buildEvaluationSummary（组装 + 除零保护）', () {
+    test('#S1 正常路径 → 头尾标记/症候/达标率/状态行齐全 + 子结果带出', () {
+      final summary = buildEvaluationSummary('test-syndrome', _summaryInput());
+
+      final injection = summary.contextInjection;
+      expect(injection.startsWith('[训练评估（代码计算）]'), isTrue);
+      expect(injection.endsWith('[/训练评估]'), isTrue);
+      expect(injection.contains('症候: test-syndrome'), isTrue);
+      expect(injection.contains('严重度变化: L2→L2'), isTrue);
+      expect(injection.contains('趋势: stable'), isTrue);
+      expect(injection.contains('综合判断: improving'), isTrue);
+      expect(injection.contains('达标率: 8/10 (80%)'), isTrue);
+      expect(injection.contains('教学状态: in_progress→in_progress'), isTrue);
+      expect(injection.contains('恶化信号: 无'), isTrue);
+      // 无恶化 / 数据充足 → 两个条件块不出现
+      expect(injection.contains('干预建议:'), isFalse);
+      expect(injection.contains('表述约束:'), isFalse);
+
+      // 子计算结果带出（组合语义由 #A4/#A5 锚定，此处锚"组装层带出"契约）
+      expect(summary.trend, TrendJudgment.stable);
+      expect(summary.comprehensiveJudgment, ComprehensiveJudgment.improving);
+      expect(summary.teachingState, TeachingState.inProgress);
+      expect(summary.trainingCount, 10);
+      expect(summary.passRate, 0.8);
+      expect(summary.deteriorationSignal, isNull);
+      expect(summary.minData.fallbackPhrases, isEmpty);
+    });
+
+    test('#S2 totalCount=0 → 除零保护：0% 且无 NaN 进 prompt', () {
+      final summary = buildEvaluationSummary(
+        'test-syndrome',
+        _summaryInput(passCount: 0, totalCount: 0),
+      );
+
+      expect(summary.passRate, 0.0);
+      expect(summary.contextInjection.contains('达标率: 0/0 (0%)'), isTrue);
+      // 若拆掉 totalCount>0 保护：0/0=NaN → round() 抛 UnsupportedError
+      expect(summary.contextInjection.contains('NaN'), isFalse);
+    });
+
+    test('#S3 恶化信号（relapse）→ 干预建议行出现 + 信号带出', () {
+      // wasResolvedToL1 + 再现 L2 → relapse（对照 #S1 的"无干预建议行"）
+      final summary = buildEvaluationSummary(
+        'test-syndrome',
+        _summaryInput(wasResolvedToL1: true),
+      );
+
+      expect(summary.deteriorationSignal, DeteriorationSignal.relapse);
+      expect(summary.contextInjection.contains('恶化信号: relapse'), isTrue);
+      expect(
+        summary.contextInjection.contains('干预建议: 回到 Lv.1 训练，换一种教学方式'),
+        isTrue,
+      );
+    });
+
+    test('#S4 数据不足 → 表述约束块注入 fallback 短语', () {
+      final summary = buildEvaluationSummary(
+        'test-syndrome',
+        _summaryInput(
+          minDiagnosisCount: 1,
+          minTrainingCount: 0,
+          minConsolidationObservations: 0,
+        ),
+      );
+
+      final injection = summary.contextInjection;
+      expect(injection.contains('表述约束:'), isTrue);
+      expect(injection.contains('不能说"你改善了"'), isTrue);
+      expect(injection.contains('不能说"你掌握了"'), isTrue);
+      expect(summary.minData.fallbackPhrases, isNotEmpty);
     });
   });
 }
