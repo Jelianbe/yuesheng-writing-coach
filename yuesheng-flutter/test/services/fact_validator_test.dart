@@ -158,5 +158,43 @@ void main() {
       expect(result.valid, isTrue);
       expect(result.data!.events.first.participants, ['林晚']);
     });
+
+    // ── 批次 G：cause 双键兼容判据锚定（3-D4 正路径此前为判据真空）──
+    // #F6 只覆盖驼峰空串→null；"驼峰非空值被采信"与"双键优先级"无断言。
+
+    test('#F10 causeEventName 驼峰非空 → 被采信（双键兼容正路径）', () {
+      final result = validateFactSchema({
+        'events': [
+          {'name': '夜袭', 'event_type': 'conflict', 'causeEventName': '密信失窃'},
+        ],
+      });
+      expect(result.valid, isTrue);
+      expect(result.data!.events.first.causeEventName, '密信失窃');
+    });
+
+    test('#F11 双键同给非空 → 蛇形优先（?? 契约）', () {
+      final result = validateFactSchema({
+        'events': [
+          {
+            'name': '对决',
+            'event_type': 'conflict',
+            'cause_event_name': '蛇形事件',
+            'causeEventName': '驼峰事件',
+          },
+        ],
+      });
+      expect(result.valid, isTrue);
+      expect(result.data!.events.first.causeEventName, '蛇形事件');
+    });
+
+    test('#F12 无 cause 键 → null（锚定空缺省，防兜底塞值）', () {
+      final result = validateFactSchema({
+        'events': [
+          {'name': '开篇', 'event_type': 'opening'},
+        ],
+      });
+      expect(result.valid, isTrue);
+      expect(result.data!.events.first.causeEventName, isNull);
+    });
   });
 }
