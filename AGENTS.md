@@ -385,3 +385,22 @@ V4.9 已要求「说明必须落在会被注入的区间内」，但只判「在
 **判别：凡是用 Edit 改过、又跑过 format 写入的文件，若后续有锚点类脚本，
 先核一遍行尾**。`git ls-files --eol` 的 `i/` 列仍会是 `lf`（提交层面无损），
 所以这个坑不会被任何门禁拦下。）
+（V4.18：**跑 `flutter test` 前必须清空会话的 HTTP 代理环境变量**
+——2026-09-04 ADR-C72 收尾实证。症状：所有测试（**包括上一轮刚跑全绿的**）
+集体报 `Failed to load ...: Unable to connect to flutter_tester process:
+WebSocketException: Invalid WebSocket upgrade request`。排查方向很容易跑偏：
+flutter 工具链完好、`flutter_tester.exe` 能正常启动、无残留进程、沙箱外也一样
+——真正的元凶是会话注入的 `HTTP_PROXY=http://127.0.0.1:<port>`：Dart VM 连
+flutter_tester 的 **localhost WebSocket 也被送去代理**，握手被吃掉。
+解法：`env HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
+NO_PROXY=localhost,127.0.0.1 flutter test ...`（`scripts/gate.sh` 同理）。
+**这个故障格外阴险**：加载失败的输出行**同样带 `[E]` 失败标记**，所以变异验证
+脚本的「拦截成功」判据会假绿——看起来每个变异都被拦住了，其实测试根本没跑起来。
+故变异/验证脚本必须先做**基线健康校验**（无变异时须 `All tests passed`），
+不绿就直接 abort，不要让坏环境冒充好结果。）
+（V4.19：**核算 prompt 漂移量要直接比源字符串长度，别按 diff 行求和**
+——2026-09-04 ADR-C72 锚点归因实证。快照里的 `len` 是 Dart `String.length`，
+即 **UTF-16 code units**，不是 UTF-8 字节数（中文 3 字节 vs 1 code unit，差 3 倍）。
+按 `git diff` 的 +/- 行求和还会**漏掉新增行的换行符**，结果总是差 1。
+正确做法：`re` 提取两个版本的 `const String _xxxBody = '''...'''` 正文直接比长度，
+与快照漂移数对账。判据是「13 个 case 等量漂移 = 新增长度」，差一个字符都要停下排查。）
