@@ -48,15 +48,26 @@ PROG_TESTS = ['test/services/progressive_diagnosis_test.dart']
 # (ID, 源文件, 原文本, 变异文本, 判据说明, [测试文件])
 MUTATIONS = [
     # ── H-1: _updateDiagnosisSummary ──
+    # 锚点适配（ADR-C73 §5 批次 I commit D）：top_syndromes 排序+截断
+    # 已抽离到 _buildTopSyndromes。原 H1-V1/V2 单行锚点失效，改成
+    # _buildTopSyndromes 内的多行块（在仓库内唯一）。
     ('H1-V1 截断3', REPO_SRC,
-     "final topSyndromes = active.take(3).map((p) {",
-     "final topSyndromes = active.take(2).map((p) {",
+     "    return active.take(3).map((p) {",
+     "    return active.take(2).map((p) {",
      'active>2 时 top_syndromes 截前 3（拦 #T1）', REPO_TESTS),
     ('H1-V2 排序', REPO_SRC,
-     "      const order = {'L3': 0, 'L2': 1, 'L1': 2};",
-     "      const order = {'L1': 0, 'L2': 1, 'L3': 2};",
-     'L3>L2>L1 降序（拦 #T1；6 空格缩进锚定行 601，区别于行 380 的 4 空格）',
-     REPO_TESTS),
+     "    active.sort((a, b) {\n"
+     "      const order = {'L3': 0, 'L2': 1, 'L1': 2};\n"
+     "      return (order[a.severity] ?? 3).compareTo(order[b.severity] ?? 3);\n"
+     "    });\n"
+     "    return active.take(3).map((p) {",
+     "    active.sort((a, b) {\n"
+     "      const order = {'L1': 0, 'L2': 1, 'L3': 2};\n"
+     "      return (order[a.severity] ?? 3).compareTo(order[b.severity] ?? 3);\n"
+     "    });\n"
+     "    return active.take(3).map((p) {",
+     'L3>L2>L1 降序（拦 #T1；多行锚定 _buildTopSyndromes 内唯一，'
+     '区别于行 380 单行的 4 空格 const order）', REPO_TESTS),
     ('H1-V3 status过滤', REPO_SRC,
      "final active = problems.where((p) => p.status == 'active').toList();",
      "final active = problems.where((p) => p.status == 'resolved').toList();",

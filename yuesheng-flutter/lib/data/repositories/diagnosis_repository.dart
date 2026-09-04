@@ -595,19 +595,7 @@ class DiagnosisRepository {
     final total = problems.length;
     final resolved = problems.where((p) => p.status == 'resolved').length;
     final active = problems.where((p) => p.status == 'active').toList();
-
-    // top_syndromes：按严重度 L3>L2>L1 排序取前 3
-    active.sort((a, b) {
-      const order = {'L3': 0, 'L2': 1, 'L1': 2};
-      return (order[a.severity] ?? 3).compareTo(order[b.severity] ?? 3);
-    });
-    final topSyndromes = active.take(3).map((p) {
-      return {
-        'syndrome_id': p.syndromeId,
-        'name': p.syndromeName,
-        'severity': p.severity,
-      };
-    }).toList();
+    final topSyndromes = _buildTopSyndromes(active);
 
     // 获取最新诊断的时间戳
     final latestDiag = await getLatestDiagnosis(sessionId);
@@ -637,6 +625,22 @@ class DiagnosisRepository {
         updatedAt: Value(nowSec()),
       ),
     );
+  }
+
+  /// 按 L3>L2>L1 排序 active 取前 3，转 JSON-friendly map。
+  /// 抽离自 _updateDiagnosisSummary（ADR-C73 §4：原 51 行超 R-019 硬上限）。
+  List<Map<String, dynamic>> _buildTopSyndromes(List<ActiveProblem> active) {
+    active.sort((a, b) {
+      const order = {'L3': 0, 'L2': 1, 'L1': 2};
+      return (order[a.severity] ?? 3).compareTo(order[b.severity] ?? 3);
+    });
+    return active.take(3).map((p) {
+      return {
+        'syndrome_id': p.syndromeId,
+        'name': p.syndromeName,
+        'severity': p.severity,
+      };
+    }).toList();
   }
 
   /// 安全解析 syndromes JSON
