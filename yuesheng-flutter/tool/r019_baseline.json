@@ -172,6 +172,13 @@
       "lines": 169
     },
     {
+      "file": "lib/services/student_profile_format.dart",
+      "func": "formatProfileText",
+      "start": 73,
+      "end": 241,
+      "lines": 169
+    },
+    {
       "file": "lib/widgets/writing_menu_sheet.dart",
       "func": "show",
       "start": 38,
@@ -184,13 +191,6 @@
       "start": 60,
       "end": 220,
       "lines": 161
-    },
-    {
-      "file": "lib/services/student_profile_format.dart",
-      "func": "formatProfileText",
-      "start": 73,
-      "end": 231,
-      "lines": 159
     },
     {
       "file": "lib/services/llm_client.dart",
@@ -375,6 +375,13 @@
       "lines": 119
     },
     {
+      "file": "lib/services/student_profile.dart",
+      "func": "buildStudentContext",
+      "start": 236,
+      "end": 352,
+      "lines": 117
+    },
+    {
       "file": "lib/widgets/adopt_suggestion_sheet.dart",
       "func": "build",
       "start": 163,
@@ -436,13 +443,6 @@
       "start": 120,
       "end": 227,
       "lines": 108
-    },
-    {
-      "file": "lib/services/student_profile.dart",
-      "func": "buildStudentContext",
-      "start": 194,
-      "end": 300,
-      "lines": 107
     },
     {
       "file": "lib/widgets/attitude_suggestion_banner.dart",
@@ -741,8 +741,8 @@
     {
       "file": "lib/data/repositories/session_repository.dart",
       "func": "getOrCreateSessionForChapter",
-      "start": 125,
-      "end": 210,
+      "start": 150,
+      "end": 235,
       "lines": 86
     },
     {
@@ -1098,8 +1098,8 @@
     {
       "file": "lib/data/repositories/session_repository.dart",
       "func": "getOrCreateSessionForManuscript",
-      "start": 54,
-      "end": 120,
+      "start": 79,
+      "end": 145,
       "lines": 67
     },
     {
@@ -1404,20 +1404,6 @@
       "lines": 57
     },
     {
-      "file": "lib/services/student_profile.dart",
-      "func": "buildStrategyEffectiveness",
-      "start": 134,
-      "end": 189,
-      "lines": 56
-    },
-    {
-      "file": "lib/services/student_profile_compute.dart",
-      "func": "inferProficiency",
-      "start": 133,
-      "end": 188,
-      "lines": 56
-    },
-    {
       "file": "lib/services/teacher_validator.dart",
       "func": "checkTeacherConsistency",
       "start": 404,
@@ -1548,13 +1534,6 @@
       "func": "validateGenuiComponent",
       "start": 33,
       "end": 83,
-      "lines": 51
-    },
-    {
-      "file": "lib/services/student_profile.dart",
-      "func": "inferCognitiveStyle",
-      "start": 69,
-      "end": 119,
       "lines": 51
     },
     {

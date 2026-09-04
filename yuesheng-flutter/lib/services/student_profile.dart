@@ -75,6 +75,23 @@ Future<CognitiveStyleInference?> inferCognitiveStyle(
   if (userMessages.length < 2) return null;
 
   final allText = userMessages.map((m) => m.content).join(' ');
+  final hits = _countKeywordHits(allText);
+  final total = hits.analytical + hits.intuitive;
+  if (total == 0) return null;
+
+  final resolved = _resolveStyleAndConfidence(
+    hits.analytical / (hits.intuitive > 0 ? hits.intuitive : 1),
+    total,
+  );
+
+  return CognitiveStyleInference(
+    style: resolved.style,
+    confidence: resolved.confidence,
+  );
+}
+
+/// 统计两类关键词在 [allText] 中的命中次数（analytical / intuitive）。
+({int analytical, int intuitive}) _countKeywordHits(String allText) {
   int analyticalCount = 0;
   int intuitiveCount = 0;
 
@@ -84,38 +101,46 @@ Future<CognitiveStyleInference?> inferCognitiveStyle(
   for (final kw in _intuitiveKeywords) {
     intuitiveCount += _countOccurrences(allText, kw);
   }
+  return (analytical: analyticalCount, intuitive: intuitiveCount);
+}
 
-  final total = analyticalCount + intuitiveCount;
-  if (total == 0) return null;
-
-  final ratio = analyticalCount / (intuitiveCount > 0 ? intuitiveCount : 1);
-  CognitiveStyle style;
-  double confidence;
-
+/// 按 [ratio]（analytical / intuitive）与命中总数判定认知风格与置信度。
+///
+/// 注：intuitive 分支复用 analytical 的置信度常量——常量表
+/// （`CognitiveStyleThresholds`）未提供 intuitive 专用项，此处保持原行为不变
+/// （R-019 重构要求零行为变更）。若日后确认其为遗漏，应单独立项改，不夹带。
+({CognitiveStyle style, double confidence}) _resolveStyleAndConfidence(
+  double ratio,
+  int total,
+) {
   if (ratio >= CognitiveStyleThresholds.analyticalRatio) {
-    style = CognitiveStyle.analytical;
-    confidence = _min(
-      CognitiveStyleThresholds.analyticalMaxConfidence,
-      CognitiveStyleThresholds.analyticalBaseConfidence +
-          total * CognitiveStyleThresholds.analyticalStepFactor,
+    return (
+      style: CognitiveStyle.analytical,
+      confidence: _min(
+        CognitiveStyleThresholds.analyticalMaxConfidence,
+        CognitiveStyleThresholds.analyticalBaseConfidence +
+            total * CognitiveStyleThresholds.analyticalStepFactor,
+      ),
     );
-  } else if (ratio <= CognitiveStyleThresholds.intuitiveRatio) {
-    style = CognitiveStyle.intuitive;
-    confidence = _min(
-      CognitiveStyleThresholds.analyticalMaxConfidence,
-      CognitiveStyleThresholds.analyticalBaseConfidence +
-          total * CognitiveStyleThresholds.analyticalStepFactor,
+  }
+  if (ratio <= CognitiveStyleThresholds.intuitiveRatio) {
+    return (
+      style: CognitiveStyle.intuitive,
+      confidence: _min(
+        CognitiveStyleThresholds.analyticalMaxConfidence,
+        CognitiveStyleThresholds.analyticalBaseConfidence +
+            total * CognitiveStyleThresholds.analyticalStepFactor,
+      ),
     );
-  } else {
-    style = CognitiveStyle.mixed;
-    confidence = _min(
+  }
+  return (
+    style: CognitiveStyle.mixed,
+    confidence: _min(
       CognitiveStyleThresholds.mixedMaxConfidence,
       CognitiveStyleThresholds.mixedBaseConfidence +
           total * CognitiveStyleThresholds.mixedStepFactor,
-    );
-  }
-
-  return CognitiveStyleInference(style: style, confidence: confidence);
+    ),
+  );
 }
 
 int _countOccurrences(String text, String sub) {
@@ -144,6 +169,16 @@ Future<String> buildStrategyEffectiveness(
 
   if (modeRecords.length < 2) return '';
 
+  final grouped = _groupModeRecords(modeRecords);
+  return _renderEffectivenessLines(grouped).join('\n');
+}
+
+/// 按 syndromeId 分组聚合策略记录（同 syndromeId + 同 mode 合并计次）。
+///
+/// 效果取值：命中非 `no_change` 时覆盖既有值（沿用真源 student-profile.ts 语义）。
+Map<String, List<_ModeEntry>> _groupModeRecords(
+  List<Map<String, dynamic>> modeRecords,
+) {
   // 按 syndromeId 分组
   final grouped = <String, List<_ModeEntry>>{};
   for (final r in modeRecords) {
@@ -165,7 +200,13 @@ Future<String> buildStrategyEffectiveness(
       }
     }
   }
+  return grouped;
+}
 
+/// 把分组结果渲染为文本行（每条 `- syndromeId：…`）。
+///
+/// 连续无效（同一 mode 尝试 ≥2 次仍 `no_change`）会在行尾追加切换建议。
+List<String> _renderEffectivenessLines(Map<String, List<_ModeEntry>> grouped) {
   final lines = <String>[];
   grouped.forEach((sid, entries) {
     final tried = entries.map((e) {
@@ -184,8 +225,7 @@ Future<String> buildStrategyEffectiveness(
       lines.add('- $sid：${tried.join('；')}$tip');
     }
   });
-
-  return lines.join('\n');
+  return lines;
 }
 
 /// 构建学员画像上下文（主入口）
