@@ -377,8 +377,8 @@
     {
       "file": "lib/services/student_profile.dart",
       "func": "buildStudentContext",
-      "start": 236,
-      "end": 352,
+      "start": 234,
+      "end": 350,
       "lines": 117
     },
     {
@@ -1527,20 +1527,6 @@
       "func": "_updateDiagnosisSummary",
       "start": 590,
       "end": 640,
-      "lines": 51
-    },
-    {
-      "file": "lib/services/genui_validator.dart",
-      "func": "validateGenuiComponent",
-      "start": 33,
-      "end": 83,
-      "lines": 51
-    },
-    {
-      "file": "lib/services/syndrome_skill_levels.dart",
-      "func": "interventionLevelForTrainingCount",
-      "start": 93,
-      "end": 143,
       "lines": 51
     },
     {
