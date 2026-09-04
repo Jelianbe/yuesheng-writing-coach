@@ -860,8 +860,8 @@
     {
       "file": "lib/services/training_evaluator.dart",
       "func": "transitionTeachingState",
-      "start": 352,
-      "end": 430,
+      "start": 345,
+      "end": 423,
       "lines": 79
     },
     {
@@ -1315,8 +1315,8 @@
     {
       "file": "lib/services/training_evaluator.dart",
       "func": "buildEvaluationSummary",
-      "start": 518,
-      "end": 576,
+      "start": 511,
+      "end": 569,
       "lines": 59
     },
     {
@@ -1339,13 +1339,6 @@
       "start": 385,
       "end": 443,
       "lines": 59
-    },
-    {
-      "file": "lib/services/progressive_diagnosis.dart",
-      "func": "splitContent",
-      "start": 87,
-      "end": 144,
-      "lines": 58
     },
     {
       "file": "lib/services/stream_guard.dart",
@@ -1402,13 +1395,6 @@
       "start": 315,
       "end": 371,
       "lines": 57
-    },
-    {
-      "file": "lib/services/teacher_validator.dart",
-      "func": "checkTeacherConsistency",
-      "start": 404,
-      "end": 459,
-      "lines": 56
     },
     {
       "file": "lib/widgets/append_chapters_page.dart",
@@ -1509,25 +1495,11 @@
       "lines": 52
     },
     {
-      "file": "lib/services/training_evaluator.dart",
-      "func": "detectDeterioration",
-      "start": 222,
-      "end": 273,
-      "lines": 52
-    },
-    {
       "file": "lib/widgets/phase_summary_card.dart",
       "func": "_buildChangesSection",
       "start": 242,
       "end": 293,
       "lines": 52
-    },
-    {
-      "file": "lib/data/repositories/diagnosis_repository.dart",
-      "func": "_updateDiagnosisSummary",
-      "start": 590,
-      "end": 640,
-      "lines": 51
     },
     {
       "file": "lib/widgets/evaluation_report_panel.dart",
