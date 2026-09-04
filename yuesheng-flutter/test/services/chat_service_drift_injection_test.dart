@@ -21,6 +21,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/style_fingerprint.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -120,6 +121,13 @@ void main() {
       llmClient: llmClient,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
       editorObservationRepo: EditorObservationRepository(db),
+      // ADR-C74 K-3：声线漂移提示已迁至 DiagnosisCommitter.buildDriftHintContext
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: sessionRepo,
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+      ),
     );
   }
 

@@ -484,68 +484,6 @@ class _FocusHistoryItem {
 }
 
 extension ChatServiceDiagnosis on ChatService {
-  /// 批次64（B62f）：声线漂移提示上下文——引导 AI 以提问方式温和指出其中一条
-  String _buildDriftHintContext(List<String> hints) {
-    return '## 声线漂移检测（L3→L1 实时反馈）\n\n'
-        '检测到写作特征与既有风格基线出现明显偏差。\n'
-        '若合适，请用**提问的方式**温和地向学员指出**其中一条**'
-        '（结合具体数字，如"你的句子长度通常 15-20 字，但这部分平均只有 8 字——'
-        '是刻意加速，还是无意识的变化？"），一次只问一个点，不展开成诊断。\n'
-        '偏差项：\n- ${hints.join('\n- ')}';
-  }
-
-  /// A6：时序知识图谱事实提取协议（诊断章节正文时注入）
-  ///
-  /// 指导 AI 在诊断回复中附加 [YS_FACT] 块，提取人物/事件/支线三类结构化事实，
-  /// 供系统 upsert 到 TKG 三表，驱动时序矛盾/因果链/情节闭环检测。
-  /// 与 [YS_DIAGNOSIS]、[YS_ENTITY] 并列独立，输出顺序排在最后。
-  String _buildFactProtocolContext() {
-    return '## 时序知识图谱事实沉淀（输出顺序约束）\n\n'
-        '【输出顺序】若同时输出诊断块、实体块与事实块，**必须严格按此顺序**：\n'
-        '  1. [YS_DIAGNOSIS] 症候块（若诊断要求）；\n'
-        '  2. [YS_ENTITY] 实体记忆块；\n'
-        '  3. [YS_FACT] 事实块（本条）；\n'
-        '  4. 之后再写面向学员的自然语言诊断与教学建议。\n\n'
-        '若章节正文出现值得长期记住的**结构化事实**（人物属性断言、关键事件、'
-        '支线收束），请在回复中附加 [YS_FACT] JSON 块，供系统沉淀为时序知识图谱。'
-        '增量更新：仅记录当前章节新增或变化的事实，不重复已沉淀内容。'
-        '完全无新事实（无人物属性变化、无关键事件、无支线进展）可不输出该块。\n\n'
-        '格式：\n'
-        '[YS_FACT]\n'
-        '{\n'
-        '  "characters": [\n'
-        '    {"name":"人物名","assertions":[\n'
-        '      {"attribute":"属性名(如独生子女状态/性格/职业/身份)","value":"属性值",'
-        '"chapter":3}\n'
-        '    ]}\n'
-        '  ],\n'
-        '  "events": [\n'
-        '    {"name":"事件名","event_type":"决定|转折|突发|冲突|日常",'
-        '"chapter":5,"participants":["人物名"],"description":"一句话概述",'
-        '"cause_event_name":"触发本事件的前因事件名（无前因则省略）"}\n'
-        '  ],\n'
-        '  "subplots": [\n'
-        '    {"name":"支线名","introduced_chapter":3,"resolved_chapter":null,'
-        '"description":"支线梗概"}\n'
-        '  ]\n'
-        '}\n'
-        '[/YS_FACT]\n\n'
-        '规则：\n'
-        '- characters：记录本章新增或变化的人物属性断言。attribute 用规范属性名'
-        '（如「独生子女状态」「性格」「职业」「身份」「关系」），value 为原文可验证的具体值，'
-        'chapter 为该断言出现的章节序号。同一人物可多条断言。\n'
-        '- events：记录关键事件（决定/转折/突发类必记，冲突/日常视重要性）。'
-        'event_type 从「决定|转折|突发|冲突|日常」中选一。participants 为参与人物名列表。'
-        'description 一句话概述事件（≤30字）。'
-        'cause_event_name 填触发本事件的前因事件名（须与既有事件 name 一致），'
-        '用于构建因果链；无前因触发（如开篇事件）则省略此字段。\n'
-        '- subplots：记录支线引入或回收。introduced_chapter 填首次引入章节，'
-        'resolved_chapter 填本章回收章节（未回收填 null）。'
-        '若本章回收了既有支线，必须输出该条并填入 resolved_chapter。\n'
-        '- **完整性硬约束**：[YS_FACT] 包裹的 JSON 必须语法合法、完整闭合。'
-        '如担心篇幅，请压缩自然语言诊断说明以保证事实块完整。';
-  }
-
   /// 批次74：快速读取某章节对应手稿下的实体数（用于 combinedContent 空时判真故障）
   Future<int> _readOutlineEntityCount(String chapterId) async {
     try {
@@ -1571,7 +1509,11 @@ extension ChatServiceSendInject on ChatService {
             _eventFactRepo != null ||
             _subplotFactRepo != null)) {
       messages.add(
-        ChatMessage(role: 'system', content: _buildFactProtocolContext()),
+        // ADR-C74 K-3：协议块字符串构造已迁至 DiagnosisCommitter
+        ChatMessage(
+          role: 'system',
+          content: _diagnosisCommitter?.buildFactProtocolContext() ?? '',
+        ),
       );
     }
 
@@ -1646,8 +1588,10 @@ extension ChatServiceSendObservations on ChatService {
             } else {
               messages.add(
                 ChatMessage(
+                  // ADR-C74 K-3：协议块字符串构造已迁至 DiagnosisCommitter
                   role: 'system',
-                  content: _buildDriftHintContext(hints),
+                  content:
+                      _diagnosisCommitter?.buildDriftHintContext(hints) ?? '',
                 ),
               );
             }
