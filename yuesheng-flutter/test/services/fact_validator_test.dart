@@ -197,4 +197,40 @@ void main() {
       expect(result.data!.events.first.causeEventName, isNull);
     });
   });
+
+  // ── 批次 J-A：补 V4.21 真覆盖（events Map 校验 + name 必填）──
+
+  test('#J1 事件元素为非对象 → 被跳过 + errors 含 "必须是对象"', () {
+    final result = validateFactSchema({
+      'events': [
+        'not-a-map', // 非对象
+        {'name': '合法事件', 'event_type': 'opening'}, // 合法对照
+      ],
+    });
+    expect(result.valid, isTrue);
+    expect(result.data!.events.length, 1); // 非对象被跳过
+    expect(result.data!.events.first.name, '合法事件');
+    expect(
+      result.errors.any((e) => e.field == 'events[0]' && e.message == '必须是对象'),
+      isTrue,
+    );
+  });
+
+  test('#J2 事件 name 空字符串 → 被跳过（name 必填）', () {
+    final result = validateFactSchema({
+      'events': [
+        {'name': '', 'event_type': 'opening'}, // 非法：空 name
+        {'name': '合法', 'event_type': 'opening'}, // 合法对照
+      ],
+    });
+    expect(result.valid, isTrue);
+    expect(result.data!.events.length, 1); // 空 name 被跳过
+    expect(result.data!.events.first.name, '合法');
+    expect(
+      result.errors.any(
+        (e) => e.field == 'events[0].name' && e.message == '必须为非空字符串',
+      ),
+      isTrue,
+    );
+  });
 }
