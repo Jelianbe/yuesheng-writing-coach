@@ -136,6 +136,32 @@ void main() {
       expect(chunks, hasLength(1));
       expect(chunks.single, exact);
     });
+
+    test('#6 单段超长（>= SIZE 且无 \\n\\n）不挂死，整段成块', () {
+      // 死循环判据（ADR-C73 §2）：批次 H 实锤，单段 ≥3000 + 总长 >3000
+      // 会让 while(startIndex < paragraphs.length) 永真（endIndex=startIndex
+      // → overlapStart ≤ startIndex → startIndex 不变）。
+      // 修复后：首段即超阈值时强制 endIndex = startIndex + 1，整段成块。
+      // 用例必须秒过（>60s 即变异命中，挂死型拦截由 _verify_batch_h_coverage
+      // 兜底）。
+      final longSingle = 'X' * 4000; // 单段 4000 字符，无段落边界
+      final chunks = splitContent(longSingle);
+      expect(chunks, isNotEmpty);
+      expect(chunks.single, longSingle); // 整段成块
+    });
+
+    test('#7 字符串中间夹杂 \\n\\n 但首段即 ≥ SIZE → 首段成块 + 后续正常切', () {
+      // 边界组合：首段超长触发修复路径，第二段短且合并到末块。
+      // 验证修复不影响后续段落的常规分块。
+      final first = 'A' * 4000; // 单段超长
+      final tail1 = 'B' * 350 + 'T1END'; // 短段落
+      final tail2 = 'C' * 350 + 'T2END'; // 短段落
+      final content = '$first\n\n$tail1\n\n$tail2';
+      final chunks = splitContent(content);
+      // 至少 2 块：第一块含首段（整段或部分），后续按段落合并
+      expect(chunks.length, greaterThanOrEqualTo(2));
+      expect(chunks.first, contains(first)); // 首段必在前块
+    });
   });
 
   group('buildMergePrompt', () {

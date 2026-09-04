@@ -84,6 +84,10 @@ class ProgressiveResult {
 ///   2. 从 startIndex 累加段落，总长度接近 SIZE 时切块
 ///   3. overlap 从本块末尾段落向前回溯，累计长度 ≥ OVERLAP 停
 ///   4. 末块 < MIN_LAST_CHUNK 时合并到前一块
+///
+/// 原子性：单段超长（首段即 ≥ SIZE）时**整段成块**，不再按字符硬切——
+/// 段落是分块算法的边界，段内不再切。修复批次 H 侦察的同步死循环缺陷
+/// （ADR-C73 §2）。
 List<String> splitContent(String content) {
   if (content.length <= kDiagnosisChunkSize) {
     return [content];
@@ -113,34 +117,49 @@ List<String> splitContent(String content) {
       break;
     }
 
+    // 单段原子性：首段即超阈值时**整段成块并跳过 overlap**——
+    // 段落是不可再分的原子单元（按 '\n\n' 分块，段内不再切）。
+    // 修复批次 H 侦察的同步死循环缺陷（ADR-C73 §2）：
+    // 若只推进 endIndex 而不推进 startIndex，overlap 回溯后会
+    // 让 startIndex 不变 → while 永真。
+    if (endIndex == startIndex) {
+      chunks.add(paragraphs[startIndex]);
+      startIndex = startIndex + 1;
+      continue;
+    }
+
     final chunk = paragraphs.sublist(startIndex, endIndex).join('\n\n');
     chunks.add(chunk);
 
-    // overlap 回溯：从 endIndex-1 向前累加，直到长度 >= OVERLAP
-    var overlapLength = 0;
-    var overlapStart = endIndex - 1;
-    while (overlapStart > startIndex) {
-      overlapLength += paragraphs[overlapStart].length + 2;
-      if (overlapLength >= kDiagnosisChunkOverlap) {
-        break;
-      }
-      overlapStart--;
-    }
-
-    startIndex = overlapStart > startIndex ? overlapStart : startIndex;
+    startIndex = _overlapStartIndex(paragraphs, endIndex, startIndex);
   }
 
-  // 末块过小时合并
-  if (chunks.length >= 2) {
-    final last = chunks.last;
-    if (last.length < kDiagnosisMinLastChunk) {
-      final merged = '${chunks[chunks.length - 2]}\n\n$last';
-      chunks[chunks.length - 2] = merged;
-      chunks.removeLast();
-    }
-  }
-
+  _mergeSmallLastChunk(chunks);
   return chunks;
+}
+
+/// overlap 回溯：从 endIndex-1 向前累加，直到长度 ≥ OVERLAP。
+int _overlapStartIndex(List<String> paragraphs, int endIndex, int startIndex) {
+  var overlapLength = 0;
+  var overlapStart = endIndex - 1;
+  while (overlapStart > startIndex) {
+    overlapLength += paragraphs[overlapStart].length + 2;
+    if (overlapLength >= kDiagnosisChunkOverlap) {
+      break;
+    }
+    overlapStart--;
+  }
+  return overlapStart > startIndex ? overlapStart : startIndex;
+}
+
+/// 末块过小时合并到前一块（避免单句成块）。
+void _mergeSmallLastChunk(List<String> chunks) {
+  if (chunks.length < 2) return;
+  final last = chunks.last;
+  if (last.length < kDiagnosisMinLastChunk) {
+    chunks[chunks.length - 2] = '${chunks[chunks.length - 2]}\n\n$last';
+    chunks.removeLast();
+  }
 }
 
 // ── 单块系统提示词（对齐 RN CHUNK_SYSTEM_PROMPT）──
