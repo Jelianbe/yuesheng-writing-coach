@@ -89,9 +89,13 @@ echo "--> 门禁 2/6: 单元测试 (flutter test)"
 # localhost WebSocket，导致全量测试加载失败（错误行同样带 [E]，
 # 看起来每个测试都失败）。门禁脚本必须主动清空代理环境变量，
 # 否则整道门禁在某些会话环境下会假红。
-if env HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
-     NO_PROXY=localhost,127.0.0.1 \
-   flutter test > "$TEST_LOG" 2>&1; then
+#
+# V4.22（2026-09-04 批次 I 实证）：AI 沙箱会话缺 PROGRAMFILES(X86)，
+# flutter.bat → update_engine_version.ps1 报错退出，表现
+# 「%PROGRAMFILES(X86)% environment variable not found.」且被 `| tail`
+# 吞掉退出码后**假绿**。注入兜底统一放在 _run_flutter_test.sh：
+#   原值优先，仅缺时注入 Windows 标准值；其他环境完全不变。
+if bash scripts/_run_flutter_test.sh > "$TEST_LOG" 2>&1; then
   RC_TEST=0
 else
   RC_TEST=1
