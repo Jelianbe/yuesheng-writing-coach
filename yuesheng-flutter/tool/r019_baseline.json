@@ -1313,13 +1313,6 @@
       "lines": 60
     },
     {
-      "file": "lib/services/training_evaluator.dart",
-      "func": "buildEvaluationSummary",
-      "start": 511,
-      "end": 569,
-      "lines": 59
-    },
-    {
       "file": "lib/widgets/outline_confirmation_card.dart",
       "func": "_buildHeader",
       "start": 189,
@@ -1360,13 +1353,6 @@
       "start": 512,
       "end": 569,
       "lines": 58
-    },
-    {
-      "file": "lib/services/fact_validator.dart",
-      "func": "_parseEvents",
-      "start": 183,
-      "end": 239,
-      "lines": 57
     },
     {
       "file": "lib/widgets/chapter_tree_drawer.dart",
