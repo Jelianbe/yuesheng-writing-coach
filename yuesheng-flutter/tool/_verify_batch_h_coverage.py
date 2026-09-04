@@ -63,27 +63,31 @@ MUTATIONS = [
      '仅 active 进 top（拦 #T1/#T2）', REPO_TESTS),
 
     # ── H-2: detectDeterioration ──
+    # 锚点适配（ADR-C73 §5 批次 I commit C）：删解包后所有 input.xxx 直引，
+    # 条件行可能被 dart formatter 拆行——H2-V1 现为三行锚点。
     ('H2-V1 门槛2', TRAIN_SRC,
-     "if (_kSeverityOrder[currentSeverity]! > _kSeverityOrder[previousSeverity]! &&\n"
-     "      consecutiveFailures >= 2) {",
-     "if (_kSeverityOrder[currentSeverity]! > _kSeverityOrder[previousSeverity]! &&\n"
-     "      consecutiveFailures >= 1) {",
+     "if (_kSeverityOrder[input.currentSeverity]! >\n"
+     "          _kSeverityOrder[input.previousSeverity]! &&\n"
+     "      input.consecutiveFailures >= 2) {",
+     "if (_kSeverityOrder[input.currentSeverity]! >\n"
+     "          _kSeverityOrder[input.previousSeverity]! &&\n"
+     "      input.consecutiveFailures >= 1) {",
      '连续失败门槛 >=2（摸底点名，拦 #D4）', TRAIN_TESTS),
     ('H2-V2 relapse条件', TRAIN_SRC,
-     "if (wasResolvedToL1 && _kSeverityOrder[currentSeverity]! >= 2) {",
-     "if (false && _kSeverityOrder[currentSeverity]! >= 2) {",
+     "if (input.wasResolvedToL1 && _kSeverityOrder[input.currentSeverity]! >= 2) {",
+     "if (false && _kSeverityOrder[input.currentSeverity]! >= 2) {",
      'L1 缓解后再现 L2+ → relapse（拦 #D2/#D8）', TRAIN_TESTS),
     ('H2-V3 新并发3', TRAIN_SRC,
-     "if (newConcurrentSyndromes >= 3) {",
-     "if (newConcurrentSyndromes >= 4) {",
+     "if (input.newConcurrentSyndromes >= 3) {",
+     "if (input.newConcurrentSyndromes >= 4) {",
      '新症候门槛 3（拦 #D5）', TRAIN_TESTS),
     ('H2-V4 反弹', TRAIN_SRC,
-     "if (reboundPattern) {",
+     "if (input.reboundPattern) {",
      "if (false) {",
      '反弹模式 → rebound（拦 #D6）', TRAIN_TESTS),
     ('H2-V5 巩固7天', TRAIN_SRC,
-     "if (gapDays > 7 && _kSeverityOrder[currentSeverity]! >= 2) {",
-     "if (gapDays > 70 && _kSeverityOrder[currentSeverity]! >= 2) {",
+     "if (input.gapDays > 7 && _kSeverityOrder[input.currentSeverity]! >= 2) {",
+     "if (input.gapDays > 70 && _kSeverityOrder[input.currentSeverity]! >= 2) {",
      '间隔 >7 天门槛（拦 #D7）', TRAIN_TESTS),
     ('H2-V6 兜底null', TRAIN_SRC,
      "return const DeteriorationResult(signal: null, intervention: '');",

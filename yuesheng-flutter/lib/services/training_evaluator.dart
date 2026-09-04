@@ -220,16 +220,8 @@ class DeteriorationResult {
 
 /// 检测恶化信号并返回干预建议。
 DeteriorationResult detectDeterioration(DeteriorationCheckInput input) {
-  final currentSeverity = input.currentSeverity;
-  final previousSeverity = input.previousSeverity;
-  final wasResolvedToL1 = input.wasResolvedToL1;
-  final consecutiveFailures = input.consecutiveFailures;
-  final reboundPattern = input.reboundPattern;
-  final gapDays = input.gapDays;
-  final newConcurrentSyndromes = input.newConcurrentSyndromes;
-
   // 复发：已降至 L1 后再次 L2/L3
-  if (wasResolvedToL1 && _kSeverityOrder[currentSeverity]! >= 2) {
+  if (input.wasResolvedToL1 && _kSeverityOrder[input.currentSeverity]! >= 2) {
     return const DeteriorationResult(
       signal: DeteriorationSignal.relapse,
       intervention: '回到 Lv.1 训练，换一种教学方式',
@@ -237,8 +229,9 @@ DeteriorationResult detectDeterioration(DeteriorationCheckInput input) {
   }
 
   // 恶化：连续 2 次 severity 上升
-  if (_kSeverityOrder[currentSeverity]! > _kSeverityOrder[previousSeverity]! &&
-      consecutiveFailures >= 2) {
+  if (_kSeverityOrder[input.currentSeverity]! >
+          _kSeverityOrder[input.previousSeverity]! &&
+      input.consecutiveFailures >= 2) {
     return const DeteriorationResult(
       signal: DeteriorationSignal.worsening,
       intervention: '停止训练该症候。改为自然语言讨论，寻找根本原因',
@@ -246,7 +239,7 @@ DeteriorationResult detectDeterioration(DeteriorationCheckInput input) {
   }
 
   // 新并发：新出现 ≥3 个症候
-  if (newConcurrentSyndromes >= 3) {
+  if (input.newConcurrentSyndromes >= 3) {
     return const DeteriorationResult(
       signal: DeteriorationSignal.newConcurrent,
       intervention: '回到诊断确认阶段，让学员挑一个最关心的先练',
@@ -254,7 +247,7 @@ DeteriorationResult detectDeterioration(DeteriorationCheckInput input) {
   }
 
   // 反弹：连续 3 次达标后突然连续 2 次未达标
-  if (reboundPattern) {
+  if (input.reboundPattern) {
     return const DeteriorationResult(
       signal: DeteriorationSignal.rebound,
       intervention: '检查是否跳过了难度。如果是→降回之前的难度。如果不是→检查学员状态',
@@ -262,7 +255,7 @@ DeteriorationResult detectDeterioration(DeteriorationCheckInput input) {
   }
 
   // 巩固失败：间隔 > 7 天后 L2+
-  if (gapDays > 7 && _kSeverityOrder[currentSeverity]! >= 2) {
+  if (input.gapDays > 7 && _kSeverityOrder[input.currentSeverity]! >= 2) {
     return const DeteriorationResult(
       signal: DeteriorationSignal.consolidationFail,
       intervention: 'FSRS 稳定度不足。增加该症候的训练频率',
