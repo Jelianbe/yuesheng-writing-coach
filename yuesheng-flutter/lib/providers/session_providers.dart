@@ -111,6 +111,8 @@ final diagnosisCommitterProvider = Provider<DiagnosisCommitter>((ref) {
     diagnosisRepo: DiagnosisRepository(db),
     // 复用 D5-B 已落地的 DiagnosisService provider，与生产侧同一实例
     diagnosisService: ref.watch(diagnosisServiceProvider),
+    // ADR-C74 K-2：阶段迁移需读 teaching_history + 重建 EvaluationService
+    studentModelRepo: StudentModelRepository(db),
     genUi: ref.watch(genUiCapabilityProvider),
     material: ref.watch(materialCapabilityProvider),
     teaching: ref.watch(teachingCapabilityProvider),
