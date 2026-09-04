@@ -62,6 +62,7 @@ import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/evaluation_service.dart'
@@ -181,6 +182,13 @@ class ChatService {
   /// 懒加载缓存：_ensureOutlineService 首次调用时由 _outlineRepo 构建
   OutlineService? _outlineService;
 
+  /// 诊断提交编排器（ADR-C74 K-1 骨架）
+  ///
+  /// K-1 阶段：nullable + ChatService 不消费，仅证明「独立类 + DI」路径
+  /// 可行（X-025-ARCH 教训复盘）。K-2 ~ K-5 阶段随方法迁入时逐步收紧为
+  /// non-null + required；K-5 收尾时本字段升级。
+  final DiagnosisCommitter? _diagnosisCommitter;
+
   /// B1：诊断连续失败计数（内存态，按 session 隔离）。
   /// 用于诊断失败卡阈值门控——连续失败达 UILimits.failureWarningThreshold 才插卡，
   /// 避免偶发单次失败也打扰用户；普通聊天（非诊断轮次）不计入。
@@ -295,6 +303,8 @@ class ChatService {
     EventFactRepository? eventFactRepo,
     SubplotFactRepository? subplotFactRepo,
     OutlineRepository? outlineRepo,
+    // ADR-C74 K-1：诊断提交编排器，K-1 阶段 nullable（不破坏现有 30+ 测试构造）
+    DiagnosisCommitter? diagnosisCommitter,
   }) : _sessionRepo = sessionRepo,
        _stateRepo = stateRepo,
        _diagnosisRepo = diagnosisRepo,
@@ -316,7 +326,8 @@ class ChatService {
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
        _subplotFactRepo = subplotFactRepo,
-       _outlineRepo = outlineRepo;
+       _outlineRepo = outlineRepo,
+       _diagnosisCommitter = diagnosisCommitter;
 
   /// 懒加载大纲服务（批次7 O2）
   ///

@@ -32,6 +32,7 @@ import '../data/repositories/training_result_repository.dart';
 import '../data/repositories/teaching_state_repository.dart';
 import '../services/bootstrap_service.dart';
 import '../services/chat_service.dart';
+import '../services/diagnosis_committer.dart';
 import '../services/diagnosis_service.dart';
 import '../services/last_session_storage.dart';
 import '../services/llm_client.dart';
@@ -97,6 +98,30 @@ final llmClientProvider = Provider<LlmClient>((ref) {
   return LlmClient();
 });
 
+/// 诊断提交编排器 Provider（ADR-C74 K-1）
+///
+/// K-1 阶段仅供 chatServiceProvider 注入；ChatService 内暂不消费（行为零变化
+/// 护栏）。K-2 ~ K-5 阶段随方法迁入时逐步收紧——届时 ChatService 内部开始
+/// 委派到本 provider 实例。
+final diagnosisCommitterProvider = Provider<DiagnosisCommitter>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DiagnosisCommitter(
+    sessionRepo: SessionRepository(db),
+    stateRepo: TeachingStateRepository(db),
+    diagnosisRepo: DiagnosisRepository(db),
+    // 复用 D5-B 已落地的 DiagnosisService provider，与生产侧同一实例
+    diagnosisService: ref.watch(diagnosisServiceProvider),
+    genUi: ref.watch(genUiCapabilityProvider),
+    material: ref.watch(materialCapabilityProvider),
+    teaching: ref.watch(teachingCapabilityProvider),
+    diagnosis: ref.watch(diagnosisCapabilityProvider),
+    characterFactRepo: CharacterFactRepository(db),
+    eventFactRepo: EventFactRepository(db),
+    subplotFactRepo: SubplotFactRepository(db),
+    outlineRepo: OutlineRepository(db),
+  );
+});
+
 /// ChatService Provider
 ///
 /// 生产环境依赖所有 Repository + LlmClient 构造；
@@ -129,6 +154,9 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     subplotFactRepo: SubplotFactRepository(db),
     // 批次72（大纲层）：大纲记忆仓储装配，启用实体索引注入 + AI 提取落库
     outlineRepo: OutlineRepository(db),
+    // ADR-C74 K-1：诊断提交编排器装配；ChatService 暂不消费，K-2 ~ K-5
+    // 阶段随方法迁入时收紧
+    diagnosisCommitter: ref.watch(diagnosisCommitterProvider),
   );
 });
 
