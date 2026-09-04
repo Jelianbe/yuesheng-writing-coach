@@ -85,7 +85,13 @@ log_result "静态分析 (analyze lib)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
 echo "--> 门禁 2/6: 单元测试 (flutter test)"
-if flutter test > "$TEST_LOG" 2>&1; then
+# V4.18：会话注入的 HTTP_PROXY 会劫持 Dart VM ↔ flutter_tester 的
+# localhost WebSocket，导致全量测试加载失败（错误行同样带 [E]，
+# 看起来每个测试都失败）。门禁脚本必须主动清空代理环境变量，
+# 否则整道门禁在某些会话环境下会假红。
+if env HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
+     NO_PROXY=localhost,127.0.0.1 \
+   flutter test > "$TEST_LOG" 2>&1; then
   RC_TEST=0
 else
   RC_TEST=1

@@ -100,44 +100,71 @@ InterventionLevel interventionLevelForTrainingCount(
   if (relapse ?? false) return InterventionLevel.iDo;
   if (currentSeverity == Severity.l3) return InterventionLevel.iDo;
 
-  // 基础次数档位（逐步撤除脚手架）
-  final base = trainingCount >= 4
-      ? InterventionLevel.youDo
-      : trainingCount >= 2
-      ? InterventionLevel.weDo
-      : InterventionLevel.iDo;
+  final base = _baseLevelForCount(trainingCount);
 
   // 7.2（批次16）：无表现数据 → 维持次数分级
   if (performance == null) return base;
 
-  // G1 强制 I do：连续 3 次未达标（学员明显卡住，重新给示范）
+  // 延迟撤脚手架（保守，主）永远优先于提前撤脚手架（正向，辅）
+  return _applyDelayRules(base, performance) ??
+      _applyAdvanceRules(base, performance) ??
+      base;
+}
+
+/// 基础次数档位（逐步撤除脚手架）：0-1 次 I do / 2-3 次 We do / ≥4 次 You do
+InterventionLevel _baseLevelForCount(int trainingCount) {
+  if (trainingCount >= 4) return InterventionLevel.youDo;
+  if (trainingCount >= 2) return InterventionLevel.weDo;
+  return InterventionLevel.iDo;
+}
+
+/// 延迟撤脚手架（保守，主）—— G1 > G2 > G3，未命中返回 null 交回次数档位。
+///
+/// G1 强制 I do：连续 3 次未达标（学员明显卡住，重新给示范）
+/// G2 降一档：passRate < 0.5 且基础档位为 We do/You do
+/// G3 不升档：连续 2 次未达标且基础档位为 You do → 保持 We do
+InterventionLevel? _applyDelayRules(
+  InterventionLevel base,
+  TrainingPerformance performance,
+) {
   if (performance.consecutiveFails >= 3) return InterventionLevel.iDo;
 
-  // G2 降一档：passRate < 0.5 且基础档位为 We do/You do
   if (performance.passRate < 0.5 && base != InterventionLevel.iDo) {
     return base == InterventionLevel.youDo
         ? InterventionLevel.weDo
         : InterventionLevel.iDo;
   }
 
-  // G3 不升档：连续 2 次未达标且基础档位为 You do → 保持 We do
   if (performance.consecutiveFails >= 2 && base == InterventionLevel.youDo) {
     return InterventionLevel.weDo;
   }
 
-  // G4 提前升 We do：基础档位 I do 且首次训练即通过（全部记录通过）
+  return null;
+}
+
+/// 提前撤脚手架（正向，辅）—— G4 / G5，未命中返回 null。
+///
+/// G4 提前升 We do：基础档位 I do 且首次训练即通过（全部记录通过）
+/// G5 提前升 You do：基础档位 We do 且 2-3 次全部通过
+///
+/// 注：G4/G5 的 base 条件互斥（I do 与 We do 不可能同时成立），故顺序无关。
+InterventionLevel? _applyAdvanceRules(
+  InterventionLevel base,
+  TrainingPerformance performance,
+) {
+  final allPassed = performance.consecutivePasses == performance.totalCount;
+
   if (base == InterventionLevel.iDo &&
       performance.totalCount >= 1 &&
-      performance.consecutivePasses == performance.totalCount) {
+      allPassed) {
     return InterventionLevel.weDo;
   }
 
-  // G5 提前升 You do：基础档位 We do 且 2-3 次全部通过
   if (base == InterventionLevel.weDo &&
       performance.totalCount >= 2 &&
-      performance.consecutivePasses == performance.totalCount) {
+      allPassed) {
     return InterventionLevel.youDo;
   }
 
-  return base;
+  return null;
 }
