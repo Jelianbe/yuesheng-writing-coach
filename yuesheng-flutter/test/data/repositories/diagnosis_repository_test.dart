@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
@@ -290,6 +292,77 @@ void main() {
       await repo.removeProblem(sid, 'S999');
 
       expect(await repo.listActiveProblems(sid), hasLength(1));
+    });
+  });
+
+  // ── 批次 H：_updateDiagnosisSummary（top_syndromes 截断——此前无 active>2 场景）──
+
+  group('批次 H diagnosis_summary（top_syndromes 截断/排序/status 过滤）', () {
+    Future<Map<String, dynamic>> readSummary(String sid) async {
+      final session = await (db.select(
+        db.sessions,
+      )..where((t) => t.id.equals(sid))).getSingle();
+      return jsonDecode(session.diagnosisSummary!) as Map<String, dynamic>;
+    }
+
+    test('#1 active 4 个 → top_syndromes 截断前 3 且 L3 排首', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'S001', 'name': 'L2症候A', 'severity': 'L2'},
+            {'syndrome_id': 'S002', 'name': 'L3症候', 'severity': 'L3'},
+            {'syndrome_id': 'S003', 'name': 'L2症候B', 'severity': 'L2'},
+            {'syndrome_id': 'S004', 'name': 'L1症候', 'severity': 'L1'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+
+      final summary = await readSummary(sid);
+      final top = (summary['top_syndromes'] as List)
+          .cast<Map<String, dynamic>>();
+
+      expect(top, hasLength(3), reason: '4 个 active 截断到前 3');
+      expect(top.first['syndrome_id'], 'S002', reason: '按 L3>L2>L1 排序，L3 首位');
+      expect(top.first['severity'], 'L3');
+      expect(
+        top.map((s) => s['syndrome_id']),
+        isNot(contains('S004')),
+        reason: 'L1 被截出局',
+      );
+      expect(summary['total_problems'], 4);
+      expect(summary['resolved_problems'], 0);
+    });
+
+    test('#2 resolved 症候不进 top_syndromes，计数分离', () async {
+      final sid = await sessionRepo.createBlankSession();
+      await repo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sid,
+          messageId: 'msg-1',
+          syndromes: [
+            {'syndrome_id': 'S001', 'name': 'L2症候A', 'severity': 'L2'},
+            {'syndrome_id': 'S002', 'name': 'L3症候', 'severity': 'L3'},
+            {'syndrome_id': 'S003', 'name': 'L1症候', 'severity': 'L1'},
+          ],
+          suggestedActions: [],
+          confidence: 0.8,
+        ),
+      );
+      await repo.resolveProblem(sid, 'S002');
+
+      final summary = await readSummary(sid);
+      final top = (summary['top_syndromes'] as List)
+          .cast<Map<String, dynamic>>();
+
+      expect(top, hasLength(2), reason: 'resolved 不算 active，不进 top');
+      expect(top.map((s) => s['syndrome_id']), isNot(contains('S002')));
+      expect(summary['total_problems'], 3);
+      expect(summary['resolved_problems'], 1);
     });
   });
 }
