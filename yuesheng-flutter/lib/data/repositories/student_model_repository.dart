@@ -146,6 +146,43 @@ class StudentModelRepository {
     return null;
   }
 
+  /// 跨会话取最新有效 onboarding 数据（ADR-C71 §3.1）
+  ///
+  /// onboarding_data 写入是 session 级，但问卷本身用户级只弹一次——新会话
+  /// 读不到会致初始画像失忆。本方法取全库最新一条有效数据（非 null / 非空 /
+  /// 非 'null' 字面量，含孤儿行，与 hasAnyOnboardingData 同口径）。
+  /// 「skipped」标记不在此过滤，由调用方按 effectiveOnboarding 语义裁决。
+  Future<Map<String, dynamic>?> getLatestOnboardingData() async {
+    final row =
+        await (_db.select(_db.studentModels)
+              ..where(
+                (t) =>
+                    t.onboardingData.isNotNull() &
+                    t.onboardingData.isNotIn(const ['', 'null']),
+              )
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.updatedAt,
+                  mode: OrderingMode.desc,
+                ),
+              ])
+              ..limit(1))
+            .getSingleOrNull();
+    if (row?.onboardingData == null) return null;
+
+    try {
+      final decoded = jsonDecode(row!.onboardingData!);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'student_model.onboardingData',
+        error: e,
+        stack: st,
+      );
+    }
+    return null;
+  }
+
   /// 更新写作风格画像（批次53：并入 student_model.style_profile）
   /// 复刻目标：无 RN 真源（RN 无画像层风格字段，本批 Flutter 先行）
   Future<void> updateStyleProfile(

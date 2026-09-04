@@ -200,10 +200,20 @@ Future<ProfileTextResult> buildStudentContext({
   // M1 修复：诊断查询用 null（跨 session 全局聚合），让 LLM 看到全局画像
   // sessionId 仍用于 onboarding/cognitiveStyle/effectiveness 等会话级数据
   final entries = await diagnosisRepo.getAllDiagnoses(sessionId: null);
+  // ADR-C71 §3.2：onboarding 写入是 session 级而问卷用户级只弹一次，
+  // 本会话查不到时回退取全库最新有效数据（skipped 过滤不变），
+  // 否则第二个会话起初始画像永久失忆。
   OnboardingData? onboarding;
   if (sessionId != null) {
     final raw = await studentModelRepo.getOnboardingData(sessionId);
-    if (raw != null) onboarding = OnboardingData.fromJson(raw);
+    if (raw != null) {
+      onboarding = OnboardingData.fromJson(raw);
+    } else {
+      final fallbackRaw = await studentModelRepo.getLatestOnboardingData();
+      if (fallbackRaw != null) {
+        onboarding = OnboardingData.fromJson(fallbackRaw);
+      }
+    }
   }
   final effectiveOnboarding = (onboarding != null && !onboarding.skipped)
       ? onboarding
