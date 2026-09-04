@@ -35,49 +35,77 @@ GenUiComponent? validateGenuiComponent(Map<String, dynamic> raw) {
   if (type is! String) return null;
   if (!kGenuiWhitelist.contains(type)) return null;
 
-  switch (type) {
-    case 'diff':
-      if (raw['before'] is! String || raw['after'] is! String) return null;
-    case 'quiz':
-      final items = raw['items'];
-      if (items is! List || items.isEmpty) return null;
-      for (final it in items) {
-        if (it is! Map) return null;
-        final m = Map<String, dynamic>.from(it);
-        if (m['q'] is! String) return null;
-        if (m['options'] is! List || (m['options'] as List).length < 2) {
-          return null;
-        }
-        if (m['answer'] is! int) return null;
-      }
-    case 'stat':
-      final items = raw['items'];
-      if (items is! List || items.isEmpty) return null;
-      for (final it in items) {
-        if (it is! Map) return null;
-        final m = Map<String, dynamic>.from(it);
-        if (m['label'] is! String) return null;
-        if (m['value'] is! num) return null;
-        if (m['max'] is! num) return null;
-      }
-    case 'progress':
-      final steps = raw['steps'];
-      if (steps is! List || steps.isEmpty) return null;
-      for (final it in steps) {
-        if (it is! Map) return null;
-        final m = Map<String, dynamic>.from(it);
-        if (m['label'] is! String) return null;
-        if (m['status'] is! String) return null;
-      }
-    case 'timeline':
-      final events = raw['events'];
-      if (events is! List || events.isEmpty) return null;
-      for (final it in events) {
-        if (it is! Map) return null;
-        final m = Map<String, dynamic>.from(it);
-        if (m['date'] is! String) return null;
-        if (m['title'] is! String) return null;
-      }
-  }
+  // 白名单与校验器一一对应：新增组件类型必须同时补校验器，
+  // 否则按「未知类型」拒收（防御式——不放行未经校验的 spec）
+  final ok = switch (type) {
+    'diff' => _validateDiff(raw),
+    'quiz' => _validateQuiz(raw),
+    'stat' => _validateStat(raw),
+    'progress' => _validateProgress(raw),
+    'timeline' => _validateTimeline(raw),
+    _ => false,
+  };
+  if (!ok) return null;
+
   return GenUiComponent(type: type, data: Map<String, dynamic>.from(raw));
+}
+
+/// diff：必须含 before / after（字符串）
+bool _validateDiff(Map<String, dynamic> raw) =>
+    raw['before'] is String && raw['after'] is String;
+
+/// quiz：必须含 items 数组，每项含 q + options(≥2) + answer(int)
+bool _validateQuiz(Map<String, dynamic> raw) {
+  final items = raw['items'];
+  if (items is! List || items.isEmpty) return false;
+  for (final it in items) {
+    if (it is! Map) return false;
+    final m = Map<String, dynamic>.from(it);
+    if (m['q'] is! String) return false;
+    if (m['options'] is! List || (m['options'] as List).length < 2) {
+      return false;
+    }
+    if (m['answer'] is! int) return false;
+  }
+  return true;
+}
+
+/// stat：必须含 items 数组，每项含 label（字符串）+ value（num）+ max（num）
+bool _validateStat(Map<String, dynamic> raw) {
+  final items = raw['items'];
+  if (items is! List || items.isEmpty) return false;
+  for (final it in items) {
+    if (it is! Map) return false;
+    final m = Map<String, dynamic>.from(it);
+    if (m['label'] is! String) return false;
+    if (m['value'] is! num) return false;
+    if (m['max'] is! num) return false;
+  }
+  return true;
+}
+
+/// progress：必须含 steps 数组，每项含 label（字符串）+ status（字符串）
+bool _validateProgress(Map<String, dynamic> raw) {
+  final steps = raw['steps'];
+  if (steps is! List || steps.isEmpty) return false;
+  for (final it in steps) {
+    if (it is! Map) return false;
+    final m = Map<String, dynamic>.from(it);
+    if (m['label'] is! String) return false;
+    if (m['status'] is! String) return false;
+  }
+  return true;
+}
+
+/// timeline：必须含 events 数组，每项含 date（字符串）+ title（字符串）
+bool _validateTimeline(Map<String, dynamic> raw) {
+  final events = raw['events'];
+  if (events is! List || events.isEmpty) return false;
+  for (final it in events) {
+    if (it is! Map) return false;
+    final m = Map<String, dynamic>.from(it);
+    if (m['date'] is! String) return false;
+    if (m['title'] is! String) return false;
+  }
+  return true;
 }
