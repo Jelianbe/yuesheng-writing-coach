@@ -125,6 +125,17 @@ void main() {
     test('#4 空字符串返回单块', () {
       expect(splitContent(''), ['']);
     });
+
+    test('#5 长度恰等于 kDiagnosisChunkSize → 单块（<= 边界）', () {
+      // 摸底判据：`content.length <= SIZE` 的 `=` 侧此前无锚
+      // （#1 用例名写 "<=" 但文本远短于阈值）。
+      // 注：单段 > SIZE 的超长文本存在死循环缺陷（批次 H 侦察实锤，
+      // 已登记待办），本用例只锚 `=` 边界，不触达该路径。
+      final exact = 'X' * kDiagnosisChunkSize; // 3000，无 \n\n
+      final chunks = splitContent(exact);
+      expect(chunks, hasLength(1));
+      expect(chunks.single, exact);
+    });
   });
 
   group('buildMergePrompt', () {

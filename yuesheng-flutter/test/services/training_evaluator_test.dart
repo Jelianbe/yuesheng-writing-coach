@@ -90,6 +90,28 @@ EvaluationSummaryInput _summaryInput({
   );
 }
 
+/// 批次 H：构造恶化检测输入（默认值不触发任何信号——五路全安全）。
+DeteriorationCheckInput _detInput({
+  Severity currentSeverity = Severity.l2,
+  Severity previousSeverity = Severity.l2,
+  bool wasResolvedToL1 = false,
+  int consecutiveFailures = 0,
+  bool reboundPattern = false,
+  int gapDays = 0,
+  int newConcurrentSyndromes = 0,
+}) {
+  return DeteriorationCheckInput(
+    syndromeId: 'test-syndrome',
+    currentSeverity: currentSeverity,
+    previousSeverity: previousSeverity,
+    wasResolvedToL1: wasResolvedToL1,
+    consecutiveFailures: consecutiveFailures,
+    reboundPattern: reboundPattern,
+    gapDays: gapDays,
+    newConcurrentSyndromes: newConcurrentSyndromes,
+  );
+}
+
 void main() {
   group('批次1（O2）consolidating 毕业复核', () {
     test('#1 consolidating + 距末次观察≥14天 + 达标率≥0.7 → mastered', () {
@@ -359,6 +381,82 @@ void main() {
       expect(injection.contains('不能说"你改善了"'), isTrue);
       expect(injection.contains('不能说"你掌握了"'), isTrue);
       expect(summary.minData.fallbackPhrases, isNotEmpty);
+    });
+  });
+
+  // ── 批次 H：detectDeterioration（此前 test/ 零直接调用——V4.20 真空）──
+  // 批次 G 的 #S3 仅经 buildEvaluationSummary 间接锚了 relapse 一条；
+  // 本组按五路信号 + 无信号兜底 + 门槛边界逐分支直锚。
+
+  group('批次 H detectDeterioration（五路信号 + 门槛边界）', () {
+    test('#D1 五路全安全 → 无信号兜底', () {
+      final r = detectDeterioration(_detInput());
+      expect(r.signal, isNull);
+      expect(r.intervention, '');
+    });
+
+    test('#D2 复发：L1 缓解后再现 L2 → relapse', () {
+      final r = detectDeterioration(
+        _detInput(wasResolvedToL1: true, currentSeverity: Severity.l2),
+      );
+      expect(r.signal, DeteriorationSignal.relapse);
+      expect(r.intervention, '回到 Lv.1 训练，换一种教学方式');
+    });
+
+    test('#D3 恶化：严重度上升 + 连续失败 2 次 → worsening', () {
+      final r = detectDeterioration(
+        _detInput(
+          currentSeverity: Severity.l2,
+          previousSeverity: Severity.l1,
+          consecutiveFailures: 2,
+        ),
+      );
+      expect(r.signal, DeteriorationSignal.worsening);
+      expect(r.intervention, '停止训练该症候。改为自然语言讨论，寻找根本原因');
+    });
+
+    test('#D4 边界：严重度上升但连续失败恰好 1 次 → 不触发 worsening', () {
+      // 门槛是 >= 2：仅 1 次失败 + 其余安全 → 落无信号兜底
+      final r = detectDeterioration(
+        _detInput(
+          currentSeverity: Severity.l2,
+          previousSeverity: Severity.l1,
+          consecutiveFailures: 1,
+        ),
+      );
+      expect(r.signal, isNull);
+    });
+
+    test('#D5 新并发：新症候恰 3 个 → newConcurrent', () {
+      final r = detectDeterioration(_detInput(newConcurrentSyndromes: 3));
+      expect(r.signal, DeteriorationSignal.newConcurrent);
+      expect(r.intervention, '回到诊断确认阶段，让学员挑一个最关心的先练');
+    });
+
+    test('#D6 反弹 → rebound', () {
+      final r = detectDeterioration(_detInput(reboundPattern: true));
+      expect(r.signal, DeteriorationSignal.rebound);
+      expect(r.intervention, '检查是否跳过了难度。如果是→降回之前的难度。如果不是→检查学员状态');
+    });
+
+    test('#D7 巩固失败：间隔 8 天 + L2 → consolidationFail', () {
+      final r = detectDeterioration(
+        _detInput(gapDays: 8, currentSeverity: Severity.l2),
+      );
+      expect(r.signal, DeteriorationSignal.consolidationFail);
+      expect(r.intervention, 'FSRS 稳定度不足。增加该症候的训练频率');
+    });
+
+    test('#D8 优先级：复发条件与恶化条件同时满足 → relapse 先于 worsening', () {
+      final r = detectDeterioration(
+        _detInput(
+          wasResolvedToL1: true,
+          currentSeverity: Severity.l3,
+          previousSeverity: Severity.l1,
+          consecutiveFailures: 5,
+        ),
+      );
+      expect(r.signal, DeteriorationSignal.relapse);
     });
   });
 }
