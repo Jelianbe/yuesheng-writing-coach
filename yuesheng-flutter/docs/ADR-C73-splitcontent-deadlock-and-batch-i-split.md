@@ -1,6 +1,6 @@
 # ADR-C73：splitContent 单段超长死循环修复 + 批次 I 四函数拆分
 
-- **状态**：**草案（方案已裁决，待新会话实施）**
+- **状态**：**已实施（2026-09-04，commit ad3ebcdf 基线 + 待 commit F 台账同步落定）**
 - **日期**：2026-09-04
 - **涉及模块**：`lib/services/progressive_diagnosis.dart`（分块诊断核心链路）/
   `lib/services/teacher_validator.dart` / `lib/services/training_evaluator.dart` /
@@ -144,12 +144,36 @@ diff 最小。行为等价（纯名替换），由 H2 系变异兜底验证。
 
 ---
 
-## 8. 实施记录（待新会话回填）
+## 8. 实施记录（2026-09-04 新会话回填）
 
-- 代码改动：
-- 死循环判据用例：
-- 变异复验：
-- 基线重生成：
-- V4.14 验证：
-- 门禁：
-- 真机复核：
+- **代码改动**：
+  - commit `f76ec872` `fix(svc): splitContent 拆 2 + 修单段超长死循环`
+    progressive_diagnosis.dart splitContent 58→49；新 `_overlapStartIndex` (12) /
+    `_mergeSmallLastChunk` (8)；死循环修复（首段即超阈值时整段成块 + `continue`）
+  - commit `e2cae8b2` `refactor(svc): checkTeacherConsistency 拆 2`
+    teacher_validator.dart 主函数 56→7；新 `_checkDecisionTaskConsistency` (22) /
+    `_checkLanguageHygiene` (18)
+  - commit `fc9516c7` `refactor(svc): detectDeterioration 删冗余解包`
+    training_evaluator.dart 删 7 行解包；52→45；`input.xxx` 直引
+  - commit `d691ccba` `refactor(repo): _updateDiagnosisSummary 拆 1`
+    diagnosis_repository.dart 主函数 51→38；新 `_buildTopSyndromes` (14)
+- **死循环判据用例**：progressive_diagnosis_test.dart
+  - `#6 单段超长（>= SIZE 且无 \n\n）不挂死，整段成块`（输入 `'X' * 4000`）
+  - `#7 字符串中间夹杂 \n\n 但首段即 ≥ SIZE → 首段成块 + 后续正常切`
+- **变异复验**：`_verify_batch_h_coverage.py` 全量 **15/16 拦住**
+  - H1-V1/V2/V3、H2-V1/V2/V3/V4/V5/V6、H3-V1/V2/V3/V4/V5、H5-V1 共 15 真覆盖
+  - H4-V1 漏网：变异等价（`<=` → `<` 对 #5 单块断言无差别），按 V4.15 不硬凑
+  - 新增 H5-V1 单段原子变异（挂死形式拦截），复用 240s + taskkill /T 兜底
+  - 锚点适配 6 处（H5 新增；H2 五锚 input. 前缀；H1 两锚扩多行块）
+- **基线重生成**：commit `ad3ebcdf` `chore(r019): 基线 220→216`
+  - **`python tool/check_r019.py --json tool/r019_baseline.json`**（**绝不带 `--baseline`**）
+  - 清偿 4 函数全部移出 baseline
+- **V4.14 验证**：`_verify_r019_baseline.py` 4/4 通过
+  - splitContent 撑到 94 → 拦住（退出码 1）
+  - checkTeacherConsistency 撑到 52 → 拦住
+  - detectDeterioration 撑到 55 → 拦住
+  - _updateDiagnosisSummary 撑到 59 → 拦住
+  - 恢复字节一致 + 恢复后退出码 0 ✅
+- **门禁**：6 道门禁实质全绿（沙箱下门禁 2 用本地 wrapper `C:\Users\NewName\flutter_env.bat` 注入 PROGRAMFILES 跑全量，其他 5 道 `bash scripts/gate.sh` 直过）
+  - 全量测试 **2364 passed / 14 skipped**（基线 2362 + 新增 #6 #7）
+- **真机复核**：**未做**（生产路径 `runProgressiveDiagnosis` 死循环场景，sandbox 跑会触发 wrapper + 代理问题，建议舰长在真机或本地 developer 环境下做一次端到端：构造 `>4000` 字无 `\n\n` 长文走 D2 WritingCoachPanel 提交，确认不再挂死 isolate）
