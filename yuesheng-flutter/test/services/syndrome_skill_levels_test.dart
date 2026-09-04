@@ -253,6 +253,33 @@ void main() {
         InterventionLevel.iDo,
       );
     });
+
+    test('#G9 passRate ≥0.5 不降档（G2 上界）', () {
+      // 0.6 未跌破 0.5 门槛，且连续未达标 <2 → 维持次数档位 You do
+      final p = perf(passRate: 0.6, consecutiveFails: 0, totalCount: 5);
+      expect(
+        interventionLevelForTrainingCount(5, performance: p),
+        InterventionLevel.youDo,
+      );
+    });
+
+    test('#G10 连续未达标 1 次不触发 G3（G3 下界）', () {
+      // consecutiveFails=1 < 2 → 不降档，维持 You do
+      final p = perf(passRate: 0.8, consecutiveFails: 1, totalCount: 5);
+      expect(
+        interventionLevelForTrainingCount(5, performance: p),
+        InterventionLevel.youDo,
+      );
+    });
+
+    test('#G11 totalCount=1 不触发 G5（G5 下界）', () {
+      // 基础档位 We do（训练 2 次）+ 仅 1 条全通过记录 → 不提前升 You do
+      final p = perf(passRate: 1.0, consecutivePasses: 1, totalCount: 1);
+      expect(
+        interventionLevelForTrainingCount(2, performance: p),
+        InterventionLevel.weDo,
+      );
+    });
   });
 
   group('批次60a: focus fallback 层级优先（软引导）', () {

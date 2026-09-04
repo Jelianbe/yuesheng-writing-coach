@@ -118,6 +118,20 @@ void main() {
       expect(c, isNull);
     });
 
+    test('answer 非 int → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'quiz',
+        'items': [
+          {
+            'q': 'q',
+            'options': ['a', 'b'],
+            'answer': 0.5,
+          },
+        ],
+      });
+      expect(c, isNull);
+    });
+
     test('合法 stat → 通过', () {
       final c = validateGenuiComponent({
         'type': 'stat',
@@ -134,6 +148,26 @@ void main() {
         'type': 'stat',
         'items': [
           {'label': '画面感', 'max': 100},
+        ],
+      });
+      expect(c, isNull);
+    });
+
+    test('stat 缺 label → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'stat',
+        'items': [
+          {'value': 75, 'max': 100},
+        ],
+      });
+      expect(c, isNull);
+    });
+
+    test('stat 缺 max → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'stat',
+        'items': [
+          {'label': '画面感', 'value': 75},
         ],
       });
       expect(c, isNull);
@@ -161,6 +195,16 @@ void main() {
       expect(c, isNull);
     });
 
+    test('progress 缺 label → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'progress',
+        'steps': [
+          {'status': 'done'},
+        ],
+      });
+      expect(c, isNull);
+    });
+
     test('合法 timeline → 通过', () {
       final c = validateGenuiComponent({
         'type': 'timeline',
@@ -177,6 +221,16 @@ void main() {
         'type': 'timeline',
         'events': [
           {'date': '2026-08-01'},
+        ],
+      });
+      expect(c, isNull);
+    });
+
+    test('timeline 缺 date → 丢弃', () {
+      final c = validateGenuiComponent({
+        'type': 'timeline',
+        'events': [
+          {'title': '首次诊断'},
         ],
       });
       expect(c, isNull);
