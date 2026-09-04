@@ -127,6 +127,9 @@ void main() {
         stateRepo: TeachingStateRepository(db),
         diagnosisRepo: DiagnosisRepository(db),
         studentModelRepo: StudentModelRepository(db),
+        // ADR-C74 K-4：实体/事实落库辅助需要 referenceRepo + chapterRepo
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
       ),
     );
   }

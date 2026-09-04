@@ -22,6 +22,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
+import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -98,6 +99,14 @@ void main() {
       llmClient: llmClient,
       teacherSuggestionRepo: TeacherSuggestionRepository(db),
       editorObservationRepo: EditorObservationRepository(db),
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: sessionRepo,
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+      ),
     );
   }
 

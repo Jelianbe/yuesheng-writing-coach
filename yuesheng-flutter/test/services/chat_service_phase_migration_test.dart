@@ -109,6 +109,9 @@ void main() {
         stateRepo: stateRepo,
         diagnosisRepo: diagnosisRepo,
         studentModelRepo: studentModelRepo,
+        // ADR-C74 K-4：实体/事实落库辅助需要 referenceRepo + chapterRepo
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
       ),
     );
   }
@@ -799,6 +802,16 @@ void main() {
         teacherSuggestionRepo: TeacherSuggestionRepository(db),
         editorObservationRepo: EditorObservationRepository(db),
         outlineRepo: outlineRepo,
+        // ADR-C74 K-4：实体/事实落库辅助需要 DiagnosisCommitter
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: stateRepo,
+          diagnosisRepo: diagnosisRepo,
+          studentModelRepo: studentModelRepo,
+          referenceRepo: refRepo,
+          chapterRepo: chapterRepo,
+          outlineRepo: outlineRepo,
+        ),
       );
 
       String? finalDisplay;

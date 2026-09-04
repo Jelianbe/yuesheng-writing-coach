@@ -21,6 +21,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/character_fact_repository.dart';
 import '../data/repositories/event_fact_repository.dart';
 import '../data/repositories/outline_repository.dart';
+import '../data/repositories/reference_repository.dart';
 import '../data/repositories/subplot_fact_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/editor_observation_repository.dart';
@@ -113,6 +114,9 @@ final diagnosisCommitterProvider = Provider<DiagnosisCommitter>((ref) {
     diagnosisService: ref.watch(diagnosisServiceProvider),
     // ADR-C74 K-2：阶段迁移需读 teaching_history + 重建 EvaluationService
     studentModelRepo: StudentModelRepository(db),
+    // ADR-C74 K-4：实体/事实落库辅助需 referenceRepo + chapterRepo
+    referenceRepo: ReferenceRepository(db),
+    chapterRepo: ChapterRepository(db),
     genUi: ref.watch(genUiCapabilityProvider),
     material: ref.watch(materialCapabilityProvider),
     teaching: ref.watch(teachingCapabilityProvider),
