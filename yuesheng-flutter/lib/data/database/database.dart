@@ -54,13 +54,18 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => 27;
 
-  /// 表是否存在（迁移守卫用，C78 批次 1）
+  /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
   /// SQLite 陷阱：`PRAGMA table_info(不存在的表)` 返回**空结果集而不报错**，
   /// 会让「缺列」判定恒为真，进而 `ALTER TABLE` 一张不存在的表 →
   /// `SqliteException: no such table`。最小 schema 的迁移测试
   /// （v23 只建 manuscripts/chapters、v24 多一张 volumes）会踩到这个坑。
-  Future<bool> _tableExists(String table) async {
+  ///
+  /// C78 批次2a：由 `_tableExists` 提为公开——`FactStaleService` 的**运行期**
+  /// 路径同样要判表存在（character_fact / event_fact 是 v16 / v17 才建的表，
+  /// 最小 schema 库里永远不存在，见 `if (from < 16)` 的跳过）。同一判据在两
+  /// 处各写一遍必然走偏，且此处已踩过 PRAGMA 的坑，故复用而非另起炉灶。
+  Future<bool> tableExists(String table) async {
     final rows = await customSelect(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
       variables: [Variable.withString(table)],
@@ -765,7 +770,7 @@ class AppDatabase extends _$AppDatabase {
         // 最小 schema 的迁移测试库（v23/v24 未建 character_fact / event_fact）。
         // 若此处不判表存在，`PRAGMA table_info` 的空集会误判为「缺列」，
         // 进而 ALTER 一张不存在的表 → SqliteException（详见 _tableExists 注释）。
-        if (await _tableExists('character_fact')) {
+        if (await tableExists('character_fact')) {
           final charCols = await customSelect(
             'PRAGMA table_info(character_fact)',
           ).get();
@@ -786,7 +791,7 @@ class AppDatabase extends _$AppDatabase {
             );
           }
         }
-        if (await _tableExists('event_fact')) {
+        if (await tableExists('event_fact')) {
           final eventCols = await customSelect(
             'PRAGMA table_info(event_fact)',
           ).get();

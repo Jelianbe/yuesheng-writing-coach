@@ -42,6 +42,7 @@ import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/evaluation_service.dart';
 import 'package:writingcoach/services/fact_parser.dart';
+import 'package:writingcoach/services/fact_stale_service.dart';
 import 'package:writingcoach/services/message_card_service.dart';
 import 'package:writingcoach/services/outline_parser.dart';
 import 'package:writingcoach/services/outline_service.dart';
@@ -88,6 +89,9 @@ class DiagnosisCommitter {
   final ChapterRepository _chapterRepo;
 
   // ─── 可选依赖（X-041c 模式：nullable，不装配则跳过对应落库）───
+  // C78 批次2a：db 仅用于构造 FactStaleService（事实 stale 标记）。未装配
+  // → 跳过 stale 标记，落库行为与本批前完全一致（保护既有构造点）。
+  final AppDatabase? _db;
   final OutlineRepository? _outlineRepo;
   final CharacterFactRepository? _characterFactRepo;
   final EventFactRepository? _eventFactRepo;
@@ -112,6 +116,8 @@ class DiagnosisCommitter {
     MaterialCapability? material,
     TeachingCapability? teaching,
     DiagnosisCapability? diagnosis,
+    // C78 批次2a：事实 stale 标记需要 AppDatabase（仅依赖链最底层，无环）
+    AppDatabase? db,
     OutlineRepository? outlineRepo,
     CharacterFactRepository? characterFactRepo,
     EventFactRepository? eventFactRepo,
@@ -125,7 +131,12 @@ class DiagnosisCommitter {
        _outlineRepo = outlineRepo,
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
-       _subplotFactRepo = subplotFactRepo;
+       _subplotFactRepo = subplotFactRepo,
+       _db = db;
+
+  /// C78 批次2a：懒构建事实 stale 服务（未装配 db → null，跳过 stale 标记）。
+  FactStaleService? get _factStale =>
+      _db == null ? null : FactStaleService(_db);
 
   /// K-4：懒加载大纲服务（批次7 O2 模式，与 ChatService 同语义）。
   OutlineService? _ensureOutlineService() {
@@ -626,13 +637,7 @@ class DiagnosisCommitter {
 
       final chapter = await _chapterRepo.getChapter(pRef.refId);
       if (chapter == null) return;
-      final manuscriptId = chapter.manuscriptId;
-      final chapterNo = chapter.sortOrder;
-      final now = nowSec();
-
-      await _persistCharacterFacts(extraction, manuscriptId, chapterNo, now);
-      await _persistEventFacts(extraction, manuscriptId, chapterNo);
-      await _persistSubplotFacts(extraction, manuscriptId, chapterNo, now);
+      await _commitFacts(chapter, extraction);
 
       debugPrint(
         '[DiagnosisCommitter] A6 事实提取落库 | 人物=${extraction.characters.length} '
@@ -641,6 +646,31 @@ class DiagnosisCommitter {
     } catch (e) {
       debugPrint('[SafeRun] 事实提取三表落库失败: $e');
     }
+  }
+
+  /// 三表落库（R-019：由 [applyFactExtractionFromContent] 抽出）。
+  ///
+  /// C78 批次2a：[chapter] 已取到，正文指纹直接由 `chapter.content` 算出——
+  /// 无需再按 ADR 设想用 getChapterByOrder 反查一次，省一次查询。
+  Future<void> _commitFacts(Chapter chapter, FactExtraction extraction) async {
+    final manuscriptId = chapter.manuscriptId;
+    final chapterNo = chapter.sortOrder;
+    final now = nowSec();
+    final content = chapter.content;
+    await _persistCharacterFacts(
+      extraction,
+      manuscriptId,
+      chapterNo,
+      now,
+      chapterContent: content,
+    );
+    await _persistEventFacts(
+      extraction,
+      manuscriptId,
+      chapterNo,
+      chapterContent: content,
+    );
+    await _persistSubplotFacts(extraction, manuscriptId, chapterNo, now);
   }
 
   /// 解析 primaryRef（同 _applyOutlineEntitiesFromContent 模式）（R-019 拆出）。
@@ -675,14 +705,20 @@ class DiagnosisCommitter {
   }
 
   /// 人物事实 → character_fact（R-019 拆出）。
+  ///
+  /// C78 批次2a：[chapterContent] 用于算当前指纹，填 hash / 标旧版 / 三元组
+  /// 合并三件事全部委托 [FactStaleService.mergeAssertions]（在 upsertCharacter
+  /// 内部调用——既有断言只有在那里才读得到）。
   Future<void> _persistCharacterFacts(
     FactExtraction extraction,
     String manuscriptId,
     int chapterNo,
-    int now,
-  ) async {
+    int now, {
+    required String chapterContent,
+  }) async {
     final repo = _characterFactRepo;
     if (repo == null) return;
+    final currentHash = chapterFingerprint(chapterContent);
     for (final c in extraction.characters) {
       await repo.upsertCharacter(
         manuscriptId: manuscriptId,
@@ -690,6 +726,8 @@ class DiagnosisCommitter {
         firstSeenChapter: chapterNo,
         firstSeenAt: now,
         assertions: c.assertions,
+        chapterHash: currentHash,
+        chapterNo: chapterNo,
       );
     }
   }
@@ -698,10 +736,12 @@ class DiagnosisCommitter {
   Future<void> _persistEventFacts(
     FactExtraction extraction,
     String manuscriptId,
-    int chapterNo,
-  ) async {
+    int chapterNo, {
+    required String chapterContent,
+  }) async {
     final repo = _eventFactRepo;
     if (repo == null) return;
+    final currentHash = chapterFingerprint(chapterContent);
     for (final e in extraction.events) {
       await repo.upsertEvent(
         manuscriptId: manuscriptId,
@@ -710,8 +750,16 @@ class DiagnosisCommitter {
         chapter: e.chapter ?? chapterNo,
         participants: e.participants,
         description: e.description,
+        chapterHash: currentHash,
       );
     }
+    // C78 批次2a：本轮重新确认过的事件已被 upsert 刷成 currentHash，下面
+    // 这条判据（chapterHash != currentHash）会自动跳过它们，只标真正的旧版。
+    await _factStale?.markStaleEvents(
+      manuscriptId: manuscriptId,
+      chapterNo: chapterNo,
+      chapterHash: currentHash,
+    );
     // 第二轮：填因果边（causeEventName → causeEventId）
     for (final e in extraction.events) {
       final causeName = e.causeEventName;

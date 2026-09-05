@@ -22,6 +22,7 @@ class EventFactRepository {
     String? effectEventId,
     List<String> participants = const [],
     String description = '',
+    String? chapterHash,
   }) async {
     final now = nowSec();
     final encodedParticipants = stringifyJson(participants);
@@ -37,6 +38,7 @@ class EventFactRepository {
           effectEventId: effectEventId,
           participants: encodedParticipants,
           description: description,
+          chapterHash: chapterHash,
           now: now,
         );
       } else {
@@ -49,6 +51,7 @@ class EventFactRepository {
           effectEventId: effectEventId,
           participants: encodedParticipants,
           description: description,
+          chapterHash: chapterHash,
           now: now,
         );
       }
@@ -76,6 +79,7 @@ class EventFactRepository {
     int? chapter,
     String? causeEventId,
     String? effectEventId,
+    String? chapterHash,
   }) async {
     await _db
         .into(_db.eventFacts)
@@ -90,6 +94,7 @@ class EventFactRepository {
             effectEventId: Value(effectEventId),
             participants: Value(participants),
             description: Value(description),
+            chapterHash: Value(chapterHash),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -107,6 +112,7 @@ class EventFactRepository {
     int? chapter,
     String? causeEventId,
     String? effectEventId,
+    String? chapterHash,
   }) async {
     await (_db.update(_db.eventFacts)..where((t) => t.id.equals(id))).write(
       EventFactsCompanion(
@@ -117,6 +123,12 @@ class EventFactRepository {
         effectEventId: Value(effectEventId),
         participants: Value(participants),
         description: Value(description),
+        // C78 批次2a：仅重诊路径（带指纹）才刷新指纹并归零 stale；其余调用点
+        // 用 Value.absent() 保持原值不动，避免误清用户可见的 stale 状态。
+        chapterHash: chapterHash == null
+            ? const Value.absent()
+            : Value(chapterHash),
+        stale: chapterHash == null ? const Value.absent() : const Value(0),
         updatedAt: Value(now),
       ),
     );
