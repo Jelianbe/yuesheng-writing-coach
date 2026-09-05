@@ -60,7 +60,7 @@ import 'package:writingcoach/types/teaching_types.dart';
 /// 字段/依赖建模原则：
 ///   - 必备依赖（required）：6 个仓储 + 1 个 service + 4 个 capability
 ///   - 可选依赖（X-041c 模式）：4 个 nullable 仓储，不装配则跳过对应落库
-///   - 内部状态：B1 连续失败计数（按 session 隔离，Map<String, int>）
+///   - 内部状态：B1 连续失败计数（按 session 隔离，`Map<String, int>`）
 ///
 /// K-1 阶段无任何方法体——仅类骨架，用于验证构造签名可编译、Provider 装配
 /// 可实例化，且 ChatService 加 `final DiagnosisCommitter? _diagnosisCommitter`
@@ -86,24 +86,11 @@ class DiagnosisCommitter {
   final ReferenceRepository _referenceRepo;
   final ChapterRepository _chapterRepo;
 
-  // ─── K-3 ~ K-5 阶段按需升级为 required ───
-  final DiagnosisService? _diagnosisService;
-  final GenUiCapability? _genUi;
-  final MaterialCapability? _material;
-  final TeachingCapability? _teaching;
-  final DiagnosisCapability? _diagnosis;
-
   // ─── 可选依赖（X-041c 模式：nullable，不装配则跳过对应落库）───
   final OutlineRepository? _outlineRepo;
   final CharacterFactRepository? _characterFactRepo;
   final EventFactRepository? _eventFactRepo;
   final SubplotFactRepository? _subplotFactRepo;
-
-  // ─── 内部状态：B1 连续失败计数（按 session 隔离）───
-  ///
-  /// 来自 ChatService L187 `_consecutiveDiagnosisFails`——K-2 ~ K-5 阶段
-  /// 随方法迁入时同步迁出。K-1 阶段不消费，仅占位声明。
-  final Map<String, int> _consecutiveDiagnosisFails = {};
 
   /// K-4 阶段：懒加载 outline service 缓存（与 ChatService._ensureOutlineService 同语义）。
   /// 装配了 outlineRepo → 首次使用即构建并缓存；未装配 → 永为 null。
@@ -117,7 +104,8 @@ class DiagnosisCommitter {
     // K-4 阶段新增 required：实体/事实落库辅助需要
     required ReferenceRepository referenceRepo,
     required ChapterRepository chapterRepo,
-    // K-3 ~ K-5 阶段按需收紧为 required——K-2 阶段 nullable 以降低测试装配成本
+    // K-3 ~ K-5 阶段预留 capability/service 参数（K-9 收尾：字段已删，
+    // 参数保留以维持构造签名向后兼容；lint 未启用参数 unused 检查）
     DiagnosisService? diagnosisService,
     GenUiCapability? genUi,
     MaterialCapability? material,
@@ -133,11 +121,6 @@ class DiagnosisCommitter {
        _studentModelRepo = studentModelRepo,
        _referenceRepo = referenceRepo,
        _chapterRepo = chapterRepo,
-       _diagnosisService = diagnosisService,
-       _genUi = genUi,
-       _material = material,
-       _teaching = teaching,
-       _diagnosis = diagnosis,
        _outlineRepo = outlineRepo,
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
