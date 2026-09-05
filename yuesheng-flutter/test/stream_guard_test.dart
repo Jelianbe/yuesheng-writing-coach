@@ -119,4 +119,40 @@ void main() {
       await src.close();
     },
   );
+
+  // ── R-019 变异验证补充：connect/idle 两阶段阈值从未被区分锚定 ──
+  // 此前所有用例 connectTimeout == idleTimeout，M1 变异（恒用 idle）可观测等价。
+
+  test('#G7 首字前用 connect 阈值（≠idle）', () async {
+    final src = StreamController<String>();
+    final guarded = guardStream(
+      src.stream,
+      connectTimeout: kShort, // 200ms
+      idleTimeout: const Duration(milliseconds: 1000), // 1s
+    );
+    // 首字前：connect(200ms) 应触发；若误用 idle(1000ms)，350ms 时尚未超时
+    final seen = <Object>[];
+    final sub = guarded.listen(seen.add, onError: seen.add);
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    expect(seen.single, isA<TimeoutException>());
+    await sub.cancel();
+    await src.close();
+  });
+
+  test('#G8 收到首字后切换到 idle 阈值', () async {
+    final src = StreamController<String>();
+    final guarded = guardStream(
+      src.stream,
+      connectTimeout: kShort, // 200ms
+      idleTimeout: const Duration(milliseconds: 1000), // 1s
+    );
+    final seen = <Object>[];
+    final sub = guarded.listen(seen.add, onError: seen.add);
+    src.add('首字'); // 收到首字 → arm 切换为 idle
+    // 首字后 350ms：idle(1000ms) 未超时，不应抛错
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    expect(seen, [equals('首字')]);
+    await sub.cancel();
+    await src.close();
+  });
 }

@@ -23,11 +23,7 @@ Stream<String> guardStream(
   Duration? connectTimeout,
   Duration? idleTimeout,
 }) {
-  final connect =
-      connectTimeout ??
-      Duration(milliseconds: LlmConfig.streamConnectTimeoutMs);
-  final idle =
-      idleTimeout ?? Duration(milliseconds: LlmConfig.streamIdleTimeoutMs);
+  final (:connect, :idle) = _resolveTimeouts(connectTimeout, idleTimeout);
 
   final controller = StreamController<String>();
   Timer? timer;
@@ -38,11 +34,7 @@ Stream<String> guardStream(
     timer = Timer(firstReceived ? idle : connect, () {
       timer = null;
       controller.addError(
-        TimeoutException(
-          firstReceived
-              ? '模型响应中断（超过 ${idle.inSeconds} 秒未收到新内容）'
-              : '模型响应超时（超过 ${connect.inSeconds} 秒未返回首个字符）',
-        ),
+        TimeoutException(_buildTimeoutMessage(firstReceived, connect, idle)),
       );
     });
   }
@@ -76,3 +68,23 @@ Stream<String> guardStream(
 
   return controller.stream;
 }
+
+/// 解析两段超时阈值（R-019 拆出：guardStream 默认值解析）。
+({Duration connect, Duration idle}) _resolveTimeouts(
+  Duration? connectTimeout,
+  Duration? idleTimeout,
+) => (
+  connect:
+      connectTimeout ??
+      Duration(milliseconds: LlmConfig.streamConnectTimeoutMs),
+  idle: idleTimeout ?? Duration(milliseconds: LlmConfig.streamIdleTimeoutMs),
+);
+
+/// 超时错误文案（R-019 拆出：arm 闭包内联文案）。
+String _buildTimeoutMessage(
+  bool firstReceived,
+  Duration connect,
+  Duration idle,
+) => firstReceived
+    ? '模型响应中断（超过 ${idle.inSeconds} 秒未收到新内容）'
+    : '模型响应超时（超过 ${connect.inSeconds} 秒未返回首个字符）';
