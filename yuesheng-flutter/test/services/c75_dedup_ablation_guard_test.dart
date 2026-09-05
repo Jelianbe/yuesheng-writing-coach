@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// ADR-C73 护栏：消融 A 族 + 重叠方案 A
+// ADR-C75 护栏：消融 A 族 + 重叠方案 A
 //
 // 断言三类不变量：
 // ① 正典指针存在（§5.3/§7.3/§六/反馈要点 引用形态）；
@@ -15,13 +15,13 @@ void main() {
   final feedbackCognition = skillRegistry['feedback-cognition']!.content;
   final phaseMapper = skillRegistry['phase-mapper']!.content;
 
-  group('ADR-C73 · A4/O-1 训练完成后正典收编', () {
+  group('ADR-C75 · A4/O-1 训练完成后正典收编', () {
     test('§5.3 与 §7.3 均指向 phase-mapper 正典', () {
       expect(coachingRhythm, contains('正典见 L1 常驻层 phase-mapper「反馈要点」'));
       expect(feedbackCognition, contains('正典见 phase-mapper「反馈要点」'));
       expect(
         feedbackCognition,
-        contains('正典在 phase-mapper「反馈要点」（L1 常驻，ADR-C73）'),
+        contains('正典在 phase-mapper「反馈要点」（L1 常驻，ADR-C75）'),
       );
     });
 
@@ -34,7 +34,7 @@ void main() {
     });
   });
 
-  group('ADR-C73 · A3 核心要求去重', () {
+  group('ADR-C75 · A3 核心要求去重', () {
     test('§5.4 / §7.4 均为指针 + 各自保留模式特有条目', () {
       expect(coachingRhythm, contains('见\nphase-mapper P2 子阶段「核心要求」'));
       expect(coachingRhythm, contains('beginner 语境补充'));
@@ -51,7 +51,7 @@ void main() {
     });
   });
 
-  group('ADR-C73 · O-4 悬空引用修复', () {
+  group('ADR-C75 · O-4 悬空引用修复', () {
     test('§5.5 红线自含，不再指向未注入的 §7.5', () {
       expect(coachingRhythm, isNot(contains('同 feedback-cognition §7.5')));
       expect(coachingRhythm, contains('不虚构任何群体/同侪数据'));
@@ -61,7 +61,7 @@ void main() {
     });
   });
 
-  group('ADR-C73 · A1 用户分层双表合并', () {
+  group('ADR-C75 · A1 用户分层双表合并', () {
     test('§3.3 吸收诊断重点列，§五 整节删除', () {
       expect(teachingStrategy, contains('| 用户类型 | 教学重点 | 语气 | 诊断重点 |'));
       expect(teachingStrategy, contains('原「§五 学员分层」表已并入本表'));
@@ -72,7 +72,7 @@ void main() {
     });
   });
 
-  group('ADR-C73 · O-2 分工表矛盾修复 + 反馈要点指针自含', () {
+  group('ADR-C75 · O-2 分工表矛盾修复 + 反馈要点指针自含', () {
     test('§六 分工表与 §5.3 同向', () {
       expect(coachingRhythm, contains('训练完成后反馈正典在 phase-mapper「反馈要点」'));
     });

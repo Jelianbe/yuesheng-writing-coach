@@ -1,4 +1,4 @@
-# ADR-C73 · 消融 A 族 + 内容重叠方案 A（合并批次）：重复规定收编正典
+# ADR-C75 · 消融 A 族 + 内容重叠方案 A（合并批次）：重复规定收编正典
 
 - **状态**：Accepted（2026-09-05，舰长「按你说的来，执行下去」授权）
 - **类型**：Skill 注入内容变更（3 个 skill：teaching-strategy / coaching-rhythm / feedback-cognition）

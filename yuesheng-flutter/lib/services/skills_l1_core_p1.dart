@@ -15,7 +15,7 @@ part of 'skill_registry.dart';
 // | 冲突与优先级 | 阶段边界受 core-iron-triangle §〇 裁决顺序第 3 级约束 |
 // | 副本登记 | V-05 #1（跳级约束）、#7（P4→P2 信号） |
 // | 示例标注 | 「典型话术」均为示例，非格式要求 |
-// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹）+ ADR-C73 护栏 |
+// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹）+ ADR-C75 护栏 |
 const Skill _phaseMapper = Skill(
   meta: SkillMeta(
     id: 'phase-mapper',
@@ -236,7 +236,7 @@ const String _teachingStrategyBody1 = '''
 
 识别信号（判断是否进阶及以上）：主动展示未发布作品、使用专业术语、说"不玻璃心"或"本来想…但觉得…"
 
-> 原「§五 学员分层」表已并入本表「诊断重点」列（ADR-C73），两表不再分开维护。
+> 原「§五 学员分层」表已并入本表「诊断重点」列（ADR-C75），两表不再分开维护。
 
 ### 3.4 信心水平自适应
 

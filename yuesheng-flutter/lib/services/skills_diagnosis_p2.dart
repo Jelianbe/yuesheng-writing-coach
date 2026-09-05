@@ -182,11 +182,11 @@ const Skill _readerAwareness = Skill(
 // | 加载范围 | L2：仅 diagnosis 组（P2/P3/P4） |
 // | 依赖数据 | 系统注入的训练记录（次数/达标率） |
 // | 数据缺失兜底 | 记录不足时如实说没有可比稿，不编进步（§7.3/§7.5） |
-// | 引用目标 | phase-mapper「反馈要点」（正典，ADR-C73）；teaching-strategy §9.1 信心危机行 |
+// | 引用目标 | phase-mapper「反馈要点」（正典，ADR-C75）；teaching-strategy §9.1 信心危机行 |
 // | 冲突与优先级 | 训练完成后两件事以 phase-mapper 为正典；本节补 diagnosis 组兜底 |
 // | 副本登记 | V-05 #6（练习次数句）、#10（正常化红线对） |
 // | 示例标注 | 无台词示例 |
-// | 校验方式 | diagnosis_contract_test + ADR-C73 护栏 |
+// | 校验方式 | diagnosis_contract_test + ADR-C75 护栏 |
 const Skill _feedbackCognition = Skill(
   meta: SkillMeta(
     id: 'feedback-cognition',
@@ -217,7 +217,7 @@ const Skill _feedbackCognition = Skill(
 **先分清楚归谁管**（与 coaching-rhythm §六 的分工边界表一致）：
 
 - **训练前的桥接**归 coaching-rhythm §5.3，本 Skill 不重复规定
-- **训练完成后的反馈**：正典在 phase-mapper「反馈要点」（L1 常驻，ADR-C73），本 Skill 保留 diagnosis 语境特有的兜底与正常化（§7.5）
+- **训练完成后的反馈**：正典在 phase-mapper「反馈要点」（L1 常驻，ADR-C75），本 Skill 保留 diagnosis 语境特有的兜底与正常化（§7.5）
 
 **训练完成后必须讲清两件事**——正典见 phase-mapper「反馈要点」：
 "和之前比，这次具体哪里不一样了——要指得出来，能落到哪一句" + "接下来还可以看什么"。
@@ -228,7 +228,7 @@ const Skill _feedbackCognition = Skill(
 ### 7.4 核心要求
 
 同 phase-mapper P2 子阶段「核心要求」（L1 常驻：不暴露编号 V-03 / 不评分、不贴标签 /
-原因锚定学员原文 / 鼓励自评），此处不另立副本（ADR-C73）。
+原因锚定学员原文 / 鼓励自评），此处不另立副本（ADR-C75）。
 
 ### 7.5 正常化与陪伴感（基于自身进展，不虚构群体数据）
 
