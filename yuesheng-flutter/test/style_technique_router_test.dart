@@ -153,6 +153,15 @@ void main() {
       expect(s.candidates.single.techniqueId, 'T023');
     });
 
+    test('门控2：L2 非文笔层症候（P006 节奏停滞）活跃 → 拦截', () {
+      final s = routeStyleTechniques(
+        styleProfile: _profile(rhythm: RhythmPreference.long),
+        activeProblems: [_view('P006', '节奏停滞', Severity.l2)],
+      );
+      expect(s.isEmpty, isTrue);
+      expect(s.gatedBy, 'content_priority');
+    });
+
     test('门控2：L2 文笔层主导症候（P007 句式节奏）活跃 → 不拦截', () {
       final s = routeStyleTechniques(
         styleProfile: _profile(sensory: SensoryPreference.visual),

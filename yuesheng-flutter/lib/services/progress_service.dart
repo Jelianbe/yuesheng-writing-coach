@@ -222,6 +222,20 @@ class ProgressService {
         : 0;
 
     final buffer = StringBuffer('📝 悦生写作教练 - 学习报告\n\n');
+    _writeOverviewSection(buffer, summary, phaseName);
+    _writeProblemStatsSection(buffer, summary, resolveRate);
+    _writeActiveProblemsSection(buffer, activeProblems);
+    _writeResolvedProblemsSection(buffer, resolvedProblems);
+    _writeReportFooter(buffer);
+    return buffer.toString();
+  }
+
+  /// 报告「学习概览」段（R-019 拆出：generateReport）。
+  void _writeOverviewSection(
+    StringBuffer buffer,
+    ProgressSummary summary,
+    String phaseName,
+  ) {
     buffer.write('━━━━━━━━━━━━━━━━━━━━\n\n');
     buffer.write('📊 学习概览\n\n');
     buffer.write('当前阶段：$phaseName\n');
@@ -241,41 +255,61 @@ class ProgressService {
     buffer.write('诊断次数：${summary.totalDiagnoses} 次\n');
     buffer.write('首次诊断：${_formatDate(summary.firstDiagnosisAt)}\n');
     buffer.write('最近诊断：${_formatDate(summary.lastDiagnosisAt)}\n\n');
+  }
+
+  /// 报告「问题统计」段（R-019 拆出：generateReport）。
+  void _writeProblemStatsSection(
+    StringBuffer buffer,
+    ProgressSummary summary,
+    int resolveRate,
+  ) {
     buffer.write('━━━━━━━━━━━━━━━━━━━━\n\n');
     buffer.write('🎯 问题统计\n\n');
     buffer.write('总问题数：${summary.totalProblems}\n');
     buffer.write('已解决：${summary.resolvedProblems}\n');
     buffer.write('待改进：${summary.activeProblems}\n');
     buffer.write('解决率：$resolveRate%\n\n');
+  }
 
-    if (activeProblems.isNotEmpty) {
-      buffer.write('━━━━━━━━━━━━━━━━━━━━\n\n');
-      buffer.write('🔴 待改进问题（${activeProblems.length}个）\n\n');
-      for (var i = 0; i < activeProblems.length; i++) {
-        final p = activeProblems[i];
-        buffer.write(
-          '${i + 1}. ${p.syndromeName}（${severityLabels[p.severity] ?? p.severity.value}）\n',
-        );
-        buffer.write('   发现时间：${_formatDate(p.firstDetectedAt)}\n\n');
-      }
+  /// 报告「待改进问题」段（R-019 拆出：generateReport）。
+  void _writeActiveProblemsSection(
+    StringBuffer buffer,
+    List<ProblemStat> active,
+  ) {
+    if (active.isEmpty) return;
+    buffer.write('━━━━━━━━━━━━━━━━━━━━\n\n');
+    buffer.write('🔴 待改进问题（${active.length}个）\n\n');
+    for (var i = 0; i < active.length; i++) {
+      final p = active[i];
+      buffer.write(
+        '${i + 1}. ${p.syndromeName}（${severityLabels[p.severity] ?? p.severity.value}）\n',
+      );
+      buffer.write('   发现时间：${_formatDate(p.firstDetectedAt)}\n\n');
     }
+  }
 
-    if (resolvedProblems.isNotEmpty) {
-      buffer.write('━━━━━━━━━━━━━━━━━━━━\n\n');
-      buffer.write('🟢 已解决问题（${resolvedProblems.length}个）\n\n');
-      for (var i = 0; i < resolvedProblems.length; i++) {
-        final p = resolvedProblems[i];
-        buffer.write(
-          '${i + 1}. ${p.syndromeName}（${severityLabels[p.severity] ?? p.severity.value}）\n',
-        );
-        buffer.write('   发现：${_formatDate(p.firstDetectedAt)}\n');
-        buffer.write('   解决：${_formatDate(p.resolvedAt)}\n\n');
-      }
+  /// 报告「已解决问题」段（R-019 拆出：generateReport）。
+  void _writeResolvedProblemsSection(
+    StringBuffer buffer,
+    List<ProblemStat> resolved,
+  ) {
+    if (resolved.isEmpty) return;
+    buffer.write('━━━━━━━━━━━━━━━━━━━━\n\n');
+    buffer.write('🟢 已解决问题（${resolved.length}个）\n\n');
+    for (var i = 0; i < resolved.length; i++) {
+      final p = resolved[i];
+      buffer.write(
+        '${i + 1}. ${p.syndromeName}（${severityLabels[p.severity] ?? p.severity.value}）\n',
+      );
+      buffer.write('   发现：${_formatDate(p.firstDetectedAt)}\n');
+      buffer.write('   解决：${_formatDate(p.resolvedAt)}\n\n');
     }
+  }
 
+  /// 报告结尾段（R-019 拆出：generateReport）。
+  void _writeReportFooter(StringBuffer buffer) {
     buffer.write('━━━━━━━━━━━━━━━━━━━━\n');
     buffer.write('✨ 继续加油，坚持写作！');
-    return buffer.toString();
   }
 
   /// 解析 syndromes JSON 计数（对齐 RN：Array.isArray ? length : 0）

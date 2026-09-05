@@ -261,5 +261,38 @@ void main() {
       expect(report, contains('情绪标签化（严重）'));
       expect(report, contains('继续加油，坚持写作！'));
     });
+
+    test('#6 已解决问题段 + 精确解决率', () async {
+      await updateTeachingState(phase: 'P2_PRACTICE_LOOP');
+      await insertDiagnosis(
+        timestamp: 1000,
+        syndromes: [
+          {'syndrome_id': 's1', 'name': '情绪标签化', 'severity': 'L3'},
+          {'syndrome_id': 's2', 'name': '情节断裂', 'severity': 'L2'},
+        ],
+      );
+      await insertProblem(
+        syndromeId: 's1',
+        name: '情绪标签化',
+        severity: 'L3',
+        status: 'active',
+        createdAt: 1000,
+      );
+      await insertProblem(
+        syndromeId: 's2',
+        name: '情节断裂',
+        severity: 'L2',
+        status: 'resolved',
+        createdAt: 1000,
+        resolvedAt: 2000,
+      );
+
+      final report = await ProgressService(db).generateReport(sessionId);
+
+      expect(report, contains('总问题数：2'));
+      expect(report, contains('解决率：50%'));
+      expect(report, contains('已解决问题（1个）'));
+      expect(report, contains('情节断裂（中等）'));
+    });
   });
 }

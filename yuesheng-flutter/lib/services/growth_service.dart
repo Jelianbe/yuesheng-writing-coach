@@ -224,7 +224,22 @@ extension GrowthStatsExtension on GrowthService {
       'SELECT COUNT(*) AS total FROM diagnosis_results',
     )).getSingleOrNull();
 
-    // 批次61：训练次数（跨会话聚合 teaching_history type='training' 记录）
+    final trainingCount = await _countTrainingRecords();
+    final diagTotal = totalDiagnoses?.read<int>('total') ?? 0;
+
+    return _buildGrowthOverview(
+      wordRow: wordRow,
+      diagRow: diagRow,
+      phaseRow: phaseRow,
+      daysRow: daysRow,
+      timeRow: timeRow,
+      diagTotal: diagTotal,
+      trainingCount: trainingCount,
+    );
+  }
+
+  /// 训练次数（跨会话聚合 teaching_history type='training' 记录，批次61）。
+  Future<int> _countTrainingRecords() async {
     final trainingRows = await (_db.select(_db.studentModels)).get();
     var trainingCount = 0;
     for (final m in trainingRows) {
@@ -240,9 +255,19 @@ extension GrowthStatsExtension on GrowthService {
         // 单条历史解析失败不影响其余
       }
     }
+    return trainingCount;
+  }
 
-    final diagTotal = totalDiagnoses?.read<int>('total') ?? 0;
-
+  /// 组装成长总览（R-019 拆出：getGrowthOverview）。
+  GrowthOverview _buildGrowthOverview({
+    required QueryRow? wordRow,
+    required QueryRow? diagRow,
+    required QueryRow? phaseRow,
+    required QueryRow? daysRow,
+    required QueryRow? timeRow,
+    required int diagTotal,
+    required int trainingCount,
+  }) {
     return GrowthOverview(
       totalWords: wordRow?.read<int>('total') ?? 0,
       totalDiagnoses: diagTotal,
