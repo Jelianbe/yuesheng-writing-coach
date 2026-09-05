@@ -238,6 +238,39 @@ void main() {
       );
       // FSRS 未启用，但非 FSRS 降级路径让 mastered 可达
       expect(detail.teachingState, TeachingState.mastered);
+      // M6/M7 锚定（R-019 批次十五）：mastered 迁移应持久化（updateTeachingState）
+      // 并立即解锁（resolveSyndromesBatch）→ active 列表不应再含 s1
+      final problemsAfter = await diagnosisRepo.listActiveProblems(sessionId);
+      expect(
+        problemsAfter.any((p) => p.syndromeId == 's1'),
+        isFalse,
+        reason: 'mastered 状态迁移应落库并解锁 active_problem',
+      );
+    });
+
+    test('#10 无训练记录 → totalCount 下限 1（M8 锚定，R-019 批次十五）', () async {
+      final sessionId = await seedSession();
+      await seedDiagnosis(sessionId);
+      // 2 条 diagnosis 记录（>=2 不返回 null），无 training 记录
+      // → trainingInput.passRateInput.totalCount == 0 → 下限 1
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      for (int i = 0; i < 2; i++) {
+        await studentModelRepo.appendTeachingHistory(sessionId, {
+          'type': 'diagnosis',
+          'syndromes': ['s1'],
+          'maxSeverity': 'L2',
+          'timestamp': now - (2 - i) * 1000,
+          'sessionId': sessionId,
+        });
+      }
+
+      final result = await service.computeRoundEvaluation(sessionId, 0);
+
+      expect(result, isNotNull);
+      final detail = result!.syndromeDetails.firstWhere(
+        (d) => d.syndromeId == 's1',
+      );
+      expect(detail.totalCount, 1);
     });
   });
 
