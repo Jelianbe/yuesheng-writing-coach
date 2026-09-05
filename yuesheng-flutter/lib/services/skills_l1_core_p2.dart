@@ -160,7 +160,7 @@ const Skill _teachingModes = Skill(
   content: '''# SKILL: 教学方式选择（双轨道）
 
 > **来源**: 从 teaching-strategy §八 抽离，独立加载以便 P1+ 阶段精准控制
-> **loadWhen**: P1+ 必加载（教学方式选择影响诊断和训练环节）
+> **loadWhen**: L1 常驻，全 phase 注入（教学方式选择影响诊断和训练环节）
 
 ## 一、概述
 
