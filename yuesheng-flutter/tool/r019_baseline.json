@@ -4,13 +4,6 @@
   "fileCount": 293,
   "violations": [
     {
-      "file": "lib/services/chat_service.dart",
-      "func": "_sendMessageCore",
-      "start": 548,
-      "end": 858,
-      "lines": 311
-    },
-    {
       "file": "lib/widgets/growth_content.dart",
       "func": "_buildContent",
       "start": 16,

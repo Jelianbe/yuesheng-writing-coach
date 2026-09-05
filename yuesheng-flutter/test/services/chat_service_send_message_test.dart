@@ -36,15 +36,16 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 /// Fake LLM 客户端：预设 streamChat 响应
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
   final Exception? _error;
   final int _chunkSize;
+  int callCount = 0;
 
   FakeLlmClient(this._fullResponse, {Exception? error, int chunkSize = 10})
     : _error = error,
@@ -56,6 +57,7 @@ class FakeLlmClient extends LlmClient {
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
   }) async {
+    callCount++;
     if (_error != null) throw _error;
 
     for (int i = 0; i < _fullResponse.length; i += _chunkSize) {
@@ -697,5 +699,57 @@ void main() {
       expect(completeContent, isNotNull);
       expect(completeContent!.contains('[YS_DIAGNOSIS]'), false);
     });
+  });
+
+  test(
+    '#10 sendMessage 用户取消（LlmRequestCancelledException）→ onCancelled 而非 onError',
+    () async {
+      final cancelService = buildChatService(
+        FakeLlmClient('', error: LlmRequestCancelledException()),
+      );
+      var cancelled = false;
+      var errorMsg = '';
+      await cancelService.sendMessage(
+        sessionId,
+        '测试内容',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (err) => errorMsg = err,
+          onCancelled: () => cancelled = true,
+        ),
+        defaultOptions,
+      );
+
+      expect(cancelled, isTrue);
+      expect(errorMsg, isEmpty);
+    },
+  );
+
+  test('#11 FT-22 只诊断边界：内容含「只要诊断」→ teacher 建议跳过（LLM 仅主调用一次）', () async {
+    // 主 LLM 响应含诊断块（teacher 本应触发）；「只要诊断」使 teacher 被跳过
+    final llm = FakeLlmClient(
+      '你的文本节奏偏快。\n[YS_DIAGNOSIS]'
+      '\n{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"测试"},'
+      '{"syndrome_id":"s2","name":"节奏过密","severity":"L2","evidence":[],"explanation":"测试"},'
+      '{"syndrome_id":"s3","name":"结构松散","severity":"L2","evidence":[],"explanation":"测试"}],'
+      '"suggested_actions":[],"confidence":0.8}'
+      '\n[/YS_DIAGNOSIS]',
+    );
+    final chatService = buildChatService(llm);
+    await chatService.sendMessage(
+      sessionId,
+      '只要诊断，先别给建议。',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+      subphase: TeachingSubphase.feedback,
+    );
+
+    // 主 LLM 调用 1 次；teacher stream 因「只诊断」被跳过（不追加第 2 次）
+    expect(llm.callCount, 1);
   });
 }

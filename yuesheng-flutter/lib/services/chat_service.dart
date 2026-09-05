@@ -159,7 +159,6 @@ class ChatService {
     );
   }
 
-
   ChatService({
     required SessionRepository sessionRepo,
     required TeachingStateRepository stateRepo,
@@ -346,6 +345,7 @@ class ChatService {
     );
   }
 }
+
 // K-9 移除: commitDiagnosisFromContent + _readOutlineEntityCount 已迁 DiagnosisFlowHandler
 extension ChatServiceDiagnosisFocus on ChatService {
   /// 批次1（O1）：Teacher 升级阀——某症候严重度达阈值或诊断次数达阈值时，
@@ -544,6 +544,56 @@ extension ChatServiceSendRun on ChatService {
 /// sendMessage 主流程实现（批次96-25 从宿主逐字迁出，行为零变更）。
 /// 命名为 _sendMessageCore 以避免遮蔽宿主保留的薄实例方法 sendMessage，
 /// 从而维持子类 override / 测试替身（_FakeChatService）的派发语义。
+/// teaching state 解析结果（R-019 拆出，供 _sendMessageCore 使用）。
+typedef _TeachingContext = ({
+  TeachingSubphase? subphase,
+  bool isBeginner,
+  BeginnerLevel? beginnerLevel,
+  TeachingPhase phase,
+});
+
+/// 心流窗口判定结果（R-019 拆出）。
+typedef _FlowWindow = ({bool flowBypassed, bool rapidFire});
+
+/// 上下文注入装配结果（R-019 拆出，供 _sendMessageCore 使用）。
+typedef _InjectedContext = ({
+  ReferenceItem? primaryRef,
+  String? chapterContent,
+  String? trainingSyndromeId,
+});
+
+/// 会话/教学上下文加载结果（R-019 第二层编排拆出）。
+typedef _LoadedContext = ({
+  List<Message> history,
+  TeachingSubphase? currentSubphase,
+  bool isBeginner,
+  BeginnerLevel? beginnerLevel,
+  TeachingPhase effectivePhase,
+  List<ActiveProblemView> activeProblems,
+});
+
+/// 消息列表 + 注入装配结果（R-019 第二层编排拆出）。
+typedef _AssembledContext = ({
+  List<ChatMessage> messages,
+  ReferenceItem? primaryRef,
+  String? chapterContent,
+  String? trainingSyndromeId,
+  Map<String, List<int>> stageIndexes,
+  void Function(String) markStage,
+});
+
+/// sendMessageCore 装配完成后的完整发送上下文（R-019 拆出）。
+typedef _SendContext = ({
+  List<ChatMessage> messages,
+  ReferenceItem? primaryRef,
+  String? chapterContent,
+  String? trainingSyndromeId,
+  List<ActiveProblemView> activeProblems,
+  TeachingSubphase? currentSubphase,
+  bool rapidFire,
+  bool flowBypassed,
+});
+
 extension ChatServiceSend on ChatService {
   Future<void> _sendMessageCore(
     String sessionId,
@@ -552,308 +602,620 @@ extension ChatServiceSend on ChatService {
     SendMessageOptions options, {
     TeachingSubphase? subphase,
   }) async {
-    debugPrint(
-      '[ChatService] sendMessage 开始 | session=$sessionId | content="${content.length > 50 ? '${content.substring(0, 50)}...' : content}" | phase=${options.phase} | attitude=${options.attitude}',
-    );
-    // 批次59/64：心流判定（Just-in-Time 触发三问第 3 问）
-    // 批次64（B62g）：叠加编辑器活跃——距上一条消息 < 60s 或最近 120s 内有编辑
-    // 批次1（O1）：Teacher 升级阀——某症候严重度/诊断次数达阈值时绕过心流窗口
-    //（判定放在步骤 4 加载活跃症候之后，见下方 _shouldBypassFlowWindow）
+    _logSendStart(sessionId, content, options);
     final nowAtSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     try {
-      // 1. 写入用户消息
-      // 批次71：@ 引用快照随 user 消息落库（气泡底部引用徽章展示 + 点击跳转）
-      await _sessionRepo.addMessage(
+      // 1-7. 用户消息落库 + 上下文装配（R-019 第二层编排拆出）
+      final ctx = await _assembleSendContext(
         sessionId,
-        'user',
         content,
-        referencesJson: options.referencesJson,
+        options,
+        subphase,
+        nowAtSec,
       );
-      debugPrint('[ChatService] 步骤1: user 消息已写入');
-
-      // 2. 获取历史消息（已含 user）
-      final history = await _sessionRepo.listMessages(sessionId);
-      debugPrint('[ChatService] 步骤2: 历史消息 ${history.length} 条');
-
-      // 3. 读取 teaching state
-      TeachingSubphase? currentSubphase = subphase;
-      bool isBeginner = false;
-      BeginnerLevel? beginnerLevel; // 批次60：技能层级软引导用
-      // 批次6 M2：阶段上下文优先取 DB 持久化 currentPhase。
-      // options.phase 由 UI 层硬编码（chat_page 恒为 p0Engage），可能与学员真实阶段
-      // 不一致——已到 P2/P3 的学员在聊天页发消息，AI 仍按 P0 语境响应。DB 为准。
-      var effectivePhase = options.phase;
-      try {
-        final ts = await _stateRepo.getTeachingState(sessionId);
-        if (ts != null) {
-          currentSubphase =
-              subphase ?? TeachingSubphase.fromString(ts.currentSubphase);
-          final level = ts.beginnerLevel;
-          beginnerLevel = BeginnerLevel.fromString(level);
-          isBeginner =
-              level != null &&
-              level != BeginnerLevel.n4Independent.value &&
-              level != BeginnerLevel.n3Diagnose.value;
-          final dbPhase = TeachingPhase.fromString(ts.currentPhase);
-          if (dbPhase != null) effectivePhase = dbPhase;
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] getTeachingState+解析失败: $e');
-        currentSubphase = subphase;
-      }
-
-      // 4. 加载活跃症候
-      final activeProblems = await _diagnosisRepo.listActiveProblems(sessionId);
-      debugPrint('[ChatService] 步骤4: 活跃症候 ${activeProblems.length} 个');
-
-      // 观测：训练阶段进入（Layer 2 认知桥接应在此发生）。
-      //
-      // 背景：桥接由 coaching-rhythm §五 以 Skill 文本驱动 LLM 输出——
-      // 无代码强制、无结构化标记（项目其余环节均有 [YS_*] 标记块，
-      // 唯独桥接没有）。因此「是否真的桥接了」系统本身无从得知，
-      // 用户若没收到桥接，就会「被推着练、不知道自己走在哪条路上」，
-      // 而日志里不会有任何痕迹。
-      //
-      // 此处先记录「应当桥接的时刻」，供事后按 sessionId 抽查这些轮次的
-      // 实际回复，验证桥接是否真的发生。不阻断、不改行为。
-      if (currentSubphase == TeachingSubphase.practice) {
-        debugPrint(
-          '[Bridge] 训练阶段进入 | sessionId=$sessionId '
-          '| phase=${effectivePhase.value} | subphase=practice '
-          '| activeProblems=${activeProblems.length}',
-        );
-      }
-
-      // 批次1（O1）：Teacher 升级阀——慢性/重度症候绕过心流窗口，让建议出得来
-      final flowBypassed = await _shouldBypassFlowWindow(
-        sessionId,
-        activeProblems,
-      );
-      final rapidFire = isInFlow(
-        lastSendAtSec: _lastUserSendAtSec[sessionId],
-        lastEditorEditAtSec: options.lastEditorEditAtSec,
-        nowAtSec: nowAtSec,
-        bypassFlowWindow: flowBypassed,
-        // 批次6（6.8 M4）：求助关键词（不会/怎么/卡住了/没思路）命中
-        // → 绕过心流抑制，主动求助及时反馈
-        helpSignal: content,
-      );
-      _lastUserSendAtSec[sessionId] = nowAtSec;
-
-      // 5. 拼接 system prompt（L1 + L2）
-      final skillCtx = SkillLoadContext(
-        phase: effectivePhase,
-        attitude: options.attitude,
-        subphase: currentSubphase,
-        isBeginner: isBeginner,
-      );
-      final promptResult = _teaching.buildSystemPrompt(skillCtx);
-
-      final messages = <ChatMessage>[
-        ChatMessage(role: 'system', content: promptResult.systemPrompt),
-      ];
-
-      // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据，2026-08-11）
-      // 只记录非保底层；systemPrompt 内嵌的 L2 组与保底阶段不记录、不裁。
-      final stageIndexes = <String, List<int>>{};
-      void markStage(String stage) {
-        (stageIndexes[stage] ??= []).add(messages.length);
-      }
-
-      // 5.0-5.2 上下文注入（R-019 三级拆分：步骤块提取至 MessageInjector，ADR-C74 K-7）
-      await _messageInjector.injectProfileAndIntents(
-        sessionId: sessionId,
-        content: content,
-        messages: messages,
-        markStage: markStage,
-      );
-      final refCtx = await _messageInjector.injectReferences(
-        sessionId: sessionId,
-        messages: messages,
-        markStage: markStage,
-      );
-      final primaryRef = refCtx.primaryRef;
-      final chapterContent = refCtx.chapterContent;
-      await _messageInjector.injectChapterObservations(
-        sessionId: sessionId,
-        content: content,
-        primaryRef: primaryRef,
-        messages: messages,
-      );
-      await _messageInjector.injectOutlineFactsAndFiles(
-        content: content,
-        primaryRef: primaryRef,
-        messages: messages,
-        markStage: markStage,
-      );
-      final trainingSyndromeId = await _messageInjector.injectDiagnosisLock(
-        sessionId: sessionId,
-        content: content,
-        activeProblems: activeProblems,
-        currentSubphase: currentSubphase,
-        beginnerLevel: beginnerLevel,
-        messages: messages,
-        markStage: markStage,
-      );
-      // 6.5 临场输出约束：在所有教学内容注入后、历史对话前追加
-      // 真源：RN e8c46bb（表达密度提交）——利用 LLM recency bias
-      // 确保表达密度规则不被后面的详细教学内容覆盖
-      //（Flutter 曾缺失：三档态度 skill 表达密度小节 + 本约束，批次 41 补齐）
-      // 示范规则以当前态度档位为准：doubao/yuesheng 最小示范，sensei 零示范（只给方向）
-      messages.add(
-        ChatMessage(role: 'system', content: kLiveOutputConstraints),
-      );
-
-      // 7. 追加历史消息
-      for (final m in history) {
-        markStage(BudgetStageNames.history);
-        messages.add(ChatMessage(role: m.role, content: m.content));
-      }
-
-      // 批次4（4.3）+ X-040 PHI P2（2026-08-27）：临场输出约束双保险——历史消息后追加 L1 核心纪律重申。
-      // 主约束在历史之前（利用 recency bias），此处兜底防止长历史稀释其优先级。
-      // X-040 P2：由原「极简一句话」扩充为浓缩版 6 项核心纪律重申（~150 tokens），
-      // 覆盖 L1 中易在长对话中漂移的不可越界/表达/诊断/格式/身份约束；
-      // 仍为浓缩版不重复整段 L1（避免预算爆增，主约束仍在前置 systemPrompt）。
-      messages.add(
-        ChatMessage(
-          role: 'system',
-          content:
-              '# 回复纪律（最后提醒）\n\n'
-              '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
-              '1. 不替用户写句子、不替用户做决定；\n'
-              '2. 一次只抛一个点，删掉铺垫；\n'
-              '3. 示范按当前态度档位执行：doubao/yuesheng 最小示范，sensei 零示范只给方向；\n'
-              '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
-              '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
-              '6. 诊断块用 ```diagnosis``` 包裹，卡片块用对应标签，不裸露 JSON。',
-        ),
-      );
-
-      // 7.0 运行时 token 预算闸门（2026-08-11 体检落地）
-      // 总估算超 maxBudget 时按 TokenBudgetTable.planDegradation() 顺序
-      // 整段裁掉已标记的可降级阶段；超 warning 线不裁仅提示。
-      final guardReport = TokenBudgetGuard.apply(
-        messages,
-        stageIndexes: stageIndexes,
-      );
-      if (guardReport.triggered) {
-        debugPrint(
-          '[ChatService] 预算闸门触发降级: 裁 ${guardReport.droppedMessageCount} 条'
-          '（${guardReport.droppedStages.join('、')}）'
-          ' | ${guardReport.totalBefore}→${guardReport.totalAfter} tokens',
-        );
-      } else if (guardReport.overWarning) {
-        debugPrint(
-          '[ChatService] 预算超警告线未裁剪: ~${guardReport.totalBefore}'
-          ' > ${(TokenEstimate.maxBudget * TokenEstimate.warningRatio).round()}',
-        );
-      }
-      // X-040 PHI 迁移 P1：素材缺失提示注入
-      // guard 裁掉 references/attachedFiles/fact 任一素材阶段时，
-      // 在末尾追加 PHI 提醒，告知 LLM 不要假定素材内容直接诊断；
-      // 完整 L1 核心约束 PHI 迁移作为后续 P2（影响面大需独立评估）。
-      if (guardReport.dropped) {
-        final materialStages = guardReport.droppedStages
-            .where(
-              (s) =>
-                  s == BudgetStageNames.references ||
-                  s == BudgetStageNames.attachedFiles ||
-                  s == BudgetStageNames.fact,
-            )
-            .toList();
-        if (materialStages.isNotEmpty) {
-          messages.add(
-            ChatMessage(
-              role: 'system',
-              content:
-                  '# 素材缺失提示（X-040 PHI）\n\n'
-                  '由于本轮 token 预算超限，已裁掉以下用户素材：${materialStages.join('、')}。\n'
-                  '回复时：\n'
-                  '1. 不得假定素材内容直接给出诊断结论；\n'
-                  '2. 若回复需这些内容支撑，明确告知用户需重新提供或简化提供；\n'
-                  '3. 可基于现有上下文（活跃症候 + 历史对话）做方向性引导。',
-            ),
-          );
-        }
-      }
-      debugPrint(
-        '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${messages.length}（含 system + history）',
-      );
-
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
-        messages: messages,
+        messages: ctx.messages,
         callbacks: callbacks,
         options: options,
       );
       final fullContent = streamResult.fullContent;
       final inDiagnosisBlock = streamResult.inDiagnosisBlock;
 
-      // 9-10. 解析 + 校验 + 落库（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
-      // FT-22：检测用户「只诊断不要建议」边界声明，命中则跳过 teacher stream
-      final diagnosisOnly = isDiagnosisOnlyRequest(content);
-      if (diagnosisOnly) {
-        debugPrint('[ChatService] FT-22: 检测到「只诊断」边界声明，跳过 teacher 建议');
-      }
-      final parsed = await _diagnosisFlowHandler.parseAndPersist(
+      // 9-11. 解析 + 提交 + 训练 + onComplete（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
+      await _runDiagnosisFlow(
         sessionId: sessionId,
+        content: content,
         fullContent: fullContent,
         inDiagnosisBlock: inDiagnosisBlock,
-        primaryRef: primaryRef,
-        chapterContent: chapterContent,
+        primaryRef: ctx.primaryRef,
+        chapterContent: ctx.chapterContent,
+        trainingSyndromeId: ctx.trainingSyndromeId,
+        activeProblems: ctx.activeProblems,
+        currentSubphase: ctx.currentSubphase,
+        rapidFire: ctx.rapidFire,
+        flowBypassed: ctx.flowBypassed,
         callbacks: callbacks,
         options: options,
-        diagnosisOnly: diagnosisOnly,
       );
-      // 步骤 10 空响应提前结束（onError 已触发，等价原 return）
-      if (parsed.aborted) return;
-
-      // 11. 诊断提交 + Teacher suggestion + GenUI 卡片（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
-      await _diagnosisFlowHandler.commitDiagnosisAndSuggestions(
-        sessionId: sessionId,
-        diagnosis: parsed.diagnosis,
-        messageId: parsed.messageId,
-        primaryRef: primaryRef,
-        teacherResult: parsed.teacherResult,
-        rapidFire: rapidFire,
-        flowBypassed: flowBypassed,
-        genuiComponents: parsed.genuiComponents,
-      );
-      // 批次50 临时测量：回复长度观测（决策前置：先量化 standard 档是否真超长）
-      // 仅 debug 留痕不干预；批次 52 汇成节奏体检报告后按结论处置。
-      _observeReplyLength(
-        parsed.displayContent,
-        content,
-        options.attitude,
-        currentSubphase,
-      );
-
-      // 11. 训练结果解析 + teaching_history 写入（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
-      await _diagnosisFlowHandler.handleTrainingResult(
-        sessionId: sessionId,
-        currentSubphase: currentSubphase,
-        displayContent: parsed.displayContent,
-        userContent: content,
-        trainingSyndromeId: trainingSyndromeId,
-        activeProblems: activeProblems,
-        callbacks: callbacks,
-      );
-      await callbacks.onComplete(parsed.finalContent, parsed.messageId);
-      debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
     } catch (e) {
-      debugPrint('[ChatService] sendMessage 异常: $e');
-      // 区分「用户主动取消」与「真实失败」：取消是预期行为，
-      // 走 onCancelled 让 UI 优雅复位（不标记消息失败、不弹红错）；
-      // 其余异常走 onError。
-      final cancelled =
-          e is LlmRequestCancelledException ||
-          (options.cancelToken?.isCancelled ?? false);
-      if (cancelled) {
-        callbacks.onCancelled?.call();
-      } else {
-        callbacks.onError(e is Exception ? e.toString() : '发送失败');
+      _handleSendError(e, callbacks, options);
+    }
+  }
+
+  /// 读取并解析 teaching state（批次6 M2：DB currentPhase 优先）。
+  /// 返回阶段/等级上下文（R-019 拆出）。
+  Future<_TeachingContext> _prepareTeachingState(
+    String sessionId,
+    TeachingSubphase? fallbackSubphase,
+    TeachingPhase fallbackPhase,
+  ) async {
+    TeachingSubphase? currentSubphase = fallbackSubphase;
+    bool isBeginner = false;
+    BeginnerLevel? beginnerLevel; // 批次60：技能层级软引导用
+    var effectivePhase = fallbackPhase;
+    try {
+      final ts = await _stateRepo.getTeachingState(sessionId);
+      if (ts != null) {
+        currentSubphase =
+            fallbackSubphase ?? TeachingSubphase.fromString(ts.currentSubphase);
+        final level = ts.beginnerLevel;
+        beginnerLevel = BeginnerLevel.fromString(level);
+        isBeginner =
+            level != null &&
+            level != BeginnerLevel.n4Independent.value &&
+            level != BeginnerLevel.n3Diagnose.value;
+        final dbPhase = TeachingPhase.fromString(ts.currentPhase);
+        if (dbPhase != null) effectivePhase = dbPhase;
+      }
+    } catch (e) {
+      debugPrint('[SafeRun] getTeachingState+解析失败: $e');
+      currentSubphase = fallbackSubphase;
+    }
+    return (
+      subphase: currentSubphase,
+      isBeginner: isBeginner,
+      beginnerLevel: beginnerLevel,
+      phase: effectivePhase,
+    );
+  }
+
+  /// 记录「应当桥接」的训练阶段进入时刻（仅观测不阻断，R-019 拆出）。
+  void _observeBridgeEntry(
+    String sessionId,
+    TeachingSubphase? currentSubphase,
+    TeachingPhase phase,
+    List<ActiveProblemView> activeProblems,
+  ) {
+    if (currentSubphase != TeachingSubphase.practice) return;
+    debugPrint(
+      '[Bridge] 训练阶段进入 | sessionId=$sessionId '
+      '| phase=${phase.value} | subphase=practice '
+      '| activeProblems=${activeProblems.length}',
+    );
+  }
+
+  /// Teacher 升级阀 + 心流窗口判定（批次1 O1 / 批次59，R-019 拆出）。
+  Future<_FlowWindow> _resolveFlowWindow(
+    String sessionId,
+    List<ActiveProblemView> activeProblems,
+    int? lastEditorEditAtSec,
+    int nowAtSec,
+    String content,
+  ) async {
+    final flowBypassed = await _shouldBypassFlowWindow(
+      sessionId,
+      activeProblems,
+    );
+    final rapidFire = isInFlow(
+      lastSendAtSec: _lastUserSendAtSec[sessionId],
+      lastEditorEditAtSec: lastEditorEditAtSec,
+      nowAtSec: nowAtSec,
+      bypassFlowWindow: flowBypassed,
+      // 批次6（6.8 M4）：求助关键词（不会/怎么/卡住了/没思路）命中
+      // → 绕过心流抑制，主动求助及时反馈
+      helpSignal: content,
+    );
+    return (flowBypassed: flowBypassed, rapidFire: rapidFire);
+  }
+
+  /// FT-22：检测「只诊断不要建议」边界声明（R-019 拆出）。
+  bool _resolveDiagnosisOnly(String content) {
+    final diagnosisOnly = isDiagnosisOnlyRequest(content);
+    if (diagnosisOnly) {
+      debugPrint('[ChatService] FT-22: 检测到「只诊断」边界声明，跳过 teacher 建议');
+    }
+    return diagnosisOnly;
+  }
+
+  /// 区分「用户主动取消」与「真实失败」（取消走 onCancelled，其余走 onError）。
+  void _handleSendError(
+    Object e,
+    SendMessageCallbacks callbacks,
+    SendMessageOptions options,
+  ) {
+    debugPrint('[ChatService] sendMessage 异常: $e');
+    final cancelled =
+        e is LlmRequestCancelledException ||
+        (options.cancelToken?.isCancelled ?? false);
+    if (cancelled) {
+      callbacks.onCancelled?.call();
+    } else {
+      callbacks.onError(e is Exception ? e.toString() : '发送失败');
+    }
+  }
+
+  /// 记录 sendMessage 入口调试信息（R-019 拆出）。
+  void _logSendStart(
+    String sessionId,
+    String content,
+    SendMessageOptions options,
+  ) {
+    debugPrint(
+      '[ChatService] sendMessage 开始 | session=$sessionId | content="${content.length > 50 ? '${content.substring(0, 50)}...' : content}" | phase=${options.phase} | attitude=${options.attitude}',
+    );
+  }
+
+  /// 桥接观测 + Teacher 升级阀/心流窗口判定（R-019 拆出）。
+  Future<_FlowWindow> _observeAndResolveFlow(
+    String sessionId,
+    String content,
+    SendMessageOptions options,
+    _LoadedContext loaded,
+    int nowAtSec,
+  ) async {
+    _observeBridgeEntry(
+      sessionId,
+      loaded.currentSubphase,
+      loaded.effectivePhase,
+      loaded.activeProblems,
+    );
+    final flow = await _resolveFlowWindow(
+      sessionId,
+      loaded.activeProblems,
+      options.lastEditorEditAtSec,
+      nowAtSec,
+      content,
+    );
+    _lastUserSendAtSec[sessionId] = nowAtSec;
+    return flow;
+  }
+
+  /// 1-7. 用户消息落库 + 上下文装配（R-019 第二层编排 helper）。
+  Future<_SendContext> _assembleSendContext(
+    String sessionId,
+    String content,
+    SendMessageOptions options,
+    TeachingSubphase? subphase,
+    int nowAtSec,
+  ) async {
+    final loaded = await _loadSessionContext(
+      sessionId,
+      content,
+      options,
+      subphase,
+      nowAtSec,
+    );
+    // 桥接观测 + Teacher 升级阀/心流窗口判定
+    final flow = await _observeAndResolveFlow(
+      sessionId,
+      content,
+      options,
+      loaded,
+      nowAtSec,
+    );
+
+    // 5-5.2. system prompt + 上下文注入（委托 MessageInjector）
+    final assembled = await _assembleMessagesAndInject(
+      sessionId: sessionId,
+      content: content,
+      options: options,
+      loaded: loaded,
+    );
+    return _finalizeSendContext(loaded, assembled, flow);
+  }
+
+  /// 6.5-7. 临场约束 + 历史/纪律/预算 + 返回装配（R-019 拆出）。
+  _SendContext _finalizeSendContext(
+    _LoadedContext loaded,
+    _AssembledContext assembled,
+    _FlowWindow flow,
+  ) {
+    // 6.5 临场输出约束：在所有教学内容注入后、历史对话前追加（recency bias）
+    assembled.messages.add(
+      ChatMessage(role: 'system', content: kLiveOutputConstraints),
+    );
+    // 7. 追加历史消息 + 纪律重申 + token 预算闸门
+    _appendHistoryAndConstraints(
+      loaded.history,
+      assembled.messages,
+      assembled.markStage,
+      assembled.stageIndexes,
+    );
+    debugPrint(
+      '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${assembled.messages.length}（含 system + history）',
+    );
+    return (
+      messages: assembled.messages,
+      primaryRef: assembled.primaryRef,
+      chapterContent: assembled.chapterContent,
+      trainingSyndromeId: assembled.trainingSyndromeId,
+      activeProblems: loaded.activeProblems,
+      currentSubphase: loaded.currentSubphase,
+      rapidFire: flow.rapidFire,
+      flowBypassed: flow.flowBypassed,
+    );
+  }
+
+  /// 1-4. 用户消息落库 + 会话/教学上下文加载（R-019 第二层编排 helper）。
+  Future<_LoadedContext> _loadSessionContext(
+    String sessionId,
+    String content,
+    SendMessageOptions options,
+    TeachingSubphase? subphase,
+    int nowAtSec,
+  ) async {
+    // 1. 写入用户消息（批次71：@ 引用快照随 user 消息落库）
+    await _sessionRepo.addMessage(
+      sessionId,
+      'user',
+      content,
+      referencesJson: options.referencesJson,
+    );
+    debugPrint('[ChatService] 步骤1: user 消息已写入');
+
+    // 2. 获取历史消息（已含 user）
+    final history = await _sessionRepo.listMessages(sessionId);
+    debugPrint('[ChatService] 步骤2: 历史消息 ${history.length} 条');
+
+    // 3. 读取 teaching state（批次6 M2：DB currentPhase 优先于 options.phase）
+    final teaching = await _prepareTeachingState(
+      sessionId,
+      subphase,
+      options.phase,
+    );
+    final currentSubphase = teaching.subphase;
+    final isBeginner = teaching.isBeginner;
+    final beginnerLevel = teaching.beginnerLevel;
+    final effectivePhase = teaching.phase;
+
+    // 4. 加载活跃症候
+    final activeProblems = await _diagnosisRepo.listActiveProblems(sessionId);
+    debugPrint('[ChatService] 步骤4: 活跃症候 ${activeProblems.length} 个');
+    return (
+      history: history,
+      currentSubphase: currentSubphase,
+      isBeginner: isBeginner,
+      beginnerLevel: beginnerLevel,
+      effectivePhase: effectivePhase,
+      activeProblems: activeProblems,
+    );
+  }
+
+  /// 5-5.2. system prompt + 上下文注入装配（R-019 第二层编排 helper）。
+  Future<_AssembledContext> _assembleMessagesAndInject({
+    required String sessionId,
+    required String content,
+    required SendMessageOptions options,
+    required _LoadedContext loaded,
+  }) async {
+    final messages = _buildSystemPrompt(
+      loaded.effectivePhase,
+      options.attitude,
+      loaded.currentSubphase,
+      loaded.isBeginner,
+    );
+    // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
+    final stageIndexes = <String, List<int>>{};
+    void markStage(String stage) {
+      (stageIndexes[stage] ??= []).add(messages.length);
+    }
+
+    final injected = await _injectContext(
+      sessionId: sessionId,
+      content: content,
+      messages: messages,
+      markStage: markStage,
+      activeProblems: loaded.activeProblems,
+      currentSubphase: loaded.currentSubphase,
+      beginnerLevel: loaded.beginnerLevel,
+    );
+    return (
+      messages: messages,
+      primaryRef: injected.primaryRef,
+      chapterContent: injected.chapterContent,
+      trainingSyndromeId: injected.trainingSyndromeId,
+      stageIndexes: stageIndexes,
+      markStage: markStage,
+    );
+  }
+
+  /// 拼接 system prompt（L1 + L2，R-019 拆出）。
+  List<ChatMessage> _buildSystemPrompt(
+    TeachingPhase phase,
+    AttitudeLevel attitude,
+    TeachingSubphase? subphase,
+    bool isBeginner,
+  ) {
+    final skillCtx = SkillLoadContext(
+      phase: phase,
+      attitude: attitude,
+      subphase: subphase,
+      isBeginner: isBeginner,
+    );
+    final promptResult = _teaching.buildSystemPrompt(skillCtx);
+    return <ChatMessage>[
+      ChatMessage(role: 'system', content: promptResult.systemPrompt),
+    ];
+  }
+
+  /// 5.0-5.2 上下文注入装配（R-019 拆出，委托 MessageInjector）。
+  Future<_InjectedContext> _injectContext({
+    required String sessionId,
+    required String content,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+    required List<ActiveProblemView> activeProblems,
+    required TeachingSubphase? currentSubphase,
+    required BeginnerLevel? beginnerLevel,
+  }) async {
+    await _messageInjector.injectProfileAndIntents(
+      sessionId: sessionId,
+      content: content,
+      messages: messages,
+      markStage: markStage,
+    );
+    final refCtx = await _messageInjector.injectReferences(
+      sessionId: sessionId,
+      messages: messages,
+      markStage: markStage,
+    );
+    final primaryRef = refCtx.primaryRef;
+    final chapterContent = refCtx.chapterContent;
+    await _messageInjector.injectChapterObservations(
+      sessionId: sessionId,
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+    );
+    await _messageInjector.injectOutlineFactsAndFiles(
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+    final trainingSyndromeId = await _messageInjector.injectDiagnosisLock(
+      sessionId: sessionId,
+      content: content,
+      activeProblems: activeProblems,
+      currentSubphase: currentSubphase,
+      beginnerLevel: beginnerLevel,
+      messages: messages,
+      markStage: markStage,
+    );
+    return (
+      primaryRef: primaryRef,
+      chapterContent: chapterContent,
+      trainingSyndromeId: trainingSyndromeId,
+    );
+  }
+
+  /// 7. 追加历史消息 + 纪律重申 + token 预算闸门（R-019 编排 helper）。
+  void _appendHistoryAndConstraints(
+    List<Message> history,
+    List<ChatMessage> messages,
+    void Function(String) markStage,
+    Map<String, List<int>> stageIndexes,
+  ) {
+    _appendHistory(history, messages, markStage);
+    _appendDisciplineReminder(messages);
+    _logBudgetOutcome(
+      TokenBudgetGuard.apply(messages, stageIndexes: stageIndexes),
+      messages,
+    );
+  }
+
+  /// 追加历史消息（R-019 拆出）。
+  void _appendHistory(
+    List<Message> history,
+    List<ChatMessage> messages,
+    void Function(String) markStage,
+  ) {
+    for (final m in history) {
+      markStage(BudgetStageNames.history);
+      messages.add(ChatMessage(role: m.role, content: m.content));
+    }
+  }
+
+  /// 历史后追加 L1 核心纪律重申（批次4 4.3 + X-040 PHI P2，R-019 拆出）。
+  void _appendDisciplineReminder(List<ChatMessage> messages) {
+    messages.add(
+      ChatMessage(
+        role: 'system',
+        content:
+            '# 回复纪律（最后提醒）\n\n'
+            '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
+            '1. 不替用户写句子、不替用户做决定；\n'
+            '2. 一次只抛一个点，删掉铺垫；\n'
+            '3. 示范按当前态度档位执行：doubao/yuesheng 最小示范，sensei 零示范只给方向；\n'
+            '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
+            '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
+            '6. 诊断块用 ```diagnosis``` 包裹，卡片块用对应标签，不裸露 JSON。',
+      ),
+    );
+  }
+
+  /// 预算闸门结果日志 + X-040 PHI 素材缺失提示（R-019 拆出）。
+  void _logBudgetOutcome(
+    BudgetGuardReport guardReport,
+    List<ChatMessage> messages,
+  ) {
+    if (guardReport.triggered) {
+      debugPrint(
+        '[ChatService] 预算闸门触发降级: 裁 ${guardReport.droppedMessageCount} 条'
+        '（${guardReport.droppedStages.join('、')}）'
+        ' | ${guardReport.totalBefore}→${guardReport.totalAfter} tokens',
+      );
+    } else if (guardReport.overWarning) {
+      debugPrint(
+        '[ChatService] 预算超警告线未裁剪: ~${guardReport.totalBefore}'
+        ' > ${(TokenEstimate.maxBudget * TokenEstimate.warningRatio).round()}',
+      );
+    }
+    if (guardReport.dropped) {
+      final materialStages = guardReport.droppedStages
+          .where(
+            (s) =>
+                s == BudgetStageNames.references ||
+                s == BudgetStageNames.attachedFiles ||
+                s == BudgetStageNames.fact,
+          )
+          .toList();
+      if (materialStages.isNotEmpty) {
+        messages.add(
+          ChatMessage(
+            role: 'system',
+            content:
+                '# 素材缺失提示（X-040 PHI）\n\n'
+                '由于本轮 token 预算超限，已裁掉以下用户素材：${materialStages.join('、')}。\n'
+                '回复时：\n'
+                '1. 不得假定素材内容直接给出诊断结论；\n'
+                '2. 若回复需这些内容支撑，明确告知用户需重新提供或简化提供；\n'
+                '3. 可基于现有上下文（活跃症候 + 历史对话）做方向性引导。',
+          ),
+        );
       }
     }
+  }
+
+  /// FT-22 边界检测 + 诊断解析落库（R-019 拆出）。
+  Future<ParseAndPersistResult> _parseAndPersistDiagnosis({
+    required String sessionId,
+    required String content,
+    required String fullContent,
+    required bool inDiagnosisBlock,
+    required ReferenceItem? primaryRef,
+    required String? chapterContent,
+    required SendMessageCallbacks callbacks,
+    required SendMessageOptions options,
+  }) async {
+    // FT-22：检测「只诊断不要建议」边界声明，命中则跳过 teacher stream
+    final diagnosisOnly = _resolveDiagnosisOnly(content);
+    return _diagnosisFlowHandler.parseAndPersist(
+      sessionId: sessionId,
+      fullContent: fullContent,
+      inDiagnosisBlock: inDiagnosisBlock,
+      primaryRef: primaryRef,
+      chapterContent: chapterContent,
+      callbacks: callbacks,
+      options: options,
+      diagnosisOnly: diagnosisOnly,
+    );
+  }
+
+  /// 9-11 诊断解析 + 提交 + 训练 + onComplete（ADR-C74 K-9，R-019 收尾 helper）。
+  Future<void> _runDiagnosisFlow({
+    required String sessionId,
+    required String content,
+    required String fullContent,
+    required bool inDiagnosisBlock,
+    required ReferenceItem? primaryRef,
+    required String? chapterContent,
+    required String? trainingSyndromeId,
+    required List<ActiveProblemView> activeProblems,
+    required TeachingSubphase? currentSubphase,
+    required bool rapidFire,
+    required bool flowBypassed,
+    required SendMessageCallbacks callbacks,
+    required SendMessageOptions options,
+  }) async {
+    final parsed = await _parseAndPersistDiagnosis(
+      sessionId: sessionId,
+      content: content,
+      fullContent: fullContent,
+      inDiagnosisBlock: inDiagnosisBlock,
+      primaryRef: primaryRef,
+      chapterContent: chapterContent,
+      callbacks: callbacks,
+      options: options,
+    );
+    // 步骤 10 空响应提前结束（onError 已触发，等价原 return）
+    if (parsed.aborted) return;
+    await _commitDiagnosisAndSuggestions(
+      sessionId: sessionId,
+      content: content,
+      parsed: parsed,
+      primaryRef: primaryRef,
+      rapidFire: rapidFire,
+      flowBypassed: flowBypassed,
+      callbacks: callbacks,
+      options: options,
+      currentSubphase: currentSubphase,
+    );
+    await _finishTrainingAndComplete(
+      sessionId: sessionId,
+      content: content,
+      parsed: parsed,
+      trainingSyndromeId: trainingSyndromeId,
+      activeProblems: activeProblems,
+      currentSubphase: currentSubphase,
+      callbacks: callbacks,
+      options: options,
+    );
+  }
+
+  /// 诊断提交 + Teacher suggestion + GenUI 卡片 + 回复长度观测（R-019 拆出）。
+  Future<void> _commitDiagnosisAndSuggestions({
+    required String sessionId,
+    required String content,
+    required dynamic parsed,
+    required ReferenceItem? primaryRef,
+    required bool rapidFire,
+    required bool flowBypassed,
+    required SendMessageCallbacks callbacks,
+    required SendMessageOptions options,
+    required TeachingSubphase? currentSubphase,
+  }) async {
+    await _diagnosisFlowHandler.commitDiagnosisAndSuggestions(
+      sessionId: sessionId,
+      diagnosis: parsed.diagnosis,
+      messageId: parsed.messageId,
+      primaryRef: primaryRef,
+      teacherResult: parsed.teacherResult,
+      rapidFire: rapidFire,
+      flowBypassed: flowBypassed,
+      genuiComponents: parsed.genuiComponents,
+    );
+    // 批次50 临时测量：回复长度观测（仅 debug 留痕不干预）
+    _observeReplyLength(
+      parsed.displayContent,
+      content,
+      options.attitude,
+      currentSubphase,
+    );
+  }
+
+  /// 训练结果解析 + teaching_history 写入 + onComplete（R-019 拆出）。
+  Future<void> _finishTrainingAndComplete({
+    required String sessionId,
+    required String content,
+    required dynamic parsed,
+    required String? trainingSyndromeId,
+    required List<ActiveProblemView> activeProblems,
+    required TeachingSubphase? currentSubphase,
+    required SendMessageCallbacks callbacks,
+    required SendMessageOptions options,
+  }) async {
+    await _diagnosisFlowHandler.handleTrainingResult(
+      sessionId: sessionId,
+      currentSubphase: currentSubphase,
+      displayContent: parsed.displayContent,
+      userContent: content,
+      trainingSyndromeId: trainingSyndromeId,
+      activeProblems: activeProblems,
+      callbacks: callbacks,
+    );
+    await callbacks.onComplete(parsed.finalContent, parsed.messageId);
+    debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
   }
 }
