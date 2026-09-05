@@ -585,8 +585,15 @@ git show 2737d292:<前缀>lib/xxx.dart  | grep -c <关键词>   # 2 → 期望 1
 git diff bfd1a9d9 2737d292 -- lib/xxx.dart | grep <关键词>  # 定位到具体新增行
 ```
 同一份测试、同一份我的改动，旧 base 绿、新 base 红 → 差异只可能来自新 base。
-⚠️ 本仓仓库根是 `D:/ai-teacher`（**不是** flutter 子目录）：`git show <sha>:<path>`
-要带 `yuesheng-flutter/` 前缀，用 `git rev-parse --show-prefix` 取，别手写。
+⚠️ 本仓仓库根是 `D:/ai-teacher`（**不是** flutter 子目录），两条连带纪律：
+1. `git show <sha>:<path>` 要带 `yuesheng-flutter/` 前缀，用 `git rev-parse
+   --show-prefix` 取，别手写；
+2. **任何 `.git/` 路径操作都要用 `$(git rev-parse --git-dir)`，不要写字面量 `.git`**。
+   在 `yuesheng-flutter/` 下直接 `mkdir -p .git/refs/...` 会在子目录里建出一个
+   **假 `.git`**（2026-09-06 实证，正是 V4.23 批次 0 清理过的那种）——git 此后会把
+   子目录当仓库根，且写进去的 ref **一个都不生效**（`git rev-parse` 会把
+   `upstream/main` 当路径解析并报 unknown revision）。写完必须复验：
+   `git rev-parse upstream/main` 应打出 40 位 hash 而非回显字面量。
 
 **批次 3 起启用 worktree 隔离**（`git worktree add` 到独立分支，每批一合并），
 从根上消除 base 漂移；批次 2a 就地收口——在途工作迁移风险大于收益。
