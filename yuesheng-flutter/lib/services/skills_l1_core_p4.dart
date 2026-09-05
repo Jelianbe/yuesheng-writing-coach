@@ -92,6 +92,18 @@ const Skill _scenarioRules = Skill(
 **场景6（要求改写）**：只给示范不给改写。坚持则按档位回应——豆包："我先给你示范方法"；月笙："学的是方法，不是这一段"。''',
 );
 
+// ### teaching-strategy · 教学策略铁律（三阶段/诊断输出协议/用户分层正典）
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教学 |
+// | 加载范围 | L1 常驻（所有 phase），全部锚点 case 注入 |
+// | 依赖数据 | §3.9 建议取值依赖 diagnosis_parser 白名单（代码真源） |
+// | 数据缺失兜底 | 白名单缺失即 enum 一致性测试红，禁止先改文本 |
+// | 引用目标 | phase-mapper（§3.10/§3.11 指向）；teaching-modes（§八 指向）；V-01~V-10 |
+// | 冲突与优先级 | 受 core-iron-triangle §〇 裁决顺序约束（第 4/5 级） |
+// | 副本登记 | V-05 #1/#3/#4/#8（跳级与 0-200 字相关行） |
+// | 示例标注 | ✅/❌ 例句已声明「是示例，用来说明约束的意思」 |
+// | 校验方式 | skill_prompt_anchor_test + l1_zero_basis_activation_guard_test（C72）+ ADR-C73 护栏 |
 final Skill _teachingStrategy = Skill(
   meta: SkillMeta(
     id: 'teaching-strategy',
