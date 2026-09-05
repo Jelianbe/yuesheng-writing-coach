@@ -105,7 +105,7 @@ flutter test --exclude-tags live,external --no-pub
 | 76 个文件超 R-019 的 300 行 | 已登记；`chat_service.dart`（3004 行）为回退后的有意单体，真分解待 ADR |
 | 12 个函数超 50 行（最长 293 行） | 已登记，见 [`audits/2026-08-29-app-health-check.md`](audits/2026-08-29-app-health-check.md) |
 | UI 样式字面量：`fontSize` 485 / `fontWeight` 318 处 | 颜色层已 100% 令牌化；字号按 R-010 顺手迁移 |
-| `feedback-cognition` 与 `coaching-rhythm §五` 内容重叠 | 未决，会导致重复注入 |
+| `feedback-cognition` 与 `coaching-rhythm §五` 内容重叠 | 已定位（2026-09-04 分析：diagnosis 模式同轮注入、「训练完成后两件事」共 3 副本、§5.5 假句+悬空引用），修法方案 A 待裁决——见 [`audits/内容重叠分析-feedback-cognition×coaching-rhythm-2026-09-04.md`](audits/内容重叠分析-feedback-cognition×coaching-rhythm-2026-09-04.md) |
 
 ---
 
