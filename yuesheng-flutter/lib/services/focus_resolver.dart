@@ -212,208 +212,30 @@ bool _isFrequentSwitching(
 /// 6. 频繁切换（5.7.3 降级）
 ResolveFocusOutput resolveTeachingFocus(ResolveFocusInput input) {
   final problems = input.problems;
-  final aiSuggestedFocusId = input.aiSuggestedFocusId;
-  final userFocusOverride = input.userFocusOverride;
-  final subphase = input.subphase;
-  final focusHistory = input.focusHistory;
-
-  final training = isInTraining(subphase);
-  final previousFocusId = focusHistory.isNotEmpty
-      ? focusHistory.first.focusId
-      : null;
-  final hasUserOverride = userFocusOverride != null;
-
-  // 确定候选 focus：用户切换优先（5.7.2）
+  final hasUserOverride = input.userFocusOverride != null;
   final candidateFocusId = hasUserOverride
-      ? userFocusOverride
-      : aiSuggestedFocusId;
+      ? input.userFocusOverride
+      : input.aiSuggestedFocusId;
+  if (candidateFocusId == null) return _fallbackOutput(input, '');
 
-  // 无候选 → fallback
-  if (candidateFocusId == null) {
-    final fb = _selectFallback(
-      problems,
-      studentSkillLevel: input.studentSkillLevel,
-    );
-    return ResolveFocusOutput(
-      activatedFocusId: fb.id,
-      source: fb.id != null ? FocusSource.fallback : FocusSource.none,
-      reason: fb.reason,
-    );
-  }
-
-  FocusProblem? candidateProblem;
-  try {
-    candidateProblem = problems.firstWhere(
-      (p) => p.syndromeId == candidateFocusId,
-    );
-  } catch (_) {
-    candidateProblem = null;
-  }
-
-  // 校验 1：在池中
+  final candidateProblem = _findProblem(problems, candidateFocusId);
   if (candidateProblem == null) {
-    // 训练中 + 用户切换 + 不在池中 → 拒绝，维持原 focus（5.7.2 第 2 行）
-    if (training && hasUserOverride && previousFocusId != null) {
-      FocusProblem? prev;
-      try {
-        prev = problems.firstWhere((p) => p.syndromeId == previousFocusId);
-      } catch (_) {
-        prev = null;
-      }
-      if (prev != null &&
-          prev.confirmationStatus != ConfirmationStatus.rejected &&
-          prev.status != 'resolved') {
-        return ResolveFocusOutput(
-          activatedFocusId: previousFocusId,
-          source: FocusSource.aiSuggested,
-          reason: '训练中用户切换 $candidateFocusId 不在池中，维持原 focus $previousFocusId',
-          rejectReason: '学员想切换到 $candidateFocusId，但该问题不在当前症候池。建议告知学员当前可用的症候。',
-        );
-      }
-    }
-    final fb = _selectFallback(
-      problems,
-      studentSkillLevel: input.studentSkillLevel,
-    );
-    return ResolveFocusOutput(
-      activatedFocusId: fb.id,
-      source: fb.id != null ? FocusSource.fallback : FocusSource.none,
-      reason: '候选 focus $candidateFocusId 不在 active_problem 池中。${fb.reason}',
-    );
+    return _resolveNotInPool(input, candidateFocusId);
   }
-
-  // 校验 2：非 rejected
   if (candidateProblem.confirmationStatus == ConfirmationStatus.rejected) {
-    final fb = _selectFallback(
-      problems,
-      studentSkillLevel: input.studentSkillLevel,
-    );
-    return ResolveFocusOutput(
-      activatedFocusId: fb.id,
-      source: fb.id != null ? FocusSource.fallback : FocusSource.none,
-      reason: '候选 focus $candidateFocusId 已被 rejected。${fb.reason}',
-    );
+    return _fallbackOutput(input, '候选 focus $candidateFocusId 已被 rejected。');
   }
-
-  // 校验 3：非 resolved
   if (candidateProblem.status == 'resolved') {
-    // 训练中 + 用户切换 + 已 resolved → 拒绝，维持原 focus（5.7.2 第 2 行）
-    if (training && hasUserOverride && previousFocusId != null) {
-      FocusProblem? prev;
-      try {
-        prev = problems.firstWhere((p) => p.syndromeId == previousFocusId);
-      } catch (_) {
-        prev = null;
-      }
-      if (prev != null &&
-          prev.confirmationStatus != ConfirmationStatus.rejected &&
-          prev.status != 'resolved') {
-        return ResolveFocusOutput(
-          activatedFocusId: previousFocusId,
-          source: FocusSource.aiSuggested,
-          reason:
-              '训练中用户切换 $candidateFocusId 已 resolved，维持原 focus $previousFocusId',
-          rejectReason:
-              '学员想切换到 ${candidateProblem.syndromeName}（$candidateFocusId），但该问题已解决。建议告知学员。',
-        );
-      }
-    }
-    final fb = _selectFallback(
-      problems,
-      studentSkillLevel: input.studentSkillLevel,
-    );
-    return ResolveFocusOutput(
-      activatedFocusId: fb.id,
-      source: fb.id != null ? FocusSource.fallback : FocusSource.none,
-      reason: '候选 focus $candidateFocusId 已 resolved。${fb.reason}',
-    );
+    return _resolveResolved(input, candidateProblem, candidateFocusId);
   }
-
-  // 校验 1-3 通过，candidate 有效
-
-  // 校验 4 + 5：训练中冲突解决（5.7.2）
-  if (training) {
-    if (hasUserOverride) {
-      // 训练中 + 用户主动切换 + focus 有效 → 允许切换，注入提示（5.7.2 第 1 行）
-      // 批次4（4.8 O5）：提示文案改为「已按要求切换，但建议先完成当前训练」
-      return ResolveFocusOutput(
-        activatedFocusId: candidateFocusId,
-        source: FocusSource.userOverride,
-        reason: '训练中用户主动切换到 $candidateFocusId（有效），允许切换',
-        rejectReason:
-            '已按你的要求切换到 ${candidateProblem.syndromeName}（$candidateFocusId）。若当前还有未完成的训练，建议先完成当前训练再切换，效果更连贯。',
-      );
-    }
-    // 训练中 + AI 自主切换 → 拒绝切换，维持原 focus（5.7.2 第 3 行）
-    if (previousFocusId != null) {
-      FocusProblem? prev;
-      try {
-        prev = problems.firstWhere((p) => p.syndromeId == previousFocusId);
-      } catch (_) {
-        prev = null;
-      }
-      if (prev != null &&
-          prev.confirmationStatus != ConfirmationStatus.rejected &&
-          prev.status != 'resolved') {
-        return ResolveFocusOutput(
-          activatedFocusId: previousFocusId,
-          source: FocusSource.aiSuggested,
-          reason: '训练中拒绝 AI 自主切换，维持原 focus $previousFocusId',
-          rejectReason:
-              '当前正在训练 ${prev.syndromeName}（$previousFocusId），本轮维持原 focus，下一轮再考虑切换。',
-        );
-      }
-    }
-    // 原 focus 无效 → fallback
-    final fb = _selectFallback(
-      problems,
-      studentSkillLevel: input.studentSkillLevel,
-    );
-    return ResolveFocusOutput(
-      activatedFocusId: fb.id,
-      source: fb.id != null ? FocusSource.fallback : FocusSource.none,
-      reason: '训练中原 focus ${previousFocusId ?? '无'} 无效。${fb.reason}',
-    );
+  if (isInTraining(input.subphase)) {
+    return _resolveTrainingSwitch(input, candidateProblem, candidateFocusId);
   }
-
-  // 非训练中
-
-  // 校验 6：频繁切换检测（5.7.3）
-  // 批次4（4.8 O5）：明确指定症候 ID 的用户覆盖绕过频繁切换降级（用户意图优先），
-  // 仅保留安全门控（在池中/非 rejected/非 resolved 已在前方校验）
+  // 批次4（4.8 O5）：明确指定症候 ID 的用户覆盖绕过频繁切换降级（用户意图优先）
   if (!hasUserOverride &&
-      _isFrequentSwitching(candidateFocusId, focusHistory)) {
-    // 降级：维持上一轮 focus
-    if (previousFocusId != null) {
-      FocusProblem? prev;
-      try {
-        prev = problems.firstWhere((p) => p.syndromeId == previousFocusId);
-      } catch (_) {
-        prev = null;
-      }
-      if (prev != null &&
-          prev.confirmationStatus != ConfirmationStatus.rejected &&
-          prev.status != 'resolved') {
-        return ResolveFocusOutput(
-          activatedFocusId: previousFocusId,
-          source: FocusSource.aiSuggested,
-          reason: '频繁切换检测，维持原 focus $previousFocusId',
-          rejectReason:
-              '检测到连续 ${FocusSwitch.threshold} 轮切换不同 focus，本轮维持原 focus。如确需切换，请在 teaching_plan.focus_reason 中说明切换的必要性（如：学员进步明显 / 原焦点已解决 / 用户主动要求）。',
-        );
-      }
-    }
-    // 原 focus 无效，仍采用 candidate（降级失败回退）
-    return ResolveFocusOutput(
-      activatedFocusId: candidateFocusId,
-      source: hasUserOverride
-          ? FocusSource.userOverride
-          : FocusSource.aiSuggested,
-      reason: '频繁切换检测但原 focus 无效，采用候选 focus $candidateFocusId',
-    );
+      _isFrequentSwitching(candidateFocusId, input.focusHistory)) {
+    return _resolveFrequentSwitch(input, candidateFocusId);
   }
-
-  // 全部校验通过
   return ResolveFocusOutput(
     activatedFocusId: candidateFocusId,
     source: hasUserOverride
@@ -421,5 +243,156 @@ ResolveFocusOutput resolveTeachingFocus(ResolveFocusInput input) {
         : FocusSource.aiSuggested,
     reason:
         '${hasUserOverride ? '用户' : 'AI'}建议 focus $candidateFocusId 通过 6 项校验',
+  );
+}
+
+/// 校验 1：候选不在池中（R-019 二次拆：resolveTeachingFocus）。
+ResolveFocusOutput _resolveNotInPool(
+  ResolveFocusInput input,
+  String candidateFocusId,
+) {
+  final training = isInTraining(input.subphase);
+  final hasUserOverride = input.userFocusOverride != null;
+  // 训练中 + 用户切换 + 不在池中 → 拒绝，维持原 focus（5.7.2 第 2 行）
+  if (training && hasUserOverride) {
+    final kept = _maintainPreviousFocus(
+      input.problems,
+      _previousFocusId(input),
+      candidateFocusId,
+      '训练中用户切换 $candidateFocusId 不在池中，维持原 focus',
+      (_) => '学员想切换到 $candidateFocusId，但该问题不在当前症候池。建议告知学员当前可用的症候。',
+    );
+    if (kept != null) return kept;
+  }
+  return _fallbackOutput(
+    input,
+    '候选 focus $candidateFocusId 不在 active_problem 池中。',
+  );
+}
+
+/// 校验 3：候选已 resolved（R-019 二次拆：resolveTeachingFocus）。
+ResolveFocusOutput _resolveResolved(
+  ResolveFocusInput input,
+  FocusProblem candidateProblem,
+  String candidateFocusId,
+) {
+  final training = isInTraining(input.subphase);
+  final hasUserOverride = input.userFocusOverride != null;
+  // 训练中 + 用户切换 + 已 resolved → 拒绝，维持原 focus（5.7.2 第 2 行）
+  if (training && hasUserOverride) {
+    final kept = _maintainPreviousFocus(
+      input.problems,
+      _previousFocusId(input),
+      candidateFocusId,
+      '训练中用户切换 $candidateFocusId 已 resolved，维持原 focus',
+      (prevName) => '学员想切换到 $prevName（$candidateFocusId），但该问题已解决。建议告知学员。',
+    );
+    if (kept != null) return kept;
+  }
+  return _fallbackOutput(input, '候选 focus $candidateFocusId 已 resolved。');
+}
+
+/// 校验 4 + 5：训练中冲突解决（5.7.2）（R-019 二次拆：resolveTeachingFocus）。
+ResolveFocusOutput _resolveTrainingSwitch(
+  ResolveFocusInput input,
+  FocusProblem candidateProblem,
+  String candidateFocusId,
+) {
+  if (input.userFocusOverride != null) {
+    // 训练中 + 用户主动切换 + focus 有效 → 允许切换，注入提示（5.7.2 第 1 行）
+    // 批次4（4.8 O5）：提示文案改为「已按要求切换，但建议先完成当前训练」
+    return ResolveFocusOutput(
+      activatedFocusId: candidateFocusId,
+      source: FocusSource.userOverride,
+      reason: '训练中用户主动切换到 $candidateFocusId（有效），允许切换',
+      rejectReason:
+          '已按你的要求切换到 ${candidateProblem.syndromeName}（$candidateFocusId）。若当前还有未完成的训练，建议先完成当前训练再切换，效果更连贯。',
+    );
+  }
+  // 训练中 + AI 自主切换 → 拒绝切换，维持原 focus（5.7.2 第 3 行）
+  final kept = _maintainPreviousFocus(
+    input.problems,
+    _previousFocusId(input),
+    candidateFocusId,
+    '训练中拒绝 AI 自主切换，维持原 focus',
+    (prevName) => '当前正在训练 $prevName，本轮维持原 focus，下一轮再考虑切换。',
+  );
+  if (kept != null) return kept;
+  // 原 focus 无效 → fallback
+  return _fallbackOutput(input, '训练中原 focus 无效。');
+}
+
+/// 校验 6：频繁切换降级（5.7.3）（R-019 二次拆：resolveTeachingFocus）。
+ResolveFocusOutput _resolveFrequentSwitch(
+  ResolveFocusInput input,
+  String candidateFocusId,
+) {
+  // 降级：维持上一轮 focus
+  final kept = _maintainPreviousFocus(
+    input.problems,
+    _previousFocusId(input),
+    candidateFocusId,
+    '频繁切换检测，维持原 focus',
+    (_) =>
+        '检测到连续 ${FocusSwitch.threshold} 轮切换不同 focus，本轮维持原 focus。如确需切换，请在 teaching_plan.focus_reason 中说明切换的必要性（如：学员进步明显 / 原焦点已解决 / 用户主动要求）。',
+  );
+  if (kept != null) return kept;
+  // 原 focus 无效，仍采用 candidate（降级失败回退）
+  return ResolveFocusOutput(
+    activatedFocusId: candidateFocusId,
+    source: FocusSource.aiSuggested,
+    reason: '频繁切换检测但原 focus 无效，采用候选 focus $candidateFocusId',
+  );
+}
+
+/// 最近一轮 focus id（R-019 三次拆：resolveTeachingFocus）。
+String? _previousFocusId(ResolveFocusInput input) {
+  return input.focusHistory.isNotEmpty
+      ? input.focusHistory.first.focusId
+      : null;
+}
+
+/// 在症候列表中查找指定 id（R-019 拆出：resolveTeachingFocus）。找不到返回 null。
+FocusProblem? _findProblem(List<FocusProblem> problems, String? id) {
+  if (id == null) return null;
+  for (final p in problems) {
+    if (p.syndromeId == id) return p;
+  }
+  return null;
+}
+
+/// 统一 fallback 输出（R-019 拆出：resolveTeachingFocus）。
+ResolveFocusOutput _fallbackOutput(ResolveFocusInput input, String prefix) {
+  final fb = _selectFallback(
+    input.problems,
+    studentSkillLevel: input.studentSkillLevel,
+  );
+  return ResolveFocusOutput(
+    activatedFocusId: fb.id,
+    source: fb.id != null ? FocusSource.fallback : FocusSource.none,
+    reason: prefix + fb.reason,
+  );
+}
+
+/// 维持原 focus 输出；原 focus 无效返回 null（R-019 拆出：resolveTeachingFocus）。
+ResolveFocusOutput? _maintainPreviousFocus(
+  List<FocusProblem> problems,
+  String? previousFocusId,
+  String candidateFocusId,
+  String reason,
+  String Function(String prevName) buildRejectReason,
+) {
+  if (previousFocusId == null) return null;
+  final prev = _findProblem(problems, previousFocusId);
+  if (prev == null ||
+      prev.confirmationStatus == ConfirmationStatus.rejected ||
+      prev.status == 'resolved') {
+    return null;
+  }
+  return ResolveFocusOutput(
+    activatedFocusId: previousFocusId,
+    source: FocusSource.aiSuggested,
+    reason: reason,
+    rejectReason: buildRejectReason(prev.syndromeName),
   );
 }

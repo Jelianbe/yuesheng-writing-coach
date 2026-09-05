@@ -39,20 +39,6 @@
       "lines": 226
     },
     {
-      "file": "lib/services/diagnosis_committer.dart",
-      "func": "applyPhaseMigration",
-      "start": 163,
-      "end": 379,
-      "lines": 217
-    },
-    {
-      "file": "lib/services/focus_resolver.dart",
-      "func": "resolveTeachingFocus",
-      "start": 213,
-      "end": 425,
-      "lines": 213
-    },
-    {
       "file": "lib/widgets/practice_task_card.dart",
       "func": "build",
       "start": 63,
@@ -221,13 +207,6 @@
       "lines": 141
     },
     {
-      "file": "lib/services/chat_context_builder.dart",
-      "func": "buildReferencesContext",
-      "start": 629,
-      "end": 766,
-      "lines": 138
-    },
-    {
       "file": "lib/widgets/manuscript_detail_page.dart",
       "func": "build",
       "start": 206,
@@ -286,8 +265,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyFactExtractionFromContent",
-      "start": 567,
-      "end": 688,
+      "start": 605,
+      "end": 726,
       "lines": 122
     },
     {

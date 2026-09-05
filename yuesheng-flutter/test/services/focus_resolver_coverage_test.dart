@@ -208,6 +208,22 @@ void main() {
       expect(out.activatedFocusId, 'P002');
       expect(out.reason, contains('维持原 focus'));
     });
+
+    test('训练中 + AI 建议候选不在池 + 原 focus 有效 → fallback（不维持）', () {
+      final out = resolveTeachingFocus(
+        _input(
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+            _fp('P002', Severity.l2, ConfirmationStatus.confirmed, 'active'),
+          ],
+          aiSuggestedFocusId: 'PX99',
+          subphase: TeachingSubphase.practice,
+          focusHistory: [FocusHistoryEntry(focusId: 'P002', timestamp: 1)],
+        ),
+      );
+      expect(out.source, FocusSource.fallback);
+      expect(out.reason, contains('不在 active_problem 池中'));
+    });
   });
 
   // ── 候选被 rejected / resolved ──

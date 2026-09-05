@@ -136,6 +136,21 @@ void main() {
       expect(ctx, isNot(contains('【选段诊断】')));
     });
 
+    test('主引用 chapter + anchor.chapterId ≠ refId → 不展开选段（回退整章）', () {
+      final ctx = buildReferencesContext([
+        ReferenceItem(
+          refType: 'chapter',
+          refId: 'ch-9',
+          title: '第九章',
+          isPrimary: 1,
+          manuscriptId: 'ms-1',
+          excerptRange: '{"chapterId":"ch-1","startPara":0,"endPara":1}',
+        ),
+      ], resolvers: resolvers());
+      expect(ctx, isNot(contains('【选段诊断】')), reason: '锚点 chapterId 与引用 id 不匹配');
+      expect(ctx, contains('【位置提示】请根据内容判断这是原文章节的开头/中段/结尾'));
+    });
+
     test('次要引用 chapter 带 excerptRange → 不展开选段（仅主引用优先）', () {
       final ctx = buildReferencesContext([
         ReferenceItem(
@@ -148,6 +163,37 @@ void main() {
         ),
       ], resolvers: resolvers());
       expect(ctx, isNot(contains('【选段诊断】')), reason: '选段展开仅限主引用');
+    });
+
+    test('manuscript 空简介 → 不输出「简介：」行（降级安全）', () {
+      final resolversWithMs = ReferenceResolvers(
+        fileResolver: (_) => null,
+        chapterResolver: (id) => _chapter(content: '原文开头正文，' * 50),
+        manuscriptResolver: (id) => ManuscriptDetail(
+          genre: '长篇小说',
+          description: '',
+          chapters: [
+            ChapterBrief(
+              id: 'ch-1',
+              title: '第一章',
+              wordCount: 1000,
+              sortOrder: 1,
+              content: '正文',
+            ),
+          ],
+        ),
+      );
+      final ctx = buildReferencesContext([
+        ReferenceItem(
+          refType: 'manuscript',
+          refId: 'ms-1',
+          title: '作品名',
+          isPrimary: 1,
+        ),
+      ], resolvers: resolversWithMs);
+      expect(ctx, contains('### 【主引用】 作品：作品名'));
+      expect(ctx, contains('- 类型：长篇小说'));
+      expect(ctx, isNot(contains('- 简介：')), reason: '空简介不输出简介行');
     });
   });
 

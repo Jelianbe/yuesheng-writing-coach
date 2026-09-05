@@ -632,30 +632,46 @@ String buildReferencesContext(
 }) {
   if (refs.isEmpty) return '';
 
-  final totalBudget = ContextBudget.totalBudget;
-  final primaryRatio = ContextBudget.primaryRatio;
-  final secondaryRatio = ContextBudget.secondaryRatio;
+  final (primary: primaryBudget, secondary: secondaryBudget) =
+      _allocateReferencesBudget(refs);
+  final parts = <String>[];
+  _appendReferencesHeader(parts);
 
-  final primaryRefs = refs.where((r) => r.isPrimary == 1).toList();
-  final secondaryRefs = refs.where((r) => r.isPrimary != 1).toList();
-
-  int primaryBudget;
-  int secondaryBudget;
-  if (primaryRefs.isEmpty) {
-    primaryBudget = 0;
-    secondaryBudget =
-        (totalBudget / (secondaryRefs.isNotEmpty ? secondaryRefs.length : 1))
-            .floor();
-  } else {
-    primaryBudget = (totalBudget * primaryRatio / primaryRefs.length).floor();
-    secondaryBudget =
-        (totalBudget *
-                secondaryRatio /
-                (secondaryRefs.isNotEmpty ? secondaryRefs.length : 1))
-            .floor();
+  for (final ref in refs) {
+    final budget = ref.isPrimary == 1 ? primaryBudget : secondaryBudget;
+    if (ref.refType == 'file') {
+      _appendFileReference(parts, ref, budget, resolvers);
+    } else if (ref.refType == 'chapter') {
+      _appendChapterReference(parts, ref, budget, resolvers);
+    } else if (ref.refType == 'manuscript') {
+      _appendManuscriptReference(parts, ref, budget, resolvers);
+    }
   }
 
-  final parts = <String>[];
+  return parts.join('\n');
+}
+
+/// 主/次引用预算分配（R-019 拆出：buildReferencesContext）。
+({int primary, int secondary}) _allocateReferencesBudget(
+  List<ReferenceItem> refs,
+) {
+  final totalBudget = ContextBudget.totalBudget;
+  final primaryRefs = refs.where((r) => r.isPrimary == 1).toList();
+  final secondaryRefs = refs.where((r) => r.isPrimary != 1).toList();
+  final secondaryDenom = secondaryRefs.isNotEmpty ? secondaryRefs.length : 1;
+  if (primaryRefs.isEmpty) {
+    return (primary: 0, secondary: (totalBudget / secondaryDenom).floor());
+  }
+  return (
+    primary: (totalBudget * ContextBudget.primaryRatio / primaryRefs.length)
+        .floor(),
+    secondary: (totalBudget * ContextBudget.secondaryRatio / secondaryDenom)
+        .floor(),
+  );
+}
+
+/// 引用段头部（R-019 拆出：buildReferencesContext）。
+void _appendReferencesHeader(List<String> parts) {
   parts.add('## 内容位置判断');
   parts.add(
     '请先判断以下引用内容在原文中的位置（开头/中段/结尾/全局），然后仅对 position_sensitivity 匹配的症候进行诊断。',
@@ -668,101 +684,119 @@ String buildReferencesContext(
   parts.add('标注【次要引用】的仅作为辅助参考，用于理解上下文和写作风格，不应作为诊断的主要依据。');
   parts.add('如果预算不足以完整呈现内容，主引用的完整性优先于次要引用。');
   parts.add('');
+}
 
-  for (final ref in refs) {
-    final budget = ref.isPrimary == 1 ? primaryBudget : secondaryBudget;
-    final tag = ref.isPrimary == 1 ? '【主引用】' : '【次要引用】';
+/// 素材文件引用（R-019 拆出：buildReferencesContext）。
+void _appendFileReference(
+  List<String> parts,
+  ReferenceItem ref,
+  int budget,
+  ReferenceResolvers resolvers,
+) {
+  final file = resolvers.fileResolver(ref.refId);
+  if (file == null) return;
+  // A-1 止血：素材不再走 50KB 独立预算，与章节引用共享同一档位 budget，
+  // 消除「双预算体系 token 爆炸」。
+  final content = file.content.length > budget
+      ? '${file.content.substring(0, budget)}\n...(内容已截断，超过$budget字符)'
+      : file.content;
+  parts.add('### 【素材文件】${file.fileName}（${file.fileRole}）');
+  parts.add('```');
+  parts.add(content);
+  parts.add('```');
+  parts.add('');
+}
 
-    if (ref.refType == 'file') {
-      final file = resolvers.fileResolver(ref.refId);
-      if (file != null) {
-        // A-1 止血：素材不再走 50KB 独立预算，与章节引用共享同一档位 budget，
-        // 消除「双预算体系 token 爆炸」。
-        final content = file.content.length > budget
-            ? '${file.content.substring(0, budget)}\n...(内容已截断，超过$budget字符)'
-            : file.content;
-        parts.add('### 【素材文件】${file.fileName}（${file.fileRole}）');
-        parts.add('```');
-        parts.add(content);
-        parts.add('```');
-        parts.add('');
-      }
-    } else if (ref.refType == 'chapter') {
-      final chapter = resolvers.chapterResolver(ref.refId);
-      if (chapter != null) {
-        parts.add('### $tag 章节：${ref.title}（${chapter.wordCount}字）');
-        // A-3：主引用带段落锚点 → 优先展开锚点窗口（替代整章）；无锚点则全章截断
-        final anchor = parseParagraphAnchor(ref.excerptRange);
-        if (ref.isPrimary == 1 &&
-            anchor != null &&
-            anchor.chapterId == ref.refId) {
-          parts.add('【选段诊断】以下为主引用章节中的选中片段（段落锚点截取）');
-          parts.add('```');
-          parts.add(
-            extractParagraphWindow(
-              chapter.content,
-              anchor.startPara,
-              anchor.endPara,
-            ),
-          );
-          parts.add('```');
-          parts.add('');
-        } else {
-          parts.add('【位置提示】请根据内容判断这是原文章节的开头/中段/结尾');
-          parts.add('```');
-          parts.add(smartTruncate(chapter.content, budget));
-          parts.add('```');
-          parts.add('');
-        }
-      }
-    } else if (ref.refType == 'manuscript') {
-      final detail = resolvers.manuscriptResolver(ref.refId);
-      if (detail == null) continue;
+/// 章节引用（A-3 段落锚点优先）（R-019 拆出：buildReferencesContext）。
+void _appendChapterReference(
+  List<String> parts,
+  ReferenceItem ref,
+  int budget,
+  ReferenceResolvers resolvers,
+) {
+  final chapter = resolvers.chapterResolver(ref.refId);
+  if (chapter == null) return;
+  final tag = ref.isPrimary == 1 ? '【主引用】' : '【次要引用】';
+  parts.add('### $tag 章节：${ref.title}（${chapter.wordCount}字）');
+  // A-3：主引用带段落锚点 → 优先展开锚点窗口（替代整章）；无锚点则全章截断
+  final anchor = parseParagraphAnchor(ref.excerptRange);
+  if (ref.isPrimary == 1 && anchor != null && anchor.chapterId == ref.refId) {
+    parts.add('【选段诊断】以下为主引用章节中的选中片段（段落锚点截取）');
+    parts.add('```');
+    parts.add(
+      extractParagraphWindow(chapter.content, anchor.startPara, anchor.endPara),
+    );
+    parts.add('```');
+    parts.add('');
+  } else {
+    parts.add('【位置提示】请根据内容判断这是原文章节的开头/中段/结尾');
+    parts.add('```');
+    parts.add(smartTruncate(chapter.content, budget));
+    parts.add('```');
+    parts.add('');
+  }
+}
 
-      final totalWords = detail.chapters.fold<int>(
-        0,
-        (sum, ch) => sum + ch.wordCount,
-      );
+/// 整部作品引用（目录 + 预览章节）（R-019 拆出：buildReferencesContext）。
+void _appendManuscriptReference(
+  List<String> parts,
+  ReferenceItem ref,
+  int budget,
+  ReferenceResolvers resolvers,
+) {
+  final detail = resolvers.manuscriptResolver(ref.refId);
+  if (detail == null) return;
+  final tag = ref.isPrimary == 1 ? '【主引用】' : '【次要引用】';
+  final metaLines = _buildManuscriptMetaLines(ref, detail, tag, budget);
+  parts.addAll(metaLines);
+}
 
-      final metaLines = <String>[];
-      metaLines.add('### $tag 作品：${ref.title}');
-      metaLines.add('- 类型：${detail.genre.isEmpty ? "未指定" : detail.genre}');
-      metaLines.add('- 章节数：${detail.chapters.length}');
-      metaLines.add('- 总字数：$totalWords');
-      if (detail.description != null && detail.description!.isNotEmpty) {
-        metaLines.add('- 简介：${detail.description}');
-      }
+/// 作品元信息 + 预览章节（R-019 拆出：_appendManuscriptReference）。
+List<String> _buildManuscriptMetaLines(
+  ReferenceItem ref,
+  ManuscriptDetail detail,
+  String tag,
+  int budget,
+) {
+  final totalWords = detail.chapters.fold<int>(
+    0,
+    (sum, ch) => sum + ch.wordCount,
+  );
+
+  final metaLines = <String>[];
+  metaLines.add('### $tag 作品：${ref.title}');
+  metaLines.add('- 类型：${detail.genre.isEmpty ? "未指定" : detail.genre}');
+  metaLines.add('- 章节数：${detail.chapters.length}');
+  metaLines.add('- 总字数：$totalWords');
+  if (detail.description != null && detail.description!.isNotEmpty) {
+    metaLines.add('- 简介：${detail.description}');
+  }
+  metaLines.add('');
+  metaLines.add('**目录概览：**');
+  for (final ch in detail.chapters) {
+    metaLines.add('  ${ch.sortOrder}. ${ch.title}（${ch.wordCount}字）');
+  }
+  metaLines.add('');
+  metaLines.add('【位置提示】以下预览章节可能位于作品的不同位置，请根据内容判断每段的位置');
+
+  final metaLength = metaLines.join('\n').length;
+  final previewBudget = budget - metaLength;
+  final previewCount =
+      detail.chapters.length < ContextBudget.manuscriptPreviewChapterCount
+      ? detail.chapters.length
+      : ContextBudget.manuscriptPreviewChapterCount;
+  if (previewCount > 0 && previewBudget > ContextBudget.minPreviewBudget) {
+    final chBudget = (previewBudget / previewCount).floor();
+    for (int i = 0; i < previewCount; i++) {
+      final ch = detail.chapters[i];
+      metaLines.add('#### ${ch.title}');
+      metaLines.add('```');
+      metaLines.add(smartTruncate(ch.content, chBudget));
+      metaLines.add('```');
       metaLines.add('');
-      metaLines.add('**目录概览：**');
-      for (final ch in detail.chapters) {
-        metaLines.add('  ${ch.sortOrder}. ${ch.title}（${ch.wordCount}字）');
-      }
-      metaLines.add('');
-      metaLines.add('【位置提示】以下预览章节可能位于作品的不同位置，请根据内容判断每段的位置');
-
-      final metaLength = metaLines.join('\n').length;
-      final previewBudget = budget - metaLength;
-      final previewCount =
-          detail.chapters.length < ContextBudget.manuscriptPreviewChapterCount
-          ? detail.chapters.length
-          : ContextBudget.manuscriptPreviewChapterCount;
-      if (previewCount > 0 && previewBudget > ContextBudget.minPreviewBudget) {
-        final chBudget = (previewBudget / previewCount).floor();
-        for (int i = 0; i < previewCount; i++) {
-          final ch = detail.chapters[i];
-          metaLines.add('#### ${ch.title}');
-          metaLines.add('```');
-          metaLines.add(smartTruncate(ch.content, chBudget));
-          metaLines.add('```');
-          metaLines.add('');
-        }
-      }
-
-      parts.addAll(metaLines);
     }
   }
-
-  return parts.join('\n');
+  return metaLines;
 }
 
 /// 引用内容解析器（依赖注入，避免纯函数直接调 DAO）
