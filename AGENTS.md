@@ -26,7 +26,7 @@
 - **框架**：Flutter + Dart
 - **状态管理**：Riverpod
 - **持久化**：drift（SQLite）。生成文件 `database.g.dart` 勿手改
-- **测试**：`flutter test --exclude-tags live,external --no-pub`（当前基线 **2298 用例全绿**，2026-09-03 A.12.37 核）
+- **测试**：`flutter test --exclude-tags live,external --no-pub`（当前基线 **2442 用例全绿**，2026-09-05 C78 开工前核）
 - **变异验证脚本**：`yuesheng-flutter/tool/_c68_mutation.py`（ADR-C68）、`_c69_mutation.py`（ADR-C69）；改源码做验证的脚本范式，见 V4.10
 - **样式**：设计令牌（`lib/config/app_theme.dart` 的 `AppTextStyles` / `AppColors`），不写裸字面量
 - **Prompt 真源**：`lib/services/skill_registry.dart` + 各 `skills_*.dart`（不是任何 .md 文件）
@@ -96,7 +96,7 @@ python tool/check_r019.py --baseline tool/r019_baseline.json
 > - 需真实 API Key 的用例用 `--exclude-tags live,external` 排除。
 
 > **门禁 5 的止血模式与「清偿后必须收紧基线」（V4.14）**
-> `tool/r019_baseline.json` 是存量债务快照（当前 **235 条，只计手写代码**），
+> `tool/r019_baseline.json` 是存量债务快照（当前 **160 条，293 文件，只计手写代码**），
 > 带上 `--baseline` 时**只卡新增**超限，存量全部豁免——这是刻意的，否则 235
 > 个函数会让此后每个提交都红灯，门禁会被当噪音绕过。
 > 扫描器**默认排除生成文件**（`*.g.dart` / `*.freezed.dart`，`--include-generated`
@@ -475,3 +475,27 @@ bash scripts/_run_flutter_test.sh test/<file>.dart --exclude-tags live,external 
 若日后 wrapper 自身出问题（例如 Flutter SDK 升级加了新的环境变量依赖），
 保留「先实跑一个不相关测试做对照」的诊断口诀；零输出即视为环境问题，
 不要凭「退出码 0」判断测试通过。
+
+（V4.23：**中文分支名 + checkout 中断 + gc = refs 丢失三连**——2026-09-05 实证，
+一次事故丢 2 个提交对象。执行 R-006 L1 备份时我用了中文分支名
+`backup/20260905-角色标签页功能`：① `git checkout -b` 在本仓（4 万+ 文件）建出的是
+**孤儿分支**（零提交，ref 未真正落盘）；② 紧接着 `git checkout main` 回切被超时
+**SIGTERM 中断**；③ 中断触发的 gc 消费掉松散对象、新 pack 未落盘 → `.git/refs/`
+**整个目录消失**，最后 2 个提交（`25b23da7` 方案 v1.2、`89ab0f30` 台账更正）对象丢失。
+
+**恢复路径**（可复用）：`mkdir -p .git/refs/heads .git/refs/tags` 让 git 重新认库 →
+用 `git cat-file -t <hash>` 逐个试探存活提交 → `git update-ref refs/heads/main <存活最新>`
+重新锚定。**文件内容零丢失**（工作树仍保有全部内容，会以未提交改动的形式重新出现），
+丢的只是历史粒度。
+
+**R-006 L1 的正确姿势（更正）**：
+```bash
+git branch backup/20260905-ascii-only   # ✅ 只建引用，不碰工作区；分支名必须纯 ASCII
+# 或更强的外部兜底：
+git bundle create ../rescue-main.bundle --all   # ✅ 独立于 .git 之外
+```
+❌ **永远不要在本仓上 `git checkout`**（切分支会重写全量工作区与索引）。
+「先 `git stash` 再 checkout 并加长超时」**仍然是在全量工作区上冒险**，不采纳。
+
+配套教训：本仓历史上 `.git` 至少断过两次（2026-08-22 的 `.git-broken-backup-20260822`
+仍在根目录，保留不动），属长期病灶——**改动前先出 bundle 兜底**应成为默认动作。）
