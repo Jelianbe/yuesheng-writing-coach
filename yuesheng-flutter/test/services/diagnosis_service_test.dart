@@ -19,6 +19,15 @@ import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 
+class _ThrowingDiagRepo extends DiagnosisRepository {
+  _ThrowingDiagRepo(super.db);
+
+  @override
+  Future<String> commitDiagnosis(DiagnosisInput input) async {
+    throw Exception('commit failed');
+  }
+}
+
 void main() {
   late AppDatabase db;
   late SessionRepository sesRepo;
@@ -65,6 +74,19 @@ void main() {
       confidence: 0.7,
     );
   }
+
+  test('#M commitDiagnosis 抛异常 → 不追加 teaching_history', () async {
+    final svc = DiagnosisService(
+      diagnosisRepo: _ThrowingDiagRepo(db),
+      studentModelRepo: studentModelRepo,
+    );
+    await svc.commitDiagnosisWithHistory(input([syndrome('P003', 'L2')]));
+
+    final rows = await (db.select(
+      db.studentModels,
+    )..where((t) => t.sessionId.equals(sessionId))).get();
+    expect(rows, isEmpty, reason: 'commit 失败应立即返回，不写 teaching_history');
+  });
 
   /// 拉大首条诊断的 timestamp（-100s），避免两轮诊断同 unix 秒
   /// 导致 getAllDiagnoses 排序不稳定（当前/上一次判定颠倒）

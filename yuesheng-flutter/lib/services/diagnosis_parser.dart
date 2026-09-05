@@ -110,14 +110,7 @@ final RegExp _kSyndromeIdRe = RegExp(r'^P0\d{2}$');
 /// 又不破坏本文件头「纯函数，无副作用，不 throw」的既有契约。
 ParseResult parseDiagnosis(String rawText) {
   final startIndex = rawText.indexOf(kDiagnosisStart);
-  if (startIndex == -1) {
-    // 批次74：无诊断块也要保证大纲协议块被剥离，避免 100% 非诊断路径出现协议 JSON
-    // 批次6（6.12 V8）：FACT 协议块同样剥离（顺序错乱/无诊断时均不泄漏）
-    return ParseResult(
-      displayContent: stripFactBlock(stripOutlineBlock(rawText)),
-      diagnosis: null,
-    );
-  }
+  if (startIndex == -1) return _parseNoMarker(rawText);
 
   // 批次6（6.12 V8）：prefix 同样剥 ENTITY/FACT 协议块（FACT 块出现在
   // 诊断块之前等顺序错乱场景不泄漏原始 JSON）
@@ -152,11 +145,8 @@ ParseResult parseDiagnosis(String rawText) {
   final jsonStr = rawText
       .substring(startIndex + kDiagnosisStart.length, endIndex)
       .trim();
-
-  dynamic parsed;
-  try {
-    parsed = jsonDecode(jsonStr);
-  } catch (_) {
+  final decoded = _decodeJsonPayload(jsonStr);
+  if (!decoded.ok) {
     return ParseResult(
       displayContent: displayContent,
       diagnosis: null,
@@ -164,13 +154,32 @@ ParseResult parseDiagnosis(String rawText) {
     );
   }
 
-  final outcome = _validateDiagnosis(parsed);
+  final outcome = _validateDiagnosis(decoded.value);
   return ParseResult(
     displayContent: displayContent,
     diagnosis: outcome.diagnosis,
     rejectReason: outcome.rejectReason,
     notes: outcome.notes,
   );
+}
+
+/// 无诊断块：仅剥离协议块后返回（批次74/6 契约）。
+ParseResult _parseNoMarker(String rawText) {
+  // 批次74：无诊断块也要保证大纲协议块被剥离，避免 100% 非诊断路径出现协议 JSON
+  // 批次6（6.12 V8）：FACT 协议块同样剥离（顺序错乱/无诊断时均不泄漏）
+  return ParseResult(
+    displayContent: stripFactBlock(stripOutlineBlock(rawText)),
+    diagnosis: null,
+  );
+}
+
+/// JSON 载荷安全解码：成功/失败用 record 区分（JSON 值本身可为 null）。
+({dynamic value, bool ok}) _decodeJsonPayload(String jsonStr) {
+  try {
+    return (value: jsonDecode(jsonStr), ok: true);
+  } catch (_) {
+    return (value: null, ok: false);
+  }
 }
 
 String _concatDiagnosisDisplay(String prefix, String suffix) {

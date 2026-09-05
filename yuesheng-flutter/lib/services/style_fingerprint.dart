@@ -307,45 +307,68 @@ List<String> detectVoiceDrift(
   StyleFingerprint current,
 ) {
   final hints = <String>[];
+  final sentence = _sentenceLengthDriftHint(baseline, current);
+  if (sentence != null) hints.add(sentence);
+  final dialogue = _dialogueRatioDriftHint(baseline, current);
+  if (dialogue != null) hints.add(dialogue);
+  final structure = _structureRatioDriftHint(baseline, current);
+  if (structure != null) hints.add(structure);
+  hints.addAll(_punctuationDriftHints(baseline, current));
+  return hints.take(3).toList();
+}
 
-  // 1. 句长均值偏离
-  if (baseline.avgSentenceLength > 0) {
-    final ratio =
-        (current.avgSentenceLength - baseline.avgSentenceLength).abs() /
-        baseline.avgSentenceLength;
-    if (ratio >= kDriftSentenceLengthRatio) {
-      hints.add(
-        '你的句子长度通常约 ${baseline.avgSentenceLength.round()} 字，'
-        '但这段平均只有 ${current.avgSentenceLength.round()} 字——'
-        '是刻意加速，还是无意识的变化？',
-      );
-    }
-  }
+/// 句长均值偏离提示（R-019 拆出：detectVoiceDrift）。
+String? _sentenceLengthDriftHint(
+  StyleFingerprint baseline,
+  StyleFingerprint current,
+) {
+  if (baseline.avgSentenceLength <= 0) return null;
+  final ratio =
+      (current.avgSentenceLength - baseline.avgSentenceLength).abs() /
+      baseline.avgSentenceLength;
+  if (ratio < kDriftSentenceLengthRatio) return null;
+  return '你的句子长度通常约 ${baseline.avgSentenceLength.round()} 字，'
+      '但这段平均只有 ${current.avgSentenceLength.round()} 字——'
+      '是刻意加速，还是无意识的变化？';
+}
 
-  // 2. 对话/叙述配比偏离
-  if ((current.dialogueRatio - baseline.dialogueRatio).abs() >=
+/// 对话/叙述配比偏离提示（R-019 拆出：detectVoiceDrift）。
+String? _dialogueRatioDriftHint(
+  StyleFingerprint baseline,
+  StyleFingerprint current,
+) {
+  if ((current.dialogueRatio - baseline.dialogueRatio).abs() <
       kDriftDialogueRatioAbs) {
-    final bPct = (baseline.dialogueRatio * 100).round();
-    final cPct = (current.dialogueRatio * 100).round();
-    hints.add(
-      '你通常对话约占 $bPct%，但这段到了 $cPct%——'
-      '对话和叙述的配比变化，是有意为之吗？',
-    );
+    return null;
   }
+  final bPct = (baseline.dialogueRatio * 100).round();
+  final cPct = (current.dialogueRatio * 100).round();
+  return '你通常对话约占 $bPct%，但这段到了 $cPct%——'
+      '对话和叙述的配比变化，是有意为之吗？';
+}
 
-  // 3. 句式结构偏离（简单句占比）
-  if ((current.simpleSentenceRatio - baseline.simpleSentenceRatio).abs() >=
+/// 句式结构（简单句占比）偏离提示（R-019 拆出：detectVoiceDrift）。
+String? _structureRatioDriftHint(
+  StyleFingerprint baseline,
+  StyleFingerprint current,
+) {
+  if ((current.simpleSentenceRatio - baseline.simpleSentenceRatio).abs() <
       kDriftSimpleRatioAbs) {
-    final bPct = (baseline.simpleSentenceRatio * 100).round();
-    final cPct = (current.simpleSentenceRatio * 100).round();
-    hints.add(
-      '你惯用的句式偏${baseline.simpleSentenceRatio >= 0.5 ? '简短' : '绵长'}'
-      '（简单句约 $bPct%），这段到了 $cPct%——'
-      '是情绪需要，还是节奏不自觉地变了？',
-    );
+    return null;
   }
+  final bPct = (baseline.simpleSentenceRatio * 100).round();
+  final cPct = (current.simpleSentenceRatio * 100).round();
+  return '你惯用的句式偏${baseline.simpleSentenceRatio >= 0.5 ? '简短' : '绵长'}'
+      '（简单句约 $bPct%），这段到了 $cPct%——'
+      '是情绪需要，还是节奏不自觉地变了？';
+}
 
-  // 4. 标点特征偏离（感叹号/省略号激增）
+/// 标点特征偏离（感叹号/省略号激增）提示列表（R-019 拆出）。
+List<String> _punctuationDriftHints(
+  StyleFingerprint baseline,
+  StyleFingerprint current,
+) {
+  final hints = <String>[];
   if (current.exclamationDensity >= kDriftExclamationMin &&
       baseline.exclamationDensity < kDriftExclamationBaselineMax) {
     hints.add(
@@ -360,6 +383,5 @@ List<String> detectVoiceDrift(
       '是留白的刻意安排吗？',
     );
   }
-
-  return hints.take(3).toList();
+  return hints;
 }

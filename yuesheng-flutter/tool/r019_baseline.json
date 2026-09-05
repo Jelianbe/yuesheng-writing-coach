@@ -195,8 +195,8 @@
     {
       "file": "lib/services/diagnosis_parser.dart",
       "func": "_validateDiagnosis",
-      "start": 273,
-      "end": 417,
+      "start": 282,
+      "end": 426,
       "lines": 145
     },
     {
@@ -1054,20 +1054,6 @@
       "lines": 65
     },
     {
-      "file": "lib/services/diagnosis_parser.dart",
-      "func": "parseDiagnosis",
-      "start": 111,
-      "end": 174,
-      "lines": 64
-    },
-    {
-      "file": "lib/services/diagnosis_service.dart",
-      "func": "commitDiagnosisWithHistory",
-      "start": 284,
-      "end": 347,
-      "lines": 64
-    },
-    {
       "file": "lib/widgets/phase_summary_card.dart",
       "func": "_buildButtons",
       "start": 296,
@@ -1108,13 +1094,6 @@
       "start": 109,
       "end": 170,
       "lines": 62
-    },
-    {
-      "file": "lib/services/style_fingerprint.dart",
-      "func": "detectVoiceDrift",
-      "start": 305,
-      "end": 365,
-      "lines": 61
     },
     {
       "file": "lib/widgets/diagnosis_card.dart",
@@ -1283,6 +1262,13 @@
       "start": 232,
       "end": 286,
       "lines": 55
+    },
+    {
+      "file": "lib/services/diagnosis_parser.dart",
+      "func": "parseDiagnosis",
+      "start": 111,
+      "end": 164,
+      "lines": 54
     },
     {
       "file": "lib/widgets/diagnosis_picker_sheet.dart",
