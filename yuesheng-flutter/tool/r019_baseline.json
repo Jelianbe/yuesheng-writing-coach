@@ -382,13 +382,6 @@
       "lines": 111
     },
     {
-      "file": "lib/services/evaluation_service.dart",
-      "func": "computeRoundEvaluation",
-      "start": 107,
-      "end": 216,
-      "lines": 110
-    },
-    {
       "file": "lib/widgets/abandon_practice_modal.dart",
       "func": "build",
       "start": 45,
@@ -524,8 +517,8 @@
     {
       "file": "lib/services/evaluation_service.dart",
       "func": "_buildSyndromeDetail",
-      "start": 221,
-      "end": 318,
+      "start": 298,
+      "end": 395,
       "lines": 98
     },
     {
@@ -576,20 +569,6 @@
       "start": 64,
       "end": 158,
       "lines": 95
-    },
-    {
-      "file": "lib/services/outline_service.dart",
-      "func": "applyOutlineExtraction",
-      "start": 126,
-      "end": 219,
-      "lines": 94
-    },
-    {
-      "file": "lib/services/style_fingerprint.dart",
-      "func": "extractStyleFingerprint",
-      "start": 205,
-      "end": 298,
-      "lines": 94
     },
     {
       "file": "lib/widgets/manuscript_detail_page.dart",
