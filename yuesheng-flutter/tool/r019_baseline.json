@@ -1,13 +1,13 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 290,
+  "fileCount": 293,
   "violations": [
     {
       "file": "lib/services/chat_service.dart",
       "func": "_sendMessageCore",
-      "start": 2317,
-      "end": 2627,
+      "start": 548,
+      "end": 858,
       "lines": 311
     },
     {
@@ -18,25 +18,11 @@
       "lines": 281
     },
     {
-      "file": "lib/services/chat_service.dart",
-      "func": "_injectDiagnosisLock",
-      "start": 840,
-      "end": 1107,
-      "lines": 268
-    },
-    {
       "file": "lib/widgets/manuscript_detail_chapter.dart",
       "func": "_handleChapterLongPress",
       "start": 189,
       "end": 432,
       "lines": 244
-    },
-    {
-      "file": "lib/services/chat_service.dart",
-      "func": "_injectChapterObservations",
-      "start": 1343,
-      "end": 1579,
-      "lines": 237
     },
     {
       "file": "lib/services/training_input_builder.dart",
@@ -109,13 +95,6 @@
       "lines": 189
     },
     {
-      "file": "lib/services/chat_service.dart",
-      "func": "_parseAndPersist",
-      "start": 1740,
-      "end": 1927,
-      "lines": 188
-    },
-    {
       "file": "lib/widgets/chat_page.dart",
       "func": "_buildBody",
       "start": 229,
@@ -135,13 +114,6 @@
       "start": 490,
       "end": 668,
       "lines": 179
-    },
-    {
-      "file": "lib/services/chat_service.dart",
-      "func": "commitDiagnosisFromContent",
-      "start": 511,
-      "end": 688,
-      "lines": 178
     },
     {
       "file": "lib/widgets/writing_coach_panel_builders.dart",
@@ -198,13 +170,6 @@
       "start": 215,
       "end": 368,
       "lines": 154
-    },
-    {
-      "file": "lib/services/chat_service.dart",
-      "func": "_commitDiagnosisAndSuggestions",
-      "start": 1931,
-      "end": 2083,
-      "lines": 153
     },
     {
       "file": "lib/widgets/message_card_dispatcher.dart",
@@ -277,13 +242,6 @@
       "lines": 138
     },
     {
-      "file": "lib/services/chat_service.dart",
-      "func": "_handleTrainingResult",
-      "start": 2085,
-      "end": 2221,
-      "lines": 137
-    },
-    {
       "file": "lib/widgets/manuscript_detail_page.dart",
       "func": "build",
       "start": 206,
@@ -349,8 +307,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyFactExtractionFromContent",
-      "start": 574,
-      "end": 695,
+      "start": 570,
+      "end": 691,
       "lines": 122
     },
     {
@@ -697,13 +655,6 @@
       "lines": 89
     },
     {
-      "file": "lib/services/chat_service.dart",
-      "func": "_injectOutlineFactsAndFiles",
-      "start": 1251,
-      "end": 1339,
-      "lines": 89
-    },
-    {
       "file": "lib/widgets/task_panel.dart",
       "func": "build",
       "start": 57,
@@ -779,13 +730,6 @@
       "start": 443,
       "end": 528,
       "lines": 86
-    },
-    {
-      "file": "lib/services/chat_service.dart",
-      "func": "_preloadReferenceDetails",
-      "start": 1641,
-      "end": 1725,
-      "lines": 85
     },
     {
       "file": "lib/widgets/append_chapters_page.dart",
@@ -888,8 +832,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyOutlineEntitiesFromContent",
-      "start": 487,
-      "end": 564,
+      "start": 484,
+      "end": 561,
       "lines": 78
     },
     {
@@ -989,13 +933,6 @@
       "start": 312,
       "end": 385,
       "lines": 74
-    },
-    {
-      "file": "lib/services/chat_service.dart",
-      "func": "_injectProfileAndIntents",
-      "start": 1111,
-      "end": 1183,
-      "lines": 73
     },
     {
       "file": "lib/widgets/diagnosis_card.dart",
@@ -1192,13 +1129,6 @@
       "start": 180,
       "end": 244,
       "lines": 65
-    },
-    {
-      "file": "lib/services/chat_service.dart",
-      "func": "_injectReferences",
-      "start": 1186,
-      "end": 1249,
-      "lines": 64
     },
     {
       "file": "lib/services/diagnosis_parser.dart",

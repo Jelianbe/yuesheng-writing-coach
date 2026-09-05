@@ -21,14 +21,15 @@ import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/services/llm_fallback.dart';
 import 'package:writingcoach/services/llm_retry.dart';
 
-const _secureChannel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+const _secureChannel = MethodChannel(
+  'plugins.it_nomads.com/flutter_secure_storage',
+);
 const _connChannel = MethodChannel('dev.fluttercommunity.plus/connectivity');
 
 /// 以内存 map 替换 secure_storage / connectivity 两个 platform channel。
 void _mockChannels(Map<String, String> store) {
-  final messenger = TestDefaultBinaryMessengerBinding
-      .instance
-      .defaultBinaryMessenger;
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(_secureChannel, (call) async {
     final key = (call.arguments as Map?)?['key'] as String?;
     switch (call.method) {
@@ -145,25 +146,58 @@ void main() {
 
   group('A2. isRetryableDioError 错误分类', () {
     test('超时/连接错误 → 可重试', () {
-      expect(isRetryableDioError(_dioErr(DioExceptionType.connectionTimeout)), isTrue);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.receiveTimeout)), isTrue);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.sendTimeout)), isTrue);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.connectionError)), isTrue);
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.connectionTimeout)),
+        isTrue,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.receiveTimeout)),
+        isTrue,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.sendTimeout)),
+        isTrue,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.connectionError)),
+        isTrue,
+      );
     });
 
     test('5xx 与 429 → 可重试；4xx → 不可重试', () {
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 500)), isTrue);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 503)), isTrue);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 429)), isTrue);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 400)), isFalse);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 401)), isFalse);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 403)), isFalse);
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 500)),
+        isTrue,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 503)),
+        isTrue,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 429)),
+        isTrue,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 400)),
+        isFalse,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 401)),
+        isFalse,
+      );
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badResponse, status: 403)),
+        isFalse,
+      );
     });
 
     test('取消/未知/证书错误 → 不可重试', () {
       expect(isRetryableDioError(_dioErr(DioExceptionType.cancel)), isFalse);
       expect(isRetryableDioError(_dioErr(DioExceptionType.unknown)), isFalse);
-      expect(isRetryableDioError(_dioErr(DioExceptionType.badCertificate)), isFalse);
+      expect(
+        isRetryableDioError(_dioErr(DioExceptionType.badCertificate)),
+        isFalse,
+      );
     });
   });
 
@@ -171,13 +205,10 @@ void main() {
     test('首次成功：不重试、不退避', () async {
       final sleeps = <Duration>[];
       var calls = 0;
-      final r = await executeWithRetry(
-        (i) async {
-          calls++;
-          return 'ok';
-        },
-        sleep: (d) async => sleeps.add(d),
-      );
+      final r = await executeWithRetry((i) async {
+        calls++;
+        return 'ok';
+      }, sleep: (d) async => sleeps.add(d));
       expect(r, 'ok');
       expect(calls, 1);
       expect(sleeps, isEmpty);
@@ -224,13 +255,10 @@ void main() {
     test('4xx 不可重试：立即抛出，仅 1 次尝试', () async {
       var calls = 0;
       await expectLater(
-        executeWithRetry(
-          (i) async {
-            calls++;
-            throw _dioErr(DioExceptionType.badResponse, status: 401);
-          },
-          sleep: (_) async => fail('不应退避'),
-        ),
+        executeWithRetry((i) async {
+          calls++;
+          throw _dioErr(DioExceptionType.badResponse, status: 401);
+        }, sleep: (_) async => fail('不应退避')),
         throwsA(isA<DioException>()),
       );
       expect(calls, 1);
@@ -240,13 +268,10 @@ void main() {
       var calls = 0;
       final marker = Exception('已输出 token 后失败');
       await expectLater(
-        executeWithRetry(
-          (i) async {
-            calls++;
-            throw LlmNonRetryableException(marker);
-          },
-          sleep: (_) async => fail('不应退避'),
-        ),
+        executeWithRetry((i) async {
+          calls++;
+          throw LlmNonRetryableException(marker);
+        }, sleep: (_) async => fail('不应退避')),
         throwsA(isA<LlmNonRetryableException>()),
       );
       expect(calls, 1);
@@ -255,14 +280,11 @@ void main() {
     test('TimeoutException（零 token 断流）→ 可重试', () async {
       final sleeps = <Duration>[];
       var calls = 0;
-      final r = await executeWithRetry(
-        (i) async {
-          calls++;
-          if (i == 1) throw TimeoutException('首字超时');
-          return 'ok';
-        },
-        sleep: (d) async => sleeps.add(d),
-      );
+      final r = await executeWithRetry((i) async {
+        calls++;
+        if (i == 1) throw TimeoutException('首字超时');
+        return 'ok';
+      }, sleep: (d) async => sleeps.add(d));
       expect(r, 'ok');
       expect(calls, 2);
       expect(sleeps.length, 1);
@@ -271,13 +293,10 @@ void main() {
     test('非 Dio/非 Timeout 异常：不可重试直接抛', () async {
       var calls = 0;
       await expectLater(
-        executeWithRetry(
-          (i) async {
-            calls++;
-            throw StateError('业务错误');
-          },
-          sleep: (_) async => fail('不应退避'),
-        ),
+        executeWithRetry((i) async {
+          calls++;
+          throw StateError('业务错误');
+        }, sleep: (_) async => fail('不应退避')),
         throwsStateError,
       );
       expect(calls, 1);
@@ -291,7 +310,8 @@ void main() {
           return 'ok';
         },
         sleep: (_) async {},
-        onRetry: (next, delay, e) => logs.add((next, delay, e.runtimeType.toString())),
+        onRetry: (next, delay, e) =>
+            logs.add((next, delay, e.runtimeType.toString())),
       );
       expect(logs.length, 2);
       expect(logs[0].$1, 2);
@@ -346,20 +366,22 @@ void main() {
         LlmFallbackEntry(baseUrl: 'https://b1/v1'),
         LlmFallbackEntry(baseUrl: 'https://b2/v1'),
       ], 3);
-      expect(
-        r.map((e) => e.baseUrl).toList(),
-        ['https://main/v1', 'https://b1/v1', 'https://b2/v1'],
-      );
+      expect(r.map((e) => e.baseUrl).toList(), [
+        'https://main/v1',
+        'https://b1/v1',
+        'https://b2/v1',
+      ]);
     });
 
     test('1 个 fallback max=3：[主, 备1, 主]（额度回补主端点）', () {
       final r = expandEndpoints(primary, const [
         LlmFallbackEntry(baseUrl: 'https://b1/v1'),
       ], 3);
-      expect(
-        r.map((e) => e.baseUrl).toList(),
-        ['https://main/v1', 'https://b1/v1', 'https://main/v1'],
-      );
+      expect(r.map((e) => e.baseUrl).toList(), [
+        'https://main/v1',
+        'https://b1/v1',
+        'https://main/v1',
+      ]);
     });
 
     test('fallback 缺省字段继承主配置；显式字段覆盖', () {
@@ -389,18 +411,26 @@ void main() {
         _dioErr(DioExceptionType.connectionTimeout),
         _jsonBody({
           'choices': [
-            {'message': {'content': '最终回答'}},
+            {
+              'message': {'content': '最终回答'},
+            },
           ],
         }),
       ]);
-      final client = LlmClient(LlmConfigStorage(const FlutterSecureStorage()), Dio()..httpClientAdapter = adapter);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
 
       final r = await client.chatCompletion([
         const ChatMessage(role: 'user', content: 'hi'),
       ]);
       expect(r, '最终回答');
       expect(adapter.urls.length, 3);
-      expect(adapter.urls.every((u) => u.startsWith('https://main/v1')), isTrue);
+      expect(
+        adapter.urls.every((u) => u.startsWith('https://main/v1')),
+        isTrue,
+      );
     });
 
     test('fallback 轮换：主失败 → 备1 成功', () async {
@@ -410,11 +440,16 @@ void main() {
         _dioErr(DioExceptionType.connectionError),
         _jsonBody({
           'choices': [
-            {'message': {'content': '备家回答'}},
+            {
+              'message': {'content': '备家回答'},
+            },
           ],
         }),
       ]);
-      final client = LlmClient(LlmConfigStorage(const FlutterSecureStorage()), Dio()..httpClientAdapter = adapter);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
 
       final r = await client.chatCompletion([
         const ChatMessage(role: 'user', content: 'hi'),
@@ -429,7 +464,10 @@ void main() {
       final adapter = _ScriptedAdapter([
         _dioErr(DioExceptionType.badResponse, status: 401),
       ]);
-      final client = LlmClient(LlmConfigStorage(const FlutterSecureStorage()), Dio()..httpClientAdapter = adapter);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
 
       await expectLater(
         client.chatCompletion([const ChatMessage(role: 'user', content: 'hi')]),
@@ -460,9 +498,14 @@ void main() {
     test('零 token 建连失败 → 退避重试成功，token 正常输出', () async {
       final adapter = _ScriptedAdapter([
         _dioErr(DioExceptionType.connectionTimeout),
-        _sseBody('data: {"choices":[{"delta":{"content":"你好"}}]}\n\ndata: [DONE]\n\n'),
+        _sseBody(
+          'data: {"choices":[{"delta":{"content":"你好"}}]}\n\ndata: [DONE]\n\n',
+        ),
       ]);
-      final client = LlmClient(LlmConfigStorage(const FlutterSecureStorage()), Dio()..httpClientAdapter = adapter);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
 
       final tokens = <String>[];
       await client.streamChat(
@@ -485,18 +528,22 @@ void main() {
           },
         ),
         // 第二个脚本项存在但不应被消费——若被消费说明错误地重试了
-        _sseBody('data: {"choices":[{"delta":{"content":"重复"}}]}\n\ndata: [DONE]\n\n'),
+        _sseBody(
+          'data: {"choices":[{"delta":{"content":"重复"}}]}\n\ndata: [DONE]\n\n',
+        ),
       ]);
-      final client = LlmClient(LlmConfigStorage(const FlutterSecureStorage()), Dio()..httpClientAdapter = adapter);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
 
       final tokens = <String>[];
       await expectLater(
-        client.streamChat(
-          [const ChatMessage(role: 'user', content: 'hi')],
-          (resp) {
-            if (!resp.isDone) tokens.add(resp.content);
-          },
-        ),
+        client.streamChat([const ChatMessage(role: 'user', content: 'hi')], (
+          resp,
+        ) {
+          if (!resp.isDone) tokens.add(resp.content);
+        }),
         throwsA(isA<TimeoutException>()),
       );
       // 核心安全断言：没有重复输出（重试被正确阻止）
@@ -507,15 +554,19 @@ void main() {
     test('取消：LlmRequestCancelledException 冒泡且不重试', () async {
       final adapter = _ScriptedAdapter([
         _dioErr(DioExceptionType.cancel),
-        _sseBody('data: {"choices":[{"delta":{"content":"不应到达"}}]}\n\ndata: [DONE]\n\n'),
+        _sseBody(
+          'data: {"choices":[{"delta":{"content":"不应到达"}}]}\n\ndata: [DONE]\n\n',
+        ),
       ]);
-      final client = LlmClient(LlmConfigStorage(const FlutterSecureStorage()), Dio()..httpClientAdapter = adapter);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
 
       await expectLater(
-        client.streamChat(
-          [const ChatMessage(role: 'user', content: 'hi')],
-          (_) {},
-        ),
+        client.streamChat([
+          const ChatMessage(role: 'user', content: 'hi'),
+        ], (_) {}),
         throwsA(isA<LlmRequestCancelledException>()),
       );
       expect(adapter.urls.length, 1);

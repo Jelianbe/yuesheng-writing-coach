@@ -29,9 +29,19 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
+import 'package:writingcoach/services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
 /// Fake LLM 客户端：预设 streamChat 响应
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
@@ -54,7 +64,10 @@ class FakeLlmClient extends LlmClient {
           ? i + _chunkSize
           : _fullResponse.length;
       callback(
-        LlmStreamResponse(content: _fullResponse.substring(i, end), isDone: false),
+        LlmStreamResponse(
+          content: _fullResponse.substring(i, end),
+          isDone: false,
+        ),
       );
     }
     callback(const LlmStreamResponse(content: '', isDone: true));
@@ -74,7 +87,10 @@ void main() {
 
   tearDown(() async => db.close());
 
-  ChatService buildChatService(LlmClient llm, {OutlineRepository? outlineRepo}) {
+  ChatService buildChatService(
+    LlmClient llm, {
+    OutlineRepository? outlineRepo,
+  }) {
     return ChatService(
       sessionRepo: sessionRepo,
       stateRepo: TeachingStateRepository(db),
@@ -93,6 +109,86 @@ void main() {
         studentModelRepo: StudentModelRepository(db),
         referenceRepo: ReferenceRepository(db),
         chapterRepo: ChapterRepository(db),
+      ),
+
+      messageInjector: MessageInjector(
+        sessionRepo: sessionRepo,
+
+        diagnosisRepo: DiagnosisRepository(db),
+
+        studentModelRepo: StudentModelRepository(db),
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+
+        manuscriptRepo: ManuscriptRepository(db),
+
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+
+          stateRepo: TeachingStateRepository(db),
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+        ),
+
+        material: const MaterialCapabilityImpl(),
+      ),
+      diagnosisFlowHandler: DiagnosisFlowHandler(
+        sessionRepo: SessionRepository(db),
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        teacherSuggestionRepo: TeacherSuggestionRepository(db),
+        llmClient: llm,
+
+        messageInjector: MessageInjector(
+          sessionRepo: sessionRepo,
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+
+            stateRepo: TeachingStateRepository(db),
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+        ),
+        diagnosis: const DiagnosisCapabilityImpl(),
+        genUi: const GenUiParser(),
       ),
       outlineRepo: outlineRepo,
     );
@@ -137,11 +233,7 @@ void main() {
         sessionId: sessionId,
         messageId: msgId,
         syndromes: [
-          {
-            'syndrome_id': syndromeId,
-            'name': '叙事含糊',
-            'severity': 'L2',
-          },
+          {'syndrome_id': syndromeId, 'name': '叙事含糊', 'severity': 'L2'},
         ],
         suggestedActions: const [],
         confidence: 0.8,
@@ -154,35 +246,38 @@ void main() {
 
   // ───────── E1：outline 装配 + 章节主引用 + 空 AI 回复 ─────────
 
-  test('E1 outline 装配 + 章节主引用 + 空 AI 回复 → _readOutlineEntityCount 跑通', () async {
-    final msRepo = ManuscriptRepository(db);
-    final chRepo = ChapterRepository(db);
-    final refRepo = ReferenceRepository(db);
-    final outlineRepo = OutlineRepository(db);
+  test(
+    'E1 outline 装配 + 章节主引用 + 空 AI 回复 → _readOutlineEntityCount 跑通',
+    () async {
+      final msRepo = ManuscriptRepository(db);
+      final chRepo = ChapterRepository(db);
+      final refRepo = ReferenceRepository(db);
+      final outlineRepo = OutlineRepository(db);
 
-    final ms = await msRepo.createManuscript(title: '主稿', genre: '小说');
-    final ch = await chRepo.createChapter(
-      ms,
-      title: '第一章 风起',
-      content: '风起云涌，这一段写得很用心，埋下伏笔。',
-    );
-    await refRepo.addReference(sessionId, 'chapter', ch, isPrimary: true);
-    // 预置实体，使 buildEntityIndexContext 返回非空（含 "- [" 行）
-    await outlineRepo.insertEntity(
-      manuscriptId: ms,
-      entityType: 'character',
-      entityKey: '王建国',
-      aliases: const ['建国'],
-    );
+      final ms = await msRepo.createManuscript(title: '主稿', genre: '小说');
+      final ch = await chRepo.createChapter(
+        ms,
+        title: '第一章 风起',
+        content: '风起云涌，这一段写得很用心，埋下伏笔。',
+      );
+      await refRepo.addReference(sessionId, 'chapter', ch, isPrimary: true);
+      // 预置实体，使 buildEntityIndexContext 返回非空（含 "- [" 行）
+      await outlineRepo.insertEntity(
+        manuscriptId: ms,
+        entityType: 'character',
+        entityKey: '王建国',
+        aliases: const ['建国'],
+      );
 
-    final svc = buildChatService(FakeLlmClient(''), outlineRepo: outlineRepo);
-    // 空回复 → combinedContent 为空 → outline 装配 + 章节主引用 → 进入 treatAsValid 分支
-    await svc.sendMessage(sessionId, '请诊断这一章', callbacks(), options());
+      final svc = buildChatService(FakeLlmClient(''), outlineRepo: outlineRepo);
+      // 空回复 → combinedContent 为空 → outline 装配 + 章节主引用 → 进入 treatAsValid 分支
+      await svc.sendMessage(sessionId, '请诊断这一章', callbacks(), options());
 
-    // 不抛错即通过（_readOutlineEntityCount 已执行）
-    final messages = await sessionRepo.listMessages(sessionId);
-    expect(messages, isNotEmpty);
-  });
+      // 不抛错即通过（_readOutlineEntityCount 已执行）
+      final messages = await sessionRepo.listMessages(sessionId);
+      expect(messages, isNotEmpty);
+    },
+  );
 
   // ───────── E2+E3：焦点历史条目 + 教学计划延续注入 ─────────
 
@@ -195,12 +290,7 @@ void main() {
     );
 
     final svc = buildChatService(FakeLlmClient('这一段写得很稳。'));
-    await svc.sendMessage(
-      sessionId,
-      '继续聊聊这一章',
-      callbacks(),
-      options(),
-    );
+    await svc.sendMessage(sessionId, '继续聊聊这一章', callbacks(), options());
 
     // 主链路完成即说明两处注入分支均已跑通
     final messages = await sessionRepo.listMessages(sessionId);
@@ -213,12 +303,7 @@ void main() {
     await commitFocusedDiagnosis(syndromeId: 'P1');
 
     final svc = buildChatService(FakeLlmClient('好的，来练这一项。'));
-    await svc.sendMessage(
-      sessionId,
-      '练习 P1',
-      callbacks(),
-      options(),
-    );
+    await svc.sendMessage(sessionId, '练习 P1', callbacks(), options());
 
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages.any((m) => m.role == 'assistant'), isTrue);
@@ -270,12 +355,7 @@ void main() {
     await commitFocusedDiagnosis(syndromeId: 's1');
 
     final svc = buildChatService(FakeLlmClient('我们来复盘这次训练。'));
-    await svc.sendMessage(
-      sessionId,
-      '这次训练怎么样',
-      callbacks(),
-      options(),
-    );
+    await svc.sendMessage(sessionId, '这次训练怎么样', callbacks(), options());
 
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages.any((m) => m.role == 'assistant'), isTrue);
@@ -319,12 +399,7 @@ void main() {
     }
 
     final svc = buildChatService(FakeLlmClient('这一轮表现稳定，可以毕业了。'));
-    await svc.sendMessage(
-      sessionId,
-      '来做个训练总结',
-      callbacks(),
-      options(),
-    );
+    await svc.sendMessage(sessionId, '来做个训练总结', callbacks(), options());
 
     // 不抛错即通过（_insertPhaseSummaryOnMastered 已执行）
     final messages = await sessionRepo.listMessages(sessionId);
@@ -337,12 +412,7 @@ void main() {
     // _kFullContentMaxLen = 200 * 1024 = 204800；返回超出即触发步骤8 截断
     final huge = '好' * (200 * 1024 + 5000);
     final svc = buildChatService(FakeLlmClient(huge, chunkSize: 50000));
-    await svc.sendMessage(
-      sessionId,
-      '请写一段很长的内容',
-      callbacks(),
-      options(),
-    );
+    await svc.sendMessage(sessionId, '请写一段很长的内容', callbacks(), options());
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages.any((m) => m.role == 'assistant'), isTrue);
   });
@@ -385,12 +455,7 @@ void main() {
     await commitFocusedDiagnosis(syndromeId: 's1');
 
     final svc = buildChatService(FakeLlmClient('这次都通过了，继续保持。'));
-    await svc.sendMessage(
-      sessionId,
-      '训练得怎么样',
-      callbacks(),
-      options(),
-    );
+    await svc.sendMessage(sessionId, '训练得怎么样', callbacks(), options());
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages.any((m) => m.role == 'assistant'), isTrue);
   });

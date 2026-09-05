@@ -32,15 +32,29 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
+import 'package:writingcoach/services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
+
 /// Fake LLM 客户端：预设 streamChat 响应（沿用既有夹具）
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
   final int _chunkSize;
+
+  /// K-9 mutation 锚点：streamChat 调用次数（FT-22「只诊断」应恰好 1 次，
+  /// Teacher 触发会再走一次 streamChat）
+  int chatCalls = 0;
 
   FakeLlmClient(this._fullResponse, {int chunkSize = 10})
     : _chunkSize = chunkSize;
@@ -51,6 +65,7 @@ class FakeLlmClient extends LlmClient {
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
   }) async {
+    chatCalls++;
     for (int i = 0; i < _fullResponse.length; i += _chunkSize) {
       final end = i + _chunkSize < _fullResponse.length
           ? i + _chunkSize
@@ -283,6 +298,86 @@ void main() {
         referenceRepo: ReferenceRepository(db),
         chapterRepo: ChapterRepository(db),
       ),
+
+      messageInjector: MessageInjector(
+        sessionRepo: sessionRepo,
+
+        diagnosisRepo: DiagnosisRepository(db),
+
+        studentModelRepo: StudentModelRepository(db),
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+
+        manuscriptRepo: ManuscriptRepository(db),
+
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+
+          stateRepo: TeachingStateRepository(db),
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+        ),
+
+        material: const MaterialCapabilityImpl(),
+      ),
+      diagnosisFlowHandler: DiagnosisFlowHandler(
+        sessionRepo: SessionRepository(db),
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        teacherSuggestionRepo: TeacherSuggestionRepository(db),
+        llmClient: llm,
+
+        messageInjector: MessageInjector(
+          sessionRepo: sessionRepo,
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+
+            stateRepo: TeachingStateRepository(db),
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+        ),
+        diagnosis: const DiagnosisCapabilityImpl(),
+        genUi: const GenUiParser(),
+      ),
     );
 
     SendMessageCallbacks callbacks() => SendMessageCallbacks(
@@ -326,6 +421,18 @@ void main() {
       expect(assistant.last.content, isNotEmpty);
     });
 
+    test('FT-22 命中「只诊断」→ Teacher 不触发（streamChat 仅诊断 1 次）', () async {
+      final fake = FakeLlmClient(buildBlock(focusId: _kInPoolId));
+      final svc = buildService(fake);
+      await svc.sendMessage(sessionId, '只诊断就好，不要给建议', callbacks(), options());
+      expect(
+        fake.chatCalls,
+        1,
+        reason:
+            'FT-22：命中只诊断边界应跳过 Teacher stream，只产生诊断 1 次 chat；'
+            '触发 Teacher 会再走一次 streamChat（K-9 _triggerTeacherForDiagnosis）',
+      );
+    });
     test('对照组：三空齐发（正文空+诊断空+实体空）→ 仍走 onError（RN 原语义）', () async {
       final svc = buildService(FakeLlmClient(''));
       await svc.sendMessage(sessionId, '只诊断就好，不要给建议', callbacks(), options());

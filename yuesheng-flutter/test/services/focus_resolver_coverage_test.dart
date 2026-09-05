@@ -20,15 +20,14 @@ FocusProblem _fp(
   ConfirmationStatus confirmationStatus,
   String status, {
   int? confirmedAt,
-}) =>
-    FocusProblem(
-      syndromeId: id,
-      syndromeName: 'name-$id',
-      severity: severity,
-      confirmationStatus: confirmationStatus,
-      status: status,
-      confirmedAt: confirmedAt,
-    );
+}) => FocusProblem(
+  syndromeId: id,
+  syndromeName: 'name-$id',
+  severity: severity,
+  confirmationStatus: confirmationStatus,
+  status: status,
+  confirmedAt: confirmedAt,
+);
 
 /// 便捷构造 resolver 输入
 ResolveFocusInput _input({
@@ -38,15 +37,14 @@ ResolveFocusInput _input({
   TeachingSubphase? subphase,
   List<FocusHistoryEntry> focusHistory = const [],
   SkillLevel? studentSkillLevel,
-}) =>
-    ResolveFocusInput(
-      problems: problems,
-      aiSuggestedFocusId: aiSuggestedFocusId,
-      userFocusOverride: userFocusOverride,
-      subphase: subphase,
-      focusHistory: focusHistory,
-      studentSkillLevel: studentSkillLevel,
-    );
+}) => ResolveFocusInput(
+  problems: problems,
+  aiSuggestedFocusId: aiSuggestedFocusId,
+  userFocusOverride: userFocusOverride,
+  subphase: subphase,
+  focusHistory: focusHistory,
+  studentSkillLevel: studentSkillLevel,
+);
 
 void main() {
   // ── 主路径：6 项校验通过 ──
@@ -54,7 +52,9 @@ void main() {
     test('AI 建议 focus 在池中且 active → 通过（aiSuggested）', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           aiSuggestedFocusId: 'P003',
         ),
       );
@@ -65,7 +65,9 @@ void main() {
     test('用户覆盖 focus 在池中且 active → 通过（userOverride）', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           userFocusOverride: 'P003',
         ),
       );
@@ -78,7 +80,11 @@ void main() {
   group('无候选 fallback', () {
     test('活跃症候列表为空 → none（不注入 L3）', () {
       final out = resolveTeachingFocus(
-        _input(problems: const [], aiSuggestedFocusId: null, userFocusOverride: null),
+        _input(
+          problems: const [],
+          aiSuggestedFocusId: null,
+          userFocusOverride: null,
+        ),
       );
       expect(out.source, FocusSource.none);
       expect(out.activatedFocusId, isNull);
@@ -106,8 +112,20 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active', confirmedAt: 100),
-            _fp('P005', Severity.l2, ConfirmationStatus.confirmed, 'active', confirmedAt: 200),
+            _fp(
+              'P003',
+              Severity.l3,
+              ConfirmationStatus.confirmed,
+              'active',
+              confirmedAt: 100,
+            ),
+            _fp(
+              'P005',
+              Severity.l2,
+              ConfirmationStatus.confirmed,
+              'active',
+              confirmedAt: 200,
+            ),
           ],
           studentSkillLevel: SkillLevel.l1,
         ),
@@ -121,8 +139,20 @@ void main() {
       final out = resolveTeachingFocus(
         _input(
           problems: [
-            _fp('P005', Severity.l2, ConfirmationStatus.confirmed, 'active', confirmedAt: 100),
-            _fp('P009', Severity.l3, ConfirmationStatus.confirmed, 'active', confirmedAt: 200),
+            _fp(
+              'P005',
+              Severity.l2,
+              ConfirmationStatus.confirmed,
+              'active',
+              confirmedAt: 100,
+            ),
+            _fp(
+              'P009',
+              Severity.l3,
+              ConfirmationStatus.confirmed,
+              'active',
+              confirmedAt: 200,
+            ),
           ],
           studentSkillLevel: SkillLevel.l1,
         ),
@@ -131,7 +161,7 @@ void main() {
       expect(out.activatedFocusId, 'P009'); // l3 在 l2 之前
     });
 
-    test('fallback 优先级2（suspected）' , () {
+    test('fallback 优先级2（suspected）', () {
       final out = resolveTeachingFocus(
         _input(
           problems: [
@@ -151,7 +181,9 @@ void main() {
     test('非训练中 + 候选不在池 → fallback（不在池中）', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.suspected, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.suspected, 'active'),
+          ],
           aiSuggestedFocusId: 'PX99',
           subphase: TeachingSubphase.diagnosis,
         ),
@@ -183,7 +215,9 @@ void main() {
     test('候选 rejected + 非训练中 → fallback（无可用 → none）', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.rejected, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.rejected, 'active'),
+          ],
           aiSuggestedFocusId: 'P003',
           subphase: TeachingSubphase.diagnosis,
         ),
@@ -195,7 +229,9 @@ void main() {
     test('候选 resolved + 非训练中 → fallback（无可用 → none）', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'resolved')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'resolved'),
+          ],
           aiSuggestedFocusId: 'P003',
           subphase: TeachingSubphase.diagnosis,
         ),
@@ -227,7 +263,9 @@ void main() {
     test('训练中 + 用户主动切换（有效）→ 允许切换', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           userFocusOverride: 'P003',
           subphase: TeachingSubphase.practice,
         ),
@@ -257,7 +295,9 @@ void main() {
     test('训练中 + AI 自主切换 + 原 focus 无效 → fallback', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           aiSuggestedFocusId: 'P003',
           subphase: TeachingSubphase.practice,
           focusHistory: [FocusHistoryEntry(focusId: 'P999', timestamp: 1)],
@@ -294,7 +334,9 @@ void main() {
     test('频繁切换 + 原 focus 无效 → 采用候选 focus', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           aiSuggestedFocusId: 'P003',
           subphase: TeachingSubphase.diagnosis,
           focusHistory: [
@@ -312,7 +354,9 @@ void main() {
     test('_isFrequentSwitching：candidate == 最近一轮 → 不触发降级', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           aiSuggestedFocusId: 'P003',
           subphase: TeachingSubphase.diagnosis,
           focusHistory: [
@@ -330,7 +374,9 @@ void main() {
     test('_isFrequentSwitching：历史不足阈值 → 不触发降级', () {
       final out = resolveTeachingFocus(
         _input(
-          problems: [_fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active')],
+          problems: [
+            _fp('P003', Severity.l3, ConfirmationStatus.confirmed, 'active'),
+          ],
           aiSuggestedFocusId: 'P003',
           subphase: TeachingSubphase.diagnosis,
           focusHistory: [FocusHistoryEntry(focusId: 'P003', timestamp: 1)],

@@ -21,7 +21,10 @@ void main() {
       final verdict = evaluateMasteryEvidence(const MasteryEvidence());
       expect(verdict.passed, isFalse);
       expect(verdict.missingDimensions.length, 3);
-      expect(verdict.missingDimensions, containsAll(['explanation', 'confidence', 'nearTransfer']));
+      expect(
+        verdict.missingDimensions,
+        containsAll(['explanation', 'confidence', 'nearTransfer']),
+      );
     });
 
     test('#2 部分证据（仅解释维度充分）→ 不通过 + 标注缺失维度', () {
@@ -31,7 +34,10 @@ void main() {
       final verdict = evaluateMasteryEvidence(evidence);
       expect(verdict.passed, isFalse);
       expect(verdict.missingDimensions.length, 2);
-      expect(verdict.missingDimensions, containsAll(['confidence', 'nearTransfer']));
+      expect(
+        verdict.missingDimensions,
+        containsAll(['confidence', 'nearTransfer']),
+      );
       expect(verdict.missingDimensions, isNot(contains('explanation')));
     });
 
@@ -111,29 +117,35 @@ void main() {
 
     test('#7 各维度单独缺失的组合', () {
       // 仅解释缺失
-      final v1 = evaluateMasteryEvidence(MasteryEvidence(
-        explanation: const ExplanationEvidence(validCount: 0),
-        confidence: const ConfidenceEvidence(rating: 4),
-        nearTransfer: const NearTransferEvidence(scenarioCount: 1),
-      ));
+      final v1 = evaluateMasteryEvidence(
+        MasteryEvidence(
+          explanation: const ExplanationEvidence(validCount: 0),
+          confidence: const ConfidenceEvidence(rating: 4),
+          nearTransfer: const NearTransferEvidence(scenarioCount: 1),
+        ),
+      );
       expect(v1.passed, isFalse);
       expect(v1.missingDimensions, equals(['explanation']));
 
       // 仅信心缺失
-      final v2 = evaluateMasteryEvidence(MasteryEvidence(
-        explanation: const ExplanationEvidence(validCount: 2),
-        confidence: const ConfidenceEvidence(rating: 1),
-        nearTransfer: const NearTransferEvidence(scenarioCount: 1),
-      ));
+      final v2 = evaluateMasteryEvidence(
+        MasteryEvidence(
+          explanation: const ExplanationEvidence(validCount: 2),
+          confidence: const ConfidenceEvidence(rating: 1),
+          nearTransfer: const NearTransferEvidence(scenarioCount: 1),
+        ),
+      );
       expect(v2.passed, isFalse);
       expect(v2.missingDimensions, equals(['confidence']));
 
       // 仅近迁移缺失
-      final v3 = evaluateMasteryEvidence(MasteryEvidence(
-        explanation: const ExplanationEvidence(validCount: 2),
-        confidence: const ConfidenceEvidence(rating: 3),
-        nearTransfer: const NearTransferEvidence(scenarioCount: 0),
-      ));
+      final v3 = evaluateMasteryEvidence(
+        MasteryEvidence(
+          explanation: const ExplanationEvidence(validCount: 2),
+          confidence: const ConfidenceEvidence(rating: 3),
+          nearTransfer: const NearTransferEvidence(scenarioCount: 0),
+        ),
+      );
       expect(v3.passed, isFalse);
       expect(v3.missingDimensions, equals(['nearTransfer']));
     });

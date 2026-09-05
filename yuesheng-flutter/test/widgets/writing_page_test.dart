@@ -40,6 +40,9 @@ import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -54,6 +57,11 @@ import 'package:writingcoach/widgets/writing_curve_chart.dart';
 import 'package:writingcoach/widgets/writing_page.dart';
 import 'package:writingcoach/widgets/editing/focus_aware_editing_controller.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
 /// 测试用 Fake LLM：预设 streamChat / chatCompletion 响应
 /// （复用 writing_coach_panel_test 模式；批次83 择选弹层走非流式 chatCompletion）
 class FakeLlmClient extends LlmClient {
@@ -586,6 +594,86 @@ void main() {
                 studentModelRepo: StudentModelRepository(db),
                 referenceRepo: ReferenceRepository(db),
                 chapterRepo: ChapterRepository(db),
+              ),
+
+              messageInjector: MessageInjector(
+                sessionRepo: SessionRepository(db),
+
+                diagnosisRepo: DiagnosisRepository(db),
+
+                studentModelRepo: StudentModelRepository(db),
+
+                referenceRepo: ReferenceRepository(db),
+
+                chapterRepo: ChapterRepository(db),
+
+                manuscriptRepo: ManuscriptRepository(db),
+
+                diagnosisCommitter: DiagnosisCommitter(
+                  sessionRepo: SessionRepository(db),
+
+                  stateRepo: TeachingStateRepository(db),
+
+                  diagnosisRepo: DiagnosisRepository(db),
+
+                  studentModelRepo: StudentModelRepository(db),
+
+                  referenceRepo: ReferenceRepository(db),
+
+                  chapterRepo: ChapterRepository(db),
+                ),
+
+                material: const MaterialCapabilityImpl(),
+              ),
+              diagnosisFlowHandler: DiagnosisFlowHandler(
+                sessionRepo: SessionRepository(db),
+                stateRepo: TeachingStateRepository(db),
+                diagnosisRepo: DiagnosisRepository(db),
+                studentModelRepo: StudentModelRepository(db),
+                referenceRepo: ReferenceRepository(db),
+                chapterRepo: ChapterRepository(db),
+                teacherSuggestionRepo: TeacherSuggestionRepository(db),
+                llmClient: FakeLlmClient('诊断完成。本章结构清晰。'),
+
+                messageInjector: MessageInjector(
+                  sessionRepo: SessionRepository(db),
+
+                  diagnosisRepo: DiagnosisRepository(db),
+
+                  studentModelRepo: StudentModelRepository(db),
+
+                  referenceRepo: ReferenceRepository(db),
+
+                  chapterRepo: ChapterRepository(db),
+
+                  manuscriptRepo: ManuscriptRepository(db),
+
+                  diagnosisCommitter: DiagnosisCommitter(
+                    sessionRepo: SessionRepository(db),
+
+                    stateRepo: TeachingStateRepository(db),
+
+                    diagnosisRepo: DiagnosisRepository(db),
+
+                    studentModelRepo: StudentModelRepository(db),
+
+                    referenceRepo: ReferenceRepository(db),
+
+                    chapterRepo: ChapterRepository(db),
+                  ),
+
+                  material: const MaterialCapabilityImpl(),
+                ),
+                diagnosisCommitter: DiagnosisCommitter(
+                  sessionRepo: SessionRepository(db),
+                  stateRepo: TeachingStateRepository(db),
+                  diagnosisRepo: DiagnosisRepository(db),
+                  studentModelRepo: StudentModelRepository(db),
+                  referenceRepo: ReferenceRepository(db),
+                  chapterRepo: ChapterRepository(db),
+                ),
+                diagnosis: const DiagnosisCapabilityImpl(),
+                genUi: const GenUiParser(),
               ),
             );
           }),

@@ -387,3 +387,19 @@ python tool/_verify_batch_k_coverage.py
 1. 门禁 1：11 个 unused_field/unused_import/unintended_html warnings（K-2~K-4 预留 capability 字段），无 error，待 K-7/K-8/K-9 真正消费 capability 时消除
 2. `_injectDiagnosisLock`（268 行）+ 4 helper（`_buildFocusHistory`/`_parseUserFocusFromMessage`/`_buildInterventionAdjustmentNote`/`_mapFocusSource`）仍滞留在 chat_service.dart，K-7 独立 ADR 处理
 3. chat_service.dart 仍残留 11 个超 50 行函数（`_sendMessageCore` 311 + `_injectDiagnosisLock` 268 + `_injectChapterObservations` 237 + `_handleTrainingResult` 137 + `_parseAndPersist` 188 + `commitDiagnosisFromContent` 178 + `_commitDiagnosisAndSuggestions` 153 + `_injectOutlineFactsAndFiles` 89 + `_preloadReferenceDetails` 85 + `_injectProfileAndIntents` 73 + `_injectReferences` 64）——K-7 训练组 + K-8 预载组 + K-9 _injectDiagnosisLock 独立 ADR
+
+### K-7 + K-9 收尾（2026-09-05，ChatService 真分解第二阶段）
+- **K-7 MessageInjector**（lib/services/message_injector.dart，1463 行）：5 公开 API + 11 helper +
+  _insertPhaseSummaryOnMastered，承载引用注入逻辑
+- **K-9 DiagnosisFlowHandler**（lib/services/diagnosis_flow_handler.dart，903 → 1169 行）：
+  ChatService 4 个诊断链方法迁出 + 公开委派；chat_service.dart 1654 → 859 行（3 个 extension 删除）
+- **R-019 净化**：K-9 4 个超限函数全拆（parseAndPersist 155 → 主方法 + 7 helper + 3 record typedef /
+  commitDiagnosisFromContent 147 → 5 helper / commitDiagnosisAndSuggestions 97 → 5 helper /
+  handleTrainingResult 51 → 1 helper）；基线收紧至 204 条，_verify_r019_baseline.py 验证仍能拦
+- **fixture 修复战役**：23 测试文件畸形块修复 + 3 层连环问题（import 库路径 26 处 / CMT 类型 22 文件 /
+  dh 缺 messageInjector 29 块）全解决；计数判据通过
+- **K-9 mutation**：	ool/_k9_mutation.py 5 变异 → M1-M4 拦截（M1 补 FT-22 判据测试：
+  streamChat 计数==1），M5 known 预存盲区（outline 兜底分支无测试装配 outlineRepo，登记）
+- **六道门禁全绿**：format ✓ / analyze 7 K-1 预存 warning / test 2374+14 ✓ / 循环依赖 ✓ /
+  密钥 ✓ / R-019 0 新增超限 ✓
+- 收尾报告：docs/audits/2026-09-05-ADR-C74-K9-ChatService拆分收尾报告.md

@@ -39,7 +39,7 @@ void main() {
     test('#2 有画像无诊断 → profile 字段正确填充', () {
       final input = ArchiveExportInput(
         teachingHistoryJson: jsonEncode([
-          {'type': 'diagnosis', 'timestamp': 1699000000}
+          {'type': 'diagnosis', 'timestamp': 1699000000},
         ]),
         onboardingDataJson: jsonEncode({'level': 'beginner', 'goal': 'novel'}),
         styleProfileJson: jsonEncode({'narrative': 3.5, 'dialogue': 4.0}),
@@ -73,7 +73,7 @@ void main() {
           sessionId: 's1',
           timestamp: 1699000000,
           syndromesJson: jsonEncode([
-            {'syndrome_id': 'P003', 'name': '情绪标签化', 'severity': 'L2'}
+            {'syndrome_id': 'P003', 'name': '情绪标签化', 'severity': 'L2'},
           ]),
           suggestedActionsJson: jsonEncode(['rewrite', 'explain']),
           feedbackSummary: '情绪描写偏抽象',
@@ -108,7 +108,7 @@ void main() {
       final input = ArchiveExportInput(
         teachingHistoryJson: jsonEncode([
           {'type': 'diagnosis'},
-          {'type': 'training'}
+          {'type': 'training'},
         ]),
         onboardingDataJson: jsonEncode({'level': 'intermediate'}),
         styleProfileJson: jsonEncode({'narrative': 4.0}),
@@ -118,7 +118,9 @@ void main() {
             id: 'd1',
             sessionId: 's1',
             timestamp: 1699000000,
-            syndromesJson: jsonEncode([{'syndrome_id': 'P005'}]),
+            syndromesJson: jsonEncode([
+              {'syndrome_id': 'P005'},
+            ]),
             suggestedActionsJson: jsonEncode(['rewrite']),
             confidence: 0.9,
           ),
@@ -126,7 +128,9 @@ void main() {
             id: 'd2',
             sessionId: 's1',
             timestamp: 1699001000,
-            syndromesJson: jsonEncode([{'syndrome_id': 'P008'}]),
+            syndromesJson: jsonEncode([
+              {'syndrome_id': 'P008'},
+            ]),
             suggestedActionsJson: jsonEncode(['explain']),
             confidence: 0.75,
             feedbackSummary: '语言堆砌',
@@ -147,7 +151,10 @@ void main() {
       expect(dxList.length, 2);
       expect((dxList[0] as Map)['id'], 'd1');
       expect((dxList[1] as Map)['id'], 'd2');
-      expect((dxList[0] as Map)['timestamp'], lessThan((dxList[1] as Map)['timestamp']));
+      expect(
+        (dxList[0] as Map)['timestamp'],
+        lessThan((dxList[1] as Map)['timestamp']),
+      );
     });
 
     test('#5 非法 JSON 字符串 → 防御性降级为空值，不抛出', () {
