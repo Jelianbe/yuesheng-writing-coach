@@ -357,6 +357,18 @@ event_fact_repository）；`chapter_repository`、`volume_repository` 已在
   合并多行断言后再交给检测器；键取主名（合并后的行按 `status='active'` 优先）。
   **同时它也是 D-5 合并前的「候选重复行」发现器**（详情页可提示「疑似同一人」）。
 
+  > **⚠️ 勘误（2026-09-06 批次 2b 读码复核，输出形状必须明确）**
+  > `groupByIdentity` 返回**扁平 `List<CharacterFactInput>`，「一行一身份」**——同一身份的
+  > 主名行 + 别名行合并成**一个** input，与 `detectCharacterConflicts` 的输入形状
+  > **逐字对齐**。判定依据（`conflict_detector.dart:56-83` 实读）：检测器是
+  > `for (final character in characters)` 逐角色逐属性处理、**跨行不合并**——若输出保留
+  > 多行，同一人的主名行与别名行会被当作**两个独立角色**各自内部检测，
+  > **跨行矛盾照样漏检**，D-1 的别名价值在 F05 侧依然落空。
+  >
+  > 合并后 identity 的 `name` **取主名行**（`status='active'` 优先；无 active 行时取首行），
+  > **别名进合并上下文**（`CharacterFact.aliases`）供 §5.4 事件关联用——**不进 `name`**，
+  > 否则 §5.4 按「主名 ∪ 别名」匹配 `participants` 时别名侧命中不到。
+
 - **唯一入口 `detectConflictsForFacts(List<CharacterFact>)`（防判据分叉，本批补）**
   `groupByIdentity` 与 `detectCharacterConflicts` **不得暴露给 UI 让调用方自行组合**——
   一旦 UI 侧漏了"先按身份合并"这一环，就会退化成按人物名分组，
@@ -408,8 +420,16 @@ event_fact_repository）；`chapter_repository`、`volume_repository` 已在
   > | 位置 | 处数 | 改动 |
   > |---|---|---|
   > | `message_injector.dart:820-829`（生产侧唯一构造点） | 1 | 加 `stale: e.stale` |
-  > | `test/services/event_causality_detector_test.dart` `:26,45,59,80,104,132` 起的字面量 | 9 | 加 `stale: false`（stale 专项用例另写 `true`） |
+  > | `test/services/event_causality_detector_test.dart` 的 record 字面量 | **9** | 加 `stale: false`（stale 专项用例另写 `true`） |
   > | `:21` 的 `const []` | 1 | 空列表，**无需改** |
+  >
+  > **⚠️ 勘误（2026-09-06 批次 2b 实点）**：上表第二行的 **9 是 record 字面量「元素」数，
+  > 不是调用点数**。原文列举的 `:26,45,59,80,104,132` 是 **6 个调用点**的行号——照它数会
+  > 得到 6 处，**差 3 处**（@58 / @79 / @103 三个调用点**各含 2 个元素**）。
+  > 元素级行号清单：`:27,46,60,67,81,88,105,112,133`；
+  > 分布 = @25×1、@44×1、@58×2、@79×2、@103×2、@131×1。
+  > **改的时候按元素改、不按调用点改**，否则每个多元素调用点都会漏掉后几个，
+  > 且漏掉的是编译期才炸的 record 字段不匹配。
   > **不采用**「改在调用点 `.where((e) => !e.stale)`」的省事做法：生产侧目前只有 1 个构造点，
   > 但将来新增调用点会**静默漏过滤**、重新长出幽灵 F07——正是本批要根除的同一类 bug。
   > 把 `stale` 写进类型 = 让编译器强制每个构造点表态。
@@ -428,7 +448,19 @@ event_fact_repository）；`chapter_repository`、`volume_repository` 已在
 
 ### 5.4 匹配归一化与合并
 
-- 新增 `CharacterFactRepository` 方法：`listCharacters(msId, {bool includeMerged = false})`
+> **【勘误 3（批次2b 侦察，2026-09-05）】`listCharacters` 是「改造」不是「新增」**
+> 原文写「**新增** `CharacterFactRepository` 方法 `listCharacters(msId, {includeMerged})`」，
+> 实测该方法**已存在**（`character_fact_repository.dart:144-149`，按 name 排序，
+> **无 status 过滤、无 includeMerged 参数**），且已被 `message_injector.dart:771`
+> 的 F05 注入路径调用。照「新增」动手会撞**重复定义**。
+> → 正解：**改造**现有方法，加 `bool includeMerged = false` 可选参数
+> （默认加 `where status != 'merged'`），既有调用点**零改动**自动获得排除语义。
+>
+> 连带：`groupByIdentity` 的入参契约是「调用方须传 `includeMerged: false` 的结果」。
+> 合并后源行断言已拷进目标行，一并喂进来会双重计入——检测器按值去重，纯重复
+> 不会凭空造矛盾，但没有理由依赖这个巧合（已写入 `character_identity.dart` 契约注释）。
+
+- 改造 `CharacterFactRepository.listCharacters(msId, {bool includeMerged = false})`
   （默认**排除 `status='merged'`**——否则合并后源行断言会与目标的副本**双重计入 F05**，制造幽灵矛盾）。
 - 事件关联：全量 `listEvents` 后内存过滤 `participants` 命中「主名 ∪ 别名」（作品级事件量小，
   几十条，无需 SQL LIKE）。

@@ -10,6 +10,14 @@
 //   6. 章节 null 排最后
 //   7. buildCausalityBreakContext：空 → null
 //   8. buildCausalityBreakContext：非空 → 含观察与措辞
+//
+// C78 批次2b 追加（§5.3 F07 过滤判据 `if (event.stale) continue;`，一个判据一条）：
+//   9. 正向基准：stale=false 的关键事件缺前因 → 照常检出
+//   10. stale=true（章节已删/已改写）→ 跳过（幽灵 F07，D-8）
+//   11. 混排：stale 逐条生效，只保留非 stale 的观察项
+//
+// 注：本文件 9 个 record 字面量已全部补 `stale: false`——typedef 加字段后
+// 无类型标注的字面量全部编译失败，这是刻意的（编译器强制每个构造点表态）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -29,6 +37,7 @@ void main() {
         eventType: '决定',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
     ]);
 
@@ -48,6 +57,7 @@ void main() {
         eventType: '决定',
         causeEventId: 'event-1',
         effectEventId: null,
+        stale: false,
       ),
     ]);
 
@@ -62,6 +72,7 @@ void main() {
         eventType: '日常',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
       (
         name: '阿禾与捕快争执',
@@ -69,6 +80,7 @@ void main() {
         eventType: '冲突',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
     ]);
 
@@ -83,6 +95,7 @@ void main() {
         eventType: '决定',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
       (
         name: '阿禾突然辞官',
@@ -90,6 +103,7 @@ void main() {
         eventType: '突发',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
     ]);
 
@@ -107,6 +121,7 @@ void main() {
         eventType: '转折',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
       (
         name: '有章节事件',
@@ -114,6 +129,7 @@ void main() {
         eventType: '转折',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
     ]);
 
@@ -135,6 +151,7 @@ void main() {
         eventType: '决定',
         causeEventId: null,
         effectEventId: null,
+        stale: false,
       ),
     ]);
 
@@ -143,5 +160,66 @@ void main() {
     expect(ctx, contains('因果链断裂观察'));
     expect(ctx, contains('第5章「阿禾决定去金陵」（决定类）缺触发事件'));
     expect(ctx, contains('P021'));
+  });
+
+  // ── C78 批次2b（§5.3）─────────────────────────────────────────
+  // F07 过滤判据 `if (event.stale) continue;`——stale 写进 EventFactInput
+  // typedef 而非在调用点 `.where()` 过滤，正是为了让编译器强制每个构造点
+  // 表态（本文件 9 个字面量全部因此编译报错而不得不补 `stale`，ADR 已预判）。
+  group('F07 过滤判据（stale 跳过）', () {
+    test('#9 正向基准：stale=false 的关键事件缺前因 → 照常检出', () {
+      final result = detectCausalityBreaks([
+        (
+          name: '阿禾决定去金陵',
+          chapter: 5,
+          eventType: '决定',
+          causeEventId: null,
+          effectEventId: null,
+          stale: false,
+        ),
+      ]);
+
+      expect(result.length, 1);
+    });
+
+    test('#10 stale=true（章节已删/已改写）→ 跳过', () {
+      // D-8：事件所属章节都不在了，报「缺触发事件」是给用户报不存在的断裂。
+      final result = detectCausalityBreaks([
+        (
+          name: '阿禾决定去金陵',
+          chapter: 5,
+          eventType: '决定',
+          causeEventId: null,
+          effectEventId: null,
+          stale: true,
+        ),
+      ]);
+
+      expect(result, isEmpty, reason: '幽灵 F07 不得报出');
+    });
+
+    test('#11 混排：stale 逐条生效，只保留非 stale 的观察项', () {
+      final result = detectCausalityBreaks([
+        (
+          name: '旧事件（已删章）',
+          chapter: 3,
+          eventType: '决定',
+          causeEventId: null,
+          effectEventId: null,
+          stale: true,
+        ),
+        (
+          name: '当前事件',
+          chapter: 8,
+          eventType: '突发',
+          causeEventId: null,
+          effectEventId: null,
+          stale: false,
+        ),
+      ]);
+
+      expect(result.length, 1);
+      expect(result.first.name, '当前事件', reason: 'stale 那条被跳过，不得连带吃掉同批的合法观察项');
+    });
   });
 }

@@ -11,6 +11,13 @@
 //   7. 多个不同值 → 取最早出现的两个
 //   8. buildConflictObservationsContext：空 → null
 //   9. buildConflictObservationsContext：非空 → 含观察与措辞
+//
+// C78 批次2b 追加（§5.3 F05 过滤判据 `confirmed && !stale`，一个判据一条）：
+//   10. 正向基准：confirmed + 非 stale → 参与
+//   11. rejected（用户已否决）→ 不参与（R-009）
+//   12. stale（章节已删/已改写）→ 不参与（幽灵矛盾，D-6）
+//   13. rejected + stale 同时成立 → 不参与（两条件独立生效）
+//   14. 过滤逐条生效：被过滤的断言不参与「最早两个值」的选取
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -23,12 +30,18 @@ CharacterAssertion _assertion({
   required String value,
   int? chapter,
   required int timestamp,
+  // C78 批次2b：status / stale 默认取「参与检测」的值——既有 9 个用例
+  // 全部落在这个默认上，故本批过滤改造对它们零影响（已实测零回归）。
+  String status = 'confirmed',
+  bool stale = false,
 }) {
   return CharacterAssertion(
     attribute: attribute,
     value: value,
     chapter: chapter,
     timestamp: timestamp,
+    status: status,
+    stale: stale,
   );
 }
 
@@ -201,5 +214,152 @@ void main() {
     expect(ctx, contains('阿禾「独生子女状态」'));
     expect(ctx, contains('第3章「独生子」→ 第15章「妹妹」'));
     expect(ctx, contains('P018'));
+  });
+
+  // ── C78 批次2b（§5.3）─────────────────────────────────────────
+  // F05 过滤判据 `status == 'confirmed' && !stale`（判据定义在
+  // conflict_detector.isActiveAssertion，检测与 UI 灰显共用同一份）。
+  // 一个判据一条用例：两条件各不满足一次、同时不满足一次，加正向基准，
+  // 最后一条验证过滤是「逐条生效」而非「整体跳过」。
+  group('F05 过滤判据（confirmed 且非 stale）', () {
+    test('#10 正向基准：confirmed + 非 stale → 参与检测', () {
+      final result = detectCharacterConflicts([
+        (
+          name: '阿禾',
+          assertions: [
+            _assertion(
+              attribute: '独生子女状态',
+              value: '独生子',
+              chapter: 3,
+              timestamp: 100,
+            ),
+            _assertion(
+              attribute: '独生子女状态',
+              value: '妹妹',
+              chapter: 15,
+              timestamp: 200,
+            ),
+          ],
+        ),
+      ]);
+
+      expect(result.length, 1);
+    });
+
+    test('#11 rejected（用户已否决）→ 不参与检测', () {
+      // R-009 用户主权：否决了还拿来做矛盾检测，等于替用户撤回决定。
+      final result = detectCharacterConflicts([
+        (
+          name: '阿禾',
+          assertions: [
+            _assertion(
+              attribute: '独生子女状态',
+              value: '独生子',
+              chapter: 3,
+              timestamp: 100,
+              status: 'rejected',
+            ),
+            _assertion(
+              attribute: '独生子女状态',
+              value: '妹妹',
+              chapter: 15,
+              timestamp: 200,
+            ),
+          ],
+        ),
+      ]);
+
+      expect(result, isEmpty, reason: '被否决的断言不参与，剩单值不成矛盾');
+    });
+
+    test('#12 stale（章节已删/已改写）→ 不参与检测', () {
+      // D-6：原文都不在了，它参与比较得出的矛盾是**幽灵矛盾**——本批病根。
+      final result = detectCharacterConflicts([
+        (
+          name: '阿禾',
+          assertions: [
+            _assertion(
+              attribute: '独生子女状态',
+              value: '独生子',
+              chapter: 3,
+              timestamp: 100,
+              stale: true,
+            ),
+            _assertion(
+              attribute: '独生子女状态',
+              value: '妹妹',
+              chapter: 15,
+              timestamp: 200,
+            ),
+          ],
+        ),
+      ]);
+
+      expect(result, isEmpty, reason: 'stale 断言不参与，剩单值不成矛盾');
+    });
+
+    test('#13 rejected + stale 同时成立 → 同样不参与（两条件独立生效）', () {
+      final result = detectCharacterConflicts([
+        (
+          name: '阿禾',
+          assertions: [
+            _assertion(
+              attribute: '独生子女状态',
+              value: '独生子',
+              chapter: 3,
+              timestamp: 100,
+              status: 'rejected',
+              stale: true,
+            ),
+            _assertion(
+              attribute: '独生子女状态',
+              value: '妹妹',
+              chapter: 15,
+              timestamp: 200,
+            ),
+          ],
+        ),
+      ]);
+
+      expect(result, isEmpty);
+    });
+
+    test('#14 过滤逐条生效：被过滤的断言不参与「最早两个值」的选取', () {
+      // 防「过滤写成整体跳过」：两条合法断言的矛盾仍须报出，且取的
+      // 是**未被过滤**的两个值——被过滤那条虽最早，也不得进 orderedValues。
+      final result = detectCharacterConflicts([
+        (
+          name: '阿禾',
+          assertions: [
+            _assertion(
+              attribute: '独生子女状态',
+              value: '独生子',
+              chapter: 3,
+              timestamp: 100,
+              stale: true, // ← 最早，但被过滤
+            ),
+            _assertion(
+              attribute: '独生子女状态',
+              value: '有妹妹',
+              chapter: 9,
+              timestamp: 150,
+            ),
+            _assertion(
+              attribute: '独生子女状态',
+              value: '独生子',
+              chapter: 15,
+              timestamp: 200,
+            ),
+          ],
+        ),
+      ]);
+
+      expect(result.length, 1);
+      expect(
+        result.first.orderedValues.map((a) => a.value).toList(),
+        ['有妹妹', '独生子'],
+        reason: 'stale 的「独生子」(第3章) 被过滤，最早合法值应为第9章那条',
+      );
+    });
   });
 }
