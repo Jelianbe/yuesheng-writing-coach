@@ -34,6 +34,24 @@ const int _kMinDiagnosisCountForTrend = 2;
 /// 一天的秒数（teaching_history 时间戳为秒级）
 const int _kSecondsPerDay = 86400;
 
+/// 训练输入派生字段（R-019 拆出，供 _loadTrainingFields / _assembleSummary 共享）。
+typedef _TrainingFields = ({
+  int passCount,
+  int totalCount,
+  int consecutiveFailures,
+  int consecutivePasses,
+  Severity previousSeverity,
+  int occurrenceCount,
+  int gapDays,
+  int daysSinceLastObservation,
+  double passRate,
+  bool wasResolvedToL1,
+  bool trainingStarted,
+  int consecutiveLowSeverity,
+  bool relapseDetected,
+  bool studentAbandoned,
+});
+
 /// 批次60：统计指定症候的已训练次数（type='training' 记录数）。
 ///
 /// 独立于 buildTrainingInputForActiveSyndrome（后者在诊断数 < 2 时返回 null），
@@ -160,230 +178,396 @@ Future<EvaluationSummaryInput?> buildTrainingInputForActiveSyndrome(
   DiagnosisRepository? diagnosisRepo,
 }) async {
   try {
-    final history = await studentModelRepo.getTeachingHistory(sessionId);
-
-    // ─── 筛选 DiagnosisRecord（含目标症候，按时间倒序）───
-    final diagnosisRecords =
-        history.where((r) => r['type'] == 'diagnosis').where((r) {
-          final syndromes = r['syndromes'];
-          if (syndromes is! List) return false;
-          return syndromes.any(
-            (id) => id is String && effectiveSyndromeId(id) == syndromeId,
-          );
-        }).toList()..sort((a, b) {
-          final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
-          final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
-          return tb.compareTo(ta); // DESC
-        });
-
-    final diagnosisCount = diagnosisRecords.length;
-
-    // ─── 筛选 TrainingRecord（目标症候，按时间正序）───
-    final trainingRecords =
-        history
-            .where(
-              (r) =>
-                  r['type'] == 'training' &&
-                  r['syndromeId'] is String &&
-                  effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
-            )
-            .toList()
-          ..sort((a, b) {
-            final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
-            final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
-            return ta.compareTo(tb); // ASC
-          });
-
-    // ─── 计算连续失败次数（从末尾倒序）───
-    int consecutiveFailures = 0;
-    for (int i = trainingRecords.length - 1; i >= 0; i--) {
-      if (trainingRecords[i]['result'] == 'failed') {
-        consecutiveFailures++;
-      } else {
-        break;
-      }
-    }
-
-    // ─── 计算连续通过次数（从末尾倒序）───
-    int consecutivePasses = 0;
-    for (int i = trainingRecords.length - 1; i >= 0; i--) {
-      if (trainingRecords[i]['result'] == 'passed') {
-        consecutivePasses++;
-      } else {
-        break;
-      }
-    }
-
-    final passCount = trainingRecords
-        .where((r) => r['result'] == 'passed')
-        .length;
-    final totalCount = trainingRecords.length;
-
-    // ─── 数据不足时跳过注入（diagnosisCount < 2）───
-    if (diagnosisCount < _kMinDiagnosisCountForTrend) {
-      return null;
-    }
-
-    // ─── previousSeverity：取倒数第二条 DiagnosisRecord.maxSeverity ───
-    // 真源说明：DiagnosisRecord 不存储 per-syndrome severity，maxSeverity 为
-    // 该次诊断中所有症候的最大严重度。作为 previousSeverity 的代理值。
-    final previousRecord = diagnosisRecords[1];
-    final previousSeverityStr =
-        (previousRecord['maxSeverity'] as String?) ?? 'L2';
-    final previousSeverity =
-        Severity.fromString(previousSeverityStr) ?? Severity.l2;
-
-    // ─── occurrenceCount：含该 syndromeId 的诊断记录数 ───
-    final occurrenceCount = diagnosisCount;
-
-    // ─── gapDays：最近两次诊断时间戳差值 / 86400 ───
-    final latestTs = (diagnosisRecords[0]['timestamp'] as num?)?.toInt() ?? 0;
-    final prevTs = (previousRecord['timestamp'] as num?)?.toInt() ?? 0;
-    final gapDays = ((latestTs - prevTs) / _kSecondsPerDay).floor();
-
-    // ─── 批次1（O2）毕业复核输入：距最后一次观察（诊断/训练）的天数 ───
-    // 学员改好后不再出现在诊断 → 无新观察数据 → 该值持续增大，
-    // 与「gapDays（两次诊断间隔）」语义不同，不可混用。
-    final latestTrainingTs = trainingRecords.isNotEmpty
-        ? (trainingRecords.last['timestamp'] as num?)?.toInt() ?? 0
-        : 0;
-    final lastObservationTs = latestTrainingTs > latestTs
-        ? latestTrainingTs
-        : latestTs;
-    final nowTs = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final daysSinceLastObservation = lastObservationTs > 0
-        ? ((nowTs - lastObservationTs) / _kSecondsPerDay).floor()
-        : 0;
-    // 历史训练达标率（毕业复核用）
-    final passRate = totalCount > 0 ? passCount / totalCount : 0.0;
-
-    // ─── wasResolvedToL1：存在 action='confirmed' 且 severity='L1' 的 ConfirmationRecord ───
-    final wasResolvedToL1 = history
-        .where((r) => r['type'] == 'confirmation')
-        .any((r) {
-          if (r['action'] != 'confirmed') return false;
-          if (r['severity'] != 'L1') return false;
-          final syndromes = r['syndromes'];
-          return syndromes is List && syndromes.contains(syndromeId);
-        });
-
-    // ─── consecutiveLowSeverity：从最近一次诊断往前数，连续 maxSeverity='L1' 的次数 ───
-    int consecutiveLowSeverity = 0;
-    for (final r in diagnosisRecords) {
-      if (r['maxSeverity'] == 'L1') {
-        consecutiveLowSeverity++;
-      } else {
-        break;
-      }
-    }
-
-    // ─── stateTransitionInput 字段计算 ───
-    // 真源: training-evaluator.ts transitionTeachingState
-    final trainingStarted = trainingRecords.isNotEmpty;
-    final consolidationObservations = trainingRecords.length; // 保守代理值（FSRS 未启用）
-    final relapseDetected =
-        previousSeverity == Severity.l1 &&
-        (activeProblemMeta.currentSeverity == Severity.l2 ||
-            activeProblemMeta.currentSeverity == Severity.l3);
-    final studentAbandoned = history
-        .where((r) => r['type'] == 'confirmation')
-        .any((r) {
-          // D3 修复：disputeDiagnosis 现在写入 action='disputed'，
-          // 与 evaluation_service 的 disputedCount 消费者对齐。
-          if (r['action'] != 'disputed') return false;
-          final syndromes = r['syndromes'];
-          return syndromes is List && syndromes.contains(syndromeId);
-        });
-
-    // ─── 教学状态起点：v19 DB持久化优先，fallback 到画像同源推断 ───
-    //
-    // 优先级：
-    //  1. DB active_problem.teaching_state（FSM 输出累积，状态不回退）
-    //  2. 批次44原有逻辑：inferTeachingState 从诊断历史画像推断（兼容存量无教学状态的症候）
-    //
-    // 历史背景：
-    // - 最早硬编码 TeachingState.identified：每次评估从0起步，状态无法累积
-    // - 批次44改推断：从画像推断，能与学员画像页一致，但随历史推断摆动，
-    //   FSM「一次评估」的短周期内可能被推断推到前一状态，状态非单调。
-    // - v19改持久化：评估服务每轮把 FSM 输出写回 teaching_state，下一轮直接读，
-    //   实现单调累积，正向迁移可完整走 identified→in_progress→consolidating→mastered。
-    TeachingState startingTeachingState;
-    if (diagnosisRepo != null) {
-      final activeRow = await diagnosisRepo.getActiveProblem(
-        sessionId,
-        syndromeId,
-      );
-      final persisted = activeRow?.teachingState;
-      if (persisted != null && persisted.isNotEmpty) {
-        final parsed = TeachingState.fromString(persisted);
-        if (parsed != null) {
-          startingTeachingState = parsed;
-        } else {
-          // DB值非法：fallback 到画像推断，避免异常起步
-          startingTeachingState = _inferStartingState(
-            diagnosisCount,
-            diagnosisRecords,
-          );
-        }
-      } else {
-        // 存量数据（v18→v19迁移后 teaching_state 为 NULL）：走历史推断
-        startingTeachingState = _inferStartingState(
-          diagnosisCount,
-          diagnosisRecords,
-        );
-      }
-    } else {
-      // 调用者未传 DiagnosisRepo（纯训练模拟/测试）：走历史推断
-      startingTeachingState = _inferStartingState(
-        diagnosisCount,
-        diagnosisRecords,
-      );
-    }
-
-    return EvaluationSummaryInput(
-      severityInput: SeverityTrendInput(
-        currentSeverity: activeProblemMeta.currentSeverity,
-        previousSeverity: previousSeverity,
-        occurrenceCount: occurrenceCount,
-      ),
-      passRateInput: PassRateInput(
-        passCount: passCount,
-        totalCount: totalCount,
-      ),
-      fsrsStability: null, // FSRS 未启用
-      deteriorationInput: DeteriorationCheckInput(
-        syndromeId: syndromeId,
-        currentSeverity: activeProblemMeta.currentSeverity,
-        previousSeverity: previousSeverity,
-        wasResolvedToL1: wasResolvedToL1,
-        consecutiveFailures: consecutiveFailures,
-        reboundPattern: false, // 保守值，不主动计算（§4.2）
-        gapDays: gapDays,
-        newConcurrentSyndromes: 0, // 保守值，不主动计算（§4.2）
-      ),
-      teachingState: startingTeachingState, // 批次 44：画像同源推断起点（原硬编码 identified）
-      stateTransitionInput: StateTransitionInput(
-        trainingStarted: trainingStarted,
-        consecutiveLowSeverity: consecutiveLowSeverity,
-        consecutivePasses: consecutivePasses,
-        fsrsIntervalDays: 0, // FSRS 未启用；consolidating → mastered 走代理/毕业复核路径
-        consolidationObservations: consolidationObservations,
-        relapseDetected: relapseDetected,
-        studentAbandoned: studentAbandoned,
-        // 批次1（O2）：毕业复核输入（长时间无新观察 + 历史达标率达标 → mastered）
-        daysSinceLastObservation: daysSinceLastObservation,
-        passRate: passRate,
-      ),
-      minDataInput: MinDataCheckInput(
-        diagnosisCount: diagnosisCount,
-        trainingCount: trainingRecords.length,
-        consolidationObservations: consolidationObservations,
-      ),
+    return await _buildInput(
+      studentModelRepo,
+      sessionId,
+      syndromeId,
+      activeProblemMeta,
+      diagnosisRepo,
     );
   } catch (_) {
     // JSON 解析失败或其他异常 → 返回 null（容错，§5.2 D1 用例）
     return null;
   }
+}
+
+/// 构建 training-evaluator 输入（数据准备 + 组装，R-019 二次拆）。
+Future<EvaluationSummaryInput?> _buildInput(
+  StudentModelRepository studentModelRepo,
+  String sessionId,
+  String syndromeId,
+  ActiveProblemMeta activeProblemMeta,
+  DiagnosisRepository? diagnosisRepo,
+) async {
+  final history = await studentModelRepo.getTeachingHistory(sessionId);
+  final diagnosisRecords = _filterDiagnosisRecords(history, syndromeId);
+  final diagnosisCount = diagnosisRecords.length;
+  final trainingRecords = _filterTrainingRecords(history, syndromeId);
+  if (diagnosisCount < _kMinDiagnosisCountForTrend) return null;
+
+  final f = _loadTrainingFields(
+    history,
+    trainingRecords,
+    diagnosisRecords,
+    syndromeId,
+    activeProblemMeta,
+  );
+  final startingTeachingState = await _resolveStartingState(
+    diagnosisRepo,
+    sessionId,
+    syndromeId,
+    diagnosisCount,
+    diagnosisRecords,
+  );
+
+  return _assembleSummary(
+    f,
+    activeProblemMeta,
+    syndromeId,
+    startingTeachingState,
+    diagnosisCount,
+  );
+}
+
+/// EvaluationSummaryInput 组装（R-019 拆出）。
+EvaluationSummaryInput _assembleSummary(
+  _TrainingFields f,
+  ActiveProblemMeta activeProblemMeta,
+  String syndromeId,
+  TeachingState startingTeachingState,
+  int diagnosisCount,
+) {
+  return EvaluationSummaryInput(
+    severityInput: _buildSeverityInput(
+      activeProblemMeta,
+      f.previousSeverity,
+      f.occurrenceCount,
+    ),
+    passRateInput: PassRateInput(
+      passCount: f.passCount,
+      totalCount: f.totalCount,
+    ),
+    fsrsStability: null, // FSRS 未启用
+    deteriorationInput: _buildDeteriorationInput(
+      syndromeId,
+      activeProblemMeta,
+      f.previousSeverity,
+      f.wasResolvedToL1,
+      f.consecutiveFailures,
+      f.gapDays,
+    ),
+    teachingState: startingTeachingState, // 批次 44：画像同源推断起点（原硬编码 identified）
+    stateTransitionInput: _buildStateTransitionInput(
+      f.trainingStarted,
+      f.consecutiveLowSeverity,
+      f.consecutivePasses,
+      f.totalCount,
+      f.relapseDetected,
+      f.studentAbandoned,
+      f.daysSinceLastObservation,
+      f.passRate,
+    ),
+    minDataInput: MinDataCheckInput(
+      diagnosisCount: diagnosisCount,
+      trainingCount: f.totalCount,
+      consolidationObservations: f.totalCount,
+    ),
+  );
+}
+
+/// 派生字段聚合（诊断/训练计数 + 趋势/状态标志，R-019 拆出）。
+({
+  int passCount,
+  int totalCount,
+  int consecutiveFailures,
+  int consecutivePasses,
+  Severity previousSeverity,
+  int occurrenceCount,
+  int gapDays,
+  int daysSinceLastObservation,
+  double passRate,
+  bool wasResolvedToL1,
+  bool trainingStarted,
+  int consecutiveLowSeverity,
+  bool relapseDetected,
+  bool studentAbandoned,
+})
+_loadTrainingFields(
+  List<Map<String, dynamic>> history,
+  List<Map<String, dynamic>> trainingRecords,
+  List<Map<String, dynamic>> diagnosisRecords,
+  String syndromeId,
+  ActiveProblemMeta activeProblemMeta,
+) {
+  final totalCount = trainingRecords.length;
+  final passCount = trainingRecords
+      .where((r) => r['result'] == 'passed')
+      .length;
+  final consecutiveFailures = _countTrailingOutcome(trainingRecords, 'failed');
+  final consecutivePasses = _countTrailingOutcome(trainingRecords, 'passed');
+  final previousSeverity = _resolvePreviousSeverity(diagnosisRecords[1]);
+  final occurrenceCount = diagnosisRecords.length;
+  final gapDays = _computeGapDays(diagnosisRecords, diagnosisRecords[1]);
+  final daysSinceLastObservation = _computeDaysSinceLastObservation(
+    trainingRecords,
+    diagnosisRecords,
+  );
+  final flags = _deriveStateFlags(
+    history,
+    syndromeId,
+    previousSeverity,
+    activeProblemMeta,
+    diagnosisRecords,
+  );
+  return (
+    passCount: passCount,
+    totalCount: totalCount,
+    consecutiveFailures: consecutiveFailures,
+    consecutivePasses: consecutivePasses,
+    previousSeverity: previousSeverity,
+    occurrenceCount: occurrenceCount,
+    gapDays: gapDays,
+    daysSinceLastObservation: daysSinceLastObservation,
+    passRate: totalCount > 0 ? passCount / totalCount : 0.0,
+    wasResolvedToL1: flags.wasResolvedToL1,
+    trainingStarted: trainingRecords.isNotEmpty,
+    consecutiveLowSeverity: flags.consecutiveLowSeverity,
+    relapseDetected: flags.relapseDetected,
+    studentAbandoned: flags.studentAbandoned,
+  );
+}
+
+/// previousSeverity：取倒数第二条 DiagnosisRecord.maxSeverity（代理值，R-019 拆出）。
+Severity _resolvePreviousSeverity(Map<String, dynamic> previousRecord) {
+  return Severity.fromString(
+        (previousRecord['maxSeverity'] as String?) ?? 'L2',
+      ) ??
+      Severity.l2;
+}
+
+/// stateTransition 相关状态标志聚合（R-019 拆出）。
+({
+  bool wasResolvedToL1,
+  bool relapseDetected,
+  bool studentAbandoned,
+  int consecutiveLowSeverity,
+})
+_deriveStateFlags(
+  List<Map<String, dynamic>> history,
+  String syndromeId,
+  Severity previousSeverity,
+  ActiveProblemMeta activeProblemMeta,
+  List<Map<String, dynamic>> diagnosisRecords,
+) {
+  return (
+    wasResolvedToL1: _hasConfirmation(history, syndromeId, 'confirmed', 'L1'),
+    relapseDetected: _isRelapseDetected(previousSeverity, activeProblemMeta),
+    studentAbandoned: _hasConfirmation(history, syndromeId, 'disputed', null),
+    consecutiveLowSeverity: _countConsecutiveLowSeverity(diagnosisRecords),
+  );
+}
+
+/// 筛选含目标症候的诊断记录（按时间倒序）（R-019 拆出）。
+List<Map<String, dynamic>> _filterDiagnosisRecords(
+  List<Map<String, dynamic>> history,
+  String syndromeId,
+) {
+  return history.where((r) => r['type'] == 'diagnosis').where((r) {
+    final syndromes = r['syndromes'];
+    if (syndromes is! List) return false;
+    return syndromes.any(
+      (id) => id is String && effectiveSyndromeId(id) == syndromeId,
+    );
+  }).toList()..sort((a, b) {
+    final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
+    final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
+    return tb.compareTo(ta); // DESC
+  });
+}
+
+/// 筛选目标症候训练记录（按时间正序）（R-019 拆出）。
+List<Map<String, dynamic>> _filterTrainingRecords(
+  List<Map<String, dynamic>> history,
+  String syndromeId,
+) {
+  return history
+      .where(
+        (r) =>
+            r['type'] == 'training' &&
+            r['syndromeId'] is String &&
+            effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+      )
+      .toList()
+    ..sort((a, b) {
+      final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
+      final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
+      return ta.compareTo(tb); // ASC
+    });
+}
+
+/// 从末尾倒序统计连续同结果训练次数（R-019 拆出）。
+int _countTrailingOutcome(
+  List<Map<String, dynamic>> trainingRecords,
+  String result,
+) {
+  var count = 0;
+  for (int i = trainingRecords.length - 1; i >= 0; i--) {
+    if (trainingRecords[i]['result'] == result) {
+      count++;
+    } else {
+      break;
+    }
+  }
+  return count;
+}
+
+/// 最近两次诊断的时间间隔天数（R-019 拆出）。
+int _computeGapDays(
+  List<Map<String, dynamic>> diagnosisRecords,
+  Map<String, dynamic> previousRecord,
+) {
+  final latestTs = (diagnosisRecords[0]['timestamp'] as num?)?.toInt() ?? 0;
+  final prevTs = (previousRecord['timestamp'] as num?)?.toInt() ?? 0;
+  return ((latestTs - prevTs) / _kSecondsPerDay).floor();
+}
+
+/// 距最后一次观察（诊断/训练）的天数（毕业复核用，R-019 拆出）。
+/// 与 gapDays（两次诊断间隔）语义不同，不可混用。
+int _computeDaysSinceLastObservation(
+  List<Map<String, dynamic>> trainingRecords,
+  List<Map<String, dynamic>> diagnosisRecords,
+) {
+  final latestTs = (diagnosisRecords[0]['timestamp'] as num?)?.toInt() ?? 0;
+  final latestTrainingTs = trainingRecords.isNotEmpty
+      ? (trainingRecords.last['timestamp'] as num?)?.toInt() ?? 0
+      : 0;
+  final lastObservationTs = latestTrainingTs > latestTs
+      ? latestTrainingTs
+      : latestTs;
+  final nowTs = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  return lastObservationTs > 0
+      ? ((nowTs - lastObservationTs) / _kSecondsPerDay).floor()
+      : 0;
+}
+
+/// 是否存在满足 action（可选 severity）的 ConfirmationRecord（R-019 拆出）。
+bool _hasConfirmation(
+  List<Map<String, dynamic>> history,
+  String syndromeId,
+  String action,
+  String? severity,
+) {
+  return history.where((r) => r['type'] == 'confirmation').any((r) {
+    if (r['action'] != action) return false;
+    if (severity != null && r['severity'] != severity) return false;
+    final syndromes = r['syndromes'];
+    return syndromes is List && syndromes.contains(syndromeId);
+  });
+}
+
+/// 从最近一次诊断往前数连续 L1 次数（R-019 拆出）。
+int _countConsecutiveLowSeverity(List<Map<String, dynamic>> diagnosisRecords) {
+  var count = 0;
+  for (final r in diagnosisRecords) {
+    if (r['maxSeverity'] == 'L1') {
+      count++;
+    } else {
+      break;
+    }
+  }
+  return count;
+}
+
+/// 复发检测：上次 L1 且当前 L2/L3（R-019 拆出）。
+bool _isRelapseDetected(
+  Severity previousSeverity,
+  ActiveProblemMeta activeProblemMeta,
+) {
+  return previousSeverity == Severity.l1 &&
+      (activeProblemMeta.currentSeverity == Severity.l2 ||
+          activeProblemMeta.currentSeverity == Severity.l3);
+}
+
+/// 教学状态起点：v19 DB 持久化优先，fallback 到画像同源推断（R-019 拆出）。
+/// 优先级：1. DB active_problem.teaching_state（FSM 输出累积，状态不回退）
+///         2. inferTeachingState 从诊断历史画像推断（兼容存量无教学状态的症候）
+Future<TeachingState> _resolveStartingState(
+  DiagnosisRepository? diagnosisRepo,
+  String sessionId,
+  String syndromeId,
+  int diagnosisCount,
+  List<Map<String, dynamic>> diagnosisRecords,
+) async {
+  if (diagnosisRepo == null) {
+    return _inferStartingState(diagnosisCount, diagnosisRecords);
+  }
+  final activeRow = await diagnosisRepo.getActiveProblem(sessionId, syndromeId);
+  final persisted = activeRow?.teachingState;
+  if (persisted == null || persisted.isEmpty) {
+    // 存量数据（v18→v19 迁移后 teaching_state 为 NULL）：走历史推断
+    return _inferStartingState(diagnosisCount, diagnosisRecords);
+  }
+  final parsed = TeachingState.fromString(persisted);
+  return parsed ?? _inferStartingState(diagnosisCount, diagnosisRecords);
+}
+
+/// severityInput 组装（R-019 拆出）。
+SeverityTrendInput _buildSeverityInput(
+  ActiveProblemMeta activeProblemMeta,
+  Severity previousSeverity,
+  int occurrenceCount,
+) {
+  return SeverityTrendInput(
+    currentSeverity: activeProblemMeta.currentSeverity,
+    previousSeverity: previousSeverity,
+    occurrenceCount: occurrenceCount,
+  );
+}
+
+/// deteriorationInput 组装（R-019 拆出）。
+DeteriorationCheckInput _buildDeteriorationInput(
+  String syndromeId,
+  ActiveProblemMeta activeProblemMeta,
+  Severity previousSeverity,
+  bool wasResolvedToL1,
+  int consecutiveFailures,
+  int gapDays,
+) {
+  return DeteriorationCheckInput(
+    syndromeId: syndromeId,
+    currentSeverity: activeProblemMeta.currentSeverity,
+    previousSeverity: previousSeverity,
+    wasResolvedToL1: wasResolvedToL1,
+    consecutiveFailures: consecutiveFailures,
+    reboundPattern: false, // 保守值，不主动计算（§4.2）
+    gapDays: gapDays,
+    newConcurrentSyndromes: 0, // 保守值，不主动计算（§4.2）
+  );
+}
+
+/// stateTransitionInput 组装（R-019 拆出）。
+StateTransitionInput _buildStateTransitionInput(
+  bool trainingStarted,
+  int consecutiveLowSeverity,
+  int consecutivePasses,
+  int consolidationObservations,
+  bool relapseDetected,
+  bool studentAbandoned,
+  int daysSinceLastObservation,
+  double passRate,
+) {
+  return StateTransitionInput(
+    trainingStarted: trainingStarted,
+    consecutiveLowSeverity: consecutiveLowSeverity,
+    consecutivePasses: consecutivePasses,
+    fsrsIntervalDays: 0, // FSRS 未启用；consolidating → mastered 走代理/毕业复核路径
+    consolidationObservations: consolidationObservations,
+    relapseDetected: relapseDetected,
+    studentAbandoned: studentAbandoned,
+    // 批次1（O2）：毕业复核输入（长时间无新观察 + 历史达标率达标 → mastered）
+    daysSinceLastObservation: daysSinceLastObservation,
+    passRate: passRate,
+  );
 }
 
 /// 批次44原有推断逻辑：从诊断历史推断 per-syndrome 教学状态起点

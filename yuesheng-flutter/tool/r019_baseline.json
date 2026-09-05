@@ -25,13 +25,6 @@
       "lines": 244
     },
     {
-      "file": "lib/services/training_input_builder.dart",
-      "func": "buildTrainingInputForActiveSyndrome",
-      "start": 154,
-      "end": 387,
-      "lines": 234
-    },
-    {
       "file": "lib/widgets/message_list.dart",
       "func": "build",
       "start": 282,
@@ -121,13 +114,6 @@
       "start": 95,
       "end": 265,
       "lines": 171
-    },
-    {
-      "file": "lib/services/chat_context_builder.dart",
-      "func": "buildStructuredSyndromeContext",
-      "start": 141,
-      "end": 309,
-      "lines": 169
     },
     {
       "file": "lib/widgets/writing_menu_sheet.dart",
@@ -261,13 +247,6 @@
       "start": 703,
       "end": 830,
       "lines": 128
-    },
-    {
-      "file": "lib/services/diagnosis_committer.dart",
-      "func": "applyFactExtractionFromContent",
-      "start": 605,
-      "end": 726,
-      "lines": 122
     },
     {
       "file": "lib/widgets/message_bubble.dart",

@@ -144,40 +144,49 @@ String buildStructuredSyndromeContext(
   ActiveFocusContext? activeFocus,
   String? styleTechniqueSection,
 }) {
-  const severityRank = {Severity.l3: 3, Severity.l2: 2, Severity.l1: 1};
-
-  final sortedProblems = List<ActiveSyndromeView>.from(problems)
-    ..sort(
-      (a, b) =>
-          (severityRank[b.severity] ?? 0) - (severityRank[a.severity] ?? 0),
-    );
-
   // 判定是否启用分级注入
   final hasActiveFocus = activeFocus != null;
   final focusId = hasActiveFocus ? activeFocus.focusId : null;
   final focusEnabled = focusId != null;
+  final sortedProblems = _sortProblemsForInjection(problems, focusId);
+  final built = _buildSyndromeSections(
+    sortedProblems,
+    focusEnabled,
+    hasActiveFocus,
+    focusId,
+    evidenceMap,
+  );
 
-  // focus 症候排在最前（若启用分级注入）
-  if (focusEnabled) {
-    final fid = focusId;
-    sortedProblems.sort((a, b) {
-      final aFocus = a.syndromeId == fid ? 1 : 0;
-      final bFocus = b.syndromeId == fid ? 1 : 0;
-      if (aFocus != bFocus) return bFocus - aFocus;
-      return (severityRank[b.severity] ?? 0) - (severityRank[a.severity] ?? 0);
-    });
+  if (built.skippedIds.isNotEmpty) {
+    built.sections.add(_buildTruncationNotice(built.skippedIds));
   }
+  final header = _buildSyndromeHeader(
+    focusEnabled,
+    hasActiveFocus,
+    activeFocus,
+    focusId,
+  );
+  final body = '$header\n\n---\n\n${built.sections.join('\n\n---\n\n')}';
 
-  final sections = <String>[];
+  // 2026-08-18 批次：文笔画像→技法旁路段（无候选时调用方传 null，零成本）
+  if (styleTechniqueSection == null || styleTechniqueSection.isEmpty) {
+    return body;
+  }
+  return '$body\n\n---\n\n$styleTechniqueSection';
+}
 
-  // X-043 P1：症候/技法段独立预算（T-06 Lorebook 独立预算）
-  // focus 症候完整注入优先消耗预算；非 focus 症候按剩余预算决定粒度：
-  //   剩余≥100 chars → 完整摘要（ID+名称+severity+确认状态+一句诊断理由）
-  //   100>剩余≥40  → 极简列表（ID+名称+severity+确认状态）
-  //   剩余<40      → 跳过（预算耗尽，按优先级截断，末尾追加截断提示）
-  // 设计权衡：focus 症候不可裁（教学焦点必须完整注入），即使超预算仅记录不截断；
-  // 非 focus 按优先级（severity 高→低）顺序消耗剩余预算。
+/// 症候段落构建：按预算分级注入（X-043 P1）（R-019 二次拆）。
+/// focus 完整注入优先消耗预算；非 focus 按剩余预算决定粒度：
+///   剩余≥100 → 完整摘要；100>剩余≥40 → 极简列表；剩余<40 → 跳过（截断）。
+({List<String> sections, List<String> skippedIds}) _buildSyndromeSections(
+  List<ActiveSyndromeView> sortedProblems,
+  bool focusEnabled,
+  bool hasActiveFocus,
+  String? focusId,
+  Map<String, SyndromeEvidence>? evidenceMap,
+) {
   var usedBudget = 0;
+  final sections = <String>[];
   final skippedIds = <String>[];
 
   for (final p in sortedProblems) {
@@ -187,93 +196,127 @@ String buildStructuredSyndromeContext(
     final isFocus = focusEnabled && p.syndromeId == focusId;
 
     if (isFocus) {
-      // focus 症候：完整 L3 定义 + 完整技法 + evidence
-      // 2026-08-08 批次 22 步骤②：接入症候/技法知识库
-      // 真源：syndrome-diagnosis.ts getSyndromeContent / technique-library.ts getTechniquesBySyndrome
-      // 训练侧完整教学知识（training-templates-v2 getTrainingContent）由 chat_service
-      // 按当前教学焦点在 L3 阶段单独注入（chat_service.dart ~L917），此处不重复
-      // X-043 P1：focus 不可裁，预算超限不截断（教学焦点完整性优先于预算控制）
-      final syndromeContent = getSyndromeContent([p.syndromeId]);
-      final techniqueSection = getTechniquesBySyndrome([p.syndromeId]);
-
-      final evidence = evidenceMap?[p.syndromeId];
-      String evidenceText = '';
-      if (evidence != null && evidence.evidence.isNotEmpty) {
-        final truncated = evidence.evidence
-            .take(2)
-            .map((e) => e.length > 60 ? '${e.substring(0, 60)}...' : e)
-            .join(' / ');
-        evidenceText = '\n> 文本证据："$truncated"\n';
-      }
-
-      sections.add(
-        '### ★ 当前教学焦点 ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]\n$evidenceText\n$syndromeContent$techniqueSection',
-      );
+      sections.add(_buildFocusSyndromeSection(p, confirmLabel, evidenceMap));
       usedBudget += sections.last.length;
     } else if (hasActiveFocus) {
-      // 非 focus 症候（分级注入模式）：按剩余预算决定粒度
-      // X-043 P1：剩余预算 = min(总预算 - 已用, 非焦点摘要池上限)
-      final remainingForNonFocus =
-          (ContextBudget.syndromeSectionBudget - usedBudget).clamp(
-            0,
-            ContextBudget.nonFocusSummaryPoolBudget,
-          );
-      if (remainingForNonFocus >= 100) {
-        // 完整摘要：ID + 名称 + severity + 确认状态 + 一句诊断理由
-        final evidence = evidenceMap?[p.syndromeId];
-        final reason = evidence?.explanation != null
-            ? _truncateToOneLine(evidence!.explanation, 80)
-            : '';
-        final reasonText = reason.isNotEmpty ? '：$reason' : '';
-        sections.add(
-          '- ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]$reasonText',
-        );
+      final remaining = _nonFocusRemainingBudget(usedBudget);
+      if (remaining >= 100) {
+        sections.add(_buildFullSyndromeSummary(p, confirmLabel, evidenceMap));
         usedBudget += sections.last.length;
-      } else if (remainingForNonFocus >= 40) {
-        // 极简列表：ID + 名称 + severity + 确认状态（无诊断理由，省 token）
-        sections.add(
-          '- ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]',
-        );
+      } else if (remaining >= 40) {
+        sections.add(_buildMinimalSyndromeLine(p, confirmLabel));
         usedBudget += sections.last.length;
       } else {
-        // 预算耗尽，按优先级截断
         skippedIds.add(p.syndromeId);
       }
     } else {
-      // 向后兼容（未传 activeFocus）：完整注入（旧逻辑）
-      // 2026-08-08 批次 22 步骤②：接入症候/技法知识库（训练知识由 chat_service L3 单独注入）
-      // X-043 P1：向后兼容分支保留全量注入语义（仅测试使用，生产代码必传 activeFocus）
-      final syndromeContent = getSyndromeContent([p.syndromeId]);
-      final techniqueSection = getTechniquesBySyndrome([p.syndromeId]);
-
-      final evidence = evidenceMap?[p.syndromeId];
-      String evidenceText = '';
-      if (evidence != null && evidence.evidence.isNotEmpty) {
-        final truncated = evidence.evidence
-            .take(2)
-            .map((e) => e.length > 60 ? '${e.substring(0, 60)}...' : e)
-            .join(' / ');
-        evidenceText = '\n> 文本证据："$truncated"\n';
-      }
-
-      sections.add(
-        '### ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]\n$evidenceText\n$syndromeContent$techniqueSection',
-      );
+      sections.add(_buildLegacySyndromeSection(p, confirmLabel, evidenceMap));
     }
   }
+  return (sections: sections, skippedIds: skippedIds);
+}
 
-  // X-043 P1：预算截断提示（让 LLM 知道有未注入的症候，避免主动展开）
-  if (skippedIds.isNotEmpty) {
-    sections.add(
-      '### 预算截断提示（X-043 P1）\n'
+/// 非 focus 剩余预算 = min(总预算 - 已用, 非焦点摘要池上限)（R-019 二次拆）。
+int _nonFocusRemainingBudget(int usedBudget) {
+  return (ContextBudget.syndromeSectionBudget - usedBudget).clamp(
+    0,
+    ContextBudget.nonFocusSummaryPoolBudget,
+  );
+}
+
+/// 症候排序：severity 高→低；focus 症候排最前（若启用分级注入）（R-019 拆出）。
+List<ActiveSyndromeView> _sortProblemsForInjection(
+  List<ActiveSyndromeView> problems,
+  String? focusId,
+) {
+  const severityRank = {Severity.l3: 3, Severity.l2: 2, Severity.l1: 1};
+  final sorted = List<ActiveSyndromeView>.from(problems)
+    ..sort(
+      (a, b) =>
+          (severityRank[b.severity] ?? 0) - (severityRank[a.severity] ?? 0),
+    );
+  if (focusId == null) return sorted;
+  sorted.sort((a, b) {
+    final aFocus = a.syndromeId == focusId ? 1 : 0;
+    final bFocus = b.syndromeId == focusId ? 1 : 0;
+    if (aFocus != bFocus) return bFocus - aFocus;
+    return (severityRank[b.severity] ?? 0) - (severityRank[a.severity] ?? 0);
+  });
+  return sorted;
+}
+
+/// 证据文本：取前 2 条、单条 60 字截断（R-019 拆出）。
+String _buildEvidenceText(
+  Map<String, SyndromeEvidence>? evidenceMap,
+  String syndromeId,
+) {
+  final evidence = evidenceMap?[syndromeId];
+  if (evidence == null || evidence.evidence.isEmpty) return '';
+  final truncated = evidence.evidence
+      .take(2)
+      .map((e) => e.length > 60 ? '${e.substring(0, 60)}...' : e)
+      .join(' / ');
+  return '\n> 文本证据："$truncated"\n';
+}
+
+/// focus 症候完整注入段（R-019 拆出）。
+String _buildFocusSyndromeSection(
+  ActiveSyndromeView p,
+  String confirmLabel,
+  Map<String, SyndromeEvidence>? evidenceMap,
+) {
+  final syndromeContent = getSyndromeContent([p.syndromeId]);
+  final techniqueSection = getTechniquesBySyndrome([p.syndromeId]);
+  final evidenceText = _buildEvidenceText(evidenceMap, p.syndromeId);
+  return '### ★ 当前教学焦点 ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]\n$evidenceText\n$syndromeContent$techniqueSection';
+}
+
+/// 非 focus 完整摘要：ID + 名称 + severity + 确认状态 + 一句诊断理由（R-019 拆出）。
+String _buildFullSyndromeSummary(
+  ActiveSyndromeView p,
+  String confirmLabel,
+  Map<String, SyndromeEvidence>? evidenceMap,
+) {
+  final evidence = evidenceMap?[p.syndromeId];
+  final reason = evidence?.explanation != null
+      ? _truncateToOneLine(evidence!.explanation, 80)
+      : '';
+  final reasonText = reason.isNotEmpty ? '：$reason' : '';
+  return '- ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]$reasonText';
+}
+
+/// 非 focus 极简列表行（R-019 拆出）。
+String _buildMinimalSyndromeLine(ActiveSyndromeView p, String confirmLabel) {
+  return '- ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]';
+}
+
+/// 向后兼容全量注入段（仅测试使用，生产代码必传 activeFocus）（R-019 拆出）。
+String _buildLegacySyndromeSection(
+  ActiveSyndromeView p,
+  String confirmLabel,
+  Map<String, SyndromeEvidence>? evidenceMap,
+) {
+  final syndromeContent = getSyndromeContent([p.syndromeId]);
+  final techniqueSection = getTechniquesBySyndrome([p.syndromeId]);
+  final evidenceText = _buildEvidenceText(evidenceMap, p.syndromeId);
+  return '### ${p.syndromeId} ${p.syndromeName} [${p.severity.value}] [$confirmLabel]\n$evidenceText\n$syndromeContent$techniqueSection';
+}
+
+/// 预算截断提示段（X-043 P1）（R-019 拆出）。
+String _buildTruncationNotice(List<String> skippedIds) {
+  return '### 预算截断提示（X-043 P1）\n'
       '由于本轮症候段预算 ${ContextBudget.syndromeSectionBudget} chars 耗尽，'
       '以下症候未注入详情：${skippedIds.join('、')}。'
-      '回复时不要主动展开这些症候；如需诊断请引导学员聚焦当前教学焦点。',
-    );
-  }
+      '回复时不要主动展开这些症候；如需诊断请引导学员聚焦当前教学焦点。';
+}
 
-  // 构建头部说明
-  String header;
+/// 症候段头部说明（R-019 拆出）。
+String _buildSyndromeHeader(
+  bool focusEnabled,
+  bool hasActiveFocus,
+  ActiveFocusContext? activeFocus,
+  String? focusId,
+) {
   if (focusEnabled) {
     final af = activeFocus!;
     final sourceLabel = {
@@ -282,30 +325,19 @@ String buildStructuredSyndromeContext(
       FocusSource.fallback: '系统兜底',
       FocusSource.none: '无',
     }[af.source]!;
-    header =
-        '## 活跃症候详情（教学焦点：$focusId，来源：$sourceLabel）\n\n'
+    return '## 活跃症候详情（教学焦点：$focusId，来源：$sourceLabel）\n\n'
         '当前教学焦点已激活，下方★标记的症候注入完整定义、技法与证据，请围绕该症候展开教学。\n'
         '其余症候仅提供概览（无完整定义、无证据、无技法），供你了解全局，不要主动展开。\n\n'
         '学员确认状态标注在方括号中：[待确认] 或 [已确认]。';
-  } else if (hasActiveFocus) {
-    header =
-        '## 活跃症候概览（未激活教学焦点）\n\n'
+  }
+  if (hasActiveFocus) {
+    return '## 活跃症候概览（未激活教学焦点）\n\n'
         '本轮未激活教学焦点，仅提供症候概览（无完整定义、无证据、无技法）。\n'
         '请在下一轮 teaching_plan.current_teaching_focus_id 中明确教学重点。';
-  } else {
-    header =
-        '## 活跃症候详情（按严重度排序）\n\n'
-        '以下是本会话中已识别的文本特征及详细说明。每条特征包含证据、定义和对应教学方法。\n'
-        '学员确认状态标注在方括号中：[待确认] 或 [已确认]。';
   }
-
-  final body = '$header\n\n---\n\n${sections.join('\n\n---\n\n')}';
-
-  // 2026-08-18 批次：文笔画像→技法旁路段（无候选时调用方传 null，零成本）
-  if (styleTechniqueSection == null || styleTechniqueSection.isEmpty) {
-    return body;
-  }
-  return '$body\n\n---\n\n$styleTechniqueSection';
+  return '## 活跃症候详情（按严重度排序）\n\n'
+      '以下是本会话中已识别的文本特征及详细说明。每条特征包含证据、定义和对应教学方法。\n'
+      '学员确认状态标注在方括号中：[待确认] 或 [已确认]。';
 }
 
 // ─── 智能截断 ─────────────────────────────────────────────────
