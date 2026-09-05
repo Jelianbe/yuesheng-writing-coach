@@ -9289,6 +9289,28 @@ class $CharacterFactsTable extends CharacterFacts
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _aliasesMeta = const VerificationMeta(
+    'aliases',
+  );
+  @override
+  late final GeneratedColumn<String> aliases = GeneratedColumn<String>(
+    'aliases',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -9321,6 +9343,8 @@ class $CharacterFactsTable extends CharacterFacts
     firstSeenChapter,
     firstSeenAt,
     assertions,
+    aliases,
+    status,
     createdAt,
     updatedAt,
   ];
@@ -9384,6 +9408,18 @@ class $CharacterFactsTable extends CharacterFacts
         assertions.isAcceptableOrUnknown(data['assertions']!, _assertionsMeta),
       );
     }
+    if (data.containsKey('aliases')) {
+      context.handle(
+        _aliasesMeta,
+        aliases.isAcceptableOrUnknown(data['aliases']!, _aliasesMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -9433,6 +9469,14 @@ class $CharacterFactsTable extends CharacterFacts
         DriftSqlType.string,
         data['${effectivePrefix}assertions'],
       )!,
+      aliases: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}aliases'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -9457,6 +9501,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
   final int? firstSeenChapter;
   final int? firstSeenAt;
   final String assertions;
+  final String aliases;
+  final String status;
   final int createdAt;
   final int updatedAt;
   const CharacterFact({
@@ -9466,6 +9512,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     this.firstSeenChapter,
     this.firstSeenAt,
     required this.assertions,
+    required this.aliases,
+    required this.status,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -9482,6 +9530,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       map['first_seen_at'] = Variable<int>(firstSeenAt);
     }
     map['assertions'] = Variable<String>(assertions);
+    map['aliases'] = Variable<String>(aliases);
+    map['status'] = Variable<String>(status);
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
     return map;
@@ -9499,6 +9549,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           ? const Value.absent()
           : Value(firstSeenAt),
       assertions: Value(assertions),
+      aliases: Value(aliases),
+      status: Value(status),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -9516,6 +9568,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       firstSeenChapter: serializer.fromJson<int?>(json['firstSeenChapter']),
       firstSeenAt: serializer.fromJson<int?>(json['firstSeenAt']),
       assertions: serializer.fromJson<String>(json['assertions']),
+      aliases: serializer.fromJson<String>(json['aliases']),
+      status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
@@ -9530,6 +9584,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       'firstSeenChapter': serializer.toJson<int?>(firstSeenChapter),
       'firstSeenAt': serializer.toJson<int?>(firstSeenAt),
       'assertions': serializer.toJson<String>(assertions),
+      'aliases': serializer.toJson<String>(aliases),
+      'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
     };
@@ -9542,6 +9598,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     Value<int?> firstSeenChapter = const Value.absent(),
     Value<int?> firstSeenAt = const Value.absent(),
     String? assertions,
+    String? aliases,
+    String? status,
     int? createdAt,
     int? updatedAt,
   }) => CharacterFact(
@@ -9553,6 +9611,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
         : this.firstSeenChapter,
     firstSeenAt: firstSeenAt.present ? firstSeenAt.value : this.firstSeenAt,
     assertions: assertions ?? this.assertions,
+    aliases: aliases ?? this.aliases,
+    status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -9572,6 +9632,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       assertions: data.assertions.present
           ? data.assertions.value
           : this.assertions,
+      aliases: data.aliases.present ? data.aliases.value : this.aliases,
+      status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -9586,6 +9648,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           ..write('firstSeenChapter: $firstSeenChapter, ')
           ..write('firstSeenAt: $firstSeenAt, ')
           ..write('assertions: $assertions, ')
+          ..write('aliases: $aliases, ')
+          ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -9600,6 +9664,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     firstSeenChapter,
     firstSeenAt,
     assertions,
+    aliases,
+    status,
     createdAt,
     updatedAt,
   );
@@ -9613,6 +9679,8 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           other.firstSeenChapter == this.firstSeenChapter &&
           other.firstSeenAt == this.firstSeenAt &&
           other.assertions == this.assertions &&
+          other.aliases == this.aliases &&
+          other.status == this.status &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -9624,6 +9692,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
   final Value<int?> firstSeenChapter;
   final Value<int?> firstSeenAt;
   final Value<String> assertions;
+  final Value<String> aliases;
+  final Value<String> status;
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<int> rowid;
@@ -9634,6 +9704,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     this.firstSeenChapter = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
     this.assertions = const Value.absent(),
+    this.aliases = const Value.absent(),
+    this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -9645,6 +9717,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     this.firstSeenChapter = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
     this.assertions = const Value.absent(),
+    this.aliases = const Value.absent(),
+    this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -9658,6 +9732,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     Expression<int>? firstSeenChapter,
     Expression<int>? firstSeenAt,
     Expression<String>? assertions,
+    Expression<String>? aliases,
+    Expression<String>? status,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<int>? rowid,
@@ -9669,6 +9745,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
       if (firstSeenChapter != null) 'first_seen_chapter': firstSeenChapter,
       if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
       if (assertions != null) 'assertions': assertions,
+      if (aliases != null) 'aliases': aliases,
+      if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -9682,6 +9760,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     Value<int?>? firstSeenChapter,
     Value<int?>? firstSeenAt,
     Value<String>? assertions,
+    Value<String>? aliases,
+    Value<String>? status,
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<int>? rowid,
@@ -9693,6 +9773,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
       firstSeenChapter: firstSeenChapter ?? this.firstSeenChapter,
       firstSeenAt: firstSeenAt ?? this.firstSeenAt,
       assertions: assertions ?? this.assertions,
+      aliases: aliases ?? this.aliases,
+      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -9720,6 +9802,12 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     if (assertions.present) {
       map['assertions'] = Variable<String>(assertions.value);
     }
+    if (aliases.present) {
+      map['aliases'] = Variable<String>(aliases.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -9741,6 +9829,8 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
           ..write('firstSeenChapter: $firstSeenChapter, ')
           ..write('firstSeenAt: $firstSeenAt, ')
           ..write('assertions: $assertions, ')
+          ..write('aliases: $aliases, ')
+          ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -9855,6 +9945,27 @@ class $EventFactsTable extends EventFacts
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _staleMeta = const VerificationMeta('stale');
+  @override
+  late final GeneratedColumn<int> stale = GeneratedColumn<int>(
+    'stale',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _chapterHashMeta = const VerificationMeta(
+    'chapterHash',
+  );
+  @override
+  late final GeneratedColumn<String> chapterHash = GeneratedColumn<String>(
+    'chapter_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -9890,6 +10001,8 @@ class $EventFactsTable extends EventFacts
     effectEventId,
     participants,
     description,
+    stale,
+    chapterHash,
     createdAt,
     updatedAt,
   ];
@@ -9979,6 +10092,21 @@ class $EventFactsTable extends EventFacts
         ),
       );
     }
+    if (data.containsKey('stale')) {
+      context.handle(
+        _staleMeta,
+        stale.isAcceptableOrUnknown(data['stale']!, _staleMeta),
+      );
+    }
+    if (data.containsKey('chapter_hash')) {
+      context.handle(
+        _chapterHashMeta,
+        chapterHash.isAcceptableOrUnknown(
+          data['chapter_hash']!,
+          _chapterHashMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -10040,6 +10168,14 @@ class $EventFactsTable extends EventFacts
         DriftSqlType.string,
         data['${effectivePrefix}description'],
       )!,
+      stale: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}stale'],
+      )!,
+      chapterHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}chapter_hash'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -10067,6 +10203,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
   final String? effectEventId;
   final String participants;
   final String description;
+  final int stale;
+  final String? chapterHash;
   final int createdAt;
   final int updatedAt;
   const EventFact({
@@ -10079,6 +10217,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     this.effectEventId,
     required this.participants,
     required this.description,
+    required this.stale,
+    this.chapterHash,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -10100,6 +10240,10 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     }
     map['participants'] = Variable<String>(participants);
     map['description'] = Variable<String>(description);
+    map['stale'] = Variable<int>(stale);
+    if (!nullToAbsent || chapterHash != null) {
+      map['chapter_hash'] = Variable<String>(chapterHash);
+    }
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
     return map;
@@ -10122,6 +10266,10 @@ class EventFact extends DataClass implements Insertable<EventFact> {
           : Value(effectEventId),
       participants: Value(participants),
       description: Value(description),
+      stale: Value(stale),
+      chapterHash: chapterHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chapterHash),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -10142,6 +10290,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
       effectEventId: serializer.fromJson<String?>(json['effectEventId']),
       participants: serializer.fromJson<String>(json['participants']),
       description: serializer.fromJson<String>(json['description']),
+      stale: serializer.fromJson<int>(json['stale']),
+      chapterHash: serializer.fromJson<String?>(json['chapterHash']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
@@ -10159,6 +10309,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
       'effectEventId': serializer.toJson<String?>(effectEventId),
       'participants': serializer.toJson<String>(participants),
       'description': serializer.toJson<String>(description),
+      'stale': serializer.toJson<int>(stale),
+      'chapterHash': serializer.toJson<String?>(chapterHash),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
     };
@@ -10174,6 +10326,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     Value<String?> effectEventId = const Value.absent(),
     String? participants,
     String? description,
+    int? stale,
+    Value<String?> chapterHash = const Value.absent(),
     int? createdAt,
     int? updatedAt,
   }) => EventFact(
@@ -10188,6 +10342,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
         : this.effectEventId,
     participants: participants ?? this.participants,
     description: description ?? this.description,
+    stale: stale ?? this.stale,
+    chapterHash: chapterHash.present ? chapterHash.value : this.chapterHash,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -10212,6 +10368,10 @@ class EventFact extends DataClass implements Insertable<EventFact> {
       description: data.description.present
           ? data.description.value
           : this.description,
+      stale: data.stale.present ? data.stale.value : this.stale,
+      chapterHash: data.chapterHash.present
+          ? data.chapterHash.value
+          : this.chapterHash,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -10229,6 +10389,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
           ..write('effectEventId: $effectEventId, ')
           ..write('participants: $participants, ')
           ..write('description: $description, ')
+          ..write('stale: $stale, ')
+          ..write('chapterHash: $chapterHash, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -10246,6 +10408,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     effectEventId,
     participants,
     description,
+    stale,
+    chapterHash,
     createdAt,
     updatedAt,
   );
@@ -10262,6 +10426,8 @@ class EventFact extends DataClass implements Insertable<EventFact> {
           other.effectEventId == this.effectEventId &&
           other.participants == this.participants &&
           other.description == this.description &&
+          other.stale == this.stale &&
+          other.chapterHash == this.chapterHash &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -10276,6 +10442,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
   final Value<String?> effectEventId;
   final Value<String> participants;
   final Value<String> description;
+  final Value<int> stale;
+  final Value<String?> chapterHash;
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<int> rowid;
@@ -10289,6 +10457,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     this.effectEventId = const Value.absent(),
     this.participants = const Value.absent(),
     this.description = const Value.absent(),
+    this.stale = const Value.absent(),
+    this.chapterHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -10303,6 +10473,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     this.effectEventId = const Value.absent(),
     this.participants = const Value.absent(),
     this.description = const Value.absent(),
+    this.stale = const Value.absent(),
+    this.chapterHash = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -10320,6 +10492,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     Expression<String>? effectEventId,
     Expression<String>? participants,
     Expression<String>? description,
+    Expression<int>? stale,
+    Expression<String>? chapterHash,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<int>? rowid,
@@ -10334,6 +10508,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
       if (effectEventId != null) 'effect_event_id': effectEventId,
       if (participants != null) 'participants': participants,
       if (description != null) 'description': description,
+      if (stale != null) 'stale': stale,
+      if (chapterHash != null) 'chapter_hash': chapterHash,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -10350,6 +10526,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     Value<String?>? effectEventId,
     Value<String>? participants,
     Value<String>? description,
+    Value<int>? stale,
+    Value<String?>? chapterHash,
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<int>? rowid,
@@ -10364,6 +10542,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
       effectEventId: effectEventId ?? this.effectEventId,
       participants: participants ?? this.participants,
       description: description ?? this.description,
+      stale: stale ?? this.stale,
+      chapterHash: chapterHash ?? this.chapterHash,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -10400,6 +10580,12 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     if (description.present) {
       map['description'] = Variable<String>(description.value);
     }
+    if (stale.present) {
+      map['stale'] = Variable<int>(stale.value);
+    }
+    if (chapterHash.present) {
+      map['chapter_hash'] = Variable<String>(chapterHash.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -10424,6 +10610,8 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
           ..write('effectEventId: $effectEventId, ')
           ..write('participants: $participants, ')
           ..write('description: $description, ')
+          ..write('stale: $stale, ')
+          ..write('chapterHash: $chapterHash, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -21475,6 +21663,8 @@ typedef $$CharacterFactsTableCreateCompanionBuilder =
       Value<int?> firstSeenChapter,
       Value<int?> firstSeenAt,
       Value<String> assertions,
+      Value<String> aliases,
+      Value<String> status,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -21487,6 +21677,8 @@ typedef $$CharacterFactsTableUpdateCompanionBuilder =
       Value<int?> firstSeenChapter,
       Value<int?> firstSeenAt,
       Value<String> assertions,
+      Value<String> aliases,
+      Value<String> status,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -21551,6 +21743,16 @@ class $$CharacterFactsTableFilterComposer
 
   ColumnFilters<String> get assertions => $composableBuilder(
     column: $table.assertions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get aliases => $composableBuilder(
+    column: $table.aliases,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -21622,6 +21824,16 @@ class $$CharacterFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get aliases => $composableBuilder(
+    column: $table.aliases,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -21685,6 +21897,12 @@ class $$CharacterFactsTableAnnotationComposer
     column: $table.assertions,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get aliases =>
+      $composableBuilder(column: $table.aliases, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -21752,6 +21970,8 @@ class $$CharacterFactsTableTableManager
                 Value<int?> firstSeenChapter = const Value.absent(),
                 Value<int?> firstSeenAt = const Value.absent(),
                 Value<String> assertions = const Value.absent(),
+                Value<String> aliases = const Value.absent(),
+                Value<String> status = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -21762,6 +21982,8 @@ class $$CharacterFactsTableTableManager
                 firstSeenChapter: firstSeenChapter,
                 firstSeenAt: firstSeenAt,
                 assertions: assertions,
+                aliases: aliases,
+                status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -21774,6 +21996,8 @@ class $$CharacterFactsTableTableManager
                 Value<int?> firstSeenChapter = const Value.absent(),
                 Value<int?> firstSeenAt = const Value.absent(),
                 Value<String> assertions = const Value.absent(),
+                Value<String> aliases = const Value.absent(),
+                Value<String> status = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -21784,6 +22008,8 @@ class $$CharacterFactsTableTableManager
                 firstSeenChapter: firstSeenChapter,
                 firstSeenAt: firstSeenAt,
                 assertions: assertions,
+                aliases: aliases,
+                status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -21867,6 +22093,8 @@ typedef $$EventFactsTableCreateCompanionBuilder =
       Value<String?> effectEventId,
       Value<String> participants,
       Value<String> description,
+      Value<int> stale,
+      Value<String?> chapterHash,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -21882,6 +22110,8 @@ typedef $$EventFactsTableUpdateCompanionBuilder =
       Value<String?> effectEventId,
       Value<String> participants,
       Value<String> description,
+      Value<int> stale,
+      Value<String?> chapterHash,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -21957,6 +22187,16 @@ class $$EventFactsTableFilterComposer
 
   ColumnFilters<String> get description => $composableBuilder(
     column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get stale => $composableBuilder(
+    column: $table.stale,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get chapterHash => $composableBuilder(
+    column: $table.chapterHash,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -22043,6 +22283,16 @@ class $$EventFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get stale => $composableBuilder(
+    column: $table.stale,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get chapterHash => $composableBuilder(
+    column: $table.chapterHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -22118,6 +22368,14 @@ class $$EventFactsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get stale =>
+      $composableBuilder(column: $table.stale, builder: (column) => column);
+
+  GeneratedColumn<String> get chapterHash => $composableBuilder(
+    column: $table.chapterHash,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -22185,6 +22443,8 @@ class $$EventFactsTableTableManager
                 Value<String?> effectEventId = const Value.absent(),
                 Value<String> participants = const Value.absent(),
                 Value<String> description = const Value.absent(),
+                Value<int> stale = const Value.absent(),
+                Value<String?> chapterHash = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -22198,6 +22458,8 @@ class $$EventFactsTableTableManager
                 effectEventId: effectEventId,
                 participants: participants,
                 description: description,
+                stale: stale,
+                chapterHash: chapterHash,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -22213,6 +22475,8 @@ class $$EventFactsTableTableManager
                 Value<String?> effectEventId = const Value.absent(),
                 Value<String> participants = const Value.absent(),
                 Value<String> description = const Value.absent(),
+                Value<int> stale = const Value.absent(),
+                Value<String?> chapterHash = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -22226,6 +22490,8 @@ class $$EventFactsTableTableManager
                 effectEventId: effectEventId,
                 participants: participants,
                 description: description,
+                stale: stale,
+                chapterHash: chapterHash,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

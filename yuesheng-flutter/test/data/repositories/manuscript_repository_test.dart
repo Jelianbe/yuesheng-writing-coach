@@ -261,11 +261,11 @@ void main() {
         );
         seed.dispose();
 
-        // 2. drift 打开 → onUpgrade(23→24→25→26)
+        // 2. drift 打开 → onUpgrade(23→24→25→26→27)
         final db = AppDatabase.forTesting(NativeDatabase(File(path)));
         addTearDown(db.close);
         final ver = await db.customSelect('PRAGMA user_version').getSingle();
-        expect(ver.read<int>('user_version'), 26);
+        expect(ver.read<int>('user_version'), 27);
 
         // 3. 升级后 createManuscript
         final upgradedRepo = ManuscriptRepository(db);

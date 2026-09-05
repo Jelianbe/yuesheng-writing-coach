@@ -4,10 +4,10 @@
 //
 // 模拟真实升级：用 sqlite3 手工构造 v22 存量库文件（manuscripts +
 // chapters，无 volumes 表、chapters 无 volume_id），user_version = 22，
-// 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(22 → 23 → 24 → 25)。
+// 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(22 → … → 27)。
 //
 // 覆盖：
-//   1. 升级后 user_version = 25
+//   1. 升级后 user_version = 27
 //   2. volumes 表已建（VolumeRepository 可写可读）
 //   3. chapters 新增 volume_id 列，存量章节 volume_id 为 NULL（未分卷）
 //   4. 存量章节数据完整保留
@@ -87,9 +87,10 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 26（v23 卷分组 + v24 回收站 CHECK + v25 标签列 + v26 schema bump 一并迁移）
+    // 1. user_version 升到 27（v23 卷分组 + v24 回收站 CHECK + v25 标签列
+    //    + v26 schema bump + v27 角色标签页列一并迁移）
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 26);
+    expect(version.read<int>('user_version'), 27);
 
     // 2. chapters 新增 volume_id，存量章节未分卷
     final chapter = await ChapterRepository(db).getChapter('c1');

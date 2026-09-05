@@ -515,6 +515,10 @@ class CharacterFacts extends Table {
   IntColumn get firstSeenAt => integer().nullable()(); // 首次出现时间（unix 秒）
   TextColumn get assertions =>
       text().withDefault(const Constant('[]'))(); // JSON CharacterAssertion[]
+  TextColumn get aliases =>
+      text().withDefault(const Constant('[]'))(); // C78 D-1：并入主角色的源名归档
+  TextColumn get status =>
+      text().withDefault(const Constant('active'))(); // C78：active | merged
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
   IntColumn get updatedAt =>
@@ -551,6 +555,9 @@ class EventFacts extends Table {
       text().withDefault(const Constant('[]'))(); // 参与人物列表 JSON
   TextColumn get description =>
       text().withDefault(const Constant(''))(); // 一句话描述
+  IntColumn get stale =>
+      integer().withDefault(const Constant(0))(); // C78 D-8：事件行级 stale
+  TextColumn get chapterHash => text().nullable()(); // C78 D-6：抽取时章节指纹
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
   IntColumn get updatedAt =>

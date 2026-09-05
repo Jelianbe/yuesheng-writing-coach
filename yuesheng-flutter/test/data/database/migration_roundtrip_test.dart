@@ -2,12 +2,12 @@
 // migration_roundtrip_test — B30 v12 → v25 迁移往返测试
 //
 // 覆盖 migration_v23_test 之外的更早版本（v12）存量库升级路径：
-// 手工用 sqlite3 构造 v12 存量库（重建 v12 真实 schema = 当前 v25 schema
+// 手工用 sqlite3 构造 v12 存量库（重建 v12 真实 schema = 当前 v27 schema
 // 减去 v13+ 引入的列/表），user_version = 12，预插存量数据，
-// 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(12 → 25 全链路)。
+// 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(12 → 27 全链路)。
 //
 // 断言：
-//   1. 升级后 user_version = 25
+//   1. 升级后 user_version = 27
 //   2. 存量数据零丢失（manuscripts/chapters/sessions/messages/
 //      student_model/teaching_state/active_problem/teacher_suggestion）
 //   3. v13+ 增量列正确补齐（tags / references_json / style_profile /
@@ -232,9 +232,9 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 26
+    // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 26);
+    expect(version.read<int>('user_version'), 27);
 
     // 2. manuscripts 存量保留 + tags 列补齐
     final m = await db
