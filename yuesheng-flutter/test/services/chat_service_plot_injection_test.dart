@@ -26,9 +26,19 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
+import 'package:writingcoach/services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
 /// 章节正文（含「决定去金陵」类转折事件，供 F07/F11 检测数据关联）
 /// 注：事件名/支线名须与正文关键词精确匹配，供 6.5 原文摘录反查命中
 const String _chapterContent =
@@ -122,6 +132,106 @@ void main() {
         chapterRepo: ChapterRepository(db),
         eventFactRepo: eventRepo,
         subplotFactRepo: subplotRepo,
+      ),
+
+      messageInjector: MessageInjector(
+        sessionRepo: sessionRepo,
+
+        diagnosisRepo: DiagnosisRepository(db),
+
+        studentModelRepo: StudentModelRepository(db),
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+
+        manuscriptRepo: ManuscriptRepository(db),
+
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+
+          stateRepo: TeachingStateRepository(db),
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          eventFactRepo: eventRepo,
+
+          subplotFactRepo: subplotRepo,
+        ),
+
+
+        eventFactRepo: eventRepo,
+
+        subplotFactRepo: subplotRepo,
+
+        material: const MaterialCapabilityImpl(),
+      ),
+      diagnosisFlowHandler: DiagnosisFlowHandler(
+        sessionRepo: SessionRepository(db),
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        teacherSuggestionRepo: TeacherSuggestionRepository(db),
+        llmClient: llmClient,
+
+        messageInjector: MessageInjector(
+          sessionRepo: sessionRepo,
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+
+            stateRepo: TeachingStateRepository(db),
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+
+            eventFactRepo: eventRepo,
+
+            subplotFactRepo: subplotRepo,
+          ),
+
+
+          eventFactRepo: eventRepo,
+
+          subplotFactRepo: subplotRepo,
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+          eventFactRepo: eventRepo,
+          subplotFactRepo: subplotRepo,
+        ),
+        diagnosis: const DiagnosisCapabilityImpl(),
+        genUi: const GenUiParser(),
       ),
     );
   }

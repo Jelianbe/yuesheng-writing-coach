@@ -29,9 +29,17 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
   FakeLlmClient(this._fullResponse);
@@ -102,6 +110,103 @@ void main() {
         eventFactRepo: eventFactRepo,
         subplotFactRepo: subplotFactRepo,
       ),
+
+      messageInjector: MessageInjector(
+        sessionRepo: sessionRepo,
+
+        diagnosisRepo: DiagnosisRepository(db),
+
+        studentModelRepo: StudentModelRepository(db),
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+
+        manuscriptRepo: ManuscriptRepository(db),
+
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+
+          stateRepo: TeachingStateRepository(db),
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          // ADR-C74 K-4：fact 仓储必须传进 DiagnosisCommitter，否则 applyFactExtraction 静默跳过
+          characterFactRepo: characterFactRepo,
+
+          eventFactRepo: eventFactRepo,
+
+          subplotFactRepo: subplotFactRepo,
+        ),
+
+        material: const MaterialCapabilityImpl(),
+      ),
+      diagnosisFlowHandler: DiagnosisFlowHandler(
+        sessionRepo: SessionRepository(db),
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        teacherSuggestionRepo: TeacherSuggestionRepository(db),
+        llmClient: llmClient,
+
+        messageInjector: MessageInjector(
+          sessionRepo: sessionRepo,
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+
+            stateRepo: TeachingStateRepository(db),
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+
+            // ADR-C74 K-4：fact 仓储必须传进 DiagnosisCommitter，否则 applyFactExtraction 静默跳过
+            characterFactRepo: characterFactRepo,
+
+            eventFactRepo: eventFactRepo,
+
+            subplotFactRepo: subplotFactRepo,
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+          characterFactRepo: characterFactRepo,
+          eventFactRepo: eventFactRepo,
+          subplotFactRepo: subplotFactRepo,
+        ),
+        diagnosis: const DiagnosisCapabilityImpl(),
+        genUi: const GenUiParser(),
+      ),
       characterFactRepo: characterFactRepo,
       eventFactRepo: eventFactRepo,
       subplotFactRepo: subplotFactRepo,
@@ -156,7 +261,9 @@ void main() {
     expect(await characterFactRepo.listCharacters(manuscriptId), isNotEmpty);
     expect(await eventFactRepo.listEvents(manuscriptId), isNotEmpty);
     expect(await subplotFactRepo.listSubplots(manuscriptId), isNotEmpty);
-    final history = await DiagnosisRepository(db).listDiagnosisHistory(sessionId);
+    final history = await DiagnosisRepository(
+      db,
+    ).listDiagnosisHistory(sessionId);
     expect(history, isNotEmpty);
   });
 

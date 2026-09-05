@@ -44,6 +44,9 @@ import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/bootstrap_service.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
@@ -54,6 +57,13 @@ import 'package:writingcoach/widgets/practice_task_card.dart';
 import 'package:writingcoach/widgets/reference_bar.dart';
 import 'package:writingcoach/widgets/task_panel.dart';
 
+import 'package:writingcoach/services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
 import '../helpers/mock_last_session_storage.dart';
 
 void main() {
@@ -1952,6 +1962,87 @@ class _FakeChatService extends ChatService {
           studentModelRepo: StudentModelRepository(_db),
           referenceRepo: ReferenceRepository(_db),
           chapterRepo: ChapterRepository(_db),
+        ),
+
+        messageInjector: MessageInjector(
+          sessionRepo: SessionRepository(_db),
+
+          diagnosisRepo: DiagnosisRepository(_db),
+
+          studentModelRepo: StudentModelRepository(_db),
+
+          referenceRepo: ReferenceRepository(_db),
+
+          chapterRepo: ChapterRepository(_db),
+
+          manuscriptRepo: ManuscriptRepository(_db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: SessionRepository(_db),
+
+            stateRepo: TeachingStateRepository(_db),
+
+            diagnosisRepo: DiagnosisRepository(_db),
+
+            studentModelRepo: StudentModelRepository(_db),
+
+            referenceRepo: ReferenceRepository(_db),
+
+            chapterRepo: ChapterRepository(_db),
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+
+        diagnosisFlowHandler: DiagnosisFlowHandler(
+          sessionRepo: SessionRepository(_db),
+          stateRepo: TeachingStateRepository(_db),
+          diagnosisRepo: DiagnosisRepository(_db),
+          studentModelRepo: StudentModelRepository(_db),
+          referenceRepo: ReferenceRepository(_db),
+          chapterRepo: ChapterRepository(_db),
+          teacherSuggestionRepo: TeacherSuggestionRepository(_db),
+          llmClient: LlmClient(),
+
+          messageInjector: MessageInjector(
+            sessionRepo: SessionRepository(_db),
+
+            diagnosisRepo: DiagnosisRepository(_db),
+
+            studentModelRepo: StudentModelRepository(_db),
+
+            referenceRepo: ReferenceRepository(_db),
+
+            chapterRepo: ChapterRepository(_db),
+
+            manuscriptRepo: ManuscriptRepository(_db),
+
+            diagnosisCommitter: DiagnosisCommitter(
+              sessionRepo: SessionRepository(_db),
+
+              stateRepo: TeachingStateRepository(_db),
+
+              diagnosisRepo: DiagnosisRepository(_db),
+
+              studentModelRepo: StudentModelRepository(_db),
+
+              referenceRepo: ReferenceRepository(_db),
+
+              chapterRepo: ChapterRepository(_db),
+            ),
+
+            material: const MaterialCapabilityImpl(),
+          ),
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: SessionRepository(_db),
+            stateRepo: TeachingStateRepository(_db),
+            diagnosisRepo: DiagnosisRepository(_db),
+            studentModelRepo: StudentModelRepository(_db),
+            referenceRepo: ReferenceRepository(_db),
+            chapterRepo: ChapterRepository(_db),
+          ),
+          diagnosis: const DiagnosisCapabilityImpl(),
+          genUi: const GenUiParser(),
         ),
       );
 

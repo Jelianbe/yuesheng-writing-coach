@@ -61,11 +61,12 @@ const String kProgressive = 'lib/services/progressive_diagnosis.dart';
 
 /// 注册表内全部未退役症候 ID（升序）——真源，与被测代码同源同法
 List<String> activeSyndromeIds() {
-  final ids = kSyndromeRegistry
-      .where((s) => s.retired != true)
-      .map((s) => s.id)
-      .toList()
-    ..sort();
+  final ids =
+      kSyndromeRegistry
+          .where((s) => s.retired != true)
+          .map((s) => s.id)
+          .toList()
+        ..sort();
   return ids;
 }
 
@@ -90,7 +91,9 @@ void main() {
     });
 
     test('逐个症候 ID 断言出现在 kChunkSystemPrompt 中', () {
-      final missing = ids.where((id) => !kChunkSystemPrompt.contains(id)).toList();
+      final missing = ids
+          .where((id) => !kChunkSystemPrompt.contains(id))
+          .toList();
       expect(
         missing,
         isEmpty,
@@ -115,14 +118,9 @@ void main() {
 
       // 每个 ID 在清单块里**恰好**出现 1 次
       final dup = ids.where((id) => _count(block, id) > 1).toList();
-      expect(
-        dup,
-        isEmpty,
-        reason: '以下症候在清单块中重复出现：${dup.join(', ')}',
-      );
+      expect(dup, isEmpty, reason: '以下症候在清单块中重复出现：${dup.join(', ')}');
       // 且清单块非空（防止派生函数返回空串却「零重复」）
-      final missingInBlock =
-          ids.where((id) => !block.contains(id)).toList();
+      final missingInBlock = ids.where((id) => !block.contains(id)).toList();
       expect(
         missingInBlock,
         isEmpty,
@@ -208,7 +206,10 @@ void main() {
     test('analyzeChunk 的调用处引用该常量', () {
       final src = _readSrc(kProgressive);
       expect(
-        _count(src, 'ChatMessage(role: \'system\', content: kChunkSystemPrompt)'),
+        _count(
+          src,
+          'ChatMessage(role: \'system\', content: kChunkSystemPrompt)',
+        ),
         1,
         reason:
             '$kProgressive 中 analyzeChunk 应以 kChunkSystemPrompt 作为 system '

@@ -28,10 +28,15 @@
 // 私有字段（_xxx）+ 公开命名参数（xxx）模式无法用 initializing formal
 // ignore_for_file: prefer_initializing_formals
 
-import 'dart:async';
-import 'dart:convert';
+// ADR-C74 K-7：5 个 _inject* 方法 + 11 跟随 helper + _insertPhaseSummaryOnMastered
+// 迁至 MessageInjector（lib/services/message_injector.dart），ChatService 改为
+// 委派。下游消费者（DiagnosisCommitter K-2..K-5 字段 + MessageInjector 装配参数）
+// 仍需 ChatService 持仓储引用作为 DI 中转，故以下字段在 ChatService 内部暂未
+// 直接消费但保留（X-041c / 批次66-72 装配契约不变，测试 fixture 兼容）。
+// ignore_for_file: unused_field
 
-import 'package:dio/dio.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
@@ -51,91 +56,24 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dart';
 import 'package:writingcoach/data/repositories/training_result_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
+import 'package:writingcoach/services/chat_message_types.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
-import 'package:writingcoach/services/reply_receipt_guard.dart';
-import 'package:writingcoach/services/conflict_detector.dart';
-import 'package:writingcoach/services/dialogue_tag_detector.dart';
-import 'package:writingcoach/services/event_causality_detector.dart';
-import 'package:writingcoach/services/grammar_lexical_detector.dart';
 import 'package:writingcoach/services/outline_parser.dart';
-import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/genui_parser.dart';
-import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
-import 'package:writingcoach/services/evaluation_service.dart'
-    show EvaluationService, EvaluationPassRateExtension;
-import 'package:writingcoach/services/focus_resolver.dart' as focus;
-import 'package:writingcoach/services/style_technique_router.dart';
+import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
-import 'package:writingcoach/services/message_card_service.dart';
-import 'package:writingcoach/data/database/utils.dart';
-import 'package:writingcoach/services/phase_mapper_resolver.dart';
-import 'package:writingcoach/services/phase_transition.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
-import 'package:writingcoach/services/student_profile.dart';
-import 'package:writingcoach/services/training_evaluator.dart';
-import 'package:writingcoach/services/training_input_builder.dart';
-import 'package:writingcoach/services/training_knowledge_base.dart';
-import 'package:writingcoach/services/training_few_shot_library.dart';
-import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
-import 'package:writingcoach/services/style_fingerprint.dart';
-import 'package:writingcoach/services/teacher_service.dart';
-import 'package:writingcoach/services/teacher_validator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
-/// 批次64（B62f）：诊断请求标记——章节诊断 prompt 的特征子串，
-/// 用于判定"本次消息是对章节正文的诊断请求"，才触发声线漂移检测。
-const String _kDiagnosisRequestMarker = '写作诊断分析';
-
-/// 流式回调
-class SendMessageCallbacks {
-  final void Function(String delta) onStream;
-  final FutureOr<void> Function(String fullContent, String messageId)
-  onComplete;
-  final void Function(String error) onError;
-
-  /// 训练结果回调（subphase==FEEDBACK 且 parseTrainingResult 命中时触发）
-  final void Function(TrainingResult result)? onTrainingResult;
-
-  /// 用户主动取消时触发（区别于 onError：取消是预期行为，不应标记消息失败）
-  final void Function()? onCancelled;
-
-  const SendMessageCallbacks({
-    required this.onStream,
-    required this.onComplete,
-    required this.onError,
-    this.onTrainingResult,
-    this.onCancelled,
-  });
-}
-
-/// 发送消息选项
-class SendMessageOptions {
-  final TeachingPhase phase;
-  final AttitudeLevel attitude;
-  final CancelToken? cancelToken;
-
-  /// 批次64（B62g）：编辑器最近一次编辑时间（秒）。写作页传入，
-  /// 心流判定叠加"编辑器活跃"；对话页不传（null）仅用消息频率判定。
-  final int? lastEditorEditAtSec;
-
-  /// 批次71：本消息携带的 @ 引用快照（JSON 数组字符串）。
-  /// 随 user 消息落库，气泡底部展示引用徽章。
-  final String? referencesJson;
-
-  const SendMessageOptions({
-    required this.phase,
-    required this.attitude,
-    this.cancelToken,
-    this.lastEditorEditAtSec,
-    this.referencesJson,
-  });
-}
+/// 批次64（B62f）诊断请求标记（ADR-C74 K-7 迁至 MessageInjector：
+/// lib/services/message_injector.dart._kDiagnosisRequestMarker）
 
 /// ChatService 依赖：所有 Repository + LlmClient
 class ChatService {
@@ -175,12 +113,9 @@ class ChatService {
   final SubplotFactRepository? _subplotFactRepo;
 
   /// 批次72（大纲层）：大纲仓储（可选——装配后实体索引注入 + 提取落库才可用）
-  /// 批次7 O2：保留仓储引用，服务改为首次使用时懒加载（_ensureOutlineService），
-  /// 解耦 eager 构造，避免「装配依赖」成为静默条件——只要装配了 repo 服务必然可用。
+  /// K-9 起 outlineRepo 由 DiagnosisFlowHandler / MessageInjector 各自持有，
+  /// ChatService 不再直接消费；保留构造参数以兼容既有测试 fixture（无副作用）。
   final OutlineRepository? _outlineRepo;
-
-  /// 懒加载缓存：_ensureOutlineService 首次调用时由 _outlineRepo 构建
-  OutlineService? _outlineService;
 
   /// 诊断提交编排器（ADR-C74 K-1 骨架）
   ///
@@ -189,98 +124,41 @@ class ChatService {
   /// non-null + required；K-5 收尾时本字段升级。
   final DiagnosisCommitter _diagnosisCommitter;
 
-  /// B1：诊断连续失败计数（内存态，按 session 隔离）。
-  /// 用于诊断失败卡阈值门控——连续失败达 UILimits.failureWarningThreshold 才插卡，
-  /// 避免偶发单次失败也打扰用户；普通聊天（非诊断轮次）不计入。
-  final Map<String, int> _consecutiveDiagnosisFails = {};
+  /// 系统消息注入编排器（ADR-C74 K-7）
+  ///
+  /// sendMessage 主流程中 5 个 system 消息注入步骤（5.0 学员画像 / 5.1 引用 /
+  /// 5.1.x 章节观察 / 5.2 附属文件 / 6 诊断锁）的独立持有者。
+  /// ChatService 改为委派，自身不持有注入链逻辑。X-025-ARCH 教训：
+  /// 必须是「独立类 + DI」模式，不可用 extension 拆分。
+  final MessageInjector _messageInjector;
 
-  // ───────────────────────── B1 消息卡片确定性触发 ─────────────────────────
+  /// 诊断流编排器（ADR-C74 K-9）
+  ///
+  /// sendMessage 主流程中 4 个诊断链方法（步骤 9-10 解析 + 持久化 /
+  /// 步骤 11 提交 + Teacher + GenUI / 步骤 11 FEEDBACK 训练结果）的独立持有者。
+  /// 连续失败计数、_diagnosisDropLog、_recordDiagnosisOutcome、_readOutlineEntityCount
+  /// 等 helper 一并随方法迁入本类。X-025-ARCH 教训：必须是「独立类 + DI」模式，
+  /// 不可用 extension 拆分。
+  final DiagnosisFlowHandler _diagnosisFlowHandler;
 
-  /// 诊断失败卡阈值门控（B1）。
-  ///
-  /// [attempted] 表示该轮是否确实发起了诊断（AI 输出含 [YS_DIAGNOSIS] 块，
-  /// 或走显式诊断链路 commitDiagnosisFromContent）。仅当 attempted && !success
-  /// 才计为一次失败，普通聊天（解析为 null）不会误触发。
-  ///
-  /// 连续失败达 UILimits.failureWarningThreshold 时插入诊断失败卡，
-  /// failureCount 传入当前连续失败次数（与卡片 UI 的额外提示阈值对齐）。
-  /// 诊断块被拒 / 字段静默丢弃的日志片段（ADR-C63，N1 / N26）。
-  ///
-  /// 返回空串表示无异常，不污染正常路径的日志。
-  ///
-  /// 这段信息此前**完全丢失**：`parseDiagnosis` 返回 null 但没人知道为什么，
-  /// 只能看到「diagnosis=无」。这是 C53「查不到根因」的直接成因，
-  /// 也是 N26「模型以为有反馈回路、实际没有 → 每一轮都静默失败」的放大器。
-  ///
-  /// 特别注意 [ParseResult.notes]：它标记的是**整块仍然通过**、但可选字段被
-  /// 白名单静默置 null 的情形（如模型填 `P5_COMPANION` → `suggested_phase` 变 null）。
-  /// 此时诊断照常显示、UI 毫无异样，唯独阶段迁移永远不发生——
-  /// 比整块丢弃更隐蔽（N13 的确切机制）。
-  String _diagnosisDropLog(ParseResult r) {
-    if (r.rejectReason == null && r.notes.isEmpty) return '';
-    final parts = <String>[];
-    if (r.rejectReason != null) {
-      parts.add('被拒原因=${r.rejectReason}');
-    }
-    if (r.notes.isNotEmpty) {
-      parts.add('静默丢弃=${r.notes.join(",")}');
-    }
-    return ' | ${parts.join(" | ")}';
-  }
+  /// 阶段总结卡 helper（ADR-C74 K-7 随 _injectDiagnosisLock / _handleTrainingResult
+  /// 迁至 MessageInjector，见 lib/services/message_injector.dart）。
 
-  Future<void> _recordDiagnosisOutcome(
-    String sessionId, {
-    required bool attempted,
-    required bool success,
+  /// 公开委派（ADR-C74 K-9）：分块诊断生成的完整 AI 输出（D4-A）。
+  ///
+  /// 由 WritingCoachPanel 调用（lib/widgets/chat_teaching.dart L53）。
+  /// 实现已迁 DiagnosisFlowHandler；本方法保留同名同参同返回以保证
+  /// 调用方零改动（K-5 同款薄壳委派）。
+  Future<String> commitDiagnosisFromContent({
+    required String sessionId,
+    required String fullContent,
   }) async {
-    if (!attempted) return; // 非诊断轮次：不动计数
-    if (success) {
-      _consecutiveDiagnosisFails[sessionId] = 0;
-      return;
-    }
-    final count = (_consecutiveDiagnosisFails[sessionId] ?? 0) + 1;
-    _consecutiveDiagnosisFails[sessionId] = count;
-    if (count >= UILimits.failureWarningThreshold) {
-      try {
-        await insertDiagnosisFailedCard(_sessionRepo, sessionId, count);
-      } catch (e) {
-        debugPrint('[SafeRun] 诊断失败卡插入失败不阻断主流程: $e');
-      }
-    }
+    return _diagnosisFlowHandler.commitDiagnosisFromContent(
+      sessionId: sessionId,
+      fullContent: fullContent,
+    );
   }
 
-  /// 阶段总结卡（B1）：某症候训练达标 mastered 时插入，汇总该症候进展。
-  ///
-  /// 在 chat_service_send 两处 mastered 迁移点（步骤 6.3 评估 / 反馈后重评估）调用，
-  /// 与 resolveSyndromesBatch 成对，确保「达标→解锁」同时留下可读的进展卡片。
-  Future<void> _insertPhaseSummaryOnMastered(
-    String sessionId,
-    String syndromeId,
-    String syndromeName,
-    int trainingCount,
-  ) async {
-    try {
-      await insertPhaseSummaryCard(
-        _sessionRepo,
-        sessionId,
-        PhaseSummaryCardPayload(
-          result: 'passed',
-          resolvedSyndromeCount: 1,
-          trainingCount: trainingCount,
-          trend: 'improving',
-          syndromeChanges: [
-            SyndromeChangeItem(
-              syndromeId: syndromeId,
-              syndromeName: syndromeName,
-              trend: 'improving',
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      debugPrint('[SafeRun] 阶段总结卡插入失败不阻断主流程: $e');
-    }
-  }
 
   ChatService({
     required SessionRepository sessionRepo,
@@ -305,6 +183,13 @@ class ChatService {
     OutlineRepository? outlineRepo,
     // ADR-C74 K-1：诊断提交编排器，K-1 阶段 nullable（不破坏现有 30+ 测试构造）
     required DiagnosisCommitter diagnosisCommitter,
+    // ADR-C74 K-7：系统消息注入编排器，required（与 diagnosisCommitter 同模式）。
+    // 「独立类 + DI」拆分路径，X-025-ARCH 教训复盘。
+    required MessageInjector messageInjector,
+    // ADR-C74 K-9：诊断流编排器，required（与 diagnosisCommitter / messageInjector 同模式）。
+    // commitDiagnosisFromContent 公开委派 + parseAndPersist / commitDiagnosisAndSuggestions /
+    // handleTrainingResult 内部三步委派。
+    required DiagnosisFlowHandler diagnosisFlowHandler,
   }) : _sessionRepo = sessionRepo,
        _stateRepo = stateRepo,
        _diagnosisRepo = diagnosisRepo,
@@ -327,30 +212,16 @@ class ChatService {
        _eventFactRepo = eventFactRepo,
        _subplotFactRepo = subplotFactRepo,
        _outlineRepo = outlineRepo,
-       _diagnosisCommitter = diagnosisCommitter;
+       _diagnosisCommitter = diagnosisCommitter,
+       _messageInjector = messageInjector,
+       _diagnosisFlowHandler = diagnosisFlowHandler;
 
-  /// 懒加载大纲服务（批次7 O2）
-  ///
-  /// 装配了 outlineRepo → 首次使用即构建并缓存；未装配 → 返回 null。
-  /// 所有大纲注入/沉淀入口统一走本方法，保证「装配即可用」单一事实源。
-  OutlineService? _ensureOutlineService() {
-    _outlineService ??= _outlineRepo != null
-        ? OutlineService(_outlineRepo)
-        : null;
-    return _outlineService;
-  }
-
-  // 引用内容预加载缓存（每次 sendMessage 调用前预加载，调用后清空）
-  // 原因：buildReferencesContext 是同步纯函数，需要同步访问 DAO 数据
-  final Map<String, AttachedFileRow> _cachedAttachedFiles = {};
-  final Map<String, ChapterBrief> _cachedChapters = {};
-  final Map<String, ManuscriptDetail> _cachedManuscripts = {};
+  // 引用内容预加载缓存（ADR-C74 K-7 迁至 MessageInjector：见 lib/services/message_injector.dart）
 
   // 批次59：心流判定——记录每个 session 最近一次用户消息发送时间（秒级）
   final Map<String, int> _lastUserSendAtSec = {};
 
-  // 批次63（B62b）：L1 意图向量——每个 session 最近 3 次交互意图（供 prompt 构造）
-  final Map<String, List<String>> _recentIntentsBySession = {};
+  // 批次63（B62b）意图向量缓存（ADR-C74 K-7 随 _injectProfileAndIntents 迁至 MessageInjector）
 
   // ════════════ 会话/态度管理 ════════════
 
@@ -475,219 +346,7 @@ class ChatService {
     );
   }
 }
-
-/// 内部 focus 历史条目
-class _FocusHistoryItem {
-  final String focusId;
-  final int timestamp;
-  const _FocusHistoryItem({required this.focusId, required this.timestamp});
-}
-
-extension ChatServiceDiagnosis on ChatService {
-  /// 批次74：快速读取某章节对应手稿下的实体数（用于 combinedContent 空时判真故障）
-  Future<int> _readOutlineEntityCount(String chapterId) async {
-    try {
-      final outlineService = _ensureOutlineService();
-      if (outlineService == null) return 0;
-      final chapter = await _chapterRepo.getChapter(chapterId);
-      if (chapter == null) return 0;
-      // 复用已公开 buildEntityIndexContext 非空推 count
-      final ctx = await outlineService.buildEntityIndexContext(
-        chapter.manuscriptId,
-      );
-      if (ctx == null) return 0;
-      // 保守估算：每行实体前缀算 1 个
-      return '\n$ctx'.split('\n- [').length - 1;
-    } catch (e) {
-      debugPrint('[SafeRun] 大纲实体检索计数失败: $e');
-      return 0;
-    }
-  }
-
-  /// 处理分块诊断生成的完整 AI 输出（D4-A）
-  ///
-  /// 当 runProgressiveDiagnosis 返回非 null 时，由 WritingCoachPanel 调用。
-  /// 复用 sendMessage 的步骤 9-11（解析 + 持久化 + 卡片），不含 Teacher 触发。
-  Future<String> commitDiagnosisFromContent({
-    required String sessionId,
-    required String fullContent,
-  }) async {
-    // 步骤 9: 解析诊断
-    final rawParse = _diagnosis.parseDiagnosis(fullContent);
-    // ADR-C63：这条路径此前**完全没有解析日志**，块被拒时全程静默。
-    // 只在有异常时输出，正常路径不增加噪声（A-1 预算止血的精神同样适用于日志）。
-    final dropLog = _diagnosisDropLog(rawParse);
-    if (dropLog.isNotEmpty) {
-      debugPrint('[ChatService] commitDiagnosisFromContent 解析诊断$dropLog');
-    }
-    String displayContent = rawParse.displayContent;
-    ParsedDiagnosis? diagnosis = rawParse.diagnosis;
-
-    if (diagnosis != null) {
-      final startIndex = fullContent.indexOf(kDiagnosisStart);
-      final endIndex = fullContent.indexOf(
-        kDiagnosisEnd,
-        startIndex + kDiagnosisStart.length,
-      );
-      if (startIndex != -1 && endIndex != -1) {
-        final jsonStr = fullContent
-            .substring(startIndex + kDiagnosisStart.length, endIndex)
-            .trim();
-        try {
-          final rawJson = jsonDecode(jsonStr);
-          final validation = _diagnosis.validateDiagnosisOutput(
-            rawParse.displayContent,
-            rawJson,
-          );
-          displayContent = validation.displayContent;
-          diagnosis = validation.diagnosis;
-        } catch (e) {
-          debugPrint(
-            '[SafeRun] commitDiagnosisFromContent JSON 解析失败沿用 rawParse: $e',
-          );
-        }
-      }
-    }
-
-    // 批次74 A1：D4-A 渐进诊断也沉淀大纲 + 写确认卡
-    // （commitDiagnosisFromContent 不传 primaryRef，内部会从 session 查当前章节主引用；
-    //   无装配/无大纲块/非章节 → 静默跳过）
-    // ADR-C74 K-4：实体/事实落库辅助已迁至 DiagnosisCommitter
-    await _diagnosisCommitter.applyOutlineEntitiesFromContent(
-      sessionId: sessionId,
-      fullContent: fullContent,
-    );
-
-    // A6：D4-A 路径也沉淀事实到 TKG 三表
-    await _diagnosisCommitter.applyFactExtractionFromContent(
-      sessionId: sessionId,
-      fullContent: fullContent,
-    );
-
-    // 批次74：剥离 [YS_ENTITY] 协议块（防原始 JSON 落库）
-    displayContent = stripOutlineBlock(displayContent);
-    // A6：剥离 [YS_FACT] 协议块
-    displayContent = stripFactBlock(displayContent);
-
-    // 步骤 10: 写入 assistant 消息
-    if (displayContent.trim().isEmpty) {
-      displayContent = '诊断完成';
-    }
-    final messageId = await _sessionRepo.addMessage(
-      sessionId,
-      'assistant',
-      displayContent,
-    );
-    debugPrint(
-      '[ChatService] commitDiagnosisFromContent: assistant 消息已写入 | messageId=$messageId | contentLen=${displayContent.length}',
-    );
-
-    // 步骤 11: 持久化诊断结果 + 卡片
-    if (diagnosis != null) {
-      // D4 修复：从 session 引用解析 primaryRef，传入 targetRefType/targetRefId
-      String? d4TargetRefType;
-      String? d4TargetRefId;
-      try {
-        final refs = await _referenceRepo.listReferences(sessionId);
-        if (refs.isNotEmpty) {
-          final primary = refs.firstWhere(
-            (r) => r.isPrimary == 1,
-            orElse: () => refs.first,
-          );
-          d4TargetRefType = primary.refType;
-          d4TargetRefId = primary.refId;
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] commitDiagnosisFromContent 引用查询失败: $e');
-      }
-
-      try {
-        await _diagnosisService.commitDiagnosisWithHistory(
-          DiagnosisInput(
-            sessionId: sessionId,
-            messageId: messageId,
-            syndromes: diagnosis.syndromes.map((s) => s.toJson()).toList(),
-            suggestedActions: diagnosis.suggestedActions,
-            confidence: diagnosis.confidence,
-            rootCauseAnalysis: diagnosis.rootCauseAnalysis,
-            nextFocus: diagnosis.nextFocus,
-            feedbackSummary: diagnosis.feedbackSummary,
-            currentTeachingFocusId: diagnosis.currentTeachingFocusId,
-            focusReason: diagnosis.focusReason,
-            teachingMode: diagnosis.teachingMode?.value,
-            targetRefType: d4TargetRefType,
-            targetRefId: d4TargetRefId,
-          ),
-        );
-
-        // 批次10（C3）：D4-A 分块诊断同样 = 旧训练轮终结 → 重置子阶段，
-        // 与 sendMessage 主路径（L1400-1406）对称，防 feedback 残留
-        try {
-          await _stateRepo.updateSubphase(sessionId, null);
-        } catch (e) {
-          debugPrint('[SafeRun] commitDiagnosisFromContent 诊断后重置子阶段失败: $e');
-        }
-
-        // S5 修复：D4-A 路径也沉淀 style_profile（与 sendMessage 主路径对齐）
-        if (diagnosis.styleProfile != null) {
-          try {
-            await _studentModelRepo.updateStyleProfile(
-              sessionId,
-              diagnosis.styleProfile!,
-            );
-          } catch (e) {
-            debugPrint('[SafeRun] commitDiagnosisFromContent 风格画像沉淀失败: $e');
-          }
-        }
-
-        try {
-          await insertDiagnosisResultCard(
-            _sessionRepo,
-            sessionId,
-            DiagnosisResultCardPayload(
-              syndromeCount: diagnosis.syndromes.length,
-              syndromes: diagnosis.syndromes
-                  .map(
-                    (s) => DiagnosisSyndromeCard(
-                      syndromeId: s.syndromeId,
-                      name: s.name,
-                      severity: s.severity.value,
-                      evidenceCount: s.evidence.length,
-                    ),
-                  )
-                  .toList(),
-              suggestedActions: diagnosis.suggestedActions,
-              confidence: diagnosis.confidence,
-              diagnosisId: messageId,
-            ),
-          );
-        } catch (e) {
-          debugPrint('[SafeRun] commitDiagnosisFromContent 卡片插入失败: $e');
-        }
-
-        // 批次6 D1：分块诊断路径复用阶段迁移（resolver + M4-A 自动迁移 + M4-C 达标率校验），
-        // 与 sendMessage 单次诊断路径行为一致，超长章节诊断完成后也能推进阶段/升级卡片
-        // ADR-C74 K-2：阶段迁移已迁至 DiagnosisCommitter.applyPhaseMigration
-        await _diagnosisCommitter.applyPhaseMigration(
-          sessionId: sessionId,
-          diagnosis: diagnosis,
-        );
-      } catch (e) {
-        debugPrint('[SafeRun] commitDiagnosisFromContent 诊断写入失败: $e');
-      }
-    }
-
-    // B1：D4-A 分块诊断链路必为诊断；成败记录 → 失败卡阈值门控
-    await _recordDiagnosisOutcome(
-      sessionId,
-      attempted: true,
-      success: diagnosis != null,
-    );
-
-    return messageId;
-  }
-}
-
+// K-9 移除: commitDiagnosisFromContent + _readOutlineEntityCount 已迁 DiagnosisFlowHandler
 extension ChatServiceDiagnosisFocus on ChatService {
   /// 批次1（O1）：Teacher 升级阀——某症候严重度达阈值或诊断次数达阈值时，
   /// 绕过心流窗口（持续写作学员「编辑器活跃 120s」恒真 → 建议永远出不来 →
@@ -721,863 +380,19 @@ extension ChatServiceDiagnosisFocus on ChatService {
     return false;
   }
 
-  /// 从用户消息解析 focus 切换意图
-  ///
-  /// 只解析明确的 P\d+ 编号匹配（"我想练 P003"等），代词"这个"暂不实现
-  String? _parseUserFocusFromMessage(
-    String content,
-    List<ActiveProblemView> activeProblems,
-  ) {
-    // 批次4（4.5 O9）：放宽覆盖表达变体（先练练/练一下/我想练/想先解决/聚焦/主攻等）
-    final patterns = [
-      RegExp(r'我想?先?(?:解决|练|练习|练练|练一下)\s*(P\d+)', caseSensitive: false),
-      RegExp(r'先?(?:解决|练|练习|练练|练一下)(?:一练)?\s*(P\d+)', caseSensitive: false),
-      RegExp(r'(?:聚焦|专注|主攻|重点练)\s*(P\d+)', caseSensitive: false),
-    ];
-
-    final activeIds = activeProblems.map((p) => p.syndromeId).toSet();
-
-    for (final pattern in patterns) {
-      final match = pattern.firstMatch(content);
-      if (match != null && match.groupCount >= 1) {
-        final id = match.group(1)!.toUpperCase();
-        if (activeIds.contains(id)) return id;
-      }
-    }
-    return null;
-  }
-
-  /// 构建 focus 历史条目（从诊断历史提取最近 N 条 focus_id）
-  Future<List<_FocusHistoryItem>> _buildFocusHistory(String sessionId) async {
-    try {
-      final diagnoses = await _diagnosisRepo.listDiagnosisHistory(sessionId);
-      final threshold = FocusSwitch.threshold;
-      final items = <_FocusHistoryItem>[];
-      for (final d in diagnoses.take(threshold)) {
-        final focusId = d.currentTeachingFocusId;
-        if (focusId != null && focusId.isNotEmpty) {
-          items.add(
-            _FocusHistoryItem(focusId: focusId, timestamp: d.timestamp),
-          );
-        }
-      }
-      return items;
-    } catch (e) {
-      debugPrint('[SafeRun] loadAttachedFilesForManuscript 失败: $e');
-      return [];
-    }
-  }
-
-  /// 映射 focus-resolver 的 FocusSource 到 chat_context_builder 的 FocusSource
-  FocusSource _mapFocusSource(focus.FocusSource source) {
-    switch (source) {
-      case focus.FocusSource.aiSuggested:
-        return FocusSource.aiSuggested;
-      case focus.FocusSource.userOverride:
-        return FocusSource.userOverride;
-      case focus.FocusSource.fallback:
-        return FocusSource.fallback;
-      case focus.FocusSource.none:
-        return FocusSource.none;
-    }
-  }
+  // ADR-C74 K-7 迁出至 MessageInjector（lib/services/message_injector.dart）：
+  // _parseUserFocusFromMessage / _buildFocusHistory / _mapFocusSource
+  // （_injectDiagnosisLock 的跟随 helper）
 }
 
-extension ChatServiceDiagnosisSupport on ChatService {
-  /// 7.2（批次16）：介入级别修正原因说明。
-  ///
-  /// D3（复发/L3）或 performance_gate（G1-G5）命中时返回一句说明，
-  /// 供介入级别注入消息标注修正原因，帮助 AI 校准教学力度；未命中返回空串。
-  /// 规则顺序与 interventionLevelForTrainingCount 完全一致（D3 > G1 > G2 > G3 > 次数 > G4 > G5）。
-  String _buildInterventionAdjustmentNote({
-    required int trainingCount,
-    required Severity currentSeverity,
-    required bool relapse,
-    required TrainingPerformance? performance,
-  }) {
-    // D3（批次8）：复发 / L3 无条件回退 I do（最高优先级）
-    if (relapse) return '（本轮因复发回退脚手架到 I do）';
-    if (currentSeverity == Severity.l3) {
-      return '（本轮因严重度 L3 回退脚手架到 I do）';
-    }
-    if (performance == null) return '';
+// ADR-C74 K-7 迁出至 MessageInjector：extension ChatServiceDiagnosisSupport
+// 整块删除（仅含 _buildInterventionAdjustmentNote，迁入 MessageInjector._buildInterventionAdjustmentNote）
 
-    // 基础次数档位（与 interventionLevelForTrainingCount 同口径）
-    final base = trainingCount >= 4
-        ? InterventionLevel.youDo
-        : trainingCount >= 2
-        ? InterventionLevel.weDo
-        : InterventionLevel.iDo;
+// ADR-C74 K-7 迁出至 MessageInjector：ChatServiceSendDiagnosisLock
 
-    // 延迟撤脚手架（保守）
-    if (performance.consecutiveFails >= 3) {
-      return '（连续 ${performance.consecutiveFails} 次未达标，回退脚手架到 I do）';
-    }
-    if (performance.passRate < 0.5 && base != InterventionLevel.iDo) {
-      final pct = (performance.passRate * 100).round();
-      return '（历史达标率 $pct%，回退脚手架一档）';
-    }
-    if (performance.consecutiveFails >= 2 && base == InterventionLevel.youDo) {
-      return '（最近两次未达标，暂不进入独立练习）';
-    }
+// ADR-C74 K-7 迁出至 MessageInjector：ChatServiceSendInject
 
-    // 提前撤脚手架（正向）
-    if (base == InterventionLevel.iDo &&
-        performance.totalCount >= 1 &&
-        performance.consecutivePasses == performance.totalCount) {
-      return '（首次训练即通过，提前进入引导练习）';
-    }
-    if (base == InterventionLevel.weDo &&
-        performance.totalCount >= 2 &&
-        performance.consecutivePasses == performance.totalCount) {
-      return '（连续训练全部通过，提前进入独立练习）';
-    }
-
-    return '';
-  }
-}
-
-extension ChatServiceSendDiagnosisLock on ChatService {
-  Future<String?> _injectDiagnosisLock({
-    required String sessionId,
-    required String content,
-    required List<ActiveProblemView> activeProblems,
-    required TeachingSubphase? currentSubphase,
-    required BeginnerLevel? beginnerLevel,
-    required List<ChatMessage> messages,
-    required void Function(String) markStage,
-  }) async {
-    // 6. 跨轮次诊断锁定注入（若有活跃症候）
-    // trainingSyndromeId 用于 appendTeachingHistory 写 training 记录（批次1-7-2）
-    String? trainingSyndromeId;
-    if (activeProblems.isNotEmpty) {
-      // 6.1 focus-resolver 6 项校验门控
-      final aiSuggestedFocusId = await _diagnosisRepo.getLatestTeachingFocus(
-        sessionId,
-      );
-      final focusHistory = await _buildFocusHistory(sessionId);
-      final userFocusOverride = _parseUserFocusFromMessage(
-        content,
-        activeProblems,
-      );
-
-      // 转换为 focus-resolver 输入类型
-      final focusProblems = activeProblems
-          .map(
-            (p) => FocusProblem(
-              syndromeId: p.syndromeId,
-              syndromeName: p.syndromeName,
-              severity: Severity.fromString(p.severity) ?? Severity.l2,
-              confirmationStatus:
-                  ConfirmationStatus.fromString(p.confirmationStatus) ??
-                  ConfirmationStatus.suspected,
-              status: 'active',
-              confirmedAt: p.confirmedAt,
-            ),
-          )
-          .toList();
-
-      final focusResult = focus.resolveTeachingFocus(
-        focus.ResolveFocusInput(
-          problems: focusProblems,
-          aiSuggestedFocusId: aiSuggestedFocusId,
-          userFocusOverride: userFocusOverride,
-          subphase: currentSubphase,
-          focusHistory: focusHistory
-              .map(
-                (h) => focus.FocusHistoryEntry(
-                  focusId: h.focusId,
-                  timestamp: h.timestamp,
-                ),
-              )
-              .toList(),
-          // 批次60：学员当前技能层级（fallback 软优先层级≤当前+1）
-          studentSkillLevel: skillLevelForBeginner(beginnerLevel),
-        ),
-      );
-
-      // 6.2 若有拒绝理由，注入提示给 AI
-      if (focusResult.rejectReason != null) {
-        messages.add(
-          ChatMessage(
-            role: 'system',
-            content: '# Focus 切换提示\n\n${focusResult.rejectReason}',
-          ),
-        );
-      }
-
-      if (focusResult.activatedFocusId != null) {
-        trainingSyndromeId = focusResult.activatedFocusId;
-      }
-
-      // 6.3 训练评估注入
-      final focusSyndromeId =
-          focusResult.activatedFocusId ?? activeProblems.first.syndromeId;
-      final focusProblem = activeProblems
-          .where((p) => p.syndromeId == focusSyndromeId)
-          .firstOrNull;
-      if (focusProblem != null) {
-        // 批次60：介入级别注入（逐步撤除脚手架，独立于训练评估）
-        // D3（批次8）：综合 severity + 复发信号；7.2（批次16）：performance_gate 表现感知
-        try {
-          // 7.2：一次拉取训练历史得表现（totalCount = 训练次数），
-          // 替代 countTrainingForSyndrome 单独查询，避免「次数+表现」双倍 I/O
-          final performance = await computeTrainingPerformance(
-            _studentModelRepo,
-            sessionId,
-            focusSyndromeId,
-          );
-          final trainingCount = performance?.totalCount ?? 0;
-          // D3：复发信号 = 该症候曾毕业（跨 session resolved），本 session 又活跃
-          bool relapse = false;
-          try {
-            relapse = await _diagnosisRepo.hasResolvedHistory(focusSyndromeId);
-          } catch (e) {
-            debugPrint('[SafeRun] 复发信号查询失败降级 false: $e');
-          }
-          final currentSeverity =
-              Severity.fromString(focusProblem.severity) ?? Severity.l2;
-          final intervention = interventionLevelForTrainingCount(
-            trainingCount,
-            currentSeverity: currentSeverity,
-            relapse: relapse,
-            performance: performance,
-          );
-          // D3 / 7.2：修正原因说明（命中时注入，帮助 AI 校准教学力度）
-          final adjustmentNote = _buildInterventionAdjustmentNote(
-            trainingCount: trainingCount,
-            currentSeverity: currentSeverity,
-            relapse: relapse,
-            performance: performance,
-          );
-          messages.add(
-            ChatMessage(
-              role: 'system',
-              content:
-                  '# 训练介入级别（逐步撤除脚手架）\n\n'
-                  '本症候已训练 $trainingCount 次，本轮采用介入级别：'
-                  '${intervention.value}（${intervention.label}）。'
-                  '${adjustmentNote.isEmpty ? '' : '$adjustmentNote\n'}'
-                  '按级别组织训练：\n'
-                  '- I do：给完整示范参考 + 常见错误提醒 + 自查锚点，让学员先看懂\n'
-                  '- We do：常见错误提醒 + 自查锚点保留，示范改为引导方向，学员动手写为主\n'
-                  '- You do：只给自查锚点，不做示范，学员独立练习 + 你来点评\n'
-                  '（本注入是参考输入，具体执行由你按学员情况判断）',
-            ),
-          );
-        } catch (e) {
-          debugPrint('[SafeRun] 训练评估注入失败不阻断主流程: $e');
-        }
-        try {
-          final trainingInput = await buildTrainingInputForActiveSyndrome(
-            _studentModelRepo,
-            sessionId,
-            focusSyndromeId,
-            ActiveProblemMeta(
-              currentSeverity:
-                  Severity.fromString(focusProblem.severity) ?? Severity.l2,
-            ),
-            // v19：传 DiagnosisRepo 让 startingTeachingState 优先读持久化起点
-            diagnosisRepo: _diagnosisRepo,
-          );
-          if (trainingInput != null) {
-            final summary = buildEvaluationSummary(
-              focusSyndromeId,
-              trainingInput,
-            );
-            // T2 修复：FSM 状态迁移时写回 DB（与 EvaluationService 同款逻辑）
-            if (summary.teachingState != trainingInput.teachingState) {
-              try {
-                await _diagnosisRepo.updateTeachingState(
-                  sessionId,
-                  focusSyndromeId,
-                  summary.teachingState.value,
-                );
-                // 正向达标：mastered → 立即解锁
-                if (summary.teachingState == TeachingState.mastered) {
-                  try {
-                    await _diagnosisRepo.resolveSyndromesBatch(sessionId, [
-                      focusSyndromeId,
-                    ]);
-                  } catch (e) {
-                    debugPrint('[SafeRun] resolveSyndromesBatch 内层: $e');
-                  }
-                  // B1：达标→解锁同时插入阶段总结卡，汇总该症候进展
-                  await _insertPhaseSummaryOnMastered(
-                    sessionId,
-                    focusSyndromeId,
-                    focusProblem.syndromeName,
-                    trainingInput.passRateInput.totalCount,
-                  );
-                }
-              } catch (e) {
-                debugPrint('[SafeRun] FSM updateTeachingState 外层: $e');
-              }
-            }
-            if (summary.contextInjection.isNotEmpty) {
-              messages.add(
-                ChatMessage(role: 'system', content: summary.contextInjection),
-              );
-            }
-          }
-          // T1 修复：注入当前焦点症候的完整训练教学知识
-          // （核心本质/教学要点/常见误区/严重度参考/教学素材库）
-          try {
-            final trainingKnowledge = getTrainingContent([focusSyndromeId]);
-            if (trainingKnowledge.isNotEmpty) {
-              markStage(BudgetStageNames.trainingKnowledge);
-              messages.add(
-                ChatMessage(role: 'system', content: trainingKnowledge),
-              );
-            }
-            // T-04 few-shot 借鉴：追加当前症候的好/坏写作片段对比示例
-            // 复用 trainingKnowledge 阶段（不新增 BudgetStage，避免改 token 预算表）
-            // 无对应示例的症候返回空字符串（不报错，作为防御性兜底）
-            final fewShot = getTrainingFewShot([focusSyndromeId]);
-            if (fewShot.isNotEmpty) {
-              messages.add(ChatMessage(role: 'system', content: fewShot));
-            }
-          } catch (e) {
-            debugPrint('[SafeRun] 知识库注入失败不阻断主流程: $e');
-          }
-        } catch (e) {
-          debugPrint('[SafeRun] 训练上下文构建失败不阻断主流程: $e');
-        }
-      }
-
-      // 6.4 L3 结构化症候详情
-      final activeSyndromeViews = activeProblems
-          .map(
-            (p) => ActiveSyndromeView(
-              syndromeId: p.syndromeId,
-              syndromeName: p.syndromeName,
-              severity: Severity.fromString(p.severity) ?? Severity.l2,
-              confirmationStatus: ConfirmationStatus.fromString(
-                p.confirmationStatus,
-              ),
-            ),
-          )
-          .toList();
-
-      // 2026-08-18 批次：文笔画像→技法旁路路由（设计 docs/2026-08-18-*.md）
-      // 五维非健康值→文笔层技法候选，门控通过才注入；失败不阻断主流程
-      String? styleTechniqueSection;
-      try {
-        final latestStyleProfile = await _studentModelRepo
-            .getLatestStyleProfile();
-        final suggestion = routeStyleTechniques(
-          styleProfile: latestStyleProfile,
-          activeProblems: activeSyndromeViews,
-          // 症候级 mastered → 技法集合派生（active_problem.teaching_state）
-          masteredTechniqueIds: deriveMasteredTechniqueIds(activeProblems),
-          focusSyndromeId: focusResult.activatedFocusId,
-        );
-        styleTechniqueSection = formatStyleTechniqueSection(suggestion);
-      } catch (e) {
-        debugPrint('[SafeRun] 文笔画像旁路路由失败不阻断主流程: $e');
-      }
-
-      final structuredContext = buildStructuredSyndromeContext(
-        activeSyndromeViews,
-        activeFocus: ActiveFocusContext(
-          focusId: focusResult.activatedFocusId,
-          source: _mapFocusSource(focusResult.source),
-          reason: focusResult.reason,
-        ),
-        styleTechniqueSection: styleTechniqueSection,
-      );
-      markStage(BudgetStageNames.l3Structure);
-      messages.add(ChatMessage(role: 'system', content: structuredContext));
-
-      // 批次60：学员技能层级软引导（AI 自主判断优先，仅提示不硬性）
-      final studentSkillLevel = skillLevelForBeginner(beginnerLevel);
-      if (studentSkillLevel != null) {
-        messages.add(
-          ChatMessage(
-            role: 'system',
-            content:
-                '# 学员技能层级\n\n'
-                '学员当前技能层级：${studentSkillLevel.value} ${studentSkillLevel.label}。\n'
-                '反馈建议：优先给当前层级+1 以内的问题做重点反馈；'
-                '若诊断出更高层级的问题可以提及，但作为次要项，不要一次展开超出学员理解范围的内容。',
-          ),
-        );
-      }
-    }
-    return trainingSyndromeId;
-  }
-}
-
-extension ChatServiceSendInject on ChatService {
-  Future<void> _injectProfileAndIntents({
-    required String sessionId,
-    required String content,
-    required List<ChatMessage> messages,
-    required void Function(String) markStage,
-  }) async {
-    // 5.0 学员画像注入（跨会话上下文）
-    // 真源：chat-service.ts L218 buildStudentContext
-    try {
-      final profileResult = await buildStudentContext(
-        diagnosisRepo: _diagnosisRepo,
-        studentModelRepo: _studentModelRepo,
-        sessionRepo: _sessionRepo,
-        sessionId: sessionId,
-      );
-      if (profileResult.text.isNotEmpty) {
-        markStage(BudgetStageNames.studentProfile);
-        messages.add(ChatMessage(role: 'system', content: profileResult.text));
-      }
-    } catch (e) {
-      debugPrint('[SafeRun] 画像注入失败不阻断主流程: $e');
-    }
-
-    // 5.0.0b S2/S3 修复：注入上一轮教学焦点的 focus_reason + next_focus
-    // 闭合 teaching_plan 3元组协议的"下一轮注入"承诺
-    try {
-      final latestDiag = await _diagnosisRepo.getLatestDiagnosis(sessionId);
-      if (latestDiag != null) {
-        final parts = <String>[];
-        if (latestDiag.focusReason != null &&
-            latestDiag.focusReason!.isNotEmpty) {
-          parts.add('**上一轮教学焦点理由**：${latestDiag.focusReason}');
-        }
-        if (latestDiag.nextFocus != null && latestDiag.nextFocus!.isNotEmpty) {
-          parts.add('**上轮设定的下一步方向**：${latestDiag.nextFocus}');
-        }
-        if (parts.isNotEmpty) {
-          messages.add(
-            ChatMessage(
-              role: 'system',
-              content:
-                  '# 上一轮教学计划延续（系统注入）\n\n'
-                  '${parts.join('\n\n')}\n\n'
-                  '请保持教学连贯性，延续上轮设定的方向。',
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('[SafeRun] 教学计划延续注入失败不阻断主流程: $e');
-    }
-
-    // 5.0.1 交互意图分类（批次63 B62b，A2 落地）
-    // L1 数据模型「意图识别分类器 + 最近3次意图向量」→ 决定 prompt 构造与触发策略
-    final intent = classifyUserIntent(content);
-    final recentIntents = _recentIntentsBySession.putIfAbsent(
-      sessionId,
-      () => [],
-    );
-    recentIntents.add(intent.value);
-    if (recentIntents.length > 3) recentIntents.removeAt(0);
-    final intentNote = buildIntentInstruction(intent, recentIntents);
-    if (intentNote != null) {
-      messages.add(ChatMessage(role: 'system', content: intentNote));
-    }
-
-    // 5.0.2 回复颗粒度控制：用户请求「长话短说/详细点」时注入（standard 不注入）
-    // 落地教学行为对照表 9.2「反馈颗粒度」行（说详细点/简单说说就行 → 调整 detail level）
-    final detailNote = buildReplyDetailInstruction(detectReplyDetail(content));
-    if (detailNote != null) {
-      messages.add(ChatMessage(role: 'system', content: detailNote));
-    }
-  }
-
-  Future<({ReferenceItem? primaryRef, String? chapterContent})>
-  _injectReferences({
-    required String sessionId,
-    required List<ChatMessage> messages,
-    required void Function(String) markStage,
-  }) async {
-    // 5.1 引用内容注入（作品/章节/素材文件）
-    // 真源：chat-service.ts L230-246 buildReferencesContext
-    // 同时记录 primaryRef 供 5.2 附属文件注入使用
-    ReferenceItem? primaryRef;
-    try {
-      final refs = await _referenceRepo.listReferences(sessionId);
-      if (refs.isNotEmpty) {
-        final referenceItems = refs
-            .map(
-              (r) => ReferenceItem(
-                refType: r.refType,
-                refId: r.refId,
-                title: r.title,
-                isPrimary: r.isPrimary,
-                manuscriptId: r.manuscriptId,
-                excerptRange: r.excerptRange,
-              ),
-            )
-            .toList();
-        // 记录主引用（isPrimary == 1），供 5.2 附属文件注入推导 manuscriptId
-        primaryRef = referenceItems.firstWhere(
-          (r) => r.isPrimary == 1,
-          orElse: () => referenceItems.first,
-        );
-
-        final resolvers = ReferenceResolvers(
-          fileResolver: (fileId) {
-            // 同步包装：buildReferencesContext 是同步函数，需要 sync resolver
-            // 由于 drift 是 async，这里用 _cachedAttachedFiles 预加载
-            return _cachedAttachedFiles[fileId];
-          },
-          chapterResolver: (chapterId) {
-            return _cachedChapters[chapterId];
-          },
-          manuscriptResolver: (manuscriptId) {
-            return _cachedManuscripts[manuscriptId];
-          },
-        );
-        // 预加载所有引用的详情到缓存
-        await _preloadReferenceDetails(refs);
-        final referencesContext = buildReferencesContext(
-          referenceItems,
-          resolvers: resolvers,
-        );
-        if (referencesContext.isNotEmpty) {
-          markStage(BudgetStageNames.references);
-          messages.add(ChatMessage(role: 'system', content: referencesContext));
-        }
-        // 清理缓存
-        _cachedAttachedFiles.clear();
-        _cachedChapters.clear();
-        _cachedManuscripts.clear();
-      }
-    } catch (e) {
-      debugPrint('[SafeRun] 引用内容注入失败不阻断主流程: $e');
-    }
-
-    return (primaryRef: primaryRef, chapterContent: null);
-  }
-
-  Future<void> _injectOutlineFactsAndFiles({
-    required String content,
-    required ReferenceItem? primaryRef,
-    required List<ChatMessage> messages,
-    required void Function(String) markStage,
-  }) async {
-    // 5.1.8 大纲实体记忆（批次72 大纲层 + 批次74 协议告知）：
-    // 触发时机：用户请求章节诊断且主引用为章节、装配了 outlineRepo
-    // 协议说明：无条件注入（零实体也注入）→ AI 从首轮即知晓 [YS_ENTITY] 协议，闭环可启动
-    // 实体索引：有实体才注入（供 matched_entity_id/conflict_with 引用，防幻觉）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter' &&
-        _ensureOutlineService() != null) {
-      try {
-        final outlineService = _ensureOutlineService()!;
-        messages.add(
-          ChatMessage(
-            role: 'system',
-            content: outlineService.buildEntityProtocolContext(),
-          ),
-        );
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final ctx = await outlineService.buildEntityIndexContext(
-            chapter.manuscriptId,
-          );
-          if (ctx != null) {
-            messages.add(ChatMessage(role: 'system', content: ctx));
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 大纲记忆注入失败不阻断主流程: $e');
-      }
-    }
-
-    // 5.1.9 A6：时序知识图谱事实提取协议注入
-    // 触发条件：章节引用 + 至少一个 fact 仓储已装配
-    // 输出顺序：[YS_DIAGNOSIS] → [YS_ENTITY] → [YS_FACT] → 自然语言
-    // 批次4（4.10 L4）：移除诊断标记硬约束——训练/评估/自由讨论等非诊断消息
-    // 在章节会话中也注入，避免学员练习文本中的事实被漏提
-    if (primaryRef?.refType == 'chapter' &&
-        (_characterFactRepo != null ||
-            _eventFactRepo != null ||
-            _subplotFactRepo != null)) {
-      messages.add(
-        // ADR-C74 K-3：协议块字符串构造已迁至 DiagnosisCommitter
-        ChatMessage(
-          role: 'system',
-          content: _diagnosisCommitter.buildFactProtocolContext(),
-        ),
-      );
-    }
-
-    // 5.2 附属文件上下文注入（V3：AI 可读取书籍下所有文件）
-    // 真源：chat-service.ts L311-335
-    // 从 primaryRef 推 manuscriptId，列书籍下所有附属文件，格式化后注入
-    try {
-      String? manuscriptId;
-      if (primaryRef != null) {
-        if (primaryRef.refType == 'manuscript') {
-          manuscriptId = primaryRef.refId;
-        } else if (primaryRef.refType == 'chapter') {
-          final chapter = await _chapterRepo.getChapter(primaryRef.refId);
-          manuscriptId = chapter?.manuscriptId;
-        }
-      }
-      if (manuscriptId != null) {
-        final files = await _referenceRepo.listAttachedFiles(manuscriptId);
-        if (files.isNotEmpty) {
-          final fileInfos = files
-              .map(
-                (f) => AttachedFileInfo(
-                  fileName: f.fileName,
-                  fileRole: f.fileRole,
-                  content: f.content,
-                ),
-              )
-              .toList();
-          final fileContext = _material.formatAttachedFiles(fileInfos);
-          if (fileContext != null && fileContext.isNotEmpty) {
-            markStage(BudgetStageNames.attachedFiles);
-            messages.add(ChatMessage(role: 'system', content: fileContext));
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('[SafeRun] 附属文件注入失败不阻断主流程: $e');
-    }
-  }
-}
-
-extension ChatServiceSendObservations on ChatService {
-  Future<void> _injectChapterObservations({
-    required String sessionId,
-    required String content,
-    required ReferenceItem? primaryRef,
-    required List<ChatMessage> messages,
-  }) async {
-    // 5.1.2 声线漂移检测（批次64 B62f，F10 实时化）：
-    // L3 定量指纹（style_fingerprint）→ L1 实时提示
-    // 触发时机：用户请求章节诊断（content 含诊断标记）且主引用为章节
-    // 基线策略：首次建立；无漂移时随最新文本滑动重锚（合法演化不误报）
-    // 漂移命中 → 注入本轮 prompt，AI 以提问式语言温和指出（软引导非硬拦截）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter') {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final current = extractStyleFingerprint(chapter.content);
-          if (current != null) {
-            final baseline = await _studentModelRepo.getStyleFingerprint(
-              sessionId,
-            );
-            final hints = (baseline == null || baseline.sentencesCount == 0)
-                ? const <String>[]
-                : detectVoiceDrift(baseline, current);
-            if (hints.isEmpty) {
-              await _studentModelRepo.updateStyleFingerprint(
-                sessionId,
-                current,
-              );
-            } else {
-              messages.add(
-                ChatMessage(
-                  // ADR-C74 K-3：协议块字符串构造已迁至 DiagnosisCommitter
-                  role: 'system',
-                  content: _diagnosisCommitter.buildDriftHintContext(hints),
-                ),
-              );
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 漂移检测失败不阻断主流程: $e');
-      }
-    }
-
-    // 5.1.3 时序矛盾冲突观察（批次66 B62i，A6 首步，挂 F05/P018 补充）：
-    // 触发时机：用户请求章节诊断且主引用为章节；人物知识仓储已装配
-    // 数据源：character_fact（作品级人物断言，断言带章节/时间维度）
-    // 无人物断言数据 → 无观察项 → 不注入（零 token 成本）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter' &&
-        _characterFactRepo != null) {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final facts = await _characterFactRepo.listCharacters(
-            chapter.manuscriptId,
-          );
-          if (facts.isNotEmpty) {
-            final inputs = facts
-                .map(
-                  (f) => (
-                    name: f.name,
-                    assertions: CharacterFactRepository.parseAssertions(
-                      f.assertions,
-                    ),
-                  ),
-                )
-                .toList();
-            final raw = detectCharacterConflicts(inputs);
-            // O11（批次6 6.5）：正文反查最早断言值的首现片段作触发原文摘录；
-            // 正文不含关键词时 excerpt 为 null，上下文降级不输出摘录
-            final observations = raw
-                .map(
-                  (o) => ConflictObservation(
-                    characterName: o.characterName,
-                    attribute: o.attribute,
-                    orderedValues: o.orderedValues,
-                    description: o.description,
-                    excerpt: findKeywordExcerpt(
-                      chapter.content,
-                      o.orderedValues.first.value,
-                    ),
-                  ),
-                )
-                .toList();
-            final ctx = buildConflictObservationsContext(observations);
-            if (ctx != null) {
-              messages.add(ChatMessage(role: 'system', content: ctx));
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 冲突检测失败不阻断主流程: $e');
-      }
-    }
-
-    // 5.1.4 因果链断裂观察（批次67 B62j，A6 第二迭代 F07，挂 P021/P016 补充）：
-    // 触发时机：用户请求章节诊断且主引用为章节；事件知识仓储已装配
-    // 数据源：event_fact（作品级事件节点，带章节 + 因果边）
-    // 无事件数据 → 无观察项 → 不注入（零 token 成本）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter' &&
-        _eventFactRepo != null) {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final events = await _eventFactRepo.listEvents(chapter.manuscriptId);
-          if (events.isNotEmpty) {
-            final inputs = events
-                .map(
-                  (e) => (
-                    name: e.name,
-                    chapter: e.chapter,
-                    eventType: e.eventType,
-                    causeEventId: e.causeEventId,
-                    effectEventId: e.effectEventId,
-                  ),
-                )
-                .toList();
-            final raw = detectCausalityBreaks(inputs);
-            // O11（批次6 6.5）：正文反查事件名首现片段作触发原文摘录；
-            // 正文不含事件名时 excerpt 为 null，上下文降级不输出摘录
-            final observations = raw
-                .map(
-                  (o) => CausalityBreakObservation(
-                    name: o.name,
-                    chapter: o.chapter,
-                    eventType: o.eventType,
-                    description: o.description,
-                    excerpt: findKeywordExcerpt(chapter.content, o.name),
-                  ),
-                )
-                .toList();
-            final ctx = buildCausalityBreakContext(observations);
-            if (ctx != null) {
-              messages.add(ChatMessage(role: 'system', content: ctx));
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 因果链检测失败不阻断主流程: $e');
-      }
-    }
-
-    // 5.1.5 情节闭环观察（批次67 B62j，A6 第二迭代 F11，挂 P014/P017 补充）：
-    // 触发时机：用户请求章节诊断且主引用为章节；支线知识仓储已装配
-    // 数据源：subplot_fact（作品级支线节点，带引入/回收章节）
-    // 当前章节 = 主引用章节 sortOrder；无支线数据 → 不注入（零 token 成本）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter' &&
-        _subplotFactRepo != null) {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final subplots = await _subplotFactRepo.listSubplots(
-            chapter.manuscriptId,
-          );
-          if (subplots.isNotEmpty) {
-            final inputs = subplots
-                .map(
-                  (s) => (
-                    name: s.name,
-                    introducedChapter: s.introducedChapter,
-                    resolvedChapter: s.resolvedChapter,
-                  ),
-                )
-                .toList();
-            final raw = detectUnclosedSubplots(
-              inputs,
-              currentChapter: chapter.sortOrder,
-            );
-            // O11（批次6 6.5）：正文反查支线名首现片段作触发原文摘录；
-            // 正文不含支线名时 excerpt 为 null，上下文降级不输出摘录
-            final observations = raw
-                .map(
-                  (o) => UnclosedSubplotObservation(
-                    name: o.name,
-                    introducedChapter: o.introducedChapter,
-                    currentChapter: o.currentChapter,
-                    description: o.description,
-                    excerpt: findKeywordExcerpt(chapter.content, o.name),
-                  ),
-                )
-                .toList();
-            final ctx = buildSubplotClosureContext(observations);
-            if (ctx != null) {
-              messages.add(ChatMessage(role: 'system', content: ctx));
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 情节闭环检测失败不阻断主流程: $e');
-      }
-    }
-
-    // 5.1.6 基础文法观察（批次70 F12，挂 P022 重复用词/基础语病 补充）：
-    // 触发时机：用户请求章节诊断且主引用为章节
-    // 数据源：章节正文（纯规则文本检测，无仓储依赖）
-    // 无检出问题 → 不注入（零 token 成本）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter') {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final issues = detectGrammarLexicalIssues(chapter.content);
-          final ctx = buildGrammarLexicalContext(issues);
-          if (ctx != null) {
-            messages.add(ChatMessage(role: 'system', content: ctx));
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 基础文法检测失败不阻断主流程: $e');
-      }
-    }
-
-    // 5.1.7 对话标签观察（批次71 F02，挂 P011 对话疲劳症 增强补充）：
-    // 触发时机：用户请求章节诊断且主引用为章节
-    // 数据源：章节正文（纯规则文本检测，无仓储依赖）
-    // 无检出问题 → 不注入（零 token 成本）
-    if (content.contains(_kDiagnosisRequestMarker) &&
-        primaryRef?.refType == 'chapter') {
-      try {
-        final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-        if (chapter != null) {
-          final issues = detectDialogueTagIssues(chapter.content);
-          final ctx = buildDialogueTagContext(issues);
-          if (ctx != null) {
-            messages.add(ChatMessage(role: 'system', content: ctx));
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 对话标签检测失败不阻断主流程: $e');
-      }
-    }
-  }
-}
+// ADR-C74 K-7 迁出至 MessageInjector：ChatServiceSendObservations
 
 extension ChatServiceObservers on ChatService {
   /// D8 轻量观测：评估顺序（学员自评 → 改前改后对比 → AI 评估）
@@ -1585,6 +400,9 @@ extension ChatServiceObservers on ChatService {
   /// 此处仅 debug 级留痕「FEEDBACK 回复是否按顺序走全三步」，不改变任何行为。
   /// 检测标记：自评引导（"你自己觉得改得怎么样"类）→ 改前改后对比（唯一不可省略）
   /// → 评估三档（含"达标"字样）。观测失败不阻断主流程。
+  /// ADR-C74 K-9：随 _handleTrainingResult 迁至 DiagnosisFlowHandler（仅内部消费者），
+  /// 此处删除 23 行死代码（保持 R-019 baseline 不新增）。
+  // ignore: unused_element  K-9 死代码占位，行为零变更
   void _observeEvaluationOrder(String reply) {
     if (!kDebugMode) return;
     final hasSelfEval = RegExp(r'你自己(觉得|认为)|你觉得(自己|刚才)?改得').hasMatch(reply);
@@ -1628,599 +446,12 @@ extension ChatServiceObservers on ChatService {
       '意图=${intent.value}（仅观测不干预）',
     );
   }
-
-  /// 预加载所有引用的详情到缓存（buildReferencesContext 调用前使用）
-  ///
-  /// A-3 遗留 N+1 消除：原实现逐条引用各发 1~2 次查询（getChapter /
-  /// getManuscript+listChapters / getAttachedFile），N 条引用最多 2N 次查询且
-  /// 在每次发送的热路径上执行。改为按 refType 分组，每类单次 `WHERE id IN(...)`
-  /// 批量取全（chapter 1 次 / file 1 次 / manuscript 2 次），与原实现填充的
-  /// 缓存键值完全等价（ChapterBrief/ManuscriptDetail/AttachedFileRow 字段不变）。
-  /// 每类批量查询独立 try/catch，保留「单类失败不阻断其它」语义；目标被删的 id
-  /// 自然不在结果集，等价原 `if (ch != null)` 跳过。
-  Future<void> _preloadReferenceDetails(List<ReferencedItem> refs) async {
-    if (refs.isEmpty) return;
-
-    final chapterIds = <String>[];
-    final manuscriptIds = <String>[];
-    final fileIds = <String>[];
-    for (final ref in refs) {
-      switch (ref.refType) {
-        case 'chapter':
-          chapterIds.add(ref.refId);
-        case 'manuscript':
-          manuscriptIds.add(ref.refId);
-        case 'file':
-          fileIds.add(ref.refId);
-      }
-    }
-
-    // 章节引用：单次 WHERE id IN(...) 取全
-    if (chapterIds.isNotEmpty) {
-      try {
-        final chapters = await _chapterRepo.getChaptersByIds(chapterIds);
-        for (final ch in chapters) {
-          _cachedChapters[ch.id] = ChapterBrief(
-            id: ch.id,
-            title: ch.title,
-            wordCount: ch.wordCount,
-            sortOrder: ch.sortOrder,
-            content: ch.content,
-          );
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 章节批量加载失败不阻断整体: $e');
-      }
-    }
-
-    // 素材文件引用：单次 WHERE id IN(...) 取全
-    if (fileIds.isNotEmpty) {
-      try {
-        final files = await _referenceRepo.getAttachedFilesByIds(fileIds);
-        for (final f in files) {
-          _cachedAttachedFiles[f.id] = f;
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 素材批量加载失败不阻断整体: $e');
-      }
-    }
-
-    // 作品引用：manuscripts 单次取全 + 其章节单次取全（2 查询替代 2N）
-    if (manuscriptIds.isNotEmpty) {
-      try {
-        final manuscripts = await _manuscriptRepo.getManuscriptsByIds(
-          manuscriptIds,
-        );
-        final msById = {for (final m in manuscripts) m.id: m};
-
-        final chapters = await _chapterRepo.listChaptersForManuscripts(
-          manuscriptIds,
-        );
-        final chaptersByMs = <String, List<ChapterBrief>>{};
-        for (final ch in chapters) {
-          (chaptersByMs[ch.manuscriptId] ??= []).add(
-            ChapterBrief(
-              id: ch.id,
-              title: ch.title,
-              wordCount: ch.wordCount,
-              sortOrder: ch.sortOrder,
-              content: ch.content,
-            ),
-          );
-        }
-
-        for (final id in manuscriptIds) {
-          final m = msById[id];
-          if (m == null) continue; // 目标被删，跳过（等价原 if(m==null) continue）
-          _cachedManuscripts[id] = ManuscriptDetail(
-            genre: m.genre,
-            description: m.description,
-            chapters: chaptersByMs[id] ?? const [],
-          );
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 作品批量加载失败不阻断整体: $e');
-      }
-    }
-  }
 }
 
-extension ChatServiceSendParse on ChatService {
-  Future<
-    ({
-      bool aborted,
-      String displayContent,
-      ParsedDiagnosis? diagnosis,
-      TeacherResult? teacherResult,
-      String messageId,
-      String finalContent,
-      List<GenUiComponent>? genuiComponents,
-    })
-  >
-  _parseAndPersist({
-    required String sessionId,
-    required String fullContent,
-    required bool inDiagnosisBlock,
-    required ReferenceItem? primaryRef,
-    required String? chapterContent,
-    required SendMessageCallbacks callbacks,
-    required SendMessageOptions options,
-    bool diagnosisOnly = false,
-  }) async {
-    // 9. 解析 + 第二层后置校验
-    final rawParse = _diagnosis.parseDiagnosis(fullContent);
-    debugPrint(
-      '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
-      // ADR-C63：补上此前完全缺失的「为什么没有诊断」。
-      '${_diagnosisDropLog(rawParse)}',
-    );
-
-    String displayContent = rawParse.displayContent;
-    ParsedDiagnosis? diagnosis = rawParse.diagnosis;
-
-    // 步骤 9.1：大纲提取落库（批次72，独立 OUTLINE 块，失败/未装配不阻断）
-    // 批次73：落库后为含 pending 印象的实体写入确认卡片
-    // ADR-C74 K-4：迁至 DiagnosisCommitter
-    await _diagnosisCommitter.applyOutlineEntitiesFromContent(
-      sessionId: sessionId,
-      fullContent: fullContent,
-      primaryRef: primaryRef,
-    );
-
-    // 步骤 9.2：A6 事实提取落库（时序知识图谱写入路径，失败不阻断）
-    // ADR-C74 K-4：迁至 DiagnosisCommitter
-    await _diagnosisCommitter.applyFactExtractionFromContent(
-      sessionId: sessionId,
-      fullContent: fullContent,
-      primaryRef: primaryRef,
-    );
-
-    if (diagnosis != null) {
-      // 提取诊断块原始 JSON 供 validator 用
-      final startIndex = fullContent.indexOf(kDiagnosisStart);
-      final endIndex = fullContent.indexOf(
-        kDiagnosisEnd,
-        startIndex + kDiagnosisStart.length,
-      );
-      if (startIndex != -1 && endIndex != -1) {
-        final jsonStr = fullContent
-            .substring(startIndex + kDiagnosisStart.length, endIndex)
-            .trim();
-        try {
-          final rawJson = jsonDecode(jsonStr);
-          final validation = _diagnosis.validateDiagnosisOutput(
-            rawParse.displayContent,
-            rawJson,
-            attitude: options.attitude,
-          );
-          displayContent = validation.displayContent;
-          diagnosis = validation.diagnosis;
-        } catch (e) {
-          debugPrint('[SafeRun] JSON 解析失败沿用 rawParse: $e');
-        }
-      }
-    }
-
-    // 批次74：剥离 [YS_ENTITY] 协议块（诊断缺块时 displayContent 会含原始 JSON，
-    // 校验回填也可能重新引入），确保展示/落库内容不含协议原文
-    displayContent = stripOutlineBlock(displayContent);
-    // A6：剥离 [YS_FACT] 协议块（事实提取块，与实体块并列独立）
-    displayContent = stripFactBlock(displayContent);
-    // B-1：剥离 [YS_GENUI] 协议块（GenUI 组件块，独立于诊断/事实）
-    displayContent = stripGenuiBlock(displayContent);
-    // B-1：解析 GenUI 组件（用于后续确定性插入 genui 卡片）
-    final genuiComponents = _genUi.parseGenuiBlock(fullContent);
-
-    // B1：诊断成败记录 → 连续失败达阈值插诊断失败卡。
-    // attempted 仅当 AI 确实输出了 [YS_DIAGNOSIS] 块（inDiagnosisBlock），
-    // 普通聊天解析为 null 不计入，避免误触发「诊断失败」卡。
-    await _recordDiagnosisOutcome(
-      sessionId,
-      attempted: inDiagnosisBlock,
-      success: diagnosis != null,
-    );
-
-    // Diagnosis → Teacher 条件触发（C3）
-    // 真源：chat-service.ts L626-655
-    // FT-22：学员声明「只诊断不要建议」时跳过 teacher stream 调用，
-    // 让 AI 仅输出诊断结论，不强行塞入修改建议（避免越界输出）。
-    String teacherDisplayContent = '';
-    TeacherResult? teacherResult;
-    if (diagnosis != null &&
-        shouldTriggerTeacherForDiagnosis(diagnosis.syndromes) &&
-        !diagnosisOnly) {
-      try {
-        final teacherStream = await callTeacherStream(
-          _llmClient,
-          TeacherDiagnosisInput(
-            diagnosis: diagnosis,
-            chapterContent: chapterContent ?? '',
-          ),
-          callbacks.onStream,
-          cancelToken: options.cancelToken,
-        );
-        teacherDisplayContent = teacherStream.displayContent;
-        teacherResult = teacherStream.teacher;
-      } catch (e) {
-        debugPrint('[SafeRun] Teacher 失败不影响 Diagnosis 已有输出: $e');
-      }
-    }
-
-    // 合并 Diagnosis + Teacher 输出（RN L657-660）
-    // 注意：不修改 displayContent，保留原始值供 parseTrainingResult 使用（RN L767 注释）
-    final combinedContent =
-        displayContent +
-        (teacherDisplayContent.isNotEmpty ? '\n\n$teacherDisplayContent' : '');
-
-    // 10. 写入 assistant 消息
-    // 放宽空判断（协议块占据首位时 displayLength=0，combinedContent 会为空）：
-    //   - diagnosis 解析成功 → 诊断块确实产出了，给默认文案「诊断完成。」继续。
-    //   - 已落库实体 > 0 → 同属「有实质产出」，继续。
-    //   - 三空齐发（说明空+诊断空+实体空）→ 维持 RN 原语义，onError。
-    //
-    // N2（ADR-C65）：原实现给 diagnosis != null 也加了「装配大纲 + 章节主引用」
-    // 两个前置条件——诊断能否落库与有没有装配大纲服务毫无关系，且与上面注释
-    // 声明的意图直接矛盾。原路径下 aborted=true 会让步骤 11 的
-    // commitDiagnosisWithHistory 被整个跳过（调用方 :3051 提前 return），
-    // 诊断非 null 却永久丢失、用户收到「AI 返回为空」。
-    //
-    // 现按注释原意拆开：diagnosis 非空即放宽；实体计数分支保留原前置条件
-    //（primaryRef!.refId 依赖 primaryRef != null，由 refType=='chapter' 保证）。
-    bool treatAsValid = false;
-    if (combinedContent.trim().isEmpty) {
-      if (diagnosis != null) {
-        treatAsValid = true;
-      } else if (_ensureOutlineService() != null &&
-          primaryRef?.refType == 'chapter') {
-        final c = await _readOutlineEntityCount(primaryRef!.refId);
-        if (c > 0) treatAsValid = true;
-      }
-    }
-    if (combinedContent.trim().isEmpty && !treatAsValid) {
-      debugPrint('[ChatService] 步骤10: combinedContent 为空，触发 onError');
-      callbacks.onError('AI 返回为空');
-      return (
-        aborted: true,
-        displayContent: displayContent,
-        diagnosis: diagnosis,
-        teacherResult: teacherResult,
-        messageId: '',
-        finalContent: '',
-        genuiComponents: genuiComponents,
-      );
-    }
-    final finalContent = combinedContent.trim().isEmpty
-        ? '诊断完成。'
-        : combinedContent;
-
-    // P0 机器回执态（2026-08-18，ADR-P0）：教练不替用户执行「保存/导出/应用/修改」
-    // 等副作用动作；若回复自称「已X」但本回合无真实机器回执，降级为「建议X」，
-    // 避免「我已替你做过」的虚假承诺。receipts 仅依据本次 service 实际落库构造：
-    // 诊断结构化数据已在步骤 11 commitDiagnosisWithHistory 落库，故允许「已保存」。
-    final performedActions = <ReceiptAction>{
-      if (diagnosis != null) ReceiptAction.saved,
-    };
-    final receiptResult = ReplyReceiptGuard.sanitize(
-      finalContent,
-      receipts: performedActions,
-    );
-    final assistantContent = receiptResult.text;
-
-    final messageId = await _sessionRepo.addMessage(
-      sessionId,
-      'assistant',
-      assistantContent,
-    );
-    debugPrint(
-      '[ChatService] 步骤10: assistant 消息已写入 | messageId=$messageId | contentLen=${assistantContent.length}'
-      "${receiptResult.status == ReceiptStatus.humanReviewPending ? ' | 回执降级: ${receiptResult.downgraded.map((a) => a.claimPhrase).join('、')}' : ''}",
-    );
-    return (
-      aborted: false,
-      displayContent: displayContent,
-      diagnosis: diagnosis,
-      teacherResult: teacherResult,
-      messageId: messageId,
-      finalContent: finalContent,
-      genuiComponents: genuiComponents,
-    );
-  }
-}
-
-extension ChatServiceSendPersist on ChatService {
-  Future<void> _commitDiagnosisAndSuggestions({
-    required String sessionId,
-    required ParsedDiagnosis? diagnosis,
-    required String messageId,
-    required ReferenceItem? primaryRef,
-    required TeacherResult? teacherResult,
-    required bool rapidFire,
-    required bool flowBypassed,
-    required List<GenUiComponent>? genuiComponents,
-  }) async {
-    // B-1：若有 GenUI 组件，确定性插入 genui 卡片（不阻断主流程）
-    if (genuiComponents != null && genuiComponents.isNotEmpty) {
-      try {
-        await insertGenuiCard(
-          _sessionRepo,
-          sessionId,
-          GenuiCardPayload(components: genuiComponents),
-        );
-      } catch (e) {
-        debugPrint('[SafeRun] GenUI 卡片插入失败不阻断主流程: $e');
-      }
-    }
-
-    // 11. 若有诊断：commitDiagnosisWithHistory + phase-mapper resolver
-    if (diagnosis != null) {
-      try {
-        await _diagnosisService.commitDiagnosisWithHistory(
-          DiagnosisInput(
-            sessionId: sessionId,
-            messageId: messageId,
-            syndromes: diagnosis.syndromes.map((s) => s.toJson()).toList(),
-            suggestedActions: diagnosis.suggestedActions,
-            confidence: diagnosis.confidence,
-            rootCauseAnalysis: diagnosis.rootCauseAnalysis,
-            nextFocus: diagnosis.nextFocus,
-            feedbackSummary: diagnosis.feedbackSummary,
-            currentTeachingFocusId: diagnosis.currentTeachingFocusId,
-            focusReason: diagnosis.focusReason,
-            teachingMode: diagnosis.teachingMode?.value,
-            targetRefType: primaryRef?.refType,
-            targetRefId: primaryRef?.refId,
-          ),
-        );
-
-        // 批次1（C3）：新诊断提交 = 旧训练轮终结 → 重置子阶段，防 feedback 残留
-        //（阶段不变时 subphase 不再永久残留；阶段变化路径也会重置，双保险）
-        try {
-          await _stateRepo.updateSubphase(sessionId, null);
-        } catch (e) {
-          debugPrint('[SafeRun] 诊断后重置子阶段失败: $e');
-        }
-
-        // phase-mapper resolver 接线 + M4-A/M4-B/M4-C 阶段迁移（批次6 D1 抽取为共享方法）
-        // 供 sendMessage 与 commitDiagnosisFromContent 复用，保证两条诊断路径行为一致
-        // ADR-C74 K-2：阶段迁移已迁至 DiagnosisCommitter.applyPhaseMigration
-        await _diagnosisCommitter.applyPhaseMigration(
-          sessionId: sessionId,
-          diagnosis: diagnosis,
-        );
-
-        // AUDIT-REF-5: 诊断完成后确定性插入诊断结果卡片
-        // 真源：chat-service.ts L742-755
-        try {
-          await insertDiagnosisResultCard(
-            _sessionRepo,
-            sessionId,
-            DiagnosisResultCardPayload(
-              syndromeCount: diagnosis.syndromes.length,
-              syndromes: diagnosis.syndromes
-                  .map(
-                    (s) => DiagnosisSyndromeCard(
-                      syndromeId: s.syndromeId,
-                      name: s.name,
-                      severity: s.severity.value,
-                      evidenceCount: s.evidence.length,
-                    ),
-                  )
-                  .toList(),
-              suggestedActions: diagnosis.suggestedActions,
-              confidence: diagnosis.confidence,
-              diagnosisId: messageId,
-            ),
-          );
-        } catch (e) {
-          debugPrint('[SafeRun] 诊断卡片插入失败不阻断主流程: $e');
-        }
-
-        // 批次53：诊断附带 style_profile 时沉淀写作风格画像
-        // 独立 try-catch（落库失败不阻断诊断主流程）
-        final styleProfile = diagnosis.styleProfile;
-        if (styleProfile != null) {
-          try {
-            await _studentModelRepo.updateStyleProfile(sessionId, styleProfile);
-          } catch (e) {
-            debugPrint('[SafeRun] 风格画像落库失败不阻断主流程: $e');
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] 诊断写入失败不阻断消息存储: $e');
-      }
-    }
-
-    // R6：Diagnosis 分支 Teacher suggestion 写入（两分支复用 persistTeacherSuggestion）
-    // 真源：chat-service.ts L762-765（位于 if(diagnosis) 块外，独立 try-catch）
-    if (teacherResult != null) {
-      try {
-        final suggestionId = await persistTeacherSuggestion(
-          _teacherSuggestionRepo,
-          teacherResult,
-          sessionId,
-          messageId,
-          'diagnosis',
-          isRapidFire: rapidFire,
-        );
-        // D6：建议落库成功后，写 teacher_suggestion 卡片消息（症候名称而非代号）
-        // 批次1（O1）：升级阀绕过心流窗口时以轻量提示替代独立卡片——建议文本已
-        // 并入 assistant 消息（combinedContent），不再重复插卡打断写作心流
-        if (suggestionId != null && !flowBypassed) {
-          final targetTask = teacherResult.trainingTask;
-          String? targetName;
-          if (targetTask?.targetSyndromeId != null && diagnosis != null) {
-            targetName = diagnosis.syndromes
-                .where((s) => s.syndromeId == targetTask!.targetSyndromeId)
-                .map((s) => s.name)
-                .firstOrNull;
-          }
-          try {
-            await insertTeacherSuggestionCard(
-              _sessionRepo,
-              sessionId,
-              TeacherSuggestionCardPayload(
-                suggestionId: suggestionId,
-                teachingDecision: teacherResult.teachingDecision,
-                naturalLanguage: teacherResult.naturalLanguage,
-                taskType: targetTask?.taskType ?? '',
-                taskDescription: targetTask?.taskDescription ?? '',
-                difficulty: targetTask?.difficulty ?? '',
-                evaluationCriteria: targetTask?.evaluationCriteria ?? const [],
-                targetSyndromeId: targetTask?.targetSyndromeId,
-                targetSyndromeName: targetName,
-                source: 'diagnosis',
-                locationMarks: teacherResult.locationMarks,
-              ),
-            );
-          } catch (e) {
-            debugPrint('[SafeRun] 建议卡片插入失败不阻断主流程: $e');
-          }
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] Teacher suggestion 落库失败: $e');
-      }
-    }
-  }
-
-  Future<void> _handleTrainingResult({
-    required String sessionId,
-    required TeachingSubphase? currentSubphase,
-    required String displayContent,
-    required String userContent,
-    required String? trainingSyndromeId,
-    required List<ActiveProblemView> activeProblems,
-    required SendMessageCallbacks callbacks,
-  }) async {
-    // 11. 训练结果解析 + teaching_history 写入
-    // 真源：chat-service.ts L767-793
-    // 条件：subphase == FEEDBACK 且 parseTrainingResult 命中
-    // trainingSyndromeId 来自 focus-resolver（步骤 6.2）
-    // 注意：基于 displayContent（不含诊断块），避免误触发
-    if (currentSubphase == TeachingSubphase.feedback) {
-      // D8 轻量观测：评估顺序（学员自评 → 改前改后对比 → AI 评估）
-      // 约束源为 skill 指令（skill_registry.dart 阶段3），非代码强制；
-      // 仅 debug 留痕观测回复是否按顺序走全三步，不改变行为。
-      _observeEvaluationOrder(displayContent);
-      final trainingResult = _diagnosis.parseTrainingResult(displayContent);
-      if (trainingResult != null) {
-        try {
-          if (trainingSyndromeId != null) {
-            await _studentModelRepo.appendTeachingHistory(sessionId, {
-              'type': 'training',
-              'syndromeId': trainingSyndromeId,
-              'result': trainingResult.value,
-              'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              'sessionId': sessionId,
-            });
-            // T3 修复：训练记录写入后，用新历史重跑 FSM 并持久化状态
-            // 步骤 6.3 在 LLM 调用前评估，此时训练记录尚未写入；
-            // 训练完成后需重评估，确保 FSM 状态反映最新训练结果。
-            try {
-              final problem = activeProblems
-                  .where((p) => p.syndromeId == trainingSyndromeId)
-                  .firstOrNull;
-              if (problem != null) {
-                final reEvalInput = await buildTrainingInputForActiveSyndrome(
-                  _studentModelRepo,
-                  sessionId,
-                  trainingSyndromeId,
-                  ActiveProblemMeta(
-                    currentSeverity:
-                        Severity.fromString(problem.severity) ?? Severity.l2,
-                  ),
-                  diagnosisRepo: _diagnosisRepo,
-                );
-                if (reEvalInput != null) {
-                  final reEvalSummary = buildEvaluationSummary(
-                    trainingSyndromeId,
-                    reEvalInput,
-                  );
-                  if (reEvalSummary.teachingState !=
-                      reEvalInput.teachingState) {
-                    await _diagnosisRepo.updateTeachingState(
-                      sessionId,
-                      trainingSyndromeId,
-                      reEvalSummary.teachingState.value,
-                    );
-                    if (reEvalSummary.teachingState == TeachingState.mastered) {
-                      try {
-                        await _diagnosisRepo.resolveSyndromesBatch(sessionId, [
-                          trainingSyndromeId,
-                        ]);
-                      } catch (e) {
-                        debugPrint('[SafeRun] 重评估resolveSyndromesBatch: $e');
-                      }
-                      // B1：达标→解锁同时插入阶段总结卡，汇总该症候进展
-                      await _insertPhaseSummaryOnMastered(
-                        sessionId,
-                        trainingSyndromeId,
-                        problem.syndromeName,
-                        reEvalInput.passRateInput.totalCount,
-                      );
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              debugPrint('[SafeRun] 重评估失败不阻断主流程: $e');
-            }
-          }
-          // X-041c：training_results 持久化（可选——未装配则跳过）
-          // 真源：PracticeStore.trainingResult 仅存内存态；此处补全落库
-          // 数据源 GrowthStore.trainingStats（症候-训练通过率看板）
-          // X-041d 增强：
-          //   - suggestionId 通过 _teacherSuggestionRepo.getLatestActiveBySyndrome
-          //     追溯触发当前训练轮的建议（取最近一条 active/resolved）
-          //   - taskType 取该建议的 taskType（rewrite/analyze/compare/generate），
-          //     无建议时 fallback 'rewrite'（自主训练场景）
-          //   - feedback 存 displayContent（AI 反馈原文，供复盘回看）
-          //   - score 暂留 null（trainingResult 是枚举，无具体分数）
-          if (_trainingResultRepo != null && trainingSyndromeId != null) {
-            try {
-              String? tracedSuggestionId;
-              String tracedTaskType = 'rewrite';
-              try {
-                final latestSuggestion = await _teacherSuggestionRepo
-                    .getLatestActiveBySyndrome(sessionId, trainingSyndromeId);
-                if (latestSuggestion != null) {
-                  tracedSuggestionId = latestSuggestion.id;
-                  tracedTaskType = latestSuggestion.taskType;
-                }
-              } catch (e) {
-                debugPrint('[SafeRun] suggestion 追溯失败 fallback: $e');
-              }
-              await _trainingResultRepo.insertTrainingResult(
-                InsertTrainingResultParams(
-                  sessionId: sessionId,
-                  syndromeId: trainingSyndromeId,
-                  suggestionId: tracedSuggestionId,
-                  taskType: tracedTaskType,
-                  userContent: userContent,
-                  result: trainingResult.value,
-                  feedback: {'displayContent': displayContent},
-                ),
-              );
-            } catch (e) {
-              debugPrint('[SafeRun] training_results 持久化失败: $e');
-            }
-          }
-        } catch (e) {
-          debugPrint('[SafeRun] 训练记录写入失败: $e');
-        }
-        // 批次1（C3）：训练轮终结（反馈已解析命中）→ 重置子阶段，防 feedback 残留
-        // 后续含"达标/未达标"字样消息不再误归属旧训练轮
-        try {
-          await _stateRepo.updateSubphase(sessionId, null);
-        } catch (e) {
-          debugPrint('[SafeRun] 训练轮终结重置子阶段失败: $e');
-        }
-        // onTrainingResult 回调：通知 UI 展示训练结果（T3 接线）
-        callbacks.onTrainingResult?.call(trainingResult);
-      }
-    }
-  }
-}
-
+// ADR-C74 K-7 迁出至 MessageInjector：_preloadReferenceDetails
+// （跟随 _injectReferences 迁入 lib/services/message_injector.dart）
+// K-9 移除: _parseAndPersist 已迁 DiagnosisFlowHandler
+// K-9 移除: _commitDiagnosisAndSuggestions + _handleTrainingResult 已迁 DiagnosisFlowHandler
 extension ChatServiceSendRun on ChatService {
   Future<({String fullContent, bool inDiagnosisBlock})> _streamLlm({
     required List<ChatMessage> messages,
@@ -2429,33 +660,33 @@ extension ChatServiceSend on ChatService {
         (stageIndexes[stage] ??= []).add(messages.length);
       }
 
-      // 5.0-5.2 上下文注入（R-019 三级拆分：步骤块提取至 chat_service_send_*.dart）
-      await _injectProfileAndIntents(
+      // 5.0-5.2 上下文注入（R-019 三级拆分：步骤块提取至 MessageInjector，ADR-C74 K-7）
+      await _messageInjector.injectProfileAndIntents(
         sessionId: sessionId,
         content: content,
         messages: messages,
         markStage: markStage,
       );
-      final refCtx = await _injectReferences(
+      final refCtx = await _messageInjector.injectReferences(
         sessionId: sessionId,
         messages: messages,
         markStage: markStage,
       );
       final primaryRef = refCtx.primaryRef;
       final chapterContent = refCtx.chapterContent;
-      await _injectChapterObservations(
+      await _messageInjector.injectChapterObservations(
         sessionId: sessionId,
         content: content,
         primaryRef: primaryRef,
         messages: messages,
       );
-      await _injectOutlineFactsAndFiles(
+      await _messageInjector.injectOutlineFactsAndFiles(
         content: content,
         primaryRef: primaryRef,
         messages: messages,
         markStage: markStage,
       );
-      final trainingSyndromeId = await _injectDiagnosisLock(
+      final trainingSyndromeId = await _messageInjector.injectDiagnosisLock(
         sessionId: sessionId,
         content: content,
         activeProblems: activeProblems,
@@ -2559,13 +790,13 @@ extension ChatServiceSend on ChatService {
       final fullContent = streamResult.fullContent;
       final inDiagnosisBlock = streamResult.inDiagnosisBlock;
 
-      // 9-10. 解析 + 校验 + 落库（R-019：提取为 _parseAndPersist）
+      // 9-10. 解析 + 校验 + 落库（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
       // FT-22：检测用户「只诊断不要建议」边界声明，命中则跳过 teacher stream
       final diagnosisOnly = isDiagnosisOnlyRequest(content);
       if (diagnosisOnly) {
         debugPrint('[ChatService] FT-22: 检测到「只诊断」边界声明，跳过 teacher 建议');
       }
-      final parsed = await _parseAndPersist(
+      final parsed = await _diagnosisFlowHandler.parseAndPersist(
         sessionId: sessionId,
         fullContent: fullContent,
         inDiagnosisBlock: inDiagnosisBlock,
@@ -2578,8 +809,8 @@ extension ChatServiceSend on ChatService {
       // 步骤 10 空响应提前结束（onError 已触发，等价原 return）
       if (parsed.aborted) return;
 
-      // 11. 诊断提交 + Teacher suggestion + GenUI 卡片（R-019：提取为 _commitDiagnosisAndSuggestions）
-      await _commitDiagnosisAndSuggestions(
+      // 11. 诊断提交 + Teacher suggestion + GenUI 卡片（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
+      await _diagnosisFlowHandler.commitDiagnosisAndSuggestions(
         sessionId: sessionId,
         diagnosis: parsed.diagnosis,
         messageId: parsed.messageId,
@@ -2598,8 +829,8 @@ extension ChatServiceSend on ChatService {
         currentSubphase,
       );
 
-      // 11. 训练结果解析 + teaching_history 写入（R-019：提取为 _handleTrainingResult）
-      await _handleTrainingResult(
+      // 11. 训练结果解析 + teaching_history 写入（ADR-C74 K-9 迁至 DiagnosisFlowHandler）
+      await _diagnosisFlowHandler.handleTrainingResult(
         sessionId: sessionId,
         currentSubphase: currentSubphase,
         displayContent: parsed.displayContent,

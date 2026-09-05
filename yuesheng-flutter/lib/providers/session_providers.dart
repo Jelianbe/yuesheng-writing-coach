@@ -34,9 +34,11 @@ import '../data/repositories/teaching_state_repository.dart';
 import '../services/bootstrap_service.dart';
 import '../services/chat_service.dart';
 import '../services/diagnosis_committer.dart';
+import '../services/diagnosis_flow_handler.dart';
 import '../services/diagnosis_service.dart';
 import '../services/last_session_storage.dart';
 import '../services/llm_client.dart';
+import '../services/message_injector.dart';
 import '../services/onboarding_service.dart';
 import '../services/realtime_observation_service.dart';
 import 'app_providers.dart';
@@ -128,6 +130,66 @@ final diagnosisCommitterProvider = Provider<DiagnosisCommitter>((ref) {
   );
 });
 
+/// 系统消息注入编排器 Provider（ADR-C74 K-7）
+///
+/// sendMessage 主流程中 5 个 system 消息注入步骤的独立持有者（详见
+/// lib/services/message_injector.dart）。仅供 chatServiceProvider 注入；
+/// ChatService 内部委派，不在 widget 层直接消费（行为零变化护栏）。
+final messageInjectorProvider = Provider<MessageInjector>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return MessageInjector(
+    sessionRepo: SessionRepository(db),
+    diagnosisRepo: DiagnosisRepository(db),
+    studentModelRepo: StudentModelRepository(db),
+    // 复用 reference capability provider，与生产侧同一实例
+    referenceRepo: ref.watch(referenceCapabilityProvider),
+    chapterRepo: ChapterRepository(db),
+    manuscriptRepo: ManuscriptRepository(db),
+    // 协议块字符串构造（K-3 已迁 DiagnosisCommitter），通过 DI 复用
+    diagnosisCommitter: ref.watch(diagnosisCommitterProvider),
+    material: ref.watch(materialCapabilityProvider),
+    // X-041c：可选仓储装配，启用对应观察项
+    characterFactRepo: CharacterFactRepository(db),
+    eventFactRepo: EventFactRepository(db),
+    subplotFactRepo: SubplotFactRepository(db),
+    outlineRepo: OutlineRepository(db),
+  );
+});
+
+/// 诊断流编排器 Provider（ADR-C74 K-9）
+///
+/// sendMessage 主流程中 4 个诊断链路方法的独立持有者（详见
+/// lib/services/diagnosis_flow_handler.dart）。仅供 chatServiceProvider 注入；
+/// ChatService 内部委派 commitDiagnosisFromContent / parseAndPersist /
+/// commitDiagnosisAndSuggestions / handleTrainingResult 四个入口。X-025-ARCH
+/// 教训：必须是「独立类 + DI」模式，不可用 extension 拆分。
+///
+/// 与 DiagnosisCommitter（K-1）/ MessageInjector（K-7）同源同构。
+final diagnosisFlowHandlerProvider = Provider<DiagnosisFlowHandler>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return DiagnosisFlowHandler(
+    sessionRepo: SessionRepository(db),
+    stateRepo: TeachingStateRepository(db),
+    diagnosisRepo: DiagnosisRepository(db),
+    studentModelRepo: StudentModelRepository(db),
+    // 复用 reference capability provider，与生产侧同一实例
+    referenceRepo: ref.watch(referenceCapabilityProvider),
+    chapterRepo: ChapterRepository(db),
+    teacherSuggestionRepo: TeacherSuggestionRepository(db),
+    llmClient: ref.watch(llmClientProvider),
+    // 协议块落库 + 阶段迁移 / 协议块字符串构造 / 系统消息注入，
+    // 全部经 DI 复用 provider，单例保证串行一致性
+    diagnosisCommitter: ref.watch(diagnosisCommitterProvider),
+    messageInjector: ref.watch(messageInjectorProvider),
+    diagnosis: ref.watch(diagnosisCapabilityProvider),
+    genUi: ref.watch(genUiCapabilityProvider),
+    // X-041c：可选仓储装配，不传则跳过 training_results 落库（不破坏现有测试构造）
+    trainingResultRepo: TrainingResultRepository(db),
+    // 大纲记忆仓储装配，K-9 单独使用；与其他 K-x provider 模式一致
+    outlineRepo: OutlineRepository(db),
+  );
+});
+
 /// ChatService Provider
 ///
 /// 生产环境依赖所有 Repository + LlmClient 构造；
@@ -163,6 +225,15 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     // ADR-C74 K-1：诊断提交编排器装配；ChatService 暂不消费，K-2 ~ K-5
     // 阶段随方法迁入时收紧
     diagnosisCommitter: ref.watch(diagnosisCommitterProvider),
+    // ADR-C74 K-7：系统消息注入编排器装配；ChatService 改为委派，
+    // 5 个 _inject* 入口全部走 _messageInjector.*，X-025-ARCH 教训：
+    // 「独立类 + DI」是拆分硬上限（≤ 50 行/函数）的唯一正确路径。
+    messageInjector: ref.watch(messageInjectorProvider),
+    // ADR-C74 K-9：诊断流编排器装配；ChatService 改为委派，
+    // commitDiagnosisFromContent / parseAndPersist / commitDiagnosisAndSuggestions /
+    // handleTrainingResult 四个入口全部走 _diagnosisFlowHandler.*，
+    // 与 K-1 / K-7 同模式（独立类 + DI），不再用 extension 拆服务层。
+    diagnosisFlowHandler: ref.watch(diagnosisFlowHandlerProvider),
   );
 });
 

@@ -23,8 +23,14 @@ void main() {
   group('FT-23 CompressionLevel.fromString', () {
     test('#1 concise/standard/detailed 正确解析', () {
       expect(CompressionLevel.fromString('concise'), CompressionLevel.concise);
-      expect(CompressionLevel.fromString('standard'), CompressionLevel.standard);
-      expect(CompressionLevel.fromString('detailed'), CompressionLevel.detailed);
+      expect(
+        CompressionLevel.fromString('standard'),
+        CompressionLevel.standard,
+      );
+      expect(
+        CompressionLevel.fromString('detailed'),
+        CompressionLevel.detailed,
+      );
     });
 
     test('#2 未知值降级为 standard', () {
@@ -64,8 +70,11 @@ void main() {
     test('#7 三档都保留三要素（核心不变）', () {
       for (final level in CompressionLevel.values) {
         final rule = getCompressionRule(level);
-        expect(rule.retainElements, containsAll(['问题点', '改善方向', '证据']),
-            reason: '$level 应保留三要素');
+        expect(
+          rule.retainElements,
+          containsAll(['问题点', '改善方向', '证据']),
+          reason: '$level 应保留三要素',
+        );
       }
     });
   });

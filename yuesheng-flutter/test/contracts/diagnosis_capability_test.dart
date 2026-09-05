@@ -16,6 +16,8 @@ import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/services/chat_training_parser.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
 void main() {
   group('DiagnosisCapability 契约', () {
     test('接口在注册表中注册', () {

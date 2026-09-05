@@ -44,10 +44,20 @@ import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/providers/evaluation_providers.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/evaluation_service.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
+import 'package:writingcoach/services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
 /// 官方 OpenAI 兼容端点（LlmClient 会拼接 /chat/completions）
 const String _kBaseUrl = 'https://api.deepseek.com';
 
@@ -220,6 +230,106 @@ void main() {
           characterFactRepo: charFactRepo,
           eventFactRepo: eventFactRepo,
           subplotFactRepo: subplotFactRepo,
+        ),
+
+        messageInjector: MessageInjector(
+          sessionRepo: sessionRepo,
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+
+            stateRepo: stateRepo,
+
+            diagnosisRepo: diagRepo,
+
+            studentModelRepo: studentModelRepo,
+
+            referenceRepo: refRepo,
+
+            chapterRepo: chapterRepo,
+
+            outlineRepo: outlineRepo,
+
+            characterFactRepo: charFactRepo,
+
+            eventFactRepo: eventFactRepo,
+
+            subplotFactRepo: subplotFactRepo,
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisFlowHandler: DiagnosisFlowHandler(
+          sessionRepo: SessionRepository(db),
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+          teacherSuggestionRepo: TeacherSuggestionRepository(db),
+          llmClient: LlmClient(),
+
+          messageInjector: MessageInjector(
+            sessionRepo: sessionRepo,
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+
+            manuscriptRepo: ManuscriptRepository(db),
+
+            diagnosisCommitter: DiagnosisCommitter(
+              sessionRepo: sessionRepo,
+
+              stateRepo: stateRepo,
+
+              diagnosisRepo: diagRepo,
+
+              studentModelRepo: studentModelRepo,
+
+              referenceRepo: refRepo,
+
+              chapterRepo: chapterRepo,
+
+              outlineRepo: outlineRepo,
+
+              characterFactRepo: charFactRepo,
+
+              eventFactRepo: eventFactRepo,
+
+              subplotFactRepo: subplotFactRepo,
+            ),
+
+            material: const MaterialCapabilityImpl(),
+          ),
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+            stateRepo: stateRepo,
+            diagnosisRepo: diagRepo,
+            studentModelRepo: studentModelRepo,
+            referenceRepo: refRepo,
+            chapterRepo: chapterRepo,
+            outlineRepo: outlineRepo,
+            characterFactRepo: charFactRepo,
+            eventFactRepo: eventFactRepo,
+            subplotFactRepo: subplotFactRepo,
+          ),
+          diagnosis: const DiagnosisCapabilityImpl(),
+          genUi: const GenUiParser(),
         ),
       );
 
@@ -456,6 +566,112 @@ void main() {
           characterFactRepo: charFactRepo,
           eventFactRepo: eventFactRepo,
           subplotFactRepo: subplotFactRepo,
+        ),
+
+        messageInjector: MessageInjector(
+          sessionRepo: sessionRepo,
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+
+            stateRepo: stateRepo,
+
+            diagnosisRepo: diagRepo,
+
+            studentModelRepo: studentModelRepo,
+
+            referenceRepo: refRepo,
+
+            chapterRepo: chapterRepo,
+
+            outlineRepo: outlineRepo,
+
+            characterFactRepo: charFactRepo,
+
+            eventFactRepo: eventFactRepo,
+
+            subplotFactRepo: subplotFactRepo,
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisFlowHandler: DiagnosisFlowHandler(
+          sessionRepo: SessionRepository(db),
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+          teacherSuggestionRepo: TeacherSuggestionRepository(db),
+          llmClient: _MigrationTriggerLlmClient(
+
+
+            syndromeId: resolvedRef?.syndromeId ?? 'P003',
+            syndromeName: resolvedRef?.syndromeName ?? '情绪直白',
+            severity: resolvedRef?.severity ?? 'L2',
+          ),
+
+          messageInjector: MessageInjector(
+            sessionRepo: sessionRepo,
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+
+            manuscriptRepo: ManuscriptRepository(db),
+
+            diagnosisCommitter: DiagnosisCommitter(
+              sessionRepo: sessionRepo,
+
+              stateRepo: stateRepo,
+
+              diagnosisRepo: diagRepo,
+
+              studentModelRepo: studentModelRepo,
+
+              referenceRepo: refRepo,
+
+              chapterRepo: chapterRepo,
+
+              outlineRepo: outlineRepo,
+
+              characterFactRepo: charFactRepo,
+
+              eventFactRepo: eventFactRepo,
+
+              subplotFactRepo: subplotFactRepo,
+            ),
+
+            material: const MaterialCapabilityImpl(),
+          ),
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: sessionRepo,
+            stateRepo: stateRepo,
+            diagnosisRepo: diagRepo,
+            studentModelRepo: studentModelRepo,
+            referenceRepo: refRepo,
+            chapterRepo: chapterRepo,
+            outlineRepo: outlineRepo,
+            characterFactRepo: charFactRepo,
+            eventFactRepo: eventFactRepo,
+            subplotFactRepo: subplotFactRepo,
+          ),
+          diagnosis: const DiagnosisCapabilityImpl(),
+          genUi: const GenUiParser(),
         ),
       );
       await migrationService.sendMessage(

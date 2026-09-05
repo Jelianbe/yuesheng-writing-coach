@@ -76,46 +76,49 @@ void main() {
   });
 
   group('T-04 kTrainingFewShotLibrary 内容契约', () {
-    test('#7 覆盖 29 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3 + 第五批 3 + 第六批 3 + 第七批 3 + 第八批 4，全覆盖收官）', () {
-      // 首批 5 个
-      expect(kTrainingFewShotLibrary.keys, contains('P003'));
-      expect(kTrainingFewShotLibrary.keys, contains('P004'));
-      expect(kTrainingFewShotLibrary.keys, contains('P008'));
-      expect(kTrainingFewShotLibrary.keys, contains('P011'));
-      expect(kTrainingFewShotLibrary.keys, contains('P019'));
-      // 第二批 5 个（2026-08-27 扩容）
-      expect(kTrainingFewShotLibrary.keys, contains('P005'));
-      expect(kTrainingFewShotLibrary.keys, contains('P006'));
-      expect(kTrainingFewShotLibrary.keys, contains('P007'));
-      expect(kTrainingFewShotLibrary.keys, contains('P009'));
-      expect(kTrainingFewShotLibrary.keys, contains('P010'));
-      // 第三批 3 个（2026-08-27 扩容）
-      expect(kTrainingFewShotLibrary.keys, contains('P012'));
-      expect(kTrainingFewShotLibrary.keys, contains('P013'));
-      expect(kTrainingFewShotLibrary.keys, contains('P014'));
-      // 第四批 3 个（2026-08-27 扩容）
-      expect(kTrainingFewShotLibrary.keys, contains('P015'));
-      expect(kTrainingFewShotLibrary.keys, contains('P016'));
-      expect(kTrainingFewShotLibrary.keys, contains('P017'));
-      // 第五批 3 个（2026-08-27 扩容）
-      expect(kTrainingFewShotLibrary.keys, contains('P018'));
-      expect(kTrainingFewShotLibrary.keys, contains('P020'));
-      expect(kTrainingFewShotLibrary.keys, contains('P021'));
-      // 第六批 3 个（2026-08-27 扩容）
-      expect(kTrainingFewShotLibrary.keys, contains('P022'));
-      expect(kTrainingFewShotLibrary.keys, contains('P023'));
-      expect(kTrainingFewShotLibrary.keys, contains('P024'));
-      // 第七批 3 个（2026-08-27 扩容）
-      expect(kTrainingFewShotLibrary.keys, contains('P025'));
-      expect(kTrainingFewShotLibrary.keys, contains('P026'));
-      expect(kTrainingFewShotLibrary.keys, contains('P027'));
-      // 第八批 4 个（2026-08-27 扩容，收官）
-      expect(kTrainingFewShotLibrary.keys, contains('P028'));
-      expect(kTrainingFewShotLibrary.keys, contains('P029'));
-      expect(kTrainingFewShotLibrary.keys, contains('P030'));
-      expect(kTrainingFewShotLibrary.keys, contains('P031'));
-      expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(29));
-    });
+    test(
+      '#7 覆盖 29 个高频症候（首批 5 + 第二批 5 + 第三批 3 + 第四批 3 + 第五批 3 + 第六批 3 + 第七批 3 + 第八批 4，全覆盖收官）',
+      () {
+        // 首批 5 个
+        expect(kTrainingFewShotLibrary.keys, contains('P003'));
+        expect(kTrainingFewShotLibrary.keys, contains('P004'));
+        expect(kTrainingFewShotLibrary.keys, contains('P008'));
+        expect(kTrainingFewShotLibrary.keys, contains('P011'));
+        expect(kTrainingFewShotLibrary.keys, contains('P019'));
+        // 第二批 5 个（2026-08-27 扩容）
+        expect(kTrainingFewShotLibrary.keys, contains('P005'));
+        expect(kTrainingFewShotLibrary.keys, contains('P006'));
+        expect(kTrainingFewShotLibrary.keys, contains('P007'));
+        expect(kTrainingFewShotLibrary.keys, contains('P009'));
+        expect(kTrainingFewShotLibrary.keys, contains('P010'));
+        // 第三批 3 个（2026-08-27 扩容）
+        expect(kTrainingFewShotLibrary.keys, contains('P012'));
+        expect(kTrainingFewShotLibrary.keys, contains('P013'));
+        expect(kTrainingFewShotLibrary.keys, contains('P014'));
+        // 第四批 3 个（2026-08-27 扩容）
+        expect(kTrainingFewShotLibrary.keys, contains('P015'));
+        expect(kTrainingFewShotLibrary.keys, contains('P016'));
+        expect(kTrainingFewShotLibrary.keys, contains('P017'));
+        // 第五批 3 个（2026-08-27 扩容）
+        expect(kTrainingFewShotLibrary.keys, contains('P018'));
+        expect(kTrainingFewShotLibrary.keys, contains('P020'));
+        expect(kTrainingFewShotLibrary.keys, contains('P021'));
+        // 第六批 3 个（2026-08-27 扩容）
+        expect(kTrainingFewShotLibrary.keys, contains('P022'));
+        expect(kTrainingFewShotLibrary.keys, contains('P023'));
+        expect(kTrainingFewShotLibrary.keys, contains('P024'));
+        // 第七批 3 个（2026-08-27 扩容）
+        expect(kTrainingFewShotLibrary.keys, contains('P025'));
+        expect(kTrainingFewShotLibrary.keys, contains('P026'));
+        expect(kTrainingFewShotLibrary.keys, contains('P027'));
+        // 第八批 4 个（2026-08-27 扩容，收官）
+        expect(kTrainingFewShotLibrary.keys, contains('P028'));
+        expect(kTrainingFewShotLibrary.keys, contains('P029'));
+        expect(kTrainingFewShotLibrary.keys, contains('P030'));
+        expect(kTrainingFewShotLibrary.keys, contains('P031'));
+        expect(kTrainingFewShotLibrary.length, greaterThanOrEqualTo(29));
+      },
+    );
 
     test('#7e 第六批 P022/P023/P024 few-shot 命中检索（独有原文片段）', () {
       // 用各症候独有原文片段断言命中
@@ -189,37 +192,19 @@ void main() {
     test('#8 每条示例必含好/坏对比 + 改善点说明', () {
       for (final entry in kTrainingFewShotLibrary.entries) {
         final content = entry.value;
-        expect(
-          content,
-          contains('❌ 问题版'),
-          reason: '${entry.key} 缺「❌ 问题版」段',
-        );
-        expect(
-          content,
-          contains('✅ 改善版'),
-          reason: '${entry.key} 缺「✅ 改善版」段',
-        );
-        expect(
-          content,
-          contains('→ 问题点'),
-          reason: '${entry.key} 缺「→ 问题点」说明',
-        );
-        expect(
-          content,
-          contains('→ 改善点'),
-          reason: '${entry.key} 缺「→ 改善点」说明',
-        );
+        expect(content, contains('❌ 问题版'), reason: '${entry.key} 缺「❌ 问题版」段');
+        expect(content, contains('✅ 改善版'), reason: '${entry.key} 缺「✅ 改善版」段');
+        expect(content, contains('→ 问题点'), reason: '${entry.key} 缺「→ 问题点」说明');
+        expect(content, contains('→ 改善点'), reason: '${entry.key} 缺「→ 改善点」说明');
       }
     });
 
     test('#9 示例不含跨症候内容（每个症候示例聚焦本症候）', () {
       // 简单 sanity：P003 示例不应提到 P008 的关键词「堆砌」
       final p003 = kTrainingFewShotLibrary['P003']!;
-      expect(p003.contains('堆砌'), false,
-          reason: 'P003 示例不应包含 P008 关键词');
+      expect(p003.contains('堆砌'), false, reason: 'P003 示例不应包含 P008 关键词');
       final p008 = kTrainingFewShotLibrary['P008']!;
-      expect(p008.contains('情绪标签'), false,
-          reason: 'P008 示例不应包含 P003 关键词');
+      expect(p008.contains('情绪标签'), false, reason: 'P008 示例不应包含 P003 关键词');
     });
   });
 }

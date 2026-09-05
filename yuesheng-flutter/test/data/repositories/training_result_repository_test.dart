@@ -98,8 +98,7 @@ void main() {
 
     final list = await repo.queryBySession(sessionId);
     expect(list.length, 3);
-    expect(list.map((r) => r.id).toList(), [id3, id2, id1],
-        reason: '倒序：最新在前');
+    expect(list.map((r) => r.id).toList(), [id3, id2, id1], reason: '倒序：最新在前');
     expect(list.first.userContent, '第三句');
     expect(list.last.userContent, '第一句');
   });
@@ -165,10 +164,7 @@ void main() {
       );
       await Future<void>.delayed(const Duration(milliseconds: 600));
     }
-    final limited = await repo.queryBySyndrome(
-      'syn-limit-test',
-      limit: 2,
-    );
+    final limited = await repo.queryBySyndrome('syn-limit-test', limit: 2);
     expect(limited.length, 2);
   });
 

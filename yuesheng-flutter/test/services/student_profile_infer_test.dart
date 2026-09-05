@@ -39,11 +39,7 @@ void main() {
     });
 
     test('l3 恰好达阈值 3 → beginner（>= 边界，改 > 即漏）', () {
-      final r = inferProficiency([
-        Severity.l3,
-        Severity.l3,
-        Severity.l3,
-      ]);
+      final r = inferProficiency([Severity.l3, Severity.l3, Severity.l3]);
       expect(r.level, ProficiencyLevel.beginner);
       // min(0.9, 0.4 + 3/3) = 0.9
       expect(r.confidence, closeTo(0.9, 1e-9));
@@ -63,11 +59,7 @@ void main() {
     });
 
     test('近期窗口内全 l1 且样本达标 → advanced，置信度 0.8', () {
-      final r = inferProficiency([
-        Severity.l1,
-        Severity.l1,
-        Severity.l1,
-      ]);
+      final r = inferProficiency([Severity.l1, Severity.l1, Severity.l1]);
       expect(r.level, ProficiencyLevel.advanced);
       expect(r.confidence, ProficiencyThresholds.advancedConfidence);
     });

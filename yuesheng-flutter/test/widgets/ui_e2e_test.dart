@@ -42,11 +42,19 @@ import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 
 import '../helpers/mock_last_session_storage.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
 /// Fake LLM：一次返回含 [YS_DIAGNOSIS] + [YS_ENTITY] 协议块的完整回复，
 /// 驱动 ChatService 走真实诊断落库 + 大纲提取 + 确认卡写入链路
 class _ProtocolLlmClient extends LlmClient {
@@ -135,6 +143,106 @@ void main() {
         eventFactRepo: EventFactRepository(db),
         subplotFactRepo: SubplotFactRepository(db),
         outlineRepo: OutlineRepository(db),
+      ),
+
+      messageInjector: MessageInjector(
+        sessionRepo: SessionRepository(db),
+
+        diagnosisRepo: DiagnosisRepository(db),
+
+        studentModelRepo: StudentModelRepository(db),
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+
+        manuscriptRepo: ManuscriptRepository(db),
+
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: SessionRepository(db),
+
+          stateRepo: TeachingStateRepository(db),
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          characterFactRepo: CharacterFactRepository(db),
+
+          eventFactRepo: EventFactRepository(db),
+
+          subplotFactRepo: SubplotFactRepository(db),
+
+          outlineRepo: OutlineRepository(db),
+        ),
+
+        material: const MaterialCapabilityImpl(),
+      ),
+      diagnosisFlowHandler: DiagnosisFlowHandler(
+        sessionRepo: SessionRepository(db),
+        stateRepo: TeachingStateRepository(db),
+        diagnosisRepo: DiagnosisRepository(db),
+        studentModelRepo: StudentModelRepository(db),
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+        teacherSuggestionRepo: TeacherSuggestionRepository(db),
+        llmClient: _ProtocolLlmClient(),
+
+        messageInjector: MessageInjector(
+          sessionRepo: SessionRepository(db),
+
+          diagnosisRepo: DiagnosisRepository(db),
+
+          studentModelRepo: StudentModelRepository(db),
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+
+          manuscriptRepo: ManuscriptRepository(db),
+
+          diagnosisCommitter: DiagnosisCommitter(
+            sessionRepo: SessionRepository(db),
+
+            stateRepo: TeachingStateRepository(db),
+
+            diagnosisRepo: DiagnosisRepository(db),
+
+            studentModelRepo: StudentModelRepository(db),
+
+            referenceRepo: ReferenceRepository(db),
+
+            chapterRepo: ChapterRepository(db),
+
+            characterFactRepo: CharacterFactRepository(db),
+
+            eventFactRepo: EventFactRepository(db),
+
+            subplotFactRepo: SubplotFactRepository(db),
+
+            outlineRepo: OutlineRepository(db),
+          ),
+
+          material: const MaterialCapabilityImpl(),
+        ),
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: SessionRepository(db),
+          stateRepo: TeachingStateRepository(db),
+          diagnosisRepo: DiagnosisRepository(db),
+          studentModelRepo: StudentModelRepository(db),
+          referenceRepo: ReferenceRepository(db),
+          chapterRepo: ChapterRepository(db),
+          characterFactRepo: CharacterFactRepository(db),
+          eventFactRepo: EventFactRepository(db),
+          subplotFactRepo: SubplotFactRepository(db),
+          outlineRepo: OutlineRepository(db),
+        ),
+        diagnosis: const DiagnosisCapabilityImpl(),
+        genUi: const GenUiParser(),
       ),
     );
   }

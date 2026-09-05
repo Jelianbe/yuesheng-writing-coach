@@ -55,9 +55,19 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/chat_service.dart';
 import 'package:writingcoach/services/diagnosis_committer.dart';
+import 'package:writingcoach/services/message_injector.dart';
+import 'package:writingcoach/services/chat_context_builder.dart'
+    show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'package:writingcoach/services/diagnosis_flow_handler.dart';
+import 'package:writingcoach/services/diagnosis_parser.dart'
+    show DiagnosisCapabilityImpl;
+import 'package:writingcoach/services/genui_parser.dart'
+    show GenUiParser;
+import 'package:writingcoach/services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
 const String _kBaseUrl = 'https://api.deepseek.com';
 const String _kModel = 'deepseek-v4-flash';
 const MethodChannel _kConnectivityChannel = MethodChannel(
@@ -315,6 +325,86 @@ void main() {
       studentModelRepo: studentModelRepo,
       referenceRepo: ReferenceRepository(db),
       chapterRepo: ChapterRepository(db),
+    ),
+
+    messageInjector: MessageInjector(
+      sessionRepo: sessionRepo,
+
+      diagnosisRepo: DiagnosisRepository(db),
+
+      studentModelRepo: StudentModelRepository(db),
+
+      referenceRepo: ReferenceRepository(db),
+
+      chapterRepo: ChapterRepository(db),
+
+      manuscriptRepo: ManuscriptRepository(db),
+
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: sessionRepo,
+
+        stateRepo: stateRepo,
+
+        diagnosisRepo: diagRepo,
+
+        studentModelRepo: studentModelRepo,
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+      ),
+
+      material: const MaterialCapabilityImpl(),
+    ),
+    diagnosisFlowHandler: DiagnosisFlowHandler(
+      sessionRepo: SessionRepository(db),
+      stateRepo: TeachingStateRepository(db),
+      diagnosisRepo: DiagnosisRepository(db),
+      studentModelRepo: StudentModelRepository(db),
+      referenceRepo: ReferenceRepository(db),
+      chapterRepo: ChapterRepository(db),
+      teacherSuggestionRepo: TeacherSuggestionRepository(db),
+      llmClient: llmClient,
+
+      messageInjector: MessageInjector(
+        sessionRepo: sessionRepo,
+
+        diagnosisRepo: DiagnosisRepository(db),
+
+        studentModelRepo: StudentModelRepository(db),
+
+        referenceRepo: ReferenceRepository(db),
+
+        chapterRepo: ChapterRepository(db),
+
+        manuscriptRepo: ManuscriptRepository(db),
+
+        diagnosisCommitter: DiagnosisCommitter(
+          sessionRepo: sessionRepo,
+
+          stateRepo: stateRepo,
+
+          diagnosisRepo: diagRepo,
+
+          studentModelRepo: studentModelRepo,
+
+          referenceRepo: ReferenceRepository(db),
+
+          chapterRepo: ChapterRepository(db),
+        ),
+
+        material: const MaterialCapabilityImpl(),
+      ),
+      diagnosisCommitter: DiagnosisCommitter(
+        sessionRepo: sessionRepo,
+        stateRepo: stateRepo,
+        diagnosisRepo: diagRepo,
+        studentModelRepo: studentModelRepo,
+        referenceRepo: ReferenceRepository(db),
+        chapterRepo: ChapterRepository(db),
+      ),
+      diagnosis: const DiagnosisCapabilityImpl(),
+      genUi: const GenUiParser(),
     ),
   );
 
