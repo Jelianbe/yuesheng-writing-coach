@@ -303,23 +303,11 @@ FullValidationResult validateDiagnosisOutput(
 
 /// 将通过 schema 校验的 Map 映射为 ParsedDiagnosis
 ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
-  final syndromesRaw = data['syndromes'] as List;
-  final syndromes = syndromesRaw.map((s) {
-    final m = s as Map<String, dynamic>;
-    return Syndrome.fromJson(m);
-  }).toList();
+  final syndromes = _parseSyndromes(data);
 
   final suggestedActions = (data['suggested_actions'] as List).cast<String>();
 
-  final teachingPlanRaw = data['teaching_plan'];
-  final teachingPlan = teachingPlanRaw is Map<String, dynamic>
-      ? teachingPlanRaw
-      : null;
-
-  String? teachingPlanNextStep;
-  if (teachingPlan != null && teachingPlan['next_step'] is String) {
-    teachingPlanNextStep = teachingPlan['next_step'] as String;
-  }
+  final teaching = _resolveTeachingPlan(data);
 
   // ADR-C64：以下可选字段 schema **不校验类型**（validateDiagnosisSchema 的
   // 校验在 :154 就结束了，只覆盖 syndromes / suggested_actions / confidence）。
@@ -331,43 +319,98 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
   //
   // 改安全读取：非 String 一律按缺失处理。漂移本身不静默消失，
   // 由 _collectOptionalFieldDrifts 产出 warning。
-  final nextFocusRaw = data['next_focus'];
-  final rootCauseRaw = data['root_cause_analysis'];
-  final feedbackRaw = data['feedback_summary'];
-  final phaseRaw = data['suggested_phase'];
-  final levelRaw = data['suggested_beginner_level'];
-  final modeRaw = data['teaching_mode'];
-  final focusIdRaw = teachingPlan?['current_teaching_focus_id'];
-  final focusReasonRaw = teachingPlan?['focus_reason'];
+  final raw = _readOptionalRawFields(data, teaching.plan);
 
   // N3-a（ADR-C65）：与 parser 侧同款校验——prompt 三处明写「必须从本轮
   // syndromes 中选取」。两条解析路径必须一致，否则重演 N8（parser 白名单 /
   // validator 不校验）的老问题。越界置 null → 走 focus-resolver fallback，
   // 这是 prompt 自己声明的既有行为，不是新造路径。
-  final syndromeIds = syndromes.map((s) => s.syndromeId).toSet();
-  final focusId = focusIdRaw is String && syndromeIds.contains(focusIdRaw)
-      ? focusIdRaw
-      : null;
+  final focusId = _resolveFocusId(syndromes, raw.focusIdRaw);
 
   return ParsedDiagnosis(
     syndromes: syndromes,
     suggestedActions: suggestedActions,
     confidence: (data['confidence'] as num).toDouble(),
-    rootCauseAnalysis: rootCauseRaw is String ? rootCauseRaw : null,
+    rootCauseAnalysis: raw.rootCauseRaw is String ? raw.rootCauseRaw : null,
     // 漂移时回退到 teachingPlan.next_step——与 next_focus 缺失时行为一致
-    nextFocus: nextFocusRaw is String ? nextFocusRaw : teachingPlanNextStep,
-    feedbackSummary: feedbackRaw is String ? feedbackRaw : null,
+    nextFocus: raw.nextFocusRaw is String
+        ? raw.nextFocusRaw
+        : teaching.nextStep,
+    feedbackSummary: raw.feedbackRaw is String ? raw.feedbackRaw : null,
     suggestedPhase: TeachingPhase.fromString(
-      phaseRaw is String ? phaseRaw : null,
+      raw.phaseRaw is String ? raw.phaseRaw : null,
     ),
     suggestedBeginnerLevel: BeginnerLevel.fromString(
-      levelRaw is String ? levelRaw : null,
+      raw.levelRaw is String ? raw.levelRaw : null,
     ),
-    teachingMode: TeachingMode.fromString(modeRaw is String ? modeRaw : null),
+    teachingMode: TeachingMode.fromString(
+      raw.modeRaw is String ? raw.modeRaw : null,
+    ),
     currentTeachingFocusId: focusId,
-    focusReason: focusReasonRaw is String ? focusReasonRaw : null,
+    focusReason: raw.focusReasonRaw is String ? raw.focusReasonRaw : null,
     styleProfile: _parseStyleProfile(data),
   );
+}
+
+/// 可选字段安全读取（ADR-C64：schema 不校验类型，非 String 按缺失处理）。
+/// 由 _collectOptionalFieldDrifts 产出 warning（R-019 拆出）。
+({
+  dynamic nextFocusRaw,
+  dynamic rootCauseRaw,
+  dynamic feedbackRaw,
+  dynamic phaseRaw,
+  dynamic levelRaw,
+  dynamic modeRaw,
+  dynamic focusIdRaw,
+  dynamic focusReasonRaw,
+})
+_readOptionalRawFields(
+  Map<String, dynamic> data,
+  Map<String, dynamic>? teachingPlan,
+) {
+  return (
+    nextFocusRaw: data['next_focus'],
+    rootCauseRaw: data['root_cause_analysis'],
+    feedbackRaw: data['feedback_summary'],
+    phaseRaw: data['suggested_phase'],
+    levelRaw: data['suggested_beginner_level'],
+    modeRaw: data['teaching_mode'],
+    focusIdRaw: teachingPlan?['current_teaching_focus_id'],
+    focusReasonRaw: teachingPlan?['focus_reason'],
+  );
+}
+
+/// N3-a（ADR-C65）：focus 必须从本轮 syndromes 中选取（R-019 拆出）。
+String? _resolveFocusId(List<Syndrome> syndromes, dynamic focusIdRaw) {
+  final syndromeIds = syndromes.map((s) => s.syndromeId).toSet();
+  return focusIdRaw is String && syndromeIds.contains(focusIdRaw)
+      ? focusIdRaw
+      : null;
+}
+
+/// teaching_plan 安全解析（R-019 拆出：_mapToParsedDiagnosis）。
+({Map<String, dynamic>? plan, String? nextStep}) _resolveTeachingPlan(
+  Map<String, dynamic> data,
+) {
+  final plan = data['teaching_plan'] is Map<String, dynamic>
+      ? data['teaching_plan'] as Map<String, dynamic>
+      : null;
+  return (plan: plan, nextStep: _resolveNextStep(plan));
+}
+
+/// syndromes 列表解析（R-019 拆出：_mapToParsedDiagnosis）。
+List<Syndrome> _parseSyndromes(Map<String, dynamic> data) {
+  final syndromesRaw = data['syndromes'] as List;
+  return syndromesRaw.map((s) {
+    final m = s as Map<String, dynamic>;
+    return Syndrome.fromJson(m);
+  }).toList();
+}
+
+/// teaching_plan.next_step 安全读取（R-019 拆出：_mapToParsedDiagnosis）。
+String? _resolveNextStep(Map<String, dynamic>? teachingPlan) {
+  if (teachingPlan == null || teachingPlan['next_step'] is! String) return null;
+  return teachingPlan['next_step'] as String;
 }
 
 /// 可选字段类型漂移检测（ADR-C64）

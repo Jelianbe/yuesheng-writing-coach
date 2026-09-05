@@ -963,20 +963,6 @@
       "lines": 67
     },
     {
-      "file": "lib/services/diagnosis_validator.dart",
-      "func": "_mapToParsedDiagnosis",
-      "start": 305,
-      "end": 371,
-      "lines": 67
-    },
-    {
-      "file": "lib/services/training_evaluator.dart",
-      "func": "comprehensiveJudgment",
-      "start": 120,
-      "end": 186,
-      "lines": 67
-    },
-    {
       "file": "lib/widgets/diagnosis_card.dart",
       "func": "_buildRewriteBlock",
       "start": 496,
@@ -1035,15 +1021,8 @@
     {
       "file": "lib/services/diagnosis_validator.dart",
       "func": "_collectOptionalFieldDrifts",
-      "start": 387,
-      "end": 451,
-      "lines": 65
-    },
-    {
-      "file": "lib/services/growth_service.dart",
-      "func": "getWritingCurve",
-      "start": 291,
-      "end": 355,
+      "start": 430,
+      "end": 494,
       "lines": 65
     },
     {

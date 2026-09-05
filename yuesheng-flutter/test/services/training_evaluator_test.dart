@@ -228,6 +228,18 @@ void main() {
       );
     });
 
+    test('#B2 严重度不变 + 达标率 0.35（(0.3,0.4) 区间）+ 稳定度下降 → 可能恶化', () {
+      final r = judge(
+        severityTrend: TrendJudgment.stable,
+        passCount: 7,
+        totalCount: 20, // 0.35，避开 A4 的 >=0.4 与规则7 的 <0.2
+        stability: const FsrsStabilityInput(
+          currentStability: 1.0,
+          previousStability: 2.0,
+        ),
+      );
+      expect(r, ComprehensiveJudgment.possibleWorsening);
+    });
     test('#A3 严重度不变 + 低达标率（0.2<=pr<=0.4）+ 稳定度下降 → 可能恶化（规则8）', () {
       final r = judge(
         severityTrend: TrendJudgment.stable,
@@ -267,6 +279,18 @@ void main() {
       expect(r, ComprehensiveJudgment.improving);
     });
 
+    test('#B1 严重度下降 + 达标率恰好 0.6 + 稳定度上升 → 明显改善（下界）', () {
+      final r = judge(
+        severityTrend: TrendJudgment.improving,
+        passCount: 6,
+        totalCount: 10, // 0.6 恰好 = 下界
+        stability: const FsrsStabilityInput(
+          currentStability: 2.0,
+          previousStability: 1.0,
+        ),
+      );
+      expect(r, ComprehensiveJudgment.significantImprovement);
+    });
     test('#A6 严重度下降 + 达标率好 + 稳定度上升 → 明显改善', () {
       final r = judge(
         severityTrend: TrendJudgment.improving,

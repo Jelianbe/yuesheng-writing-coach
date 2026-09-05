@@ -317,6 +317,15 @@ void main() {
       expect(points, isEmpty);
     });
 
+    test('#7b 仅诊断无写作（chapterRows 空）→ 仍返回近 N 天序列', () async {
+      final t = todayUtcSec();
+      await insertDiagnosis(timestamp: t);
+
+      final points = await GrowthService(db).getWritingCurve(days: 3);
+
+      expect(points, isNotEmpty); // 空守卫须两者皆空才返回空
+      expect(points.last.diagnosisCount, 1);
+    });
     test('#7 近 N 天序列完整 + 每日字数/诊断聚合', () async {
       final t = todayUtcSec();
       // 昨天：800 字 + 1 诊断；今天：1200 字 + 2 诊断

@@ -135,54 +135,70 @@ ComprehensiveJudgment comprehensiveJudgment(ComprehensiveJudgmentInput input) {
       ? classifyStability(fsrsStability)
       : TrendJudgment.insufficientData;
 
+  return _judgeComprehensiveTrend(severityTrend, passRateVal, stabilityTrend);
+}
+
+/// 综合判定链（R-019 拆出：comprehensiveJudgment）。first-match 顺序不可乱。
+ComprehensiveJudgment _judgeComprehensiveTrend(
+  TrendJudgment severityTrend,
+  double passRateVal,
+  TrendJudgment stabilityTrend,
+) {
   // 严重度恶化 → 无条件恶化（置顶短路）
   if (severityTrend == TrendJudgment.worsening) {
     return ComprehensiveJudgment.worsening;
   }
 
+  if (severityTrend == TrendJudgment.improving) {
+    return _judgeImprovingTrend(passRateVal, stabilityTrend);
+  }
+
+  return _judgeStableTrend(passRateVal, stabilityTrend);
+}
+
+/// 严重度下降分支判定（R-019 二次拆出：_judgeComprehensiveTrend）。
+ComprehensiveJudgment _judgeImprovingTrend(
+  double passRateVal,
+  TrendJudgment stabilityTrend,
+) {
   // 严重度下降 + 高达标率 + 稳定度上升 → 明显改善
-  if (severityTrend == TrendJudgment.improving &&
-      passRateVal >= 0.6 &&
-      stabilityTrend == TrendJudgment.improving) {
+  if (passRateVal >= 0.6 && stabilityTrend == TrendJudgment.improving) {
     return ComprehensiveJudgment.significantImprovement;
   }
 
   // 严重度下降 + 达标率好 → 改善
-  if (severityTrend == TrendJudgment.improving && passRateVal >= 0.6) {
-    return ComprehensiveJudgment.improving;
-  }
+  return passRateVal >= 0.6
+      ? ComprehensiveJudgment.improving
+      : ComprehensiveJudgment.stable;
+}
 
+/// 严重度不变分支判定（R-019 二次拆出：_judgeComprehensiveTrend）。
+/// first-match 顺序不可乱（恶化趋势须先于可能恶化）。
+ComprehensiveJudgment _judgeStableTrend(
+  double passRateVal,
+  TrendJudgment stabilityTrend,
+) {
   // 严重度不变 + 达标率好 + 稳定度上升 → 改善
-  if (severityTrend == TrendJudgment.stable &&
-      passRateVal >= 0.6 &&
-      stabilityTrend == TrendJudgment.improving) {
+  if (passRateVal >= 0.6 && stabilityTrend == TrendJudgment.improving) {
     return ComprehensiveJudgment.improving;
   }
 
   // 严重度不变 + 中等达标率 → 稳定
-  if (severityTrend == TrendJudgment.stable &&
-      passRateVal >= 0.4 &&
-      passRateVal < 0.6) {
+  if (passRateVal >= 0.4 && passRateVal < 0.6) {
     return ComprehensiveJudgment.stable;
   }
 
   // 批次6（6.12 A5）：恶化趋势（pr<0.2）必须先于可能恶化（pr<=0.4）判定，
   // 否则被规则8 遮蔽为死代码（first-match 顺序修正）
   // 严重度不变 + 很低达标率 + 稳定度下降 → 恶化趋势
-  if (severityTrend == TrendJudgment.stable &&
-      passRateVal < 0.2 &&
-      stabilityTrend == TrendJudgment.worsening) {
+  if (passRateVal < 0.2 && stabilityTrend == TrendJudgment.worsening) {
     return ComprehensiveJudgment.worseningTrend;
   }
 
   // 严重度不变 + 低达标率 + 稳定度下降 → 可能恶化
-  if (severityTrend == TrendJudgment.stable &&
-      passRateVal <= 0.4 &&
-      stabilityTrend == TrendJudgment.worsening) {
-    return ComprehensiveJudgment.possibleWorsening;
-  }
-
-  return ComprehensiveJudgment.stable;
+  return passRateVal <= 0.4 && stabilityTrend == TrendJudgment.worsening
+      ? ComprehensiveJudgment.possibleWorsening
+      : ComprehensiveJudgment.stable;
 }
 
 class DeteriorationCheckInput {
