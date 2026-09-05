@@ -103,7 +103,7 @@ const Skill _scenarioRules = Skill(
 // | 冲突与优先级 | 受 core-iron-triangle §〇 裁决顺序约束（第 4/5 级） |
 // | 副本登记 | V-05 #1/#3/#4/#8（跳级与 0-200 字相关行） |
 // | 示例标注 | ✅/❌ 例句已声明「是示例，用来说明约束的意思」 |
-// | 校验方式 | skill_prompt_anchor_test + l1_zero_basis_activation_guard_test（C72）+ ADR-C73 护栏 |
+// | 校验方式 | skill_prompt_anchor_test + l1_zero_basis_activation_guard_test（C72）+ ADR-C75 护栏 |
 final Skill _teachingStrategy = Skill(
   meta: SkillMeta(
     id: 'teaching-strategy',
