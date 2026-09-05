@@ -64,43 +64,11 @@ class DiagnosisService {
   ) async {
     final allHistory = await _studentModelRepo.getTeachingHistory(sessionId);
 
-    // 筛选含目标症候的 ConfirmationRecord
-    final syndromeHistory = allHistory.where((r) {
-      if (r['type'] != 'confirmation') return false;
-      final syndromes = r['syndromes'];
-      if (syndromes is! List) return false;
-      return syndromes.any(
-        (id) => id is String && effectiveSyndromeId(id) == syndromeId,
-      );
-    }).toList();
-
-    // 筛选目标症候的 TrainingRecord（按时间正序）
-    final trainingRecords =
-        allHistory
-            .where(
-              (r) =>
-                  r['type'] == 'training' &&
-                  r['syndromeId'] is String &&
-                  effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
-            )
-            .toList()
-          ..sort((a, b) {
-            final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
-            final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
-            return ta.compareTo(tb);
-          });
-
-    // 计算连续失败次数（从末尾倒序）
-    int consecutiveFailedTrainings = 0;
-    for (int i = trainingRecords.length - 1; i >= 0; i--) {
-      if (trainingRecords[i]['result'] == 'failed') {
-        consecutiveFailedTrainings++;
-      } else {
-        break;
-      }
-    }
-
-    // 质疑次数：action='disputed'
+    final syndromeHistory = _filterSyndromeHistory(allHistory, syndromeId);
+    final trainingRecords = _sortTrainingRecords(allHistory, syndromeId);
+    final consecutiveFailedTrainings = _countConsecutiveFailures(
+      trainingRecords,
+    );
     final disputeCount = syndromeHistory
         .where((r) => r['action'] == 'disputed')
         .length;
@@ -123,6 +91,54 @@ class DiagnosisService {
       consecutiveFailedTrainings: consecutiveFailedTrainings,
       disputeCount: disputeCount,
     );
+  }
+
+  /// 筛选含目标症候的 ConfirmationRecord（R-019 拆出）。
+  List<Map<String, dynamic>> _filterSyndromeHistory(
+    List<Map<String, dynamic>> allHistory,
+    String syndromeId,
+  ) {
+    return allHistory.where((r) {
+      if (r['type'] != 'confirmation') return false;
+      final syndromes = r['syndromes'];
+      if (syndromes is! List) return false;
+      return syndromes.any(
+        (id) => id is String && effectiveSyndromeId(id) == syndromeId,
+      );
+    }).toList();
+  }
+
+  /// 筛选目标症候的 TrainingRecord（按时间正序；R-019 拆出）。
+  List<Map<String, dynamic>> _sortTrainingRecords(
+    List<Map<String, dynamic>> allHistory,
+    String syndromeId,
+  ) {
+    return allHistory
+        .where(
+          (r) =>
+              r['type'] == 'training' &&
+              r['syndromeId'] is String &&
+              effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
+        )
+        .toList()
+      ..sort((a, b) {
+        final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
+        final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
+        return ta.compareTo(tb);
+      });
+  }
+
+  /// 计算连续失败次数（从末尾倒序；R-019 拆出）。
+  int _countConsecutiveFailures(List<Map<String, dynamic>> trainingRecords) {
+    var count = 0;
+    for (int i = trainingRecords.length - 1; i >= 0; i--) {
+      if (trainingRecords[i]['result'] == 'failed') {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
   }
 
   /// 批量解锁症候（将 active_problem status 设为 'resolved'）

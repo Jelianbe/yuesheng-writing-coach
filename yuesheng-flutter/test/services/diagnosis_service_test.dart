@@ -88,6 +88,67 @@ void main() {
     expect(rows, isEmpty, reason: 'commit 失败应立即返回，不写 teaching_history');
   });
 
+  group('shouldUnlockSyndrome（R-019 批次七补测）', () {
+    Future<void> seedTraining({required String result, required int ts}) {
+      return studentModelRepo.appendTeachingHistory(sessionId, {
+        'type': 'training',
+        'syndromeId': 'P003',
+        'result': result,
+        'timestamp': ts,
+      });
+    }
+
+    Future<void> seedDispute() {
+      return studentModelRepo.appendTeachingHistory(sessionId, {
+        'type': 'confirmation',
+        'syndromes': ['P003'],
+        'action': 'disputed',
+        'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      });
+    }
+
+    test('#U1 连续失败 ≥ 阈值（2）→ 解锁 + reason 记录次数', () async {
+      await seedTraining(result: 'failed', ts: 100);
+      await seedTraining(result: 'passed', ts: 200);
+      await seedTraining(result: 'failed', ts: 300);
+      await seedTraining(result: 'failed', ts: 400);
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      expect(u.shouldUnlock, isTrue);
+      expect(u.consecutiveFailedTrainings, 2, reason: 'passed 中断后仅末尾 2 次失败');
+      expect(u.reason, contains('连续 2 次训练无效'));
+    });
+
+    test('#U2 被质疑 ≥ 阈值（2）→ 解锁（反向解锁路径）', () async {
+      await seedDispute();
+      await seedDispute();
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      expect(u.shouldUnlock, isTrue);
+      expect(u.disputeCount, 2);
+      expect(u.reason, contains('被质疑 2 次'));
+    });
+
+    test('#U4 他症候的 disputed 不计入本症候 disputeCount', () async {
+      for (var i = 0; i < 2; i++) {
+        await studentModelRepo.appendTeachingHistory(sessionId, {
+          'type': 'confirmation',
+          'syndromes': ['P999'],
+          'action': 'disputed',
+          'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        });
+      }
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      expect(u.disputeCount, 0, reason: '他症候的质疑不应计入 P003');
+      expect(u.shouldUnlock, isFalse);
+    });
+    test('#U3 两条件均不足 → 不解锁 + 默认 reason', () async {
+      await seedTraining(result: 'failed', ts: 100);
+      await seedDispute();
+      final u = await service.shouldUnlockSyndrome(sessionId, 'P003');
+      expect(u.shouldUnlock, isFalse);
+      expect(u.reason, '不满足解锁条件');
+    });
+  });
+
   /// 拉大首条诊断的 timestamp（-100s），避免两轮诊断同 unix 秒
   /// 导致 getAllDiagnoses 排序不稳定（当前/上一次判定颠倒）
   Future<void> backdateFirstDiagnosis() async {

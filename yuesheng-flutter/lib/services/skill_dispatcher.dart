@@ -87,10 +87,35 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
   final chunks = <String>[];
   final loadedIds = <String>[];
+  _buildL1Chunks(ctx, chunks, loadedIds);
+  _buildL2Chunks(ctx, chunks, loadedIds);
 
-  // ═══════════════════════════════════════════════════════════
-  // L1: 常驻层 — 核心规则（所有场景必加载）
-  // ═══════════════════════════════════════════════════════════
+  // 位置判断引导语（L1 末尾，始终注入）
+  chunks.add(_kPositionGuidance);
+
+  // 拼接
+  final systemPrompt = chunks.join(_kSkillSeparator);
+  final estimatedTokens = _estimateTokens(systemPrompt);
+  final l2Mode = resolveL2Mode(ctx);
+
+  // L3: 检索函数（返回后由调用方按需调用）
+  String injectL3(L3RetrievalContext l3Ctx) => _buildL3Injection(l3Ctx);
+
+  return SystemPromptResult(
+    systemPrompt: systemPrompt,
+    l2Mode: l2Mode,
+    loadedSkillIds: List.unmodifiable(loadedIds),
+    estimatedTokens: estimatedTokens,
+    injectL3: injectL3,
+  );
+}
+
+/// L1 常驻层加载（R-019 拆出：buildSystemPromptV2）。
+void _buildL1Chunks(
+  SkillLoadContext ctx,
+  List<String> chunks,
+  List<String> loadedIds,
+) {
   for (final skillId in l1SkillIds) {
     final skill = getSkill(skillId);
     if (skill != null) {
@@ -106,13 +131,15 @@ SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
     chunks.add(attitudeSkill.content);
     loadedIds.add(attitudeKey);
   }
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // L2: 按需层 — 根据教学语境选择一组 skill
-  // ═══════════════════════════════════════════════════════════
-  final l2Mode = resolveL2Mode(ctx);
-  final l2SkillIds = getL2SkillIds(l2Mode);
-
+/// L2 按需层加载（R-019 拆出：buildSystemPromptV2）。
+void _buildL2Chunks(
+  SkillLoadContext ctx,
+  List<String> chunks,
+  List<String> loadedIds,
+) {
+  final l2SkillIds = getL2SkillIds(resolveL2Mode(ctx));
   for (final ref in l2SkillIds) {
     final skill = getSkill(ref.skillId);
     if (skill != null) {
@@ -126,50 +153,32 @@ SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
     }
     // 未注册的 skill 静默跳过（后续补齐后自动生效）
   }
+}
 
-  // 位置判断引导语（L1 末尾，始终注入）
-  chunks.add(_kPositionGuidance);
+/// L3 检索注入（R-019 拆出：buildSystemPromptV2）。
+String _buildL3Injection(L3RetrievalContext l3Ctx) {
+  final parts = <String>[];
 
-  // 拼接
-  final systemPrompt = chunks.join(_kSkillSeparator);
-  final estimatedTokens = _estimateTokens(systemPrompt);
-
-  // ═══════════════════════════════════════════════════════════
-  // L3: 检索函数（返回后由调用方按需调用）
-  // ═══════════════════════════════════════════════════════════
-  String injectL3(L3RetrievalContext l3Ctx) {
-    final parts = <String>[];
-
-    // 症候详情（诊断/训练模式都需要）
-    // 2026-08-08 批次 22 步骤②：已接入 syndrome-diagnosis 知识库
-    //（syndrome_knowledge_base.dart，getSyndromeContent 检索完整定义）
-    if (l3Ctx.activeSyndromeIds != null &&
-        l3Ctx.activeSyndromeIds!.isNotEmpty) {
-      final syndromeDetail = _getSyndromeContent(l3Ctx.activeSyndromeIds!);
-      if (syndromeDetail != null && syndromeDetail.isNotEmpty) {
-        parts.add(syndromeDetail);
-      }
+  // 症候详情（诊断/训练模式都需要）
+  // 2026-08-08 批次 22 步骤②：已接入 syndrome-diagnosis 知识库
+  //（syndrome_knowledge_base.dart，getSyndromeContent 检索完整定义）
+  if (l3Ctx.activeSyndromeIds != null && l3Ctx.activeSyndromeIds!.isNotEmpty) {
+    final syndromeDetail = _getSyndromeContent(l3Ctx.activeSyndromeIds!);
+    if (syndromeDetail != null && syndromeDetail.isNotEmpty) {
+      parts.add(syndromeDetail);
     }
-
-    // 技法详情
-    if (l3Ctx.focusedTechniqueIds != null &&
-        l3Ctx.focusedTechniqueIds!.isNotEmpty) {
-      final techniqueDetail = _getTechniqueContent(l3Ctx.focusedTechniqueIds!);
-      if (techniqueDetail != null && techniqueDetail.isNotEmpty) {
-        parts.add(techniqueDetail);
-      }
-    }
-
-    return parts.isNotEmpty ? '\n\n${parts.join('\n\n---\n\n')}' : '';
   }
 
-  return SystemPromptResult(
-    systemPrompt: systemPrompt,
-    l2Mode: l2Mode,
-    loadedSkillIds: List.unmodifiable(loadedIds),
-    estimatedTokens: estimatedTokens,
-    injectL3: injectL3,
-  );
+  // 技法详情
+  if (l3Ctx.focusedTechniqueIds != null &&
+      l3Ctx.focusedTechniqueIds!.isNotEmpty) {
+    final techniqueDetail = _getTechniqueContent(l3Ctx.focusedTechniqueIds!);
+    if (techniqueDetail != null && techniqueDetail.isNotEmpty) {
+      parts.add(techniqueDetail);
+    }
+  }
+
+  return parts.isNotEmpty ? '\n\n${parts.join('\n\n---\n\n')}' : '';
 }
 
 // ─── 辅助函数 ─────────────────────────────────────────────────

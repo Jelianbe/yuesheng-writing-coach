@@ -669,13 +669,6 @@
       "lines": 88
     },
     {
-      "file": "lib/services/skill_dispatcher.dart",
-      "func": "buildSystemPromptV2",
-      "start": 63,
-      "end": 149,
-      "lines": 87
-    },
-    {
       "file": "lib/widgets/editor_settings_sheet.dart",
       "func": "build",
       "start": 61,
@@ -998,13 +991,6 @@
       "lines": 66
     },
     {
-      "file": "lib/services/diagnosis_service.dart",
-      "func": "shouldUnlockSyndrome",
-      "start": 61,
-      "end": 126,
-      "lines": 66
-    },
-    {
       "file": "lib/widgets/growth_detail_page.dart",
       "func": "build",
       "start": 384,
@@ -1017,13 +1003,6 @@
       "start": 143,
       "end": 208,
       "lines": 66
-    },
-    {
-      "file": "lib/services/diagnosis_validator.dart",
-      "func": "_collectOptionalFieldDrifts",
-      "start": 430,
-      "end": 494,
-      "lines": 65
     },
     {
       "file": "lib/widgets/quick_phrase_sheet.dart",

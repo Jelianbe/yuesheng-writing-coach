@@ -444,53 +444,69 @@ List<String> _collectOptionalFieldDrifts(Map<String, dynamic> data) {
   check('suggested_beginner_level');
   check('teaching_mode');
 
-  // syndromes[].reader_impact（Syndrome.fromJson 消费，schema 不校验其类型）
-  final syndromesRaw = data['syndromes'];
+  final syndromeIdSet = _collectSyndromeDrifts(data, drifts);
+  _collectTeachingPlanDrifts(data, drifts, syndromeIdSet);
+
+  return drifts;
+}
+
+/// syndromes[].reader_impact 类型漂移 + syndrome_id 收集（R-019 拆出）。
+/// 返回本轮 syndromes 的 id 集合，供 N3-a 越界校验使用。
+Set<String> _collectSyndromeDrifts(
+  Map<String, dynamic> data,
+  List<String> drifts,
+) {
   final syndromeIdSet = <String>{};
-  if (syndromesRaw is List) {
-    for (var i = 0; i < syndromesRaw.length; i++) {
-      if (syndromesRaw[i] is! Map<String, dynamic>) continue;
-      final syndrome = syndromesRaw[i] as Map<String, dynamic>;
-      final sid = syndrome['syndrome_id'];
-      if (sid is String) syndromeIdSet.add(sid);
-      final ri = syndrome['reader_impact'];
-      if (ri != null && ri is! String) {
-        drifts.add(
-          '可选字段 syndromes[$i].reader_impact 类型漂移'
-          '（${ri.runtimeType}），已按缺失处理',
-        );
-      }
+  final syndromesRaw = data['syndromes'];
+  if (syndromesRaw is! List) return syndromeIdSet;
+  for (var i = 0; i < syndromesRaw.length; i++) {
+    if (syndromesRaw[i] is! Map<String, dynamic>) continue;
+    final syndrome = syndromesRaw[i] as Map<String, dynamic>;
+    final sid = syndrome['syndrome_id'];
+    if (sid is String) syndromeIdSet.add(sid);
+    final ri = syndrome['reader_impact'];
+    if (ri != null && ri is! String) {
+      drifts.add(
+        '可选字段 syndromes[$i].reader_impact 类型漂移'
+        '（${ri.runtimeType}），已按缺失处理',
+      );
     }
   }
+  return syndromeIdSet;
+}
 
+/// teaching_plan 字段漂移 + N3-a 越界校验（R-019 拆出）。
+void _collectTeachingPlanDrifts(
+  Map<String, dynamic> data,
+  List<String> drifts,
+  Set<String> syndromeIdSet,
+) {
   final teachingPlan = data['teaching_plan'];
-  if (teachingPlan is Map<String, dynamic>) {
-    void checkPlan(String field) {
-      final v = teachingPlan[field];
-      if (v != null && v is! String) {
-        drifts.add(
-          '可选字段 teaching_plan.$field 类型漂移'
-          '（${v.runtimeType}），已按缺失处理',
-        );
-      }
-    }
+  if (teachingPlan is! Map<String, dynamic>) return;
 
-    checkPlan('current_teaching_focus_id');
-    checkPlan('focus_reason');
-
-    // N3-a（ADR-C65）：类型合法但**越界**（不在本轮 syndromes 中）是另一类
-    // 违规——checkPlan 只管类型，管不了成员关系。越界值会被置 null 走向
-    // focus-resolver fallback，必须留痕，否则又是「静默丢弃且不留痕」。
-    final ctf = teachingPlan['current_teaching_focus_id'];
-    if (ctf is String && !syndromeIdSet.contains(ctf)) {
+  void checkPlan(String field) {
+    final v = teachingPlan[field];
+    if (v != null && v is! String) {
       drifts.add(
-        'teaching_plan.current_teaching_focus_id = $ctf 不在本轮 syndromes 中，'
-        '已按缺失处理（走 fallback 优先级表）',
+        '可选字段 teaching_plan.$field 类型漂移'
+        '（${v.runtimeType}），已按缺失处理',
       );
     }
   }
 
-  return drifts;
+  checkPlan('current_teaching_focus_id');
+  checkPlan('focus_reason');
+
+  // N3-a（ADR-C65）：类型合法但**越界**（不在本轮 syndromes 中）是另一类
+  // 违规——checkPlan 只管类型，管不了成员关系。越界值会被置 null 走向
+  // focus-resolver fallback，必须留痕，否则又是「静默丢弃且不留痕」。
+  final ctf = teachingPlan['current_teaching_focus_id'];
+  if (ctf is String && !syndromeIdSet.contains(ctf)) {
+    drifts.add(
+      'teaching_plan.current_teaching_focus_id = $ctf 不在本轮 syndromes 中，'
+      '已按缺失处理（走 fallback 优先级表）',
+    );
+  }
 }
 
 /// 解析可选 style_profile（批次53；缺失/非法返回 null，不阻断诊断）
