@@ -55,78 +55,36 @@ AttitudeSuggestion? suggestAttitudeAdjustment({
 
   if (messageCount < AttitudeThresholds.minMessageCount) return null;
 
-  if (lastSuggestionTime != null &&
-      currentTime - lastSuggestionTime <
-          AttitudeThresholds.suggestionCooldownMs) {
-    return null;
-  }
+  if (_isInCooldown(currentTime, lastSuggestionTime)) return null;
 
   final currentIndex = attitudeOrder.indexOf(currentAttitude);
-
-  final avgSeverity = syndromes.isEmpty
-      ? 0.0
-      : syndromes.map(_severityRank).reduce((a, b) => a + b) / syndromes.length;
-
-  final isHighPhase =
-      currentPhase == TeachingPhase.p2PracticeLoop ||
-      currentPhase == TeachingPhase.p3Training;
-
-  final positiveFeedbackEnough =
-      consecutivePositiveFeedback >=
-      AttitudeThresholds.positiveFeedbackUpgradeCount;
-  final negativeFeedbackEnough =
-      consecutiveNegativeFeedback >=
-      AttitudeThresholds.negativeFeedbackDowngradeCount;
+  final ctx = _computeContext(
+    syndromes: syndromes,
+    currentPhase: currentPhase,
+    consecutivePositiveFeedback: consecutivePositiveFeedback,
+    consecutiveNegativeFeedback: consecutiveNegativeFeedback,
+  );
 
   // 升级（当前档位非最高）：问题多且严重，或学员积极跟上（正反馈）
-  if (currentIndex < attitudeOrder.length - 1) {
-    final canUpgrade =
-        (isHighPhase &&
-            avgSeverity >= AttitudeThresholds.upgradeSeverityThreshold &&
-            syndromes.length >= AttitudeThresholds.upgradeSyndromeCount) ||
-        positiveFeedbackEnough ||
-        (messageCount >= AttitudeThresholds.upgradeMessageCountHigh &&
-            isHighPhase &&
-            avgSeverity >= AttitudeThresholds.upgradeSeverityThresholdHigh);
-
-    if (canUpgrade) {
-      final target = attitudeOrder[currentIndex + 1];
-      return AttitudeSuggestion(
-        direction: 'upgrade',
-        targetLevel: target,
-        reason: _generateUpgradeReason(
-          target,
-          syndromes,
-          avgSeverity,
-          isHighPhase,
-          viaPositiveFeedback: positiveFeedbackEnough,
-        ),
-      );
-    }
-  }
+  final upgraded = _tryUpgrade(
+    currentIndex: currentIndex,
+    isHighPhase: ctx.isHighPhase,
+    avgSeverity: ctx.avgSeverity,
+    syndromes: syndromes,
+    positiveFeedbackEnough: ctx.positiveFeedbackEnough,
+    messageCount: messageCount,
+  );
+  if (upgraded != null) return upgraded;
 
   // 降级（当前档位非最低）：问题少且轻，或用户挫败/负反馈（对齐教学策略"用户挫败降档"）
-  if (currentIndex > 0) {
-    final canDowngrade =
-        negativeFeedbackEnough ||
-        (avgSeverity <= AttitudeThresholds.downgradeSeverityThreshold &&
-            syndromes.length <= AttitudeThresholds.downgradeSyndromeCount &&
-            messageCount >= AttitudeThresholds.downgradeMessageCount);
-
-    if (canDowngrade) {
-      final target = attitudeOrder[currentIndex - 1];
-      return AttitudeSuggestion(
-        direction: 'downgrade',
-        targetLevel: target,
-        reason: _generateDowngradeReason(
-          target,
-          syndromes,
-          avgSeverity,
-          viaNegativeFeedback: negativeFeedbackEnough,
-        ),
-      );
-    }
-  }
+  final downgraded = _tryDowngrade(
+    currentIndex: currentIndex,
+    avgSeverity: ctx.avgSeverity,
+    syndromes: syndromes,
+    negativeFeedbackEnough: ctx.negativeFeedbackEnough,
+    messageCount: messageCount,
+  );
+  if (downgraded != null) return downgraded;
 
   return null;
 }
@@ -219,3 +177,96 @@ String getAttitudeLabel(AttitudeLevel level) => switch (level) {
   AttitudeLevel.yuesheng => '月笙',
   AttitudeLevel.sensei => '老师',
 };
+
+/// 冷却期检查（R-019 拆出：suggestAttitudeAdjustment 前置守卫）。
+bool _isInCooldown(int currentTime, int? lastSuggestionTime) =>
+    lastSuggestionTime != null &&
+    currentTime - lastSuggestionTime < AttitudeThresholds.suggestionCooldownMs;
+
+/// 上下文计算：平均严重度 / 高阶段 / 反馈阈值（R-019 拆出）。
+({
+  double avgSeverity,
+  bool isHighPhase,
+  bool positiveFeedbackEnough,
+  bool negativeFeedbackEnough,
+})
+_computeContext({
+  required List<Severity> syndromes,
+  required TeachingPhase currentPhase,
+  required int consecutivePositiveFeedback,
+  required int consecutiveNegativeFeedback,
+}) => (
+  avgSeverity: syndromes.isEmpty
+      ? 0.0
+      : syndromes.map(_severityRank).reduce((a, b) => a + b) / syndromes.length,
+  isHighPhase:
+      currentPhase == TeachingPhase.p2PracticeLoop ||
+      currentPhase == TeachingPhase.p3Training,
+  positiveFeedbackEnough:
+      consecutivePositiveFeedback >=
+      AttitudeThresholds.positiveFeedbackUpgradeCount,
+  negativeFeedbackEnough:
+      consecutiveNegativeFeedback >=
+      AttitudeThresholds.negativeFeedbackDowngradeCount,
+);
+
+/// 升级判定与建议构造（R-019 拆出：suggestAttitudeAdjustment 升级分支）。
+AttitudeSuggestion? _tryUpgrade({
+  required int currentIndex,
+  required bool isHighPhase,
+  required double avgSeverity,
+  required List<Severity> syndromes,
+  required bool positiveFeedbackEnough,
+  required int messageCount,
+}) {
+  if (currentIndex >= attitudeOrder.length - 1) return null;
+  final canUpgrade =
+      (isHighPhase &&
+          avgSeverity >= AttitudeThresholds.upgradeSeverityThreshold &&
+          syndromes.length >= AttitudeThresholds.upgradeSyndromeCount) ||
+      positiveFeedbackEnough ||
+      (messageCount >= AttitudeThresholds.upgradeMessageCountHigh &&
+          isHighPhase &&
+          avgSeverity >= AttitudeThresholds.upgradeSeverityThresholdHigh);
+  if (!canUpgrade) return null;
+  final target = attitudeOrder[currentIndex + 1];
+  return AttitudeSuggestion(
+    direction: 'upgrade',
+    targetLevel: target,
+    reason: _generateUpgradeReason(
+      target,
+      syndromes,
+      avgSeverity,
+      isHighPhase,
+      viaPositiveFeedback: positiveFeedbackEnough,
+    ),
+  );
+}
+
+/// 降级判定与建议构造（R-019 拆出：suggestAttitudeAdjustment 降级分支）。
+AttitudeSuggestion? _tryDowngrade({
+  required int currentIndex,
+  required double avgSeverity,
+  required List<Severity> syndromes,
+  required bool negativeFeedbackEnough,
+  required int messageCount,
+}) {
+  if (currentIndex <= 0) return null;
+  final canDowngrade =
+      negativeFeedbackEnough ||
+      (avgSeverity <= AttitudeThresholds.downgradeSeverityThreshold &&
+          syndromes.length <= AttitudeThresholds.downgradeSyndromeCount &&
+          messageCount >= AttitudeThresholds.downgradeMessageCount);
+  if (!canDowngrade) return null;
+  final target = attitudeOrder[currentIndex - 1];
+  return AttitudeSuggestion(
+    direction: 'downgrade',
+    targetLevel: target,
+    reason: _generateDowngradeReason(
+      target,
+      syndromes,
+      avgSeverity,
+      viaNegativeFeedback: negativeFeedbackEnough,
+    ),
+  );
+}

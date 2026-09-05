@@ -11,6 +11,7 @@
 import 'dart:convert';
 
 import '../data/repositories/diagnosis_repository.dart';
+import '../data/database/database.dart';
 
 /// 单次诊断记录点（复刻 RN SyndromeTrendPoint）
 class SyndromeTrendPoint {
@@ -76,8 +77,23 @@ class SyndromeTracker {
     final rows = await _repo.listDiagnosisHistory(sessionId);
     if (rows.isEmpty) return [];
 
-    final map = <String, SyndromeTracked>{};
+    final map = _aggregateSyndromeMap(rows);
+    final result = _finalizeTrends(map);
 
+    // 排序：当前严重度降序 → 出现次数降序（对齐 RN）
+    result.sort((a, b) {
+      final sevDiff =
+          (_severityScore[b.currentSeverity] ?? 0) -
+          (_severityScore[a.currentSeverity] ?? 0);
+      if (sevDiff != 0) return sevDiff;
+      return b.occurrenceCount - a.occurrenceCount;
+    });
+    return result;
+  }
+
+  /// 聚合诊断历史为症候映射（R-019 拆出：loadSyndromeTrends 逐条累加）。
+  Map<String, SyndromeTracked> _aggregateSyndromeMap(List<DiagnosisRow> rows) {
+    final map = <String, SyndromeTracked>{};
     // 诊断历史按 timestamp DESC；聚合时不依赖行序，逐条累加
     for (final row in rows) {
       final syndromes = _parseSyndromes(row.syndromes);
@@ -89,7 +105,6 @@ class SyndromeTracker {
           severity: s['severity'] as String? ?? 'L2',
           diagnosisId: row.id,
         );
-
         final existing = map[id];
         if (existing == null) {
           map[id] = SyndromeTracked(
@@ -122,7 +137,11 @@ class SyndromeTracker {
         }
       }
     }
+    return map;
+  }
 
+  /// 聚合结果后处理：排序 recent 窗口 + 计算趋势（R-019 拆出）。
+  List<SyndromeTracked> _finalizeTrends(Map<String, SyndromeTracked> map) {
     final result = <SyndromeTracked>[];
     for (final t in map.values) {
       final points = [...t.recentPoints]
@@ -143,15 +162,6 @@ class SyndromeTracker {
         ),
       );
     }
-
-    // 排序：当前严重度降序 → 出现次数降序（对齐 RN）
-    result.sort((a, b) {
-      final sevDiff =
-          (_severityScore[b.currentSeverity] ?? 0) -
-          (_severityScore[a.currentSeverity] ?? 0);
-      if (sevDiff != 0) return sevDiff;
-      return b.occurrenceCount - a.occurrenceCount;
-    });
     return result;
   }
 

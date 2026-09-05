@@ -41,8 +41,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyPhaseMigration",
-      "start": 180,
-      "end": 396,
+      "start": 163,
+      "end": 379,
       "lines": 217
     },
     {
@@ -307,8 +307,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyFactExtractionFromContent",
-      "start": 570,
-      "end": 691,
+      "start": 553,
+      "end": 674,
       "lines": 122
     },
     {
@@ -648,13 +648,6 @@
       "lines": 92
     },
     {
-      "file": "lib/services/attitude_advisor.dart",
-      "func": "suggestAttitudeAdjustment",
-      "start": 44,
-      "end": 132,
-      "lines": 89
-    },
-    {
       "file": "lib/widgets/task_panel.dart",
       "func": "build",
       "start": 57,
@@ -760,13 +753,6 @@
       "lines": 83
     },
     {
-      "file": "lib/services/syndrome_tracker.dart",
-      "func": "loadSyndromeTrends",
-      "start": 75,
-      "end": 156,
-      "lines": 82
-    },
-    {
       "file": "lib/widgets/editor_settings_sheet.dart",
       "func": "build",
       "start": 560,
@@ -832,8 +818,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyOutlineEntitiesFromContent",
-      "start": 484,
-      "end": 561,
+      "start": 467,
+      "end": 544,
       "lines": 78
     },
     {
@@ -1262,13 +1248,6 @@
       "start": 385,
       "end": 443,
       "lines": 59
-    },
-    {
-      "file": "lib/services/stream_guard.dart",
-      "func": "guardStream",
-      "start": 21,
-      "end": 78,
-      "lines": 58
     },
     {
       "file": "lib/widgets/attitude_indicator.dart",
