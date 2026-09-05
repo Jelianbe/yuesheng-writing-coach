@@ -211,7 +211,36 @@ StyleFingerprint? extractStyleFingerprint(String text) {
 
   final totalChars = t.length.toDouble();
 
-  // 段落分布（按换行切分）
+  final pdist = _paragraphDistribution(t);
+  final dialogueRatio = _dialogueRatio(t);
+  final (avgLen, varLen) = _sentenceLengthStats(sentences);
+  final simpleCount = _countSimpleSentences(sentences);
+  final punc = _punctuationCounts(t);
+  final rhet = _rhetoricCounts(t);
+  final topWords = _bigramFingerprint(sentences);
+
+  return StyleFingerprint(
+    avgSentenceLength: avgLen,
+    sentenceLengthVariance: varLen,
+    shortParaRatio: pdist.short / pdist.total,
+    mediumParaRatio: pdist.medium / pdist.total,
+    longParaRatio: pdist.long / pdist.total,
+    dialogueRatio: dialogueRatio,
+    narrativeRatio: 1 - dialogueRatio,
+    simpleSentenceRatio: simpleCount / sentences.length,
+    metaphorDensity: rhet.metaphor * 1000 / totalChars,
+    rhetoricalQuestionDensity: rhet.rhetorical * 1000 / totalChars,
+    ellipsisDensity: punc.ellipsis * 1000 / totalChars,
+    exclamationDensity: punc.exclamation * 1000 / totalChars,
+    topWords: topWords,
+    sentencesCount: sentences.length,
+  );
+}
+
+/// 段落分布（R-019 拆出：extractStyleFingerprint）。
+({int short, int medium, int long, int total}) _paragraphDistribution(
+  String t,
+) {
   final paragraphs = t
       .split('\n')
       .map((p) => p.trim())
@@ -227,9 +256,12 @@ StyleFingerprint? extractStyleFingerprint(String text) {
       longP++;
     }
   }
-  final paraTotal = paragraphs.isEmpty ? 1 : paragraphs.length;
+  final total = paragraphs.isEmpty ? 1 : paragraphs.length;
+  return (short: shortP, medium: mediumP, long: longP, total: total);
+}
 
-  // 对话/叙述占比（按行）
+/// 对话行占比（R-019 拆出：extractStyleFingerprint）。
+double _dialogueRatio(String t) {
   final lines = t
       .split('\n')
       .map((l) => l.trim())
@@ -240,20 +272,27 @@ StyleFingerprint? extractStyleFingerprint(String text) {
     if (_dialogueQuote.hasMatch(l)) dialogueLines++;
   }
   final lineTotal = lines.isEmpty ? 1 : lines.length;
-  final dialogueRatio = dialogueLines / lineTotal;
+  return dialogueLines / lineTotal;
+}
 
-  // 句式结构 + 句长统计
+/// 简单句计数（逗号类分隔 ≤1 视为简单句，R-019 拆出）。
+int _countSimpleSentences(List<String> sentences) {
   var simpleCount = 0;
   for (final s in sentences) {
     if (_commaLike.allMatches(s).length <= 1) simpleCount++;
   }
-  final (avgLen, varLen) = _sentenceLengthStats(sentences);
+  return simpleCount;
+}
 
-  // 标点特征
+/// 省略号 / 感叹号计数（R-019 拆出）。
+({int ellipsis, int exclamation}) _punctuationCounts(String t) {
   final ellipsisCount = '……'.allMatches(t).length + '…'.allMatches(t).length;
   final exclamationCount = '！'.allMatches(t).length;
+  return (ellipsis: ellipsisCount, exclamation: exclamationCount);
+}
 
-  // 修辞频率
+/// 修辞词频（R-019 拆出）。
+({int metaphor, int rhetorical}) _rhetoricCounts(String t) {
   var metaphorCount = 0;
   for (final w in _metaphorWords) {
     metaphorCount += w.allMatches(t).length;
@@ -262,8 +301,11 @@ StyleFingerprint? extractStyleFingerprint(String text) {
   for (final w in _rhetoricalQuestionWords) {
     rhetoricalCount += w.allMatches(t).length;
   }
+  return (metaphor: metaphorCount, rhetorical: rhetoricalCount);
+}
 
-  // 高频词指纹（2-gram 近似）
+/// 2-gram 高频词指纹（R-019 拆出：extractStyleFingerprint）。
+Map<String, int> _bigramFingerprint(List<String> sentences) {
   final bigrams = <String, int>{};
   for (final s in sentences) {
     final cleaned = s.replaceAll(RegExp(r'[^\u4e00-\u9fa5]'), '');
@@ -275,26 +317,9 @@ StyleFingerprint? extractStyleFingerprint(String text) {
   }
   final sorted = bigrams.entries.toList()
     ..sort((a, b) => b.value.compareTo(a.value));
-  final topWords = <String, int>{
+  return <String, int>{
     for (final e in sorted.take(kTopWordsCount)) e.key: e.value,
   };
-
-  return StyleFingerprint(
-    avgSentenceLength: avgLen,
-    sentenceLengthVariance: varLen,
-    shortParaRatio: shortP / paraTotal,
-    mediumParaRatio: mediumP / paraTotal,
-    longParaRatio: longP / paraTotal,
-    dialogueRatio: dialogueRatio,
-    narrativeRatio: 1 - dialogueRatio,
-    simpleSentenceRatio: simpleCount / sentences.length,
-    metaphorDensity: metaphorCount * 1000 / totalChars,
-    rhetoricalQuestionDensity: rhetoricalCount * 1000 / totalChars,
-    ellipsisDensity: ellipsisCount * 1000 / totalChars,
-    exclamationDensity: exclamationCount * 1000 / totalChars,
-    topWords: topWords,
-    sentencesCount: sentences.length,
-  );
 }
 
 /// 声线漂移检测：当前指纹 vs 基线指纹。

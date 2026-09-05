@@ -162,6 +162,45 @@ void main() {
       expect(detail.teachingState, TeachingState.consolidating);
     });
 
+    test('#7 无症候明细且无确认记录 → passRate 回退 0.5（防除零）', () async {
+      final sessionId = await seedSession();
+      // 有诊断历史（过守卫），但不创建 active problem、无确认记录
+      final msgId = await sessionRepo.addMessage(
+        sessionId,
+        'assistant',
+        '诊断内容',
+        messageType: 'diagnosis_result',
+      );
+      await diagnosisRepo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: sessionId,
+          messageId: msgId,
+          syndromes: const [],
+          suggestedActions: const [],
+          confidence: 0.8,
+        ),
+      );
+
+      final result = await service.computeRoundEvaluation(sessionId, 0);
+
+      expect(result, isNotNull);
+      expect(result!.passRate, 0.5);
+    });
+
+    test('#8 round=0 且诊断>=2 条 → severityDelta 为 null；round>0 才计算', () async {
+      final sessionId = await seedSession();
+      await seedDiagnosis(sessionId);
+      await seedDiagnosis(sessionId);
+
+      final round0 = await service.computeRoundEvaluation(sessionId, 0);
+      final round1 = await service.computeRoundEvaluation(sessionId, 1);
+
+      expect(round0, isNotNull);
+      expect(round0!.severityDelta, isNull, reason: 'round=0 不计算严重度变化');
+      expect(round1, isNotNull);
+      expect(round1!.severityDelta, isNotNull, reason: 'round>0 且诊断>=2 应计算');
+    });
+
     test('#6 consolidating→mastered 可达（非 FSRS 降级路径，FSRS 未启用）', () async {
       final sessionId = await seedSession();
       await seedDiagnosis(sessionId);

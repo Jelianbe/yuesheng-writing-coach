@@ -133,10 +133,43 @@ class OutlineService {
     // 防确认卡永居与陈旧印象覆盖当前 active。
     await _repo.cleanupPendingImpressions();
 
+    final (knownIds, existingKeys) = await _loadKnownEntities(manuscriptId);
+
     final results = <OutlineExtractionResult>[];
+    for (final update in extraction.entities) {
+      final resolved = await _resolveOutlineTarget(
+        manuscriptId,
+        update,
+        knownIds,
+        existingKeys,
+      );
+      if (resolved == null) continue; // 兜底：极端情况跳过该实体
+      final target = resolved.entity!;
+      final newImpressions = await _appendOutlineImpressions(
+        target,
+        update,
+        sourceChapterId,
+        sourceChapterNo,
+      );
+      results.add(
+        OutlineExtractionResult(
+          entityId: target.id,
+          entityType: target.entityType,
+          entityKey: target.entityKey,
+          isNewEntity: resolved.isNew,
+          impressions: newImpressions,
+        ),
+      );
+    }
+    return results;
+  }
+
+  /// 加载已知实体 + 匹配键（R-019 拆出：applyOutlineExtraction）。
+  Future<(Set<String>, Map<String, OutlineEntity>)> _loadKnownEntities(
+    String manuscriptId,
+  ) async {
     final entities = await _repo.listEntities(manuscriptId);
     final knownIds = entities.map((e) => e.id).toSet();
-    // 已有匹配键（key + 别名），供别名交集匹配
     final existingKeys = <String, OutlineEntity>{};
     for (final e in entities) {
       existingKeys[e.entityKey] = e;
@@ -144,78 +177,79 @@ class OutlineService {
         existingKeys[alias] = e;
       }
     }
+    return (knownIds, existingKeys);
+  }
 
-    for (final update in extraction.entities) {
-      // 1. matched_entity_id（校验存在性，防幻觉）
-      OutlineEntity? target;
-      if (update.matchedEntityId != null &&
-          knownIds.contains(update.matchedEntityId)) {
-        target = await _repo.getEntityById(update.matchedEntityId!);
-      }
-      // 2. 别名交集匹配
-      if (target == null) {
-        final probeKeys = {update.key, ...update.aliases};
-        for (final key in probeKeys) {
-          final hit = existingKeys[key];
-          if (hit != null) {
-            target = hit;
-            break;
-          }
+  /// 解析实体目标（matched id → 别名交集 → 新建 pending，R-019 拆出）。
+  Future<({OutlineEntity? entity, bool isNew})?> _resolveOutlineTarget(
+    String manuscriptId,
+    OutlineEntityUpdate update,
+    Set<String> knownIds,
+    Map<String, OutlineEntity> existingKeys,
+  ) async {
+    // 1. matched_entity_id（校验存在性，防幻觉）
+    OutlineEntity? target;
+    if (update.matchedEntityId != null &&
+        knownIds.contains(update.matchedEntityId)) {
+      target = await _repo.getEntityById(update.matchedEntityId!);
+    }
+    // 2. 别名交集匹配
+    if (target == null) {
+      final probeKeys = {update.key, ...update.aliases};
+      for (final key in probeKeys) {
+        final hit = existingKeys[key];
+        if (hit != null) {
+          target = hit;
+          break;
         }
       }
-      // 3. 新建（pending）
-      var isNewEntity = false;
-      if (target == null) {
-        await _repo.insertEntity(
-          manuscriptId: manuscriptId,
-          entityType: update.type,
-          entityKey: update.key,
-          aliases: update.aliases,
-        );
-        target = await _findByKey(manuscriptId, update.key);
-        isNewEntity = true;
-      } else {
-        await _repo.mergeAliases(target.id, update.aliases);
-      }
-      if (target == null) continue; // 兜底：极端情况跳过该实体
+    }
+    // 3. 新建（pending）
+    var isNewEntity = false;
+    if (target == null) {
+      await _repo.insertEntity(
+        manuscriptId: manuscriptId,
+        entityType: update.type,
+        entityKey: update.key,
+        aliases: update.aliases,
+      );
+      target = await _findByKey(manuscriptId, update.key);
+      isNewEntity = true;
+    } else {
+      await _repo.mergeAliases(target.id, update.aliases);
+    }
+    return target == null ? null : (entity: target, isNew: isNewEntity);
+  }
 
-      // 追加印象（增量，不覆盖）
-      final existingImpressions = await _repo.listImpressions(target.id);
-      final impressionIds = existingImpressions.map((i) => i.id).toSet();
-      final newImpressions = <OutlineImpressionResult>[];
-      for (final im in update.impressions) {
-        if (await _repo.hasImpression(target.id, im.text)) continue;
-        // conflict_with 防幻觉：仅采信同实体已有印象 id
-        final conflict =
-            im.conflictWith != null && impressionIds.contains(im.conflictWith)
-            ? im.conflictWith
-            : null;
-        final id = await _repo.insertImpression(
-          entityId: target.id,
-          impression: im.text,
-          sourceChapterId: sourceChapterId,
-          sourceChapterNo: sourceChapterNo,
-          conflictWith: conflict,
-        );
-        newImpressions.add(
-          OutlineImpressionResult(
-            id: id,
-            text: im.text,
-            conflictWith: conflict,
-          ),
-        );
-      }
-      results.add(
-        OutlineExtractionResult(
-          entityId: target.id,
-          entityType: target.entityType,
-          entityKey: target.entityKey,
-          isNewEntity: isNewEntity,
-          impressions: newImpressions,
-        ),
+  /// 追加印象（增量，不覆盖；conflict_with 防幻觉，R-019 拆出）。
+  Future<List<OutlineImpressionResult>> _appendOutlineImpressions(
+    OutlineEntity target,
+    OutlineEntityUpdate update,
+    String? sourceChapterId,
+    int? sourceChapterNo,
+  ) async {
+    final existingImpressions = await _repo.listImpressions(target.id);
+    final impressionIds = existingImpressions.map((i) => i.id).toSet();
+    final newImpressions = <OutlineImpressionResult>[];
+    for (final im in update.impressions) {
+      if (await _repo.hasImpression(target.id, im.text)) continue;
+      // conflict_with 防幻觉：仅采信同实体已有印象 id
+      final conflict =
+          im.conflictWith != null && impressionIds.contains(im.conflictWith)
+          ? im.conflictWith
+          : null;
+      final id = await _repo.insertImpression(
+        entityId: target.id,
+        impression: im.text,
+        sourceChapterId: sourceChapterId,
+        sourceChapterNo: sourceChapterNo,
+        conflictWith: conflict,
+      );
+      newImpressions.add(
+        OutlineImpressionResult(id: id, text: im.text, conflictWith: conflict),
       );
     }
-    return results;
+    return newImpressions;
   }
 
   Future<OutlineEntity?> _findByKey(String manuscriptId, String key) async {
