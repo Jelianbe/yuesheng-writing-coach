@@ -35,7 +35,8 @@ import '../providers/session_providers.dart';
 import '../providers/capability_providers.dart'; // mentionParserProvider（ADR-C70 迁入此文件）
 import '../router/app_routes.dart';
 import '../services/attitude_advisor.dart';
-import '../services/chat_message_types.dart' show SendMessageCallbacks, SendMessageOptions;
+import '../services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
 import '../services/message_card_service.dart';
 import '../services/progressive_diagnosis.dart';
 import '../services/work_import_service.dart';
