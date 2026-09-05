@@ -470,76 +470,90 @@ class DiagnosisCommitter {
     ReferenceItem? primaryRef,
   }) async {
     if (_ensureOutlineService() == null) return;
-    // 若调用方未传入 primaryRef（D4-A 路径），从 session 装配主引用
-    ReferenceItem? pRef = primaryRef;
-    if (pRef == null) {
-      try {
-        final refs = await _referenceRepo.listReferences(sessionId);
-        if (refs.isNotEmpty) {
-          final items = refs
-              .map(
-                (r) => ReferenceItem(
-                  refType: r.refType,
-                  refId: r.refId,
-                  title: r.title,
-                  isPrimary: r.isPrimary,
-                  manuscriptId: r.manuscriptId,
-                  excerptRange: r.excerptRange,
-                ),
-              )
-              .toList();
-          pRef = items.firstWhere(
-            (r) => r.isPrimary == 1,
-            orElse: () => items.first,
-          );
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] commitOutlineChangeFromContent 引用查询失败: $e');
-        return;
-      }
-    }
+    final pRef = await _resolveChapterPrimaryRef(sessionId, primaryRef);
     if (pRef?.refType != 'chapter') return;
     try {
-      final outlineExtraction = parseOutlineExtraction(fullContent);
-      if (outlineExtraction == null || outlineExtraction.entities.isEmpty) {
-        return;
-      }
-      final chapter = await _chapterRepo.getChapter(pRef!.refId);
-      if (chapter == null) return;
-      final results = await _ensureOutlineService()!.applyOutlineExtraction(
-        manuscriptId: chapter.manuscriptId,
-        extraction: outlineExtraction,
-        sourceChapterId: chapter.id,
-        sourceChapterNo: chapter.sortOrder,
-      );
-      debugPrint(
-        '[DiagnosisCommitter] 大纲提取落库 | 实体数=${outlineExtraction.entities.length}',
-      );
-      for (final r in results) {
-        if (r.impressions.isEmpty) continue;
-        await insertOutlineConfirmationCard(
-          _sessionRepo,
-          sessionId,
-          OutlineConfirmationPayload(
-            confirmationId: generateUuid(),
-            entityId: r.entityId,
-            entityType: r.entityType,
-            entityKey: r.entityKey,
-            isNewEntity: r.isNewEntity,
-            impressions: r.impressions
-                .map(
-                  (im) => OutlineImpressionPayload(
-                    id: im.id,
-                    text: im.text,
-                    conflictWith: im.conflictWith,
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      }
+      await _persistOutlineExtraction(sessionId, fullContent, pRef!);
     } catch (e) {
       debugPrint('[SafeRun] commitOutlineChangeFromContent 大纲落库失败: $e');
+    }
+  }
+
+  /// 解析主引用（R-019 拆出：applyOutlineEntitiesFromContent）。
+  /// 入参未传（D4-A 路径）时从 session 引用装配；查询失败返回 null。
+  Future<ReferenceItem?> _resolveChapterPrimaryRef(
+    String sessionId,
+    ReferenceItem? primaryRef,
+  ) async {
+    if (primaryRef != null) return primaryRef;
+    try {
+      final refs = await _referenceRepo.listReferences(sessionId);
+      if (refs.isEmpty) return null;
+      final items = refs
+          .map(
+            (r) => ReferenceItem(
+              refType: r.refType,
+              refId: r.refId,
+              title: r.title,
+              isPrimary: r.isPrimary,
+              manuscriptId: r.manuscriptId,
+              excerptRange: r.excerptRange,
+            ),
+          )
+          .toList();
+      return items.firstWhere(
+        (r) => r.isPrimary == 1,
+        orElse: () => items.first,
+      );
+    } catch (e) {
+      debugPrint('[SafeRun] commitOutlineChangeFromContent 引用查询失败: $e');
+      return null;
+    }
+  }
+
+  /// 大纲提取落库 + 确认卡写入（R-019 拆出：applyOutlineEntitiesFromContent）。
+  Future<void> _persistOutlineExtraction(
+    String sessionId,
+    String fullContent,
+    ReferenceItem pRef,
+  ) async {
+    final outlineExtraction = parseOutlineExtraction(fullContent);
+    if (outlineExtraction == null || outlineExtraction.entities.isEmpty) {
+      return;
+    }
+    final chapter = await _chapterRepo.getChapter(pRef.refId);
+    if (chapter == null) return;
+    final results = await _ensureOutlineService()!.applyOutlineExtraction(
+      manuscriptId: chapter.manuscriptId,
+      extraction: outlineExtraction,
+      sourceChapterId: chapter.id,
+      sourceChapterNo: chapter.sortOrder,
+    );
+    debugPrint(
+      '[DiagnosisCommitter] 大纲提取落库 | 实体数=${outlineExtraction.entities.length}',
+    );
+    for (final r in results) {
+      if (r.impressions.isEmpty) continue;
+      await insertOutlineConfirmationCard(
+        _sessionRepo,
+        sessionId,
+        OutlineConfirmationPayload(
+          confirmationId: generateUuid(),
+          entityId: r.entityId,
+          entityType: r.entityType,
+          entityKey: r.entityKey,
+          isNewEntity: r.isNewEntity,
+          impressions: r.impressions
+              .map(
+                (im) => OutlineImpressionPayload(
+                  id: im.id,
+                  text: im.text,
+                  conflictWith: im.conflictWith,
+                ),
+              )
+              .toList(),
+        ),
+      );
     }
   }
 

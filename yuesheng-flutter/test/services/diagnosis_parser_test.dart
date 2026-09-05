@@ -35,6 +35,12 @@ void main() {
       expect(r.displayContent, endsWith('收尾'));
     });
 
+    test('#4b 有起始标记无结束标记 → rejectReason=marker_end_missing', () {
+      final r = parseDiagnosis('开头[YS_DIAGNOSIS]{"syndromes":[]}');
+      expect(r.diagnosis, isNull);
+      expect(r.rejectReason, 'marker_end_missing');
+    });
+
     test('#3 有诊断块但无大纲块：prefix 保留', () {
       const raw =
           '一段前导话\n'

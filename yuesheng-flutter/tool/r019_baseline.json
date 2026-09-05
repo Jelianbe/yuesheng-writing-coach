@@ -195,8 +195,8 @@
     {
       "file": "lib/services/diagnosis_parser.dart",
       "func": "_validateDiagnosis",
-      "start": 282,
-      "end": 426,
+      "start": 287,
+      "end": 431,
       "lines": 145
     },
     {
@@ -307,8 +307,8 @@
     {
       "file": "lib/services/diagnosis_committer.dart",
       "func": "applyFactExtractionFromContent",
-      "start": 553,
-      "end": 674,
+      "start": 567,
+      "end": 688,
       "lines": 122
     },
     {
@@ -774,13 +774,6 @@
       "lines": 79
     },
     {
-      "file": "lib/services/diagnosis_committer.dart",
-      "func": "applyOutlineEntitiesFromContent",
-      "start": 467,
-      "end": 544,
-      "lines": 78
-    },
-    {
       "file": "lib/widgets/chat_header.dart",
       "func": "build",
       "start": 267,
@@ -1220,13 +1213,6 @@
       "start": 232,
       "end": 286,
       "lines": 55
-    },
-    {
-      "file": "lib/services/diagnosis_parser.dart",
-      "func": "parseDiagnosis",
-      "start": 111,
-      "end": 164,
-      "lines": 54
     },
     {
       "file": "lib/widgets/diagnosis_picker_sheet.dart",
