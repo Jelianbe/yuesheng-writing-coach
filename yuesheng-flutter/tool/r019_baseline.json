@@ -151,13 +151,6 @@
       "lines": 148
     },
     {
-      "file": "lib/services/diagnosis_parser.dart",
-      "func": "_validateDiagnosis",
-      "start": 287,
-      "end": 431,
-      "lines": 145
-    },
-    {
       "file": "lib/services/editor_validator.dart",
       "func": "validateEditorSchema",
       "start": 131,
@@ -401,13 +394,6 @@
       "start": 519,
       "end": 620,
       "lines": 102
-    },
-    {
-      "file": "lib/services/diagnosis_validator.dart",
-      "func": "validateDiagnosisSchema",
-      "start": 67,
-      "end": 167,
-      "lines": 101
     },
     {
       "file": "lib/widgets/project_settings_page.dart",

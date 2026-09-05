@@ -224,6 +224,27 @@ class _DiagnosisValidation {
       notes = List<String>.unmodifiable(collectedNotes);
 }
 
+/// 可选文本字段解析结果（R-019 拆出）。
+typedef _OptionalTextFields = ({
+  String? rootCauseAnalysis,
+  String? nextFocus,
+  String? feedbackSummary,
+});
+
+/// 白名单守卫字段解析结果（R-019 拆出）。
+typedef _WhitelistFields = ({
+  TeachingPhase? suggestedPhase,
+  BeginnerLevel? suggestedBeginnerLevel,
+  TeachingMode? teachingMode,
+});
+
+/// teaching_plan 子块解析结果（R-019 拆出）。
+typedef _TeachingPlanFields = ({
+  String? currentTeachingFocusId,
+  String? focusReason,
+  String? teachingPlanNextStep,
+});
+
 /// 校验 syndromes 数组，命中则填充 [out]，非阻断观测写入 [notes]。
 ///
 /// 返回原因码（null = 通过）。
@@ -311,28 +332,82 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
     return const _DiagnosisValidation.reject('confidence_invalid');
   }
 
-  // 可选字段
+  // 可选字段（R-019 拆出：文本 / 白名单守卫 / teaching_plan / style_profile）
+  final texts = _parseOptionalTextFields(obj);
+  final whitelist = _parseWhitelistFields(obj, notes);
+  final plan = _parseTeachingPlan(obj, syndromes, notes);
+  final styleProfile = _parseStyleProfile(obj);
+  // 兼容性策略（设计 5.8.4）：teaching_plan.next_step 优先，null 回退 next_focus
+  final finalNextFocus = plan.teachingPlanNextStep ?? texts.nextFocus;
+
+  return _DiagnosisValidation.ok(
+    _buildParsedDiagnosis(
+      syndromes,
+      suggestedActions,
+      confidence,
+      texts,
+      finalNextFocus,
+      whitelist,
+      plan,
+      styleProfile,
+    ),
+    notes,
+  );
+}
+
+/// 组装 ParsedDiagnosis（R-019 拆出，纯装配无逻辑）。
+ParsedDiagnosis _buildParsedDiagnosis(
+  List<Syndrome> syndromes,
+  List<String> suggestedActions,
+  num confidence,
+  _OptionalTextFields texts,
+  String? finalNextFocus,
+  _WhitelistFields whitelist,
+  _TeachingPlanFields plan,
+  WritingStyleProfile? styleProfile,
+) {
+  return ParsedDiagnosis(
+    syndromes: syndromes,
+    suggestedActions: suggestedActions,
+    confidence: confidence.toDouble(),
+    rootCauseAnalysis: texts.rootCauseAnalysis,
+    nextFocus: finalNextFocus,
+    feedbackSummary: texts.feedbackSummary,
+    suggestedPhase: whitelist.suggestedPhase,
+    suggestedBeginnerLevel: whitelist.suggestedBeginnerLevel,
+    teachingMode: whitelist.teachingMode,
+    currentTeachingFocusId: plan.currentTeachingFocusId,
+    focusReason: plan.focusReason,
+    styleProfile: styleProfile,
+  );
+}
+
+/// 解析可选文本字段（root_cause_analysis / next_focus / feedback_summary，R-019 拆出）。
+_OptionalTextFields _parseOptionalTextFields(Map<String, dynamic> obj) {
   String? rootCauseAnalysis;
   final rca = obj['root_cause_analysis'];
-  if (rca is String) {
-    rootCauseAnalysis = rca;
-  }
+  if (rca is String) rootCauseAnalysis = rca;
 
   String? nextFocus;
   final nf = obj['next_focus'];
-  if (nf is String) {
-    nextFocus = nf;
-  }
+  if (nf is String) nextFocus = nf;
 
   String? feedbackSummary;
   final fs = obj['feedback_summary'];
-  if (fs is String) {
-    feedbackSummary = fs;
-  }
+  if (fs is String) feedbackSummary = fs;
+  return (
+    rootCauseAnalysis: rootCauseAnalysis,
+    nextFocus: nextFocus,
+    feedbackSummary: feedbackSummary,
+  );
+}
 
-  // 以下三个可选字段走白名单守卫。白名单未命中时**整块仍然通过**，
-  // 只是字段变成 null——这是 N26 的 B 组形态，比整块丢弃更隐蔽：
-  // 诊断照常显示、UI 毫无异样，唯独阶段迁移永远不发生（N13 的确切机制）。
+/// 解析白名单守卫字段（R-019 拆出）。
+/// 白名单未命中时整块仍通过、字段变 null（N26 B 组形态，R-019 拆出）。
+_WhitelistFields _parseWhitelistFields(
+  Map<String, dynamic> obj,
+  List<String> notes,
+) {
   TeachingPhase? suggestedPhase;
   final sp = obj['suggested_phase'];
   if (sp is String && kValidPhases.contains(sp)) {
@@ -356,78 +431,65 @@ _DiagnosisValidation _validateDiagnosis(dynamic raw) {
   } else if (tm != null) {
     notes.add('teaching_mode_dropped');
   }
+  return (
+    suggestedPhase: suggestedPhase,
+    suggestedBeginnerLevel: suggestedBeginnerLevel,
+    teachingMode: teachingMode,
+  );
+}
 
-  // teaching_plan 子块（设计文档 5.8.4 兼容性策略）
-  final teachingPlanRaw = obj['teaching_plan'];
-  final teachingPlan = teachingPlanRaw is Map<String, dynamic>
-      ? teachingPlanRaw
-      : null;
-
+/// 解析 teaching_plan 子块（设计 5.8.4 兼容性策略，R-019 拆出）。
+_TeachingPlanFields _parseTeachingPlan(
+  Map<String, dynamic> obj,
+  List<Syndrome> syndromes,
+  List<String> notes,
+) {
+  final teachingPlan = obj['teaching_plan'];
+  if (teachingPlan is! Map<String, dynamic>) {
+    return (
+      currentTeachingFocusId: null,
+      focusReason: null,
+      teachingPlanNextStep: null,
+    );
+  }
   String? currentTeachingFocusId;
-  if (teachingPlan != null) {
-    final ctf = teachingPlan['current_teaching_focus_id'];
-    if (ctf is String) {
-      // N3-a（ADR-C65）：prompt 三处明写「必须从本轮 syndromes 中选取」
-      //（skills_l1_core_p2.dart:124 / syndrome_kb_content.dart:77、99）。
-      // 越界值置 null → 走 focus-resolver fallback，这是 prompt 自己声明的
-      // 既有行为（同 :124「缺失时走 fallback 优先级表」），不是新造路径。
-      //
-      // 为什么必须拦：越界 id 会绕过诊断锁定。落库后下轮
-      // getLatestTeachingFocus 取出它，focus-resolver 校验 1「在池中」只看
-      // active_problem 池——而 commitDiagnosis 已把本轮症候 UPSERT 进池，
-      // 校验先于落库不成立，拦不住。详见 ADR-C65 §3.3。
-      if (syndromes.any((s) => s.syndromeId == ctf)) {
-        currentTeachingFocusId = ctf;
-      } else {
-        notes.add('focus_not_in_syndromes');
-      }
+  final ctf = teachingPlan['current_teaching_focus_id'];
+  if (ctf is String) {
+    // N3-a（ADR-C65）：越界 id 置 null → 走 focus-resolver fallback。
+    // 为什么必须拦：越界 id 会绕过诊断锁定。落库后下轮
+    // getLatestTeachingFocus 取出它，focus-resolver 校验 1「在池中」只看
+    // active_problem 池——而 commitDiagnosis 已把本轮症候 UPSERT 进池，
+    // 校验先于落库不成立，拦不住。详见 ADR-C65 §3.3。
+    if (syndromes.any((s) => s.syndromeId == ctf)) {
+      currentTeachingFocusId = ctf;
+    } else {
+      notes.add('focus_not_in_syndromes');
     }
   }
 
   String? focusReason;
-  if (teachingPlan != null) {
-    final fr = teachingPlan['focus_reason'];
-    if (fr is String) focusReason = fr;
-  }
+  final fr = teachingPlan['focus_reason'];
+  if (fr is String) focusReason = fr;
 
   String? teachingPlanNextStep;
-  if (teachingPlan != null) {
-    final ns = teachingPlan['next_step'];
-    if (ns is String) teachingPlanNextStep = ns;
-  }
-
-  // 兼容性策略（设计 5.8.4）：
-  // teaching_plan.next_step 有值时优先；为 null 时回退到 next_focus
-  final finalNextFocus = teachingPlanNextStep ?? nextFocus;
-
-  // 可选：style_profile 写作风格画像（批次53，缺失/非法不阻断诊断）
-  WritingStyleProfile? styleProfile;
-  final styleRaw = obj['style_profile'];
-  if (styleRaw is Map<String, dynamic>) {
-    try {
-      styleProfile = WritingStyleProfile.fromJson(styleRaw);
-    } catch (_) {
-      styleProfile = null; // 缺 summary 等非法结构 → 忽略
-    }
-  }
-
-  return _DiagnosisValidation.ok(
-    ParsedDiagnosis(
-      syndromes: syndromes,
-      suggestedActions: suggestedActions,
-      confidence: confidence.toDouble(),
-      rootCauseAnalysis: rootCauseAnalysis,
-      nextFocus: finalNextFocus,
-      feedbackSummary: feedbackSummary,
-      suggestedPhase: suggestedPhase,
-      suggestedBeginnerLevel: suggestedBeginnerLevel,
-      teachingMode: teachingMode,
-      currentTeachingFocusId: currentTeachingFocusId,
-      focusReason: focusReason,
-      styleProfile: styleProfile,
-    ),
-    notes,
+  final ns = teachingPlan['next_step'];
+  if (ns is String) teachingPlanNextStep = ns;
+  return (
+    currentTeachingFocusId: currentTeachingFocusId,
+    focusReason: focusReason,
+    teachingPlanNextStep: teachingPlanNextStep,
   );
+}
+
+/// 解析 style_profile（批次53，缺失/非法不阻断诊断，R-019 拆出）。
+WritingStyleProfile? _parseStyleProfile(Map<String, dynamic> obj) {
+  final styleRaw = obj['style_profile'];
+  if (styleRaw is! Map<String, dynamic>) return null;
+  try {
+    return WritingStyleProfile.fromJson(styleRaw);
+  } catch (_) {
+    return null; // 缺 summary 等非法结构 → 忽略
+  }
 }
 
 /// 检查 fullContent 尾部是否匹配 [YS_DIAGNOSIS] 的某个前缀

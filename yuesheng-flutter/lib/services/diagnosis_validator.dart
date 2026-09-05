@@ -63,6 +63,73 @@ const Set<String> _kBlockingFixTypes = {'V-03', 'V-04'};
 /// 完整校验结果 等 DTO 已上移至 contracts/diagnosis_capability.dart，
 /// 本文件经 import 复用，不再重复定义。
 
+/// syndromes 字段整体校验（非空数组 + 逐项，R-019 拆出）。
+void _validateSyndromesField(
+  dynamic syndromes,
+  List<ValidationError> errors,
+  List<String> parsedSyndromeIds,
+) {
+  if (syndromes is! List || syndromes.isEmpty) {
+    errors.add(
+      const ValidationError(field: 'syndromes', message: 'syndromes 必须为非空数组'),
+    );
+    return;
+  }
+  for (var i = 0; i < syndromes.length; i++) {
+    _validateSyndromeEntry(syndromes[i], i, errors, parsedSyndromeIds);
+  }
+}
+
+/// 单项 syndrome 校验（R-019 拆出）。
+void _validateSyndromeEntry(
+  dynamic s,
+  int i,
+  List<ValidationError> errors,
+  List<String> parsedSyndromeIds,
+) {
+  if (s is! Map<String, dynamic>) {
+    errors.add(ValidationError(field: 'syndromes[$i]', message: '必须为对象'));
+    return;
+  }
+  if (s['syndrome_id'] is! String || (s['syndrome_id'] as String).isEmpty) {
+    errors.add(
+      ValidationError(field: 'syndromes[$i].syndrome_id', message: '必须为非空字符串'),
+    );
+  } else {
+    parsedSyndromeIds.add(s['syndrome_id'] as String);
+    // b11：退役症候不允许出现在诊断输出（预置校验，当前无退役症候不触发）
+    if (kRetiredSyndromeIds.contains(s['syndrome_id'])) {
+      errors.add(
+        ValidationError(
+          field: 'syndromes[$i].syndrome_id',
+          message: '退役症候 ${s['syndrome_id']} 不允许出现在诊断输出',
+        ),
+      );
+    }
+  }
+  if (s['name'] is! String || (s['name'] as String).isEmpty) {
+    errors.add(
+      ValidationError(field: 'syndromes[$i].name', message: '必须为非空字符串'),
+    );
+  }
+  final sev = s['severity'];
+  if (sev is! String || !['L1', 'L2', 'L3'].contains(sev)) {
+    errors.add(
+      ValidationError(field: 'syndromes[$i].severity', message: '必须为 L1/L2/L3'),
+    );
+  }
+  if (s['evidence'] is! List) {
+    errors.add(
+      ValidationError(field: 'syndromes[$i].evidence', message: '必须为数组'),
+    );
+  }
+  if (s['explanation'] is! String) {
+    errors.add(
+      ValidationError(field: 'syndromes[$i].explanation', message: '必须为字符串'),
+    );
+  }
+}
+
 /// JSON schema 校验
 DiagnosisValidationResult validateDiagnosisSchema(dynamic raw) {
   if (raw is! Map<String, dynamic>) {
@@ -75,67 +142,8 @@ DiagnosisValidationResult validateDiagnosisSchema(dynamic raw) {
   final errors = <ValidationError>[];
   final parsedSyndromeIds = <String>[];
 
-  // syndromes: 非空数组
-  final syndromes = raw['syndromes'];
-  if (syndromes is! List || syndromes.isEmpty) {
-    errors.add(
-      const ValidationError(field: 'syndromes', message: 'syndromes 必须为非空数组'),
-    );
-  } else {
-    for (var i = 0; i < syndromes.length; i++) {
-      final s = syndromes[i];
-      if (s is! Map<String, dynamic>) {
-        errors.add(ValidationError(field: 'syndromes[$i]', message: '必须为对象'));
-        continue;
-      }
-      if (s['syndrome_id'] is! String || (s['syndrome_id'] as String).isEmpty) {
-        errors.add(
-          ValidationError(
-            field: 'syndromes[$i].syndrome_id',
-            message: '必须为非空字符串',
-          ),
-        );
-      } else {
-        parsedSyndromeIds.add(s['syndrome_id'] as String);
-        // b11：退役症候不允许出现在诊断输出（预置校验，当前无退役症候不触发）
-        if (kRetiredSyndromeIds.contains(s['syndrome_id'])) {
-          errors.add(
-            ValidationError(
-              field: 'syndromes[$i].syndrome_id',
-              message: '退役症候 ${s['syndrome_id']} 不允许出现在诊断输出',
-            ),
-          );
-        }
-      }
-      if (s['name'] is! String || (s['name'] as String).isEmpty) {
-        errors.add(
-          ValidationError(field: 'syndromes[$i].name', message: '必须为非空字符串'),
-        );
-      }
-      final sev = s['severity'];
-      if (sev is! String || !['L1', 'L2', 'L3'].contains(sev)) {
-        errors.add(
-          ValidationError(
-            field: 'syndromes[$i].severity',
-            message: '必须为 L1/L2/L3',
-          ),
-        );
-      }
-      if (s['evidence'] is! List) {
-        errors.add(
-          ValidationError(field: 'syndromes[$i].evidence', message: '必须为数组'),
-        );
-      }
-      if (s['explanation'] is! String) {
-        errors.add(
-          ValidationError(
-            field: 'syndromes[$i].explanation',
-            message: '必须为字符串',
-          ),
-        );
-      }
-    }
-  }
+  // syndromes: 非空数组（逐项校验拆至 _validateSyndromesField）
+  _validateSyndromesField(raw['syndromes'], errors, parsedSyndromeIds);
 
   // suggested_actions: string[]
   if (raw['suggested_actions'] is! List ||
