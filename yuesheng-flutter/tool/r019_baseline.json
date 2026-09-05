@@ -123,13 +123,6 @@
       "lines": 161
     },
     {
-      "file": "lib/services/llm_client.dart",
-      "func": "streamChat",
-      "start": 227,
-      "end": 380,
-      "lines": 154
-    },
-    {
       "file": "lib/widgets/message_card_dispatcher.dart",
       "func": "dispatchMessageCard",
       "start": 45,
@@ -151,32 +144,11 @@
       "lines": 148
     },
     {
-      "file": "lib/services/editor_validator.dart",
-      "func": "validateEditorSchema",
-      "start": 131,
-      "end": 275,
-      "lines": 145
-    },
-    {
-      "file": "lib/services/editor_validator.dart",
-      "func": "_parseObservation",
-      "start": 277,
-      "end": 418,
-      "lines": 142
-    },
-    {
       "file": "lib/widgets/save_to_file_sheet.dart",
       "func": "build",
       "start": 117,
       "end": 258,
       "lines": 142
-    },
-    {
-      "file": "lib/services/teacher_validator.dart",
-      "func": "_parseTrainingTask",
-      "start": 260,
-      "end": 400,
-      "lines": 141
     },
     {
       "file": "lib/widgets/manuscript_detail_page.dart",
@@ -282,13 +254,6 @@
       "start": 315,
       "end": 429,
       "lines": 115
-    },
-    {
-      "file": "lib/services/teacher_validator.dart",
-      "func": "validateTeacherSchema",
-      "start": 147,
-      "end": 258,
-      "lines": 112
     },
     {
       "file": "lib/widgets/bookshelf_actions.dart",
