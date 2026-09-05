@@ -110,6 +110,20 @@ void main() {
       );
     }
 
+    test('#5b baseline 句长 0 → 不产生句长偏离提示（除零防护）', () {
+      final base = fp(avg: 0, dialogue: 0.3);
+      final current = fp(avg: 8, dialogue: 0.3);
+      final hints = detectVoiceDrift(base, current);
+      expect(hints.any((h) => h.contains('句子长度')), isFalse);
+    });
+
+    test('#5c simpleSentenceRatio 恰好 0.5 → 文案「偏简短」', () {
+      final base = fp(avg: 15, dialogue: 0.3, simple: 0.5);
+      final current = fp(avg: 15, dialogue: 0.3, simple: 0.9);
+      final hints = detectVoiceDrift(base, current);
+      final h = hints.firstWhere((x) => x.contains('惯用的句式'));
+      expect(h, contains('偏简短'));
+    });
     test('#5 句长均值偏离 ≥40% → 提示（例证式带数字）', () {
       final base = fp(avg: 18, dialogue: 0.3);
       final current = fp(avg: 8, dialogue: 0.3); // 18 → 8，偏离 55%
@@ -120,6 +134,12 @@ void main() {
       expect(hints.first, contains('是刻意加速'));
     });
 
+    test('#6b 对话占比恰好等于阈值（base 0 → 0.15）→ 提示', () {
+      final base = fp(avg: 15, dialogue: 0);
+      final current = fp(avg: 15, dialogue: 0.15);
+      final hints = detectVoiceDrift(base, current);
+      expect(hints.any((h) => h.contains('对话和叙述的配比')), isTrue);
+    });
     test('#6 对话占比偏离 ≥0.15 → 提示', () {
       final base = fp(avg: 15, dialogue: 0.3);
       final current = fp(avg: 15, dialogue: 0.6); // +0.3

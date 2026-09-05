@@ -282,14 +282,7 @@ class DiagnosisService {
   /// 步骤：commitDiagnosis → appendTeachingHistory → checkAndResolveMastered → autoCheckAndUnlock
   /// 核心步骤（commitDiagnosis）失败立即返回，避免后续步骤基于空诊断运行。
   Future<void> commitDiagnosisWithHistory(DiagnosisInput input) async {
-    final severityOrder = const {'L1': 1, 'L2': 2, 'L3': 3};
-    String maxSeverity = 'L1';
-    for (final s in input.syndromes) {
-      final sev = s['severity'] as String? ?? 'L1';
-      if ((severityOrder[sev] ?? 0) > (severityOrder[maxSeverity] ?? 0)) {
-        maxSeverity = sev;
-      }
-    }
+    final maxSeverity = _resolveMaxSeverity(input.syndromes);
 
     // 1. 提交诊断结果（核心步骤，失败必须记录并立即返回）
     try {
@@ -302,18 +295,9 @@ class DiagnosisService {
     }
 
     // 2. 追加 teaching_history
-    final historyRecord = <String, dynamic>{
-      'type': 'diagnosis',
-      'syndromes': input.syndromes
-          .map((s) => s['syndrome_id'] as String)
-          .toList(),
-      'maxSeverity': maxSeverity,
-      'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      'sessionId': input.sessionId,
-      'teaching_mode': input.teachingMode ?? 'socratic',
-    };
     try {
       final effectiveness = await calculateEffectiveness(input);
+      final historyRecord = _buildHistoryRecord(input, maxSeverity);
       if (effectiveness != null) {
         historyRecord['effectiveness'] = effectiveness;
       }
@@ -344,5 +328,35 @@ class DiagnosisService {
         '[Diagnosis] autoCheckAndUnlock 失败 session=${input.sessionId}: $e',
       );
     }
+  }
+
+  /// 取症候最高严重度（R-019 拆出：commitDiagnosisWithHistory）。
+  String _resolveMaxSeverity(List<Map<String, dynamic>> syndromes) {
+    const severityOrder = {'L1': 1, 'L2': 2, 'L3': 3};
+    String maxSeverity = 'L1';
+    for (final s in syndromes) {
+      final sev = s['severity'] as String? ?? 'L1';
+      if ((severityOrder[sev] ?? 0) > (severityOrder[maxSeverity] ?? 0)) {
+        maxSeverity = sev;
+      }
+    }
+    return maxSeverity;
+  }
+
+  /// 构建 teaching_history 记录（R-019 拆出：commitDiagnosisWithHistory）。
+  Map<String, dynamic> _buildHistoryRecord(
+    DiagnosisInput input,
+    String maxSeverity,
+  ) {
+    return <String, dynamic>{
+      'type': 'diagnosis',
+      'syndromes': input.syndromes
+          .map((s) => s['syndrome_id'] as String)
+          .toList(),
+      'maxSeverity': maxSeverity,
+      'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      'sessionId': input.sessionId,
+      'teaching_mode': input.teachingMode ?? 'socratic',
+    };
   }
 }
