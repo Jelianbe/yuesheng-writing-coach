@@ -81,27 +81,55 @@ String formatProfileText(
   sections.add('');
 
   // ── 学员初始画像 ──
-  if (onboarding != null) {
-    sections.add('【学员初始画像】');
-    sections.add('- 写作经验：${_proficiencyLabel(onboarding.proficiency)}');
-    if (onboarding.focusAreas.isNotEmpty) {
-      sections.add('- 关注领域：${onboarding.focusAreas.join('、')}');
-    }
-    sections.add(
-      '- 学习偏好：${_cognitiveStyleLabel(onboarding.cognitiveStyle)}（${_cognitiveStyleDesc(onboarding.cognitiveStyle)}）',
-    );
-    sections.add('- 写作目标：${onboarding.writingGoal}');
-    // ADR-C71 §3.4：此前本节只陈述不消费——补一段明确的教学加权指令。
-    // 保持通用（不建静态映射表）；R-009 优先级显式写明：当轮请求压过问卷画像。
-    sections.add(
-      '- 教学加权（系统指令）：选择练习类型与举例素材时优先倾向「关注领域」，'
-      '按「学习偏好」调整讲解与练习的密度配比；'
-      '与学员当轮的明确请求冲突时，一律以当轮为准',
-    );
-    sections.add('');
-  }
+  _appendOnboardingSection(sections, onboarding);
 
   // ── 第一步：症候演化分析 ──
+  final totalDiagnoses = _appendSyndromeEvolution(sections, profile);
+
+  // ── 第二步：能力等级评估 ──
+  _appendProficiencyAssessment(
+    sections,
+    profile,
+    onboarding,
+    stagnation,
+    totalDiagnoses,
+  );
+
+  // ── 第三步：教学策略建议 ──
+  _appendTeachingStrategy(sections, profile, effectivenessText);
+
+  sections.add('注意：以上三步推理由系统自动生成，仅供参考。实际教学方式请结合学员本轮的具体反馈灵活选择。');
+
+  return sections.join('\n');
+}
+
+/// 学员初始画像段（R-019 拆出：formatProfileText）。
+void _appendOnboardingSection(
+  List<String> sections,
+  OnboardingData? onboarding,
+) {
+  if (onboarding == null) return;
+  sections.add('【学员初始画像】');
+  sections.add('- 写作经验：${_proficiencyLabel(onboarding.proficiency)}');
+  if (onboarding.focusAreas.isNotEmpty) {
+    sections.add('- 关注领域：${onboarding.focusAreas.join('、')}');
+  }
+  sections.add(
+    '- 学习偏好：${_cognitiveStyleLabel(onboarding.cognitiveStyle)}（${_cognitiveStyleDesc(onboarding.cognitiveStyle)}）',
+  );
+  sections.add('- 写作目标：${onboarding.writingGoal}');
+  // ADR-C71 §3.4：此前本节只陈述不消费——补一段明确的教学加权指令。
+  // 保持通用（不建静态映射表）；R-009 优先级显式写明：当轮请求压过问卷画像。
+  sections.add(
+    '- 教学加权（系统指令）：选择练习类型与举例素材时优先倾向「关注领域」，'
+    '按「学习偏好」调整讲解与练习的密度配比；'
+    '与学员当轮的明确请求冲突时，一律以当轮为准',
+  );
+  sections.add('');
+}
+
+/// 第一步症候演化分析；返回累计诊断次数（R-019 拆出：formatProfileText）。
+int _appendSyndromeEvolution(List<String> sections, StudentProfile profile) {
   sections.add('## 第一步：症候演化分析');
   sections.add('');
   final totalSyndromes = profile.syndromeProfile.length;
@@ -115,16 +143,7 @@ String formatProfileText(
   sections.add('');
 
   // 按教学状态分组
-  final byState = <TeachingState, List<SyndromeAggregation>>{
-    TeachingState.inProgress: [],
-    TeachingState.consolidating: [],
-    TeachingState.mastered: [],
-    TeachingState.identified: [],
-  };
-  for (final agg in profile.syndromeProfile.values) {
-    byState[agg.teachingState] ??= <SyndromeAggregation>[];
-    byState[agg.teachingState]!.add(agg);
-  }
+  final byState = _groupSyndromesByState(profile);
 
   // 按固定顺序输出
   for (final state in [
@@ -140,22 +159,23 @@ String formatProfileText(
       final trail = agg.severityHistory.length >= 2
           ? '，严重度轨迹 ${agg.severityHistory.map(_severityLabel).join('→')}'
           : '，当前 ${_severityLabel(agg.latestSeverity)}';
-      String trendDesc;
-      if (agg.trend == Trend.improving) {
-        trendDesc = '（改善趋势）';
-      } else if (agg.trend == Trend.worsening) {
-        trendDesc = '（恶化趋势，需关注）';
-      } else if (agg.trend == Trend.stable) {
-        trendDesc = '（稳定）';
-      } else {
-        trendDesc = '（初现）';
-      }
-      sections.add('  - ${agg.syndromeName}：$trail$trendDesc');
+      sections.add(
+        '  - ${agg.syndromeName}：$trail${_describeTrend(agg.trend)}',
+      );
     }
     sections.add('');
   }
+  return totalDiagnoses;
+}
 
-  // ── 第二步：能力等级评估 ──
+/// 第二步能力等级评估（R-019 拆出：formatProfileText）。
+void _appendProficiencyAssessment(
+  List<String> sections,
+  StudentProfile profile,
+  OnboardingData? onboarding,
+  StagnationResult? stagnation,
+  int totalDiagnoses,
+) {
   sections.add('## 第二步：能力等级评估');
   sections.add('');
 
@@ -170,25 +190,44 @@ String formatProfileText(
   // ADR-C71 §3.4：onboarding 存在时，认知风格与上方「学习偏好」同源同值，
   // 重复输出且「依据」行会失实（声称关键词推断，实为问卷自报）——跳过本段，
   // 仅在画像来自关键词推断时展示。
-  if (profile.cognitiveStyle != null && onboarding == null) {
-    final styleLabel = _cognitiveStyleLabel(profile.cognitiveStyle!.style);
-    sections.add(
-      '认知风格：$styleLabel（置信度 ${(profile.cognitiveStyle!.confidence * 100).toStringAsFixed(0)}%）',
-    );
-    final styleBasis =
-        profile.cognitiveStyle!.style == CognitiveStyle.analytical
-        ? '分析型'
-        : profile.cognitiveStyle!.style == CognitiveStyle.intuitive
-        ? '直觉型'
-        : '混合型';
-    sections.add('依据：基于用户历史 $styleBasis 关键词使用频率推断');
-    sections.add('');
-  }
+  _appendCognitiveStyleInfo(sections, profile, onboarding);
+  _appendStateAssessment(sections, profile, stagnation, totalDiagnoses);
+  sections.add('');
+}
 
+/// 认知风格段（R-019 拆出：_appendProficiencyAssessment）。
+void _appendCognitiveStyleInfo(
+  List<String> sections,
+  StudentProfile profile,
+  OnboardingData? onboarding,
+) {
+  if (profile.cognitiveStyle == null || onboarding != null) return;
+  final styleLabel = _cognitiveStyleLabel(profile.cognitiveStyle!.style);
+  sections.add(
+    '认知风格：$styleLabel（置信度 ${(profile.cognitiveStyle!.confidence * 100).toStringAsFixed(0)}%）',
+  );
+  final styleBasis = profile.cognitiveStyle!.style == CognitiveStyle.analytical
+      ? '分析型'
+      : profile.cognitiveStyle!.style == CognitiveStyle.intuitive
+      ? '直觉型'
+      : '混合型';
+  sections.add('依据：基于用户历史 $styleBasis 关键词使用频率推断');
+  sections.add('');
+}
+
+/// 状态评估段（R-019 拆出：_appendProficiencyAssessment）。
+void _appendStateAssessment(
+  List<String> sections,
+  StudentProfile profile,
+  StagnationResult? stagnation,
+  int totalDiagnoses,
+) {
   if (stagnation != null && stagnation.stagnated) {
     sections.add('状态评估：停滞预警');
     sections.add('依据：${stagnation.reason}');
-  } else if (totalDiagnoses >= 3) {
+    return;
+  }
+  if (totalDiagnoses >= 3) {
     final improvingCount = profile.syndromeProfile.values
         .where((agg) => agg.trend == Trend.improving)
         .length;
@@ -196,12 +235,17 @@ String formatProfileText(
     sections.add(
       '依据：${improvingCount > 0 ? "$improvingCount 个症候有改善趋势" : "已有教学记录，尚未出现停滞信号"}',
     );
-  } else {
-    sections.add('状态评估：初始阶段，数据不足');
+    return;
   }
-  sections.add('');
+  sections.add('状态评估：初始阶段，数据不足');
+}
 
-  // ── 第三步：教学策略建议 ──
+/// 第三步教学策略建议（R-019 拆出：formatProfileText）。
+void _appendTeachingStrategy(
+  List<String> sections,
+  StudentProfile profile,
+  String? effectivenessText,
+) {
   sections.add('## 第三步：教学策略建议');
   sections.add('');
 
@@ -234,10 +278,6 @@ String formatProfileText(
       sections.add('');
     }
   }
-
-  sections.add('注意：以上三步推理由系统自动生成，仅供参考。实际教学方式请结合学员本轮的具体反馈灵活选择。');
-
-  return sections.join('\n');
 }
 
 String _buildProficiencyReason(StudentProfile profile) {
@@ -283,4 +323,29 @@ String _buildPriorityReason(SyndromeAggregation agg) {
     parts.add('趋稳中');
   }
   return parts.join('，');
+}
+
+/// 按教学状态分组症候（R-019 拆出：_appendSyndromeEvolution）。
+Map<TeachingState, List<SyndromeAggregation>> _groupSyndromesByState(
+  StudentProfile profile,
+) {
+  final byState = <TeachingState, List<SyndromeAggregation>>{
+    TeachingState.inProgress: [],
+    TeachingState.consolidating: [],
+    TeachingState.mastered: [],
+    TeachingState.identified: [],
+  };
+  for (final agg in profile.syndromeProfile.values) {
+    byState[agg.teachingState] ??= <SyndromeAggregation>[];
+    byState[agg.teachingState]!.add(agg);
+  }
+  return byState;
+}
+
+/// 症候趋势的中文描述（R-019 拆出：_appendSyndromeEvolution）。
+String _describeTrend(Trend trend) {
+  if (trend == Trend.improving) return '（改善趋势）';
+  if (trend == Trend.worsening) return '（恶化趋势，需关注）';
+  if (trend == Trend.stable) return '（稳定）';
+  return '（初现）';
 }

@@ -184,5 +184,18 @@ void main() {
       expect(out.effectivePhase, isNull);
       expect(out.effectiveBeginnerLevel, BeginnerLevel.n3Diagnose);
     });
+
+    test('B3c-2：N3 + 恰好 3 次训练失败 + 无 suggested → 自动降级 N2', () {
+      final out = resolvePhaseMapper(
+        PhaseMapperInput(
+          currentPhase: TeachingPhase.p2PracticeLoop,
+          currentBeginnerLevel: BeginnerLevel.n3Diagnose,
+          consecutiveFailedTrainings: 3,
+        ),
+      );
+      expect(out.effectiveBeginnerLevel, BeginnerLevel.n2Scene);
+      expect(out.appliedRule, 4);
+      expect(out.effectivePhase, isNull);
+    });
   });
 }

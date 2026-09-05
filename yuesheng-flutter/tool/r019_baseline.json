@@ -144,13 +144,6 @@
       "lines": 169
     },
     {
-      "file": "lib/services/student_profile_format.dart",
-      "func": "formatProfileText",
-      "start": 73,
-      "end": 241,
-      "lines": 169
-    },
-    {
       "file": "lib/widgets/writing_menu_sheet.dart",
       "func": "show",
       "start": 38,
@@ -235,25 +228,11 @@
       "lines": 138
     },
     {
-      "file": "lib/services/outline_validator.dart",
-      "func": "validateOutlineSchema",
-      "start": 72,
-      "end": 209,
-      "lines": 138
-    },
-    {
       "file": "lib/widgets/manuscript_detail_page.dart",
       "func": "build",
       "start": 206,
       "end": 342,
       "lines": 137
-    },
-    {
-      "file": "lib/services/phase_mapper_resolver.dart",
-      "func": "resolvePhaseMapper",
-      "start": 81,
-      "end": 216,
-      "lines": 136
     },
     {
       "file": "lib/widgets/selection_ai_sheet.dart",
