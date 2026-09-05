@@ -123,6 +123,8 @@ final diagnosisCommitterProvider = Provider<DiagnosisCommitter>((ref) {
     material: ref.watch(materialCapabilityProvider),
     teaching: ref.watch(teachingCapabilityProvider),
     diagnosis: ref.watch(diagnosisCapabilityProvider),
+    // C78 批次2a：事实 stale 标记需要 AppDatabase（FactStaleService 只用底层库）
+    db: db,
     characterFactRepo: CharacterFactRepository(db),
     eventFactRepo: EventFactRepository(db),
     subplotFactRepo: SubplotFactRepository(db),

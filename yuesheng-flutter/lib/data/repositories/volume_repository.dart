@@ -8,6 +8,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/drift.dart';
+import '../../services/fact_stale_service.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../utils/chapter_title.dart';
@@ -72,6 +73,22 @@ class VolumeRepository {
   /// 恢复后落入「散落」组，符合「卷已删除」的事实。
   Future<void> deleteVolume(String volumeId) async {
     await _db.transaction(() async {
+      // C78 批次2a（决策5）：标记 stale 前必须复刻下方 update 的
+      // status == 'draft' 过滤——卷内已在回收站的 archived 章节不在本次影响
+      // 范围内，按「该卷全部章节」取集会多标它们（ADR 漏记了此条件）。
+      final stale = FactStaleService(_db);
+      final targets =
+          await (_db.select(_db.chapters)..where(
+                (t) => t.volumeId.equals(volumeId) & t.status.equals('draft'),
+              ))
+              .get();
+      for (final c in targets) {
+        await stale.markChapterStale(
+          manuscriptId: c.manuscriptId,
+          chapterNo: c.sortOrder,
+          chapterHash: chapterFingerprint(c.content),
+        );
+      }
       await (_db.update(_db.chapters)..where(
             (t) => t.volumeId.equals(volumeId) & t.status.equals('draft'),
           ))

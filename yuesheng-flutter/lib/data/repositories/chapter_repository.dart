@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/drift.dart';
+import '../../services/fact_stale_service.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 
@@ -157,7 +158,12 @@ class ChapterRepository {
   }
 
   /// 软删章节 → 回收站（status='archived'，批次94-2）
+  ///
+  /// C78 批次2a：删除前先把从该章抽出的断言/事件标 stale——两表外键挂在
+  /// manuscript_id 上而非章节，删章节对它们零连带影响，不标就变「幽灵」
+  /// 继续参与矛盾检测。
   Future<void> softDeleteChapter(String chapterId) async {
+    await _markChapterFactsStale(chapterId);
     await (_db.update(
       _db.chapters,
     )..where((t) => t.id.equals(chapterId))).write(
@@ -165,6 +171,18 @@ class ChapterRepository {
         status: const Value('archived'),
         updatedAt: Value(nowSec()),
       ),
+    );
+  }
+
+  /// C78 批次2a：反查章节三要素 → 标记该章事实 stale（决策4 并集判据）。
+  /// 必须在删除动作**之前**调——删完章节行就没了，拿不到三要素。
+  Future<void> _markChapterFactsStale(String chapterId) async {
+    final chapter = await getChapter(chapterId);
+    if (chapter == null) return;
+    await FactStaleService(_db).markChapterStale(
+      manuscriptId: chapter.manuscriptId,
+      chapterNo: chapter.sortOrder,
+      chapterHash: chapterFingerprint(chapter.content),
     );
   }
 
@@ -182,7 +200,16 @@ class ChapterRepository {
 
   /// 永久删除章节（回收站「彻底删除」，复用物理删除事务，批次94-2）
   Future<void> purgeChapter(String chapterId) async {
+    await _deleteChapterPhysical(chapterId);
+  }
+
+  /// C78 批次2a：purgeChapter 与 deleteChapter 方法体原本逐字重复（唯一差别
+  /// 是文档注释），抽此共用方法——删除钩子只挂一处，既避免两处逻辑走偏，
+  /// 也保证未来新增删除路径自动继承钩子。
+  Future<void> _deleteChapterPhysical(String chapterId) async {
     await _db.transaction(() async {
+      // 必须在 delete 之前反查：删完章节行就拿不到标 stale 所需的三要素。
+      await _markChapterFactsStale(chapterId);
       await (_db.delete(
         _db.chapters,
       )..where((t) => t.id.equals(chapterId))).go();
@@ -288,15 +315,7 @@ class ChapterRepository {
   ///   ② 清理 session_reference 中对该章节的悬空引用（ref_id 为软引用无外键约束）
   /// 历史记录（messages/diagnosis 的 target_ref）为软引用，保守保留不误删。
   Future<void> deleteChapter(String chapterId) async {
-    await _db.transaction(() async {
-      await (_db.delete(
-        _db.chapters,
-      )..where((t) => t.id.equals(chapterId))).go();
-      await (_db.delete(_db.sessionReferences)..where(
-            (t) => t.refType.equals('chapter') & t.refId.equals(chapterId),
-          ))
-          .go();
-    });
+    await _deleteChapterPhysical(chapterId);
   }
 
   /// 交换两章 sort_order（批次96-1：卷内上移/下移）

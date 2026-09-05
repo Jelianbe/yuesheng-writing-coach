@@ -62,6 +62,43 @@ class CharacterAssertion {
     'stale': stale,
   };
 
+  /// DB 回读入口（C78 批次2a）——与 [tryFromJson] **严格分工，勿混用**
+  ///
+  /// [tryFromJson] 解析 **AI 协议 JSON**，刻意只读 evidence；本方法解析
+  /// **自己写进去的 DB JSON**，必须原样还原全部字段，否则 stale 标记与
+  /// 用户裁决会在一次读写往返中丢失（批次1 遗留的潜伏缺陷）。
+  static CharacterAssertion fromDbJson(Map<String, dynamic> json) {
+    return CharacterAssertion(
+      attribute: (json['attribute'] as String?) ?? '',
+      value: (json['value'] as String?) ?? '',
+      chapter: (json['chapter'] as num?)?.toInt(),
+      timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
+      status: (json['status'] as String?) ?? 'confirmed',
+      source: (json['source'] as String?) ?? 'ai',
+      evidence: json['evidence'] as String?,
+      chapterHash: json['chapterHash'] as String?,
+      stale: json['stale'] == true,
+    );
+  }
+
+  /// C78 D-6：仅覆盖 stale / chapterHash 两个「写入路径字段」
+  ///
+  /// 不写全量 copyWith：[chapter] 可空，全量 copyWith 需要哨兵值来区分
+  /// 「不传」与「传 null」，本批只需要改这两个字段。
+  CharacterAssertion withStaleMark({String? chapterHash, bool? stale}) {
+    return CharacterAssertion(
+      attribute: attribute,
+      value: value,
+      chapter: chapter,
+      timestamp: timestamp,
+      status: status,
+      source: source,
+      evidence: evidence,
+      chapterHash: chapterHash ?? this.chapterHash,
+      stale: stale ?? this.stale,
+    );
+  }
+
   /// 宽松解析：属性名/值缺失或为空 → 跳过该条（保守，不抛出）
   static CharacterAssertion? tryFromJson(Map<String, dynamic> json) {
     final attribute = json['attribute'];

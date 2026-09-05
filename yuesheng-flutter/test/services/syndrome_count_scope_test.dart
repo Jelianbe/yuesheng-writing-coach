@@ -51,11 +51,36 @@ String _readSrc(String relPath) {
   return f.readAsStringSync();
 }
 
-/// 片段在源码中的出现次数。
+/// 剥掉整行注释后的源码——内容语义计数必须锚定**生效位置**。
+///
+/// V4.13「注释不是代码，判据要锚定生效位置」：元数据头（2737d292 落的
+/// 「L1 常驻补头」）是给协作者看的登记文案，`//` 开头、**不进 prompt**，
+/// 但整文件计数会把它们算进去 → 头部补一句，② 的护栏就从 1 跳到 2 而红
+/// （2026-09-06 实测，正是本函数存在的原因）。
+///
+/// 只剥「跳过前导空白后以 `//` 开头」的**整行**，**不剥行内尾注释**——这些
+/// 源文件的行内 `//` 多为字符串或代码尾注，粗暴剥离会切掉注入正文，制造
+/// 比原问题更隐蔽的假绿。
+///
+/// 剥离范围已离线核验：四个文件共删 93 行注释，12 项受检判据中仅 attitude
+/// 的 1 处落在注释里，其余 11 项剥离前后计数不变（零误伤）。
+String _stripCommentLines(String src) {
+  return src
+      .split('\n')
+      .where((line) => !line.trimLeft().startsWith('//'))
+      .join('\n');
+}
+
+/// 片段在**生效内容**（剥离注释行后）中的出现次数。
 ///
 /// 一律用次数而非 `contains` —— contains 是假判据：同一标识符在多处出现时，
 /// 改坏其中一处不改变布尔结果（AGENTS.md V4.7）。
-int _count(String src, String needle) => needle.allMatches(src).length;
+///
+/// 计数锚定生效内容而非整文件（V4.25-b）：注释里写一百遍也不算数，模型看
+/// 不到——这与 ⑤「说明必须落在 kSyndromeIndexContent 区间」是同一个道理
+/// 的两个面：⑤ 管**位置**，这里管**介质**。
+int _count(String src, String needle) =>
+    needle.allMatches(_stripCommentLines(src)).length;
 
 const String kSyndromeKb = 'lib/services/syndrome_kb_content.dart';
 const String kAttitude = 'lib/services/skills_attitude.dart';
