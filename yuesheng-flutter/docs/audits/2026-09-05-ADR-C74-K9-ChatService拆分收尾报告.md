@@ -98,16 +98,17 @@ K-9 新增 3 个超限函数已拆（见 2.2），最后一个 parseAndPersist�
 仅剩 7 个 K-1 预存 warning（diagnosis_committer.dart：6 unused_field + 1 unintended_html），
 与交接基线一致，无 error。
 
-### 6.2 M5 预存盲区（mutation 暴露，登记不补测）
+### 6.2 M5 预存盲区（✅ 2026-09-05 已补测，见 §十）
 
 `_resolveFinalAssistantContent` 的空诊断 + chapter outline 兜底分支
 （`else if (_ensureOutlineService() != null && primaryRef?.refType == 'chapter')`
-→ `if (c > 0) treatAsValid = true`）在**任何现有测试中都不可达**——没有任何测试给
-DiagnosisFlowHandler 装配 outlineRepo，故 `_ensureOutlineService()` 恒为 null。
+→ `if (c > 0) treatAsValid = true`）在 K-9 收尾时**任何现有测试中都不可达**——没有测试给
+DiagnosisFlowHandler 装配 outlineRepo，`_ensureOutlineService()` 恒为 null。
 
-- 这是**预存逻辑**（从原 ChatService 逐行搬移），非 K-9 新增判据
-- 触达需 reference/chapter/manuscript/outline 四层 fixture（R-010 最小范围不扩）
-- 建议后续独立 ADR 补测（防御性兜底，不影响当前诊断链正确性）
+- 预存逻辑（从原 ChatService 逐行搬移），非 K-9 新增判据
+- 2026-09-05 已补测：`test/services/diagnosis_flow_outline_fallback_test.dart` 3 例
+  （装配 outlineRepo + 四层 fixture + FakeLlmClient('') 空响应），M5 变异
+  （`c > 0` → `c < 0`）被 #1 判据拦截，详见 §十
 
 ## 七、六道门禁结果（R-027）
 
@@ -127,7 +128,7 @@ DiagnosisFlowHandler 装配 outlineRepo，故 `_ensureOutlineService()` 恒为 n
 
 - **验证方式**：六道门禁逐道手跑 + 全量测试 2374 通过 + mutation 5 变异（4 拦截 1 known）
 - **覆盖范围**：诊断链 4 个方法全部拆完；K-9 fixture 修复 23 文件 + 3 层连环问题全解决
-- **仍存在的缺口**：M5 分支无测试触达（预存盲区，登记）；门禁 1 的 7 个 K-1 warning 待后续消费 capability 时消除
+- **仍存在的缺口**：门禁 1 的 7 个 K-1 warning 待后续消费 capability 时消除（M5 盲区已补测闭环）
 
 ## 九、临时脚本处置
 
@@ -141,3 +142,12 @@ DiagnosisFlowHandler 装配 outlineRepo，故 `_ensureOutlineService()` 恒为 n
 ---
 
 *建立：2026-09-05｜ADR-C74 K-9 收尾*
+
+## 十、M5 盲区补测（2026-09-05）
+
+- 新文件：`test/services/diagnosis_flow_outline_fallback_test.dart`（3 例）
+- #1 空响应 + 无诊断 + chapter 有 outline 实体 → 兜底判真不 abort（onError 不触发 + assistant 落库「诊断完成。」）
+- #2 无实体 → abort（onError「AI 返回为空」）
+- #3 主引用非 chapter → abort
+- 变异验证：`tool/_k9_m5_mutation.py`（try/finally 恢复 + 锚点校验），`c > 0` → `c < 0` 被 #1 拦截 ✓，恢复后 diff 为空
+- 全量回归：`flutter test --no-pub` 结果见 §七
