@@ -31,7 +31,8 @@ import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
 import '../providers/writing_providers.dart';
 import '../router/app_routes.dart';
-import '../services/chat_message_types.dart' show SendMessageCallbacks, SendMessageOptions;
+import '../services/chat_message_types.dart'
+    show SendMessageCallbacks, SendMessageOptions;
 import '../services/progressive_diagnosis.dart';
 import '../services/phase_transition.dart';
 import '../types/teaching_types.dart';
