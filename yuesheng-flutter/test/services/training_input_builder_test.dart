@@ -87,6 +87,21 @@ void main() {
       },
     );
 
+    test('#1b 恰好 2 条诊断（阈值边界）→ 非 null', () async {
+      final sessionId = await seedSession();
+      await appendDiagnosis(sessionId, maxSeverity: 'L2', timestamp: 1000);
+      await appendDiagnosis(sessionId, maxSeverity: 'L1', timestamp: 2000);
+
+      final input = await buildTrainingInputForActiveSyndrome(
+        studentModelRepo,
+        sessionId,
+        's1',
+        const ActiveProblemMeta(currentSeverity: Severity.l1),
+      );
+
+      expect(input, isNotNull);
+    });
+
     test('#2 诊断历史不足（<2 条）→ null（既有行为保持）', () async {
       final sessionId = await seedSession();
       await appendDiagnosis(sessionId, maxSeverity: 'L2', timestamp: 1000);
@@ -99,6 +114,36 @@ void main() {
       );
 
       expect(input, isNull);
+    });
+
+    test('#2b 训练尾部连续 failed → deteriorationInput 连续失败锚定', () async {
+      final sessionId = await seedSession();
+      await appendDiagnosis(sessionId, maxSeverity: 'L2', timestamp: 1000);
+      await appendDiagnosis(sessionId, maxSeverity: 'L1', timestamp: 2000);
+      await studentModelRepo.appendTeachingHistory(sessionId, {
+        'type': 'training',
+        'syndromeId': 's1',
+        'result': 'failed',
+        'timestamp': 3000,
+        'sessionId': sessionId,
+      });
+      await studentModelRepo.appendTeachingHistory(sessionId, {
+        'type': 'training',
+        'syndromeId': 's1',
+        'result': 'failed',
+        'timestamp': 4000,
+        'sessionId': sessionId,
+      });
+
+      final input = await buildTrainingInputForActiveSyndrome(
+        studentModelRepo,
+        sessionId,
+        's1',
+        const ActiveProblemMeta(currentSeverity: Severity.l1),
+      );
+
+      expect(input, isNotNull);
+      expect(input!.deteriorationInput.consecutiveFailures, 2);
     });
 
     test('#3 多次诊断但未稳定改善（L1→L2→L1→L2 波动）→ 起点不越级到 consolidating', () async {

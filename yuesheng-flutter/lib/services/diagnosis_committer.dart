@@ -615,106 +615,22 @@ class DiagnosisCommitter {
     }
 
     // 解析 primaryRef（同 _applyOutlineEntitiesFromContent 模式）
-    ReferenceItem? pRef = primaryRef;
-    if (pRef == null) {
-      try {
-        final refs = await _referenceRepo.listReferences(sessionId);
-        if (refs.isNotEmpty) {
-          final items = refs
-              .map(
-                (r) => ReferenceItem(
-                  refType: r.refType,
-                  refId: r.refId,
-                  title: r.title,
-                  isPrimary: r.isPrimary,
-                  manuscriptId: r.manuscriptId,
-                  excerptRange: r.excerptRange,
-                ),
-              )
-              .toList();
-          pRef = items.firstWhere(
-            (r) => r.isPrimary == 1,
-            orElse: () => items.first,
-          );
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] persistTeacherSuggestion 失败: $e');
-        return;
-      }
-    }
-    if (pRef?.refType != 'chapter') return;
+    final pRef = await _resolveFactPrimaryRef(primaryRef, sessionId);
+    if (pRef == null || pRef.refType != 'chapter') return;
 
     try {
       final extraction = parseFactExtraction(fullContent);
       if (extraction == null || extraction.isEmpty) return;
 
-      final chapter = await _chapterRepo.getChapter(pRef!.refId);
+      final chapter = await _chapterRepo.getChapter(pRef.refId);
       if (chapter == null) return;
       final manuscriptId = chapter.manuscriptId;
       final chapterNo = chapter.sortOrder;
       final now = nowSec();
 
-      // 人物事实 → character_fact
-      if (_characterFactRepo != null) {
-        for (final c in extraction.characters) {
-          await _characterFactRepo.upsertCharacter(
-            manuscriptId: manuscriptId,
-            name: c.name,
-            firstSeenChapter: chapterNo,
-            firstSeenAt: now,
-            assertions: c.assertions,
-          );
-        }
-      }
-
-      // 事件事实 → event_fact
-      // 批次3-D4：两轮写入——先 upsert 全部事件（不带因果边），
-      // 再反查 causeEventName 对应 id 填入 cause_event_id
-      if (_eventFactRepo != null) {
-        // 第一轮：upsert 全部事件
-        for (final e in extraction.events) {
-          await _eventFactRepo.upsertEvent(
-            manuscriptId: manuscriptId,
-            name: e.name,
-            eventType: e.eventType,
-            chapter: e.chapter ?? chapterNo,
-            participants: e.participants,
-            description: e.description,
-          );
-        }
-        // 第二轮：填因果边（causeEventName → causeEventId）
-        for (final e in extraction.events) {
-          final causeName = e.causeEventName;
-          if (causeName == null) continue;
-          final self = await _eventFactRepo.getEvent(manuscriptId, e.name);
-          final cause = await _eventFactRepo.getEvent(manuscriptId, causeName);
-          if (self != null && cause != null) {
-            await _eventFactRepo.updateCauseEventId(self.id, cause.id);
-          } else {
-            // 批次6（6.11 L5/V10）：因果边反查失败不再静默丢弃——
-            // 打日志留痕，便于排查前因名称不一致导致关联未建立
-            debugPrint(
-              '[FactExtract] 因果边反查失败未关联: 事件="$e.name" '
-              '前因="$causeName"（self=${self != null ? '找到' : '缺失'}'
-              ' / cause=${cause != null ? '找到' : '缺失'}）',
-            );
-          }
-        }
-      }
-
-      // 支线事实 → subplot_fact
-      if (_subplotFactRepo != null) {
-        for (final s in extraction.subplots) {
-          await _subplotFactRepo.upsertSubplot(
-            manuscriptId: manuscriptId,
-            name: s.name,
-            introducedChapter: s.introducedChapter ?? chapterNo,
-            resolvedChapter: s.resolvedChapter,
-            resolvedAt: s.resolvedChapter != null ? now : null,
-            description: s.description,
-          );
-        }
-      }
+      await _persistCharacterFacts(extraction, manuscriptId, chapterNo, now);
+      await _persistEventFacts(extraction, manuscriptId, chapterNo);
+      await _persistSubplotFacts(extraction, manuscriptId, chapterNo, now);
 
       debugPrint(
         '[DiagnosisCommitter] A6 事实提取落库 | 人物=${extraction.characters.length} '
@@ -722,6 +638,116 @@ class DiagnosisCommitter {
       );
     } catch (e) {
       debugPrint('[SafeRun] 事实提取三表落库失败: $e');
+    }
+  }
+
+  /// 解析 primaryRef（同 _applyOutlineEntitiesFromContent 模式）（R-019 拆出）。
+  Future<ReferenceItem?> _resolveFactPrimaryRef(
+    ReferenceItem? primaryRef,
+    String sessionId,
+  ) async {
+    if (primaryRef != null) return primaryRef;
+    try {
+      final refs = await _referenceRepo.listReferences(sessionId);
+      if (refs.isEmpty) return null;
+      final items = refs
+          .map(
+            (r) => ReferenceItem(
+              refType: r.refType,
+              refId: r.refId,
+              title: r.title,
+              isPrimary: r.isPrimary,
+              manuscriptId: r.manuscriptId,
+              excerptRange: r.excerptRange,
+            ),
+          )
+          .toList();
+      return items.firstWhere(
+        (r) => r.isPrimary == 1,
+        orElse: () => items.first,
+      );
+    } catch (e) {
+      debugPrint('[SafeRun] persistTeacherSuggestion 失败: $e');
+      return null;
+    }
+  }
+
+  /// 人物事实 → character_fact（R-019 拆出）。
+  Future<void> _persistCharacterFacts(
+    FactExtraction extraction,
+    String manuscriptId,
+    int chapterNo,
+    int now,
+  ) async {
+    final repo = _characterFactRepo;
+    if (repo == null) return;
+    for (final c in extraction.characters) {
+      await repo.upsertCharacter(
+        manuscriptId: manuscriptId,
+        name: c.name,
+        firstSeenChapter: chapterNo,
+        firstSeenAt: now,
+        assertions: c.assertions,
+      );
+    }
+  }
+
+  /// 事件事实 → event_fact：两轮写入（upsert 全部 + 反查填因果边）（R-019 拆出）。
+  Future<void> _persistEventFacts(
+    FactExtraction extraction,
+    String manuscriptId,
+    int chapterNo,
+  ) async {
+    final repo = _eventFactRepo;
+    if (repo == null) return;
+    for (final e in extraction.events) {
+      await repo.upsertEvent(
+        manuscriptId: manuscriptId,
+        name: e.name,
+        eventType: e.eventType,
+        chapter: e.chapter ?? chapterNo,
+        participants: e.participants,
+        description: e.description,
+      );
+    }
+    // 第二轮：填因果边（causeEventName → causeEventId）
+    for (final e in extraction.events) {
+      final causeName = e.causeEventName;
+      if (causeName == null) continue;
+      final self = await repo.getEvent(manuscriptId, e.name);
+      final cause = await repo.getEvent(manuscriptId, causeName);
+      if (self != null && cause != null) {
+        await repo.updateCauseEventId(self.id, cause.id);
+      } else {
+        // 批次6（6.11 L5/V10）：因果边反查失败不再静默丢弃——
+        // 打日志留痕，便于排查前因名称不一致导致关联未建立
+        debugPrint(
+          '[FactExtract] 因果边反查失败未关联: 事件="$e.name" '
+          '前因="$causeName"（self=${self != null ? '找到' : '缺失'}'
+          ' / cause=${cause != null ? '找到' : '缺失'}）',
+        );
+      }
+    }
+  }
+
+  /// 支线事实 → subplot_fact（R-019 拆出）。
+  Future<void> _persistSubplotFacts(
+    FactExtraction extraction,
+    String manuscriptId,
+    int chapterNo,
+    int now,
+  ) async {
+    final repo = _subplotFactRepo;
+    if (repo == null) return;
+    for (final s in extraction.subplots) {
+      await repo.upsertSubplot(
+        manuscriptId: manuscriptId,
+        name: s.name,
+        introducedChapter: s.introducedChapter ?? chapterNo,
+        resolvedChapter: s.resolvedChapter,
+        resolvedAt: s.resolvedChapter != null ? now : null,
+        description: s.description,
+      );
     }
   }
 }

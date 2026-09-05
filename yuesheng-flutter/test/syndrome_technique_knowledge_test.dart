@@ -191,6 +191,32 @@ void main() {
       );
       expect(simplified, isNot(contains('### P008')));
     });
+
+    test('focus 注入后非 focus 按剩余预算注入（预算 clamp 锚定）', () {
+      final text = buildStructuredSyndromeContext(
+        [
+          ActiveSyndromeView(
+            syndromeId: 'P003',
+            syndromeName: '情绪标签化',
+            severity: Severity.l2,
+            confirmationStatus: ConfirmationStatus.confirmed,
+          ),
+          ActiveSyndromeView(
+            syndromeId: 'P008',
+            syndromeName: '语言堆砌',
+            severity: Severity.l2,
+            confirmationStatus: ConfirmationStatus.confirmed,
+          ),
+        ],
+        activeFocus: const ActiveFocusContext(
+          focusId: 'P003',
+          source: FocusSource.aiSuggested,
+          reason: '测试',
+        ),
+      );
+      // focus 已消耗预算，非 focus P008 按剩余预算分级注入（极简/完整摘要）
+      expect(text, contains('- P008 语言堆砌'));
+    });
   });
 
   group('training 知识库（training-templates-v2）', () {
