@@ -113,28 +113,44 @@ StyleTechniqueSuggestion routeStyleTechniques({
   }
 
   // 门控 2：内容层问题优先（L2/L3 且非文笔层主导的症候活跃 → 不抢占）
-  const severityRank = {Severity.l3: 3, Severity.l2: 2, Severity.l1: 1};
-  final hasContentPriority = activeProblems.any(
-    (p) =>
-        (severityRank[p.severity] ?? 0) >= 2 &&
-        !_isProseDominantSyndrome(p.syndromeId),
-  );
-  if (hasContentPriority) {
+  if (_hasContentPriorityProblem(activeProblems)) {
     return const StyleTechniqueSuggestion(gatedBy: 'content_priority');
   }
 
   // 门控 3：焦点症候技法已含 prose 层（主路由已覆盖，不重复注入）
-  if (focusSyndromeId != null) {
-    final focusTechniques = kTechniquesBySyndrome[focusSyndromeId] ?? const [];
-    final focusHasProse = focusTechniques.any(
-      (t) => kTechniqueLayers[t] == TechniqueLayer.prose,
-    );
-    if (focusHasProse) {
-      return const StyleTechniqueSuggestion(gatedBy: 'focus_covers_prose');
-    }
+  if (_focusSyndromeCoversProse(focusSyndromeId)) {
+    return const StyleTechniqueSuggestion(gatedBy: 'focus_covers_prose');
   }
 
-  // 门控 4：五维非健康值 → 候选映射（固定维度顺序保证确定性）
+  return StyleTechniqueSuggestion(
+    candidates: _collectTechniqueCandidates(styleProfile, masteredTechniqueIds),
+  );
+}
+
+/// 门控 2：是否存在内容层优先的活跃症候（L2/L3 且非文笔层主导）。
+bool _hasContentPriorityProblem(List<ActiveSyndromeView> activeProblems) {
+  const severityRank = {Severity.l3: 3, Severity.l2: 2, Severity.l1: 1};
+  return activeProblems.any(
+    (p) =>
+        (severityRank[p.severity] ?? 0) >= 2 &&
+        !_isProseDominantSyndrome(p.syndromeId),
+  );
+}
+
+/// 门控 3：焦点症候技法是否已含 prose 层（主路由已覆盖，不重复注入）。
+bool _focusSyndromeCoversProse(String? focusSyndromeId) {
+  if (focusSyndromeId == null) return false;
+  final focusTechniques = kTechniquesBySyndrome[focusSyndromeId] ?? const [];
+  return focusTechniques.any(
+    (t) => kTechniqueLayers[t] == TechniqueLayer.prose,
+  );
+}
+
+/// 门控 4：五维非健康值 → 候选技法（固定维度顺序保证确定性，满 2 即停）。
+List<StyleTechniqueCandidate> _collectTechniqueCandidates(
+  WritingStyleProfile styleProfile,
+  Set<String> masteredTechniqueIds,
+) {
   final dimensionKeys = <String>[
     'rhythm:${styleProfile.rhythm.value}',
     'sensory:${styleProfile.sensory.value}',
@@ -162,12 +178,10 @@ StyleTechniqueSuggestion routeStyleTechniques({
           crossLayer: mapping.crossLayer,
         ),
       );
-      if (candidates.length >= 2) {
-        return StyleTechniqueSuggestion(candidates: candidates);
-      }
+      if (candidates.length >= 2) return candidates;
     }
   }
-  return StyleTechniqueSuggestion(candidates: candidates);
+  return candidates;
 }
 
 /// 旁路段格式化：注入 system prompt 的「✒️ 文笔精修候选」条件段。

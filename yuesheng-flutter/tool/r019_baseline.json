@@ -914,13 +914,6 @@
       "lines": 72
     },
     {
-      "file": "lib/services/progress_service.dart",
-      "func": "generateReport",
-      "start": 209,
-      "end": 279,
-      "lines": 71
-    },
-    {
       "file": "lib/widgets/reference_picker.dart",
       "func": "_buildChapterList",
       "start": 341,
@@ -947,20 +940,6 @@
       "start": 70,
       "end": 138,
       "lines": 69
-    },
-    {
-      "file": "lib/services/growth_service.dart",
-      "func": "getGrowthOverview",
-      "start": 193,
-      "end": 260,
-      "lines": 68
-    },
-    {
-      "file": "lib/services/style_technique_router.dart",
-      "func": "routeStyleTechniques",
-      "start": 104,
-      "end": 171,
-      "lines": 68
     },
     {
       "file": "lib/widgets/bookshelf_actions.dart",
@@ -1063,8 +1042,8 @@
     {
       "file": "lib/services/growth_service.dart",
       "func": "getWritingCurve",
-      "start": 266,
-      "end": 330,
+      "start": 291,
+      "end": 355,
       "lines": 65
     },
     {
