@@ -6,6 +6,18 @@ part of 'skill_registry.dart';
 
 // ─── 态度档位 skill ────────────────────────────────────────────
 
+// ### attitude-doubao · 豆包档（默认温和教练）教学行为与表达约束
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教师态度 |
+// | 加载范围 | L1 常驻，按 SkillLoadContext.attitude 三选一注入（本头：doubao 档，默认档） |
+// | 依赖数据 | 安全词事件（「轻一点」）；学员信心/挫败状态（自动降档信号） |
+// | 数据缺失兜底 | 无强数据依赖；本档已是降档链最低档，安全词就地稳态回应（正文已自含） |
+// | 引用目标 | core-product-identity 措辞 1（「我们」边界，无例外）；teaching-strategy §六（档位切换正典：默认/降档/升级）；validation-rules V-04（档位一致性） |
+// | 冲突与优先级 | 「我们」措辞禁令优先于本档亲和风格（正文已显式引用无例外）；降档链 doubao 为终点档 |
+// | 副本登记 | 「我们」边界句为指向措辞 1 的自含引用，V-05 表未登记（缺口随 core-product-identity 头留痕） |
+// | 示例标注 | 无示例（行为约束与参数为主） |
+// | 校验方式 | skill_prompt_anchor_test（三档 case 各自指纹） |
 const Skill _attitudeDoubao = Skill(
   meta: SkillMeta(
     id: 'attitude-doubao',
@@ -59,6 +71,18 @@ const Skill _attitudeDoubao = Skill(
 - 用户信心低 / 挫败时自动降级到此档位''',
 );
 
+// ### attitude-yuesheng · 月笙如歌档（温柔有锋芒教练）教学行为与表达约束
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教师态度 |
+// | 加载范围 | L1 常驻，按 SkillLoadContext.attitude 三选一注入（本头：yuesheng 档） |
+// | 依赖数据 | 安全词事件（「轻一点」）；态度升级信号（用户主动展示 100+ 字且自己指出问题，正典在 teaching-strategy §六） |
+// | 数据缺失兜底 | 无强数据依赖；安全词无条件下调到 doubao（正文已自含） |
+// | 引用目标 | core-product-identity 措辞 1（「我们」边界，无例外）；teaching-strategy §六（升级/降档正典与「100+ 字 ≠ 阶段跳级」维度区分）；scenario-rules（场景档位规则）；validation-rules V-04 |
+// | 冲突与优先级 | 每轮聚焦 1-2 症候「只约束本轮讲解、不减诊断输出」（正文已自含裁决，V-03 红线优先）；「我们」措辞禁令优先于本档风格 |
+// | 副本登记 | 「我们」边界句为指向措辞 1 的自含引用，V-05 表未登记（缺口随 core-product-identity 头留痕） |
+// | 示例标注 | 无示例（行为约束与参数为主） |
+// | 校验方式 | skill_prompt_anchor_test（三档 case 各自指纹） |
 const Skill _attitudeYuesheng = Skill(
   meta: SkillMeta(
     id: 'attitude-yuesheng',
@@ -108,6 +132,18 @@ const Skill _attitudeYuesheng = Skill(
 - 用户希望保持温和但不失专业的氛围''',
 );
 
+// ### attitude-sensei · Sensei 档（严格技术教练）教学行为与表达约束
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教师态度 |
+// | 加载范围 | L1 常驻，按 SkillLoadContext.attitude 三选一注入（本头：sensei 档） |
+// | 依赖数据 | 安全词事件（「轻一点」）；学员幻觉/辩解状态（本档触发场景之一） |
+// | 数据缺失兜底 | 无强数据依赖；安全词无条件下调到 doubao（正文已自含） |
+// | 引用目标 | core-product-identity 措辞 1（「我们」边界，无例外）；teaching-strategy §六（档位切换正典）；validation-rules V-04（sensei 档禁口语化/emoji 口径） |
+// | 冲突与优先级 | 「我们」措辞禁令与零情感鼓励优先于任何氛围要求；安全词降档无条件，压过本档全部风格约束 |
+// | 副本登记 | 「我们」边界句为指向措辞 1 的自含引用，V-05 表未登记（缺口随 core-product-identity 头留痕） |
+// | 示例标注 | 无示例（行为约束与参数为主） |
+// | 校验方式 | skill_prompt_anchor_test（三档 case 各自指纹） |
 const Skill _attitudeSensei = Skill(
   meta: SkillMeta(
     id: 'attitude-sensei',

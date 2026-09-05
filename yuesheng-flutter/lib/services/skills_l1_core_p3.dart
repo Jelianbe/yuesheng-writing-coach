@@ -94,6 +94,18 @@ P2_PRACTICE_LOOP 下分为 DIAGNOSIS（诊断）→ PRACTICE（练习）→ FEED
 
 > "聊几句——你现在在写什么？卡在哪里了？"''';
 
+// ### core-product-identity · 产品身份底线（4负4正）+ 声线保护措辞三约束 + 能力边界声明
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教师态度（产品身份与底线） |
+// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入）。正文「loadWhen: P2+ 必加载」为旧自述，与 skill_layers.dart 现状不符，以代码为准 |
+// | 依赖数据 | 无（纯边界规则） |
+// | 数据缺失兜底 | 无依赖 |
+// | 引用目标 | scenario-rules（DP-F/DP-G/DP-I 拒绝话术，检测标准所指向）；validation-rules V-09（合规校验引用本 skill 4负4正）；core-iron-triangle §〇（本 skill 列裁决第 1 级） |
+// | 冲突与优先级 | 4负4正与 validation-rules 🔴 致命项同列铁三角裁决第 1 级（产品底线）；措辞 1 与鼓励侧成对裁决：指向创作动作→严禁「我们」，指向共同讨论→允许 |
+// | 副本登记 | 「我们」边界在各 attitude 档为指向措辞 1 的自含引用（如 attitude-doubao 表达风格节），V-05 现行 10 对中无本 skill 条目——规范范例 1 所称「已登记」与现行表不符，登记缺口已留痕待裁决 |
+// | 示例标注 | ✅/❌ 措辞示例多处 + 边界声明话术，均为示例非台词（措辞 1 已注明「不要固定在某一种说法上」） |
+// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹）+ 扫描器 copy-drift（attitude 侧边界句） |
 const Skill _coreProductIdentity = Skill(
   meta: SkillMeta(
     id: 'core-product-identity',
@@ -182,6 +194,18 @@ const Skill _coreProductIdentity = Skill(
 - 学员对 AI 输出不满意 → "这是 AI 的天花板——我能帮你看到差距，但跨越这个 gap 需要你自己的练习。"''',
 );
 
+// ### validation-rules · 输出验证自查清单 + V-01~V-10 合规硬约束
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教学 |
+// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入；正文「所有 phase 必加载」与代码一致） |
+// | 依赖数据 | 当前 attitudeLevel（V-04 档位一致性）；DisputeTracker 降档事件（V-07）；症候 ID 范围插值 $_syndromeIdRange（skill_registry.dart:209，注册表派生） |
+// | 数据缺失兜底 | V-07 无降档记录时按「用户说过安全词」的对话事实执行；范围插值由注册表派生恒有值，无缺失态 |
+// | 引用目标 | core-product-identity（V-09 的 4负4正本体）；scenario-rules（V-09 防御点立场表述）；attitude 三档（V-04 档位口径）；core-iron-triangle §〇（本 skill 致命项列第 1 级） |
+// | 冲突与优先级 | 🔴 V-01/V-02/V-09/V-10 列铁三角裁决第 1 级（产品底线）；🟢 V-05/V-06/V-08 列第 5 级（建议级） |
+// | 副本登记 | 无 V-05 登记 |
+// | 示例标注 | ❌/✅ 全部为示例（正文已显式声明「都是示例……不是必须套用的句式」） |
+// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹） |
 final Skill _validationRules = Skill(
   meta: SkillMeta(
     id: 'validation-rules',
@@ -272,6 +296,18 @@ final Skill _validationRules = Skill(
     也不要从一两句里推出结论''',
 );
 
+// ### writing-anchors · 写作认知锚点（好写作方向参考，非诊断标准）
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教学 |
+// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入） |
+// | 依赖数据 | 无（纯认知参考） |
+// | 数据缺失兜底 | 无依赖 |
+// | 引用目标 | 症候/技法参考库（正文「用症候 ID 到参考库取教学资源」→ syndrome_kb_content / technique_knowledge_base） |
+// | 冲突与优先级 | 「认知参考，非诊断标准」：与症候诊断结论冲突时不作诊断依据；建议级，受 core-iron-triangle §〇 第 5 级约束 |
+// | 副本登记 | 无 V-05 登记 |
+// | 示例标注 | 锚点为方向性描述非检查清单（正文已声明「不是必须逐条检查的清单」） |
+// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹） |
 const Skill _writingAnchors = Skill(
   meta: SkillMeta(
     id: 'writing-anchors',

@@ -224,6 +224,7 @@ python tool/check_r019.py --baseline tool/r019_baseline.json
 | R-020 | 循环依赖零容忍 | L3 | `.trae/rules/R-020-循环依赖零容忍.md` |
 | R-028 | 防御性编码 | L3 | `.trae/rules/R-028-防御性编码.md` |
 | R-006 | 回退机制规范 | L2 | `.trae/rules/R-006-回退机制规范.md` |
+| 规范V1.0 | **内容增减规范（内容层改动前自检 + 9 字段元数据头，配套巡检 `scripts/check_content_metadata.py`）** | L3 | `yuesheng-flutter/docs/standards/内容增减规范-V1.0.md` |
 | 完整清单 | 全部活跃规则 | - | `.trae/rules/月笙项目开发规则汇总.md` |
 
 ## 项目文档（Flutter 真源侧）
