@@ -499,3 +499,34 @@ git bundle create ../rescue-main.bundle --all   # ✅ 独立于 .git 之外
 
 配套教训：本仓历史上 `.git` 至少断过两次（2026-08-22 的 `.git-broken-backup-20260822`
 仍在根目录，保留不动），属长期病灶——**改动前先出 bundle 兜底**应成为默认动作。）
+
+（V4.24：**「exit 0 但效果没发生」的静默失败，先隔时复验再下结构性结论**——
+2026-09-05 实证。21:35–21:44 期间 `git branch` / `git update-ref` 连续返回
+**exit 0 但引用不落盘**（`.git/refs/heads/` 里没有新文件），据此一度判定
+「ref 层结构性损坏、R-006 L1 备份的正路被堵死」——**结论错误，一小时后探针
+复验即成功**。
+
+时间线吻合：失败窗口紧跟在 21:29–21:35 写出 230MB bundle 之后，判定为
+**Windows Defender 对新建大文件的实时扫描锁窗口**，git 的事务路径在锁上静默
+放弃（不给错误、退出码仍为 0）。
+
+**判别方法**：遇到「退出码正常但结果没发生」，不要直接定性为结构性故障——
+隔一段时间用探针做**双向验证**：
+```bash
+git branch probe-$$          # 建
+git rev-parse --verify refs/heads/probe-$$   # 验（能打出 hash 才算真成功）
+git branch -D probe-$$       # 删（删得掉才算写路径完整）
+```
+建成功 + 删得掉 = ref 层健康。若失败**再**去查 fsck / 磁盘 / 权限。
+
+同一批的另一条误判：`git fsck` 报的 `failed to load pack in position 0`
+是**持续但良性**的已知状态——commit / log / cat-file / ref 读写 / bundle
+生成全部正常（230MB bundle 就是在这个 pack 之上生成且 `verify` 通过的）。
+维持「live repack 暂缓」判定，**不要每次 fsck 红灯都当新故障处置**。
+
+**备份的层次（更正 V4.23「先出 bundle」的表述）**：
+- **常规兜底 = `git push`**（远端 `upstream`，一条命令，零体积成本）；
+  本仓远端 `git@github.com:Jelianbe/yuesheng-writing-coach.git`。
+- **bundle 只在大节点出**（schema 迁移、大批提交前），**不要每批都出 230MB**。
+- 文件级备份（`_c78_isolated/batchN_before/`）用于批次内的细粒度还原。
+三者的关系是：push 管历史、bundle 管极端情况、文件级备份管在途改动。）

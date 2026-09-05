@@ -74,3 +74,20 @@ List<String> parseJsonStringList(String? raw) {
 String stringifyJson(dynamic value) {
   return jsonEncode(value);
 }
+
+/// 章节内容指纹（C78 D-6）：FNV-1a 32-bit，返回 8 位小写十六进制串
+///
+/// 用途：事实抽取落地时记录当时该章正文指纹，后续比对指纹变化 → 相关
+/// 断言/事件标记 stale，由用户在角色标签页确认或修正。
+/// 自实现而非用 String.hashCode：Dart 字符串 hash 不保证跨版本/跨 isolate
+/// 稳定，用它会导致存量事实在升级后集体误判为 stale。
+String chapterFingerprint(String content) {
+  const int offsetBasis = 0x811c9dc5;
+  const int prime = 0x01000193;
+  var hash = offsetBasis;
+  for (var i = 0; i < content.length; i++) {
+    hash = (hash ^ content.codeUnitAt(i)) & 0xFFFFFFFF;
+    hash = (hash * prime) & 0xFFFFFFFF;
+  }
+  return hash.toRadixString(16).padLeft(8, '0');
+}

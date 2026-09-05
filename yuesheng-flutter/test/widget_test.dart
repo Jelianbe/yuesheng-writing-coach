@@ -55,14 +55,16 @@ void main() {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
 
-      // 2. 验证 user_version = 26（drift schemaVersion；批次89 → 23，批次94-2 → 24
+      // 2. 验证 user_version = 27（drift schemaVersion；批次89 → 23，批次94-2 → 24
       // chapters.status CHECK 扩 'archived'；批次94-5 → 25 manuscripts.tags 列；
-      // 批次96+ → 26 新增 volumes 之外的 schema bump）
+      // 批次96+ → 26 新增 volumes 之外的 schema bump；
+      // C78 批次1 → 27 角色标签页列：character_fact.aliases/status，
+      // event_fact.stale/chapter_hash）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        26,
-        reason: 'schemaVersion 应为 26',
+        27,
+        reason: 'schemaVersion 应为 27',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

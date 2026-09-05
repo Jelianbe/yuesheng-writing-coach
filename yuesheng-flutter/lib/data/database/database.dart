@@ -52,7 +52,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
+
+  /// 表是否存在（迁移守卫用，C78 批次 1）
+  ///
+  /// SQLite 陷阱：`PRAGMA table_info(不存在的表)` 返回**空结果集而不报错**，
+  /// 会让「缺列」判定恒为真，进而 `ALTER TABLE` 一张不存在的表 →
+  /// `SqliteException: no such table`。最小 schema 的迁移测试
+  /// （v23 只建 manuscripts/chapters、v24 多一张 volumes）会踩到这个坑。
+  Future<bool> _tableExists(String table) async {
+    final rows = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+      variables: [Variable.withString(table)],
+    ).get();
+    return rows.isNotEmpty;
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -174,8 +188,8 @@ class AppDatabase extends _$AppDatabase {
       // 批次89：守卫上移到 23（v23 块对 from=22 存量库可达，幂等）
       // 批次94-2：守卫上移到 24（v24 块对 from=23 存量库可达，幂等）
       // 批次94-5：守卫上移到 25（v25 块对 from=24 存量库可达，幂等）
-      // X-041a：守卫上移到 26（v26 块对 from=25 存量库可达，幂等）
-      if (from >= 26) return;
+      // C78 批次1：守卫上移到 27（v27 块对 from=26 存量库可达，幂等）
+      if (from >= 27) return;
 
       // v2: add_last_diagnosed_at_to_chapters
       if (from < 2) {
@@ -739,6 +753,60 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_training_results_syndrome ON training_results(syndrome_id, created_at DESC)',
         );
+      }
+
+      // v27: C78 批次1 角色标签页数据层列（幂等）
+      // character_fact.aliases：并入主角色的源名归档（D-1）
+      // character_fact.status：active | merged（D-1 角色合并）
+      // event_fact.stale：事件行级 stale（D-8）
+      // event_fact.chapter_hash：抽取时章节指纹（D-6）
+      if (from < 27) {
+        // 表存在才加列：真实存量库 v16+ 必有这两张表，跳过只发生在
+        // 最小 schema 的迁移测试库（v23/v24 未建 character_fact / event_fact）。
+        // 若此处不判表存在，`PRAGMA table_info` 的空集会误判为「缺列」，
+        // 进而 ALTER 一张不存在的表 → SqliteException（详见 _tableExists 注释）。
+        if (await _tableExists('character_fact')) {
+          final charCols = await customSelect(
+            'PRAGMA table_info(character_fact)',
+          ).get();
+          final hasAliases = charCols.any(
+            (r) => r.read<String>('name') == 'aliases',
+          );
+          if (!hasAliases) {
+            await customStatement(
+              "ALTER TABLE character_fact ADD COLUMN aliases TEXT NOT NULL DEFAULT '[]'",
+            );
+          }
+          final hasStatus = charCols.any(
+            (r) => r.read<String>('name') == 'status',
+          );
+          if (!hasStatus) {
+            await customStatement(
+              "ALTER TABLE character_fact ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+            );
+          }
+        }
+        if (await _tableExists('event_fact')) {
+          final eventCols = await customSelect(
+            'PRAGMA table_info(event_fact)',
+          ).get();
+          final hasStale = eventCols.any(
+            (r) => r.read<String>('name') == 'stale',
+          );
+          if (!hasStale) {
+            await customStatement(
+              'ALTER TABLE event_fact ADD COLUMN stale INTEGER NOT NULL DEFAULT 0',
+            );
+          }
+          final hasChapterHash = eventCols.any(
+            (r) => r.read<String>('name') == 'chapter_hash',
+          );
+          if (!hasChapterHash) {
+            await customStatement(
+              'ALTER TABLE event_fact ADD COLUMN chapter_hash TEXT DEFAULT NULL',
+            );
+          }
+        }
       }
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，

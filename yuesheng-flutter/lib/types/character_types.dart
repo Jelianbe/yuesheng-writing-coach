@@ -23,11 +23,31 @@ class CharacterAssertion {
   /// 断言时间（unix 秒，时间维度）
   final int timestamp;
 
+  /// C78 D-2：确认状态 confirmed | rejected（无 pending，存量断言默认 confirmed）
+  final String status;
+
+  /// C78 D-4：来源 ai | user（用户手动修正的断言为 user，不被 AI 覆写）
+  final String source;
+
+  /// C78 D-3：正文原文摘录（非转述、非概括），供用户在角色标签页核对依据
+  final String? evidence;
+
+  /// C78 D-6：抽取时该章内容指纹，用于判定断言是否 stale
+  final String? chapterHash;
+
+  /// C78 D-6：旧版标记（章节正文已改动 → true）
+  final bool stale;
+
   const CharacterAssertion({
     required this.attribute,
     required this.value,
     this.chapter,
     required this.timestamp,
+    this.status = 'confirmed',
+    this.source = 'ai',
+    this.evidence,
+    this.chapterHash,
+    this.stale = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -35,6 +55,11 @@ class CharacterAssertion {
     'value': value,
     'chapter': chapter,
     'timestamp': timestamp,
+    'status': status,
+    'source': source,
+    'evidence': evidence,
+    'chapterHash': chapterHash,
+    'stale': stale,
   };
 
   /// 宽松解析：属性名/值缺失或为空 → 跳过该条（保守，不抛出）
@@ -48,6 +73,9 @@ class CharacterAssertion {
       value: value,
       chapter: (json['chapter'] as num?)?.toInt(),
       timestamp: (json['timestamp'] as num?)?.toInt() ?? 0,
+      // C78 D-3：仅 evidence 从协议 JSON 读取（AI 唯一上报的新字段）；
+      // status/source/chapterHash/stale 由写入路径填值，此处不读，靠默认值兜底。
+      evidence: json['evidence'] as String?,
     );
   }
 }
