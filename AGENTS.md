@@ -529,4 +529,36 @@ git branch -D probe-$$       # 删（删得掉才算写路径完整）
   本仓远端 `git@github.com:Jelianbe/yuesheng-writing-coach.git`。
 - **bundle 只在大节点出**（schema 迁移、大批提交前），**不要每批都出 230MB**。
 - 文件级备份（`_c78_isolated/batchN_before/`）用于批次内的细粒度还原。
-三者的关系是：push 管历史、bundle 管极端情况、文件级备份管在途改动。）
+三者的关系是：push 管历史、bundle 管极端情况、文件级备份管在途改动。
+
+**`refs/remotes/**` 写入静默失败的根因与绕过**（2026-09-05 实证，**已定位根因**）：
+`git fetch` / `git update-ref` 对 `refs/remotes/**` 一律 **exit 0 但文件不落盘**
+——`GIT_TRACE_REFS=1` 显示事务 `finish: 0`，git 自认成功；`GIT_TRACE2_EVENT=1`
+显示 `midx load/num_packs = 3`。
+
+根因链条：
+```
+坏 pack（position 0，git fsck 报 "failed to load pack in position 0"）
+  → 事务 finish 后遍历 pack 校验对象存在性时失败
+  → 事务**静默回滚**（退出码仍是 0，stderr 全空）
+  → 回滚删掉刚建的松散 ref 文件与目录
+     （所以 `mkdir -p .git/refs/remotes/upstream` 建的目录会被 git 自己删掉）
+```
+`refs/heads/**` 与 `refs/tags/**` **不受影响**——它们走 packed-refs 的批量写路径，
+在事务之外落盘（这就是 heads 能写、remotes 不能写的全部原因）。
+已排除的假设：文件系统/磁盘（手工写文件成功）、reflog（`core.logAllRefUpdates=false`
+仍失败）、hook（`hooksPath` 只有 pre-commit）、prune 配置（未设置）。
+
+**绕过**：手工写松散 ref 文件（git 标准格式 = 40 hex + LF，**共 41 字节**）：
+```bash
+mkdir -p .git/refs/remotes/upstream
+printf '<40位hash>\n' > .git/refs/remotes/upstream/main
+git rev-parse upstream/main          # 应能解析
+git rev-list --count upstream/main..main   # 0 = 完全同步
+```
+⚠️ 一旦再跑 `git update-ref` / `git fetch`，事务回滚会**连带删掉**手工写的 ref，需重写。
+判据：`git status -sb` 显示 `## main...upstream/main [gone]` 即 ref 又丢了。
+
+**不修根因的代价**：remote-tracking refs 需手工维护；
+**commit / push / 工作树完全不受影响**（已实证 push 成功，远端同步到最新）。
+修根因要动 pack（repack / gc），维护窗口另议。）
