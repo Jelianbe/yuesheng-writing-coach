@@ -346,80 +346,82 @@ StateTransitionResult transitionTeachingState(
   TeachingState currentState,
   StateTransitionInput input,
 ) {
-  final s = currentState;
+  final result = switch (currentState) {
+    TeachingState.identified => _transitionFromIdentified(input),
+    TeachingState.inProgress => _transitionFromInProgress(input),
+    TeachingState.consolidating => _transitionFromConsolidating(input),
+    TeachingState.mastered => _transitionFromMastered(input),
+  };
+  return result ??
+      StateTransitionResult(newState: currentState, reason: '维持当前状态');
+}
 
-  // identified → in_progress
-  if (s == TeachingState.identified && input.trainingStarted) {
+/// identified → in_progress（R-019 拆出：transitionTeachingState 分派）。
+StateTransitionResult? _transitionFromIdentified(StateTransitionInput input) {
+  if (!input.trainingStarted) return null;
+  return const StateTransitionResult(
+    newState: TeachingState.inProgress,
+    reason: '第一次训练开始',
+  );
+}
+
+/// in_progress：前进至 consolidating / 学员放弃回退（R-019 拆出）。
+StateTransitionResult? _transitionFromInProgress(StateTransitionInput input) {
+  if (input.consecutiveLowSeverity >= 3 || input.consecutivePasses >= 5) {
     return const StateTransitionResult(
-      newState: TeachingState.inProgress,
-      reason: '第一次训练开始',
+      newState: TeachingState.consolidating,
+      reason: '连续稳定表现，进入巩固期',
     );
   }
-
-  // in_progress → consolidating
-  if (s == TeachingState.inProgress) {
-    if (input.consecutiveLowSeverity >= 3 || input.consecutivePasses >= 5) {
-      return const StateTransitionResult(
-        newState: TeachingState.consolidating,
-        reason: '连续稳定表现，进入巩固期',
-      );
-    }
-  }
-
-  // consolidating → mastered
-  if (s == TeachingState.consolidating) {
-    // FSRS 路径（未来启用）：间隔达标 + 巩固观察充足
-    final fsrsReady =
-        input.fsrsIntervalDays >= 14 && input.consolidationObservations >= 3;
-    // 非 FSRS 降级路径：FSRS 未启用时代理规则
-    // 要求巩固观察 ≥5 + 连续低严重度 ≥3 + 连续通过 ≥3
-    final proxyReady =
-        input.consolidationObservations >= 5 &&
-        input.consecutiveLowSeverity >= 3 &&
-        input.consecutivePasses >= 3;
-    // 批次1（O2）：毕业复核——长时间无新观察 + 历史达标率达标 → 直接确认掌握。
-    // 修复：学员改好后不再出现在诊断 → 无观察数据 → 原规则永久卡 active 阻塞 M4-A。
-    // 保守守卫：已检测到复发（relapseDetected）时不毕业，交给下方回退规则处理。
-    final graduationReady =
-        !input.relapseDetected &&
-        input.daysSinceLastObservation >= kGraduationReviewGapDays &&
-        input.passRate >= kGraduationReviewPassRate;
-    if (fsrsReady || proxyReady || graduationReady) {
-      return StateTransitionResult(
-        newState: TeachingState.mastered,
-        reason: graduationReady ? '长时间无复发且历史达标，毕业复核确认掌握' : '巩固期表现稳定，确认掌握',
-      );
-    }
-  }
-
-  // 回退规则
-  // mastered → in_progress (复发)
-  if (s == TeachingState.mastered && input.relapseDetected) {
-    return const StateTransitionResult(
-      newState: TeachingState.inProgress,
-      reason: '复发L2/L3，回退到训练',
-    );
-  }
-
-  // consolidating → in_progress (FSRS到期诊断= L3)
-  if (s == TeachingState.consolidating &&
-      input.relapseDetected &&
-      input.consecutiveLowSeverity == 0) {
-    return const StateTransitionResult(
-      newState: TeachingState.inProgress,
-      reason: '巩固期诊断恶化为L3，回退',
-    );
-  }
-
-  // in_progress → identified (学员放弃)
-  if (s == TeachingState.inProgress && input.studentAbandoned) {
+  if (input.studentAbandoned) {
     return const StateTransitionResult(
       newState: TeachingState.identified,
       reason: '学员主动放弃训练该症候',
     );
   }
+  return null;
+}
 
-  return StateTransitionResult(newState: currentState, reason: '维持当前状态');
+/// consolidating：FSRS/代理/毕业复核三路径至 mastered，复发回退（R-019 拆出）。
+StateTransitionResult? _transitionFromConsolidating(
+  StateTransitionInput input,
+) {
+  // FSRS 路径（未来启用）：间隔达标 + 巩固观察充足
+  final fsrsReady =
+      input.fsrsIntervalDays >= 14 && input.consolidationObservations >= 3;
+  // 非 FSRS 降级路径：巩固观察 ≥5 + 连续低严重度 ≥3 + 连续通过 ≥3
+  final proxyReady =
+      input.consolidationObservations >= 5 &&
+      input.consecutiveLowSeverity >= 3 &&
+      input.consecutivePasses >= 3;
+  // 毕业复核：长时间无新观察 + 历史达标率达标 → 直接确认掌握（O2）。
+  // 保守守卫：已检测复发（relapseDetected）时不毕业，交给下方回退规则。
+  final graduationReady =
+      !input.relapseDetected &&
+      input.daysSinceLastObservation >= kGraduationReviewGapDays &&
+      input.passRate >= kGraduationReviewPassRate;
+  if (fsrsReady || proxyReady || graduationReady) {
+    return StateTransitionResult(
+      newState: TeachingState.mastered,
+      reason: graduationReady ? '长时间无复发且历史达标，毕业复核确认掌握' : '巩固期表现稳定，确认掌握',
+    );
+  }
+  if (input.relapseDetected && input.consecutiveLowSeverity == 0) {
+    return const StateTransitionResult(
+      newState: TeachingState.inProgress,
+      reason: '巩固期诊断恶化为L3，回退',
+    );
+  }
+  return null;
+}
+
+/// mastered → in_progress（复发回退，R-019 拆出）。
+StateTransitionResult? _transitionFromMastered(StateTransitionInput input) {
+  if (!input.relapseDetected) return null;
+  return const StateTransitionResult(
+    newState: TeachingState.inProgress,
+    reason: '复发L2/L3，回退到训练',
+  );
 }
 
 // ─── 最小数据量检查 ─────────────────────────────────────────

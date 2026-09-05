@@ -16,6 +16,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/services/diagnosis_validator.dart';
+import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
   group('validateSyndromeMutexWarnings（4.1 O6）', () {
@@ -98,6 +99,45 @@ void main() {
     test('非判决句 → 无 V-02', () {
       final result = validateNaturalLanguage('这一段的人物动机可以再明确一点');
       expect(result.fixes.any((f) => f.type == 'V-02'), isFalse);
+    });
+
+    group('validateNaturalLanguage V-01/V-03/V-04（R-019 批次二补判据边界）', () {
+      test('#N1 V-03 编号泄漏 → 替换 + 记录 fix', () {
+        final result = validateNaturalLanguage('这里有 P001 与 A001 编号');
+        expect(result.cleaned.contains('P001'), isFalse);
+        expect(result.cleaned, contains('【症候】'));
+        expect(result.cleaned, contains('【动作】'));
+        expect(result.fixes.any((f) => f.type == 'V-03'), isTrue);
+      });
+
+      test('#N2 V-04 sensei 档含糖水词 → 拦截（valid=false）', () {
+        final result = validateNaturalLanguage(
+          '你写得真棒',
+          attitude: AttitudeLevel.sensei,
+        );
+        expect(
+          result.fixes.any((f) => f.type == 'V-04' && f.original == '真棒'),
+          isTrue,
+        );
+        expect(result.valid, isFalse); // V-04 是阻断型
+      });
+
+      test('#N3 V-04 非 sensei 档含糖水词 → 不拦', () {
+        final result = validateNaturalLanguage('你写得真棒');
+        expect(result.fixes.any((f) => f.type == 'V-04'), isFalse);
+      });
+
+      test('#N4 V-01 恰好 80 字符无引号段落 → 不触发（阈值边界）', () {
+        final longPara = '甲' * 80;
+        final result = validateNaturalLanguage(longPara);
+        expect(result.fixes.any((f) => f.type == 'V-01'), isFalse);
+      });
+
+      test('#N5 V-01 81 字符无引号段落 → 触发', () {
+        final longPara = '甲' * 81;
+        final result = validateNaturalLanguage(longPara);
+        expect(result.fixes.any((f) => f.type == 'V-01'), isTrue);
+      });
     });
   });
 }
