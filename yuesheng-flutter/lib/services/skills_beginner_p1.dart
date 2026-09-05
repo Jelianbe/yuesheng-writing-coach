@@ -272,6 +272,18 @@ const Skill _writerPsychology = Skill(
 **注意**: 建议休息 ≠ 放弃。要给学员明确的"我们会回来"的信号。''',
 );
 
+// ### coaching-rhythm · 教练对话节奏（P0 五步 / P1 提问 / Layer2 桥接）
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教学 |
+// | 加载范围 | L2：beginner 组 + diagnosis 组（skill_layers.l2SkillMap） |
+// | 依赖数据 | contentForPhase 按 P0/P1 裁剪（代码函数） |
+// | 数据缺失兜底 | P2+ 返回原文，无缺失路径 |
+// | 引用目标 | phase-mapper「反馈要点」（训练完成后正典，ADR-C73）；V-03 |
+// | 冲突与优先级 | 训练完成后两件事以 phase-mapper 为正典，本节只留语气参考 |
+// | 副本登记 | V-05 #2/#3/#4/#6/#8/#10（跨层同值行） |
+// | 示例标注 | 语气参考均标「不照念」 |
+// | 校验方式 | coaching_rhythm_phase_slice_test（C57 护栏）+ ADR-C73 护栏 |
 const Skill _coachingRhythm = Skill(
   meta: SkillMeta(
     id: 'coaching-rhythm',
