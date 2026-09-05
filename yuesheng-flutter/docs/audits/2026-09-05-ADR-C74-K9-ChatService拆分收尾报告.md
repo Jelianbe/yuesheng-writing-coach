@@ -95,8 +95,11 @@ K-9 新增 3 个超限函数已拆（见 2.2），最后一个 parseAndPersist�
 
 ### 6.1 门禁 1（analyze lib）
 
-仅剩 7 个 K-1 预存 warning（diagnosis_committer.dart：6 unused_field + 1 unintended_html），
-与交接基线一致，无 error。
+✅ 2026-09-05 已全消——diagnosis_committer.dart 删除 6 个 K-1 预留死字段
+（_diagnosisService / _genUi / _material / _teaching / _diagnosis /
+_consecutiveDiagnosisFails，能力已被 DiagnosisFlowHandler / MessageInjector 持有）
++ 修注释 HTML 转义。构造参数保留以维持签名向后兼容（lint 未启用参数 unused
+检查，零调用点改动）。`flutter analyze lib` → **No issues found**。
 
 ### 6.2 M5 预存盲区（✅ 2026-09-05 已补测，见 §十）
 
@@ -128,7 +131,7 @@ DiagnosisFlowHandler 装配 outlineRepo，`_ensureOutlineService()` 恒为 null�
 
 - **验证方式**：六道门禁逐道手跑 + 全量测试 2374 通过 + mutation 5 变异（4 拦截 1 known）
 - **覆盖范围**：诊断链 4 个方法全部拆完；K-9 fixture 修复 23 文件 + 3 层连环问题全解决
-- **仍存在的缺口**：门禁 1 的 7 个 K-1 warning 待后续消费 capability 时消除（M5 盲区已补测闭环）
+- **仍存在的缺口**：无（M5 盲区已补测闭环；7 个 K-1 warning 已消除，analyze lib No issues found）
 
 ## 九、临时脚本处置
 
