@@ -112,25 +112,11 @@ ParseResult parseDiagnosis(String rawText) {
   final startIndex = rawText.indexOf(kDiagnosisStart);
   if (startIndex == -1) return _parseNoMarker(rawText);
 
-  // 批次6（6.12 V8）：prefix 同样剥 ENTITY/FACT 协议块（FACT 块出现在
-  // 诊断块之前等顺序错乱场景不泄漏原始 JSON）
-  final prefix = stripFactBlock(
-    stripOutlineBlock(rawText.substring(0, startIndex)),
-  ).trimRight();
-
   final endIndex = rawText.indexOf(
     kDiagnosisEnd,
     startIndex + kDiagnosisStart.length,
   );
-  // 批次74：suffix 也做大纲协议块剥离（AI 常把 YS_ENTITY 放诊断块之后、自然语言之前）
-  // 批次6（6.12 V8）：suffix 同步剥 FACT 块
-  final suffix = endIndex == -1
-      ? ''
-      : stripFactBlock(
-          stripOutlineBlock(rawText.substring(endIndex + kDiagnosisEnd.length)),
-        ).trimLeft();
-
-  final displayContent = _concatDiagnosisDisplay(prefix, suffix);
+  final displayContent = _buildDisplayContent(rawText, startIndex, endIndex);
 
   if (endIndex == -1) {
     // ADR-C63：此前静默丢弃（无日志）。模型以为有反馈回路，实际没有
@@ -161,6 +147,25 @@ ParseResult parseDiagnosis(String rawText) {
     rejectReason: outcome.rejectReason,
     notes: outcome.notes,
   );
+}
+
+/// 组装展示文本：prefix/suffix 各自剥离 ENTITY/FACT 协议块（R-019 拆出）。
+String _buildDisplayContent(String rawText, int startIndex, int endIndex) {
+  // 批次6（6.12 V8）：prefix 同样剥 ENTITY/FACT 协议块（FACT 块出现在
+  // 诊断块之前等顺序错乱场景不泄漏原始 JSON）
+  final prefix = stripFactBlock(
+    stripOutlineBlock(rawText.substring(0, startIndex)),
+  ).trimRight();
+
+  // 批次74：suffix 也做大纲协议块剥离（AI 常把 YS_ENTITY 放诊断块之后、自然语言之前）
+  // 批次6（6.12 V8）：suffix 同步剥 FACT 块
+  final suffix = endIndex == -1
+      ? ''
+      : stripFactBlock(
+          stripOutlineBlock(rawText.substring(endIndex + kDiagnosisEnd.length)),
+        ).trimLeft();
+
+  return _concatDiagnosisDisplay(prefix, suffix);
 }
 
 /// 无诊断块：仅剥离协议块后返回（批次74/6 契约）。
