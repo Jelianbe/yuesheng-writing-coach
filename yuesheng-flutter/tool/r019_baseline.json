@@ -697,13 +697,6 @@
       "lines": 86
     },
     {
-      "file": "lib/services/editor_service.dart",
-      "func": "callEditorStream",
-      "start": 34,
-      "end": 119,
-      "lines": 86
-    },
-    {
       "file": "lib/widgets/onboarding_questionnaire.dart",
       "func": "build",
       "start": 412,
@@ -760,13 +753,6 @@
       "lines": 82
     },
     {
-      "file": "lib/services/diagnosis_validator.dart",
-      "func": "validateNaturalLanguage",
-      "start": 170,
-      "end": 250,
-      "lines": 81
-    },
-    {
       "file": "lib/services/llm_client.dart",
       "func": "testLlmConnection",
       "start": 75,
@@ -786,13 +772,6 @@
       "start": 68,
       "end": 148,
       "lines": 81
-    },
-    {
-      "file": "lib/services/training_evaluator.dart",
-      "func": "transitionTeachingState",
-      "start": 345,
-      "end": 423,
-      "lines": 79
     },
     {
       "file": "lib/widgets/append_chapters_page.dart",
@@ -1028,8 +1007,8 @@
     {
       "file": "lib/services/diagnosis_validator.dart",
       "func": "_mapToParsedDiagnosis",
-      "start": 296,
-      "end": 362,
+      "start": 305,
+      "end": 371,
       "lines": 67
     },
     {
@@ -1098,8 +1077,8 @@
     {
       "file": "lib/services/diagnosis_validator.dart",
       "func": "_collectOptionalFieldDrifts",
-      "start": 378,
-      "end": 442,
+      "start": 387,
+      "end": 451,
       "lines": 65
     },
     {

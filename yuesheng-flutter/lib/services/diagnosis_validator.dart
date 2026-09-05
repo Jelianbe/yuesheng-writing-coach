@@ -172,29 +172,45 @@ NlValidationResult validateNaturalLanguage(
   AttitudeLevel? attitude,
 }) {
   final fixes = <NlFix>[];
-  var cleaned = raw;
-
-  // V-03: 编号泄漏替换
-  final codeMatches = <String>[];
-  cleaned = cleaned.replaceAllMapped(kSyndromeCodeRe, (match) {
-    codeMatches.add(match.group(0)!);
-    return '【症候】';
-  });
-  cleaned = cleaned.replaceAllMapped(kActionCodeRe, (match) {
-    codeMatches.add(match.group(0)!);
-    return '【动作】';
-  });
-  if (codeMatches.isNotEmpty) {
+  final codeResult = _applyCodeReplacement(raw);
+  var cleaned = codeResult.text;
+  if (codeResult.codes.isNotEmpty) {
     fixes.add(
       NlFix(
         type: 'V-03',
-        original: codeMatches.join(', '),
+        original: codeResult.codes.join(', '),
         replacement: '【症候】/【动作】',
       ),
     );
   }
+  fixes.addAll(_detectRewrites(cleaned));
+  fixes.addAll(_detectSugaryWords(cleaned, attitude));
+  final decision = _detectDecision(cleaned);
+  if (decision != null) fixes.add(decision);
+  return NlValidationResult(
+    valid: !fixes.any((f) => _kBlockingFixTypes.contains(f.type)),
+    fixes: fixes,
+    cleaned: cleaned,
+  );
+}
 
-  // V-01: 连续改写检测（仅记录）
+/// V-03 编号泄漏替换（R-019 拆出：validateNaturalLanguage）。
+({String text, List<String> codes}) _applyCodeReplacement(String cleaned) {
+  final codes = <String>[];
+  var out = cleaned.replaceAllMapped(kSyndromeCodeRe, (match) {
+    codes.add(match.group(0)!);
+    return '【症候】';
+  });
+  out = out.replaceAllMapped(kActionCodeRe, (match) {
+    codes.add(match.group(0)!);
+    return '【动作】';
+  });
+  return (text: out, codes: codes);
+}
+
+/// V-01 连续改写检测（仅记录，R-019 拆出）。
+List<NlFix> _detectRewrites(String cleaned) {
+  final fixes = <NlFix>[];
   final paragraphs = cleaned
       .split('\n')
       .where((p) => p.trim().isNotEmpty)
@@ -214,38 +230,31 @@ NlValidationResult validateNaturalLanguage(
       );
     }
   }
+  return fixes;
+}
 
-  // V-04: sensei 档禁止糖水词（真拦截）
-  if (attitude == AttitudeLevel.sensei) {
-    for (final word in _kSugaryWords) {
-      if (cleaned.contains(word)) {
-        fixes.add(
-          NlFix(
-            type: 'V-04',
-            original: word,
-            replacement: '（sensei 档禁止糖水词，已拦截）',
-          ),
-        );
-      }
+/// V-04 sensei 档禁止糖水词（真拦截，R-019 拆出）。
+List<NlFix> _detectSugaryWords(String cleaned, AttitudeLevel? attitude) {
+  final fixes = <NlFix>[];
+  if (attitude != AttitudeLevel.sensei) return fixes;
+  for (final word in _kSugaryWords) {
+    if (cleaned.contains(word)) {
+      fixes.add(
+        NlFix(type: 'V-04', original: word, replacement: '（sensei 档禁止糖水词，已拦截）'),
+      );
     }
   }
+  return fixes;
+}
 
-  // V-02: 决策句检测（仅记录）
+/// V-02 决策句检测（仅记录，R-019 拆出）。
+NlFix? _detectDecision(String cleaned) {
   final decisionMatch = _kDecisionRe.firstMatch(cleaned);
-  if (decisionMatch != null) {
-    fixes.add(
-      NlFix(
-        type: 'V-02',
-        original: decisionMatch.group(0)!,
-        replacement: '（已记录）',
-      ),
-    );
-  }
-
-  return NlValidationResult(
-    valid: !fixes.any((f) => _kBlockingFixTypes.contains(f.type)),
-    fixes: fixes,
-    cleaned: cleaned,
+  if (decisionMatch == null) return null;
+  return NlFix(
+    type: 'V-02',
+    original: decisionMatch.group(0)!,
+    replacement: '（已记录）',
   );
 }
 

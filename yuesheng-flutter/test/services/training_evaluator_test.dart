@@ -458,5 +458,61 @@ void main() {
       );
       expect(r.signal, DeteriorationSignal.relapse);
     });
+
+    group('FSM 基础转移（R-019 批次二补判据边界）', () {
+      test('#T1 identified + trainingStarted → inProgress', () {
+        final result = transitionTeachingState(
+          TeachingState.identified,
+          _input(trainingStarted: true),
+        );
+        expect(result.newState, TeachingState.inProgress);
+      });
+
+      test('#T2 identified + 未开始 → 维持 identified', () {
+        final result = transitionTeachingState(
+          TeachingState.identified,
+          _input(),
+        );
+        expect(result.newState, TeachingState.identified);
+      });
+
+      test('#T3 in_progress + consecutivePasses=5 → consolidating（恰好边界）', () {
+        final result = transitionTeachingState(
+          TeachingState.inProgress,
+          _input(consecutivePasses: 5),
+        );
+        expect(result.newState, TeachingState.consolidating);
+      });
+
+      test(
+        '#T4 in_progress + consecutiveLowSeverity=3 → consolidating（恰好边界）',
+        () {
+          final result = transitionTeachingState(
+            TeachingState.inProgress,
+            _input(consecutiveLowSeverity: 3),
+          );
+          expect(result.newState, TeachingState.consolidating);
+        },
+      );
+
+      test('#T5 in_progress + 不达标 → 维持 inProgress', () {
+        final result = transitionTeachingState(
+          TeachingState.inProgress,
+          _input(consecutivePasses: 4, consecutiveLowSeverity: 2),
+        );
+        expect(result.newState, TeachingState.inProgress);
+      });
+      test('#T6 consolidating + 代理路径恰好 3 次低严重度 → mastered（proxyReady 边界）', () {
+        final result = transitionTeachingState(
+          TeachingState.consolidating,
+          _input(
+            consolidationObservations: 5,
+            consecutiveLowSeverity: 3,
+            consecutivePasses: 3,
+          ),
+        );
+        expect(result.newState, TeachingState.mastered);
+      });
+    });
   });
 }
