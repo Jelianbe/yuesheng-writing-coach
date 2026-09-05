@@ -28,6 +28,7 @@ import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'package:writingcoach/contracts/genui_capability.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
 import 'package:writingcoach/contracts/teaching_capability.dart';
+import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
@@ -166,216 +167,253 @@ class DiagnosisCommitter {
   }) async {
     // 批次1（C5/H3）：路径1（AI 驱动）成功迁移后，路径2（M4-A 自动）不得
     // 再无条件继续，防止同轮链式双跳（如 P1→P2→P3）
-    var path1Migrated = false;
-    // ── 1. AI 驱动路径：phase-mapper resolver ──
-    if (diagnosis != null &&
-        (diagnosis.suggestedPhase != null ||
-            diagnosis.suggestedBeginnerLevel != null)) {
-      try {
-        final currentState = await _stateRepo.getTeachingState(sessionId);
-        final currentBeginnerLevelStr = currentState?.beginnerLevel;
-        final currentBeginnerLevel = BeginnerLevel.fromString(
-          currentBeginnerLevelStr,
-        );
-
-        // 计算连续失败训练次数（仅 N3 触发降级检查时需要）
-        int consecutiveFailedTrainings = 0;
-        if (currentBeginnerLevel == BeginnerLevel.n3Diagnose) {
-          try {
-            final allHistory = await _studentModelRepo.getTeachingHistory(
-              sessionId,
-            );
-            final activeProblems = await _diagnosisRepo.listActiveProblems(
-              sessionId,
-            );
-            final focusSyndromeId =
-                diagnosis.currentTeachingFocusId ??
-                activeProblems.firstOrNull?.syndromeId;
-            if (focusSyndromeId != null) {
-              final trainingRecords =
-                  allHistory
-                      .where(
-                        (r) =>
-                            r['type'] == 'training' &&
-                            r['syndromeId'] == focusSyndromeId,
-                      )
-                      .toList()
-                    ..sort((a, b) {
-                      final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
-                      final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
-                      return ta.compareTo(tb);
-                    });
-              for (int i = trainingRecords.length - 1; i >= 0; i--) {
-                if (trainingRecords[i]['result'] == 'failed') {
-                  consecutiveFailedTrainings++;
-                } else {
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            debugPrint('[SafeRun] resolver 训练记录读取失败: $e');
-          }
-        }
-
-        final resolverResult = resolvePhaseMapper(
-          PhaseMapperInput(
-            currentPhase: TeachingPhase.fromString(currentState?.currentPhase),
-            currentBeginnerLevel: currentBeginnerLevel,
-            suggestedPhase: diagnosis.suggestedPhase,
-            suggestedBeginnerLevel: diagnosis.suggestedBeginnerLevel,
-            consecutiveFailedTrainings: consecutiveFailedTrainings,
-          ),
-        );
-
-        final effectivePhase = resolverResult.effectivePhase;
-        if (effectivePhase != null) {
-          // M4-B: 阶段迁移合法性校验——拦截非法跳级/回退
-          // （如 P2→P0、P3→P1 等），仅放行相邻递进或 P4→P2 回退
-          final prevPhaseValue = currentState?.currentPhase;
-          final currentPhaseForValidation =
-              TeachingPhase.fromString(prevPhaseValue) ??
-              TeachingPhase.p0Engage;
-          if (validatePhaseTransition(
-            currentPhaseForValidation,
-            effectivePhase,
-          )) {
-            await _stateRepo.updatePhase(sessionId, effectivePhase.value);
-            // 批次9：阶段真实变化时插入 phase_upgrade 卡片（对齐 RN insertPhaseUpgradeCard）
-            if (prevPhaseValue != effectivePhase.value) {
-              path1Migrated = true;
-              // M4-D: 阶段迁移时重置子阶段，避免上一阶段子阶段残留
-              await _stateRepo.updateSubphase(sessionId, null);
-              try {
-                await insertPhaseUpgradeCard(
-                  _sessionRepo,
-                  sessionId,
-                  PhaseUpgradeCardPayload(
-                    from: prevPhaseValue ?? TeachingPhase.p0Engage.value,
-                    to: effectivePhase.value,
-                  ),
-                );
-              } catch (e) {
-                debugPrint('[SafeRun] 卡片插入失败不影响阶段迁移: $e');
-              }
-            }
-          } else {
-            // C54 方案 C（C-2，ADR-C54 §4-C-2）：早期跨一格的非法建议
-            // 确定性降级为相邻递进，而非整轮丢弃——首诊双信号场景
-            // （P0→P1 与 P1→P2 同时成立）不再依赖 AI 采样选择
-            final fallback = clampEarlyPhaseSkip(
-              currentPhaseForValidation,
-              effectivePhase,
-            );
-            if (fallback != null) {
-              await _stateRepo.updatePhase(sessionId, fallback.value);
-              path1Migrated = true;
-              // M4-D: 阶段迁移时重置子阶段，避免上一阶段子阶段残留
-              await _stateRepo.updateSubphase(sessionId, null);
-              try {
-                await insertPhaseUpgradeCard(
-                  _sessionRepo,
-                  sessionId,
-                  PhaseUpgradeCardPayload(
-                    from: prevPhaseValue ?? TeachingPhase.p0Engage.value,
-                    to: fallback.value,
-                  ),
-                );
-              } catch (e) {
-                debugPrint('[SafeRun] 卡片插入失败不影响阶段迁移: $e');
-              }
-            } else {
-              debugPrint(
-                '[SafeRun] M4-B: 阶段迁移非法已拦截 '
-                '$currentPhaseForValidation → $effectivePhase',
-              );
-            }
-          }
-        }
-        if (resolverResult.effectiveBeginnerLevel != null) {
-          await _stateRepo.updateBeginnerLevel(
-            sessionId,
-            resolverResult.effectiveBeginnerLevel!.value,
-          );
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] resolver 失败不阻断主流程: $e');
-      }
-    } else if (diagnosis != null && diagnosis.syndromes.isNotEmpty) {
-      // N38 可观测性：诊断块识别到症候、却没有 suggested_phase → 上面的入口
-      // 守卫不成立，路径 1 整条被跳过，本轮不发生迁移且全程无痕。这是实测过的
-      // 失败模式（gp-13 三次全漏填，把「可选字段」当成了可填可不填）。
-      // 此处只记录、不改行为——代码侧不代填迁移，避免越权改动教学状态机。
-      // 仅在 P0/P1 告警：这两个阶段「诊断出症候」本身就是迁移信号，属于确凿
-      // 漏填；P2 及以后每轮有症候是常态，不告警以免日志噪声。
-      try {
-        final n38State = await _stateRepo.getTeachingState(sessionId);
-        final n38Phase = TeachingPhase.fromString(n38State?.currentPhase);
-        if (n38Phase == TeachingPhase.p0Engage ||
-            n38Phase == TeachingPhase.p1World) {
-          debugPrint(
-            '[N38] ${n38Phase!.value} 阶段诊断块含 ${diagnosis.syndromes.length} 个症候'
-            '（迁移信号已成立）但无 suggested_phase → 本轮不发生阶段迁移',
-          );
-        }
-      } catch (e) {
-        debugPrint('[SafeRun] N38 可观测读取教学状态失败: $e');
-      }
-    }
-
-    // 批次1（C5/H3）：路径1 已成功迁移 → 直接返回，路径2 仅当路径1 无有效迁移时评估
+    final path1Migrated = await _applyResolverMigration(sessionId, diagnosis);
     if (path1Migrated) return;
 
     // ── 2. 自动迁移路径：M4-A + M4-C 达标率校验 ──
-    // 所有活跃症候已 resolved 时，代码侧主动推进阶段（不依赖 AI suggestedPhase）
+    await _applyAutomaticMigration(sessionId);
+  }
+
+  /// 路径1：AI 驱动迁移（phase-mapper resolver）。返回是否真实迁移。
+  Future<bool> _applyResolverMigration(
+    String sessionId,
+    ParsedDiagnosis? diagnosis,
+  ) async {
+    final hasSignal =
+        diagnosis != null &&
+        (diagnosis.suggestedPhase != null ||
+            diagnosis.suggestedBeginnerLevel != null);
+    if (!hasSignal) {
+      await _logN38MissingMigration(sessionId, diagnosis);
+      return false;
+    }
+    final d = diagnosis;
+    try {
+      final currentState = await _stateRepo.getTeachingState(sessionId);
+      final currentBeginnerLevel = BeginnerLevel.fromString(
+        currentState?.beginnerLevel,
+      );
+      final consecutiveFailedTrainings =
+          await _computeConsecutiveFailedTrainings(
+            sessionId,
+            currentBeginnerLevel,
+            d,
+          );
+      return await _applyResolverResult(
+        sessionId,
+        currentState,
+        d,
+        consecutiveFailedTrainings,
+      );
+    } catch (e) {
+      debugPrint('[SafeRun] resolver 失败不阻断主流程: $e');
+      return false;
+    }
+  }
+
+  /// 解析器结果应用：阶段 + 学员等级落库（R-019 二次拆）。
+  Future<bool> _applyResolverResult(
+    String sessionId,
+    TeachingStateRow? currentState,
+    ParsedDiagnosis d,
+    int consecutiveFailedTrainings,
+  ) async {
+    final resolverResult = resolvePhaseMapper(
+      PhaseMapperInput(
+        currentPhase: TeachingPhase.fromString(currentState?.currentPhase),
+        currentBeginnerLevel: BeginnerLevel.fromString(
+          currentState?.beginnerLevel,
+        ),
+        suggestedPhase: d.suggestedPhase,
+        suggestedBeginnerLevel: d.suggestedBeginnerLevel,
+        consecutiveFailedTrainings: consecutiveFailedTrainings,
+      ),
+    );
+    var migrated = false;
+    if (resolverResult.effectivePhase != null) {
+      migrated = await _applyResolvedPhase(
+        sessionId,
+        currentState?.currentPhase,
+        resolverResult.effectivePhase!,
+      );
+    }
+    if (resolverResult.effectiveBeginnerLevel != null) {
+      await _stateRepo.updateBeginnerLevel(
+        sessionId,
+        resolverResult.effectiveBeginnerLevel!.value,
+      );
+    }
+    return migrated;
+  }
+
+  /// 计算连续失败训练次数（仅 N3 触发降级检查时需要）。
+  Future<int> _computeConsecutiveFailedTrainings(
+    String sessionId,
+    BeginnerLevel? currentBeginnerLevel,
+    ParsedDiagnosis diagnosis,
+  ) async {
+    if (currentBeginnerLevel != BeginnerLevel.n3Diagnose) return 0;
+    try {
+      final allHistory = await _studentModelRepo.getTeachingHistory(sessionId);
+      final activeProblems = await _diagnosisRepo.listActiveProblems(sessionId);
+      final focusSyndromeId =
+          diagnosis.currentTeachingFocusId ??
+          activeProblems.firstOrNull?.syndromeId;
+      if (focusSyndromeId == null) return 0;
+      final trainingRecords =
+          allHistory
+              .where(
+                (r) =>
+                    r['type'] == 'training' &&
+                    r['syndromeId'] == focusSyndromeId,
+              )
+              .toList()
+            ..sort((a, b) {
+              final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
+              final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
+              return ta.compareTo(tb);
+            });
+      var consecutiveFailedTrainings = 0;
+      for (int i = trainingRecords.length - 1; i >= 0; i--) {
+        if (trainingRecords[i]['result'] == 'failed') {
+          consecutiveFailedTrainings++;
+        } else {
+          break;
+        }
+      }
+      return consecutiveFailedTrainings;
+    } catch (e) {
+      debugPrint('[SafeRun] resolver 训练记录读取失败: $e');
+      return 0;
+    }
+  }
+
+  /// M4-B 校验 + 阶段迁移（含 C54 clamp 降级）。返回是否真实迁移。
+  Future<bool> _applyResolvedPhase(
+    String sessionId,
+    String? prevPhaseValue,
+    TeachingPhase effectivePhase,
+  ) async {
+    final currentPhaseForValidation =
+        TeachingPhase.fromString(prevPhaseValue) ?? TeachingPhase.p0Engage;
+    if (validatePhaseTransition(currentPhaseForValidation, effectivePhase)) {
+      await _stateRepo.updatePhase(sessionId, effectivePhase.value);
+      // 批次9：阶段真实变化时插入 phase_upgrade 卡片（对齐 RN insertPhaseUpgradeCard）
+      if (prevPhaseValue != effectivePhase.value) {
+        // M4-D: 阶段迁移时重置子阶段，避免上一阶段子阶段残留
+        await _stateRepo.updateSubphase(sessionId, null);
+        await _insertUpgradeCard(
+          sessionId,
+          prevPhaseValue ?? TeachingPhase.p0Engage.value,
+          effectivePhase.value,
+        );
+        return true;
+      }
+      return false;
+    }
+    // C54 方案 C（C-2，ADR-C54 §4-C-2）：早期跨一格的非法建议
+    // 确定性降级为相邻递进，而非整轮丢弃——首诊双信号场景
+    // （P0→P1 与 P1→P2 同时成立）不再依赖 AI 采样选择
+    final fallback = clampEarlyPhaseSkip(
+      currentPhaseForValidation,
+      effectivePhase,
+    );
+    if (fallback == null) {
+      debugPrint(
+        '[SafeRun] M4-B: 阶段迁移非法已拦截 '
+        '$currentPhaseForValidation → $effectivePhase',
+      );
+      return false;
+    }
+    await _stateRepo.updatePhase(sessionId, fallback.value);
+    // M4-D: 阶段迁移时重置子阶段，避免上一阶段子阶段残留
+    await _stateRepo.updateSubphase(sessionId, null);
+    await _insertUpgradeCard(
+      sessionId,
+      prevPhaseValue ?? TeachingPhase.p0Engage.value,
+      fallback.value,
+    );
+    return true;
+  }
+
+  /// 阶段迁移卡片插入（失败不影响迁移）。
+  Future<void> _insertUpgradeCard(
+    String sessionId,
+    String from,
+    String to,
+  ) async {
+    try {
+      await insertPhaseUpgradeCard(
+        _sessionRepo,
+        sessionId,
+        PhaseUpgradeCardPayload(from: from, to: to),
+      );
+    } catch (e) {
+      debugPrint('[SafeRun] 卡片插入失败不影响阶段迁移: $e');
+    }
+  }
+
+  /// N38 可观测性：诊断含症候但无 suggested_phase，仅 P0/P1 告警。
+  Future<void> _logN38MissingMigration(
+    String sessionId,
+    ParsedDiagnosis? diagnosis,
+  ) async {
+    if (diagnosis == null || diagnosis.syndromes.isEmpty) return;
+    // 此处只记录、不改行为——代码侧不代填迁移，避免越权改动教学状态机。
+    try {
+      final state = await _stateRepo.getTeachingState(sessionId);
+      final phase = TeachingPhase.fromString(state?.currentPhase);
+      if (phase == TeachingPhase.p0Engage || phase == TeachingPhase.p1World) {
+        debugPrint(
+          '[N38] ${phase!.value} 阶段诊断块含 ${diagnosis.syndromes.length} 个症候'
+          '（迁移信号已成立）但无 suggested_phase → 本轮不发生阶段迁移',
+        );
+      }
+    } catch (e) {
+      debugPrint('[SafeRun] N38 可观测读取教学状态失败: $e');
+    }
+  }
+
+  /// 路径2：M4-A 自动迁移（所有活跃症候 resolved + M4-C 达标率）。
+  Future<void> _applyAutomaticMigration(String sessionId) async {
     // 守卫：仅在 P2 及以后触发（P0/P1 阶段迁移由 AI suggested_phase 驱动）
     // M4-C: passRate >= phasePassRate(0.7) 才允许迁移，避免手动标记完成跳过训练升阶
     try {
       final remaining = await _diagnosisRepo.listActiveProblems(sessionId);
       if (remaining.isEmpty) {
-        final ts = await _stateRepo.getTeachingState(sessionId);
-        final currentPhase =
-            TeachingPhase.fromString(ts?.currentPhase) ??
-            TeachingPhase.p0Engage;
-        if (currentPhase != TeachingPhase.p0Engage &&
-            currentPhase != TeachingPhase.p1World) {
-          final evalService = EvaluationService(
-            _diagnosisRepo,
-            _studentModelRepo,
-          );
-          final passRate = await evalService.computePassRateForPhaseMigration(
-            sessionId,
-          );
-          if (passRate >= EvaluationThresholds.phasePassRate) {
-            final next = nextPhase(currentPhase);
-            // M4-B: nextPhase 已保证相邻递进，validatePhaseTransition 双重校验
-            if (next != null && validatePhaseTransition(currentPhase, next)) {
-              await _stateRepo.updatePhase(sessionId, next.value);
-              await _stateRepo.updateSubphase(sessionId, null);
-              try {
-                await insertPhaseUpgradeCard(
-                  _sessionRepo,
-                  sessionId,
-                  PhaseUpgradeCardPayload(
-                    from: currentPhase.value,
-                    to: next.value,
-                  ),
-                );
-              } catch (e) {
-                debugPrint('[SafeRun] 自动迁移卡片插入失败: $e');
-              }
-            }
-          } else {
-            debugPrint(
-              '[SafeRun] M4-C: 达标率 $passRate < '
-              '${EvaluationThresholds.phasePassRate}，阶段暂不迁移',
-            );
-          }
-        }
+        await _tryAutomaticUpgrade(sessionId);
       }
     } catch (e) {
       debugPrint('[SafeRun] 自动迁移失败不阻断主流程: $e');
     }
+  }
+
+  /// M4-A 单次自动升阶评估。
+  Future<void> _tryAutomaticUpgrade(String sessionId) async {
+    final ts = await _stateRepo.getTeachingState(sessionId);
+    final currentPhase =
+        TeachingPhase.fromString(ts?.currentPhase) ?? TeachingPhase.p0Engage;
+    if (currentPhase == TeachingPhase.p0Engage ||
+        currentPhase == TeachingPhase.p1World) {
+      return;
+    }
+    final evalService = EvaluationService(_diagnosisRepo, _studentModelRepo);
+    final passRate = await evalService.computePassRateForPhaseMigration(
+      sessionId,
+    );
+    if (passRate < EvaluationThresholds.phasePassRate) {
+      debugPrint(
+        '[SafeRun] M4-C: 达标率 $passRate < '
+        '${EvaluationThresholds.phasePassRate}，阶段暂不迁移',
+      );
+      return;
+    }
+    final next = nextPhase(currentPhase);
+    // M4-B: nextPhase 已保证相邻递进，validatePhaseTransition 双重校验
+    if (next == null || !validatePhaseTransition(currentPhase, next)) return;
+    await _stateRepo.updatePhase(sessionId, next.value);
+    await _stateRepo.updateSubphase(sessionId, null);
+    await _insertUpgradeCard(sessionId, currentPhase.value, next.value);
   }
 
   // ─────────────────────────────────────────────────────────────
