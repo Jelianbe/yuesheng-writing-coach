@@ -293,38 +293,15 @@ extension GrowthStatsExtension on GrowthService {
     final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final cutoff = nowSec - days * 86400;
 
-    final chapterRows = await (_db.customSelect(
-      "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS date, "
-      'updated_at AS ts, word_count AS words FROM chapters '
-      'WHERE updated_at >= ? AND word_count > 0 ORDER BY updated_at ASC',
-      variables: [Variable.withInt(cutoff)],
-    )).get();
-
-    final diagnosisRows = await (_db.customSelect(
-      "SELECT strftime('%Y-%m-%d', timestamp, 'unixepoch') AS date, "
-      'timestamp AS ts FROM diagnosis_results '
-      'WHERE timestamp >= ? ORDER BY timestamp ASC',
-      variables: [Variable.withInt(cutoff)],
-    )).get();
+    final rows = await _fetchCurveRows(cutoff);
 
     // 新用户无写作和诊断记录时返回空数组，触发 UI 空态引导文案
-    if (chapterRows.isEmpty && diagnosisRows.isEmpty) return const [];
+    if (rows.chapterRows.isEmpty && rows.diagnosisRows.isEmpty) return const [];
 
     // 初始化最近 days 天 UTC 日期序列（对齐 RN toISOString().slice(0,10)）
-    final byDate = <String, WritingDataPoint>{};
-    for (var i = days - 1; i >= 0; i--) {
-      final d = nowUtc.subtract(Duration(days: i));
-      final dateStr = _formatUtcDate(d);
-      byDate[dateStr] = WritingDataPoint(
-        date: dateStr,
-        timestamp:
-            DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 1000,
-        wordCount: 0,
-        diagnosisCount: 0,
-      );
-    }
+    final byDate = _initCurveDateSequence(days, nowUtc);
 
-    for (final row in chapterRows) {
+    for (final row in rows.chapterRows) {
       final date = row.read<String>('date');
       final point = byDate[date];
       if (point != null) {
@@ -337,7 +314,7 @@ extension GrowthStatsExtension on GrowthService {
       }
     }
 
-    for (final row in diagnosisRows) {
+    for (final row in rows.diagnosisRows) {
       final date = row.read<String>('date');
       final point = byDate[date];
       if (point != null) {
@@ -352,6 +329,45 @@ extension GrowthStatsExtension on GrowthService {
 
     // 按插入顺序返回（旧 → 新），对齐 RN Array.from(byDate.values())
     return byDate.values.toList();
+  }
+
+  /// 拉取曲线原始行：章节省字数 + 诊断记录（R-019 拆出：getWritingCurve）。
+  Future<({List<QueryRow> chapterRows, List<QueryRow> diagnosisRows})>
+  _fetchCurveRows(int cutoff) async {
+    final chapterRows = await (_db.customSelect(
+      "SELECT strftime('%Y-%m-%d', updated_at, 'unixepoch') AS date, "
+      'updated_at AS ts, word_count AS words FROM chapters '
+      'WHERE updated_at >= ? AND word_count > 0 ORDER BY updated_at ASC',
+      variables: [Variable.withInt(cutoff)],
+    )).get();
+
+    final diagnosisRows = await (_db.customSelect(
+      "SELECT strftime('%Y-%m-%d', timestamp, 'unixepoch') AS date, "
+      'timestamp AS ts FROM diagnosis_results '
+      'WHERE timestamp >= ? ORDER BY timestamp ASC',
+      variables: [Variable.withInt(cutoff)],
+    )).get();
+    return (chapterRows: chapterRows, diagnosisRows: diagnosisRows);
+  }
+
+  /// 初始化最近 days 天 UTC 日期序列（R-019 拆出：getWritingCurve）。
+  Map<String, WritingDataPoint> _initCurveDateSequence(
+    int days,
+    DateTime nowUtc,
+  ) {
+    final byDate = <String, WritingDataPoint>{};
+    for (var i = days - 1; i >= 0; i--) {
+      final d = nowUtc.subtract(Duration(days: i));
+      final dateStr = _formatUtcDate(d);
+      byDate[dateStr] = WritingDataPoint(
+        date: dateStr,
+        timestamp:
+            DateTime.utc(d.year, d.month, d.day).millisecondsSinceEpoch ~/ 1000,
+        wordCount: 0,
+        diagnosisCount: 0,
+      );
+    }
+    return byDate;
   }
 
   static String _formatUtcDate(DateTime utc) {
