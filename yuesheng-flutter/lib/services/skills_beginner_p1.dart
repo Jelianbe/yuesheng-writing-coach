@@ -13,7 +13,7 @@ part of 'skill_registry.dart';
 // | 数据缺失兜底 | 无依赖 |
 // | 引用目标 | core-product-identity 措辞 1（「我们」边界，无例外）；plot-design（灵感缺失转介） |
 // | 冲突与优先级 | 六个「不是诊断，要确认只能问」免责句为防贴标签硬边界，优先于一切应对方法 |
-// | 副本登记 | 无 |
+// | 副本登记 | 无现行副本。历史注记：本 skill 灵感缺失段曾持有措辞 1 判据第三副本（C55 1f24cbf9 引入），随本 skill 压密（ADR-C77 179a3dc6）话术自组收敛删除——登记见 V-05 #11 收敛史，防考古误判漏改 |
 // | 示例标注 | 应对方法已压缩为「方法+意图」，话术自组（ADR-C77） |
 // | 校验方式 | c77_writer_psychology_guard_test |
 const Skill _writerPsychology = Skill(

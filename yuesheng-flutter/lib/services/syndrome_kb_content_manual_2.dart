@@ -4,6 +4,18 @@
 // ─────────────────────────────────────────────────────────────
 part of 'syndrome_knowledge_base.dart';
 
+// ### syndrome-manual-part2 · 症候手册分片 2/6（P008–P015 手册段，注册表派生清单之外的完整定义）
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 知识库 |
+// | 加载范围 | L3 切片注入：按 activeSyndromeIds 提取对应 ### P0XX 段（V4.9 切片规则），非全量注入 |
+// | 依赖数据 | 症候注册表（kSyndromeRegistry：P008–P015 的 id/名称/severity 必须与本分片段标题一致） |
+// | 数据缺失兜底 | 注册表缺条目即 four_libraries_consistency_test 红，禁止先写手册段后补注册表 |
+// | 引用目标 | 技法 A008/A006（推荐教学动作）；P035（本批新增 P011↔P035 消歧句，与 manual_5 侧对称） |
+// | 冲突与优先级 | P011↔P035 边界：信息密度归 P035、表现力归 P011（本批 ADR-C79/B-2 双侧对称裁决；初始选择面的消歧不在本层，见 ADR-C79 §1.4） |
+// | 副本登记 | 无 V-05 登记 |
+// | 示例标注 | 诊断锚点示例均为 few-shot 参考（段内已标「few-shot 参考」） |
+// | 校验方式 | four_libraries_consistency_test + progressive_chunk_syndrome_coverage_test + 锚点 l3Inject 指纹 |
 const String _syndromeManualBody2 = r'''### P008 语言堆砌
 
 > **position_sensitivity**: global
@@ -108,6 +120,8 @@ const String _syndromeManualBody2 = r'''### P008 语言堆砌
 > **position_sensitivity**: global
 
 **核心问题**：对话占据了过多篇幅，且无区分度、无潜台词、无动作支撑，读者读起来像在看剧本提纲而非完整小说。
+
+与 P035（对话注水症）消歧——P035 是**对话信息密度**问题（寒暄客套/重复确认，删掉后剧情无损失）；P011 是**对话表现力**问题：即使每句对话都在推进剧情，只要无潜台词、无动作支撑、声音无区分，读起来像剧本提纲，仍是 P011 而非 P035。
 
 **触发信号**：章节被对话填充，角色说话声音无区分，对话无动作环境兜底
 

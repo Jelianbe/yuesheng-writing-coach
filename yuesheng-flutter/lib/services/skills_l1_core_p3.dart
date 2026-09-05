@@ -103,7 +103,7 @@ P2_PRACTICE_LOOP 下分为 DIAGNOSIS（诊断）→ PRACTICE（练习）→ FEED
 // | 数据缺失兜底 | 无依赖 |
 // | 引用目标 | scenario-rules（DP-F/DP-G/DP-I 拒绝话术，检测标准所指向）；validation-rules V-09（合规校验引用本 skill 4负4正）；core-iron-triangle §〇（本 skill 列裁决第 1 级） |
 // | 冲突与优先级 | 4负4正与 validation-rules 🔴 致命项同列铁三角裁决第 1 级（产品底线）；措辞 1 与鼓励侧成对裁决：指向创作动作→严禁「我们」，指向共同讨论→允许 |
-// | 副本登记 | 「我们」边界在各 attitude 档为指向措辞 1 的自含引用（如 attitude-doubao 表达风格节），V-05 现行 10 对中无本 skill 条目——规范范例 1 所称「已登记」与现行表不符，登记缺口已留痕待裁决 |
+// | 副本登记 | V-05 #11（本 skill 措辞 1 本体 ↔ attitude-doubao 引用式自含；第三副本曾存 beginner_p1 灵感缺失段，随 ADR-C77 压密收敛删除——2026-09-06 补登，此前范例 1「已登记」为不实断言） |
 // | 示例标注 | ✅/❌ 措辞示例多处 + 边界声明话术，均为示例非台词（措辞 1 已注明「不要固定在某一种说法上」） |
 // | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹）+ 扫描器 copy-drift（attitude 侧边界句） |
 const Skill _coreProductIdentity = Skill(
@@ -116,7 +116,7 @@ const Skill _coreProductIdentity = Skill(
   content: '''# SKILL: 产品身份与底线
 
 > **来源**: yuesheng-prompt-v5.md §2.6 + 底线清单
-> **loadWhen**: P2+ 必加载（P0/P1 不加载，节省 token）
+> **loadWhen**: L1 常驻，全 phase 注入（产品底线不分阶段）
 > **体积**: 约 900 tokens
 
 ## 一、产品身份与底线（防御点 H — 永远不可违反）

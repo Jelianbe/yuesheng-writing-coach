@@ -6,7 +6,8 @@
 //
 // 2026-08-11 token/检索体检修订（数值贴近实测，静态合计仍为"所有阶段
 // 同时最坏"的审计上界——超限提示需要降级机制，而非实际运行常态）：
-//   - L1 核心 12000 → 10000（实测 8 项 9323，留 ~7% 余量）
+//   - L1 核心 12000 → 10000（实测 9 命名项 + 3 态度档共 9323，留 ~7% 余量；
+//     「8 项」为过时口径——2026-09-06 ADR-C79 更正，真源 = skill_layers.dart l1SkillIds）
 //   - L2 按需组 14000 → 16500（实测最重 diagnosis 组 16463；原表低估）
 //   - 训练教学知识 1800 → 400（实测 focus 单症候 ~330）
 //   - L3 结构化详情 2200 → 1100（实测 focus 症候+技法 ~722）
@@ -34,7 +35,7 @@ import 'shared_constants.dart';
 /// 运行时标记（chat_service 组装时记录"阶段 → 消息索引"）与
 /// 预算闸门（TokenBudgetGuard）均引用这些常量，避免字符串散落漂移。
 abstract final class BudgetStageNames {
-  static const String l1Core = 'L1 核心 skill（8 项）';
+  static const String l1Core = 'L1 核心 skill（9 命名项 + 3 态度档）';
   static const String l1Attitude = 'L1 态度档位 skill';
   static const String l2OnDemand = 'L2 按需组（仅当前 mode 一组）';
   static const String positionGuidance = '位置判断引导语';
