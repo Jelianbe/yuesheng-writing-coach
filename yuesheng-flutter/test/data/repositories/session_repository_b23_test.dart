@@ -56,6 +56,9 @@ void main() {
   Future<int> _sessionCount(String sessionId) async => (await (db.select(
     db.sessions,
   )..where((t) => t.id.equals(sessionId))).get()).length;
+  Future<String> _sessionTitle(String sessionId) async => (await (db.select(
+    db.sessions,
+  )..where((t) => t.id.equals(sessionId))).getSingle()).title;
 
   test('B23 createBlankSession 原子建会话 + teaching_state', () async {
     final id = await sessionRepo.createBlankSession(title: 't');
@@ -83,6 +86,7 @@ void main() {
       final refs = await _refTypes(id);
       expect(refs, contains('chapter'), reason: '主引用（chapter）应齐备');
       expect(refs, contains('manuscript'), reason: '次要引用（manuscript）应齐备');
+      expect(await _sessionTitle(id), '诊断·ch-2', reason: '章节标题命名（批次61：诊断·标题）');
     },
   );
 

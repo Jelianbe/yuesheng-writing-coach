@@ -64,67 +64,78 @@ Future<TeacherStreamResult> callTeacherStream(
   CancelToken? cancelToken,
 }) async {
   try {
-    final userPrompt = _buildTeacherUserPrompt(input);
-    final messages = <ChatMessage>[
-      ChatMessage(role: 'system', content: kTeacherSkillContent),
-      ChatMessage(role: 'user', content: userPrompt),
-    ];
-
-    // 流式拦截 [YS_TEACHER]（与 editor-service 模式一致）
-    String fullContent = '';
-    bool inTeacherBlock = false;
-    int displayLength = 0;
-
-    await llmClient.streamChat(messages, (response) {
+    final accumulator = _TeacherStreamAccumulator(
+      onStream,
+      messages: _buildTeacherMessages(input),
+    );
+    await llmClient.streamChat(accumulator.messages, (response) {
       if (response.isDone) return;
       if (response.content.isEmpty) return;
-
-      fullContent += response.content;
-
-      if (inTeacherBlock) return;
-
-      final markerIndex = fullContent.indexOf(kTeacherStart);
-      if (markerIndex != -1) {
-        final newDisplay = fullContent.substring(displayLength, markerIndex);
-        if (newDisplay.isNotEmpty) onStream(newDisplay);
-        displayLength = markerIndex;
-        inTeacherBlock = true;
-        return;
-      }
-
-      final pendingLen = getTeacherPendingMarkerPrefix(fullContent);
-      final safeEnd = pendingLen > 0
-          ? fullContent.length - pendingLen
-          : fullContent.length;
-      if (safeEnd > displayLength) {
-        final newDisplay = fullContent.substring(displayLength, safeEnd);
-        if (newDisplay.isNotEmpty) onStream(newDisplay);
-        displayLength = safeEnd;
-      }
+      accumulator.add(response.content);
     }, cancelToken: cancelToken);
-
-    final parsed = parseTeacherDecision(fullContent);
-    final displayContent = parsed.displayContent;
-
-    if (parsed.teacher == null) {
-      return TeacherStreamResult(displayContent: displayContent, teacher: null);
-    }
-
-    // parser 已做 schema 校验，service 只做 consistency 校验
-    // （修复 P0 bug：原代码传 TeacherResult 给 validateTeacherOutput，
-    //  该函数期望原始 JSON Map，导致 schema 校验恒失败、所有合法输入返回 null）
-    final consistency = checkTeacherConsistency(parsed.teacher!);
-    if (!consistency.passed) {
-      return TeacherStreamResult(displayContent: displayContent, teacher: null);
-    }
-
-    return TeacherStreamResult(
-      displayContent: displayContent,
-      teacher: parsed.teacher,
-    );
+    return _finalizeTeacherResult(accumulator.fullContent);
   } catch (_) {
     // API 错误 → 返回空 displayContent，不抛出
     return const TeacherStreamResult(displayContent: '', teacher: null);
+  }
+}
+
+/// 构建教学请求消息（R-019 拆出：callTeacherStream）。
+List<ChatMessage> _buildTeacherMessages(TeacherInput input) {
+  return <ChatMessage>[
+    ChatMessage(role: 'system', content: kTeacherSkillContent),
+    ChatMessage(role: 'user', content: _buildTeacherUserPrompt(input)),
+  ];
+}
+
+/// 流式结束收尾：解析 + consistency 校验 + 组装结果（R-019 拆出）。
+TeacherStreamResult _finalizeTeacherResult(String fullContent) {
+  final parsed = parseTeacherDecision(fullContent);
+  final displayContent = parsed.displayContent;
+  if (parsed.teacher == null) {
+    return TeacherStreamResult(displayContent: displayContent, teacher: null);
+  }
+  // parser 已做 schema 校验，service 只做 consistency 校验
+  final consistency = checkTeacherConsistency(parsed.teacher!);
+  if (!consistency.passed) {
+    return TeacherStreamResult(displayContent: displayContent, teacher: null);
+  }
+  return TeacherStreamResult(
+    displayContent: displayContent,
+    teacher: parsed.teacher,
+  );
+}
+
+/// 流式累积器：拦截 [YS_TEACHER] 标记，转发标记前自然语言（R-019 拆出）。
+/// 与 editor-service 的拦截模式一致。
+class _TeacherStreamAccumulator {
+  final void Function(String) onStream;
+  final List<ChatMessage> messages;
+  String fullContent = '';
+  bool inTeacherBlock = false;
+  int displayLength = 0;
+  _TeacherStreamAccumulator(this.onStream, {required this.messages});
+
+  void add(String content) {
+    fullContent += content;
+    if (inTeacherBlock) return;
+    final markerIndex = fullContent.indexOf(kTeacherStart);
+    if (markerIndex != -1) {
+      final newDisplay = fullContent.substring(displayLength, markerIndex);
+      if (newDisplay.isNotEmpty) onStream(newDisplay);
+      displayLength = markerIndex;
+      inTeacherBlock = true;
+      return;
+    }
+    final pendingLen = getTeacherPendingMarkerPrefix(fullContent);
+    final safeEnd = pendingLen > 0
+        ? fullContent.length - pendingLen
+        : fullContent.length;
+    if (safeEnd > displayLength) {
+      final newDisplay = fullContent.substring(displayLength, safeEnd);
+      if (newDisplay.isNotEmpty) onStream(newDisplay);
+      displayLength = safeEnd;
+    }
   }
 }
 

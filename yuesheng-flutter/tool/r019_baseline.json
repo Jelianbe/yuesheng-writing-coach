@@ -167,8 +167,8 @@
     {
       "file": "lib/services/llm_client.dart",
       "func": "streamChat",
-      "start": 215,
-      "end": 368,
+      "start": 227,
+      "end": 380,
       "lines": 154
     },
     {
@@ -690,13 +690,6 @@
       "lines": 87
     },
     {
-      "file": "lib/data/repositories/session_repository.dart",
-      "func": "getOrCreateSessionForChapter",
-      "start": 150,
-      "end": 235,
-      "lines": 86
-    },
-    {
       "file": "lib/widgets/onboarding_questionnaire.dart",
       "func": "build",
       "start": 412,
@@ -751,13 +744,6 @@
       "start": 560,
       "end": 641,
       "lines": 82
-    },
-    {
-      "file": "lib/services/llm_client.dart",
-      "func": "testLlmConnection",
-      "start": 75,
-      "end": 155,
-      "lines": 81
     },
     {
       "file": "lib/widgets/outline_confirmation_card.dart",
@@ -940,13 +926,6 @@
       "start": 341,
       "end": 411,
       "lines": 71
-    },
-    {
-      "file": "lib/services/teacher_service.dart",
-      "func": "callTeacherStream",
-      "start": 60,
-      "end": 129,
-      "lines": 70
     },
     {
       "file": "lib/widgets/manuscript_detail_volume.dart",
