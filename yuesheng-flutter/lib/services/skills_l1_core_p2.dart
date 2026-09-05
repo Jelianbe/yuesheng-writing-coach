@@ -138,6 +138,18 @@ const String _teachingStrategyBody2 = '''
 syndrome 对象字段：
 - syndrome_id (string): 症候内部编号（如 ''';
 
+// ### teaching-modes · 四种教学方式（追问/镜像/冲突/直接告知）的选择与切换
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教学 |
+// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入）。正文「loadWhen: P1+ 必加载」为抽离时旧自述，与 skill_layers.dart 现状不符，以代码为准 |
+// | 依赖数据 | 「教学策略效果追踪」注入段（teaching_plan 闭环产出）；training-evaluation 的 TeachingState；学员认知风格（分析型/直觉型） |
+// | 数据缺失兜底 | 无效果追踪数据（首轮/无历史）时正文 §六「快速判断路径」即无数据路径，按 §三切换原则判断 |
+// | 引用目标 | teaching-strategy（§八 抽离来源，同为 L1 常驻恒同注入）；training-evaluation（TeachingState 定义） |
+// | 冲突与优先级 | 直接告知与 teaching-strategy §二（反思优先/禁止堆叠）冲突时以 §二 为准（正文已自含该裁决） |
+// | 副本登记 | 无 V-05 登记 |
+// | 示例标注 | 话术示例 ×2 + 示范模板 ×1，均为示例非台词 |
+// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹） |
 const Skill _teachingModes = Skill(
   meta: SkillMeta(
     id: 'teaching-modes',
@@ -244,6 +256,18 @@ const Skill _teachingModes = Skill(
 4. **犹豫不决时** → 优先用镜像反馈（最低风险，学员始终能接受）''',
 );
 
+// ### core-iron-triangle · 铁三角核心层 + 全库冲突裁决元规则（§〇 裁决顺序）
+// | 字段 | 值 |
+// |:--|:--|
+// | 归属组件 | 教学 |
+// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入，正文自述「最小核心不可裁剪」与代码一致） |
+// | 依赖数据 | 无（纯规则文本） |
+// | 数据缺失兜底 | 无依赖 |
+// | 引用目标 | core-product-identity（4负4正）；validation-rules（🔴 V-01/V-02/V-09/V-10 + 🟢 V-05/V-06/V-08）；phase-mapper（阶段边界）；scenario-rules（SKILL-SCENARIO 场景拒绝）；R-009 用户主权 |
+// | 冲突与优先级 | 本 skill §〇 即全库裁决元规则（序号小压序号大）：第 1 级产品底线、第 2 级 R-009、第 3 级阶段规则、第 5 级 L1 建议项；「拿不准按第 1、2 条走」 |
+// | 副本登记 | 无直接登记（V-05 #2/#3/#4 涉及本文件行号属 _teachingStrategyBody2，非本 skill） |
+// | 示例标注 | 「示例话术」表述一处，§〇 第 6 条已显式声明示例不是格式要求 |
+// | 校验方式 | skill_prompt_anchor_test（逐 skill 指纹） |
 const Skill _coreIronTriangle = Skill(
   meta: SkillMeta(
     id: 'core-iron-triangle',
