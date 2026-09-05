@@ -237,12 +237,110 @@ Future<ProfileTextResult> buildStudentContext({
   required SessionRepository sessionRepo,
   String? sessionId,
 }) async {
-  // M1 修复：诊断查询用 null（跨 session 全局聚合），让 LLM 看到全局画像
-  // sessionId 仍用于 onboarding/cognitiveStyle/effectiveness 等会话级数据
+  // M1：诊断全局聚合；onboarding 用户级回退（ADR-C71 §3.2）
   final entries = await diagnosisRepo.getAllDiagnoses(sessionId: null);
-  // ADR-C71 §3.2：onboarding 写入是 session 级而问卷用户级只弹一次，
-  // 本会话查不到时回退取全库最新有效数据（skipped 过滤不变），
-  // 否则第二个会话起初始画像永久失忆。
+  final effectiveOnboarding = await _loadEffectiveOnboarding(
+    studentModelRepo,
+    sessionId,
+  );
+  if (entries.isEmpty && effectiveOnboarding == null) {
+    return _emptyProfileResult();
+  }
+
+  final syndromeProfile = computeSyndromeProfile(entries);
+  final proficiency = await _resolveProficiency(
+    effectiveOnboarding,
+    syndromeProfile,
+  );
+  final cognitiveStyle = await _resolveCognitiveStyle(
+    effectiveOnboarding,
+    sessionRepo,
+    sessionId,
+  );
+  final allSessionIds = entries.map((e) => e.sessionId).toSet();
+  final built = _buildProfile(
+    syndromeProfile,
+    proficiency,
+    cognitiveStyle,
+    allSessionIds,
+  );
+
+  final effectivenessText = await _loadEffectivenessText(
+    studentModelRepo,
+    sessionId,
+  );
+  final styleProfileText = await _loadStyleProfileText(studentModelRepo);
+  final fullText = _assembleProfileText(
+    built.profile,
+    built.stagnation,
+    effectivenessText,
+    effectiveOnboarding,
+    styleProfileText,
+  );
+  return ProfileTextResult(text: fullText, profile: built.profile);
+}
+
+/// 画像 + 停滞结果（R-019 拆出）。
+typedef _ProfileWithStagnation = ({
+  StudentProfile profile,
+  StagnationResult stagnation,
+});
+
+/// 组装画像与停滞结果（R-019 拆出）。
+_ProfileWithStagnation _buildProfile(
+  Map<String, SyndromeAggregation> syndromeProfile,
+  ProficiencyInference proficiency,
+  CognitiveStyleInference? cognitiveStyle,
+  Set<String> allSessionIds,
+) {
+  final profile = StudentProfile(
+    proficiency: proficiency.level,
+    confidence: proficiency.confidence,
+    cognitiveStyle: cognitiveStyle,
+    syndromeProfile: syndromeProfile,
+    totalSessions: allSessionIds.length,
+  );
+  return (
+    profile: profile,
+    stagnation: detectStagnation(syndromeProfile, allSessionIds.length),
+  );
+}
+
+/// 空画像结果（R-019 拆出）。
+ProfileTextResult _emptyProfileResult() {
+  return ProfileTextResult(
+    text: '',
+    profile: StudentProfile(
+      proficiency: ProficiencyLevel.beginner,
+      confidence: 0,
+      syndromeProfile: const {},
+      totalSessions: 0,
+    ),
+  );
+}
+
+/// 组装画像文本并追加风格画像段（M2，R-019 拆出）。
+String _assembleProfileText(
+  StudentProfile profile,
+  StagnationResult stagnation,
+  String? effectivenessText,
+  OnboardingData? effectiveOnboarding,
+  String? styleProfileText,
+) {
+  final text = formatProfileText(
+    profile,
+    stagnation,
+    effectivenessText,
+    effectiveOnboarding,
+  );
+  return styleProfileText != null ? '$text\n\n$styleProfileText' : text;
+}
+
+/// 加载有效 onboarding（ADR-C71 用户级回退 + skipped 过滤，R-019 拆出）。
+Future<OnboardingData?> _loadEffectiveOnboarding(
+  StudentModelRepository studentModelRepo,
+  String? sessionId,
+) async {
   OnboardingData? onboarding;
   if (sessionId != null) {
     final raw = await studentModelRepo.getOnboardingData(sessionId);
@@ -255,98 +353,76 @@ Future<ProfileTextResult> buildStudentContext({
       }
     }
   }
-  final effectiveOnboarding = (onboarding != null && !onboarding.skipped)
-      ? onboarding
-      : null;
+  return (onboarding != null && !onboarding.skipped) ? onboarding : null;
+}
 
-  if (entries.isEmpty && effectiveOnboarding == null) {
-    return ProfileTextResult(
-      text: '',
-      profile: StudentProfile(
-        proficiency: ProficiencyLevel.beginner,
-        confidence: 0,
-        syndromeProfile: const {},
-        totalSessions: 0,
-      ),
+/// 解析熟练度推断（R-019 拆出）。
+Future<ProficiencyInference> _resolveProficiency(
+  OnboardingData? effectiveOnboarding,
+  Map<String, SyndromeAggregation> syndromeProfile,
+) async {
+  if (effectiveOnboarding != null) {
+    return ProficiencyInference(
+      level: effectiveOnboarding.proficiency,
+      confidence: 0.5,
     );
   }
-
-  final syndromeProfile = computeSyndromeProfile(entries);
-
   final allSeverities = syndromeProfile.values
       .expand((agg) => agg.severityHistory)
       .toList();
+  return inferProficiency(allSeverities);
+}
 
-  final proficiency = effectiveOnboarding != null
-      ? ProficiencyInference(
-          level: effectiveOnboarding.proficiency,
-          confidence: 0.5,
-        )
-      : inferProficiency(allSeverities);
-
-  CognitiveStyleInference? cognitiveStyle;
+/// 解析认知风格推断（R-019 拆出）。
+Future<CognitiveStyleInference?> _resolveCognitiveStyle(
+  OnboardingData? effectiveOnboarding,
+  SessionRepository sessionRepo,
+  String? sessionId,
+) async {
   if (effectiveOnboarding != null) {
-    cognitiveStyle = CognitiveStyleInference(
+    return CognitiveStyleInference(
       style: effectiveOnboarding.cognitiveStyle,
       confidence: 0.5,
     );
-  } else if (sessionId != null) {
+  }
+  if (sessionId != null) {
     try {
-      cognitiveStyle = await inferCognitiveStyle(sessionRepo, sessionId);
+      return await inferCognitiveStyle(sessionRepo, sessionId);
     } catch (_) {
       // 认知风格推断失败不阻断主流程
     }
   }
+  return null;
+}
 
-  final allSessionIds = entries.map((e) => e.sessionId).toSet();
-
-  final profile = StudentProfile(
-    proficiency: proficiency.level,
-    confidence: proficiency.confidence,
-    cognitiveStyle: cognitiveStyle,
-    syndromeProfile: syndromeProfile,
-    totalSessions: allSessionIds.length,
-  );
-
-  final stagnation = detectStagnation(syndromeProfile, allSessionIds.length);
-
-  // 合并策略效果到第三步
-  String? effectivenessText;
+/// 加载策略效果文本（R-019 拆出，失败不阻断）。
+Future<String?> _loadEffectivenessText(
+  StudentModelRepository studentModelRepo,
+  String? sessionId,
+) async {
   if (sessionId != null) {
     try {
-      effectivenessText = await buildStrategyEffectiveness(
-        studentModelRepo,
-        sessionId,
-      );
+      return await buildStrategyEffectiveness(studentModelRepo, sessionId);
     } catch (_) {
       // 效果追踪非关键，失败不阻断
     }
   }
+  return null;
+}
 
-  // M2 修复：读取跨 session 最新写作风格画像，注入 LLM
-  String? styleProfileText;
+/// 加载跨 session 最新风格画像文本（M2，R-019 拆出，失败不阻断）。
+Future<String?> _loadStyleProfileText(
+  StudentModelRepository studentModelRepo,
+) async {
   try {
     final styleProfile = await studentModelRepo.getLatestStyleProfile();
     if (styleProfile != null) {
-      styleProfileText = _formatStyleProfile(styleProfile);
+      return _formatStyleProfile(styleProfile);
     }
   } catch (_) {
     // 风格画像非关键，失败不阻断
   }
-
-  final text = formatProfileText(
-    profile,
-    stagnation,
-    effectivenessText,
-    effectiveOnboarding,
-  );
-
-  // M2：追加风格画像段落到画像文本末尾
-  final fullText = styleProfileText != null
-      ? '$text\n\n$styleProfileText'
-      : text;
-
-  return ProfileTextResult(text: fullText, profile: profile);
+  return null;
 }
 
 double _min(double a, double b) => a < b ? a : b;

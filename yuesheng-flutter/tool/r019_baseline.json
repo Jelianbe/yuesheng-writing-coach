@@ -256,13 +256,6 @@
       "lines": 119
     },
     {
-      "file": "lib/services/student_profile.dart",
-      "func": "buildStudentContext",
-      "start": 234,
-      "end": 350,
-      "lines": 117
-    },
-    {
       "file": "lib/widgets/adopt_suggestion_sheet.dart",
       "func": "build",
       "start": 163,
@@ -429,13 +422,6 @@
       "start": 25,
       "end": 123,
       "lines": 99
-    },
-    {
-      "file": "lib/services/evaluation_service.dart",
-      "func": "_buildSyndromeDetail",
-      "start": 298,
-      "end": 395,
-      "lines": 98
     },
     {
       "file": "lib/widgets/reference_picker.dart",

@@ -321,46 +321,79 @@ extension EvaluationDetailExtension on EvaluationService {
         // v19：FSM 输出持久化 — 若状态发生迁移，写回 active_problem.teaching_state
         // 实现「状态累积」：identified→in_progress→consolidating→mastered 单调前进
         if (summary.teachingState != startingTeachingState) {
-          try {
-            await _diagnosisRepo.updateTeachingState(
-              sessionId,
-              problem.syndromeId,
-              summary.teachingState.value,
-            );
-            // v19 E3 正向达标路径：FSM 输出 mastered → 立即解锁（status=resolved）
-            // 避免学员在评估面板看到「已掌握」后，症候仍在活跃列表停留到下次诊断。
-            if (summary.teachingState == TeachingState.mastered) {
-              try {
-                await _diagnosisRepo.resolveSyndromesBatch(sessionId, [
-                  problem.syndromeId,
-                ]);
-              } catch (_) {
-                // 解锁失败不阻断评估报告继续返回（下一次诊断提交时会重试）
-              }
-            }
-          } catch (_) {
-            // 持久化失败不阻断评估报告继续返回（容错降级）
-          }
+          await _persistTeachingStateMigration(
+            sessionId,
+            problem.syndromeId,
+            summary.teachingState,
+          );
         }
-        final passCount = trainingInput.passRateInput.passCount;
-        final totalCount = trainingInput.passRateInput.totalCount < 1
-            ? 1
-            : trainingInput.passRateInput.totalCount;
-        return SyndromeEvaluationDetail(
-          syndromeId: problem.syndromeId,
-          syndromeName: problem.syndromeName,
-          currentSeverity: Severity.fromString(problem.severity) ?? Severity.l2,
-          teachingState: summary.teachingState,
-          passCount: passCount,
-          totalCount: totalCount,
-          trend: EvaluationService.mapTrendJudgment(summary.trend),
-        );
+        return _buildMainDetail(problem, trainingInput, summary);
       }
     } catch (_) {
       // 失败走 fallback
     }
 
-    // Fallback：基于 teaching_history 独立计算
+    // Fallback：基于 teaching_history 独立计算（R-019 拆出）
+    return _computeFallbackDetail(
+      problem,
+      confirmationRecords,
+      diagnosisRecords,
+    );
+  }
+
+  /// 主路径：training-evaluator 真数据组装明细（R-019 拆出）。
+  SyndromeEvaluationDetail _buildMainDetail(
+    ActiveProblemView problem,
+    EvaluationSummaryInput trainingInput,
+    EvaluationSummary summary,
+  ) {
+    final passCount = trainingInput.passRateInput.passCount;
+    final totalCount = trainingInput.passRateInput.totalCount < 1
+        ? 1
+        : trainingInput.passRateInput.totalCount;
+    return SyndromeEvaluationDetail(
+      syndromeId: problem.syndromeId,
+      syndromeName: problem.syndromeName,
+      currentSeverity: Severity.fromString(problem.severity) ?? Severity.l2,
+      teachingState: summary.teachingState,
+      passCount: passCount,
+      totalCount: totalCount,
+      trend: EvaluationService.mapTrendJudgment(summary.trend),
+    );
+  }
+
+  /// FSM 状态迁移持久化：写回 teaching_state，mastered 时立即解锁（R-019 拆出）。
+  Future<void> _persistTeachingStateMigration(
+    String sessionId,
+    String syndromeId,
+    TeachingState state,
+  ) async {
+    try {
+      await _diagnosisRepo.updateTeachingState(
+        sessionId,
+        syndromeId,
+        state.value,
+      );
+      // v19 E3 正向达标路径：FSM 输出 mastered → 立即解锁（status=resolved）
+      // 避免学员在评估面板看到「已掌握」后，症候仍在活跃列表停留到下次诊断。
+      if (state == TeachingState.mastered) {
+        try {
+          await _diagnosisRepo.resolveSyndromesBatch(sessionId, [syndromeId]);
+        } catch (_) {
+          // 解锁失败不阻断评估报告继续返回（下一次诊断提交时会重试）
+        }
+      }
+    } catch (_) {
+      // 持久化失败不阻断评估报告继续返回（容错降级）
+    }
+  }
+
+  /// Fallback：trainingInput 为 null 时基于 teaching_history 独立计算（R-019 拆出）。
+  SyndromeEvaluationDetail _computeFallbackDetail(
+    ActiveProblemView problem,
+    List<Map<String, dynamic>> confirmationRecords,
+    List<Map<String, dynamic>> diagnosisRecords,
+  ) {
     final syndromeConfirms = confirmationRecords.where((r) {
       final syndromes = r['syndromes'];
       return syndromes is List && syndromes.contains(problem.syndromeId);
