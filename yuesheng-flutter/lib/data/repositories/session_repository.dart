@@ -151,23 +151,26 @@ class SessionRepository {
     String manuscriptId,
     String chapterId,
   ) async {
-    // 先查该章节的现有会话（按 chapter_id 精确匹配）
-    final existing =
-        await (_db.select(_db.sessions)
-              ..where((t) => t.chapterId.equals(chapterId))
-              ..orderBy([
-                (t) => OrderingTerm(
-                  expression: t.updatedAt,
-                  mode: OrderingMode.desc,
-                ),
-              ])
-              ..limit(1))
-            .getSingleOrNull();
-
+    final existing = await _findChapterSession(chapterId);
     if (existing != null) return existing.id;
+    final chapterTitle = await _resolveChapterTitle(chapterId);
+    return _createChapterSession(manuscriptId, chapterId, chapterTitle);
+  }
 
-    // 新建会话（批次61：用章节标题命名「诊断·章节标题」，会话列表可辨识；
-    // 标题为空回退「章节会话」；章节查询失败不影响会话创建）
+  /// 按 chapter_id 查最近更新的现有会话（R-019 拆出）。
+  Future<SessionRow?> _findChapterSession(String chapterId) async {
+    return (_db.select(_db.sessions)
+          ..where((t) => t.chapterId.equals(chapterId))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
+          ])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// 解析章节标题（失败降级为空串，不影响会话创建，R-019 拆出）。
+  Future<String> _resolveChapterTitle(String chapterId) async {
     String chapterTitle = '';
     try {
       final chapter = await (_db.select(
@@ -175,7 +178,6 @@ class SessionRepository {
       )..where((t) => t.id.equals(chapterId))).getSingleOrNull();
       chapterTitle = chapter?.title ?? '';
     } catch (e, st) {
-      // 降级行为保留：标题取不到 → 会话名回退「章节会话」，不影响会话创建。
       // 此前为空 catch，会话名异常时无从追溯，此处补可观测性。
       debugPrint('[SessionRepo] 章节标题查询失败，会话名回退: error=$e');
       ErrorHandler.instance.captureError(
@@ -186,13 +188,19 @@ class SessionRepository {
         stack: '$st',
       );
     }
-    // 新建会话（建会话 + 建 teaching_state + 建冗余缓存 + 建引用，整体包事务，避免半完成态）
-    final sessionId = await _db.transaction(() async {
+    return chapterTitle;
+  }
+
+  /// 事务创建章节会话 + 冗余缓存 + 主次引用（R-019 拆出）。
+  Future<String> _createChapterSession(
+    String manuscriptId,
+    String chapterId,
+    String chapterTitle,
+  ) async {
+    return _db.transaction(() async {
       final sid = await createBlankSession(
         title: chapterTitle.trim().isEmpty ? '章节会话' : '诊断·$chapterTitle',
       );
-
-      // 写入冗余缓存
       await (_db.update(_db.sessions)..where((t) => t.id.equals(sid))).write(
         SessionsCompanion(
           manuscriptId: Value(manuscriptId),
@@ -200,8 +208,6 @@ class SessionRepository {
           updatedAt: Value(nowSec()),
         ),
       );
-
-      // 建主引用：chapter 为 primary（诊断目标）
       await _db
           .into(_db.sessionReferences)
           .insertOnConflictUpdate(
@@ -214,7 +220,6 @@ class SessionRepository {
               createdAt: Value(nowSec()),
             ),
           );
-      // manuscript 作为次要引用（提供全局上下文）
       await _db
           .into(_db.sessionReferences)
           .insertOnConflictUpdate(
@@ -227,11 +232,8 @@ class SessionRepository {
               createdAt: Value(nowSec()),
             ),
           );
-
       return sid;
     });
-
-    return sessionId;
   }
 
   /// 列出所有会话（按 updated_at DESC）

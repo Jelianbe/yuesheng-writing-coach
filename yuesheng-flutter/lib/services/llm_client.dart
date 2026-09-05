@@ -71,21 +71,23 @@ class LlmClient {
     : _configStorage = configStorage ?? LlmConfigStorage(),
       _dio = dio ?? Dio();
 
+  static const _kConfigMissing = TestConnectionResult(
+    success: false,
+    message: 'API 配置未设置，请先填写并保存',
+  );
+  static const _kNetworkUnavailable = TestConnectionResult(
+    success: false,
+    message: '设备网络不可用',
+  );
+
   /// 测试 LLM API 连通性
   Future<TestConnectionResult> testLlmConnection({
     LlmConfigValues? config,
   }) async {
     final cfg = config ?? await _configStorage.getLlmConfig();
-    if (cfg == null) {
-      return const TestConnectionResult(
-        success: false,
-        message: 'API 配置未设置，请先填写并保存',
-      );
-    }
+    if (cfg == null) return _kConfigMissing;
 
-    if (!await checkNetwork()) {
-      return const TestConnectionResult(success: false, message: '设备网络不可用');
-    }
+    if (!await checkNetwork()) return _kNetworkUnavailable;
 
     final url = '${cfg.baseUrl}/chat/completions';
     final startTime = DateTime.now();
@@ -99,14 +101,7 @@ class LlmClient {
           'stream': false,
           'max_tokens': LlmConfig.testMaxTokens,
         }),
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${cfg.apiKey}',
-          },
-          sendTimeout: Duration(milliseconds: LlmConfig.testTimeoutMs),
-          receiveTimeout: Duration(milliseconds: LlmConfig.testTimeoutMs),
-        ),
+        options: _buildTestOptions(cfg),
       );
 
       final latencyMs = DateTime.now().difference(startTime).inMilliseconds;
@@ -125,33 +120,50 @@ class LlmClient {
         latencyMs: latencyMs,
       );
     } on DioException catch (e) {
-      final latencyMs = DateTime.now().difference(startTime).inMilliseconds;
-      String errorMsg = 'HTTP ${e.response?.statusCode ?? 0}';
-      final data = e.response?.data;
-      if (data is String && data.isNotEmpty) {
-        try {
-          final errJson = jsonDecode(data) as Map<String, dynamic>;
-          final msg = errJson['error']?['message'];
-          if (msg != null) errorMsg += ': $msg';
-        } catch (_) {
-          errorMsg +=
-              ': ${data.substring(0, data.length > LlmConfig.errorPreviewLength ? LlmConfig.errorPreviewLength : data.length)}';
-        }
-      } else if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.sendTimeout) {
-        errorMsg = '请求超时（15秒无响应）';
-      } else if (e.type == DioExceptionType.connectionError) {
-        errorMsg = '网络请求失败（无法连接到服务器，检查 URL 或网络）';
-      }
-      return TestConnectionResult(
-        success: false,
-        message: errorMsg,
-        latencyMs: latencyMs,
-      );
+      return _mapDioError(e, startTime);
     } catch (_) {
       return TestConnectionResult(success: false, message: '未知错误');
     }
+  }
+
+  /// 构建测试连通性请求 options（R-019 拆出）。
+  Options _buildTestOptions(LlmConfigValues cfg) {
+    return Options(
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${cfg.apiKey}',
+      },
+      sendTimeout: Duration(milliseconds: LlmConfig.testTimeoutMs),
+      receiveTimeout: Duration(milliseconds: LlmConfig.testTimeoutMs),
+    );
+  }
+
+  /// Dio 异常 → 连通性错误文案（R-019 拆出）。
+  TestConnectionResult _mapDioError(DioException e, DateTime startTime) {
+    final latencyMs = DateTime.now().difference(startTime).inMilliseconds;
+    String errorMsg = 'HTTP ${e.response?.statusCode ?? 0}';
+    final data = e.response?.data;
+    if (data is String && data.isNotEmpty) {
+      try {
+        final errJson = jsonDecode(data) as Map<String, dynamic>;
+        final msg = errJson['error']?['message'];
+        if (msg != null) errorMsg += ': $msg';
+      } catch (_) {
+        errorMsg +=
+            ': ${data.substring(0, data.length > LlmConfig.errorPreviewLength ? LlmConfig.errorPreviewLength : data.length)}';
+      }
+    } else if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      errorMsg = '请求超时（15秒无响应）';
+    } else if (e.type == DioExceptionType.connectionError) {
+      errorMsg = '网络请求失败（无法连接到服务器，检查 URL 或网络）';
+    }
+    return TestConnectionResult(
+      success: false,
+      message: errorMsg,
+      latencyMs: latencyMs,
+    );
   }
 
   /// 非流式对话（chatCompletion）
