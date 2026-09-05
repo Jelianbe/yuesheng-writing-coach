@@ -69,6 +69,142 @@ class OutlineValidationResult {
 ///   - 根对象必须有 entities 数组（允许空数组 → valid）
 ///   - type 必须在白名单；key 非空；matched_entity_id 为字符串或 null
 ///   - impressions 数组；text 非空；conflict_with 为字符串或 null
+/// 校验单个实体（R-019 拆出：validateOutlineSchema）。
+/// 非法返回 null 并追加 errors；合法返回解析后的实体。
+OutlineEntityUpdate? _validateEntity(
+  int i,
+  Map<String, dynamic> e,
+  List<OutlineValidationError> errors,
+) {
+  final type = _validateEntityType(i, e, errors);
+  if (type == null) return null;
+
+  final key = e['key'];
+  if (key is! String || key.trim().isEmpty) {
+    errors.add(
+      OutlineValidationError(field: 'entities[$i].key', message: '必须为非空字符串'),
+    );
+    return null;
+  }
+
+  final aliasesRaw = e['aliases'];
+  final aliases = aliasesRaw is List
+      ? aliasesRaw.whereType<String>().where((a) => a.isNotEmpty).toList()
+      : const <String>[];
+
+  if (!_validateMatchedEntityId(i, e, errors)) return null;
+
+  final impressionsRaw = e['impressions'];
+  if (impressionsRaw is! List) {
+    errors.add(
+      OutlineValidationError(
+        field: 'entities[$i].impressions',
+        message: '必须是数组',
+      ),
+    );
+    return null;
+  }
+
+  final impressions = _parseEntityImpressions(i, impressionsRaw, errors);
+
+  return OutlineEntityUpdate(
+    type: type,
+    key: key,
+    aliases: aliases,
+    matchedEntityId: e['matched_entity_id'] as String?,
+    impressions: impressions,
+  );
+}
+
+/// 校验实体 type（R-019 拆出：_validateEntity）。非法追加 error 返回 null。
+String? _validateEntityType(
+  int i,
+  Map<String, dynamic> e,
+  List<OutlineValidationError> errors,
+) {
+  final type = e['type'];
+  if (type is! String || !kValidEntityTypes.contains(type)) {
+    errors.add(
+      OutlineValidationError(
+        field: 'entities[$i].type',
+        message: '必须为 character/setting/plot（实际: $type）',
+      ),
+    );
+    return null;
+  }
+  return type;
+}
+
+/// 校验 matched_entity_id（R-019 拆出：_validateEntity）。非法追加 error 返回 false。
+bool _validateMatchedEntityId(
+  int i,
+  Map<String, dynamic> e,
+  List<OutlineValidationError> errors,
+) {
+  final matched = e['matched_entity_id'];
+  if (matched != null && matched is! String) {
+    errors.add(
+      OutlineValidationError(
+        field: 'entities[$i].matched_entity_id',
+        message: '必须是字符串或 null',
+      ),
+    );
+    return false;
+  }
+  return true;
+}
+
+/// 解析 impressions 数组（R-019 拆出：_validateEntity）。
+List<OutlineImpressionUpdate> _parseEntityImpressions(
+  int i,
+  List<dynamic> impressionsRaw,
+  List<OutlineValidationError> errors,
+) {
+  final impressions = <OutlineImpressionUpdate>[];
+  for (var j = 0; j < impressionsRaw.length; j++) {
+    final im = impressionsRaw[j];
+    if (im is! Map<String, dynamic>) {
+      errors.add(
+        OutlineValidationError(
+          field: 'entities[$i].impressions[$j]',
+          message: '必须是对象',
+        ),
+      );
+      continue;
+    }
+
+    final text = im['text'];
+    if (text is! String || text.trim().isEmpty) {
+      errors.add(
+        OutlineValidationError(
+          field: 'entities[$i].impressions[$j].text',
+          message: '必须为非空字符串',
+        ),
+      );
+      continue;
+    }
+
+    final conflictWith = im['conflict_with'];
+    if (conflictWith != null && conflictWith is! String) {
+      errors.add(
+        OutlineValidationError(
+          field: 'entities[$i].impressions[$j].conflict_with',
+          message: '必须是字符串或 null',
+        ),
+      );
+      continue;
+    }
+
+    impressions.add(
+      OutlineImpressionUpdate(
+        text: text,
+        conflictWith: conflictWith as String?,
+      ),
+    );
+  }
+  return impressions;
+}
+
 OutlineValidationResult validateOutlineSchema(Object? raw) {
   if (raw is! Map<String, dynamic>) {
     return OutlineValidationResult(
@@ -100,105 +236,8 @@ OutlineValidationResult validateOutlineSchema(Object? raw) {
       );
       continue;
     }
-
-    final type = e['type'];
-    if (type is! String || !kValidEntityTypes.contains(type)) {
-      errors.add(
-        OutlineValidationError(
-          field: 'entities[$i].type',
-          message: '必须为 character/setting/plot（实际: $type）',
-        ),
-      );
-      continue;
-    }
-
-    final key = e['key'];
-    if (key is! String || key.trim().isEmpty) {
-      errors.add(
-        OutlineValidationError(field: 'entities[$i].key', message: '必须为非空字符串'),
-      );
-      continue;
-    }
-
-    final aliasesRaw = e['aliases'];
-    final aliases = aliasesRaw is List
-        ? aliasesRaw.whereType<String>().where((a) => a.isNotEmpty).toList()
-        : const <String>[];
-
-    final matchedEntityId = e['matched_entity_id'];
-    if (matchedEntityId != null && matchedEntityId is! String) {
-      errors.add(
-        OutlineValidationError(
-          field: 'entities[$i].matched_entity_id',
-          message: '必须是字符串或 null',
-        ),
-      );
-      continue;
-    }
-
-    final impressionsRaw = e['impressions'];
-    if (impressionsRaw is! List) {
-      errors.add(
-        OutlineValidationError(
-          field: 'entities[$i].impressions',
-          message: '必须是数组',
-        ),
-      );
-      continue;
-    }
-
-    final impressions = <OutlineImpressionUpdate>[];
-    for (var j = 0; j < impressionsRaw.length; j++) {
-      final im = impressionsRaw[j];
-      if (im is! Map<String, dynamic>) {
-        errors.add(
-          OutlineValidationError(
-            field: 'entities[$i].impressions[$j]',
-            message: '必须是对象',
-          ),
-        );
-        continue;
-      }
-
-      final text = im['text'];
-      if (text is! String || text.trim().isEmpty) {
-        errors.add(
-          OutlineValidationError(
-            field: 'entities[$i].impressions[$j].text',
-            message: '必须为非空字符串',
-          ),
-        );
-        continue;
-      }
-
-      final conflictWith = im['conflict_with'];
-      if (conflictWith != null && conflictWith is! String) {
-        errors.add(
-          OutlineValidationError(
-            field: 'entities[$i].impressions[$j].conflict_with',
-            message: '必须是字符串或 null',
-          ),
-        );
-        continue;
-      }
-
-      impressions.add(
-        OutlineImpressionUpdate(
-          text: text,
-          conflictWith: conflictWith as String?,
-        ),
-      );
-    }
-
-    entities.add(
-      OutlineEntityUpdate(
-        type: type,
-        key: key,
-        aliases: aliases,
-        matchedEntityId: matchedEntityId as String?,
-        impressions: impressions,
-      ),
-    );
+    final entity = _validateEntity(i, e, errors);
+    if (entity != null) entities.add(entity);
   }
 
   return OutlineValidationResult(

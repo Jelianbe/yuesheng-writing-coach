@@ -66,89 +66,41 @@ const List<BeginnerLevel> _kBeginnerOrder = [
   BeginnerLevel.n4Independent,
 ];
 
-/// 校验 N 系单向递进
-/// - 同级合法
-/// - 前进 1 步合法
-/// - 跳跃非法
-/// - 降级非法
-bool _isValidProgression(BeginnerLevel from, BeginnerLevel to) {
-  final fromIdx = _kBeginnerOrder.indexOf(from);
-  final toIdx = _kBeginnerOrder.indexOf(to);
-  return toIdx == fromIdx || toIdx == fromIdx + 1;
-}
-
-/// 按 phase-mapper.ts skill 的 4 条决策规则，对 AI 输出的迁移信号进行代码侧校验
-PhaseMapperOutput resolvePhaseMapper(PhaseMapperInput input) {
-  final currentBeginnerLevel = input.currentBeginnerLevel;
-  final suggestedPhase = input.suggestedPhase;
-  final suggestedBeginnerLevel = input.suggestedBeginnerLevel;
-  final consecutiveFailedTrainings = input.consecutiveFailedTrainings;
-
-  final ignoredFields = <IgnoredField>[];
-
-  // ============ Step 1: 确定生效的 beginner_level ============
-
-  BeginnerLevel? resolverBeginnerLevel;
-  BeginnerLevel? outputBeginnerLevel;
-
+/// 确定生效 beginner_level（R-019 拆出：resolvePhaseMapper Step1）。
+({BeginnerLevel? resolver, BeginnerLevel? output}) _resolveBeginnerLevel(
+  BeginnerLevel? currentBeginnerLevel,
+  BeginnerLevel? suggestedBeginnerLevel,
+  List<IgnoredField> ignoredFields,
+) {
   if (suggestedBeginnerLevel != null) {
     if (currentBeginnerLevel == null) {
       // B6: 首次激活，接受任意 suggested
-      resolverBeginnerLevel = suggestedBeginnerLevel;
-      outputBeginnerLevel = suggestedBeginnerLevel;
-    } else {
-      final valid = _isValidProgression(
-        currentBeginnerLevel,
-        suggestedBeginnerLevel,
-      );
-      if (valid) {
-        resolverBeginnerLevel = suggestedBeginnerLevel;
-        outputBeginnerLevel = suggestedBeginnerLevel;
-      } else {
-        // 跳跃或降级：拒绝，保持 current
-        resolverBeginnerLevel = currentBeginnerLevel;
-        outputBeginnerLevel = currentBeginnerLevel;
-        ignoredFields.add(IgnoredField.suggestedBeginnerLevel);
-      }
+      return (resolver: suggestedBeginnerLevel, output: suggestedBeginnerLevel);
     }
-  } else {
-    // 未提供 suggested
-    resolverBeginnerLevel = currentBeginnerLevel;
-    outputBeginnerLevel = null;
-  }
-
-  // decisionBeginnerLevel: 用于规则1/2 分支选择（应用规则4 默认 N3）
-  final decisionBeginnerLevel =
-      resolverBeginnerLevel ?? BeginnerLevel.n3Diagnose;
-
-  // B3c-2: N3 降级触发检查
-  const n3DowngradeThreshold = 3;
-  if (currentBeginnerLevel == BeginnerLevel.n3Diagnose &&
-      consecutiveFailedTrainings >= n3DowngradeThreshold &&
-      suggestedBeginnerLevel == null) {
-    return PhaseMapperOutput(
-      effectivePhase: null,
-      effectiveBeginnerLevel: BeginnerLevel.n2Scene,
-      ignoredFields: const [],
-      reason: 'B3c-2：N3 连续 $consecutiveFailedTrainings 次训练失败，自动降级到 N2',
-      appliedRule: 4,
+    final valid = _isValidProgression(
+      currentBeginnerLevel,
+      suggestedBeginnerLevel,
     );
+    if (valid) {
+      return (resolver: suggestedBeginnerLevel, output: suggestedBeginnerLevel);
+    }
+    // 跳跃或降级：拒绝，保持 current
+    ignoredFields.add(IgnoredField.suggestedBeginnerLevel);
+    return (resolver: currentBeginnerLevel, output: currentBeginnerLevel);
   }
+  // 未提供 suggested
+  return (resolver: currentBeginnerLevel, output: null);
+}
 
-  // ============ Step 2: 决定 phase ============
-
-  // 规则4: 无任何迁移信号
-  if (suggestedPhase == null && suggestedBeginnerLevel == null) {
-    return const PhaseMapperOutput(
-      effectivePhase: null,
-      effectiveBeginnerLevel: null,
-      ignoredFields: [],
-      reason: '无迁移信号',
-      appliedRule: 4,
-    );
-  }
-
-  // 规则3 特例（N3+P1→P2 提升）
+/// 规则3 特例（N3+P1→P2 提升 / N2+P3 拒绝，R-019 拆出）。
+/// 命中返回输出，未命中返回 null 继续走规则1/2。
+PhaseMapperOutput? _resolveRule3SpecialCase(
+  PhaseMapperInput input,
+  BeginnerLevel? resolverBeginnerLevel,
+  TeachingPhase? suggestedPhase,
+  BeginnerLevel? outputBeginnerLevel,
+  List<IgnoredField> ignoredFields,
+) {
   // C-3 收窄（ADR-C54 §4-C-3）：current 尚未越过 P1（null 或 P0）时不提升。
   // 此时 P0→P1 是合法相邻递进，提升会把一个合法信号改写成非法的 P0→P2
   // 被 validatePhaseTransition 拦截——与规则 3 的设计意图（「P1 世界观对
@@ -178,24 +130,174 @@ PhaseMapperOutput resolvePhaseMapper(PhaseMapperInput input) {
       appliedRule: 3,
     );
   }
+  return null;
+}
+
+/// 规则1: N0/N1/N2 P 系虚拟挂起（R-019 拆出）。
+PhaseMapperOutput? _applyRule1VirtualHang(
+  BeginnerLevel decisionBeginnerLevel,
+  TeachingPhase? suggestedPhase,
+  BeginnerLevel? outputBeginnerLevel,
+  List<IgnoredField> ignoredFields,
+) {
+  if (decisionBeginnerLevel != BeginnerLevel.n0Engage &&
+      decisionBeginnerLevel != BeginnerLevel.n1Elements &&
+      decisionBeginnerLevel != BeginnerLevel.n2Scene) {
+    return null;
+  }
+  if (suggestedPhase != null) {
+    ignoredFields.add(IgnoredField.suggestedPhase);
+  }
+  return PhaseMapperOutput(
+    effectivePhase: null,
+    effectiveBeginnerLevel: outputBeginnerLevel,
+    ignoredFields: ignoredFields,
+    reason: '规则1：${decisionBeginnerLevel.value} 阶段 P 系虚拟挂起',
+    appliedRule: 1,
+  );
+}
+
+/// 校验 N 系单向递进
+/// - 同级合法
+/// - 前进 1 步合法
+/// - 跳跃非法
+/// - 降级非法
+bool _isValidProgression(BeginnerLevel from, BeginnerLevel to) {
+  final fromIdx = _kBeginnerOrder.indexOf(from);
+  final toIdx = _kBeginnerOrder.indexOf(to);
+  return toIdx == fromIdx || toIdx == fromIdx + 1;
+}
+
+/// 按 phase-mapper.ts skill 的 4 条决策规则，对 AI 输出的迁移信号进行代码侧校验
+PhaseMapperOutput resolvePhaseMapper(PhaseMapperInput input) {
+  final currentBeginnerLevel = input.currentBeginnerLevel;
+  final suggestedPhase = input.suggestedPhase;
+  final suggestedBeginnerLevel = input.suggestedBeginnerLevel;
+  final consecutiveFailedTrainings = input.consecutiveFailedTrainings;
+
+  final ignoredFields = <IgnoredField>[];
+
+  // ============ Step 1: 确定生效的 beginner_level ============
+
+  final (
+    resolver: resolverBeginnerLevel,
+    output: outputBeginnerLevel,
+  ) = _resolveBeginnerLevel(
+    currentBeginnerLevel,
+    suggestedBeginnerLevel,
+    ignoredFields,
+  );
+
+  // decisionBeginnerLevel: 用于规则1/2 分支选择（应用规则4 默认 N3）
+  final decisionBeginnerLevel =
+      resolverBeginnerLevel ?? BeginnerLevel.n3Diagnose;
+
+  // B3c-2: N3 降级触发检查
+  final downgradeOut = _resolveN3Downgrade(
+    currentBeginnerLevel,
+    consecutiveFailedTrainings,
+    suggestedBeginnerLevel,
+  );
+  if (downgradeOut != null) return downgradeOut;
+
+  // ============ Step 2: 决定 phase ============
+
+  // 规则4: 无任何迁移信号
+  final noSignal = _resolveNoSignalRule4(
+    suggestedPhase,
+    suggestedBeginnerLevel,
+  );
+  if (noSignal != null) return noSignal;
+
+  // 规则3/1/2：按 decision beginner 逐条短路
+  return _resolvePhaseByRules(
+    input,
+    resolverBeginnerLevel,
+    decisionBeginnerLevel,
+    outputBeginnerLevel,
+    ignoredFields,
+  );
+}
+
+/// 规则3/1/2 逐条短路（R-019 三次拆：resolvePhaseMapper）。
+PhaseMapperOutput _resolvePhaseByRules(
+  PhaseMapperInput input,
+  BeginnerLevel? resolverBeginnerLevel,
+  BeginnerLevel decisionBeginnerLevel,
+  BeginnerLevel? outputBeginnerLevel,
+  List<IgnoredField> ignoredFields,
+) {
+  final suggestedPhase = input.suggestedPhase;
+  final rule3 = _resolveRule3SpecialCase(
+    input,
+    resolverBeginnerLevel,
+    suggestedPhase,
+    outputBeginnerLevel,
+    ignoredFields,
+  );
+  if (rule3 != null) return rule3;
 
   // 规则1: N0/N1/N2 P 系虚拟挂起
-  if (decisionBeginnerLevel == BeginnerLevel.n0Engage ||
-      decisionBeginnerLevel == BeginnerLevel.n1Elements ||
-      decisionBeginnerLevel == BeginnerLevel.n2Scene) {
-    if (suggestedPhase != null) {
-      ignoredFields.add(IgnoredField.suggestedPhase);
-    }
-    return PhaseMapperOutput(
-      effectivePhase: null,
-      effectiveBeginnerLevel: outputBeginnerLevel,
-      ignoredFields: ignoredFields,
-      reason: '规则1：${decisionBeginnerLevel.value} 阶段 P 系虚拟挂起',
-      appliedRule: 1,
-    );
-  }
+  final rule1 = _applyRule1VirtualHang(
+    decisionBeginnerLevel,
+    suggestedPhase,
+    outputBeginnerLevel,
+    ignoredFields,
+  );
+  if (rule1 != null) return rule1;
 
   // 规则2: N3/N4 切换到 P 系
+  return _resolveRule2Output(
+    decisionBeginnerLevel,
+    suggestedPhase,
+    outputBeginnerLevel,
+    ignoredFields,
+  );
+}
+
+/// B3c-2: N3 降级触发检查（R-019 二次拆：resolvePhaseMapper）。
+PhaseMapperOutput? _resolveN3Downgrade(
+  BeginnerLevel? currentBeginnerLevel,
+  int consecutiveFailedTrainings,
+  BeginnerLevel? suggestedBeginnerLevel,
+) {
+  const n3DowngradeThreshold = 3;
+  if (currentBeginnerLevel != BeginnerLevel.n3Diagnose ||
+      consecutiveFailedTrainings < n3DowngradeThreshold ||
+      suggestedBeginnerLevel != null) {
+    return null;
+  }
+  return PhaseMapperOutput(
+    effectivePhase: null,
+    effectiveBeginnerLevel: BeginnerLevel.n2Scene,
+    ignoredFields: const [],
+    reason: 'B3c-2：N3 连续 $consecutiveFailedTrainings 次训练失败，自动降级到 N2',
+    appliedRule: 4,
+  );
+}
+
+/// 规则4: 无任何迁移信号（R-019 二次拆：resolvePhaseMapper）。
+PhaseMapperOutput? _resolveNoSignalRule4(
+  TeachingPhase? suggestedPhase,
+  BeginnerLevel? suggestedBeginnerLevel,
+) {
+  if (suggestedPhase != null || suggestedBeginnerLevel != null) return null;
+  return const PhaseMapperOutput(
+    effectivePhase: null,
+    effectiveBeginnerLevel: null,
+    ignoredFields: [],
+    reason: '无迁移信号',
+    appliedRule: 4,
+  );
+}
+
+/// 规则2: N3/N4 切换到 P 系（R-019 二次拆：resolvePhaseMapper）。
+PhaseMapperOutput _resolveRule2Output(
+  BeginnerLevel decisionBeginnerLevel,
+  TeachingPhase? suggestedPhase,
+  BeginnerLevel? outputBeginnerLevel,
+  List<IgnoredField> ignoredFields,
+) {
   if (suggestedPhase != null) {
     return PhaseMapperOutput(
       effectivePhase: suggestedPhase,

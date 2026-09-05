@@ -154,5 +154,72 @@ void main() {
       expect(text, contains('关键词使用频率推断'));
       expect(text, isNot(contains('教学加权')));
     });
+
+    test('totalDiagnoses==3 + 无停滞 → 状态评估正常推进', () {
+      final text = formatProfileText(
+        StudentProfile(
+          proficiency: ProficiencyLevel.beginner,
+          confidence: 0.5,
+          syndromeProfile: const {
+            'P1': SyndromeAggregation(
+              syndromeId: 'P1',
+              syndromeName: '症候一',
+              occurrenceCount: 3,
+              severityHistory: [Severity.l1],
+              latestSeverity: Severity.l1,
+              trend: Trend.improving,
+              lastSeenAt: 1,
+              sessionCount: 1,
+              teachingState: TeachingState.inProgress,
+            ),
+          },
+          totalSessions: 1,
+        ),
+        null,
+        null,
+        null,
+      );
+      expect(text, contains('状态评估：正常推进'));
+    });
+
+    test('同 teachingState 多个症候 → 全部列出', () {
+      final text = formatProfileText(
+        StudentProfile(
+          proficiency: ProficiencyLevel.beginner,
+          confidence: 0.5,
+          syndromeProfile: const {
+            'P1': SyndromeAggregation(
+              syndromeId: 'P1',
+              syndromeName: '症候甲',
+              occurrenceCount: 1,
+              severityHistory: [Severity.l1],
+              latestSeverity: Severity.l1,
+              trend: Trend.stable,
+              lastSeenAt: 1,
+              sessionCount: 1,
+              teachingState: TeachingState.inProgress,
+            ),
+            'P2': SyndromeAggregation(
+              syndromeId: 'P2',
+              syndromeName: '症候乙',
+              occurrenceCount: 1,
+              severityHistory: [Severity.l1],
+              latestSeverity: Severity.l1,
+              trend: Trend.stable,
+              lastSeenAt: 1,
+              sessionCount: 1,
+              teachingState: TeachingState.inProgress,
+            ),
+          },
+          totalSessions: 1,
+        ),
+        null,
+        null,
+        null,
+      );
+      // 锚定「训练中的症候」分组段（同 state 两症候都必须列出）
+      expect(text, contains('训练中的症候：\n  - 症候甲'));
+      expect(text, contains('  - 症候乙：'));
+    });
   });
 }
