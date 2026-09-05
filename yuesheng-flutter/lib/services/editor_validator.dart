@@ -139,13 +139,38 @@ EditorValidationResult validateEditorSchema(Object? raw) {
     );
   }
 
-  String? possibleIntent;
-  String? intentConfidence;
-  List<EditorObservation>? observations;
-  String? overallImpression;
-  List<String>? strengths;
+  final intents = _validateIntentFields(raw, errors);
+  final observations = _validateObservationsField(raw, errors);
+  final rest = _validateImpressionAndStrengths(raw, errors);
 
-  // possible_intent
+  if (errors.isNotEmpty) {
+    return EditorValidationResult(valid: false, errors: errors);
+  }
+
+  return EditorValidationResult(
+    valid: true,
+    errors: const [],
+    data: EditorResult(
+      possibleIntent: intents.possibleIntent!,
+      intentConfidence: intents.intentConfidence!,
+      observations: observations!,
+      overallImpression: rest.overallImpression!,
+      strengths: rest.strengths!,
+    ),
+  );
+}
+
+/// possible_intent / intent_confidence 校验（R-019 拆出）。
+typedef _EditorIntentFields = ({
+  String? possibleIntent,
+  String? intentConfidence,
+});
+
+_EditorIntentFields _validateIntentFields(
+  Map<String, dynamic> raw,
+  List<EditorValidationError> errors,
+) {
+  String? possibleIntent;
   final pi = raw['possible_intent'];
   if (pi is String && pi.isNotEmpty) {
     possibleIntent = pi;
@@ -158,7 +183,7 @@ EditorValidationResult validateEditorSchema(Object? raw) {
     );
   }
 
-  // intent_confidence
+  String? intentConfidence;
   final ic = raw['intent_confidence'];
   if (ic is String) {
     if (_isValidConfidence(ic)) {
@@ -176,46 +201,63 @@ EditorValidationResult validateEditorSchema(Object? raw) {
       const EditorValidationError(field: 'intent_confidence', message: '必填字段'),
     );
   }
+  return (possibleIntent: possibleIntent, intentConfidence: intentConfidence);
+}
 
-  // observations
+/// observations 字段校验（≥3 条 + 逐项解析，R-019 拆出）。
+List<EditorObservation>? _validateObservationsField(
+  Map<String, dynamic> raw,
+  List<EditorValidationError> errors,
+) {
   final obsList = raw['observations'];
-  if (obsList is List) {
-    if (obsList.length < 3) {
-      errors.add(
-        EditorValidationError(
-          field: 'observations',
-          message: '至少 3 条 observation（实际: ${obsList.length}）',
-        ),
-      );
-    } else {
-      final parsedObs = <EditorObservation>[];
-      bool ok = true;
-      for (int i = 0; i < obsList.length; i++) {
-        final item = obsList[i];
-        if (item is! Map) {
-          errors.add(
-            EditorValidationError(field: 'observations[$i]', message: '必须是对象'),
-          );
-          ok = false;
-          continue;
-        }
-        final map = Map<String, dynamic>.from(item);
-        final o = _parseObservation(map, 'observations[$i]', errors);
-        if (o != null) {
-          parsedObs.add(o);
-        } else {
-          ok = false;
-        }
-      }
-      if (ok) observations = parsedObs;
-    }
-  } else {
+  if (obsList is! List) {
     errors.add(
       const EditorValidationError(field: 'observations', message: '必须是数组'),
     );
+    return null;
   }
+  if (obsList.length < 3) {
+    errors.add(
+      EditorValidationError(
+        field: 'observations',
+        message: '至少 3 条 observation（实际: ${obsList.length}）',
+      ),
+    );
+    return null;
+  }
+  final parsedObs = <EditorObservation>[];
+  bool ok = true;
+  for (int i = 0; i < obsList.length; i++) {
+    final item = obsList[i];
+    if (item is! Map) {
+      errors.add(
+        EditorValidationError(field: 'observations[$i]', message: '必须是对象'),
+      );
+      ok = false;
+      continue;
+    }
+    final map = Map<String, dynamic>.from(item);
+    final o = _parseObservation(map, 'observations[$i]', errors);
+    if (o != null) {
+      parsedObs.add(o);
+    } else {
+      ok = false;
+    }
+  }
+  return ok ? parsedObs : null;
+}
 
-  // overall_impression
+/// overall_impression / strengths 校验（R-019 拆出）。
+typedef _EditorRestFields = ({
+  String? overallImpression,
+  List<String>? strengths,
+});
+
+_EditorRestFields _validateImpressionAndStrengths(
+  Map<String, dynamic> raw,
+  List<EditorValidationError> errors,
+) {
+  String? overallImpression;
   final oi = raw['overall_impression'];
   if (oi is String && oi.isNotEmpty) {
     overallImpression = oi;
@@ -228,50 +270,33 @@ EditorValidationResult validateEditorSchema(Object? raw) {
     );
   }
 
-  // strengths
+  List<String>? strengths;
   final st = raw['strengths'];
-  if (st is List) {
-    if (st.isEmpty) {
-      errors.add(
-        const EditorValidationError(field: 'strengths', message: '至少 1 条'),
-      );
-    } else {
-      final list = <String>[];
-      bool ok = true;
-      for (int i = 0; i < st.length; i++) {
-        final item = st[i];
-        if (item is String && item.isNotEmpty) {
-          list.add(item);
-        } else {
-          errors.add(
-            EditorValidationError(field: 'strengths[$i]', message: '必须是非空字符串'),
-          );
-          ok = false;
-        }
-      }
-      if (ok) strengths = list;
-    }
-  } else {
+  if (st is! List) {
     errors.add(
       const EditorValidationError(field: 'strengths', message: '必须是字符串数组'),
     );
+  } else if (st.isEmpty) {
+    errors.add(
+      const EditorValidationError(field: 'strengths', message: '至少 1 条'),
+    );
+  } else {
+    final list = <String>[];
+    bool ok = true;
+    for (int i = 0; i < st.length; i++) {
+      final item = st[i];
+      if (item is String && item.isNotEmpty) {
+        list.add(item);
+      } else {
+        errors.add(
+          EditorValidationError(field: 'strengths[$i]', message: '必须是非空字符串'),
+        );
+        ok = false;
+      }
+    }
+    if (ok) strengths = list;
   }
-
-  if (errors.isNotEmpty) {
-    return EditorValidationResult(valid: false, errors: errors);
-  }
-
-  return EditorValidationResult(
-    valid: true,
-    errors: const [],
-    data: EditorResult(
-      possibleIntent: possibleIntent!,
-      intentConfidence: intentConfidence!,
-      observations: observations!,
-      overallImpression: overallImpression!,
-      strengths: strengths!,
-    ),
-  );
+  return (overallImpression: overallImpression, strengths: strengths);
 }
 
 EditorObservation? _parseObservation(
@@ -279,14 +304,35 @@ EditorObservation? _parseObservation(
   String prefix,
   List<EditorValidationError> errors,
 ) {
-  String? dimension;
-  String? dimensionName;
-  String? phenomenon;
-  List<String>? evidence;
-  String? readerImpact;
-  String? observationVisibility;
-  String? intentAlignment;
+  final dims = _parseDimensionGroup(map, prefix, errors);
+  final evidence = _parseEvidenceField(map, prefix, errors);
+  final vis = _parseVisibilityGroup(map, prefix, errors);
 
+  if (errors.isNotEmpty) return null;
+  return EditorObservation(
+    dimension: dims.dimension!,
+    dimensionName: dims.dimensionName!,
+    phenomenon: dims.phenomenon!,
+    evidence: evidence!,
+    readerImpact: vis.readerImpact!,
+    observationVisibility: vis.observationVisibility!,
+    intentAlignment: vis.intentAlignment!,
+  );
+}
+
+/// dimension / dimension_name / phenomenon 校验（R-019 拆出）。
+typedef _ObsDimensionGroup = ({
+  String? dimension,
+  String? dimensionName,
+  String? phenomenon,
+});
+
+_ObsDimensionGroup _parseDimensionGroup(
+  Map<String, dynamic> map,
+  String prefix,
+  List<EditorValidationError> errors,
+) {
+  String? dimension;
   final d = map['dimension'];
   if (d is String && _isValidDimension(d)) {
     dimension = d;
@@ -299,6 +345,7 @@ EditorObservation? _parseObservation(
     );
   }
 
+  String? dimensionName;
   final dn = map['dimension_name'];
   if (dn is String && dn.isNotEmpty) {
     dimensionName = dn;
@@ -311,6 +358,7 @@ EditorObservation? _parseObservation(
     );
   }
 
+  String? phenomenon;
   final ph = map['phenomenon'];
   if (ph is String && ph.isNotEmpty) {
     phenomenon = ph;
@@ -319,41 +367,67 @@ EditorObservation? _parseObservation(
       EditorValidationError(field: '$prefix.phenomenon', message: '必须是非空字符串'),
     );
   }
+  return (
+    dimension: dimension,
+    dimensionName: dimensionName,
+    phenomenon: phenomenon,
+  );
+}
 
+/// evidence 字段校验（≥1 条 + 逐项，R-019 拆出）。
+List<String>? _parseEvidenceField(
+  Map<String, dynamic> map,
+  String prefix,
+  List<EditorValidationError> errors,
+) {
   final ev = map['evidence'];
-  if (ev is List) {
-    if (ev.isEmpty) {
-      errors.add(
-        EditorValidationError(
-          field: '$prefix.evidence',
-          message: '至少 1 条 evidence',
-        ),
-      );
-    } else {
-      final list = <String>[];
-      bool ok = true;
-      for (int i = 0; i < ev.length; i++) {
-        final item = ev[i];
-        if (item is String && item.isNotEmpty) {
-          list.add(item);
-        } else {
-          errors.add(
-            EditorValidationError(
-              field: '$prefix.evidence[$i]',
-              message: '必须是非空字符串',
-            ),
-          );
-          ok = false;
-        }
-      }
-      if (ok) evidence = list;
-    }
-  } else {
+  if (ev is! List) {
     errors.add(
       EditorValidationError(field: '$prefix.evidence', message: '必须是字符串数组'),
     );
+    return null;
   }
+  if (ev.isEmpty) {
+    errors.add(
+      EditorValidationError(
+        field: '$prefix.evidence',
+        message: '至少 1 条 evidence',
+      ),
+    );
+    return null;
+  }
+  final list = <String>[];
+  bool ok = true;
+  for (int i = 0; i < ev.length; i++) {
+    final item = ev[i];
+    if (item is String && item.isNotEmpty) {
+      list.add(item);
+    } else {
+      errors.add(
+        EditorValidationError(
+          field: '$prefix.evidence[$i]',
+          message: '必须是非空字符串',
+        ),
+      );
+      ok = false;
+    }
+  }
+  return ok ? list : null;
+}
 
+/// reader_impact / observation_visibility / intent_alignment 校验（R-019 拆出）。
+typedef _ObsVisibilityGroup = ({
+  String? readerImpact,
+  String? observationVisibility,
+  String? intentAlignment,
+});
+
+_ObsVisibilityGroup _parseVisibilityGroup(
+  Map<String, dynamic> map,
+  String prefix,
+  List<EditorValidationError> errors,
+) {
+  String? readerImpact;
   final ri = map['reader_impact'];
   if (ri is String && ri.isNotEmpty) {
     readerImpact = ri;
@@ -366,18 +440,32 @@ EditorObservation? _parseObservation(
     );
   }
 
+  final observationVisibility = _parseVisibilityValue(map, prefix, errors);
+  final intentAlignment = _parseAlignmentValue(map, prefix, errors);
+  return (
+    readerImpact: readerImpact,
+    observationVisibility: observationVisibility,
+    intentAlignment: intentAlignment,
+  );
+}
+
+/// observation_visibility 白名单校验（R-019 拆出）。
+String? _parseVisibilityValue(
+  Map<String, dynamic> map,
+  String prefix,
+  List<EditorValidationError> errors,
+) {
   final ov = map['observation_visibility'];
   if (ov is String) {
     if (_isValidVisibility(ov)) {
-      observationVisibility = ov;
-    } else {
-      errors.add(
-        EditorValidationError(
-          field: '$prefix.observation_visibility',
-          message: '必须是 subtle | moderate | pronounced（实际: $ov）',
-        ),
-      );
+      return ov;
     }
+    errors.add(
+      EditorValidationError(
+        field: '$prefix.observation_visibility',
+        message: '必须是 subtle | moderate | pronounced（实际: $ov）',
+      ),
+    );
   } else {
     errors.add(
       EditorValidationError(
@@ -386,35 +474,32 @@ EditorObservation? _parseObservation(
       ),
     );
   }
+  return null;
+}
 
+/// intent_alignment 白名单校验（R-019 拆出）。
+String? _parseAlignmentValue(
+  Map<String, dynamic> map,
+  String prefix,
+  List<EditorValidationError> errors,
+) {
   final ia = map['intent_alignment'];
   if (ia is String) {
     if (_isValidAlignment(ia)) {
-      intentAlignment = ia;
-    } else {
-      errors.add(
-        EditorValidationError(
-          field: '$prefix.intent_alignment',
-          message: '必须是 aligned | against | unclear（实际: $ia）',
-        ),
-      );
+      return ia;
     }
+    errors.add(
+      EditorValidationError(
+        field: '$prefix.intent_alignment',
+        message: '必须是 aligned | against | unclear（实际: $ia）',
+      ),
+    );
   } else {
     errors.add(
       EditorValidationError(field: '$prefix.intent_alignment', message: '必填字段'),
     );
   }
-
-  if (errors.isNotEmpty) return null;
-  return EditorObservation(
-    dimension: dimension!,
-    dimensionName: dimensionName!,
-    phenomenon: phenomenon!,
-    evidence: evidence!,
-    readerImpact: readerImpact!,
-    observationVisibility: observationVisibility!,
-    intentAlignment: intentAlignment!,
-  );
+  return null;
 }
 
 // ─── 硬限制检查 ────────────────────────────────────────────────

@@ -155,31 +155,40 @@ TeacherValidationResult validateTeacherSchema(Object? raw) {
     );
   }
 
-  String? teachingDecision;
-  String? teachingReason;
-  String? naturalLanguage;
-  TrainingTask? trainingTask;
+  final decisions = _validateDecisionFields(raw, errors);
+  final trainingTask = _parseOptionalTrainingTask(raw, errors);
+  final locationMarks = _parseLocationMarks(raw);
 
-  // teaching_decision
-  final td = raw['teaching_decision'];
-  if (td is String) {
-    if (_isValidDecision(td)) {
-      teachingDecision = td;
-    } else {
-      errors.add(
-        TeacherValidationError(
-          field: 'teaching_decision',
-          message: '必须是 encourage | guide | train | defer（实际: $td）',
-        ),
-      );
-    }
-  } else {
-    errors.add(
-      const TeacherValidationError(field: 'teaching_decision', message: '必填字段'),
-    );
+  if (errors.isNotEmpty) {
+    return TeacherValidationResult(valid: false, errors: errors);
   }
 
-  // teaching_reason
+  return TeacherValidationResult(
+    valid: true,
+    errors: const [],
+    data: TeacherResult(
+      teachingDecision: decisions.teachingDecision!,
+      teachingReason: decisions.teachingReason!,
+      naturalLanguage: decisions.naturalLanguage!,
+      trainingTask: trainingTask,
+      locationMarks: locationMarks,
+    ),
+  );
+}
+
+/// teaching_decision / teaching_reason / natural_language 校验（R-019 拆出）。
+typedef _TeacherDecisionFields = ({
+  String? teachingDecision,
+  String? teachingReason,
+  String? naturalLanguage,
+});
+
+_TeacherDecisionFields _validateDecisionFields(
+  Map<String, dynamic> raw,
+  List<TeacherValidationError> errors,
+) {
+  final teachingDecision = _parseDecisionValue(raw, errors);
+  String? teachingReason;
   final tr = raw['teaching_reason'];
   if (tr is String && tr.isNotEmpty) {
     teachingReason = tr;
@@ -192,7 +201,7 @@ TeacherValidationResult validateTeacherSchema(Object? raw) {
     );
   }
 
-  // natural_language
+  String? naturalLanguage;
   final nl = raw['natural_language'];
   if (nl is String && nl.isNotEmpty) {
     naturalLanguage = nl;
@@ -204,57 +213,43 @@ TeacherValidationResult validateTeacherSchema(Object? raw) {
       ),
     );
   }
-
-  // training_task（optional，但如果存在必须是对象，且字段有效）
-  final tt = raw['training_task'];
-  if (tt != null) {
-    if (tt is Map) {
-      final map = Map<String, dynamic>.from(tt);
-      final parsed = _parseTrainingTask(map, 'training_task', errors);
-      if (parsed != null) trainingTask = parsed;
-    } else {
-      errors.add(
-        const TeacherValidationError(
-          field: 'training_task',
-          message: '必须是对象或省略',
-        ),
-      );
-    }
-  }
-
-  // location_marks（optional，批次63 B62d）——宽松解析：
-  // 合法字符串数组 → 采纳；缺失或非法 → 静默忽略（可选字段不阻断整条建议）
-  List<String> locationMarks = const [];
-  final lm = raw['location_marks'];
-  if (lm is List) {
-    final list = <String>[];
-    var ok = true;
-    for (final item in lm) {
-      if (item is String && item.isNotEmpty) {
-        list.add(item);
-      } else {
-        ok = false;
-        break;
-      }
-    }
-    if (ok) locationMarks = list;
-  }
-
-  if (errors.isNotEmpty) {
-    return TeacherValidationResult(valid: false, errors: errors);
-  }
-
-  return TeacherValidationResult(
-    valid: true,
-    errors: const [],
-    data: TeacherResult(
-      teachingDecision: teachingDecision!,
-      teachingReason: teachingReason!,
-      naturalLanguage: naturalLanguage!,
-      trainingTask: trainingTask,
-      locationMarks: locationMarks,
-    ),
+  return (
+    teachingDecision: teachingDecision,
+    teachingReason: teachingReason,
+    naturalLanguage: naturalLanguage,
   );
+}
+
+/// training_task 可选子块解析（R-019 拆出）。
+TrainingTask? _parseOptionalTrainingTask(
+  Map<String, dynamic> raw,
+  List<TeacherValidationError> errors,
+) {
+  final tt = raw['training_task'];
+  if (tt == null) return null;
+  if (tt is! Map) {
+    errors.add(
+      const TeacherValidationError(field: 'training_task', message: '必须是对象或省略'),
+    );
+    return null;
+  }
+  final map = Map<String, dynamic>.from(tt);
+  return _parseTrainingTask(map, 'training_task', errors);
+}
+
+/// location_marks 宽松解析（可选字段不阻断，R-019 拆出）。
+List<String> _parseLocationMarks(Map<String, dynamic> raw) {
+  final lm = raw['location_marks'];
+  if (lm is! List) return const [];
+  final list = <String>[];
+  for (final item in lm) {
+    if (item is String && item.isNotEmpty) {
+      list.add(item);
+    } else {
+      return const [];
+    }
+  }
+  return list;
 }
 
 TrainingTask? _parseTrainingTask(
@@ -262,14 +257,33 @@ TrainingTask? _parseTrainingTask(
   String prefix,
   List<TeacherValidationError> errors,
 ) {
-  String? targetSyndromeId;
-  String? targetDimension;
-  String? taskType;
-  String? taskDescription;
-  String? difficulty;
-  List<String>? evaluationCriteria;
+  final ids = _parseOptionalIds(map, prefix, errors);
+  final core = _parseTaskCoreFields(map, prefix, errors);
+  final evaluationCriteria = _parseEvaluationCriteria(map, prefix, errors);
 
-  // target_syndrome_id （nullable/optional）
+  if (errors.isNotEmpty) return null;
+  return TrainingTask(
+    targetSyndromeId: ids.targetSyndromeId,
+    targetDimension: ids.targetDimension,
+    taskType: core.taskType!,
+    taskDescription: core.taskDescription!,
+    difficulty: core.difficulty!,
+    evaluationCriteria: evaluationCriteria!,
+  );
+}
+
+/// target_syndrome_id / target_dimension（可选字段，R-019 拆出）。
+typedef _TrainingOptionalIds = ({
+  String? targetSyndromeId,
+  String? targetDimension,
+});
+
+_TrainingOptionalIds _parseOptionalIds(
+  Map<String, dynamic> map,
+  String prefix,
+  List<TeacherValidationError> errors,
+) {
+  String? targetSyndromeId;
   final tsid = map['target_syndrome_id'];
   if (tsid != null) {
     if (tsid is String) {
@@ -284,7 +298,7 @@ TrainingTask? _parseTrainingTask(
     }
   }
 
-  // target_dimension （nullable/optional）
+  String? targetDimension;
   final tdim = map['target_dimension'];
   if (tdim != null) {
     if (tdim is String) {
@@ -307,8 +321,22 @@ TrainingTask? _parseTrainingTask(
       );
     }
   }
+  return (targetSyndromeId: targetSyndromeId, targetDimension: targetDimension);
+}
 
-  // task_type
+/// task_type / task_description / difficulty 校验（R-019 拆出）。
+typedef _TrainingTaskCore = ({
+  String? taskType,
+  String? taskDescription,
+  String? difficulty,
+});
+
+_TrainingTaskCore _parseTaskCoreFields(
+  Map<String, dynamic> map,
+  String prefix,
+  List<TeacherValidationError> errors,
+) {
+  String? taskType;
   final ttT = map['task_type'];
   if (ttT is String) {
     if (_isValidTaskType(ttT)) {
@@ -327,7 +355,7 @@ TrainingTask? _parseTrainingTask(
     );
   }
 
-  // task_description
+  String? taskDescription;
   final tdesc = map['task_description'];
   if (tdesc is String && tdesc.isNotEmpty) {
     taskDescription = tdesc;
@@ -340,63 +368,96 @@ TrainingTask? _parseTrainingTask(
     );
   }
 
-  // difficulty
+  final difficulty = _parseDifficultyValue(map, prefix, errors);
+  return (
+    taskType: taskType,
+    taskDescription: taskDescription,
+    difficulty: difficulty,
+  );
+}
+
+/// teaching_decision 白名单校验（R-019 拆出）。
+String? _parseDecisionValue(
+  Map<String, dynamic> raw,
+  List<TeacherValidationError> errors,
+) {
+  final td = raw['teaching_decision'];
+  if (td is String) {
+    if (_isValidDecision(td)) {
+      return td;
+    }
+    errors.add(
+      TeacherValidationError(
+        field: 'teaching_decision',
+        message: '必须是 encourage | guide | train | defer（实际: $td）',
+      ),
+    );
+  } else {
+    errors.add(
+      const TeacherValidationError(field: 'teaching_decision', message: '必填字段'),
+    );
+  }
+  return null;
+}
+
+/// difficulty 白名单校验（R-019 拆出）。
+String? _parseDifficultyValue(
+  Map<String, dynamic> map,
+  String prefix,
+  List<TeacherValidationError> errors,
+) {
   final diff = map['difficulty'];
   if (diff is String) {
     if (_isValidDifficulty(diff)) {
-      difficulty = diff;
-    } else {
-      errors.add(
-        TeacherValidationError(
-          field: '$prefix.difficulty',
-          message: '必须是 easy | medium | hard（实际: $diff）',
-        ),
-      );
+      return diff;
     }
+    errors.add(
+      TeacherValidationError(
+        field: '$prefix.difficulty',
+        message: '必须是 easy | medium | hard（实际: $diff）',
+      ),
+    );
   } else {
     errors.add(
       TeacherValidationError(field: '$prefix.difficulty', message: '必填字段'),
     );
   }
+  return null;
+}
 
-  // evaluation_criteria
+/// evaluation_criteria 校验（≥1 条 + 逐项，R-019 拆出）。
+List<String>? _parseEvaluationCriteria(
+  Map<String, dynamic> map,
+  String prefix,
+  List<TeacherValidationError> errors,
+) {
   final ec = map['evaluation_criteria'];
-  if (ec is List) {
-    final list = <String>[];
-    bool ok = true;
-    for (int i = 0; i < ec.length; i++) {
-      final item = ec[i];
-      if (item is String && item.isNotEmpty) {
-        list.add(item);
-      } else {
-        errors.add(
-          TeacherValidationError(
-            field: '$prefix.evaluation_criteria[$i]',
-            message: '必须是非空字符串',
-          ),
-        );
-        ok = false;
-      }
-    }
-    if (ok) evaluationCriteria = list;
-  } else {
+  if (ec is! List) {
     errors.add(
       TeacherValidationError(
         field: '$prefix.evaluation_criteria',
         message: '必须是字符串数组',
       ),
     );
+    return null;
   }
-
-  if (errors.isNotEmpty) return null;
-  return TrainingTask(
-    targetSyndromeId: targetSyndromeId,
-    targetDimension: targetDimension,
-    taskType: taskType!,
-    taskDescription: taskDescription!,
-    difficulty: difficulty!,
-    evaluationCriteria: evaluationCriteria!,
-  );
+  final list = <String>[];
+  bool ok = true;
+  for (int i = 0; i < ec.length; i++) {
+    final item = ec[i];
+    if (item is String && item.isNotEmpty) {
+      list.add(item);
+    } else {
+      errors.add(
+        TeacherValidationError(
+          field: '$prefix.evaluation_criteria[$i]',
+          message: '必须是非空字符串',
+        ),
+      );
+      ok = false;
+    }
+  }
+  return ok ? list : null;
 }
 
 // ─── 一致性检查 ────────────────────────────────────────────────
