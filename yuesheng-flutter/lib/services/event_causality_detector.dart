@@ -34,13 +34,18 @@ class CausalityBreakObservation {
   });
 }
 
-/// 检测输入：事件名 + 章节 + 事件类型 + 因果边
+/// 检测输入：事件名 + 章节 + 事件类型 + 因果边 + 旧版标记
+///
+/// C78 批次2b（§5.3）：`stale` 写进类型而非在调用点 `.where((e) => !e.stale)` 过滤
+/// ——生产侧目前只有 1 个构造点，省事的调用点过滤将来新增时会**静默漏过滤**、
+/// 重新长出幽灵 F07。写进 typedef 则**让编译器强制每个构造点表态**。
 typedef EventFactInput = ({
   String name,
   int? chapter,
   String eventType,
   String? causeEventId,
   String? effectEventId,
+  bool stale,
 });
 
 /// 需要因果解释的关键事件类型（决定/转折/突发——「突然…」「为什么…」）
@@ -53,12 +58,16 @@ const Set<String> kCriticalEventTypes = {'决定', '转折', '突发'};
 ///   2. 因果前驱 causeEventId 为空 → 缺触发事件；
 ///   3. 非关键事件（冲突/日常等）不检测，避免误报。
 /// 输出按 章节（null 排最后）→ 事件名 稳定排序，便于测试与上下文注入。
+///
+/// C78 批次2b（§5.3）：`stale` 的事件**跳过**——它所属章节已被删除或已改写
+/// （D-8），继续报「缺触发事件」是给用户报不存在的断裂（幽灵 F07）。
 List<CausalityBreakObservation> detectCausalityBreaks(
   List<EventFactInput> events,
 ) {
   final observations = <CausalityBreakObservation>[];
 
   for (final event in events) {
+    if (event.stale) continue;
     if (!kCriticalEventTypes.contains(event.eventType)) continue;
     if (event.causeEventId != null && event.causeEventId!.isNotEmpty) {
       continue; // 有前因，因果链完整

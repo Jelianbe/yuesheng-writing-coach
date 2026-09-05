@@ -48,6 +48,10 @@ typedef CharacterFactInput = ({
 ///   2. 组内按 章节（null 排最后）→ 时间戳 升序排列；
 ///   3. 去重后不同值 ≥2 → 构成观察项，取最早出现的两个不同值。
 /// 输出按 (人物名, 属性) 字典序稳定排序，便于测试与上下文注入。
+///
+/// C78 批次2b（§5.3）：只消费 [isActiveAssertion] 为真的断言——被用户否决的、
+/// 以及所出章节已被删/已改写的（stale），一律不参与检测，否则报出来的是
+/// **根本不存在的矛盾**（幽灵 F05）。
 List<ConflictObservation> detectCharacterConflicts(
   List<CharacterFactInput> characters,
 ) {
@@ -56,6 +60,7 @@ List<ConflictObservation> detectCharacterConflicts(
   for (final character in characters) {
     final byAttribute = <String, List<CharacterAssertion>>{};
     for (final assertion in character.assertions) {
+      if (!isActiveAssertion(assertion)) continue;
       byAttribute.putIfAbsent(assertion.attribute, () => []).add(assertion);
     }
 
@@ -88,6 +93,20 @@ List<ConflictObservation> detectCharacterConflicts(
     return a.attribute.compareTo(b.attribute);
   });
   return observations;
+}
+
+/// C78 批次2b（§5.3）：断言是否参与 F05 检测——**判据共用**的唯一定义处。
+///
+/// 两条各自成立的否决理由：
+/// - `status != 'confirmed'`：用户已否决（D-2 枚举仅 confirmed / rejected）。
+///   否决了还拿来做矛盾检测，等于替用户撤回决定（R-009 用户主权）。
+/// - `stale`：该断言所出章节已被删除或已改写（D-6），原文都不在了，
+///   它参与比较得出的矛盾是**幽灵矛盾**——正是本批要根除的病根。
+///
+/// 判据放这里而不散在调用点：F05 检测与 UI 侧灰显（批次 3）共用同一份定义，
+/// 不会分叉出「检测算它、界面不显示」或反之的错位。
+bool isActiveAssertion(CharacterAssertion a) {
+  return a.status == 'confirmed' && !a.stale;
 }
 
 /// 断言时间序：章节（null 排最后）→ 时间戳

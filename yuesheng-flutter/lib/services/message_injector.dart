@@ -64,7 +64,10 @@ import 'package:writingcoach/services/chat_context_builder.dart'
         buildStructuredSyndromeContext,
         buildSubplotClosureContext,
         findKeywordExcerpt;
-import 'package:writingcoach/services/conflict_detector.dart';
+import 'package:writingcoach/services/character_identity.dart';
+// C78 批次2b：conflict_detector 的 import 已移除——本文件改走
+// character_identity 的共享判据入口（detectConflictsForFacts / fillConflictExcerpts），
+// 不再直接引用 detectCharacterConflicts，避免调用方自行组合导致判据分叉。
 import 'package:writingcoach/services/diagnosis_committer.dart';
 import 'package:writingcoach/services/dialogue_tag_detector.dart';
 import 'package:writingcoach/services/event_causality_detector.dart';
@@ -769,30 +772,12 @@ class MessageInjector {
         chapter.manuscriptId,
       );
       if (facts.isEmpty) return;
-      final inputs = facts
-          .map(
-            (f) => (
-              name: f.name,
-              assertions: CharacterFactRepository.parseAssertions(f.assertions),
-            ),
-          )
-          .toList();
-      final raw = detectCharacterConflicts(inputs);
-      final chapterContent = chapter.content;
-      final observations = raw
-          .map(
-            (o) => ConflictObservation(
-              characterName: o.characterName,
-              attribute: o.attribute,
-              orderedValues: o.orderedValues,
-              description: o.description,
-              excerpt: findKeywordExcerpt(
-                chapterContent,
-                o.orderedValues.first.value,
-              ),
-            ),
-          )
-          .toList();
+      // C78 批次2b（§5.3）：改走共享判据入口——先按身份合并（别名行不漏检），
+      // 再检测；摘录仍在本地填（AI 侧用当前诊断章节正文，与判据刻意分离）。
+      // 逐行等价于原 .map() 构造 inputs + detectCharacterConflicts + 填 excerpt，
+      // 零行为变更，唯一差别是**先做了身份合并**（原逻辑漏掉的一环）。
+      final raw = detectConflictsForFacts(facts);
+      final observations = fillConflictExcerpts(raw, chapter.content);
       final ctx = buildConflictObservationsContext(observations);
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
@@ -825,6 +810,9 @@ class MessageInjector {
               eventType: e.eventType,
               causeEventId: e.causeEventId,
               effectEventId: e.effectEventId,
+              // C78 批次2b（§5.3）：EventFact.stale 是 **int**（SQLite 布尔惯例，
+              // drift 生成为 `final int stale`），typedef 定的是 bool，故显式转换。
+              stale: e.stale != 0,
             ),
           )
           .toList();
