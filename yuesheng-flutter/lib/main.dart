@@ -25,6 +25,7 @@ import 'providers/app_providers.dart';
 import 'router/app_router.dart';
 import 'services/error_handler.dart';
 import 'widgets/onboarding_flow.dart';
+import 'widgets/privacy_notice_dialog.dart';
 
 /// 演示数据种子开关（默认关闭；`flutter run --dart-define=SEED_DEMO=true`
 /// 开启——批次89 卷分组效果演示用，正常打包运行不受影响）
@@ -247,6 +248,20 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
     }
     if (!mounted) return;
     setState(() => _introDone = true);
+    // v0.1 发布批：轮播是问卷之前的第一级首启，「跳过」也走这里。
+    // 跳过轮播的用户可能不再经过问卷直接开聊，隐私告知须在此兜底触发（一次性）。
+    await _maybeShowPrivacyNotice();
+  }
+
+  /// 轮播结束后的一次性隐私与费用告知（与问卷路径共用同一 flag，先到先弹）。
+  Future<void> _maybeShowPrivacyNotice() async {
+    if (!mounted) return;
+    // 主界面 MaterialApp.router 在下一帧才挂载，先等帧再取 Navigator context
+    await WidgetsBinding.instance.endOfFrame;
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    final appState = AppStateRepository(ref.read(appDatabaseProvider));
+    await maybeShowPrivacyNoticeOnce(ctx, appState);
   }
 
   @override

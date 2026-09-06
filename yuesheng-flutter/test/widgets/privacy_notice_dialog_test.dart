@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
+import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/widgets/privacy_notice_dialog.dart';
 
 void main() {
@@ -91,5 +92,14 @@ void main() {
     expect(find.text('开始之前，请了解'), findsNothing);
     // flag 的写入只属于首启一次性路径（maybeShowPrivacyNoticeOnce）
     expect(await appState.getValue(kPrivacyNoticeAckKey), isNull);
+  });
+
+  test('#5 rootNavigatorKey 已挂到 appRouter（main 层轮播结束的告知借它取 context）', () {
+    // 防接线回归：若 router 丢失 navigatorKey 配置，main._maybeShowPrivacyNotice
+    // 永远取不到 context，轮播路径的告知会静默失效（无编译错误、无日志）。
+    expect(
+      identical(appRouter.configuration.navigatorKey, rootNavigatorKey),
+      isTrue,
+    );
   });
 }

@@ -37,8 +37,12 @@ import '../widgets/settings_page.dart';
 import '../widgets/writing_page.dart';
 import 'app_routes.dart';
 
+/// 根 Navigator key（main.dart 轮播结束后借它取主界面 context 弹隐私告知）
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// go_router 配置
 final GoRouter appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: AppRoutes.bookshelf,
   errorBuilder: (context, state) => Scaffold(
     appBar: AppBar(title: const Text('页面未找到')),
