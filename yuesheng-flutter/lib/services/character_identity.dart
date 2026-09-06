@@ -15,6 +15,7 @@ import 'dart:convert';
 
 import '../data/database/database.dart';
 import '../data/repositories/character_fact_repository.dart';
+import '../data/repositories/event_fact_repository.dart';
 import '../types/character_types.dart';
 import 'chat_context_builder.dart';
 import 'conflict_detector.dart';
@@ -47,6 +48,26 @@ Map<String, Set<String>> identityAliases(List<CharacterFact> facts) => {
   for (final group in _groupRows(facts))
     _primaryOf(group).name: {for (final f in group) ..._identityNames(f)},
 };
+
+/// 事件关联（§5.4）：从**全量事件**里挑出 participants 命中该身份任一称呼的。
+///
+/// 纯函数、不碰 IO——`listEvents` 由调用方各自调（ADR §5.4 定「作品级事件量小，
+/// 全量取出后内存过滤，无需 SQL LIKE」）。放这里而不是仓储层，是为了让
+/// 「主名 ∪ 别名」这个匹配口径与 [identityAliases] **同源**：口径只有一处，
+/// 不会出现「列表按别名合并了、事件却只按主名匹配」的错位。
+///
+/// 命中判据是 participants 与称呼集合**有交集**而非相等——一个事件有多个
+/// 参与者，只要涉及该人物就算相关。
+List<EventFact> filterEventsByIdentity(
+  List<EventFact> events,
+  Set<String> identityNames,
+) => events
+    .where(
+      (e) => EventFactRepository.parseParticipants(
+        e.participants,
+      ).any(identityNames.contains),
+    )
+    .toList();
 
 /// 判据入口：身份合并 + F05 检测。**不碰正文**，两个调用方共用，判据不可能分叉。
 ///

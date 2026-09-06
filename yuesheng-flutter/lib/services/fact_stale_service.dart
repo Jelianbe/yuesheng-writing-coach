@@ -213,6 +213,55 @@ class FactStaleService {
     return result;
   }
 
+  /// 合并迁移（C78 §5.4）：把**源行**的断言并入**目标行**，与重诊合并**刻意不共用**。
+  ///
+  /// 为什么不能复用 [mergeAssertions]——两条路都错，已逐条实测：
+  /// - 传 `currentHash: null` → 走 :182 的简并分支 = 纯三元组去重、**existing
+  ///   优先**。目标行是 existing，于是「目标行的 AI 断言」会吃掉「源行里用户
+  ///   手改的同三元组断言」→ **用户的手动修正在一次合并后蒸发**（R-009）。
+  /// - 传指纹走完整分支 → 触发 stale 标记（:203）与 chapterHash 覆写（:211），
+  ///   把「合并」误伤成「章节改写」，存量断言被凭空标灰。
+  ///
+  /// 迁移判据（三元组 = attribute + value + chapter，同 [tripleKey]）：
+  ///   1. 三元组冲突 → **user 压 ai**（R-009 / D-4）：用户手改值不得被 AI 值
+  ///      顶掉；反过来 AI 值可以被用户值顶掉。
+  ///   2. 三元组冲突 → **rejected 压 confirmed**：已否决的不得被合并复活。
+  ///   3. 其余同级冲突 → 保留**先到者**（目标行那条），结果稳定可复现。
+  ///   4. 断言**原样搬运**：source / status / evidence / chapterHash / stale
+  ///      一个字段都不改——迁移不是重新诊断，没有任何理由改写来源信息。
+  static List<CharacterAssertion> mergeForTransfer(
+    List<CharacterAssertion> existing,
+    List<CharacterAssertion> incoming,
+  ) {
+    final result = <CharacterAssertion>[];
+    final byKey = <String, int>{};
+    for (final a in existing) {
+      byKey[tripleKey(a)] = result.length;
+      result.add(a);
+    }
+    for (final a in incoming) {
+      final key = tripleKey(a);
+      final at = byKey[key];
+      if (at == null) {
+        byKey[key] = result.length;
+        result.add(a);
+        continue;
+      }
+      if (_outranksForTransfer(a, result[at])) result[at] = a;
+    }
+    return result;
+  }
+
+  /// [candidate] 是否该顶掉 [kept]（三条优先级，见 [mergeForTransfer]）
+  static bool _outranksForTransfer(
+    CharacterAssertion candidate,
+    CharacterAssertion kept,
+  ) {
+    if (candidate.source == 'user' && kept.source != 'user') return true;
+    if (candidate.source != 'user' && kept.source == 'user') return false;
+    return candidate.status == 'rejected' && kept.status != 'rejected';
+  }
+
   /// 遍历该作品全部人物行，按并集判据处理属于该章的断言。
   ///
   /// [keep] = true → 标 stale（删除钩子）；false → 从列表里删除（用户清除）。

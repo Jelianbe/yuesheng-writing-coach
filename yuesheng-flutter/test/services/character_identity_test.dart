@@ -218,6 +218,69 @@ void main() {
     expect(miss.single.excerpt, isNull);
   });
 
+  EventFact event(String name, List<String> participants, {int? chapter}) {
+    return EventFact(
+      id: 'ev_$name',
+      manuscriptId: 'ms_1',
+      name: name,
+      chapter: chapter,
+      eventType: '冲突',
+      participants: jsonEncode(participants),
+      description: '一句概述',
+      stale: 0,
+      createdAt: 1000,
+      updatedAt: 1000,
+    );
+  }
+
+  test('#11 事件关联：主名与别名任一命中即相关', () {
+    final events = [
+      event('巷口冲突', ['阿晴', '沈砚'], chapter: 2), // 用**别名**参与
+      event('雨夜分别', ['林晚晴'], chapter: 9), // 用主名参与
+      event('无关事件', ['沈砚', '路人']), // 完全不相干
+    ];
+
+    final hit = filterEventsByIdentity(events, {'林晚晴', '阿晴'});
+    expect(hit.map((e) => e.name).toList(), [
+      '巷口冲突',
+      '雨夜分别',
+    ], reason: 'participants 与称呼集合有交集即相关，不要求相等');
+
+    // 只认主名的口径会漏掉「巷口冲突」——这正是别名必须进匹配集合的理由
+    final mainNameOnly = filterEventsByIdentity(events, {'林晚晴'});
+    expect(mainNameOnly.map((e) => e.name).toList(), ['雨夜分别']);
+  });
+
+  test('#12 事件关联：空集合 / 脏 participants → 不误关联', () {
+    final events = [
+      event('巷口冲突', ['阿晴']),
+      event('空参与者', []),
+      event('脏 participants', []), // participants 会被写成非数组
+    ];
+    final dirty = EventFact(
+      id: 'ev_dirty',
+      manuscriptId: 'ms_1',
+      name: '脏 participants',
+      eventType: '冲突',
+      participants: 'not-json',
+      description: '',
+      stale: 0,
+      createdAt: 1000,
+      updatedAt: 1000,
+    );
+
+    expect(
+      filterEventsByIdentity(events, <String>{}),
+      isEmpty,
+      reason: '空称呼集合不该命中任何事件',
+    );
+    expect(
+      filterEventsByIdentity([dirty, ...events], {'阿晴'}).map((e) => e.name),
+      ['巷口冲突'],
+      reason: 'JSON 非法的 participants 保守跳过，不抛也不误命中（R-028）',
+    );
+  });
+
   test('#10 判据入口输出 = 手写「已合并单角色」输入的输出', () {
     final a0 = a('性格', '冷静', chapter: 1, timestamp: 100);
     final a1 = a('性格', '暴烈', chapter: 8, timestamp: 200);
