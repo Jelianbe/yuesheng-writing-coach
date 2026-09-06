@@ -170,7 +170,16 @@ class LlmClient {
   ///
   /// B1-2/B1-1：可重试错误（超时/连接/5xx/429）指数退避重试；
   /// 配置了备选端点（yuesheng_api_fallbacks）时按序轮换。
-  Future<String> chatCompletion(List<ChatMessage> messages) async {
+  ///
+  /// [maxTokens] 覆盖默认 completion 预算（ADR-C80 分块兜底重试用）；
+  /// [extraBody] 合并进请求体（如 thinking 控制字段），不得含
+  /// model / messages / stream / temperature / max_tokens——这些以本方法
+  /// 参数与配置为准，传了会被静默覆盖。
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+  }) async {
     final cfg = await _configStorage.getLlmConfig();
     if (cfg == null) throw Exception('API 配置未设置');
 
@@ -188,13 +197,12 @@ class LlmClient {
         final c = endpoints[attemptIndex - 1];
         final response = await _dio.post<dynamic>(
           '${c.baseUrl}/chat/completions',
-          data: jsonEncode({
-            'model': c.model,
-            'messages': messages.map((m) => m.toJson()).toList(),
-            'stream': false,
-            'temperature': LlmConfig.chatTemperature,
-            'max_tokens': LlmConfig.chatMaxTokens,
-          }),
+          data: _buildChatCompletionBody(
+            c,
+            messages,
+            maxTokens: maxTokens,
+            extraBody: extraBody,
+          ),
           options: Options(
             headers: {
               'Content-Type': 'application/json',
@@ -345,6 +353,24 @@ class LlmClient {
       emitted: emitted,
       firstTokenLogged: firstTokenLogged,
     );
+  }
+
+  /// 构建非流式请求体（R-019 拆出；ADR-C80 增 maxTokens / extraBody 覆盖）。
+  String _buildChatCompletionBody(
+    LlmConfigValues c,
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+  }) {
+    final body = <String, dynamic>{
+      'model': c.model,
+      'messages': messages.map((m) => m.toJson()).toList(),
+      'stream': false,
+      'temperature': LlmConfig.chatTemperature,
+      'max_tokens': maxTokens ?? LlmConfig.chatMaxTokens,
+    };
+    if (extraBody != null) body.addAll(extraBody);
+    return jsonEncode(body);
   }
 
   /// 构建流式请求体（R-019 拆出）。

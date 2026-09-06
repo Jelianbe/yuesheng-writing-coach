@@ -15,7 +15,11 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
+import '../config/shared_constants.dart';
 import 'decode_guard.dart';
+import 'error_handler.dart';
 import 'llm_client.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
 
@@ -55,12 +59,25 @@ class ChunkAnalysisResult {
   final List<ChunkNote> notes;
   final bool success;
 
+  /// 失败原因码（success=true 时恒为 null，ADR-C80）：
+  /// [kChunkFailureEmptyContent]（重试后 content 仍为空）/
+  /// [kChunkFailureException]（调用抛异常）。
+  final String? failureReason;
+
   const ChunkAnalysisResult({
     required this.chunkIndex,
     required this.notes,
     required this.success,
+    this.failureReason,
   });
 }
+
+/// 单块失败原因码：重试后 content 仍为空——推理型模型把 max_tokens 预算
+/// 全部耗在 reasoning 上（ADR-C80 §1.2 探针实证）。
+const String kChunkFailureEmptyContent = 'empty_content';
+
+/// 单块失败原因码：调用抛异常（网络 / 超时等）。
+const String kChunkFailureException = 'exception';
 
 /// runProgressiveDiagnosis 返回值
 class ProgressiveResult {
@@ -413,34 +430,21 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   final chunks = splitContent(content);
   onProgress?.call('分块完成', 0, chunks.length);
 
-  // 2. 逐块分析（非流式 chatCompletion）
+  // 2. 逐块分析（非流式 chatCompletion；空内容分级降级见 ADR-C80）
   final chunkResults = <ChunkAnalysisResult>[];
   var failedChunks = 0;
 
   for (var i = 0; i < chunks.length; i++) {
-    try {
-      final response = await llmClient.chatCompletion([
-        // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉
-        ChatMessage(role: 'system', content: kChunkSystemPrompt),
-        ChatMessage(
-          role: 'user',
-          content:
-              '章节标题：$title\n\n文本片段 ${i + 1}/${chunks.length}：\n\n${chunks[i]}',
-        ),
-      ]);
-
-      final jsonStr = extractJson(response);
-      final notes = _parseChunkNotes(jsonStr);
-      chunkResults.add(
-        ChunkAnalysisResult(chunkIndex: i, notes: notes, success: true),
-      );
-      onProgress?.call('分析分片', i + 1, chunks.length);
-    } catch (e) {
-      chunkResults.add(
-        ChunkAnalysisResult(chunkIndex: i, notes: const [], success: false),
-      );
-      failedChunks++;
-    }
+    final result = await _analyzeSingleChunk(
+      llmClient,
+      title: title,
+      chunk: chunks[i],
+      chunkIndex: i,
+      chunkCount: chunks.length,
+      onProgress: onProgress,
+    );
+    if (!result.success) failedChunks++;
+    chunkResults.add(result);
   }
 
   // 3. 合并：用 streamChat 流式输出
@@ -499,4 +503,103 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
     );
   }
   return const [];
+}
+
+// ── 单块分析：空内容分级降级（ADR-C80）──
+
+/// 单块分析的 messages（尝试 1 与兜底重试共用同一组消息）。
+List<ChatMessage> _chunkMessages(
+  String title,
+  String chunk,
+  int chunkIndex,
+  int chunkCount,
+) {
+  return [
+    // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉
+    ChatMessage(role: 'system', content: kChunkSystemPrompt),
+    ChatMessage(
+      role: 'user',
+      content: '章节标题：$title\n\n文本片段 ${chunkIndex + 1}/$chunkCount：\n\n$chunk',
+    ),
+  ];
+}
+
+/// 单块分析（ADR-C80 分级降级）：
+///
+/// 尝试 1 = 应用现参数（推理开启，质量优先，成功路径零变更）；content 为空
+/// → 尝试 2 = 兜底参数（8192 + thinking disabled，推理归零，实测见 ADR §1.2）；
+/// 仍空 → 返回 success=false + [kChunkFailureEmptyContent] 并留痕。
+/// 异常路径同样置 [kChunkFailureException] 并留痕（此前 catch 静默）。
+///
+/// 「空」判据是 `content.trim().isEmpty`：合法「零症候」是 notes 为空的
+/// 非空 JSON（模型说了「没有」），与本缺陷（模型一个字没说）是两回事。
+Future<ChunkAnalysisResult> _analyzeSingleChunk(
+  LlmClient llmClient, {
+  required String title,
+  required String chunk,
+  required int chunkIndex,
+  required int chunkCount,
+  required ProgressCallback? onProgress,
+}) async {
+  final messages = _chunkMessages(title, chunk, chunkIndex, chunkCount);
+  try {
+    var content = await llmClient.chatCompletion(messages);
+    if (content.trim().isEmpty) {
+      content = await llmClient.chatCompletion(
+        messages,
+        maxTokens: LlmConfig.chunkAnalysisFallbackMaxTokens,
+        extraBody: LlmConfig.chunkAnalysisFallbackExtraBody,
+      );
+    }
+    // 空块此前走成功路径会推进度，保持推进；异常块此前不推，保持不推
+    onProgress?.call('分析分片', chunkIndex + 1, chunkCount);
+    if (content.trim().isEmpty) {
+      _logChunkFailure(chunkIndex, kChunkFailureEmptyContent);
+      return ChunkAnalysisResult(
+        chunkIndex: chunkIndex,
+        notes: const [],
+        success: false,
+        failureReason: kChunkFailureEmptyContent,
+      );
+    }
+    final jsonStr = extractJson(content);
+    final notes = _parseChunkNotes(jsonStr);
+    return ChunkAnalysisResult(
+      chunkIndex: chunkIndex,
+      notes: notes,
+      success: true,
+    );
+  } catch (e, st) {
+    _logChunkFailure(chunkIndex, kChunkFailureException, error: e, stack: st);
+    return ChunkAnalysisResult(
+      chunkIndex: chunkIndex,
+      notes: const [],
+      success: false,
+      failureReason: kChunkFailureException,
+    );
+  }
+}
+
+/// 单块失败显式留痕（ADR-C63 范式：降级行为保留，可观测性补上）。
+void _logChunkFailure(
+  int chunkIndex,
+  String reason, {
+  Object? error,
+  StackTrace? stack,
+}) {
+  debugPrint(
+    '[progressive_diagnosis] 分块 $chunkIndex 失败 reason=$reason'
+    '${error != null ? ' error=$error' : ''}',
+  );
+  ErrorHandler.instance.captureError(
+    level: 'warn',
+    category: 'api',
+    message: '分块诊断失败，已按失败块降级',
+    context: {
+      'chunkIndex': chunkIndex,
+      'reason': reason,
+      if (error != null) 'error': '$error',
+    },
+    stack: stack?.toString(),
+  );
 }

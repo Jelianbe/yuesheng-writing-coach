@@ -21,6 +21,24 @@ class LlmConfig {
       20000; // 流式中段空闲超时：相邻 chunk 超 20s 视为断流，避免 UI 永久卡死
   static const int errorPreviewLength = 100;
   static const int errorPreviewLengthLong = 200;
+
+  /// 分块分析兜底重试的 max_tokens（ADR-C80）。
+  ///
+  /// 推理型生产模型会把 max_tokens 预算全部耗在 reasoning 上（实测 8191/8192、
+  /// content 0 token），提高预算只是推迟空内容，不是解。此值只作重试那一次的
+  /// 纯输出余量——重试同时关闭推理（见 [chunkAnalysisFallbackExtraBody]），
+  /// 实测单块输出 510–750 tokens，5 倍裕度。
+  static const int chunkAnalysisFallbackMaxTokens = 8192;
+
+  /// 分块分析兜底重试的请求体附加字段（ADR-C80）。
+  ///
+  /// `thinking: {"type": "disabled"}` 是探针实测唯一被 DeepSeek API 采纳的
+  /// 推理控制参数（reasoning_tokens 归零 3/3）；reasoning_effort /
+  /// enable_thinking / reasoning.enabled / budget_tokens 均被静默忽略。
+  /// 生效判据以 usage 里 reasoning_tokens 归零为准，参数发出 ≠ 生效。
+  static const Map<String, dynamic> chunkAnalysisFallbackExtraBody = {
+    'thinking': {'type': 'disabled'},
+  };
 }
 
 /// 上下文预算（chat-service 引用注入）

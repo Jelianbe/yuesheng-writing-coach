@@ -8,12 +8,14 @@
 //   #3 splitContent 末块过小时与前块合并
 //   #4 buildMergePrompt 注入 SYNDROME_DIAGNOSIS_SKILL 引用 + 跨片段合并规则
 //   #5 runProgressiveDiagnosis 短文本走 null（走单次链路）
+//   #8 ADR-C80 空内容分级降级（换参重试 / 仍空显式失败 / 合法零症候不误伤）
 // ─────────────────────────────────────────────────────────────
 
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/progressive_diagnosis.dart';
 
@@ -22,15 +24,41 @@ class _FakeLlmClient extends LlmClient {
   final String _chatResponse;
   final String _streamResponse;
 
+  /// 逐次返回的 chatCompletion 响应队列（空则恒返 [_chatResponse]）；
+  /// 同时记录每次调用的透传参数，供 ADR-C80 兜底参数断言用。
+  final List<String> _chatResponses;
+  final List<ChatMessage> chatMessages = [];
+  final List<int?> chatMaxTokens = [];
+  final List<Map<String, dynamic>?> chatExtraBodies = [];
+  final Object? _chatError;
+
+  /// streamChat 收到的 messages（merge 阶段），供端到端断言 notes 进入合并。
+  final List<List<ChatMessage>> streamMessages = [];
+
   _FakeLlmClient({
     String chatResponse = '{"notes":[]}',
     String streamResponse = '',
+    List<String>? chatResponses,
+    Object? chatError,
   }) : _chatResponse = chatResponse,
-       _streamResponse = streamResponse;
+       _streamResponse = streamResponse,
+       _chatResponses = chatResponses ?? const [],
+       _chatError = chatError;
 
   @override
-  Future<String> chatCompletion(List<ChatMessage> messages) async {
-    return _chatResponse;
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+  }) async {
+    chatMessages.addAll(messages);
+    chatMaxTokens.add(maxTokens);
+    chatExtraBodies.add(extraBody);
+    if (_chatError != null) throw _chatError!;
+    if (_chatResponses.isEmpty) return _chatResponse;
+    return _chatResponses.length == 1
+        ? _chatResponses.first
+        : _chatResponses.removeAt(0);
   }
 
   @override
@@ -39,6 +67,7 @@ class _FakeLlmClient extends LlmClient {
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
   }) async {
+    streamMessages.add(messages);
     if (_streamResponse.isEmpty) {
       callback(const LlmStreamResponse(content: '', isDone: true));
       return;
@@ -273,6 +302,110 @@ void main() {
       expect(result.fullContent, isNotEmpty);
       expect(receivedContent, isNotEmpty);
       expect(result.fullContent, contains('[YS_DIAGNOSIS]'));
+    });
+  });
+
+  group('runProgressiveDiagnosis · ADR-C80 空内容分级降级', () {
+    // >4000 字触发分块（与 #6 同款构造，切成 2 块）
+    String makeLongContent() {
+      final paragraphs = <String>[];
+      for (int i = 0; i < 15; i++) {
+        paragraphs.add('X' * 350 + '段落$i');
+      }
+      return paragraphs.join('\n\n');
+    }
+
+    const validNotes =
+        '{"notes":[{"syndromeId":"P003","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"}]}';
+
+    test('#8-1 尝试 1 空 → 换兜底参数重试一次（消息不变）→ 救回', () async {
+      final fake = _FakeLlmClient(chatResponses: ['', validNotes]);
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: '降级测试',
+        llmClient: fake,
+        onContent: (_) {},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.failedChunks, 0);
+
+      // 2 块：chunk0 两次调用（尝试 1 + 兜底），chunk1 队列耗尽走默认响应一次
+      expect(fake.chatMaxTokens.length, 3);
+      // 尝试 1：不传覆盖参数（应用现参数原样）；尝试 2：兜底参数
+      expect(fake.chatMaxTokens[0], isNull);
+      expect(fake.chatMaxTokens[1], LlmConfig.chunkAnalysisFallbackMaxTokens);
+      expect(LlmConfig.chunkAnalysisFallbackMaxTokens, 8192);
+      expect(fake.chatExtraBodies[0], isNull);
+      expect(fake.chatExtraBodies[1], LlmConfig.chunkAnalysisFallbackExtraBody);
+      expect(fake.chatExtraBodies[1]!['thinking'], {'type': 'disabled'});
+
+      // 重试是换参数，不是换消息：chunk0 两次调用的 messages 逐条一致
+      expect(fake.chatMessages.length, 6);
+      for (var i = 0; i < 2; i++) {
+        expect(fake.chatMessages[i].role, fake.chatMessages[i + 2].role);
+        expect(fake.chatMessages[i].content, fake.chatMessages[i + 2].content);
+      }
+
+      // 救回的 notes 真正进入 merge 阶段（端到端：P003 出现在合并 prompt）
+      expect(fake.streamMessages, hasLength(1));
+      expect(
+        fake.streamMessages.last.map((m) => m.content).join('\n'),
+        contains('P003'),
+      );
+    });
+
+    test('#8-2 重试后仍空 → 显式失败（empty_content），不再静默计成功', () async {
+      final fake = _FakeLlmClient(chatResponse: ''); // 所有调用都返回空
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: '降级测试',
+        llmClient: fake,
+        onContent: (_) {},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.failedChunks, result!.chunkCount);
+      // 每块两次调用（尝试 1 + 兜底重试）
+      expect(fake.chatMaxTokens.length, result!.chunkCount * 2);
+      for (var i = 0; i < fake.chatMaxTokens.length; i += 2) {
+        expect(fake.chatMaxTokens[i], isNull);
+        expect(
+          fake.chatMaxTokens[i + 1],
+          LlmConfig.chunkAnalysisFallbackMaxTokens,
+        );
+      }
+    });
+
+    test('#8-3 合法零症候（非空 JSON、notes 空）不误伤为失败', () async {
+      final fake = _FakeLlmClient(); // 默认 '{"notes":[]}'
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: '降级测试',
+        llmClient: fake,
+        onContent: (_) {},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.failedChunks, 0);
+      expect(fake.chatMaxTokens.length, result!.chunkCount); // 无重试
+      expect(fake.chatMaxTokens[0], isNull);
+      expect(fake.chatExtraBodies[0], isNull);
+    });
+
+    test('#8-4 调用异常 → 显式失败（exception）且计入 failedChunks', () async {
+      final fake = _FakeLlmClient(chatError: Exception('网络不可用'));
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: '降级测试',
+        llmClient: fake,
+        onContent: (_) {},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.failedChunks, result!.chunkCount);
+      // 异常路径只调用一次（无兜底重试——异常不是空 content）
+      expect(fake.chatMaxTokens.length, result!.chunkCount);
     });
   });
 }
