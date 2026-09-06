@@ -30,6 +30,8 @@ void main() {
     // 批次96-11：全文搜索入口
     VoidCallback? onOpenFullTextSearch,
     VoidCallback? onOpenFindReplace,
+    // C78 批次3：角色页入口
+    VoidCallback? onOpenCharacters,
     VoidCallback? onOpenQuickPhrases,
     VoidCallback? onOpenStyleProfile,
     VoidCallback? onOpenWritingStats,
@@ -49,6 +51,7 @@ void main() {
                   onDiagnose: onDiagnose,
                   onOpenChapterTree: onOpenChapterTree,
                   onOpenOutline: onOpenOutline,
+                  onOpenCharacters: onOpenCharacters,
                   onOpenFullTextSearch: onOpenFullTextSearch,
                   onOpenFindReplace: onOpenFindReplace,
                   onOpenRecycleBin: onOpenRecycleBin,
@@ -276,10 +279,29 @@ void main() {
         onOpenFindReplace: () => findReplaceCalled = true,
       );
 
-      await tester.tap(find.text('查找替换'));
+      // C78 批次3：菜单新增「角色」项后「查找替换」下移出首屏 → 滚动后点击
+      await tapMenuBottom(tester, '查找替换');
       await tester.pumpAndSettle();
 
       expect(findReplaceCalled, isTrue);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('C78 批次3 点击"角色" → onOpenCharacters 触发 + sheet 关闭', (
+      tester,
+    ) async {
+      bool charactersCalled = false;
+      await pumpSheet(
+        tester,
+        lastSavedAt: null,
+        onDiagnose: () {},
+        onOpenCharacters: () => charactersCalled = true,
+      );
+
+      await tester.tap(find.text('角色'));
+      await tester.pumpAndSettle();
+
+      expect(charactersCalled, isTrue);
       expect(find.byType(BottomSheet), findsNothing);
     });
 

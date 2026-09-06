@@ -2045,7 +2045,17 @@ void main() {
     Future<void> openFindReplace(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('查找替换'));
+      // C78 批次3：菜单新增「角色」项后「查找替换」下移出首屏 → 先滚动到可见
+      final item = find.text('查找替换');
+      await tester.scrollUntilVisible(
+        item,
+        120,
+        scrollable: find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      await tester.tap(item);
       await tester.pumpAndSettle();
     }
 

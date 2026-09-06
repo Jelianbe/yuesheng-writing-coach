@@ -25,6 +25,7 @@ import '../config/app_theme.dart';
 import '../widgets/bookshelf_page.dart';
 import '../widgets/chat_page.dart';
 import '../widgets/append_chapters_page.dart';
+import '../widgets/character/character_page.dart';
 import '../widgets/chapter_recycle_bin_page.dart';
 import '../widgets/growth_detail_page.dart';
 import '../widgets/growth_page.dart';
@@ -194,6 +195,25 @@ final GoRouter appRouter = GoRouter(
         return ChapterRecycleBinPage(
           manuscriptId: manuscriptId,
           manuscriptTitle: title,
+        );
+      },
+    ),
+
+    // ── 顶层路由：/characters（C78 批次3 角色页）──
+    // 入口①：写作页 ⋮ 菜单（Navigator.push，ADR-C78 §3.0）
+    // 入口②：对话页 FR-10 批次提示卡（go_router 深链，可携带最近批次过滤）
+    GoRoute(
+      path: AppRoutes.characters,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        final manuscriptId = extra['manuscriptId'] as String? ?? '';
+        if (manuscriptId.isEmpty) {
+          return const PlaceholderPage(title: '角色', subtitle: '未提供作品 ID');
+        }
+        return CharacterPage(
+          manuscriptId: manuscriptId,
+          manuscriptTitle: extra['title'] as String?,
+          sinceTimestamp: extra['since'] as int?,
         );
       },
     ),

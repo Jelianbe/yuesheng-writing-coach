@@ -38,6 +38,10 @@ class CharacterAssertion {
   /// C78 D-6：旧版标记（章节正文已改动 → true）
   final bool stale;
 
+  /// C78 D-7：拒绝理由（可选 chips：抽取错误/章节已改写/重复/其他；
+  /// 仅 status == rejected 时可能有值，批次3 UI 写入，AI 协议不上报）
+  final String? rejectReason;
+
   const CharacterAssertion({
     required this.attribute,
     required this.value,
@@ -48,6 +52,7 @@ class CharacterAssertion {
     this.evidence,
     this.chapterHash,
     this.stale = false,
+    this.rejectReason,
   });
 
   Map<String, dynamic> toJson() => {
@@ -60,6 +65,7 @@ class CharacterAssertion {
     'evidence': evidence,
     'chapterHash': chapterHash,
     'stale': stale,
+    'rejectReason': rejectReason,
   };
 
   /// DB 回读入口（C78 批次2a）——与 [tryFromJson] **严格分工，勿混用**
@@ -78,6 +84,7 @@ class CharacterAssertion {
       evidence: json['evidence'] as String?,
       chapterHash: json['chapterHash'] as String?,
       stale: json['stale'] == true,
+      rejectReason: json['rejectReason'] as String?,
     );
   }
 
@@ -96,6 +103,7 @@ class CharacterAssertion {
       evidence: evidence,
       chapterHash: chapterHash ?? this.chapterHash,
       stale: stale ?? this.stale,
+      rejectReason: rejectReason,
     );
   }
 

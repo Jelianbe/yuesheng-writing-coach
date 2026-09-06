@@ -216,6 +216,14 @@ class CharacterFactRepository {
         .getSingleOrNull();
   }
 
+  /// 按主键获取人物（批次3 详情页用：列表项携带的是 id，且合并后源行
+  /// 可能是 merged 状态，按 name 查会与目标行别名重合）。
+  Future<CharacterFact?> getCharacterById(String id) async {
+    return (_db.select(
+      _db.characterFacts,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
   /// 解析人物的属性断言列表（JSON 非法 / 脏条目 → 保守跳过，不抛出）
   ///
   /// C78 批次2a：改走 [CharacterAssertion.fromDbJson]（原用 tryFromJson）。

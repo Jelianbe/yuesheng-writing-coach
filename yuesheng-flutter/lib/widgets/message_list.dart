@@ -19,10 +19,12 @@ import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/fact_batch_providers.dart';
 import '../providers/practice_providers.dart';
 import '../router/app_routes.dart';
 import '../types/display_types.dart';
 import '../types/teaching_types.dart';
+import 'fact_batch_card.dart';
 import 'message_bubble.dart';
 import 'message_card_dispatcher.dart';
 import 'practice_result_indicator.dart';
@@ -86,6 +88,11 @@ class MessageList extends ConsumerStatefulWidget {
   /// T4 评估报告：messageId → EvaluationData（非空时渲染评估报告面板）
   final Map<String, EvaluationData> evaluationReports;
 
+  /// C78 批次3（FR-10）：messageId → 批次沉淀记录（非空时消息尾部渲染提示卡）。
+  /// 由 ChatPage watch factBatchProvider 传入——MessageList 保持 build 期
+  /// 无 ref 依赖（对齐 evaluationReports 的参数注入模式，流式测试可裸 pump）。
+  final Map<String, FactBatchRecord> factBatches;
+
   /// T4 评估报告：关闭指定消息的报告
   final void Function(String messageId)? onDismissEvaluationReport;
 
@@ -121,6 +128,7 @@ class MessageList extends ConsumerStatefulWidget {
     this.onPartialAgreementSubmit,
     this.onPartialAgreementSkip,
     this.evaluationReports = const {},
+    this.factBatches = const {},
     this.onDismissEvaluationReport,
     this.emptyWidget,
     this.onSaveToFile,
@@ -179,6 +187,20 @@ class _MessageListState extends ConsumerState<MessageList> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(text)));
+  }
+
+  /// C78 批次3（FR-10）：assistant 消息有批次沉淀记录 → 尾部追加系统提示卡
+  /// （数据来自 [MessageList.factBatches]；流式虚拟消息 id 不会命中）。
+  Widget _withFactBatchCard(Widget child, Message msg) {
+    final record = widget.factBatches[msg.id];
+    if (record == null || msg.role != 'assistant') return child;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        child,
+        FactBatchCard(record: record),
+      ],
+    );
   }
 
   /// 长按消息 → 弹出删除确认对话框（E4：统一为标准 showDialog，
@@ -450,11 +472,14 @@ class _MessageListState extends ConsumerState<MessageList> {
                       return RepaintBoundary(
                         key: ValueKey('msg-item-${msg.id}'),
                         // 批次74：卡片消息同样支持长按删除（对齐普通气泡心智）
-                        child: GestureDetector(
-                          onLongPress: widget.onDelete != null
-                              ? () => _showDeleteConfirm(msg)
-                              : null,
-                          child: card,
+                        child: _withFactBatchCard(
+                          GestureDetector(
+                            onLongPress: widget.onDelete != null
+                                ? () => _showDeleteConfirm(msg)
+                                : null,
+                            child: card,
+                          ),
+                          msg,
                         ),
                       );
                     }
@@ -495,7 +520,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                     }
                     return RepaintBoundary(
                       key: ValueKey('msg-item-${msg.id}'),
-                      child: streamBubble,
+                      child: _withFactBatchCard(streamBubble, msg),
                     );
                   },
                 ),

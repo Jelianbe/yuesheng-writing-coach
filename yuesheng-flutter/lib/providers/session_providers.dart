@@ -43,6 +43,7 @@ import '../services/onboarding_service.dart';
 import '../services/realtime_observation_service.dart';
 import 'app_providers.dart';
 import 'capability_providers.dart';
+import 'fact_batch_providers.dart';
 
 /// Session bootstrap 状态（record）
 ///
@@ -189,6 +190,17 @@ final diagnosisFlowHandlerProvider = Provider<DiagnosisFlowHandler>((ref) {
     trainingResultRepo: TrainingResultRepository(db),
     // 大纲记忆仓储装配，K-9 单独使用；与其他 K-x provider 模式一致
     outlineRepo: OutlineRepository(db),
+    // C78 批次3（FR-10）：批次沉淀登记到内存态注册表（ADR-C78 冲突 C，
+    // 不落库；重启后提示卡消失——如实标注语义在卡片/角色页横幅）
+    onFactBatch: ({required messageId, required count, required manuscriptId}) {
+      ref
+          .read(factBatchProvider.notifier)
+          .register(
+            messageId: messageId,
+            count: count,
+            manuscriptId: manuscriptId,
+          );
+    },
   );
 });
 

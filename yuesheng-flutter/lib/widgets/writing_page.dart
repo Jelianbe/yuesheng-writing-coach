@@ -31,6 +31,7 @@ import '../router/app_routes.dart';
 import '../services/suggestion_adoption_service.dart';
 import '../utils/chapter_title.dart';
 import '../utils/paragraph_format.dart';
+import 'character/character_page.dart';
 import 'chapter_tree_drawer.dart';
 import 'editing/focus_aware_editing_controller.dart';
 import 'editor_settings_sheet.dart';
@@ -443,6 +444,25 @@ class _WritingPageState extends ConsumerState<WritingPage> {
     WritingStatsSheet.show(context);
   }
 
+  /// C78 批次3：打开角色页（ADR-C78 §3.0：MaterialPageRoute 独立路由页，
+  /// 不用 Sheet / 不复用面板槽位——isAiPanelOpen / toggleAiPanel 语义
+  /// 已被 writing_providers_test.dart:85,173-200 锁死，本入口零接触）
+  void _handleOpenCharacters() {
+    final manuscriptId = _resolvedManuscriptId;
+    if (manuscriptId == null || manuscriptId.isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('章节加载中，请稍后再试')));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => CharacterPage(manuscriptId: manuscriptId),
+      ),
+    );
+  }
+
   /// 批次85-3：在光标处插入常用语（插入后光标移到短语后，即时保存 + 轻提示）
   void _handleInsertQuickPhrase(String phrase) {
     final text = _controller.text;
@@ -780,6 +800,8 @@ class _WritingPageState extends ConsumerState<WritingPage> {
               onOpenChapterTree: _handleOpenChapterTree,
               // 批次83：大纲边写边看入口（右侧抽屉）
               onOpenOutline: _handleOpenOutline,
+              // C78 批次3：角色页入口（独立路由页）
+              onOpenCharacters: _handleOpenCharacters,
               // 批次96-11：全文搜索入口（整本作品章节搜索 + 跳转定位）
               onOpenFullTextSearch: _handleOpenFullTextSearch,
               // 批次84-2：全文查找替换入口

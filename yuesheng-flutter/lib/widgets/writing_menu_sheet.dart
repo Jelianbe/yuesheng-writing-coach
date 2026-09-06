@@ -47,6 +47,8 @@ class WritingMenuSheet {
     VoidCallback? onOpenChapterTree,
     // 批次83：大纲边写边看入口
     VoidCallback? onOpenOutline,
+    // C78 批次3：角色页入口（独立路由页，ADR-C78 §3.0）
+    VoidCallback? onOpenCharacters,
     // 批次96-11：全文搜索入口（整本作品章节搜索，命中片段+高亮+跳转定位）
     VoidCallback? onOpenFullTextSearch,
     // 批次84-2：全文查找替换入口
@@ -115,6 +117,14 @@ class WritingMenuSheet {
                         onTap: () {
                           Navigator.pop(ctx);
                           onOpenOutline?.call();
+                        },
+                      ),
+                      // C78 批次3：角色档案（列表/详情/断言校正/合并）
+                      _MenuItem(
+                        label: '角色',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenCharacters?.call();
                         },
                       ),
                       // 批次96-11：全文搜索（整本作品章节搜索，命中片段+高亮+跳转定位）
