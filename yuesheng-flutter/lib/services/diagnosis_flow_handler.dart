@@ -94,10 +94,13 @@ typedef ParseAndPersistResult = ({
 });
 
 /// K-9 中间结果：解析 + 校验 + 协议剥离后的诊断输出。
+/// C78 批次3：factCount / factManuscriptId = 本轮净新增人物断言（FR-10）。
 typedef _ParsedOutput = ({
   String displayContent,
   ParsedDiagnosis? diagnosis,
   List<GenUiComponent>? genuiComponents,
+  int factCount,
+  String? factManuscriptId,
 });
 
 /// K-9 中间结果：Teacher 触发输出。
@@ -135,6 +138,17 @@ class DiagnosisFlowHandler {
   /// 大纲服务懒加载缓存（K-9 从 ChatService._ensureOutlineService 迁出）
   OutlineService? _outlineService;
 
+  /// C78 批次3（FR-10）：批次沉淀回调——messageId 已知后登记
+  /// （count, manuscriptId）到内存态注册表（ADR-C78 冲突 C：不落库）。
+  /// 可选装配；回调形状与 fact_batch_providers.OnFactBatch 结构一致
+  /// （服务层不 import providers，依赖方向保持 services ← 上层装配）。
+  final void Function({
+    required String messageId,
+    required int count,
+    required String? manuscriptId,
+  })?
+  _onFactBatch;
+
   /// B1：诊断连续失败计数（来自 ChatService K-1 迁出，按 session 隔离）。
   /// 用于诊断失败卡阈值门控——连续失败达 UILimits.failureWarningThreshold 才插卡，
   /// 避免偶发单次失败也打扰用户；普通聊天（非诊断轮次）不计入。
@@ -155,6 +169,12 @@ class DiagnosisFlowHandler {
     required GenUiCapability genUi,
     TrainingResultRepository? trainingResultRepo,
     OutlineRepository? outlineRepo,
+    void Function({
+      required String messageId,
+      required int count,
+      required String? manuscriptId,
+    })?
+    onFactBatch,
   }) : _sessionRepo = sessionRepo,
        _stateRepo = stateRepo,
        _diagnosisRepo = diagnosisRepo,
@@ -172,7 +192,22 @@ class DiagnosisFlowHandler {
        _diagnosis = diagnosis,
        _genUi = genUi,
        _trainingResultRepo = trainingResultRepo,
-       _outlineRepo = outlineRepo;
+       _outlineRepo = outlineRepo,
+       _onFactBatch = onFactBatch;
+
+  /// FR-10：count > 0 才登记（无新增不发提示卡——「沉淀 N 条」必须真实）。
+  void _notifyFactBatch({
+    required String messageId,
+    required int count,
+    required String? manuscriptId,
+  }) {
+    if (count <= 0) return;
+    _onFactBatch?.call(
+      messageId: messageId,
+      count: count,
+      manuscriptId: manuscriptId,
+    );
+  }
 
   // ════════════════════════════════════════════════════════════
   // Helpers
@@ -262,12 +297,21 @@ class DiagnosisFlowHandler {
       fullContent: fullContent,
       rawParse: rawParse,
     );
-    final displayContent = await _persistOutlineAndStrip(
+    final persisted = await _persistOutlineAndStrip(
       sessionId: sessionId,
       fullContent: fullContent,
       displayContent: parsed.displayContent,
     );
-    final messageId = await _writeAssistantMessage(sessionId, displayContent);
+    final messageId = await _writeAssistantMessage(
+      sessionId,
+      persisted.cleaned,
+    );
+    // C78 批次3（FR-10）：messageId 已知 → 登记批次提示卡（内存态）
+    _notifyFactBatch(
+      messageId: messageId,
+      count: persisted.factCount,
+      manuscriptId: persisted.factManuscriptId,
+    );
     final diagnosis = parsed.diagnosis;
 
     // 步骤 11: 持久化诊断结果 + 卡片
@@ -332,7 +376,9 @@ class DiagnosisFlowHandler {
   }
 
   /// 私有 helper：大纲/事实沉淀 + 协议块剥离（提取自 commitDiagnosisFromContent）。
-  Future<String> _persistOutlineAndStrip({
+  /// C78 批次3：返回剥离后内容 + 本轮净新增人物断言（FR-10，messageId 生成后登记）。
+  Future<({String cleaned, int factCount, String? factManuscriptId})>
+  _persistOutlineAndStrip({
     required String sessionId,
     required String fullContent,
     required String displayContent,
@@ -343,7 +389,7 @@ class DiagnosisFlowHandler {
       fullContent: fullContent,
     );
     // A6：D4-A 路径也沉淀事实到 TKG 三表
-    await _diagnosisCommitter.applyFactExtractionFromContent(
+    final outcome = await _diagnosisCommitter.applyFactExtractionFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
     );
@@ -351,7 +397,11 @@ class DiagnosisFlowHandler {
     var cleaned = stripOutlineBlock(displayContent);
     // A6：剥离 [YS_FACT] 协议块
     cleaned = stripFactBlock(cleaned);
-    return cleaned;
+    return (
+      cleaned: cleaned,
+      factCount: outcome.count,
+      factManuscriptId: outcome.manuscriptId,
+    );
   }
 
   /// 私有 helper：写入 assistant 消息（提取自 commitDiagnosisFromContent）。
@@ -525,7 +575,7 @@ class DiagnosisFlowHandler {
     var displayContent = rawParse.displayContent;
     ParsedDiagnosis? diagnosis = rawParse.diagnosis;
 
-    await _persistContentArtifacts(
+    final factOutcome = await _persistContentArtifacts(
       sessionId: sessionId,
       fullContent: fullContent,
       primaryRef: primaryRef,
@@ -542,9 +592,7 @@ class DiagnosisFlowHandler {
     diagnosis = validated.diagnosis;
 
     // 协议块剥离 + GenUI 解析
-    displayContent = stripOutlineBlock(displayContent);
-    displayContent = stripFactBlock(displayContent);
-    displayContent = stripGenuiBlock(displayContent);
+    displayContent = _stripProtocolBlocks(displayContent);
     final genuiComponents = _genUi.parseGenuiBlock(fullContent);
 
     // B1：诊断成败记录
@@ -558,11 +606,30 @@ class DiagnosisFlowHandler {
       displayContent: displayContent,
       diagnosis: diagnosis,
       genuiComponents: genuiComponents,
+      factCount: factOutcome.count,
+      factManuscriptId: factOutcome.manuscriptId,
     );
   }
 
+  /// 协议块剥离（R-019 真分解：三个协议块剥离聚合为一处）。
+  String _stripProtocolBlocks(String content) {
+    var cleaned = stripOutlineBlock(content);
+    cleaned = stripFactBlock(cleaned);
+    cleaned = stripGenuiBlock(cleaned);
+    return cleaned;
+  }
+
+  /// 诊断展示内容 + Teacher 展示内容拼接（空段不加换行）。
+  String _combineDisplayContent(_ParsedOutput parsed, _TeacherOutcome teacher) {
+    return parsed.displayContent +
+        (teacher.displayContent.isNotEmpty
+            ? '\n\n${teacher.displayContent}'
+            : '');
+  }
+
   /// 私有 helper：大纲实体 + 事实提取沉淀（parseAndPersist 前段）。
-  Future<void> _persistContentArtifacts({
+  /// C78 批次3：返回事实提取结果（净新增条数 + 作品ID，FR-10）。
+  Future<({int count, String? manuscriptId})> _persistContentArtifacts({
     required String sessionId,
     required String fullContent,
     required ReferenceItem? primaryRef,
@@ -572,7 +639,7 @@ class DiagnosisFlowHandler {
       fullContent: fullContent,
       primaryRef: primaryRef,
     );
-    await _diagnosisCommitter.applyFactExtractionFromContent(
+    return _diagnosisCommitter.applyFactExtractionFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
       primaryRef: primaryRef,
@@ -657,11 +724,7 @@ class DiagnosisFlowHandler {
     required ReferenceItem? primaryRef,
     required SendMessageCallbacks callbacks,
   }) async {
-    final combinedContent =
-        parsed.displayContent +
-        (teacher.displayContent.isNotEmpty
-            ? '\n\n${teacher.displayContent}'
-            : '');
+    final combinedContent = _combineDisplayContent(parsed, teacher);
     final resolved = await _resolveFinalAssistantContent(
       sessionId: sessionId,
       combinedContent: combinedContent,
@@ -685,6 +748,12 @@ class DiagnosisFlowHandler {
     );
     debugPrint(
       '[ChatService] 步骤10: assistant 消息已写入 | messageId=$messageId | contentLen=${resolved.assistantContent.length}${resolved.receiptNote}',
+    );
+    // C78 批次3（FR-10）：messageId 已知 → 登记批次提示卡（内存态）
+    _notifyFactBatch(
+      messageId: messageId,
+      count: parsed.factCount,
+      manuscriptId: parsed.factManuscriptId,
     );
     return (
       aborted: false,

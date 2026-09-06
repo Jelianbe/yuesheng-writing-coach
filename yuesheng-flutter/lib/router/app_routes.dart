@@ -23,4 +23,7 @@ class AppRoutes {
   static const String projectSettings = '/project-settings';
   static const String progressDetail = '/progress-detail';
   static const String chapterRecycleBin = '/chapter-recycle-bin';
+
+  /// C78 批次3：角色页（FR-10 提示卡深链入口；写作页 ⋮ 菜单走 Navigator.push）
+  static const String characters = '/characters';
 }

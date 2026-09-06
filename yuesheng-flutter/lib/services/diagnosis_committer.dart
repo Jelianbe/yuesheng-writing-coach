@@ -615,7 +615,11 @@ class DiagnosisCommitter {
   /// 失败/未装配/无事实块/非章节 → 静默跳过不抛。
   /// 优先使用入参 primaryRef（sendMessage 路径）；
   /// 若未传（commitDiagnosisFromContent 路径）则从 session 引用取。
-  Future<void> applyFactExtractionFromContent({
+  /// C78 批次3（FR-10）：返回 `（本轮净新增人物断言条数, 作品ID）`——
+  /// 诊断流经 onFactBatch 回调登记为消息尾部提示卡（内存态，ADR-C78 冲突 C）。
+  /// 净新增 = 落库后断言数 − 落库前（AI 重抽同三元组被合并/替换不计入，
+  /// 「沉淀 N 条」必须与角色页可见的新增一致，不夸大）。
+  Future<({int count, String? manuscriptId})> applyFactExtractionFromContent({
     required String sessionId,
     required String fullContent,
     ReferenceItem? primaryRef,
@@ -624,27 +628,34 @@ class DiagnosisCommitter {
     if (_characterFactRepo == null &&
         _eventFactRepo == null &&
         _subplotFactRepo == null) {
-      return;
+      return (count: 0, manuscriptId: null);
     }
 
     // 解析 primaryRef（同 _applyOutlineEntitiesFromContent 模式）
     final pRef = await _resolveFactPrimaryRef(primaryRef, sessionId);
-    if (pRef == null || pRef.refType != 'chapter') return;
+    if (pRef == null || pRef.refType != 'chapter') {
+      return (count: 0, manuscriptId: null);
+    }
 
     try {
       final extraction = parseFactExtraction(fullContent);
-      if (extraction == null || extraction.isEmpty) return;
+      if (extraction == null || extraction.isEmpty) {
+        return (count: 0, manuscriptId: null);
+      }
 
       final chapter = await _chapterRepo.getChapter(pRef.refId);
-      if (chapter == null) return;
-      await _commitFacts(chapter, extraction);
+      if (chapter == null) return (count: 0, manuscriptId: null);
+      final added = await _commitFacts(chapter, extraction);
 
       debugPrint(
         '[DiagnosisCommitter] A6 事实提取落库 | 人物=${extraction.characters.length} '
-        '事件=${extraction.events.length} 支线=${extraction.subplots.length}',
+        '事件=${extraction.events.length} 支线=${extraction.subplots.length} '
+        '净新增断言=$added',
       );
+      return (count: added, manuscriptId: chapter.manuscriptId);
     } catch (e) {
       debugPrint('[SafeRun] 事实提取三表落库失败: $e');
+      return (count: 0, manuscriptId: null);
     }
   }
 
@@ -652,12 +663,13 @@ class DiagnosisCommitter {
   ///
   /// C78 批次2a：[chapter] 已取到，正文指纹直接由 `chapter.content` 算出——
   /// 无需再按 ADR 设想用 getChapterByOrder 反查一次，省一次查询。
-  Future<void> _commitFacts(Chapter chapter, FactExtraction extraction) async {
+  /// C78 批次3：返回本轮**净新增**人物断言条数（FR-10 提示卡计数来源）。
+  Future<int> _commitFacts(Chapter chapter, FactExtraction extraction) async {
     final manuscriptId = chapter.manuscriptId;
     final chapterNo = chapter.sortOrder;
     final now = nowSec();
     final content = chapter.content;
-    await _persistCharacterFacts(
+    final added = await _persistCharacterFacts(
       extraction,
       manuscriptId,
       chapterNo,
@@ -671,6 +683,7 @@ class DiagnosisCommitter {
       chapterContent: content,
     );
     await _persistSubplotFacts(extraction, manuscriptId, chapterNo, now);
+    return added;
   }
 
   /// 解析 primaryRef（同 _applyOutlineEntitiesFromContent 模式）（R-019 拆出）。
@@ -709,7 +722,8 @@ class DiagnosisCommitter {
   /// C78 批次2a：[chapterContent] 用于算当前指纹，填 hash / 标旧版 / 三元组
   /// 合并三件事全部委托 [FactStaleService.mergeAssertions]（在 upsertCharacter
   /// 内部调用——既有断言只有在那里才读得到）。
-  Future<void> _persistCharacterFacts(
+  /// C78 批次3：返回净新增断言数（落库前后逐角色对账；替换/去重不计）。
+  Future<int> _persistCharacterFacts(
     FactExtraction extraction,
     String manuscriptId,
     int chapterNo,
@@ -717,9 +731,11 @@ class DiagnosisCommitter {
     required String chapterContent,
   }) async {
     final repo = _characterFactRepo;
-    if (repo == null) return;
+    if (repo == null) return 0;
     final currentHash = chapterFingerprint(chapterContent);
+    var added = 0;
     for (final c in extraction.characters) {
+      final before = await _countAssertions(repo, manuscriptId, c.name);
       await repo.upsertCharacter(
         manuscriptId: manuscriptId,
         name: c.name,
@@ -729,7 +745,21 @@ class DiagnosisCommitter {
         chapterHash: currentHash,
         chapterNo: chapterNo,
       );
+      final after = await _countAssertions(repo, manuscriptId, c.name);
+      added += after - before;
     }
+    return added;
+  }
+
+  /// 该角色行当前的断言条数（净新增对账用；行不存在计 0）。
+  Future<int> _countAssertions(
+    CharacterFactRepository repo,
+    String manuscriptId,
+    String name,
+  ) async {
+    final row = await repo.getCharacter(manuscriptId, name);
+    if (row == null) return 0;
+    return CharacterFactRepository.parseAssertions(row.assertions).length;
   }
 
   /// 事件事实 → event_fact：两轮写入（upsert 全部 + 反查填因果边）（R-019 拆出）。

@@ -30,6 +30,7 @@ import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
+import '../providers/fact_batch_providers.dart';
 import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
 import '../providers/capability_providers.dart'; // mentionParserProvider（ADR-C70 迁入此文件）
@@ -340,6 +341,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 onRetryPractice: () =>
                     ref.read(practiceStoreProvider.notifier).retryPractice(),
                 evaluationReports: evaluationState.reports,
+                // C78 批次3（FR-10）：批次沉淀提示卡数据（内存态，重启即失）
+                factBatches: ref.watch(factBatchProvider),
                 onDismissEvaluationReport: (messageId) => ref
                     .read(evaluationReportsProvider.notifier)
                     .dismissEvaluationReport(messageId),
