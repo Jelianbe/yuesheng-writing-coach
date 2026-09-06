@@ -50,8 +50,8 @@ import 'package:writingcoach/widgets/writing_coach_panel.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
+
 /// 测试用 Fake LLM：预设 streamChat 响应（复用 chat_service_send_message_test 模式）
 class FakeLlmClient extends LlmClient {
   final String fullResponse;
@@ -1005,6 +1005,63 @@ void main() {
 
       // 反馈作为用户消息真实进入消息列表（非静默清空）
       expect(find.textContaining('我对刚才的诊断结果有不同看法：我觉得问题不严重'), findsOneWidget);
+    });
+  });
+
+  group('ADR-C81 章节会话懒创建', () {
+    testWidgets('L1 打开面板（无已有会话）→ 不创建会话与引用', (tester) async {
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+
+      // 面板 UI 正常落入空态
+      expect(find.text('有问题问教练'), findsOneWidget);
+      // DB 零落库：无会话、无引用
+      expect(await db.select(db.sessions).get(), isEmpty);
+      expect(await db.select(db.sessionReferences).get(), isEmpty);
+    });
+
+    testWidgets('L2 打开后发送消息 → 此时才创建会话并关联章节', (tester) async {
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+      expect(await db.select(db.sessions).get(), isEmpty);
+
+      await tester.enterText(find.byType(TextField), '测试消息');
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.send));
+      await tester.pumpAndSettle();
+
+      final sessions = await db.select(db.sessions).get();
+      expect(sessions.length, 1);
+      expect(sessions.single.chapterId, chapterId);
+      expect(sessions.single.manuscriptId, msId);
+      final refs = await db.select(db.sessionReferences).get();
+      expect(refs.where((r) => r.sessionId == sessions.single.id), isNotEmpty);
+    });
+
+    testWidgets('L3 打开后整章诊断 → 此时才创建会话', (tester) async {
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+      expect(await db.select(db.sessions).get(), isEmpty);
+
+      await tester.tap(find.text('诊断本章'));
+      await tester.pumpAndSettle();
+
+      final sessions = await db.select(db.sessions).get();
+      expect(sessions.length, 1);
+      expect(sessions.single.chapterId, chapterId);
+    });
+
+    testWidgets('L4 已有会话 → 面板复用，不新建', (tester) async {
+      final sid = await SessionRepository(
+        db,
+      ).getOrCreateSessionForChapter(msId, chapterId);
+
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+
+      final sessions = await db.select(db.sessions).get();
+      expect(sessions.length, 1);
+      expect(sessions.single.id, sid);
     });
   });
 }

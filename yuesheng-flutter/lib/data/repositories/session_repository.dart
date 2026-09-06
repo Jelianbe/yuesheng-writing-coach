@@ -147,18 +147,22 @@ class SessionRepository {
   /// 获取或创建章节级隔离会话
   /// 每个 chapter 拥有独立会话，诊断/对话互不污染
   /// 逻辑：先查 session.chapter_id == chapterId，有则复用；否则新建 + 建主引用
+  /// ADR-C81：本方法只在「真正产生内容」时调用（发送/诊断/观察）——
+  /// 打开教练面板不再触发创建（懒创建），打开路径请用 [findSessionForChapter]。
   Future<String> getOrCreateSessionForChapter(
     String manuscriptId,
     String chapterId,
   ) async {
-    final existing = await _findChapterSession(chapterId);
+    final existing = await findSessionForChapter(chapterId);
     if (existing != null) return existing.id;
     final chapterTitle = await _resolveChapterTitle(chapterId);
     return _createChapterSession(manuscriptId, chapterId, chapterTitle);
   }
 
   /// 按 chapter_id 查最近更新的现有会话（R-019 拆出）。
-  Future<SessionRow?> _findChapterSession(String chapterId) async {
+  /// ADR-C81：懒创建的「只查不建」路径——教练面板打开时用它加载已有会话，
+  /// 查不到返回 null 且**不落库**，首次发送/诊断/观察才走 getOrCreate。
+  Future<SessionRow?> findSessionForChapter(String chapterId) async {
     return (_db.select(_db.sessions)
           ..where((t) => t.chapterId.equals(chapterId))
           ..orderBy([

@@ -120,9 +120,8 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     if (text.isEmpty) return;
     _inputController.clear();
 
-    // 等待会话初始化完成
-    await _initFuture;
-    final sid = _sessionId;
+    // ADR-C81 懒创建：发送是「产生内容」入口，此处才真正创建会话
+    final sid = await _ensureSession();
     if (sid == null) return;
 
     // 1. 先把用户消息加到内存 store（即时反馈）
@@ -237,8 +236,8 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
   /// 低延迟反馈，不进入全量诊断链路。观察结果写会话 + 入库（R1）。
   /// 与「诊断本章」（复盘通道·全量）形成 A7 双通道分工。
   Future<void> _handleRealtimeObserve() async {
-    await _initFuture;
-    final sid = _sessionId;
+    // ADR-C81 懒创建：快速观察是「产生内容」入口，此处才真正创建会话
+    final sid = await _ensureSession();
     if (sid == null) return;
 
     // 字数校验：实时观察要求至少 50 字（短文本观察无意义）
@@ -306,9 +305,8 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
   ///   3. updatePhase(P1_WORLD)：状态机流转，否则 syndrome-diagnosis-index 不加载
   ///   4. 调 ChatService.sendMessage（phase=P1_WORLD），让 LLM 真正做诊断
   Future<void> _handleDiagnoseWithText(String? selectedText) async {
-    // 等待会话初始化完成
-    await _initFuture;
-    final sid = _sessionId;
+    // ADR-C81 懒创建：诊断（整章/划词）是「产生内容」入口，此处才真正创建会话
+    final sid = await _ensureSession();
     if (sid == null) return;
     final db = ref.read(appDatabaseProvider);
 
