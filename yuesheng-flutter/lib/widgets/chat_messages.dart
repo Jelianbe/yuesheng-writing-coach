@@ -98,6 +98,7 @@ extension _ChatMessages on _ChatPageState {
     final onboardingService = ref.read(onboardingServiceProvider);
     await onboardingService.submitOnboarding(bootstrap.sessionId, data);
     await ref.read(sessionBootstrapProvider.notifier).refresh();
+    await _maybeShowPrivacyNotice();
   }
 
   Future<void> _handleOnboardingSkip() async {
@@ -107,5 +108,14 @@ extension _ChatMessages on _ChatPageState {
     final onboardingService = ref.read(onboardingServiceProvider);
     await onboardingService.skipOnboarding(bootstrap.sessionId);
     await ref.read(sessionBootstrapProvider.notifier).refresh();
+    await _maybeShowPrivacyNotice();
+  }
+
+  /// v0.1 发布批：首启流程（完成/跳过）结束后一次性隐私与费用告知。
+  /// 跳过问卷的用户同样告知——他们接下来就会直接发送文本，属应告知范围。
+  Future<void> _maybeShowPrivacyNotice() async {
+    if (!mounted) return;
+    final appState = AppStateRepository(ref.read(appDatabaseProvider));
+    await maybeShowPrivacyNoticeOnce(context, appState);
   }
 }

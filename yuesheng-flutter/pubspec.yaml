@@ -1,7 +1,8 @@
 name: writingcoach
 description: "月笙写作教练 - AI 驱动的小说写作辅助应用（React Native → Flutter 迁移版）"
 publish_to: 'none'
-version: 1.0.0+1
+# v0.1.0+2 — 首次内测分发（beta 语义；versionCode 递增，舰长确认前为本批提案值）
+version: 0.1.0+2
 
 environment:
   sdk: ^3.12.2

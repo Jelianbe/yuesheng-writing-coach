@@ -249,7 +249,7 @@ void main() {
     expect(find.text('维护'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
     expect(find.text('月笙写作教练'), findsOneWidget);
-    expect(find.text('v1.0.0'), findsOneWidget);
+    expect(find.text('v0.1.0'), findsOneWidget);
     expect(find.text('com.yuesheng.writingcoach'), findsOneWidget);
   });
 
@@ -368,5 +368,124 @@ void main() {
     // 进入学习进度详情页
     expect(find.text('当前阶段'), findsOneWidget);
     expect(find.text('诊断次数'), findsOneWidget);
+  });
+
+  group('v0.1 发布准备批：Key 指引 / 隐私告知 / 会话导出', () {
+    /// 滚动到维护/关于区块并确保目标行可见
+    Future<void> scrollTo(WidgetTester tester, String label) async {
+      await tester.dragUntilVisible(
+        find.text(label),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+      await tester.ensureVisible(find.text(label));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('#E1 三个新入口存在（API 区 / 维护区 / 关于区）', (tester) async {
+      await tester.pumpWidget(buildSettings());
+      await tester.pumpAndSettle();
+
+      // API 区在首屏
+      expect(find.text('如何获取 DeepSeek Key →'), findsOneWidget);
+
+      await scrollTo(tester, '导出会话记录（JSON）');
+      expect(find.text('导出会话记录（JSON）'), findsOneWidget);
+
+      await scrollTo(tester, '隐私与费用说明');
+      expect(find.text('隐私与费用说明'), findsOneWidget);
+    });
+
+    testWidgets('#E2 Key 指引：平台路径 + 费用一句话', (tester) async {
+      await tester.pumpWidget(buildSettings());
+      await tester.pumpAndSettle();
+
+      // API 区在首屏但按钮贴近视口底部，先滚动确保命中
+      await scrollTo(tester, '如何获取 DeepSeek Key →');
+      await tester.tap(find.text('如何获取 DeepSeek Key →'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('如何获取 DeepSeek Key'), findsOneWidget);
+      expect(find.textContaining('platform.deepseek.com'), findsOneWidget);
+      expect(find.textContaining('账户余额'), findsOneWidget);
+
+      await tester.tap(find.text('知道了'));
+      await tester.pumpAndSettle();
+      expect(find.text('如何获取 DeepSeek Key'), findsNothing);
+    });
+
+    testWidgets('#E3 隐私与费用说明（设置页常驻入口）', (tester) async {
+      await tester.pumpWidget(buildSettings());
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, '隐私与费用说明');
+      await tester.tap(find.text('隐私与费用说明'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('开始之前，请了解'), findsOneWidget);
+      expect(find.textContaining('发送至 DeepSeek API'), findsOneWidget);
+      await tester.tap(find.text('我知道了'));
+      await tester.pumpAndSettle();
+      expect(find.text('开始之前，请了解'), findsNothing);
+    });
+
+    testWidgets('#E4 导出：确认框含作品内容提示 + 取消不动', (tester) async {
+      await tester.pumpWidget(buildSettings());
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, '导出会话记录（JSON）');
+      await tester.tap(find.text('导出会话记录（JSON）'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('导出会话记录'), findsOneWidget);
+      expect(find.textContaining('作品原文与练习内容'), findsOneWidget);
+
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+      expect(find.text('导出会话记录'), findsNothing);
+      expect(find.textContaining('导出失败'), findsNothing);
+      expect(find.textContaining('还没有可导出的会话'), findsNothing);
+    });
+
+    testWidgets('#E5 导出：空库 → 提示无会话', (tester) async {
+      await tester.pumpWidget(buildSettings());
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, '导出会话记录（JSON）');
+      await tester.tap(find.text('导出会话记录（JSON）'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('导出'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('还没有可导出的会话'), findsOneWidget);
+    });
+
+    testWidgets('#E6 导出：临时目录通道失败 → 失败提示（R-028）', (tester) async {
+      await SessionRepository(db).createBlankSession(title: '反馈素材');
+
+      // share_plus 对平台层失败静默降级（返回 unavailable，不抛），
+      // 故让更前置的 path_provider 通道抛异常，真正走导出层 catch。
+      const channel = MethodChannel('plugins.flutter.io/path_provider');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (call) async => throw PlatformException(code: 'unavailable'),
+          );
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null),
+      );
+
+      await tester.pumpWidget(buildSettings());
+      await tester.pumpAndSettle();
+
+      await scrollTo(tester, '导出会话记录（JSON）');
+      await tester.tap(find.text('导出会话记录（JSON）'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('导出'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('导出失败，请稍后再试'), findsOneWidget);
+    });
   });
 }

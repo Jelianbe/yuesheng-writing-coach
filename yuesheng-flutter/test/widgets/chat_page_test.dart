@@ -54,6 +54,7 @@ import 'package:writingcoach/widgets/encouragement_text.dart';
 import 'package:writingcoach/widgets/message_list.dart';
 import 'package:writingcoach/widgets/partial_agreement_card.dart';
 import 'package:writingcoach/widgets/practice_task_card.dart';
+import 'package:writingcoach/widgets/privacy_notice_dialog.dart';
 import 'package:writingcoach/widgets/reference_bar.dart';
 import 'package:writingcoach/widgets/task_panel.dart';
 
@@ -62,8 +63,7 @@ import 'package:writingcoach/services/chat_message_types.dart'
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import '../helpers/mock_last_session_storage.dart';
 
 void main() {
@@ -128,6 +128,13 @@ void main() {
       // 状态迁移验证
       final appStateRepo = AppStateRepository(db);
       expect(await appStateRepo.getQuestionnaireCompleted(), true);
+
+      // v0.1 发布批：完成后弹一次性隐私与费用告知，确认后落 flag
+      expect(find.text('开始之前，请了解'), findsOneWidget);
+      await tester.tap(find.text('我知道了'));
+      await tester.pumpAndSettle();
+      expect(find.text('开始之前，请了解'), findsNothing);
+      expect(await appStateRepo.getValue(kPrivacyNoticeAckKey), '1');
     });
 
     testWidgets('#2 跳过问卷 → 隐藏 + 状态迁移', (tester) async {
@@ -147,6 +154,12 @@ void main() {
       // 状态迁移验证
       final appStateRepo = AppStateRepository(db);
       expect(await appStateRepo.getQuestionnaireCompleted(), true);
+
+      // v0.1 发布批：跳过问卷同样告知（跳过者接下来就会直接发送文本）
+      expect(find.text('开始之前，请了解'), findsOneWidget);
+      await tester.tap(find.text('我知道了'));
+      await tester.pumpAndSettle();
+      expect(await appStateRepo.getValue(kPrivacyNoticeAckKey), '1');
     });
   });
 
