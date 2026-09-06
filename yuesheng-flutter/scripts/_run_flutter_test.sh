@@ -25,7 +25,9 @@ export PROGRAMW6432="${PROGRAMW6432:-C:\\Program Files}"
 PROG_FILES_X86="${PROGRAMFILES_X86:-C:\\Program Files (x86)}"
 
 # 2. 清代理（V4.18）+ 注入 PROGRAMFILES(X86) + 透传所有 flutter test 参数
-exec env "PROGRAMFILES(X86)=${PROG_FILES_X86}" \
+#    V4.27：必须写 /usr/bin/env 绝对路径——uv 遗留 shim（~/.local/bin/env）
+#    会遮蔽裸 env（只 export PATH 不 exec），导致 flutter 静默不执行、假绿。
+exec /usr/bin/env "PROGRAMFILES(X86)=${PROG_FILES_X86}" \
   HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
   NO_PROXY=localhost,127.0.0.1 \
   flutter test "$@"
