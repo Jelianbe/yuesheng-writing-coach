@@ -134,27 +134,52 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
     _handleDiagnoseWithText(text);
   }
 
-  /// 初始化章节级隔离会话 + 加载已有消息
+  /// 加载章节已有会话（ADR-C81 懒创建：只查不建）
+  ///
+  /// 查到 → 绑定 store + 加载消息 + 恢复评估报告（原路径）；
+  /// 查不到 → 不落库任何会话，UI 落空态。首次发送/诊断/观察时由
+  /// [_ensureSession] 真正创建，避免「打开面板即产生空会话」。
   Future<void> _initSession() async {
     final db = ref.read(appDatabaseProvider);
-    final sessionId = await SessionRepository(
+    final existing = await SessionRepository(
       db,
+    ).findSessionForChapter(widget.chapterId);
+    if (existing != null) {
+      _sessionId = existing.id;
+      ref
+          .read(writingCoachStoreProvider(widget.chapterId).notifier)
+          .setSessionId(existing.id);
+      final messages = await SessionRepository(db).listMessages(existing.id);
+      ref
+          .read(writingCoachStoreProvider(widget.chapterId).notifier)
+          .setMessages(messages);
+      // 批次6 E1：恢复该章节会话的评估报告 + 当前轮次（对齐 chat_page bootstrap）。
+      // 注意：不用 resetReports——它会清空 DB 中当前会话报告导致刚训练的数据丢失；
+      // restoreForSession 内部会覆盖内存状态并重置 _currentSessionId（防跨会话串写）。
+      await ref
+          .read(evaluationReportsProvider.notifier)
+          .restoreForSession(existing.id);
+    }
+    if (mounted) setState(() => _isInitLoading = false);
+  }
+
+  /// 确保章节会话存在（ADR-C81 懒创建的创建点，幂等）
+  ///
+  /// 仅由「产生内容」的入口调用（发送/诊断/快速观察）；已有会话直接复用。
+  Future<String?> _ensureSession() async {
+    final existing = _sessionId;
+    if (existing != null) return existing;
+    final sessionId = await SessionRepository(
+      ref.read(appDatabaseProvider),
     ).getOrCreateSessionForChapter(widget.manuscriptId, widget.chapterId);
     _sessionId = sessionId;
     ref
         .read(writingCoachStoreProvider(widget.chapterId).notifier)
         .setSessionId(sessionId);
-    final messages = await SessionRepository(db).listMessages(sessionId);
-    ref
-        .read(writingCoachStoreProvider(widget.chapterId).notifier)
-        .setMessages(messages);
-    // 批次6 E1：恢复该章节会话的评估报告 + 当前轮次（对齐 chat_page bootstrap）。
-    // 注意：不用 resetReports——它会清空 DB 中当前会话报告导致刚训练的数据丢失；
-    // restoreForSession 内部会覆盖内存状态并重置 _currentSessionId（防跨会话串写）。
     await ref
         .read(evaluationReportsProvider.notifier)
         .restoreForSession(sessionId);
-    if (mounted) setState(() => _isInitLoading = false);
+    return sessionId;
   }
 
   @override
