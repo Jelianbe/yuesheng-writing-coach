@@ -60,8 +60,8 @@ import 'package:writingcoach/widgets/editing/focus_aware_editing_controller.dart
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
+
 /// 测试用 Fake LLM：预设 streamChat / chatCompletion 响应
 /// （复用 writing_coach_panel_test 模式；批次83 择选弹层走非流式 chatCompletion）
 class FakeLlmClient extends LlmClient {
@@ -76,7 +76,11 @@ class FakeLlmClient extends LlmClient {
     : chatResponses = chatResponses ?? const [];
 
   @override
-  Future<String> chatCompletion(List<ChatMessage> messages) async {
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+  }) async {
     if (error != null) throw error!;
     if (chatResponses.isEmpty) return fullResponse;
     final index = _chatCallCount < chatResponses.length
