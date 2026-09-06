@@ -467,6 +467,46 @@ event_fact_repository）；`chapter_repository`、`volume_repository` 已在
 - 合并 `mergeCharacter(targetId, sourceId)`：事务内 ① 源断言迁移（source 保留原值）→
   ② 源名写入目标 `aliases`（去重）→ ③ 源行 `status='merged'`。
 
+> **【勘误 4（批次2c 实测，2026-09-06）】`mergeAssertions` 不能直接复用**
+> 合并迁移**不能**走 `FactStaleService.mergeAssertions(existing, incoming, ...)`，
+> 已逐条实测两条路都错（fact_stale_service.dart:175-214）：
+>   - 传 `currentHash: null` → 走 :182 简并分支 = 纯三元组去重、**existing 优先**。
+>     目标行是 existing，于是「目标行的 AI 断言」会吃掉「源行里用户手改的同三元组
+>     断言」→ **用户手改值在合并后蒸发**（R-009 / D-4）。
+>   - 传指纹走完整分支 → 触发 stale 标记（:203）与 chapterHash 覆写（:211），
+>     把「合并」误伤成「章节改写」，存量断言被凭空标灰。
+>
+> → 正解：**新增** `FactStaleService.mergeForTransfer(existing, incoming)` 静态
+> 纯函数（fact_stale_service.dart:215-），三条优先级：
+>   1. 三元组冲突 → **user 压 ai**（R-009）
+>   2. 三元组冲突 → **rejected 压 confirmed**
+>   3. 其余同级冲突 → 保留**先到者**（目标行那条）
+>   4. 断言**原样搬运**：source / status / evidence / chapterHash / stale 一字不改
+>
+> **负向验证**：临时把 `mergeForTransfer` 的优先级函数返回 `false`（= 简并
+> existing 优先）→ `#7 断言迁移保 source` 用例 `Expected 'user' Actual 'ai'`
+> 变红——正是用户手改值被吃掉的实锤，证明用例钉的是判据本身。还原后 md5 对拍一致。
+
+> **【勘误 5（批次2c 实测，2026-09-06）】源行「标记」不是物理删，按载体定的**
+> `character_fact` 表**没有** deleted_at / isDeleted 类软删列
+> （tables.dart:506-534 全列实读），项目软删惯例本就是用 status 列标记
+> （该列注释明写 `active | merged`，tables.dart:521；章节侧同理走
+> softDeleteChapter + status）。物理删有三个实打实的代价：
+>   1. 丢首次出场信息（firstSeenChapter / firstSeenAt / createdAt 一并没）；
+>   2. UNIQUE(manuscript_id, name) 下源名立刻可被 AI 再次抽出重建 → 刚并上的
+>      两行又被拆开，合并功能形同无效，D-1 的别名价值一起没了；
+>   3. 合并不可撤销——用户误并一次就永久丢数据（R-009）。
+> 故沿用 D-6 的**标记制**：源行留在库里，只是不进列表、不参与检测
+> （`listCharacters` 默认过滤）。`#8 源行是标记不是物理删` 用例钉住这点。
+
+> **【勘误 6（批次2c 侦察，2026-09-06）】调用点不是 11 处，是 7 处**
+> 启动指令说「既有 11 个调用点零改动」，实测：
+>   - lib 生产 1 处：`message_injector.dart:771`
+>   - test 6 处：`character_fact_repository_test.dart:49/91/166`、
+>     `live_full_loop_test.dart:386`、`chat_service_fact_coverage_t2_4_test.dart:234/261`
+> 影响：「零改动」结论不变（7 处都因为可选参数默认而零改动），但台账与
+> 报告里这个数字**按实测的 7 处**写，不照搬 11。
+
 ### 5.5 R-019 硬上限预警（本批一定会撞，先列分解预案）
 
 | 函数 | 现状 | 处置 |
