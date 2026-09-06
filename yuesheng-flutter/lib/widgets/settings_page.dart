@@ -21,11 +21,15 @@ import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../router/app_routes.dart';
+import '../services/error_handler.dart';
 import '../services/llm_client.dart';
 import '../services/llm_config_storage.dart';
 import '../services/progress_service.dart';
+import '../services/session_export_service.dart';
+import 'privacy_notice_dialog.dart';
 
-const String _appVersion = '1.0.0';
+/// 与 pubspec.yaml version 同步（发布前人工核对）
+const String _appVersion = '0.1.0';
 const String _packageName = 'com.yuesheng.writingcoach';
 const String _feedbackEmail = 'feedback@yuesheng.app';
 
@@ -305,6 +309,78 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// 如何获取 DeepSeek Key：平台路径 + 费用一句话（v0.1 发布批任务 2.3）
+  void _handleShowKeyGuide() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('如何获取 DeepSeek Key', style: AppTextStyles.titleLg),
+        content: const Text(
+          '1. 浏览器打开 platform.deepseek.com 并注册 / 登录；\n'
+          '2. 进入「API keys」页面，点「创建 API key」，复制生成的 sk- 开头密钥；\n'
+          '3. 回到本页，粘贴到上方 API Key 输入框保存。\n\n'
+          '费用按实际用量计入你的 DeepSeek 账户余额，具体价格见平台充值页。',
+          style: AppTextStyles.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 导出会话记录（JSON）：确认（含作品内容提示）→ 收集最新会话 → 系统分享
+  Future<void> _handleExportSession() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('导出会话记录', style: AppTextStyles.titleLg),
+        content: const Text(
+          '将导出最近一个会话的完整记录（JSON 文件），其中包含你的作品原文与练习内容。\n\n'
+          '是否脱敏由你自行判断；文件发给谁也由你决定。继续导出吗？',
+          style: AppTextStyles.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('导出'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final result = await collectLatestSessionExport(
+        ref.read(appDatabaseProvider),
+      );
+      if (!mounted) return;
+      if (result == null) {
+        _notify('还没有可导出的会话');
+        return;
+      }
+      await shareSessionExport(
+        json: result.json,
+        fileName: result.fileName,
+        subject: '月笙写作教练 — 会话记录（${result.sessionTitle}）',
+      );
+    } catch (e, st) {
+      ErrorHandler.instance.captureError(
+        level: 'error',
+        category: 'general',
+        message: '会话导出失败: $e',
+        stack: st.toString(),
+      );
+      if (mounted) _notify('导出失败，请稍后再试', error: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -478,6 +554,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
           ),
+          TextButton(
+            onPressed: _handleShowKeyGuide,
+            child: const Text(
+              '如何获取 DeepSeek Key →',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
           if (_connResult != null)
             Container(
               margin: const EdgeInsets.only(top: AppSpacing.sm),
@@ -517,6 +603,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       title: '维护',
       child: Column(
         children: [
+          _ActionRow(label: '导出会话记录（JSON）', onTap: _handleExportSession),
+          const Divider(height: 1, color: AppColors.borderSoft),
           _ActionRow(label: '清除缓存', onTap: _handleClearCache),
           const Divider(height: 1, color: AppColors.borderSoft),
           _ActionRow(label: '反馈建议', onTap: _handleFeedback),
@@ -536,6 +624,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _AboutRow(label: '版本', value: 'v$_appVersion'),
           const Divider(height: 1, color: AppColors.borderSoft),
           const _AboutRow(label: '包名', value: _packageName),
+          const Divider(height: 1, color: AppColors.borderSoft),
+          _ActionRow(
+            label: '隐私与费用说明',
+            onTap: () => showPrivacyNoticeDialog(context),
+          ),
         ],
       ),
     );
