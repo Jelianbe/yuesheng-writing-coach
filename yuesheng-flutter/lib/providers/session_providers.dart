@@ -290,12 +290,16 @@ class SessionBootstrapNotifier extends AsyncNotifier<SessionBootstrapState> {
     //    显式目标（drawer 切换/新建）> LAST_SESSION_KEY（SecureStore 恢复）>
     //    updated_at 最新会话 > 新建空白会话
     final sessions = await sessionRepo.listSessions();
+    // 存在性校验：SecureStore 恢复 / 显式目标的会话可能已被删除或清库，
+    // 直接采用会在 INSERT messages 时外键约束失败（无法发送消息）。
+    // 失效时回退：显式目标 > 上次会话 > 最新会话 > 新建空白会话（RN 原优先级）。
+    final validIds = {for (final s in sessions) s.id};
     final String sessionId;
-    if (_targetSessionId != null) {
+    if (_targetSessionId != null && validIds.contains(_targetSessionId)) {
       sessionId = _targetSessionId!;
     } else {
       final lastId = await lastStorage.getLastSessionId();
-      if (lastId != null && lastId.isNotEmpty) {
+      if (lastId != null && lastId.isNotEmpty && validIds.contains(lastId)) {
         sessionId = lastId;
       } else if (sessions.isNotEmpty) {
         sessionId = sessions.first.id;

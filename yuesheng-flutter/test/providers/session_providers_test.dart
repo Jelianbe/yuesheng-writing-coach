@@ -204,6 +204,52 @@ void main() {
       expect(state2.sessionId, isNot(state1.sessionId));
       expect(await lastStorage.getLastSessionId(), state2.sessionId);
     });
+
+    test('#10 死 LAST_SESSION（DB 不存在）→ 回退新建，不采用失效 ID（FK 修复）', () async {
+      final lastStorage = _MemoryLastSessionStorage();
+      await lastStorage.setLastSessionId('dead-session-id-not-in-db');
+      final container = buildContainer(
+        overrides: [lastSessionStorageProvider.overrideWithValue(lastStorage)],
+      );
+      addTearDown(container.dispose);
+
+      // 空 DB + 死 lastId → 必须新建会话，且持久化为新 ID（不得报 FK 错）
+      final state = await container.read(sessionBootstrapProvider.future);
+      final sessionRepo = SessionRepository(db);
+      final sessions = await sessionRepo.listSessions();
+      expect(state.sessionId, isNot('dead-session-id-not-in-db'));
+      expect(sessions.any((s) => s.id == state.sessionId), isTrue);
+      expect(await lastStorage.getLastSessionId(), state.sessionId);
+    });
+
+    test('#11 死 LAST_SESSION + DB 有会话 → 回退 updated_at 最新会话', () async {
+      final sessionRepo = SessionRepository(db);
+      final latestSessionId = await sessionRepo.createBlankSession();
+      final lastStorage = _MemoryLastSessionStorage();
+      await lastStorage.setLastSessionId('dead-session-id-not-in-db');
+      final container = buildContainer(
+        overrides: [lastSessionStorageProvider.overrideWithValue(lastStorage)],
+      );
+      addTearDown(container.dispose);
+
+      final state = await container.read(sessionBootstrapProvider.future);
+      expect(state.sessionId, latestSessionId);
+    });
+
+    test('#12 死显式目标会话 → 回退最新会话（不采用失效 ID）', () async {
+      final sessionRepo = SessionRepository(db);
+      final latestSessionId = await sessionRepo.createBlankSession();
+      final lastStorage = _MemoryLastSessionStorage();
+      final container = buildContainer(
+        overrides: [lastSessionStorageProvider.overrideWithValue(lastStorage)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(sessionBootstrapProvider.notifier);
+      await notifier.switchTo('dead-target-not-in-db');
+      final state = await container.read(sessionBootstrapProvider.future);
+      expect(state.sessionId, latestSessionId);
+    });
   });
 }
 
