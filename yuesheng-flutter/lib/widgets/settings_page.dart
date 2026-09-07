@@ -20,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/session_providers.dart';
 import '../router/app_routes.dart';
 import '../services/error_handler.dart';
 import '../services/llm_client.dart';
@@ -270,6 +271,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     try {
       final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
       final deleted = await sessionRepo.deleteOrphanSessions();
+      // 保障：删除孤儿会话后，若 LAST_SESSION_KEY 指向被删会话则同步清除，
+      // 避免下次启动 bootstrap 恢复死会话 ID（发送消息 FK 失败根因二配套）。
+      final lastStorage = ref.read(lastSessionStorageProvider);
+      final lastId = await lastStorage.getLastSessionId();
+      if (lastId != null) {
+        final remaining = await sessionRepo.listSessions();
+        if (!remaining.any((s) => s.id == lastId)) {
+          await lastStorage.clearLastSessionId();
+        }
+      }
       _notify(deleted > 0 ? '缓存已清除（移除 $deleted 个空会话）' : '缓存已清除');
     } catch (_) {
       _notify('清除失败，请稍后再试', error: true);

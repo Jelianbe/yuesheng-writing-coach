@@ -24,6 +24,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/providers/session_providers.dart';
+import '../helpers/mock_last_session_storage.dart';
 import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/services/llm_client.dart';
@@ -72,9 +74,17 @@ void main() {
 
   tearDown(() async => db.close());
 
-  Widget buildSettings({_FakeLlmClient? llm}) {
+  Widget buildSettings({
+    _FakeLlmClient? llm,
+    MemoryLastSessionStorage? lastStorage,
+  }) {
     return ProviderScope(
-      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      overrides: [
+        appDatabaseProvider.overrideWithValue(db),
+        lastSessionStorageProvider.overrideWithValue(
+          lastStorage ?? MemoryLastSessionStorage(),
+        ),
+      ],
       child: MaterialApp(
         home: SettingsPage(
           configStorage: storage,
@@ -234,6 +244,56 @@ void main() {
     expect(remaining.length, 1);
     expect(remaining.single.id, withMsg);
     expect(find.textContaining('缓存已清除'), findsOneWidget);
+  });
+
+  testWidgets('#8b 清除缓存 → LAST_SESSION 指向被删孤儿会话时同步清理', (tester) async {
+    final sessionRepo = SessionRepository(db);
+    final orphan = await sessionRepo.createBlankSession(title: '空会话');
+    final withMsg = await sessionRepo.createBlankSession(title: '有消息');
+    await sessionRepo.addMessage(withMsg, 'user', '你好');
+    final lastStorage = MemoryLastSessionStorage();
+    await lastStorage.setLastSessionId(orphan);
+
+    await tester.pumpWidget(buildSettings(lastStorage: lastStorage));
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('清除缓存'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.ensureVisible(find.text('清除缓存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('清除缓存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('清除'));
+    await tester.pumpAndSettle();
+
+    expect(await lastStorage.getLastSessionId(), isNull);
+  });
+
+  testWidgets('#8c 清除缓存 → LAST_SESSION 指向保留会话时保留', (tester) async {
+    final sessionRepo = SessionRepository(db);
+    await sessionRepo.createBlankSession(title: '空会话');
+    final withMsg = await sessionRepo.createBlankSession(title: '有消息');
+    await sessionRepo.addMessage(withMsg, 'user', '你好');
+    final lastStorage = MemoryLastSessionStorage();
+    await lastStorage.setLastSessionId(withMsg);
+
+    await tester.pumpWidget(buildSettings(lastStorage: lastStorage));
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('清除缓存'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.ensureVisible(find.text('清除缓存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('清除缓存'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('清除'));
+    await tester.pumpAndSettle();
+
+    expect(await lastStorage.getLastSessionId(), withMsg);
   });
 
   testWidgets('#9 关于区块 → 应用名称/版本/包名', (tester) async {

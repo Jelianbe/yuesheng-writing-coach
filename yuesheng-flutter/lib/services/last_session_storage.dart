@@ -20,6 +20,9 @@ abstract class LastSessionStorage {
 
   /// 持久化当前会话 ID（对齐 RN initSession 每次写入）
   Future<void> setLastSessionId(String sessionId);
+
+  /// 清除上次会话 ID（会话被删除/清库时同步清理，避免启动恢复死 ID）
+  Future<void> clearLastSessionId();
 }
 
 /// flutter_secure_storage 实现（对应 RN expo-secure-store，
@@ -36,4 +39,7 @@ class SecureLastSessionStorage implements LastSessionStorage {
   @override
   Future<void> setLastSessionId(String sessionId) =>
       _storage.write(key: _kKeyLastSession, value: sessionId);
+
+  @override
+  Future<void> clearLastSessionId() => _storage.delete(key: _kKeyLastSession);
 }

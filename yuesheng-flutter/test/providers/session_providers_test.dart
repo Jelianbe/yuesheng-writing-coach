@@ -264,6 +264,11 @@ class _MemoryLastSessionStorage implements LastSessionStorage {
   Future<void> setLastSessionId(String sessionId) async {
     _id = sessionId;
   }
+
+  @override
+  Future<void> clearLastSessionId() async {
+    _id = null;
+  }
 }
 
 /// Fake BootstrapService：shouldShowQuestionnaire 总是抛异常

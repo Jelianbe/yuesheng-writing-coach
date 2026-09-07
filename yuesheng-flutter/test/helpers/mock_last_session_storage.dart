@@ -21,4 +21,9 @@ class MemoryLastSessionStorage implements LastSessionStorage {
   Future<void> setLastSessionId(String sessionId) async {
     _id = sessionId;
   }
+
+  @override
+  Future<void> clearLastSessionId() async {
+    _id = null;
+  }
 }
