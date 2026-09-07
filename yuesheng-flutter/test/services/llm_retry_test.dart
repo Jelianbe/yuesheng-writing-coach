@@ -60,6 +60,7 @@ void _mockChannels(Map<String, String> store) {
 class _ScriptedAdapter implements HttpClientAdapter {
   final List<Object> script;
   final List<String> urls = [];
+  final List<String> authorizations = [];
   int _cursor = 0;
 
   _ScriptedAdapter(this.script);
@@ -71,6 +72,7 @@ class _ScriptedAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     urls.add(options.uri.toString());
+    authorizations.add((options.headers['Authorization'] ?? '').toString());
     final item = script[_cursor++];
     if (item is Exception) throw item;
     return item as ResponseBody;
@@ -570,6 +572,25 @@ void main() {
         throwsA(isA<LlmRequestCancelledException>()),
       );
       expect(adapter.urls.length, 1);
+    });
+
+    test('流式请求 URL 与 Authorization 头正确拼接（防 R-019 转义回归）', () async {
+      final adapter = _ScriptedAdapter([
+        _sseBody(
+          'data: {"choices":[{"delta":{"content":"你好"}}]}\n\ndata: [DONE]\n\n',
+        ),
+      ]);
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio()..httpClientAdapter = adapter,
+      );
+
+      await client.streamChat(
+        [const ChatMessage(role: 'user', content: 'hi')],
+        (_) {},
+      );
+      expect(adapter.urls, ['https://main/v1/chat/completions']);
+      expect(adapter.authorizations, ['Bearer k0']);
     });
   });
 }

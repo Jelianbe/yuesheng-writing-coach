@@ -394,13 +394,13 @@ class LlmClient {
   ) async {
     try {
       return await _dio.post<ResponseBody>(
-        '\${c.baseUrl}/chat/completions',
+        '${c.baseUrl}/chat/completions',
         data: body,
         options: Options(
           responseType: ResponseType.stream,
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer \${c.apiKey}',
+            'Authorization': 'Bearer ${c.apiKey}',
             'Accept': 'text/event-stream',
           },
           sendTimeout: const Duration(milliseconds: LlmConfig.streamTimeoutMs),
