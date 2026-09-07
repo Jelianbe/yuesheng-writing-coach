@@ -9,6 +9,8 @@
 //   5. 取消 → 关闭且不触发 onSelect
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -244,5 +246,24 @@ void main() {
     expect(gotPath, '@[chapter:$chId]');
     expect(gotTitle, '测试小说 · 第一章');
     expect(find.text('选择引用'), findsNothing);
+  });
+
+  test('契约：default 模式 onSelect 回调不得重复 pop（picker 已负责关闭）', () {
+    // 2026-09-07 实证：chat_reference.dart 的 onSelect 回调曾执行
+    // Navigator.pop(sheetCtx)，与 reference_picker._handleSelect 内的 pop
+    // 构成 double-pop，损坏 Overlay/Navigator 状态 → 真实设备黑屏
+    // （widget test 无 GPU 渲染，测不出；故用源码契约护栏）。
+    final src = File(
+      'lib/widgets/chat_reference.dart',
+    ).readAsStringSync();
+    final lines = src.split('\n');
+    final offending = lines.where(
+      (l) => l.contains('Navigator.pop(sheetCtx)'),
+    );
+    expect(
+      offending,
+      isEmpty,
+      reason: 'onSelect 回调不得再 pop 选择器（reference_picker._handleSelect 已 pop）',
+    );
   });
 }

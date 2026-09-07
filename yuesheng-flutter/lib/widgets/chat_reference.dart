@@ -165,7 +165,6 @@ extension _ChatReference on _ChatPageState {
       builder: (sheetCtx) => ReferencePicker(
         mode: 'default',
         onSelect: (refType, refId, title) async {
-          Navigator.pop(sheetCtx);
           try {
             // 从管理入口添加的引用保持附加身份（主引用可在弹层内切换）
             await refRepo.addReference(sessionId, refType, refId);
