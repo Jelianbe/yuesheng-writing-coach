@@ -181,4 +181,31 @@ void main() {
     expect(systemContents.last, contains('轻量观察约束'));
     expect(systemContents.last, contains('一次只观察一个最值得提的点'));
   });
+  test('#5 displayContent 为空但解析成功 → 可见摘要 + observation 入库', () async {
+    // ADR-C85：DeepSeek 流式对 editor-observation 请求直接输出
+    // [YS_EDITOR] JSON 块（marker 前无自然语言导语），displayContent 为空
+    // 但 observation 解析成功。修复：生成可见摘要，保证用户有反馈且可入库。
+    final llm = _RecordingLlmClient(
+      fullResponse: '[YS_EDITOR]\n$_validEditorJson\n[/YS_EDITOR]',
+    );
+    final service = buildService(llm);
+
+    final result = await service.observe(sessionId: sessionId, text: '待观察文本');
+
+    expect(result.displayContent, isEmpty);
+    expect(result.observation, isNotNull);
+    // 摘要写入会话 → messageId 非空 → observation 可入库
+    expect(result.messageId, isNotNull);
+    final stored = await observationRepo.getObservationByMessage(
+      result.messageId!,
+    );
+    expect(stored, isNotNull);
+    expect(stored!.possibleIntent, '表达情绪');
+
+    // 会话历史里出现可见摘要（用户能读到反馈）
+    final messages = await sessionRepo.listMessages(sessionId);
+    expect(messages, isNotEmpty);
+    expect(messages.last.content, contains('快速观察完成'));
+    expect(messages.last.content, contains('人物能动性'));
+  });
 }

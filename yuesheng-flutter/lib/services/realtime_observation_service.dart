@@ -115,6 +115,12 @@ class RealtimeObservationService {
   ///
   /// 兜底文案（LLM 失败）也走此路径，保证用户可见；displayContent
   /// 为空白时不写消息、返回 null（observation 入库需要非空关联键）。
+  ///
+  /// ADR-C85：DeepSeek 流式对 editor-observation 请求直接输出
+  /// [YS_EDITOR] JSON 块（marker 前无自然语言导语），displayContent 为空
+  /// 但 observation 解析成功——若不写消息，观察结果既不可见也无法入库，
+  /// 表现为「快速观察点了没反应」。故 displayContent 为空但解析成功时，
+  /// 用结构化结果生成可见摘要，保证用户有反馈且 observation 可入库。
   Future<String?> _writeAssistantMessage(
     String sessionId,
     EditorStreamResult editorResult,
@@ -126,7 +132,16 @@ class RealtimeObservationService {
         editorResult.displayContent,
       );
     }
-    return null;
+    final obs = editorResult.observation;
+    if (obs == null) return null;
+    final buffer = StringBuffer('快速观察完成，共 ${obs.observations.length} 个方面：\n');
+    for (final o in obs.observations.take(3)) {
+      buffer.writeln('· ${o.dimensionName}：${o.phenomenon}');
+    }
+    if (obs.observations.length > 3) {
+      buffer.writeln('…其余已记录');
+    }
+    return _sessionRepo.addMessage(sessionId, 'assistant', buffer.toString());
   }
 
   /// observation 入库（R1：观察结果总是入库，便于审计阈值校准）。
