@@ -42,7 +42,6 @@ import 'punctuation_bar.dart';
 import 'quick_phrase_sheet.dart';
 import 'recycle_bin_sheet.dart';
 import 'search_replace_sheet.dart';
-import 'selection_ai_sheet.dart';
 import 'smart_punctuation_formatter.dart';
 import 'style_profile_sheet.dart';
 import 'version_time_machine_sheet.dart';
@@ -123,7 +122,6 @@ class _WritingPageState extends ConsumerState<WritingPage> {
   // B3 划词诊断：当前选中文本 + 选区 + 浮动菜单可见性 + 待注入面板的选段
   String _selectedText = '';
   // 批次83：选中时的选区（改写/续写/扩写落稿按此偏移替换/插入）
-  TextSelection? _selection;
   bool _showSelectionMenu = false;
 
   /// 批次95-1：划词菜单相对正文 Stack 的左上角（null = 无法定位，保持隐藏）
@@ -1091,24 +1089,6 @@ class _WritingPageState extends ConsumerState<WritingPage> {
                                     label: '诊断这段文字',
                                     icon: Icons.search,
                                     onTap: _handleDiagnoseSelection,
-                                  ),
-                                  const Divider(height: 1),
-                                  _buildSelectionMenuItem(
-                                    label: '改写这段',
-                                    icon: Icons.brush_outlined,
-                                    onTap: _handleRewriteSelection,
-                                  ),
-                                  const Divider(height: 1),
-                                  _buildSelectionMenuItem(
-                                    label: '续写这段',
-                                    icon: Icons.play_arrow_outlined,
-                                    onTap: _handleContinueSelection,
-                                  ),
-                                  const Divider(height: 1),
-                                  _buildSelectionMenuItem(
-                                    label: '扩写这段',
-                                    icon: Icons.unfold_more_outlined,
-                                    onTap: _handleExpandSelection,
                                   ),
                                 ],
                               ),

@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 // writing_page 的 part 文件：划词 AI 相关逻辑
-// 覆盖批次82/83/95-1 的 B3 划词诊断 + 改写/续写/扩写择选弹层。
+// 覆盖批次82/95-1 的 B3 划词诊断（R-009：不代写，仅诊断）。
 // 以私有 extension on _WritingPageState 形式提供划词 AI 方法，
-// 直接访问宿主私有成员（_controller / _selectedText / _selection /
+// 直接访问宿主私有成员（_controller / _selectedText /
 // _selectionMenuPos / _editorStackKey / _pendingDiagnoseText 等），
 // 行为与原内联实现完全一致，仅做物理拆分。
 // ─────────────────────────────────────────────────────────────
@@ -19,7 +19,6 @@ extension _WritingPageSelectionAi on _WritingPageState {
     if (!selection.isValid || selection.start == selection.end) {
       setState(() {
         _selectedText = '';
-        _selection = null;
         _showSelectionMenu = false;
         _selectionMenuPos = null;
       });
@@ -28,7 +27,6 @@ extension _WritingPageSelectionAi on _WritingPageState {
     final text = _controller.text.substring(selection.start, selection.end);
     setState(() {
       _selectedText = text;
-      _selection = selection;
       _showSelectionMenu = text.isNotEmpty;
       // 批次95-1：菜单跟随选区（RenderEditable 定位 + 屏幕外翻转）
       _selectionMenuPos = text.isNotEmpty
@@ -39,7 +37,7 @@ extension _WritingPageSelectionAi on _WritingPageState {
 
   /// 批次95-1：划词菜单跟随选区——RenderEditable 取选区矩形 → Stack 局部坐标
   /// → 屏幕外翻转（下方放不下且上方有空间则翻到选区上方，纯纯/笔落跟随）
-  /// 预估菜单尺寸用于翻转判断（4 项 + 分隔线，宽松取值）
+  /// 预估菜单尺寸用于翻转判断（1 项：诊断，宽松取值）
   static const Size _selectionMenuSize = Size(150, 176);
   Offset? _computeSelectionMenuPos(TextSelection selection) {
     try {
@@ -106,92 +104,6 @@ extension _WritingPageSelectionAi on _WritingPageState {
       return;
     }
     _injectToPanel(text);
-  }
-
-  /// 批次83：划词「改写这段」→ 择选弹层（生成 3 个版本可择选 + 换一换）
-  void _handleRewriteSelection() {
-    _openSelectionAi(SelectionAiMode.rewrite);
-  }
-
-  /// 批次83：划词「续写这段」→ 择选弹层（续写走向可择选）
-  void _handleContinueSelection() {
-    _openSelectionAi(SelectionAiMode.continueWrite);
-  }
-
-  /// 批次83：划词「扩写这段」→ 择选弹层（扩写版本可择选）
-  void _handleExpandSelection() {
-    _openSelectionAi(SelectionAiMode.expand);
-  }
-
-  /// 批次83：打开择选弹层（≥10 字拦截；改写/续写/扩写共用）
-  void _openSelectionAi(SelectionAiMode mode) {
-    final text = _selectedText.trim();
-    if (text.isEmpty) {
-      setState(() => _showSelectionMenu = false);
-      return;
-    }
-    // ADR-C66：门槛取自 UILimits
-    if (text.length < UILimits.selectionAiWordThreshold) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('请至少选择 ${UILimits.selectionAiWordThreshold} 字以上的文本'),
-        ),
-      );
-      setState(() => _showSelectionMenu = false);
-      return;
-    }
-    setState(() => _showSelectionMenu = false);
-    SelectionAiSheet.show(
-      context,
-      mode: mode,
-      selectedText: text,
-      onAdopt: (chosen) => _adoptAiVersion(mode, chosen),
-    );
-  }
-
-  /// 批次83：择选「用这个」→ 按模式落稿（替换选区 / 插入选区后）+ 保存
-  void _adoptAiVersion(SelectionAiMode mode, String chosen) {
-    final selection = _selection;
-    if (selection == null ||
-        !selection.isValid ||
-        selection.end > _controller.text.length) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('选中的内容好像变了，重新选一下试试')));
-      }
-      return;
-    }
-    final current = _controller.text;
-    final int start = selection.start;
-    final int end = selection.end;
-    final String newText;
-    final int cursor;
-    if (mode == SelectionAiMode.continueWrite) {
-      // 续写：插到选中文本之后
-      newText = current.replaceRange(end, end, chosen);
-      cursor = end + chosen.length;
-    } else {
-      // 改写/扩写：替换选中文本
-      newText = current.replaceRange(start, end, chosen);
-      cursor = start + chosen.length;
-    }
-    _controller.value = TextEditingValue(
-      text: newText,
-      selection: TextSelection.collapsed(offset: cursor),
-    );
-    _onContentChanged(newText);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            mode == SelectionAiMode.continueWrite ? '已续写这段' : '已更新这段文字',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
   }
 
   /// B3 划词诊断：注入面板（诊断文本）并打开面板

@@ -124,9 +124,6 @@ class UILimits {
   /// 快速观察最短正文字数（<50 字提示继续写）
   static const int quickObservationWordThreshold = 50;
 
-  /// 划词「改写 / 续写 / 扩写」择选弹层最短字数（<10 字拦截）
-  static const int selectionAiWordThreshold = 10;
-
   /// PhaseSummaryCard 症候变化列表最大展示条数（真源 UI_LIMITS.MAX_SYNDROME_CHANGES）
   static const int maxSyndromeChanges = 5;
 

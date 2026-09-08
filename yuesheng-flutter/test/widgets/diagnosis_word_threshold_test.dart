@@ -115,11 +115,9 @@ const List<_Gate> kThresholdGates = [
     'lib/widgets/writing_page_selection_ai.dart',
     occurrences: {
       'UILimits.diagnosisSelectionWordThreshold': 2, // 阈值 + 文案
-      'UILimits.selectionAiWordThreshold': 2,
     },
     snippets: [
       r"'请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上的文本进行诊断'",
-      r"'请至少选择 ${UILimits.selectionAiWordThreshold} 字以上的文本'",
     ],
   ),
 ];
@@ -133,7 +131,6 @@ void main() {
 
     test('顺带纳入的两个门槛取值不变（ADR-C66 新发现-a）', () {
       expect(UILimits.quickObservationWordThreshold, 50);
-      expect(UILimits.selectionAiWordThreshold, 10);
     });
   });
 
