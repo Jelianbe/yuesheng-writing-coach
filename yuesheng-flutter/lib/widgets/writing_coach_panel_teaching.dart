@@ -118,27 +118,19 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
   }) async {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
-    _inputController.clear();
 
     // ADR-C81 懒创建：发送是「产生内容」入口，此处才真正创建会话
     final sid = await _ensureSession();
     if (sid == null) return;
 
-    // 1. 先把用户消息加到内存 store（即时反馈）
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final userMsg = Message(
-      id: now.toString(),
-      sessionId: sid,
-      role: 'user',
-      content: text,
-      timestamp: now ~/ 1000,
-      messageType: 'chat',
-    );
-    ref
-        .read(writingCoachStoreProvider(widget.chapterId).notifier)
-        .addMessage(userMsg);
+    // ADR-C86：发送即清空输入栏（对齐主流 AI 对话体验——消息已发出，
+    // 输入栏立即可编辑下一条，不等 AI 回复）。会话确保成功后才清空，
+    // 避免会话创建失败时用户输入丢失。
+    _inputController.clear();
 
-    // 2. 接入 ChatService 流式发送
+    // 2. 接入 ChatService 流式发送（onUserMessagePersisted：用户消息
+    //    落库即上屏、真实消息 id——与对话页 ADR-C84 一致，流式中断/
+    //    失败也保证消息可见且可管理）
     final store = ref.read(
       writingCoachStoreProvider(widget.chapterId).notifier,
     );
@@ -149,6 +141,11 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
         sid,
         text,
         SendMessageCallbacks(
+          onUserMessagePersisted: (message) {
+            ref
+                .read(writingCoachStoreProvider(widget.chapterId).notifier)
+                .addMessage(message);
+          },
           onStream: (delta) {
             ref
                 .read(writingCoachStoreProvider(widget.chapterId).notifier)
