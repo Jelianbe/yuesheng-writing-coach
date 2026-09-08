@@ -193,7 +193,6 @@ extension _ManuscriptDetailVolume on _ManuscriptDetailPageState {
           .read(chapterStoreProvider(widget.args.manuscriptId).notifier)
           .loadChapters();
       ref.invalidate(volumeListProvider(widget.args.manuscriptId));
-      ref.invalidate(chapterListProvider(widget.args.manuscriptId));
       if (!mounted) return;
       _snack('已删除《$title》');
     } catch (e) {

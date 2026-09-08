@@ -8,7 +8,7 @@
 //     点击折叠/展开（折叠态为组件内本地状态，随抽屉重建重置）。
 //   - 无卷的作品（volumes 为空）保持扁平列表，行为与批次83 一致。
 //   - 抽屉每次打开由 WritingPage 以新 ValueKey 重建 + 失效
-//     chapterListProvider / volumeListProvider，保证列表数据与标题最新
+//     chapterStoreProvider（ADR-C90 单一真源）/ volumeListProvider
 //   - 跳转/新建动作通过回调交给 WritingPage 执行（本组件保持纯 UI）
 // ─────────────────────────────────────────────────────────────
 
@@ -20,6 +20,7 @@ import '../data/database/database.dart';
 import '../data/repositories/volume_repository.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/chapter_providers.dart';
 import '../providers/manuscript_providers.dart';
 import '../utils/volume_group.dart';
 import 'yue_sheet.dart';
@@ -69,17 +70,18 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
   @override
   Widget build(BuildContext context) {
     final msId = widget.manuscriptId ?? '';
-    final chaptersAsync = msId.isEmpty
-        ? null
+    // ADR-C90：chapterListProvider 已派生自 chapterStoreProvider（同步 List），
+    // 加载态从 store 取——写操作经 store 后自动同步，无需手工 invalidate。
+    final store = msId.isEmpty ? null : ref.watch(chapterStoreProvider(msId));
+    final chapters = msId.isEmpty
+        ? const <Chapter>[]
         : ref.watch(chapterListProvider(msId));
     final volumesAsync = msId.isEmpty
         ? null
         : ref.watch(volumeListProvider(msId));
-    final chapters = chaptersAsync?.value ?? const <Chapter>[];
     final volumes = volumesAsync?.value ?? const <Volume>[];
     final loading =
-        (chaptersAsync?.isLoading ?? false) ||
-        (volumesAsync?.isLoading ?? false);
+        (store?.isLoading ?? false) || (volumesAsync?.isLoading ?? false);
 
     return Drawer(
       backgroundColor: AppColors.background,
@@ -275,7 +277,8 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       final db = ref.read(appDatabaseProvider);
       final repo = ChapterRepository(db);
       await repo.updateChapterTitle(chapter.id, trimmed);
-      ref.invalidate(chapterListProvider(_msId));
+      // ADR-C90：chapterListProvider 已派生自 store——直写 repo 后刷新 store
+      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
       if (!mounted) return;
       _snack(trimmed.isEmpty ? '已重命名为「未命名章节」' : '已重命名为《$trimmed》');
     } catch (e) {
@@ -382,7 +385,8 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           : repo.nextVolumeTitle(await repo.listVolumes(_msId));
       await repo.createVolume(_msId, title: title);
       ref.invalidate(volumeListProvider(_msId));
-      ref.invalidate(chapterListProvider(_msId));
+      // ADR-C90：直写 repo 后刷新 store（建卷不影响章节，删卷会软删卷内章节）
+      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
       if (!mounted) return;
       _snack('已创建《$title》');
     } catch (e) {
@@ -520,7 +524,8 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       final repo = VolumeRepository(ref.read(appDatabaseProvider));
       await repo.deleteVolume(volume.id);
       ref.invalidate(volumeListProvider(_msId));
-      ref.invalidate(chapterListProvider(_msId));
+      // ADR-C90：删卷会软删卷内章节——刷新 store 让列表同步
+      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
       if (!mounted) return;
       _snack('已删除《$title》');
     } catch (e) {
@@ -598,7 +603,8 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       // 避免原 sort_order 保留导致章节插入目标卷任意位置）
       await repo.moveChapterToVolumeEnd(chapter.id, target);
       ref.invalidate(volumeListProvider(_msId));
-      ref.invalidate(chapterListProvider(_msId));
+      // ADR-C90：移章改了 volumeId/sortOrder——刷新 store
+      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 移动章节失败: $e');
       if (!mounted) return;

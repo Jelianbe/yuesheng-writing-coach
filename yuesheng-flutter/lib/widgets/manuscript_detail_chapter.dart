@@ -22,7 +22,6 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
       await repo.swapChapterSortOrder(chapter.id, target.id);
       // 双通道刷新：详情页真源 + FutureProvider 消费者（章节树/写作页）
       await ref.read(chapterStoreProvider(msId).notifier).loadChapters();
-      ref.invalidate(chapterListProvider(msId));
       if (!mounted) return;
       _snack(delta < 0 ? '已上移' : '已下移');
     } catch (e) {
@@ -97,7 +96,6 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
       await repo.moveChapterToVolumeEnd(chapter.id, target);
       // 双通道刷新：详情页真源 + FutureProvider 消费者 + 卷列表
       await ref.read(chapterStoreProvider(msId).notifier).loadChapters();
-      ref.invalidate(chapterListProvider(msId));
       ref.invalidate(volumeListProvider(msId));
       if (!mounted) return;
       _snack('已移动到${target == null ? '未分卷' : '目标卷'}');
@@ -141,7 +139,6 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
           .read(chapterStoreProvider(widget.args.manuscriptId).notifier)
           .updateChapterTitle(chapter.id, trimmed);
       // 同步写作页 FutureProvider 缓存（下次打开章节树抽屉/写作页读到新标题）
-      ref.invalidate(chapterListProvider(widget.args.manuscriptId));
       if (!mounted) return;
       _snack(trimmed.isEmpty ? '已重命名为「未命名章节」' : '已重命名为《$trimmed》');
     } catch (e) {
@@ -160,7 +157,6 @@ extension _ManuscriptDetailChapter on _ManuscriptDetailPageState {
         .read(chapterStoreProvider(msId).notifier)
         .createChapter(title: title, volumeId: volumeId);
     if (id != null && mounted) {
-      ref.invalidate(chapterListProvider(msId));
       _snack('已创建《$title》');
     } else if (mounted) {
       _snack('创建失败，请稍后再试');

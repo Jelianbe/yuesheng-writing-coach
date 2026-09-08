@@ -29,6 +29,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/outline_repository.dart';
 import '../data/repositories/volume_repository.dart';
+import 'chapter_providers.dart';
 import 'app_providers.dart';
 
 /// 书架状态（不可变）
@@ -199,16 +200,15 @@ final manuscriptStoreProvider =
 /// 无法可靠感知「branch 内页面从 root push 的页面返回」，用显式信号兜底。
 final bookshelfRefreshSignalProvider = StateProvider<int>((ref) => 0);
 
-/// 作品详情 Provider（按 manuscriptId 加载章节列表）
+/// 章节列表（ADR-C90 收敛：派生自 chapterStoreProvider，不再直读 DB）
 ///
-/// 批次 B 扩展：用于 manuscript-detail 页面
-final chapterListProvider = FutureProvider.family<List<Chapter>, String>((
+/// 原为 FutureProvider 直读 DB；写操作经 store 后本视图自动同步，
+/// 消费方不再需要手工 invalidate。类型为同步 List（非 AsyncValue）。
+final chapterListProvider = Provider.family<List<Chapter>, String>((
   ref,
   manuscriptId,
-) async {
-  final db = ref.watch(appDatabaseProvider);
-  final repo = ChapterRepository(db);
-  return repo.listChapters(manuscriptId);
+) {
+  return ref.watch(chapterStoreProvider(manuscriptId)).chapters;
 });
 
 /// 批次92：按作品加载卷列表（章节树抽屉分组用；无卷时为空列表）

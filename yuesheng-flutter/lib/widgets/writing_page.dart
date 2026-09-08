@@ -25,6 +25,7 @@ import '../config/shared_constants.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/chapter_providers.dart';
 import '../providers/manuscript_providers.dart';
 import '../providers/writing_providers.dart';
 import '../router/app_routes.dart';
@@ -305,10 +306,10 @@ class _WritingPageState extends ConsumerState<WritingPage> {
     ref
         .read(writingStoreProvider(widget.chapterId).notifier)
         .updateChapterTitle(title.trim());
-    // 批次96-4：标题即章节名——失效章节列表缓存，抽屉/列表同步显示新名
+    // 批次96-4：标题即章节名——直写 repo 后刷新 store，抽屉/列表同步显示新名
     final msId = _resolvedManuscriptId;
     if (msId != null) {
-      ref.invalidate(chapterListProvider(msId));
+      ref.read(chapterStoreProvider(msId).notifier).loadChapters();
     }
   }
 
@@ -581,10 +582,12 @@ class _WritingPageState extends ConsumerState<WritingPage> {
       ),
       onDrawerChanged: (isOpened) {
         if (!isOpened) return;
-        // 打开时重建抽屉 + 失效章节列表缓存（编辑器改标题后抽屉能读到最新）
+        // 打开时重建抽屉 + 刷新章节 store（编辑器改标题后抽屉能读到最新）
         setState(() => _treeOpenCount++);
         final msId = _resolvedManuscriptId;
-        if (msId != null) ref.invalidate(chapterListProvider(msId));
+        if (msId != null) {
+          ref.read(chapterStoreProvider(msId).notifier).loadChapters();
+        }
       },
       // 批次83：大纲边写边看（右侧抽屉；每次打开重建 + 失效缓存）
       endDrawer: OutlineDrawer(

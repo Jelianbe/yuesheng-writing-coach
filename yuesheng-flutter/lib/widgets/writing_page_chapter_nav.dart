@@ -93,8 +93,8 @@ extension _WritingPageChapterNav on _WritingPageState {
         title: title,
         volumeId: volumeId,
       );
-      // 列表缓存失效，下次打开抽屉读到新章节
-      ref.invalidate(chapterListProvider(msId));
+      // ADR-C90：直写 repo 后刷新 store——下次打开抽屉读到新章节
+      ref.read(chapterStoreProvider(msId).notifier).loadChapters();
       if (!mounted) return;
       _jumpToChapter(newId, title);
     } catch (e) {

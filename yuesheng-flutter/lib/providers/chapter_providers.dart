@@ -66,6 +66,9 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
     try {
       final repo = ChapterRepository(_db);
       final chapters = await repo.listChapters(manuscriptId);
+      // ADR-C90：自动加载（microtask）可能跨越 container dispose——
+      // await 后不再写已释放的 state，避免 Bad state 污染后续测试。
+      if (!mounted) return;
       state = state.copyWith(
         chapters: chapters,
         isLoading: false,
@@ -75,6 +78,7 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
         '[ChapterListStore] loadChapters 成功: manuscriptId=$manuscriptId count=${chapters.length}',
       );
     } catch (e) {
+      if (!mounted) return;
       debugPrint(
         '[ChapterListStore] loadChapters 失败: manuscriptId=$manuscriptId error=$e',
       );
@@ -309,13 +313,26 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
 ///
 /// 注意：已将名称从 chapterListProvider 改为 chapterStoreProvider，
 /// 避免与 manuscript_providers.dart 中的 FutureProvider 版重名冲突。
+///
+/// ADR-C90（CR-24 收敛）：单一真源——任何消费方首次 watch 即自动加载，
+/// 不再依赖详情页显式 loadChapters()；chapterListProvider 已降级为
+/// 本 provider 的派生视图（见 manuscript_providers.dart）。
 final chapterStoreProvider =
     StateNotifierProvider.family<ChapterListStore, ChapterListState, String>((
       ref,
       manuscriptId,
     ) {
       final db = ref.watch(appDatabaseProvider);
-      return ChapterListStore(db, manuscriptId);
+      final store = ChapterListStore(db, manuscriptId);
+      // ADR-C90：微任务加载——watch 方 build 时 store 尚空（isLoading=true），
+      // 加载完成后自动通知重建。幂等：显式 loadChapters 调用不受影响。
+      // mounted 防护：同步 test 结束后 container 可能已 dispose，
+      // 此时 microtask 尚在队列——跳过，避免 dispose 后使用。
+      Future.microtask(() {
+        if (!store.mounted) return;
+        store.loadChapters();
+      });
+      return store;
     });
 
 /// 单章节内容 Provider（按 chapterId 加载）

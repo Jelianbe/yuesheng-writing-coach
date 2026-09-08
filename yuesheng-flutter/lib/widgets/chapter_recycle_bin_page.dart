@@ -7,8 +7,8 @@
 // 操作：
 //   恢复      → status='draft' 回章节列表（原文完整保留）
 //   永久删除  → 物理删除（二次确认，诊断历史保留，会话冗余缓存清空）
-// 每次操作后刷新 chapterStoreProvider（详情页真源，StateNotifier）+ invalidate
-// chapterListProvider（FutureProvider，其它消费者）双通道同步。
+// ADR-C90：每次操作后刷新 chapterStoreProvider（单一真源）；
+// chapterListProvider 已降级为 store 的派生视图，无需 invalidate。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -19,7 +19,6 @@ import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chapter_providers.dart';
-import '../providers/manuscript_providers.dart';
 
 /// 章节回收站页
 class ChapterRecycleBinPage extends ConsumerStatefulWidget {
@@ -80,7 +79,6 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       final repo = ChapterRepository(ref.read(appDatabaseProvider));
       await repo.restoreChapter(chapter.id);
       // 双通道同步：详情页真源（StateNotifier）+ FutureProvider 消费者
-      ref.invalidate(chapterListProvider(widget.manuscriptId));
       await ref
           .read(chapterStoreProvider(widget.manuscriptId).notifier)
           .loadChapters();
@@ -121,7 +119,6 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       final repo = ChapterRepository(ref.read(appDatabaseProvider));
       await repo.purgeChapter(chapter.id);
       // 双通道同步：详情页真源（StateNotifier）+ FutureProvider 消费者
-      ref.invalidate(chapterListProvider(widget.manuscriptId));
       await ref
           .read(chapterStoreProvider(widget.manuscriptId).notifier)
           .loadChapters();
