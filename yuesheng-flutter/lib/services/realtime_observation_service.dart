@@ -113,8 +113,9 @@ class RealtimeObservationService {
 
   /// displayContent 写为 assistant 消息，返回消息 id。
   ///
-  /// 兜底文案（LLM 失败）也走此路径，保证用户可见；displayContent
-  /// 为空白时不写消息、返回 null（observation 入库需要非空关联键）。
+  /// 兜底文案（LLM 失败）也走此路径，保证用户可见。displayContent
+  /// 为空时按解析结果降级：observation 非空 → 结构化摘要；
+  /// observation 空 → 明确失败提示（杜绝静默无反馈）。
   ///
   /// ADR-C85：DeepSeek 流式对 editor-observation 请求直接输出
   /// [YS_EDITOR] JSON 块（marker 前无自然语言导语），displayContent 为空
@@ -133,7 +134,16 @@ class RealtimeObservationService {
       );
     }
     final obs = editorResult.observation;
-    if (obs == null) return null;
+    if (obs == null) {
+      // ADR-C85 兜底：displayContent 空 + observation 空（LLM 输出纯 JSON
+      // 块但解析/校验失败）→ 写明确提示，杜绝「点了快速观察没反应」的
+      // 静默失败（API 错误已有 editor_service 兜底文案，不在此分支）。
+      return _sessionRepo.addMessage(
+        sessionId,
+        'assistant',
+        '快速观察未生成有效结果，请稍后重试',
+      );
+    }
     final buffer = StringBuffer('快速观察完成，共 ${obs.observations.length} 个方面：\n');
     for (final o in obs.observations.take(3)) {
       buffer.writeln('· ${o.dimensionName}：${o.phenomenon}');

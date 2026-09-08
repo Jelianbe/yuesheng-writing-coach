@@ -208,4 +208,22 @@ void main() {
     expect(messages.last.content, contains('快速观察完成'));
     expect(messages.last.content, contains('人物能动性'));
   });
+  test('#6 displayContent 为空 + observation 为空 → 明确失败提示（杜绝静默）', () async {
+    // ADR-C85 兜底：LLM 输出纯 JSON 块但解析/校验失败时，displayContent
+    // 与 observation 均为空——若不写消息，用户看到「正在快速观察…」后
+    // 直接消失，没有任何反馈。修复：写明确失败提示。
+    final llm = _RecordingLlmClient(
+      fullResponse: '[YS_EDITOR]\n{\"bad\": json}\n[/YS_EDITOR]',
+    );
+    final service = buildService(llm);
+
+    final result = await service.observe(sessionId: sessionId, text: '待观察文本');
+
+    expect(result.displayContent, isEmpty);
+    expect(result.observation, isNull);
+    // 兜底消息已写入 → 用户有反馈
+    expect(result.messageId, isNotNull);
+    final messages = await sessionRepo.listMessages(sessionId);
+    expect(messages.last.content, contains('快速观察未生成有效结果'));
+  });
 }
