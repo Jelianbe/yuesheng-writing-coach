@@ -37,6 +37,8 @@
 
 import 'dart:async';
 
+import 'package:dio/dio.dart' show DioException;
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
@@ -774,7 +776,24 @@ extension ChatServiceSend on ChatService {
       callbacks.onCancelled?.call();
     } else {
       callbacks.onError(e is Exception ? e.toString() : '发送失败');
+      _logSendFailure(e, options);
     }
+  }
+
+  /// ADR-C84 后续：发送失败落库留痕（取消是预期行为不记录）。
+  /// captureError 内部自动脱敏（A12：防 API Key 泄漏），
+  /// 使「发送/输出失败」可度量、可归类。
+  void _logSendFailure(Object e, SendMessageOptions options) {
+    final msg = e is Exception ? e.toString() : '发送失败';
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: e is DioException ? 'network' : 'api',
+      message: 'sendMessage 失败: $msg',
+      context: {
+        'phase': options.phase.value,
+        'attitude': options.attitude.value,
+      },
+    );
   }
 
   /// 记录 sendMessage 入口调试信息（R-019 拆出）。

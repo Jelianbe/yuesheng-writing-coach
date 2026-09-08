@@ -262,9 +262,20 @@ class _MessageListState extends ConsumerState<MessageList> {
   @override
   void didUpdateWidget(MessageList oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 消息数变化或流式内容变化时，仅当用户本就停在底部才自动滚动到底部
-    // （B18：防止每收到一个 token 就无条件劫持滚动，用户上滑看历史时被拉回）
-    if ((oldWidget.messages.length != widget.messages.length ||
+    // ADR-C84 后续：用户主动发送（新 user 消息上屏）→ 无条件滚到底。
+    // 发送是强意图（键盘弹起时 _isAtBottom 会因视口压缩误判，导致
+    // 键盘收起后列表停在旧位置、新消息不可见）；B18 的「不劫持」仅
+    // 适用于流式 token 追加（用户看历史时不被拉回）。
+    final hasNewUserMessage =
+        widget.messages.length > oldWidget.messages.length &&
+        widget.messages.any(
+          (m) =>
+              m.role == 'user' &&
+              !oldWidget.messages.any((om) => om.id == m.id),
+        );
+    if (hasNewUserMessage) {
+      _scrollToBottom();
+    } else if ((oldWidget.messages.length != widget.messages.length ||
             oldWidget.streamingContent != widget.streamingContent) &&
         _isAtBottom()) {
       _scrollToBottom();
