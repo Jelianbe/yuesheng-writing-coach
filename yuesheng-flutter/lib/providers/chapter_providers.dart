@@ -18,6 +18,7 @@
 // 因此这里命名为 chapterStoreProvider（StateNotifier 版本，带可变状态）。
 // ─────────────────────────────────────────────────────────────
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -99,7 +100,10 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
         volumeId: volumeId,
       );
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final finalSortOrder = sortOrder ?? state.chapters.length;
+      // CR-23：与 repository 的 MAX(sort_order)+1 对齐。此前取
+      // state.chapters.length——软删章节后列表变短，新章会与现存章节撞
+      // sort_order（实测 state=2 / DB=3，且两章同为 2）。
+      final finalSortOrder = sortOrder ?? _maxSortOrder() + 1;
       final newChapter = Chapter(
         id: id,
         manuscriptId: manuscriptId,
@@ -131,7 +135,23 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
     }
   }
 
+  /// 当前列表中的最大 sort_order（无章节时 -1）。
+  ///
+  /// 与 repository 侧 `MAX(sort_order)` 对齐——repository 算 order 时用的是
+  /// MAX+1，乐观更新必须用同一公式，否则两层排序值漂移（CR-23）。
+  int _maxSortOrder() {
+    var max = -1;
+    for (final c in state.chapters) {
+      if (c.sortOrder > max) max = c.sortOrder;
+    }
+    return max;
+  }
+
   /// 更新章节标题
+  ///
+  /// CR-22：改用 `c.copyWith(...)` 而非逐字段重建 Chapter——此前四处重建
+  /// 均漏传 `volumeId`（默认 null），导致编辑后章节在 UI 上「跑出卷外」
+  /// 而 DB 里归属仍在。copyWith 未指定的字段保持原值，杜绝再漏字段。
   Future<void> updateChapterTitle(String chapterId, String title) async {
     try {
       final repo = ChapterRepository(_db);
@@ -140,19 +160,7 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
       state = state.copyWith(
         chapters: state.chapters.map((c) {
           if (c.id == chapterId) {
-            return Chapter(
-              id: c.id,
-              manuscriptId: c.manuscriptId,
-              title: title,
-              content: c.content,
-              wordCount: c.wordCount,
-              sortOrder: c.sortOrder,
-              status: c.status,
-              lastDiagnosedAt: c.lastDiagnosedAt,
-              previousContent: c.previousContent,
-              createdAt: c.createdAt,
-              updatedAt: now,
-            );
+            return c.copyWith(title: title, updatedAt: now);
           }
           return c;
         }).toList(),
@@ -175,17 +183,9 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
       state = state.copyWith(
         chapters: state.chapters.map((c) {
           if (c.id == chapterId) {
-            return Chapter(
-              id: c.id,
-              manuscriptId: c.manuscriptId,
-              title: c.title,
+            return c.copyWith(
               content: content,
               wordCount: content.length,
-              sortOrder: c.sortOrder,
-              status: c.status,
-              lastDiagnosedAt: c.lastDiagnosedAt,
-              previousContent: c.previousContent,
-              createdAt: c.createdAt,
               updatedAt: now,
             );
           }
@@ -213,17 +213,10 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
       state = state.copyWith(
         chapters: state.chapters.map((c) {
           if (c.id == chapterId) {
-            return Chapter(
-              id: c.id,
-              manuscriptId: c.manuscriptId,
-              title: c.title,
+            return c.copyWith(
               content: newContent,
-              previousContent: c.content,
+              previousContent: Value(c.content),
               wordCount: newContent.length,
-              sortOrder: c.sortOrder,
-              status: c.status,
-              lastDiagnosedAt: c.lastDiagnosedAt,
-              createdAt: c.createdAt,
               updatedAt: now,
             );
           }
@@ -292,19 +285,7 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
       state = state.copyWith(
         chapters: state.chapters.map((c) {
           if (c.id == chapterId) {
-            return Chapter(
-              id: c.id,
-              manuscriptId: c.manuscriptId,
-              title: c.title,
-              content: c.content,
-              wordCount: c.wordCount,
-              sortOrder: c.sortOrder,
-              status: c.status,
-              lastDiagnosedAt: now,
-              previousContent: c.previousContent,
-              createdAt: c.createdAt,
-              updatedAt: now,
-            );
+            return c.copyWith(lastDiagnosedAt: Value(now), updatedAt: now);
           }
           return c;
         }).toList(),
