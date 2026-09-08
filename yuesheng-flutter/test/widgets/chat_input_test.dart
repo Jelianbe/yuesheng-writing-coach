@@ -267,5 +267,69 @@ void main() {
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.decoration?.hintText, '和月笙聊聊…输入 @ 引用作品');
     });
+
+    group('空态一行 + 纵向滑块（2026-09-08 回归）', () {
+      testWidgets('空输入框高度 = 一行（不占两行）', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChatInput(
+                input: '',
+                isStreaming: false,
+                onInputChange: (_) {},
+                onSend: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final size = tester.getSize(find.byType(TextField));
+        // 空态一行：isDense + vertical 8 → 约 33-38px；两行会 ≥ 55
+        expect(
+          size.height,
+          lessThan(45),
+          reason: '空态输入框应保持一行，实际高度 ${size.height}',
+        );
+        expect(size.height, greaterThan(20));
+      });
+
+      testWidgets('长文本超 5 行 → 高度封顶 + 纵向滑块出现', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ChatInput(
+                input: '',
+                isStreaming: false,
+                onInputChange: (_) {},
+                onSend: (_) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        final emptyHeight = tester.getSize(find.byType(TextField)).height;
+
+        // 输入 200 字（超过 5 行显示容量）
+        await tester.enterText(find.byType(TextField), '这是测试文字。' * 40);
+        await tester.pump();
+
+        final filledHeight = tester.getSize(find.byType(TextField)).height;
+        // 多行增高但封顶（≤ 6 行高），不无限撑高
+        expect(filledHeight, greaterThan(emptyHeight));
+        expect(
+          filledHeight,
+          lessThan(emptyHeight * 6 + 60),
+          reason: '输入框应封顶（maxLines 5），实际 ${filledHeight}',
+        );
+
+        // 纵向滑块存在（Scrollbar 已挂 controller）
+        final scrollbar = find.descendant(
+          of: find.byType(ChatInput),
+          matching: find.byType(Scrollbar),
+        );
+        expect(scrollbar, findsOneWidget);
+      });
+    });
   });
 }

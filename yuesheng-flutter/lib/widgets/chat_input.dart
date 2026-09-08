@@ -56,6 +56,9 @@ class ChatInputState extends State<ChatInput> {
   late final TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
 
+  /// 输入框纵向滚动控制器（内容超 maxLines 时框内滚动 + 滑块指示）
+  final ScrollController _scrollController = ScrollController();
+
   /// 上一次文本（用于检测用户是否刚刚输入了 @ 字符）
   String _prevText = '';
 
@@ -94,6 +97,7 @@ class ChatInputState extends State<ChatInput> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -204,35 +208,42 @@ class ChatInputState extends State<ChatInput> {
             const SizedBox(width: 8),
           ],
           Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              enabled: !widget.isStreaming,
-              maxLines: 5,
-              minLines: 1,
-              textInputAction: TextInputAction.newline,
-              onChanged: _handleChanged,
-              decoration: InputDecoration(
-                hintText: _placeholder,
-                hintStyle: const TextStyle(color: AppColors.textTertiary),
-                filled: true,
-                fillColor: AppColors.surface,
-                border: OutlineInputBorder(
-                  // pill shape：半径取大值，由引擎 clamp 到实际高度一半，
-                  // 保证单行/多行均为完全圆角药丸形
-                  // X-039-Batch1：100→pill
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  borderSide: BorderSide.none,
+            child: Scrollbar(
+              controller: _scrollController,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                scrollController: _scrollController,
+                enabled: !widget.isStreaming,
+                maxLines: 5,
+                minLines: 1,
+                textInputAction: TextInputAction.newline,
+                onChanged: _handleChanged,
+                decoration: InputDecoration(
+                  hintText: _placeholder,
+                  hintStyle: const TextStyle(color: AppColors.textTertiary),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    // pill shape：半径取大值，由引擎 clamp 到实际高度一半，
+                    // 保证单行/多行均为完全圆角药丸形
+                    // X-039-Batch1：100→pill
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    // X-039-Batch1：16→lg / 10→smx
+                    // 2026-09-08：vertical 10→8（isDense 配合），空态压回一行，
+                    //   对齐 36px 发送按钮；内容超 5 行后框内纵向滚动
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.sm,
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  // X-039-Batch1：16→lg / 10→smx
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.smx,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
                 ),
-              ),
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppColors.textPrimary,
               ),
             ),
           ),
