@@ -4,7 +4,7 @@
 //
 // 批次3 范围（对齐 RN ChatInput.tsx L48-82）：
 //   - + 按钮（onUploadFile 回调，传了才显示）
-//   - 单行 TextInput（强制一行，超长横向滚动；回车=发送）
+//   - 多行 TextInput（1-5 行自适应）
 //   - 圆形发送按钮（竹青主题）
 //   - isStreaming 时禁用输入和发送（按钮不受影响，对齐 RN）
 //
@@ -208,20 +208,9 @@ class ChatInputState extends State<ChatInput> {
               controller: _controller,
               focusNode: _focusNode,
               enabled: !widget.isStreaming,
-              // 单行输入框（对齐主流 AI 对话）：超长横向滚动，不撑高
-              maxLines: 1,
+              maxLines: 5,
               minLines: 1,
-              maxLength: 1000,
-              // 隐藏字数计数器（避免破坏单行美感）
-              buildCounter:
-                  (
-                    context, {
-                    required currentLength,
-                    required isFocused,
-                    maxLength,
-                  }) => null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => _handleSend(),
+              textInputAction: TextInputAction.newline,
               onChanged: _handleChanged,
               decoration: InputDecoration(
                 hintText: _placeholder,
@@ -230,7 +219,7 @@ class ChatInputState extends State<ChatInput> {
                 fillColor: AppColors.surface,
                 border: OutlineInputBorder(
                   // pill shape：半径取大值，由引擎 clamp 到实际高度一半，
-                  // 保证单行也为完全圆角药丸形
+                  // 保证单行/多行均为完全圆角药丸形
                   // X-039-Batch1：100→pill
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   borderSide: BorderSide.none,
@@ -242,7 +231,7 @@ class ChatInputState extends State<ChatInput> {
                 ),
               ),
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: 15,
                 color: AppColors.textPrimary,
               ),
             ),
