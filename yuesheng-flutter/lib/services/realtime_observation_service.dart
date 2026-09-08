@@ -71,7 +71,9 @@ class RealtimeObservationService {
   ///
   /// 流程：轻 prompt 调用（editor-observation skill + 轻量约束）→
   /// displayContent 写为 assistant 消息 → observation 入库（R1）→ 返回结果。
-  /// 任何失败均不抛出：observation=null + 兜底文案（对齐 callEditorStream 语义）。
+  /// 非取消失败均不抛出：observation=null + 兜底文案（对齐 callEditorStream
+  /// 语义）；用户取消（cancelToken.cancel → DioExceptionType.cancel）原样上抛，
+  /// 由调用方优雅复位（不写失败文案）。
   Future<RealtimeObservationResult> observe({
     required String sessionId,
     required String text,

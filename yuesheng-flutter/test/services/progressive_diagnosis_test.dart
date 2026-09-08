@@ -55,6 +55,7 @@ class _FakeLlmClient extends LlmClient {
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
   }) async {
     chatMessages.addAll(messages);
     chatMaxTokens.add(maxTokens);

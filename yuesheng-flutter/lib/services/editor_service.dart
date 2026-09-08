@@ -2,14 +2,15 @@
 // Editor Service
 // 复刻 yuesheng-android/src/services/editor-service.ts
 //
-// 用 streamChat 调 editor-observation skill，
-// 流式拦截 [YS_EDITOR] 块（不转发给用户），
-// 结束后 parseEditorObservation + validateEditorOutput 完整校验。
+// 用 chatCompletion（非流式，ADR-C88）调 editor-observation skill，
+// 一次性拿完整响应，parseEditorObservation + validateEditorOutput 完整校验，
+// 拦截 [YS_EDITOR] 块（不转发给用户）。
 //
-// 失败处理（不 throw）：
+// 失败处理（不 throw，取消除外）：
 //   - API 错误 → 兜底文案 displayContent，observation = null
 //   - 解析失败 → 去标记原文 displayContent，observation = null
 //   - 校验失败 → 同解析失败
+//   - 用户取消（DioExceptionType.cancel）→ 原样上抛（调用方优雅复位）
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
@@ -38,19 +39,26 @@ Future<EditorStreamResult> callEditorStream(
   CancelToken? cancelToken,
   List<ChatMessage> extraSystemMessages = const [],
 }) async {
+  // ADR-C88：快速观察改非流式（chatCompletion）。
+  // 背景：editor-observation 请求首 token 即 [YS_EDITOR] JSON 块（无自然语言
+  // 导语），DeepSeek 流式首字延迟在真机网络下不稳定，60s 首字超时命中导致
+  // 「快速观察未生成有效结果」。非流式 60s 全响应超时更稳（分块诊断单块
+  // 已实测可用），且 [YS_EDITOR] 块本就拦截不转发，流式展示无收益。
+  // onStream 不再回调（签名保留兼容既有调用方）。
   try {
-    final accumulator = _EditorStreamAccumulator(
-      onStream,
-      messages: _buildEditorMessages(text, extraSystemMessages),
+    final fullContent = await llmClient.chatCompletion(
+      _buildEditorMessages(text, extraSystemMessages),
+      cancelToken: cancelToken,
     );
-    await llmClient.streamChat(accumulator.messages, (response) {
-      if (response.isDone) return;
-      if (response.content.isEmpty) return;
-      accumulator.add(response.content);
-    }, cancelToken: cancelToken);
-    return _finalizeEditorResult(accumulator.fullContent);
+    return _finalizeEditorResult(fullContent);
+  } on DioException catch (e) {
+    if (e.type == DioExceptionType.cancel) rethrow; // 用户取消向上传播
+    return const EditorStreamResult(
+      displayContent: '审稿通过，但生成编辑观察失败，请稍后重试',
+      observation: null,
+    );
   } catch (_) {
-    // API 错误 → 返回兜底文案，不抛出
+    // 其他异常 → 兜底文案，不抛出
     return const EditorStreamResult(
       displayContent: '审稿通过，但生成编辑观察失败，请稍后重试',
       observation: null,
@@ -93,37 +101,4 @@ EditorStreamResult _finalizeEditorResult(String fullContent) {
     displayContent: displayContent,
     observation: parsed.observation,
   );
-}
-
-/// 流式累积器：拦截 [YS_EDITOR] 标记，转发标记前自然语言（R-019 拆出）。
-/// 状态集中在类内，避免闭包跨回调共享（与 chat-service 拦截模式一致）。
-class _EditorStreamAccumulator {
-  final void Function(String) onStream;
-  final List<ChatMessage> messages;
-  String fullContent = '';
-  bool inEditorBlock = false;
-  int displayLength = 0; // 已转发给 onStream 的字符数
-  _EditorStreamAccumulator(this.onStream, {required this.messages});
-
-  void add(String content) {
-    fullContent += content;
-    if (inEditorBlock) return;
-    final markerIndex = fullContent.indexOf(kEditorStart);
-    if (markerIndex != -1) {
-      final newDisplay = fullContent.substring(displayLength, markerIndex);
-      if (newDisplay.isNotEmpty) onStream(newDisplay);
-      displayLength = markerIndex;
-      inEditorBlock = true;
-      return;
-    }
-    final pendingLen = getEditorPendingMarkerPrefix(fullContent);
-    final safeEnd = pendingLen > 0
-        ? fullContent.length - pendingLen
-        : fullContent.length;
-    if (safeEnd > displayLength) {
-      final newDisplay = fullContent.substring(displayLength, safeEnd);
-      if (newDisplay.isNotEmpty) onStream(newDisplay);
-      displayLength = safeEnd;
-    }
-  }
 }

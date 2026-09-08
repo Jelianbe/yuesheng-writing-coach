@@ -52,7 +52,8 @@ import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
 import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 
-/// 测试用 Fake LLM：预设 streamChat 响应（复用 chat_service_send_message_test 模式）
+/// 测试用 Fake LLM：预设 chatCompletion 响应（ADR-C88 快速观察非流式化；
+/// streamChat 保留供聊天/诊断链路 mock）
 class FakeLlmClient extends LlmClient {
   final String fullResponse;
   final Exception? error;
@@ -80,6 +81,17 @@ class FakeLlmClient extends LlmClient {
       );
     }
     callback(const LlmStreamResponse(content: '', isDone: true));
+  }
+
+  @override
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
+  }) async {
+    if (error != null) throw error!;
+    return fullResponse;
   }
 }
 

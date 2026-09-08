@@ -80,6 +80,7 @@ class FakeLlmClient extends LlmClient {
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
   }) async {
     if (error != null) throw error!;
     if (chatResponses.isEmpty) return fullResponse;

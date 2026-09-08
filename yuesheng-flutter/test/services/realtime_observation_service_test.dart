@@ -3,7 +3,7 @@
 //
 // 覆盖：
 //   1. observe 成功 → displayContent + observation + messageId，observation 入库
-//   2. 流式回调透传 + targetRef 字段入库
+//   2. 非流式（ADR-C88）：onStream 不再回调 + targetRef 字段入库
 //   3. LLM 失败 → observation=null，不抛出，不入库（兜底）
 //   4. 轻量约束 system 消息已附加（轻 prompt 语义）
 // ─────────────────────────────────────────────────────────────
@@ -63,15 +63,15 @@ class _RecordingLlmClient extends LlmClient {
   _RecordingLlmClient({this.fullResponse, this.error});
 
   @override
-  Future<void> streamChat(
-    List<ChatMessage> messages,
-    void Function(LlmStreamResponse response) callback, {
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
   }) async {
     capturedMessages = messages;
     if (error != null) throw error!;
-    callback(LlmStreamResponse(content: fullResponse ?? '', isDone: false));
-    callback(const LlmStreamResponse(content: '', isDone: true));
+    return fullResponse ?? '';
   }
 }
 
@@ -137,11 +137,11 @@ void main() {
       onStream: (d) => deltas.add(d),
     );
 
-    // 流式回调收到标记前的自然语言，且不含 [YS_EDITOR] 块
-    final streamed = deltas.join('');
-    expect(streamed, contains('反馈A'));
-    expect(streamed, contains('反馈B'));
-    expect(streamed, isNot(contains('[YS_EDITOR]')));
+    // ADR-C88 非流式：onStream 不再回调（快速观察无流式增量）
+    expect(deltas, isEmpty);
+    // displayContent 仍含标记前的自然语言，且不含 [YS_EDITOR] 块
+    expect(result.displayContent, contains('反馈A'));
+    expect(result.displayContent, isNot(contains('[YS_EDITOR]')));
 
     // targetRef 字段入库
     final stored = await observationRepo.getObservationByMessage(
@@ -225,5 +225,31 @@ void main() {
     expect(result.messageId, isNotNull);
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages.last.content, contains('快速观察未生成有效结果'));
+  });
+  test('#7 用户取消 → 原样上抛（不写兜底文案，调用方优雅复位）', () async {
+    // ADR-C88：chatCompletion 取消（DioExceptionType.cancel）经
+    // callEditorStream 原样上抛，observe 不吞错——面板据此走优雅复位。
+    final llm = _RecordingLlmClient(
+      error: DioException(
+        requestOptions: RequestOptions(path: '/chat/completions'),
+        type: DioExceptionType.cancel,
+      ),
+    );
+    final service = buildService(llm);
+
+    expect(
+      () => service.observe(sessionId: sessionId, text: '待观察文本'),
+      throwsA(
+        isA<DioException>().having(
+          (e) => e.type,
+          'type',
+          DioExceptionType.cancel,
+        ),
+      ),
+    );
+    // 取消不落库：无 assistant 消息、无 observation
+    final messages = await sessionRepo.listMessages(sessionId);
+    expect(messages, isEmpty);
+    expect(await observationRepo.countObservations(sessionId), 0);
   });
 }

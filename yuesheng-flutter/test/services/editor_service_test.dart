@@ -8,10 +8,11 @@
 //   4. schema 校验失败（observations < 3）→ displayContent，observation=null
 //   5. 硬限制失败（phenomenon 含判决词）→ displayContent，observation=null
 //   6. LLM 抛异常 → 兜底文案，observation=null
-//   7. 流式跨 chunk 标记：[YS_ED 在一个 chunk，ITOR] 在下一个
+//   7. 用户取消（DioExceptionType.cancel）→ 原样上抛（不写兜底文案）
 //
-// 设计：FakeLlmClient 继承 LlmClient override streamChat，
-// 把完整字符串切成 chunks 模拟流式回调。
+// 设计（ADR-C88）：callEditorStream 改非流式（chatCompletion），
+// FakeLlmClient 继承 LlmClient override chatCompletion 返回完整串。
+// onStream 不再回调（非流式无增量），displayContent 断言走返回值。
 // ─────────────────────────────────────────────────────────────
 
 // ignore_for_file: prefer_initializing_formals
@@ -21,38 +22,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/editor_service.dart';
 import 'package:writingcoach/services/llm_client.dart';
 
-/// Fake LLM 客户端：预设 streamChat 响应
+/// Fake LLM 客户端：预设 chatCompletion 响应（ADR-C88 非流式）
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
   final Exception? _error;
-  final int _chunkSize;
 
-  /// [_chunkSize] 模拟流式分块大小，默认 10 字符/chunk
-  FakeLlmClient(this._fullResponse, {Exception? error, int chunkSize = 10})
-    : _error = error,
-      _chunkSize = chunkSize;
+  FakeLlmClient(this._fullResponse, {Exception? error}) : _error = error;
 
   @override
-  Future<void> streamChat(
-    List<ChatMessage> messages,
-    void Function(LlmStreamResponse response) callback, {
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
   }) async {
     if (_error != null) throw _error;
-
-    // 把完整响应切成 chunks 模拟流式
-    for (int i = 0; i < _fullResponse.length; i += _chunkSize) {
-      final end = i + _chunkSize < _fullResponse.length
-          ? i + _chunkSize
-          : _fullResponse.length;
-      callback(
-        LlmStreamResponse(
-          content: _fullResponse.substring(i, end),
-          isDone: false,
-        ),
-      );
-    }
-    callback(const LlmStreamResponse(content: '', isDone: true));
+    return _fullResponse;
   }
 }
 
@@ -64,14 +49,14 @@ class RecordingLlmClient extends LlmClient {
   RecordingLlmClient(this._fullResponse);
 
   @override
-  Future<void> streamChat(
-    List<ChatMessage> messages,
-    void Function(LlmStreamResponse response) callback, {
+  Future<String> chatCompletion(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
   }) async {
     capturedMessages = messages;
-    callback(LlmStreamResponse(content: _fullResponse, isDone: false));
-    callback(const LlmStreamResponse(content: '', isDone: true));
+    return _fullResponse;
   }
 }
 
@@ -182,11 +167,11 @@ void main() {
       expect(result.observation!.observations.length, 3);
       // displayContent 应包含标记前的文本
       expect(result.displayContent, contains('这是给用户的反馈'));
-      // onStream 应收到标记前的文本
-      expect(deltas.join(''), contains('这是给用户的反馈'));
-      // [YS_EDITOR] 块不应转发给 onStream
-      expect(deltas.join(''), isNot(contains('[YS_EDITOR]')));
-      expect(deltas.join(''), isNot(contains('possible_intent')));
+      // ADR-C88 非流式：onStream 不再回调（无增量）
+      expect(deltas, isEmpty);
+      // [YS_EDITOR] 块不进入展示内容
+      expect(result.displayContent, isNot(contains('[YS_EDITOR]')));
+      expect(result.displayContent, isNot(contains('possible_intent')));
     });
 
     test('#2 无 [YS_EDITOR] 标记 → displayContent=原文，observation=null', () async {
@@ -236,22 +221,28 @@ void main() {
       expect(result.displayContent, '审稿通过，但生成编辑观察失败，请稍后重试');
     });
 
-    test('#7 流式跨 chunk 标记：标记被拆分到多个 chunk', () async {
-      // 用很小的 chunkSize 强制 [YS_EDITOR] 被拆分到多个 chunk
-      final raw = '反馈\n[YS_EDITOR]\n$kValidEditorJson\n[/YS_EDITOR]';
-      final llm = FakeLlmClient(raw, chunkSize: 3);
+    test('#7 用户取消（DioExceptionType.cancel）→ 原样上抛，不写兜底文案', () async {
+      // ADR-C88：取消不得被 catch (_) 吞成「审稿通过…失败」误导文案，
+      // 必须原样上抛让调用方优雅复位。
+      final llm = FakeLlmClient(
+        '',
+        error: DioException(
+          requestOptions: RequestOptions(path: '/chat/completions'),
+          type: DioExceptionType.cancel,
+        ),
+      );
 
-      final deltas = <String>[];
-      final result = await callEditorStream(llm, '测试文本', (d) => deltas.add(d));
-
-      expect(result.observation, isNotNull);
-      // 即使标记跨 chunk，也不应转发给 onStream
-      final combined = deltas.join('');
-      expect(combined, isNot(contains('[YS_EDITOR]')));
-      expect(combined, isNot(contains('possible_intent')));
-      expect(combined, contains('反馈'));
+      expect(
+        () => callEditorStream(llm, '测试文本', (_) {}),
+        throwsA(
+          isA<DioException>().having(
+            (e) => e.type,
+            'type',
+            DioExceptionType.cancel,
+          ),
+        ),
+      );
     });
-
     test('#8 extraSystemMessages → 追加到 system 消息（默认不影响既有调用）', () async {
       final raw = '反馈\n[YS_EDITOR]\n$kValidEditorJson\n[/YS_EDITOR]';
       final llm = RecordingLlmClient(raw);

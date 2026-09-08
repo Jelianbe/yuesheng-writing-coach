@@ -200,10 +200,13 @@ class LlmClient {
   /// [extraBody] 合并进请求体（如 thinking 控制字段），不得含
   /// model / messages / stream / temperature / max_tokens——这些以本方法
   /// 参数与配置为准，传了会被静默覆盖。
+  /// [cancelToken]（ADR-C88 快速观察非流式化）可用于取消请求；取消时
+  /// 抛 DioExceptionType.cancel 原样上抛（不转 _buildDioError、不触发重试）。
   Future<String> chatCompletion(
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
   }) async {
     final cfg = await _configStorage.getLlmConfig();
     if (cfg == null) throw Exception('API 配置未设置');
@@ -236,15 +239,16 @@ class LlmClient {
             sendTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
             receiveTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
           ),
+          cancelToken: cancelToken,
         );
 
         final json = response.data is String
             ? jsonDecode(response.data as String) as Map<String, dynamic>
             : response.data as Map<String, dynamic>;
-        final content = json['choices']?[0]?['message']?['content'] ?? '';
-        return content as String;
+        return (json['choices']?[0]?['message']?['content'] ?? '') as String;
       });
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) rethrow;
       throw Exception(_buildDioError(e));
     }
   }

@@ -193,6 +193,12 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       );
     } catch (e) {
       if (mounted) setState(() => _streamStageLabel = null);
+      // ADR-C88：快速观察改非流式后，取消（chatCompletion 抛
+      // DioExceptionType.cancel）原样上抛至此——优雅复位，不标记失败不弹红错。
+      if (e is DioException && e.type == DioExceptionType.cancel) {
+        store.cancelStreaming();
+        return;
+      }
       store.setError(e.toString());
     } finally {
       _cancelToken = null;
@@ -314,6 +320,12 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       if (mounted) setState(() => _streamStageLabel = null);
     } catch (e) {
       if (mounted) setState(() => _streamStageLabel = null);
+      // ADR-C88：快速观察改非流式后，取消（chatCompletion 抛
+      // DioExceptionType.cancel）原样上抛至此——优雅复位，不标记失败不弹红错。
+      if (e is DioException && e.type == DioExceptionType.cancel) {
+        store.cancelStreaming();
+        return;
+      }
       store.setError(e.toString());
     } finally {
       _cancelToken = null;
