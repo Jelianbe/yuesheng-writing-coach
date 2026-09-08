@@ -193,6 +193,8 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
           const SizedBox(height: 8),
           InkWell(
             onTap: () {
+              // 先关弹层再导航：pop 同步入队，go 走 go_router 路由栈，
+              // 两栈互不干扰；若顺序颠倒（先 go）会带着 sheet 一起消失。
               Navigator.of(context).pop();
               context.go(AppRoutes.bookshelf);
             },

@@ -101,7 +101,7 @@ extension _BookshelfCreate on _BookshelfPageState {
       Navigator.of(context, rootNavigator: true).pop();
       // 批次93-4：新建书后立即跳详情页（阅文「去写作」模型，不再是留在书架 + SnackBar）
       context.push(
-        '/manuscript-detail',
+        AppRoutes.manuscriptDetail,
         extra: {'manuscriptId': id, 'title': title},
       );
     } else if (mounted) {
