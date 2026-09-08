@@ -1480,4 +1480,40 @@ void main() {
       expect(afterExpand, isNot(contains(vid)));
     });
   });
+
+  group('卷创建不再依赖章节（空作品建卷即时可见）', () {
+    testWidgets('零章节 + 已有卷 → Tab0 渲染卷头而非章节空态', (tester) async {
+      final vRepo = VolumeRepository(db);
+      final vid = await vRepo.createVolume(manuscriptId, title: '第一卷');
+
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+
+      // 卷已存在 → 空态（"还没有章节"）不应再独占 Tab0
+      expect(find.text('还没有章节'), findsNothing);
+      expect(find.text('第一卷'), findsOneWidget);
+      // 空卷占位 + 卷内「新建章节」入口
+      expect(find.text('暂无章节'), findsOneWidget);
+      expect(find.byKey(ValueKey('new-chapter-row-$vid')), findsOneWidget);
+    });
+
+    testWidgets('零章节 → 页面内新建卷 → 卷头即时出现，无需先建章节', (tester) async {
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+      expect(find.text('还没有章节'), findsOneWidget);
+
+      // 右上角「+」→ 新建卷
+      await tester.tap(find.byTooltip('新建卷'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('detail-new-volume-field')),
+        '序章之卷',
+      );
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('序章之卷'), findsOneWidget);
+      expect(find.text('还没有章节'), findsNothing);
+    });
+  });
 }

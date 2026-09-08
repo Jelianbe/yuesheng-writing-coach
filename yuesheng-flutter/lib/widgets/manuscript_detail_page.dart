@@ -284,9 +284,11 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
                       controller: _tabController,
                       children: [
                         // ── Tab0 章节 ──
+                        // 空态判据必须是「章与卷皆空」：只按 chapters 判会让零章节
+                        // 作品新建的卷被章节空态吞掉，必须再建一章才可见。
                         chapterState.isLoading
                             ? const _LoadingView()
-                            : chapters.isEmpty
+                            : chapters.isEmpty && volumes.isEmpty
                             ? ListView(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: AppSpacing.lg,
