@@ -1063,5 +1063,23 @@ void main() {
       expect(sessions.length, 1);
       expect(sessions.single.id, sid);
     });
+
+    testWidgets('ADR-C87 流式中：发送按钮变停止按钮，点击安全', (tester) async {
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+
+      // 进入流式 → 发送按钮变「停止生成」
+      container
+          .read(writingCoachStoreProvider(chapterId).notifier)
+          .setStreaming(true);
+      await tester.pump();
+      expect(find.byIcon(Icons.stop), findsOneWidget);
+      expect(find.byIcon(Icons.send), findsNothing);
+
+      // 点击停止（_cancelToken 为空时安全 no-op，不崩）
+      await tester.tap(find.byIcon(Icons.stop));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
   });
 }

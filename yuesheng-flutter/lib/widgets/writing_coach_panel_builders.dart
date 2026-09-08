@@ -305,12 +305,23 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.send, color: AppColors.primary),
-            onPressed: chatState.isStreaming ? null : () => _handleSend(),
-          ),
+          // ADR-C87：流式进行中发送按钮变「停止生成」按钮（对齐主流 AI 对话）
+          _buildSendStopButton(chatState),
         ],
       ),
+    );
+  }
+
+  /// ADR-C87：发送 / 停止生成按钮（流式进行中切换为停止，可中止生成）。
+  Widget _buildSendStopButton(ChatState chatState) {
+    return IconButton(
+      icon: chatState.isStreaming
+          ? const Icon(Icons.stop, color: AppColors.primary)
+          : const Icon(Icons.send, color: AppColors.primary),
+      tooltip: chatState.isStreaming ? '停止生成' : '发送',
+      onPressed: chatState.isStreaming
+          ? _cancelGeneration
+          : () => _handleSend(),
     );
   }
 }

@@ -136,6 +136,9 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     );
     store.setStreaming(true);
     final chatService = ref.read(chatServiceProvider);
+    // ADR-C87：本次发送的取消令牌（供「停止生成」按钮在流式中段中止）
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
     try {
       await chatService.sendMessage(
         sid,
@@ -170,6 +173,12 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
                 .read(writingCoachStoreProvider(widget.chapterId).notifier)
                 .setError(error);
           },
+          onCancelled: () {
+            // 用户主动停止：优雅复位（不标记失败、不弹红错）
+            ref
+                .read(writingCoachStoreProvider(widget.chapterId).notifier)
+                .cancelStreaming();
+          },
           onTrainingResult: onTrainingResult,
         ),
         SendMessageOptions(
@@ -177,13 +186,24 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
           attitude: AttitudeLevel.doubao,
           // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
           lastEditorEditAtSec: ref.read(editorActivityProvider),
+          // ADR-C87：取消令牌——流式中可主动中止
+          cancelToken: cancelToken,
         ),
         subphase: subphase,
       );
     } catch (e) {
       if (mounted) setState(() => _streamStageLabel = null);
       store.setError(e.toString());
+    } finally {
+      _cancelToken = null;
     }
+  }
+
+  /// ADR-C87：主动停止当前生成（「停止生成」按钮回调）。
+  /// 取消底层 Dio 请求 → 流被中断 → sendMessage 走 onCancelled 优雅复位；
+  /// 快速观察走 callEditorStream 兜底文案（显示失败提示，不崩溃）。
+  void _cancelGeneration() {
+    _cancelToken?.cancel('用户取消生成');
   }
 
   /// 提交练习作答（T3：练习任务闭环）
@@ -260,6 +280,9 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       writingCoachStoreProvider(widget.chapterId).notifier,
     );
     store.setStreaming(true);
+    // ADR-C87：本次观察的取消令牌（「停止生成」按钮可中止）
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
 
     try {
       await ref
@@ -274,6 +297,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
                   .read(writingCoachStoreProvider(widget.chapterId).notifier)
                   .appendStreamingContent(delta);
             },
+            cancelToken: cancelToken,
           );
 
       // observe 内部已写入 assistant 消息 → 刷新消息列表
@@ -291,6 +315,8 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     } catch (e) {
       if (mounted) setState(() => _streamStageLabel = null);
       store.setError(e.toString());
+    } finally {
+      _cancelToken = null;
     }
   }
 
@@ -474,6 +500,10 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       // 分块链路返回 null（内容 <= THRESHOLD，不触发分块）
       // → 走 D1 已接通的单次 ChatService.sendMessage 链路
       final chatService = ref.read(chatServiceProvider);
+      // ADR-C87：单次链路可取消（分块链路暂不支持取消，_cancelToken
+      // 保持 null → 停止按钮在分块中禁用，避免点了无反应）
+      final cancelToken = CancelToken();
+      _cancelToken = cancelToken;
       await chatService.sendMessage(
         sid,
         diagPrompt,
@@ -485,16 +515,32 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
           },
           onComplete: (_, _) => handleDiagnosisComplete(),
           onError: handleDiagnosisError,
+          onCancelled: () {
+            // 用户主动停止诊断：优雅复位（不标记失败、不弹红错）
+            ref
+                .read(writingCoachStoreProvider(widget.chapterId).notifier)
+                .cancelStreaming();
+            if (mounted) {
+              setState(() {
+                _isDiagnosing = false;
+                _streamStageLabel = null;
+              });
+            }
+          },
         ),
         SendMessageOptions(
           phase: TeachingPhase.p1World,
           attitude: AttitudeLevel.doubao,
           // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
           lastEditorEditAtSec: ref.read(editorActivityProvider),
+          // ADR-C87：取消令牌——诊断中可主动中止
+          cancelToken: cancelToken,
         ),
       );
     } catch (e) {
       handleDiagnosisError(e.toString());
+    } finally {
+      _cancelToken = null;
     }
   }
 }

@@ -42,6 +42,7 @@ import 'partial_agreement_card.dart';
 import 'practice_result_indicator.dart';
 import 'practice_task_card.dart';
 import 'writing/thinking_placeholder.dart';
+import 'package:dio/dio.dart';
 
 part 'writing_coach_panel_teaching.dart';
 part 'writing_coach_panel_builders.dart';
@@ -87,6 +88,11 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
   final _scrollController = ScrollController();
   final _inputController = TextEditingController();
   final _inputFocusNode = FocusNode();
+
+  /// ADR-C87：当前流式的取消令牌（发送/快速观察/诊断共用）。
+  /// 供「停止生成」按钮在流式中段中止（避免卡死时无出口）；
+  /// 面板关闭（dispose）时也取消，防止流式在面板销毁后继续跑。
+  CancelToken? _cancelToken;
 
   /// _initSession 的 Future，供 _handleDiagnose 等待会话初始化完成
   late Future<void> _initFuture;
@@ -184,6 +190,9 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
 
   @override
   void dispose() {
+    // ADR-C87：关闭面板时取消进行中的流式（防止流式继续跑浪费额度）
+    _cancelToken?.cancel('panel closed');
+    _cancelToken = null;
     _scrollController.dispose();
     _inputController.dispose();
     _inputFocusNode.dispose();
