@@ -52,14 +52,10 @@ void main() {
 
   test('#2 CR-14 回归：createChaptersBatch 支持 volumeId', () async {
     final v = await volumeRepo.createVolume(manuscriptId, title: '卷A');
-    final count = await chapterRepo.createChaptersBatch(
-      manuscriptId,
-      [
-        (title: 'A', content: 'aaa'),
-        (title: 'B', content: 'bbbbb'),
-      ],
-      volumeId: v,
-    );
+    final count = await chapterRepo.createChaptersBatch(manuscriptId, [
+      (title: 'A', content: 'aaa'),
+      (title: 'B', content: 'bbbbb'),
+    ], volumeId: v);
 
     expect(count, 2);
     final chapters = await chapterRepo.listChapters(manuscriptId);
