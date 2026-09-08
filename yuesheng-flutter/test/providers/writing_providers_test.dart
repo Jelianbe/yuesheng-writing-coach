@@ -20,6 +20,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
 
@@ -679,5 +680,37 @@ void main() {
       );
       expect(container.read(writingStoreProvider(chapterId)).canUndo, isFalse);
     });
+
+    test(
+      '#CR-26 updateChapterTitle 后卷归属保持（回归：手写重建漏 volumeId）',
+      () async {
+        final container = buildContainer();
+        final msId = await ManuscriptRepository(
+          db,
+        ).createManuscript(title: '卷归属测试');
+        final vid = await VolumeRepository(db).createVolume(msId);
+        final cid = await ChapterRepository(
+          db,
+        ).createChapter(msId, title: '原标题', volumeId: vid);
+
+        final notifier = container.read(writingStoreProvider(cid).notifier);
+        await notifier.loadChapter();
+        expect(notifier.state.chapter?.volumeId, vid);
+
+        await notifier.updateChapterTitle('新标题');
+
+        // 修复前：逐字段重建 Chapter 漏传 volumeId → state 中卷归属丢失
+        // （DB 仍在，刷新才恢复，用户感知为「章节跑出卷外」）
+        expect(notifier.state.chapter?.title, '新标题');
+        expect(
+          notifier.state.chapter?.volumeId,
+          vid,
+          reason: 'CR-26：改标题不得丢失卷归属',
+        );
+        final dbCh = await ChapterRepository(db).getChapter(cid);
+        expect(dbCh?.title, '新标题');
+        expect(dbCh?.volumeId, vid);
+      },
+    );
   });
 }

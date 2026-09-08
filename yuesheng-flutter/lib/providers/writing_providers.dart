@@ -326,18 +326,12 @@ class WritingStore extends StateNotifier<WritingState> {
       final repo = ChapterRepository(_db);
       await repo.updateChapterTitle(chapterId, title);
       if (current != null) {
+        // CR-26：改用 copyWith。此前逐字段重建 Chapter 时漏传 volumeId
+        // （批次89 新增字段，手写重建点未同步补），导致改标题后章节在 state
+        // 中脱离所属卷。copyWith 未指定字段保持原值，杜绝此类漏传复发。
         state = state.copyWith(
-          chapter: Chapter(
-            id: current.id,
-            manuscriptId: current.manuscriptId,
+          chapter: current.copyWith(
             title: title,
-            content: current.content,
-            wordCount: current.wordCount,
-            sortOrder: current.sortOrder,
-            status: current.status,
-            lastDiagnosedAt: current.lastDiagnosedAt,
-            previousContent: current.previousContent,
-            createdAt: current.createdAt,
             updatedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           ),
         );
