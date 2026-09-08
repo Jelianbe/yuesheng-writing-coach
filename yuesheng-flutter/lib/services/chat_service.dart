@@ -286,10 +286,11 @@ class ChatService {
   /// 某个前缀，返回需暂缓转发的后缀长度（防分隔符跨 chunk 到达时误转发）
   static int _blockPendingPrefix(String fullContent) {
     final diag = getPendingMarkerPrefix(fullContent);
+    final mdDiag = _pendingPrefix(fullContent, kMarkdownDiagOpen);
     final outline = _pendingPrefix(fullContent, kOutlineStart);
     final fact = _pendingPrefix(fullContent, kFactStart);
     final genui = _pendingPrefix(fullContent, kGenuiStart);
-    return [diag, outline, fact, genui].reduce((a, b) => a > b ? a : b);
+    return [diag, mdDiag, outline, fact, genui].reduce((a, b) => a > b ? a : b);
   }
 
   static int _pendingPrefix(String fullContent, String marker) {
@@ -501,12 +502,22 @@ extension ChatServiceSendRun on ChatService {
           ? displayLength - ChatService._kMaxStreamMarkerLen + 1
           : 0;
       final diagMarkerIndex = fullContent.indexOf(kDiagnosisStart, scanStart);
+      final mdDiagMarkerIndex = fullContent.indexOf(
+        kMarkdownDiagOpen,
+        scanStart,
+      );
       final outlineMarkerIndex = fullContent.indexOf(kOutlineStart, scanStart);
       final factMarkerIndex = fullContent.indexOf(kFactStart, scanStart);
       final genuiMarkerIndex = fullContent.indexOf(kGenuiStart, scanStart);
       final markerIndex = ChatService._earliestMarkerIndex(
         ChatService._earliestMarkerIndex(
-          ChatService._earliestMarkerIndex(diagMarkerIndex, outlineMarkerIndex),
+          ChatService._earliestMarkerIndex(
+            ChatService._earliestMarkerIndex(
+              diagMarkerIndex,
+              mdDiagMarkerIndex,
+            ),
+            outlineMarkerIndex,
+          ),
           factMarkerIndex,
         ),
         genuiMarkerIndex,
@@ -613,6 +624,8 @@ extension ChatServiceSend on ChatService {
         subphase,
         nowAtSec,
       );
+      // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
+      _injectDiagnosisProtocolAndLog(ctx.messages, content);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,
@@ -1040,8 +1053,51 @@ extension ChatServiceSend on ChatService {
             '3. 示范按当前态度档位执行：doubao/yuesheng 最小示范，sensei 零示范只给方向；\n'
             '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
             '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
-            '6. 诊断块用 ```diagnosis``` 包裹，卡片块用对应标签，不裸露 JSON。',
+            '6. 诊断块按 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 标记输出（用户请求诊断时），卡片块用对应标签，不裸露 JSON。',
       ),
+    );
+  }
+
+  /// 诊断协议后缀（ADR-C82）：追加到 user 消息侧，绕过长 prompt 指令淹没。
+  /// 实验验证：user 侧注入后 deepseek-v4-flash 稳定输出 [YS_DIAGNOSIS] 块。
+  static const String kDiagnosisProtocolSuffix =
+      '\n\n【输出要求·最高优先级】\n'
+      '用户明确请求诊断。除正文回复外，必须在回复**最末尾**附加结构化诊断块，'
+      '严格使用协议标记：\n'
+      '[YS_DIAGNOSIS]\n'
+      '{"syndromes": ["症候（必填）"], "suggested_actions": ["动作（必填）"], '
+      '"confidence": 0.0-1.0, "root_cause_analysis": "根因（可选）", '
+      '"next_focus": "下步焦点（可选）", "feedback_summary": "反馈总结（可选）", '
+      '"suggested_phase": "阶段（可选）"}\n'
+      '[/YS_DIAGNOSIS]\n'
+      '块内容必须与正文结论一致，不得伪造症候。'
+      '不要使用 markdown 代码块（```）包裹诊断 JSON；'
+      '必须用 [YS_DIAGNOSIS] 与 [/YS_DIAGNOSIS] 标记，不要省略。';
+
+  /// ADR-C82：诊断意图注入 + 请求结构观测（R-019 拆出：_sendMessageCore
+  /// 行数收敛）。注入需在流式前、历史追加后执行；观测仅 debug 级留痕。
+  void _injectDiagnosisProtocolAndLog(
+    List<ChatMessage> messages,
+    String content,
+  ) {
+    _maybeInjectDiagnosisProtocol(messages, content);
+    debugPrint(
+      '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]:${m.content.length > 40 ? '${m.content.substring(0, 20)}...${m.content.substring(m.content.length - 20)}' : m.content}").join(" | ")}',
+    );
+  }
+
+  /// 诊断意图 → user 消息侧注入诊断协议（ADR-C82；R-019 ≤50 行）。
+  void _maybeInjectDiagnosisProtocol(
+    List<ChatMessage> messages,
+    String content,
+  ) {
+    if (!isDiagnosisRequest(content)) return;
+    final lastUser = messages.lastIndexWhere((m) => m.role == 'user');
+    if (lastUser < 0) return;
+    final m = messages[lastUser];
+    messages[lastUser] = ChatMessage(
+      role: m.role,
+      content: '${m.content}\n\n$kDiagnosisProtocolSuffix',
     );
   }
 

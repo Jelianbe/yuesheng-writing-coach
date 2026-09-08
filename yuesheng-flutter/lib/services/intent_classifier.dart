@@ -262,3 +262,39 @@ String? buildIntentInstruction(UserIntent intent, List<String> recentIntents) {
       return null;
   }
 }
+
+/// 诊断请求信号（ADR-C82）：明确请求评价/诊断的措辞。
+/// 保守集合——宁可少触发（对话行为不变），避免误触发改变模型输出形态。
+const List<String> _diagnosisSignals = [
+  // 中文
+  '诊断',
+  '评价',
+  '点评',
+  '看看这段',
+  '怎么改',
+  '哪里不好',
+  '怎么改进',
+  '帮我分析',
+  '分析一下',
+  '提提意见',
+  '看看有什么问题',
+  // 英文
+  'diagnose',
+  'diagnosis',
+  'analyze',
+  'analysis',
+  'review',
+  'improve',
+  'feedback',
+  'comment',
+];
+
+/// 检测是否为明确诊断请求（纯函数，无副作用）。
+///
+/// 命中返回 true → 发送链在 user 消息侧注入诊断协议（ADR-C82）。
+bool isDiagnosisRequest(String text) {
+  final t = text.trim();
+  if (t.isEmpty) return false;
+  final lower = t.toLowerCase();
+  return _diagnosisSignals.any(lower.contains);
+}

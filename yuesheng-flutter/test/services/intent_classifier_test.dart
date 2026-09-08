@@ -192,4 +192,29 @@ void main() {
       expect(ReplyDetail.fromValue('detailed'), ReplyDetail.detailed);
     });
   });
+
+  group('isDiagnosisRequest（ADR-C82）', () {
+    test('#22 中文诊断请求 → true', () {
+      expect(isDiagnosisRequest('请帮我诊断这段文字'), isTrue);
+      expect(isDiagnosisRequest('帮我分析一下这个段落'), isTrue);
+      expect(isDiagnosisRequest('这段怎么改更好'), isTrue);
+      expect(isDiagnosisRequest('提提意见吧'), isTrue);
+      expect(isDiagnosisRequest('看看这段哪里不好'), isTrue);
+    });
+
+    test('#23 英文诊断请求 → true（大小写不敏感）', () {
+      expect(isDiagnosisRequest('diagnose it'), isTrue);
+      expect(isDiagnosisRequest('Please DIAGNOSE this paragraph'), isTrue);
+      expect(isDiagnosisRequest('analyze my writing'), isTrue);
+      expect(isDiagnosisRequest('give me feedback'), isTrue);
+    });
+
+    test('#24 非诊断内容 → false（不误触发）', () {
+      expect(isDiagnosisRequest('hi'), isFalse);
+      expect(isDiagnosisRequest('你好，在吗'), isFalse);
+      expect(isDiagnosisRequest('我今天写了一段新开头'), isFalse);
+      expect(isDiagnosisRequest(''), isFalse);
+      expect(isDiagnosisRequest('   '), isFalse);
+    });
+  });
 }

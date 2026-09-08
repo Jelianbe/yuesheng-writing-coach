@@ -18,6 +18,11 @@ export 'package:writingcoach/contracts/diagnosis_capability.dart';
 const String kDiagnosisStart = '[YS_DIAGNOSIS]';
 const String kDiagnosisEnd = '[/YS_DIAGNOSIS]';
 
+/// 模型先验的 markdown 代码块包裹（ADR-C82：deepseek 系模型对诊断 JSON
+/// 常输出 ```` ```diagnosis ```` 而非协议标记；解析器兼容，避免「输出了
+/// 但解析失败」的静默丢失。协议真源仍以 [YS_DIAGNOSIS] 为准）。
+const String kMarkdownDiagOpen = '```diagnosis';
+
 /// 解析结果（DTO 已上移至 contracts/diagnosis_capability.dart）
 
 /// 解析白名单 —— 枚举一致性（N19）的四份真源之一。
@@ -110,7 +115,7 @@ final RegExp _kSyndromeIdRe = RegExp(r'^P0\d{2}$');
 /// 又不破坏本文件头「纯函数，无副作用，不 throw」的既有契约。
 ParseResult parseDiagnosis(String rawText) {
   final startIndex = rawText.indexOf(kDiagnosisStart);
-  if (startIndex == -1) return _parseNoMarker(rawText);
+  if (startIndex == -1) return _parseMarkdownDiagnosis(rawText);
 
   final endIndex = rawText.indexOf(
     kDiagnosisEnd,
@@ -168,6 +173,37 @@ String _buildDisplayContent(String rawText, int startIndex, int endIndex) {
   return _concatDiagnosisDisplay(prefix, suffix);
 }
 
+/// ADR-C82：无协议标记时兼容模型先验的 markdown 代码块包裹
+///（```` ```diagnosis ```` ... ```` ``` ````）。模型在长历史对话下常输出
+/// 该形态而非 [YS_DIAGNOSIS]，此前解析失败导致诊断卡静默不触发。
+/// 无块或载荷非法时回退 [ParseResult.diagnosis] = null（R-019 拆出）。
+ParseResult _parseMarkdownDiagnosis(String rawText) {
+  final mdStart = rawText.indexOf(kMarkdownDiagOpen);
+  if (mdStart == -1) return _parseNoMarker(rawText);
+  final mdEnd = rawText.indexOf('```', mdStart + kMarkdownDiagOpen.length);
+  if (mdEnd == -1) return _parseNoMarker(rawText);
+  final mdJson = rawText
+      .substring(mdStart + kMarkdownDiagOpen.length, mdEnd)
+      .trim();
+  final mdDecoded = _decodeJsonPayload(mdJson);
+  if (mdDecoded.ok && mdDecoded.value is Map<String, dynamic>) {
+    final outcome = _validateDiagnosis(mdDecoded.value);
+    return ParseResult(
+      displayContent: _buildMarkdownDisplay(rawText, mdStart, mdEnd),
+      diagnosis: outcome.diagnosis,
+      rejectReason: outcome.rejectReason,
+      notes: outcome.notes,
+    );
+  }
+  // 载荷非法 → 仍剥离代码块（不泄漏原始 JSON），诊断为 null。
+  return ParseResult(
+    displayContent: stripFactBlock(
+      stripOutlineBlock(_buildMarkdownDisplay(rawText, mdStart, mdEnd)),
+    ),
+    diagnosis: null,
+  );
+}
+
 /// 无诊断块：仅剥离协议块后返回（批次74/6 契约）。
 ParseResult _parseNoMarker(String rawText) {
   // 批次74：无诊断块也要保证大纲协议块被剥离，避免 100% 非诊断路径出现协议 JSON
@@ -176,6 +212,18 @@ ParseResult _parseNoMarker(String rawText) {
     displayContent: stripFactBlock(stripOutlineBlock(rawText)),
     diagnosis: null,
   );
+}
+
+/// 组装 markdown 包裹诊断块的展示文本（ADR-C82）：剥掉代码块本身，
+/// 保留前后自然语言，与 [YS_DIAGNOSIS] 路径的展示语义一致。
+String _buildMarkdownDisplay(String rawText, int mdStart, int mdEnd) {
+  final prefix = stripFactBlock(
+    stripOutlineBlock(rawText.substring(0, mdStart)),
+  ).trimRight();
+  final suffix = stripFactBlock(
+    stripOutlineBlock(rawText.substring(mdEnd + '```'.length)),
+  ).trimLeft();
+  return _concatDiagnosisDisplay(prefix, suffix);
 }
 
 /// JSON 载荷安全解码：成功/失败用 record 区分（JSON 值本身可为 null）。
