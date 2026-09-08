@@ -34,6 +34,7 @@ import '../data/repositories/training_result_repository.dart';
 import '../data/repositories/teaching_state_repository.dart';
 import '../services/bootstrap_service.dart';
 import '../services/chat_service.dart';
+import '../services/error_handler.dart';
 import '../services/diagnosis_committer.dart';
 import '../services/diagnosis_flow_handler.dart';
 import '../services/diagnosis_service.dart';
@@ -217,7 +218,11 @@ final chatServiceProvider = Provider<ChatService>((ref) {
     stateRepo: TeachingStateRepository(db),
     diagnosisRepo: DiagnosisRepository(db),
     studentModelRepo: StudentModelRepository(db),
-    referenceRepo: ref.read(referenceCapabilityProvider),
+    // CR-35：此前用 ref.read，而同文件 messageInjector(:149) /
+    // diagnosisFlowHandler(:181) 用的是 ref.watch。read 不建立依赖，一旦
+    // referenceRepositoryProvider 被重建，本 provider 不会跟着重建，就会与
+    // 那两个编排器持有的 referenceRepo 变成两个实例（同源分歧，P1-13）。
+    referenceRepo: ref.watch(referenceCapabilityProvider),
     chapterRepo: ChapterRepository(db),
     manuscriptRepo: ManuscriptRepository(db),
     llmClient: ref.watch(llmClientProvider),
@@ -288,30 +293,11 @@ class SessionBootstrapNotifier extends AsyncNotifier<SessionBootstrapState> {
     final lastStorage = ref.watch(lastSessionStorageProvider);
     final sessionRepo = SessionRepository(db);
 
-    // 1. 取或建默认会话（复刻 useBootstrap L26-39 + 批次 50 会话恢复）：
-    //    显式目标（drawer 切换/新建）> LAST_SESSION_KEY（SecureStore 恢复）>
-    //    updated_at 最新会话 > 新建空白会话
-    final sessions = await sessionRepo.listSessions();
-    // 存在性校验：SecureStore 恢复 / 显式目标的会话可能已被删除或清库，
-    // 直接采用会在 INSERT messages 时外键约束失败（无法发送消息）。
-    // 失效时回退：显式目标 > 上次会话 > 最新会话 > 新建空白会话（RN 原优先级）。
-    final validIds = {for (final s in sessions) s.id};
-    final String sessionId;
-    if (_targetSessionId != null && validIds.contains(_targetSessionId)) {
-      sessionId = _targetSessionId!;
-    } else {
-      final lastId = await lastStorage.getLastSessionId();
-      if (lastId != null && lastId.isNotEmpty && validIds.contains(lastId)) {
-        sessionId = lastId;
-      } else if (sessions.isNotEmpty) {
-        sessionId = sessions.first.id;
-      } else {
-        sessionId = await sessionRepo.createBlankSession();
-      }
-    }
+    // 1. 取或建默认会话（复刻 useBootstrap L26-39 + 批次 50 会话恢复）
+    final sessionId = await _resolveSessionId(sessionRepo, lastStorage);
 
     // 对齐 RN initSession（chat-store.ts L79）：选定会话后持久化 LAST_SESSION_KEY
-    await lastStorage.setLastSessionId(sessionId);
+    await _persistLastSessionId(lastStorage, sessionId);
 
     // 2. 判定是否需要弹问卷
     final shouldShow = await bootstrapService.shouldShowQuestionnaire(
@@ -319,6 +305,71 @@ class SessionBootstrapNotifier extends AsyncNotifier<SessionBootstrapState> {
     );
 
     return (sessionId: sessionId, shouldShowOnboarding: shouldShow);
+  }
+
+  /// 解析本次启动要用的会话，优先级：
+  /// 显式目标（drawer 切换/新建）> LAST_SESSION_KEY（SecureStore 恢复）>
+  /// updated_at 最新会话（[SessionRepository.listSessions] 已按 updated_at DESC）
+  /// > 新建空白会话
+  ///
+  /// 存在性校验：SecureStore 恢复 / 显式目标的会话可能已被删除或清库，直接采用
+  /// 会在 INSERT messages 时外键约束失败（无法发送消息），故失效一律回退。
+  Future<String> _resolveSessionId(
+    SessionRepository sessionRepo,
+    LastSessionStorage lastStorage,
+  ) async {
+    final sessions = await sessionRepo.listSessions();
+    final validIds = {for (final s in sessions) s.id};
+    if (_targetSessionId != null && validIds.contains(_targetSessionId)) {
+      return _targetSessionId!;
+    }
+    // CR-33：读取失败不应阻断启动——「恢复到上次会话」只是体验优化，
+    // 取不到时往下走「updated_at 最新 / 新建」即可，应用照样可用。
+    final lastId = await _readLastSessionId(lastStorage);
+    if (lastId != null && lastId.isNotEmpty && validIds.contains(lastId)) {
+      return lastId;
+    }
+    if (sessions.isNotEmpty) return sessions.first.id;
+    return sessionRepo.createBlankSession();
+  }
+
+  /// 读取上次会话 ID；SecureStore 抛异常（keystore 不可用 / 平台通道未就绪）
+  /// 时降级为 null 并留痕，不阻断 bootstrap。
+  Future<String?> _readLastSessionId(LastSessionStorage storage) async {
+    try {
+      return await storage.getLastSessionId();
+    } catch (e, st) {
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: '读取 LAST_SESSION 失败，回退默认会话解析',
+        context: {'error': '$e'},
+        stack: st.toString(),
+      );
+      return null;
+    }
+  }
+
+  /// 持久化上次会话 ID。
+  ///
+  /// CR-33：写入失败**只影响下次启动恢复到哪个会话**，不影响本次使用；
+  /// 但此前它未做降级，SecureStore 一抛异常整个 build 就失败，
+  /// ChatPage 落到「初始化失败，请重试」且无重试入口 → 应用主页面不可用。
+  Future<void> _persistLastSessionId(
+    LastSessionStorage storage,
+    String sessionId,
+  ) async {
+    try {
+      await storage.setLastSessionId(sessionId);
+    } catch (e, st) {
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: '持久化 LAST_SESSION 失败，本次会话不受影响',
+        context: {'sessionId': sessionId, 'error': '$e'},
+        stack: st.toString(),
+      );
+    }
   }
 
   /// 切换会话（对齐 RN switchSession）：设置目标后重新 bootstrap

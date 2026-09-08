@@ -250,7 +250,88 @@ void main() {
       final state = await container.read(sessionBootstrapProvider.future);
       expect(state.sessionId, latestSessionId);
     });
+    // ── 以下为第五批审查补充（CR-33） ─────────────────────────
+    // SecureStore 走平台通道，keystore 不可用 / 通道未就绪时会抛异常。
+    // 「恢复到上次会话」只是体验优化，不应连带打挂整个 bootstrap——
+    // 否则 ChatPage 落到「初始化失败，请重试」且无重试入口。
+
+    test('#13 CR-33 回归：LAST_SESSION 写入失败 → 降级，bootstrap 仍成功',
+        () async {
+      final container = buildContainer(
+        overrides: [
+          lastSessionStorageProvider.overrideWithValue(
+            _ThrowingWriteLastSessionStorage(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final state = await container.read(sessionBootstrapProvider.future);
+
+      expect(state.sessionId, isNotEmpty, reason: '写入失败不应阻断启动');
+      expect(state.shouldShowOnboarding, isTrue);
+    });
+
+    test('#14 CR-33 回归：LAST_SESSION 读取失败 → 回退默认解析', () async {
+      final container = buildContainer(
+        overrides: [
+          lastSessionStorageProvider.overrideWithValue(
+            _ThrowingReadLastSessionStorage(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final state = await container.read(sessionBootstrapProvider.future);
+
+      expect(state.sessionId, isNotEmpty, reason: '读取失败应回退到新建/最新会话');
+    });
+
+    test('#15 CR-33 回归：读写均失败时，会话仍可用于后续刷新', () async {
+      final container = buildContainer(
+        overrides: [
+          lastSessionStorageProvider.overrideWithValue(
+            _ThrowingWriteLastSessionStorage(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final first = await container.read(sessionBootstrapProvider.future);
+      await container.read(sessionBootstrapProvider.notifier).refresh();
+      final second = await container.read(sessionBootstrapProvider.future);
+
+      expect(second.sessionId, first.sessionId, reason: '降级后 refresh 应稳定');
+    });
   });
+}
+
+/// 写入即抛（模拟 SecureStore 平台通道故障）
+class _ThrowingWriteLastSessionStorage implements LastSessionStorage {
+  @override
+  Future<String?> getLastSessionId() async => null;
+
+  @override
+  Future<void> setLastSessionId(String sessionId) async {
+    throw Exception('PlatformException: 写入失败');
+  }
+
+  @override
+  Future<void> clearLastSessionId() async {}
+}
+
+/// 读取即抛
+class _ThrowingReadLastSessionStorage implements LastSessionStorage {
+  @override
+  Future<String?> getLastSessionId() async {
+    throw Exception('PlatformException: 读取失败');
+  }
+
+  @override
+  Future<void> setLastSessionId(String sessionId) async {}
+
+  @override
+  Future<void> clearLastSessionId() async {}
 }
 
 /// 内存版 LastSessionStorage（批次50：测试隔离平台通道）

@@ -172,5 +172,126 @@ void main() {
       expect(after.streamingContent, isEmpty);
       expect(after.streamStageLabel, isNull);
     });
+
+    // ── 以下为第五批审查补充 ──────────────────────────────────
+    // CR-37：这四个方法此前零覆盖，且都在「发送失败 → 重试」链路上
+
+    test('#8 CR-37 removeMessage：从列表移除指定消息', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setMessages([
+        _msg(id: 'u1', role: 'user', content: 'a'),
+        _msg(id: 'a1', role: 'assistant', content: 'b'),
+      ]);
+      notifier.removeMessage('a1');
+
+      final ids = container
+          .read(chatStoreProvider)
+          .messages
+          .map((m) => m.id)
+          .toList();
+      expect(ids, ['u1'], reason: '只移除目标 id，其余保持原顺序');
+
+      // 移除不存在的 id 不应抛，也不应影响列表
+      notifier.removeMessage('not-exist');
+      expect(container.read(chatStoreProvider).messages.length, 1);
+    });
+
+    test('#9 CR-37 cancelStreaming：清 error 与流式态，但不标消息失败', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setMessages([_msg(id: 'u1', role: 'user', content: 'hi')]);
+      notifier.setStreaming(true);
+      notifier.appendStreamingContent('半截内容');
+      notifier.setError('网络错误');
+      expect(container.read(chatStoreProvider).isFailed('u1'), isTrue);
+
+      notifier.cancelStreaming();
+      final s = container.read(chatStoreProvider);
+      expect(s.isStreaming, isFalse);
+      expect(s.streamingContent, isEmpty, reason: '取消后不再展示半截内容');
+      expect(s.error, isNull);
+      expect(
+        s.isFailed('u1'),
+        isTrue,
+        reason: '「已标记失败」是既成状态，cancel 只负责干净退出本轮，不擦除历史',
+      );
+    });
+
+    test('#10 CR-37 clearMessageFailed：重试前解除失败标记', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setMessages([_msg(id: 'u1', role: 'user', content: 'hi')]);
+      notifier.setError('网络错误');
+      expect(container.read(chatStoreProvider).isFailed('u1'), isTrue);
+
+      notifier.clearMessageFailed('u1');
+      final s = container.read(chatStoreProvider);
+      expect(s.isFailed('u1'), isFalse);
+      expect(s.error, isNull, reason: '解除失败标记时一并清掉错误横幅');
+    });
+
+    test('#11 CR-37 isFailed：仅对已标记 id 为真', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setMessages([
+        _msg(id: 'u1', role: 'user', content: 'a'),
+        _msg(id: 'a1', role: 'assistant', content: 'b'),
+      ]);
+      notifier.setError('出错了');
+
+      final s = container.read(chatStoreProvider);
+      expect(s.isFailed('u1'), isTrue, reason: 'setError 只标最后一条 user 消息');
+      expect(s.isFailed('a1'), isFalse, reason: 'assistant 消息不该被标失败');
+      expect(s.isFailed('nope'), isFalse);
+    });
+
+    // CR-34 回归：三处手写重建改为 copyWith 后，语义必须逐条等价。
+    // 重点锁「重置为真」的字段——copyWith 无法用传 null 表达清空，
+    // 若漏了 clear 标志，这里会静默沿用旧值。
+    test('#12 CR-34 回归：setStreaming(true) 无 label 时重置阶段标签', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setStreaming(true, stageLabel: '正在诊断');
+      expect(container.read(chatStoreProvider).streamStageLabel, '正在诊断');
+
+      // 第二轮不带 label：不得沿用上一轮的「正在诊断」
+      notifier.setStreaming(true);
+      expect(
+        container.read(chatStoreProvider).streamStageLabel,
+        isNull,
+        reason: '改造前靠重建隐式置 null，改造后靠 clear 标志，行为须一致',
+      );
+
+      notifier.setStreaming(false);
+      expect(container.read(chatStoreProvider).streamStageLabel, isNull);
+    });
+
+    test('#13 CR-34 回归：completeStreaming 清空阶段标签', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(chatStoreProvider.notifier);
+
+      notifier.setStreaming(true, stageLabel: '正在诊断');
+      notifier.completeStreaming(
+        _msg(id: 'a1', role: 'assistant', content: 'done'),
+      );
+
+      final s = container.read(chatStoreProvider);
+      expect(s.streamStageLabel, isNull);
+      expect(s.isStreaming, isFalse);
+      expect(s.messages.length, 1);
+      expect(s.error, isNull);
+    });
   });
 }

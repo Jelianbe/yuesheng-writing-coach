@@ -49,7 +49,8 @@ class ChatState {
   /// 判断消息是否发送失败
   bool isFailed(String messageId) => failedMessageIds.contains(messageId);
 
-  /// copyWith：error 字段通过 clearError 标志显式清空，避免与「设置 error」语义冲突
+  /// copyWith：可空字段无法用「传 null」表达清空（null 表示「不修改」），
+  /// 故 error / streamStageLabel 各配一个独立的 clear 标志显式清空。
   ChatState copyWith({
     String? currentSessionId,
     List<Message>? messages,
@@ -58,6 +59,7 @@ class ChatState {
     String? streamStageLabel,
     String? error,
     bool clearError = false,
+    bool clearStreamStageLabel = false,
     Set<String>? failedMessageIds,
   }) {
     return ChatState(
@@ -65,7 +67,9 @@ class ChatState {
       messages: messages ?? this.messages,
       isStreaming: isStreaming ?? this.isStreaming,
       streamingContent: streamingContent ?? this.streamingContent,
-      streamStageLabel: streamStageLabel ?? this.streamStageLabel,
+      streamStageLabel: clearStreamStageLabel
+          ? null
+          : (streamStageLabel ?? this.streamStageLabel),
       error: clearError ? null : (error ?? this.error),
       failedMessageIds: failedMessageIds ?? this.failedMessageIds,
     );
@@ -83,10 +87,16 @@ class ChatStore extends StateNotifier<ChatState> {
     if (sessionId == state.currentSessionId) return;
     // B14：切换会话时重置流式状态，避免跨会话 stream 泄漏
     // （A 会话流式进行中切到 B，isStreaming/streamingContent 不应残留到 B）
-    state = ChatState(
+    //
+    // CR-34：此前靠「手写重建 ChatState 时干脆不传这几个字段」来隐式重置。
+    // 那是 CR-22 的同型写法——一旦 ChatState 新增字段，这里会静默丢弃它。
+    // 改为 copyWith 显式重置，未提及的字段自动沿用原值。
+    state = state.copyWith(
       currentSessionId: sessionId,
-      messages: state.messages,
-      failedMessageIds: state.failedMessageIds,
+      isStreaming: false,
+      streamingContent: '',
+      clearStreamStageLabel: true,
+      clearError: true,
     );
   }
 
@@ -108,19 +118,25 @@ class ChatStore extends StateNotifier<ChatState> {
   /// 启动/停止流式：启动时清空 streamingContent + error
   ///
   /// 注意：仅用于启动（true）。停止流式应通过 completeStreaming 或 setError，
-  /// 它们会同时处理消息追加或错误设置。直接 setStreaming(false) 也可用，
-  /// 但会保留 streamingContent（需调用方手动清空）。
+  /// 它们会同时处理消息追加或错误设置。
+  ///
+  /// CR-36：此处原注释写「直接 setStreaming(false) 也可用，但会保留
+  /// streamingContent（需调用方手动清空）」——与实现相反：无论 true/false，
+  /// streamingContent 都会被清空（PROBE-S1 实测）。已按实现更正注释，
+  /// 否则调用方会误以为能拿回流式内容。
   ///
   /// [stageLabel] 批次49：流式阶段标签（诊断/评估等），null = 默认「正在思考…」。
   void setStreaming(bool streaming, {String? stageLabel}) {
-    state = ChatState(
-      currentSessionId: state.currentSessionId,
-      messages: state.messages,
+    // CR-34：同上，改 copyWith 显式重置。streamStageLabel 的原语义是
+    // `streaming ? stageLabel : null`——启动时若 stageLabel 为 null 也要重置
+    // （不沿用上一轮的阶段标签），停止时恒为 null，故 clear 标志取
+    // `!streaming || stageLabel == null`。
+    state = state.copyWith(
       isStreaming: streaming,
       streamingContent: '',
-      streamStageLabel: streaming ? stageLabel : null,
-      error: null,
-      failedMessageIds: state.failedMessageIds,
+      streamStageLabel: stageLabel,
+      clearStreamStageLabel: !streaming || stageLabel == null,
+      clearError: true,
     );
   }
 
@@ -130,13 +146,14 @@ class ChatStore extends StateNotifier<ChatState> {
 
   /// 完成流式：追加 assistant 消息 + 重置流式状态
   void completeStreaming(Message assistantMessage) {
-    state = ChatState(
-      currentSessionId: state.currentSessionId,
+    // CR-34：同上，改 copyWith 显式重置（原写法漏传 streamStageLabel 依赖
+    // 默认值取 null，同样会在新增字段时踩雷）。
+    state = state.copyWith(
       messages: [...state.messages, assistantMessage],
       isStreaming: false,
       streamingContent: '',
-      error: null,
-      failedMessageIds: state.failedMessageIds,
+      clearStreamStageLabel: true,
+      clearError: true,
     );
   }
 
