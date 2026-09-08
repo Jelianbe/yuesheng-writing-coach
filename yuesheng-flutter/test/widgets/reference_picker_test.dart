@@ -243,7 +243,7 @@ void main() {
     await tester.tap(find.text('第一章'));
     await tester.pumpAndSettle();
 
-    expect(gotPath, '@[chapter:$chId]');
+    expect(gotPath, '@测试小说/第一章');
     expect(gotTitle, '测试小说 · 第一章');
     expect(find.text('选择引用'), findsNothing);
   });
@@ -253,13 +253,9 @@ void main() {
     // Navigator.pop(sheetCtx)，与 reference_picker._handleSelect 内的 pop
     // 构成 double-pop，损坏 Overlay/Navigator 状态 → 真实设备黑屏
     // （widget test 无 GPU 渲染，测不出；故用源码契约护栏）。
-    final src = File(
-      'lib/widgets/chat_reference.dart',
-    ).readAsStringSync();
+    final src = File('lib/widgets/chat_reference.dart').readAsStringSync();
     final lines = src.split('\n');
-    final offending = lines.where(
-      (l) => l.contains('Navigator.pop(sheetCtx)'),
-    );
+    final offending = lines.where((l) => l.contains('Navigator.pop(sheetCtx)'));
     expect(
       offending,
       isEmpty,

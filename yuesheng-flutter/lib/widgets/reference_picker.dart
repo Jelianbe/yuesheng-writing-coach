@@ -10,7 +10,7 @@
 // 说明：
 //   - session_reference.ref_type 支持 manuscript/chapter/file（批次7 D2：v21 CHECK 已扩）；
 //     素材文件（file）可作次引用，不可设主（setPrimaryReference 有 ArgumentError 防御）
-//   - mention 模式（@W001/C003 插入输入框）依赖 mention-parser，后续批次
+//   - mention 模式（@作品标题/章节标题 插入输入框，批次71 文字格式）
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -29,7 +29,7 @@ class ReferencePicker extends ConsumerStatefulWidget {
   /// 选择回调：refType ∈ {manuscript, chapter, file}（default 模式）
   final void Function(String refType, String refId, String title)? onSelect;
 
-  /// mention 模式回调：选择后返回 @路径 + 标题（如 "@W001/C003"）
+  /// mention 模式回调：选择后返回 @路径 + 标题（如 "@AAA/第一章"）
   final void Function(String mentionPath, String title)? onSelectMention;
 
   /// 模式：'default' 设引用；'mention' 插入 @路径 到输入框
@@ -103,10 +103,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   ) {
     Navigator.of(context).pop();
     if (widget.mode == 'mention') {
-      // A-2：mention 模式传出稳定 ID 标记 @[refType:refId]（改名免疫），
-      // 而非 @标题 文本；title 仍传出（选择器内徽章预览用）。
-      final markerPath = '@[$refType:$refId]';
-      widget.onSelectMention?.call(markerPath, title);
+      // 插入 @标题 路径（@AAA 或 @AAA/第一章，/ 表上下级；批次71 文字格式）。
+      // 注：曾用稳定 ID 标记 @[refType:refId]（改名免疫），但用户侧展示为
+      // 编号不易读；trade-off：改名后旧消息引用降级为普通文本（parser 兼容）。
+      widget.onSelectMention?.call(mentionPath, title);
     } else {
       widget.onSelect?.call(refType, refId, title);
     }

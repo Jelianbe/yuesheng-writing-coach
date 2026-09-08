@@ -147,7 +147,7 @@ class ChatInputState extends State<ChatInput> {
   }
 
   /// 在 @ 触发位置替换插入 mentionPath
-  /// 注意：mentionPath 已由 buildMentionPath 带上 @ 前缀（如 "@W001/C003"），
+  /// 注意：mentionPath 已由 buildMentionPath 带上 @ 前缀（如 "@AAA/第一章"），
   /// 这里不再重复加 @。（批次70：替代原来简单拼接在末尾的方式）
   void insertMention(String mentionPath) {
     final at = _mentionAtOffset;
