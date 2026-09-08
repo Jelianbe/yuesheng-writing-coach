@@ -49,9 +49,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('开始之前，请了解'), findsOneWidget);
-    expect(find.textContaining('发送至 DeepSeek API'), findsOneWidget);
+    expect(find.textContaining('发送至你所选的 AI 服务商 API'), findsOneWidget);
     expect(find.textContaining('无任何遥测与数据上报'), findsOneWidget);
-    expect(find.textContaining('DeepSeek 账户按用量承担'), findsOneWidget);
+    expect(find.textContaining('服务商账户按用量承担'), findsOneWidget);
   });
 
   testWidgets('#2 点「我知道了」→ 关闭 + flag 落库', (tester) async {

@@ -62,6 +62,31 @@ class TestConnectionResult {
   });
 }
 
+/// OpenAI 兼容模型的参数画像（ADR-C83：扩展多供应商）。
+///
+/// 差异点：
+/// - OpenAI o 系列推理模型（o1/o3/o4/gpt-5）：不支持 `temperature`，
+///   `max_tokens` 需改用 `max_completion_tokens`，否则请求 400；
+/// - DeepSeek 系与其他 OpenAI 兼容端点：`max_tokens` + `temperature`
+///   均支持（现状保持不变）。
+class LlmModelProfile {
+  /// true = 推理优先模型：禁 temperature，用 max_completion_tokens
+  final bool reasoningOnly;
+  const LlmModelProfile({required this.reasoningOnly});
+}
+
+/// 按模型名识别参数画像（纯函数，前缀匹配、大小写不敏感）。
+/// 仅识别 OpenAI o 系列推理模型；其余（含 deepseek）走通用 OpenAI 行为。
+LlmModelProfile classifyLlmModel(String model) {
+  final m = model.toLowerCase().trim();
+  final reasoningOnly =
+      RegExp(r'^(o1|o3|o4|gpt-5)([-.]|$)').hasMatch(m) ||
+      m.startsWith('o1-') ||
+      m.startsWith('o3-') ||
+      m.startsWith('o4-');
+  return LlmModelProfile(reasoningOnly: reasoningOnly);
+}
+
 /// LLM 客户端（依赖 LlmConfigStorage + Dio）
 class LlmClient {
   final LlmConfigStorage _configStorage;
@@ -355,35 +380,47 @@ class LlmClient {
     );
   }
 
-  /// 构建非流式请求体（R-019 拆出；ADR-C80 增 maxTokens / extraBody 覆盖）。
+  /// 构建非流式请求体（R-019 拆出；ADR-C80 增 maxTokens / extraBody 覆盖；
+  /// ADR-C83 增推理模型参数差异：o 系列禁 temperature、用 max_completion_tokens）。
   String _buildChatCompletionBody(
     LlmConfigValues c,
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
   }) {
+    final profile = classifyLlmModel(c.model);
     final body = <String, dynamic>{
       'model': c.model,
       'messages': messages.map((m) => m.toJson()).toList(),
       'stream': false,
-      'temperature': LlmConfig.chatTemperature,
-      'max_tokens': maxTokens ?? LlmConfig.chatMaxTokens,
     };
+    if (profile.reasoningOnly) {
+      body['max_completion_tokens'] = maxTokens ?? LlmConfig.chatMaxTokens;
+    } else {
+      body['temperature'] = LlmConfig.chatTemperature;
+      body['max_tokens'] = maxTokens ?? LlmConfig.chatMaxTokens;
+    }
     if (extraBody != null) body.addAll(extraBody);
     return jsonEncode(body);
   }
 
-  /// 构建流式请求体（R-019 拆出）。
+  /// 构建流式请求体（R-019 拆出；ADR-C83 增推理模型参数差异）。
   String _buildStreamRequestBody(
     LlmConfigValues c,
     List<ChatMessage> messages,
   ) {
-    return jsonEncode({
+    final profile = classifyLlmModel(c.model);
+    final body = <String, dynamic>{
       'model': c.model,
       'messages': messages.map((m) => m.toJson()).toList(),
       'stream': true,
-      'temperature': LlmConfig.streamTemperature,
-    });
+    };
+    if (profile.reasoningOnly) {
+      body['max_completion_tokens'] = LlmConfig.chatMaxTokens;
+    } else {
+      body['temperature'] = LlmConfig.streamTemperature;
+    }
+    return jsonEncode(body);
   }
 
   /// 发起流式 POST（建连阶段取消单独分类，R-019 拆出）。

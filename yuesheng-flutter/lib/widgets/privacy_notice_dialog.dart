@@ -42,14 +42,14 @@ Future<void> showPrivacyNoticeDialog(BuildContext context) {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '· 你的作品文本会发送至 DeepSeek API，用于生成诊断与教学反馈。',
+            '· 你的作品文本会发送至你所选的 AI 服务商 API，用于生成诊断与教学反馈。',
             style: AppTextStyles.body,
           ),
           SizedBox(height: 8),
           Text('· 全部数据仅存储在你的设备本地，本应用无任何遥测与数据上报。', style: AppTextStyles.body),
           SizedBox(height: 8),
           Text(
-            '· API 费用由你自己的 DeepSeek 账户按用量承担，本应用不代收任何费用。',
+            '· API 费用由你对应的服务商账户按用量承担，本应用不代收任何费用。',
             style: AppTextStyles.body,
           ),
         ],

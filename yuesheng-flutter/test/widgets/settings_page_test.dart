@@ -180,6 +180,12 @@ void main() {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();
 
+    await tester.dragUntilVisible(
+      find.text('填充示例配置'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('填充示例配置'));
     await tester.pumpAndSettle();
 
@@ -202,6 +208,12 @@ void main() {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();
 
+    await tester.dragUntilVisible(
+      find.text('清空配置'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('清空配置'));
     await tester.pumpAndSettle();
     expect(find.text('确定清空所有 API 配置吗？'), findsOneWidget);
@@ -447,7 +459,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // API 区在首屏
-      expect(find.text('如何获取 DeepSeek Key →'), findsOneWidget);
+      expect(find.text('如何获取 API Key →'), findsOneWidget);
 
       await scrollTo(tester, '导出会话记录（JSON）');
       expect(find.text('导出会话记录（JSON）'), findsOneWidget);
@@ -461,17 +473,17 @@ void main() {
       await tester.pumpAndSettle();
 
       // API 区在首屏但按钮贴近视口底部，先滚动确保命中
-      await scrollTo(tester, '如何获取 DeepSeek Key →');
-      await tester.tap(find.text('如何获取 DeepSeek Key →'));
+      await scrollTo(tester, '如何获取 API Key →');
+      await tester.tap(find.text('如何获取 API Key →'));
       await tester.pumpAndSettle();
 
-      expect(find.text('如何获取 DeepSeek Key'), findsOneWidget);
+      expect(find.text('如何获取 API Key'), findsOneWidget);
       expect(find.textContaining('platform.deepseek.com'), findsOneWidget);
       expect(find.textContaining('账户余额'), findsOneWidget);
 
       await tester.tap(find.text('知道了'));
       await tester.pumpAndSettle();
-      expect(find.text('如何获取 DeepSeek Key'), findsNothing);
+      expect(find.text('如何获取 API Key'), findsNothing);
     });
 
     testWidgets('#E3 隐私与费用说明（设置页常驻入口）', (tester) async {
@@ -483,7 +495,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('开始之前，请了解'), findsOneWidget);
-      expect(find.textContaining('发送至 DeepSeek API'), findsOneWidget);
+      expect(find.textContaining('发送至你所选的 AI 服务商 API'), findsOneWidget);
       await tester.tap(find.text('我知道了'));
       await tester.pumpAndSettle();
       expect(find.text('开始之前，请了解'), findsNothing);

@@ -34,6 +34,37 @@ const String _appVersion = '0.1.0';
 const String _packageName = 'com.yuesheng.writingcoach';
 const String _feedbackEmail = 'feedback@yuesheng.app';
 
+/// OpenAI 兼容供应商预设（ADR-C83：扩展多模型）。选中自动填 Base URL +
+/// Model 默认值；API Key 各供应商独立，仍需用户自行填写（R-029 零硬编码）。
+const List<({String name, String baseUrl, String model})> _llmPresets = [
+  (
+    name: 'DeepSeek',
+    baseUrl: 'https://api.deepseek.com',
+    model: 'deepseek-v4-flash',
+  ),
+  (name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o'),
+  (
+    name: 'Kimi（月之暗面）',
+    baseUrl: 'https://api.moonshot.cn/v1',
+    model: 'moonshot-v1-8k',
+  ),
+  (
+    name: '通义千问',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    model: 'qwen-plus',
+  ),
+  (
+    name: '智谱 GLM',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    model: 'glm-4',
+  ),
+  (
+    name: '豆包（火山方舟）',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'doubao-pro-32k',
+  ),
+];
+
 class SettingsPage extends ConsumerStatefulWidget {
   /// LLM 配置存储（测试可注入 fake）
   final LlmConfigStorage? configStorage;
@@ -320,17 +351,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// ADR-C83：选中供应商预设 → 自动填 Base URL + Model（Key 不动）。
+  void _applyPreset(({String name, String baseUrl, String model}) preset) {
+    setState(() {
+      _baseUrlCtrl.text = preset.baseUrl;
+      _modelCtrl.text = preset.model;
+    });
+  }
+
   /// 如何获取 DeepSeek Key：平台路径 + 费用一句话（v0.1 发布批任务 2.3）
   void _handleShowKeyGuide() {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('如何获取 DeepSeek Key', style: AppTextStyles.titleLg),
+        title: const Text('如何获取 API Key', style: AppTextStyles.titleLg),
         content: const Text(
-          '1. 浏览器打开 platform.deepseek.com 并注册 / 登录；\n'
-          '2. 进入「API keys」页面，点「创建 API key」，复制生成的 sk- 开头密钥；\n'
+          '1. 在所选 AI 服务商官网注册 / 登录（DeepSeek 为 platform.deepseek.com）；\n'
+          '2. 进入「API keys」页面，创建并复制你的密钥（多为 sk- 开头）；\n'
           '3. 回到本页，粘贴到上方 API Key 输入框保存。\n\n'
-          '费用按实际用量计入你的 DeepSeek 账户余额，具体价格见平台充值页。',
+          '费用按实际用量计入你对应服务商账户余额，具体价格见各平台充值页。',
           style: AppTextStyles.body,
         ),
         actions: [
@@ -470,6 +509,30 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             autocorrect: false,
             decoration: _inputDecoration('deepseek-v4-flash'),
           ),
+          // ADR-C83：供应商预设快捷入口（点选自动填 Base URL + Model）
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final preset in _llmPresets)
+                ActionChip(
+                  label: Text(
+                    preset.name,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  side: const BorderSide(color: AppColors.border),
+                  backgroundColor: AppColors.surface,
+                  onPressed: (_isSaving || _isTestingConn)
+                      ? null
+                      : () => _applyPreset(preset),
+                ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -568,7 +631,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           TextButton(
             onPressed: _handleShowKeyGuide,
             child: const Text(
-              '如何获取 DeepSeek Key →',
+              '如何获取 API Key →',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w500,
