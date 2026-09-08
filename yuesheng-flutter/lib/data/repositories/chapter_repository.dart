@@ -56,10 +56,14 @@ class ChapterRepository {
 
   /// 批量创建章节（事务内追加，sort_order 从 MAX+1 递增）
   /// 复刻 createChaptersBatch(manuscriptId, chapters)
+  ///
+  /// [volumeId] 可选（CR-14 修复）：此前批量导入的章节恒落「未分卷」，
+  /// 与 [createChapter] 支持指定卷的行为分歧；追加导入页可按目标卷传入。
   Future<int> createChaptersBatch(
     String manuscriptId,
-    List<({String title, String content})> chapters,
-  ) async {
+    List<({String title, String content})> chapters, {
+    String? volumeId,
+  }) async {
     if (chapters.isEmpty) return 0;
 
     return _db.transaction(() async {
@@ -84,6 +88,7 @@ class ChapterRepository {
                 wordCount: Value(ch.content.length),
                 sortOrder: Value(order),
                 status: const Value('draft'),
+                volumeId: Value(volumeId),
                 createdAt: Value(now),
                 updatedAt: Value(now),
               ),

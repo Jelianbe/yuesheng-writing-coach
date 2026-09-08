@@ -34,9 +34,11 @@ class VolumeRepository {
               .getSingleOrNull();
       order = (maxOrder?.read(_db.volumes.sortOrder.max()) ?? -1) + 1;
     }
+    // CR-11：标题序号按实际落库的 order 推导，与 sortOrder 同源。
+    // 此前按「当前卷数+1」推导，删卷后卷数减少而 order 不减 → 重名。
     final resolvedTitle = title?.trim().isNotEmpty == true
         ? title!.trim()
-        : nextVolumeTitle(await listVolumes(manuscriptId));
+        : _volumeTitleByOrder(order);
     await _db
         .into(_db.volumes)
         .insert(
@@ -145,17 +147,44 @@ class VolumeRepository {
   }
 
   /// 批次92-2：重命名卷（鱼写作长按驱动模型——长按卷头 → 重命名）
+  ///
+  /// 空名回退自动命名，与 [createVolume] 同源（CR-13 修复）：二者都走
+  /// [_volumeTitleByOrder]，不再各自给一套兜底文案（此前一处给「第一卷」、
+  /// 一处给「未命名卷」，用户侧表现为同名空卷两种叫法）。
   Future<void> updateVolumeTitle(String volumeId, String title) async {
+    final trimmed = title.trim();
+    if (trimmed.isNotEmpty) {
+      await _writeVolumeTitle(volumeId, trimmed);
+      return;
+    }
+    final current = await getVolume(volumeId);
+    if (current == null) return;
+    await _writeVolumeTitle(volumeId, _volumeTitleByOrder(current.sortOrder));
+  }
+
+  Future<void> _writeVolumeTitle(String volumeId, String title) async {
     await (_db.update(_db.volumes)..where((t) => t.id.equals(volumeId))).write(
-      VolumesCompanion(
-        title: Value(title.trim().isEmpty ? '未命名卷' : title.trim()),
-        updatedAt: Value(nowSec()),
-      ),
+      VolumesCompanion(title: Value(title), updatedAt: Value(nowSec())),
     );
   }
 
-  /// 计算新建卷的自动标题（「第X卷」，按当前卷数 +1）
+  /// 计算新建卷的自动标题（「第X卷」）。
+  ///
+  /// CR-11 修复：序号按 **MAX(sort_order)+1** 推导，与 [createVolume] 的
+  /// sortOrder 同源。此前按 `volumes.length + 1` 推导——删掉非末卷后
+  /// length 减小而 MAX(sort_order) 不变，两个基准独立漂移，新建卷必然与
+  /// 现存卷重名（实测：删「第二卷」后新建得到第二个「第三卷」）。
   String nextVolumeTitle(List<Volume> volumes) {
-    return '第${intToChineseNumber(volumes.length + 1)}卷';
+    var maxOrder = -1;
+    for (final v in volumes) {
+      if (v.sortOrder > maxOrder) maxOrder = v.sortOrder;
+    }
+    return _volumeTitleByOrder(maxOrder + 1);
+  }
+
+  /// 「第X卷」的唯一构造处（sort_order → 标题），供 [nextVolumeTitle]
+  /// 与 [updateVolumeTitle] 共用，避免同源实现分歧。
+  String _volumeTitleByOrder(int sortOrder) {
+    return '第${intToChineseNumber(sortOrder + 1)}卷';
   }
 }

@@ -133,4 +133,32 @@ void main() {
       '第二卷',
     );
   });
+
+  test('#8 CR-11 回归：删中间卷后新建不重名', () async {
+    final a = await repo.createVolume(manuscriptId);
+    final b = await repo.createVolume(manuscriptId);
+    await repo.createVolume(manuscriptId);
+    // 删「第二卷」→ 剩 第一卷(0)、第三卷(2)，卷数减一但 MAX(sort_order) 不变
+    await repo.deleteVolume(b);
+
+    await repo.createVolume(manuscriptId);
+    final titles = (await repo.listVolumes(manuscriptId))
+        .map((v) => v.title)
+        .toList();
+
+    expect(titles.length, 3);
+    expect(titles.toSet().length, 3, reason: '卷标题不得重复：$titles');
+    expect(titles, ['第一卷', '第三卷', '第四卷']);
+    expect(a, isNotNull);
+  });
+
+  test('#9 CR-13 回归：空卷名兜底与 createVolume 同源', () async {
+    final v = await repo.createVolume(manuscriptId, title: '自定义卷名');
+    // 清空卷名 → 回退自动命名（按该卷 sort_order），而非「未命名卷」
+    await repo.updateVolumeTitle(v, '   ');
+
+    final after = await repo.getVolume(v);
+    expect(after?.title, '第一卷');
+    expect(after?.title, isNot('未命名卷'));
+  });
 }
