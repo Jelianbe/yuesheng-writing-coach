@@ -35,11 +35,16 @@ class _FakeLlmClient extends LlmClient {
   /// streamChat 收到的 messages（merge 阶段），供端到端断言 notes 进入合并。
   final List<List<ChatMessage>> streamMessages = [];
 
+  /// ADR-C87：每次 chatCompletion 调用后回调（测试注入中途取消时机）。
+  final void Function(int callCount)? onChatCall;
+  int _chatCallCount = 0;
+
   _FakeLlmClient({
     String chatResponse = '{"notes":[]}',
     String streamResponse = '',
     List<String>? chatResponses,
     Object? chatError,
+    this.onChatCall,
   }) : _chatResponse = chatResponse,
        _streamResponse = streamResponse,
        _chatResponses = chatResponses ?? const [],
@@ -54,6 +59,8 @@ class _FakeLlmClient extends LlmClient {
     chatMessages.addAll(messages);
     chatMaxTokens.add(maxTokens);
     chatExtraBodies.add(extraBody);
+    _chatCallCount++;
+    onChatCall?.call(_chatCallCount);
     if (_chatError != null) throw _chatError!;
     if (_chatResponses.isEmpty) return _chatResponse;
     return _chatResponses.length == 1
@@ -406,6 +413,48 @@ void main() {
       expect(result!.failedChunks, result!.chunkCount);
       // 异常路径只调用一次（无兜底重试——异常不是空 content）
       expect(fake.chatMaxTokens.length, result!.chunkCount);
+    });
+
+    test('#9 ADR-C87 取消令牌已取消 → 分块前抛，LLM 未被调用', () async {
+      final fake = _FakeLlmClient();
+      final cancel = CancelToken()..cancel();
+
+      await expectLater(
+        runProgressiveDiagnosis(
+          content: makeLongContent(),
+          title: '取消测试',
+          llmClient: fake,
+          onContent: (_) {},
+          cancelToken: cancel,
+        ),
+        throwsA(isA<ProgressiveDiagnosisCancelled>()),
+      );
+      // 第一块前即抛 → chatCompletion 从未被调用
+      expect(fake.chatMessages, isEmpty);
+    });
+
+    test('#10 ADR-C87 块分析中途取消 → 不再调后续块与合并', () async {
+      final cancel = CancelToken();
+      final fake = _FakeLlmClient(
+        // 第一块分析完成后取消 → 循环回到第二块前检查即抛
+        onChatCall: (n) {
+          if (n >= 1) cancel.cancel();
+        },
+      );
+
+      await expectLater(
+        runProgressiveDiagnosis(
+          content: makeLongContent(),
+          title: '取消测试',
+          llmClient: fake,
+          onContent: (_) {},
+          cancelToken: cancel,
+        ),
+        throwsA(isA<ProgressiveDiagnosisCancelled>()),
+      );
+      // 只调了一次 LLM（第一块），后续块与合并均未发起
+      expect(fake.chatMaxTokens.length, 1);
+      expect(fake.streamMessages, isEmpty);
     });
   });
 }

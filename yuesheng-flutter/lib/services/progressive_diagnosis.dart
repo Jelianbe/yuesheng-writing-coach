@@ -15,6 +15,7 @@
 
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/shared_constants.dart';
@@ -90,6 +91,21 @@ class ProgressiveResult {
     required this.chunkCount,
     required this.failedChunks,
   });
+}
+
+/// ADR-C87 延伸：分块诊断被用户取消（「停止生成」按钮）。
+///
+/// 与「返回 null（未触发分块）」必须区分：取消返回 null 会让调用方
+/// 误走单次链路（再发一次请求，比不取消更糟），故用专用异常。
+class ProgressiveDiagnosisCancelled implements Exception {
+  const ProgressiveDiagnosisCancelled();
+}
+
+/// ADR-C87 延伸：检查取消令牌，已取消则抛 [ProgressiveDiagnosisCancelled]。
+void _throwIfCancelled(CancelToken? token) {
+  if (token != null && token.isCancelled) {
+    throw const ProgressiveDiagnosisCancelled();
+  }
 }
 
 // ── 分块：按段落 + overlap 回溯（对齐 RN splitContent）──
@@ -421,6 +437,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   ProgressCallback? onProgress,
   String? sessionId,
   String diagnosisContext = '',
+  CancelToken? cancelToken,
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -435,6 +452,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   var failedChunks = 0;
 
   for (var i = 0; i < chunks.length; i++) {
+    // ADR-C87 延伸：每块前检查，用户可在多轮调用中中途停止
+    _throwIfCancelled(cancelToken);
     final result = await _analyzeSingleChunk(
       llmClient,
       title: title,
@@ -448,6 +467,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   }
 
   // 3. 合并：用 streamChat 流式输出
+  // ADR-C87 延伸：合并前检查，取消时不发起最后一次调用
+  _throwIfCancelled(cancelToken);
   final mergePrompt = buildMergePrompt(
     chunkResults,
     diagnosisContext: diagnosisContext,

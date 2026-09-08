@@ -472,6 +472,9 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
           .setError(error);
     }
 
+    // ADR-C87 延伸：诊断全链路（分块+单次）共用取消令牌
+    final cancelToken = CancelToken();
+    _cancelToken = cancelToken;
     try {
       // D2：长度路由 — 先尝试分块链路（长文本）
       final progressive = await runProgressiveDiagnosis(
@@ -484,6 +487,8 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
               .read(writingCoachStoreProvider(widget.chapterId).notifier)
               .appendStreamingContent(delta);
         },
+        // ADR-C87 延伸：分块诊断中途可取消（每块前/合并前检查）
+        cancelToken: cancelToken,
       );
 
       if (progressive != null) {
@@ -500,10 +505,6 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       // 分块链路返回 null（内容 <= THRESHOLD，不触发分块）
       // → 走 D1 已接通的单次 ChatService.sendMessage 链路
       final chatService = ref.read(chatServiceProvider);
-      // ADR-C87：单次链路可取消（分块链路暂不支持取消，_cancelToken
-      // 保持 null → 停止按钮在分块中禁用，避免点了无反应）
-      final cancelToken = CancelToken();
-      _cancelToken = cancelToken;
       await chatService.sendMessage(
         sid,
         diagPrompt,
@@ -537,6 +538,17 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
           cancelToken: cancelToken,
         ),
       );
+    } on ProgressiveDiagnosisCancelled {
+      // 用户主动停止分块诊断：优雅复位（不标记失败、不弹红错）
+      ref
+          .read(writingCoachStoreProvider(widget.chapterId).notifier)
+          .cancelStreaming();
+      if (mounted) {
+        setState(() {
+          _isDiagnosing = false;
+          _streamStageLabel = null;
+        });
+      }
     } catch (e) {
       handleDiagnosisError(e.toString());
     } finally {
