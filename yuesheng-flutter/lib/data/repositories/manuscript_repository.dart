@@ -6,6 +6,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import '../../services/decode_guard.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 
@@ -67,12 +68,17 @@ class ManuscriptRepository {
   }
 
   /// 解析稿件 tags JSON（容错：非法 JSON / 非数组 → 空列表，批次94-5）
+  ///
+  /// CR-20：解析失败此前 `catch (_)` 静默返回空列表，用户侧表现为「标签凭空
+  /// 消失」且完全不可归因（tags 由本仓库 [jsonEncode] 写入，非法值只可能来自
+  /// 脏数据 / 迁移遗留）。补 [logDecodeFailure] 留痕，降级行为不变。
   static List<String> parseTags(Manuscript manuscript) {
     try {
       final raw = jsonDecode(manuscript.tags);
       if (raw is List) return raw.whereType<String>().toList();
       return const [];
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(field: 'manuscript.tags', error: e, stack: st);
       return const [];
     }
   }

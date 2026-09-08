@@ -544,8 +544,16 @@ class WritingStore extends StateNotifier<WritingState> {
       ).getValue('chapter_goal:$chapterId');
       final goal = int.tryParse(raw ?? '') ?? 0;
       state = state.copyWith(goalWords: goal < 0 ? 0 : goal);
-    } catch (_) {
-      // 读取失败沿用当前值
+    } catch (e, st) {
+      // 读取失败沿用当前值（不阻断写作主流程）。CR-31：此前 catch (_) {}
+      // 完全无留痕，用户侧表现为「单章目标字数被静默清零」且无法归因。
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: 'loadGoalWords 读取失败，沿用当前值',
+        context: {'chapterId': chapterId, 'error': '$e'},
+        stack: st.toString(),
+      );
     }
   }
 
@@ -662,8 +670,16 @@ class WritingStore extends StateNotifier<WritingState> {
         smartPunctOn: smartPunct,
         fabVisible: fabVisible,
       );
-    } catch (_) {
-      // 读取失败沿用默认/当前值
+    } catch (e, st) {
+      // 读取失败沿用默认/当前值（不阻断写作主流程）。CR-31：同上，此前
+      // catch (_) {} 使「排版设置被静默重置」不可归因。
+      ErrorHandler.instance.captureError(
+        level: 'warn',
+        category: 'database',
+        message: 'loadEditorSettings 读取失败，沿用默认值',
+        context: {'chapterId': chapterId, 'error': '$e'},
+        stack: st.toString(),
+      );
     }
   }
 

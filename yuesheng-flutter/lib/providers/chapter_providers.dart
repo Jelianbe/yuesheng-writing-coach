@@ -338,6 +338,11 @@ final chapterStoreProvider =
 /// 单章节内容 Provider（按 chapterId 加载）
 ///
 /// 批次 C 扩展：用于写作页的章节编辑
+/// CR-28：本 provider **有意**不带自动失效机制——DB 更新后不会自动重取。
+/// 写作页自行持有并管理内容状态（WritingStore.localContent），是本 provider
+/// 的主要消费方；若此处再自动重取，会与编辑中的内存态打架，导致光标跳动 /
+/// 内容回退。故它只承担「首次加载」职责，刷新由调用方显式 invalidate。
+/// 若未来新增消费方，请先确认它不需要跟随 DB 实时更新。
 final chapterContentProvider = FutureProvider.family<Chapter?, String>((
   ref,
   chapterId,

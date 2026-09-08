@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import '../../services/fact_stale_service.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 class ChapterRepository {
   final AppDatabase _db;
@@ -21,38 +22,44 @@ class ChapterRepository {
     String? content,
     int? sortOrder,
     String? volumeId,
-  }) async {
+  }) => guardRepoWrite('chapter', 'createChapter', () async {
     final id = generateUuid();
-    final now = nowSec();
-    // 如果没指定 sortOrder，取 MAX(sort_order)+1
-    int order = sortOrder ?? 0;
-    if (sortOrder == null) {
-      final maxOrder =
-          await (_db.selectOnly(_db.chapters)
-                ..addColumns([_db.chapters.sortOrder.max()])
-                ..where(_db.chapters.manuscriptId.equals(manuscriptId)))
-              .getSingleOrNull();
-      order = (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
-    }
+    // CR-16：与 createChaptersBatch 对齐——「取 MAX(sort_order)」与 insert 必须
+    // 同处一个事务。此前两者分离，一旦出现并发写入（或取 MAX 后中途失败），
+    // 就会基于过期的 MAX 值算出重复的 sort_order。当前单机单用户场景不可达，
+    // 但与同类实现保持同构，避免同源逻辑日后再次分歧（P1-13）。
+    return _db.transaction(() async {
+      final now = nowSec();
+      // 如果没指定 sortOrder，取 MAX(sort_order)+1
+      int order = sortOrder ?? 0;
+      if (sortOrder == null) {
+        final maxOrder =
+            await (_db.selectOnly(_db.chapters)
+                  ..addColumns([_db.chapters.sortOrder.max()])
+                  ..where(_db.chapters.manuscriptId.equals(manuscriptId)))
+                .getSingleOrNull();
+        order = (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
+      }
 
-    await _db
-        .into(_db.chapters)
-        .insert(
-          ChaptersCompanion.insert(
-            id: id,
-            manuscriptId: manuscriptId,
-            title: Value(title ?? ''),
-            content: Value(content ?? ''),
-            wordCount: Value(content?.length ?? 0),
-            sortOrder: Value(order),
-            status: const Value('draft'),
-            volumeId: Value(volumeId),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-    return id;
-  }
+      await _db
+          .into(_db.chapters)
+          .insert(
+            ChaptersCompanion.insert(
+              id: id,
+              manuscriptId: manuscriptId,
+              title: Value(title ?? ''),
+              content: Value(content ?? ''),
+              wordCount: Value(content?.length ?? 0),
+              sortOrder: Value(order),
+              status: const Value('draft'),
+              volumeId: Value(volumeId),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+      return id;
+    });
+  });
 
   /// 批量创建章节（事务内追加，sort_order 从 MAX+1 递增）
   /// 复刻 createChaptersBatch(manuscriptId, chapters)
@@ -63,7 +70,7 @@ class ChapterRepository {
     String manuscriptId,
     List<({String title, String content})> chapters, {
     String? volumeId,
-  }) async {
+  }) => guardRepoWrite('chapter', 'createChaptersBatch', () async {
     if (chapters.isEmpty) return 0;
 
     return _db.transaction(() async {
@@ -97,7 +104,7 @@ class ChapterRepository {
       }
       return chapters.length;
     });
-  }
+  });
 
   /// 获取单条章节
   /// 复刻 getChapter(chapterId)
@@ -167,17 +174,18 @@ class ChapterRepository {
   /// C78 批次2a：删除前先把从该章抽出的断言/事件标 stale——两表外键挂在
   /// manuscript_id 上而非章节，删章节对它们零连带影响，不标就变「幽灵」
   /// 继续参与矛盾检测。
-  Future<void> softDeleteChapter(String chapterId) async {
-    await _markChapterFactsStale(chapterId);
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        status: const Value('archived'),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> softDeleteChapter(String chapterId) =>
+      guardRepoWrite('chapter', 'softDeleteChapter', () async {
+        await _markChapterFactsStale(chapterId);
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            status: const Value('archived'),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// C78 批次2a：反查章节三要素 → 标记该章事实 stale（决策4 并集判据）。
   /// 必须在删除动作**之前**调——删完章节行就没了，拿不到三要素。
@@ -192,21 +200,28 @@ class ChapterRepository {
   }
 
   /// 从回收站恢复章节（status → 'draft'，批次94-2）
-  Future<void> restoreChapter(String chapterId) async {
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        status: const Value('draft'),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  ///
+  /// CR-17：恢复**不**反向清除事实 stale（对比软删时 [_markChapterFactsStale]
+  /// 会标记）。这是有意的保守策略——stale 只触发一次重新抽取，代价是多算一遍，
+  /// 不会产出错误结论；反过来若盲目「反标记」，才可能让基于已删内容抽出的
+  /// 事实重新参与矛盾检测。此处显式留注，避免后人误当遗漏补上反向操作。
+  Future<void> restoreChapter(String chapterId) =>
+      guardRepoWrite('chapter', 'restoreChapter', () async {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            status: const Value('draft'),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 永久删除章节（回收站「彻底删除」，复用物理删除事务，批次94-2）
-  Future<void> purgeChapter(String chapterId) async {
-    await _deleteChapterPhysical(chapterId);
-  }
+  Future<void> purgeChapter(String chapterId) =>
+      guardRepoWrite('chapter', 'purgeChapter', () async {
+        await _deleteChapterPhysical(chapterId);
+      });
 
   /// C78 批次2a：purgeChapter 与 deleteChapter 方法体原本逐字重复（唯一差别
   /// 是文档注释），抽此共用方法——删除钩子只挂一处，既避免两处逻辑走偏，
@@ -227,80 +242,82 @@ class ChapterRepository {
 
   /// 保存章节内容（同步更新 word_count + updated_at）
   /// 复刻 saveChapterContent(chapterId, content)
-  Future<void> saveChapterContent(String chapterId, String content) async {
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        content: Value(content),
-        wordCount: Value(content.length),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> saveChapterContent(String chapterId, String content) =>
+      guardRepoWrite('chapter', 'saveChapterContent', () async {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            content: Value(content),
+            wordCount: Value(content.length),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 更新章节标题
   /// 复刻 updateChapterTitle(chapterId, title)
-  Future<void> updateChapterTitle(String chapterId, String title) async {
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(title: Value(title), updatedAt: Value(nowSec())),
-    );
-  }
+  Future<void> updateChapterTitle(String chapterId, String title) =>
+      guardRepoWrite('chapter', 'updateChapterTitle', () async {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(title: Value(title), updatedAt: Value(nowSec())),
+        );
+      });
 
   /// 更新章节的最后诊断时间
   /// 复刻 updateChapterDiagnosedAt(chapterId)
-  Future<void> updateChapterDiagnosedAt(String chapterId) async {
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        lastDiagnosedAt: Value(nowSec()),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> updateChapterDiagnosedAt(String chapterId) =>
+      guardRepoWrite('chapter', 'updateChapterDiagnosedAt', () async {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            lastDiagnosedAt: Value(nowSec()),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 采纳内容到章节（旧内容备份到 previous_content）
   /// 复刻 adoptContentToChapter(chapterId, newContent)
-  Future<void> adoptContentToChapter(
-    String chapterId,
-    String newContent,
-  ) async {
-    final chapter = await getChapter(chapterId);
-    if (chapter == null) return;
+  Future<void> adoptContentToChapter(String chapterId, String newContent) =>
+      guardRepoWrite('chapter', 'adoptContentToChapter', () async {
+        final chapter = await getChapter(chapterId);
+        if (chapter == null) return;
 
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        previousContent: Value(chapter.content),
-        content: Value(newContent),
-        wordCount: Value(newContent.length),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            previousContent: Value(chapter.content),
+            content: Value(newContent),
+            wordCount: Value(newContent.length),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 撤销上次采纳：将 previous_content 恢复为 content，并清空 previous_content
   /// 若 chapter 不存在或 previous_content 为 null，则不做任何操作。
-  Future<void> undoLastAdoption(String chapterId) async {
-    final chapter = await getChapter(chapterId);
-    if (chapter == null || chapter.previousContent == null) return;
+  Future<void> undoLastAdoption(String chapterId) =>
+      guardRepoWrite('chapter', 'undoLastAdoption', () async {
+        final chapter = await getChapter(chapterId);
+        if (chapter == null || chapter.previousContent == null) return;
 
-    final restored = chapter.previousContent!;
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        content: Value(restored),
-        previousContent: const Value(null),
-        wordCount: Value(restored.length),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+        final restored = chapter.previousContent!;
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            content: Value(restored),
+            previousContent: const Value(null),
+            wordCount: Value(restored.length),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 按 sort_order 获取章节（解析 @W001/C003 语法用）
   /// 复刻 getChapterByOrder(manuscriptId, order)
@@ -319,15 +336,19 @@ class ChapterRepository {
   ///   ① 物理删除章节（sessions.chapter_id 冗余缓存由外键 ON DELETE SET NULL 自动清空）
   ///   ② 清理 session_reference 中对该章节的悬空引用（ref_id 为软引用无外键约束）
   /// 历史记录（messages/diagnosis 的 target_ref）为软引用，保守保留不误删。
-  Future<void> deleteChapter(String chapterId) async {
-    await _deleteChapterPhysical(chapterId);
-  }
+  Future<void> deleteChapter(String chapterId) =>
+      guardRepoWrite('chapter', 'deleteChapter', () async {
+        await _deleteChapterPhysical(chapterId);
+      });
 
   /// 交换两章 sort_order（批次96-1：卷内上移/下移）
   /// 事务内读取双方当前 sort_order 后互换，保证同卷相邻章节顺序翻转。
   /// 注意：sort_order 为全局整型，同卷章节在分组排序时仅按卷内比较，
   /// 交换后同卷内相对顺序即翻转（全局值可能不连续，但卷内排序正确）。
-  Future<void> swapChapterSortOrder(String aId, String bId) async {
+  Future<void> swapChapterSortOrder(
+    String aId,
+    String bId,
+  ) => guardRepoWrite('chapter', 'swapChapterSortOrder', () async {
     await _db.transaction(() async {
       final a = await getChapter(aId);
       final b = await getChapter(bId);
@@ -340,20 +361,21 @@ class ChapterRepository {
         ChaptersCompanion(sortOrder: Value(a.sortOrder), updatedAt: Value(now)),
       );
     });
-  }
+  });
 
   /// 更新章节 sort_order（批次96-1：跨卷移动时置入目标卷末位用）
   /// volumeId 由 VolumeRepository.setChapterVolume 负责，本方法仅改顺序。
-  Future<void> updateChapterSortOrder(String chapterId, int sortOrder) async {
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(
-        sortOrder: Value(sortOrder),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> updateChapterSortOrder(String chapterId, int sortOrder) =>
+      guardRepoWrite('chapter', 'updateChapterSortOrder', () async {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            sortOrder: Value(sortOrder),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 批量统计多个作品的章节数 + 总字数。
   /// 单条 `WHERE manuscript_id IN (...)` 查询替代书架逐卡片 [listChapters] 的 N+1 查询（B27 修复）；

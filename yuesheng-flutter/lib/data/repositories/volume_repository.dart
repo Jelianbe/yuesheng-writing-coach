@@ -12,6 +12,7 @@ import '../../services/fact_stale_service.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../utils/chapter_title.dart';
+import 'repository_write_guard.dart';
 
 class VolumeRepository {
   final AppDatabase _db;
@@ -22,7 +23,7 @@ class VolumeRepository {
     String manuscriptId, {
     String? title,
     int? sortOrder,
-  }) async {
+  }) => guardRepoWrite('volume', 'createVolume', () async {
     final id = generateUuid();
     final now = nowSec();
     int order = sortOrder ?? 0;
@@ -52,7 +53,7 @@ class VolumeRepository {
           ),
         );
     return id;
-  }
+  });
 
   /// 读取作品全部卷（按 sort_order）
   Future<List<Volume>> listVolumes(String manuscriptId) async {
@@ -73,45 +74,53 @@ class VolumeRepository {
   /// 不再散落到「散落」组——卷内章节一并删除（回收站可恢复，语义与单章删除一致）。
   /// 外键 ON DELETE SET NULL 仍作兜底：软删章节的 volume_id 随卷删除被置空，
   /// 恢复后落入「散落」组，符合「卷已删除」的事实。
-  Future<void> deleteVolume(String volumeId) async {
-    await _db.transaction(() async {
-      // C78 批次2a（决策5）：标记 stale 前必须复刻下方 update 的
-      // status == 'draft' 过滤——卷内已在回收站的 archived 章节不在本次影响
-      // 范围内，按「该卷全部章节」取集会多标它们（ADR 漏记了此条件）。
-      final stale = FactStaleService(_db);
-      final targets =
-          await (_db.select(_db.chapters)..where(
+  Future<void> deleteVolume(String volumeId) =>
+      guardRepoWrite('volume', 'deleteVolume', () async {
+        await _db.transaction(() async {
+          // C78 批次2a（决策5）：标记 stale 前必须复刻下方 update 的
+          // status == 'draft' 过滤——卷内已在回收站的 archived 章节不在本次影响
+          // 范围内，按「该卷全部章节」取集会多标它们（ADR 漏记了此条件）。
+          final stale = FactStaleService(_db);
+          final targets =
+              await (_db.select(_db.chapters)..where(
+                    (t) =>
+                        t.volumeId.equals(volumeId) & t.status.equals('draft'),
+                  ))
+                  .get();
+          for (final c in targets) {
+            await stale.markChapterStale(
+              manuscriptId: c.manuscriptId,
+              chapterNo: c.sortOrder,
+              chapterHash: chapterFingerprint(c.content),
+            );
+          }
+          await (_db.update(_db.chapters)..where(
                 (t) => t.volumeId.equals(volumeId) & t.status.equals('draft'),
               ))
-              .get();
-      for (final c in targets) {
-        await stale.markChapterStale(
-          manuscriptId: c.manuscriptId,
-          chapterNo: c.sortOrder,
-          chapterHash: chapterFingerprint(c.content),
-        );
-      }
-      await (_db.update(_db.chapters)..where(
-            (t) => t.volumeId.equals(volumeId) & t.status.equals('draft'),
-          ))
-          .write(
-            ChaptersCompanion(
-              status: const Value('archived'),
-              updatedAt: Value(nowSec()),
-            ),
-          );
-      await (_db.delete(_db.volumes)..where((t) => t.id.equals(volumeId))).go();
-    });
-  }
+              .write(
+                ChaptersCompanion(
+                  status: const Value('archived'),
+                  updatedAt: Value(nowSec()),
+                ),
+              );
+          await (_db.delete(
+            _db.volumes,
+          )..where((t) => t.id.equals(volumeId))).go();
+        });
+      });
 
   /// 设置章节所属卷（volumeId null = 移出卷 → 未分卷）
-  Future<void> setChapterVolume(String chapterId, String? volumeId) async {
-    await (_db.update(
-      _db.chapters,
-    )..where((t) => t.id.equals(chapterId))).write(
-      ChaptersCompanion(volumeId: Value(volumeId), updatedAt: Value(nowSec())),
-    );
-  }
+  Future<void> setChapterVolume(String chapterId, String? volumeId) =>
+      guardRepoWrite('volume', 'setChapterVolume', () async {
+        await (_db.update(
+          _db.chapters,
+        )..where((t) => t.id.equals(chapterId))).write(
+          ChaptersCompanion(
+            volumeId: Value(volumeId),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 批次96-1：移动章节到目标卷末尾（跨卷归属调整）
   /// 事务内：
@@ -119,48 +128,51 @@ class VolumeRepository {
   ///   ② 设置 volumeId + 更新 sort_order
   /// 与 setChapterVolume 的区别：后者保持原 sort_order（章节会按原全局序
   /// 插入目标卷任意位置），本方法保证落到目标卷末位，顺序语义直观。
-  Future<void> moveChapterToVolumeEnd(
-    String chapterId,
-    String? volumeId,
-  ) async {
-    await _db.transaction(() async {
-      final maxOrder =
-          await (_db.selectOnly(_db.chapters)
-                ..addColumns([_db.chapters.sortOrder.max()])
-                ..where(
-                  volumeId == null
-                      ? _db.chapters.volumeId.isNull()
-                      : _db.chapters.volumeId.equals(volumeId),
-                ))
-              .getSingleOrNull();
-      final order = (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
-      await (_db.update(
-        _db.chapters,
-      )..where((t) => t.id.equals(chapterId))).write(
-        ChaptersCompanion(
-          volumeId: Value(volumeId),
-          sortOrder: Value(order),
-          updatedAt: Value(nowSec()),
-        ),
-      );
-    });
-  }
+  Future<void> moveChapterToVolumeEnd(String chapterId, String? volumeId) =>
+      guardRepoWrite('volume', 'moveChapterToVolumeEnd', () async {
+        await _db.transaction(() async {
+          final maxOrder =
+              await (_db.selectOnly(_db.chapters)
+                    ..addColumns([_db.chapters.sortOrder.max()])
+                    ..where(
+                      volumeId == null
+                          ? _db.chapters.volumeId.isNull()
+                          : _db.chapters.volumeId.equals(volumeId),
+                    ))
+                  .getSingleOrNull();
+          final order =
+              (maxOrder?.read(_db.chapters.sortOrder.max()) ?? -1) + 1;
+          await (_db.update(
+            _db.chapters,
+          )..where((t) => t.id.equals(chapterId))).write(
+            ChaptersCompanion(
+              volumeId: Value(volumeId),
+              sortOrder: Value(order),
+              updatedAt: Value(nowSec()),
+            ),
+          );
+        });
+      });
 
   /// 批次92-2：重命名卷（鱼写作长按驱动模型——长按卷头 → 重命名）
   ///
   /// 空名回退自动命名，与 [createVolume] 同源（CR-13 修复）：二者都走
   /// [_volumeTitleByOrder]，不再各自给一套兜底文案（此前一处给「第一卷」、
   /// 一处给「未命名卷」，用户侧表现为同名空卷两种叫法）。
-  Future<void> updateVolumeTitle(String volumeId, String title) async {
-    final trimmed = title.trim();
-    if (trimmed.isNotEmpty) {
-      await _writeVolumeTitle(volumeId, trimmed);
-      return;
-    }
-    final current = await getVolume(volumeId);
-    if (current == null) return;
-    await _writeVolumeTitle(volumeId, _volumeTitleByOrder(current.sortOrder));
-  }
+  Future<void> updateVolumeTitle(String volumeId, String title) =>
+      guardRepoWrite('volume', 'updateVolumeTitle', () async {
+        final trimmed = title.trim();
+        if (trimmed.isNotEmpty) {
+          await _writeVolumeTitle(volumeId, trimmed);
+          return;
+        }
+        final current = await getVolume(volumeId);
+        if (current == null) return;
+        await _writeVolumeTitle(
+          volumeId,
+          _volumeTitleByOrder(current.sortOrder),
+        );
+      });
 
   Future<void> _writeVolumeTitle(String volumeId, String title) async {
     await (_db.update(_db.volumes)..where((t) => t.id.equals(volumeId))).write(
