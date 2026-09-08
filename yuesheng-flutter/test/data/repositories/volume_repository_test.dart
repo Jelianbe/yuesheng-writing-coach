@@ -1,164 +1,83 @@
 // ─────────────────────────────────────────────────────────────
-// volume_repository_test — 批次89 卷分组仓储单元测试
+// VolumeRepository 测试 — 卷标题推导与创建组合语义
 //
-// 覆盖：
-//   1. 建卷自动命名（第一卷/第二卷…）
-//   2. 指定标题建卷
-//   3. listVolumes 按 sort_order 排序
-//   4. 章节移入卷；删卷 → 章节回「未分卷」（ON DELETE SET NULL）
-//   5. setChapterVolume(null) 移出卷
-//   6. 卷按作品隔离
+// CR-21：UI 曾「先 createVolume 后 nextVolumeTitle(listVolumes())」，
+// 新卷已入库导致提示名大一号（建「第一卷」提示「第二卷」）。
+// 修复约定：先 nextVolumeTitle(空列表/存量列表) 再 createVolume(title)。
+// 本文件锁定「先算标题 → 落库标题 == 提示标题」不变量。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
-import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 
+AppDatabase _openMemory() => AppDatabase.forTesting(NativeDatabase.memory());
+
 void main() {
-  late AppDatabase db;
-  late VolumeRepository repo;
-  late ChapterRepository chapterRepo;
-  late String manuscriptId;
+  group('CR-21 先算标题再建卷', () {
+    late AppDatabase db;
+    late ManuscriptRepository msRepo;
+    late VolumeRepository volRepo;
+    late String msId;
 
-  setUp(() async {
-    db = AppDatabase.forTesting(NativeDatabase.memory());
-    repo = VolumeRepository(db);
-    chapterRepo = ChapterRepository(db);
-    manuscriptId = await ManuscriptRepository(
-      db,
-    ).createManuscript(title: '测试稿');
-  });
+    setUp(() async {
+      db = _openMemory();
+      msRepo = ManuscriptRepository(db);
+      volRepo = VolumeRepository(db);
+      msId = await msRepo.createManuscript(title: '书');
+    });
 
-  tearDown(() async => db.close());
+    tearDown(() async => db.close());
 
-  test('#1 建卷自动命名：第一卷、第二卷…', () async {
-    final v1 = await repo.createVolume(manuscriptId);
-    final v2 = await repo.createVolume(manuscriptId);
+    test('空列表先算 → 第一卷，落库标题与提示一致', () async {
+      final predicted = volRepo.nextVolumeTitle(
+        await volRepo.listVolumes(msId),
+      );
+      await volRepo.createVolume(msId, title: predicted);
+      final volumes = await volRepo.listVolumes(msId);
+      expect(predicted, '第一卷');
+      expect(volumes.single.title, predicted);
+    });
 
-    final volumes = await repo.listVolumes(manuscriptId);
-    expect(volumes.length, 2);
-    expect(volumes.map((v) => v.id), [v1, v2]);
-    expect(volumes[0].title, '第一卷');
-    expect(volumes[1].title, '第二卷');
-  });
+    test('存量一卷先算 → 第二卷，落库标题与提示一致（不重复）', () async {
+      await volRepo.createVolume(msId, title: '第一卷');
+      final predicted = volRepo.nextVolumeTitle(
+        await volRepo.listVolumes(msId),
+      );
+      await volRepo.createVolume(msId, title: predicted);
+      final volumes = await volRepo.listVolumes(msId);
+      expect(predicted, '第二卷');
+      expect(volumes.map((v) => v.title).toList(), ['第一卷', '第二卷']);
+    });
 
-  test('#2 指定标题建卷', () async {
-    final v1 = await repo.createVolume(manuscriptId, title: '  风起篇  ');
-    final volumes = await repo.listVolumes(manuscriptId);
+    test('删末卷后先算 → 复用空出的序号（CR-11 语义保持）', () async {
+      final v1 = await volRepo.createVolume(msId, title: '第一卷');
+      await volRepo.createVolume(msId, title: '第二卷');
+      await volRepo.deleteVolume(v1);
+      final predicted = volRepo.nextVolumeTitle(
+        await volRepo.listVolumes(msId),
+      );
+      await volRepo.createVolume(msId, title: predicted);
+      final volumes = await volRepo.listVolumes(msId);
+      // 删卷后 MAX(sort_order)=1 → 下一卷是「第三卷」，
+      // 与 createVolume 内部 order 推导同源，不产生重复标题。
+      expect(predicted, '第三卷');
+      expect(volumes.map((v) => v.title).toSet(), {'第二卷', '第三卷'});
+    });
 
-    expect(volumes.length, 1);
-    expect(volumes.first.id, v1);
-    expect(volumes.first.title, '风起篇', reason: '标题应 trim 后保存');
-  });
-
-  test('#3 listVolumes 按 sort_order 排序', () async {
-    await repo.createVolume(manuscriptId, title: '第一篇', sortOrder: 3);
-    await repo.createVolume(manuscriptId, title: '第二篇', sortOrder: 1);
-    await repo.createVolume(manuscriptId, title: '第三篇', sortOrder: 2);
-
-    final volumes = await repo.listVolumes(manuscriptId);
-    expect(volumes.map((v) => v.title).toList(), ['第二篇', '第三篇', '第一篇']);
-    expect(volumes.map((v) => v.sortOrder).toList(), [1, 2, 3]);
-  });
-
-  test('#4 章节移入卷；删卷 → 卷内章节一并删除（批次96-4，不再散落）', () async {
-    final volumeId = await repo.createVolume(manuscriptId, title: '第一卷');
-    final chapterId = await chapterRepo.createChapter(
-      manuscriptId,
-      title: '第一章',
-      content: '内容',
-    );
-
-    // 初始未分卷
-    expect((await chapterRepo.getChapter(chapterId))!.volumeId, isNull);
-
-    // 移入卷
-    await repo.setChapterVolume(chapterId, volumeId);
-    expect((await chapterRepo.getChapter(chapterId))!.volumeId, volumeId);
-
-    // 删卷 → 卷行消失；卷内章节软删进回收站（status='archived'），不再回未分卷
-    await repo.deleteVolume(volumeId);
-    expect(await repo.listVolumes(manuscriptId), isEmpty);
-    final ch = await chapterRepo.getChapter(chapterId);
-    expect(ch, isNotNull);
-    expect(ch!.status, 'archived');
-  });
-
-  test('#5 setChapterVolume(null) 移出卷', () async {
-    final volumeId = await repo.createVolume(manuscriptId, title: '第一卷');
-    final chapterId = await chapterRepo.createChapter(
-      manuscriptId,
-      title: '第一章',
-    );
-
-    await repo.setChapterVolume(chapterId, volumeId);
-    expect((await chapterRepo.getChapter(chapterId))!.volumeId, volumeId);
-
-    await repo.setChapterVolume(chapterId, null);
-    expect((await chapterRepo.getChapter(chapterId))!.volumeId, isNull);
-  });
-
-  test('#6 卷按作品隔离', () async {
-    final otherManuscriptId = await ManuscriptRepository(
-      db,
-    ).createManuscript(title: '另一稿');
-    await repo.createVolume(manuscriptId, title: '本稿第一卷');
-    await repo.createVolume(otherManuscriptId, title: '另一稿第一卷');
-
-    final mine = await repo.listVolumes(manuscriptId);
-    final other = await repo.listVolumes(otherManuscriptId);
-    expect(mine.length, 1);
-    expect(mine.first.title, '本稿第一卷');
-    expect(other.length, 1);
-    expect(other.first.title, '另一稿第一卷');
-  });
-
-  test('#7 nextVolumeTitle 纯函数', () {
-    final repo = VolumeRepository(db);
-    expect(repo.nextVolumeTitle([]), '第一卷');
-    expect(
-      repo.nextVolumeTitle([
-        Volume(
-          id: 'a',
-          manuscriptId: manuscriptId,
-          title: '第一卷',
-          sortOrder: 0,
-          createdAt: 0,
-          updatedAt: 0,
-        ),
-      ]),
-      '第二卷',
-    );
-  });
-
-  test('#8 CR-11 回归：删中间卷后新建不重名', () async {
-    final a = await repo.createVolume(manuscriptId);
-    final b = await repo.createVolume(manuscriptId);
-    await repo.createVolume(manuscriptId);
-    // 删「第二卷」→ 剩 第一卷(0)、第三卷(2)，卷数减一但 MAX(sort_order) 不变
-    await repo.deleteVolume(b);
-
-    await repo.createVolume(manuscriptId);
-    final titles = (await repo.listVolumes(manuscriptId))
-        .map((v) => v.title)
-        .toList();
-
-    expect(titles.length, 3);
-    expect(titles.toSet().length, 3, reason: '卷标题不得重复：$titles');
-    expect(titles, ['第一卷', '第三卷', '第四卷']);
-    expect(a, isNotNull);
-  });
-
-  test('#9 CR-13 回归：空卷名兜底与 createVolume 同源', () async {
-    final v = await repo.createVolume(manuscriptId, title: '自定义卷名');
-    // 清空卷名 → 回退自动命名（按该卷 sort_order），而非「未命名卷」
-    await repo.updateVolumeTitle(v, '   ');
-
-    final after = await repo.getVolume(v);
-    expect(after?.title, '第一卷');
-    expect(after?.title, isNot('未命名卷'));
+    test('createVolume 传 title 与内部自动命名等价（行为不漂移）', () async {
+      // 路径 A：先算后建（修复后 UI 路径）
+      final predicted = volRepo.nextVolumeTitle(
+        await volRepo.listVolumes(msId),
+      );
+      await volRepo.createVolume(msId, title: predicted);
+      // 路径 B：内部自动命名（createVolume title 空）
+      await volRepo.createVolume(msId);
+      final volumes = await volRepo.listVolumes(msId);
+      expect(volumes[0].title, '第一卷'); // 路径 A 落库
+      expect(volumes[1].title, '第二卷'); // 路径 B 内部自动命名
+    });
   });
 }

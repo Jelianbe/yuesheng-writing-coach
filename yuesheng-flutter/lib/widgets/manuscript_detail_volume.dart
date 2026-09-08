@@ -34,12 +34,14 @@ extension _ManuscriptDetailVolume on _ManuscriptDetailPageState {
     try {
       final db = ref.read(appDatabaseProvider);
       final repo = VolumeRepository(db);
-      await repo.createVolume(widget.args.manuscriptId, title: trimmed);
+      // CR-21：先算自动标题再建卷——createVolume 后列表已含新卷，
+      // nextVolumeTitle 按 MAX(sort_order)+1 推导会大一号。
       final title = trimmed.isNotEmpty
           ? trimmed
           : repo.nextVolumeTitle(
               await repo.listVolumes(widget.args.manuscriptId),
             );
+      await repo.createVolume(widget.args.manuscriptId, title: title);
       ref.invalidate(volumeListProvider(widget.args.manuscriptId));
       if (!mounted) return;
       _snack('已创建《$title》');
