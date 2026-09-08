@@ -6,6 +6,11 @@
 //   2. 非流式（ADR-C88）：onStream 不再回调 + targetRef 字段入库
 //   3. LLM 失败 → observation=null，不抛出，不入库（兜底）
 //   4. 轻量约束 system 消息已附加（轻 prompt 语义）
+//
+// ADR-C88 观测增强：
+//   8. 截断（finish_reason=length）→ 文案与「未生成有效结果」区分
+//   9. F5 入库失败 → error_logs stage=persist（原静默吞掉）
+//   7'. 用户取消（F3）→ 不落 error_logs
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
@@ -13,8 +18,11 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/editor_observation_repository.dart';
+import 'package:writingcoach/data/repositories/error_log_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 
 /// 合法 EditorResult JSON（3 条 observation）
@@ -54,41 +62,66 @@ const String _validEditorJson = '''{
   "strengths": ["意象独特"]
 }''';
 
-/// 记录 messages 的 Fake LLM（断言 system 构造 + 注入错误）
+/// 记录 messages 的 Fake LLM（断言 system 构造 + 注入错误 / finish_reason）
 class _RecordingLlmClient extends LlmClient {
   final String? fullResponse;
   final Exception? error;
+  final String? finishReason;
   List<ChatMessage> capturedMessages = [];
 
-  _RecordingLlmClient({this.fullResponse, this.error});
+  _RecordingLlmClient({this.fullResponse, this.error, this.finishReason});
 
   @override
-  Future<String> chatCompletion(
+  Future<ChatCompletionResult> chatCompletionWithMeta(
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
+    LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
   }) async {
     capturedMessages = messages;
     if (error != null) throw error!;
-    return fullResponse ?? '';
+    return ChatCompletionResult(
+      content: fullResponse ?? '',
+      finishReason: finishReason,
+    );
   }
+}
+
+/// 等待 captureError 的异步落库完成（内部 unawaited 写库，需轮询）。
+Future<List<ErrorLogEntry>> _waitForLogs(
+  ErrorLogRepository repo,
+  int minCount,
+) async {
+  for (var i = 0; i < 50; i++) {
+    final logs = await repo.queryErrorLogs();
+    if (logs.length >= minCount) return logs;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  return repo.queryErrorLogs();
 }
 
 void main() {
   late AppDatabase db;
   late SessionRepository sessionRepo;
   late EditorObservationRepository observationRepo;
+  late ErrorLogRepository errorLogRepo;
   late String sessionId;
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     sessionRepo = SessionRepository(db);
     observationRepo = EditorObservationRepository(db);
+    errorLogRepo = ErrorLogRepository(db);
+    ErrorHandler.instance.resetForTesting();
+    ErrorHandler.instance.attachRepository(errorLogRepo);
     sessionId = await sessionRepo.createBlankSession();
   });
 
-  tearDown(() async => db.close());
+  tearDown(() async {
+    ErrorHandler.instance.resetForTesting();
+    await db.close();
+  });
 
   RealtimeObservationService buildService(LlmClient llmClient) {
     return RealtimeObservationService(
@@ -251,5 +284,52 @@ void main() {
     final messages = await sessionRepo.listMessages(sessionId);
     expect(messages, isEmpty);
     expect(await observationRepo.countObservations(sessionId), 0);
+    // 取消是预期行为：不得污染 error_logs（否则真机无法区分真失败与主动取消）
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(await errorLogRepo.queryErrorLogs(), isEmpty);
+  });
+
+  test('#8 截断（finish_reason=length）→ 文案明确报「被截断」', () async {
+    // 与 #6（JSON 畸形 → 未生成有效结果）同为空 display + 空 observation，
+    // 但根因不同：截断须单独成文案，否则真机上分不清「模型没输出」与
+    // 「被 max_tokens 截断」——两者处置完全不同（后者要调输出预算）。
+    final cut = _validEditorJson.substring(0, _validEditorJson.length - 40);
+    final llm = _RecordingLlmClient(
+      fullResponse: '[YS_EDITOR]\n$cut',
+      finishReason: 'length',
+    );
+    final service = buildService(llm);
+
+    final result = await service.observe(sessionId: sessionId, text: '待观察文本');
+
+    expect(result.observation, isNull);
+    final messages = await sessionRepo.listMessages(sessionId);
+    expect(messages.last.content, contains('截断'));
+    expect(messages.last.content, isNot(contains('未生成有效结果')));
+
+    final logs = await _waitForLogs(errorLogRepo, 1);
+    expect(logs.last.context?['stage'], 'parse');
+    expect(logs.last.context?['truncated'], true);
+    expect(logs.last.context?['finishReason'], 'length');
+  });
+
+  test('#9 F5 入库失败 → error_logs stage=persist（原静默吞掉）', () async {
+    // 删掉观察表 → insert 必抛；展示链路（会话消息表）不受影响
+    // （不新建第二个 AppDatabase：同 executor 多实例会触发 drift 警告噪声）
+    await db.customStatement('DROP TABLE editor_observation');
+    final llm = _RecordingLlmClient(
+      fullResponse: '[YS_EDITOR]\n$_validEditorJson\n[/YS_EDITOR]',
+    );
+    final service = buildService(llm);
+
+    final result = await service.observe(sessionId: sessionId, text: '待观察文本');
+
+    // 展示内容照常（observation 解析成功），仅入库失败
+    expect(result.observation, isNotNull);
+    final logs = await _waitForLogs(errorLogRepo, 1);
+    expect(logs.last.category, 'database');
+    expect(logs.last.context?['stage'], 'persist');
+    expect(logs.last.context?['observationCount'], 3);
+    expect(logs.last.context?['error'], isNotNull);
   });
 }

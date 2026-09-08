@@ -3,6 +3,7 @@
 // 用 Dio 实现 OpenAI 兼容协议：
 //   - testLlmConnection: 测试连接（非流式，5 token，15s 超时）
 //   - chatCompletion: 非流式对话（温度 0.3，4096 token，60s 超时）
+//     chatCompletionWithMeta 同链路，另返回 finish_reason（截断检测）
 //   - streamChat: 流式 SSE（温度 0.7，按 data: 行解析，[DONE] 结束）
 // RN 用 XHR onprogress 实现 SSE；Flutter 用 Dio ResponseType.stream
 // ─────────────────────────────────────────────────────────────
@@ -34,6 +35,25 @@ class LlmStreamResponse {
   final String content;
   final bool isDone;
   const LlmStreamResponse({required this.content, required this.isDone});
+}
+
+/// 非流式响应完整结果（ADR-C88 观测增强）。
+///
+/// 除正文外一并带回 `finish_reason`：仅凭正文无法区分「模型没输出」与
+/// 「输出被 max_tokens 截断」，二者在快速观察链路上的归因与处置不同
+/// （前者查 prompt/解析，后者查输出预算）。
+class ChatCompletionResult {
+  /// 消息正文（可能为空串）
+  final String content;
+
+  /// OpenAI 兼容协议的结束原因：stop / length / tool_calls / content_filter…
+  /// 端点未返回时为 null。
+  final String? finishReason;
+
+  const ChatCompletionResult({required this.content, this.finishReason});
+
+  /// `finish_reason == 'length'` → 命中 max_tokens 上限，内容不完整。
+  bool get isTruncated => finishReason == 'length';
 }
 
 /// 用户主动取消请求时抛出（区别于普通异常，调用方据此做优雅复位而非报错）
@@ -202,11 +222,38 @@ class LlmClient {
   /// 参数与配置为准，传了会被静默覆盖。
   /// [cancelToken]（ADR-C88 快速观察非流式化）可用于取消请求；取消时
   /// 抛 DioExceptionType.cancel 原样上抛（不转 _buildDioError、不触发重试）。
+  ///
+  /// 只需要正文；需要 finish_reason（截断检测）或自定义重试策略的调用方
+  /// 改用 [chatCompletionWithMeta]。
   Future<String> chatCompletion(
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
+  }) async {
+    final result = await chatCompletionWithMeta(
+      messages,
+      maxTokens: maxTokens,
+      extraBody: extraBody,
+      cancelToken: cancelToken,
+    );
+    return result.content;
+  }
+
+  /// 非流式对话（含 finish_reason）——[chatCompletion] 的元数据版本。
+  ///
+  /// ADR-C88 观测增强：正文之外返回 finish_reason，供调用方判定
+  /// 「内容被 max_tokens 截断」（见 [ChatCompletionResult.isTruncated]）。
+  ///
+  /// [retryPolicy] 可按场景收紧重试（快速观察用 2 次，见
+  /// [LlmConfig.editorObservationMaxAttempts]）；端点轮换数随之取
+  /// [LlmRetryPolicy.maxAttempts]。
+  Future<ChatCompletionResult> chatCompletionWithMeta(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
+    LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
   }) async {
     final cfg = await _configStorage.getLlmConfig();
     if (cfg == null) throw Exception('API 配置未设置');
@@ -214,43 +261,60 @@ class LlmClient {
     if (!await checkNetwork()) throw Exception('网络不可用');
 
     final fallbacks = parseFallbacks(await _configStorage.getLlmFallbacksRaw());
-    final endpoints = expandEndpoints(
-      cfg,
-      fallbacks,
-      LlmRetryPolicy.standard.maxAttempts,
-    );
+    final endpoints = expandEndpoints(cfg, fallbacks, retryPolicy.maxAttempts);
 
     try {
-      return await executeWithRetry((attemptIndex) async {
-        final c = endpoints[attemptIndex - 1];
-        final response = await _dio.post<dynamic>(
-          '${c.baseUrl}/chat/completions',
-          data: _buildChatCompletionBody(
-            c,
-            messages,
-            maxTokens: maxTokens,
-            extraBody: extraBody,
-          ),
-          options: Options(
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ${c.apiKey}',
-            },
-            sendTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
-            receiveTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
-          ),
+      return await executeWithRetry(
+        (attemptIndex) => _postChatCompletion(
+          endpoints[attemptIndex - 1],
+          messages,
+          maxTokens: maxTokens,
+          extraBody: extraBody,
           cancelToken: cancelToken,
-        );
-
-        final json = response.data is String
-            ? jsonDecode(response.data as String) as Map<String, dynamic>
-            : response.data as Map<String, dynamic>;
-        return (json['choices']?[0]?['message']?['content'] ?? '') as String;
-      });
+        ),
+        policy: retryPolicy,
+      );
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) rethrow;
       throw Exception(_buildDioError(e));
     }
+  }
+
+  /// 单次非流式请求（R-019 拆出；含 finish_reason 读取）。
+  Future<ChatCompletionResult> _postChatCompletion(
+    LlmConfigValues c,
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _dio.post<dynamic>(
+      '${c.baseUrl}/chat/completions',
+      data: _buildChatCompletionBody(
+        c,
+        messages,
+        maxTokens: maxTokens,
+        extraBody: extraBody,
+      ),
+      options: Options(
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${c.apiKey}',
+        },
+        sendTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
+        receiveTimeout: Duration(milliseconds: LlmConfig.chatTimeoutMs),
+      ),
+      cancelToken: cancelToken,
+    );
+
+    final json = response.data is String
+        ? jsonDecode(response.data as String) as Map<String, dynamic>
+        : response.data as Map<String, dynamic>;
+    final choice = json['choices']?[0];
+    return ChatCompletionResult(
+      content: (choice?['message']?['content'] ?? '') as String,
+      finishReason: choice?['finish_reason'] as String?,
+    );
   }
 
   /// 流式 SSE 对话（streamChat）

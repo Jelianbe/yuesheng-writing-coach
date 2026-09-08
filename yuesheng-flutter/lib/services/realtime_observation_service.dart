@@ -11,6 +11,9 @@
 //     附加轻量约束 system 消息（表达密度：一次一个点 / 最小示范 / 不代改正文）。
 //   · R1 原则：观察结果总是入库（即使 teacher 未触发），便于审计阈值校准。
 //   · 失败兜底不抛出：API/解析失败 → observation=null，displayContent 兜底。
+//   · 失败留痕（ADR-C88 观测增强）：入库失败（F5）落 error_logs，
+//     stage=persist；解析/校验失败由 editor_service 落 stage=parse/hardlimit。
+//     用户取消（F3）不落日志。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
@@ -18,6 +21,7 @@ import 'package:writingcoach/data/repositories/editor_observation_repository.dar
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/services/editor_service.dart';
 import 'package:writingcoach/services/editor_validator.dart';
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/llm_client.dart';
 
 /// 实时通道轻量观察约束（批次68 A7，对齐表达密度规则 + A1 措辞约束）
@@ -140,10 +144,13 @@ class RealtimeObservationService {
       // ADR-C85 兜底：displayContent 空 + observation 空（LLM 输出纯 JSON
       // 块但解析/校验失败）→ 写明确提示，杜绝「点了快速观察没反应」的
       // 静默失败（API 错误已有 editor_service 兜底文案，不在此分支）。
+      // ADR-C88 观测增强：截断单独成文案——它属「内容不完整」而非「没生成」，
+      // 与 error_logs 的 stage=parse + truncated=true 一一对应，免得真机上
+      // 把「被 max_tokens 截断」误判成「模型没输出」。
       return _sessionRepo.addMessage(
         sessionId,
         'assistant',
-        '快速观察未生成有效结果，请稍后重试',
+        editorResult.truncated ? '快速观察返回内容被截断，请稍后重试' : '快速观察未生成有效结果，请稍后重试',
       );
     }
     final buffer = StringBuffer('快速观察完成，共 ${obs.observations.length} 个方面：\n');
@@ -158,7 +165,8 @@ class RealtimeObservationService {
 
   /// observation 入库（R1：观察结果总是入库，便于审计阈值校准）。
   ///
-  /// 入库失败被吞掉：不影响已写入的展示内容（失败兜底不抛出语义）。
+  /// 入库失败降级为留痕（不抛出）：不影响已写入的展示内容，但不再静默吞掉
+  /// （ADR-C88 观测增强 F5——此前 error_logs 为零，观察丢失无从查证）。
   Future<void> _persistObservation({
     required String sessionId,
     required String messageId,
@@ -184,8 +192,41 @@ class RealtimeObservationService {
           targetRefId: targetRefId,
         ),
       );
-    } catch (_) {
-      // 入库失败不影响展示内容
+    } catch (e, stack) {
+      // 入库失败不影响展示内容，但必须可见（R-028：禁止空 catch）
+      _logPersistFailure(
+        sessionId: sessionId,
+        messageId: messageId,
+        count: observations.length,
+        error: e,
+        stack: stack,
+      );
     }
   }
+}
+
+/// 入库失败留痕（ADR-C88 观测增强 F5）。
+///
+/// [stage]=persist 与 editor_service 的 api/parse/hardlimit 并列，
+/// 使「观察结果丢了」与「压根没生成」在 error_logs 里可区分。
+void _logPersistFailure({
+  required String sessionId,
+  required String messageId,
+  required int count,
+  required Object error,
+  StackTrace? stack,
+}) {
+  ErrorHandler.instance.captureError(
+    level: 'warn',
+    category: 'database',
+    message: '快速观察结果入库失败，展示内容不受影响',
+    context: {
+      'stage': 'persist',
+      'sessionId': sessionId,
+      'messageId': messageId,
+      'observationCount': count,
+      'error': '$error',
+    },
+    stack: stack?.toString(),
+  );
 }

@@ -42,6 +42,7 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/chat_context_builder.dart'
     show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 import 'package:writingcoach/widgets/partial_agreement_card.dart';
 import 'package:writingcoach/widgets/practice_task_card.dart';
@@ -84,14 +85,15 @@ class FakeLlmClient extends LlmClient {
   }
 
   @override
-  Future<String> chatCompletion(
+  Future<ChatCompletionResult> chatCompletionWithMeta(
     List<ChatMessage> messages, {
     int? maxTokens,
     Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
+    LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
   }) async {
     if (error != null) throw error!;
-    return fullResponse;
+    return ChatCompletionResult(content: fullResponse, finishReason: 'stop');
   }
 }
 

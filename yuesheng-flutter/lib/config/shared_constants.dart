@@ -30,6 +30,25 @@ class LlmConfig {
   /// 实测单块输出 510–750 tokens，5 倍裕度。
   static const int chunkAnalysisFallbackMaxTokens = 8192;
 
+  /// 编辑观察（editor-observation）非流式 max_tokens（ADR-C88）。
+  ///
+  /// ADR-C88 快速观察改非流式后，默认 chatMaxTokens(4096) 对 [YS_EDITOR]
+  /// 长 JSON（3 条 observation + evidence + strengths）可能截断，导致
+  /// parseEditorObservation 失败 →「快速观察未生成有效结果」。翻倍给足
+  /// 输出余量（DeepSeek 单块实测 510–750 tokens，8192 为 10 倍裕度）。
+  static const int editorObservationMaxTokens = 8192;
+
+  /// 编辑观察（快速观察）非流式的最大尝试次数（ADR-C88 观测增强）。
+  ///
+  /// 默认 [LlmRetryPolicy.maxAttempts] = 3（1 次原始 + 2 次重试），且超时
+  /// 属可重试错误（llm_retry.dart isRetryableDioError）：单超时 60s 时最坏
+  /// ≈ 3×60s + 退避 ≈ 180s+，而 UI 只有一句「正在快速观察…」，用户多半等
+  /// 不及手动取消——重试反而把失败变成不可观测的取消（F3）。
+  ///
+  /// 快速观察是写作过程中的即时反馈，等待敏感：降为 2（1 次原始 + 1 次重试），
+  /// 最坏 ≈ 121s，保留对偶发网络抖动的一次容错。真机若仍嫌长再降到 1。
+  static const int editorObservationMaxAttempts = 2;
+
   /// 分块分析兜底重试的请求体附加字段（ADR-C80）。
   ///
   /// `thinking: {"type": "disabled"}` 是探针实测唯一被 DeepSeek API 采纳的
