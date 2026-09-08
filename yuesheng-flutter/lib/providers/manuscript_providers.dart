@@ -29,6 +29,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/outline_repository.dart';
 import '../data/repositories/volume_repository.dart';
+import '../services/error_handler.dart';
 import 'chapter_providers.dart';
 import 'app_providers.dart';
 
@@ -65,6 +66,22 @@ class ManuscriptStore extends StateNotifier<ManuscriptState> {
   final AppDatabase _db;
   ManuscriptStore(this._db) : super(const ManuscriptState());
 
+  /// 持久化失败留痕（CR-43）
+  ///
+  /// `debugPrint` 在 release 构建不输出 = 生产环境零留痕。作品 CRUD 是主链路
+  /// 操作，失败表现为用户「点了没反应」且无从归因，故落 error_logs。
+  /// 与 evaluation_providers 的 `_logPersistFailure` 同形（故意保持同构，
+  /// 便于后续统一），level 取 error —— 评估是旁路用 warn，这里是主链路。
+  void _logFailure(String op, Object e, StackTrace s) {
+    debugPrint('[ManuscriptStore] $op 失败: $e');
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'database',
+      message: '[ManuscriptStore] $op 失败: $e',
+      stack: s.toString(),
+    );
+  }
+
   /// 从 DB 加载作品列表
   Future<void> loadManuscripts() async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -76,8 +93,8 @@ class ManuscriptStore extends StateNotifier<ManuscriptState> {
         isLoading: false,
         clearError: true,
       );
-    } catch (e) {
-      debugPrint('[ManuscriptStore] loadManuscripts 失败: $e');
+    } catch (e, s) {
+      _logFailure('loadManuscripts', e, s);
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -97,27 +114,23 @@ class ManuscriptStore extends StateNotifier<ManuscriptState> {
         genre: genre,
         tags: tags,
       );
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final newMs = Manuscript(
-        id: id,
-        title: title,
-        description: description ?? '',
-        genre: genre ?? '',
-        tags: tags != null ? jsonEncode(tags) : '[]',
-        language: '中文',
-        status: 'active',
-        sortOrder: 0,
-        createdAt: now,
-        updatedAt: now,
-      );
+      // CR-42：回读 DB 真实记录，不在内存里按默认值重造一个 Manuscript。
+      // 原写法把 language / status / sortOrder 的默认值在此又抄了一份，
+      // repository 侧改默认值时本处不会同步（P1-13 同源分歧）。
+      final newMs = await repo.getManuscript(id);
+      if (newMs == null) {
+        // 回读失败（理论不可达）：重拉全量，保证内存与 DB 一致
+        await loadManuscripts();
+        return id;
+      }
       state = state.copyWith(
         manuscripts: [newMs, ...state.manuscripts],
         clearError: true,
       );
       debugPrint('[ManuscriptStore] createManuscript 成功: id=$id');
       return id;
-    } catch (e) {
-      debugPrint('[ManuscriptStore] createManuscript 失败: $e');
+    } catch (e, s) {
+      _logFailure('createManuscript', e, s);
       state = state.copyWith(error: e.toString());
       return null;
     }
@@ -143,26 +156,22 @@ class ManuscriptStore extends StateNotifier<ManuscriptState> {
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       state = state.copyWith(
         manuscripts: state.manuscripts.map((m) {
-          if (m.id == id) {
-            return Manuscript(
-              id: m.id,
-              title: title ?? m.title,
-              description: description ?? m.description,
-              genre: genre ?? m.genre,
-              tags: tags != null ? jsonEncode(tags) : m.tags,
-              language: m.language,
-              status: m.status,
-              sortOrder: m.sortOrder,
-              createdAt: m.createdAt,
-              updatedAt: now,
-            );
-          }
-          return m;
+          // CR-42：改 copyWith —— 表新增列时不会在此被静默丢弃
+          // （原写法逐字段列举，漏一个就重置成默认值）
+          return m.id == id
+              ? m.copyWith(
+                  title: title,
+                  description: description,
+                  genre: genre,
+                  tags: tags != null ? jsonEncode(tags) : null,
+                  updatedAt: now,
+                )
+              : m;
         }).toList(),
         clearError: true,
       );
-    } catch (e) {
-      debugPrint('[ManuscriptStore] updateManuscript 失败: $e');
+    } catch (e, s) {
+      _logFailure('updateManuscript', e, s);
       state = state.copyWith(error: e.toString());
     }
   }
@@ -177,8 +186,8 @@ class ManuscriptStore extends StateNotifier<ManuscriptState> {
         clearError: true,
       );
       debugPrint('[ManuscriptStore] deleteManuscript 成功: id=$id');
-    } catch (e) {
-      debugPrint('[ManuscriptStore] deleteManuscript 失败: $e');
+    } catch (e, s) {
+      _logFailure('deleteManuscript', e, s);
       state = state.copyWith(error: e.toString());
     }
   }
@@ -233,8 +242,13 @@ class ManuscriptStats {
 /// 查询替代原先每张卡片单独 manuscriptStatsProvider 的 N+1 查询。
 final allManuscriptStatsProvider = FutureProvider<Map<String, ManuscriptStats>>(
   (ref) async {
-    final store = ref.watch(manuscriptStoreProvider);
-    final ids = store.manuscripts.map((m) => m.id).toList();
+    // CR-45：只订阅 manuscripts，不订阅整个 store。store 的 isLoading /
+    // error 每次变化都会让整个 provider 重建——loadManuscripts 一轮就触发两次
+    // 统计查询（isLoading=true 一次、false 一次），且第一次拿到的还是旧列表。
+    final manuscripts = ref.watch(
+      manuscriptStoreProvider.select((s) => s.manuscripts),
+    );
+    final ids = manuscripts.map((m) => m.id).toList();
     final db = ref.watch(appDatabaseProvider);
     final stats = await ChapterRepository(db).statsForManuscripts(ids);
     return {

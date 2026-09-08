@@ -92,7 +92,10 @@ final mentionParserProvider = Provider<MentionParser>((ref) {
   return MentionParser(
     ManuscriptRepository(db),
     ChapterRepository(db),
-    ref.read(referenceCapabilityProvider),
+    // CR-47：用 watch 而非 read。read 不建立依赖，appDatabaseProvider 一旦
+    // 重建（测试 override / DB 重连），本 provider 不会重建，MentionParser 会
+    // 继续持有旧 DB 的 ReferenceRepository —— 与 CR-35（chatServiceProvider）同型。
+    ref.watch(referenceCapabilityProvider),
     VolumeRepository(db),
   );
 });

@@ -21,6 +21,7 @@ final workImportServiceProvider = Provider<WorkImportService>((ref) {
     db,
     ManuscriptRepository(db),
     ChapterRepository(db),
-    ref.read(referenceCapabilityProvider),
+    // CR-47：watch 而非 read（同 CR-35 / capability_providers 的 mentionParser）
+    ref.watch(referenceCapabilityProvider),
   );
 });
