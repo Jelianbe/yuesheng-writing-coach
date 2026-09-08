@@ -20,6 +20,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/widgets/reference_picker.dart';
 
@@ -246,6 +247,81 @@ void main() {
     expect(gotPath, '@测试小说/第一章');
     expect(gotTitle, '测试小说 · 第一章');
     expect(find.text('选择引用'), findsNothing);
+  });
+
+  testWidgets('批次97 分卷作品：卷行=选中卷，箭头=展开卷内章节', (tester) async {
+    final msId2 = await msRepo.createManuscript(title: '长篇');
+    final volRepo = VolumeRepository(db);
+    final volId = await volRepo.createVolume(msId2, title: '第一卷');
+    final chId2 = await chRepo.createChapter(msId2, title: '开篇');
+    await volRepo.setChapterVolume(chId2, volId);
+    final ungroupedId = await chRepo.createChapter(msId2, title: '番外');
+    // 未分卷章节
+    await volRepo.setChapterVolume(ungroupedId, null);
+
+    String? gotPath;
+    String? gotTitle;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => ReferencePicker(
+                      mode: 'mention',
+                      onSelectMention: (path, title) {
+                        gotPath = path;
+                        gotTitle = title;
+                      },
+                    ),
+                  ),
+                  child: const Text('打开'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+
+    // 展开作品 → 卷行 + 卷徽章 @长篇/第一卷
+    await tester.tap(find.text('长篇'));
+    await tester.pumpAndSettle();
+    expect(find.text('第一卷'), findsOneWidget);
+    expect(find.text('@长篇/第一卷'), findsOneWidget);
+    // 未分卷组标题
+    expect(find.textContaining('未分卷'), findsOneWidget);
+
+    // 点箭头展开 → 卷内章节（不触发选中回调）
+    await tester.tap(find.byIcon(Icons.keyboard_arrow_right));
+    await tester.pumpAndSettle();
+    expect(find.text('开篇'), findsOneWidget);
+    expect(gotPath, isNull);
+
+    // 选卷内章节 → 回调三段路径（选中后弹层关闭）
+    await tester.tap(find.text('开篇'));
+    await tester.pumpAndSettle();
+    expect(gotPath, '@长篇/第一卷/开篇');
+    expect(gotTitle, '长篇 · 第一卷 · 开篇');
+
+    // 重开弹层：点卷行（非箭头）→ 选中整卷（方案2b：volume 可引用）
+    gotPath = null;
+    gotTitle = null;
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('长篇'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('第一卷'));
+    await tester.pumpAndSettle();
+    expect(gotPath, '@长篇/第一卷');
+    expect(gotTitle, '长篇 · 第一卷');
   });
 
   test('契约：default 模式 onSelect 回调不得重复 pop（picker 已负责关闭）', () {

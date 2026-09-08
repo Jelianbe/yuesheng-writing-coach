@@ -646,6 +646,19 @@ class ChapterBrief {
   });
 }
 
+/// 卷详情（方案2b：卷引用注入的结构信息——卷名 + 卷内章节清单）
+class VolumeDetail {
+  final String title;
+  final String manuscriptTitle;
+  final List<ChapterBrief> chapters;
+
+  const VolumeDetail({
+    required this.title,
+    required this.manuscriptTitle,
+    required this.chapters,
+  });
+}
+
 /// 构建引用内容上下文（注入 system prompt）
 ///
 /// 真源：yuesheng-android/src/services/chat-context-builder.ts L221-338
@@ -677,6 +690,8 @@ String buildReferencesContext(
       _appendChapterReference(parts, ref, budget, resolvers);
     } else if (ref.refType == 'manuscript') {
       _appendManuscriptReference(parts, ref, budget, resolvers);
+    } else if (ref.refType == 'volume') {
+      _appendVolumeReference(parts, ref, budget, resolvers);
     }
   }
 
@@ -769,6 +784,35 @@ void _appendChapterReference(
   }
 }
 
+/// 卷引用（方案2b：注入卷结构信息——卷名 + 章节清单，不注入正文；
+/// AI 需要具体内容时按章节名再引用单章）。
+void _appendVolumeReference(
+  List<String> parts,
+  ReferenceItem ref,
+  int budget,
+  ReferenceResolvers resolvers,
+) {
+  final volume = resolvers.volumeResolver?.call(ref.refId);
+  if (volume == null) return;
+  final tag = ref.isPrimary == 1 ? '【主引用】' : '【次要引用】';
+  final totalWords = volume.chapters.fold<int>(
+    0,
+    (sum, ch) => sum + ch.wordCount,
+  );
+  parts.add('### $tag 卷：${volume.manuscriptTitle} · ${volume.title}');
+  parts.add('- 所属作品：${volume.manuscriptTitle}');
+  parts.add('- 卷内章节数：${volume.chapters.length}');
+  parts.add('- 总字数：$totalWords');
+  if (volume.chapters.isNotEmpty) {
+    parts.add('- 卷内章节：');
+    for (final ch in volume.chapters) {
+      parts.add('  ${ch.sortOrder}. ${ch.title}（${ch.wordCount}字）');
+    }
+  }
+  parts.add('【位置提示】本卷为作品的一部分，如需具体内容请引用对应章节');
+  parts.add('');
+}
+
 /// 整部作品引用（目录 + 预览章节）（R-019 拆出：buildReferencesContext）。
 void _appendManuscriptReference(
   List<String> parts,
@@ -836,10 +880,12 @@ class ReferenceResolvers {
   final AttachedFileRow? Function(String fileId) fileResolver;
   final ChapterBrief? Function(String chapterId) chapterResolver;
   final ManuscriptDetail? Function(String manuscriptId) manuscriptResolver;
+  final VolumeDetail? Function(String volumeId)? volumeResolver;
 
   const ReferenceResolvers({
     required this.fileResolver,
     required this.chapterResolver,
     required this.manuscriptResolver,
+    this.volumeResolver,
   });
 }

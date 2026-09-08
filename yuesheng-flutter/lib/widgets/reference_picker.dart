@@ -21,6 +21,7 @@ import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/reference_repository.dart';
+import '../data/repositories/volume_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 import '../services/mention_parser.dart';
@@ -50,7 +51,13 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   List<Manuscript> _manuscripts = [];
   Map<String, List<Chapter>> _chaptersMap = {};
   Map<String, List<AttachedFileRow>> _filesMap = {};
+
+  /// 作品 → 卷列表（批次97 卷引用：分卷作品按卷分组）
+  Map<String, List<Volume>> _volumesMap = {};
   String? _expandedMsId;
+
+  /// 当前展开的卷（作品下二级展开）
+  String? _expandedVolumeId;
   final Set<String> _filesExpanded = {};
   int _tab = 0; // 0=作品 1=素材
 
@@ -67,6 +74,14 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
 
     final msList = await msRepo.listManuscripts();
 
+    // 卷按稿件分组（批次97 卷引用）
+    final volRepo = VolumeRepository(db);
+    final volumesMap = <String, List<Volume>>{};
+    for (final m in msList) {
+      final vols = await volRepo.listVolumes(m.id);
+      if (vols.isNotEmpty) volumesMap[m.id] = vols;
+    }
+
     // 素材文件按稿件分组（RN loadFiles 语义）
     final filesMap = <String, List<AttachedFileRow>>{};
     for (final m in msList) {
@@ -78,6 +93,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
     setState(() {
       _manuscripts = msList;
       _filesMap = filesMap;
+      _volumesMap = volumesMap;
     });
   }
 
@@ -93,6 +109,13 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       if (!mounted) return;
       setState(() => _chaptersMap = {..._chaptersMap, manuscriptId: chapters});
     }
+  }
+
+  /// 展开/收起卷（作品展开后二级）
+  void _toggleVolume(String volumeId) {
+    setState(() {
+      _expandedVolumeId = _expandedVolumeId == volumeId ? null : volumeId;
+    });
   }
 
   void _handleSelect(
@@ -350,63 +373,177 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         ),
       );
     }
+
+    // 批次97：分卷作品先按卷分组（卷 → 卷内章节），未分卷章节归「未分卷」组
+    final volumes = _volumesMap[m.id] ?? const <Volume>[];
+    if (volumes.isNotEmpty) {
+      final ungrouped = chapters.where((c) => c.volumeId == null).toList();
+      return Column(
+        children: [
+          for (final v in volumes) _buildVolumeTile(m, v),
+          if (ungrouped.isNotEmpty) _buildUngroupedTitle(ungrouped.length),
+          for (final c in ungrouped) _buildChapterRow(m, c),
+        ],
+      );
+    }
+
+    // 无卷：章节平铺（存量逻辑）
+    return Column(children: [for (final c in chapters) _buildChapterRow(m, c)]);
+  }
+
+  /// 卷行：点击=选中卷（方案2b：@作品/卷 可引用），箭头=展开卷内章节
+  Widget _buildVolumeTile(Manuscript m, Volume v) {
+    final expanded = _expandedVolumeId == v.id;
+    final inVol = (_chaptersMap[m.id] ?? const <Chapter>[])
+        .where((c) => c.volumeId == v.id)
+        .toList();
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (var j = 0; j < chapters.length; j++)
-          InkWell(
-            onTap: () => _handleSelect(
-              'chapter',
-              chapters[j].id,
-              '${m.title} · ${chapters[j].title}',
-              buildMentionPath(m.title, subTitle: chapters[j].title),
+        Row(
+          children: [
+            Expanded(child: _buildVolumeSelectArea(m, v)),
+            _buildVolumeArrow(v, expanded),
+          ],
+        ),
+        if (expanded)
+          for (final c in inVol) _buildChapterRow(m, c, inVolume: v),
+        const Divider(height: 1, color: AppColors.borderSoft),
+      ],
+    );
+  }
+
+  /// 卷行选中区（点击 → 引用整卷 @作品/卷）
+  Widget _buildVolumeSelectArea(Manuscript m, Volume v) {
+    return InkWell(
+      onTap: () => _handleSelect(
+        'volume',
+        v.id,
+        '${m.title} · ${v.title}',
+        buildMentionPath(m.title, subTitle: v.title),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          left: AppSpacing.section + AppSpacing.sm,
+          right: AppSpacing.xxs,
+          top: AppSpacing.smx,
+          bottom: AppSpacing.smx,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                v.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.only(
-                left: AppSpacing.section + AppSpacing.sm,
-                right: AppSpacing.lg,
-                top: AppSpacing.smx,
-                bottom: AppSpacing.smx,
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            chapters[j].title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        if (widget.mode == 'mention') ...[
-                          const SizedBox(width: 8),
-                          _mentionBadge(
-                            buildMentionPath(
-                              m.title,
-                              subTitle: chapters[j].title,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Text(
-                    '${chapters[j].wordCount} 字',
+            if (widget.mode == 'mention') ...[
+              const SizedBox(width: 8),
+              _mentionBadge(buildMentionPath(m.title, subTitle: v.title)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 卷行展开箭头（点击 → 展开/收起卷内章节，不触发选中）
+  Widget _buildVolumeArrow(Volume v, bool expanded) {
+    return InkWell(
+      onTap: () => _toggleVolume(v.id),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.smx,
+        ),
+        child: Icon(
+          expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
+          size: 18,
+          color: AppColors.disabledText,
+        ),
+      ),
+    );
+  }
+
+  /// 未分卷章节组标题
+  Widget _buildUngroupedTitle(int count) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.section + AppSpacing.sm,
+        right: AppSpacing.lg,
+        top: AppSpacing.smx,
+        bottom: AppSpacing.xxs,
+      ),
+      child: Text(
+        '未分卷（$count）',
+        style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+      ),
+    );
+  }
+
+  /// 章节行（选中 → @作品/卷/章 或 @作品/章）
+  Widget _buildChapterRow(Manuscript m, Chapter c, {Volume? inVolume}) {
+    final path = buildMentionPath(
+      m.title,
+      volumeTitle: inVolume?.title,
+      subTitle: c.title,
+    );
+    final displayTitle = inVolume == null
+        ? '${m.title} · ${c.title}'
+        : '${m.title} · ${inVolume.title} · ${c.title}';
+    return InkWell(
+      onTap: () => _handleSelect('chapter', c.id, displayTitle, path),
+      child: _buildChapterRowBody(m, c, path),
+    );
+  }
+
+  /// 章节行内容区（标题 + 路径徽章 + 字数）
+  Widget _buildChapterRowBody(Manuscript m, Chapter c, String path) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: AppSpacing.section + AppSpacing.sm,
+        right: AppSpacing.lg,
+        top: AppSpacing.smx,
+        bottom: AppSpacing.smx,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    c.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.disabledText,
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
                     ),
                   ),
+                ),
+                if (widget.mode == 'mention') ...[
+                  const SizedBox(width: 8),
+                  _mentionBadge(path),
                 ],
-              ),
+              ],
             ),
           ),
-      ],
+          Text(
+            '${c.wordCount} 字',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.disabledText,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

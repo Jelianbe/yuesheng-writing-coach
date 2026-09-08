@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/chapter_repository.dart';
+import '../data/repositories/volume_repository.dart';
 import '../data/repositories/character_fact_repository.dart';
 import '../data/repositories/event_fact_repository.dart';
 import '../data/repositories/outline_repository.dart';
@@ -148,6 +149,7 @@ final messageInjectorProvider = Provider<MessageInjector>((ref) {
     referenceRepo: ref.watch(referenceCapabilityProvider),
     chapterRepo: ChapterRepository(db),
     manuscriptRepo: ManuscriptRepository(db),
+    volumeRepo: VolumeRepository(db),
     // 协议块字符串构造（K-3 已迁 DiagnosisCommitter），通过 DI 复用
     diagnosisCommitter: ref.watch(diagnosisCommitterProvider),
     material: ref.watch(materialCapabilityProvider),

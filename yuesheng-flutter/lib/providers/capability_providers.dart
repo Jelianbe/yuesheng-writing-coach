@@ -32,6 +32,7 @@ import '../contracts/reference_capability.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../data/repositories/reference_repository.dart';
+import '../data/repositories/volume_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/chat_context_builder.dart';
 import '../services/diagnosis_parser.dart';
@@ -92,6 +93,7 @@ final mentionParserProvider = Provider<MentionParser>((ref) {
     ManuscriptRepository(db),
     ChapterRepository(db),
     ref.read(referenceCapabilityProvider),
+    VolumeRepository(db),
   );
 });
 

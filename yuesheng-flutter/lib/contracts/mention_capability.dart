@@ -16,7 +16,7 @@
 /// 解析出的单条引用
 class ParsedMention {
   final String raw;
-  final String refType; // 'manuscript' | 'chapter' | 'file'
+  final String refType; // 'manuscript' | 'chapter' | 'file' | 'volume'
   final String refId;
   final String title;
 

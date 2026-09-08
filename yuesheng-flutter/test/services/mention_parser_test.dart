@@ -4,6 +4,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/services/mention_parser.dart';
 
 AppDatabase _openMemory() => AppDatabase.forTesting(NativeDatabase.memory());
@@ -21,7 +22,8 @@ void main() {
       final msRepo = ManuscriptRepository(db);
       final chRepo = ChapterRepository(db);
       final refRepo = ReferenceRepository(db);
-      parser = MentionParser(msRepo, chRepo, refRepo);
+      final volRepo = VolumeRepository(db);
+      parser = MentionParser(msRepo, chRepo, refRepo, volRepo);
 
       msId = await msRepo.createManuscript(title: '我的小说');
       chId = await chRepo.createChapter(msId, title: '第三章');
@@ -98,6 +100,74 @@ void main() {
       final r = await parser.parseMentions('@[bogus:$chId] 测试');
       expect(r.mentions.isEmpty, isTrue);
       expect(r.cleanedText.contains('@[bogus:'), isTrue);
+    });
+  });
+
+  group('批次97 卷引用：@作品/卷/章', () {
+    late AppDatabase db;
+    late MentionParser parser;
+    late VolumeRepository volRepo;
+    late String msId;
+    late String volId;
+    late String chId;
+
+    setUp(() async {
+      db = _openMemory();
+      final msRepo = ManuscriptRepository(db);
+      final chRepo = ChapterRepository(db);
+      final refRepo = ReferenceRepository(db);
+      volRepo = VolumeRepository(db);
+      parser = MentionParser(msRepo, chRepo, refRepo, volRepo);
+
+      msId = await msRepo.createManuscript(title: '长篇');
+      volId = await volRepo.createVolume(msId, title: '第一卷');
+      // 卷内章节（先建章再归卷）
+      chId = await chRepo.createChapter(msId, title: '开篇');
+      await volRepo.setChapterVolume(chId, volId);
+    });
+
+    tearDown(() async => db.close());
+
+    test('@长篇/第一卷/开篇 → 解析为卷内章节', () async {
+      final r = await parser.parseMentions('看看 @长篇/第一卷/开篇 这段');
+      expect(r.mentions.length, 1);
+      final m = r.mentions.first;
+      expect(m.refType, 'chapter');
+      expect(m.refId, chId);
+      expect(m.title, '长篇 · 第一卷 · 开篇');
+      expect(m.manuscriptId, msId);
+      expect(r.cleanedText.contains('看看'), isTrue);
+      expect(r.cleanedText.contains('这段'), isTrue);
+    });
+
+    test('卷内章节 → buildMentionPath 三段路径', () {
+      expect(
+        buildMentionPath('长篇', volumeTitle: '第一卷', subTitle: '开篇'),
+        '@长篇/第一卷/开篇',
+      );
+      expect(buildMentionPath('长篇', subTitle: '开篇'), '@长篇/开篇');
+    });
+
+    test('@长篇/第一卷 → 解析为卷引用（volume refType）', () async {
+      final r = await parser.parseMentions('看看 @长篇/第一卷 整卷');
+      expect(r.mentions.length, 1);
+      final m = r.mentions.first;
+      expect(m.refType, 'volume');
+      expect(m.refId, volId);
+      expect(m.title, '长篇 · 第一卷');
+      expect(m.manuscriptId, msId);
+      expect(r.cleanedText.contains('看看'), isTrue);
+      expect(r.cleanedText.contains('整卷'), isTrue);
+    });
+
+    test('@作品/卷 与章节同名时章节优先（内容实体优先于集合）', () async {
+      // 卷标题与章节标题同名：@长篇/开篇 应解析为章节而非卷
+      await volRepo.createVolume(msId, title: '开篇');
+      final r = await parser.parseMentions('引用 @长篇/开篇');
+      expect(r.mentions.length, 1);
+      final m = r.mentions.first;
+      expect(m.refType, 'chapter');
+      expect(m.refId, chId);
     });
   });
 }

@@ -13,6 +13,7 @@ import '../contracts/reference_capability.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
+import '../data/repositories/volume_repository.dart';
 
 // ParseResult / ParsedMention 已上移至契约层（依赖倒置），此处 re-export
 // 维持旧有「从本文件导入」的调用方（editor/reviewer/teacher_parser 等）不变。
@@ -38,7 +39,10 @@ class MentionParser implements MentionCapability {
   /// 解除「MentionCapability 实现反向依赖 Reference 具体实现」的耦合）。
   final ReferenceCapability _refRepo;
 
-  MentionParser(this._msRepo, this._chRepo, this._refRepo);
+  /// 卷读取（批次97 卷引用：@作品/卷/章 解析）
+  final VolumeRepository _volRepo;
+
+  MentionParser(this._msRepo, this._chRepo, this._refRepo, this._volRepo);
 
   /// 解析文本中的所有 @ 引用
   ///
@@ -55,6 +59,7 @@ class MentionParser implements MentionCapability {
 
     final chaptersCache = <String, List<Chapter>>{};
     final filesCache = <String, List<AttachedFileRow>>{};
+    final volumesCache = <String, List<Volume>>{};
 
     int idx = 0;
     while (idx < text.length) {
@@ -106,7 +111,57 @@ class MentionParser implements MentionCapability {
         }
         final chapters = chaptersCache[ms.id]!;
 
-        // 匹配章节标题（长度降序）
+        // 卷引用：@作品/卷/章 3 段（分卷作品路径带卷）
+        // 卷内章节限 volumeId == 卷.id，避免跨卷同名章节误匹配
+        final slashIdx = subPart.indexOf('/');
+        if (slashIdx > 0) {
+          final volumeTitle = subPart.substring(0, slashIdx);
+          final rest = subPart.substring(slashIdx + 1);
+          if (!volumesCache.containsKey(ms.id)) {
+            volumesCache[ms.id] = await _volRepo.listVolumes(ms.id);
+          }
+          final volumes = volumesCache[ms.id]!;
+          Volume? vol;
+          for (final v in volumes) {
+            final vt = v.title;
+            if (volumeTitle.startsWith(vt) &&
+                _isTitleBoundary(volumeTitle.substring(vt.length))) {
+              vol = v;
+              break;
+            }
+          }
+          final resolvedVol = vol;
+          if (resolvedVol != null) {
+            final inVol = chapters.where((c) => c.volumeId == resolvedVol.id);
+            final sortedInVol = List.of(inVol)
+              ..sort((a, b) => b.title.length.compareTo(a.title.length));
+            Chapter? chInVol;
+            for (final c in sortedInVol) {
+              if (rest.startsWith(c.title) &&
+                  _isTitleBoundary(rest.substring(c.title.length))) {
+                chInVol = c;
+                break;
+              }
+            }
+            if (chInVol != null) {
+              final raw = '@${ms.title}/${resolvedVol.title}/${chInVol.title}';
+              mentions.add(
+                ParsedMention(
+                  raw: raw,
+                  refType: 'chapter',
+                  refId: chInVol.id,
+                  title:
+                      '${ms.title} · ${resolvedVol.title} · ${chInVol.title}',
+                  manuscriptId: ms.id,
+                ),
+              );
+              idx = atIdx + raw.length;
+              continue;
+            }
+          }
+        }
+
+        // 匹配章节标题（长度降序；未分卷/旧格式 @作品/章）
         final sortedCh = List.of(chapters)
           ..sort((a, b) => b.title.length.compareTo(a.title.length));
 
@@ -132,6 +187,37 @@ class MentionParser implements MentionCapability {
           );
           idx = atIdx + raw.length;
           continue;
+        }
+
+        // 方案2b：@作品/卷（2段、不含斜杠）→ 卷引用（章节优先，卷其次）
+        if (!subPart.contains('/')) {
+          if (!volumesCache.containsKey(ms.id)) {
+            volumesCache[ms.id] = await _volRepo.listVolumes(ms.id);
+          }
+          final volumes = volumesCache[ms.id]!;
+          Volume? vol;
+          for (final v in volumes) {
+            final vt = v.title;
+            if (subPart.startsWith(vt) &&
+                _isTitleBoundary(subPart.substring(vt.length))) {
+              vol = v;
+              break;
+            }
+          }
+          if (vol != null) {
+            final raw = '@${ms.title}/${vol.title}';
+            mentions.add(
+              ParsedMention(
+                raw: raw,
+                refType: 'volume',
+                refId: vol.id,
+                title: '${ms.title} · ${vol.title}',
+                manuscriptId: ms.id,
+              ),
+            );
+            idx = atIdx + raw.length;
+            continue;
+          }
         }
 
         // 尝试素材文件
@@ -297,9 +383,16 @@ class MentionParser implements MentionCapability {
   }
 }
 
-/// 构建完整路径（@作品标题 或 @作品标题/章节标题）
+/// 构建完整路径：@作品标题 / @作品标题/章节标题 / @作品标题/卷标题/章节标题
 /// 批次71：从编号格式（@W001/C003）改为文字标题格式
-String buildMentionPath(String workTitle, {String? subTitle}) {
-  if (subTitle == null) return '@$workTitle';
-  return '@$workTitle/$subTitle';
+/// 卷引用：分卷章节带卷路径（@AAA/第一卷/第一章），/ 表上下级
+String buildMentionPath(
+  String workTitle, {
+  String? subTitle,
+  String? volumeTitle,
+}) {
+  final base = '@$workTitle';
+  if (subTitle == null) return base;
+  if (volumeTitle == null || volumeTitle.isEmpty) return '$base/$subTitle';
+  return '$base/$volumeTitle/$subTitle';
 }

@@ -43,6 +43,8 @@ import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/event_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
+import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
@@ -56,6 +58,7 @@ import 'package:writingcoach/services/chat_context_builder.dart'
         ManuscriptDetail,
         ReferenceItem,
         ReferenceResolvers,
+        VolumeDetail,
         buildCausalityBreakContext,
         buildConflictObservationsContext,
         buildDialogueTagContext,
@@ -103,6 +106,7 @@ class MessageInjector {
   final ReferenceCapability _referenceRepo;
   final ChapterRepository _chapterRepo;
   final ManuscriptRepository _manuscriptRepo;
+  final VolumeRepository? _volumeRepo;
 
   /// 协议块字符串构造（K-3 已迁 DiagnosisCommitter），通过 DI 复用
   final DiagnosisCommitter _diagnosisCommitter;
@@ -124,6 +128,9 @@ class MessageInjector {
   final Map<String, ChapterBrief> _cachedChapters = {};
   final Map<String, ManuscriptDetail> _cachedManuscripts = {};
 
+  /// 卷引用缓存（方案2b：卷结构信息注入）
+  final Map<String, VolumeDetail> _cachedVolumes = {};
+
   /// 批次63（B62b）：L1 意图向量——每个 session 最近 3 次交互意图
   /// 随 _injectProfileAndIntents 迁入
   final Map<String, List<String>> _recentIntentsBySession = {};
@@ -139,6 +146,7 @@ class MessageInjector {
     required ReferenceCapability referenceRepo,
     required ChapterRepository chapterRepo,
     required ManuscriptRepository manuscriptRepo,
+    VolumeRepository? volumeRepo,
     required DiagnosisCommitter diagnosisCommitter,
     required MaterialCapability material,
     CharacterFactRepository? characterFactRepo,
@@ -151,6 +159,7 @@ class MessageInjector {
        _referenceRepo = referenceRepo,
        _chapterRepo = chapterRepo,
        _manuscriptRepo = manuscriptRepo,
+       _volumeRepo = volumeRepo,
        _diagnosisCommitter = diagnosisCommitter,
        _material = material,
        _characterFactRepo = characterFactRepo,
@@ -501,6 +510,7 @@ class MessageInjector {
       fileResolver: (fileId) => _cachedAttachedFiles[fileId],
       chapterResolver: (chapterId) => _cachedChapters[chapterId],
       manuscriptResolver: (manuscriptId) => _cachedManuscripts[manuscriptId],
+      volumeResolver: (volumeId) => _cachedVolumes[volumeId],
     );
   }
 
@@ -508,6 +518,7 @@ class MessageInjector {
     _cachedAttachedFiles.clear();
     _cachedChapters.clear();
     _cachedManuscripts.clear();
+    _cachedVolumes.clear();
   }
 
   /// A-3 N+1 消除：单次 `WHERE id IN(...)` 批量取全
@@ -522,6 +533,7 @@ class MessageInjector {
     final chapterIds = <String>[];
     final manuscriptIds = <String>[];
     final fileIds = <String>[];
+    final volumeRefs = <ReferencedItem>[];
     for (final ref in refs) {
       switch (ref.refType) {
         case 'chapter':
@@ -530,11 +542,14 @@ class MessageInjector {
           manuscriptIds.add(ref.refId);
         case 'file':
           fileIds.add(ref.refId);
+        case 'volume':
+          volumeRefs.add(ref);
       }
     }
     await _preloadChapters(chapterIds);
     await _preloadAttachedFiles(fileIds);
     await _preloadManuscripts(manuscriptIds);
+    await _preloadVolumes(volumeRefs);
   }
 
   /// 章节引用：单次 `WHERE id IN(...)` 取全
@@ -603,6 +618,49 @@ class MessageInjector {
       }
     } catch (e) {
       debugPrint('[SafeRun] 作品批量加载失败不阻断整体: $e');
+    }
+  }
+
+  /// 卷引用：按作品分组取卷 + 卷内章节（方案2b 结构信息，不注入正文）。
+  Future<void> _preloadVolumes(List<ReferencedItem> volumeRefs) async {
+    final volRepo = _volumeRepo;
+    if (volumeRefs.isEmpty || volRepo == null) return;
+    try {
+      final msIds = volumeRefs
+          .map((r) => r.manuscriptId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+      final allVolumes = <Volume>[];
+      for (final msId in msIds) {
+        allVolumes.addAll(await volRepo.listVolumes(msId));
+      }
+      final chapters = await _chapterRepo.listChaptersForManuscripts(msIds);
+      final manuscripts = await _manuscriptRepo.getManuscriptsByIds(msIds);
+      final msTitleById = {for (final m in manuscripts) m.id: m.title};
+      for (final ref in volumeRefs) {
+        final vol = allVolumes.where((v) => v.id == ref.refId).firstOrNull;
+        if (vol == null) continue; // 卷已删，跳过
+        final volChapters = chapters
+            .where((c) => c.volumeId == vol.id)
+            .map(
+              (c) => ChapterBrief(
+                id: c.id,
+                title: c.title,
+                wordCount: c.wordCount,
+                sortOrder: c.sortOrder,
+                content: c.content,
+              ),
+            )
+            .toList();
+        _cachedVolumes[vol.id] = VolumeDetail(
+          title: vol.title,
+          manuscriptTitle: msTitleById[ref.manuscriptId] ?? '',
+          chapters: volChapters,
+        );
+      }
+    } catch (e) {
+      debugPrint('[SafeRun] 卷批量加载失败不阻断整体: $e');
     }
   }
 
