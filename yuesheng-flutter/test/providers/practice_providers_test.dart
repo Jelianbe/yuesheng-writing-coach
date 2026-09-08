@@ -102,5 +102,48 @@ void main() {
       store.retryPractice();
       expect(store.state.activePracticeTask, isNull);
     });
+
+    // ── CR-38：isSubmitting 是 PracticeTaskCard 的防连点闸门
+    // （输入框 enabled / 提交 return / 跳过 disabled 三处都读它）。
+    // setTrainingResult 在 LLM 流式回调中触发，若顺带把闸门清成 false，
+    // _handleSend 尚未返回时用户即可重复提交（重复烧 token）。
+    test('setTrainingResult 不清 isSubmitting（CR-38 防连点）', () {
+      final store = PracticeStore();
+      store.startPractice(_task());
+      store.setSubmitting(true);
+
+      store.setTrainingResult(TrainingResult.partial);
+
+      expect(store.state.isSubmitting, isTrue, reason: '流式回调设置结果时，防连点闸门必须保持关闭');
+    });
+
+    test('setTrainingResult(null) → 结果置空且不清 isSubmitting', () {
+      final store = PracticeStore();
+      store.startPractice(_task());
+      store.setSubmitting(true);
+      store.setTrainingResult(TrainingResult.partial);
+
+      store.setTrainingResult(null);
+
+      expect(store.state.trainingResult, isNull);
+      expect(store.state.isSubmitting, isTrue);
+    });
+
+    test('startPractice / retryPractice / submitPractice → 显式重置提交态', () {
+      final store = PracticeStore();
+      store.startPractice(_task());
+      store.setSubmitting(true);
+
+      store.startPractice(_task(name: '另一个症候'));
+      expect(store.state.isSubmitting, isFalse);
+
+      store.setSubmitting(true);
+      store.retryPractice();
+      expect(store.state.isSubmitting, isFalse);
+
+      store.setSubmitting(true);
+      store.submitPractice();
+      expect(store.state.isSubmitting, isFalse);
+    });
   });
 }

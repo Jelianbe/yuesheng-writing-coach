@@ -45,6 +45,26 @@ class PracticeState {
     this.trainingResult,
     this.isSubmitting = false,
   });
+
+  /// copyWith：可空字段用 clearXxx 标志显式清空
+  /// （copyWith 传 null 表示「不修改」，无法表达「置空」，与 chat_store 同一惯例）
+  PracticeState copyWith({
+    PracticeTask? activePracticeTask,
+    TrainingResult? trainingResult,
+    bool? isSubmitting,
+    bool clearActivePracticeTask = false,
+    bool clearTrainingResult = false,
+  }) {
+    return PracticeState(
+      activePracticeTask: clearActivePracticeTask
+          ? null
+          : (activePracticeTask ?? this.activePracticeTask),
+      trainingResult: clearTrainingResult
+          ? null
+          : (trainingResult ?? this.trainingResult),
+      isSubmitting: isSubmitting ?? this.isSubmitting,
+    );
+  }
 }
 
 /// 练习状态管理
@@ -57,41 +77,50 @@ class PracticeStore extends StateNotifier<PracticeState> {
   /// 开始练习：设置活动任务
   void startPractice(PracticeTask task) {
     _lastTask = task;
-    state = PracticeState(activePracticeTask: task);
+    state = state.copyWith(
+      activePracticeTask: task,
+      clearTrainingResult: true,
+      isSubmitting: false,
+    );
   }
 
   /// 提交练习：清空活动任务（结果由 onTrainingResult 单独设置）
   void submitPractice() {
-    state = PracticeState(trainingResult: state.trainingResult);
+    state = state.copyWith(clearActivePracticeTask: true, isSubmitting: false);
   }
 
   /// 跳过练习：清空活动任务
   void skipPractice() {
-    state = PracticeState(trainingResult: state.trainingResult);
+    state = state.copyWith(clearActivePracticeTask: true, isSubmitting: false);
   }
 
   /// 设置训练结果
+  ///
+  /// **不重置 isSubmitting**（CR-38）：本方法在 LLM 流式回调中触发，
+  /// 若顺带把 isSubmitting 清成 false，会在 _handleSend 返回前就把
+  /// PracticeTaskCard 的输入框/提交/跳过三处闸门重新打开，用户可重复提交。
+  /// 提交态只由 setSubmitting 管理。
   void setTrainingResult(TrainingResult? result) {
-    state = PracticeState(
-      activePracticeTask: state.activePracticeTask,
+    state = state.copyWith(
       trainingResult: result,
+      clearTrainingResult: result == null,
     );
   }
 
   /// 设置提交中状态
   void setSubmitting(bool submitting) {
-    state = PracticeState(
-      activePracticeTask: state.activePracticeTask,
-      trainingResult: state.trainingResult,
-      isSubmitting: submitting,
-    );
+    state = state.copyWith(isSubmitting: submitting);
   }
 
   /// 再试一次：重新打开上次练习任务，清空结果（对齐 RN onRetry 语义）
   void retryPractice() {
     final task = _lastTask;
     if (task == null) return;
-    state = PracticeState(activePracticeTask: task);
+    state = state.copyWith(
+      activePracticeTask: task,
+      clearTrainingResult: true,
+      isSubmitting: false,
+    );
   }
 
   /// 重置全部练习状态

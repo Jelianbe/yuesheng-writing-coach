@@ -21,6 +21,7 @@ import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../providers/app_providers.dart';
+import '../services/error_handler.dart';
 import '../services/evaluation_service.dart';
 import '../types/display_types.dart';
 
@@ -36,6 +37,16 @@ class EvaluationReportsState {
     this.reports = const {},
     this.currentRound = 0,
   });
+
+  EvaluationReportsState copyWith({
+    Map<String, EvaluationData>? reports,
+    int? currentRound,
+  }) {
+    return EvaluationReportsState(
+      reports: reports ?? this.reports,
+      currentRound: currentRound ?? this.currentRound,
+    );
+  }
 }
 
 /// 评估报告状态管理
@@ -49,6 +60,21 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
   EvaluationReportsStore(this._service, this._appStateRepo)
     : super(const EvaluationReportsState());
 
+  /// 持久化失败留痕（CR-39）
+  ///
+  /// 评估报告走 app_state KV 表，落库失败原本只有 debugPrint——生产环境
+  /// 零留痕，用户表现为「关掉的报告重启后又回来」。评估是旁路功能，失败
+  /// 不阻断主流程（仍 catch），但必须可归因，故落 error_logs。
+  void _logPersistFailure(String op, Object e, StackTrace s) {
+    debugPrint('[EvalStore] $op 失败: $e');
+    ErrorHandler.instance.captureError(
+      level: 'warn',
+      category: 'database',
+      message: '[EvalStore] $op 失败: $e',
+      stack: s.toString(),
+    );
+  }
+
   /// 批次4-M3：会话启动时从 DB 恢复 reports + currentRound
   /// 在 ChatPage 会话 bootstrap 后调用
   Future<void> restoreForSession(String sessionId) async {
@@ -56,9 +82,9 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
     try {
       final round = await _appStateRepo.getEvaluationRound(sessionId);
       final reports = await _appStateRepo.listEvaluationReports(sessionId);
-      state = EvaluationReportsState(reports: reports, currentRound: round);
-    } catch (e) {
-      debugPrint('[EvalStore] restoreForSession 失败: $e');
+      state = state.copyWith(reports: reports, currentRound: round);
+    } catch (e, s) {
+      _logPersistFailure('restoreForSession', e, s);
     }
   }
 
@@ -72,7 +98,7 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
       );
       if (evaluation == null) return;
 
-      state = EvaluationReportsState(
+      state = state.copyWith(
         reports: {...state.reports, messageId: evaluation},
         currentRound: state.currentRound + 1,
       );
@@ -85,8 +111,8 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
         evaluation,
       );
       await _appStateRepo.setEvaluationRound(sessionId, state.currentRound);
-    } catch (e) {
-      debugPrint('[EvalStore] buildEvaluationReport 失败: $e');
+    } catch (e, s) {
+      _logPersistFailure('buildEvaluationReport', e, s);
     }
   }
 
@@ -94,10 +120,7 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
   Future<void> dismissEvaluationReport(String messageId) async {
     final reports = {...state.reports};
     reports.remove(messageId);
-    state = EvaluationReportsState(
-      reports: reports,
-      currentRound: state.currentRound,
-    );
+    state = state.copyWith(reports: reports);
     // 批次4-M3：同步删除 DB 记录
     if (_currentSessionId != null) {
       try {
@@ -105,8 +128,8 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
           _currentSessionId!,
           messageId,
         );
-      } catch (e) {
-        debugPrint('[EvalStore] dismissEvaluationReport 删除失败: $e');
+      } catch (e, s) {
+        _logPersistFailure('dismissEvaluationReport 删除', e, s);
       }
     }
   }
@@ -118,8 +141,8 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
     if (_currentSessionId != null) {
       try {
         await _appStateRepo.clearEvaluationReports(_currentSessionId!);
-      } catch (e) {
-        debugPrint('[EvalStore] resetReports 清空失败: $e');
+      } catch (e, s) {
+        _logPersistFailure('resetReports 清空', e, s);
       }
       _currentSessionId = null;
     }

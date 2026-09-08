@@ -160,6 +160,9 @@ class GrowthStore extends StateNotifier<GrowthState> {
       final syndromeRecurrences = results[8] as List<SyndromeRecurrence>;
       final trainingStats = results[9] as List<SyndromeTrainingStats>;
 
+      // 全量重建（此处**不**用 copyWith）：成功路径要一次性覆盖 11 项数据
+      // 并把 error 清空——改 copyWith 反而得显式传 11 个参数，漏一个就静默
+      // 残留上一次的旧值。error 不传 = 清空，是有意设计（成功即无错误）。
       state = GrowthState(
         isLoading: false,
         profile: profileResult.profile,
