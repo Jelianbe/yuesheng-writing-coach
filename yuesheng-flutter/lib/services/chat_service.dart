@@ -576,6 +576,9 @@ typedef _InjectedContext = ({
 /// 会话/教学上下文加载结果（R-019 第二层编排拆出）。
 typedef _LoadedContext = ({
   List<Message> history,
+
+  /// ADR-C84：本次落库的用户消息 id（立即上屏回调用）
+  String userMessageId,
   TeachingSubphase? currentSubphase,
   bool isBeginner,
   BeginnerLevel? beginnerLevel,
@@ -596,6 +599,9 @@ typedef _AssembledContext = ({
 /// sendMessageCore 装配完成后的完整发送上下文（R-019 拆出）。
 typedef _SendContext = ({
   List<ChatMessage> messages,
+
+  /// ADR-C84：本次落库的用户消息 id（发送后立即上屏用）
+  String userMessageId,
   ReferenceItem? primaryRef,
   String? chapterContent,
   String? trainingSyndromeId,
@@ -614,7 +620,6 @@ extension ChatServiceSend on ChatService {
     TeachingSubphase? subphase,
   }) async {
     _logSendStart(sessionId, content, options);
-    final nowAtSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     try {
       // 1-7. 用户消息落库 + 上下文装配（R-019 第二层编排拆出）
       final ctx = await _assembleSendContext(
@@ -622,8 +627,10 @@ extension ChatServiceSend on ChatService {
         content,
         options,
         subphase,
-        nowAtSec,
+        DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
+      // ADR-C84：用户消息落库即通知 UI 上屏（不等 AI 回复）
+      await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
       _injectDiagnosisProtocolAndLog(ctx.messages, content);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
@@ -653,6 +660,18 @@ extension ChatServiceSend on ChatService {
       );
     } catch (e) {
       _handleSendError(e, callbacks, options);
+    }
+  }
+
+  /// ADR-C84：落库的用户消息回调 UI 上屏（流式中断/失败也保证消息可见）。
+  Future<void> _notifyUserMessagePersisted(
+    _SendContext ctx,
+    SendMessageCallbacks callbacks,
+  ) async {
+    if (callbacks.onUserMessagePersisted == null) return;
+    final userMessage = await _sessionRepo.getMessage(ctx.userMessageId);
+    if (userMessage != null) {
+      callbacks.onUserMessagePersisted!(userMessage);
     }
   }
 
@@ -850,6 +869,7 @@ extension ChatServiceSend on ChatService {
     );
     return (
       messages: assembled.messages,
+      userMessageId: loaded.userMessageId,
       primaryRef: assembled.primaryRef,
       chapterContent: assembled.chapterContent,
       trainingSyndromeId: assembled.trainingSyndromeId,
@@ -869,13 +889,14 @@ extension ChatServiceSend on ChatService {
     int nowAtSec,
   ) async {
     // 1. 写入用户消息（批次71：@ 引用快照随 user 消息落库）
-    await _sessionRepo.addMessage(
+    // ADR-C84：返回 id 供发送后立即上屏（不等 AI 回复）
+    final userMessageId = await _sessionRepo.addMessage(
       sessionId,
       'user',
       content,
       referencesJson: options.referencesJson,
     );
-    debugPrint('[ChatService] 步骤1: user 消息已写入');
+    debugPrint('[ChatService] 步骤1: user 消息已写入 id=$userMessageId');
 
     // 2. 获取历史消息（已含 user）
     final history = await _sessionRepo.listMessages(sessionId);
@@ -897,6 +918,7 @@ extension ChatServiceSend on ChatService {
     debugPrint('[ChatService] 步骤4: 活跃症候 ${activeProblems.length} 个');
     return (
       history: history,
+      userMessageId: userMessageId,
       currentSubphase: currentSubphase,
       isBeginner: isBeginner,
       beginnerLevel: beginnerLevel,

@@ -10,6 +10,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart' show CancelToken;
+import 'package:writingcoach/data/database/database.dart' show Message;
 import 'package:writingcoach/types/teaching_types.dart'
     show AttitudeLevel, TeachingPhase, TrainingResult;
 
@@ -26,12 +27,17 @@ class SendMessageCallbacks {
   /// 用户主动取消时触发（区别于 onError：取消是预期行为，不应标记消息失败）
   final void Function()? onCancelled;
 
+  /// ADR-C84：用户消息已落库时触发（发送后立即上屏，不等 AI 回复）。
+  /// 流式中断/失败也保证用户消息已上屏——修复「消息似乎没发出去」体感。
+  final void Function(Message message)? onUserMessagePersisted;
+
   const SendMessageCallbacks({
     required this.onStream,
     required this.onComplete,
     required this.onError,
     this.onTrainingResult,
     this.onCancelled,
+    this.onUserMessagePersisted,
   });
 }
 

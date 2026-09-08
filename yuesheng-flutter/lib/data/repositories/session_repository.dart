@@ -420,6 +420,13 @@ class SessionRepository {
   /// 同秒多条时 id 次级排序产生随机顺序，反而不如仅按 timestamp（SQLite 按插入行序
   /// 返回更可预期）。真实场景 user/assistant 消息跨秒（LLM 响应延迟），timestamp
   /// 排序已足够——保持 Flutter 原实现，不模仿 RN 的随机次级排序（批次 46 审计结论）。
+  /// ADR-C84：按 id 读取单条消息（发送后立即上屏用）。
+  Future<Message?> getMessage(String id) async {
+    return (_db.select(
+      _db.messages,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
   Future<List<Message>> listMessages(String sessionId) async {
     return (_db.select(_db.messages)
           ..where((t) => t.sessionId.equals(sessionId))

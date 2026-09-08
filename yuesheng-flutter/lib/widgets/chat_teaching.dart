@@ -269,6 +269,12 @@ extension _ChatTeaching on _ChatPageState {
         .read(chatStoreProvider.notifier)
         .setStreaming(true, stageLabel: stageLabel);
 
+    // ADR-C84：发送即清空输入栏（对齐主流 AI 对话体验——
+    // 消息已发出，输入栏立即可编辑下一条，不等 AI 回复）
+    if (mounted) {
+      setState(() => _inputText = '');
+    }
+
     final chatService = ref.read(chatServiceProvider);
     // 本次发送的取消令牌：供「停止生成」按钮在流式中段中止（避免卡死时无出口）
     final cancelToken = CancelToken();
@@ -278,6 +284,10 @@ extension _ChatTeaching on _ChatPageState {
         bootstrap.sessionId,
         textToSend,
         SendMessageCallbacks(
+          // ADR-C84：用户消息落库即上屏（流式中断/失败也保证消息可见）
+          onUserMessagePersisted: (message) {
+            ref.read(chatStoreProvider.notifier).addMessage(message);
+          },
           onStream: (delta) {
             ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
           },
@@ -321,9 +331,6 @@ extension _ChatTeaching on _ChatPageState {
     } finally {
       // 无论完成/失败/取消，令牌都一次性作废，下次发送新建
       _cancelToken = null;
-    }
-    if (mounted) {
-      setState(() => _inputText = '');
     }
   }
 

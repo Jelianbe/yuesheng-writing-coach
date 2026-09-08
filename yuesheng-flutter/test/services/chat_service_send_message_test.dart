@@ -752,4 +752,50 @@ void main() {
     // 主 LLM 调用 1 次；teacher stream 因「只诊断」被跳过（不追加第 2 次）
     expect(llm.callCount, 1);
   });
+  test('#8 ADR-C84 落库即触发 onUserMessagePersisted', () async {
+    final chatService = buildChatService(FakeLlmClient('你好，我是月笙。'));
+
+    Message? persisted;
+    await chatService.sendMessage(
+      sessionId,
+      '立即上屏测试',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+        onUserMessagePersisted: (msg) => persisted = msg,
+      ),
+      defaultOptions,
+    );
+
+    expect(persisted, isNotNull);
+    expect(persisted!.role, 'user');
+    expect(persisted!.content, '立即上屏测试');
+    expect(persisted!.sessionId, sessionId);
+    final fromDb = await sessionRepo.getMessage(persisted!.id);
+    expect(fromDb, isNotNull);
+    expect(fromDb!.content, '立即上屏测试');
+  });
+
+  test('#9 ADR-C84 LLM 失败时 onUserMessagePersisted 仍触发', () async {
+    final errorService = buildChatService(
+      FakeLlmClient('', error: Exception('网络错误')),
+    );
+
+    Message? persisted;
+    await errorService.sendMessage(
+      sessionId,
+      '失败也上屏',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+        onUserMessagePersisted: (msg) => persisted = msg,
+      ),
+      defaultOptions,
+    );
+
+    expect(persisted, isNotNull);
+    expect(persisted!.content, '失败也上屏');
+  });
 }
