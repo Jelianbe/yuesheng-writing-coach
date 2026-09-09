@@ -265,7 +265,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
               color: AppColors.disabledText,
             ),
             SizedBox(height: 8),
-            Text('还没有作品', style: TextStyle(color: AppColors.textTertiary)),
+            Text('还没有作品', style: AppTextStyles.body),
             SizedBox(height: 4),
             Text(
               '去书架创建，或通过「+」导入小说',
@@ -554,7 +554,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
           children: [
             Icon(Icons.attach_file, size: 40, color: AppColors.disabledText),
             SizedBox(height: 8),
-            Text('还没有素材文件', style: TextStyle(color: AppColors.textTertiary)),
+            Text('还没有素材文件', style: AppTextStyles.body),
             SizedBox(height: 4),
             Text(
               // 批次77：文案指向真实路径（全应用无「素材页」，素材在作品详情的文件 Tab 添加）

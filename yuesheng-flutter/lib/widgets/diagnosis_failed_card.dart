@@ -117,14 +117,10 @@ class DiagnosisFailedCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 '你可以尝试补充更多写作内容或具体描述遇到的问题。',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
-                  color: AppColors.textTertiary,
-                ),
+                style: AppTextStyles.body.copyWith(height: 1.4),
               ),
               const SizedBox(height: 12),
               _buildSuggestions(),
