@@ -16,6 +16,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:writingcoach/services/agent_skills.dart';
+import 'package:writingcoach/services/decode_guard.dart';
 import 'package:writingcoach/services/editor_validator.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/teacher_parser.dart';
@@ -74,8 +75,14 @@ Future<TeacherStreamResult> callTeacherStream(
       accumulator.add(response.content);
     }, cancelToken: cancelToken);
     return _finalizeTeacherResult(accumulator.fullContent);
-  } catch (_) {
-    // API 错误 → 返回空 displayContent，不抛出
+  } catch (e, st) {
+    // API 错误 → 返回空 displayContent，不抛出；留痕（R-028 静默降级可追溯）。
+    logSilentDegrade(
+      operation: 'teacherStream',
+      error: e,
+      stack: st,
+      category: 'api',
+    );
     return const TeacherStreamResult(displayContent: '', teacher: null);
   }
 }

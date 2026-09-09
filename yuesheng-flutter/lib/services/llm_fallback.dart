@@ -7,6 +7,7 @@
 
 import 'dart:convert';
 
+import 'decode_guard.dart';
 import 'llm_config_storage.dart';
 
 /// 备选端点声明（JSON 的一条记录）
@@ -48,7 +49,14 @@ List<LlmFallbackEntry> parseFallbacks(String? raw) {
           ),
         )
         .toList();
-  } catch (_) {
+  } catch (e, st) {
+    // 配置损坏不应放大为运行时崩溃 → 返回空列表；留痕（R-028 可追溯）。
+    logSilentDegrade(
+      operation: 'parseFallbacks',
+      error: e,
+      stack: st,
+      category: 'database',
+    );
     return const [];
   }
 }
