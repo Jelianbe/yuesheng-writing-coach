@@ -153,9 +153,22 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
               vertical: AppSpacing.sm,
             ),
             itemCount:
-                chatState.messages.length + (chatState.isStreaming ? 1 : 0),
+                chatState.messages.length +
+                (chatState.isStreaming ? 1 : 0) +
+                practiceWidgets.length,
             itemBuilder: (context, index) {
-              // 流式占位气泡（列表末尾，isStreaming 时）
+              // 练习任务卡 / 结果指示器：并入滚动列表底部（与 message_list 一致，
+              // 避免固定高度 Column 溢出——「BOTTOM OVERFLOWED BY 274 PIXELS」实证）
+              final practiceIndex =
+                  index -
+                  chatState.messages.length -
+                  (chatState.isStreaming ? 1 : 0);
+              if (practiceIndex >= 0) {
+                return RepaintBoundary(
+                  key: ValueKey('coach-item-practice-$practiceIndex'),
+                  child: practiceWidgets[practiceIndex],
+                );
+              }
               if (index == chatState.messages.length && chatState.isStreaming) {
                 // D5-A：尚无流式内容时显示「思考/诊断中…」占位，而非空气泡
                 // 批次51：诊断阶段（阶段标签以「正在诊断」开头）即使已有流式内容
@@ -260,8 +273,6 @@ extension _WritingCoachPanelBuilders on _WritingCoachPanelState {
             },
           ),
         ),
-        // T3：练习任务卡 + 结果指示器（列表底部）
-        ...practiceWidgets,
       ],
     );
   }

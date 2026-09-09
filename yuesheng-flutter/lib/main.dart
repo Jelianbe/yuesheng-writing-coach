@@ -105,7 +105,6 @@ ThemeData buildAppTheme() {
 /// TextField 光标等 Material 组件跟随系统暗色；自定义页面底色仍用亮色令牌，
 /// 全量令牌化（AppColors 双 token）列入后续批次（见台账 94-3 执行记录）。
 ThemeData buildDarkTheme() {
-  const darkScaffold = Color(0xFF1E2126); // 深墨（略深于编辑器暗夜预设）
   const darkSurface = Color(0xFF26282B); // 对齐 editorBgDark
   const darkText = Color(0xFFE8EAED); // 对齐 editorBgDark 文字
   return ThemeData(
@@ -129,16 +128,16 @@ ThemeData buildDarkTheme() {
         TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
       },
     ),
-    scaffoldBackgroundColor: darkScaffold,
-    dialogTheme: const DialogThemeData(backgroundColor: darkSurface),
+    scaffoldBackgroundColor: AppColors.background,
+    dialogTheme: const DialogThemeData(backgroundColor: AppColors.surfaceWhite),
     textTheme: const TextTheme(
       titleMedium: TextStyle(
         fontSize: 16,
         fontWeight: FontWeight.w600,
-        color: darkText,
+        color: AppColors.textPrimary,
       ),
-      bodyMedium: TextStyle(fontSize: 15, color: darkText),
-      bodySmall: TextStyle(fontSize: 13, color: Color(0xFF9AA0A6)),
+      bodyMedium: TextStyle(fontSize: 15, color: AppColors.textPrimary),
+      bodySmall: TextStyle(fontSize: 13, color: AppColors.textSecondary),
     ),
   );
 }

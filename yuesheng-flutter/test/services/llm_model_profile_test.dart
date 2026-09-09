@@ -49,5 +49,29 @@ void main() {
       expect(classifyLlmModel('  deepseek-v4-flash  ').reasoningOnly, isFalse);
       expect(classifyLlmModel('  o1-mini  ').reasoningOnly, isTrue);
     });
+
+    test('GLM thinking 系 → disableThinking=true（防思考退化乱码）', () {
+      expect(
+        classifyLlmModel('glm-4.1v-thinking-flash').disableThinking,
+        isTrue,
+      );
+      expect(classifyLlmModel('glm-4.5').disableThinking, isTrue);
+      expect(classifyLlmModel('glm-4.6').disableThinking, isTrue);
+      expect(classifyLlmModel('glm-4.7-flash').disableThinking, isTrue);
+      expect(classifyLlmModel('glm-5').disableThinking, isTrue);
+      expect(
+        classifyLlmModel('glm-4.1v-thinking-flash').reasoningOnly,
+        isFalse,
+      );
+    });
+
+    test('GLM 旧系 / DeepSeek 不受 disableThinking 影响', () {
+      expect(classifyLlmModel('glm-4').disableThinking, isFalse);
+      expect(classifyLlmModel('glm-4-flash').disableThinking, isFalse);
+      expect(classifyLlmModel('deepseek-chat').disableThinking, isFalse);
+      expect(classifyLlmModel('deepseek-reasoner').disableThinking, isFalse);
+      expect(classifyLlmModel('gpt-4o').disableThinking, isFalse);
+      expect(classifyLlmModel('qwen-plus').disableThinking, isFalse);
+    });
   });
 }

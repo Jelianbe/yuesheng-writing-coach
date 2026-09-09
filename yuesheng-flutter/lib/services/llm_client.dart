@@ -89,14 +89,27 @@ class TestConnectionResult {
 ///   `max_tokens` 需改用 `max_completion_tokens`，否则请求 400；
 /// - DeepSeek 系与其他 OpenAI 兼容端点：`max_tokens` + `temperature`
 ///   均支持（现状保持不变）。
+/// - GLM thinking 系（glm-4.5+ / 含 thinking 的 glm 变体，如
+///   glm-4.1v-thinking-flash）：思考模式在复杂长 prompt 下易退化输出
+///   （[gMASK] 复读 / 乱码，sglang + z.ai 实证），请求体显式关闭
+///   thinking（`{"type":"disabled"}`）规避；temperature/max_tokens 照常。
 class LlmModelProfile {
   /// true = 推理优先模型：禁 temperature，用 max_completion_tokens
   final bool reasoningOnly;
-  const LlmModelProfile({required this.reasoningOnly});
+
+  /// true = GLM thinking 系：请求体注入 `thinking: {type: disabled}`
+  ///（防思考退化乱码；DeepSeek/OpenAI 保持 false 不受影响）
+  final bool disableThinking;
+
+  const LlmModelProfile({
+    required this.reasoningOnly,
+    this.disableThinking = false,
+  });
 }
 
 /// 按模型名识别参数画像（纯函数，前缀匹配、大小写不敏感）。
-/// 仅识别 OpenAI o 系列推理模型；其余（含 deepseek）走通用 OpenAI 行为。
+/// 仅识别 OpenAI o 系列推理模型与 GLM thinking 系；其余（含 deepseek）
+/// 走通用 OpenAI 行为。
 LlmModelProfile classifyLlmModel(String model) {
   final m = model.toLowerCase().trim();
   final reasoningOnly =
@@ -104,7 +117,13 @@ LlmModelProfile classifyLlmModel(String model) {
       m.startsWith('o1-') ||
       m.startsWith('o3-') ||
       m.startsWith('o4-');
-  return LlmModelProfile(reasoningOnly: reasoningOnly);
+  final glmThinking =
+      RegExp(r'^glm[-_.]?(4\.[5-9]|5|5\.\d|4\.1v)').hasMatch(m) ||
+      m.contains('thinking');
+  return LlmModelProfile(
+    reasoningOnly: reasoningOnly,
+    disableThinking: glmThinking,
+  );
 }
 
 /// LLM 客户端（依赖 LlmConfigStorage + Dio）
@@ -462,6 +481,10 @@ class LlmClient {
       'messages': messages.map((m) => m.toJson()).toList(),
       'stream': false,
     };
+    if (profile.disableThinking) {
+      // GLM thinking 系：显式关闭思考模式，防复杂 prompt 下退化乱码
+      body['thinking'] = {'type': 'disabled'};
+    }
     if (profile.reasoningOnly) {
       body['max_completion_tokens'] = maxTokens ?? LlmConfig.chatMaxTokens;
     } else {
@@ -483,6 +506,10 @@ class LlmClient {
       'messages': messages.map((m) => m.toJson()).toList(),
       'stream': true,
     };
+    if (profile.disableThinking) {
+      // GLM thinking 系：显式关闭思考模式，防复杂 prompt 下退化乱码
+      body['thinking'] = {'type': 'disabled'};
+    }
     if (profile.reasoningOnly) {
       body['max_completion_tokens'] = LlmConfig.chatMaxTokens;
     } else {
