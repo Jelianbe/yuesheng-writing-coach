@@ -56,14 +56,14 @@ extension _ChatTeaching on _ChatPageState {
             );
       } else {
         // 2. 回退：单次诊断 prompt（对齐 RN sendDiagnosisMessage 回退分支）
-        final prompt =
-            '请对以下章节内容进行写作诊断分析：\n\n'
-            '【${chapter.title}】\n\n'
-            '${chapter.content}';
+        // 批次98：对话历史只展示简洁消息（「已发送章节」），全文由
+        // chapterFullText 运行时注入（不落库，AI 仍收到全部内容）。
+        final prompt = '请诊断本章：《${chapter.title}》';
         await _handleSend(
           prompt,
           // 批次49：单次诊断回退分支打标
           stageLabel: '正在诊断本章…',
+          chapterFullText: chapter.content,
         );
       }
     } catch (_) {
@@ -179,6 +179,8 @@ extension _ChatTeaching on _ChatPageState {
     void Function(TrainingResult)? onTrainingResult,
     // 批次49：流式阶段标签（诊断/评估等场景 ThinkingIndicator 阶段化文案）
     String? stageLabel,
+    // 批次98：诊断场景待诊断全文——对话历史只落库简洁消息，全文运行时注入
+    String? chapterFullText,
   }) async {
     if (text.isEmpty) return;
     final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
@@ -310,6 +312,8 @@ extension _ChatTeaching on _ChatPageState {
         SendMessageOptions(
           phase: TeachingPhase.p0Engage,
           attitude: _attitude,
+          // 批次98：诊断全文运行时注入（不落库）
+          chapterFullText: chapterFullText,
           // 批次7 O1：心流判定叠加编辑器活跃维度（对齐 writing_coach_panel）。
           // 用户刚在写作页编辑后切回对话页发消息，isInFlow 可识别"编辑器活跃"
           // 即时反馈窗口（批次59/64 三问第 3 问触发）。

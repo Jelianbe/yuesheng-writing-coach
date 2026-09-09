@@ -46,9 +46,7 @@ void main() {
 
     test('注入 helper 必须在流式调用前被调用', () {
       final src = File('lib/services/chat_service.dart').readAsStringSync();
-      final callIdx = src.indexOf(
-        '_injectDiagnosisProtocolAndLog(ctx.messages, content)',
-      );
+      final callIdx = src.indexOf('_injectDiagnosisFor(');
       expect(
         callIdx,
         greaterThan(0),

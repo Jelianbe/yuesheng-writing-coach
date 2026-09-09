@@ -59,6 +59,9 @@ class FakeLlmClient extends LlmClient {
   final String fullResponse;
   final Exception? error;
 
+  /// 批次98：记录最后一次 LLM 请求消息（断言「AI 收到全文 + 协议」）。
+  List<ChatMessage>? capturedMessages;
+
   FakeLlmClient(this.fullResponse, {this.error});
 
   @override
@@ -67,6 +70,7 @@ class FakeLlmClient extends LlmClient {
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
   }) async {
+    capturedMessages = messages;
     if (error != null) throw error!;
 
     const chunkSize = 10;
@@ -103,6 +107,9 @@ void main() {
   late String chapterId;
   late String msId;
 
+  /// 批次98：共享 Fake LLM 实例（断言「AI 收到全文 + 协议」用）。
+  late FakeLlmClient fakeLlm;
+
   /// 字数 ≥100 的章节内容（D1 真链路要求字数校验通过）
   const longContent =
       '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，'
@@ -115,6 +122,7 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
+    fakeLlm = FakeLlmClient('诊断完成。本章结构清晰，节奏明快。');
     final msRepo = ManuscriptRepository(db);
     final chRepo = ChapterRepository(db);
     msId = await msRepo.createManuscript(title: '测试作品');
@@ -136,7 +144,7 @@ void main() {
             referenceRepo: ReferenceRepository(db),
             chapterRepo: ChapterRepository(db),
             manuscriptRepo: ManuscriptRepository(db),
-            llmClient: FakeLlmClient('诊断完成。本章结构清晰，节奏明快。'),
+            llmClient: fakeLlm,
             teacherSuggestionRepo: TeacherSuggestionRepository(db),
             editorObservationRepo: EditorObservationRepository(db),
             // ADR-C74 K-5：诊断提交编排器收紧为 required
@@ -503,19 +511,19 @@ void main() {
       await tester.pumpAndSettle();
 
       // 内存 store 应有用户消息 + assistant 消息
-      // onComplete 后 setMessages 用 DB 消息替换内存（DB user 消息是完整 diagPrompt）
+      // onComplete 后 setMessages 用 DB 消息替换内存（DB user 消息是简洁诊断请求）
       final chatState = container.read(writingCoachStoreProvider(chapterId));
       expect(chatState.messages.length, greaterThanOrEqualTo(2));
       expect(chatState.messages[0].role, 'user');
-      // DB 中 user 消息是完整诊断 prompt（含章节内容）
-      expect(chatState.messages[0].content, contains('写作诊断分析'));
+      // 批次98：DB 中 user 消息是简洁的「已发送章节」式请求（不含全文）
+      expect(chatState.messages[0].content, '请诊断本章：《第一章：启程》');
       expect(chatState.messages[1].role, 'assistant');
 
       // 由于 FakeLlmClient 返回 "诊断完成..."，streaming 应最终为 false
       expect(chatState.isStreaming, isFalse);
     });
 
-    testWidgets('D1-3 诊断用户消息不再内联协议指令（批次97：协议由运行时注入）', (tester) async {
+    testWidgets('D1-3 诊断用户消息简洁展示 + 运行时注入全文（批次98）', (tester) async {
       await tester.pumpWidget(buildPanel());
       await tester.pumpAndSettle();
 
@@ -524,9 +532,8 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      // 批次97：对话历史用户消息只含正文请求——[YS_DIAGNOSIS] 协议由
-      // ChatService._maybeInjectDiagnosisProtocol 运行时追加（不落库），
-      // 避免指令文本进入对话历史 / 被模型复读。
+      // 批次98：对话历史（落库）只展示简洁消息——「已发送章节」式文本，
+      // 不含全文、不含协议指令；[YS_DIAGNOSIS] 协议与全文均在运行时注入。
       final sessionRepo = SessionRepository(db);
       final sid = await sessionRepo.getOrCreateSessionForChapter(
         msId,
@@ -534,11 +541,16 @@ void main() {
       );
       final messages = await sessionRepo.listMessages(sid);
       final userMsg = messages.firstWhere((m) => m.role == 'user');
-      expect(userMsg.content, contains('写作诊断分析'));
-      expect(userMsg.content, isNotEmpty);
+      expect(userMsg.content, '请诊断本章：《第一章：启程》');
+      expect(userMsg.content, isNot(contains('大雪纷飞')));
       expect(userMsg.content, isNot(contains('[YS_DIAGNOSIS]')));
-      expect(userMsg.content, isNot(contains('必须输出')));
-      expect(userMsg.content, isNot(contains('重要：诊断说明后')));
+
+      // AI 侧收到全部内容：运行时注入的全文 + 诊断协议
+      final fake = fakeLlm;
+      final llmUser = fake.capturedMessages!.lastWhere((m) => m.role == 'user');
+      expect(llmUser.content, contains('大雪纷飞'));
+      expect(llmUser.content, contains('[YS_DIAGNOSIS]'));
+      expect(llmUser.content, contains('suggested_actions'));
     });
 
     testWidgets('D1-4 会话隔离：两章节各自诊断，teaching_state 互不影响', (tester) async {
@@ -788,12 +800,13 @@ void main() {
       );
       final messages = await sessionRepo.listMessages(sid);
       final userMsg = messages.firstWhere((m) => m.role == 'user');
-      expect(userMsg.content, contains('选中文本'));
-      expect(userMsg.content, contains('【选段】'));
-      // 批次97：协议指令不再内联进用户消息（由运行时注入），防对话历史观感差
+      expect(userMsg.content, '请诊断选中文本');
+      // 批次97/98：协议指令不再内联进用户消息；选段全文运行时注入
       expect(userMsg.content, isNot(contains('[YS_DIAGNOSIS]')));
       // 诊断内容为选中文本而非整章
-      expect(userMsg.content, contains(selectedText));
+      final fake = fakeLlm;
+      final llmUser = fake.capturedMessages!.lastWhere((m) => m.role == 'user');
+      expect(llmUser.content, contains(selectedText));
     });
 
     testWidgets('B3-2 选段 <20 字 → SnackBar 拦截，不触发诊断', (tester) async {

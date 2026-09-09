@@ -398,11 +398,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     // 1. 先把用户消息加到内存 store（即时反馈）
     store.addMessage(_buildDiagnosisUserMessage(sid, input.isSelection));
     // 2. 构造单次诊断 prompt（对齐 RN chat.tsx#L212：显式要求 [YS_DIAGNOSIS] 格式）
-    final diagPrompt = _buildDiagnosisPrompt(
-      input.content,
-      input.title,
-      input.isSelection,
-    );
+    final diagPrompt = _buildDiagnosisPrompt(input.title, input.isSelection);
 
     await _runDiagnosisChain(
       sid: sid,
@@ -492,11 +488,10 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
 
   /// 单次诊断 prompt（对齐 RN chat.tsx#L212：显式要求 [YS_DIAGNOSIS] 格式，
   /// R-019 清偿拆出：_handleDiagnoseWithText）。
-  String _buildDiagnosisPrompt(String content, String title, bool isSelection) {
-    final header = isSelection
-        ? '请对以下选中文本进行写作诊断分析：\n\n【选段】\n'
-        : '请对以下章节内容进行写作诊断分析：\n\n【$title】\n\n';
-    return '$header$content';
+  // 批次98：对话历史只展示简洁消息（「已发送章节」），全文由
+  // SendMessageOptions.chapterFullText 运行时注入（不落库，AI 仍收到全部内容）。
+  String _buildDiagnosisPrompt(String title, bool isSelection) {
+    return isSelection ? '请诊断选中文本' : '请诊断本章：《$title》';
   }
 
   /// 诊断完成：刷新消息 + 复位流式/诊断中 + 完成反馈（R-019 清偿拆出）。
@@ -624,6 +619,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     await _runSingleDiagnosisSend(
       sid: sid,
       diagPrompt: diagPrompt,
+      fullText: content,
       store: store,
       chatService: chatService,
       cancelToken: cancelToken,
@@ -634,6 +630,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
   Future<void> _runSingleDiagnosisSend({
     required String sid,
     required String diagPrompt,
+    required String fullText,
     required ChatStore store,
     required dynamic chatService,
     required CancelToken cancelToken,
@@ -659,6 +656,8 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
         lastEditorEditAtSec: ref.read(editorActivityProvider),
         // ADR-C87：取消令牌——诊断中可主动中止
         cancelToken: cancelToken,
+        // 批次98：诊断全文运行时注入（不落库，对话历史只展示简洁消息）
+        chapterFullText: fullText,
       ),
     );
   }

@@ -735,9 +735,7 @@ void main() {
       Future<int> diagnoseCount() => sessionRepo
           .listMessages(sessionId)
           .then(
-            (msgs) => msgs
-                .where((m) => m.content.contains('请对以下选中文本进行写作诊断分析'))
-                .length,
+            (msgs) => msgs.where((m) => m.content.contains('请诊断选中文本')).length,
           );
 
       expect(await diagnoseCount(), 1, reason: '首次划词诊断应触发 1 条选段诊断');

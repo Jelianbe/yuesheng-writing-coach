@@ -919,10 +919,10 @@ void main() {
           chapterId;
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
-      // 自动诊断：user 消息（诊断 prompt）已落库
+      // 自动诊断：user 消息（简洁诊断请求）已落库
       final messages = await db.select(db.messages).get();
       expect(
-        messages.any((m) => m.role == 'user' && m.content.contains('写作诊断分析')),
+        messages.any((m) => m.role == 'user' && m.content.contains('请诊断本章')),
         isTrue,
         reason: '选章后应自动发送诊断请求',
       );
@@ -1296,7 +1296,7 @@ void main() {
       expect(find.text('导入成功！'), findsNothing);
       final messages = await db.select(db.messages).get();
       expect(
-        messages.any((m) => m.role == 'user' && m.content.contains('写作诊断分析')),
+        messages.any((m) => m.role == 'user' && m.content.contains('请诊断本章')),
         isTrue,
         reason: '立即诊断应触发自动诊断',
       );

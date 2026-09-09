@@ -55,11 +55,17 @@ class SendMessageOptions {
   /// 随 user 消息落库，气泡底部展示引用徽章。
   final String? referencesJson;
 
+  /// 批次98：诊断场景下待诊断全文（章节全文 / 选中文本）。
+  /// 对话历史只落库简洁消息（「已发送章节《X》」），AI 收到全文——
+  /// 全文在此字段随运行时装配注入 user 消息（不落库）。
+  final String? chapterFullText;
+
   const SendMessageOptions({
     required this.phase,
     required this.attitude,
     this.cancelToken,
     this.lastEditorEditAtSec,
     this.referencesJson,
+    this.chapterFullText,
   });
 }

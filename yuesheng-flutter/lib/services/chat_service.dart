@@ -612,7 +612,7 @@ extension ChatServiceSend on ChatService {
       // ADR-C84：用户消息落库即通知 UI 上屏（不等 AI 回复）
       await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
-      _injectDiagnosisProtocolAndLog(ctx.messages, content);
+      _injectDiagnosisFor(ctx.messages, content, options.chapterFullText);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,
@@ -1102,13 +1102,32 @@ extension ChatServiceSend on ChatService {
   /// 行数收敛）。注入需在流式前、历史追加后执行；观测仅 debug 级留痕。
   ///
   /// CR-56 PHI 脱敏：debugPrint 仅打 `role[length]`，**不打印内容截取**。
+  /// 批次98：诊断注入编排（R-019：_sendMessageCore 减负）。
+  /// 将诊断协议 + 待诊断全文注入 user 消息，并做请求结构观测。
+  void _injectDiagnosisFor(
+    List<ChatMessage> messages,
+    String content,
+    String? chapterFullText,
+  ) {
+    _injectDiagnosisProtocolAndLog(
+      messages,
+      content,
+      chapterFullText: chapterFullText,
+    );
+  }
+
   /// 原版（删除前）会对 >40 字符消息打前 20+后 20 字符——含用户原文片段，
   /// 触 X-040 PHI P2 风险（debug 日志被外发/截图即泄漏用户输入）。
   void _injectDiagnosisProtocolAndLog(
     List<ChatMessage> messages,
-    String content,
-  ) {
-    _maybeInjectDiagnosisProtocol(messages, content);
+    String content, {
+    String? chapterFullText,
+  }) {
+    _maybeInjectDiagnosisProtocol(
+      messages,
+      content,
+      chapterFullText: chapterFullText,
+    );
     debugPrint(
       '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]").join(" | ")}',
     );
@@ -1117,15 +1136,21 @@ extension ChatServiceSend on ChatService {
   /// 诊断意图 → user 消息侧注入诊断协议（ADR-C82；R-019 ≤50 行）。
   void _maybeInjectDiagnosisProtocol(
     List<ChatMessage> messages,
-    String content,
-  ) {
+    String content, {
+    String? chapterFullText,
+  }) {
     if (!isDiagnosisRequest(content)) return;
     final lastUser = messages.lastIndexWhere((m) => m.role == 'user');
     if (lastUser < 0) return;
     final m = messages[lastUser];
+    // 批次98：诊断全文运行时注入（不落库）——对话历史只展示简洁消息，
+    // AI 侧仍收到全文；历史重放不含全文（避免长对话被整章内容稀释）。
+    final fullTextBlock = chapterFullText == null || chapterFullText.isEmpty
+        ? ''
+        : '\n\n## 待诊断全文\n\n$chapterFullText';
     messages[lastUser] = ChatMessage(
       role: m.role,
-      content: '${m.content}\n\n$kDiagnosisProtocolSuffix',
+      content: '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix',
     );
   }
 
