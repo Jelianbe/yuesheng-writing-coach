@@ -37,12 +37,9 @@ class FakeLlmClient extends LlmClient {
   final Exception? _error;
   final String? _finishReason;
 
-  FakeLlmClient(
-    this._fullResponse, {
-    Exception? error,
-    String? finishReason,
-  }) : _error = error,
-       _finishReason = finishReason;
+  FakeLlmClient(this._fullResponse, {Exception? error, String? finishReason})
+    : _error = error,
+      _finishReason = finishReason;
 
   @override
   Future<ChatCompletionResult> chatCompletionWithMeta(
@@ -136,7 +133,7 @@ const String kSchemaFailJson = '''{
   "strengths": ["优点"]
 }''';
 
-/// 硬限制失败 JSON（phenomenon 含判决词"应该"）
+/// 硬限制失败 JSON（phenomenon 含命令句式"你应该"）
 const String kHardLimitFailJson = '''{
   "possible_intent": "表达情绪",
   "intent_confidence": "moderate",
@@ -144,7 +141,7 @@ const String kHardLimitFailJson = '''{
     {
       "dimension": "character_agency",
       "dimension_name": "人物能动性",
-      "phenomenon": "主角应该主动选择",
+      "phenomenon": "你应该主动选择",
       "evidence": ["第3段"],
       "reader_impact": "读者难以代入",
       "observation_visibility": "pronounced",
@@ -165,6 +162,45 @@ const String kHardLimitFailJson = '''{
       "phenomenon": "对话密度高",
       "evidence": ["对话段"],
       "reader_impact": "信息过载",
+      "observation_visibility": "subtle",
+      "intent_alignment": "aligned"
+    }
+  ],
+  "overall_impression": "有潜力",
+  "strengths": ["意象独特"]
+}''';
+
+/// 现象描述含「应该」（非命令句式）——K-10 误伤豁免夹具。
+/// 三处 phenomenon 均为描述性情态词用法（「应该由…驱动」），
+/// Editor 专用判定应放行；旧裸词判定会整条作废。
+const String kDescriptiveShouldJson = '''{
+  "possible_intent": "表达情绪",
+  "intent_confidence": "moderate",
+  "observations": [
+    {
+      "dimension": "character_agency",
+      "dimension_name": "人物能动性",
+      "phenomenon": "角色的选择应该由动机驱动",
+      "evidence": ["第3段"],
+      "reader_impact": "读者可感知行为逻辑",
+      "observation_visibility": "pronounced",
+      "intent_alignment": "against"
+    },
+    {
+      "dimension": "pacing_control",
+      "dimension_name": "节奏",
+      "phenomenon": "信息密度应当集中在中段",
+      "evidence": ["第5段"],
+      "reader_impact": "读者关注度随之转移",
+      "observation_visibility": "moderate",
+      "intent_alignment": "unclear"
+    },
+    {
+      "dimension": "dialogue_dynamics",
+      "dimension_name": "对话",
+      "phenomenon": "对话必须承担信息推进功能",
+      "evidence": ["对话段"],
+      "reader_impact": "信息传递效率高",
       "observation_visibility": "subtle",
       "intent_alignment": "aligned"
     }
@@ -255,13 +291,26 @@ void main() {
       expect(result.observation, isNull);
     });
 
-    test('#5 硬限制失败（phenomenon 含判决词"应该"）→ observation=null', () async {
+    test('#5 硬限制失败（命令句式"你应该主动选择"）→ observation=null', () async {
       final raw = '[YS_EDITOR]\n$kHardLimitFailJson\n[/YS_EDITOR]';
       final llm = FakeLlmClient(raw);
 
       final result = await callEditorStream(llm, '测试文本', (_) {});
 
       expect(result.observation, isNull);
+    });
+
+    test('#5b 现象描述含"应该"（非命令句式）→ 不再误伤（K-10 快速观察修复）', () async {
+      // 根因（ADR-C89 后仍高频）：硬限制按裸词「应该」拦截，而现象描述
+      // 天然使用情态词（「选择应该由动机驱动」是描述非命令）——真机
+      // error_logs 实证 stage=validation + violations:[phenomenon:应该]。
+      // Editor 专用判定只拦命令句式，此条应放行。
+      final raw = '[YS_EDITOR]\n$kDescriptiveShouldJson\n[/YS_EDITOR]';
+      final llm = FakeLlmClient(raw);
+
+      final result = await callEditorStream(llm, '测试文本', (_) {});
+
+      expect(result.observation, isNotNull, reason: '现象描述含「应该」应放行，不得整条作废');
     });
 
     test('#6 LLM 抛异常 → 兜底文案，observation=null', () async {

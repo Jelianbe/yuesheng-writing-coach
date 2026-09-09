@@ -117,6 +117,50 @@ class FullEditorValidationResult {
 
 // ─── 判决词检测 ────────────────────────────────────────────────
 
+/// Editor 判决词（命令句式）——观察者定位专用。
+///
+/// 与 teacher 共享的 [verdictDangerousWords]（含裸情态词「应该/必须/务必/
+/// 应当」）不同：Editor 是观察者，现象描述天然会使用情态词（如「角色的
+/// 选择应该由动机驱动」是描述而非命令）。若按裸词硬拦，任何一条含
+/// 「应该」的 phenomenon 都会让整条观察作废 → 真机高频表现为
+/// 「快速观察未生成有效结果」（error_logs 实证：stage=validation +
+/// violations:[character_agency.phenomenon:应该]）。
+///
+/// 故 Editor 硬限制只拦「对作者/作品的直接指令句式」——准确率优先于
+/// 召回率：漏掉一句含「应该」的建议语气，远好于模型正常输出被整条作废。
+const List<String> kEditorVerdictCommandWords = [
+  '你应该',
+  '你务必',
+  '你必须',
+  '你要',
+  '你可以试着',
+  '建议你',
+  '需要修改',
+  '需要重写',
+  '需要调整',
+  '需要增加',
+  '需要删除',
+  '需要补充',
+  '修改成',
+  '改成',
+  '重写',
+  '不好',
+  '失败',
+  '糟糕',
+  '拖沓',
+  '平庸',
+  '缺陷',
+];
+
+/// 检查单条文本是否含 Editor 命令句式。返回命中数组。
+List<String> detectEditorVerdictWords(String text) {
+  final hits = <String>[];
+  for (final word in kEditorVerdictCommandWords) {
+    if (text.contains(word)) hits.add(word);
+  }
+  return hits;
+}
+
 /// 检查单条文本是否含判决词。返回命中数组。
 List<String> detectVerdictWords(String text) {
   final hits = <String>[];
@@ -507,7 +551,7 @@ String? _parseAlignmentValue(
 HardLimitResult checkHardLimits(EditorResult result) {
   final violations = <HardLimitViolation>[];
   for (final obs in result.observations) {
-    final phHits = detectVerdictWords(obs.phenomenon);
+    final phHits = detectEditorVerdictWords(obs.phenomenon);
     if (phHits.isNotEmpty) {
       violations.add(
         HardLimitViolation(
@@ -517,7 +561,7 @@ HardLimitResult checkHardLimits(EditorResult result) {
         ),
       );
     }
-    final riHits = detectVerdictWords(obs.readerImpact);
+    final riHits = detectEditorVerdictWords(obs.readerImpact);
     if (riHits.isNotEmpty) {
       violations.add(
         HardLimitViolation(
