@@ -2,8 +2,7 @@
 // ChatWelcome — 欢迎态（缺口清单第 5 项）
 // 真源：yuesheng-android/src/components/chat/ChatWelcome.tsx
 //
-// 结构（对齐 RN）：
-//   - 月笙圆形头像（primary 底 + 白「月」字，72px）
+// 结构（对齐 RN，头像已于精简批次移除）：
 //   - 标题「你好，我是月笙」
 //   - 副标题「你的专属写作教练，随时帮你诊断和提升写作」
 //
@@ -34,21 +33,9 @@ class ChatWelcome extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 月笙圆形头像（对齐 RN ChatWelcome 真源 + 头注释声明；教学老师形象）
-            const CircleAvatar(
-              radius: 36,
-              backgroundColor: AppColors.primary,
-              child: Text(
-                '月',
-                style: TextStyle(
-                  color: AppColors.onPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
             // UI-AUDIT：走 AppTextStyles 令牌（titleLg=18/w600，空态主文字）
+            // 头像：早期「精简」批次已移除（chat_welcome_test 锚定），
+            // 恢复作 P2 提案待定案（对齐 RN 真源，见 UI-AUDIT 报告 §3）
             const Text(_welcomeTitle, style: AppTextStyles.titleLg),
             const SizedBox(height: AppSpacing.sm),
             // UI-AUDIT：副标题改 body（14/textSecondary，对比度 4.68:1 达标；
