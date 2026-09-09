@@ -217,36 +217,7 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(ms?.title ?? widget.args.title ?? '作品详情'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        toolbarHeight: 48,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, size: 22),
-          onPressed: () {
-            // 批次93-3：返回书架前发刷新信号（书架 listen 后失效章节统计缓存）
-            ref.read(bookshelfRefreshSignalProvider.notifier).state++;
-            context.canPop() ? context.pop() : context.go('/bookshelf');
-          },
-          tooltip: '返回书架',
-        ),
-        actions: [
-          // 批次96-3：右上角「+」= 新建卷（详情页唯一入口，列表级「新建章节」另在列表内）
-          if (_tabController.index == 0)
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: _handleCreateVolume,
-              tooltip: '新建卷',
-            ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: _openMoreMenu,
-            tooltip: '更多',
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context, ms?.title ?? widget.args.title ?? '作品详情'),
       body: SafeArea(
         // P3-3：加载中显示 LoadingView，作品不存在显示错误视图，否则正常布局
         child: !_isLoaded
@@ -262,84 +233,141 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
                     chapterCount: chapters.length,
                   ),
                   // 批次 28：三 Tab（章节 / 文件 / 相关对话）
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    indicatorColor: AppColors.primary,
-                    indicatorSize: TabBarIndicatorSize.label,
-                    labelStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    unselectedLabelStyle: const TextStyle(fontSize: 14),
-                    tabs: const [
-                      Tab(text: '章节'),
-                      Tab(text: '文件'),
-                      Tab(text: '相关对话'),
-                    ],
-                  ),
+                  _buildTabBar(),
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        // ── Tab0 章节 ──
-                        // 空态判据必须是「章与卷皆空」：只按 chapters 判会让零章节
-                        // 作品新建的卷被章节空态吞掉，必须再建一章才可见。
-                        chapterState.isLoading
-                            ? const _LoadingView()
-                            : chapters.isEmpty && volumes.isEmpty
-                            ? ListView(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.lg,
-                                  vertical: AppSpacing.sm,
-                                ),
-                                children: [
-                                  _ChapterListHeader(
-                                    onImport: _openAppendChapters,
-                                    chapterCount: 0,
-                                  ),
-                                  SizedBox(
-                                    height: 260,
-                                    child: _EmptyChaptersState(
-                                      // 批次96-3：空态 CTA 直接创建「第一章」，无弹窗
-                                      onCreate: () =>
-                                          _handleQuickCreateChapter(null),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : _ChapterList(
-                                chapters: chapters,
-                                volumes: volumes,
-                                onTap: _handleChapterTap,
-                                onLongPress: _handleChapterLongPress,
-                                onImport: _openAppendChapters,
-                                chapterCount: chapters.length,
-                                onRenameChapter: _handleRenameChapter,
-                                onQuickCreateChapter: _handleQuickCreateChapter,
-                                // 批次92-1/92-4/92-5：卷分组 + 折叠 + 吸顶 + 卷操作
-                                collapsedVolumes: _collapsedVolumes,
-                                onToggleVolume: _toggleVolumeCollapsed,
-                                onVolumeLongPress: _showVolumeActions,
-                                onRenameVolume: _handleRenameVolume,
-                              ),
-                        // ── Tab1 文件（批次 28：从章节列表尾部独立成 Tab）──
-                        FileSection(
-                          manuscriptId: ms.id,
-                          manuscriptTitle: ms.title,
-                        ),
-                        // ── Tab2 相关对话（批次 28：按活跃度排序；批次 30：点击跳转打开会话）──
-                        RelatedSessionsTab(
-                          manuscriptId: ms.id,
-                          onOpenSession: _handleOpenRelatedSession,
-                        ),
-                      ],
+                    child: _buildTabBarView(
+                      ms: ms,
+                      chapters: chapters,
+                      volumes: volumes,
+                      chaptersLoading: chapterState.isLoading,
                     ),
                   ),
                 ],
               ),
       ),
+    );
+  }
+
+  /// AppBar：返回书架 + 新建卷（仅章节 Tab）+ 更多（R-019 清偿拆出）。
+  PreferredSizeWidget _buildAppBar(BuildContext context, String appBarTitle) {
+    return AppBar(
+      title: Text(appBarTitle),
+      backgroundColor: AppColors.background,
+      foregroundColor: AppColors.textPrimary,
+      toolbarHeight: 48,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, size: 22),
+        onPressed: () {
+          // 批次93-3：返回书架前发刷新信号（书架 listen 后失效章节统计缓存）
+          ref.read(bookshelfRefreshSignalProvider.notifier).state++;
+          context.canPop() ? context.pop() : context.go('/bookshelf');
+        },
+        tooltip: '返回书架',
+      ),
+      actions: [
+        // 批次96-3：右上角「+」= 新建卷（详情页唯一入口，列表级「新建章节」另在列表内）
+        if (_tabController.index == 0)
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _handleCreateVolume,
+            tooltip: '新建卷',
+          ),
+        IconButton(
+          icon: const Icon(Icons.more_vert),
+          onPressed: _openMoreMenu,
+          tooltip: '更多',
+        ),
+      ],
+    );
+  }
+
+  /// 三 Tab 栏（章节 / 文件 / 相关对话；R-019 清偿拆出）。
+  Widget _buildTabBar() {
+    return TabBar(
+      controller: _tabController,
+      labelColor: AppColors.primary,
+      unselectedLabelColor: AppColors.textSecondary,
+      indicatorColor: AppColors.primary,
+      indicatorSize: TabBarIndicatorSize.label,
+      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      unselectedLabelStyle: const TextStyle(fontSize: 14),
+      tabs: const [
+        Tab(text: '章节'),
+        Tab(text: '文件'),
+        Tab(text: '相关对话'),
+      ],
+    );
+  }
+
+  /// TabBarView：章节 / 文件 / 相关对话（R-019 清偿拆出）。
+  Widget _buildTabBarView({
+    required Manuscript ms,
+    required List<Chapter> chapters,
+    required List<Volume> volumes,
+    required bool chaptersLoading,
+  }) {
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        // ── Tab0 章节 ──
+        _buildChaptersTab(
+          chapters: chapters,
+          volumes: volumes,
+          isLoading: chaptersLoading,
+        ),
+        // ── Tab1 文件（批次 28：从章节列表尾部独立成 Tab）──
+        FileSection(manuscriptId: ms.id, manuscriptTitle: ms.title),
+        // ── Tab2 相关对话（批次 28：按活跃度排序；批次 30：点击跳转打开会话）──
+        RelatedSessionsTab(
+          manuscriptId: ms.id,
+          onOpenSession: _handleOpenRelatedSession,
+        ),
+      ],
+    );
+  }
+
+  /// 章节 Tab：加载 / 空态（章卷皆空）/ 卷分组列表（R-019 清偿拆出）。
+  Widget _buildChaptersTab({
+    required List<Chapter> chapters,
+    required List<Volume> volumes,
+    required bool isLoading,
+  }) {
+    // 空态判据必须是「章与卷皆空」：只按 chapters 判会让零章节
+    // 作品新建的卷被章节空态吞掉，必须再建一章才可见。
+    if (isLoading) return const _LoadingView();
+    if (chapters.isEmpty && volumes.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        children: [
+          _ChapterListHeader(onImport: _openAppendChapters, chapterCount: 0),
+          SizedBox(
+            height: 260,
+            child: _EmptyChaptersState(
+              // 批次96-3：空态 CTA 直接创建「第一章」，无弹窗
+              onCreate: () => _handleQuickCreateChapter(null),
+            ),
+          ),
+        ],
+      );
+    }
+    return _ChapterList(
+      chapters: chapters,
+      volumes: volumes,
+      onTap: _handleChapterTap,
+      onLongPress: _handleChapterLongPress,
+      onImport: _openAppendChapters,
+      chapterCount: chapters.length,
+      onRenameChapter: _handleRenameChapter,
+      onQuickCreateChapter: _handleQuickCreateChapter,
+      // 批次92-1/92-4/92-5：卷分组 + 折叠 + 吸顶 + 卷操作
+      collapsedVolumes: _collapsedVolumes,
+      onToggleVolume: _toggleVolumeCollapsed,
+      onVolumeLongPress: _showVolumeActions,
+      onRenameVolume: _handleRenameVolume,
     );
   }
 }
@@ -568,25 +596,7 @@ class _ChapterList extends StatelessWidget {
 
     // 无卷 → 扁平章节列表（批次83 原行为）
     if (volumes.isEmpty) {
-      return CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: header),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.xs,
-            ),
-            sliver: _chapterSliver(chapters),
-          ),
-          // 批次96-2：列表末尾「新建章节」入口（无卷 → 未分卷）
-          SliverToBoxAdapter(
-            child: _NewChapterRow(
-              targetVolumeId: null,
-              onTap: () => onQuickCreateChapter(null),
-            ),
-          ),
-        ],
-      );
+      return _buildFlatScrollView(header);
     }
 
     // 有卷 → 按全局序渲染段（批次96-4：散落章节平铺无组头，卷组自然穿插）
@@ -607,41 +617,7 @@ class _ChapterList extends StatelessWidget {
         );
         continue;
       }
-      final group = VolumeGroup(volume: sec.volume, chapters: sec.chapters);
-      final key = sec.volume!.id;
-      slivers.add(
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _VolumeHeaderDelegate(
-            group: group,
-            collapsed: collapsedVolumes.contains(key),
-            onToggle: () => onToggleVolume(key),
-            onLongPress: () => onVolumeLongPress(sec.volume!),
-            onRename: () => onRenameVolume(sec.volume!),
-          ),
-        ),
-      );
-      if (collapsedVolumes.contains(key)) continue;
-      slivers.add(
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.xs,
-          ),
-          sliver: sec.chapters.isEmpty
-              ? const SliverToBoxAdapter(child: _DetailEmptyVolumeHint())
-              : _chapterSliver(sec.chapters),
-        ),
-      );
-      // 批次96-2：卷内末尾「新建章节」入口（就近归属该卷）
-      slivers.add(
-        SliverToBoxAdapter(
-          child: _NewChapterRow(
-            targetVolumeId: sec.volume!.id,
-            onTap: () => onQuickCreateChapter(sec.volume!.id),
-          ),
-        ),
-      );
+      _appendVolumeSectionSlivers(slivers, sec);
     }
     // 批次96-4：列表末尾「新建章节」入口（归属散落，与无卷扁平列表一致）
     slivers.add(
@@ -653,6 +629,68 @@ class _ChapterList extends StatelessWidget {
       ),
     );
     return CustomScrollView(slivers: slivers);
+  }
+
+  /// 无卷 → 扁平章节列表（批次83 原行为；R-019 清偿拆出）。
+  Widget _buildFlatScrollView(Widget header) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(child: header),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.xs,
+          ),
+          sliver: _chapterSliver(chapters),
+        ),
+        // 批次96-2：列表末尾「新建章节」入口（无卷 → 未分卷）
+        SliverToBoxAdapter(
+          child: _NewChapterRow(
+            targetVolumeId: null,
+            onTap: () => onQuickCreateChapter(null),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 单卷段 sliver 追加：吸顶卷头 + 章列表 + 卷内新建入口（R-019 清偿拆出）。
+  void _appendVolumeSectionSlivers(List<Widget> slivers, ChapterSection sec) {
+    final group = VolumeGroup(volume: sec.volume, chapters: sec.chapters);
+    final key = sec.volume!.id;
+    slivers.add(
+      SliverPersistentHeader(
+        pinned: true,
+        delegate: _VolumeHeaderDelegate(
+          group: group,
+          collapsed: collapsedVolumes.contains(key),
+          onToggle: () => onToggleVolume(key),
+          onLongPress: () => onVolumeLongPress(sec.volume!),
+          onRename: () => onRenameVolume(sec.volume!),
+        ),
+      ),
+    );
+    if (collapsedVolumes.contains(key)) return;
+    slivers.add(
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.xs,
+        ),
+        sliver: sec.chapters.isEmpty
+            ? const SliverToBoxAdapter(child: _DetailEmptyVolumeHint())
+            : _chapterSliver(sec.chapters),
+      ),
+    );
+    // 批次96-2：卷内末尾「新建章节」入口（就近归属该卷）
+    slivers.add(
+      SliverToBoxAdapter(
+        child: _NewChapterRow(
+          targetVolumeId: sec.volume!.id,
+          onTap: () => onQuickCreateChapter(sec.volume!.id),
+        ),
+      ),
+    );
   }
 }
 
@@ -810,28 +848,7 @@ class _DetailVolumeHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // 左侧 3dp 色条（卷 → 竹青；未分卷 → 弱化灰）
-              Container(
-                width: 3,
-                color: isUnassigned ? AppColors.placeholder : AppColors.primary,
-              ),
-              const SizedBox(width: 10),
-              Icon(
-                collapsed ? Icons.chevron_right : Icons.expand_more,
-                size: 18,
-                color: AppColors.textTertiary,
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                isUnassigned
-                    ? Icons.notes_outlined
-                    : Icons.collections_bookmark_outlined,
-                size: 16,
-                color: isUnassigned
-                    ? AppColors.textTertiary
-                    : AppColors.primary,
-              ),
-              const SizedBox(width: 6),
+              _buildLeading(isUnassigned, collapsed),
               Expanded(
                 child: Text(
                   title,
@@ -840,38 +857,74 @@ class _DetailVolumeHeader extends StatelessWidget {
                   style: AppTextStyles.titleMd,
                 ),
               ),
-              if (totalWords > 0) ...[
-                Text(
-                  _formatWords(totalWords),
-                  style: AppTextStyles.microCaption,
-                ),
-                const SizedBox(width: 8),
-              ],
-              Text('$count 章', style: AppTextStyles.microCaption),
-              if (onRename != null) ...[
-                const SizedBox(width: 4),
-                // 批次92-2：卷头铅笔图标 → 直接重命名
-                InkWell(
-                  onTap: onRename,
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs,
-                      vertical: AppSpacing.xxs,
-                    ),
-                    child: Icon(
-                      Icons.edit_outlined,
-                      size: 14,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-              ],
+              _buildTrailingInfo(),
               const SizedBox(width: 8),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// 左侧：3dp 色条 + 折叠箭头 + 卷图标（R-019 清偿拆出）。
+  Widget _buildLeading(bool isUnassigned, bool collapsed) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 左侧 3dp 色条（卷 → 竹青；未分卷 → 弱化灰）
+        Container(
+          width: 3,
+          color: isUnassigned ? AppColors.placeholder : AppColors.primary,
+        ),
+        const SizedBox(width: 10),
+        Icon(
+          collapsed ? Icons.chevron_right : Icons.expand_more,
+          size: 18,
+          color: AppColors.textTertiary,
+        ),
+        const SizedBox(width: 4),
+        Icon(
+          isUnassigned
+              ? Icons.notes_outlined
+              : Icons.collections_bookmark_outlined,
+          size: 16,
+          color: isUnassigned ? AppColors.textTertiary : AppColors.primary,
+        ),
+        const SizedBox(width: 6),
+      ],
+    );
+  }
+
+  /// 尾部：字数 + 章数 + 重命名铅笔（R-019 清偿拆出）。
+  Widget _buildTrailingInfo() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (totalWords > 0) ...[
+          Text(_formatWords(totalWords), style: AppTextStyles.microCaption),
+          const SizedBox(width: 8),
+        ],
+        Text('$count 章', style: AppTextStyles.microCaption),
+        if (onRename != null) ...[
+          const SizedBox(width: 4),
+          // 批次92-2：卷头铅笔图标 → 直接重命名
+          InkWell(
+            onTap: onRename,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: AppSpacing.xxs,
+              ),
+              child: Icon(
+                Icons.edit_outlined,
+                size: 14,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -975,70 +1028,85 @@ class _MoreMenuSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 顶部把手
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-            ),
-            // 批次77：移除「导出项目」「分享」开发中死菜单项（对齐写作页 E3 清理，
-            // 菜单只保留真实功能：项目设置 / 删除项目）
-            _MenuActionItem(
-              icon: Icons.settings_outlined,
-              label: '项目设置',
-              iconColor: AppColors.textPrimary,
-              labelColor: AppColors.textPrimary,
-              onTap: onOpenSettings,
-            ),
-            const Divider(height: 1, color: AppColors.divider),
-            // 批次94-1：导出整书（批次77 曾移除的「导出项目」死菜单，现为真实功能）
-            _MenuActionItem(
-              icon: Icons.ios_share_outlined,
-              label: '导出整书',
-              iconColor: AppColors.primary,
-              labelColor: AppColors.textPrimary,
-              onTap: onExport,
-            ),
-            const Divider(height: 1, color: AppColors.divider),
-            // 批次94-2：章节回收站（软删章节恢复/永久删除）
-            _MenuActionItem(
-              icon: Icons.delete_sweep_outlined,
-              label: '回收站',
-              iconColor: AppColors.textPrimary,
-              labelColor: AppColors.textPrimary,
-              onTap: onRecycleBin,
-            ),
-            const Divider(height: 1, color: AppColors.divider),
-            _MenuActionItem(
-              icon: Icons.delete_outline,
-              label: '删除项目',
-              iconColor: AppColors.danger,
-              labelColor: AppColors.danger,
-              onTap: onDelete,
-            ),
+            _buildHandle(),
+            ..._buildMenuItems(),
             const SizedBox(height: 8),
-            // 取消按钮
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(44),
-                  side: const BorderSide(color: AppColors.border),
-                  foregroundColor: AppColors.textSecondary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                ),
-                child: const Text('取消'),
-              ),
-            ),
+            _buildCancelButton(context),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 菜单项列表：项目设置 / 导出整书 / 回收站 / 删除项目（R-019 清偿拆出）。
+  List<Widget> _buildMenuItems() {
+    return [
+      // 批次77：移除「导出项目」「分享」开发中死菜单项（对齐写作页 E3 清理，
+      // 菜单只保留真实功能：项目设置 / 删除项目）
+      _MenuActionItem(
+        icon: Icons.settings_outlined,
+        label: '项目设置',
+        iconColor: AppColors.textPrimary,
+        labelColor: AppColors.textPrimary,
+        onTap: onOpenSettings,
+      ),
+      const Divider(height: 1, color: AppColors.divider),
+      // 批次94-1：导出整书（批次77 曾移除的「导出项目」死菜单，现为真实功能）
+      _MenuActionItem(
+        icon: Icons.ios_share_outlined,
+        label: '导出整书',
+        iconColor: AppColors.primary,
+        labelColor: AppColors.textPrimary,
+        onTap: onExport,
+      ),
+      const Divider(height: 1, color: AppColors.divider),
+      // 批次94-2：章节回收站（软删章节恢复/永久删除）
+      _MenuActionItem(
+        icon: Icons.delete_sweep_outlined,
+        label: '回收站',
+        iconColor: AppColors.textPrimary,
+        labelColor: AppColors.textPrimary,
+        onTap: onRecycleBin,
+      ),
+      const Divider(height: 1, color: AppColors.divider),
+      _MenuActionItem(
+        icon: Icons.delete_outline,
+        label: '删除项目',
+        iconColor: AppColors.danger,
+        labelColor: AppColors.danger,
+        onTap: onDelete,
+      ),
+    ];
+  }
+
+  /// 顶部把手（R-019 清偿拆出）。
+  Widget _buildHandle() {
+    return Container(
+      width: 36,
+      height: 4,
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.border,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+    );
+  }
+
+  /// 取消按钮（R-019 清偿拆出）。
+  Widget _buildCancelButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () => Navigator.of(context).pop(),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(44),
+          side: const BorderSide(color: AppColors.border),
+          foregroundColor: AppColors.textSecondary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+        ),
+        child: const Text('取消'),
       ),
     );
   }
@@ -1145,110 +1213,124 @@ class _ChapterCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            chapter.title.isEmpty ? '未命名章节' : chapter.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        // 状态标签
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: AppSpacing.xxs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusCfg.bgColor,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            statusCfg.label,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: statusCfg.textColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildTitleRow(statusCfg),
                     const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.sticky_note_2_outlined,
-                          size: 12,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatWords(chapter.wordCount),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                        if (chapter.lastDiagnosedAt != null) ...[
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 12,
-                            color: AppColors.textDeep,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            '已诊断',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textDeep,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                    _buildMetaRow(),
                   ],
                 ),
               ),
               const SizedBox(width: 4),
-              // 修复3：行尾铅笔图标（直接重命名章节名）
-              IconButton(
-                onPressed: onRename,
-                icon: const Icon(
-                  Icons.edit_outlined,
-                  size: 18,
-                  color: AppColors.textSecondary,
-                ),
-                tooltip: '重命名章节',
-                visualDensity: VisualDensity.compact,
-              ),
-              // 批次79 C：行尾可见删除入口
-              IconButton(
-                onPressed: onDelete,
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 18,
-                  color: AppColors.danger,
-                ),
-                tooltip: '删除章节',
-                visualDensity: VisualDensity.compact,
-              ),
-              const Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: AppColors.textTertiary,
-              ),
+              _buildTrailingActions(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  /// 标题行：章节名 + 状态标签（R-019 清偿拆出）。
+  Widget _buildTitleRow(_ChapterStatusConfig statusCfg) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            chapter.title.isEmpty ? '未命名章节' : chapter.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        // 状态标签
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.xxs,
+          ),
+          decoration: BoxDecoration(
+            color: statusCfg.bgColor,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          child: Text(
+            statusCfg.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: statusCfg.textColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 元信息行：字数 + 已诊断（R-019 清偿拆出）。
+  Widget _buildMetaRow() {
+    return Row(
+      children: [
+        Icon(
+          Icons.sticky_note_2_outlined,
+          size: 12,
+          color: AppColors.textTertiary,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          _formatWords(chapter.wordCount),
+          style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        ),
+        if (chapter.lastDiagnosedAt != null) ...[
+          const SizedBox(width: 12),
+          const Icon(
+            Icons.check_circle_outline,
+            size: 12,
+            color: AppColors.textDeep,
+          ),
+          const SizedBox(width: 4),
+          const Text(
+            '已诊断',
+            style: TextStyle(fontSize: 12, color: AppColors.textDeep),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// 行尾操作：重命名 + 删除 + 跳转箭头（R-019 清偿拆出）。
+  Widget _buildTrailingActions() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 修复3：行尾铅笔图标（直接重命名章节名）
+        IconButton(
+          onPressed: onRename,
+          icon: const Icon(
+            Icons.edit_outlined,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
+          tooltip: '重命名章节',
+          visualDensity: VisualDensity.compact,
+        ),
+        // 批次79 C：行尾可见删除入口
+        IconButton(
+          onPressed: onDelete,
+          icon: const Icon(
+            Icons.delete_outline,
+            size: 18,
+            color: AppColors.danger,
+          ),
+          tooltip: '删除章节',
+          visualDensity: VisualDensity.compact,
+        ),
+        const Icon(
+          Icons.chevron_right,
+          size: 20,
+          color: AppColors.textTertiary,
+        ),
+      ],
     );
   }
 }
