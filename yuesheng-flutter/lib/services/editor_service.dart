@@ -110,7 +110,7 @@ List<ChatMessage> _buildEditorMessages(
   String text,
   List<ChatMessage> extraSystemMessages,
 ) {
-  final userPrompt = '请对以下小说文本做编辑观察，输出 [YS_EDITOR] JSON。\n\n## 待观察文本\n\n$text';
+  final userPrompt = '请对以下小说文本做编辑观察。\n\n## 待观察文本\n\n$text';
   return <ChatMessage>[
     ChatMessage(role: 'system', content: kEditorObservationSkillContent),
     ...extraSystemMessages,

@@ -496,13 +496,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     final header = isSelection
         ? '请对以下选中文本进行写作诊断分析：\n\n【选段】\n'
         : '请对以下章节内容进行写作诊断分析：\n\n【$title】\n\n';
-    return '$header'
-        '$content\n\n'
-        '---\n'
-        '重要：诊断说明后必须输出 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 包裹的 JSON 块，'
-        '含 syndromes 数组（每条含 syndrome_id/name/severity/evidence/explanation）、'
-        'suggested_actions（数组）、confidence（0-1）。'
-        '此结构化数据用于驱动后续教学流程，不可缺少。';
+    return '$header$content';
   }
 
   /// 诊断完成：刷新消息 + 复位流式/诊断中 + 完成反馈（R-019 清偿拆出）。

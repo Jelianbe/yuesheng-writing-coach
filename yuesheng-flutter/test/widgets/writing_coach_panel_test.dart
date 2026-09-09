@@ -515,7 +515,7 @@ void main() {
       expect(chatState.isStreaming, isFalse);
     });
 
-    testWidgets('D1-3 诊断 prompt 含 [YS_DIAGNOSIS] 格式要求', (tester) async {
+    testWidgets('D1-3 诊断用户消息不再内联协议指令（批次97：协议由运行时注入）', (tester) async {
       await tester.pumpWidget(buildPanel());
       await tester.pumpAndSettle();
 
@@ -524,7 +524,9 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      // 验证 DB 中的 user 消息含 [YS_DIAGNOSIS] 格式要求（对齐 RN chat.tsx#L212）
+      // 批次97：对话历史用户消息只含正文请求——[YS_DIAGNOSIS] 协议由
+      // ChatService._maybeInjectDiagnosisProtocol 运行时追加（不落库），
+      // 避免指令文本进入对话历史 / 被模型复读。
       final sessionRepo = SessionRepository(db);
       final sid = await sessionRepo.getOrCreateSessionForChapter(
         msId,
@@ -532,9 +534,11 @@ void main() {
       );
       final messages = await sessionRepo.listMessages(sid);
       final userMsg = messages.firstWhere((m) => m.role == 'user');
-      expect(userMsg.content, contains('[YS_DIAGNOSIS]'));
-      expect(userMsg.content, contains('syndromes'));
-      expect(userMsg.content, contains('severity'));
+      expect(userMsg.content, contains('写作诊断分析'));
+      expect(userMsg.content, isNotEmpty);
+      expect(userMsg.content, isNot(contains('[YS_DIAGNOSIS]')));
+      expect(userMsg.content, isNot(contains('必须输出')));
+      expect(userMsg.content, isNot(contains('重要：诊断说明后')));
     });
 
     testWidgets('D1-4 会话隔离：两章节各自诊断，teaching_state 互不影响', (tester) async {
@@ -786,7 +790,8 @@ void main() {
       final userMsg = messages.firstWhere((m) => m.role == 'user');
       expect(userMsg.content, contains('选中文本'));
       expect(userMsg.content, contains('【选段】'));
-      expect(userMsg.content, contains('[YS_DIAGNOSIS]'));
+      // 批次97：协议指令不再内联进用户消息（由运行时注入），防对话历史观感差
+      expect(userMsg.content, isNot(contains('[YS_DIAGNOSIS]')));
       // 诊断内容为选中文本而非整章
       expect(userMsg.content, contains(selectedText));
     });
