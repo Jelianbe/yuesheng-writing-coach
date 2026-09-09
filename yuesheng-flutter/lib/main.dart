@@ -101,21 +101,26 @@ ThemeData buildAppTheme() {
 /// 暗夜主题（批次94-3：ThemeMode.system 跟随系统暗色，Material 层暗色）
 ///
 /// 渐进说明：AppColors 为静态亮色令牌（76 文件 1668 处引用、含 147 处 const
-/// 上下文），本轮仅做「系统级 ThemeData 暗色」——Dialog/Sheet/SnackBar/
-/// TextField 光标等 Material 组件跟随系统暗色；自定义页面底色仍用亮色令牌，
-/// 全量令牌化（AppColors 双 token）列入后续批次（见台账 94-3 执行记录）。
+/// 上下文），全量双 token 不可行（dynamic getter 触发 invalid_constant）；
+/// 自定义页面底色与文字均用亮色令牌，全量令牌化列入后续批次。
+///
+/// 批次99（暗色可读修复）：surface 由暗色 #26282B 改回亮色。
+/// 根因：onSurface/textTheme 仍用深色亮系令牌（textPrimary/textSecondary），
+/// surface 走暗色 → BottomSheet/DropdownMenu/未显式填色的 TextField 等浮层
+/// 「暗底深字」不可读（用户反馈：暗色模式下输入与应用默认文字看不清）。
+/// 修复：surface 对齐 surfaceWhite（亮底深字），全 App 无论系统亮暗均为
+/// 亮色外观，可读性一致；brightness: dark 保留，系统状态栏/导航栏仍按暗色适配。
 ThemeData buildDarkTheme() {
-  const darkSurface = Color(0xFF26282B); // 对齐 editorBgDark
-  const darkText = Color(0xFFE8EAED); // 对齐 editorBgDark 文字
   return ThemeData(
     brightness: Brightness.dark,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       brightness: Brightness.dark,
       primary: AppColors.primary,
-      surface: darkSurface,
-      onSurface: darkText,
-      error: AppColors.l3Text,
+      onPrimary: AppColors.onPrimary,
+      surface: AppColors.surfaceWhite,
+      onSurface: AppColors.textPrimary,
+      error: AppColors.danger,
     ),
     useMaterial3: true,
     pageTransitionsTheme: const PageTransitionsTheme(
