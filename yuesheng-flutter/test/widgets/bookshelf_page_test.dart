@@ -22,6 +22,7 @@ import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/manuscript_providers.dart';
 import 'package:writingcoach/providers/work_import_providers.dart';
@@ -581,12 +582,12 @@ void main() {
       final blocks = tester.widgetList<Container>(coverBlocks).toList();
       expect(blocks.length, 3); // 3 个作品 → 3 个首字封面
 
-      // 无体裁作品封面用弱化灰 #858B92（textTertiary）
+      // 无体裁作品封面用弱化灰（textTertiary，批次99b 加深为 #656C76）
       for (final container in blocks) {
         final deco = container.decoration as BoxDecoration;
         expect(
           deco.color,
-          const Color(0xFF858B92),
+          AppColors.textTertiary,
           reason: '无体裁封面用弱化灰，不再统一竹青图标',
         );
       }

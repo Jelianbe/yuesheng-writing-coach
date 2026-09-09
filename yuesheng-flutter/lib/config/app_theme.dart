@@ -24,7 +24,9 @@ abstract final class AppColors {
   static const Color onPrimaryDim = Color(0xB3FFFFFF); // 70% 白（次级信息）
   static const Color onPrimaryFaint = Color(0x3DFFFFFF); // 24% 白（装饰/分隔）
   static const Color primarySoft = Color(0xFFE8F0EE); // 竹青淡（L1 共用）
-  static const Color primaryDeep = Color(0xFF5B7565); // 深青次级文字
+  static const Color primaryDeep = Color(
+    0xFF4E6A5A,
+  ); // 深青次级文字（与 textDeep 同值，批次99b 同步加深）
   // UI-AUDIT-V1 定案（2026-09-09）：教学强调色——竹青同系加深一档，
   // 用于「老师批注/重点提示/诊断强调」的二次强调层级（区别于 primary 品牌主色）。
   // 对比度：白底 8.26:1 / 米纸底 7.33:1，均达 AA。不引入第二主色。
@@ -40,12 +42,16 @@ abstract final class AppColors {
   // ── 文字 ──
   static const Color textPrimary = Color(0xFF2D3142); // 主文字
   static const Color textSecondary = Color(
-    0xFF6B7076,
-  ); // 次级文字（对比度 4.68:1，达标 AA）
-  static const Color textTertiary = Color(0xFF858B92); // 弱化文字/图标（对比度 3.23:1，达标）
+    0xFF5F646B,
+  ); // 次级文字（批次99b 加深：白底 5.96:1，背景/卡片/米纸全 ≥5.29:1，达标 AA）
+  // 弱化文字/图标（批次99b 加深：白底 5.30:1，背景 4.98 / 卡片 4.80 /
+  // 米纸 4.70 —— 全场景 ≥4.5:1，caption/microCaption 小号文字达标 AA）
+  static const Color textTertiary = Color(0xFF656C76);
   static const Color textInk = Color(0xFF1A1A1A); // 编辑器正文/菜单
   static const Color textBody = Color(0xFF4A4E54); // 表单标签
-  static const Color textDeep = Color(0xFF5B7565); // 深青说明文字（建议卡等）
+  static const Color textDeep = Color(
+    0xFF4E6A5A,
+  ); // 深青说明文字（建议卡等，批次99b 加深：米纸底 5.27:1）
 
   // ── 边框 / 分隔 ──
   static const Color border = Color(0xFFE0E4E0); // 标准边框
