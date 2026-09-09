@@ -696,7 +696,7 @@ class _NewChapterRow extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 '新建章节',
-                style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
             ],
           ),

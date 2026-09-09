@@ -851,7 +851,10 @@ class _AboutRow extends StatelessWidget {
           Expanded(child: Text(label, style: AppTextStyles.body)),
           Text(
             value,
-            style: const TextStyle(fontSize: 14, color: AppColors.textTertiary),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
