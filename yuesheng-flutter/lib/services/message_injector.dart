@@ -35,6 +35,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:writingcoach/config/shared_constants.dart' show FocusSwitch;
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
@@ -405,8 +406,8 @@ class MessageInjector {
         markStage(BudgetStageNames.studentProfile);
         messages.add(ChatMessage(role: 'system', content: profileResult.text));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 画像注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('画像注入失败不阻断主流程', e, st);
     }
   }
 
@@ -436,8 +437,8 @@ class MessageInjector {
               '请保持教学连贯性，延续上轮设定的方向。',
         ),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 教学计划延续注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('教学计划延续注入失败不阻断主流程', e, st);
     }
   }
 
@@ -480,8 +481,8 @@ class MessageInjector {
     try {
       final refs = await _referenceRepo.listReferences(sessionId);
       return refs;
-    } catch (e) {
-      debugPrint('[SafeRun] 引用列表加载失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('引用列表加载失败不阻断主流程', e, st);
       return const [];
     }
   }
@@ -566,8 +567,8 @@ class MessageInjector {
           content: ch.content,
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 章节批量加载失败不阻断整体: $e');
+    } catch (e, st) {
+      _logSafeRun('章节批量加载失败不阻断整体', e, st);
     }
   }
 
@@ -579,8 +580,8 @@ class MessageInjector {
       for (final f in files) {
         _cachedAttachedFiles[f.id] = f;
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 素材批量加载失败不阻断整体: $e');
+    } catch (e, st) {
+      _logSafeRun('素材批量加载失败不阻断整体', e, st);
     }
   }
 
@@ -616,8 +617,8 @@ class MessageInjector {
           chapters: chaptersByMs[id] ?? const [],
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 作品批量加载失败不阻断整体: $e');
+    } catch (e, st) {
+      _logSafeRun('作品批量加载失败不阻断整体', e, st);
     }
   }
 
@@ -659,8 +660,8 @@ class MessageInjector {
           chapters: volChapters,
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 卷批量加载失败不阻断整体: $e');
+    } catch (e, st) {
+      _logSafeRun('卷批量加载失败不阻断整体', e, st);
     }
   }
 
@@ -687,8 +688,8 @@ class MessageInjector {
         ),
       );
       return true;
-    } catch (e) {
-      debugPrint('[SafeRun] 大纲记忆注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('大纲记忆注入失败不阻断主流程', e, st);
       return false;
     }
   }
@@ -711,8 +712,8 @@ class MessageInjector {
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 大纲实体索引注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('大纲实体索引注入失败不阻断主流程', e, st);
     }
   }
 
@@ -760,8 +761,8 @@ class MessageInjector {
         markStage(BudgetStageNames.attachedFiles);
         messages.add(ChatMessage(role: 'system', content: fileContext));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 附属文件注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('附属文件注入失败不阻断主流程', e, st);
     }
   }
 
@@ -808,8 +809,8 @@ class MessageInjector {
           ),
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 漂移检测失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('漂移检测失败不阻断主流程', e, st);
     }
   }
 
@@ -840,8 +841,8 @@ class MessageInjector {
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 冲突检测失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('冲突检测失败不阻断主流程', e, st);
     }
   }
 
@@ -891,8 +892,8 @@ class MessageInjector {
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 因果链检测失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('因果链检测失败不阻断主流程', e, st);
     }
   }
 
@@ -942,8 +943,8 @@ class MessageInjector {
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 情节闭环检测失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('情节闭环检测失败不阻断主流程', e, st);
     }
   }
 
@@ -963,8 +964,8 @@ class MessageInjector {
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 基础文法检测失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('基础文法检测失败不阻断主流程', e, st);
     }
   }
 
@@ -984,8 +985,8 @@ class MessageInjector {
       if (ctx != null) {
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 对话标签检测失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('对话标签检测失败不阻断主流程', e, st);
     }
   }
 
@@ -1104,8 +1105,8 @@ class MessageInjector {
           ),
         ),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 训练评估注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('训练评估注入失败不阻断主流程', e, st);
     }
   }
 
@@ -1113,8 +1114,8 @@ class MessageInjector {
   Future<bool> _resolveRelapseSignal(String focusSyndromeId) async {
     try {
       return await _diagnosisRepo.hasResolvedHistory(focusSyndromeId);
-    } catch (e) {
-      debugPrint('[SafeRun] 复发信号查询失败降级 false: $e');
+    } catch (e, st) {
+      _logSafeRun('复发信号查询失败降级 false', e, st);
       return false;
     }
   }
@@ -1203,8 +1204,8 @@ class MessageInjector {
         focusProblem: focusProblem,
         messages: messages,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 训练上下文构建失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('训练上下文构建失败不阻断主流程', e, st);
     }
     await _injectTrainingKnowledge(
       focusSyndromeId: focusSyndromeId,
@@ -1267,8 +1268,8 @@ class MessageInjector {
         await _diagnosisRepo.resolveSyndromesBatch(sessionId, [
           focusSyndromeId,
         ]);
-      } catch (e) {
-        debugPrint('[SafeRun] resolveSyndromesBatch 内层: $e');
+      } catch (e, st) {
+        _logSafeRun('resolveSyndromesBatch 内层', e, st);
       }
       // B1：达标→解锁同时插入阶段总结卡
       await insertPhaseSummaryOnMastered(
@@ -1277,8 +1278,8 @@ class MessageInjector {
         focusProblem.syndromeName,
         trainingInput.passRateInput.totalCount,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] FSM updateTeachingState 外层: $e');
+    } catch (e, st) {
+      _logSafeRun('FSM updateTeachingState 外层', e, st);
     }
   }
 
@@ -1298,8 +1299,8 @@ class MessageInjector {
       if (fewShot.isNotEmpty) {
         messages.add(ChatMessage(role: 'system', content: fewShot));
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 知识库注入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('知识库注入失败不阻断主流程', e, st);
     }
   }
 
@@ -1338,8 +1339,8 @@ class MessageInjector {
         focusSyndromeId: focusResult.activatedFocusId,
       );
       styleTechniqueSection = formatStyleTechniqueSection(suggestion);
-    } catch (e) {
-      debugPrint('[SafeRun] 文笔画像旁路路由失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('文笔画像旁路路由失败不阻断主流程', e, st);
     }
     final structuredContext = buildStructuredSyndromeContext(
       activeSyndromeViews,
@@ -1392,8 +1393,8 @@ class MessageInjector {
         }
       }
       return items;
-    } catch (e) {
-      debugPrint('[SafeRun] buildFocusHistory 失败: $e');
+    } catch (e, st) {
+      _logSafeRun('buildFocusHistory 失败', e, st);
       return [];
     }
   }
@@ -1477,9 +1478,27 @@ class MessageInjector {
           ],
         ),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 阶段总结卡插入失败不阻断主流程: $e');
+    } catch (e, st) {
+      _logSafeRun('阶段总结卡插入失败不阻断主流程', e, st);
     }
+  }
+
+  /// SafeRun 降级统一留痕（CR-53）。
+  ///
+  /// 本类的失败路径一律「不阻断主流程」——异常已被 catch 处理、不会上抛，
+  /// 按 V1.4 P0-2 处置判据缺的是**留痕**不是捕获。此前只有 debugPrint，
+  /// 而 release 构建不输出 → 生产环境这些降级全程静默、无法归因。
+  /// 保留 debugPrint（开发期即时可见）+ captureError 落 error_logs。
+  /// 同模式实现见 diagnosis_committer.dart:142 / diagnosis_flow_handler.dart:198
+  /// —— 3 份分散实现本批先不抽公用 helper（ADR 待立），逐文件独立维护。
+  void _logSafeRun(String stage, Object e, StackTrace s) {
+    debugPrint('[SafeRun] $stage: $e');
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'database',
+      message: '[SafeRun] $stage: $e',
+      stack: s.toString(),
+    );
   }
 }
 
