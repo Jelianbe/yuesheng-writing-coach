@@ -52,49 +52,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       context: context,
       barrierDismissible: true,
       barrierColor: AppColors.overlay,
-      builder: (ctx) => AlertDialog(
-        title: const Text('删除消息', style: AppTextStyles.titleLg),
-        content: const Text(
-          '确定要删除这条消息吗？此操作不可撤销。',
-          textAlign: TextAlign.center,
-          style: AppTextStyles.body,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            style: AppButtonStyles.secondary,
-            child: const Text(
-              '取消',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              padding: const EdgeInsets.symmetric(
-                // X-039-Batch1：16→lg / 12→md
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-            ),
-            child: const Text(
-              '删除',
-              style: TextStyle(
-                color: AppColors.onPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
+      builder: (ctx) => _buildDeleteConfirmDialog(ctx),
     );
     if (confirmed != true || !mounted) return;
     await _initFuture;
@@ -107,6 +65,53 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     ref
         .read(writingCoachStoreProvider(widget.chapterId).notifier)
         .setMessages(messages);
+  }
+
+  /// 删除确认对话框（R-019 清偿：_confirmDeleteMessage 拆出）。
+  Widget _buildDeleteConfirmDialog(BuildContext dialogCtx) {
+    return AlertDialog(
+      title: const Text('删除消息', style: AppTextStyles.titleLg),
+      content: const Text(
+        '确定要删除这条消息吗？此操作不可撤销。',
+        textAlign: TextAlign.center,
+        style: AppTextStyles.body,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogCtx, false),
+          style: AppButtonStyles.secondary,
+          child: const Text(
+            '取消',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogCtx, true),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.danger,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            padding: const EdgeInsets.symmetric(
+              // X-039-Batch1：16→lg / 12→md
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+          ),
+          child: const Text(
+            '删除',
+            style: TextStyle(
+              color: AppColors.onPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   ///
@@ -135,61 +140,17 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       writingCoachStoreProvider(widget.chapterId).notifier,
     );
     store.setStreaming(true);
-    final chatService = ref.read(chatServiceProvider);
     // ADR-C87：本次发送的取消令牌（供「停止生成」按钮在流式中段中止）
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
     try {
-      await chatService.sendMessage(
-        sid,
-        text,
-        SendMessageCallbacks(
-          onUserMessagePersisted: (message) {
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .addMessage(message);
-          },
-          onStream: (delta) {
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .appendStreamingContent(delta);
-          },
-          onComplete: (fullContent, messageId) async {
-            final sessionRepo = SessionRepository(
-              ref.read(appDatabaseProvider),
-            );
-            final messages = await sessionRepo.listMessages(sid);
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .setMessages(messages);
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .setStreaming(false);
-            // 批次49：复位阶段标签
-            if (mounted) setState(() => _streamStageLabel = null);
-          },
-          onError: (error) {
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .setError(error);
-          },
-          onCancelled: () {
-            // 用户主动停止：优雅复位（不标记失败、不弹红错）
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .cancelStreaming();
-          },
-          onTrainingResult: onTrainingResult,
-        ),
-        SendMessageOptions(
-          phase: TeachingPhase.p0Engage,
-          attitude: AttitudeLevel.doubao,
-          // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
-          lastEditorEditAtSec: ref.read(editorActivityProvider),
-          // ADR-C87：取消令牌——流式中可主动中止
-          cancelToken: cancelToken,
-        ),
+      await _runSendMessage(
+        sid: sid,
+        text: text,
+        store: store,
         subphase: subphase,
+        onTrainingResult: onTrainingResult,
+        cancelToken: cancelToken,
       );
     } catch (e) {
       if (mounted) setState(() => _streamStageLabel = null);
@@ -203,6 +164,55 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     } finally {
       _cancelToken = null;
     }
+  }
+
+  /// ChatService.sendMessage 调用 + 流式回调（R-019 清偿：_handleSend 拆出）。
+  Future<void> _runSendMessage({
+    required String sid,
+    required String text,
+    required ChatStore store,
+    TeachingSubphase? subphase,
+    void Function(TrainingResult)? onTrainingResult,
+    required CancelToken cancelToken,
+  }) async {
+    final chatService = ref.read(chatServiceProvider);
+    await chatService.sendMessage(
+      sid,
+      text,
+      SendMessageCallbacks(
+        onUserMessagePersisted: (message) {
+          store.addMessage(message);
+        },
+        onStream: (delta) {
+          store.appendStreamingContent(delta);
+        },
+        onComplete: (fullContent, messageId) async {
+          final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
+          final messages = await sessionRepo.listMessages(sid);
+          store.setMessages(messages);
+          store.setStreaming(false);
+          // 批次49：复位阶段标签
+          if (mounted) setState(() => _streamStageLabel = null);
+        },
+        onError: (error) {
+          store.setError(error);
+        },
+        onCancelled: () {
+          // 用户主动停止：优雅复位（不标记失败、不弹红错）
+          store.cancelStreaming();
+        },
+        onTrainingResult: onTrainingResult,
+      ),
+      SendMessageOptions(
+        phase: TeachingPhase.p0Engage,
+        attitude: AttitudeLevel.doubao,
+        // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
+        lastEditorEditAtSec: ref.read(editorActivityProvider),
+        // ADR-C87：取消令牌——流式中可主动中止
+        cancelToken: cancelToken,
+      ),
+      subphase: subphase,
+    );
   }
 
   /// ADR-C87：主动停止当前生成（「停止生成」按钮回调）。
@@ -260,25 +270,11 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
   /// 与「诊断本章」（复盘通道·全量）形成 A7 双通道分工。
   Future<void> _handleRealtimeObserve() async {
     // ADR-C81 懒创建：快速观察是「产生内容」入口，此处才真正创建会话
-    final sid = await _ensureSession();
-    if (sid == null) return;
-
-    // 字数校验：实时观察要求至少 50 字（短文本观察无意义）
-    //
-    // ADR-C66：门槛取自 UILimits，与诊断门槛同理（避免常量与文案双份维护）。
-    final writingState = ref.read(writingStoreProvider(widget.chapterId));
-    final content = writingState.localContent;
-    if (content.trim().length < UILimits.quickObservationWordThreshold) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            '请至少写 ${UILimits.quickObservationWordThreshold} 字后再快速观察',
-          ),
-        ),
-      );
-      return;
-    }
+    // ADR-C66：门槛取自 UILimits（字数不足时弹提示并返回 null）
+    final prepared = await _ensureObserveSession();
+    if (prepared == null) return;
+    final sid = prepared.sid;
+    final content = prepared.content;
 
     // 批次49：快速观察阶段标签
     if (mounted) setState(() => _streamStageLabel = '正在快速观察…');
@@ -291,33 +287,12 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     _cancelToken = cancelToken;
 
     try {
-      await ref
-          .read(realtimeObservationServiceProvider)
-          .observe(
-            sessionId: sid,
-            text: content,
-            targetRefType: 'chapter',
-            targetRefId: widget.chapterId,
-            onStream: (delta) {
-              ref
-                  .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                  .appendStreamingContent(delta);
-            },
-            cancelToken: cancelToken,
-          );
-
-      // observe 内部已写入 assistant 消息 → 刷新消息列表
-      final messages = await SessionRepository(
-        ref.read(appDatabaseProvider),
-      ).listMessages(sid);
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setMessages(messages);
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setStreaming(false);
-      // 批次49：复位阶段标签，避免残留到下一次流式
-      if (mounted) setState(() => _streamStageLabel = null);
+      await _runObserve(
+        sid: sid,
+        content: content,
+        store: store,
+        cancelToken: cancelToken,
+      );
     } catch (e) {
       if (mounted) setState(() => _streamStageLabel = null);
       // ADR-C88：快速观察改非流式后，取消（chatCompletion 抛
@@ -332,30 +307,119 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
     }
   }
 
+  /// 快速观察前置：会话懒创建 + 字数校验（R-019 清偿拆出：_handleRealtimeObserve）。
+  ///
+  /// 字数不足（<50 字）时弹提示并返回 null，不发起观察。
+  Future<({String sid, String content})?> _ensureObserveSession() async {
+    final sid = await _ensureSession();
+    if (sid == null) return null;
+
+    // 字数校验：实时观察要求至少 50 字（短文本观察无意义）
+    //
+    // ADR-C66：门槛取自 UILimits，与诊断门槛同理（避免常量与文案双份维护）。
+    final writingState = ref.read(writingStoreProvider(widget.chapterId));
+    final content = writingState.localContent;
+    if (content.trim().length < UILimits.quickObservationWordThreshold) {
+      if (!mounted) return null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            '请至少写 ${UILimits.quickObservationWordThreshold} 字后再快速观察',
+          ),
+        ),
+      );
+      return null;
+    }
+    return (sid: sid, content: content);
+  }
+
+  /// RealtimeObservationService.observe 调用 + 刷新消息（R-019 清偿拆出）。
+  Future<void> _runObserve({
+    required String sid,
+    required String content,
+    required ChatStore store,
+    required CancelToken cancelToken,
+  }) async {
+    await ref
+        .read(realtimeObservationServiceProvider)
+        .observe(
+          sessionId: sid,
+          text: content,
+          targetRefType: 'chapter',
+          targetRefId: widget.chapterId,
+          onStream: (delta) {
+            store.appendStreamingContent(delta);
+          },
+          cancelToken: cancelToken,
+        );
+
+    // observe 内部已写入 assistant 消息 → 刷新消息列表
+    final messages = await SessionRepository(
+      ref.read(appDatabaseProvider),
+    ).listMessages(sid);
+    store.setMessages(messages);
+    store.setStreaming(false);
+    // 批次49：复位阶段标签，避免残留到下一次流式
+    if (mounted) setState(() => _streamStageLabel = null);
+  }
+
   /// 诊断入口：selectedText 非空 → 选段诊断（B3 划词诊断）；否则整章诊断
   ///
   /// 对齐 RN chapter-editor.tsx#L254-L284（整章）与 #L331-L365（选段）：
   ///   1. saveContent：先把编辑器当前内容落库（避免诊断到旧版本，仅整章诊断）
   ///   2. updateChapterDiagnosedAt：写章节最后诊断时间（仅整章诊断）
   ///   3. updatePhase(P1_WORLD)：状态机流转，否则 syndrome-diagnosis-index 不加载
-  ///   4. 调 ChatService.sendMessage（phase=P1_WORLD），让 LLM 真正做诊断
+  ///
+  /// R-019 清偿：前置（会话/输入解析/整章准备）与链路（分块/单次）拆至子方法。
   Future<void> _handleDiagnoseWithText(String? selectedText) async {
     // ADR-C81 懒创建：诊断（整章/划词）是「产生内容」入口，此处才真正创建会话
     final sid = await _ensureSession();
     if (sid == null) return;
-    final db = ref.read(appDatabaseProvider);
 
     // D5-A：诊断中置位（驱动「诊断中…」占位 + 按钮禁用态）
     // 批次49：同时设阶段标签（选段/整章区分文案）
-    final isSelection = selectedText != null && selectedText.trim().isNotEmpty;
+    final input = _resolveDiagnosisInput(selectedText);
+    if (input == null) return;
     if (mounted) {
       setState(() {
         _isDiagnosing = true;
-        _streamStageLabel = isSelection ? '正在诊断选段…' : '正在诊断本章…';
+        _streamStageLabel = input.isSelection ? '正在诊断选段…' : '正在诊断本章…';
       });
     }
 
-    // 前置 1：内容来源（选中文本 或 整章）+ 字数校验
+    await _prepareChapterDiagnosis(sid, input.isSelection);
+
+    // D2：长度路由 — 内容 > THRESHOLD(4000) 时分块，否则单次
+    // 调用方 onContent/onComplete：统一由 sendMessage 流程处理
+    final store = ref.read(
+      writingCoachStoreProvider(widget.chapterId).notifier,
+    );
+    store.setStreaming(true);
+    // 1. 先把用户消息加到内存 store（即时反馈）
+    store.addMessage(_buildDiagnosisUserMessage(sid, input.isSelection));
+    // 2. 构造单次诊断 prompt（对齐 RN chat.tsx#L212：显式要求 [YS_DIAGNOSIS] 格式）
+    final diagPrompt = _buildDiagnosisPrompt(
+      input.content,
+      input.title,
+      input.isSelection,
+    );
+
+    await _runDiagnosisChain(
+      sid: sid,
+      content: input.content,
+      title: input.title,
+      diagPrompt: diagPrompt,
+      isSelection: input.isSelection,
+    );
+  }
+
+  /// 诊断输入解析：内容来源（选中文本或整章）+ 字数校验（R-019 清偿拆出）。
+  ///
+  /// 字数不足时弹提示并返回 null（不继续诊断）。
+  ({String content, String title, bool isSelection})? _resolveDiagnosisInput(
+    String? selectedText,
+  ) {
+    final isSelection = selectedText != null && selectedText.trim().isNotEmpty;
     final writingState = ref.read(writingStoreProvider(widget.chapterId));
     final content = isSelection
         ? selectedText.trim()
@@ -369,7 +433,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
         ? UILimits.diagnosisSelectionWordThreshold
         : UILimits.diagnosisWordThreshold;
     if (content.trim().length < minLength) {
-      if (!mounted) return;
+      if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -379,9 +443,13 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
           ),
         ),
       );
-      return;
+      return null;
     }
+    return (content: content, title: title, isSelection: isSelection);
+  }
 
+  /// 整章诊断前置：未保存内容落库 + 诊断时间 + P1 阶段迁移（R-019 清偿拆出）。
+  Future<void> _prepareChapterDiagnosis(String sid, bool isSelection) async {
     // 前置 3：把未保存内容落库，避免诊断到旧版本（仅整章诊断；选段诊断不落库）
     if (!isSelection) {
       await ref.read(writingStoreProvider(widget.chapterId).notifier).saveNow();
@@ -389,33 +457,30 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
 
     // 前置 4：更新章节最后诊断时间（仅整章诊断）+ 教学阶段 P1_WORLD
     if (!isSelection) {
+      final db = ref.read(appDatabaseProvider);
       await ChapterRepository(db).updateChapterDiagnosedAt(widget.chapterId);
-    }
-    // 批次6 M1：阶段迁移合法性校验——仅当当前阶段允许 P1（P0 或同阶段）时才写入，
-    // 防止已到 P2+ 的学员被整章诊断非法回退到 P1（validatePhaseTransition 拦截降级）。
-    try {
-      final ts = await TeachingStateRepository(db).getTeachingState(sid);
-      final currentPhase =
-          TeachingPhase.fromString(ts?.currentPhase) ?? TeachingPhase.p0Engage;
-      if (validatePhaseTransition(currentPhase, TeachingPhase.p1World)) {
-        await TeachingStateRepository(
-          db,
-        ).updatePhase(sid, TeachingPhase.p1World.value);
+      // 批次6 M1：阶段迁移合法性校验——仅当当前阶段允许 P1（P0 或同阶段）时才写入，
+      // 防止已到 P2+ 的学员被整章诊断非法回退到 P1（validatePhaseTransition 拦截降级）。
+      try {
+        final ts = await TeachingStateRepository(db).getTeachingState(sid);
+        final currentPhase =
+            TeachingPhase.fromString(ts?.currentPhase) ??
+            TeachingPhase.p0Engage;
+        if (validatePhaseTransition(currentPhase, TeachingPhase.p1World)) {
+          await TeachingStateRepository(
+            db,
+          ).updatePhase(sid, TeachingPhase.p1World.value);
+        }
+      } catch (e) {
+        // 迁移失败不阻断诊断主流程（保守策略，静默）
       }
-    } catch (e) {
-      // 迁移失败不阻断诊断主流程（保守策略，静默）
     }
+  }
 
-    // D2：长度路由 — 内容 > THRESHOLD(4000) 时分块，否则单次
-    // 调用方 onContent/onComplete：统一由 sendMessage 流程处理
-    final store = ref.read(
-      writingCoachStoreProvider(widget.chapterId).notifier,
-    );
-    store.setStreaming(true);
-
-    // 1. 先把用户消息加到内存 store（即时反馈）
+  /// 诊断用户消息（R-019 清偿拆出：_handleDiagnoseWithText）。
+  Message _buildDiagnosisUserMessage(String sid, bool isSelection) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    final userMsg = Message(
+    return Message(
       id: now.toString(),
       sessionId: sid,
       role: 'user',
@@ -423,148 +488,184 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       timestamp: now ~/ 1000,
       messageType: 'chat',
     );
+  }
+
+  /// 单次诊断 prompt（对齐 RN chat.tsx#L212：显式要求 [YS_DIAGNOSIS] 格式，
+  /// R-019 清偿拆出：_handleDiagnoseWithText）。
+  String _buildDiagnosisPrompt(String content, String title, bool isSelection) {
+    final header = isSelection
+        ? '请对以下选中文本进行写作诊断分析：\n\n【选段】\n'
+        : '请对以下章节内容进行写作诊断分析：\n\n【$title】\n\n';
+    return '$header'
+        '$content\n\n'
+        '---\n'
+        '重要：诊断说明后必须输出 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 包裹的 JSON 块，'
+        '含 syndromes 数组（每条含 syndrome_id/name/severity/evidence/explanation）、'
+        'suggested_actions（数组）、confidence（0-1）。'
+        '此结构化数据用于驱动后续教学流程，不可缺少。';
+  }
+
+  /// 诊断完成：刷新消息 + 复位流式/诊断中 + 完成反馈（R-019 清偿拆出）。
+  Future<void> _handleDiagnosisComplete(String sid) async {
+    final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
+    final messages = await sessionRepo.listMessages(sid);
+    final store = ref.read(
+      writingCoachStoreProvider(widget.chapterId).notifier,
+    );
+    store.setMessages(messages);
+    store.setStreaming(false);
+    // D5-A：复位诊断中标志 + 完成反馈（短时 SnackBar，不遮挡后续操作）
+    if (mounted) {
+      setState(() {
+        _isDiagnosing = false;
+        _streamStageLabel = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('诊断完成'),
+          duration: const Duration(milliseconds: 1200),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// 诊断错误：复位诊断中标志 + 写入 store 错误（R-019 清偿拆出）。
+  void _handleDiagnosisError(String error) {
+    if (mounted) {
+      setState(() {
+        _isDiagnosing = false;
+        _streamStageLabel = null;
+      });
+    }
     ref
         .read(writingCoachStoreProvider(widget.chapterId).notifier)
-        .addMessage(userMsg);
+        .setError(error);
+  }
 
-    // 2. 构造单次诊断 prompt（对齐 RN chat.tsx#L212：显式要求 [YS_DIAGNOSIS] 格式）
-    final diagPrompt = isSelection
-        ? '请对以下选中文本进行写作诊断分析：\n\n'
-              '【选段】\n'
-              '$content\n\n'
-              '---\n'
-              '重要：诊断说明后必须输出 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 包裹的 JSON 块，'
-              '含 syndromes 数组（每条含 syndrome_id/name/severity/evidence/explanation）、'
-              'suggested_actions（数组）、confidence（0-1）。'
-              '此结构化数据用于驱动后续教学流程，不可缺少。'
-        : '请对以下章节内容进行写作诊断分析：\n\n'
-              '【$title】\n\n'
-              '$content\n\n'
-              '---\n'
-              '重要：诊断说明后必须输出 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 包裹的 JSON 块，'
-              '含 syndromes 数组（每条含 syndrome_id/name/severity/evidence/explanation）、'
-              'suggested_actions（数组）、confidence（0-1）。'
-              '此结构化数据用于驱动后续教学流程，不可缺少。';
-
-    // 统一的完成/错误回调，分块/单次都复用
-    Future<void> handleDiagnosisComplete() async {
-      final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
-      final messages = await sessionRepo.listMessages(sid);
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setMessages(messages);
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setStreaming(false);
-      // D5-A：复位诊断中标志 + 完成反馈（短时 SnackBar，不遮挡后续操作）
-      if (mounted) {
-        setState(() {
-          _isDiagnosing = false;
-          _streamStageLabel = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('诊断完成'),
-            duration: const Duration(milliseconds: 1200),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
+  /// 用户主动停止诊断：优雅复位（不标记失败、不弹红错，R-019 清偿拆出）。
+  void _handleDiagnosisCancelled() {
+    ref
+        .read(writingCoachStoreProvider(widget.chapterId).notifier)
+        .cancelStreaming();
+    if (mounted) {
+      setState(() {
+        _isDiagnosing = false;
+        _streamStageLabel = null;
+      });
     }
+  }
 
-    handleDiagnosisError(String error) {
-      if (mounted) {
-        setState(() {
-          _isDiagnosing = false;
-          _streamStageLabel = null;
-        });
-      }
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setError(error);
-    }
-
+  /// 诊断链路编排：共用取消令牌 + 分块/单次路由 + 取消/错误处理（R-019 清偿拆出）。
+  Future<void> _runDiagnosisChain({
+    required String sid,
+    required String content,
+    required String title,
+    required String diagPrompt,
+    required bool isSelection,
+  }) async {
     // ADR-C87 延伸：诊断全链路（分块+单次）共用取消令牌
     final cancelToken = CancelToken();
     _cancelToken = cancelToken;
     try {
-      // D2：长度路由 — 先尝试分块链路（长文本）
-      final progressive = await runProgressiveDiagnosis(
+      await _runProgressiveOrSend(
+        sid: sid,
         content: content,
         title: title,
-        llmClient: ref.read(llmClientProvider),
-        sessionId: sid,
-        onContent: (delta) {
-          ref
-              .read(writingCoachStoreProvider(widget.chapterId).notifier)
-              .appendStreamingContent(delta);
-        },
-        // ADR-C87 延伸：分块诊断中途可取消（每块前/合并前检查）
+        diagPrompt: diagPrompt,
+        isSelection: isSelection,
         cancelToken: cancelToken,
-      );
-
-      if (progressive != null) {
-        // D4-A：分块链路完成 → 解析+持久化+卡片插入
-        final chatService = ref.read(chatServiceProvider);
-        await chatService.commitDiagnosisFromContent(
-          sessionId: sid,
-          fullContent: progressive.fullContent,
-        );
-        await handleDiagnosisComplete();
-        return;
-      }
-
-      // 分块链路返回 null（内容 <= THRESHOLD，不触发分块）
-      // → 走 D1 已接通的单次 ChatService.sendMessage 链路
-      final chatService = ref.read(chatServiceProvider);
-      await chatService.sendMessage(
-        sid,
-        diagPrompt,
-        SendMessageCallbacks(
-          onStream: (delta) {
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .appendStreamingContent(delta);
-          },
-          onComplete: (_, _) => handleDiagnosisComplete(),
-          onError: handleDiagnosisError,
-          onCancelled: () {
-            // 用户主动停止诊断：优雅复位（不标记失败、不弹红错）
-            ref
-                .read(writingCoachStoreProvider(widget.chapterId).notifier)
-                .cancelStreaming();
-            if (mounted) {
-              setState(() {
-                _isDiagnosing = false;
-                _streamStageLabel = null;
-              });
-            }
-          },
-        ),
-        SendMessageOptions(
-          phase: TeachingPhase.p1World,
-          attitude: AttitudeLevel.doubao,
-          // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
-          lastEditorEditAtSec: ref.read(editorActivityProvider),
-          // ADR-C87：取消令牌——诊断中可主动中止
-          cancelToken: cancelToken,
-        ),
       );
     } on ProgressiveDiagnosisCancelled {
       // 用户主动停止分块诊断：优雅复位（不标记失败、不弹红错）
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .cancelStreaming();
-      if (mounted) {
-        setState(() {
-          _isDiagnosing = false;
-          _streamStageLabel = null;
-        });
-      }
+      _handleDiagnosisCancelled();
     } catch (e) {
-      handleDiagnosisError(e.toString());
+      _handleDiagnosisError(e.toString());
     } finally {
       _cancelToken = null;
     }
+  }
+
+  /// 长度路由执行：先分块链路（长文本），null（≤THRESHOLD）则单次 sendMessage
+  /// （R-019 清偿拆出：_runDiagnosisChain）。
+  Future<void> _runProgressiveOrSend({
+    required String sid,
+    required String content,
+    required String title,
+    required String diagPrompt,
+    required bool isSelection,
+    required CancelToken cancelToken,
+  }) async {
+    // D2：长度路由 — 先尝试分块链路（长文本）
+    final progressive = await runProgressiveDiagnosis(
+      content: content,
+      title: title,
+      llmClient: ref.read(llmClientProvider),
+      sessionId: sid,
+      onContent: (delta) {
+        ref
+            .read(writingCoachStoreProvider(widget.chapterId).notifier)
+            .appendStreamingContent(delta);
+      },
+      // ADR-C87 延伸：分块诊断中途可取消（每块前/合并前检查）
+      cancelToken: cancelToken,
+    );
+
+    final store = ref.read(
+      writingCoachStoreProvider(widget.chapterId).notifier,
+    );
+    final chatService = ref.read(chatServiceProvider);
+    if (progressive != null) {
+      // D4-A：分块链路完成 → 解析+持久化+卡片插入
+      await chatService.commitDiagnosisFromContent(
+        sessionId: sid,
+        fullContent: progressive.fullContent,
+      );
+      await _handleDiagnosisComplete(sid);
+      return;
+    }
+
+    // 分块链路返回 null（内容 <= THRESHOLD，不触发分块）
+    // → 走 D1 已接通的单次 ChatService.sendMessage 链路
+    await _runSingleDiagnosisSend(
+      sid: sid,
+      diagPrompt: diagPrompt,
+      store: store,
+      chatService: chatService,
+      cancelToken: cancelToken,
+    );
+  }
+
+  /// 单次诊断 sendMessage（D1 链路；R-019 清偿拆出：_runProgressiveOrSend）。
+  Future<void> _runSingleDiagnosisSend({
+    required String sid,
+    required String diagPrompt,
+    required ChatStore store,
+    required dynamic chatService,
+    required CancelToken cancelToken,
+  }) async {
+    await chatService.sendMessage(
+      sid,
+      diagPrompt,
+      SendMessageCallbacks(
+        onStream: (delta) {
+          store.appendStreamingContent(delta);
+        },
+        onComplete: (_, _) => _handleDiagnosisComplete(sid),
+        onError: _handleDiagnosisError,
+        onCancelled: () {
+          // 用户主动停止诊断：优雅复位（不标记失败、不弹红错）
+          _handleDiagnosisCancelled();
+        },
+      ),
+      SendMessageOptions(
+        phase: TeachingPhase.p1World,
+        attitude: AttitudeLevel.doubao,
+        // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
+        lastEditorEditAtSec: ref.read(editorActivityProvider),
+        // ADR-C87：取消令牌——诊断中可主动中止
+        cancelToken: cancelToken,
+      ),
+    );
   }
 }
