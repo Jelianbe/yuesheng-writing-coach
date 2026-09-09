@@ -284,6 +284,13 @@ class ChatService {
     return a < b ? a : b;
   }
 
+  /// 取多个 index 中最早出现者（-1 视为不存在；空列表返回 -1）。
+  /// 与 [_blockPendingPrefix] 的 max-reduce 对偶，min-reduce 形式统一（CR-54）。
+  static int _earliestMarkerIndexList(List<int> indexes) {
+    if (indexes.isEmpty) return -1;
+    return indexes.reduce(_earliestMarkerIndex);
+  }
+
   /// 检查 fullContent 尾部是否命中任一协议块标记（[YS_DIAGNOSIS]/[YS_ENTITY]/[YS_FACT]/[YS_GENUI]）的
   /// 某个前缀，返回需暂缓转发的后缀长度（防分隔符跨 chunk 到达时误转发）
   static int _blockPendingPrefix(String fullContent) {
@@ -322,8 +329,6 @@ class ChatService {
   Future<void> setSubphase(String sessionId, TeachingSubphase? subphase) async {
     await _stateRepo.updateSubphase(sessionId, subphase?.value);
   }
-
-  // ════════════ D8 评估顺序轻量观测 ════════════
 
   // ════════════ 批次50 回复长度临时观测 ════════════
 
@@ -377,8 +382,8 @@ extension ChatServiceDiagnosisFocus on ChatService {
         }).length;
         if (diagnosisCount >= kFlowBypassDiagnosisCount) return true;
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 升级阀诊断次数统计失败，降级为不绕过: $e');
+    } catch (e, st) {
+      _logSafeRun('升级阀诊断次数统计失败，降级为不绕过', e, st);
     }
     return false;
   }
@@ -398,27 +403,6 @@ extension ChatServiceDiagnosisFocus on ChatService {
 // ADR-C74 K-7 迁出至 MessageInjector：ChatServiceSendObservations
 
 extension ChatServiceObservers on ChatService {
-  /// D8 轻量观测：评估顺序（学员自评 → 改前改后对比 → AI 评估）
-  /// 约束源为 skill 指令（skill_registry.dart 阶段3 三步评估流程），非代码强制；
-  /// 此处仅 debug 级留痕「FEEDBACK 回复是否按顺序走全三步」，不改变任何行为。
-  /// 检测标记：自评引导（"你自己觉得改得怎么样"类）→ 改前改后对比（唯一不可省略）
-  /// → 评估三档（含"达标"字样）。观测失败不阻断主流程。
-  /// ADR-C74 K-9：随 _handleTrainingResult 迁至 DiagnosisFlowHandler（仅内部消费者），
-  /// 此处删除 23 行死代码（保持 R-019 baseline 不新增）。
-  // ignore: unused_element  K-9 死代码占位，行为零变更
-  void _observeEvaluationOrder(String reply) {
-    if (!kDebugMode) return;
-    final hasSelfEval = RegExp(r'你自己(觉得|认为)|你觉得(自己|刚才)?改得').hasMatch(reply);
-    final hasContrast = RegExp(
-      r'改(之前|以前|前).{0,60}(改(之后|以后|后)|现在.{0,20}(是|变成))',
-    ).hasMatch(reply);
-    final hasAssessment = reply.contains('达标');
-    debugPrint(
-      '[D8 评估顺序观测] 自评引导=$hasSelfEval 改前改后对比=$hasContrast '
-      '评估三档=$hasAssessment（仅观测不干预）',
-    );
-  }
-
   /// 批次50 临时测量：回复长度观测（standard 档是否真超长）
   /// 「回复颗粒度真人感收敛」决策前置——先量化标准档回复长度分布再决定约束方案。
   /// 仅 debug 级留痕（长度 + 分档 + 颗粒度 + 态度 + 子阶段 + 意图），不改变任何行为；
@@ -511,19 +495,13 @@ extension ChatServiceSendRun on ChatService {
       final outlineMarkerIndex = fullContent.indexOf(kOutlineStart, scanStart);
       final factMarkerIndex = fullContent.indexOf(kFactStart, scanStart);
       final genuiMarkerIndex = fullContent.indexOf(kGenuiStart, scanStart);
-      final markerIndex = ChatService._earliestMarkerIndex(
-        ChatService._earliestMarkerIndex(
-          ChatService._earliestMarkerIndex(
-            ChatService._earliestMarkerIndex(
-              diagMarkerIndex,
-              mdDiagMarkerIndex,
-            ),
-            outlineMarkerIndex,
-          ),
-          factMarkerIndex,
-        ),
+      final markerIndex = ChatService._earliestMarkerIndexList([
+        diagMarkerIndex,
+        mdDiagMarkerIndex,
+        outlineMarkerIndex,
+        factMarkerIndex,
         genuiMarkerIndex,
-      );
+      ]);
       if (markerIndex != -1) {
         final newDisplay = fullContent.substring(displayLength, markerIndex);
         if (newDisplay.isNotEmpty) callbacks.onStream(newDisplay);
@@ -702,8 +680,8 @@ extension ChatServiceSend on ChatService {
         final dbPhase = TeachingPhase.fromString(ts.currentPhase);
         if (dbPhase != null) effectivePhase = dbPhase;
       }
-    } catch (e) {
-      debugPrint('[SafeRun] getTeachingState+解析失败: $e');
+    } catch (e, st) {
+      _logSafeRun('getTeachingState+解析失败', e, st);
       currentSubphase = fallbackSubphase;
     }
     return (
@@ -1117,13 +1095,17 @@ extension ChatServiceSend on ChatService {
 
   /// ADR-C82：诊断意图注入 + 请求结构观测（R-019 拆出：_sendMessageCore
   /// 行数收敛）。注入需在流式前、历史追加后执行；观测仅 debug 级留痕。
+  ///
+  /// CR-56 PHI 脱敏：debugPrint 仅打 `role[length]`，**不打印内容截取**。
+  /// 原版（删除前）会对 >40 字符消息打前 20+后 20 字符——含用户原文片段，
+  /// 触 X-040 PHI P2 风险（debug 日志被外发/截图即泄漏用户输入）。
   void _injectDiagnosisProtocolAndLog(
     List<ChatMessage> messages,
     String content,
   ) {
     _maybeInjectDiagnosisProtocol(messages, content);
     debugPrint(
-      '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]:${m.content.length > 40 ? '${m.content.substring(0, 20)}...${m.content.substring(m.content.length - 20)}' : m.content}").join(" | ")}',
+      '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]").join(" | ")}',
     );
   }
 
@@ -1314,5 +1296,23 @@ extension ChatServiceSend on ChatService {
     );
     await callbacks.onComplete(parsed.finalContent, parsed.messageId);
     debugPrint('[ChatService] sendMessage 完成 | onComplete 已触发');
+  }
+
+  /// SafeRun 降级统一留痕（CR-53）。
+  ///
+  /// 本类的失败路径一律「不阻断主流程」——异常已被 catch 处理、不会上抛，
+  /// 按 V1.4 P0-2 处置判据缺的是**留痕**不是捕获。此前只有 debugPrint，
+  /// 而 release 构建不输出 → 生产环境这些降级全程静默、无法归因。
+  /// 保留 debugPrint（开发期即时可见）+ captureError 落 error_logs。
+  /// 同模式实现见 diagnosis_committer.dart:142 / diagnosis_flow_handler.dart:198 /
+  /// message_injector.dart:1487 —— 4 份分散实现本批先不抽公用 helper，逐文件独立维护。
+  void _logSafeRun(String stage, Object e, StackTrace s) {
+    debugPrint('[SafeRun] $stage: $e');
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'database',
+      message: '[SafeRun] $stage: $e',
+      stack: s.toString(),
+    );
   }
 }
