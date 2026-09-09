@@ -48,6 +48,7 @@ import 'package:writingcoach/services/chat_context_builder.dart'
     show ReferenceItem;
 import 'package:writingcoach/services/chat_gates.dart'
     show persistTeacherSuggestion, shouldTriggerTeacherForDiagnosis;
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import 'package:writingcoach/services/diagnosis_committer.dart';
@@ -195,6 +196,22 @@ class DiagnosisFlowHandler {
        _outlineRepo = outlineRepo,
        _onFactBatch = onFactBatch;
 
+  /// SafeRun 降级统一留痕（CR-51）。
+  ///
+  /// 本类的失败路径一律「不阻断主流程」——异常已被 catch 处理、不会上抛，
+  /// 按 V1.4 P0-2 处置判据缺的是**留痕**不是捕获。此前只有 debugPrint，
+  /// 而 release 构建不输出 → 生产环境这些降级全程静默、无法归因。
+  /// 保留 debugPrint（开发期即时可见）+ captureError 落 error_logs。
+  void _logSafeRun(String stage, Object e, StackTrace s) {
+    debugPrint('[SafeRun] $stage: $e');
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'database',
+      message: '[SafeRun] $stage: $e',
+      stack: s.toString(),
+    );
+  }
+
   /// FR-10：count > 0 才登记（无新增不发提示卡——「沉淀 N 条」必须真实）。
   void _notifyFactBatch({
     required String messageId,
@@ -254,8 +271,8 @@ class DiagnosisFlowHandler {
     if (count >= UILimits.failureWarningThreshold) {
       try {
         await insertDiagnosisFailedCard(_sessionRepo, sessionId, count);
-      } catch (e) {
-        debugPrint('[SafeRun] 诊断失败卡插入失败不阻断主流程: $e');
+      } catch (e, s) {
+        _logSafeRun('诊断失败卡插入失败不阻断主流程', e, s);
       }
     }
   }
@@ -273,8 +290,8 @@ class DiagnosisFlowHandler {
       );
       if (ctx == null) return 0;
       return '\n$ctx'.split('\n- [').length - 1;
-    } catch (e) {
-      debugPrint('[SafeRun] 大纲实体检索计数失败: $e');
+    } catch (e, s) {
+      _logSafeRun('大纲实体检索计数失败', e, s);
       return 0;
     }
   }
@@ -316,10 +333,13 @@ class DiagnosisFlowHandler {
 
     // 步骤 11: 持久化诊断结果 + 卡片
     if (diagnosis != null) {
-      await _persistDiagnosisFromContent(
+      final ref = await _resolvePrimaryRef(sessionId);
+      await _runDiagnosisCommitSequence(
         sessionId: sessionId,
         messageId: messageId,
         diagnosis: diagnosis,
+        refType: ref.refType,
+        refId: ref.refId,
       );
     }
 
@@ -365,10 +385,8 @@ class DiagnosisFlowHandler {
           );
           displayContent = validation.displayContent;
           diagnosis = validation.diagnosis;
-        } catch (e) {
-          debugPrint(
-            '[SafeRun] commitDiagnosisFromContent JSON 解析失败沿用 rawParse: $e',
-          );
+        } catch (e, s) {
+          _logSafeRun('JSON 解析失败沿用 rawParse', e, s);
         }
       }
     }
@@ -437,87 +455,84 @@ class DiagnosisFlowHandler {
         );
         return (refType: primary.refType, refId: primary.refId);
       }
-    } catch (e) {
-      debugPrint('[SafeRun] commitDiagnosisFromContent 引用查询失败: $e');
+    } catch (e, s) {
+      _logSafeRun('引用查询失败', e, s);
     }
     return (refType: null, refId: null);
   }
 
-  /// 私有 helper：诊断结果持久化 + 卡片（提取自 commitDiagnosisFromContent）。
-  Future<void> _persistDiagnosisFromContent({
+  /// 两条诊断路径共用的落库序列（CR-50：消除双实现分歧）。
+  ///
+  /// ADR-C74 K-9 拆分后，widget 端 [commitDiagnosisFromContent]（超长分块
+  /// 诊断 >4000 字）与 ChatService 内部 [commitDiagnosisAndSuggestions]
+  /// （单次诊断 ≤4000 字）各自实现了一份「提交历史 → 重置子阶段 → 卡片 →
+  /// 阶段迁移 → 风格画像」，但**顺序不一致**：旧 A 是「卡片→阶段迁移」、
+  /// 旧 B 是「阶段迁移→卡片」。两者都经 sessionRepo.addMessage 写 messages
+  /// 表，而阶段迁移内部还会插升级卡 → 消息流中的卡片排列在两条路径下相反
+  /// （用户可见：同一份诊断，长短文本下卡片顺序不一致）。
+  ///
+  /// 收敛为唯一实现，顺序定为「诊断卡 → 阶段迁移 → 风格画像」：
+  /// 先展示诊断结果再展示阶段升级更符合阅读顺序；风格画像是旁路（写
+  /// student_model 表、不进消息流），放最后最安全。
+  Future<void> _runDiagnosisCommitSequence({
     required String sessionId,
     required String messageId,
     required ParsedDiagnosis diagnosis,
+    required String? refType,
+    required String? refId,
   }) async {
-    final ref = await _resolvePrimaryRef(sessionId);
     try {
       await _diagnosisService.commitDiagnosisWithHistory(
-        DiagnosisInput(
+        _buildDiagnosisInput(
           sessionId: sessionId,
           messageId: messageId,
-          syndromes: diagnosis.syndromes.map((s) => s.toJson()).toList(),
-          suggestedActions: diagnosis.suggestedActions,
-          confidence: diagnosis.confidence,
-          rootCauseAnalysis: diagnosis.rootCauseAnalysis,
-          nextFocus: diagnosis.nextFocus,
-          feedbackSummary: diagnosis.feedbackSummary,
-          currentTeachingFocusId: diagnosis.currentTeachingFocusId,
-          focusReason: diagnosis.focusReason,
-          teachingMode: diagnosis.teachingMode?.value,
-          targetRefType: ref.refType,
-          targetRefId: ref.refId,
+          diagnosis: diagnosis,
+          refType: refType,
+          refId: refId,
         ),
       );
       try {
         await _stateRepo.updateSubphase(sessionId, null);
-      } catch (e) {
-        debugPrint('[SafeRun] commitDiagnosisFromContent 诊断后重置子阶段失败: $e');
+      } catch (e, s) {
+        _logSafeRun('诊断后重置子阶段', e, s);
       }
-      await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
-      await _commitDiagnosisCardAndPhaseMig(
+      await _insertDiagnosisResultCard(
         sessionId: sessionId,
         diagnosis: diagnosis,
         messageId: messageId,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] commitDiagnosisFromContent 诊断写入失败: $e');
+      await _diagnosisCommitter.applyPhaseMigration(
+        sessionId: sessionId,
+        diagnosis: diagnosis,
+      );
+      await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
+    } catch (e, s) {
+      _logSafeRun('诊断写入', e, s);
     }
   }
 
-  /// 私有 helper：从 commitDiagnosisFromContent 抽出「卡片插入 + 阶段迁移」段
-  /// （保持 R-019 ≤ 50 行）。
-  Future<void> _commitDiagnosisCardAndPhaseMig({
+  /// 私有 helper：构造诊断落库输入（两条路径共用，消除超长参数列表）。
+  DiagnosisInput _buildDiagnosisInput({
     required String sessionId,
-    required ParsedDiagnosis diagnosis,
     required String messageId,
-  }) async {
-    try {
-      await insertDiagnosisResultCard(
-        _sessionRepo,
-        sessionId,
-        DiagnosisResultCardPayload(
-          syndromeCount: diagnosis.syndromes.length,
-          syndromes: diagnosis.syndromes
-              .map(
-                (s) => DiagnosisSyndromeCard(
-                  syndromeId: s.syndromeId,
-                  name: s.name,
-                  severity: s.severity.value,
-                  evidenceCount: s.evidence.length,
-                ),
-              )
-              .toList(),
-          suggestedActions: diagnosis.suggestedActions,
-          confidence: diagnosis.confidence,
-          diagnosisId: messageId,
-        ),
-      );
-    } catch (e) {
-      debugPrint('[SafeRun] commitDiagnosisFromContent 卡片插入失败: $e');
-    }
-    await _diagnosisCommitter.applyPhaseMigration(
+    required ParsedDiagnosis diagnosis,
+    required String? refType,
+    required String? refId,
+  }) {
+    return DiagnosisInput(
       sessionId: sessionId,
-      diagnosis: diagnosis,
+      messageId: messageId,
+      syndromes: diagnosis.syndromes.map((s) => s.toJson()).toList(),
+      suggestedActions: diagnosis.suggestedActions,
+      confidence: diagnosis.confidence,
+      rootCauseAnalysis: diagnosis.rootCauseAnalysis,
+      nextFocus: diagnosis.nextFocus,
+      feedbackSummary: diagnosis.feedbackSummary,
+      currentTeachingFocusId: diagnosis.currentTeachingFocusId,
+      focusReason: diagnosis.focusReason,
+      teachingMode: diagnosis.teachingMode?.value,
+      targetRefType: refType,
+      targetRefId: refId,
     );
   }
 
@@ -676,8 +691,8 @@ class DiagnosisFlowHandler {
             displayContent: validation.displayContent,
             diagnosis: validation.diagnosis,
           );
-        } catch (e) {
-          debugPrint('[SafeRun] JSON 解析失败沿用 rawParse: $e');
+        } catch (e, s) {
+          _logSafeRun('JSON 解析失败沿用 rawParse', e, s);
         }
       }
     }
@@ -709,8 +724,8 @@ class DiagnosisFlowHandler {
         );
         teacherDisplayContent = teacherStream.displayContent;
         teacherResult = teacherStream.teacher;
-      } catch (e) {
-        debugPrint('[SafeRun] Teacher 失败不影响 Diagnosis 已有输出: $e');
+      } catch (e, s) {
+        _logSafeRun('Teacher 失败不影响 Diagnosis 已有输出', e, s);
       }
     }
     return (displayContent: teacherDisplayContent, teacher: teacherResult);
@@ -854,11 +869,12 @@ class DiagnosisFlowHandler {
 
     // 11：诊断提交 + 阶段迁移 + 诊断结果卡 + 风格画像
     if (diagnosis != null) {
-      await _commitDiagnosisWithCard(
+      await _runDiagnosisCommitSequence(
         sessionId: sessionId,
         diagnosis: diagnosis,
         messageId: messageId,
-        primaryRef: primaryRef,
+        refType: primaryRef?.refType,
+        refId: primaryRef?.refId,
       );
     }
 
@@ -887,69 +903,9 @@ class DiagnosisFlowHandler {
         sessionId,
         GenuiCardPayload(components: genuiComponents),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] GenUI 卡片插入失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('GenUI 卡片插入失败不阻断主流程', e, s);
     }
-  }
-
-  /// 私有 helper：诊断历史提交 + 阶段迁移 + 诊断结果卡。
-  Future<void> _commitDiagnosisWithCard({
-    required String sessionId,
-    required ParsedDiagnosis diagnosis,
-    required String messageId,
-    required ReferenceItem? primaryRef,
-  }) async {
-    try {
-      await _diagnosisService.commitDiagnosisWithHistory(
-        _buildDiagnosisInput(
-          sessionId: sessionId,
-          messageId: messageId,
-          diagnosis: diagnosis,
-          primaryRef: primaryRef,
-        ),
-      );
-      try {
-        await _stateRepo.updateSubphase(sessionId, null);
-      } catch (e) {
-        debugPrint('[SafeRun] 诊断后重置子阶段失败: $e');
-      }
-      await _diagnosisCommitter.applyPhaseMigration(
-        sessionId: sessionId,
-        diagnosis: diagnosis,
-      );
-      await _insertDiagnosisResultCard(
-        sessionId: sessionId,
-        diagnosis: diagnosis,
-        messageId: messageId,
-      );
-      await _persistStyleProfileIfAny(sessionId, diagnosis.styleProfile);
-    } catch (e) {
-      debugPrint('[SafeRun] 诊断写入失败不阻断消息存储: $e');
-    }
-  }
-
-  /// 私有 helper：构造诊断落库输入（消除超长参数列表）。
-  DiagnosisInput _buildDiagnosisInput({
-    required String sessionId,
-    required String messageId,
-    required ParsedDiagnosis diagnosis,
-    required ReferenceItem? primaryRef,
-  }) {
-    return DiagnosisInput(
-      sessionId: sessionId,
-      messageId: messageId,
-      syndromes: diagnosis.syndromes.map((s) => s.toJson()).toList(),
-      suggestedActions: diagnosis.suggestedActions,
-      confidence: diagnosis.confidence,
-      rootCauseAnalysis: diagnosis.rootCauseAnalysis,
-      nextFocus: diagnosis.nextFocus,
-      feedbackSummary: diagnosis.feedbackSummary,
-      currentTeachingFocusId: diagnosis.currentTeachingFocusId,
-      focusReason: diagnosis.focusReason,
-      teachingMode: diagnosis.teachingMode?.value,
-      targetRefType: primaryRef?.refType,
-      targetRefId: primaryRef?.refId,
-    );
   }
 
   /// 私有 helper：风格画像落库（失败不阻断）。
@@ -960,8 +916,8 @@ class DiagnosisFlowHandler {
     if (styleProfile == null) return;
     try {
       await _studentModelRepo.updateStyleProfile(sessionId, styleProfile);
-    } catch (e) {
-      debugPrint('[SafeRun] 风格画像落库失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('风格画像落库失败不阻断主流程', e, s);
     }
   }
 
@@ -991,8 +947,8 @@ class DiagnosisFlowHandler {
           diagnosis: diagnosis,
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] Teacher suggestion 落库失败: $e');
+    } catch (e, s) {
+      _logSafeRun('Teacher suggestion 落库失败', e, s);
     }
   }
 
@@ -1023,8 +979,8 @@ class DiagnosisFlowHandler {
           diagnosisId: messageId,
         ),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 诊断卡片插入失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('诊断卡片插入失败不阻断主流程', e, s);
     }
   }
 
@@ -1061,8 +1017,8 @@ class DiagnosisFlowHandler {
           locationMarks: teacherResult.locationMarks,
         ),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 建议卡片插入失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('建议卡片插入失败不阻断主流程', e, s);
     }
   }
 
@@ -1093,8 +1049,8 @@ class DiagnosisFlowHandler {
     // 防 feedback 残留
     try {
       await _stateRepo.updateSubphase(sessionId, null);
-    } catch (e) {
-      debugPrint('[SafeRun] 训练轮终结重置子阶段失败: $e');
+    } catch (e, s) {
+      _logSafeRun('训练轮终结重置子阶段失败', e, s);
     }
     callbacks.onTrainingResult?.call(trainingResult);
   }
@@ -1134,8 +1090,8 @@ class DiagnosisFlowHandler {
           trainingResult: trainingResult,
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 训练记录写入失败: $e');
+    } catch (e, s) {
+      _logSafeRun('训练记录写入失败', e, s);
     }
   }
 
@@ -1175,8 +1131,8 @@ class DiagnosisFlowHandler {
         await _diagnosisRepo.resolveSyndromesBatch(sessionId, [
           trainingSyndromeId,
         ]);
-      } catch (e) {
-        debugPrint('[SafeRun] 重评估resolveSyndromesBatch: $e');
+      } catch (e, s) {
+        _logSafeRun('重评估resolveSyndromesBatch', e, s);
       }
       await _messageInjector.insertPhaseSummaryOnMastered(
         sessionId,
@@ -1184,8 +1140,8 @@ class DiagnosisFlowHandler {
         problem.syndromeName,
         reEvalInput.passRateInput.totalCount,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 重评估失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('重评估失败不阻断主流程', e, s);
     }
   }
 
@@ -1206,8 +1162,8 @@ class DiagnosisFlowHandler {
         tracedSuggestionId = latestSuggestion.id;
         tracedTaskType = latestSuggestion.taskType;
       }
-    } catch (e) {
-      debugPrint('[SafeRun] suggestion 追溯失败 fallback: $e');
+    } catch (e, s) {
+      _logSafeRun('suggestion 追溯失败 fallback', e, s);
     }
     try {
       await _trainingResultRepo!.insertTrainingResult(
@@ -1221,8 +1177,8 @@ class DiagnosisFlowHandler {
           feedback: {'displayContent': displayContent},
         ),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] training_results 持久化失败: $e');
+    } catch (e, s) {
+      _logSafeRun('training_results 持久化失败', e, s);
     }
   }
 

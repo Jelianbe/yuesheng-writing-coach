@@ -40,6 +40,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/subplot_fact_repository.dart';
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/evaluation_service.dart';
 import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/fact_stale_service.dart';
@@ -138,6 +139,22 @@ class DiagnosisCommitter {
   FactStaleService? get _factStale =>
       _db == null ? null : FactStaleService(_db);
 
+  /// SafeRun 降级统一留痕（CR-51）。
+  ///
+  /// 本类的失败路径一律「不阻断主流程」——异常已被 catch 处理、不会上抛，
+  /// 按 V1.4 P0-2 处置判据缺的是**留痕**不是捕获。此前只有 debugPrint，
+  /// 而 release 构建不输出 → 生产环境这些降级全程静默、无法归因。
+  /// 保留 debugPrint（开发期即时可见）+ captureError 落 error_logs。
+  void _logSafeRun(String stage, Object e, StackTrace s) {
+    debugPrint('[SafeRun] $stage: $e');
+    ErrorHandler.instance.captureError(
+      level: 'error',
+      category: 'database',
+      message: '[SafeRun] $stage: $e',
+      stack: s.toString(),
+    );
+  }
+
   /// K-4：懒加载大纲服务（批次7 O2 模式，与 ChatService 同语义）。
   OutlineService? _ensureOutlineService() {
     _outlineService ??= _outlineRepo != null
@@ -216,8 +233,8 @@ class DiagnosisCommitter {
         d,
         consecutiveFailedTrainings,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] resolver 失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('resolver 失败不阻断主流程', e, s);
       return false;
     }
   }
@@ -293,10 +310,24 @@ class DiagnosisCommitter {
         }
       }
       return consecutiveFailedTrainings;
-    } catch (e) {
-      debugPrint('[SafeRun] resolver 训练记录读取失败: $e');
+    } catch (e, s) {
+      _logSafeRun('resolver 训练记录读取失败', e, s);
       return 0;
     }
+  }
+
+  /// M4-B 非法阶段跃迁拦截留痕（CR-51）。
+  ///
+  /// 这不是「失败降级」而是**校验拦截**——意味着上游（AI 输出或 resolver）
+  /// 给出了非法阶段跃迁，属异常信号，生产需可见。用 warn 而非 error：
+  /// 本路径已正确兜底（返回 false 不迁移），主流程未受损。
+  void _logIllegalPhaseTransition(TeachingPhase from, TeachingPhase to) {
+    debugPrint('[M4-B] 阶段迁移非法已拦截 $from → $to');
+    ErrorHandler.instance.captureError(
+      level: 'warn',
+      category: 'validation',
+      message: '[M4-B] 阶段迁移非法已拦截 $from → $to',
+    );
   }
 
   /// M4-B 校验 + 阶段迁移（含 C54 clamp 降级）。返回是否真实迁移。
@@ -331,9 +362,10 @@ class DiagnosisCommitter {
     );
     if (fallback == null) {
       debugPrint(
-        '[SafeRun] M4-B: 阶段迁移非法已拦截 '
+        '[M4-B] 阶段迁移非法已拦截 '
         '$currentPhaseForValidation → $effectivePhase',
       );
+      _logIllegalPhaseTransition(currentPhaseForValidation, effectivePhase);
       return false;
     }
     await _stateRepo.updatePhase(sessionId, fallback.value);
@@ -359,8 +391,8 @@ class DiagnosisCommitter {
         sessionId,
         PhaseUpgradeCardPayload(from: from, to: to),
       );
-    } catch (e) {
-      debugPrint('[SafeRun] 卡片插入失败不影响阶段迁移: $e');
+    } catch (e, s) {
+      _logSafeRun('卡片插入失败不影响阶段迁移', e, s);
     }
   }
 
@@ -380,8 +412,8 @@ class DiagnosisCommitter {
           '（迁移信号已成立）但无 suggested_phase → 本轮不发生阶段迁移',
         );
       }
-    } catch (e) {
-      debugPrint('[SafeRun] N38 可观测读取教学状态失败: $e');
+    } catch (e, s) {
+      _logSafeRun('N38 可观测读取教学状态失败', e, s);
     }
   }
 
@@ -394,8 +426,8 @@ class DiagnosisCommitter {
       if (remaining.isEmpty) {
         await _tryAutomaticUpgrade(sessionId);
       }
-    } catch (e) {
-      debugPrint('[SafeRun] 自动迁移失败不阻断主流程: $e');
+    } catch (e, s) {
+      _logSafeRun('自动迁移失败不阻断主流程', e, s);
     }
   }
 
@@ -413,8 +445,11 @@ class DiagnosisCommitter {
       sessionId,
     );
     if (passRate < EvaluationThresholds.phasePassRate) {
+      // CR-51：这是**正常业务决策**（达标率未到门槛，本来就不该迁移），
+      // 不是失败降级，故不落 error_logs（否则高频淹没真实异常）。
+      // 仅纠正前缀——原 [SafeRun] 会让人误以为是异常路径。
       debugPrint(
-        '[SafeRun] M4-C: 达标率 $passRate < '
+        '[M4-C] 达标率 $passRate < '
         '${EvaluationThresholds.phasePassRate}，阶段暂不迁移',
       );
       return;
@@ -525,8 +560,8 @@ class DiagnosisCommitter {
     if (pRef?.refType != 'chapter') return;
     try {
       await _persistOutlineExtraction(sessionId, fullContent, pRef!);
-    } catch (e) {
-      debugPrint('[SafeRun] commitOutlineChangeFromContent 大纲落库失败: $e');
+    } catch (e, s) {
+      _logSafeRun('大纲落库失败', e, s);
     }
   }
 
@@ -556,8 +591,8 @@ class DiagnosisCommitter {
         (r) => r.isPrimary == 1,
         orElse: () => items.first,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] commitOutlineChangeFromContent 引用查询失败: $e');
+    } catch (e, s) {
+      _logSafeRun('引用查询失败', e, s);
       return null;
     }
   }
@@ -653,8 +688,8 @@ class DiagnosisCommitter {
         '净新增断言=$added',
       );
       return (count: added, manuscriptId: chapter.manuscriptId);
-    } catch (e) {
-      debugPrint('[SafeRun] 事实提取三表落库失败: $e');
+    } catch (e, s) {
+      _logSafeRun('事实提取三表落库失败', e, s);
       return (count: 0, manuscriptId: null);
     }
   }
@@ -711,8 +746,8 @@ class DiagnosisCommitter {
         (r) => r.isPrimary == 1,
         orElse: () => items.first,
       );
-    } catch (e) {
-      debugPrint('[SafeRun] persistTeacherSuggestion 失败: $e');
+    } catch (e, s) {
+      _logSafeRun('persistTeacherSuggestion 失败', e, s);
       return null;
     }
   }
@@ -762,6 +797,29 @@ class DiagnosisCommitter {
     return CharacterFactRepository.parseAssertions(row.assertions).length;
   }
 
+  /// 因果边反查失败留痕（CR-51）。
+  ///
+  /// 批次6（6.11 L5/V10）已要求「不再静默丢弃」，但原实现只有 debugPrint——
+  /// release 构建不输出，生产仍不可见，与注释声明矛盾。补落库，便于排查
+  /// 前因名称不一致导致的关联未建立。用 warn：数据已写入，仅关联缺失。
+  void _logCausalityMiss({
+    required String eventName,
+    required String causeName,
+    required bool selfFound,
+    required bool causeFound,
+  }) {
+    final msg =
+        '[FactExtract] 因果边反查失败未关联: 事件="$eventName" '
+        '前因="$causeName"（self=${selfFound ? '找到' : '缺失'}'
+        ' / cause=${causeFound ? '找到' : '缺失'}）';
+    debugPrint(msg);
+    ErrorHandler.instance.captureError(
+      level: 'warn',
+      category: 'validation',
+      message: msg,
+    );
+  }
+
   /// 事件事实 → event_fact：两轮写入（upsert 全部 + 反查填因果边）（R-019 拆出）。
   Future<void> _persistEventFacts(
     FactExtraction extraction,
@@ -800,11 +858,12 @@ class DiagnosisCommitter {
         await repo.updateCauseEventId(self.id, cause.id);
       } else {
         // 批次6（6.11 L5/V10）：因果边反查失败不再静默丢弃——
-        // 打日志留痕，便于排查前因名称不一致导致关联未建立
-        debugPrint(
-          '[FactExtract] 因果边反查失败未关联: 事件="$e.name" '
-          '前因="$causeName"（self=${self != null ? '找到' : '缺失'}'
-          ' / cause=${cause != null ? '找到' : '缺失'}）',
+        // 打日志留痕，便于排查前因名称不一致导致关联未建立。
+        _logCausalityMiss(
+          eventName: e.name,
+          causeName: causeName,
+          selfFound: self != null,
+          causeFound: cause != null,
         );
       }
     }
