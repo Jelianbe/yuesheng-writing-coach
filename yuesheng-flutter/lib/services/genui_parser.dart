@@ -109,13 +109,18 @@ void _addIfValid(List<GenUiComponent> out, Map<String, dynamic> raw) {
 Object? _lenientJson(String s) {
   try {
     return jsonDecode(s);
-  } catch (_) {
+  } catch (e, st) {
     final fixed = s.replaceAll('\u201C', '"').replaceAll('\u201D', '"');
-    if (fixed == s) return null;
+    if (fixed == s) {
+      // 无中文引号可修复且原生解析失败 → 最终降级，留痕（R-028；
+      // D1 补留痕时漏了本分支，第二层 catch 已有）。
+      logDecodeFailure(field: 'genui', error: e, stack: st, category: 'api');
+      return null;
+    }
     try {
       return jsonDecode(fixed);
-    } catch (e, st) {
-      logDecodeFailure(field: 'genui', error: e, stack: st, category: 'api');
+    } catch (e2, st2) {
+      logDecodeFailure(field: 'genui', error: e2, stack: st2, category: 'api');
       return null;
     }
   }
