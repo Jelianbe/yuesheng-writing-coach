@@ -17,6 +17,7 @@ import '../types/teaching_types.dart';
 import 'student_profile_compute.dart';
 import 'training_evaluator.dart';
 import 'training_input_builder.dart';
+import 'decode_guard.dart';
 
 /// 评估阈值（真源：shared-constants.ts EVALUATION_THRESHOLDS）
 class EvaluationThresholds {
@@ -93,7 +94,8 @@ class EvaluationService {
             count++;
           }
         }
-      } catch (_) {
+      } catch (e, st) {
+        logDecodeFailure(field: 'syndromes', error: e, stack: st);
         // 忽略解析错误
       }
     }

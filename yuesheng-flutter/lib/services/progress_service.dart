@@ -20,6 +20,7 @@ import '../data/database/database.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/teaching_state_repository.dart';
 import '../types/teaching_types.dart';
+import 'decode_guard.dart';
 
 /// 锁定症候（复刻 RN LockedSyndrome）
 class LockedSyndrome {
@@ -318,7 +319,8 @@ class ProgressService {
       final decoded = jsonDecode(json);
       if (decoded is! List) return 0;
       return decoded.length;
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(field: 'syndromesJson', error: e, stack: st);
       return 0;
     }
   }

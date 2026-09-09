@@ -12,6 +12,7 @@ import 'dart:convert';
 
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/database/database.dart';
+import 'decode_guard.dart';
 
 /// 单次诊断记录点（复刻 RN SyndromeTrendPoint）
 class SyndromeTrendPoint {
@@ -191,7 +192,8 @@ class SyndromeTracker {
       final decoded = jsonDecode(json);
       if (decoded is! List) return const [];
       return decoded.whereType<Map<String, dynamic>>().toList();
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(field: 'syndromes', error: e, stack: st);
       return const [];
     }
   }

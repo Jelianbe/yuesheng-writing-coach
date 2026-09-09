@@ -8,6 +8,7 @@
 
 import 'package:writingcoach/services/json_parser_utils.dart';
 import 'package:writingcoach/services/teacher_validator.dart';
+import 'decode_guard.dart';
 
 const String kTeacherStart = '[YS_TEACHER]';
 const String kTeacherEnd = '[/YS_TEACHER]';
@@ -42,7 +43,13 @@ TeacherParseResult parseTeacherDecision(String rawText) {
   Object? parsed;
   try {
     parsed = parseJsonLenient(jsonStr);
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(
+      field: 'teacherStream',
+      error: e,
+      stack: st,
+      category: 'api',
+    );
     return TeacherParseResult(displayContent: displayContent, teacher: null);
   }
 

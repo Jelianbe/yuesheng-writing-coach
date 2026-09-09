@@ -17,6 +17,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 
 import '../config/shared_constants.dart';
+import 'decode_guard.dart';
 
 /// 解析出的章节
 class ParsedChapter {
@@ -59,7 +60,8 @@ Future<PickedDocument?> pickDocument() async {
     final path = file.path;
     if (path == null) return null;
     return PickedDocument(path: path, name: file.name);
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'fileContent', error: e, stack: st);
     return null;
   }
 }

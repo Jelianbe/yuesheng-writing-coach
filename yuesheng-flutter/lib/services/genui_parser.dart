@@ -14,6 +14,7 @@ import 'dart:convert';
 
 import '../contracts/genui_capability.dart';
 import 'genui_validator.dart';
+import 'decode_guard.dart';
 
 export '../contracts/genui_capability.dart';
 
@@ -113,7 +114,8 @@ Object? _lenientJson(String s) {
     if (fixed == s) return null;
     try {
       return jsonDecode(fixed);
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(field: 'genui', error: e, stack: st, category: 'api');
       return null;
     }
   }

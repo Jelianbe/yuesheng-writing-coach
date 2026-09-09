@@ -22,6 +22,7 @@ import 'package:writingcoach/services/syndrome_knowledge_base.dart';
 import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
+import 'decode_guard.dart';
 
 export 'package:writingcoach/contracts/material_capability.dart';
 
@@ -568,7 +569,8 @@ ParagraphAnchor? parseParagraphAnchor(String? json) {
     if (chapterId is! String || start is! num || end is! num) return null;
     if (start < 0 || end < start) return null;
     return ParagraphAnchor(chapterId, start.toInt(), end.toInt());
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'paragraphAnchor', error: e, stack: st);
     return null;
   }
 }

@@ -27,6 +27,7 @@ import 'package:writingcoach/services/student_profile_compute.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+import 'decode_guard.dart';
 
 /// 数据不足阈值：少于 2 条诊断无法判断趋势（无 previousSeverity 可比对）
 const int _kMinDiagnosisCountForTrend = 2;
@@ -71,7 +72,8 @@ Future<int> countTrainingForSyndrome(
               effectiveSyndromeId(r['syndromeId'] as String) == syndromeId,
         )
         .length;
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'trainingInput', error: e, stack: st);
     return 0;
   }
 }
@@ -144,7 +146,8 @@ Future<TrainingPerformance?> computeTrainingPerformance(
       consecutiveFails: consecutiveFails,
       totalCount: records.length,
     );
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'trainingRecord', error: e, stack: st);
     return null;
   }
 }
@@ -185,7 +188,8 @@ Future<EvaluationSummaryInput?> buildTrainingInputForActiveSyndrome(
       activeProblemMeta,
       diagnosisRepo,
     );
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'trainingRecord', error: e, stack: st);
     // JSON 解析失败或其他异常 → 返回 null（容错，§5.2 D1 用例）
     return null;
   }

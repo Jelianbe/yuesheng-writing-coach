@@ -15,6 +15,7 @@
 import 'dart:convert';
 
 import 'outline_validator.dart';
+import 'decode_guard.dart';
 
 // D4：领域类（OutlineEntityUpdate/OutlineExtraction 等）随 validator 层移动，
 // 经 export 保持对既有调用方（outline_service/chat_service/测试）的兼容。
@@ -142,7 +143,8 @@ dynamic tryParseJsonWithRecovery(String jsonStr) {
 
   try {
     return jsonDecode(buffer.toString());
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'outline', error: e, stack: st, category: 'api');
     return null;
   }
 }

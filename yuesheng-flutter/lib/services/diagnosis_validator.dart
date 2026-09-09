@@ -10,6 +10,7 @@ import '../config/shared_constants.dart';
 import '../services/syndrome_registry.dart';
 import '../types/teaching_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
+import 'decode_guard.dart';
 
 export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
@@ -523,7 +524,8 @@ WritingStyleProfile? _parseStyleProfile(Map<String, dynamic> data) {
   if (raw is! Map<String, dynamic>) return null;
   try {
     return WritingStyleProfile.fromJson(raw);
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'diagnosis', error: e, stack: st, category: 'api');
     return null; // 缺 summary 等非法结构 → 忽略
   }
 }

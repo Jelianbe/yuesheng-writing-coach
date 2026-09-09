@@ -6,6 +6,7 @@
 import 'dart:convert';
 
 import 'teaching_types.dart';
+import '../services/decode_guard.dart';
 
 /// 评估趋势（UI 展示 3 值）
 enum EvaluationTrend {
@@ -151,7 +152,8 @@ class EvaluationData {
         syndromeDetails: details,
         generatedAt: (decoded['generatedAt'] as num?)?.toInt() ?? 0,
       );
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(field: 'evaluationData', error: e, stack: st);
       return null;
     }
   }

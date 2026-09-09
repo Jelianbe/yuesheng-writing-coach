@@ -11,6 +11,7 @@ import 'fact_parser.dart';
 import 'outline_parser.dart';
 import 'diagnosis_validator.dart';
 import 'chat_training_parser.dart';
+import 'decode_guard.dart';
 
 export 'package:writingcoach/contracts/diagnosis_capability.dart';
 
@@ -535,7 +536,13 @@ WritingStyleProfile? _parseStyleProfile(Map<String, dynamic> obj) {
   if (styleRaw is! Map<String, dynamic>) return null;
   try {
     return WritingStyleProfile.fromJson(styleRaw);
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(
+      field: 'styleProfile',
+      error: e,
+      stack: st,
+      category: 'api',
+    );
     return null; // 缺 summary 等非法结构 → 忽略
   }
 }

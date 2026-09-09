@@ -19,6 +19,7 @@ import '../data/repositories/event_fact_repository.dart';
 import '../types/character_types.dart';
 import 'chat_context_builder.dart';
 import 'conflict_detector.dart';
+import 'decode_guard.dart';
 
 /// 按身份合并人物行 → **一行一身份**的扁平输入。
 ///
@@ -154,7 +155,8 @@ List<String> _parseAliases(String raw) {
     final decoded = jsonDecode(raw);
     if (decoded is! List) return const [];
     return decoded.whereType<String>().toList();
-  } catch (_) {
+  } catch (e, st) {
+    logDecodeFailure(field: 'aliases', error: e, stack: st);
     return const [];
   }
 }

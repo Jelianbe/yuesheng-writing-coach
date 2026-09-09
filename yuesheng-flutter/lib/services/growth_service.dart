@@ -20,6 +20,7 @@ import 'package:drift/drift.dart';
 import '../data/database/database.dart';
 import '../data/repositories/training_result_repository.dart';
 import '../types/teaching_types.dart';
+import 'decode_guard.dart';
 
 /// 成长数据服务（用户级，无 sessionId 维度）
 class GrowthService {
@@ -251,7 +252,8 @@ extension GrowthStatsExtension on GrowthService {
               .where((r) => r['type'] == 'training')
               .length;
         }
-      } catch (_) {
+      } catch (e, st) {
+        logDecodeFailure(field: 'teachingHistory', error: e, stack: st);
         // 单条历史解析失败不影响其余
       }
     }
@@ -395,7 +397,8 @@ extension GrowthStatsExtension on GrowthService {
           ? <String, dynamic>{}
           : (jsonDecode(decoded) as Map<String, dynamic>);
       return WritingStyleProfile.fromJson(map);
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(field: 'growthJson', error: e, stack: st);
       return null; // 非法 JSON → 忽略
     }
   }
