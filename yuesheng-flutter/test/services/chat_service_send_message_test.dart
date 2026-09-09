@@ -798,4 +798,21 @@ void main() {
     expect(persisted, isNotNull);
     expect(persisted!.content, '失败也上屏');
   });
+  test('D2 sendMessage 会话不存在：落库前显式校验 → onError 明确报错', () async {
+    final chatService = buildChatService(FakeLlmClient('你好'));
+    String? errorMsg;
+    await chatService.sendMessage(
+      'no-such-session',
+      '你好',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (msg) {
+          errorMsg = msg;
+        },
+      ),
+      defaultOptions,
+    );
+    expect(errorMsg, contains('会话不存在或已被删除'));
+  });
 }

@@ -887,6 +887,11 @@ extension ChatServiceSend on ChatService {
   ) async {
     // 1. 写入用户消息（批次71：@ 引用快照随 user 消息落库）
     // ADR-C84：返回 id 供发送后立即上屏（不等 AI 回复）
+    // D2：落库前显式校验会话存在性（R-028 边界防御）。会话可能已被删除/清库，
+    // UI 持有的过期 ID 直接 INSERT 会外键约束失败且报错不可读 → 明确抛错走 onError。
+    if (!await _sessionRepo.sessionExists(sessionId)) {
+      throw Exception('会话不存在或已被删除，请重新打开教练面板');
+    }
     final userMessageId = await _sessionRepo.addMessage(
       sessionId,
       'user',

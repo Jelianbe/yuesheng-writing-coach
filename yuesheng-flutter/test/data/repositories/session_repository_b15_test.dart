@@ -53,4 +53,10 @@ void main() {
     )..where((t) => t.sessionId.equals(sessionId))).get();
     expect(remaining, isEmpty);
   });
+  test('D2 sessionExists：存在→true / 不存在→false / 空→false', () async {
+    final sid = await sessionRepo.createBlankSession(title: 'exists');
+    expect(await sessionRepo.sessionExists(sid), isTrue);
+    expect(await sessionRepo.sessionExists('no-such-session'), isFalse);
+    expect(await sessionRepo.sessionExists(''), isFalse);
+  });
 }

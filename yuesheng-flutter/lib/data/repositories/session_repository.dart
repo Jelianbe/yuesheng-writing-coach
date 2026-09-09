@@ -175,6 +175,20 @@ class SessionRepository {
         .getSingleOrNull();
   }
 
+  /// 会话存在性校验（D2：sendMessage 落库前防御）。
+  ///
+  /// 会话可能已被删除/清库（ADR-C81 懒创建下 UI 可能持有过期 ID），
+  /// 直接 INSERT messages 会触发外键约束失败且报错不可读——
+  /// 落库前先显式校验，不存在返回 false（空 ID 同样视为不存在），
+  /// 由调用方决定抛错/回退。
+  Future<bool> sessionExists(String sessionId) async {
+    if (sessionId.isEmpty) return false;
+    final row = await (_db.select(
+      _db.sessions,
+    )..where((t) => t.id.equals(sessionId))).getSingleOrNull();
+    return row != null;
+  }
+
   /// 解析章节标题（失败降级为空串，不影响会话创建，R-019 拆出）。
   Future<String> _resolveChapterTitle(String chapterId) async {
     String chapterTitle = '';
