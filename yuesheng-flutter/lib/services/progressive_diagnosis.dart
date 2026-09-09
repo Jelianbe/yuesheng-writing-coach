@@ -338,7 +338,8 @@ String buildMergePrompt(
             },
           )
           .toList();
-      // 用 toString() 近似 JSON.stringify；生产用 dart:convert jsonEncode 更严谨
+      // 用自研 _encodeJson 序列化分片笔记（对齐 JSON.stringify 语义；
+      // 不用 toString()——其对中文/引号/换行会产生非 JSON 输出）。
       final encoded = '{"notes": ${_encodeJson(notes)}}';
       allNotesJson.add('## 分片 ${i + 1}\n```json\n$encoded\n```');
     }
@@ -475,17 +476,25 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   );
   var fullContent = '';
 
-  await llmClient.streamChat(
-    [
-      const ChatMessage(role: 'system', content: '你是一个专业的写作诊断助手。'),
-      ChatMessage(role: 'user', content: mergePrompt),
-    ],
-    (response) {
-      if (response.isDone || response.content.isEmpty) return;
-      fullContent += response.content;
-      onContent(response.content);
-    },
-  );
+  try {
+    await llmClient.streamChat(
+      [
+        const ChatMessage(role: 'system', content: '你是一个专业的写作诊断助手。'),
+        ChatMessage(role: 'user', content: mergePrompt),
+      ],
+      (response) {
+        if (response.isDone || response.content.isEmpty) return;
+        fullContent += response.content;
+        onContent(response.content);
+      },
+      // P3 观察项收口：merge 阶段透传取消令牌——此前缺传，合并中无法
+      // 中途停止；取消统一转 ProgressiveDiagnosisCancelled（调用方已有
+      // 优雅复位），不落为「报错」。
+      cancelToken: cancelToken,
+    );
+  } on LlmRequestCancelledException {
+    throw const ProgressiveDiagnosisCancelled();
+  }
 
   return ProgressiveResult(
     fullContent: fullContent,

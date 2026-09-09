@@ -39,6 +39,10 @@ class _FakeLlmClient extends LlmClient {
   final void Function(int callCount)? onChatCall;
   int _chatCallCount = 0;
 
+  /// P3：merge 阶段注入取消（模拟流式输出中用户点停止 → streamChat 抛
+  /// LlmRequestCancelledException），验证统一转 ProgressiveDiagnosisCancelled。
+  bool streamThrowsCancelled = false;
+
   _FakeLlmClient({
     String chatResponse = '{"notes":[]}',
     String streamResponse = '',
@@ -76,6 +80,9 @@ class _FakeLlmClient extends LlmClient {
     CancelToken? cancelToken,
   }) async {
     streamMessages.add(messages);
+    if (streamThrowsCancelled) {
+      throw LlmRequestCancelledException();
+    }
     if (_streamResponse.isEmpty) {
       callback(const LlmStreamResponse(content: '', isDone: true));
       return;
@@ -457,5 +464,25 @@ void main() {
       expect(fake.chatMaxTokens.length, 1);
       expect(fake.streamMessages, isEmpty);
     });
+
+    test(
+      '#11 P3 merge 阶段取消 → LlmRequestCancelledException 转 ProgressiveDiagnosisCancelled（不落报错）',
+      () async {
+        final fake = _FakeLlmClient()..streamThrowsCancelled = true;
+
+        await expectLater(
+          runProgressiveDiagnosis(
+            content: makeLongContent(),
+            title: '取消测试',
+            llmClient: fake,
+            onContent: (_) {},
+          ),
+          throwsA(isA<ProgressiveDiagnosisCancelled>()),
+        );
+        // 块分析全部完成（每块一次 chat），merge 发起后抛取消并被转换
+        expect(fake.chatMaxTokens.length, greaterThan(0));
+        expect(fake.streamMessages.length, 1);
+      },
+    );
   });
 }
