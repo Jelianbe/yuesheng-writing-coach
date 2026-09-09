@@ -51,3 +51,28 @@ void logDecodeFailure({
     stack: stack?.toString(),
   );
 }
+
+/// 记录一次业务降级（非解析：调用/流程失败，按「失败不阻断」注释静默降级）。
+///
+/// 与 [logDecodeFailure] 的区别：这里不是「数据解析失败」，而是
+/// 非关键业务操作失败后按设计继续（如学生模型推断失败、评估持久化失败）。
+/// 同样 warn 级留痕，保证「静默降级」可被事后追溯。
+///
+/// [operation] 降级的业务操作名（如 'inferCognitiveStyle'）。
+/// [error] / [stack] 原始异常与堆栈。
+/// [category] error_logs.category 白名单值；默认 'general'。
+void logSilentDegrade({
+  required String operation,
+  required Object error,
+  StackTrace? stack,
+  String category = 'general',
+}) {
+  debugPrint('[degrade] $operation 降级（失败不阻断）: $error');
+  ErrorHandler.instance.captureError(
+    level: 'warn',
+    category: category,
+    message: '$operation 降级（失败不阻断）',
+    context: {'operation': operation, 'error': '$error'},
+    stack: stack?.toString(),
+  );
+}

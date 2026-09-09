@@ -22,6 +22,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/services/student_profile_compute.dart';
 import 'package:writingcoach/services/student_profile_format.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+import 'decode_guard.dart';
 
 const List<String> _analyticalKeywords = [
   '逻辑',
@@ -388,7 +389,13 @@ Future<CognitiveStyleInference?> _resolveCognitiveStyle(
   if (sessionId != null) {
     try {
       return await inferCognitiveStyle(sessionRepo, sessionId);
-    } catch (_) {
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'inferCognitiveStyle',
+        error: e,
+        stack: st,
+        category: 'database',
+      );
       // 认知风格推断失败不阻断主流程
     }
   }
@@ -403,7 +410,13 @@ Future<String?> _loadEffectivenessText(
   if (sessionId != null) {
     try {
       return await buildStrategyEffectiveness(studentModelRepo, sessionId);
-    } catch (_) {
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'buildStrategyEffectiveness',
+        error: e,
+        stack: st,
+        category: 'database',
+      );
       // 效果追踪非关键，失败不阻断
     }
   }
@@ -419,7 +432,13 @@ Future<String?> _loadStyleProfileText(
     if (styleProfile != null) {
       return _formatStyleProfile(styleProfile);
     }
-  } catch (_) {
+  } catch (e, st) {
+    logSilentDegrade(
+      operation: 'loadStyleProfile',
+      error: e,
+      stack: st,
+      category: 'database',
+    );
     // 风格画像非关键，失败不阻断
   }
   return null;

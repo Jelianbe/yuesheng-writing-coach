@@ -213,50 +213,61 @@ extension EvaluationRoundExtension on EvaluationService {
     int round,
   ) async {
     try {
-      final diagnoses = await _diagnosisRepo.listDiagnosisHistory(sessionId);
-      if (diagnoses.isEmpty) return null;
-
-      final (
-        trainingCount,
-        confirmedCount,
-        totalConfirms,
-        confirmationRecords,
-        diagnosisRecords,
-      ) = await _loadRoundHistory(
-        sessionId,
+      return _buildEvaluationCore(sessionId, round);
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'computeRoundEvaluation',
+        error: e,
+        stack: st,
+        category: 'database',
       );
-
-      // 症候明细：优先用 training-evaluator 真实数据，失败走 fallback
-      final syndromeDetails = await _buildSyndromeDetails(
-        sessionId,
-        confirmationRecords,
-        diagnosisRecords,
-      );
-
-      final passRate = _resolvePassRate(
-        syndromeDetails,
-        confirmedCount,
-        totalConfirms,
-      );
-      final trend = _resolveEvaluationTrend(
-        syndromeDetails,
-        passRate,
-        diagnoses,
-      );
-
-      final severityDelta = _resolveSeverityDelta(round, diagnoses);
-      return _assembleEvaluationData(
-        round: round,
-        trend: trend,
-        trainingCount: trainingCount,
-        passRate: passRate,
-        severityDelta: severityDelta,
-        syndromeDetails: syndromeDetails,
-      );
-    } catch (_) {
       // 评估失败不阻断主流程（静默，release 不暴露细节）
       return null;
     }
+  }
+
+  /// 评估核心组装（R-019 真分解：computeRoundEvaluation 的 try 主体）。
+  /// 独立职责 = 读历史 + 算 passRate/trend + 组装 EvaluationData。
+  Future<EvaluationData?> _buildEvaluationCore(
+    String sessionId,
+    int round,
+  ) async {
+    final diagnoses = await _diagnosisRepo.listDiagnosisHistory(sessionId);
+    if (diagnoses.isEmpty) return null;
+
+    final (
+      trainingCount,
+      confirmedCount,
+      totalConfirms,
+      confirmationRecords,
+      diagnosisRecords,
+    ) = await _loadRoundHistory(
+      sessionId,
+    );
+
+    // 症候明细：优先用 training-evaluator 真实数据，失败走 fallback
+    final syndromeDetails = await _buildSyndromeDetails(
+      sessionId,
+      confirmationRecords,
+      diagnosisRecords,
+    );
+
+    final passRate = _resolvePassRate(
+      syndromeDetails,
+      confirmedCount,
+      totalConfirms,
+    );
+    final trend = _resolveEvaluationTrend(syndromeDetails, passRate, diagnoses);
+
+    final severityDelta = _resolveSeverityDelta(round, diagnoses);
+    return _assembleEvaluationData(
+      round: round,
+      trend: trend,
+      trainingCount: trainingCount,
+      passRate: passRate,
+      severityDelta: severityDelta,
+      syndromeDetails: syndromeDetails,
+    );
   }
 
   /// 严重度变化：round>0 且诊断 >= 2 条时比较最近两轮平均严重度（R-019 二次拆）。
@@ -331,7 +342,8 @@ extension EvaluationDetailExtension on EvaluationService {
         }
         return _buildMainDetail(problem, trainingInput, summary);
       }
-    } catch (_) {
+    } catch (e, st) {
+      _degradeSyndromeDetail(e, st);
       // 失败走 fallback
     }
 
@@ -340,6 +352,16 @@ extension EvaluationDetailExtension on EvaluationService {
       problem,
       confirmationRecords,
       diagnosisRecords,
+    );
+  }
+
+  /// 症候明细构建失败留痕（R-019：_buildSyndromeDetail 的 catch 提出）。
+  void _degradeSyndromeDetail(Object e, StackTrace st) {
+    logSilentDegrade(
+      operation: 'buildSyndromeDetail',
+      error: e,
+      stack: st,
+      category: 'general',
     );
   }
 
@@ -381,11 +403,23 @@ extension EvaluationDetailExtension on EvaluationService {
       if (state == TeachingState.mastered) {
         try {
           await _diagnosisRepo.resolveSyndromesBatch(sessionId, [syndromeId]);
-        } catch (_) {
+        } catch (e, st) {
+          logSilentDegrade(
+            operation: 'phaseUnlock',
+            error: e,
+            stack: st,
+            category: 'general',
+          );
           // 解锁失败不阻断评估报告继续返回（下一次诊断提交时会重试）
         }
       }
-    } catch (_) {
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'evaluationPersist',
+        error: e,
+        stack: st,
+        category: 'database',
+      );
       // 持久化失败不阻断评估报告继续返回（容错降级）
     }
   }
