@@ -537,10 +537,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
           ),
           Text(
             '${c.wordCount} 字',
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.disabledText,
-            ),
+            style: const TextStyle(fontSize: 12, color: AppColors.disabledText),
           ),
         ],
       ),
