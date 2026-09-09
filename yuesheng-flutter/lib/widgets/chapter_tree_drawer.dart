@@ -90,51 +90,56 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── 头部：标题 + 章节数 ──
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.md,
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.menu_book_outlined,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    '章节列表',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textInk,
-                    ),
-                  ),
-                  const Spacer(),
-                  // 批次89-3：新建卷入口（始终可用，卷可在任何时候追加）
-                  IconButton(
-                    key: const ValueKey('create-volume-btn'),
-                    onPressed: msId.isNotEmpty ? _handleCreateVolume : null,
-                    visualDensity: VisualDensity.compact,
-                    tooltip: '新建卷',
-                    icon: const Icon(
-                      Icons.create_new_folder_outlined,
-                      size: 20,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  Text('${chapters.length} 章', style: AppTextStyles.caption),
-                ],
-              ),
-            ),
+            _buildHeaderRow(chapters.length, msId.isNotEmpty),
             const Divider(height: 1),
             // ── 章节列表 / 加载中 / 空态 ──
             Expanded(child: _buildBody(chapters, volumes, loading)),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 抽屉头部：标题 + 章节数 + 新建卷入口（R-019 清偿拆出）。
+  Widget _buildHeaderRow(int chapterCount, bool hasMsId) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.menu_book_outlined,
+            size: 18,
+            color: AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            '章节列表',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textInk,
+            ),
+          ),
+          const Spacer(),
+          // 批次89-3：新建卷入口（始终可用，卷可在任何时候追加）
+          IconButton(
+            key: const ValueKey('create-volume-btn'),
+            onPressed: hasMsId ? _handleCreateVolume : null,
+            visualDensity: VisualDensity.compact,
+            tooltip: '新建卷',
+            icon: const Icon(
+              Icons.create_new_folder_outlined,
+              size: 20,
+              color: AppColors.primary,
+            ),
+          ),
+          Text('$chapterCount 章', style: AppTextStyles.caption),
+        ],
       ),
     );
   }
@@ -171,42 +176,10 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       );
     } else if (volumes.isEmpty) {
       // 无卷 → 扁平章节列表（批次83 原行为，兼容既有测试）
-      for (final ch in chapters) {
-        children.add(_buildChapterItem(ch));
-      }
+      _buildFlatChapters(chapters, children);
     } else {
       // 有卷 → 按全局序渲染段（批次96-4：散落章节平铺无组头，卷组自然穿插）
-      final sections = buildChapterSections(volumes, chapters);
-      for (final sec in sections) {
-        final loose = sec.looseChapter;
-        if (loose != null) {
-          children.add(_buildChapterItem(loose));
-          continue;
-        }
-        final volume = sec.volume!;
-        final key = volume.id;
-        final collapsed = _collapsed.contains(key);
-        children.add(
-          _VolumeHeader(
-            volume: volume,
-            count: sec.chapters.length,
-            collapsed: collapsed,
-            onToggle: () => setState(() {
-              if (!_collapsed.add(key)) _collapsed.remove(key);
-            }),
-            onLongPress: () => _showVolumeActions(volume),
-            onRename: () => _handleRenameVolume(volume),
-          ),
-        );
-        if (collapsed) continue;
-        if (sec.chapters.isEmpty) {
-          children.add(const _EmptyVolumeHint());
-          continue;
-        }
-        for (final ch in sec.chapters) {
-          children.add(_buildChapterItem(ch));
-        }
-      }
+      _buildSectionsChildren(chapters, volumes, children);
     }
     // 批次89-4：列表末尾「新建章节」行（新建卷唯一入口 = 头部「＋」图标）
     children.add(_NewChapterRow(onTap: widget.onCreateChapter));
@@ -214,6 +187,52 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       children: children,
     );
+  }
+
+  /// 无卷 → 扁平章节列表（批次83 原行为，兼容既有测试；R-019 清偿拆出）。
+  void _buildFlatChapters(List<Chapter> chapters, List<Widget> children) {
+    for (final ch in chapters) {
+      children.add(_buildChapterItem(ch));
+    }
+  }
+
+  /// 有卷 → 按全局序渲染段（散落章节平铺、卷组自然穿插；R-019 清偿拆出）。
+  void _buildSectionsChildren(
+    List<Chapter> chapters,
+    List<Volume> volumes,
+    List<Widget> children,
+  ) {
+    final sections = buildChapterSections(volumes, chapters);
+    for (final sec in sections) {
+      final loose = sec.looseChapter;
+      if (loose != null) {
+        children.add(_buildChapterItem(loose));
+        continue;
+      }
+      final volume = sec.volume!;
+      final key = volume.id;
+      final collapsed = _collapsed.contains(key);
+      children.add(
+        _VolumeHeader(
+          volume: volume,
+          count: sec.chapters.length,
+          collapsed: collapsed,
+          onToggle: () => setState(() {
+            if (!_collapsed.add(key)) _collapsed.remove(key);
+          }),
+          onLongPress: () => _showVolumeActions(volume),
+          onRename: () => _handleRenameVolume(volume),
+        ),
+      );
+      if (collapsed) continue;
+      if (sec.chapters.isEmpty) {
+        children.add(const _EmptyVolumeHint());
+        continue;
+      }
+      for (final ch in sec.chapters) {
+        children.add(_buildChapterItem(ch));
+      }
+    }
   }
 
   Widget _buildChapterItem(Chapter ch) {
@@ -292,50 +311,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
   Future<void> _showChapterActionsSheet(Chapter chapter) async {
     final action = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.section,
-                AppSpacing.lg,
-                AppSpacing.section,
-                AppSpacing.sm,
-              ),
-              child: Text(
-                chapter.title.trim().isEmpty ? '未命名章节' : chapter.title.trim(),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              title: const Text('重命名章节'),
-              onTap: () => Navigator.pop(ctx, 'rename'),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.drive_file_move_outlined,
-                size: 18,
-                color: AppColors.textPrimary,
-              ),
-              title: const Text('移动到卷'),
-              onTap: () => Navigator.pop(ctx, 'move'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+      builder: (ctx) => _buildChapterActionsSheet(ctx, chapter),
     );
     if (!mounted || action == null) return;
     if (action == 'rename') {
@@ -343,6 +319,54 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     } else if (action == 'move') {
       await _showMoveToVolumeSheet(chapter);
     }
+  }
+
+  /// 章节操作弹层内容（重命名 / 移动到卷；R-019 清偿拆出）。
+  Widget _buildChapterActionsSheet(BuildContext ctx, Chapter chapter) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.section,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              chapter.title.trim().isEmpty ? '未命名章节' : chapter.title.trim(),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            title: const Text('重命名章节'),
+            onTap: () => Navigator.pop(ctx, 'rename'),
+          ),
+          ListTile(
+            leading: const Icon(
+              Icons.drive_file_move_outlined,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
+            title: const Text('移动到卷'),
+            onTap: () => Navigator.pop(ctx, 'move'),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
   }
 
   /// 新建卷：弹输入框（空 → 自动命名「第X卷」）
@@ -401,59 +425,58 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
   Future<void> _showVolumeActions(Volume volume) async {
     final action = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.section,
-                AppSpacing.lg,
-                AppSpacing.section,
-                AppSpacing.sm,
-              ),
-              child: Text(
-                volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
-                style: const TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(
-                Icons.edit_outlined,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              title: const Text('重命名卷'),
-              onTap: () => Navigator.pop(ctx, 'rename'),
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: AppColors.danger,
-              ),
-              title: const Text(
-                '删除卷',
-                style: TextStyle(color: AppColors.danger),
-              ),
-              subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
-              onTap: () => Navigator.pop(ctx, 'delete'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+      builder: (ctx) => _buildVolumeActionsSheet(ctx, volume),
     );
     if (action == 'rename' && mounted) {
       await _handleRenameVolume(volume);
     } else if (action == 'delete' && mounted) {
       await _confirmDeleteVolume(volume);
     }
+  }
+
+  /// 卷操作弹层内容（重命名卷 / 删除卷；R-019 清偿拆出）。
+  Widget _buildVolumeActionsSheet(BuildContext ctx, Volume volume) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.section,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            title: const Text('重命名卷'),
+            onTap: () => Navigator.pop(ctx, 'rename'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: AppColors.danger),
+            title: const Text('删除卷', style: TextStyle(color: AppColors.danger)),
+            subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
+            onTap: () => Navigator.pop(ctx, 'delete'),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
   }
 
   /// 批次92-2：重命名卷（长按菜单 + 铅笔图标均走这里）
@@ -545,54 +568,11 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     const unassignedMarker = '__unassigned__';
     final selected = await showYueModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.section,
-              AppSpacing.lg,
-              AppSpacing.section,
-              AppSpacing.sm,
-            ),
-            child: const Text(
-              '移动到卷',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          for (final v in volumes)
-            ListTile(
-              leading: const Icon(
-                Icons.collections_bookmark_outlined,
-                size: 18,
-                color: AppColors.primary,
-              ),
-              title: Text(v.title.trim().isEmpty ? '未命名卷' : v.title.trim()),
-              trailing: chapter.volumeId == v.id
-                  ? const Icon(Icons.check, size: 18, color: AppColors.primary)
-                  : null,
-              onTap: () => Navigator.pop(ctx, v.id),
-            ),
-          ListTile(
-            leading: const Icon(
-              Icons.notes_outlined,
-              size: 18,
-              color: AppColors.textTertiary,
-            ),
-            title: const Text('未分卷'),
-            trailing: chapter.volumeId == null
-                ? const Icon(Icons.check, size: 18, color: AppColors.primary)
-                : null,
-            onTap: () => Navigator.pop(ctx, unassignedMarker),
-          ),
-          const SizedBox(height: 8),
-        ],
+      builder: (ctx) => _buildMoveToVolumeSheet(
+        ctx,
+        volumes: volumes,
+        chapter: chapter,
+        unassignedMarker: unassignedMarker,
       ),
     );
     if (!mounted || selected == null) return; // 遮罩关闭：不执行
@@ -610,6 +590,76 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       if (!mounted) return;
       _snack('移动失败，请稍后再试');
     }
+  }
+
+  /// 移动到卷弹层内容（全部卷 + 未分卷；R-019 清偿拆出）。
+  Widget _buildMoveToVolumeSheet(
+    BuildContext ctx, {
+    required List<Volume> volumes,
+    required Chapter chapter,
+    required String unassignedMarker,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.section,
+            AppSpacing.lg,
+            AppSpacing.section,
+            AppSpacing.sm,
+          ),
+          child: const Text(
+            '移动到卷',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        ..._buildVolumeOptions(ctx, volumes, chapter, unassignedMarker),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  /// 移动到卷弹层选项：全部卷 + 未分卷（当前归属打勾；R-019 清偿拆出）。
+  List<Widget> _buildVolumeOptions(
+    BuildContext ctx,
+    List<Volume> volumes,
+    Chapter chapter,
+    String unassignedMarker,
+  ) {
+    return [
+      for (final v in volumes)
+        ListTile(
+          leading: const Icon(
+            Icons.collections_bookmark_outlined,
+            size: 18,
+            color: AppColors.primary,
+          ),
+          title: Text(v.title.trim().isEmpty ? '未命名卷' : v.title.trim()),
+          trailing: chapter.volumeId == v.id
+              ? const Icon(Icons.check, size: 18, color: AppColors.primary)
+              : null,
+          onTap: () => Navigator.pop(ctx, v.id),
+        ),
+      ListTile(
+        leading: const Icon(
+          Icons.notes_outlined,
+          size: 18,
+          color: AppColors.textTertiary,
+        ),
+        title: const Text('未分卷'),
+        trailing: chapter.volumeId == null
+            ? const Icon(Icons.check, size: 18, color: AppColors.primary)
+            : null,
+        onTap: () => Navigator.pop(ctx, unassignedMarker),
+      ),
+    ];
   }
 }
 
@@ -671,26 +721,36 @@ class _VolumeHeader extends StatelessWidget {
                 style: AppTextStyles.titleMd,
               ),
             ),
-            if (onRename != null)
-              InkWell(
-                onTap: onRename,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                    vertical: AppSpacing.xxs,
-                  ),
-                  child: Icon(
-                    Icons.edit_outlined,
-                    size: 14,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ),
-            Text('$count 章', style: AppTextStyles.microCaption),
+            _buildTrailing(),
           ],
         ),
       ),
+    );
+  }
+
+  /// 尾部：重命名按钮 + 章节数（R-019 清偿拆出）。
+  Widget _buildTrailing() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (onRename != null)
+          InkWell(
+            onTap: onRename,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: AppSpacing.xxs,
+              ),
+              child: Icon(
+                Icons.edit_outlined,
+                size: 14,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ),
+        Text('$count 章', style: AppTextStyles.microCaption),
+      ],
     );
   }
 }
@@ -754,18 +814,7 @@ class _ChapterTreeItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isCurrent ? AppColors.primary : AppColors.textInk,
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                ),
-              ),
-            ),
+            Expanded(child: _buildTitle(title)),
             // 修复3：铅笔小图标（点击直接重命名，不占过多空间）
             InkWell(
               onTap: onRename,
@@ -792,23 +841,42 @@ class _ChapterTreeItem extends StatelessWidget {
               ),
             if (status != null) ...[
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xsm,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: status.bgColor,
-                  borderRadius: BorderRadius.circular(AppRadius.xs),
-                ),
-                child: Text(
-                  status.label,
-                  style: TextStyle(fontSize: 10, color: status.textColor),
-                ),
-              ),
+              _buildStatusBadge(status),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// 章节标题（当前章高亮；R-019 清偿拆出）。
+  Widget _buildTitle(String title) {
+    return Text(
+      title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 14,
+        color: isCurrent ? AppColors.primary : AppColors.textInk,
+        fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+      ),
+    );
+  }
+
+  /// 状态徽章（草稿/修改中/完成；R-019 清偿拆出）。
+  Widget _buildStatusBadge(_StatusConfig status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: status.bgColor,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text(
+        status.label,
+        style: TextStyle(fontSize: 10, color: status.textColor),
       ),
     );
   }
