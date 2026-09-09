@@ -231,46 +231,49 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               children: [
                 // 左侧 4dp 竹青主色条
                 Container(width: 4, color: AppColors.primary),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(confPct),
-                      _buildTagRow(),
-                      SizeTransition(
-                        sizeFactor: CurvedAnimation(
-                          parent: _expandAnim,
-                          curve: AppMotion.curveFade,
-                        ),
-                        alignment: Alignment.topCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            0,
-                            AppSpacing.lg,
-                            AppSpacing.lg,
-                          ),
-                          child: Column(
-                            children: [
-                              const Divider(height: 1, color: AppColors.border),
-                              const SizedBox(height: 12),
-                              _buildSyndromesDetail(),
-                              if (widget.suggestedActions.isNotEmpty) ...[
-                                const SizedBox(height: 16),
-                                _buildRewriteBlock(),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Expanded(child: _buildCardBody(confPct)),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// 卡片主体：Header + 标签行 + 展开详情（R-019 清偿拆出）。
+  Widget _buildCardBody(int confPct) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildHeader(confPct),
+        _buildTagRow(),
+        SizeTransition(
+          sizeFactor: CurvedAnimation(
+            parent: _expandAnim,
+            curve: AppMotion.curveFade,
+          ),
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              0,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
+            child: Column(
+              children: [
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 12),
+                _buildSyndromesDetail(),
+                if (widget.suggestedActions.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _buildRewriteBlock(),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -304,28 +307,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                 ),
               ),
               const Spacer(),
-              Text(
-                '${widget.syndromeCount}${_CardText.problemSuffix}',
-                style: AppTextStyles.subBody,
-              ),
-              const SizedBox(width: 6),
-              const Text('·', style: TextStyle(color: AppColors.textTertiary)),
-              const SizedBox(width: 6),
-              Text(
-                '$confPct${_CardText.confidenceSuffix}',
-                style: AppTextStyles.subBody,
-              ),
-              const SizedBox(width: 8),
-              RotationTransition(
-                turns: Tween(begin: 0.0, end: 0.5).animate(
-                  CurvedAnimation(parent: _expandAnim, curve: Curves.easeOut),
-                ),
-                child: const Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 20,
-                  color: AppColors.textTertiary,
-                ),
-              ),
+              _buildHeaderMeta(confPct),
             ],
           ),
         ),
@@ -333,39 +315,41 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
+  /// Header 尾部：问题数 · 信心 · 展开箭头（R-019 清偿拆出）。
+  Widget _buildHeaderMeta(int confPct) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${widget.syndromeCount}${_CardText.problemSuffix}',
+          style: AppTextStyles.subBody,
+        ),
+        const SizedBox(width: 6),
+        const Text('·', style: TextStyle(color: AppColors.textTertiary)),
+        const SizedBox(width: 6),
+        Text(
+          '$confPct${_CardText.confidenceSuffix}',
+          style: AppTextStyles.subBody,
+        ),
+        const SizedBox(width: 8),
+        RotationTransition(
+          turns: Tween(begin: 0.0, end: 0.5).animate(
+            CurvedAnimation(parent: _expandAnim, curve: Curves.easeOut),
+          ),
+          child: const Icon(
+            Icons.keyboard_arrow_down,
+            size: 20,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── 标签行：症候名 + 矿物色严重度 chip ──
   Widget _buildTagRow() {
     if (widget.syndromes.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          0,
-          AppSpacing.lg,
-          AppSpacing.md,
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.smx,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.l1,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: const Text(
-                _CardText.emptyHint,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
+      return _buildEmptyTagHint();
     }
 
     return Padding(
@@ -378,62 +362,103 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
-        children: widget.syndromes.map((s) {
-          final cfg = _sev(s.severity);
-          // 批次 45：教学状态存在时色点优先显示教学状态色（对齐 RN SyndromeTag P0-3）
-          final teachingState = _teachingStates[s.syndromeId];
-          final dotColor = teachingState != null
-              ? _teachingStateDotColor(teachingState)
-              : cfg.textColor;
-          return InkWell(
-            // sessionId 非空时可点击打开症候详情弹层（对齐 RN SyndromeTag onPress）
-            onTap: widget.sessionId != null
-                ? () => _openSyndromeDetail(s)
-                : null,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.smx,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: cfg.bgColor,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.only(right: AppSpacing.xsm),
-                    decoration: BoxDecoration(
-                      color: dotColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  Text(
-                    s.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: cfg.textColor,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    s.severity,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: cfg.textColor.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ],
+        children: widget.syndromes.map(_buildSyndromeChip).toList(),
+      ),
+    );
+  }
+
+  /// 空症候提示 chip（R-019 清偿拆出）。
+  Widget _buildEmptyTagHint() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        0,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.smx,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.l1,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: const Text(
+              _CardText.emptyHint,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.primary,
               ),
             ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
+    );
+  }
+
+  /// 单个症候 chip：色点 + 名 + 严重度（R-019 清偿拆出）。
+  Widget _buildSyndromeChip(DiagnosisSyndromeCard s) {
+    final cfg = _sev(s.severity);
+    // 批次 45：教学状态存在时色点优先显示教学状态色（对齐 RN SyndromeTag P0-3）
+    final teachingState = _teachingStates[s.syndromeId];
+    final dotColor = teachingState != null
+        ? _teachingStateDotColor(teachingState)
+        : cfg.textColor;
+    return InkWell(
+      // sessionId 非空时可点击打开症候详情弹层（对齐 RN SyndromeTag onPress）
+      onTap: widget.sessionId != null ? () => _openSyndromeDetail(s) : null,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.smx,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: cfg.bgColor,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: _buildChipLabel(cfg, dotColor, s),
+      ),
+    );
+  }
+
+  /// chip 内容：色点 + 症候名 + 严重度（R-019 清偿拆出）。
+  Widget _buildChipLabel(
+    _SeverityConfig cfg,
+    Color dotColor,
+    DiagnosisSyndromeCard s,
+  ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          margin: const EdgeInsets.only(right: AppSpacing.xsm),
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ),
+        Text(
+          s.name,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: cfg.textColor,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          s.severity,
+          style: TextStyle(
+            fontSize: 11,
+            color: cfg.textColor.withValues(alpha: 0.85),
+          ),
+        ),
+      ],
     );
   }
 
@@ -519,37 +544,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                       ),
                       const SizedBox(height: 8),
                       for (var i = 0; i < widget.suggestedActions.length; i++)
-                        Padding(
-                          padding: EdgeInsets.only(
-                            bottom: i == widget.suggestedActions.length - 1
-                                ? 0
-                                : AppSpacing.xsm,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${i + 1}.',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  widget.suggestedActions[i],
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textDeep,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildRewriteAction(i),
                     ],
                   ),
                 ),
@@ -557,6 +552,41 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 单条改写建议行（序号 + 文本；R-019 清偿拆出）。
+  Widget _buildRewriteAction(int index) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: index == widget.suggestedActions.length - 1
+            ? 0
+            : AppSpacing.xsm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${index + 1}.',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              widget.suggestedActions[index],
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textDeep,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -609,35 +639,42 @@ class _SyndromeBlock extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              // 证据
-              const Text(
-                _CardText.evidenceLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textDeep,
-                ),
-              ),
-              const SizedBox(height: 4),
-              if (syndrome.evidenceCount == 0)
-                const Text(
-                  _CardText.noEvidence,
-                  style: AppTextStyles.noteCaption,
-                )
-              else
-                // 批次80 M1：原文案承诺「跳转原文查看」但实际打开统计详情弹层，
-                // 改为如实描述（对齐 SyndromeDetailModal 实际能力）
-                Text(
-                  '（共 ${syndrome.evidenceCount} 处证据，点击症候可查看详情与趋势）',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textDeep,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
+              _buildEvidenceRow(),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  /// 证据行：标签 + 数量 / 无证据（R-019 清偿拆出）。
+  Widget _buildEvidenceRow() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 证据
+        const Text(
+          _CardText.evidenceLabel,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDeep,
+          ),
+        ),
+        const SizedBox(height: 4),
+        if (syndrome.evidenceCount == 0)
+          const Text(_CardText.noEvidence, style: AppTextStyles.noteCaption)
+        else
+          // 批次80 M1：原文案承诺「跳转原文查看」但实际打开统计详情弹层，
+          // 改为如实描述（对齐 SyndromeDetailModal 实际能力）
+          Text(
+            '（共 ${syndrome.evidenceCount} 处证据，点击症候可查看详情与趋势）',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textDeep,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
       ],
     );
   }
