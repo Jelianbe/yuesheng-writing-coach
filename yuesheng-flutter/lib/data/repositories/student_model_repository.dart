@@ -10,6 +10,7 @@ import '../database/utils.dart';
 import '../../services/decode_guard.dart';
 import '../../services/style_fingerprint.dart';
 import '../../types/teaching_types.dart';
+import 'repository_write_guard.dart';
 
 class StudentModelRepository {
   final AppDatabase _db;
@@ -17,27 +18,28 @@ class StudentModelRepository {
 
   /// 确保学员画像行存在（不存在则创建），返回 id
   /// 复刻 ensureStudentModel(sessionId) — private 在原项目里
-  Future<String> _ensureStudentModel(String sessionId) async {
-    final existing = await (_db.select(
-      _db.studentModels,
-    )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
-    if (existing != null) return existing.id;
+  Future<String> _ensureStudentModel(String sessionId) =>
+      guardRepoWrite('student_model', '_ensureStudentModel', () async {
+        final existing = await (_db.select(
+          _db.studentModels,
+        )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
+        if (existing != null) return existing.id;
 
-    final id = generateUuid();
-    final now = nowSec();
-    await _db
-        .into(_db.studentModels)
-        .insert(
-          StudentModelsCompanion.insert(
-            id: id,
-            sessionId: sessionId,
-            teachingHistory: const Value('[]'),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-    return id;
-  }
+        final id = generateUuid();
+        final now = nowSec();
+        await _db
+            .into(_db.studentModels)
+            .insert(
+              StudentModelsCompanion.insert(
+                id: id,
+                sessionId: sessionId,
+                teachingHistory: const Value('[]'),
+                createdAt: Value(now),
+                updatedAt: Value(now),
+              ),
+            );
+        return id;
+      });
 
   /// 追加教学历史记录
   /// 复刻 appendTeachingHistory(sessionId, record)
@@ -45,7 +47,7 @@ class StudentModelRepository {
   Future<void> appendTeachingHistory(
     String sessionId,
     Map<String, dynamic> record,
-  ) async {
+  ) => guardRepoWrite('student_model', 'appendTeachingHistory', () async {
     final now = nowSec();
     await _db.transaction(() async {
       final modelId = await _ensureStudentModel(sessionId);
@@ -78,7 +80,7 @@ class StudentModelRepository {
         ),
       );
     });
-  }
+  });
 
   /// 获取教学历史
   /// 复刻 getTeachingHistory(sessionId)
@@ -110,7 +112,7 @@ class StudentModelRepository {
   Future<void> updateOnboardingData(
     String sessionId,
     Map<String, dynamic> data,
-  ) async {
+  ) => guardRepoWrite('student_model', 'updateOnboardingData', () async {
     final now = nowSec();
     await _db.transaction(() async {
       final modelId = await _ensureStudentModel(sessionId);
@@ -123,7 +125,7 @@ class StudentModelRepository {
         ),
       );
     });
-  }
+  });
 
   /// 获取新手引导数据
   /// 复刻 getOnboardingData(sessionId)
@@ -188,7 +190,7 @@ class StudentModelRepository {
   Future<void> updateStyleProfile(
     String sessionId,
     WritingStyleProfile profile,
-  ) async {
+  ) => guardRepoWrite('student_model', 'updateStyleProfile', () async {
     final now = nowSec();
     await _db.transaction(() async {
       final modelId = await _ensureStudentModel(sessionId);
@@ -201,7 +203,7 @@ class StudentModelRepository {
         ),
       );
     });
-  }
+  });
 
   /// 更新最新一条有 style_profile 的画像（批次57：成长页风格纠正入口）
   ///
@@ -274,7 +276,7 @@ class StudentModelRepository {
   Future<void> updateStyleFingerprint(
     String sessionId,
     StyleFingerprint fingerprint,
-  ) async {
+  ) => guardRepoWrite('student_model', 'updateStyleFingerprint', () async {
     final now = nowSec();
     await _db.transaction(() async {
       final modelId = await _ensureStudentModel(sessionId);
@@ -287,7 +289,7 @@ class StudentModelRepository {
         ),
       );
     });
-  }
+  });
 
   /// 获取写作风格定量指纹（无则返回 null；JSON 非法返回 null，不抛出）
   Future<StyleFingerprint?> getStyleFingerprint(String sessionId) async {

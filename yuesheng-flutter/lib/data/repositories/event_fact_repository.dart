@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 class EventFactRepository {
   final AppDatabase _db;
@@ -23,7 +24,7 @@ class EventFactRepository {
     List<String> participants = const [],
     String description = '',
     String? chapterHash,
-  }) async {
+  }) => guardRepoWrite('event_fact', 'upsertEvent', () async {
     final now = nowSec();
     final encodedParticipants = stringifyJson(participants);
     await _db.transaction(() async {
@@ -56,7 +57,7 @@ class EventFactRepository {
         );
       }
     });
-  }
+  });
 
   /// 按作品 + 名称查既有事件（UNIQUE(manuscript_id, name)）。
   ///
@@ -80,7 +81,7 @@ class EventFactRepository {
     String? causeEventId,
     String? effectEventId,
     String? chapterHash,
-  }) async {
+  }) => guardRepoWrite('event_fact', '_insertEvent', () async {
     await _db
         .into(_db.eventFacts)
         .insert(
@@ -99,7 +100,7 @@ class EventFactRepository {
             updatedAt: Value(now),
           ),
         );
-  }
+  });
 
   /// 更新既有事件（不含 createdAt）。R-019：由 [upsertEvent] 抽出。
   Future<void> _updateEvent(
@@ -113,7 +114,7 @@ class EventFactRepository {
     String? causeEventId,
     String? effectEventId,
     String? chapterHash,
-  }) async {
+  }) => guardRepoWrite('event_fact', '_updateEvent', () async {
     await (_db.update(_db.eventFacts)..where((t) => t.id.equals(id))).write(
       EventFactsCompanion(
         name: Value(name),
@@ -132,7 +133,7 @@ class EventFactRepository {
         updatedAt: Value(now),
       ),
     );
-  }
+  });
 
   /// 列出作品下全部事件（按章节排序，null 排最后；同章节按名称）
   Future<List<EventFact>> listEvents(String manuscriptId) async {
@@ -158,14 +159,15 @@ class EventFactRepository {
   }
 
   /// 批次3-D4：仅更新事件的因果前驱 id（轻量更新，不触碰其他字段）
-  Future<void> updateCauseEventId(String id, String? causeEventId) async {
-    await (_db.update(_db.eventFacts)..where((t) => t.id.equals(id))).write(
-      EventFactsCompanion(
-        causeEventId: Value(causeEventId),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> updateCauseEventId(String id, String? causeEventId) =>
+      guardRepoWrite('event_fact', 'updateCauseEventId', () async {
+        await (_db.update(_db.eventFacts)..where((t) => t.id.equals(id))).write(
+          EventFactsCompanion(
+            causeEventId: Value(causeEventId),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 解析事件参与人物列表（JSON 非法 / 脏条目 → 保守跳过，不抛出）
   static List<String> parseParticipants(String json) {

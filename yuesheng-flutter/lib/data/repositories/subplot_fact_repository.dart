@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 class SubplotFactRepository {
   final AppDatabase _db;
@@ -20,7 +21,7 @@ class SubplotFactRepository {
     int? resolvedChapter,
     int? resolvedAt,
     String description = '',
-  }) async {
+  }) => guardRepoWrite('subplot_fact', 'upsertSubplot', () async {
     final now = nowSec();
     await _db.transaction(() async {
       final existing =
@@ -61,7 +62,7 @@ class SubplotFactRepository {
         );
       }
     });
-  }
+  });
 
   /// 列出作品下全部支线（按引入章节排序，null 排最后；同章节按名称）
   Future<List<SubplotFact>> listSubplots(String manuscriptId) async {

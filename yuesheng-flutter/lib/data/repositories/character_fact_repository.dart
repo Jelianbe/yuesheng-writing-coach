@@ -11,6 +11,7 @@ import '../../services/fact_stale_service.dart';
 import '../../types/character_types.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 /// `character_fact.status` 仅两个取值（tables.dart:521 明列 `active | merged`）。
 /// C78 §5.4：合并后的**源行**标 merged——留在库里，但不进列表、不参与检测。
@@ -39,7 +40,7 @@ class CharacterFactRepository {
     List<CharacterAssertion> assertions = const [],
     String? chapterHash,
     int? chapterNo,
-  }) async {
+  }) => guardRepoWrite('character_fact', 'upsertCharacter', () async {
     final now = nowSec();
     await _db.transaction(() async {
       final existing = await _findCharacter(manuscriptId, name);
@@ -66,7 +67,7 @@ class CharacterFactRepository {
         );
       }
     });
-  }
+  });
 
   /// 按作品 + 姓名查既有人物（UNIQUE(manuscript_id, name)）。
   /// R-019：由 [upsertCharacter] 抽出（与 event_fact_repository 同构）。
@@ -90,7 +91,7 @@ class CharacterFactRepository {
     int? firstSeenAt,
     String? chapterHash,
     int? chapterNo,
-  }) async {
+  }) => guardRepoWrite('character_fact', '_insertCharacter', () async {
     final merged = FactStaleService.mergeAssertions(
       const [],
       assertions,
@@ -111,7 +112,7 @@ class CharacterFactRepository {
             updatedAt: Value(now),
           ),
         );
-  }
+  });
 
   /// 更新既有人物（不覆盖 firstSeenChapter / firstSeenAt，保留首次出场信息）。
   /// R-019：由 [upsertCharacter] 抽出（C78 批次2a）。
@@ -123,7 +124,7 @@ class CharacterFactRepository {
     required int now,
     String? chapterHash,
     int? chapterNo,
-  }) async {
+  }) => guardRepoWrite('character_fact', '_updateCharacter', () async {
     final merged = FactStaleService.mergeAssertions(
       existingAssertions,
       assertions,
@@ -137,7 +138,7 @@ class CharacterFactRepository {
         updatedAt: Value(now),
       ),
     );
-  }
+  });
 
   /// 断言列表 → JSON 字符串。
   /// 填指纹 / 标 stale / 三元组合并全部由 [FactStaleService] 负责，此处只管序列化。
@@ -194,7 +195,7 @@ class CharacterFactRepository {
   Future<bool> mergeCharacter({
     required String targetId,
     required String sourceId,
-  }) async {
+  }) => guardRepoWrite('character_fact', 'mergeCharacter', () async {
     if (targetId == sourceId) return false;
     return _db.transaction(() async {
       final target = await _findById(targetId);
@@ -206,7 +207,7 @@ class CharacterFactRepository {
       await _markSourceMerged(source, now);
       return true;
     });
-  }
+  });
 
   /// 获取单个人物
   Future<CharacterFact?> getCharacter(String manuscriptId, String name) async {
@@ -255,7 +256,7 @@ class CharacterFactRepository {
     CharacterFact target,
     CharacterFact source,
     int now,
-  ) async {
+  ) => guardRepoWrite('character_fact', '_mergeIntoTarget', () async {
     final assertions = FactStaleService.mergeForTransfer(
       parseAssertions(target.assertions),
       parseAssertions(source.assertions),
@@ -274,20 +275,21 @@ class CharacterFactRepository {
         updatedAt: Value(now),
       ),
     );
-  }
+  });
 
   /// 合并第③步：源行标记为已并入（软删语义，理由见 [mergeCharacter]）。
   ///
   /// 源行断言**不清空**——标记制下它仍在库里，万一合并判据将来修正，
   /// 用户还有后悔药；且 F05 检测按 `listCharacters` 默认排除，不会双重计入。
-  Future<void> _markSourceMerged(CharacterFact source, int now) async {
-    await (_db.update(
-      _db.characterFacts,
-    )..where((t) => t.id.equals(source.id))).write(
-      CharacterFactsCompanion(
-        status: const Value(_kMergedStatus),
-        updatedAt: Value(now),
-      ),
-    );
-  }
+  Future<void> _markSourceMerged(CharacterFact source, int now) =>
+      guardRepoWrite('character_fact', '_markSourceMerged', () async {
+        await (_db.update(
+          _db.characterFacts,
+        )..where((t) => t.id.equals(source.id))).write(
+          CharacterFactsCompanion(
+            status: const Value(_kMergedStatus),
+            updatedAt: Value(now),
+          ),
+        );
+      });
 }

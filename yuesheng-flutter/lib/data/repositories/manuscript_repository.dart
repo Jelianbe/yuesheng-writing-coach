@@ -9,6 +9,7 @@ import 'package:drift/drift.dart';
 import '../../services/decode_guard.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 class ManuscriptRepository {
   final AppDatabase _db;
@@ -28,7 +29,7 @@ class ManuscriptRepository {
     String? language,
     List<String>? tags,
     int? sortOrder,
-  }) async {
+  }) => guardRepoWrite('manuscript', 'createManuscript', () async {
     final id = generateUuid();
     final now = nowSec();
     await _db
@@ -49,7 +50,7 @@ class ManuscriptRepository {
           ),
         );
     return id;
-  }
+  });
 
   /// 获取单条稿件
   /// 复刻 getManuscript(id)
@@ -108,7 +109,7 @@ class ManuscriptRepository {
     String? description,
     String? genre,
     List<String>? tags,
-  }) async {
+  }) => guardRepoWrite('manuscript', 'updateManuscript', () async {
     final companion = ManuscriptsCompanion(
       title: title != null ? Value(title) : const Value.absent(),
       description: description != null
@@ -122,28 +123,36 @@ class ManuscriptRepository {
     await (_db.update(
       _db.manuscripts,
     )..where((t) => t.id.equals(id))).write(companion);
-  }
+  });
 
   /// 批次93-7：更新作品排序值（书架「置顶」用——置为当前最小 sort_order - 1）
-  Future<void> updateSortOrder(String id, int sortOrder) async {
-    await (_db.update(_db.manuscripts)..where((t) => t.id.equals(id))).write(
-      ManuscriptsCompanion(
-        sortOrder: Value(sortOrder),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> updateSortOrder(String id, int sortOrder) => guardRepoWrite(
+    'manuscript',
+    'updateSortOrder',
+    () async {
+      await (_db.update(_db.manuscripts)..where((t) => t.id.equals(id))).write(
+        ManuscriptsCompanion(
+          sortOrder: Value(sortOrder),
+          updatedAt: Value(nowSec()),
+        ),
+      );
+    },
+  );
 
   /// 软删除稿件（置 status='archived'）
   /// 复刻 deleteManuscript(id) — 不是物理删除
-  Future<void> deleteManuscript(String id) async {
-    await (_db.update(_db.manuscripts)..where((t) => t.id.equals(id))).write(
-      ManuscriptsCompanion(
-        status: const Value('archived'),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> deleteManuscript(String id) => guardRepoWrite(
+    'manuscript',
+    'deleteManuscript',
+    () async {
+      await (_db.update(_db.manuscripts)..where((t) => t.id.equals(id))).write(
+        ManuscriptsCompanion(
+          status: const Value('archived'),
+          updatedAt: Value(nowSec()),
+        ),
+      );
+    },
+  );
 
   /// 按 sort_order 获取稿件（解析 @W001 语法用）
   /// 复刻 getManuscriptByOrder(order)

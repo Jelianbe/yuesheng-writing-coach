@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 class OutlineRepository {
   final AppDatabase _db;
@@ -39,7 +40,7 @@ class OutlineRepository {
     required String entityType,
     required String entityKey,
     List<String> aliases = const [],
-  }) async {
+  }) => guardRepoWrite('outline', 'insertEntity', () async {
     final now = nowSec();
     await _db
         .into(_db.outlineEntities)
@@ -54,22 +55,26 @@ class OutlineRepository {
             updatedAt: Value(now),
           ),
         );
-  }
+  });
 
   /// 追加实体别名（合并去重，防同实体别名散落）
-  Future<void> mergeAliases(String entityId, List<String> newAliases) async {
-    final entity = await getEntityById(entityId);
-    if (entity == null || newAliases.isEmpty) return;
-    final merged = {...parseAliases(entity.aliases), ...newAliases}.toList();
-    await (_db.update(
-      _db.outlineEntities,
-    )..where((t) => t.id.equals(entityId))).write(
-      OutlineEntitiesCompanion(
-        aliases: Value(jsonEncode(merged)),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> mergeAliases(String entityId, List<String> newAliases) =>
+      guardRepoWrite('outline', 'mergeAliases', () async {
+        final entity = await getEntityById(entityId);
+        if (entity == null || newAliases.isEmpty) return;
+        final merged = {
+          ...parseAliases(entity.aliases),
+          ...newAliases,
+        }.toList();
+        await (_db.update(
+          _db.outlineEntities,
+        )..where((t) => t.id.equals(entityId))).write(
+          OutlineEntitiesCompanion(
+            aliases: Value(jsonEncode(merged)),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 列出实体下全部印象（按版本/时间正序）
   Future<List<OutlineImpression>> listImpressions(String entityId) {
@@ -103,7 +108,7 @@ class OutlineRepository {
     String? sourceChapterId,
     int? sourceChapterNo,
     String? conflictWith,
-  }) async {
+  }) => guardRepoWrite('outline', 'insertImpression', () async {
     final id = generateUuid();
     await _db
         .into(_db.outlineImpressions)
@@ -119,7 +124,7 @@ class OutlineRepository {
           ),
         );
     return id;
-  }
+  });
 
   /// 解析实体别名表（JSON 非法 → 空列表）
   static List<String> parseAliases(String json) {
@@ -134,18 +139,19 @@ class OutlineRepository {
   }
 
   /// 确认实体（批次87-4 大纲抽屉快速确认）：仅 pending → active
-  Future<void> approveEntity(String entityId) async {
-    final entity = await getEntityById(entityId);
-    if (entity == null || entity.status != 'pending') return;
-    await (_db.update(
-      _db.outlineEntities,
-    )..where((t) => t.id.equals(entityId))).write(
-      OutlineEntitiesCompanion(
-        status: const Value('active'),
-        updatedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> approveEntity(String entityId) =>
+      guardRepoWrite('outline', 'approveEntity', () async {
+        final entity = await getEntityById(entityId);
+        if (entity == null || entity.status != 'pending') return;
+        await (_db.update(
+          _db.outlineEntities,
+        )..where((t) => t.id.equals(entityId))).write(
+          OutlineEntitiesCompanion(
+            status: const Value('active'),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 确认印象（确认卡「接受」按钮）
   ///
@@ -156,59 +162,66 @@ class OutlineRepository {
   /// 批次5（5.2）：仅 pending 印象可被确认——已过期（cleanup 置 expired）
   /// 或已处理（active/rejected/superseded）的印象直接跳过，
   /// 防止陈旧确认卡上的印象覆盖当前 active 认知。
-  Future<void> approveImpression(String impressionId) async {
-    final imp = await getImpressionById(impressionId);
-    if (imp == null || imp.status != 'pending') return;
-    final now = nowSec();
-    await _db.transaction(() async {
-      if (imp.conflictWith != null) {
-        await (_db.update(
-          _db.outlineImpressions,
-        )..where((t) => t.id.equals(imp.conflictWith!))).write(
-          const OutlineImpressionsCompanion(status: Value('superseded')),
-        );
-      }
-      await (_db.update(_db.outlineImpressions)
-            ..where((t) => t.id.equals(impressionId)))
-          .write(const OutlineImpressionsCompanion(status: Value('active')));
-      final entity = await getEntityById(imp.entityId);
-      if (entity != null && entity.status == 'pending') {
-        await (_db.update(
-          _db.outlineEntities,
-        )..where((t) => t.id.equals(entity.id))).write(
-          OutlineEntitiesCompanion(
-            status: const Value('active'),
-            updatedAt: Value(now),
-          ),
-        );
-      }
-    });
-  }
+  Future<void> approveImpression(String impressionId) => guardRepoWrite(
+    'outline',
+    'approveImpression',
+    () async {
+      final imp = await getImpressionById(impressionId);
+      if (imp == null || imp.status != 'pending') return;
+      final now = nowSec();
+      await _db.transaction(() async {
+        if (imp.conflictWith != null) {
+          await (_db.update(
+            _db.outlineImpressions,
+          )..where((t) => t.id.equals(imp.conflictWith!))).write(
+            const OutlineImpressionsCompanion(status: Value('superseded')),
+          );
+        }
+        await (_db.update(_db.outlineImpressions)
+              ..where((t) => t.id.equals(impressionId)))
+            .write(const OutlineImpressionsCompanion(status: Value('active')));
+        final entity = await getEntityById(imp.entityId);
+        if (entity != null && entity.status == 'pending') {
+          await (_db.update(
+            _db.outlineEntities,
+          )..where((t) => t.id.equals(entity.id))).write(
+            OutlineEntitiesCompanion(
+              status: const Value('active'),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      });
+    },
+  );
 
   /// 拒绝印象（确认卡「拒绝」按钮）——冲突时拒绝即保留旧认知。
   /// 批次5（5.8）：批量冲突清理——被拒印象若带 conflict_with（指向旧印象 B），
   /// 同实体下其它 pending 且冲突指向同一 B 的印象一并拒绝，
   /// 避免同一冲突反复触发多张确认卡。
-  Future<void> rejectImpression(String impressionId) async {
-    final imp = await getImpressionById(impressionId);
-    if (imp == null) return;
-    await _db.transaction(() async {
-      await (_db.update(_db.outlineImpressions)
-            ..where((t) => t.id.equals(impressionId)))
-          .write(const OutlineImpressionsCompanion(status: Value('rejected')));
-      if (imp.conflictWith != null) {
-        await (_db.update(_db.outlineImpressions)..where(
-              (t) =>
-                  t.entityId.equals(imp.entityId) &
-                  t.status.equals('pending') &
-                  t.conflictWith.equals(imp.conflictWith!),
-            ))
-            .write(
-              const OutlineImpressionsCompanion(status: Value('rejected')),
-            );
-      }
-    });
-  }
+  Future<void> rejectImpression(String impressionId) =>
+      guardRepoWrite('outline', 'rejectImpression', () async {
+        final imp = await getImpressionById(impressionId);
+        if (imp == null) return;
+        await _db.transaction(() async {
+          await (_db.update(
+            _db.outlineImpressions,
+          )..where((t) => t.id.equals(impressionId))).write(
+            const OutlineImpressionsCompanion(status: Value('rejected')),
+          );
+          if (imp.conflictWith != null) {
+            await (_db.update(_db.outlineImpressions)..where(
+                  (t) =>
+                      t.entityId.equals(imp.entityId) &
+                      t.status.equals('pending') &
+                      t.conflictWith.equals(imp.conflictWith!),
+                ))
+                .write(
+                  const OutlineImpressionsCompanion(status: Value('rejected')),
+                );
+          }
+        });
+      });
 
   /// 批次5（5.2）：清理过期 pending 印象（防确认卡永居/陈旧覆盖）。
   ///
@@ -217,7 +230,9 @@ class OutlineRepository {
   ///   2. 所属作品已归档（manuscript.status='archived'）下的 pending 印象
   ///      （作品软删后不再需要确认卡）。
   /// 返回本次清理的印象数。
-  Future<int> cleanupPendingImpressions({int maxAgeDays = 7}) async {
+  Future<int> cleanupPendingImpressions({
+    int maxAgeDays = 7,
+  }) => guardRepoWrite('outline', 'cleanupPendingImpressions', () async {
     final cutoff = nowSec() - maxAgeDays * 86400;
     var cleaned = 0;
 
@@ -254,5 +269,5 @@ class OutlineRepository {
     }
 
     return cleaned;
-  }
+  });
 }

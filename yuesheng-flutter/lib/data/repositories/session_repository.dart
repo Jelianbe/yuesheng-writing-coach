@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 import '../../services/error_handler.dart';
 
 class SessionRepository {
@@ -21,41 +22,42 @@ class SessionRepository {
   /// ADR-C71 §3.3：beginnerLevel 是用户级学习属性（N 系课程进度坐标），
   /// 新会话继承全库最新非空值，否则零基础学员每段新对话都要重新赌
   /// LLM 块回填（N-1）。phase/subphase/attitudeLevel 维持会话级，不继承。
-  Future<String> createBlankSession({String? title}) async {
-    final id = generateUuid();
-    final now = nowSec();
-    final inheritedLevel = await _latestBeginnerLevel();
-    await _db.transaction(() async {
-      await _db
-          .into(_db.sessions)
-          .insert(
-            SessionsCompanion.insert(
-              id: id,
-              title: Value(title ?? '新建会话'),
-              preview: const Value(''),
-              diagnosisSummary: const Value('{}'),
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
-          );
-      // 同步创建 teaching_state 行（INSERT OR IGNORE，默认 P0_ENGAGE）
-      await _db
-          .into(_db.teachingState)
-          .insertOnConflictUpdate(
-            TeachingStateCompanion.insert(
-              id: generateUuid(),
-              sessionId: id,
-              currentPhase: const Value('P0_ENGAGE'),
-              // ADR-C71 §3.3：beginnerLevel 用户级继承
-              beginnerLevel: inheritedLevel == null
-                  ? const Value.absent()
-                  : Value(inheritedLevel),
-              updatedAt: Value(now),
-            ),
-          );
-    });
-    return id;
-  }
+  Future<String> createBlankSession({String? title}) =>
+      guardRepoWrite('session', 'createBlankSession', () async {
+        final id = generateUuid();
+        final now = nowSec();
+        final inheritedLevel = await _latestBeginnerLevel();
+        await _db.transaction(() async {
+          await _db
+              .into(_db.sessions)
+              .insert(
+                SessionsCompanion.insert(
+                  id: id,
+                  title: Value(title ?? '新建会话'),
+                  preview: const Value(''),
+                  diagnosisSummary: const Value('{}'),
+                  createdAt: Value(now),
+                  updatedAt: Value(now),
+                ),
+              );
+          // 同步创建 teaching_state 行（INSERT OR IGNORE，默认 P0_ENGAGE）
+          await _db
+              .into(_db.teachingState)
+              .insertOnConflictUpdate(
+                TeachingStateCompanion.insert(
+                  id: generateUuid(),
+                  sessionId: id,
+                  currentPhase: const Value('P0_ENGAGE'),
+                  // ADR-C71 §3.3：beginnerLevel 用户级继承
+                  beginnerLevel: inheritedLevel == null
+                      ? const Value.absent()
+                      : Value(inheritedLevel),
+                  updatedAt: Value(now),
+                ),
+              );
+        });
+        return id;
+      });
 
   /// 全库最新非空 beginnerLevel（ADR-C71；无任何历史时返回 null）
   Future<String?> _latestBeginnerLevel() async {
@@ -79,7 +81,7 @@ class SessionRepository {
   Future<String> getOrCreateSessionForManuscript(
     String manuscriptId, {
     String? chapterId,
-  }) async {
+  }) => guardRepoWrite('session', 'getOrCreateSessionForManuscript', () async {
     // 先查现有会话
     final existing =
         await (_db.select(_db.sessions)
@@ -142,7 +144,7 @@ class SessionRepository {
     });
 
     return sessionId;
-  }
+  });
 
   /// 获取或创建章节级隔离会话
   /// 每个 chapter 拥有独立会话，诊断/对话互不污染
@@ -200,7 +202,7 @@ class SessionRepository {
     String manuscriptId,
     String chapterId,
     String chapterTitle,
-  ) async {
+  ) => guardRepoWrite('session', '_createChapterSession', () async {
     return _db.transaction(() async {
       final sid = await createBlankSession(
         title: chapterTitle.trim().isEmpty ? '章节会话' : '诊断·$chapterTitle',
@@ -238,7 +240,7 @@ class SessionRepository {
           );
       return sid;
     });
-  }
+  });
 
   /// 列出所有会话（按 updated_at DESC）
   /// 复刻 listSessions()
@@ -370,7 +372,7 @@ class SessionRepository {
     String content, {
     String messageType = 'chat',
     String? referencesJson,
-  }) async {
+  }) => guardRepoWrite('session', 'addMessage', () async {
     final id = generateUuid();
     final now = nowSec();
 
@@ -405,14 +407,15 @@ class SessionRepository {
       }
       return id;
     });
-  }
+  });
 
   /// 更新消息内容（quiz 答题状态内联持久化，按 messageId 关联）
   /// 仅重写 content 列；不更新 preview/sessions（卡片类消息不污染列表预览）。
-  Future<void> updateMessageContent(String messageId, String content) async {
-    await (_db.update(_db.messages)..where((t) => t.id.equals(messageId)))
-        .write(MessagesCompanion(content: Value(content)));
-  }
+  Future<void> updateMessageContent(String messageId, String content) =>
+      guardRepoWrite('session', 'updateMessageContent', () async {
+        await (_db.update(_db.messages)..where((t) => t.id.equals(messageId)))
+            .write(MessagesCompanion(content: Value(content)));
+      });
 
   /// 列出会话所有消息（按 timestamp ASC）
   /// 复刻 listMessages(sessionId)
@@ -436,12 +439,13 @@ class SessionRepository {
 
   /// 删除消息
   /// 复刻 deleteMessage(sessionId, messageId)
-  Future<void> deleteMessage(String sessionId, String messageId) async {
-    await (_db.delete(
-          _db.messages,
-        )..where((t) => t.sessionId.equals(sessionId) & t.id.equals(messageId)))
-        .go();
-  }
+  Future<void> deleteMessage(String sessionId, String messageId) =>
+      guardRepoWrite('session', 'deleteMessage', () async {
+        await (_db.delete(_db.messages)..where(
+              (t) => t.sessionId.equals(sessionId) & t.id.equals(messageId),
+            ))
+            .go();
+      });
 
   /// 删除单个会话（批次73：会话可清理，对齐抽屉长按删除入口）
   ///
@@ -453,22 +457,23 @@ class SessionRepository {
   ///     session_id 列 NOT NULL + FK SET NULL 会违反约束，故显式删行
   ///   - app_state：无外键，清理 eval_round:/eval_report: 孤儿键
   ///     （对齐 deleteOrphanSessions 的批次5 5.4 处理）
-  Future<void> deleteSession(String sessionId) async {
-    await _db.transaction(() async {
-      await (_db.delete(
-        _db.studentModels,
-      )..where((t) => t.sessionId.equals(sessionId))).go();
-      await (_db.delete(
-        _db.appStates,
-      )..where((t) => t.key.like('eval_report:$sessionId:%'))).go();
-      await (_db.delete(
-        _db.appStates,
-      )..where((t) => t.key.equals('eval_round:$sessionId'))).go();
-      await (_db.delete(
-        _db.sessions,
-      )..where((t) => t.id.equals(sessionId))).go();
-    });
-  }
+  Future<void> deleteSession(String sessionId) =>
+      guardRepoWrite('session', 'deleteSession', () async {
+        await _db.transaction(() async {
+          await (_db.delete(
+            _db.studentModels,
+          )..where((t) => t.sessionId.equals(sessionId))).go();
+          await (_db.delete(
+            _db.appStates,
+          )..where((t) => t.key.like('eval_report:$sessionId:%'))).go();
+          await (_db.delete(
+            _db.appStates,
+          )..where((t) => t.key.equals('eval_round:$sessionId'))).go();
+          await (_db.delete(
+            _db.sessions,
+          )..where((t) => t.id.equals(sessionId))).go();
+        });
+      });
 
   /// 清除缓存：删除没有任何消息的孤儿会话
   ///
@@ -480,33 +485,37 @@ class SessionRepository {
   /// 返回删除的会话数。
   /// 批次5（5.4）：会话删除事务内同步清理 app_state 孤儿 KV
   /// （eval_round:/eval_report: 前缀键，app_state 无外键不级联）。
-  Future<int> deleteOrphanSessions() async {
-    final sessions = await _db.select(_db.sessions).get();
-    var deleted = 0;
-    for (final s in sessions) {
-      final msgCount = await (_db.select(
-        _db.messages,
-      )..where((t) => t.sessionId.equals(s.id))).get().then((l) => l.length);
-      if (msgCount == 0) {
-        await _db.transaction(() async {
-          await (_db.delete(
-            _db.studentModels,
-          )..where((t) => t.sessionId.equals(s.id))).go();
-          await (_db.delete(
-            _db.sessions,
-          )..where((t) => t.id.equals(s.id))).go();
-          await (_db.delete(
-            _db.appStates,
-          )..where((t) => t.key.like('eval_report:${s.id}:%'))).go();
-          await (_db.delete(
-            _db.appStates,
-          )..where((t) => t.key.equals('eval_round:${s.id}'))).go();
-        });
-        deleted++;
+  Future<int> deleteOrphanSessions() => guardRepoWrite(
+    'session',
+    'deleteOrphanSessions',
+    () async {
+      final sessions = await _db.select(_db.sessions).get();
+      var deleted = 0;
+      for (final s in sessions) {
+        final msgCount = await (_db.select(
+          _db.messages,
+        )..where((t) => t.sessionId.equals(s.id))).get().then((l) => l.length);
+        if (msgCount == 0) {
+          await _db.transaction(() async {
+            await (_db.delete(
+              _db.studentModels,
+            )..where((t) => t.sessionId.equals(s.id))).go();
+            await (_db.delete(
+              _db.sessions,
+            )..where((t) => t.id.equals(s.id))).go();
+            await (_db.delete(
+              _db.appStates,
+            )..where((t) => t.key.like('eval_report:${s.id}:%'))).go();
+            await (_db.delete(
+              _db.appStates,
+            )..where((t) => t.key.equals('eval_round:${s.id}'))).go();
+          });
+          deleted++;
+        }
       }
-    }
-    return deleted;
-  }
+      return deleted;
+    },
+  );
 }
 
 /// 会话 + 教学阶段联合查询结果

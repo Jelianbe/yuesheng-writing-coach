@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
+import 'repository_write_guard.dart';
 
 /// 新增 Training Result 入参
 class InsertTrainingResultParams {
@@ -61,35 +62,36 @@ class TrainingResultRepository {
   /// 新增训练结果记录，返回 id
   ///
   /// 真源：PracticeStore.setTrainingResult 的持久化对应
-  Future<String> insertTrainingResult(InsertTrainingResultParams params) async {
-    final id = generateUuid();
-    final now = nowSec();
+  Future<String> insertTrainingResult(InsertTrainingResultParams params) =>
+      guardRepoWrite('training_result', 'insertTrainingResult', () async {
+        final id = generateUuid();
+        final now = nowSec();
 
-    await _db
-        .into(_db.trainingResults)
-        .insert(
-          TrainingResultsCompanion.insert(
-            id: id,
-            sessionId: params.sessionId,
-            suggestionId: params.suggestionId == null
-                ? const Value.absent()
-                : Value(params.suggestionId),
-            syndromeId: params.syndromeId,
-            taskType: params.taskType,
-            userContent: params.userContent,
-            result: params.result,
-            feedbackJson: params.feedback == null
-                ? const Value.absent()
-                : Value(jsonEncode(params.feedback)),
-            score: params.score == null
-                ? const Value.absent()
-                : Value(params.score),
-            createdAt: Value(now),
-          ),
-        );
+        await _db
+            .into(_db.trainingResults)
+            .insert(
+              TrainingResultsCompanion.insert(
+                id: id,
+                sessionId: params.sessionId,
+                suggestionId: params.suggestionId == null
+                    ? const Value.absent()
+                    : Value(params.suggestionId),
+                syndromeId: params.syndromeId,
+                taskType: params.taskType,
+                userContent: params.userContent,
+                result: params.result,
+                feedbackJson: params.feedback == null
+                    ? const Value.absent()
+                    : Value(jsonEncode(params.feedback)),
+                score: params.score == null
+                    ? const Value.absent()
+                    : Value(params.score),
+                createdAt: Value(now),
+              ),
+            );
 
-    return id;
-  }
+        return id;
+      });
 
   /// 会话级查询：本会话所有训练结果，按 created_at 倒序
   ///

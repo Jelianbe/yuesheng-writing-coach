@@ -14,6 +14,7 @@ import 'package:drift/drift.dart';
 import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
+import 'repository_write_guard.dart';
 
 // ReferencedItem / AttachedFileRow 已上移至契约层（依赖倒置），此处
 // re-export 维持旧有「从本文件导入 DTO」的调用方（widget / service）不变。
@@ -173,7 +174,7 @@ class ReferenceRepository implements ReferenceCapability {
     String mimeType = 'text/plain',
     required String content,
     int? byteSize,
-  }) async {
+  }) => guardRepoWrite('reference', 'createAttachedFile', () async {
     final id = generateUuid();
     final now = nowSec();
     final size = byteSize ?? content.length;
@@ -204,7 +205,7 @@ class ReferenceRepository implements ReferenceCapability {
       content: content,
       byteSize: size,
     );
-  }
+  });
 
   /// 更新附属文件（部分字段）
   /// 复刻 file-dao.ts updateAttachedFile
@@ -215,7 +216,7 @@ class ReferenceRepository implements ReferenceCapability {
     String? fileName,
     String? fileRole,
     String? content,
-  }) async {
+  }) => guardRepoWrite('reference', 'updateAttachedFile', () async {
     final hasChange = fileName != null || fileRole != null || content != null;
     if (!hasChange) return;
 
@@ -232,7 +233,7 @@ class ReferenceRepository implements ReferenceCapability {
         updatedAt: Value(nowSec()),
       ),
     );
-  }
+  });
 
   /// 删除附属文件（事务内同步清理 session_reference 孤儿行）
   /// 复刻 file-dao.ts deleteAttachedFile（T-003 修复）
@@ -240,7 +241,9 @@ class ReferenceRepository implements ReferenceCapability {
   /// 注意：session_reference.ref_type CHECK 约束仅允许 manuscript|chapter，
   /// file 类型不会出现在 session_reference 中，此清理为防御性 no-op。
   @override
-  Future<void> deleteAttachedFile(String fileId) async {
+  Future<void> deleteAttachedFile(
+    String fileId,
+  ) => guardRepoWrite('reference', 'deleteAttachedFile', () async {
     await _db.transaction(() async {
       // 防御性清理（file 类型不在 session_reference，实际 no-op）
       await _db.customStatement(
@@ -251,7 +254,7 @@ class ReferenceRepository implements ReferenceCapability {
         _db.attachedFiles,
       )..where((t) => t.id.equals(fileId))).go();
     });
-  }
+  });
 
   // ════════════ session_reference 写入 ════════════
 
@@ -268,7 +271,7 @@ class ReferenceRepository implements ReferenceCapability {
     String refId, {
     bool isPrimary = false,
     ({String chapterId, int startPara, int endPara})? excerptRange,
-  }) async {
+  }) => guardRepoWrite('reference', 'addReference', () async {
     final id = generateUuid();
     final now = nowSec();
     final excerpt = _encodeExcerpt(excerptRange);
@@ -278,10 +281,10 @@ class ReferenceRepository implements ReferenceCapability {
       // drift 的 insertOnConflictUpdate 默认用主键冲突，需用原生 SQL 指定 UNIQUE 约束
       await _db.customStatement(
         '''
-        INSERT INTO session_reference (id, session_id, ref_type, ref_id, is_primary, excerpt_range, created_at)
-        VALUES (?, ?, ?, ?, 0, ?, ?)
-        ON CONFLICT(session_id, ref_type, ref_id) DO UPDATE SET excerpt_range = excluded.excerpt_range
-        ''',
+            INSERT INTO session_reference (id, session_id, ref_type, ref_id, is_primary, excerpt_range, created_at)
+            VALUES (?, ?, ?, ?, 0, ?, ?)
+            ON CONFLICT(session_id, ref_type, ref_id) DO UPDATE SET excerpt_range = excluded.excerpt_range
+            ''',
         [id, sessionId, refType, refId, excerpt, now],
       );
       if (isPrimary) {
@@ -289,7 +292,7 @@ class ReferenceRepository implements ReferenceCapability {
       }
     });
     return id;
-  }
+  });
 
   /// 选段锚点序列化（addReference / updateExcerptRange 共用，字节级一致）
   static String? _encodeExcerpt(
@@ -311,7 +314,7 @@ class ReferenceRepository implements ReferenceCapability {
     String refType,
     String refId,
     ({String chapterId, int startPara, int endPara})? anchor,
-  ) async {
+  ) => guardRepoWrite('reference', 'updateExcerptRange', () async {
     final count =
         await (_db.update(_db.sessionReferences)..where(
               (t) =>
@@ -325,7 +328,7 @@ class ReferenceRepository implements ReferenceCapability {
               ),
             );
     return count > 0;
-  }
+  });
 
   /// 移除一条引用
   /// 复刻 reference-dao.ts removeReference
@@ -337,7 +340,7 @@ class ReferenceRepository implements ReferenceCapability {
     String sessionId,
     String refType,
     String refId,
-  ) async {
+  ) => guardRepoWrite('reference', 'removeReference', () async {
     final now = nowSec();
     await _db.transaction(() async {
       // 查是否是主引用
@@ -357,7 +360,7 @@ class ReferenceRepository implements ReferenceCapability {
         await _electNextPrimary(sessionId, now);
       }
     });
-  }
+  });
 
   /// 读取目标引用的 is_primary 标记（未命中行视为 0）。
   ///
@@ -383,28 +386,29 @@ class ReferenceRepository implements ReferenceCapability {
   /// 若已无其它引用，清空 sessions 冗余缓存。
   ///
   /// R-019：由 [removeReference] 抽出。
-  Future<void> _electNextPrimary(String sessionId, int now) async {
-    final next =
-        await (_db.select(_db.sessionReferences)
-              ..where((t) => t.sessionId.equals(sessionId))
-              ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
-              ..limit(1))
-            .getSingleOrNull();
-    if (next != null) {
-      await _setPrimaryInTx(sessionId, next.refType, next.refId, now);
-      return;
-    }
-    // 没有其它引用，清空缓存
-    await (_db.update(
-      _db.sessions,
-    )..where((t) => t.id.equals(sessionId))).write(
-      SessionsCompanion(
-        manuscriptId: const Value(null),
-        chapterId: const Value(null),
-        updatedAt: Value(now),
-      ),
-    );
-  }
+  Future<void> _electNextPrimary(String sessionId, int now) =>
+      guardRepoWrite('reference', '_electNextPrimary', () async {
+        final next =
+            await (_db.select(_db.sessionReferences)
+                  ..where((t) => t.sessionId.equals(sessionId))
+                  ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+                  ..limit(1))
+                .getSingleOrNull();
+        if (next != null) {
+          await _setPrimaryInTx(sessionId, next.refType, next.refId, now);
+          return;
+        }
+        // 没有其它引用，清空缓存
+        await (_db.update(
+          _db.sessions,
+        )..where((t) => t.id.equals(sessionId))).write(
+          SessionsCompanion(
+            manuscriptId: const Value(null),
+            chapterId: const Value(null),
+            updatedAt: Value(now),
+          ),
+        );
+      });
 
   /// 设置主引用（file 类型禁止）
   /// 复刻 reference-dao.ts setPrimaryReference
@@ -417,14 +421,14 @@ class ReferenceRepository implements ReferenceCapability {
     String sessionId,
     String refType,
     String refId,
-  ) async {
+  ) => guardRepoWrite('reference', 'setPrimaryReference', () async {
     if (refType == 'file') {
       throw ArgumentError('素材文件不能设为主引用');
     }
     await _db.transaction(() async {
       await _setPrimaryInTx(sessionId, refType, refId, nowSec());
     });
-  }
+  });
 
   /// 事务内：把某条置为主引用（清掉其它 primary），并同步 sessions 冗余缓存
   /// 复刻 reference-dao.ts setPrimaryInTx
@@ -433,7 +437,7 @@ class ReferenceRepository implements ReferenceCapability {
     String refType,
     String refId,
     int now,
-  ) async {
+  ) => guardRepoWrite('reference', '_setPrimaryInTx', () async {
     // 清掉同 session 所有 is_primary
     await (_db.update(_db.sessionReferences)
           ..where((t) => t.sessionId.equals(sessionId)))
@@ -450,7 +454,7 @@ class ReferenceRepository implements ReferenceCapability {
 
     // 同步冗余缓存：主引用是章节则连带回填其所属作品
     await _syncPrimaryCache(sessionId, refType, refId, now);
-  }
+  });
 
   /// 同步 sessions.manuscript_id / chapter_id 冗余缓存：
   /// chapter 主引用连带回填其所属作品，manuscript 主引用清空 chapter_id。
@@ -461,7 +465,7 @@ class ReferenceRepository implements ReferenceCapability {
     String refType,
     String refId,
     int now,
-  ) async {
+  ) => guardRepoWrite('reference', '_syncPrimaryCache', () async {
     if (refType == 'chapter') {
       final ch =
           await (_db.selectOnly(_db.chapters)
@@ -492,7 +496,7 @@ class ReferenceRepository implements ReferenceCapability {
         ),
       );
     }
-  }
+  });
 
   // ════════════ 辅助查询 ════════════
 

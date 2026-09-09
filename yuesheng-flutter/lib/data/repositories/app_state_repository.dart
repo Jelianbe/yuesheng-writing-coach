@@ -12,6 +12,7 @@ import '../database/utils.dart';
 import '../../services/decode_guard.dart';
 import '../../types/display_types.dart';
 import '../../widgets/punctuation_bar.dart';
+import 'repository_write_guard.dart';
 
 class AppStateRepository {
   final AppDatabase _db;
@@ -30,17 +31,18 @@ class AppStateRepository {
 
   /// 设置引导轮播完成状态（用户级）
   /// 复刻 setOnboardingCompleted(completed)
-  Future<void> setOnboardingCompleted(bool completed) async {
-    await _db
-        .into(_db.appStates)
-        .insertOnConflictUpdate(
-          AppStatesCompanion.insert(
-            key: 'onboarding_completed',
-            value: Value(completed ? 'true' : 'false'),
-            updatedAt: Value(nowSec()),
-          ),
-        );
-  }
+  Future<void> setOnboardingCompleted(bool completed) =>
+      guardRepoWrite('app_state', 'setOnboardingCompleted', () async {
+        await _db
+            .into(_db.appStates)
+            .insertOnConflictUpdate(
+              AppStatesCompanion.insert(
+                key: 'onboarding_completed',
+                value: Value(completed ? 'true' : 'false'),
+                updatedAt: Value(nowSec()),
+              ),
+            );
+      });
 
   /// 获取问卷完成状态（用户级）— 批次1-8 波6
   /// key='questionnaire_completed'，与 onboarding_completed 区分：
@@ -54,17 +56,18 @@ class AppStateRepository {
   }
 
   /// 设置问卷完成状态（用户级）— 批次1-8 波6
-  Future<void> setQuestionnaireCompleted(bool completed) async {
-    await _db
-        .into(_db.appStates)
-        .insertOnConflictUpdate(
-          AppStatesCompanion.insert(
-            key: 'questionnaire_completed',
-            value: Value(completed ? 'true' : 'false'),
-            updatedAt: Value(nowSec()),
-          ),
-        );
-  }
+  Future<void> setQuestionnaireCompleted(bool completed) =>
+      guardRepoWrite('app_state', 'setQuestionnaireCompleted', () async {
+        await _db
+            .into(_db.appStates)
+            .insertOnConflictUpdate(
+              AppStatesCompanion.insert(
+                key: 'questionnaire_completed',
+                value: Value(completed ? 'true' : 'false'),
+                updatedAt: Value(nowSec()),
+              ),
+            );
+      });
 
   // ════════════ 通用 key-value ════════════
 
@@ -77,17 +80,18 @@ class AppStateRepository {
   }
 
   /// 写入 key-value（INSERT OR REPLACE 语义）
-  Future<void> setValue(String key, String value) async {
-    await _db
-        .into(_db.appStates)
-        .insertOnConflictUpdate(
-          AppStatesCompanion.insert(
-            key: key,
-            value: Value(value),
-            updatedAt: Value(nowSec()),
-          ),
-        );
-  }
+  Future<void> setValue(String key, String value) =>
+      guardRepoWrite('app_state', 'setValue', () async {
+        await _db
+            .into(_db.appStates)
+            .insertOnConflictUpdate(
+              AppStatesCompanion.insert(
+                key: key,
+                value: Value(value),
+                updatedAt: Value(nowSec()),
+              ),
+            );
+      });
 
   // ════════════ 章节草稿（复刻 chapter-draft-dao.ts） ════════════
 
@@ -134,11 +138,12 @@ class AppStateRepository {
 
   /// 清除章节草稿
   /// 复刻 clearChapterDraft(chapterId)
-  Future<void> clearChapterDraft(String chapterId) async {
-    await (_db.delete(
-      _db.appStates,
-    )..where((t) => t.key.equals('chapter_draft:$chapterId'))).go();
-  }
+  Future<void> clearChapterDraft(String chapterId) =>
+      guardRepoWrite('app_state', 'clearChapterDraft', () async {
+        await (_db.delete(
+          _db.appStates,
+        )..where((t) => t.key.equals('chapter_draft:$chapterId'))).go();
+      });
 
   /// 是否有章节草稿
   /// 复刻 hasChapterDraft(chapterId)
@@ -204,25 +209,24 @@ class AppStateRepository {
   }
 
   /// 删除单条评估报告
-  Future<void> deleteEvaluationReport(
-    String sessionId,
-    String messageId,
-  ) async {
-    await (_db.delete(
-      _db.appStates,
-    )..where((t) => t.key.equals('eval_report:$sessionId:$messageId'))).go();
-  }
+  Future<void> deleteEvaluationReport(String sessionId, String messageId) =>
+      guardRepoWrite('app_state', 'deleteEvaluationReport', () async {
+        await (_db.delete(_db.appStates)
+              ..where((t) => t.key.equals('eval_report:$sessionId:$messageId')))
+            .go();
+      });
 
   /// 清空会话全部评估报告（会话切换时调用）
-  Future<void> clearEvaluationReports(String sessionId) async {
-    final prefix = 'eval_report:$sessionId:';
-    await (_db.delete(
-      _db.appStates,
-    )..where((t) => t.key.like('$prefix%'))).go();
-    await (_db.delete(
-      _db.appStates,
-    )..where((t) => t.key.equals('eval_round:$sessionId'))).go();
-  }
+  Future<void> clearEvaluationReports(String sessionId) =>
+      guardRepoWrite('app_state', 'clearEvaluationReports', () async {
+        final prefix = 'eval_report:$sessionId:';
+        await (_db.delete(
+          _db.appStates,
+        )..where((t) => t.key.like('$prefix%'))).go();
+        await (_db.delete(
+          _db.appStates,
+        )..where((t) => t.key.equals('eval_round:$sessionId'))).go();
+      });
 
   // ════════════ 章节版本快照（批次82 P0 四件套之③ 时光机） ════════════
   // 对标橙瓜码字「时光机（每 100 字版本快照）」，本产品取每 200 字。
@@ -236,24 +240,25 @@ class AppStateRepository {
   static const int chapterVersionInterval = 200;
 
   /// 写入一章的版本快照（超出上限丢弃最旧）
-  Future<void> addChapterVersion(String chapterId, String content) async {
-    final versions = await listChapterVersions(chapterId);
-    versions.insert(
-      0,
-      ChapterVersion(
-        savedAt: nowSec(),
-        wordCount: content.length,
-        content: content,
-      ),
-    );
-    if (versions.length > maxChapterVersions) {
-      versions.removeRange(maxChapterVersions, versions.length);
-    }
-    await setValue(
-      'chapter_versions:$chapterId',
-      jsonEncode(versions.map((v) => v.toJson()).toList()),
-    );
-  }
+  Future<void> addChapterVersion(String chapterId, String content) =>
+      guardRepoWrite('app_state', 'addChapterVersion', () async {
+        final versions = await listChapterVersions(chapterId);
+        versions.insert(
+          0,
+          ChapterVersion(
+            savedAt: nowSec(),
+            wordCount: content.length,
+            content: content,
+          ),
+        );
+        if (versions.length > maxChapterVersions) {
+          versions.removeRange(maxChapterVersions, versions.length);
+        }
+        await setValue(
+          'chapter_versions:$chapterId',
+          jsonEncode(versions.map((v) => v.toJson()).toList()),
+        );
+      });
 
   /// 读取一章的全部版本快照（新→旧）
   Future<List<ChapterVersion>> listChapterVersions(String chapterId) async {
@@ -375,16 +380,17 @@ class AppStateRepository {
   }
 
   /// 写入一条回收文本（最新在前，先清超龄，超出上限丢弃最旧）
-  Future<void> addRecycleBinItem(String content) async {
-    final trimmed = content.trim();
-    if (trimmed.isEmpty) return;
-    final items = await listRecycleBinItems();
-    items.insert(0, RecycleBinItem(content: trimmed, deletedAt: nowSec()));
-    if (items.length > maxRecycleBinItems) {
-      items.removeRange(maxRecycleBinItems, items.length);
-    }
-    await _writeRecycleBin(items);
-  }
+  Future<void> addRecycleBinItem(String content) =>
+      guardRepoWrite('app_state', 'addRecycleBinItem', () async {
+        final trimmed = content.trim();
+        if (trimmed.isEmpty) return;
+        final items = await listRecycleBinItems();
+        items.insert(0, RecycleBinItem(content: trimmed, deletedAt: nowSec()));
+        if (items.length > maxRecycleBinItems) {
+          items.removeRange(maxRecycleBinItems, items.length);
+        }
+        await _writeRecycleBin(items);
+      });
 
   /// 读取全部回收文本（新→旧；顺带清理超龄条目）
   Future<List<RecycleBinItem>> listRecycleBinItems() async {

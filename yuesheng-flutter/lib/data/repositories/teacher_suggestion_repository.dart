@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
+import 'repository_write_guard.dart';
 
 const int _maxActivePerSession = 3;
 
@@ -51,70 +52,76 @@ class TeacherSuggestionRepository {
   /// 真源：teacher-suggestion-dao.ts insertTeacherSuggestion
   Future<String> insertTeacherSuggestion(
     InsertTeacherSuggestionParams params,
-  ) async {
-    final id = generateUuid();
-    final now = nowSec();
+  ) => guardRepoWrite(
+    'teacher_suggestion',
+    'insertTeacherSuggestion',
+    () async {
+      final id = generateUuid();
+      final now = nowSec();
 
-    await _db.transaction(() async {
-      // FIFO 淘汰
-      final activeCount =
-          await (_db.selectOnly(_db.teacherSuggestions)
-                ..addColumns([_db.teacherSuggestions.id.count()])
-                ..where(
-                  _db.teacherSuggestions.sessionId.equals(params.sessionId),
-                )
-                ..where(_db.teacherSuggestions.status.equals('active')))
-              .map((row) => row.read(_db.teacherSuggestions.id.count()) ?? 0)
-              .getSingle();
+      await _db.transaction(() async {
+        // FIFO 淘汰
+        final activeCount =
+            await (_db.selectOnly(_db.teacherSuggestions)
+                  ..addColumns([_db.teacherSuggestions.id.count()])
+                  ..where(
+                    _db.teacherSuggestions.sessionId.equals(params.sessionId),
+                  )
+                  ..where(_db.teacherSuggestions.status.equals('active')))
+                .map((row) => row.read(_db.teacherSuggestions.id.count()) ?? 0)
+                .getSingle();
 
-      if (activeCount >= _maxActivePerSession) {
-        // 选最旧的一条 active（createdAt 升序）
-        final oldestQuery = (_db.select(_db.teacherSuggestions)
-          ..where((t) => t.sessionId.equals(params.sessionId))
-          ..where((t) => t.status.equals('active'))
-          ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
-          ..limit(1));
-        final oldest = await oldestQuery.getSingleOrNull();
-        if (oldest != null) {
-          await (_db.update(
-            _db.teacherSuggestions,
-          )..where((t) => t.id.equals(oldest.id))).write(
-            TeacherSuggestionsCompanion(
-              status: const Value('resolved'),
-              resolvedAt: Value(now),
-            ),
-          );
+        if (activeCount >= _maxActivePerSession) {
+          // 选最旧的一条 active（createdAt 升序）
+          final oldestQuery = (_db.select(_db.teacherSuggestions)
+            ..where((t) => t.sessionId.equals(params.sessionId))
+            ..where((t) => t.status.equals('active'))
+            ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
+            ..limit(1));
+          final oldest = await oldestQuery.getSingleOrNull();
+          if (oldest != null) {
+            await (_db.update(
+              _db.teacherSuggestions,
+            )..where((t) => t.id.equals(oldest.id))).write(
+              TeacherSuggestionsCompanion(
+                status: const Value('resolved'),
+                resolvedAt: Value(now),
+              ),
+            );
+          }
         }
-      }
 
-      // INSERT
-      await _db
-          .into(_db.teacherSuggestions)
-          .insert(
-            TeacherSuggestionsCompanion.insert(
-              id: id,
-              sessionId: params.sessionId,
-              messageId: params.messageId,
-              source: params.source,
-              teachingDecision: params.teachingDecision,
-              targetSyndromeId: params.targetSyndromeId == null
-                  ? const Value.absent()
-                  : Value(params.targetSyndromeId),
-              targetDimension: params.targetDimension == null
-                  ? const Value.absent()
-                  : Value(params.targetDimension),
-              taskType: params.taskType,
-              taskDescription: params.taskDescription,
-              difficulty: params.difficulty,
-              evaluationCriteria: Value(jsonEncode(params.evaluationCriteria)),
-              status: const Value('active'),
-              createdAt: Value(now),
-            ),
-          );
-    });
+        // INSERT
+        await _db
+            .into(_db.teacherSuggestions)
+            .insert(
+              TeacherSuggestionsCompanion.insert(
+                id: id,
+                sessionId: params.sessionId,
+                messageId: params.messageId,
+                source: params.source,
+                teachingDecision: params.teachingDecision,
+                targetSyndromeId: params.targetSyndromeId == null
+                    ? const Value.absent()
+                    : Value(params.targetSyndromeId),
+                targetDimension: params.targetDimension == null
+                    ? const Value.absent()
+                    : Value(params.targetDimension),
+                taskType: params.taskType,
+                taskDescription: params.taskDescription,
+                difficulty: params.difficulty,
+                evaluationCriteria: Value(
+                  jsonEncode(params.evaluationCriteria),
+                ),
+                status: const Value('active'),
+                createdAt: Value(now),
+              ),
+            );
+      });
 
-    return id;
-  }
+      return id;
+    },
+  );
 
   /// 获取 session 所有 active suggestion（按 createdAt 倒序）
   Future<List<TeacherSuggestionRow>> getActiveSuggestions(
@@ -162,50 +169,53 @@ class TeacherSuggestionRepository {
   ///
   /// 真源：teacher-suggestion-dao.ts markResolved
   /// 批次62：保留（FIFO/历史语义）；卡片跳过改用 [markDismissed]
-  Future<void> markResolved(String suggestionId) async {
-    await (_db.update(
-      _db.teacherSuggestions,
-    )..where((t) => t.id.equals(suggestionId))).write(
-      TeacherSuggestionsCompanion(
-        status: const Value('resolved'),
-        resolvedAt: Value(nowSec()),
-      ),
-    );
-  }
+  Future<void> markResolved(String suggestionId) =>
+      guardRepoWrite('teacher_suggestion', 'markResolved', () async {
+        await (_db.update(
+          _db.teacherSuggestions,
+        )..where((t) => t.id.equals(suggestionId))).write(
+          TeacherSuggestionsCompanion(
+            status: const Value('resolved'),
+            resolvedAt: Value(nowSec()),
+          ),
+        );
+      });
 
   /// 批次62：标记已采纳（卡片「开始练习」）。
   ///
   /// 置 resolved + adoptedAt，供 Just-in-Time 去重决策：
   /// 已采纳 → 冷却期后可触发新的/进阶反馈点。
-  Future<void> markAdopted(String suggestionId) async {
-    final now = nowSec();
-    await (_db.update(
-      _db.teacherSuggestions,
-    )..where((t) => t.id.equals(suggestionId))).write(
-      TeacherSuggestionsCompanion(
-        status: const Value('resolved'),
-        resolvedAt: Value(now),
-        adoptedAt: Value(now),
-      ),
-    );
-  }
+  Future<void> markAdopted(String suggestionId) =>
+      guardRepoWrite('teacher_suggestion', 'markAdopted', () async {
+        final now = nowSec();
+        await (_db.update(
+          _db.teacherSuggestions,
+        )..where((t) => t.id.equals(suggestionId))).write(
+          TeacherSuggestionsCompanion(
+            status: const Value('resolved'),
+            resolvedAt: Value(now),
+            adoptedAt: Value(now),
+          ),
+        );
+      });
 
   /// 批次62：标记已跳过（卡片「跳过此建议」）。
   ///
   /// 置 resolved + dismissedAt，语义 = 用户见过但未采纳，
   /// 去重窗口内不再触发同症候建议。
-  Future<void> markDismissed(String suggestionId) async {
-    final now = nowSec();
-    await (_db.update(
-      _db.teacherSuggestions,
-    )..where((t) => t.id.equals(suggestionId))).write(
-      TeacherSuggestionsCompanion(
-        status: const Value('resolved'),
-        resolvedAt: Value(now),
-        dismissedAt: Value(now),
-      ),
-    );
-  }
+  Future<void> markDismissed(String suggestionId) =>
+      guardRepoWrite('teacher_suggestion', 'markDismissed', () async {
+        final now = nowSec();
+        await (_db.update(
+          _db.teacherSuggestions,
+        )..where((t) => t.id.equals(suggestionId))).write(
+          TeacherSuggestionsCompanion(
+            status: const Value('resolved'),
+            resolvedAt: Value(now),
+            dismissedAt: Value(now),
+          ),
+        );
+      });
 
   /// 批次75：该建议是否已被用户跳过（卡片重建后按此持久态过滤）。
   ///

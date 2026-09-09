@@ -12,6 +12,7 @@ import 'package:drift/drift.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/services/editor_validator.dart';
+import 'repository_write_guard.dart';
 
 /// 新增 Editor Observation 入参
 /// 真源：editor-observation-dao.ts insertEditorObservation params
@@ -50,54 +51,57 @@ class EditorObservationRepository {
   /// 既有写法），冲突时更新而非抛错。
   Future<String> insertEditorObservation(
     InsertEditorObservationParams params,
-  ) async {
-    final id = generateUuid();
-    final now = nowSec();
+  ) =>
+      guardRepoWrite('editor_observation', 'insertEditorObservation', () async {
+        final id = generateUuid();
+        final now = nowSec();
 
-    await _db.transaction(() async {
-      await _db.customStatement(
-        '''
-        INSERT INTO editor_observation (
-          id, session_id, message_id, possible_intent, intent_confidence,
-          observations, overall_impression, strengths, teacher_triggered,
-          pronounced_count, against_count, target_ref_type, target_ref_id,
-          timestamp, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(session_id, message_id) DO UPDATE SET
-          possible_intent = excluded.possible_intent,
-          intent_confidence = excluded.intent_confidence,
-          observations = excluded.observations,
-          overall_impression = excluded.overall_impression,
-          strengths = excluded.strengths,
-          teacher_triggered = excluded.teacher_triggered,
-          pronounced_count = excluded.pronounced_count,
-          against_count = excluded.against_count,
-          target_ref_type = excluded.target_ref_type,
-          target_ref_id = excluded.target_ref_id,
-          timestamp = excluded.timestamp
-        ''',
-        [
-          id,
-          params.sessionId,
-          params.messageId,
-          params.editorResult.possibleIntent,
-          params.editorResult.intentConfidence,
-          jsonEncode(_serializeObservations(params.editorResult.observations)),
-          params.editorResult.overallImpression,
-          jsonEncode(params.editorResult.strengths),
-          params.teacherTriggered ? 1 : 0,
-          params.pronouncedCount,
-          params.againstCount,
-          params.targetRefType,
-          params.targetRefId,
-          now,
-          now,
-        ],
-      );
-    });
+        await _db.transaction(() async {
+          await _db.customStatement(
+            '''
+            INSERT INTO editor_observation (
+              id, session_id, message_id, possible_intent, intent_confidence,
+              observations, overall_impression, strengths, teacher_triggered,
+              pronounced_count, against_count, target_ref_type, target_ref_id,
+              timestamp, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(session_id, message_id) DO UPDATE SET
+              possible_intent = excluded.possible_intent,
+              intent_confidence = excluded.intent_confidence,
+              observations = excluded.observations,
+              overall_impression = excluded.overall_impression,
+              strengths = excluded.strengths,
+              teacher_triggered = excluded.teacher_triggered,
+              pronounced_count = excluded.pronounced_count,
+              against_count = excluded.against_count,
+              target_ref_type = excluded.target_ref_type,
+              target_ref_id = excluded.target_ref_id,
+              timestamp = excluded.timestamp
+            ''',
+            [
+              id,
+              params.sessionId,
+              params.messageId,
+              params.editorResult.possibleIntent,
+              params.editorResult.intentConfidence,
+              jsonEncode(
+                _serializeObservations(params.editorResult.observations),
+              ),
+              params.editorResult.overallImpression,
+              jsonEncode(params.editorResult.strengths),
+              params.teacherTriggered ? 1 : 0,
+              params.pronouncedCount,
+              params.againstCount,
+              params.targetRefType,
+              params.targetRefId,
+              now,
+              now,
+            ],
+          );
+        });
 
-    return id;
-  }
+        return id;
+      });
 
   /// 获取 session 最近 N 条 observation（默认 20）
   Future<List<EditorObservationRow>> getRecentObservations(

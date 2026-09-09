@@ -6,6 +6,7 @@
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'repository_write_guard.dart';
 
 class TeachingStateRepository {
   final AppDatabase _db;
@@ -21,16 +22,17 @@ class TeachingStateRepository {
   /// 兼容 teaching_state 行缺失的边界场景（race/迁移/未走 createBlankSession）。
   /// 原实现仅 update，行不存在时静默 0 行写入 → attitudeLevel 为空但
   /// student_model 已写入 → 两表不一致。
-  Future<void> persistAttitude(String sessionId, String attitude) async {
-    final now = nowSec();
-    await _db.transaction(() async {
-      // 1. teaching_state（Upsert：先 update，受影响 0 行再 insert）
-      await _upsertTeachingState(sessionId, attitude, now);
+  Future<void> persistAttitude(String sessionId, String attitude) =>
+      guardRepoWrite('teaching_state', 'persistAttitude', () async {
+        final now = nowSec();
+        await _db.transaction(() async {
+          // 1. teaching_state（Upsert：先 update，受影响 0 行再 insert）
+          await _upsertTeachingState(sessionId, attitude, now);
 
-      // 2. student_model：不存在则创建，否则更新 attitude_preference
-      await _upsertStudentModel(sessionId, attitude, now);
-    });
-  }
+          // 2. student_model：不存在则创建，否则更新 attitude_preference
+          await _upsertStudentModel(sessionId, attitude, now);
+        });
+      });
 
   /// teaching_state 的 Upsert：先 update，受影响 0 行再 insert。
   ///
@@ -43,7 +45,7 @@ class TeachingStateRepository {
     String sessionId,
     String attitude,
     int now,
-  ) async {
+  ) => guardRepoWrite('teaching_state', '_upsertTeachingState', () async {
     final affected =
         await (_db.update(
           _db.teachingState,
@@ -66,7 +68,7 @@ class TeachingStateRepository {
             ),
           );
     }
-  }
+  });
 
   /// student_model 的 Upsert：不存在则创建，否则更新 attitude_preference。
   ///
@@ -75,7 +77,7 @@ class TeachingStateRepository {
     String sessionId,
     String attitude,
     int now,
-  ) async {
+  ) => guardRepoWrite('teaching_state', '_upsertStudentModel', () async {
     final existing = await (_db.select(
       _db.studentModels,
     )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
@@ -102,36 +104,37 @@ class TeachingStateRepository {
         ),
       );
     }
-  }
+  });
 
   /// 更新会话的当前教学阶段
   ///
   /// **A2 修复**：同步 upsert（update 0 行时 insert），无行时自动建行。
   /// 原实现仅 update，session 未走 createBlankSession 时静默失败。
-  Future<void> updatePhase(String sessionId, String phase) async {
-    final now = nowSec();
-    final affected =
-        await (_db.update(
-          _db.teachingState,
-        )..where((t) => t.sessionId.equals(sessionId))).write(
-          TeachingStateCompanion(
-            currentPhase: Value(phase),
-            updatedAt: Value(now),
-          ),
-        );
-    if (affected == 0) {
-      await _db
-          .into(_db.teachingState)
-          .insert(
-            TeachingStateCompanion.insert(
-              id: generateUuid(),
-              sessionId: sessionId,
-              currentPhase: Value(phase),
-              updatedAt: Value(now),
-            ),
-          );
-    }
-  }
+  Future<void> updatePhase(String sessionId, String phase) =>
+      guardRepoWrite('teaching_state', 'updatePhase', () async {
+        final now = nowSec();
+        final affected =
+            await (_db.update(
+              _db.teachingState,
+            )..where((t) => t.sessionId.equals(sessionId))).write(
+              TeachingStateCompanion(
+                currentPhase: Value(phase),
+                updatedAt: Value(now),
+              ),
+            );
+        if (affected == 0) {
+          await _db
+              .into(_db.teachingState)
+              .insert(
+                TeachingStateCompanion.insert(
+                  id: generateUuid(),
+                  sessionId: sessionId,
+                  currentPhase: Value(phase),
+                  updatedAt: Value(now),
+                ),
+              );
+        }
+      });
 
   /// 读取会话的教学状态（不存在返回 null）
   Future<TeachingStateRow?> getTeachingState(String sessionId) async {
@@ -143,61 +146,60 @@ class TeachingStateRepository {
   /// 更新学员等级（beginner_level）
   ///
   /// **A2 修复**：同步 upsert，无行时自动建行。
-  Future<void> updateBeginnerLevel(
-    String sessionId,
-    String beginnerLevel,
-  ) async {
-    final now = nowSec();
-    final affected =
-        await (_db.update(
-          _db.teachingState,
-        )..where((t) => t.sessionId.equals(sessionId))).write(
-          TeachingStateCompanion(
-            beginnerLevel: Value(beginnerLevel),
-            updatedAt: Value(now),
-          ),
-        );
-    if (affected == 0) {
-      await _db
-          .into(_db.teachingState)
-          .insert(
-            TeachingStateCompanion.insert(
-              id: generateUuid(),
-              sessionId: sessionId,
-              currentPhase: const Value('P0_ENGAGE'),
-              beginnerLevel: Value(beginnerLevel),
-              updatedAt: Value(now),
-            ),
-          );
-    }
-  }
+  Future<void> updateBeginnerLevel(String sessionId, String beginnerLevel) =>
+      guardRepoWrite('teaching_state', 'updateBeginnerLevel', () async {
+        final now = nowSec();
+        final affected =
+            await (_db.update(
+              _db.teachingState,
+            )..where((t) => t.sessionId.equals(sessionId))).write(
+              TeachingStateCompanion(
+                beginnerLevel: Value(beginnerLevel),
+                updatedAt: Value(now),
+              ),
+            );
+        if (affected == 0) {
+          await _db
+              .into(_db.teachingState)
+              .insert(
+                TeachingStateCompanion.insert(
+                  id: generateUuid(),
+                  sessionId: sessionId,
+                  currentPhase: const Value('P0_ENGAGE'),
+                  beginnerLevel: Value(beginnerLevel),
+                  updatedAt: Value(now),
+                ),
+              );
+        }
+      });
 
   /// 更新当前子阶段（current_subphase，可空）
   ///
   /// **A2 修复**：同步 upsert，无行时自动建行。
-  Future<void> updateSubphase(String sessionId, String? subphase) async {
-    final now = nowSec();
-    final affected =
-        await (_db.update(
-          _db.teachingState,
-        )..where((t) => t.sessionId.equals(sessionId))).write(
-          TeachingStateCompanion(
-            currentSubphase: Value(subphase),
-            updatedAt: Value(now),
-          ),
-        );
-    if (affected == 0) {
-      await _db
-          .into(_db.teachingState)
-          .insert(
-            TeachingStateCompanion.insert(
-              id: generateUuid(),
-              sessionId: sessionId,
-              currentPhase: const Value('P0_ENGAGE'),
-              currentSubphase: Value(subphase),
-              updatedAt: Value(now),
-            ),
-          );
-    }
-  }
+  Future<void> updateSubphase(String sessionId, String? subphase) =>
+      guardRepoWrite('teaching_state', 'updateSubphase', () async {
+        final now = nowSec();
+        final affected =
+            await (_db.update(
+              _db.teachingState,
+            )..where((t) => t.sessionId.equals(sessionId))).write(
+              TeachingStateCompanion(
+                currentSubphase: Value(subphase),
+                updatedAt: Value(now),
+              ),
+            );
+        if (affected == 0) {
+          await _db
+              .into(_db.teachingState)
+              .insert(
+                TeachingStateCompanion.insert(
+                  id: generateUuid(),
+                  sessionId: sessionId,
+                  currentPhase: const Value('P0_ENGAGE'),
+                  currentSubphase: Value(subphase),
+                  updatedAt: Value(now),
+                ),
+              );
+        }
+      });
 }
