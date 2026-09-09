@@ -25,6 +25,10 @@ abstract final class AppColors {
   static const Color onPrimaryFaint = Color(0x3DFFFFFF); // 24% 白（装饰/分隔）
   static const Color primarySoft = Color(0xFFE8F0EE); // 竹青淡（L1 共用）
   static const Color primaryDeep = Color(0xFF5B7565); // 深青次级文字
+  // UI-AUDIT-V1 定案（2026-09-09）：教学强调色——竹青同系加深一档，
+  // 用于「老师批注/重点提示/诊断强调」的二次强调层级（区别于 primary 品牌主色）。
+  // 对比度：白底 8.26:1 / 米纸底 7.33:1，均达 AA。不引入第二主色。
+  static const Color primaryAccent = Color(0xFF23574D);
 
   // ── 背景 / 表面 ──
   static const Color background = Color(0xFFF7F8F6); // 冷青灰白
