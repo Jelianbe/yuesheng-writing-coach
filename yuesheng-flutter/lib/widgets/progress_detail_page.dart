@@ -162,75 +162,80 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
           _DiagnosisHistory(records: _history),
           const SizedBox(height: 12),
         ],
-        // 症候趋势追踪（对齐 RN「症候趋势追踪」section）
-        _SectionCard(
-          title: '症候趋势追踪',
-          child: _trends.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.trending_up,
-                        size: 32,
-                        color: AppColors.textTertiary,
-                      ),
-                      SizedBox(height: 8),
-                      Text('暂无症候追踪', style: AppTextStyles.body),
-                      SizedBox(height: 4),
-                      Text(
-                        '完成几次诊断后，这里会显示你的问题变化趋势',
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.caption,
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: [
-                    for (final s in _trends)
-                      _TrendRow(
-                        tracked: s,
-                        onTap: () => _openSyndromeDetail(s),
-                      ),
-                  ],
-                ),
-        ),
+        _buildTrendSection(),
         const SizedBox(height: 12),
         if (_problems.isNotEmpty) ...[
           _ProblemStats(problems: _problems),
           const SizedBox(height: 12),
         ],
-        // 生成学习报告（对齐 RN reportButton）
-        FilledButton(
-          onPressed: _generating ? null : _handleGenerateReport,
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(48),
-            backgroundColor: AppColors.primary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-          ),
-          child: _generating
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.onPrimary,
-                  ),
-                )
-              : const Text(
-                  '生成学习报告',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.onPrimary,
-                  ),
-                ),
-        ),
+        _buildGenerateReportButton(),
         const SizedBox(height: 24),
       ],
+    );
+  }
+
+  /// 症候趋势追踪区（R-019 清偿拆出）。
+  Widget _buildTrendSection() {
+    return _SectionCard(
+      title: '症候趋势追踪',
+      child: _trends.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.trending_up,
+                    size: 32,
+                    color: AppColors.textTertiary,
+                  ),
+                  SizedBox(height: 8),
+                  Text('暂无症候追踪', style: AppTextStyles.body),
+                  SizedBox(height: 4),
+                  Text(
+                    '完成几次诊断后，这里会显示你的问题变化趋势',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.caption,
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                for (final s in _trends)
+                  _TrendRow(tracked: s, onTap: () => _openSyndromeDetail(s)),
+              ],
+            ),
+    );
+  }
+
+  /// 生成学习报告按钮（R-019 清偿拆出）。
+  Widget _buildGenerateReportButton() {
+    return FilledButton(
+      onPressed: _generating ? null : _handleGenerateReport,
+      style: FilledButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        backgroundColor: AppColors.primary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+      ),
+      child: _generating
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.onPrimary,
+              ),
+            )
+          : const Text(
+              '生成学习报告',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.onPrimary,
+              ),
+            ),
     );
   }
 
@@ -329,60 +334,59 @@ class _DiagnosisHistory extends StatelessWidget {
       title: '诊断历史',
       child: Column(
         children: [
-          for (var i = 0; i < records.length; i++)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              decoration: BoxDecoration(
-                border: i == records.length - 1
-                    ? null
-                    : const Border(
-                        bottom: BorderSide(color: AppColors.divider),
-                      ),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _formatDate(records[i].timestamp),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '置信度 ${(records[i].confidence * 100).round()}%',
-                          style: AppTextStyles.caption,
-                        ),
-                      ],
-                    ),
+          for (var i = 0; i < records.length; i++) _buildHistoryRow(i),
+        ],
+      ),
+    );
+  }
+
+  /// 单条诊断历史行（R-019 清偿拆出）。
+  Widget _buildHistoryRow(int i) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        border: i == records.length - 1
+            ? null
+            : const Border(bottom: BorderSide(color: AppColors.divider)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatDate(records[i].timestamp),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textPrimary,
                   ),
-                  Column(
-                    children: [
-                      Text(
-                        '${records[i].syndromeCount}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const Text(
-                        '症候',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.disabledText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '置信度 ${(records[i].confidence * 100).round()}%',
+                  style: AppTextStyles.caption,
+                ),
+              ],
             ),
+          ),
+          Column(
+            children: [
+              Text(
+                '${records[i].syndromeCount}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+              const Text(
+                '症候',
+                style: TextStyle(fontSize: 11, color: AppColors.disabledText),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -449,34 +453,38 @@ class _TrendRow extends StatelessWidget {
                 ],
               ),
             ),
-            // 迷你趋势条（对齐 MiniTrendChart：最近几次严重度色点）
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final p in tracked.recentPoints)
-                  Container(
-                    width: 6,
-                    height: 18,
-                    margin: const EdgeInsets.only(right: AppSpacing.xxs),
-                    decoration: BoxDecoration(
-                      color: _severityColor(p.severity),
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                Text(
-                  getTrendLabel(tracked.trend),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _trendColor(tracked.trend),
-                  ),
-                ),
-              ],
-            ),
+            _buildMiniTrend(),
           ],
         ),
       ),
+    );
+  }
+
+  /// 迷你趋势条：最近几次严重度色点 + 趋势文案（R-019 清偿拆出）。
+  Widget _buildMiniTrend() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final p in tracked.recentPoints)
+          Container(
+            width: 6,
+            height: 18,
+            margin: const EdgeInsets.only(right: AppSpacing.xxs),
+            decoration: BoxDecoration(
+              color: _severityColor(p.severity),
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+            ),
+          ),
+        const SizedBox(width: 8),
+        Text(
+          getTrendLabel(tracked.trend),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: _trendColor(tracked.trend),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -515,6 +523,71 @@ class _ProblemStatsState extends State<_ProblemStats> {
     return '${d.month}月${d.day}日 $hh:$mm';
   }
 
+  /// 严重度筛选 chips（R-019 清偿拆出）。
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final f in _filters)
+            Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: InkWell(
+                onTap: () => setState(() => _filter = f),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xsm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _filter == f
+                        ? AppColors.primarySoft
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    border: Border.all(
+                      color: _filter == f
+                          ? AppColors.primary
+                          : AppColors.divider,
+                    ),
+                  ),
+                  child: Text(
+                    f,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: _filter == f
+                          ? AppColors.primary
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// 底部汇总条（R-019 清偿拆出）。
+  Widget _buildSummaryFooter(int resolved, int active) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        '共 ${widget.problems.length} 条诊断 · $resolved 已处理 · $active 待处理',
+        textAlign: TextAlign.center,
+        style: AppTextStyles.caption,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final resolved = widget.problems
@@ -530,51 +603,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 严重度筛选 chips
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final f in _filters)
-                      Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.sm),
-                        child: InkWell(
-                          onTap: () => setState(() => _filter = f),
-                          borderRadius: BorderRadius.circular(AppRadius.pill),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md,
-                              vertical: AppSpacing.xsm,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _filter == f
-                                  ? AppColors.primarySoft
-                                  : AppColors.surface,
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.pill,
-                              ),
-                              border: Border.all(
-                                color: _filter == f
-                                    ? AppColors.primary
-                                    : AppColors.divider,
-                              ),
-                            ),
-                            child: Text(
-                              f,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: _filter == f
-                                    ? AppColors.primary
-                                    : AppColors.textTertiary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+              _buildFilterChips(),
               const SizedBox(height: 8),
               // 批次78 L5：筛选后无匹配项时渲染空态提示（原为空白）
               if (_filtered.isEmpty)
@@ -599,22 +628,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
             ],
           ),
         ),
-        // 底部汇总（对齐 RN summaryFooter）
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(top: AppSpacing.md),
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Text(
-            '共 ${widget.problems.length} 条诊断 · $resolved 已处理 · $active 待处理',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.caption,
-          ),
-        ),
+        _buildSummaryFooter(resolved, active),
       ],
     );
   }
@@ -642,25 +656,7 @@ class _ProblemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          // 状态标签（对齐 RN problemStatus）
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xxs,
-            ),
-            decoration: BoxDecoration(
-              color: isResolved ? AppColors.primarySoft : AppColors.l3,
-              borderRadius: BorderRadius.circular(AppRadius.xs),
-            ),
-            child: Text(
-              isResolved ? '已解决' : '待改进',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: isResolved ? AppColors.primary : AppColors.l3Text,
-              ),
-            ),
-          ),
+          _buildStatusBadge(isResolved),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -686,28 +682,49 @@ class _ProblemRow extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _ProblemStatsState._formatDate(problem.firstDetectedAt),
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.disabledText,
-                ),
-              ),
-              if (problem.resolvedAt != null)
-                Text(
-                  '→ ${_ProblemStatsState._formatDate(problem.resolvedAt!)}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.disabledText,
-                  ),
-                ),
-            ],
-          ),
+          _buildDateColumn(),
         ],
       ),
+    );
+  }
+
+  /// 状态标签：已解决 / 待改进（R-019 清偿拆出）。
+  Widget _buildStatusBadge(bool isResolved) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: isResolved ? AppColors.primarySoft : AppColors.l3,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text(
+        isResolved ? '已解决' : '待改进',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: isResolved ? AppColors.primary : AppColors.l3Text,
+        ),
+      ),
+    );
+  }
+
+  /// 右侧时间列（R-019 清偿拆出）。
+  Widget _buildDateColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          _ProblemStatsState._formatDate(problem.firstDetectedAt),
+          style: const TextStyle(fontSize: 11, color: AppColors.disabledText),
+        ),
+        if (problem.resolvedAt != null)
+          Text(
+            '→ ${_ProblemStatsState._formatDate(problem.resolvedAt!)}',
+            style: const TextStyle(fontSize: 11, color: AppColors.disabledText),
+          ),
+      ],
     );
   }
 }
