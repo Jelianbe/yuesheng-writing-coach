@@ -34,23 +34,29 @@ class ChatWelcome extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              _welcomeTitle,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+            // 月笙圆形头像（对齐 RN ChatWelcome 真源 + 头注释声明；教学老师形象）
+            const CircleAvatar(
+              radius: 36,
+              backgroundColor: AppColors.primary,
+              child: Text(
+                '月',
+                style: TextStyle(
+                  color: AppColors.onPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
+            const SizedBox(height: AppSpacing.lg),
+            // UI-AUDIT：走 AppTextStyles 令牌（titleLg=18/w600，空态主文字）
+            const Text(_welcomeTitle, style: AppTextStyles.titleLg),
             const SizedBox(height: AppSpacing.sm),
+            // UI-AUDIT：副标题改 body（14/textSecondary，对比度 4.68:1 达标；
+            // 原 textTertiary 3.23:1 < 4.5:1，14px 正文不达 WCAG AA）
             const Text(
               _welcomeSubtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.5,
-                color: AppColors.textTertiary,
-              ),
+              style: AppTextStyles.body,
             ),
             // 批次62：空态行动引导——给用户明确的下一步（写作为先）
             if (onStartWriting != null) ...[
