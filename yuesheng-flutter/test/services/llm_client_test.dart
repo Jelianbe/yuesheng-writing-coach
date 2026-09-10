@@ -132,7 +132,7 @@ void main() {
     messenger.setMockMethodCallHandler(_kConnChannel, null);
   });
 
-  test('配置缺失 → 返回「请先填写并保存」', () async {
+  test('配置缺失 → 返回免费模式引导提示', () async {
     final client = LlmClient(
       LlmConfigStorage(const FlutterSecureStorage()),
       Dio(),
@@ -140,6 +140,7 @@ void main() {
     final r = await client.testLlmConnection();
     expect(r.success, isFalse);
     expect(r.message, contains('API 配置未设置'));
+    expect(r.message, contains('免费测试模式'));
   });
 
   test('成功路径 → 请求 URL 用配置 baseUrl，Authorization/body 正确（批次A 链路锚定）', () async {
@@ -292,5 +293,55 @@ void main() {
     expect(r.content, '完整内容');
     expect(r.isTruncated, isFalse);
     expect(adapter.requestBodies, hasLength(1));
+  });
+
+  test('免费模式：无配置 chatCompletionWithMeta → 免费教学文案（不抛错，批次E）', () async {
+    final client = LlmClient(
+      LlmConfigStorage(const FlutterSecureStorage()),
+      Dio(),
+    );
+    final r = await client.chatCompletionWithMeta(
+      const [ChatMessage(role: 'user', content: 'hi')],
+    );
+    expect(r.content, contains('免费测试模式'));
+    expect(r.content, contains('设置'));
+  });
+
+  test('免费模式：无配置 streamChat → 模拟流式完整回调 + DONE（批次E）', () async {
+    final client = LlmClient(
+      LlmConfigStorage(const FlutterSecureStorage()),
+      Dio(),
+    );
+    final chunks = <String>[];
+    var done = false;
+    await client.streamChat(const [ChatMessage(role: 'user', content: 'hi')], (
+      r,
+    ) {
+      if (r.isDone) {
+        done = true;
+      } else if (r.content.isNotEmpty) {
+        chunks.add(r.content);
+      }
+    });
+    expect(done, isTrue);
+    expect(chunks.join(), contains('免费测试模式'));
+    expect(chunks.join(), contains('设置'));
+  });
+
+  test('免费模式：无配置 streamChat 提前取消 → LlmRequestCancelledException（批次E）', () async {
+    final client = LlmClient(
+      LlmConfigStorage(const FlutterSecureStorage()),
+      Dio(),
+    );
+    final cancelToken = CancelToken();
+    cancelToken.cancel();
+    await expectLater(
+      client.streamChat(
+        const [ChatMessage(role: 'user', content: 'hi')],
+        (_) {},
+        cancelToken: cancelToken,
+      ),
+      throwsA(isA<LlmRequestCancelledException>()),
+    );
   });
 }

@@ -490,7 +490,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 border: Border.all(color: AppColors.dangerBorder),
               ),
               child: const Text(
-                '尚未配置 API，请填写以下信息以启用对话功能',
+                '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
                 style: TextStyle(fontSize: 13, color: AppColors.danger),
               ),
             ),

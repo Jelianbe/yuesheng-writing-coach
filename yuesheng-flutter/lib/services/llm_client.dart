@@ -145,9 +145,16 @@ class LlmClient {
     : _configStorage = configStorage ?? LlmConfigStorage(),
       _dio = dio ?? Dio();
 
+  /// 免费测试模式教学文案（批次 E-1，2026-09-10 用户决策）：
+  /// 无次数限制、无开关——判定 = 未配置 API Key 自动启用；不伪造诊断，
+  /// 固定文案由解析类调用方走各自现有失败兜底（editor 兜底 / 诊断失败卡）。
+  static const String _kFreeTestReply =
+      '（免费测试模式）我现在处于离线示例模式。配置 API Key 后，'
+      '我就能为你做真实的写作诊断与编辑观察——去「设置」中填入即可。';
+
   static const _kConfigMissing = TestConnectionResult(
     success: false,
-    message: 'API 配置未设置，请先填写并保存',
+    message: 'API 配置未设置，当前为免费测试模式；填写并保存后可测试真实连接',
   );
   static const _kNetworkUnavailable = TestConnectionResult(
     success: false,
@@ -285,7 +292,11 @@ class LlmClient {
     LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
   }) async {
     final cfg = await _configStorage.getLlmConfig();
-    if (cfg == null) throw Exception('API 配置未设置');
+    if (cfg == null) {
+      // 批次 E-1 免费测试模式：未配置 API Key 自动启用（无开关、无次数限制），
+      // 返回固定教学文案，不伪造诊断——解析类调用方走各自现有失败兜底。
+      return ChatCompletionResult(content: _kFreeTestReply);
+    }
 
     if (!await checkNetwork()) throw Exception('网络不可用');
 
@@ -404,7 +415,11 @@ class LlmClient {
     CancelToken? cancelToken,
   }) async {
     final cfg = await _configStorage.getLlmConfig();
-    if (cfg == null) throw Exception('API 配置未设置');
+    if (cfg == null) {
+      // 批次 E-1 免费测试模式：模拟流式回调（教学文案分块推送 + DONE）。
+      await _emitFreeTestStream(callback, cancelToken);
+      return;
+    }
 
     if (!await checkNetwork()) throw Exception('网络不可用');
 
@@ -430,6 +445,28 @@ class LlmClient {
     } on DioException catch (e) {
       throw Exception(_buildDioError(e));
     }
+  }
+
+  /// 免费测试模式模拟流式（批次 E-1）：教学文案分块推送 + DONE。
+  /// 取消语义与真实流一致：cancelToken 已取消则提前抛 LlmRequestCancelledException。
+  Future<void> _emitFreeTestStream(
+    void Function(LlmStreamResponse response) callback,
+    CancelToken? cancelToken,
+  ) async {
+    if (cancelToken?.isCancelled ?? false) throw LlmRequestCancelledException();
+    const chunks = <String>[
+      '（免费测试模式）我现在处于离线示例模式。',
+      '配置 API Key 后，我就能为你做真实的写作诊断与编辑观察——',
+      '去「设置」中填入即可。',
+    ];
+    for (final chunk in chunks) {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (cancelToken?.isCancelled ?? false) {
+        throw LlmRequestCancelledException();
+      }
+      callback(LlmStreamResponse(content: chunk, isDone: false));
+    }
+    callback(const LlmStreamResponse(content: '', isDone: true));
   }
 
   /// 单次流式请求尝试（B1：仅零 token 阶段失败可安全重试，R-019 拆出）。

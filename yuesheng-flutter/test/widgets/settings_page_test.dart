@@ -100,7 +100,12 @@ void main() {
 
     // 首屏（ListView 懒加载：「维护」「关于」在 #9 滚动后验证）
     expect(find.text('API 配置'), findsOneWidget);
-    expect(find.text('尚未配置 API，请填写以下信息以启用对话功能'), findsOneWidget);
+    expect(
+      find.text(
+        '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('#2 表单加载已有配置', (tester) async {
@@ -114,7 +119,12 @@ void main() {
     await tester.pumpAndSettle();
 
     // 表单已填充 → 未配置警告消失
-    expect(find.text('尚未配置 API，请填写以下信息以启用对话功能'), findsNothing);
+    expect(
+      find.text(
+        '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
+      ),
+      findsNothing,
+    );
     final keyField = tester.widget<TextField>(find.byType(TextField).at(0));
     expect(keyField.controller!.text, 'sk-existing');
     expect(
