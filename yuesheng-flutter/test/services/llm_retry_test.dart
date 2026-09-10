@@ -462,7 +462,7 @@ void main() {
       expect(adapter.urls[1].startsWith('https://backup/v1'), isTrue);
     });
 
-    test('401 不可重试：转用户错误消息「HTTP 401」后抛出', () async {
+    test('401 不可重试：转用户错误消息「API Key 无效」后抛出（批次3 分类文案）', () async {
       final adapter = _ScriptedAdapter([
         _dioErr(DioExceptionType.badResponse, status: 401),
       ]);
@@ -477,7 +477,7 @@ void main() {
           isA<Exception>().having(
             (e) => e.toString(),
             'message',
-            contains('HTTP 401'),
+            contains('API Key 无效或已过期'),
           ),
         ),
       );

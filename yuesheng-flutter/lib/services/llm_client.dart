@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 
 import '../config/shared_constants.dart';
 import 'llm_config_storage.dart';
+import 'llm_error_codes.dart';
 import 'llm_fallback.dart';
 import 'llm_retry.dart';
 import 'network_check.dart';
@@ -219,30 +220,49 @@ class LlmClient {
     );
   }
 
-  /// Dio 异常 → 连通性错误文案（R-019 拆出）。
+  /// Dio 异常 → 连通性错误文案（R-019 拆出；批次 3 统一走错误分类）。
   TestConnectionResult _mapDioError(DioException e, DateTime startTime) {
     final latencyMs = DateTime.now().difference(startTime).inMilliseconds;
-    String errorMsg = 'HTTP ${e.response?.statusCode ?? 0}';
+    final kind = classifyLlmError(e);
+    if (kind == LlmErrorKind.timeout) {
+      return TestConnectionResult(
+        success: false,
+        message: llmErrorMessage(
+          kind,
+          timeoutSeconds: LlmConfig.testTimeoutMs ~/ 1000,
+        ),
+        latencyMs: latencyMs,
+      );
+    }
+    if (kind == LlmErrorKind.network) {
+      return TestConnectionResult(
+        success: false,
+        message: llmErrorMessage(kind),
+        latencyMs: latencyMs,
+      );
+    }
+    // 带状态码：优先取服务端 error.message 作 preview（测试连接场景更可读），
+    // 解析失败回退原始响应体预览（脱敏）。
+    String? preview;
     final data = e.response?.data;
     if (data is String && data.isNotEmpty) {
       try {
         final errJson = jsonDecode(data) as Map<String, dynamic>;
         final msg = errJson['error']?['message'];
-        if (msg != null) errorMsg += ': $msg';
+        if (msg != null) preview = msg;
       } catch (_) {
-        errorMsg +=
-            ': ${data.substring(0, data.length > LlmConfig.errorPreviewLength ? LlmConfig.errorPreviewLength : data.length)}';
+        preview = data.length > LlmConfig.errorPreviewLength
+            ? data.substring(0, LlmConfig.errorPreviewLength)
+            : data;
       }
-    } else if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
-      errorMsg = '请求超时（15秒无响应）';
-    } else if (e.type == DioExceptionType.connectionError) {
-      errorMsg = '网络请求失败（无法连接到服务器，检查 URL 或网络）';
     }
     return TestConnectionResult(
       success: false,
-      message: errorMsg,
+      message: llmErrorMessage(
+        kind,
+        status: e.response?.statusCode ?? 0,
+        preview: preview != null ? _redactAuth(preview) : null,
+      ),
       latencyMs: latencyMs,
     );
   }
@@ -697,30 +717,28 @@ class LlmClient {
   }
 
   String _buildDioError(DioException e) {
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
+    // 批次 3：统一走错误分类（llm_error_codes.dart）——401/403/429/超时/
+    // 连接等给用户可操作文案，替代裸 "HTTP N"。
+    final kind = classifyLlmError(e);
+    if (kind == LlmErrorKind.timeout) {
       // 区分：流式 3 分钟兜底 vs 非流式 1 分钟兜底
       final t =
           e.requestOptions.receiveTimeout?.inMilliseconds ??
           LlmConfig.chatTimeoutMs;
-      return '请求超时（${t ~/ 1000}秒无响应）';
-    }
-    if (e.type == DioExceptionType.connectionError) {
-      return '网络请求失败';
+      return llmErrorMessage(kind, timeoutSeconds: t ~/ 1000);
     }
     final status = e.response?.statusCode ?? 0;
-    String msg = 'HTTP $status';
     final data = e.response?.data;
+    String? preview;
     if (data is String && data.isNotEmpty) {
-      final preview = data.length > LlmConfig.errorPreviewLengthLong
+      final raw = data.length > LlmConfig.errorPreviewLengthLong
           ? data.substring(0, LlmConfig.errorPreviewLengthLong)
           : data;
       // B22/R-029：防御性脱敏——OpenAI 错误响应通常不含 Authorization，
       // 但代理/网关可能 echo 请求头到错误响应体；此层作为防御纵深。
-      msg += ': ${_redactAuth(preview)}';
+      preview = _redactAuth(raw);
     }
-    return msg;
+    return llmErrorMessage(kind, status: status, preview: preview);
   }
 
   /// R-029 安全：脱敏可能泄露的 Authorization / Bearer 凭证
