@@ -21,6 +21,7 @@ import 'data/repositories/app_state_repository.dart';
 import 'data/repositories/chapter_repository.dart';
 import 'data/repositories/manuscript_repository.dart';
 import 'data/repositories/volume_repository.dart';
+import 'providers/app_error_observer.dart';
 import 'providers/app_providers.dart';
 import 'router/app_router.dart';
 import 'services/error_handler.dart';
@@ -39,7 +40,13 @@ void main() {
   ErrorHandler.instance.installErrorHandlers();
   runZonedGuarded(
     () {
-      runApp(const ProviderScope(child: YueshengApp()));
+      runApp(
+        const ProviderScope(
+          // 入档批次：ProviderObserver 全局拦截（provider 失败 → error_logs）
+          observers: [AppErrorObserver()],
+          child: YueshengApp(),
+        ),
+      );
       // 首帧构建/绘制完成后记录耗时
       WidgetsBinding.instance.addPostFrameCallback((_) {
         coldStartWatch.stop();
