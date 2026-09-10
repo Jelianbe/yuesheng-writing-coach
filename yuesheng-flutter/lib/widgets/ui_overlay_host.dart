@@ -23,41 +23,43 @@ class UiOverlayHost extends ConsumerWidget {
     final state = ref.watch(uiOverlayProvider);
     return Stack(
       children: [
-        // confirm 模态（至多一个挂起）
-        if (state.confirm != null)
-          Positioned.fill(
-            child: _ConfirmScrim(
-              key: ValueKey(state.confirm!.title),
-              request: state.confirm!,
-              onResolve: (result) {
-                ref.read(uiOverlayProvider.notifier).resolveConfirm(result);
-              },
-            ),
-          ),
-        // toast 队列（底部堆叠，新 toast 在上）
-        if (state.toasts.isNotEmpty)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 24,
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final toast in state.toasts.reversed)
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        left: 24,
-                        right: 24,
-                        bottom: 8,
-                      ),
-                      child: _ToastCard(toast: toast),
-                    ),
-                ],
-              ),
-            ),
-          ),
+        if (state.confirm != null) _buildConfirm(ref, state.confirm!),
+        if (state.toasts.isNotEmpty) _buildToastColumn(state.toasts),
       ],
+    );
+  }
+
+  /// confirm 模态（至多一个挂起，R-019 拆出 build）
+  Widget _buildConfirm(WidgetRef ref, UiConfirmRequest request) {
+    return Positioned.fill(
+      child: _ConfirmScrim(
+        key: ValueKey(request.title),
+        request: request,
+        onResolve: (result) {
+          ref.read(uiOverlayProvider.notifier).resolveConfirm(result);
+        },
+      ),
+    );
+  }
+
+  /// toast 队列（底部堆叠，新 toast 在上，R-019 拆出 build）
+  Widget _buildToastColumn(List<UiToast> toasts) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 24,
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final toast in toasts.reversed)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, right: 24, bottom: 8),
+                child: _ToastCard(toast: toast),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -139,66 +141,73 @@ class _ConfirmScrim extends StatelessWidget {
       child: Container(
         color: AppColors.overlay,
         alignment: Alignment.center,
-        child: GestureDetector(
-          onTap: () {},
-          child: Container(
-            width: 300,
-            margin: const EdgeInsets.symmetric(horizontal: 32),
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceWhite,
-              borderRadius: BorderRadius.circular(14),
+        child: GestureDetector(onTap: () {}, child: _buildDialogCard()),
+      ),
+    );
+  }
+
+  /// 确认卡片本体（R-019 拆出 _ConfirmScrim.build）
+  Widget _buildDialogCard() {
+    return Container(
+      width: 300,
+      margin: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceWhite,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            request.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  request.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  request.message,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => onResolve(false),
-                      child: Text(
-                        request.cancelText,
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    TextButton(
-                      onPressed: () => onResolve(true),
-                      child: Text(
-                        request.confirmText,
-                        style: const TextStyle(
-                          color: AppColors.danger,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            request.message,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildActions(),
+        ],
+      ),
+    );
+  }
+
+  /// 确认/取消按钮行（R-019 拆出 _buildDialogCard）
+  Widget _buildActions() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        TextButton(
+          onPressed: () => onResolve(false),
+          child: Text(
+            request.cancelText,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+        const SizedBox(width: 8),
+        TextButton(
+          onPressed: () => onResolve(true),
+          child: Text(
+            request.confirmText,
+            style: const TextStyle(
+              color: AppColors.danger,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

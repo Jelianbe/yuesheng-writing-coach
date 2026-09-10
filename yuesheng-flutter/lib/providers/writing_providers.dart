@@ -223,9 +223,11 @@ class WritingStore extends StateNotifier<WritingState> {
   @visibleForTesting
   final ChapterRepository Function(AppDatabase db) chapterRepoFactory;
 
-  WritingStore(this._db, this.chapterId,
-      {this.chapterRepoFactory = ChapterRepository.new})
-      : super(const WritingState());
+  WritingStore(
+    this._db,
+    this.chapterId, {
+    this.chapterRepoFactory = ChapterRepository.new,
+  }) : super(const WritingState());
 
   @override
   void dispose() {

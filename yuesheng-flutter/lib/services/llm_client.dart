@@ -347,19 +347,7 @@ class LlmClient {
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
     _gate.enter();
     try {
-      // 熔断器：连续失败开路期快速失败（免费模式不熔断，cfg 非空才检查）
-      if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
-
-      if (!await checkNetwork()) throw Exception('网络不可用');
-
-      final fallbacks = parseFallbacks(
-        await _configStorage.getLlmFallbacksRaw(),
-      );
-      final endpoints = expandEndpoints(
-        cfg,
-        fallbacks,
-        retryPolicy.maxAttempts,
-      );
+      final endpoints = await _prepareEndpoints(cfg, retryPolicy.maxAttempts);
 
       try {
         final result = await executeWithRetry(
@@ -488,17 +476,8 @@ class LlmClient {
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
     _gate.enter();
     try {
-      // 熔断器：连续失败开路期快速失败（免费模式不熔断，cfg 非空才检查）
-      if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
-
-      if (!await checkNetwork()) throw Exception('网络不可用');
-
-      final fallbacks = parseFallbacks(
-        await _configStorage.getLlmFallbacksRaw(),
-      );
-      final endpoints = expandEndpoints(
+      final endpoints = await _prepareEndpoints(
         cfg,
-        fallbacks,
         LlmRetryPolicy.standard.maxAttempts,
       );
 
@@ -523,6 +502,17 @@ class LlmClient {
     } finally {
       _gate.exit();
     }
+  }
+
+  /// 请求前置准备：熔断检查 + 网络检查 + 端点构建（R-019 拆出，两个入口共用）
+  Future<List<LlmConfigValues>> _prepareEndpoints(
+    LlmConfigValues cfg,
+    int maxAttempts,
+  ) async {
+    if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
+    if (!await checkNetwork()) throw Exception('网络不可用');
+    final fallbacks = parseFallbacks(await _configStorage.getLlmFallbacksRaw());
+    return expandEndpoints(cfg, fallbacks, maxAttempts);
   }
 
   /// 流式失败上报熔断器（非 DioException 保守不计数；超时/可恢复 Dio 计数）
