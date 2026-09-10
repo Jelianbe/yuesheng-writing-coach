@@ -710,4 +710,72 @@ void main() {
       );
     });
   });
+  group('批次 C：诊断依据区（置信条 + 推理链）', () {
+    testWidgets('C1 展开后显示置信条百分比与诊断依据链', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 3,
+            syndromes: threeSyndromes,
+            suggestedActions: actions,
+            confidence: 0.85,
+          ),
+        ),
+      );
+
+      // 折叠态：依据区不可命中（SizeTransition 尺寸为 0）
+      expect(find.text('诊断信心').hitTestable(), findsNothing);
+      expect(find.text('诊断依据').hitTestable(), findsNothing);
+
+      // 点击卡片 header 展开
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      // 置信条
+      expect(find.text('诊断信心'), findsOneWidget);
+      expect(find.text('85%'), findsOneWidget);
+      // 依据链 header（默认折叠）
+      expect(find.text('诊断依据'), findsOneWidget);
+      expect(find.text('4 步'), findsOneWidget);
+
+      // 展开依据链
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+
+      // 步骤内容（诚实派生自 payload：证据 2+1+3=6、症候名、严重度、建议数）
+      expect(find.text('文本分析'), findsOneWidget);
+      expect(find.textContaining('6 处问题片段'), findsOneWidget);
+      expect(find.textContaining('情绪标签化、视角漂移、张力不足症'), findsOneWidget);
+      expect(find.text('严重度评估'), findsOneWidget);
+      expect(find.textContaining('张力不足症（严重）'), findsOneWidget);
+      expect(find.text('建议生成'), findsOneWidget);
+      expect(find.textContaining('2 条改写建议'), findsOneWidget);
+    });
+
+    testWidgets('C2 空症候诊断：依据链显示未匹配提示', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 0,
+            syndromes: const [],
+            suggestedActions: const [],
+            confidence: 0.2,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('20%'), findsOneWidget);
+      expect(find.text('未匹配到已知症候'), findsOneWidget);
+      expect(find.text('生成 0 条改写建议'), findsOneWidget);
+    });
+  });
 }

@@ -23,6 +23,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_motion.dart';
 import '../config/app_theme.dart';
+import 'knowledge_card.dart';
+import 'thinking_chain.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
@@ -264,6 +266,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               children: [
                 const Divider(height: 1, color: AppColors.border),
                 const SizedBox(height: 12),
+                _buildReasoningSection(),
+                const SizedBox(height: 12),
                 _buildSyndromesDetail(),
                 if (widget.suggestedActions.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -277,6 +281,53 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
+  // ── 诊断依据区（批次 C：ConfidenceBar + ThinkingChain 竹青化接入）──
+  /// 展开详情顶部：诊断信心置信条 + 诊断依据步骤链（默认折叠）。
+  Widget _buildReasoningSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ConfidenceBar(label: '诊断信心', value: widget.confidence),
+        const SizedBox(height: AppSpacing.md),
+        ThinkingChain(title: '诊断依据', steps: _buildReasoningSteps()),
+      ],
+    );
+  }
+
+  /// 诊断依据步骤链（诚实派生：每一步都来自诊断 payload 真实字段，
+  /// 不伪造推理过程；步骤不含置信点——置信只经 ConfidenceBar 展示）。
+  List<ThinkingStep> _buildReasoningSteps() {
+    final syndromes = widget.syndromes;
+    final totalEvidence = syndromes.fold<int>(
+      0,
+      (sum, s) => sum + s.evidenceCount,
+    );
+    final names = syndromes.map((s) => s.name).join('、');
+    final severitySummary = syndromes
+        .map((s) => '${s.name}（${_severityLabel(s.severity)}）')
+        .join('；');
+    return [
+      ThinkingStep(label: '文本分析', detail: '扫描文本，定位 $totalEvidence 处问题片段'),
+      ThinkingStep(
+        label: '症候匹配',
+        detail: syndromes.isEmpty ? '未匹配到已知症候' : '匹配 $names',
+      ),
+      ThinkingStep(
+        label: '严重度评估',
+        detail: severitySummary.isEmpty ? '—' : severitySummary,
+      ),
+      ThinkingStep(
+        label: '建议生成',
+        detail: '生成 ${widget.suggestedActions.length} 条改写建议',
+      ),
+    ];
+  }
+
+  String _severityLabel(String severity) => switch (severity) {
+    'L2' => '中等',
+    'L3' => '严重',
+    _ => '轻微',
+  };
   // ── Header：本次诊断 · N 个问题 · N% 信心 · 展开/收起 ▾ ──
   Widget _buildHeader(int confPct) {
     return Material(
