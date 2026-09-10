@@ -73,5 +73,27 @@ void main() {
       expect(classifyLlmModel('gpt-4o').disableThinking, isFalse);
       expect(classifyLlmModel('qwen-plus').disableThinking, isFalse);
     });
+
+    test('doubao-seed 深度思考系 → disableThinking=true（默认思考控延迟）', () {
+      expect(
+        classifyLlmModel('doubao-seed-2.1-turbo').disableThinking,
+        isTrue,
+      );
+      expect(classifyLlmModel('doubao-seed-2.1-pro').disableThinking, isTrue);
+      expect(classifyLlmModel('doubao-seed-1.6-flash').disableThinking, isTrue);
+      expect(classifyLlmModel('doubao-seed-2.1-turbo').reasoningOnly, isFalse);
+    });
+
+    test('doubao 无思考能力变体 / kimi-k3 不受 disableThinking 影响', () {
+      // doubao-seed-character 无版本号（不带深度思考能力标签），不命中
+      expect(
+        classifyLlmModel('doubao-seed-character-251128').disableThinking,
+        isFalse,
+      );
+      expect(classifyLlmModel('doubao-pro-32k').disableThinking, isFalse);
+      // kimi-k3 始终思考且不应传 thinking 参数；reasoning_content 由解析层忽略
+      expect(classifyLlmModel('kimi-k3').disableThinking, isFalse);
+      expect(classifyLlmModel('kimi-k3').reasoningOnly, isFalse);
+    });
   });
 }

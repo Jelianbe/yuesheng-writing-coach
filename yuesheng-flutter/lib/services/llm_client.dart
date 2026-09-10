@@ -117,12 +117,17 @@ LlmModelProfile classifyLlmModel(String model) {
       m.startsWith('o1-') ||
       m.startsWith('o3-') ||
       m.startsWith('o4-');
-  final glmThinking =
+  // disableThinking：GLM thinking 系（防复杂 prompt 下退化乱码）+ doubao-seed
+  // 系（火山方舟深度思考默认开启，简单诊断任务显式关闭以控延迟/成本）。
+  // 两者均用 OpenAI 兼容字段 thinking: {"type": "disabled"}。
+  // doubao-seed-character 等无深度思考能力的变体不带版本号，不命中。
+  final disableThinking =
       RegExp(r'^glm[-_.]?(4\.[5-9]|5|5\.\d|4\.1v)').hasMatch(m) ||
+      RegExp(r'^doubao-seed-\d').hasMatch(m) ||
       m.contains('thinking');
   return LlmModelProfile(
     reasoningOnly: reasoningOnly,
-    disableThinking: glmThinking,
+    disableThinking: disableThinking,
   );
 }
 
