@@ -23,6 +23,7 @@ import 'decode_guard.dart';
 import 'error_handler.dart';
 import 'llm_client.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
+import 'output_whitelist.dart'; // L3：severity 白名单归一化
 
 // ── 常量（对齐 RN shared-constants.ts DIAGNOSIS_CHUNK）──
 /// 触发分块诊断的字符阈值
@@ -520,6 +521,18 @@ List<ChunkNote> _parseChunkNotes(String jsonStr) {
               severity: n['severity'] as String? ?? 'L1',
             ),
           )
+          // L3 白名单：severity 越界（非 L1/L2/L3）→ 剔除该条并留痕。
+          // 中间产物诚实降级——不伪造严重度进入合并 prompt。
+          .where((n) {
+            final ok = normalizeSeverity(n.severity) != null;
+            if (!ok) {
+              debugPrint(
+                '[L3] 分块笔记 severity 越界剔除: '
+                '${n.syndromeId} ${n.severity}',
+              );
+            }
+            return ok;
+          })
           .toList();
     }
   } catch (e, st) {

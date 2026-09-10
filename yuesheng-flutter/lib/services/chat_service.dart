@@ -70,6 +70,7 @@ import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_output_guard.dart';
+import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 token 清洗
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
@@ -1056,11 +1057,28 @@ extension ChatServiceSend on ChatService {
     Map<String, List<int>> stageIndexes,
   ) {
     _appendHistory(history, messages, markStage);
+    // L2 注入纵深防御（R-027 人工确认）：发送前清洗 user 消息中的
+    // 已知指令 token（<system>/[INST] 等转义），防反向注入。
+    // 只作用于 LLM 输入副本，不影响落库的用户原文。
+    _sanitizeUserMessages(messages);
     _appendDisciplineReminder(messages);
     _logBudgetOutcome(
       TokenBudgetGuard.apply(messages, stageIndexes: stageIndexes),
       messages,
     );
+  }
+
+  /// L2 输入清洗：对所有 role=user 的 LLM 输入消息做指令 token 转义。
+  /// 只改发送给模型的副本（messages 列表），落库原文不受影响。
+  void _sanitizeUserMessages(List<ChatMessage> messages) {
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.role != 'user') continue;
+      final cleaned = sanitizeUserContent(m.content);
+      if (cleaned != m.content) {
+        messages[i] = ChatMessage(role: m.role, content: cleaned);
+      }
+    }
   }
 
   /// 追加历史消息（R-019 拆出）。

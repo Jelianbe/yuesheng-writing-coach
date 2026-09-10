@@ -484,5 +484,29 @@ void main() {
         expect(fake.streamMessages.length, 1);
       },
     );
+
+    test('#L3 越界 severity 白名单：L4 条目不进 merge，合法条目保留', () async {
+      // 分块分析返回：一条合法（L1）+ 一条越界（L4）
+      const notes = '{"notes":['
+          '{"syndromeId":"P003","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"},'
+          '{"syndromeId":"P999","description":"伪造症候","evidence":["x"],"severity":"L4"}'
+          ']}';
+      final fake = _FakeLlmClient(chatResponses: [notes, '{"notes":[]}']);
+      final result = await runProgressiveDiagnosis(
+        content: makeLongContent(),
+        title: 'L3 白名单测试',
+        llmClient: fake,
+        onContent: (_) {},
+      );
+
+      expect(result, isNotNull);
+      expect(result!.failedChunks, 0);
+      // merge 阶段 prompt：合法 P003 保留，越界 L4 条目被剔除
+      final mergeText =
+          fake.streamMessages.last.map((m) => m.content).join('\n');
+      expect(mergeText, contains('P003'));
+      expect(mergeText, isNot(contains('P999')));
+      expect(mergeText, isNot(contains('L4')));
+    });
   });
 }
