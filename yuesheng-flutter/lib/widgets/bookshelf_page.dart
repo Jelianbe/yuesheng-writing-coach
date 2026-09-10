@@ -642,6 +642,9 @@ class _CreateManuscriptModal extends StatefulWidget {
 class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
   bool _isLoading = false;
 
+  /// 标题为空时的行内错误提示（原 SnackBar 被弹窗遮挡不可见，改弹窗内展示）
+  String? _titleError;
+
   /// 批次93-5：体裁 Chip 预设（番茄作家助手模型）
   static const List<String> _genrePresets = [
     '奇幻',
@@ -662,6 +665,11 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
 
   Future<void> _handleCreate() async {
     if (_isLoading) return; // P1-1 防连点
+    // 标题为空：弹窗内行内提示（原 SnackBar 在 dialog 之下被遮挡，用户不可见）
+    if (widget.titleController.text.trim().isEmpty) {
+      setState(() => _titleError = '请输入作品标题');
+      return;
+    }
     setState(() => _isLoading = true);
     try {
       await widget.onCreate();
@@ -713,8 +721,23 @@ class _CreateManuscriptModalState extends State<_CreateManuscriptModal> {
                   controller: widget.titleController,
                   autofocus: true,
                   enabled: !_isLoading,
+                  onChanged: (_) {
+                    if (_titleError != null) {
+                      setState(() => _titleError = null);
+                    }
+                  },
                   decoration: AppBoxStyles.standardInput(hintText: '输入作品标题'),
                 ),
+                if (_titleError != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _titleError!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.danger,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 const Text(
                   '简介（可选）',
