@@ -256,8 +256,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               currentSubphase: _subphase,
               onAttitudeChange: _handleAttitudeChange,
               onNextSubphase: _handleNextSubphase,
-              onOpenSessionDrawer: () =>
-                  _scaffoldKey.currentState?.openDrawer(),
+              // 打开会话列表前先释放输入框焦点：真机实证点汉堡会唤起
+              // 输入法（输入框焦点在 drawer 打开动画期间被恢复），先 unfocus 解耦
+              onOpenSessionDrawer: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                _scaffoldKey.currentState?.openDrawer();
+              },
               onOpenProfile: _handleOpenProfile,
               // 批次 29：头部 ⋯ 左侧新建对话快捷入口
               onNewSession: _handleCreateSession,
