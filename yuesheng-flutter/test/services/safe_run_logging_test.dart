@@ -55,7 +55,7 @@ void main() {
         final calls = total - 1;
         expect(calls, greaterThan(0), reason: '$f 至少一个降级点调用 helper');
       }
-      // 全量：message_injector 25 + chat_service 2 = 27 处降级点。
+      // 全量：message_injector 26 + chat_service 2 = 28 处降级点（B 档新增 _injectSyndromeHistory catch）。
       // 注：审查文档估算 30（含诊断编排 helper 或重复计数），
       // 实际全仓 grep 无裸 debugPrint('[SafeRun] 残留——27 为全部收敛点。
       final mi = File('lib/services/message_injector.dart').readAsStringSync();
@@ -64,7 +64,7 @@ void main() {
       final csCalls = '_logSafeRun('.allMatches(cs).length - 1;
       expect(
         miCalls + csCalls,
-        27,
+        28,
         reason: 'CR-53 应覆盖全部降级点（实际 mi=$miCalls cs=$csCalls）',
       );
     });

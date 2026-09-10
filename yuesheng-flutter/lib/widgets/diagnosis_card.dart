@@ -139,10 +139,34 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   /// sessionId 非空时加载画像聚合，标签行色点按教学状态着色）
   Map<String, TeachingState> _teachingStates = const {};
 
+  /// 症候ID → 跨轮次追踪（出现次数/趋势；用于「第 N 次出现」角标与好转提示）。
+  /// 异步加载，失败静默回退空 map——不阻断卡片渲染。
+  Map<String, SyndromeTracked> _trends = const {};
+
   @override
   void initState() {
     super.initState();
     _loadTeachingStates();
+    _loadTrends();
+  }
+
+  /// 加载跨轮次症候追踪（复用 SyndromeTracker.loadSyndromeTrends，
+  /// 与详情弹层同源；会话级无缓存、量小，直接查库）。
+  Future<void> _loadTrends() async {
+    final sessionId = widget.sessionId;
+    if (sessionId == null) return;
+    try {
+      final tracker = SyndromeTracker(
+        DiagnosisRepository(ref.read(appDatabaseProvider)),
+      );
+      final trends = await tracker.loadSyndromeTrends(sessionId);
+      if (!mounted) return;
+      setState(() {
+        _trends = {for (final t in trends) t.syndromeId: t};
+      });
+    } catch (_) {
+      // 加载失败静默（角标/趋势行不显示）
+    }
   }
 
   // 批次6（6.1）：prefers-reduced-motion —— 展开动画时长按系统设置归零。
@@ -478,12 +502,13 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     );
   }
 
-  /// chip 内容：色点 + 症候名 + 严重度（R-019 清偿拆出）。
+  /// chip 内容：色点 + 症候名 + 严重度 + 第 N 次出现角标（R-019 清偿拆出）。
   Widget _buildChipLabel(
     _SeverityConfig cfg,
     Color dotColor,
     DiagnosisSyndromeCard s,
   ) {
+    final occurrence = _trends[s.syndromeId]?.occurrenceCount ?? 0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -509,6 +534,18 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             color: cfg.textColor.withValues(alpha: 0.85),
           ),
         ),
+        // 第 N 次出现角标：仅 N ≥ 2 时显示（首现是常态，不制造噪音）
+        if (occurrence >= 2) ...[
+          const SizedBox(width: 4),
+          Text(
+            '×$occurrence',
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: cfg.textColor.withValues(alpha: 0.9),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -553,7 +590,10 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     return Column(
       children: [
         for (var i = 0; i < widget.syndromes.length; i++) ...[
-          _SyndromeBlock(syndrome: widget.syndromes[i]),
+          _SyndromeBlock(
+            syndrome: widget.syndromes[i],
+            tracked: _trends[widget.syndromes[i].syndromeId],
+          ),
           // D5-B：sessionId 非空时每个症候块底部渲染确认栏（对齐 RN）
           if (widget.sessionId != null) ...[
             const SizedBox(height: 8),
@@ -646,7 +686,10 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
 // ── 症候详情块内部组件 ──
 class _SyndromeBlock extends StatefulWidget {
   final DiagnosisSyndromeCard syndrome;
-  const _SyndromeBlock({required this.syndrome});
+
+  /// 跨轮次追踪（可能为 null：新症候无历史/加载失败时不显示趋势行）
+  final SyndromeTracked? tracked;
+  const _SyndromeBlock({required this.syndrome, this.tracked});
 
   @override
   State<_SyndromeBlock> createState() => _SyndromeBlockState();
@@ -698,11 +741,51 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
                 ),
               ),
               const SizedBox(height: 8),
+              _buildTrendRow(),
+              const SizedBox(height: 4),
               _buildEvidenceRow(),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// 趋势行：仅 improving/worsening 显示（stable 不制造噪音；
+  /// 诚实派生自跨轮次严重度差分，无数据时不显示）。
+  Widget _buildTrendRow() {
+    final tracked = widget.tracked;
+    if (tracked == null) return const SizedBox.shrink();
+    final (icon, text, color) = switch (tracked.trend) {
+      'improving' => ('↗', '较上次诊断好转', AppColors.primary),
+      'worsening' => ('↘', '较上次诊断加重', AppColors.danger),
+      _ => (null, null, null),
+    };
+    if (text == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            icon!,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 3),
+          Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

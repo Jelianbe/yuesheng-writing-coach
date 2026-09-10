@@ -35,12 +35,18 @@ extension _ChatTeaching on _ChatPageState {
           stageLabel: '正在诊断本章…',
         );
     try {
+      // B 档：加载跨轮次症候历史（出现次数/趋势）→ 分块合并 prompt 注入，
+      // 让诊断 AI 能引用「第 N 次出现 / 较上次好转」。
+      final historySection = await _loadSyndromeHistorySection(
+        bootstrap.sessionId,
+      );
       // 1. 超长分块（>4000 字）优先，质量更好（对齐 RN T-011）
       final progressive = await runProgressiveDiagnosis(
         content: chapter.content,
         title: chapter.title,
         llmClient: ref.read(llmClientProvider),
         sessionId: bootstrap.sessionId,
+        diagnosisContext: historySection,
         onContent: (delta) {
           ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
         },
@@ -75,6 +81,20 @@ extension _ChatTeaching on _ChatPageState {
         final messages = await sessionRepo.listMessages(bootstrap.sessionId);
         ref.read(chatStoreProvider.notifier).setMessages(messages);
       }
+    }
+  }
+
+  /// B 档：跨轮次症候历史 → 注入文本。加载失败返回空串（不注入、
+  /// 不阻断诊断主流程——历史是增强不是依赖）。
+  Future<String> _loadSyndromeHistorySection(String sessionId) async {
+    try {
+      final tracker = SyndromeTracker(
+        DiagnosisRepository(ref.read(appDatabaseProvider)),
+      );
+      final tracked = await tracker.loadSyndromeTrends(sessionId);
+      return formatSyndromeHistory(tracked);
+    } catch (_) {
+      return '';
     }
   }
 

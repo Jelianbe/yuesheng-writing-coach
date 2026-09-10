@@ -819,4 +819,126 @@ void main() {
       expect(find.text('生成 0 条改写建议'), findsOneWidget);
     });
   });
+
+  // ── 批次 A：第 N 次出现角标 + 较上次好转/加重提示 ──
+  group('批次 A：跨轮次历史引用（角标 + 趋势行）', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+    late String sessionId;
+
+    setUp(() async {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      sessionId = await SessionRepository(db).createBlankSession();
+    });
+
+    tearDown(() {
+      container.dispose();
+      db.close();
+    });
+
+    /// 直接 insert 一条诊断记录（同症候单条，制造跨轮次历史）
+    Future<void> seedDiagnosis(String severity, int index) async {
+      final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000 + index;
+      await db
+          .into(db.diagnosisResults)
+          .insert(
+            DiagnosisResultsCompanion.insert(
+              id: generateUuid(),
+              sessionId: sessionId,
+              messageId: 'msg-${generateUuid()}',
+              syndromes: Value(
+                jsonEncode([
+                  {
+                    'syndrome_id': 'S001',
+                    'name': '情绪标签化',
+                    'severity': severity,
+                    'evidence': ['例${index + 1}'],
+                  },
+                ]),
+              ),
+              suggestedActions: const Value('[]'),
+              confidence: const Value(0.8),
+              timestamp: Value(ts),
+            ),
+          );
+    }
+
+    Widget wrapWithSession(Widget child) => UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(home: Scaffold(body: child)),
+    );
+
+    DiagnosisCard cardWithSession() => DiagnosisCard(
+      syndromeCount: 1,
+      syndromes: const [
+        DiagnosisSyndromeCard(
+          syndromeId: 'S001',
+          name: '情绪标签化',
+          severity: 'L2',
+          evidenceCount: 2,
+        ),
+      ],
+      suggestedActions: const [],
+      confidence: 0.8,
+      sessionId: sessionId,
+    );
+
+    testWidgets('A1 出现 2 次 → 标签行 chip 显示 ×2 角标', (tester) async {
+      await seedDiagnosis('L3', 0);
+      await seedDiagnosis('L2', 1);
+
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('×2'), findsOneWidget);
+      // 首次出现的症候不显示角标（无历史数据时）
+      expect(find.text('×1'), findsNothing);
+    });
+
+    testWidgets('A2 首现（仅 1 条历史）→ 不显示角标', (tester) async {
+      await seedDiagnosis('L2', 0);
+
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('×'), findsNothing);
+    });
+
+    testWidgets('A3 趋势好转（L3→L2）→ 详情块显示「较上次诊断好转」', (tester) async {
+      await seedDiagnosis('L3', 0);
+      await seedDiagnosis('L2', 1);
+
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('较上次诊断好转'), findsOneWidget);
+      expect(find.text('较上次诊断加重'), findsNothing);
+    });
+
+    testWidgets('A4 趋势加重（L1→L2）→ 详情块显示「较上次诊断加重」', (tester) async {
+      await seedDiagnosis('L1', 0);
+      await seedDiagnosis('L2', 1);
+
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('较上次诊断加重'), findsOneWidget);
+      expect(find.text('较上次诊断好转'), findsNothing);
+    });
+  });
 }

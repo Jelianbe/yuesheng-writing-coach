@@ -32,6 +32,7 @@
 // 私有字段（_xxx）+ 公开命名参数（xxx）模式无法用 initializing formal
 // ignore_for_file: prefer_initializing_formals
 
+import 'syndrome_tracker.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:writingcoach/config/shared_constants.dart' show FocusSwitch;
@@ -341,6 +342,7 @@ class MessageInjector {
       markStage: markStage,
     );
     await _injectStructuredSyndromeContext(
+      sessionId: sessionId,
       activeProblems: activeProblems,
       focusResult: focusResult,
       messages: messages,
@@ -1304,12 +1306,13 @@ class MessageInjector {
     }
   }
 
-  /// 6.4：L3 结构化症候详情（含文笔画像旁路路由）
+  /// 6.4：L3 结构化症候详情（含文笔画像旁路路由 + B 档症候历史注入）
   ///
-  /// 内部仅 1 个 await（拉取 latestStyleProfile），其后 routeStyleTechniques /
-  /// formatStyleTechniqueSection / buildStructuredSyndromeContext 全同步，
-  /// 故函数本身是 async 但行为等价原 chat_service §6.4 同步语义。
+  /// 内部 2 个 await（拉取 latestStyleProfile、症候历史追踪），其后
+  /// routeStyleTechniques / formatStyleTechniqueSection /
+  /// buildStructuredSyndromeContext / formatSyndromeHistory 全同步。
   Future<void> _injectStructuredSyndromeContext({
+    required String sessionId,
     required List<ActiveProblemView> activeProblems,
     required _FocusResolveResult focusResult,
     required List<ChatMessage> messages,
@@ -1353,6 +1356,24 @@ class MessageInjector {
     );
     markStage(BudgetStageNames.l3Structure);
     messages.add(ChatMessage(role: 'system', content: structuredContext));
+    await _injectSyndromeHistory(sessionId, messages);
+  }
+
+  /// B 档：注入跨轮次症候历史（出现次数/趋势），让 AI 在回复中引用
+  /// 「第 N 次出现 / 较上次好转」。加载失败静默——历史是增强不是依赖。
+  Future<void> _injectSyndromeHistory(
+    String sessionId,
+    List<ChatMessage> messages,
+  ) async {
+    try {
+      final tracker = SyndromeTracker(_diagnosisRepo);
+      final tracked = await tracker.loadSyndromeTrends(sessionId);
+      final section = formatSyndromeHistory(tracked);
+      if (section.isEmpty) return;
+      messages.add(ChatMessage(role: 'system', content: section));
+    } catch (e, st) {
+      _logSafeRun('症候历史注入失败不阻断主流程', e, st);
+    }
   }
 
   /// 6.5：学员技能层级软引导

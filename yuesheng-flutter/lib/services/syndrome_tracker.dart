@@ -69,6 +69,28 @@ String getTrendLabel(String trend) => _trendLabel[trend] ?? '稳定';
 /// 趋势语义（对齐 RN getTrendColor，UI 层据此映射主题色）
 String getTrendColor(String trend) => _trendColor[trend] ?? 'neutral';
 
+/// 症候历史追踪注入文本（B 档：让诊断 AI 引用跨轮次出现次数/趋势）。
+///
+/// 无历史时返回空串（调用方据此跳过注入）。输出为 Markdown 段，
+/// 与 buildStructuredSyndromeContext 风格一致；仅陈述聚合事实，
+/// 不添加任何「应当如何反馈」的指令——引用与否由模型自主决定。
+String formatSyndromeHistory(List<SyndromeTracked> tracked) {
+  if (tracked.isEmpty) return '';
+  final lines = <String>[];
+  lines.add('### 症候历史追踪（跨轮次）');
+  lines.add('以下为该学员近期诊断中相关症候的出现历史，供你在本次诊断时如实引用：');
+  for (final t in tracked) {
+    final sevSeq = t.recentPoints.map((p) => p.severity).join(' → ');
+    final tail = sevSeq.isEmpty ? '' : '，最近严重度 $sevSeq';
+    lines.add(
+      '- ${t.syndromeId} ${t.name}：出现 ${t.occurrenceCount} 次，'
+      '当前 ${t.currentSeverity}，趋势 ${getTrendLabel(t.trend)}$tail',
+    );
+  }
+  lines.add('可引用形式：「该症候已是第 N 次出现」「较上次诊断好转/加重」——仅当历史确实支持时使用。');
+  return lines.join('\n');
+}
+
 class SyndromeTracker {
   final DiagnosisRepository _repo;
   SyndromeTracker(this._repo);

@@ -196,4 +196,56 @@ void main() {
     expect(trends.map((t) => t.syndromeId).toList(), ['s1', 's2', 's3']);
     expect(trends[0].occurrenceCount, 2); // 同严重度按次数降序
   });
+
+  group('formatSyndromeHistory（B 档注入文本）', () {
+    test('#8 无历史 → 空串（调用方跳过注入）', () {
+      expect(formatSyndromeHistory(const []), '');
+    });
+
+    test('#9 有历史 → 输出含次数/趋势/严重度序列', () async {
+      await insertDiagnosis(
+        timestamp: 100,
+        syndromes: [
+          {'syndrome_id': 's1', 'name': '症候A', 'severity': 'L3'},
+        ],
+      );
+      await insertDiagnosis(
+        timestamp: 200,
+        syndromes: [
+          {'syndrome_id': 's1', 'name': '症候A', 'severity': 'L2'},
+        ],
+      );
+      final tracker = SyndromeTracker(DiagnosisRepository(db));
+      final trends = await tracker.loadSyndromeTrends(sessionId);
+
+      final text = formatSyndromeHistory(trends);
+      expect(text, contains('症候历史追踪'));
+      expect(text, contains('s1 症候A'));
+      expect(text, contains('出现 2 次'));
+      expect(text, contains('趋势 好转'));
+      expect(text, contains('最近严重度 L3 → L2'));
+      // 引用指引存在（模型可引用但非强制）
+      expect(text, contains('第 N 次出现'));
+    });
+
+    test('#10 趋势加重 → 文本如实标注加重', () async {
+      await insertDiagnosis(
+        timestamp: 100,
+        syndromes: [
+          {'syndrome_id': 's2', 'name': '症候B', 'severity': 'L1'},
+        ],
+      );
+      await insertDiagnosis(
+        timestamp: 200,
+        syndromes: [
+          {'syndrome_id': 's2', 'name': '症候B', 'severity': 'L3'},
+        ],
+      );
+      final tracker = SyndromeTracker(DiagnosisRepository(db));
+      final trends = await tracker.loadSyndromeTrends(sessionId);
+
+      final text = formatSyndromeHistory(trends);
+      expect(text, contains('趋势 加重'));
+    });
+  });
 }

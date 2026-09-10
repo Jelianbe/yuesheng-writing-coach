@@ -41,6 +41,7 @@ import '../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import '../services/message_card_service.dart';
 import '../services/progressive_diagnosis.dart';
+import '../services/syndrome_tracker.dart';
 import '../services/work_import_service.dart';
 import '../types/teaching_types.dart';
 import 'attitude_suggestion_banner.dart';
