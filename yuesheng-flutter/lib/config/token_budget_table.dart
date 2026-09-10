@@ -194,7 +194,9 @@ abstract final class TokenBudgetTable {
     ),
     TokenBudgetStage(
       name: BudgetStageNames.history,
-      worstCaseTokens: 20000,
+      // 批次 B-2：派生自 LlmInputLimits.maxHistoryMessages（单一真源），
+      // 20 条 × 1000 chars ≈ 20000 tokens（最坏）；改封顶数自动跟随。
+      worstCaseTokens: LlmInputLimits.maxHistoryMessages * 1000,
       degradePriority: 8,
     ),
   ];

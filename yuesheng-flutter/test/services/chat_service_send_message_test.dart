@@ -47,6 +47,9 @@ class FakeLlmClient extends LlmClient {
   final int _chunkSize;
   int callCount = 0;
 
+  /// 最近一次请求的完整 messages（批次 B-2 断言输入侧历史封顶用）
+  List<ChatMessage>? lastMessages;
+
   FakeLlmClient(this._fullResponse, {Exception? error, int chunkSize = 10})
     : _error = error,
       _chunkSize = chunkSize;
@@ -58,6 +61,7 @@ class FakeLlmClient extends LlmClient {
     CancelToken? cancelToken,
   }) async {
     callCount++;
+    lastMessages = messages;
     if (_error != null) throw _error;
 
     for (int i = 0; i < _fullResponse.length; i += _chunkSize) {
@@ -392,6 +396,101 @@ void main() {
     expect(messages[2].role, 'user');
     expect(messages[2].content, '第二轮');
     expect(messages[3].role, 'assistant');
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // 批次 B-2：输入侧上下文细化 —— 历史消息条数封顶
+  // （LlmInputLimits.maxHistoryMessages = 20，保序取最近 N 条）
+  // ─────────────────────────────────────────────────────────────
+
+  /// 种子 n 对 user/assistant 历史消息（addMessage 落库，秒级时间戳 + 插入行序）
+  Future<void> seedPairs(SessionRepository repo, String sid, int pairs) async {
+    for (var i = 0; i < pairs; i++) {
+      await repo.addMessage(sid, 'user', '种子问题$i');
+      await repo.addMessage(sid, 'assistant', '种子回答$i');
+    }
+  }
+
+  /// 从请求 messages 中提取 user/assistant 角色消息
+  /// （注入上下文均为 system 角色，历史即这些消息）
+  List<ChatMessage> historySent(FakeLlmClient fake) => fake
+      .lastMessages!
+      .where((m) => m.role == 'user' || m.role == 'assistant')
+      .toList();
+
+  test('#10 B-2 历史 ≤20 条 → 全部追加进 LLM 输入（保序）', () async {
+    final fake = FakeLlmClient('收到。');
+    final chatService = buildChatService(fake);
+    await seedPairs(sessionRepo, sessionId, 9); // 18 条 + 当前 1 = 19 ≤ 20
+
+    await chatService.sendMessage(
+      sessionId,
+      '当前提问',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
+
+    final sent = historySent(fake);
+    expect(sent.length, 19);
+    expect(sent.first.content, '种子问题0');
+    expect(sent[1].content, '种子回答0');
+    expect(sent[17].content, '种子回答8');
+    expect(sent.last.content, '当前提问');
+  });
+
+  test('#11 B-2 历史 >20 条 → 仅保最近 20 条，最早丢弃、当前提问保留', () async {
+    final fake = FakeLlmClient('收到。');
+    final chatService = buildChatService(fake);
+    await seedPairs(sessionRepo, sessionId, 10); // 20 条 + 当前 1 = 21 > 20
+
+    await chatService.sendMessage(
+      sessionId,
+      '当前提问',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
+
+    final sent = historySent(fake);
+    expect(sent.length, 20);
+    expect(sent.first.content, '种子回答0'); // 最早的「种子问题0」被丢弃
+    final sentContents = sent.map((m) => m.content).toList();
+    expect(sentContents, isNot(contains('种子问题0')));
+    expect(sent[sent.length - 2].content, '种子回答9');
+    expect(sent.last.content, '当前提问'); // 当前 user 消息必保留
+  });
+
+  test('#12 B-2 长会话封顶后仍保序且不重复', () async {
+    final fake = FakeLlmClient('收到。');
+    final chatService = buildChatService(fake);
+    await seedPairs(sessionRepo, sessionId, 15); // 30 条 + 当前 1 = 31 > 20
+
+    await chatService.sendMessage(
+      sessionId,
+      '当前提问',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
+
+    final sent = historySent(fake);
+    expect(sent.length, 20);
+    // 31 条中保最近 20 → 丢弃前 11 条（索引 0~10：种子问题0/回答0 … 种子问题5），
+    // 首条应为「种子回答5」
+    expect(sent.first.content, '种子回答5');
+    final contents = sent.map((m) => m.content).toList();
+    expect(contents.toSet().length, contents.length); // 无重复
+    expect(sent.last.content, '当前提问');
   });
 
   test(

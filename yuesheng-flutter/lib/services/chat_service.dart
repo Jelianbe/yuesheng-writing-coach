@@ -1053,12 +1053,19 @@ extension ChatServiceSend on ChatService {
   }
 
   /// 追加历史消息（R-019 拆出）。
+  ///
+  /// 批次 B-2（输入侧上下文细化）：历史条数封顶 [LlmInputLimits.maxHistoryMessages]，
+  /// 保序取最近 N 条——防止长会话无界增长挤占教学注入预算；当前 user 消息
+  /// 总是最后一条，必然保留。TokenBudgetGuard 阶段级裁剪仍作兜底。
   void _appendHistory(
     List<Message> history,
     List<ChatMessage> messages,
     void Function(String) markStage,
   ) {
-    for (final m in history) {
+    final capped = history.length > LlmInputLimits.maxHistoryMessages
+        ? history.sublist(history.length - LlmInputLimits.maxHistoryMessages)
+        : history;
+    for (final m in capped) {
       markStage(BudgetStageNames.history);
       messages.add(ChatMessage(role: m.role, content: m.content));
     }

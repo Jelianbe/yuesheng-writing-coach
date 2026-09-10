@@ -188,6 +188,22 @@ class TokenEstimate {
   static const double warningRatio = 0.8;
 }
 
+/// LLM 输入侧上下文上限（批次 B-2：输入侧上下文细化）
+///
+/// 历史消息追加进 LLM 输入前的条数封顶（保序取最近 N 条）。单一真源：
+/// [TokenBudgetTable] 历史阶段 worstCaseTokens 由此派生，避免「同一事实
+/// 多处表述」漂移（V4.12）。封顶防止长会话无界增长挤占教学注入预算；
+/// 当前 user 消息总是最后一条，必然保留。TokenBudgetGuard 阶段级裁剪
+/// 仍作兜底。
+class LlmInputLimits {
+  const LlmInputLimits._();
+
+  /// 追加进 LLM 上下文的历史消息条数上限。
+  ///
+  /// 与预算表历史阶段对齐：20 条 × 1000 chars ≈ 20000 tokens（最坏）。
+  static const int maxHistoryMessages = 20;
+}
+
 /// Teacher 门控配置（已启用）
 class TeacherGate {
   const TeacherGate._();
