@@ -79,6 +79,40 @@ class FakeLlmClient extends LlmClient {
   }
 }
 
+/// 按调用次数行为的 Fake：第一次（主回复）正常流式，第二次（Teacher 流）抛取消。
+/// 用于验证「暂停只中断 Teacher 段、不冒泡 onCancelled、诊断照常提交」。
+class _TeacherCancelLlmClient extends LlmClient {
+  final String _fullResponse;
+  int callCount = 0;
+
+  _TeacherCancelLlmClient(this._fullResponse);
+
+  @override
+  Future<void> streamChat(
+    List<ChatMessage> messages,
+    void Function(LlmStreamResponse response) callback, {
+    CancelToken? cancelToken,
+  }) async {
+    callCount++;
+    if (callCount >= 2) {
+      // 模拟真实暂停：先取消 token（isCancelled=true）再抛取消异常，
+      // 与 chat_page._cancelGeneration → cancelToken.cancel() 链路一致。
+      cancelToken?.cancel('用户取消生成');
+      throw LlmRequestCancelledException();
+    }
+    for (int i = 0; i < _fullResponse.length; i += 10) {
+      final end = i + 10 < _fullResponse.length ? i + 10 : _fullResponse.length;
+      callback(
+        LlmStreamResponse(
+          content: _fullResponse.substring(i, end),
+          isDone: false,
+        ),
+      );
+    }
+    callback(const LlmStreamResponse(content: '', isDone: true));
+  }
+}
+
 void main() {
   late AppDatabase db;
   late SessionRepository sessionRepo;
@@ -413,8 +447,7 @@ void main() {
 
   /// 从请求 messages 中提取 user/assistant 角色消息
   /// （注入上下文均为 system 角色，历史即这些消息）
-  List<ChatMessage> historySent(FakeLlmClient fake) => fake
-      .lastMessages!
+  List<ChatMessage> historySent(FakeLlmClient fake) => fake.lastMessages!
       .where((m) => m.role == 'user' || m.role == 'assistant')
       .toList();
 
@@ -897,6 +930,77 @@ void main() {
     expect(persisted, isNotNull);
     expect(persisted!.content, '失败也上屏');
   });
+  test(
+    '#12 批次 D-Stage Teacher 阶段回调：诊断触发 teacher → onTeacherPhase(true→false)',
+    () async {
+      final llm = FakeLlmClient(
+        '你的文本节奏偏快。\n[YS_DIAGNOSIS]'
+        '\n{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"测试"},'
+        '{"syndrome_id":"s2","name":"节奏过密","severity":"L2","evidence":[],"explanation":"测试"},'
+        '{"syndrome_id":"s3","name":"结构松散","severity":"L2","evidence":[],"explanation":"测试"}],'
+        '"suggested_actions":[],"confidence":0.8}'
+        '\n[/YS_DIAGNOSIS]',
+      );
+      final chatService = buildChatService(llm);
+      final phases = <bool>[];
+      await chatService.sendMessage(
+        sessionId,
+        '帮我分析这段。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+          onTeacherPhase: (active) => phases.add(active),
+        ),
+        defaultOptions,
+      );
+
+      // L2+ 症候 → teacher 第二段流触发：阶段先 true 后 false，主+teacher 共 2 次调用
+      expect(phases, [true, false]);
+      expect(llm.callCount, 2);
+    },
+  );
+
+  test(
+    '#13 批次 D-Stage Teacher 阶段被取消 → onTeacherCancelled 触发且不冒泡 onCancelled',
+    () async {
+      final llm = _TeacherCancelLlmClient(
+        '你的文本节奏偏快。\n[YS_DIAGNOSIS]'
+        '\n{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"测试"},'
+        '{"syndrome_id":"s2","name":"节奏过密","severity":"L2","evidence":[],"explanation":"测试"},'
+        '{"syndrome_id":"s3","name":"结构松散","severity":"L2","evidence":[],"explanation":"测试"}],'
+        '"suggested_actions":[],"confidence":0.8}'
+        '\n[/YS_DIAGNOSIS]',
+      );
+      final chatService = buildChatService(llm);
+      // 模拟暂停：必须带 cancelToken（chat_page 真实链路由「停止生成」持有）
+      final token = CancelToken();
+      var cancelled = false;
+      var teacherCancelled = false;
+      var completed = false;
+      await chatService.sendMessage(
+        sessionId,
+        '帮我分析这段。',
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) => completed = true,
+          onError: (_) {},
+          onCancelled: () => cancelled = true,
+          onTeacherCancelled: () => teacherCancelled = true,
+        ),
+        SendMessageOptions(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+          cancelToken: token,
+        ),
+      );
+
+      // 取消仅中断 Teacher 流：不冒泡 onCancelled，但诊断流程继续 → onComplete 仍触发
+      expect(teacherCancelled, isTrue);
+      expect(cancelled, isFalse);
+      expect(completed, isTrue);
+    },
+  );
   test('D2 sendMessage 会话不存在：落库前显式校验 → onError 明确报错', () async {
     final chatService = buildChatService(FakeLlmClient('你好'));
     String? errorMsg;

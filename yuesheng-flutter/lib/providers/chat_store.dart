@@ -144,6 +144,16 @@ class ChatStore extends StateNotifier<ChatState> {
     state = state.copyWith(streamingContent: state.streamingContent + delta);
   }
 
+  /// 仅更新流式阶段标签，不触碰 streamingContent（区别于 setStreaming——
+  /// 后者会清空已输出的内容）。用于两段式流：主回复完成后 Teacher
+  /// 建议阶段切换「正在生成教学建议…」，保留已显示的回复文本。
+  void updateStreamingStageLabel(String? stageLabel) {
+    state = state.copyWith(
+      streamStageLabel: stageLabel,
+      clearStreamStageLabel: stageLabel == null,
+    );
+  }
+
   /// 完成流式：追加 assistant 消息 + 重置流式状态
   void completeStreaming(Message assistantMessage) {
     // CR-34：同上，改 copyWith 显式重置（原写法漏传 streamStageLabel 依赖

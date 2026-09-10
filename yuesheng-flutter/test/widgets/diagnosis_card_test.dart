@@ -526,10 +526,51 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // 修复前承诺「跳转原文查看」但实际无此功能 → 改为「查看详情与趋势」
+      // 批次 D-Evidence：无证据原文（旧数据/未透传）时如实只展示计数，
+      // 不再承诺「点击症候可查看详情与趋势」（详情弹层并无证据内容）
       expect(find.textContaining('共 2 处证据'), findsOneWidget);
-      expect(find.textContaining('点击症候可查看详情与趋势'), findsOneWidget);
+      expect(find.textContaining('点击症候可查看详情与趋势'), findsNothing);
+      expect(find.textContaining('展开证据'), findsNothing);
       expect(find.textContaining('跳转原文'), findsNothing);
+    });
+
+    testWidgets('批次 D-Evidence 证据原文可展开查看（有 evidence 列表）', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: [
+              DiagnosisSyndromeCard(
+                syndromeId: 'S001',
+                name: '情绪标签化',
+                severity: 'L2',
+                evidenceCount: 2,
+                evidence: ['角色生气却写「他很伤心」', '「气得要死」口语直白无描写'],
+              ),
+            ],
+            suggestedActions: [],
+            confidence: 0.8,
+            defaultExpanded: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // 有原文 → 显示可点击入口，展开前原文不可见
+      expect(find.textContaining('展开证据（2 处）'), findsOneWidget);
+      expect(find.textContaining('他很伤心'), findsNothing);
+
+      await tester.tap(find.textContaining('展开证据（2 处）').hitTestable());
+      await tester.pumpAndSettle();
+
+      // 展开后证据原文可见，且可收起
+      expect(find.textContaining('收起证据（2 处）'), findsOneWidget);
+      expect(find.textContaining('角色生气却写「他很伤心」'), findsOneWidget);
+      expect(find.textContaining('气得要死'), findsOneWidget);
+
+      await tester.tap(find.textContaining('收起证据（2 处）').hitTestable());
+      await tester.pumpAndSettle();
+      expect(find.textContaining('他很伤心'), findsNothing);
     });
 
     testWidgets('批次80 M2 无跨轮次追踪数据 → 点症候 chip → SnackBar 轻提示', (tester) async {

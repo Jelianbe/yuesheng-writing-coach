@@ -31,6 +31,16 @@ class SendMessageCallbacks {
   /// 流式中断/失败也保证用户消息已上屏——修复「消息似乎没发出去」体感。
   final void Function(Message message)? onUserMessagePersisted;
 
+  /// Teacher 建议阶段（诊断后的第二段流式）进入/离开通知。
+  /// true = 已进入「生成教学建议」阶段；false = 该阶段结束（成功或失败）。
+  /// UI 据此切换阶段文案，避免「回复显示完但界面仍在等待」被误判为卡住。
+  final void Function(bool teacherActive)? onTeacherPhase;
+
+  /// Teacher 建议阶段被用户主动取消时触发（区别于 onCancelled——
+  /// 该阶段异常被 DiagnosisFlowHandler 吞掉不冒泡，需此回调显式通知 UI）。
+  /// 语义：主回复与诊断已完成，仅教学建议被中止。
+  final void Function()? onTeacherCancelled;
+
   const SendMessageCallbacks({
     required this.onStream,
     required this.onComplete,
@@ -38,6 +48,8 @@ class SendMessageCallbacks {
     this.onTrainingResult,
     this.onCancelled,
     this.onUserMessagePersisted,
+    this.onTeacherPhase,
+    this.onTeacherCancelled,
   });
 }
 

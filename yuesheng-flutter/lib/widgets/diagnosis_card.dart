@@ -644,14 +644,22 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
 }
 
 // ── 症候详情块内部组件 ──
-class _SyndromeBlock extends StatelessWidget {
+class _SyndromeBlock extends StatefulWidget {
   final DiagnosisSyndromeCard syndrome;
   const _SyndromeBlock({required this.syndrome});
 
   @override
+  State<_SyndromeBlock> createState() => _SyndromeBlockState();
+}
+
+class _SyndromeBlockState extends State<_SyndromeBlock> {
+  /// 证据原文展开状态（点击「展开证据」切换）。
+  bool _evidenceExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final sev = _SeverityConfig(AppColors.l1, AppColors.primary);
-    final cfg = _severityMap[syndrome.severity] ?? sev;
+    final cfg = _severityMap[widget.syndrome.severity] ?? sev;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -681,7 +689,7 @@ class _SyndromeBlock extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
-                  syndrome.name,
+                  widget.syndrome.name,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -698,8 +706,10 @@ class _SyndromeBlock extends StatelessWidget {
     );
   }
 
-  /// 证据行：标签 + 数量 / 无证据（R-019 清偿拆出）。
+  /// 证据行：无证据 / 有原文可展开 / 仅计数（旧数据无原文时如实展示）。
   Widget _buildEvidenceRow() {
+    final evidence = widget.syndrome.evidence;
+    final count = widget.syndrome.evidenceCount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -713,20 +723,90 @@ class _SyndromeBlock extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        if (syndrome.evidenceCount == 0)
+        if (count == 0)
           const Text(_CardText.noEvidence, style: AppTextStyles.noteCaption)
+        else if (evidence.isNotEmpty)
+          _buildEvidenceToggle(evidence, count)
         else
-          // 批次80 M1：原文案承诺「跳转原文查看」但实际打开统计详情弹层，
-          // 改为如实描述（对齐 SyndromeDetailModal 实际能力）
+          // 旧版数据仅有计数、无证据原文：不承诺可查看（批次80 M1 教训延续）
           Text(
-            '（共 ${syndrome.evidenceCount} 处证据，点击症候可查看详情与趋势）',
+            '（共 $count 处证据）',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textDeep,
               fontStyle: FontStyle.italic,
             ),
           ),
+        if (_evidenceExpanded && evidence.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          for (final e in evidence) _EvidenceQuote(text: e),
+        ],
       ],
+    );
+  }
+
+  /// 证据展开/收起开关（有原文时显示可点击入口）。
+  Widget _buildEvidenceToggle(List<String> evidence, int count) {
+    return GestureDetector(
+      onTap: () => setState(() => _evidenceExpanded = !_evidenceExpanded),
+      behavior: HitTestBehavior.opaque,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _evidenceExpanded ? '▾ 收起证据（$count 处）' : '▸ 展开证据（$count 处）',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(
+            Icons.keyboard_arrow_down,
+            size: 14,
+            color: AppColors.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 证据原文引用块：左侧竹青色竖线 + 斜体弱色文本。
+class _EvidenceQuote extends StatelessWidget {
+  final String text;
+  const _EvidenceQuote({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 3,
+            height: 16,
+            margin: const EdgeInsets.only(top: 2, right: 8),
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.5,
+                color: AppColors.textDeep,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

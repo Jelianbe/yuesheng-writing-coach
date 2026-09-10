@@ -712,6 +712,9 @@ class DiagnosisFlowHandler {
     TeacherResult? teacherResult;
     if (shouldTriggerTeacherForDiagnosis(diagnosis.syndromes) &&
         !diagnosisOnly) {
+      // 批次 D-Stage：Teacher 阶段开始 → UI 切换到「正在生成教学建议…」，
+      // 避免「回复显示完但界面仍在等待」被误判为卡住（两段式流透明化）。
+      callbacks.onTeacherPhase?.call(true);
       try {
         final teacherStream = await callTeacherStream(
           _llmClient,
@@ -722,10 +725,21 @@ class DiagnosisFlowHandler {
           callbacks.onStream,
           cancelToken: options.cancelToken,
         );
+        // callTeacherStream 内部吞掉取消异常（返回空结果），故在此显式检查
+        // token 状态：暂停语义 = 诊断已完成、教学建议被中止（不冒泡 onCancelled）
+        if (options.cancelToken?.isCancelled ?? false) {
+          callbacks.onTeacherCancelled?.call();
+        }
         teacherDisplayContent = teacherStream.displayContent;
         teacherResult = teacherStream.teacher;
       } catch (e, s) {
+        // 兜底：若 callTeacherStream 未来改为抛出，取消仍能被识别
+        if (options.cancelToken?.isCancelled ?? false) {
+          callbacks.onTeacherCancelled?.call();
+        }
         _logSafeRun('Teacher 失败不影响 Diagnosis 已有输出', e, s);
+      } finally {
+        callbacks.onTeacherPhase?.call(false);
       }
     }
     return (displayContent: teacherDisplayContent, teacher: teacherResult);
@@ -971,6 +985,7 @@ class DiagnosisFlowHandler {
                   name: s.name,
                   severity: s.severity.value,
                   evidenceCount: s.evidence.length,
+                  evidence: s.evidence,
                 ),
               )
               .toList(),

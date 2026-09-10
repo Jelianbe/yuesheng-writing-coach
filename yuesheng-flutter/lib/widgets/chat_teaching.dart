@@ -307,6 +307,21 @@ extension _ChatTeaching on _ChatPageState {
             // 用户主动取消：优雅复位（不标记失败、不弹红错），回到可继续输入状态
             ref.read(chatStoreProvider.notifier).cancelStreaming();
           },
+          onTeacherPhase: (teacherActive) {
+            // 两段式流透明化：主回复完成后 Teacher 建议阶段切换独立文案，
+            // 保留已显示的回复（updateStreamingStageLabel 不清 streamingContent）
+            ref
+                .read(chatStoreProvider.notifier)
+                .updateStreamingStageLabel(teacherActive ? '正在生成教学建议…' : null);
+          },
+          onTeacherCancelled: () {
+            // Teacher 建议被用户暂停：诊断与主回复已完成，仅建议中止——
+            // 用轻提示解释「暂停后仍出现症候卡」的现象，避免误解为取消失效
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(const SnackBar(content: Text('诊断已完成，教学建议已停止')));
+          },
           onTrainingResult: onTrainingResult,
         ),
         SendMessageOptions(

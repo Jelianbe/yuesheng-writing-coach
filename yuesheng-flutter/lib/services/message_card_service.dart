@@ -71,11 +71,16 @@ class DiagnosisSyndromeCard {
   final String severity; // 'L1' | 'L2' | 'L3'
   final int evidenceCount;
 
+  /// 证据原文（诊断解析出的问题片段引用，可为空列表）。
+  /// 批次 D-Evidence：由 Syndrome.evidence 透传，供诊断卡展开查看。
+  final List<String> evidence;
+
   const DiagnosisSyndromeCard({
     required this.syndromeId,
     required this.name,
     required this.severity,
     required this.evidenceCount,
+    this.evidence = const [],
   });
 
   factory DiagnosisSyndromeCard.fromJson(Map<String, dynamic> json) {
@@ -90,6 +95,11 @@ class DiagnosisSyndromeCard {
           (json['evidence_count'] as num?)?.toInt() ??
           (json['evidenceCount'] as num?)?.toInt() ??
           0,
+      evidence:
+          (json['evidence'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
     );
   }
 
@@ -98,6 +108,7 @@ class DiagnosisSyndromeCard {
     'name': name,
     'severity': severity,
     'evidence_count': evidenceCount,
+    'evidence': evidence,
   };
 }
 
