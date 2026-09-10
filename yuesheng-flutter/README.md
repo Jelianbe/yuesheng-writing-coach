@@ -1,17 +1,80 @@
-# writingcoach
+# 月笙写作教练（Flutter 版 · 产品真源）
 
-> **月笙写作教练（Flutter 版，产品真源）**。工程纪律与真源：`docs/yuesheng-flutter-宪法草案.md`（v0.2 定稿）；批次执行：`docs/待办执行清单.md`；项目现状：`docs/Flutter版现状报告-2026-08-16.md`。
+> AI 驱动的中文小说写作辅导工具 · **写作教练，不是写作助手**
 
-## Getting Started
+这是月笙写作教练的**当前活跃真源**（Flutter + Dart）。Electron 旧原型见仓库根 [`yuesheng-writing-coach/`](../yuesheng-writing-coach/)，已归档。
 
-This project is a starting point for a Flutter application.
+**定位**：不替你写句子，也不替你做创作决策——通过诊断 → 教学 → 训练 → 复盘的闭环，帮你识别写作中的系统性问题并提供针对性训练。
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 核心能力
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- **五阶段教学状态机**（P0 初始 → P1 教学 → P2 训练 → P3 评估 → P4 复盘）驱动对话
+- **诊断引擎**：分析写作片段，识别症候并排序（注册表 41 条，P001–P041）
+- **五步训练流**：解说 → 例证 → 确认 → 尝试 → 反馈，写作技法库按症候动态填充
+- **能力图谱与训练推荐**：基于诊断结果推荐针对性训练，支撑进度追踪
+- **学生模型**：基于 drift/SQLite 本地数据库的学习画像
+- **症候跨轮次历史引用**：诊断卡回溯历史表现，标注好转/复发进展
+- **多供应商 LLM 适配**：OpenAI 兼容接口统一接入（DeepSeek / Kimi / 智谱 / 豆包等），支持自定义 baseUrl、多账号管理与自动降级
+- **稳定性机制**：LLM 熔断器、错误分类、输出轻量校验、AI 输出续接（finish_reason=length 自动续写）
+
+## 技术栈
+
+| 层 | 技术 |
+|:---|:-----|
+| 框架 | Flutter + Dart |
+| 状态管理 | Riverpod |
+| 持久化 | drift（SQLite） |
+| 样式 | 设计令牌体系（竹青 `#2D5A52` 色系，`lib/config/app_theme.dart`） |
+| 测试 | Flutter test，2600+ 用例（255 个测试文件） |
+
+## 质量门禁
+
+六道门禁，`bash scripts/gate.sh` 一键全跑：
+
+1. 代码格式（dart format）
+2. 静态分析（flutter analyze）
+3. 全量测试（2600+ 用例）
+4. 循环依赖检查
+5. 安全 / 密钥扫描
+6. R-019 函数行数硬上限（≤50 行/函数）
+
+工程纪律（详见仓库根 AGENTS.md，本地维护）：最小必要范围改动、函数行数硬上限、密钥零硬编码、ADR 决策记录。
+
+---
+
+## 快速开始
+
+### 前置依赖
+
+- Flutter SDK（稳定版）
+- Android SDK / Xcode（按目标平台）
+
+### 运行
+
+```bash
+flutter pub get
+flutter run
+```
+
+### 测试
+
+```bash
+flutter test
+```
+
+---
+
+## 版本状态
+
+| 标识 | 说明 |
+|:--|:--|
+| Git tag | 最新 `v5.0.0`（持续迭代中） |
+| GitHub Release | `v1.4.0`（内部预览里程碑） |
+
+---
+
+## 反馈
+
+欢迎通过 GitHub Issues 提交 bug 或功能建议。
