@@ -36,18 +36,23 @@ const String _feedbackEmail = 'feedback@yuesheng.app';
 
 /// OpenAI 兼容供应商预设（ADR-C83：扩展多模型）。选中自动填 Base URL +
 /// Model 默认值；API Key 各供应商独立，仍需用户自行填写（R-029 零硬编码）。
+/// 模型时效性核验（2026-09-10，以各供应商官方 API 文档为准）：
+/// - deepseek-v4-flash：DeepSeek 现行主模型（deepseek-chat/reasoner 已于
+///   2026-07-24 弃用，分别映射至 v4-flash 非思考/思考模式）
+/// - gpt-4.1：OpenAI chat/completions 稳定模型（gpt-4o 已从 ChatGPT 淘汰，
+///   gpt-5 系为 reasoning-only，走 responses/max_completion_tokens 语义）
+/// - kimi-k3：Kimi 现行旗舰（moonshot-v1 系列已于 2026-08-31 下线）
+/// - qwen-plus：通义稳定别名，仍可用
+/// - glm-4.6：智谱现行旗舰（glm-4 已过时，glm-4.5-X 即将下线）
+/// - doubao-seed-2.1-turbo：火山方舟现行主力（doubao-pro-32k 已过时）
 const List<({String name, String baseUrl, String model})> _llmPresets = [
   (
     name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com',
     model: 'deepseek-v4-flash',
   ),
-  (name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o'),
-  (
-    name: 'Kimi（月之暗面）',
-    baseUrl: 'https://api.moonshot.cn/v1',
-    model: 'moonshot-v1-8k',
-  ),
+  (name: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4.1'),
+  (name: 'Kimi（月之暗面）', baseUrl: 'https://api.moonshot.cn/v1', model: 'kimi-k3'),
   (
     name: '通义千问',
     baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
@@ -56,12 +61,12 @@ const List<({String name, String baseUrl, String model})> _llmPresets = [
   (
     name: '智谱 GLM',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    model: 'glm-4',
+    model: 'glm-4.6',
   ),
   (
     name: '豆包（火山方舟）',
     baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
-    model: 'doubao-pro-32k',
+    model: 'doubao-seed-2.1-turbo',
   ),
 ];
 
