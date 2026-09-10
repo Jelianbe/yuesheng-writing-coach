@@ -11,6 +11,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -842,8 +843,35 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA journal_mode = WAL');
       // foreign_keys = ON（PRD 的级联删除依赖它，SQLite 默认 OFF！）
       await customStatement('PRAGMA foreign_keys = ON');
+      // 入档批次：数据库维护——WAL 下官方推荐的同步级别（性能与安全平衡）
+      await customStatement('PRAGMA synchronous = NORMAL');
+      // 入档批次：启动快速完整性校验（quick_check 是 integrity_check 的轻量版，
+      // 只查页面级损坏，大库启动成本可忽略；异常时留痕供诊断）
+      try {
+        final rows = await customSelect('PRAGMA quick_check').get();
+        if (rows.isNotEmpty &&
+            '${rows.first.data.values.first}'.trim().toLowerCase() != 'ok') {
+          debugPrint('[DB] quick_check 异常: ${rows.first.data.values.first}');
+        }
+      } catch (e) {
+        debugPrint('[DB] quick_check 执行失败: $e');
+      }
     },
   );
+
+  // ── 入档批次：数据库关闭维护 ──
+
+  /// 关闭前把 WAL 内容 checkpoint 回主库（TRUNCATE 截断 WAL），
+  /// 收尾持久化 + 防 WAL 文件异常增长；失败留痕不阻断关闭。
+  @override
+  Future<void> close() async {
+    try {
+      await customStatement('PRAGMA wal_checkpoint(TRUNCATE)');
+    } catch (e) {
+      debugPrint('[DB] wal_checkpoint 失败: $e');
+    }
+    await super.close();
+  }
 }
 
 // ── 数据库连接 ──

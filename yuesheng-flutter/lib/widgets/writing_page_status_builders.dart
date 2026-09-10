@@ -103,9 +103,10 @@ extension _WritingPageStatusBuilders on _WritingPageState {
         ],
       );
     } else if (state.saveError != null) {
-      content = const Text(
-        '保存失败，请稍后重试',
-        style: TextStyle(fontSize: 11, color: AppColors.warning),
+      // 入档批次：连续失败 >= 3 暂停自动保存时给持续可见提示
+      content = Text(
+        state.autosavePaused ? '自动保存已暂停，请手动保存' : '保存失败，请稍后重试',
+        style: const TextStyle(fontSize: 11, color: AppColors.warning),
       );
     } else if (state.lastSavedAt != null) {
       content = Text(

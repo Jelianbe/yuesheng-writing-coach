@@ -24,6 +24,17 @@ import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
 
+/// 可控失败/成功的仓库替身（入档批次：保存失败暂停测试用）
+class _FakeChapterRepo extends ChapterRepository {
+  bool fail = false;
+  _FakeChapterRepo(super.db);
+  @override
+  Future<void> saveChapterContent(String chapterId, String content) async {
+    if (fail) throw Exception('模拟保存失败');
+    return super.saveChapterContent(chapterId, content);
+  }
+}
+
 void main() {
   late AppDatabase db;
   late String chapterId;
@@ -712,5 +723,69 @@ void main() {
         expect(dbCh?.volumeId, vid);
       },
     );
+  });
+
+  group('入档批次：保存失败连续 3 次暂停自动保存', () {
+    test('连续 3 次失败 → autosavePaused=true 且自动保存停止调度', () async {
+      final fake = _FakeChapterRepo(db);
+      fake.fail = true;
+      final store = WritingStore(
+        db,
+        chapterId,
+        chapterRepoFactory: (_) => fake,
+      );
+      await store.loadChapter();
+      store.updateContent('内容A');
+      for (var i = 0; i < 3; i++) {
+        await store.saveNow();
+      }
+      expect(store.state.autosavePaused, isTrue);
+      // 暂停后 scheduleSave 不再创建定时器
+      store.updateContent('内容B');
+      store.scheduleSave();
+      expect(store.hasPendingSave, isFalse);
+    });
+
+    test('失败不足 3 次不暂停', () async {
+      final fake = _FakeChapterRepo(db);
+      fake.fail = true;
+      final store = WritingStore(
+        db,
+        chapterId,
+        chapterRepoFactory: (_) => fake,
+      );
+      await store.loadChapter();
+      store.updateContent('内容A');
+      await store.saveNow();
+      await store.saveNow();
+      expect(store.state.autosavePaused, isFalse);
+      expect(store.state.saveError, isNotNull);
+    });
+
+    test('暂停后保存成功 → 复位并恢复自动保存', () async {
+      final fake = _FakeChapterRepo(db);
+      final store = WritingStore(
+        db,
+        chapterId,
+        chapterRepoFactory: (_) => fake,
+      );
+      await store.loadChapter();
+      store.updateContent('内容A');
+      // 3 次失败进入暂停
+      fake.fail = true;
+      for (var i = 0; i < 3; i++) {
+        await store.saveNow();
+      }
+      expect(store.state.autosavePaused, isTrue);
+      // 手动保存成功 → 复位
+      fake.fail = false;
+      await store.saveNow();
+      expect(store.state.autosavePaused, isFalse);
+      expect(store.state.saveError, isNull);
+      // 自动保存恢复调度
+      store.updateContent('内容B');
+      store.scheduleSave();
+      expect(store.hasPendingSave, isTrue);
+    });
   });
 }

@@ -69,6 +69,7 @@ import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/llm_output_guard.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
@@ -526,6 +527,16 @@ extension ChatServiceSendRun on ChatService {
     debugPrint(
       '[ChatService] 步骤8: streamChat 完成 | 总 chunk=$streamChunkCount | fullContent 长度=${fullContent.length} | inDiagnosisBlock=$inDiagnosisBlock',
     );
+    // 入档批次：AI 输出轻量校验（空/重复 loop/元文本）——只留痕不截断，
+    // 阈值校准后再决定是否干预（写作场景误拦风险高于模型抽风）
+    if (fullContent.isNotEmpty) {
+      final assessment = assessLlmOutput(fullContent);
+      if (assessment.isProblematic) {
+        debugPrint(
+          '[ChatService] 输出校验命中: ${assessment.detail} | blank=${assessment.isBlank} repeat=${assessment.hasRepetition} meta=${assessment.hasMetaText}',
+        );
+      }
+    }
     return (fullContent: fullContent, inDiagnosisBlock: inDiagnosisBlock);
   }
 }

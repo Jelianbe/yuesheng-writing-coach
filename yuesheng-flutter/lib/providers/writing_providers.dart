@@ -81,6 +81,9 @@ class WritingState {
 
   /// 批次60：保存错误（仅状态条 + SnackBar 提示，不切换整页错误视图）
   final String? saveError;
+
+  /// 入档批次：自动保存已暂停（连续保存失败 >= 3 次后暂停，防重试风暴）
+  final bool autosavePaused;
   final bool isOffline;
   final bool hasDraft;
   final bool canUndo;
@@ -105,6 +108,7 @@ class WritingState {
     this.isSaving = false,
     this.error,
     this.saveError,
+    this.autosavePaused = false,
     this.isOffline = false,
     this.hasDraft = false,
     this.canUndo = false,
@@ -134,6 +138,7 @@ class WritingState {
     bool clearError = false,
     String? saveError,
     bool clearSaveError = false,
+    bool? autosavePaused,
     bool clearLastSavedAt = false,
     bool? isOffline,
     bool? hasDraft,
@@ -159,6 +164,7 @@ class WritingState {
       isSaving: isSaving ?? this.isSaving,
       error: clearError ? null : (error ?? this.error),
       saveError: clearSaveError ? null : (saveError ?? this.saveError),
+      autosavePaused: autosavePaused ?? this.autosavePaused,
       isOffline: isOffline ?? this.isOffline,
       hasDraft: hasDraft ?? this.hasDraft,
       canUndo: canUndo ?? this.canUndo,
@@ -188,6 +194,9 @@ class WritingStore extends StateNotifier<WritingState> {
   /// 在 loadChapter 播种（避免存量长文首次输入即连拍），saveNow 成功后检查
   int _nextSnapshotWords = AppStateRepository.chapterVersionInterval;
 
+  /// 入档批次：连续保存失败计数（>= 3 暂停自动保存，防重试风暴）
+  int _consecutiveSaveFailures = 0;
+
   // ── 批次91-1：保存 debounce（纯纯写作 300ms 多层保存机制）──
   /// 合并写入窗口：连续输入在 300ms 内只落库一次
   static const Duration saveDebounce = Duration(milliseconds: 300);
@@ -210,7 +219,13 @@ class WritingStore extends StateNotifier<WritingState> {
   String _lastCommitted = '';
   Timer? _historyTimer;
 
-  WritingStore(this._db, this.chapterId) : super(const WritingState());
+  /// 入档批次：仓库工厂注入点（测试替身用，默认直接构造）
+  @visibleForTesting
+  final ChapterRepository Function(AppDatabase db) chapterRepoFactory;
+
+  WritingStore(this._db, this.chapterId,
+      {this.chapterRepoFactory = ChapterRepository.new})
+      : super(const WritingState());
 
   @override
   void dispose() {
@@ -226,6 +241,8 @@ class WritingStore extends StateNotifier<WritingState> {
   /// 批次91-1：调度合并保存（300ms 窗口内多次输入只落库一次）
   /// 由 WritingPage._onContentChanged 调用，替代批次31 的立即 saveNow。
   void scheduleSave() {
+    // 入档批次：自动保存暂停期间不调度（手动 saveNow 不受影响）
+    if (state.autosavePaused) return;
     _saveTimer?.cancel();
     _saveTimer = Timer(saveDebounce, () {
       _saveTimer = null;
@@ -438,12 +455,15 @@ class WritingStore extends StateNotifier<WritingState> {
         await _saveDraftOffline();
         return;
       }
-      final repo = ChapterRepository(_db);
+      final repo = chapterRepoFactory(_db);
       await repo.saveChapterContent(chapterId, state.localContent);
+      // 入档批次：保存成功复位连续失败计数，自动保存恢复
+      _consecutiveSaveFailures = 0;
       state = state.copyWith(
         isSaving: false,
         lastSavedAt: DateTime.now(),
         clearError: true,
+        autosavePaused: false,
       );
       // 批次82：跨 200 字边界 → 落版本快照（时光机留痕）
       await _maybeSnapshot();
@@ -460,7 +480,14 @@ class WritingStore extends StateNotifier<WritingState> {
         context: {'chapterId': chapterId, 'error': '$e'},
       );
       // 保存失败只标记 saveError（状态条 + SnackBar 提示），不切换整页错误视图
-      state = state.copyWith(isSaving: false, saveError: '$e');
+      // 入档批次：连续失败 >= 3 次暂停自动保存（手动保存不受影响）
+      _consecutiveSaveFailures++;
+      final paused = _consecutiveSaveFailures >= 3;
+      state = state.copyWith(
+        isSaving: false,
+        saveError: '$e',
+        autosavePaused: paused,
+      );
     }
   }
 
@@ -519,7 +546,7 @@ class WritingStore extends StateNotifier<WritingState> {
   Future<void> syncDraftToChapter() async {
     if (state.isOffline || !state.hasDraft) return;
     try {
-      final repo = ChapterRepository(_db);
+      final repo = chapterRepoFactory(_db);
       await repo.saveChapterContent(chapterId, state.localContent);
       await AppStateRepository(_db).clearChapterDraft(chapterId);
       _pendingDraft = null;
