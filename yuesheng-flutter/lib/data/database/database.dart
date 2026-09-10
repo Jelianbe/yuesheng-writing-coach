@@ -43,6 +43,8 @@ part 'database.g.dart';
     Volumes,
     // X-041a P0：训练结果持久化（PracticeStore.trainingResult 落库）
     TrainingResults,
+    // ADR-C91：LLM 多账号元信息（v28，api_key 不入 DB）
+    AiAccounts,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -52,7 +54,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -194,7 +196,8 @@ class AppDatabase extends _$AppDatabase {
       // 批次94-2：守卫上移到 24（v24 块对 from=23 存量库可达，幂等）
       // 批次94-5：守卫上移到 25（v25 块对 from=24 存量库可达，幂等）
       // C78 批次1：守卫上移到 27（v27 块对 from=26 存量库可达，幂等）
-      if (from >= 27) return;
+      // ADR-C91：守卫上移到 28（v28 块对 from=27 存量库可达，幂等）
+      if (from >= 28) return;
 
       // v2: add_last_diagnosed_at_to_chapters
       if (from < 2) {
@@ -812,6 +815,21 @@ class AppDatabase extends _$AppDatabase {
             );
           }
         }
+      }
+
+      // v28: ADR-C91 批次 D-1 LLM 多账号表（幂等）
+      if (from < 28) {
+        await customStatement(
+          'CREATE TABLE IF NOT EXISTS ai_accounts ('
+          'id TEXT PRIMARY KEY, '
+          'name TEXT NOT NULL, '
+          'base_url TEXT NOT NULL, '
+          'model TEXT NOT NULL, '
+          'is_default INTEGER NOT NULL DEFAULT 0, '
+          'is_enabled INTEGER NOT NULL DEFAULT 1, '
+          'created_at INTEGER NOT NULL DEFAULT (unixepoch())'
+          ')',
+        );
       }
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，

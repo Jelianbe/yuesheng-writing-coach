@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────
 // migration_roundtrip_test — B30 v12 → v25 迁移往返测试
 //
 // 覆盖 migration_v23_test 之外的更早版本（v12）存量库升级路径：
@@ -234,7 +234,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 27);
+    expect(version.read<int>('user_version'), 28);
 
     // 2. manuscripts 存量保留 + tags 列补齐
     final m = await db

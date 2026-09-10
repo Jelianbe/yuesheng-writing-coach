@@ -22,6 +22,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/ai_account_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
@@ -70,6 +71,28 @@ void main() {
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     storage = _FakeConfigStorage();
+    // ADR-C91：多账号 key map 走 flutter_secure_storage，测试环境必须 mock
+    // platform channel（否则 createAccount 写 key map 抛 MissingPluginException）。
+    // 用内存 map 落盘，保证 seedAccounts 写入的 key 可被 _editAccount 读回。
+    final secure = <String, String>{};
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async {
+            final key = (call.arguments as Map?)?['key'] as String?;
+            switch (call.method) {
+              case 'read':
+                return secure[key];
+              case 'write':
+                secure[key!] = (call.arguments as Map)['value'] as String;
+                return null;
+              case 'delete':
+                secure.remove(key);
+                return null;
+            }
+            return null;
+          },
+        );
   });
 
   tearDown(() async => db.close());
@@ -100,12 +123,7 @@ void main() {
 
     // 首屏（ListView 懒加载：「维护」「关于」在 #9 滚动后验证）
     expect(find.text('API 配置'), findsOneWidget);
-    expect(
-      find.text(
-        '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能'), findsOneWidget);
   });
 
   testWidgets('#2 表单加载已有配置', (tester) async {
@@ -119,12 +137,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 表单已填充 → 未配置警告消失
-    expect(
-      find.text(
-        '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
-      ),
-      findsNothing,
-    );
+    expect(find.text('尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能'), findsNothing);
     final keyField = tester.widget<TextField>(find.byType(TextField).at(0));
     expect(keyField.controller!.text, 'sk-existing');
     expect(
@@ -137,7 +150,7 @@ void main() {
     );
   });
 
-  testWidgets('#3 保存配置 → 写入 storage', (tester) async {
+  testWidgets('#3 保存配置 → 建账号（ADR-C91 多账号）', (tester) async {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();
 
@@ -150,11 +163,13 @@ void main() {
     await tester.tap(find.text('保存配置'));
     await tester.pumpAndSettle();
 
-    expect(storage.stored, isNotNull);
-    expect(storage.stored!.apiKey, 'sk-abc');
-    expect(storage.stored!.baseUrl, 'https://api.deepseek.com'); // 去尾部斜杠
-    expect(storage.stored!.model, 'deepseek-v4-flash');
     expect(find.text('API 配置已保存'), findsOneWidget);
+    // 多账号：保存落 DB 账号（而非旧三键 storage）
+    final accounts = await AIAccountRepository(db).listAccounts();
+    expect(accounts, hasLength(1));
+    expect(accounts.first.isDefault, isTrue); // 首建自动默认
+    expect(accounts.first.baseUrl, 'https://api.deepseek.com'); // 去尾部斜杠
+    expect(accounts.first.model, 'deepseek-v4-flash');
   });
 
   testWidgets('#4 空表单保存 → 完整提示', (tester) async {
@@ -182,8 +197,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('✓ 连接成功'), findsOneWidget);
-    // 测试连接前自动保存了表单
-    expect(storage.stored, isNotNull);
+    // 测试连接前自动保存了表单（DB 账号）
+    final accounts = await AIAccountRepository(db).listAccounts();
+    expect(accounts, hasLength(1));
   });
 
   testWidgets('#6 填充示例 → 字段填充', (tester) async {
@@ -571,8 +587,9 @@ void main() {
     });
   });
 
-  testWidgets('#A 预设点选 → Kimi 自动填 kimi-k3 + api.moonshot.cn（批次A 时效性锚定）',
-      (tester) async {
+  testWidgets('#A 预设点选 → Kimi 自动填 kimi-k3 + api.moonshot.cn（批次A 时效性锚定）', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();
 
@@ -605,6 +622,151 @@ void main() {
     expect(
       tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
       'doubao-seed-2.1-turbo',
+    );
+  });
+
+  // ── ADR-C91 多账号（批次 D-1） ──
+
+  Future<void> seedAccounts(AppDatabase target) async {
+    final repo = AIAccountRepository(target);
+    await repo.createAccount(
+      name: 'DeepSeek 主账号',
+      baseUrl: 'https://api.deepseek.com',
+      model: 'deepseek-v4-flash',
+      apiKey: 'sk-main',
+    );
+    await repo.createAccount(
+      name: 'Kimi 备选',
+      baseUrl: 'https://api.moonshot.cn/v1',
+      model: 'kimi-k3',
+      apiKey: 'sk-kimi',
+    );
+  }
+
+  testWidgets('#M1 已有账号 → 列表渲染（名称/默认徽标/model·baseUrl）', (tester) async {
+    await seedAccounts(db);
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    expect(find.text('已保存的账号（2）'), findsOneWidget);
+    expect(find.text('DeepSeek 主账号'), findsOneWidget);
+    expect(find.text('Kimi 备选'), findsOneWidget);
+    expect(find.text('默认'), findsOneWidget); // 仅首建账号
+    expect(
+      find.text('deepseek-v4-flash · https://api.deepseek.com'),
+      findsOneWidget,
+    );
+    expect(find.text('kimi-k3 · https://api.moonshot.cn/v1'), findsOneWidget);
+  });
+
+  testWidgets('#M2 添加新账号 → 表单清空 + 保存后列表 +1', (tester) async {
+    await seedAccounts(db);
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    // 当前编辑默认账号 → 点「添加新账号」清空表单
+    await tester.tap(find.text('添加新账号'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
+      '',
+    );
+
+    // 填新账号并保存（账号列表推高内容 → 先滚到保存按钮）
+    await tester.enterText(find.byType(TextField).at(0), 'sk-new');
+    await tester.enterText(
+      find.byType(TextField).at(1),
+      'https://new.example.com',
+    );
+    await tester.enterText(find.byType(TextField).at(2), 'new-model');
+    await tester.ensureVisible(find.text('保存配置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存配置'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('API 配置已保存'), findsOneWidget);
+    expect(find.text('已保存的账号（3）'), findsOneWidget);
+    expect(find.text('new-model · https://new.example.com'), findsOneWidget);
+  });
+
+  testWidgets('#M3 删除非默认账号 → 确认后列表 -1', (tester) async {
+    await seedAccounts(db);
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    // Kimi 备选行的删除按钮（第一个删除图标 = DeepSeek 行，第二个 = Kimi 行）
+    await tester.tap(find.byIcon(Icons.delete_outline).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('账号已删除'), findsOneWidget);
+    expect(find.text('已保存的账号（1）'), findsOneWidget);
+    expect(find.text('Kimi 备选'), findsNothing);
+    expect(find.text('DeepSeek 主账号'), findsOneWidget);
+  });
+
+  testWidgets('#M4 删除最后账号 → 拒绝并提示', (tester) async {
+    await seedAccounts(db);
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    // 删掉 Kimi（非默认）
+    await tester.tap(find.byIcon(Icons.delete_outline).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+
+    // 只剩 DeepSeek（默认）→ 再删被拒。
+    // 先等上一条「账号已删除」snackbar 过期，避免排队遮挡新提示。
+    await tester.pump(const Duration(seconds: 5));
+    await tester.tap(find.byIcon(Icons.delete_outline).at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('删除失败：至少保留一个账号'), findsOneWidget);
+    expect(find.text('已保存的账号（1）'), findsOneWidget);
+  });
+
+  testWidgets('#M5 设默认 → 默认徽标切换', (tester) async {
+    await seedAccounts(db);
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    // Kimi 行「设默认」
+    await tester.tap(find.text('设默认'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('已设为默认账号'), findsOneWidget);
+    // 默认徽标仍只有一个（从 DeepSeek 移到 Kimi）
+    expect(find.text('默认'), findsOneWidget);
+    final kimiRow = find.ancestor(
+      of: find.text('Kimi 备选'),
+      matching: find.byType(Container),
+    );
+    expect(kimiRow, findsWidgets);
+  });
+
+  testWidgets('#M6 点击账号行 → 编辑模式（表单载入该账号）', (tester) async {
+    await seedAccounts(db);
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Kimi 备选'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
+      'sk-kimi',
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
+      'https://api.moonshot.cn/v1',
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
+      'kimi-k3',
     );
   });
 }

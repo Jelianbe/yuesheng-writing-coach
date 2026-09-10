@@ -710,3 +710,22 @@ class TrainingResults extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// ============================================================
+/// 16. ai_accounts — LLM 多账号（v28，ADR-C91 批次 D-1）
+/// 仅存元信息；api_key 存 flutter_secure_storage JSON map（R-029 密钥零 DB 面）
+/// ============================================================
+@DataClassName('AiAccountRow')
+class AiAccounts extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get baseUrl => text()();
+  TextColumn get model => text()();
+  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+  BoolColumn get isEnabled => boolean().withDefault(const Constant(true))();
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

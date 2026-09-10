@@ -142,9 +142,20 @@ class LlmClient {
   final LlmConfigStorage _configStorage;
   final Dio _dio;
 
-  LlmClient([LlmConfigStorage? configStorage, Dio? dio])
+  /// 多账号配置加载器（ADR-C91 批次 D-1）：null 时回退旧单键读取。
+  /// 生产组装注入「默认账号优先 → 旧三键兼容迁移」；测试默认不传保持旧行为。
+  final Future<LlmConfigValues?> Function()? _configLoader;
+
+  LlmClient([LlmConfigStorage? configStorage, Dio? dio, this._configLoader])
     : _configStorage = configStorage ?? LlmConfigStorage(),
       _dio = dio ?? Dio();
+
+  /// 当前配置源：优先自定义 loader（多账号），否则旧单键存储
+  Future<LlmConfigValues?> _loadConfig() {
+    final loader = _configLoader;
+    if (loader != null) return loader();
+    return _configStorage.getLlmConfig();
+  }
 
   /// 免费测试模式教学文案（批次 E-1，2026-09-10 用户决策）：
   /// 无次数限制、无开关——判定 = 未配置 API Key 自动启用；不伪造诊断，
@@ -166,7 +177,7 @@ class LlmClient {
   Future<TestConnectionResult> testLlmConnection({
     LlmConfigValues? config,
   }) async {
-    final cfg = config ?? await _configStorage.getLlmConfig();
+    final cfg = config ?? await _loadConfig();
     if (cfg == null) return _kConfigMissing;
 
     if (!await checkNetwork()) return _kNetworkUnavailable;
@@ -311,7 +322,7 @@ class LlmClient {
     CancelToken? cancelToken,
     LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
   }) async {
-    final cfg = await _configStorage.getLlmConfig();
+    final cfg = await _loadConfig();
     if (cfg == null) {
       // 批次 E-1 免费测试模式：未配置 API Key 自动启用（无开关、无次数限制），
       // 返回固定教学文案，不伪造诊断——解析类调用方走各自现有失败兜底。
@@ -434,7 +445,7 @@ class LlmClient {
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
   }) async {
-    final cfg = await _configStorage.getLlmConfig();
+    final cfg = await _loadConfig();
     if (cfg == null) {
       // 批次 E-1 免费测试模式：模拟流式回调（教学文案分块推送 + DONE）。
       await _emitFreeTestStream(callback, cancelToken);

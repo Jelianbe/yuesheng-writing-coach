@@ -18,6 +18,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_theme.dart';
+import '../data/database/database.dart';
+import '../data/repositories/ai_account_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/session_providers.dart';
@@ -86,6 +88,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late final LlmConfigStorage _configStorage;
   late final LlmClient _llmClient;
+  late final AIAccountRepository _accountRepo;
 
   final TextEditingController _apiKeyCtrl = TextEditingController();
   final TextEditingController _baseUrlCtrl = TextEditingController();
@@ -95,6 +98,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _isSaving = false;
   bool _isTestingConn = false;
   TestConnectionResult? _connResult;
+
+  /// ADR-C91 多账号：账号列表 / 当前编辑账号（null=新增模式）
+  List<AiAccountRow> _accounts = [];
+  bool _accountsLoaded = false;
+  String? _editingAccountId;
+  bool _isDeleting = false;
 
   /// 批次 38：最新会话的学习进度概览（学习进度从书架移至设置）
   ProgressSummary? _progressSummary;
@@ -107,6 +116,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     super.initState();
     _configStorage = widget.configStorage ?? LlmConfigStorage();
     _llmClient = widget.llmClient ?? LlmClient(_configStorage);
+    _accountRepo = AIAccountRepository(ref.read(appDatabaseProvider));
     _loadApiConfig();
     _loadProgressSummary();
   }
@@ -148,9 +158,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     super.dispose();
   }
 
+  /// 加载 API 配置与账号列表（ADR-C91 多账号）
+  /// 账号存在 → 载入默认账号表单；否则回退旧单键（兼容未迁移）
   Future<void> _loadApiConfig() async {
     try {
-      final config = await _configStorage.getLlmConfig();
+      final accounts = await _accountRepo.listAccounts();
+      if (mounted) setState(() => _accounts = accounts);
+      LlmConfigValues? config;
+      if (accounts.isNotEmpty) {
+        final def = accounts.firstWhere(
+          (a) => a.isDefault,
+          orElse: () => accounts.first,
+        );
+        final key = await _accountRepo.getApiKey(def.id);
+        if (key != null && key.isNotEmpty) {
+          config = LlmConfigValues(
+            apiKey: key,
+            baseUrl: def.baseUrl,
+            model: def.model,
+          );
+          _editingAccountId = def.id;
+        }
+      }
+      config ??= await _configStorage.getLlmConfig();
       if (config != null && mounted) {
         _apiKeyCtrl.text = config.apiKey;
         _baseUrlCtrl.text = config.baseUrl;
@@ -159,7 +189,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (_) {
       // 加载失败保持空表单，静默（release 不暴露技术细节）
     } finally {
-      if (mounted) setState(() => _configLoaded = true);
+      if (mounted) {
+        setState(() {
+          _configLoaded = true;
+          _accountsLoaded = true;
+        });
+      }
     }
   }
 
@@ -178,7 +213,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  /// 保存配置：校验非空 → trim + baseUrl 去尾部斜杠 → 写入
+  /// 保存配置：校验非空 → 写账号（ADR-C91 多账号：编辑中 → 更新；否则新建）
   Future<void> _handleSaveConfig() async {
     if (!_hasFullConfig) {
       _notify('请填写完整的 API 配置', error: true);
@@ -186,13 +221,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     setState(() => _isSaving = true);
     try {
-      await _configStorage.saveLlmConfig(
-        LlmConfigValues(
-          apiKey: _apiKeyCtrl.text.trim(),
-          baseUrl: _baseUrlCtrl.text.trim().replaceAll(RegExp(r'/$'), ''),
-          model: _modelCtrl.text.trim(),
-        ),
-      );
+      await _saveCurrentForm(resetAfterCreate: true);
+      await _reloadAccounts();
       _notify('API 配置已保存');
     } catch (_) {
       _notify('保存失败，请稍后再试', error: true);
@@ -201,7 +231,40 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  /// 测试连接：先保存当前表单，再发起连通性测试
+  /// 保存当前表单到账号：编辑中 → updateAccount；否则 createAccount。
+  /// [resetAfterCreate]：新建后回到「新增」起点（保存配置用，可连续新增多账号）。
+  Future<void> _saveCurrentForm({bool resetAfterCreate = false}) async {
+    final editingId = _editingAccountId;
+    final name = _modelCtrl.text.trim();
+    final baseUrl = _baseUrlCtrl.text.trim().replaceAll(RegExp(r'/$'), '');
+    final model = _modelCtrl.text.trim();
+    final apiKey = _apiKeyCtrl.text.trim();
+    if (editingId != null) {
+      await _accountRepo.updateAccount(
+        id: editingId,
+        name: name,
+        baseUrl: baseUrl,
+        model: model,
+        apiKey: apiKey,
+      );
+    } else {
+      await _accountRepo.createAccount(
+        name: name,
+        baseUrl: baseUrl,
+        model: model,
+        apiKey: apiKey,
+      );
+      if (resetAfterCreate) _editingAccountId = null;
+    }
+  }
+
+  /// 重新加载账号列表（保存/删除后刷新；保留表单不动）
+  Future<void> _reloadAccounts() async {
+    final accounts = await _accountRepo.listAccounts();
+    if (mounted) setState(() => _accounts = accounts);
+  }
+
+  /// 测试连接：先保存当前表单（账号路径），再发起连通性测试
   Future<void> _handleTestConnection() async {
     if (!_hasFullConfig) {
       setState(() {
@@ -217,13 +280,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _connResult = null;
     });
     try {
-      await _configStorage.saveLlmConfig(
-        LlmConfigValues(
-          apiKey: _apiKeyCtrl.text.trim(),
-          baseUrl: _baseUrlCtrl.text.trim().replaceAll(RegExp(r'/$'), ''),
-          model: _modelCtrl.text.trim(),
-        ),
-      );
+      await _saveCurrentForm();
       final result = await _llmClient.testLlmConnection();
       if (mounted) setState(() => _connResult = result);
     } catch (_) {
@@ -469,6 +526,198 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   // ── API 配置 ──
+
+  /// 账号列表（ADR-C91 多账号）：行 = 名称+model+默认徽标+设默认/删除
+  Widget _buildAccountList() {
+    if (!_accountsLoaded || _accounts.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _FieldLabel('已保存的账号（${_accounts.length}）'),
+        for (final account in _accounts) _buildAccountRow(account),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  /// 单账号行（ADR-C91）：编辑态高亮；默认徽标；设默认/删除操作
+  Widget _buildAccountRow(AiAccountRow account) {
+    final busy = _isSaving || _isTestingConn || _isDeleting;
+    final editing = _editingAccountId == account.id;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.smx,
+      ),
+      decoration: BoxDecoration(
+        color: editing ? AppColors.primarySoft : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(
+          color: editing ? AppColors.primary : AppColors.border,
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              onTap: busy ? null : () => _editAccount(account),
+              child: _buildAccountInfo(account),
+            ),
+          ),
+          if (!account.isDefault)
+            TextButton(
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                foregroundColor: AppColors.primary,
+              ),
+              onPressed: busy ? null : () => _handleSetDefault(account.id),
+              child: const Text('设默认', style: TextStyle(fontSize: 12)),
+            ),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            tooltip: '删除账号',
+            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+            onPressed: busy ? null : () => _handleDeleteAccount(account),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 账号行信息区：名称 + 默认徽标 + model·baseUrl 摘要
+  Widget _buildAccountInfo(AiAccountRow account) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAccountTitle(account),
+          const SizedBox(height: 2),
+          Text(
+            '${account.model} · ${account.baseUrl}',
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 账号行标题：名称 + 默认徽标
+  Widget _buildAccountTitle(AiAccountRow account) {
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            account.name,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+        if (account.isDefault) ...[
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              '默认',
+              style: TextStyle(fontSize: 10, color: AppColors.primary),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// 点击「＋ 添加新账号」：清表单进入新增模式
+  void _startNewAccount() {
+    setState(() {
+      _editingAccountId = null;
+      _apiKeyCtrl.clear();
+      _baseUrlCtrl.clear();
+      _modelCtrl.clear();
+      _connResult = null;
+    });
+  }
+
+  /// 点击账号行：载入表单进入编辑模式
+  void _editAccount(AiAccountRow account) async {
+    final key = await _accountRepo.getApiKey(account.id);
+    if (!mounted) return;
+    setState(() {
+      _editingAccountId = account.id;
+      _apiKeyCtrl.text = key ?? '';
+      _baseUrlCtrl.text = account.baseUrl;
+      _modelCtrl.text = account.model;
+      _connResult = null;
+    });
+  }
+
+  /// 设默认（应用层保证全局唯一默认）
+  Future<void> _handleSetDefault(String accountId) async {
+    try {
+      await _accountRepo.setDefault(accountId);
+      await _reloadAccounts();
+      _notify('已设为默认账号');
+    } catch (_) {
+      _notify('操作失败，请稍后再试', error: true);
+    }
+  }
+
+  /// 删除账号：确认 → 至少保留一个（最后账号拒绝）→ 默认被删时表单载入新默认
+  Future<void> _handleDeleteAccount(AiAccountRow account) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除账号', style: AppTextStyles.titleLg),
+        content: Text(
+          '确定删除账号「${account.name}」吗？',
+          textAlign: TextAlign.center,
+          style: AppTextStyles.body,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: AppColors.onPrimary,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _isDeleting = true);
+    try {
+      await _accountRepo.deleteAccount(account.id);
+      await _loadApiConfig(); // 刷新列表；默认被删 → 表单载入接管账号
+      _notify('账号已删除');
+    } catch (_) {
+      _notify('删除失败：至少保留一个账号', error: true);
+    } finally {
+      if (mounted) setState(() => _isDeleting = false);
+    }
+  }
+
   Widget _buildApiSection() {
     final hasConfig = _configLoaded && !_hasFullConfig;
     return _SectionCard(
@@ -492,6 +741,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               child: const Text(
                 '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
                 style: TextStyle(fontSize: 13, color: AppColors.danger),
+              ),
+            ),
+          _buildAccountList(),
+          if (_editingAccountId != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  foregroundColor: AppColors.primary,
+                ),
+                onPressed: (_isSaving || _isTestingConn || _isDeleting)
+                    ? null
+                    : _startNewAccount,
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('添加新账号', style: TextStyle(fontSize: 12)),
               ),
             ),
           _FieldLabel('API Key'),

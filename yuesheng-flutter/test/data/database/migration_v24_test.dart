@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────
 // migration_v24_test — 批次94-2 v23 → v24 迁移路径测试（v25 标签列一并迁移到 25）
 //
 // 模拟真实升级：用 sqlite3 手工构造 v23 存量库文件（含 volumes 表 +
@@ -102,7 +102,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 27);
+    expect(version.read<int>('user_version'), 28);
 
     // 2. 存量章节保留（含 volume_id）
     final chapter = await ChapterRepository(db).getChapter('c1');
@@ -139,6 +139,6 @@ void main() {
     final chapter = await ChapterRepository(db2).getChapter('c1');
     expect(chapter!.status, 'draft');
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 27);
+    expect(version.read<int>('user_version'), 28);
   });
 }

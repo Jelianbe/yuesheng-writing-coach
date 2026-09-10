@@ -27,6 +27,7 @@ import '../data/repositories/subplot_fact_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/editor_observation_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
+import '../services/llm_config_resolver.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../data/repositories/teacher_suggestion_repository.dart';
@@ -99,9 +100,12 @@ final diagnosisServiceProvider = Provider<DiagnosisService>((ref) {
 
 /// LLM 客户端 Provider（单例）
 ///
-/// ChatService 和 runProgressiveDiagnosis 共用同一实例
+/// ChatService 和 runProgressiveDiagnosis 共用同一实例。
+/// ADR-C91：注入多账号 configLoader（默认账号优先 + 旧单键兼容迁移）；
+/// 测试不 override 本 provider 时经注入 loader 走真实存储，override 时不受影响。
 final llmClientProvider = Provider<LlmClient>((ref) {
-  return LlmClient();
+  final db = ref.watch(appDatabaseProvider);
+  return LlmClient(null, null, () => resolveLlmConfig(db));
 });
 
 /// 诊断提交编排器 Provider（ADR-C74 K-1）

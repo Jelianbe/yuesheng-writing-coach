@@ -12940,6 +12940,459 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
   }
 }
 
+class $AiAccountsTable extends AiAccounts
+    with TableInfo<$AiAccountsTable, AiAccountRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiAccountsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _baseUrlMeta = const VerificationMeta(
+    'baseUrl',
+  );
+  @override
+  late final GeneratedColumn<String> baseUrl = GeneratedColumn<String>(
+    'base_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _modelMeta = const VerificationMeta('model');
+  @override
+  late final GeneratedColumn<String> model = GeneratedColumn<String>(
+    'model',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isDefaultMeta = const VerificationMeta(
+    'isDefault',
+  );
+  @override
+  late final GeneratedColumn<bool> isDefault = GeneratedColumn<bool>(
+    'is_default',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_default" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isEnabledMeta = const VerificationMeta(
+    'isEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> isEnabled = GeneratedColumn<bool>(
+    'is_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    baseUrl,
+    model,
+    isDefault,
+    isEnabled,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_accounts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiAccountRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('base_url')) {
+      context.handle(
+        _baseUrlMeta,
+        baseUrl.isAcceptableOrUnknown(data['base_url']!, _baseUrlMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_baseUrlMeta);
+    }
+    if (data.containsKey('model')) {
+      context.handle(
+        _modelMeta,
+        model.isAcceptableOrUnknown(data['model']!, _modelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_modelMeta);
+    }
+    if (data.containsKey('is_default')) {
+      context.handle(
+        _isDefaultMeta,
+        isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
+      );
+    }
+    if (data.containsKey('is_enabled')) {
+      context.handle(
+        _isEnabledMeta,
+        isEnabled.isAcceptableOrUnknown(data['is_enabled']!, _isEnabledMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AiAccountRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiAccountRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      baseUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}base_url'],
+      )!,
+      model: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}model'],
+      )!,
+      isDefault: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_default'],
+      )!,
+      isEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_enabled'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AiAccountsTable createAlias(String alias) {
+    return $AiAccountsTable(attachedDatabase, alias);
+  }
+}
+
+class AiAccountRow extends DataClass implements Insertable<AiAccountRow> {
+  final String id;
+  final String name;
+  final String baseUrl;
+  final String model;
+  final bool isDefault;
+  final bool isEnabled;
+  final int createdAt;
+  const AiAccountRow({
+    required this.id,
+    required this.name,
+    required this.baseUrl,
+    required this.model,
+    required this.isDefault,
+    required this.isEnabled,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['base_url'] = Variable<String>(baseUrl);
+    map['model'] = Variable<String>(model);
+    map['is_default'] = Variable<bool>(isDefault);
+    map['is_enabled'] = Variable<bool>(isEnabled);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  AiAccountsCompanion toCompanion(bool nullToAbsent) {
+    return AiAccountsCompanion(
+      id: Value(id),
+      name: Value(name),
+      baseUrl: Value(baseUrl),
+      model: Value(model),
+      isDefault: Value(isDefault),
+      isEnabled: Value(isEnabled),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory AiAccountRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiAccountRow(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      baseUrl: serializer.fromJson<String>(json['baseUrl']),
+      model: serializer.fromJson<String>(json['model']),
+      isDefault: serializer.fromJson<bool>(json['isDefault']),
+      isEnabled: serializer.fromJson<bool>(json['isEnabled']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'baseUrl': serializer.toJson<String>(baseUrl),
+      'model': serializer.toJson<String>(model),
+      'isDefault': serializer.toJson<bool>(isDefault),
+      'isEnabled': serializer.toJson<bool>(isEnabled),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  AiAccountRow copyWith({
+    String? id,
+    String? name,
+    String? baseUrl,
+    String? model,
+    bool? isDefault,
+    bool? isEnabled,
+    int? createdAt,
+  }) => AiAccountRow(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    baseUrl: baseUrl ?? this.baseUrl,
+    model: model ?? this.model,
+    isDefault: isDefault ?? this.isDefault,
+    isEnabled: isEnabled ?? this.isEnabled,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  AiAccountRow copyWithCompanion(AiAccountsCompanion data) {
+    return AiAccountRow(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      baseUrl: data.baseUrl.present ? data.baseUrl.value : this.baseUrl,
+      model: data.model.present ? data.model.value : this.model,
+      isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
+      isEnabled: data.isEnabled.present ? data.isEnabled.value : this.isEnabled,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiAccountRow(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('baseUrl: $baseUrl, ')
+          ..write('model: $model, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, baseUrl, model, isDefault, isEnabled, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiAccountRow &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.baseUrl == this.baseUrl &&
+          other.model == this.model &&
+          other.isDefault == this.isDefault &&
+          other.isEnabled == this.isEnabled &&
+          other.createdAt == this.createdAt);
+}
+
+class AiAccountsCompanion extends UpdateCompanion<AiAccountRow> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> baseUrl;
+  final Value<String> model;
+  final Value<bool> isDefault;
+  final Value<bool> isEnabled;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const AiAccountsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.baseUrl = const Value.absent(),
+    this.model = const Value.absent(),
+    this.isDefault = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiAccountsCompanion.insert({
+    required String id,
+    required String name,
+    required String baseUrl,
+    required String model,
+    this.isDefault = const Value.absent(),
+    this.isEnabled = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       name = Value(name),
+       baseUrl = Value(baseUrl),
+       model = Value(model);
+  static Insertable<AiAccountRow> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? baseUrl,
+    Expression<String>? model,
+    Expression<bool>? isDefault,
+    Expression<bool>? isEnabled,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (baseUrl != null) 'base_url': baseUrl,
+      if (model != null) 'model': model,
+      if (isDefault != null) 'is_default': isDefault,
+      if (isEnabled != null) 'is_enabled': isEnabled,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiAccountsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? baseUrl,
+    Value<String>? model,
+    Value<bool>? isDefault,
+    Value<bool>? isEnabled,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return AiAccountsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      baseUrl: baseUrl ?? this.baseUrl,
+      model: model ?? this.model,
+      isDefault: isDefault ?? this.isDefault,
+      isEnabled: isEnabled ?? this.isEnabled,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (baseUrl.present) {
+      map['base_url'] = Variable<String>(baseUrl.value);
+    }
+    if (model.present) {
+      map['model'] = Variable<String>(model.value);
+    }
+    if (isDefault.present) {
+      map['is_default'] = Variable<bool>(isDefault.value);
+    }
+    if (isEnabled.present) {
+      map['is_enabled'] = Variable<bool>(isEnabled.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiAccountsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('baseUrl: $baseUrl, ')
+          ..write('model: $model, ')
+          ..write('isDefault: $isDefault, ')
+          ..write('isEnabled: $isEnabled, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -12974,6 +13427,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TrainingResultsTable trainingResults = $TrainingResultsTable(
     this,
   );
+  late final $AiAccountsTable aiAccounts = $AiAccountsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13000,6 +13454,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     outlineEntities,
     outlineImpressions,
     trainingResults,
+    aiAccounts,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -24408,6 +24863,244 @@ typedef $$TrainingResultsTableProcessedTableManager =
       TrainingResultRow,
       PrefetchHooks Function({bool sessionId, bool suggestionId})
     >;
+typedef $$AiAccountsTableCreateCompanionBuilder =
+    AiAccountsCompanion Function({
+      required String id,
+      required String name,
+      required String baseUrl,
+      required String model,
+      Value<bool> isDefault,
+      Value<bool> isEnabled,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$AiAccountsTableUpdateCompanionBuilder =
+    AiAccountsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> baseUrl,
+      Value<String> model,
+      Value<bool> isDefault,
+      Value<bool> isEnabled,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$AiAccountsTableFilterComposer
+    extends Composer<_$AppDatabase, $AiAccountsTable> {
+  $$AiAccountsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get baseUrl => $composableBuilder(
+    column: $table.baseUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get model => $composableBuilder(
+    column: $table.model,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isEnabled => $composableBuilder(
+    column: $table.isEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiAccountsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiAccountsTable> {
+  $$AiAccountsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get baseUrl => $composableBuilder(
+    column: $table.baseUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get model => $composableBuilder(
+    column: $table.model,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDefault => $composableBuilder(
+    column: $table.isDefault,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isEnabled => $composableBuilder(
+    column: $table.isEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiAccountsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiAccountsTable> {
+  $$AiAccountsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get baseUrl =>
+      $composableBuilder(column: $table.baseUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get model =>
+      $composableBuilder(column: $table.model, builder: (column) => column);
+
+  GeneratedColumn<bool> get isDefault =>
+      $composableBuilder(column: $table.isDefault, builder: (column) => column);
+
+  GeneratedColumn<bool> get isEnabled =>
+      $composableBuilder(column: $table.isEnabled, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$AiAccountsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiAccountsTable,
+          AiAccountRow,
+          $$AiAccountsTableFilterComposer,
+          $$AiAccountsTableOrderingComposer,
+          $$AiAccountsTableAnnotationComposer,
+          $$AiAccountsTableCreateCompanionBuilder,
+          $$AiAccountsTableUpdateCompanionBuilder,
+          (
+            AiAccountRow,
+            BaseReferences<_$AppDatabase, $AiAccountsTable, AiAccountRow>,
+          ),
+          AiAccountRow,
+          PrefetchHooks Function()
+        > {
+  $$AiAccountsTableTableManager(_$AppDatabase db, $AiAccountsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiAccountsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiAccountsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiAccountsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> baseUrl = const Value.absent(),
+                Value<String> model = const Value.absent(),
+                Value<bool> isDefault = const Value.absent(),
+                Value<bool> isEnabled = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiAccountsCompanion(
+                id: id,
+                name: name,
+                baseUrl: baseUrl,
+                model: model,
+                isDefault: isDefault,
+                isEnabled: isEnabled,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String baseUrl,
+                required String model,
+                Value<bool> isDefault = const Value.absent(),
+                Value<bool> isEnabled = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiAccountsCompanion.insert(
+                id: id,
+                name: name,
+                baseUrl: baseUrl,
+                model: model,
+                isDefault: isDefault,
+                isEnabled: isEnabled,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiAccountsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiAccountsTable,
+      AiAccountRow,
+      $$AiAccountsTableFilterComposer,
+      $$AiAccountsTableOrderingComposer,
+      $$AiAccountsTableAnnotationComposer,
+      $$AiAccountsTableCreateCompanionBuilder,
+      $$AiAccountsTableUpdateCompanionBuilder,
+      (
+        AiAccountRow,
+        BaseReferences<_$AppDatabase, $AiAccountsTable, AiAccountRow>,
+      ),
+      AiAccountRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -24454,4 +25147,6 @@ class $AppDatabaseManager {
       $$OutlineImpressionsTableTableManager(_db, _db.outlineImpressions);
   $$TrainingResultsTableTableManager get trainingResults =>
       $$TrainingResultsTableTableManager(_db, _db.trainingResults);
+  $$AiAccountsTableTableManager get aiAccounts =>
+      $$AiAccountsTableTableManager(_db, _db.aiAccounts);
 }
