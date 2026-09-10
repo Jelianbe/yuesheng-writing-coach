@@ -16,6 +16,7 @@ import 'package:flutter/foundation.dart';
 
 import '../config/shared_constants.dart';
 import 'llm_circuit_breaker.dart';
+import 'llm_concurrency_gate.dart';
 import 'llm_config_storage.dart';
 import 'llm_error_codes.dart';
 import 'llm_fallback.dart';
@@ -150,14 +151,19 @@ class LlmClient {
   /// 熔断器（入档批次）：连续失败开路 → 快速失败，冷却自动恢复
   final LlmCircuitBreaker _breaker;
 
+  /// 在途请求并发闸门（入档批次）：真实请求互斥，防并发风暴
+  final LlmConcurrencyGate _gate;
+
   LlmClient([
     LlmConfigStorage? configStorage,
     Dio? dio,
     this._configLoader,
     LlmCircuitBreaker? circuitBreaker,
+    LlmConcurrencyGate? gate,
   ]) : _configStorage = configStorage ?? LlmConfigStorage(),
        _dio = dio ?? Dio(),
-       _breaker = circuitBreaker ?? LlmCircuitBreaker();
+       _breaker = circuitBreaker ?? LlmCircuitBreaker(),
+       _gate = gate ?? kSharedLlmGate;
 
   /// 当前配置源：优先自定义 loader（多账号），否则旧单键存储
   Future<LlmConfigValues?> _loadConfig() {
@@ -338,31 +344,43 @@ class LlmClient {
       return ChatCompletionResult(content: _kFreeTestReply);
     }
 
-    // 熔断器：连续失败开路期快速失败（免费模式不熔断，cfg 非空才检查）
-    if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
-
-    if (!await checkNetwork()) throw Exception('网络不可用');
-
-    final fallbacks = parseFallbacks(await _configStorage.getLlmFallbacksRaw());
-    final endpoints = expandEndpoints(cfg, fallbacks, retryPolicy.maxAttempts);
-
+    // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
+    _gate.enter();
     try {
-      final result = await executeWithRetry(
-        (attemptIndex) => _postChatCompletion(
-          endpoints[attemptIndex - 1],
-          messages,
-          maxTokens: maxTokens,
-          extraBody: extraBody,
-          cancelToken: cancelToken,
-        ),
-        policy: retryPolicy,
+      // 熔断器：连续失败开路期快速失败（免费模式不熔断，cfg 非空才检查）
+      if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
+
+      if (!await checkNetwork()) throw Exception('网络不可用');
+
+      final fallbacks = parseFallbacks(
+        await _configStorage.getLlmFallbacksRaw(),
       );
-      _breaker.onSuccess();
-      return result;
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.cancel) rethrow;
-      if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
-      throw Exception(_buildDioError(e));
+      final endpoints = expandEndpoints(
+        cfg,
+        fallbacks,
+        retryPolicy.maxAttempts,
+      );
+
+      try {
+        final result = await executeWithRetry(
+          (attemptIndex) => _postChatCompletion(
+            endpoints[attemptIndex - 1],
+            messages,
+            maxTokens: maxTokens,
+            extraBody: extraBody,
+            cancelToken: cancelToken,
+          ),
+          policy: retryPolicy,
+        );
+        _breaker.onSuccess();
+        return result;
+      } on DioException catch (e) {
+        if (e.type == DioExceptionType.cancel) rethrow;
+        if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
+        throw Exception(_buildDioError(e));
+      }
+    } finally {
+      _gate.exit();
     }
   }
 
@@ -467,35 +485,43 @@ class LlmClient {
       return;
     }
 
-    // 熔断器：连续失败开路期快速失败（免费模式不熔断，cfg 非空才检查）
-    if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
-
-    if (!await checkNetwork()) throw Exception('网络不可用');
-
-    final fallbacks = parseFallbacks(await _configStorage.getLlmFallbacksRaw());
-    final endpoints = expandEndpoints(
-      cfg,
-      fallbacks,
-      LlmRetryPolicy.standard.maxAttempts,
-    );
-
+    // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
+    _gate.enter();
     try {
-      await executeWithRetry((attemptIndex) async {
-        await _attemptStreamRequest(
-          endpoints[attemptIndex - 1],
-          messages,
-          callback,
-          cancelToken,
-        );
-      });
-      _breaker.onSuccess();
-    } on LlmNonRetryableException catch (wrapped) {
-      // 解包：断流/超时等原始错误原样冒泡（调用方已有对应处理链路）
-      _reportStreamFailure(wrapped.cause);
-      throw wrapped.cause;
-    } on DioException catch (e) {
-      if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
-      throw Exception(_buildDioError(e));
+      // 熔断器：连续失败开路期快速失败（免费模式不熔断，cfg 非空才检查）
+      if (_breaker.isOpen) throw LlmCircuitOpenException(_breaker.remaining);
+
+      if (!await checkNetwork()) throw Exception('网络不可用');
+
+      final fallbacks = parseFallbacks(
+        await _configStorage.getLlmFallbacksRaw(),
+      );
+      final endpoints = expandEndpoints(
+        cfg,
+        fallbacks,
+        LlmRetryPolicy.standard.maxAttempts,
+      );
+
+      try {
+        await executeWithRetry((attemptIndex) async {
+          await _attemptStreamRequest(
+            endpoints[attemptIndex - 1],
+            messages,
+            callback,
+            cancelToken,
+          );
+        });
+        _breaker.onSuccess();
+      } on LlmNonRetryableException catch (wrapped) {
+        // 解包：断流/超时等原始错误原样冒泡（调用方已有对应处理链路）
+        _reportStreamFailure(wrapped.cause);
+        throw wrapped.cause;
+      } on DioException catch (e) {
+        if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
+        throw Exception(_buildDioError(e));
+      }
+    } finally {
+      _gate.exit();
     }
   }
 

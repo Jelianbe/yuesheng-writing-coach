@@ -27,6 +27,7 @@ import 'router/app_router.dart';
 import 'services/error_handler.dart';
 import 'widgets/onboarding_flow.dart';
 import 'widgets/privacy_notice_dialog.dart';
+import 'package:writingcoach/widgets/ui_overlay_host.dart';
 
 /// 演示数据种子开关（默认关闭；`flutter run --dart-define=SEED_DEMO=true`
 /// 开启——批次89 卷分组效果演示用，正常打包运行不受影响）
@@ -310,6 +311,9 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
       themeMode: ThemeMode.system,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
+      // 入档批次：全局 Toast/Dialog 覆盖层（纯增量能力）
+      builder: (context, child) =>
+          Stack(children: [?child, const UiOverlayHost()]),
     );
   }
 }
