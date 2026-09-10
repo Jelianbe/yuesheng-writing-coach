@@ -51,3 +51,19 @@ nul
 historical-archive/
 
 .trae/tmp/
+
+# ── 内部内容不公开（2026-09-10 清理：版权素材/内部文档/AI 工具链配置）──
+# 以下目录/文件仅本地使用，不进入公开仓库（覆盖上方白名单 ! 规则）
+/docs/
+/.workbuddy/
+/.trae/
+/AGENTS.md
+/yuesheng-flutter/docs/
+/yuesheng-writing-coach/novel-chapters/
+/yuesheng-writing-coach/dev-docs/
+/yuesheng-writing-coach/docs/
+/yuesheng-writing-coach/historical-archive/
+/yuesheng-writing-coach/.trae/
+/yuesheng-writing-coach/.agents/
+/yuesheng-writing-coach/.claude/
+/yuesheng-writing-coach/.qoder/
