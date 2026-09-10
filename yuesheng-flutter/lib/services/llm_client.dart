@@ -56,6 +56,11 @@ class ChatCompletionResult {
   bool get isTruncated => finishReason == 'length';
 }
 
+/// 截断续接提示（批次B）：指示模型从断点继续、不重复、不加说明。
+const String _kContinuePrompt =
+    '输出被长度限制截断。请直接从断点继续输出剩余部分，'
+    '不要重复上述已生成内容，不要加任何说明文字。';
+
 /// 用户主动取消请求时抛出（区别于普通异常，调用方据此做优雅复位而非报错）
 class LlmRequestCancelledException implements Exception {
   @override
@@ -302,6 +307,50 @@ class LlmClient {
       if (e.type == DioExceptionType.cancel) rethrow;
       throw Exception(_buildDioError(e));
     }
+  }
+
+  /// 截断自动续接的非流式对话（批次B：防溢出）。
+  ///
+  /// [chatCompletionWithMeta] 的续接版本：响应命中 max_tokens 上限
+  /// （finish_reason == 'length'）时，把已生成内容作为 assistant 上下文
+  /// 追加进消息列表，指示模型从断点继续输出，最多续接 [maxContinuations]
+  /// 轮（默认 3），返回拼接后的完整内容与最终 finish_reason。
+  ///
+  /// 适用：长结构化输出（诊断/编辑观察 JSON）单次 max_tokens 装不下、
+  /// 但每轮又足够生成一段的场景。正常不截断时与 [chatCompletionWithMeta]
+  /// 行为一致（零额外请求），截断时自动续接降低「内容崩溃」概率。
+  Future<ChatCompletionResult> chatCompletionWithContinuation(
+    List<ChatMessage> messages, {
+    int? maxTokens,
+    Map<String, dynamic>? extraBody,
+    CancelToken? cancelToken,
+    LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
+    int maxContinuations = 3,
+  }) async {
+    final chunks = <String>[];
+    var current = List<ChatMessage>.from(messages);
+    String? finishReason;
+    for (var i = 0; i <= maxContinuations; i++) {
+      final result = await chatCompletionWithMeta(
+        current,
+        maxTokens: maxTokens,
+        extraBody: extraBody,
+        cancelToken: cancelToken,
+        retryPolicy: retryPolicy,
+      );
+      chunks.add(result.content);
+      finishReason = result.finishReason;
+      if (!result.isTruncated) break;
+      current = [
+        ...current,
+        ChatMessage(role: 'assistant', content: result.content),
+        const ChatMessage(role: 'user', content: _kContinuePrompt),
+      ];
+    }
+    return ChatCompletionResult(
+      content: chunks.join(),
+      finishReason: finishReason,
+    );
   }
 
   /// 单次非流式请求（R-019 拆出；含 finish_reason 读取）。

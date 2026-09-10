@@ -69,7 +69,7 @@ Future<EditorStreamResult> callEditorStream(
   // 已实测可用），且 [YS_EDITOR] 块本就拦截不转发，流式展示无收益。
   // onStream 不再回调（签名保留兼容既有调用方）。
   try {
-    final completion = await llmClient.chatCompletionWithMeta(
+    final completion = await llmClient.chatCompletionWithContinuation(
       _buildEditorMessages(text, extraSystemMessages),
       cancelToken: cancelToken,
       // ADR-C88：editor-observation 长 JSON 需更高输出预算（默认 4096

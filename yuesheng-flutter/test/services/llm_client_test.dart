@@ -81,6 +81,41 @@ class _CapturingAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+/// 按序返回预设响应序列的 adapter，记录每次请求体（续接测试用）。
+class _SequenceAdapter implements HttpClientAdapter {
+  final List<({String content, String finishReason})> responses;
+  final List<Map<String, dynamic>> requestBodies = [];
+  int _cursor = 0;
+
+  _SequenceAdapter(this.responses);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requestBodies.add(jsonDecode(options.data as String) as Map<String, dynamic>);
+    final r = responses[_cursor++];
+    final data = {
+      'choices': [
+        {
+          'message': {'role': 'assistant', 'content': r.content},
+          'finish_reason': r.finishReason,
+        },
+      ],
+    };
+    return ResponseBody(
+      Stream.value(Uint8List.fromList(utf8.encode(jsonEncode(data)))),
+      200,
+      headers: {'content-type': ['application/json']},
+    );
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -168,5 +203,94 @@ void main() {
 
     expect(r.success, isFalse);
     expect(r.message, contains('HTTP 500'));
+  });
+
+  test('续接：截断后自动续接成功，拼接完整内容（批次B）', () async {
+    _mockChannels({
+      'yuesheng_api_key': 'sk-custom-test',
+      'yuesheng_api_base_url': 'https://api.custom.example.com',
+      'yuesheng_api_model': 'custom-model',
+    });
+    final adapter = _SequenceAdapter([
+      (content: '第一段', finishReason: 'length'),
+      (content: '第二段', finishReason: 'stop'),
+    ]);
+    final dio = Dio()..httpClientAdapter = adapter;
+    final client = LlmClient(
+      LlmConfigStorage(const FlutterSecureStorage()),
+      dio,
+    );
+
+    final r = await client.chatCompletionWithContinuation(
+      const [ChatMessage(role: 'user', content: 'hi')],
+    );
+
+    expect(r.content, '第一段第二段');
+    expect(r.isTruncated, isFalse);
+    expect(r.finishReason, 'stop');
+    expect(adapter.requestBodies, hasLength(2));
+    // 第二次请求必须把已生成内容作为 assistant 上下文 + 继续提示
+    final secondMessages =
+        adapter.requestBodies[1]['messages'] as List<dynamic>;
+    expect(secondMessages, hasLength(3));
+    expect(secondMessages[1]['role'], 'assistant');
+    expect(secondMessages[1]['content'], '第一段');
+    expect(secondMessages[2]['role'], 'user');
+    expect(
+      (secondMessages[2]['content'] as String),
+      contains('继续'),
+    );
+  });
+
+  test('续接：连续截断达到上限 → 返回拼接内容且仍标记截断（批次B）', () async {
+    _mockChannels({
+      'yuesheng_api_key': 'sk-custom-test',
+      'yuesheng_api_base_url': 'https://api.custom.example.com',
+      'yuesheng_api_model': 'custom-model',
+    });
+    final adapter = _SequenceAdapter([
+      (content: 'A', finishReason: 'length'),
+      (content: 'B', finishReason: 'length'),
+      (content: 'C', finishReason: 'length'),
+    ]);
+    final dio = Dio()..httpClientAdapter = adapter;
+    final client = LlmClient(
+      LlmConfigStorage(const FlutterSecureStorage()),
+      dio,
+    );
+
+    final r = await client.chatCompletionWithContinuation(
+      const [ChatMessage(role: 'user', content: 'hi')],
+      maxContinuations: 2,
+    );
+
+    expect(r.content, 'ABC');
+    expect(r.isTruncated, isTrue);
+    expect(r.finishReason, 'length');
+    expect(adapter.requestBodies, hasLength(3));
+  });
+
+  test('续接：不截断时零额外请求（批次B）', () async {
+    _mockChannels({
+      'yuesheng_api_key': 'sk-custom-test',
+      'yuesheng_api_base_url': 'https://api.custom.example.com',
+      'yuesheng_api_model': 'custom-model',
+    });
+    final adapter = _SequenceAdapter([
+      (content: '完整内容', finishReason: 'stop'),
+    ]);
+    final dio = Dio()..httpClientAdapter = adapter;
+    final client = LlmClient(
+      LlmConfigStorage(const FlutterSecureStorage()),
+      dio,
+    );
+
+    final r = await client.chatCompletionWithContinuation(
+      const [ChatMessage(role: 'user', content: 'hi')],
+    );
+
+    expect(r.content, '完整内容');
+    expect(r.isTruncated, isFalse);
+    expect(adapter.requestBodies, hasLength(1));
   });
 }
