@@ -560,4 +560,41 @@ void main() {
       expect(find.text('导出失败，请稍后再试'), findsOneWidget);
     });
   });
+
+  testWidgets('#A 预设点选 → Kimi 自动填 kimi-k3 + api.moonshot.cn（批次A 时效性锚定）',
+      (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Kimi（月之暗面）'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(1)).controller!.text,
+      'https://api.moonshot.cn/v1',
+    );
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
+      'kimi-k3',
+    );
+  });
+
+  testWidgets('#B 预设点选 → 智谱/豆包新模型名生效（批次A 时效性锚定）', (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(ActionChip, '智谱 GLM'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
+      'glm-4.6',
+    );
+
+    await tester.tap(find.widgetWithText(ActionChip, '豆包（火山方舟）'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
+      'doubao-seed-2.1-turbo',
+    );
+  });
 }
