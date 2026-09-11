@@ -50,8 +50,9 @@ void main() {
         'outline_impression',
         'volumes',
         'ai_accounts',
+        'backup_history',
       };
-      expect(tableNames.length, 22, reason: '应有 22 张业务表');
+      expect(tableNames.length, 23, reason: '应有 23 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
@@ -60,12 +61,13 @@ void main() {
       // chapters.status CHECK 扩 'archived'；批次94-5 → 25 manuscripts.tags 列；
       // 批次96+ → 26 新增 volumes 之外的 schema bump；
       // C78 批次1 → 27 角色标签页列：character_fact.aliases/status，
-      // event_fact.stale/chapter_hash；ADR-C91 → 28 ai_accounts 表）
+      // event_fact.stale/chapter_hash；ADR-C91 → 28 ai_accounts 表；
+      // v29 → backup_history 备份记录表）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        28,
-        reason: 'schemaVersion 应为 28',
+        29,
+        reason: 'schemaVersion 应为 29',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

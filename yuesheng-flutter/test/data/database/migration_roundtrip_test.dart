@@ -234,7 +234,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 28);
+    expect(version.read<int>('user_version'), 29);
 
     // 2. manuscripts 存量保留 + tags 列补齐
     final m = await db

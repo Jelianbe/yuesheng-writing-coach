@@ -46,6 +46,8 @@ part 'database.g.dart';
     TrainingResults,
     // ADR-C91：LLM 多账号元信息（v28，api_key 不入 DB）
     AiAccounts,
+    // v29：数据库备份记录（外来设计文档 §二，pre_migrate/auto/manual）
+    BackupHistory,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -55,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -179,6 +181,10 @@ class AppDatabase extends _$AppDatabase {
       await customStatement(
         'CREATE INDEX IF NOT EXISTS idx_training_results_syndrome ON training_results(syndrome_id, created_at DESC)',
       );
+      // v29：备份历史索引（按创建时间倒序查最近备份）
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_backup_history_created ON backup_history(created_at DESC)',
+      );
     },
 
     onUpgrade: (m, from, to) async {
@@ -198,7 +204,12 @@ class AppDatabase extends _$AppDatabase {
       // 批次94-5：守卫上移到 25（v25 块对 from=24 存量库可达，幂等）
       // C78 批次1：守卫上移到 27（v27 块对 from=26 存量库可达，幂等）
       // ADR-C91：守卫上移到 28（v28 块对 from=27 存量库可达，幂等）
-      if (from >= 28) return;
+      // v29：守卫上移到 29（v29 块对 from=28 存量库可达，幂等）
+      if (from >= 29) return;
+
+      // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
+      // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
+      await _preMigrateBackup(from);
 
       // v2: add_last_diagnosed_at_to_chapters
       if (from < 2) {
@@ -833,6 +844,25 @@ class AppDatabase extends _$AppDatabase {
         );
       }
 
+      // v29: 数据库备份记录表（外来设计文档 §二，幂等）
+      if (from < 29) {
+        await customStatement(
+          'CREATE TABLE IF NOT EXISTS backup_history ('
+          'id TEXT PRIMARY KEY, '
+          "type TEXT NOT NULL CHECK(type IN ('auto','manual','pre_migrate')), "
+          'file_path TEXT NOT NULL, '
+          'file_size INTEGER NOT NULL, '
+          "status TEXT NOT NULL CHECK(status IN ('success','failed','restored')), "
+          "error_message TEXT NOT NULL DEFAULT '', "
+          'created_at INTEGER NOT NULL DEFAULT (unixepoch())'
+          ')',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_backup_history_created '
+          'ON backup_history(created_at DESC)',
+        );
+      }
+
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，
       //      不再需要 ref_title 快照列（死 schema，评审移除）。
     },
@@ -858,6 +888,36 @@ class AppDatabase extends _$AppDatabase {
       }
     },
   );
+
+  // ── v29：迁移前自动备份 ──
+
+  /// 迁移前把数据库三件套（主库 + WAL + SHM）复制到 backups/pre_migrate/。
+  ///
+  /// 时序说明：onUpgrade 在 drift 的事务中执行，此处只做文件复制、不触碰
+  /// SQLite 状态；WAL 中即使含未提交帧，恢复时 SQLite 会自动回滚 → 得到的
+  /// 快照等价于「迁移前一致状态」。测试环境（flutter test 内存库，无真实
+  /// 文件且 path_provider 无 binding）直接跳过，不阻断任何迁移。
+  Future<void> _preMigrateBackup(int from) async {
+    try {
+      if (Platform.environment['FLUTTER_TEST'] == 'true') return;
+      final dbFolder = await getApplicationDocumentsDirectory();
+      final file = File(p.join(dbFolder.path, 'yuesheng.db'));
+      if (!await file.exists()) return;
+      final dir = Directory(p.join(dbFolder.path, 'backups', 'pre_migrate'));
+      await dir.create(recursive: true);
+      final stamp = DateTime.now().millisecondsSinceEpoch;
+      for (final suffix in const ['', '-wal', '-shm']) {
+        final src = File(file.path + suffix);
+        if (await src.exists()) {
+          await src.copy(
+            p.join(dir.path, 'backup_${stamp}_pre_migrate_v$from$suffix'),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[DB] pre_migrate 备份失败（不阻断迁移）: $e');
+    }
+  }
 
   // ── 入档批次：数据库关闭维护 ──
 

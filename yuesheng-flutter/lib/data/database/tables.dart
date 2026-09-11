@@ -729,3 +729,26 @@ class AiAccounts extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// ============================================================
+/// 21. backup_history — 数据库备份记录（v29，外来设计文档 §二）
+/// type: auto(自动) / manual(手动) / pre_migrate(迁移前自动)
+/// status: success / failed / restored
+/// file_path 存备份文件绝对路径；错误信息留痕供诊断
+/// ============================================================
+@DataClassName('BackupHistoryRow')
+class BackupHistory extends Table {
+  TextColumn get id => text()(); // 备份 ID（UUID）
+  TextColumn get type =>
+      text().check(type.isIn(const ['auto', 'manual', 'pre_migrate']))();
+  TextColumn get filePath => text()();
+  IntColumn get fileSize => integer()();
+  TextColumn get status =>
+      text().check(status.isIn(const ['success', 'failed', 'restored']))();
+  TextColumn get errorMessage => text().withDefault(const Constant(''))();
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
