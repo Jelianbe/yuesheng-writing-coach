@@ -14,15 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
-
-/// 阶段升级完整阶段名（对齐 RN PHASE_UPGRADE_LABELS）
-const Map<String, String> _phaseUpgradeLabels = {
-  'P0_ENGAGE': '启程阶段',
-  'P1_WORLD': '世界观阶段',
-  'P2_PRACTICE_LOOP': '练习循环阶段',
-  'P3_TRAINING': '训练阶段',
-  'P4_REVIEW': '复盘阶段',
-};
+import '../services/progress_service.dart';
 
 /// 阶段升级解锁功能描述（对齐 RN PHASE_UNLOCK_DESCRIPTIONS）
 const Map<String, String> _phaseUnlock = {
@@ -70,7 +62,10 @@ class PhaseUpgradeCard extends StatelessWidget {
     }
   }
 
-  String get _phaseLabel => _phaseUpgradeLabels[to] ?? '新阶段';
+  /// 阶段名走 progress_service 单真源（V4.12：阶段中文名只在
+  /// progressPhaseLabels 一处维护）。批次 C78-4a 删除本文件原私藏 map
+  /// _phaseUpgradeLabels（「启程阶段/世界观阶段」），与通用名双源冲突。
+  String get _phaseLabel => phaseLabelFromCode(to) ?? '新阶段';
 
   String get _unlockText => _phaseUnlock[to] ?? '解锁：更多学习功能';
 

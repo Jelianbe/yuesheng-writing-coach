@@ -2,10 +2,14 @@
 // PhaseUpgradeCard widget 测试 — 阶段升级卡片
 //
 // 覆盖路径：
-//   1. P1_WORLD → 世界观阶段 + 解锁描述 + 鼓励语
-//   2. P2_PRACTICE_LOOP → 练习循环阶段 + 解锁
+//   1. P1_WORLD → 暴露问题 + 解锁描述 + 鼓励语
+//   2. P2_PRACTICE_LOOP → 训练循环 + 解锁
 //   3. 未知阶段 → 兜底「新阶段」
 //   4. fromMessageContent 合法/非法 JSON
+//
+// 批次 C78-4a：阶段名改走 progress_service 单真源 progressPhaseLabels
+// （V4.12），文案随之变化——P1_WORLD「世界观阶段」→「暴露问题」、
+// P2_PRACTICE_LOOP「练习循环阶段」→「训练循环」。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -21,25 +25,25 @@ void main() {
     return MaterialApp(home: Scaffold(body: card));
   }
 
-  testWidgets('#1 P1_WORLD → 世界观阶段 + 解锁 + 鼓励', (tester) async {
+  testWidgets('#1 P1_WORLD → 暴露问题 + 解锁 + 鼓励', (tester) async {
     await tester.pumpWidget(
       buildCard(const PhaseUpgradeCard(from: 'P0_ENGAGE', to: 'P1_WORLD')),
     );
 
     expect(find.text('进入新阶段！'), findsOneWidget);
-    expect(find.text('世界观阶段'), findsOneWidget);
+    expect(find.text('暴露问题'), findsOneWidget);
     expect(find.text('解锁：世界观构建与场景描写训练'), findsOneWidget);
     expect(find.text('你的写作之旅迈出了第一步！'), findsOneWidget);
   });
 
-  testWidgets('#2 P2_PRACTICE_LOOP → 练习循环阶段', (tester) async {
+  testWidgets('#2 P2_PRACTICE_LOOP → 训练循环', (tester) async {
     await tester.pumpWidget(
       buildCard(
         const PhaseUpgradeCard(from: 'P1_WORLD', to: 'P2_PRACTICE_LOOP'),
       ),
     );
 
-    expect(find.text('练习循环阶段'), findsOneWidget);
+    expect(find.text('训练循环'), findsOneWidget);
     expect(find.text('解锁：系统化写作练习循环'), findsOneWidget);
     expect(find.text('持续练习是进步的阶梯！'), findsOneWidget);
   });
@@ -66,7 +70,7 @@ void main() {
       ),
     );
 
-    expect(find.text('练习循环阶段'), findsOneWidget);
+    expect(find.text('训练循环'), findsOneWidget);
     expect(find.text('诊断反馈建议升级'), findsOneWidget);
   });
 
@@ -76,6 +80,6 @@ void main() {
     );
 
     expect(find.text('进入新阶段！'), findsOneWidget);
-    expect(find.text('世界观阶段'), findsOneWidget); // 兜底 to=P1_WORLD
+    expect(find.text('暴露问题'), findsOneWidget); // 兜底 to=P1_WORLD
   });
 }

@@ -211,7 +211,8 @@ void main() {
 
       expect(find.byType(PhaseUpgradeCard), findsOneWidget);
       expect(find.text('进入新阶段！'), findsOneWidget);
-      expect(find.text('世界观阶段'), findsOneWidget);
+      // 批次 C78-4a：阶段名走 progressPhaseLabels 单真源（V4.12）
+      expect(find.text('暴露问题'), findsOneWidget);
     });
   });
 

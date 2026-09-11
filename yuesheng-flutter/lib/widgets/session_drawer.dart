@@ -11,7 +11,6 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
-import '../services/progress_service.dart';
 import '../utils/time_format.dart';
 
 class SessionDrawer extends StatefulWidget {
@@ -50,9 +49,6 @@ class SessionDrawer extends StatefulWidget {
     this.onTogglePin,
     this.onBatchDelete,
   });
-
-  /// 阶段标签文案（转发 progress_service 单真源）
-  static String? phaseLabel(String? phase) => phaseLabelFromCode(phase);
 
   @override
   State<SessionDrawer> createState() => _SessionDrawerState();
