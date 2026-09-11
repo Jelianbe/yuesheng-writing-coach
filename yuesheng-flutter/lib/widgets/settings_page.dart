@@ -34,7 +34,7 @@ import 'privacy_notice_dialog.dart';
 /// 与 pubspec.yaml version 同步（发布前人工核对）
 const String _appVersion = '0.1.0';
 const String _packageName = 'com.yuesheng.writingcoach';
-const String _feedbackEmail = 'feedback@yuesheng.app';
+const String _feedbackQQGroup = '470562649';
 
 /// OpenAI 兼容供应商预设（ADR-C83：扩展多模型）。选中自动填 Base URL +
 /// Model 默认值；API Key 各供应商独立，仍需用户自行填写（R-029 零硬编码）。
@@ -264,7 +264,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (mounted) setState(() => _accounts = accounts);
   }
 
-  /// 测试连接：先保存当前表单（账号路径），再发起连通性测试
+  /// 测试连接：直接测当前表单（所见即所得），不依赖已保存配置。
+  /// 修复：此前「先保存再读存储默认账号」会让测试结果与表单脱节
+  /// （未保存/多账号时永远测到旧配置，失败文案固定不随输入变化）。
   Future<void> _handleTestConnection() async {
     if (!_hasFullConfig) {
       setState(() {
@@ -280,8 +282,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       _connResult = null;
     });
     try {
-      await _saveCurrentForm();
-      final result = await _llmClient.testLlmConnection();
+      final baseUrl = _baseUrlCtrl.text.trim().replaceAll(RegExp(r'/$'), '');
+      final result = await _llmClient.testLlmConnection(
+        config: LlmConfigValues(
+          apiKey: _apiKeyCtrl.text.trim(),
+          baseUrl: baseUrl,
+          model: _modelCtrl.text.trim(),
+        ),
+      );
       if (mounted) setState(() => _connResult = result);
     } catch (_) {
       if (mounted) {
@@ -380,29 +388,29 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  /// 反馈建议：联系方式对话框（批次78 L3：邮箱可一键复制）
+  /// 反馈建议：联系方式对话框（QQ 群，群号可一键复制）
   void _handleFeedback() {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('反馈', style: AppTextStyles.titleLg),
         content: Text(
-          '遇到问题或有建议？请通过以下方式联系我们：\n\n邮箱：$_feedbackEmail',
+          '遇到问题或有建议？欢迎加入 QQ 群交流反馈：\n\nQQ 群：$_feedbackQQGroup',
           textAlign: TextAlign.center,
           style: AppTextStyles.body,
         ),
         actions: [
           TextButton(
             onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: _feedbackEmail));
+              await Clipboard.setData(ClipboardData(text: _feedbackQQGroup));
               if (ctx.mounted) Navigator.pop(ctx);
               if (mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('邮箱已复制')));
+                ).showSnackBar(const SnackBar(content: Text('群号已复制')));
               }
             },
-            child: const Text('复制邮箱'),
+            child: const Text('复制群号'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx),

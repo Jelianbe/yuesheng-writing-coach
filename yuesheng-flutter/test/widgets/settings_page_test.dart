@@ -54,11 +54,13 @@ class _FakeConfigStorage extends LlmConfigStorage {
 /// Fake LLM 客户端：固定返回成功，避免真实网络
 class _FakeLlmClient extends LlmClient {
   TestConnectionResult? result;
+  LlmConfigValues? lastConfig;
 
   @override
   Future<TestConnectionResult> testLlmConnection({
     LlmConfigValues? config,
   }) async {
+    lastConfig = config;
     return result ??
         const TestConnectionResult(success: true, message: '连接成功（42ms）');
   }
@@ -183,23 +185,27 @@ void main() {
     expect(storage.stored, isNull);
   });
 
-  testWidgets('#5 测试连接 → 成功结果框', (tester) async {
-    await tester.pumpWidget(buildSettings());
+  testWidgets('#5 测试连接 → 成功结果框（直接用当前表单，不依赖保存）', (tester) async {
+    final llm = _FakeLlmClient();
+    await tester.pumpWidget(buildSettings(llm: llm));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'sk-abc');
     await tester.enterText(
       find.byType(TextField).at(1),
-      'https://api.deepseek.com',
+      'https://api.deepseek.com/',
     );
     await tester.enterText(find.byType(TextField).at(2), 'deepseek-v4-flash');
     await tester.tap(find.text('测试连接'));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('✓ 连接成功'), findsOneWidget);
-    // 测试连接前自动保存了表单（DB 账号）
+    // 测试连接直接使用当前表单（所见即所得），尾斜杠已清洗，不落库
+    expect(llm.lastConfig?.apiKey, 'sk-abc');
+    expect(llm.lastConfig?.baseUrl, 'https://api.deepseek.com');
+    expect(llm.lastConfig?.model, 'deepseek-v4-flash');
     final accounts = await AIAccountRepository(db).listAccounts();
-    expect(accounts, hasLength(1));
+    expect(accounts, isEmpty);
   });
 
   testWidgets('#6 填充示例 → 字段填充', (tester) async {
@@ -351,7 +357,7 @@ void main() {
     expect(find.text('com.yuesheng.writingcoach'), findsOneWidget);
   });
 
-  testWidgets('#10 反馈对话框 → 邮箱展示 + 一键复制', (tester) async {
+  testWidgets('#10 反馈对话框 → QQ 群展示 + 一键复制', (tester) async {
     // 批次78 L3：mock platform channel，Clipboard.setData 不落真实平台通道
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
@@ -377,15 +383,15 @@ void main() {
     await tester.tap(find.text('反馈建议'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('feedback@yuesheng.app'), findsOneWidget);
-    // 批次78 L3：新增「复制邮箱」按钮
-    expect(find.text('复制邮箱'), findsOneWidget);
-    await tester.tap(find.text('复制邮箱'));
+    expect(find.textContaining('470562649'), findsOneWidget);
+    // 新增「复制群号」按钮
+    expect(find.text('复制群号'), findsOneWidget);
+    await tester.tap(find.text('复制群号'));
     await tester.pumpAndSettle();
 
     // 复制成功轻提示 + 弹窗关闭
-    expect(find.text('邮箱已复制'), findsOneWidget);
-    expect(find.textContaining('feedback@yuesheng.app'), findsNothing);
+    expect(find.text('群号已复制'), findsOneWidget);
+    expect(find.textContaining('470562649'), findsNothing);
   });
 
   // ── 批次 38: 学习进度区块（学习进度从书架移至设置页） ──
