@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -201,6 +202,49 @@ class _MessageListState extends ConsumerState<MessageList> {
         FactBatchCard(record: record),
       ],
     );
+  }
+
+  /// 长按消息 → 操作菜单（复制内容 / 删除）。
+  /// 复制不依赖 onDelete（任何消息都可用）；删除沿用确认弹窗流程。
+  Future<void> _showMessageActions(Message message) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.copy_rounded,
+                color: AppColors.textPrimary,
+              ),
+              title: const Text('复制内容', style: AppTextStyles.body),
+              onTap: () => Navigator.pop(ctx, 'copy'),
+            ),
+            if (widget.onDelete != null)
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.danger,
+                ),
+                title: const Text('删除', style: AppTextStyles.body),
+                onTap: () => Navigator.pop(ctx, 'delete'),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (action == 'copy') {
+      await Clipboard.setData(ClipboardData(text: message.content));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('内容已复制')));
+      }
+    } else if (action == 'delete') {
+      await _showDeleteConfirm(message);
+    }
   }
 
   /// 长按消息 → 弹出删除确认对话框（E4：统一为标准 showDialog，
@@ -485,9 +529,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                         // 批次74：卡片消息同样支持长按删除（对齐普通气泡心智）
                         child: _withFactBatchCard(
                           GestureDetector(
-                            onLongPress: widget.onDelete != null
-                                ? () => _showDeleteConfirm(msg)
-                                : null,
+                            onLongPress: () => _showMessageActions(msg),
                             child: card,
                           ),
                           msg,
@@ -500,9 +542,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                       isStreaming: isStreamingBubble,
                       isFailed: isFailed,
                       onRetry: isFailed ? widget.onRetry : null,
-                      onLongPress: widget.onDelete != null
-                          ? _showDeleteConfirm
-                          : null,
+                      onLongPress: _showMessageActions,
                       onSaveToFile: widget.onSaveToFile,
                       // 批次71：引用徽章点击跳转
                       onMentionTap: _handleMentionTap,

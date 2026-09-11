@@ -568,7 +568,7 @@ void main() {
   });
 
   group('删除消息（T9 #14）', () {
-    testWidgets('#10 长按消息 → 弹出删除确认对话框', (tester) async {
+    testWidgets('#10 长按消息 → 弹出操作菜单（复制 / 删除）', (tester) async {
       final appStateRepo = AppStateRepository(db);
       await appStateRepo.setQuestionnaireCompleted(true);
 
@@ -592,13 +592,12 @@ void main() {
       await tester.longPress(find.text('待删除的消息'));
       await tester.pumpAndSettle();
 
-      // 应弹出删除确认对话框
-      expect(find.text('确认删除'), findsOneWidget);
+      // 应弹出操作菜单（复制内容 + 删除）
+      expect(find.text('复制内容'), findsOneWidget);
       expect(find.text('删除'), findsOneWidget);
-      expect(find.text('取消'), findsOneWidget);
     });
 
-    testWidgets('#11 点击删除 → 消息从 UI 和 DB 移除', (tester) async {
+    testWidgets('#11 点击删除 → 确认弹窗 → 消息从 UI 和 DB 移除', (tester) async {
       final appStateRepo = AppStateRepository(db);
       await appStateRepo.setQuestionnaireCompleted(true);
 
@@ -614,9 +613,12 @@ void main() {
       await tester.pumpWidget(buildChatPage());
       await tester.pumpAndSettle();
 
-      // 长按 → 弹窗 → 点击删除
+      // 长按 → 菜单 → 删除 → 确认弹窗 → 删除
       await tester.longPress(find.text('要删掉的消息'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+      expect(find.text('确认删除'), findsOneWidget);
       await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
 
@@ -644,9 +646,12 @@ void main() {
       await tester.pumpWidget(buildChatPage());
       await tester.pumpAndSettle();
 
-      // 长按 → 弹窗 → 点击取消
+      // 长按 → 菜单 → 删除 → 确认弹窗 → 取消
       await tester.longPress(find.text('不删的消息'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+      expect(find.text('确认删除'), findsOneWidget);
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
 

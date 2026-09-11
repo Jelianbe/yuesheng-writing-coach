@@ -15,6 +15,7 @@ import 'dart:convert';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -422,8 +423,8 @@ void main() {
     });
   });
 
-  group('批次74：长按删除', () {
-    testWidgets('长按系统卡片 → 确认弹窗 → 确认后回调 onDelete', (tester) async {
+  group('批次74：长按操作菜单（复制 / 删除）', () {
+    testWidgets('长按系统卡片 → 菜单 → 删除 → 确认弹窗 → 回调 onDelete', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       final messages = [
@@ -449,7 +450,13 @@ void main() {
       await tester.longPress(find.byType(ReferenceChangeCard));
       await tester.pumpAndSettle();
 
-      // 确认弹窗出现
+      // 操作菜单出现
+      expect(find.text('复制内容'), findsOneWidget);
+      expect(find.text('删除'), findsOneWidget);
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+
+      // 删除确认弹窗
       expect(find.text('确认删除'), findsOneWidget);
       await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
@@ -457,7 +464,7 @@ void main() {
       expect(deletedId, 'm1');
     });
 
-    testWidgets('长按卡片 → 取消不回调 onDelete', (tester) async {
+    testWidgets('长按卡片 → 菜单 → 删除 → 取消不回调 onDelete', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       final messages = [
@@ -481,6 +488,8 @@ void main() {
       );
 
       await tester.longPress(find.byType(ReferenceChangeCard));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
@@ -490,7 +499,7 @@ void main() {
       expect(find.byType(ReferenceChangeCard), findsOneWidget);
     });
 
-    testWidgets('长按普通气泡 → 确认弹窗 → 确认后回调 onDelete', (tester) async {
+    testWidgets('长按普通气泡 → 菜单 → 删除 → 确认弹窗 → 回调 onDelete', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       final messages = [_msg(id: 'm1', role: 'user', content: '你好')];
@@ -505,6 +514,11 @@ void main() {
       await tester.longPress(find.text('你好'));
       await tester.pumpAndSettle();
 
+      // 操作菜单出现
+      expect(find.text('复制内容'), findsOneWidget);
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
+
       expect(find.text('确认删除'), findsOneWidget);
       await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
@@ -512,7 +526,7 @@ void main() {
       expect(deletedId, 'm1');
     });
 
-    testWidgets('未传 onDelete 时卡片长按不弹窗', (tester) async {
+    testWidgets('未传 onDelete → 长按仍弹菜单（仅复制，无删除）', (tester) async {
       final db = AppDatabase.forTesting(NativeDatabase.memory());
       addTearDown(db.close);
       final messages = [_msg(id: 'm1', role: 'user', content: '你好')];
@@ -521,7 +535,41 @@ void main() {
       await tester.longPress(find.text('你好'));
       await tester.pumpAndSettle();
 
-      expect(find.text('确认删除'), findsNothing);
+      expect(find.text('复制内容'), findsOneWidget);
+      expect(find.text('删除'), findsNothing);
+    });
+
+    testWidgets('长按 → 复制内容 → 剪贴板收到原文 + 复制提示', (tester) async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final copiedTexts = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copiedTexts.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+      final messages = [
+        _msg(id: 'm1', role: 'assistant', content: '这是需要复制的内容'),
+      ];
+      await _pumpList(tester, db, messages: messages);
+
+      await tester.longPress(find.text('这是需要复制的内容'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('复制内容'));
+      await tester.pumpAndSettle();
+
+      expect(copiedTexts, ['这是需要复制的内容']);
+      expect(find.text('内容已复制'), findsOneWidget);
     });
   });
 
