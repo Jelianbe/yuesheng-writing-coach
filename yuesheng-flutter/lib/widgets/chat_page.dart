@@ -268,8 +268,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               onOpenProfile: _handleOpenProfile,
               // 批次 29：头部 ⋯ 左侧新建对话快捷入口
               onNewSession: _handleCreateSession,
-              // 引用管理：更多菜单入口 → ReferenceBar 管理弹层
-              onOpenReferences: _handleOpenReferences,
+              // 引用管理：批次 C78-3c-2 起唯一入口为主引用小字（onTapPrimaryRef），
+              // 更多菜单里的重复入口已删
               primaryRefTitle: _primaryRefTitle,
               onTapPrimaryRef: _handleOpenReferences,
             ),

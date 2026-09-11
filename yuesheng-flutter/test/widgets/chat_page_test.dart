@@ -1636,19 +1636,25 @@ void main() {
       return container;
     }
 
-    /// 打开更多菜单 → 点击「引用管理」
-    Future<void> openRefSheet(WidgetTester tester) async {
-      await tester.tap(find.byIcon(Icons.more_horiz));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('引用管理'));
+    /// 打开引用管理弹层 → 点标题下方主引用小字
+    /// （批次 C78-3c-2：更多菜单里的「引用管理」重复入口已删，
+    ///   唯一入口为头部主引用小字 onTapPrimaryRef）
+    /// 小字文案随状态变化：有主引用 → 书名；无引用 → 「未关联书籍 · 点此管理」
+    Future<void> openRefSheet(
+      WidgetTester tester, {
+      String? expectedTitle,
+    }) async {
+      final target = find.text(expectedTitle ?? '未关联书籍 · 点此管理');
+      expect(target, findsOneWidget, reason: '头部主引用小字应存在且可点');
+      await tester.tap(target);
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
     }
 
-    testWidgets('#R1 更多菜单 → 引用管理 → ReferenceBar 弹层渲染（含主引用）', (tester) async {
+    testWidgets('#R1 头部主引用小字 → 引用管理 → ReferenceBar 弹层渲染（含主引用）', (tester) async {
       await seedPrimaryReference();
       await pumpChat(tester);
 
-      await openRefSheet(tester);
+      await openRefSheet(tester, expectedTitle: '第一章：启程');
 
       // ReferenceBar 已挂载（弹层内）
       expect(find.byType(ReferenceBar), findsOneWidget);
@@ -1661,7 +1667,7 @@ void main() {
       await seedPrimaryReference();
       await pumpChat(tester);
 
-      await openRefSheet(tester);
+      await openRefSheet(tester, expectedTitle: '第一章：启程');
 
       // 展开列表 → 点移除（close 图标）
       await tester.tap(find.text('章节（主引用）'));
@@ -1697,7 +1703,7 @@ void main() {
       await chRepo.createChapter(msId, title: '第一章', content: '内容');
 
       await pumpChat(tester);
-      await openRefSheet(tester);
+      await openRefSheet(tester); // 无主引用 → 小字为「未关联书籍 · 点此管理」
 
       // 无引用时占位行可展开 → 显示「+ 添加引用」→ 选择器 → 引用整本书
       await tester.tap(find.text('还没有引用作品，点下方按钮添加'));

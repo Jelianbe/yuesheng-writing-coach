@@ -12,12 +12,15 @@
 //   - 态度档位：行内 3 档选择（对齐 RN AttitudeIndicator 行内语义，
 //     避免 bottom sheet 内嵌套弹层）
 //   - 画像：入口 → onOpenProfile
-//   - 引用管理：入口 → onOpenReferences
 //
 // 批次 C78-3c 删除「子阶段」菜单段：SubphaseIndicator 组件已废弃
 // （展示层「诊断中/练习中/反馈中」胶囊与教学链路真实状态脱节，
 //  保留会造成「显示的子阶段」与 teaching_state.current_subphase 双真源）。
 // 教学子阶段语义仍在 chat_service / message_injector 中活跃，未删除。
+//
+// 批次 C78-3c-2 删除「引用管理」菜单段：与标题下方主引用小字是同一入口
+// （chat_page.dart 的 onOpenReferences / onTapPrimaryRef 两回调同指
+//  _handleOpenReferences），菜单项属重复入口，去掉后小字仍完整可达。
 //
 // 差异说明：RN 头部左为返回（Stack 导航），Flutter ChatPage 为 Tab2
 // 常驻页无上级返回，左按钮改为会话列表（drawer）入口。
@@ -52,9 +55,6 @@ class ChatHeader extends StatelessWidget {
   /// 新建对话（批次 29：头部 ⋯ 左侧快捷入口）
   final VoidCallback onNewSession;
 
-  /// 打开引用管理（对齐 RN onOpenReferences → ReferenceBar 管理弹层）
-  final VoidCallback onOpenReferences;
-
   /// 入口标识：'manuscript' → 「诊断模式」徽章，其他 → 主引用书名小字
   final String? entryPoint;
 
@@ -72,7 +72,6 @@ class ChatHeader extends StatelessWidget {
     required this.onOpenSessionDrawer,
     required this.onOpenProfile,
     required this.onNewSession,
-    required this.onOpenReferences,
     this.entryPoint,
     this.primaryRefTitle,
     this.onTapPrimaryRef,
@@ -138,38 +137,6 @@ class ChatHeader extends StatelessWidget {
                       SizedBox(width: AppSpacing.md),
                       Text(
                         '画像',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // 引用管理入口（修复「@ 只能添加、不能撤销/设主」的断裂链路）
-              InkWell(
-                onTap: () {
-                  Navigator.pop(sheetCtx);
-                  onOpenReferences();
-                },
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs,
-                    vertical: AppSpacing.md,
-                  ),
-                  child: Row(
-                    children: const [
-                      Icon(
-                        Icons.menu_book_outlined,
-                        size: 22,
-                        color: AppColors.textPrimary,
-                      ),
-                      SizedBox(width: AppSpacing.md),
-                      Text(
-                        '引用管理',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,

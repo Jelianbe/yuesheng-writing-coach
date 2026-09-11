@@ -27,7 +27,6 @@ void main() {
     VoidCallback? onOpenSessionDrawer,
     VoidCallback? onOpenProfile,
     VoidCallback? onNewSession,
-    VoidCallback? onOpenReferences,
     String? entryPoint,
     String? primaryRefTitle,
     VoidCallback? onTapPrimaryRef,
@@ -40,7 +39,6 @@ void main() {
           onOpenSessionDrawer: onOpenSessionDrawer ?? () {},
           onOpenProfile: onOpenProfile ?? () {},
           onNewSession: onNewSession ?? () {},
-          onOpenReferences: onOpenReferences ?? () {},
           entryPoint: entryPoint,
           primaryRefTitle: primaryRefTitle,
           onTapPrimaryRef: onTapPrimaryRef,
@@ -93,6 +91,8 @@ void main() {
     expect(find.text('画像'), findsOneWidget);
     // 批次 C78-3c：子阶段展示端已废弃，菜单不应再出现
     expect(find.text('子阶段'), findsNothing);
+    // 批次 C78-3c-2：引用管理入口已并入标题下方主引用小字，菜单不应再出现
+    expect(find.text('引用管理'), findsNothing);
   });
 
   testWidgets('#5 更多菜单选态度 → onAttitudeChange', (tester) async {
