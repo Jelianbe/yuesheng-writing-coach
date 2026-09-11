@@ -57,6 +57,7 @@ import 'package:writingcoach/widgets/practice_task_card.dart';
 import 'package:writingcoach/widgets/privacy_notice_dialog.dart';
 import 'package:writingcoach/widgets/reference_bar.dart';
 import 'package:writingcoach/widgets/task_panel.dart';
+import 'package:writingcoach/widgets/ui_overlay_host.dart';
 
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
@@ -1017,7 +1018,12 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(home: ChatPage()),
+          child: MaterialApp(
+            home: const ChatPage(),
+            builder: (context, child) => Stack(
+              children: [child ?? const SizedBox(), const UiOverlayHost()],
+            ),
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -1028,6 +1034,9 @@ void main() {
 
       expect(find.text('请先关联一本书籍'), findsOneWidget);
       expect(find.text('保存到《第一章》'), findsNothing);
+
+      // toast 2s 自动消失；推进时间清掉 pending Timer 再收尾
+      await tester.pump(const Duration(seconds: 3));
     });
 
     testWidgets('#B14-3 无主引用但有 @ 附加引用 → 保存到文件回退到第一条引用（批次39 死数据修复）', (

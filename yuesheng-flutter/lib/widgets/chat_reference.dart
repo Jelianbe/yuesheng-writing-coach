@@ -87,9 +87,9 @@ extension _ChatReference on _ChatPageState {
         refs.where((r) => r.refType != 'file').firstOrNull;
     if (primary == null) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('请先关联一本书籍')));
+        // 真机反馈：底部 SnackBar 完全遮挡输入框，改用全局 toast
+        //（2s 自消、悬浮卡片、不占布局、不拦截输入）
+        ref.read(uiOverlayProvider.notifier).showToast('请先关联一本书籍');
       }
       return;
     }

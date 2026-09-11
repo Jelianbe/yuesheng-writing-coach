@@ -196,16 +196,6 @@ class ChatInputState extends State<ChatInput> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // ── + 上传按钮（secondary，带边框）──
-          if (widget.onUploadFile != null) ...[
-            _IconButton(
-              icon: Icons.add,
-              color: AppColors.textPrimary,
-              onTap: widget.onUploadFile!,
-              hasBorder: true,
-            ),
-            const SizedBox(width: 8),
-          ],
           Expanded(
             child: Scrollbar(
               controller: _scrollController,
@@ -246,7 +236,16 @@ class ChatInputState extends State<ChatInput> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          // ── + 上传按钮（secondary，带边框）——置于输入框右侧（真机反馈调整）──
+          if (widget.onUploadFile != null) ...[
+            _IconButton(
+              icon: Icons.add,
+              color: AppColors.textPrimary,
+              onTap: widget.onUploadFile!,
+              hasBorder: true,
+            ),
+            const SizedBox(width: 8),
+          ],
           SizedBox(
             width: 36,
             height: 36,

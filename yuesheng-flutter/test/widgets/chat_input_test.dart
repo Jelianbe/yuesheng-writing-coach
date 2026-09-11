@@ -320,7 +320,7 @@ void main() {
         expect(
           filledHeight,
           lessThan(emptyHeight * 6 + 60),
-          reason: '输入框应封顶（maxLines 5），实际 ${filledHeight}',
+          reason: '输入框应封顶（maxLines 5），实际 $filledHeight',
         );
 
         // 纵向滑块存在（Scrollbar 已挂 controller）
