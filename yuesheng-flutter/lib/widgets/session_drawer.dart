@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
-import '../types/teaching_types.dart';
+import '../services/progress_service.dart';
 import '../utils/time_format.dart';
 
 class SessionDrawer extends StatelessWidget {
@@ -46,16 +46,9 @@ class SessionDrawer extends StatelessWidget {
   });
 
   /// 阶段标签文案（对齐 RN PHASE_LABELS）
-  static String? phaseLabel(String? phase) {
-    return switch (TeachingPhase.fromString(phase)) {
-      TeachingPhase.p0Engage => '建立投入',
-      TeachingPhase.p1World => '暴露问题',
-      TeachingPhase.p2PracticeLoop => '训练循环',
-      TeachingPhase.p3Training => '深度训练',
-      TeachingPhase.p4Review => '复盘阶段',
-      null => null,
-    };
-  }
+  /// 阶段码 → 中文名（转发 progress_service 单真源，不另写 map；
+  /// 明面渲染已按真机三批收敛，保留供进度/画像主动页使用）
+  static String? phaseLabel(String? phase) => phaseLabelFromCode(phase);
 
   @override
   Widget build(BuildContext context) {
@@ -229,10 +222,6 @@ class SessionDrawer extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (phaseLabel(item.currentPhase) != null) ...[
-                        const SizedBox(width: 8),
-                        _phaseTag(phaseLabel(item.currentPhase)!),
-                      ],
                     ],
                   ),
                 ],
@@ -300,27 +289,5 @@ class SessionDrawer extends StatelessWidget {
       Navigator.of(context).pop(); // 关闭抽屉
       onDelete?.call(item.session.id);
     }
-  }
-
-  /// 阶段标签（月色竹青：竹青淡底 + 竹青字）
-  Widget _phaseTag(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: AppColors.primary,
-        ),
-      ),
-    );
   }
 }

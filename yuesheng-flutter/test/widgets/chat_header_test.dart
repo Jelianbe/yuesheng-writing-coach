@@ -73,7 +73,7 @@ void main() {
     expect(opened, isTrue);
   });
 
-  testWidgets('#4 更多菜单 → 阶段名 + 态度档位 + 子阶段 + 画像', (tester) async {
+  testWidgets('#4 更多菜单 → 态度档位 + 子阶段 + 画像（阶段名已按真机三批收敛）', (tester) async {
     await tester.pumpWidget(
       buildHeader(
         phase: TeachingPhase.p2PracticeLoop,
@@ -84,8 +84,6 @@ void main() {
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
 
-    expect(find.text('当前阶段'), findsOneWidget);
-    expect(find.text('训练循环'), findsOneWidget);
     expect(find.text('子阶段'), findsOneWidget);
     expect(find.text('练习中'), findsOneWidget);
     expect(find.text('态度档位'), findsOneWidget);

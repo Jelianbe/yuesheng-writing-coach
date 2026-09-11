@@ -82,7 +82,7 @@ void main() {
     expect(find.text('新建会话'), findsNothing);
   });
 
-  testWidgets('#2 列表：标题/预览/时间/阶段标签', (tester) async {
+  testWidgets('#2 列表：标题/预览/时间（阶段标签已按真机三批收敛）', (tester) async {
     final sessions = [
       makeSession(
         id: 's1',
@@ -101,7 +101,6 @@ void main() {
     expect(find.text('第一章修改讨论'), findsOneWidget);
     expect(find.text('这段过渡可以更顺滑'), findsOneWidget);
     expect(find.text('3 分钟前'), findsOneWidget); // s1: updatedAgoSec=180
-    expect(find.text('训练循环'), findsOneWidget); // P2_PRACTICE_LOOP 标签
     expect(find.text('大纲推演'), findsOneWidget);
     expect(find.text('6 分钟前'), findsOneWidget); // s2: updatedAgoSec=360
     expect(find.text('暂无消息'), findsOneWidget); // 空 preview 兜底

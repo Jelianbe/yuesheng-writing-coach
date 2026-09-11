@@ -712,11 +712,9 @@ void main() {
       expect(find.text('会话'), findsOneWidget);
       expect(find.text('自由对话'), findsOneWidget);
 
-      // 更多菜单 → 阶段（P0 建立投入）/ 态度档位 / 画像
+      // 更多菜单 → 态度档位 / 画像（阶段名已按真机三批收敛）
       await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
-      expect(find.text('当前阶段'), findsOneWidget);
-      expect(find.text('建立投入'), findsOneWidget);
       expect(find.text('态度档位'), findsOneWidget);
       expect(find.text('画像'), findsOneWidget);
     });

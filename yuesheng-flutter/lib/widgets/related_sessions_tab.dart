@@ -16,7 +16,6 @@ import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../utils/time_format.dart';
-import 'session_drawer.dart' show SessionDrawer;
 
 class RelatedSessionsTab extends ConsumerStatefulWidget {
   final String manuscriptId;
@@ -105,7 +104,6 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
   }
 
   Widget _buildSessionCard(SessionWithPhase item) {
-    final phaseLabel = SessionDrawer.phaseLabel(item.currentPhase);
     return InkWell(
       onTap: () => widget.onOpenSession(item.session.id),
       child: Padding(
@@ -155,27 +153,6 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                           ),
                         ),
                       ),
-                      if (phaseLabel != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.xsm,
-                            vertical: AppSpacing.xxs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primarySoft,
-                            borderRadius: BorderRadius.circular(AppRadius.pill),
-                          ),
-                          child: Text(
-                            phaseLabel,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ],
                       const SizedBox(width: 8),
                       Text(
                         formatRelativeTime(item.session.updatedAt),

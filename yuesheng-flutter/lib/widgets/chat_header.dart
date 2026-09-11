@@ -26,15 +26,6 @@ import 'yue_sheet.dart';
 import '../types/teaching_types.dart';
 import 'subphase_indicator.dart';
 
-/// 阶段标签（对齐 RN PHASE_LABELS）
-const Map<String, String> _phaseLabels = {
-  'P0_ENGAGE': '建立投入',
-  'P1_WORLD': '暴露问题',
-  'P2_PRACTICE_LOOP': '训练循环',
-  'P3_TRAINING': '深度训练',
-  'P4_REVIEW': '复盘阶段',
-};
-
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
 const List<(AttitudeLevel, String, Color)> _attitudeOptions = [
   (AttitudeLevel.doubao, '豆包', AppColors.l1Text),
@@ -105,17 +96,6 @@ class ChatHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _menuSection(
-                label: '当前阶段',
-                child: Text(
-                  _phaseLabels[currentPhase.value] ?? currentPhase.value,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
               _menuSection(
                 label: '子阶段',
                 child: Row(

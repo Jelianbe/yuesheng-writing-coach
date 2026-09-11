@@ -104,6 +104,14 @@ const Map<TeachingPhase, String> progressPhaseLabels = {
   TeachingPhase.p4Review: '复盘阶段',
 };
 
+/// 阶段码（'P0_ENGAGE'）→ 中文名的 UI 唯一入口。
+/// 阶段中文名只在 progressPhaseLabels 一处维护；chat_header /
+/// session_drawer / related_sessions_tab 等不得另写 map（V4.12）。
+String? phaseLabelFromCode(String? phaseCode) {
+  if (phaseCode == null) return null;
+  return progressPhaseLabels[TeachingPhase.fromString(phaseCode)];
+}
+
 /// 零基础等级中文名（对齐 RN beginnerLevelNames）
 const Map<BeginnerLevel, String> beginnerLevelLabels = {
   BeginnerLevel.n0Engage: '建立投入（零基础）',
