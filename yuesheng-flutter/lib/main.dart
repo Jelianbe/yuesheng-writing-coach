@@ -79,6 +79,14 @@ ThemeData buildAppTheme() {
       error: AppColors.danger,
     ),
     useMaterial3: true,
+    // 排序/更多菜单浮层钉白底深字（门3 设计系统）：
+    // M3 PopupMenu 背景读 surfaceContainer，fromSeed 可能漂移；
+    // 显式钉 surfaceWhite + transparent surfaceTint 杜绝深底深字（真机反馈三批#3）
+    popupMenuTheme: const PopupMenuThemeData(
+      color: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
+      textStyle: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+    ),
     // 批次67：页面转场收敛——Android/桌面用自定义轻量过渡
     // （YueFadeSlidePageTransitionsBuilder：fade+轻微上滑 220ms easeOutCubic，
     // 替代 PredictiveBack/FadeForwards 的 450ms 长过渡与 Zoom 的缩放感）；
@@ -131,6 +139,13 @@ ThemeData buildDarkTheme() {
       error: AppColors.danger,
     ),
     useMaterial3: true,
+    // 同亮主题钉 popupMenu（真机反馈三批#3 根因：dark seed 的 surfaceContainer 深色，
+    // 批次99 只修了 surface 漏修浮层容器 → 深底 + textTheme 深字 对比度≈0）
+    popupMenuTheme: const PopupMenuThemeData(
+      color: AppColors.surfaceWhite,
+      surfaceTintColor: Colors.transparent,
+      textStyle: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+    ),
     pageTransitionsTheme: const PageTransitionsTheme(
       builders: {
         TargetPlatform.android: YueFadeSlidePageTransitionsBuilder(),

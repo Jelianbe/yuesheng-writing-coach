@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/app_theme.dart';
+import 'package:writingcoach/main.dart' show buildAppTheme, buildDarkTheme;
 
 /// WCAG 相对亮度（0-1）
 double _relativeLuminance(Color c) {
@@ -109,6 +110,42 @@ void main() {
       final muted = _contrastRatio(AppColors.editorDarkMuted, darkPanel);
       expect(text, greaterThanOrEqualTo(4.5));
       expect(muted, greaterThanOrEqualTo(4.5));
+    });
+
+    // 真机反馈第三批#3（2026-09-11）：书架排序菜单深底深字对比度≈0。
+    // 根因：buildDarkTheme 钉了 surface 漏修 M3 PopupMenu 读的 surfaceContainer。
+    // 本护栏锁死两主题 popupMenu 必须钉 surfaceWhite 底 + textPrimary 字，防回退。
+    group('PopupMenu 浮层钉白底深字（真机三批#3 护栏）', () {
+      final themes = [('亮主题', buildAppTheme()), ('暗主题', buildDarkTheme())];
+
+      for (final (name, theme) in themes) {
+        test('$name popupMenu 底=surfaceWhite、字=textPrimary', () {
+          final pm = theme.popupMenuTheme;
+          expect(
+            pm.color,
+            AppColors.surfaceWhite,
+            reason: 'popupMenu 底色必须钉 surfaceWhite，防 M3 surfaceContainer 漂移',
+          );
+          expect(
+            pm.textStyle?.color,
+            AppColors.textPrimary,
+            reason: 'popupMenu 文字必须钉 textPrimary',
+          );
+        });
+
+        test('$name popupMenu 底×字对比度 ≥4.5:1', () {
+          final bg = theme.popupMenuTheme.color!;
+          final fg = theme.popupMenuTheme.textStyle!.color!;
+          final ratio = _contrastRatio(fg, bg);
+          expect(
+            ratio,
+            greaterThanOrEqualTo(4.5),
+            reason:
+                'popupMenu 文字 ${fg.toARGB32().toRadixString(16)} 对底色 '
+                '${bg.toARGB32().toRadixString(16)} 仅 ${ratio.toStringAsFixed(2)}:1 < 4.5:1',
+          );
+        });
+      }
     });
   });
 }
