@@ -197,21 +197,24 @@ class _SessionDrawerState extends State<SessionDrawer> {
     final isActive = id == widget.currentSessionId;
     final title = item.session.title.isEmpty ? '新建会话' : item.session.title;
     final isPinned = item.session.pinned == 1;
-    return InkWell(
-      onTap: () => _onCardTap(id, isActive),
-      onLongPress: () => _openMenu(context, item, title),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        child: Row(
-          children: [
-            if (_multiSelect) _buildSelectCheck(id),
-            _buildAvatar(isActive),
-            const SizedBox(width: 12),
-            Expanded(child: _cardContent(item, title, isPinned)),
-          ],
+    return GestureDetector(
+      onLongPressStart: (details) =>
+          _openMenu(context, item, title, details.globalPosition),
+      child: InkWell(
+        onTap: () => _onCardTap(id, isActive),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: Row(
+            children: [
+              if (_multiSelect) _buildSelectCheck(id),
+              _buildAvatar(isActive),
+              const SizedBox(width: 12),
+              Expanded(child: _cardContent(item, title, isPinned)),
+            ],
+          ),
         ),
       ),
     );
@@ -306,15 +309,24 @@ class _SessionDrawerState extends State<SessionDrawer> {
   }
 
   // ── 浮层菜单（对齐参考：重命名/置顶/多选/删除）──
+  RelativeRect _menuPosition(BuildContext context, Offset globalPos) {
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    return RelativeRect.fromRect(
+      globalPos & const Size(40, 40),
+      Offset.zero & overlay.size,
+    );
+  }
+
   Future<void> _openMenu(
     BuildContext context,
     SessionWithPhase item,
     String title,
+    Offset globalPos,
   ) async {
     final isPinned = item.session.pinned == 1;
     final result = await showMenu<String>(
       context: context,
-      position: const RelativeRect.fromLTRB(120, 200, 40, 200),
+      position: _menuPosition(context, globalPos),
       items: [
         _menuItem('rename', Icons.edit_outlined, '重命名'),
         _menuItem(
