@@ -17,6 +17,9 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+// drift 与 flutter_test 都导出 isNull（前者是顶层函数 isNull(Expression)，
+// 后者经 matcher 导出同名的 Matcher 常量），具名导入以消歧。
+import 'package:matcher/matcher.dart' as matcher;
 
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/data/database/database.dart';
@@ -817,6 +820,178 @@ void main() {
       expect(find.text('20%'), findsOneWidget);
       expect(find.text('未匹配到已知症候'), findsOneWidget);
       expect(find.text('生成 0 条改写建议'), findsOneWidget);
+    });
+  });
+
+  // ── 批次 D-B：归因步骤（focus_reason 接线）──
+  group('批次 D-B：诊断依据链「归因」步骤', () {
+    testWidgets('D1 有 focus_reason：链首步为归因，共 5 步', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 3,
+            syndromes: threeSyndromes,
+            suggestedActions: actions,
+            confidence: 0.85,
+            focusReason: '本轮先处理情绪标签化，因为它同时影响读者代入与后续视角稳定性',
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('5 步'), findsOneWidget);
+      expect(find.text('归因'), findsOneWidget);
+      expect(
+        find.textContaining('本轮先处理情绪标签化'),
+        findsOneWidget,
+        reason: 'focus_reason 原文应展示（不摘要、不改写）',
+      );
+      // 原 4 步仍在
+      expect(find.text('文本分析'), findsOneWidget);
+      expect(find.text('建议生成'), findsOneWidget);
+    });
+
+    testWidgets('D2 无 focus_reason：链退化为原 4 步，不出现归因', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 3,
+            syndromes: threeSyndromes,
+            suggestedActions: actions,
+            confidence: 0.85,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('4 步'), findsOneWidget);
+      expect(find.text('归因'), findsNothing, reason: '数据缺失不得编造归因');
+    });
+
+    testWidgets('D3 空串 / 纯空白 focus_reason 视同缺失', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          const DiagnosisCard(
+            syndromeCount: 0,
+            syndromes: [],
+            suggestedActions: [],
+            confidence: 0.2,
+            focusReason: '   ',
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('4 步'), findsOneWidget);
+      expect(find.text('归因'), findsNothing);
+    });
+
+    testWidgets('D4 超长 focus_reason 截断到 160 字 + 省略号', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final long = '甲' * 200;
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: const [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P003',
+                name: '情绪标签化',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: const ['改一处'],
+            confidence: 0.5,
+            focusReason: long,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('归因'), findsOneWidget);
+      expect(find.text('${'甲' * 160}…'), findsOneWidget);
+    });
+  });
+
+  // ── 批次 D-B：payload 往返（focusReason 序列化）──
+  group('DiagnosisResultCardPayload focusReason 往返', () {
+    test('D5 toJson 含 focusReason / fromJson 读回', () {
+      const p = DiagnosisResultCardPayload(
+        syndromeCount: 1,
+        syndromes: [],
+        suggestedActions: ['a'],
+        confidence: 0.7,
+        focusReason: '先处理 P003 因为它是连锁起点',
+        diagnosisId: 'm1',
+      );
+      expect(p.toJson()['focusReason'], '先处理 P003 因为它是连锁起点');
+      final back = DiagnosisResultCardPayload.fromJson(p.toJson());
+      expect(back.focusReason, '先处理 P003 因为它是连锁起点');
+      expect(back.syndromeCount, 1);
+      expect(back.suggestedActions, ['a']);
+      expect(back.confidence, 0.7);
+      expect(back.diagnosisId, 'm1');
+    });
+
+    test('D6 focusReason 为空/null 时 toJson 省略该键，fromJson 得 null', () {
+      const p1 = DiagnosisResultCardPayload(
+        syndromeCount: 0,
+        syndromes: [],
+        suggestedActions: [],
+        confidence: 0.0,
+        diagnosisId: 'm2',
+      );
+      expect(p1.toJson().containsKey('focusReason'), isFalse);
+
+      const p2 = DiagnosisResultCardPayload(
+        syndromeCount: 0,
+        syndromes: [],
+        suggestedActions: [],
+        confidence: 0.0,
+        focusReason: '',
+        diagnosisId: 'm3',
+      );
+      expect(p2.toJson().containsKey('focusReason'), isFalse);
+      // 注：drift（expressions/null_check.dart）与 matcher 都导出 isNull，
+      // 本文件两者均 import，故 matcher 侧用具名前缀消歧。
+      expect(
+        DiagnosisResultCardPayload.fromJson(const {
+          'focusReason': '',
+        }).focusReason,
+        matcher.isNull,
+        reason: '空串在 fromJson 归一为 null',
+      );
+      expect(
+        DiagnosisResultCardPayload.fromJson(const {
+          'focusReason': 123,
+        }).focusReason,
+        matcher.isNull,
+        reason: '非字符串类型降级为 null，不抛',
+      );
     });
   });
 

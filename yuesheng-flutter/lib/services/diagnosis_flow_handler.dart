@@ -991,6 +991,9 @@ class DiagnosisFlowHandler {
               .toList(),
           suggestedActions: diagnosis.suggestedActions,
           confidence: diagnosis.confidence,
+          // 批次 D-B：把 teaching_plan.focus_reason 接入诊断卡 payload，
+          // 供「诊断依据」链渲染「归因」步骤（此前该字段只进 DB + prompt）。
+          focusReason: diagnosis.focusReason,
           diagnosisId: messageId,
         ),
       );

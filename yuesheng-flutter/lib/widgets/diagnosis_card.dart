@@ -80,6 +80,13 @@ class DiagnosisCard extends ConsumerStatefulWidget {
   final double confidence;
   final bool defaultExpanded;
 
+  /// 本轮教学焦点理由（teaching_plan.focus_reason，批次 D-B）。
+  ///
+  /// 数据来源：`DiagnosisResultCardPayload.focusReason` ← `ParsedDiagnosis
+  /// .focusReason` ← AI 输出的 `teaching_plan.focus_reason`。
+  /// 为空时「诊断依据」链不含「归因」步骤——不编造理由。
+  final String? focusReason;
+
   /// D5-B：所属会话 ID。非空时每个症候详情块底部渲染确认栏
   /// （对齐 RN DiagnosisConfirmationBar：认同/部分认同/不认同）
   final String? sessionId;
@@ -91,6 +98,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
     required this.suggestedActions,
     required this.confidence,
     this.defaultExpanded = false,
+    this.focusReason,
     this.sessionId,
   });
 
@@ -111,6 +119,7 @@ class DiagnosisCard extends ConsumerStatefulWidget {
         syndromes: payload.syndromes,
         suggestedActions: payload.suggestedActions,
         confidence: payload.confidence,
+        focusReason: payload.focusReason,
         sessionId: sessionId,
       );
     } catch (_) {
@@ -320,7 +329,30 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
 
   /// 诊断依据步骤链（诚实派生：每一步都来自诊断 payload 真实字段，
   /// 不伪造推理过程；步骤不含置信点——置信只经 ConfidenceBar 展示）。
+  ///
+  /// 批次 D-B：AI 未给出 `focus_reason` 时退化为原有 4 步（文本分析 →
+  /// 症候匹配 → 严重度评估 → 建议生成）；给出时才在前面接「归因」。
   List<ThinkingStep> _buildReasoningSteps() {
+    return [
+      if (_focusReasonText != null)
+        ThinkingStep(label: '归因', detail: _focusReasonText),
+      ..._buildDiagnosisSteps(),
+    ];
+  }
+
+  /// focus_reason 的展示文本（null = 不渲染归因步骤）。
+  ///
+  /// 长度上限 160 字：该字段由 AI 自由生成，实测偶有长段落，
+  /// 在折叠步骤行里会撑爆一行。截断而非改写——保留原文前 160 字
+  /// 加省略号，不做摘要（R-009：不替用户改写 AI 的原话）。
+  String? get _focusReasonText {
+    final raw = widget.focusReason?.trim();
+    if (raw == null || raw.isEmpty) return null;
+    return raw.length <= 160 ? raw : '${raw.substring(0, 160)}…';
+  }
+
+  /// 依据链主干 4 步（全部派生自 payload 既有字段，R-019 拆出）。
+  List<ThinkingStep> _buildDiagnosisSteps() {
     final syndromes = widget.syndromes;
     final totalEvidence = syndromes.fold<int>(
       0,

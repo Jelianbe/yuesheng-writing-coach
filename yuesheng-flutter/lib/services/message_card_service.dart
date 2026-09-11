@@ -27,6 +27,15 @@ class DiagnosisResultCardPayload {
   final List<DiagnosisSyndromeCard> syndromes;
   final List<String> suggestedActions;
   final double confidence;
+
+  /// 本轮教学焦点理由（teaching_plan.focus_reason）。
+  ///
+  /// 批次 D-B：该字段此前只落 diagnosis_results 表 + 注入 prompt 给 AI 看
+  /// （message_injector.dart），用户侧完全不可见。诊断卡的「归因」步骤
+  /// 把它接出来展示——是**已有数据接线**，不是新造数据。
+  /// null / 空串时该步骤不渲染（数据诚实：不编造归因）。
+  final String? focusReason;
+
   final String diagnosisId;
 
   const DiagnosisResultCardPayload({
@@ -35,11 +44,13 @@ class DiagnosisResultCardPayload {
     required this.suggestedActions,
     required this.confidence,
     required this.diagnosisId,
+    this.focusReason,
   });
 
   factory DiagnosisResultCardPayload.fromJson(Map<String, dynamic> json) {
     final syndromesRaw = json['syndromes'] as List<dynamic>? ?? [];
     final actionsRaw = json['suggestedActions'] as List<dynamic>? ?? [];
+    final fr = json['focusReason'];
     return DiagnosisResultCardPayload(
       syndromeCount: (json['syndromeCount'] as num?)?.toInt() ?? 0,
       syndromes: syndromesRaw
@@ -51,6 +62,7 @@ class DiagnosisResultCardPayload {
           .toList(),
       suggestedActions: actionsRaw.map((e) => e.toString()).toList(),
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
+      focusReason: (fr is String && fr.isNotEmpty) ? fr : null,
       diagnosisId: (json['diagnosisId'] as String?) ?? '',
     );
   }
@@ -60,6 +72,10 @@ class DiagnosisResultCardPayload {
     'syndromes': syndromes.map((s) => s.toJson()).toList(),
     'suggestedActions': suggestedActions,
     'confidence': confidence,
+    // 空串与 null 同等对待：都不落 key（fromJson 亦把空串归一为 null，
+    // 保证 toJson→fromJson 往返稳定）。
+    if (focusReason != null && focusReason!.isNotEmpty)
+      'focusReason': focusReason,
     'diagnosisId': diagnosisId,
   };
 }
