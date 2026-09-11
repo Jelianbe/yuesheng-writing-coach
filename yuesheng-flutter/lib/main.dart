@@ -301,7 +301,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         darkTheme: buildDarkTheme(),
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.light, // 固定亮色：暗色主题代码保留但暂不启用（绕开系统暗色切换红屏，后续再议）
         home: OnboardingFlow(onComplete: _completeIntro),
       );
     }
@@ -312,7 +312,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         darkTheme: buildDarkTheme(),
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.light, // 固定亮色：暗色主题代码保留但暂不启用（绕开系统暗色切换红屏，后续再议）
         home: const Scaffold(
           backgroundColor: AppColors.background,
           body: SizedBox.shrink(),
@@ -323,7 +323,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
       title: '月笙写作教练',
       theme: buildAppTheme(),
       darkTheme: buildDarkTheme(),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.light, // 固定亮色：暗色主题代码保留但暂不启用（绕开系统暗色切换红屏，后续再议）
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       // 入档批次：全局 Toast/Dialog 覆盖层（纯增量能力）
