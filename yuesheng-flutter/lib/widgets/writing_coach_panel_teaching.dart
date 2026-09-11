@@ -205,7 +205,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       ),
       SendMessageOptions(
         phase: TeachingPhase.p0Engage,
-        attitude: AttitudeLevel.doubao,
+        attitude: _attitude,
         // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
         lastEditorEditAtSec: ref.read(editorActivityProvider),
         // ADR-C87：取消令牌——流式中可主动中止
@@ -651,7 +651,7 @@ extension _WritingCoachPanelTeaching on _WritingCoachPanelState {
       ),
       SendMessageOptions(
         phase: TeachingPhase.p1World,
-        attitude: AttitudeLevel.doubao,
+        attitude: _attitude,
         // 批次64（B62g）：透传编辑器活动时间戳，心流判定叠加编辑活跃
         lastEditorEditAtSec: ref.read(editorActivityProvider),
         // ADR-C87：取消令牌——诊断中可主动中止

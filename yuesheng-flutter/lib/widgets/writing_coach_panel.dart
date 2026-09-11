@@ -109,6 +109,10 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
   /// B3 划词诊断：已处理的选中文本（防重复触发）
   String? _handledDiagnoseText;
 
+  /// P1（2026-09-11）：本面板态度档位。默认 doubao；会话存在时从
+  /// teaching_state 恢复（与对话页切换保持同步，不再硬编码 doubao）。
+  AttitudeLevel _attitude = AttitudeLevel.doubao;
+
   @override
   void initState() {
     super.initState();
@@ -152,6 +156,7 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
     ).findSessionForChapter(widget.chapterId);
     if (existing != null) {
       _sessionId = existing.id;
+      _loadAttitude(existing.id);
       ref
           .read(writingCoachStoreProvider(widget.chapterId).notifier)
           .setSessionId(existing.id);
@@ -179,6 +184,7 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
       ref.read(appDatabaseProvider),
     ).getOrCreateSessionForChapter(widget.manuscriptId, widget.chapterId);
     _sessionId = sessionId;
+    _loadAttitude(sessionId);
     ref
         .read(writingCoachStoreProvider(widget.chapterId).notifier)
         .setSessionId(sessionId);
@@ -186,6 +192,21 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
         .read(evaluationReportsProvider.notifier)
         .restoreForSession(sessionId);
     return sessionId;
+  }
+
+  /// P1（2026-09-11）：从 teaching_state 恢复本章节会话的态度档位，
+  /// 与对话页切换保持同步。加载失败保持默认档，静默。
+  Future<void> _loadAttitude(String sessionId) async {
+    try {
+      final state = await ref
+          .read(chatServiceProvider)
+          .loadAttitudeState(sessionId);
+      if (mounted) {
+        setState(() => _attitude = state.attitude);
+      }
+    } catch (_) {
+      // 保持默认档，静默（与 chat_page._loadAttitude 一致）
+    }
   }
 
   @override
