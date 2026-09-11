@@ -212,5 +212,27 @@ extension _ChatReference on _ChatPageState {
     } catch (_) {
       // 卡片写入失败不阻断主操作（引用变更本身已生效）
     }
+    // 设主/添加/移除后主引用可能变了，刷新头部小字
+    _loadPrimaryRefTitle();
+  }
+
+  /// 加载当前会话主引用书名（头部小字展示）。
+  /// 主引用 = references 里 isPrimary==1；无主引用时回退第一条章节/作品引用
+  /// （与 _handleSaveToFile 口径一致），都没有则 null -> 显示「未关联书籍」。
+  Future<void> _loadPrimaryRefTitle() async {
+    final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
+    if (bootstrap == null || !mounted) return;
+    try {
+      final refs = await ref
+          .read(referenceCapabilityProvider)
+          .listReferences(bootstrap.sessionId);
+      final primary =
+          refs.where((r) => r.isPrimary == 1).firstOrNull ??
+          refs.where((r) => r.refType != 'file').firstOrNull;
+      if (!mounted) return;
+      setState(() => _primaryRefTitle = primary?.title);
+    } catch (_) {
+      // 读取失败保持现状（头部小字降级为未关联文案）
+    }
   }
 }

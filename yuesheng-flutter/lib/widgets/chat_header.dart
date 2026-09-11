@@ -64,6 +64,13 @@ class ChatHeader extends StatelessWidget {
   /// 入口标识：'manuscript' → 诊断模式徽章，其他 → 自由对话
   final String? entryPoint;
 
+  /// 当前会话主引用书名（references 里 isPrimary==1 的 title）。
+  /// 自由对话时显示在标题下方小字；null 表示未关联书籍。
+  final String? primaryRefTitle;
+
+  /// 点主引用小字 → 打开引用管理（设主/添加/移除主引用）
+  final VoidCallback? onTapPrimaryRef;
+
   const ChatHeader({
     super.key,
     required this.currentAttitude,
@@ -76,6 +83,8 @@ class ChatHeader extends StatelessWidget {
     required this.onNewSession,
     required this.onOpenReferences,
     this.entryPoint,
+    this.primaryRefTitle,
+    this.onTapPrimaryRef,
   });
 
   bool get _isManuscriptEntry => entryPoint == 'manuscript';
@@ -265,41 +274,72 @@ class ChatHeader extends StatelessWidget {
               onPressed: onOpenSessionDrawer,
             ),
             const Spacer(),
-            // 中：标题 + 入口徽章
-            const Text(
-              '会话',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+            // 中：诊断模式保留徽章；自由对话 → 标题 + 主引用小字
+            if (_isManuscriptEntry)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    '会话',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xxs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.l2,
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(color: AppColors.l2Text),
+                    ),
+                    child: const Text(
+                      '诊断模式',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.l2Text,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '会话',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onTapPrimaryRef,
+                    behavior: HitTestBehavior.opaque,
+                    child: Text(
+                      primaryRefTitle != null && primaryRefTitle!.isNotEmpty
+                          ? primaryRefTitle!
+                          : '未关联书籍 · 点此管理',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xxs,
-              ),
-              decoration: BoxDecoration(
-                color: _isManuscriptEntry ? AppColors.l2 : AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(
-                  color: _isManuscriptEntry
-                      ? AppColors.l2Text
-                      : AppColors.borderSoft,
-                ),
-              ),
-              child: Text(
-                _isManuscriptEntry ? '诊断模式' : '自由对话',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: _isManuscriptEntry
-                      ? AppColors.l2Text
-                      : AppColors.textTertiary,
-                ),
-              ),
-            ),
             const Spacer(),
             // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
             IconButton(

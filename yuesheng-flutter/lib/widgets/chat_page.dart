@@ -97,6 +97,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   /// 批次 10 头部状态区：当前 P2 子阶段（teaching_state.current_subphase）
   TeachingSubphase? _subphase;
 
+  /// 当前会话主引用书名（references isPrimary==1 的 title），头部小字展示。
+  /// null 表示未关联书籍；点小字打开引用管理可调整主引用。
+  String? _primaryRefTitle;
+
   /// 批次 12 态度建议：当前展示的建议（null = 不展示）
   AttitudeSuggestion? _attitudeSuggestion;
 
@@ -169,6 +173,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (bootstrap != null && !bootstrap.shouldShowOnboarding) {
         _loadAttitude(bootstrap.sessionId);
         _loadSubphase(bootstrap.sessionId);
+        _loadPrimaryRefTitle(); // 头部小字：当前主引用书名
         _loadSessions(); // 切换/新建会话后刷新列表（updated_at/标题变化）
         // 批次4-M3：恢复该会话的评估报告 + 当前轮次（应用重启/会话切换后）
         ref
@@ -269,6 +274,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               onNewSession: _handleCreateSession,
               // 引用管理：更多菜单入口 → ReferenceBar 管理弹层
               onOpenReferences: _handleOpenReferences,
+              primaryRefTitle: _primaryRefTitle,
+              onTapPrimaryRef: _handleOpenReferences,
             ),
             // 批次 12：态度建议横幅（对齐 RN 位于头部下方、内容上方）
             if (_attitudeSuggestion != null)

@@ -708,9 +708,9 @@ void main() {
       await tester.pumpWidget(buildChatPage());
       await tester.pumpAndSettle();
 
-      // 头部：标题「会话」+ 徽章「自由对话」
+      // 头部：标题「会话」+ 主引用小字（未关联时为提示文案）
       expect(find.text('会话'), findsOneWidget);
-      expect(find.text('自由对话'), findsOneWidget);
+      expect(find.text('未关联书籍 · 点此管理'), findsOneWidget);
 
       // 更多菜单 → 态度档位 / 画像（阶段名已按真机三批收敛）
       await tester.tap(find.byIcon(Icons.more_horiz));
@@ -1650,9 +1650,9 @@ void main() {
 
       // ReferenceBar 已挂载（弹层内）
       expect(find.byType(ReferenceBar), findsOneWidget);
-      // 主引用行
+      // 主引用行（弹层内）；头部小字也显示同一主引用书名，故全书名出现 2 次
       expect(find.text('章节（主引用）'), findsOneWidget);
-      expect(find.text('第一章：启程'), findsOneWidget);
+      expect(find.text('第一章：启程'), findsNWidgets(2));
     });
 
     testWidgets('#R2 移除引用 → 落库删除 + reference_change 卡片写入', (tester) async {

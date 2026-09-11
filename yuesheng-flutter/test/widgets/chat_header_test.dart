@@ -2,7 +2,7 @@
 // ChatHeader widget 测试 — 聊天头部状态区
 //
 // 覆盖路径：
-//   1. 标题「会话」+ 入口徽章「自由对话」
+//   1. 标题「会话」+ 主引用小字（未关联 / 书名）
 //   2. entryPoint='manuscript' → 「诊断模式」徽章
 //   3. 汉堡按钮 → onOpenSessionDrawer
 //   4. 更多菜单 → 阶段名 + 态度档位 + 子阶段 + 画像入口
@@ -29,6 +29,8 @@ void main() {
     VoidCallback? onNewSession,
     VoidCallback? onOpenReferences,
     String? entryPoint,
+    String? primaryRefTitle,
+    VoidCallback? onTapPrimaryRef,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -43,17 +45,28 @@ void main() {
           onNewSession: onNewSession ?? () {},
           onOpenReferences: onOpenReferences ?? () {},
           entryPoint: entryPoint,
+          primaryRefTitle: primaryRefTitle,
+          onTapPrimaryRef: onTapPrimaryRef,
         ),
       ),
     );
   }
 
-  testWidgets('#1 标题「会话」+ 徽章「自由对话」', (tester) async {
+  testWidgets('#1 标题「会话」+ 未关联小字', (tester) async {
     await tester.pumpWidget(buildHeader());
 
     expect(find.text('会话'), findsOneWidget);
-    expect(find.text('自由对话'), findsOneWidget);
+    expect(find.text('未关联书籍 · 点此管理'), findsOneWidget);
+    expect(find.text('自由对话'), findsNothing);
     expect(find.text('诊断模式'), findsNothing);
+  });
+
+  testWidgets('#1b 传 primaryRefTitle → 显示书名小字', (tester) async {
+    await tester.pumpWidget(buildHeader(primaryRefTitle: '我的第一本书'));
+
+    expect(find.text('会话'), findsOneWidget);
+    expect(find.text('我的第一本书'), findsOneWidget);
+    expect(find.text('未关联书籍 · 点此管理'), findsNothing);
   });
 
   testWidgets('#2 entryPoint=manuscript → 「诊断模式」', (tester) async {
