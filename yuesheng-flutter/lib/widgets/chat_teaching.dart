@@ -171,28 +171,6 @@ extension _ChatTeaching on _ChatPageState {
     await _loadActiveProblems(bootstrap.sessionId);
   }
 
-  /// 切换 P2 子阶段（对齐 RN handleNextSubphase 循环）：
-  /// DIAGNOSIS → PRACTICE → FEEDBACK → DIAGNOSIS，持久化失败回滚
-  Future<void> _handleNextSubphase() async {
-    final bootstrap = ref.read(sessionBootstrapProvider).valueOrNull;
-    if (bootstrap == null) return;
-    final prev = _subphase;
-    final next = switch (prev) {
-      TeachingSubphase.diagnosis => TeachingSubphase.practice,
-      TeachingSubphase.practice => TeachingSubphase.feedback,
-      TeachingSubphase.feedback => TeachingSubphase.diagnosis,
-      null => TeachingSubphase.diagnosis,
-    };
-    setState(() => _subphase = next);
-    try {
-      await ref
-          .read(chatServiceProvider)
-          .setSubphase(bootstrap.sessionId, next);
-    } catch (_) {
-      if (mounted) setState(() => _subphase = prev);
-    }
-  }
-
   Future<void> _handleSend(
     String text, {
     TeachingSubphase? subphase,

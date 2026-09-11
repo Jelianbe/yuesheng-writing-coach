@@ -94,9 +94,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   /// 批次 10 头部状态区：当前教学阶段（loadAttitudeState 返回 phase）
   TeachingPhase _phase = TeachingPhase.p0Engage;
 
-  /// 批次 10 头部状态区：当前 P2 子阶段（teaching_state.current_subphase）
-  TeachingSubphase? _subphase;
-
   /// 当前会话主引用书名（references isPrimary==1 的 title），头部小字展示。
   /// null 表示未关联书籍；点小字打开引用管理可调整主引用。
   String? _primaryRefTitle;
@@ -172,7 +169,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final bootstrap = next.valueOrNull;
       if (bootstrap != null && !bootstrap.shouldShowOnboarding) {
         _loadAttitude(bootstrap.sessionId);
-        _loadSubphase(bootstrap.sessionId);
         _loadPrimaryRefTitle(); // 头部小字：当前主引用书名
         _loadSessions(); // 切换/新建会话后刷新列表（updated_at/标题变化）
         // 批次4-M3：恢复该会话的评估报告 + 当前轮次（应用重启/会话切换后）
@@ -262,10 +258,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             // ChatHeader：聊天头部状态区（标题/入口徽章/会话列表/更多菜单）
             ChatHeader(
               currentAttitude: _attitude,
-              currentPhase: _phase,
-              currentSubphase: _subphase,
               onAttitudeChange: _handleAttitudeChange,
-              onNextSubphase: _handleNextSubphase,
               // 打开会话列表前先释放输入框焦点：真机实证点汉堡会唤起
               // 输入法（输入框焦点在 drawer 打开动画期间被恢复），先 unfocus 解耦
               onOpenSessionDrawer: () {

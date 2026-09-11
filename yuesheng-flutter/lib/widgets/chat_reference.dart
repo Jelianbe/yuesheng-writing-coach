@@ -59,8 +59,9 @@ extension _ChatReference on _ChatPageState {
       },
       onConfirmSkip: () async {
         // 确认跳过：清空练习状态 + 子阶段回 DIAGNOSIS（对齐 RN L486）
+        // 批次 C78-3c：只落库，不再维护 Widget 内存态——内存镜像已随头部
+        // 展示端删除而废弃，重进会话时由 chat_service.loadSubphase 读回。
         ref.read(practiceStoreProvider.notifier).resetPractice();
-        setState(() => _subphase = TeachingSubphase.diagnosis);
         try {
           await ref
               .read(chatServiceProvider)

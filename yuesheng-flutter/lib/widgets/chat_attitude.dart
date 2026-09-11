@@ -117,18 +117,4 @@ extension _ChatAttitude on _ChatPageState {
       // 加载失败保持默认档位，静默（release 不暴露技术细节）
     }
   }
-
-  /// 加载当前 P2 子阶段（ChatHeader 更多菜单展示用）
-  Future<void> _loadSubphase(String sessionId) async {
-    try {
-      final subphase = await ref
-          .read(chatServiceProvider)
-          .loadSubphase(sessionId);
-      if (mounted) {
-        setState(() => _subphase = subphase);
-      }
-    } catch (_) {
-      // 加载失败保持 null，静默
-    }
-  }
 }

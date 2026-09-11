@@ -5,15 +5,19 @@
 // 结构（对齐 RN）：
 //   头部栏（56 高）：
 //   - 左：会话列表按钮（汉堡）→ 打开 SessionDrawer
-//   - 中：标题「会话」+ 入口徽章（诊断模式 / 自由对话）
+//   - 中：标题「会话」+ 满幅区分（诊断模式徽章 / 主引用书名小字）
 //   - 右：更多按钮 → 更多菜单（底部弹层）
 //
 //   更多菜单（对齐 RN Modal menuSheet）：
-//   - 阶段（只读）：PHASE_LABELS[currentPhase]
-//   - 子阶段：SubphaseIndicator + 切换按钮（onNextSubphase 循环切换）
 //   - 态度档位：行内 3 档选择（对齐 RN AttitudeIndicator 行内语义，
 //     避免 bottom sheet 内嵌套弹层）
 //   - 画像：入口 → onOpenProfile
+//   - 引用管理：入口 → onOpenReferences
+//
+// 批次 C78-3c 删除「子阶段」菜单段：SubphaseIndicator 组件已废弃
+// （展示层「诊断中/练习中/反馈中」胶囊与教学链路真实状态脱节，
+//  保留会造成「显示的子阶段」与 teaching_state.current_subphase 双真源）。
+// 教学子阶段语义仍在 chat_service / message_injector 中活跃，未删除。
 //
 // 差异说明：RN 头部左为返回（Stack 导航），Flutter ChatPage 为 Tab2
 // 常驻页无上级返回，左按钮改为会话列表（drawer）入口。
@@ -24,7 +28,6 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../types/teaching_types.dart';
-import 'subphase_indicator.dart';
 
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
 const List<(AttitudeLevel, String, Color)> _attitudeOptions = [
@@ -37,17 +40,8 @@ class ChatHeader extends StatelessWidget {
   /// 当前态度档位
   final AttitudeLevel currentAttitude;
 
-  /// 当前教学阶段
-  final TeachingPhase currentPhase;
-
-  /// 当前 P2 子阶段（可空）
-  final TeachingSubphase? currentSubphase;
-
   /// 态度切换回调
   final ValueChanged<AttitudeLevel> onAttitudeChange;
-
-  /// 子阶段切换回调（循环 DIAGNOSIS→PRACTICE→FEEDBACK）
-  final VoidCallback onNextSubphase;
 
   /// 打开会话抽屉（对齐 RN onOpenSessionDrawer）
   final VoidCallback onOpenSessionDrawer;
@@ -61,11 +55,11 @@ class ChatHeader extends StatelessWidget {
   /// 打开引用管理（对齐 RN onOpenReferences → ReferenceBar 管理弹层）
   final VoidCallback onOpenReferences;
 
-  /// 入口标识：'manuscript' → 诊断模式徽章，其他 → 自由对话
+  /// 入口标识：'manuscript' → 「诊断模式」徽章，其他 → 主引用书名小字
   final String? entryPoint;
 
   /// 当前会话主引用书名（references 里 isPrimary==1 的 title）。
-  /// 自由对话时显示在标题下方小字；null 表示未关联书籍。
+  /// 非 manuscript 入口时显示在标题下方小字；null 表示未关联书籍。
   final String? primaryRefTitle;
 
   /// 点主引用小字 → 打开引用管理（设主/添加/移除主引用）
@@ -74,10 +68,7 @@ class ChatHeader extends StatelessWidget {
   const ChatHeader({
     super.key,
     required this.currentAttitude,
-    required this.currentPhase,
-    required this.currentSubphase,
     required this.onAttitudeChange,
-    required this.onNextSubphase,
     required this.onOpenSessionDrawer,
     required this.onOpenProfile,
     required this.onNewSession,
@@ -105,37 +96,6 @@ class ChatHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _menuSection(
-                label: '子阶段',
-                child: Row(
-                  children: [
-                    SubphaseIndicator(subphase: currentSubphase),
-                    const SizedBox(width: AppSpacing.md),
-                    InkWell(
-                      onTap: onNextSubphase,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.xsm,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        child: const Text(
-                          '切换',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               _menuSection(
                 label: '态度档位',
                 child: Row(
