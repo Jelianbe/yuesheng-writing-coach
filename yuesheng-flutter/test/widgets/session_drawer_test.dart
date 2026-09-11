@@ -70,7 +70,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('#1 空态 → CTA + 新建按钮', (tester) async {
+  testWidgets('#1 空态 → CTA（底部固定新建入口已按真机#4 移除）', (tester) async {
     await tester.pumpWidget(buildHost(sessions: const []));
     await openDrawer(tester);
 
@@ -78,7 +78,8 @@ void main() {
     expect(find.text('还没有会话'), findsOneWidget);
     expect(find.text('发起你的第一次对话，开始写作诊断之旅'), findsOneWidget);
     expect(find.text('发起第一次对话'), findsOneWidget);
-    expect(find.text('新建会话'), findsOneWidget);
+    // 真机#4：drawer 底部「+ 新建会话」固定按钮已移除（空会话复用逻辑兜底）
+    expect(find.text('新建会话'), findsNothing);
   });
 
   testWidgets('#2 列表：标题/预览/时间/阶段标签', (tester) async {
@@ -129,20 +130,6 @@ void main() {
     expect(gotId, 's2');
     // drawer 已关闭（对话标题不可见）
     expect(find.text('对话'), findsNothing);
-  });
-
-  testWidgets('#4 底部新建 → onCreate 回调', (tester) async {
-    final sessions = [makeSession(id: 's1', title: '会话一')];
-    var created = 0;
-    await tester.pumpWidget(
-      buildHost(sessions: sessions, onCreate: () => created++),
-    );
-    await openDrawer(tester);
-
-    await tester.tap(find.text('新建会话'));
-    await tester.pumpAndSettle();
-
-    expect(created, 1);
   });
 
   testWidgets('#5 空态 CTA → onCreate 回调', (tester) async {

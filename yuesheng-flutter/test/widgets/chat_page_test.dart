@@ -350,26 +350,24 @@ void main() {
       expect(msgs, isEmpty);
     });
 
-    testWidgets('#B5-2 新建会话 → 数量 +1 且可发送', (tester) async {
+    testWidgets('#B5-2 appbar 新建对话 → 当前会话不空时数量 +1（真机#4 复用逻辑）', (tester) async {
       final appStateRepo = AppStateRepository(db);
       await appStateRepo.setQuestionnaireCompleted(true);
       final sessionRepo = SessionRepository(db);
-      await sessionRepo.createBlankSession(title: '会话A');
+      // 当前会话带消息（不空），新建才开新会话；空会话会被复用不 +1
+      final aId = await sessionRepo.createBlankSession(title: '会话A');
+      await sessionRepo.addMessage(aId, 'user', 'A的消息');
       final before = (await db.select(db.sessions).get()).length;
 
       await tester.pumpWidget(buildChatPage());
       await tester.pumpAndSettle();
 
-      // 打开抽屉 → 新建会话
-      await tester.tap(find.byIcon(Icons.menu));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('新建会话'));
+      // appbar「+ 新建对话」（drawer 底部入口已按真机#4 移除）
+      await tester.tap(find.byIcon(Icons.add_comment_outlined));
       await tester.pumpAndSettle();
 
       final after = (await db.select(db.sessions).get()).length;
-      expect(after, before + 1);
-      // 抽屉已关闭
-      expect(find.text('对话'), findsNothing);
+      expect(after, before + 1, reason: '当前会话已不空，新建应开新会话');
     });
 
     testWidgets('#B5-3 批次73 长按删除当前会话 → DB 删除 + 切到剩余会话 + 消息清空', (tester) async {

@@ -386,7 +386,7 @@ class SessionBootstrapNotifier extends AsyncNotifier<SessionBootstrapState> {
   Future<void> createNew() async {
     final db = ref.read(appDatabaseProvider);
     final sessionRepo = SessionRepository(db);
-    final id = await sessionRepo.createBlankSession();
+    final id = await sessionRepo.createOrReuseBlankSession();
     _targetSessionId = id;
     await refresh();
   }

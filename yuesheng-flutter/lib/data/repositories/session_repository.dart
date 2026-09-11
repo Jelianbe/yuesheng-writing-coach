@@ -59,6 +59,34 @@ class SessionRepository {
         return id;
       });
 
+  /// 新建或复用一个无消息的自由会话（真机反馈三批#4：反复点「+」不再堆积空会话）
+  ///
+  /// 复用条件：manuscriptId IS NULL（自由对话，不串章节/作品会话）且 messages 表无记录。
+  /// 找不到才 createBlankSession。
+  Future<String> createOrReuseBlankSession() =>
+      guardRepoWrite('session', 'createOrReuseBlankSession', () async {
+        final activeIds =
+            await (_db.selectOnly(_db.messages)
+                  ..addColumns([_db.messages.sessionId]))
+                .map((r) => r.read(_db.messages.sessionId))
+                .get();
+        final activeSet = activeIds.toSet();
+        final candidates =
+            await (_db.select(_db.sessions)
+                  ..where((t) => t.manuscriptId.isNull())
+                  ..orderBy([
+                    (t) => OrderingTerm(
+                      expression: t.updatedAt,
+                      mode: OrderingMode.desc,
+                    ),
+                  ]))
+                .get();
+        for (final s in candidates) {
+          if (!activeSet.contains(s.id)) return s.id;
+        }
+        return createBlankSession();
+      });
+
   /// 全库最新非空 beginnerLevel（ADR-C71；无任何历史时返回 null）
   Future<String?> _latestBeginnerLevel() async {
     final row =

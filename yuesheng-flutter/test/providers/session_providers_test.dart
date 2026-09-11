@@ -195,7 +195,18 @@ void main() {
       final state1 = await container.read(sessionBootstrapProvider.future);
       expect(await lastStorage.getLastSessionId(), state1.sessionId);
 
-      // 新建会话并切换
+      // 真机#4：先让当前会话有消息，否则 createNew 会复用空会话（不再 +1）
+      await db
+          .into(db.messages)
+          .insert(
+            MessagesCompanion.insert(
+              id: 'm-seed',
+              sessionId: state1.sessionId,
+              role: 'user',
+              content: 'hi',
+            ),
+          );
+      // 新建会话并切换（当前会话已不空，应开新会话）
       final notifier = container.read(sessionBootstrapProvider.notifier);
       await notifier.createNew();
 
@@ -255,8 +266,7 @@ void main() {
     // 「恢复到上次会话」只是体验优化，不应连带打挂整个 bootstrap——
     // 否则 ChatPage 落到「初始化失败，请重试」且无重试入口。
 
-    test('#13 CR-33 回归：LAST_SESSION 写入失败 → 降级，bootstrap 仍成功',
-        () async {
+    test('#13 CR-33 回归：LAST_SESSION 写入失败 → 降级，bootstrap 仍成功', () async {
       final container = buildContainer(
         overrides: [
           lastSessionStorageProvider.overrideWithValue(

@@ -30,7 +30,7 @@ class SessionDrawer extends StatelessWidget {
   /// 选择会话（drawer 先关闭再回调）
   final ValueChanged<String> onSelect;
 
-  /// 新建会话（drawer 先关闭再回调）
+  /// 新建会话（空态 CTA 用；drawer 底部固定入口已按真机#4 移除）
   final VoidCallback onCreate;
 
   /// 删除会话（批次73：长按会话 → 确认 → drawer 先关闭再回调；null 时无删除入口）
@@ -95,40 +95,6 @@ class SessionDrawer extends StatelessWidget {
                       itemBuilder: (context, index) =>
                           _buildSessionCard(context, sessions[index]),
                     ),
-            ),
-            // ── 底部新建 ──
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.borderSoft)),
-              ),
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).pop();
-                  onCreate();
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 14),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_circle_outline,
-                        size: 20,
-                        color: AppColors.primary,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        '新建会话',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ),
           ],
         ),
