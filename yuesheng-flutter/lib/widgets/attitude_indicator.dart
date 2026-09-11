@@ -16,6 +16,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../services/attitude_advisor.dart';
 import 'yue_sheet.dart';
 import '../types/teaching_types.dart';
 
@@ -49,12 +50,6 @@ const Map<AttitudeLevel, _AttitudeMeta> _attitudeMeta = {
     color: AppColors.l3Text,
   ),
 };
-
-const List<AttitudeLevel> _attitudeOrder = [
-  AttitudeLevel.doubao,
-  AttitudeLevel.yuesheng,
-  AttitudeLevel.sensei,
-];
 
 class AttitudeIndicator extends StatelessWidget {
   final AttitudeLevel currentAttitude;
@@ -97,7 +92,7 @@ class AttitudeIndicator extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                for (final attitude in _attitudeOrder)
+                for (final attitude in attitudeOrder)
                   _AttitudeOption(
                     attitude: attitude,
                     meta: _attitudeMeta[attitude]!,

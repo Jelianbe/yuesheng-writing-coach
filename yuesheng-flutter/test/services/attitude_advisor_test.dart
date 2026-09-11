@@ -204,11 +204,11 @@ void main() {
     });
 
     test('yuesheng → 月笙', () {
-      expect(getAttitudeLabel(AttitudeLevel.yuesheng), '月笙');
+      expect(getAttitudeLabel(AttitudeLevel.yuesheng), '月笙如歌');
     });
 
     test('sensei → 老师', () {
-      expect(getAttitudeLabel(AttitudeLevel.sensei), '老师');
+      expect(getAttitudeLabel(AttitudeLevel.sensei), 'sensei');
     });
   });
 

@@ -808,13 +808,13 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
       expect(find.text('建议调整为轻松模式'), findsOneWidget);
-      expect(find.text('切换到月笙'), findsOneWidget);
+      expect(find.text('切换到月笙如歌'), findsOneWidget);
       expect(find.textContaining('当前问题较少'), findsOneWidget);
       // 横幅显示时 QuickChips 隐藏（对齐 RN !attitudeSuggestion）
       expect(find.text('诊断节奏问题'), findsNothing);
     });
 
-    testWidgets('#B12-2 点击「切换到月笙」→ 态度双写 + 横幅消失', (tester) async {
+    testWidgets('#B12-2 点击「切换到月笙如歌」→ 态度双写 + 横幅消失', (tester) async {
       final sId = await seedDowngradeEnv();
 
       await tester.pumpWidget(
@@ -837,7 +837,7 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 600));
 
       // 接受 → 横幅消失
-      await tester.tap(find.text('切换到月笙'));
+      await tester.tap(find.text('切换到月笙如歌'));
       await tester.pumpAndSettle();
 
       expect(find.text('建议调整为轻松模式'), findsNothing);

@@ -174,8 +174,8 @@ String _generateDowngradeReason(
 /// 档位展示名（对齐 RN getAttitudeLabel）
 String getAttitudeLabel(AttitudeLevel level) => switch (level) {
   AttitudeLevel.doubao => '豆包',
-  AttitudeLevel.yuesheng => '月笙',
-  AttitudeLevel.sensei => '老师',
+  AttitudeLevel.yuesheng => '月笙如歌',
+  AttitudeLevel.sensei => 'sensei',
 };
 
 /// 冷却期检查（R-019 拆出：suggestAttitudeAdjustment 前置守卫）。

@@ -32,12 +32,12 @@ void main() {
     final suggestion = AttitudeSuggestion(
       direction: 'upgrade',
       targetLevel: AttitudeLevel.yuesheng,
-      reason: '当前发现 2 个写作问题，问题严重度偏高，建议切换到「月笙」模式',
+      reason: '当前发现 2 个写作问题，问题严重度偏高，建议切换到「月笙如歌」模式',
     );
     await tester.pumpWidget(_build(suggestion: suggestion));
 
     expect(find.text('建议提升指导强度'), findsOneWidget);
-    expect(find.text('切换到月笙'), findsOneWidget);
+    expect(find.text('切换到月笙如歌'), findsOneWidget);
     expect(find.text('暂不'), findsOneWidget);
     expect(find.textContaining('当前发现 2 个写作问题'), findsOneWidget);
     expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
@@ -62,13 +62,13 @@ void main() {
     final suggestion = AttitudeSuggestion(
       direction: 'upgrade',
       targetLevel: AttitudeLevel.sensei,
-      reason: '已进入训练阶段，建议切换到「老师」模式',
+      reason: '已进入训练阶段，建议切换到「sensei」模式',
     );
     await tester.pumpWidget(
       _build(suggestion: suggestion, onAccept: () => accepted = true),
     );
 
-    await tester.tap(find.text('切换到老师'));
+    await tester.tap(find.text('切换到sensei'));
     expect(accepted, isTrue);
   });
 
@@ -87,15 +87,15 @@ void main() {
     expect(dismissed, isTrue);
   });
 
-  testWidgets('sensei 目标显示「老师」', (tester) async {
+  testWidgets('sensei 目标显示「sensei」', (tester) async {
     final suggestion = AttitudeSuggestion(
       direction: 'upgrade',
       targetLevel: AttitudeLevel.sensei,
-      reason: '学习状态良好，建议切换到「老师」模式，获得更严格专业的指导',
+      reason: '学习状态良好，建议切换到「sensei」模式，获得更严格专业的指导',
     );
     await tester.pumpWidget(_build(suggestion: suggestion));
 
-    expect(find.text('切换到老师'), findsOneWidget);
+    expect(find.text('切换到sensei'), findsOneWidget);
     expect(find.textContaining('更严格专业的指导'), findsOneWidget);
   });
 }
