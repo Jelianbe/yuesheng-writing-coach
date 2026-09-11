@@ -887,6 +887,21 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('PRAGMA foreign_keys = ON');
       // 入档批次：数据库维护——WAL 下官方推荐的同步级别（性能与安全平衡）
       await customStatement('PRAGMA synchronous = NORMAL');
+
+      // v30 自愈兜底：sessions 表存在但缺 pinned 列时补列。
+      // 旧残留库（user_version=0 等异常状态）onUpgrade 可能未跑到 ALTER 分支，
+      // 而 listSessions 已按 pinned 排序，不补会导致「初始化失败」。
+      try {
+        final cols = await customSelect('PRAGMA table_info(sessions)').get();
+        final hasPinned = cols.any((r) => r.read<String>('name') == 'pinned');
+        if (cols.isNotEmpty && !hasPinned) {
+          await customStatement(
+            'ALTER TABLE sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0',
+          );
+        }
+      } catch (_) {
+        // 自愈失败不阻断启动（多数路径已由 onUpgrade 保证）
+      }
       // 入档批次：启动快速完整性校验（quick_check 是 integrity_check 的轻量版，
       // 只查页面级损坏，大库启动成本可忽略；异常时留痕供诊断）
       try {
