@@ -102,7 +102,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 29);
+    expect(version.read<int>('user_version'), 30);
 
     // 2. 存量章节保留（含 volume_id）
     final chapter = await ChapterRepository(db).getChapter('c1');
@@ -139,6 +139,6 @@ void main() {
     final chapter = await ChapterRepository(db2).getChapter('c1');
     expect(chapter!.status, 'draft');
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 29);
+    expect(version.read<int>('user_version'), 30);
   });
 }

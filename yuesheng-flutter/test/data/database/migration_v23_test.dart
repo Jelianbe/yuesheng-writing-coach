@@ -90,7 +90,7 @@ void main() {
     // 1. user_version 升到 27（v23 卷分组 + v24 回收站 CHECK + v25 标签列
     //    + v26 schema bump + v27 角色标签页列一并迁移）
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 29);
+    expect(version.read<int>('user_version'), 30);
 
     // 2. chapters 新增 volume_id，存量章节未分卷
     final chapter = await ChapterRepository(db).getChapter('c1');

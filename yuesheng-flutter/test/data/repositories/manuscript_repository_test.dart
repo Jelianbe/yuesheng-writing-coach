@@ -265,7 +265,7 @@ void main() {
         final db = AppDatabase.forTesting(NativeDatabase(File(path)));
         addTearDown(db.close);
         final ver = await db.customSelect('PRAGMA user_version').getSingle();
-        expect(ver.read<int>('user_version'), 29);
+        expect(ver.read<int>('user_version'), 30);
 
         // 3. 升级后 createManuscript
         final upgradedRepo = ManuscriptRepository(db);

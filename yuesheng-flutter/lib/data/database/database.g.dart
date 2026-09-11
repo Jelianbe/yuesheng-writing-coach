@@ -1814,6 +1814,16 @@ class $SessionsTable extends Sessions
     requiredDuringInsert: false,
     defaultValue: const CustomExpression<int>('unixepoch()'),
   );
+  static const VerificationMeta _pinnedMeta = const VerificationMeta('pinned');
+  @override
+  late final GeneratedColumn<int> pinned = GeneratedColumn<int>(
+    'pinned',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1824,6 +1834,7 @@ class $SessionsTable extends Sessions
     diagnosisSummary,
     createdAt,
     updatedAt,
+    pinned,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1890,6 +1901,12 @@ class $SessionsTable extends Sessions
         updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
       );
     }
+    if (data.containsKey('pinned')) {
+      context.handle(
+        _pinnedMeta,
+        pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta),
+      );
+    }
     return context;
   }
 
@@ -1931,6 +1948,10 @@ class $SessionsTable extends Sessions
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
       )!,
+      pinned: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pinned'],
+      )!,
     );
   }
 
@@ -1949,6 +1970,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
   final String diagnosisSummary;
   final int createdAt;
   final int updatedAt;
+  final int pinned;
   const SessionRow({
     required this.id,
     required this.title,
@@ -1958,6 +1980,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
     required this.diagnosisSummary,
     required this.createdAt,
     required this.updatedAt,
+    required this.pinned,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1974,6 +1997,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
     map['diagnosis_summary'] = Variable<String>(diagnosisSummary);
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
+    map['pinned'] = Variable<int>(pinned);
     return map;
   }
 
@@ -1991,6 +2015,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
       diagnosisSummary: Value(diagnosisSummary),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
+      pinned: Value(pinned),
     );
   }
 
@@ -2008,6 +2033,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
       diagnosisSummary: serializer.fromJson<String>(json['diagnosisSummary']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      pinned: serializer.fromJson<int>(json['pinned']),
     );
   }
   @override
@@ -2022,6 +2048,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
       'diagnosisSummary': serializer.toJson<String>(diagnosisSummary),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
+      'pinned': serializer.toJson<int>(pinned),
     };
   }
 
@@ -2034,6 +2061,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
     String? diagnosisSummary,
     int? createdAt,
     int? updatedAt,
+    int? pinned,
   }) => SessionRow(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -2043,6 +2071,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
     diagnosisSummary: diagnosisSummary ?? this.diagnosisSummary,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
+    pinned: pinned ?? this.pinned,
   );
   SessionRow copyWithCompanion(SessionsCompanion data) {
     return SessionRow(
@@ -2058,6 +2087,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
           : this.diagnosisSummary,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      pinned: data.pinned.present ? data.pinned.value : this.pinned,
     );
   }
 
@@ -2071,7 +2101,8 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
           ..write('chapterId: $chapterId, ')
           ..write('diagnosisSummary: $diagnosisSummary, ')
           ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pinned: $pinned')
           ..write(')'))
         .toString();
   }
@@ -2086,6 +2117,7 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
     diagnosisSummary,
     createdAt,
     updatedAt,
+    pinned,
   );
   @override
   bool operator ==(Object other) =>
@@ -2098,7 +2130,8 @@ class SessionRow extends DataClass implements Insertable<SessionRow> {
           other.chapterId == this.chapterId &&
           other.diagnosisSummary == this.diagnosisSummary &&
           other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.pinned == this.pinned);
 }
 
 class SessionsCompanion extends UpdateCompanion<SessionRow> {
@@ -2110,6 +2143,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
   final Value<String> diagnosisSummary;
   final Value<int> createdAt;
   final Value<int> updatedAt;
+  final Value<int> pinned;
   final Value<int> rowid;
   const SessionsCompanion({
     this.id = const Value.absent(),
@@ -2120,6 +2154,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
     this.diagnosisSummary = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.pinned = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SessionsCompanion.insert({
@@ -2131,6 +2166,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
     this.diagnosisSummary = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.pinned = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id);
   static Insertable<SessionRow> custom({
@@ -2142,6 +2178,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
     Expression<String>? diagnosisSummary,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
+    Expression<int>? pinned,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2153,6 +2190,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
       if (diagnosisSummary != null) 'diagnosis_summary': diagnosisSummary,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (pinned != null) 'pinned': pinned,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2166,6 +2204,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
     Value<String>? diagnosisSummary,
     Value<int>? createdAt,
     Value<int>? updatedAt,
+    Value<int>? pinned,
     Value<int>? rowid,
   }) {
     return SessionsCompanion(
@@ -2177,6 +2216,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
       diagnosisSummary: diagnosisSummary ?? this.diagnosisSummary,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      pinned: pinned ?? this.pinned,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2208,6 +2248,9 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
+    if (pinned.present) {
+      map['pinned'] = Variable<int>(pinned.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2225,6 +2268,7 @@ class SessionsCompanion extends UpdateCompanion<SessionRow> {
           ..write('diagnosisSummary: $diagnosisSummary, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('pinned: $pinned, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16251,6 +16295,7 @@ typedef $$SessionsTableCreateCompanionBuilder =
       Value<String> diagnosisSummary,
       Value<int> createdAt,
       Value<int> updatedAt,
+      Value<int> pinned,
       Value<int> rowid,
     });
 typedef $$SessionsTableUpdateCompanionBuilder =
@@ -16263,6 +16308,7 @@ typedef $$SessionsTableUpdateCompanionBuilder =
       Value<String> diagnosisSummary,
       Value<int> createdAt,
       Value<int> updatedAt,
+      Value<int> pinned,
       Value<int> rowid,
     });
 
@@ -16543,6 +16589,11 @@ class $$SessionsTableFilterComposer
 
   ColumnFilters<int> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pinned => $composableBuilder(
+    column: $table.pinned,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16857,6 +16908,11 @@ class $$SessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pinned => $composableBuilder(
+    column: $table.pinned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ManuscriptsTableOrderingComposer get manuscriptId {
     final $$ManuscriptsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -16932,6 +16988,9 @@ class $$SessionsTableAnnotationComposer
 
   GeneratedColumn<int> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get pinned =>
+      $composableBuilder(column: $table.pinned, builder: (column) => column);
 
   $$ManuscriptsTableAnnotationComposer get manuscriptId {
     final $$ManuscriptsTableAnnotationComposer composer = $composerBuilder(
@@ -17256,6 +17315,7 @@ class $$SessionsTableTableManager
                 Value<String> diagnosisSummary = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
+                Value<int> pinned = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsCompanion(
                 id: id,
@@ -17266,6 +17326,7 @@ class $$SessionsTableTableManager
                 diagnosisSummary: diagnosisSummary,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                pinned: pinned,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17278,6 +17339,7 @@ class $$SessionsTableTableManager
                 Value<String> diagnosisSummary = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
+                Value<int> pinned = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SessionsCompanion.insert(
                 id: id,
@@ -17288,6 +17350,7 @@ class $$SessionsTableTableManager
                 diagnosisSummary: diagnosisSummary,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
+                pinned: pinned,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

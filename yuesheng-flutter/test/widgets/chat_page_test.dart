@@ -396,6 +396,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('删除'));
       await tester.pumpAndSettle();
+      await tester.tap(find.text('删除'));
+      await tester.pumpAndSettle();
 
       // A 已删除，B 保留；A 的消息不再显示
       final sessions = await sessionRepo.listSessions();

@@ -66,8 +66,8 @@ void main() {
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        29,
-        reason: 'schemaVersion 应为 29',
+        30,
+        reason: 'schemaVersion 应为 30',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

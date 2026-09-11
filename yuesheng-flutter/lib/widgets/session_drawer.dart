@@ -1,16 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// SessionDrawer — 会话管理抽屉（缺口清单第 2 项）
+// SessionDrawer — 会话管理抽屉
 // 真源：yuesheng-android/src/components/chat/SessionDrawer.tsx
 //
-// 结构（对齐 RN）：
-//   - 头部：「对话」标题
-//   - 会话列表：月字头像（当前会话品牌色 / 其余灰）+ 标题
-//     + 相对时间 + 预览 + 阶段标签（currentPhase → PHASE_LABELS）
-//   - 空态：还没有会话 + 发起第一次对话 CTA
-//   - 底部：「+ 新建会话」按钮
-//
-// 数据：SessionWithPhase（session + currentPhase）由父级传入
-// （对齐 RN sessions 由 useChatStore 提供，Flutter 侧由 ChatPage 加载）
+// 结构：头部「对话」+ 会话列表（头像/标题/时间/预览）+ 空态 CTA
+// v30：每条右侧 ⋯ 浮层菜单（重命名/置顶/多选/删除）；长按也弹同一菜单；
+//      多选模式可批量删除。置顶后会话排最前（pinned DESC, updatedAt DESC）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -20,8 +14,8 @@ import '../data/repositories/session_repository.dart';
 import '../services/progress_service.dart';
 import '../utils/time_format.dart';
 
-class SessionDrawer extends StatelessWidget {
-  /// 会话列表（listSessionsWithPhase，按 updated_at 降序）
+class SessionDrawer extends StatefulWidget {
+  /// 会话列表（listSessionsWithPhase，pinned DESC, updatedAt DESC）
   final List<SessionWithPhase> sessions;
 
   /// 当前会话 ID（高亮显示）
@@ -30,11 +24,20 @@ class SessionDrawer extends StatelessWidget {
   /// 选择会话（drawer 先关闭再回调）
   final ValueChanged<String> onSelect;
 
-  /// 新建会话（空态 CTA 用；drawer 底部固定入口已按真机#4 移除）
+  /// 新建会话
   final VoidCallback onCreate;
 
-  /// 删除会话（批次73：长按会话 → 确认 → drawer 先关闭再回调；null 时无删除入口）
+  /// 删除单条会话（确认后关抽屉 → 回调）
   final ValueChanged<String>? onDelete;
+
+  /// 重命名会话（v30）
+  final void Function(String sessionId, String title)? onRename;
+
+  /// 切换置顶（v30）
+  final ValueChanged<String>? onTogglePin;
+
+  /// 批量删除（v30 多选模式）
+  final ValueChanged<List<String>>? onBatchDelete;
 
   const SessionDrawer({
     super.key,
@@ -43,12 +46,21 @@ class SessionDrawer extends StatelessWidget {
     required this.onSelect,
     required this.onCreate,
     this.onDelete,
+    this.onRename,
+    this.onTogglePin,
+    this.onBatchDelete,
   });
 
-  /// 阶段标签文案（对齐 RN PHASE_LABELS）
-  /// 阶段码 → 中文名（转发 progress_service 单真源，不另写 map；
-  /// 明面渲染已按真机三批收敛，保留供进度/画像主动页使用）
+  /// 阶段标签文案（转发 progress_service 单真源）
   static String? phaseLabel(String? phase) => phaseLabelFromCode(phase);
+
+  @override
+  State<SessionDrawer> createState() => _SessionDrawerState();
+}
+
+class _SessionDrawerState extends State<SessionDrawer> {
+  bool _multiSelect = false;
+  final Set<String> _selected = {};
 
   @override
   Widget build(BuildContext context) {
@@ -58,44 +70,86 @@ class SessionDrawer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── 头部 ──
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: 14,
-              ),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
-              ),
-              child: const Text(
-                '对话',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-            // ── 列表 / 空态 ──
-            Expanded(
-              child: sessions.isEmpty
-                  ? _buildEmpty(context)
-                  : ListView.separated(
-                      itemCount: sessions.length,
-                      separatorBuilder: (_, _) =>
-                          const Divider(height: 1, color: AppColors.borderSoft),
-                      itemBuilder: (context, index) =>
-                          _buildSessionCard(context, sessions[index]),
-                    ),
-            ),
+            _buildHeader(context),
+            Expanded(child: _buildBody(context)),
+            if (_multiSelect) _buildBottomBar(context),
           ],
         ),
       ),
     );
   }
 
-  /// 空态（对齐 RN EmptyState：还没有会话 / 发起第一次对话）
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: 14,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+      ),
+      child: Row(
+        children: [
+          if (_multiSelect)
+            TextButton(
+              onPressed: _exitMultiSelect,
+              child: const Text(
+                '取消',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+            )
+          else
+            const SizedBox(width: 48),
+          const Expanded(
+            child: Text(
+              '对话',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          _buildHeaderTrailing(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderTrailing() {
+    return SizedBox(
+      width: 48,
+      child: _multiSelect
+          ? Text(
+              '已选 ${_selected.length}',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            )
+          : IconButton(
+              icon: const Icon(
+                Icons.more_horiz,
+                size: 22,
+                color: AppColors.textSecondary,
+              ),
+              tooltip: '批量管理',
+              onPressed: () => setState(() => _multiSelect = true),
+            ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (widget.sessions.isEmpty) return _buildEmpty(context);
+    return ListView.separated(
+      itemCount: widget.sessions.length,
+      separatorBuilder: (_, _) =>
+          const Divider(height: 1, color: AppColors.borderSoft),
+      itemBuilder: (context, i) => _buildCard(context, widget.sessions[i]),
+    );
+  }
+
   Widget _buildEmpty(BuildContext context) {
     return Center(
       child: Column(
@@ -125,7 +179,7 @@ class SessionDrawer extends StatelessWidget {
           FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
-              onCreate();
+              widget.onCreate();
             },
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -138,18 +192,14 @@ class SessionDrawer extends StatelessWidget {
     );
   }
 
-  /// 会话卡片（对齐 RN sessionCard：avatar + 标题 + 时间 + 预览 + 阶段标签）
-  Widget _buildSessionCard(BuildContext context, SessionWithPhase item) {
-    final isActive = item.session.id == currentSessionId;
+  Widget _buildCard(BuildContext context, SessionWithPhase item) {
+    final id = item.session.id;
+    final isActive = id == widget.currentSessionId;
+    final title = item.session.title.isEmpty ? '新建会话' : item.session.title;
+    final isPinned = item.session.pinned == 1;
     return InkWell(
-      onTap: () {
-        Navigator.of(context).pop();
-        onSelect(item.session.id);
-      },
-      // 批次73：长按会话 → 删除确认（对齐消息长按删除心智）
-      onLongPress: onDelete != null
-          ? () => _confirmDelete(context, item)
-          : null,
+      onTap: () => _onCardTap(id, isActive),
+      onLongPress: () => _openMenu(context, item, title),
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
@@ -157,83 +207,201 @@ class SessionDrawer extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 月字头像
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: isActive ? AppColors.primary : AppColors.surface,
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                '月',
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: isActive
-                      ? AppColors.onPrimary
-                      : AppColors.textTertiary,
-                ),
-              ),
-            ),
+            if (_multiSelect) _buildSelectCheck(id),
+            _buildAvatar(isActive),
             const SizedBox(width: 12),
-            // 内容区
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.session.title.isEmpty
-                              ? '新建会话'
-                              : item.session.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formatRelativeTime(item.session.updatedAt),
-                        style: AppTextStyles.microCaption,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          item.session.preview.isEmpty
-                              ? '暂无消息'
-                              : item.session.preview,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            Expanded(child: _cardContent(item, title, isPinned)),
           ],
         ),
       ),
     );
   }
 
-  /// 删除会话确认（批次73）：确认后关抽屉 → 回调 onDelete
+  Widget _buildSelectCheck(String id) {
+    final checked = _selected.contains(id);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Icon(
+        checked ? Icons.check_circle : Icons.circle_outlined,
+        color: checked ? AppColors.primary : AppColors.disabledText,
+        size: 22,
+      ),
+    );
+  }
+
+  Widget _buildAvatar(bool isActive) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.primary : AppColors.surface,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '月',
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: isActive ? AppColors.onPrimary : AppColors.textTertiary,
+        ),
+      ),
+    );
+  }
+
+  Widget _cardContent(SessionWithPhase item, String title, bool isPinned) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (isPinned)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(Icons.push_pin, size: 13, color: AppColors.primary),
+              ),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              formatRelativeTime(item.session.updatedAt),
+              style: AppTextStyles.microCaption,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          item.session.preview.isEmpty ? '暂无消息' : item.session.preview,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+        ),
+      ],
+    );
+  }
+
+  void _onCardTap(String id, bool isActive) {
+    if (_multiSelect) {
+      setState(() {
+        if (_selected.contains(id)) {
+          _selected.remove(id);
+        } else {
+          _selected.add(id);
+        }
+      });
+      return;
+    }
+    Navigator.of(context).pop();
+    widget.onSelect(id);
+  }
+
+  // ── 浮层菜单（对齐参考：重命名/置顶/多选/删除）──
+  Future<void> _openMenu(
+    BuildContext context,
+    SessionWithPhase item,
+    String title,
+  ) async {
+    final isPinned = item.session.pinned == 1;
+    final result = await showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(120, 200, 40, 200),
+      items: [
+        _menuItem('rename', Icons.edit_outlined, '重命名'),
+        _menuItem(
+          'pin',
+          isPinned ? Icons.push_pin_outlined : Icons.push_pin_outlined,
+          isPinned ? '取消置顶' : '置顶',
+        ),
+        _menuItem('delete', Icons.delete_outline, '删除', danger: true),
+      ],
+    );
+    if (!mounted || !context.mounted || result == null) return;
+    switch (result) {
+      case 'rename':
+        _showRenameDialog(context, item.session.id, title);
+      case 'pin':
+        widget.onTogglePin?.call(item.session.id);
+      case 'delete':
+        _confirmDelete(context, item);
+    }
+  }
+
+  PopupMenuItem<String> _menuItem(
+    String value,
+    IconData icon,
+    String label, {
+    bool danger = false,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: danger ? AppColors.danger : AppColors.textPrimary,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 15,
+              color: danger ? AppColors.danger : AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 重命名 ──
+  Future<void> _showRenameDialog(
+    BuildContext context,
+    String id,
+    String current,
+  ) async {
+    final controller = TextEditingController(text: current);
+    final newTitle = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名会话', style: AppTextStyles.titleLg),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLength: 30,
+          decoration: const InputDecoration(hintText: '输入会话名称'),
+          onSubmitted: (v) => Navigator.pop(ctx, v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (newTitle != null && newTitle.isNotEmpty && newTitle != current) {
+      widget.onRename?.call(id, newTitle);
+    }
+  }
+
+  // ── 删除单条（确认后关抽屉 → 回调）──
   Future<void> _confirmDelete(
     BuildContext context,
     SessionWithPhase item,
@@ -253,7 +421,6 @@ class SessionDrawer extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            style: AppButtonStyles.secondary,
             child: const Text(
               '取消',
               style: TextStyle(
@@ -264,16 +431,7 @@ class SessionDrawer extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             child: const Text(
               '删除',
               style: TextStyle(
@@ -286,8 +444,90 @@ class SessionDrawer extends StatelessWidget {
       ),
     );
     if (confirmed == true && context.mounted) {
-      Navigator.of(context).pop(); // 关闭抽屉
-      onDelete?.call(item.session.id);
+      Navigator.of(context).pop();
+      widget.onDelete?.call(item.session.id);
     }
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: const BoxDecoration(
+          border: Border(top: BorderSide(color: AppColors.borderSoft)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () => setState(
+                () => _selected
+                  ..clear()
+                  ..addAll(widget.sessions.map((s) => s.session.id)),
+              ),
+              child: const Text(
+                '全选',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+            ),
+            FilledButton(
+              onPressed: _selected.isEmpty
+                  ? null
+                  : () => _confirmBatchDelete(context),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              child: Text(
+                '删除 ${_selected.isEmpty ? '' : _selected.length}',
+                style: const TextStyle(
+                  color: AppColors.onPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmBatchDelete(BuildContext context) async {
+    final count = _selected.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('批量删除', style: AppTextStyles.titleLg),
+        content: Text('删除选中的 $count 个会话？此操作不可撤销。', style: AppTextStyles.body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            child: const Text(
+              '删除',
+              style: TextStyle(color: AppColors.onPrimary),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      final ids = _selected.toList();
+      _exitMultiSelect();
+      Navigator.of(context).pop();
+      widget.onBatchDelete?.call(ids);
+    }
+  }
+
+  void _exitMultiSelect() {
+    setState(() {
+      _multiSelect = false;
+      _selected.clear();
+    });
   }
 }

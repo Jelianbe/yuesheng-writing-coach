@@ -37,6 +37,7 @@ void main() {
                 .subtract(Duration(seconds: updatedAgoSec))
                 .millisecondsSinceEpoch ~/
             1000,
+        pinned: 0,
       ),
       currentPhase: phase,
     );
@@ -159,6 +160,11 @@ void main() {
     await tester.longPress(find.text('会话一'));
     await tester.pumpAndSettle();
 
+    // 先弹浮层菜单（重命名/置顶/删除），点菜单里的「删除」
+    expect(find.text('重命名'), findsOneWidget);
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+
     expect(find.text('删除会话'), findsOneWidget);
     expect(find.textContaining('此操作不可撤销'), findsOneWidget);
 
@@ -179,7 +185,9 @@ void main() {
 
     await tester.longPress(find.text('会话一'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('取消'));
+    // 浮层菜单出现，点菜单外空白处关闭（不选删除）
+    expect(find.text('重命名'), findsOneWidget);
+    await tester.tapAt(const Offset(20, 20));
     await tester.pumpAndSettle();
 
     expect(deletedId, isNull);

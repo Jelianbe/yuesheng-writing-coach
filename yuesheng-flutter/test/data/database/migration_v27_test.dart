@@ -101,7 +101,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 29);
+    expect(version.read<int>('user_version'), 30);
 
     // 2. 4 个新列全部存在
     expect(
@@ -164,7 +164,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 29);
+    expect(version.read<int>('user_version'), 30);
 
     // 列数未因重复 ALTER 而膨胀
     final cfCols = await db2

@@ -288,6 +288,7 @@ class SessionRepository {
   /// 复刻 listSessions()
   Future<List<SessionRow>> listSessions() async {
     return (_db.select(_db.sessions)..orderBy([
+          (t) => OrderingTerm(expression: t.pinned, mode: OrderingMode.desc),
           (t) => OrderingTerm(expression: t.updatedAt, mode: OrderingMode.desc),
         ]))
         .get();
@@ -303,6 +304,10 @@ class SessionRepository {
             _db.teachingState.sessionId.equalsExp(_db.sessions.id),
           ),
         ])..orderBy([
+          OrderingTerm(
+            expression: _db.sessions.pinned,
+            mode: OrderingMode.desc,
+          ),
           OrderingTerm(
             expression: _db.sessions.updatedAt,
             mode: OrderingMode.desc,
@@ -515,6 +520,20 @@ class SessionRepository {
             _db.sessions,
           )..where((t) => t.id.equals(sessionId))).go();
         });
+      });
+
+  /// v30：切换会话置顶（会话列表按 pinned DESC, updatedAt DESC 排序）
+  Future<void> setPinned(String sessionId, bool pinned) =>
+      guardRepoWrite('session', 'setPinned', () async {
+        await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId)))
+            .write(SessionsCompanion(pinned: Value(pinned ? 1 : 0)));
+      });
+
+  /// 重命名会话标题（复用 sessions.title，默认「新建会话」）
+  Future<void> renameSession(String sessionId, String title) =>
+      guardRepoWrite('session', 'renameSession', () async {
+        await (_db.update(_db.sessions)..where((t) => t.id.equals(sessionId)))
+            .write(SessionsCompanion(title: Value(title)));
       });
 
   /// 清除缓存：删除没有任何消息的孤儿会话

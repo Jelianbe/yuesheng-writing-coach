@@ -80,6 +80,35 @@ extension _ChatSession on _ChatPageState {
     }
   }
 
+  /// v30：重命名会话标题
+  Future<void> _handleRenameSession(String sessionId, String title) async {
+    try {
+      await SessionRepository(
+        ref.read(appDatabaseProvider),
+      ).renameSession(sessionId, title);
+      await _loadSessions();
+    } catch (_) {}
+  }
+
+  /// v30：切换会话置顶（读当前值翻转）
+  Future<void> _handleTogglePinSession(String sessionId) async {
+    try {
+      final repo = SessionRepository(ref.read(appDatabaseProvider));
+      final current = _sessions
+          .where((s) => s.session.id == sessionId)
+          .firstOrNull;
+      await repo.setPinned(sessionId, current?.session.pinned != 1);
+      await _loadSessions();
+    } catch (_) {}
+  }
+
+  /// v30：批量删除会话（逐个复用 deleteSession 链路）
+  Future<void> _handleBatchDeleteSessions(List<String> ids) async {
+    for (final id in ids) {
+      await _handleDeleteSession(id);
+    }
+  }
+
   /// 切换/新建会话时清空上一会话的临时状态（对齐 RN 重置诊断/练习/模态 store）
   void _resetSessionScopedState() {
     ref.read(practiceStoreProvider.notifier).resetPractice();

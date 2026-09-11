@@ -57,7 +57,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -861,6 +861,18 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS idx_backup_history_created '
           'ON backup_history(created_at DESC)',
         );
+      }
+
+      if (from < 30) {
+        // v30：会话置顶标记（会话列表菜单「置顶」）。
+        // 幂等：老版本迁移 fixture 可能尚未建 sessions 表，PRAGMA 查列后再 ALTER。
+        final cols = await customSelect('PRAGMA table_info(sessions)').get();
+        final hasPinned = cols.any((r) => r.read<String>('name') == 'pinned');
+        if (cols.isNotEmpty && !hasPinned) {
+          await customStatement(
+            'ALTER TABLE sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0',
+          );
+        }
       }
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，

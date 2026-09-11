@@ -201,8 +201,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         currentSessionId: bootstrapAsync.valueOrNull?.sessionId,
         onSelect: _handleSwitchSession,
         onCreate: _handleCreateSession,
-        // 批次73：长按会话删除
+        // 批次73：长按会话删除；v30：重命名/置顶/批量删除
         onDelete: _handleDeleteSession,
+        onRename: _handleRenameSession,
+        onTogglePin: _handleTogglePinSession,
+        onBatchDelete: _handleBatchDeleteSessions,
       ),
       body: bootstrapAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

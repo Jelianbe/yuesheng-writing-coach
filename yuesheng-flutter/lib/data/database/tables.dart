@@ -29,7 +29,6 @@ class Manuscripts extends Table {
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
   IntColumn get updatedAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
-
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -111,6 +110,8 @@ class Sessions extends Table {
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
   IntColumn get updatedAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+  // v30：置顶标记（1=置顶，会话列表排最前）
+  IntColumn get pinned => integer().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {id};
