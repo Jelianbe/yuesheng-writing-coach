@@ -1,8 +1,8 @@
 {
   "dir": "lib",
   "limit": 300,
-  "fileCount": 337,
-  "familyCount": 8,
+  "fileCount": 347,
+  "familyCount": 7,
   "ruleCount": 3,
   "violations": [
     {
@@ -41,36 +41,6 @@
       "part": "widgets/chat_teaching.dart",
       "oversizedParts": {
         "widgets/chat_teaching.dart": 405
-      }
-    },
-    {
-      "host": "widgets/manuscript_detail_page.dart",
-      "rule": "S1",
-      "hostLines": 1336,
-      "partLines": 462,
-      "part": "widgets/manuscript_detail_chapter.dart",
-      "oversizedParts": {
-        "widgets/manuscript_detail_chapter.dart": 462
-      }
-    },
-    {
-      "host": "widgets/manuscript_detail_page.dart",
-      "rule": "S2",
-      "hostLines": 1336,
-      "partLines": 0,
-      "part": "",
-      "oversizedParts": {
-        "widgets/manuscript_detail_chapter.dart": 462
-      }
-    },
-    {
-      "host": "widgets/manuscript_detail_page.dart",
-      "rule": "S3",
-      "hostLines": 1336,
-      "partLines": 462,
-      "part": "widgets/manuscript_detail_chapter.dart",
-      "oversizedParts": {
-        "widgets/manuscript_detail_chapter.dart": 462
       }
     },
     {
