@@ -388,7 +388,13 @@ def main():
         # ⚠️ 落盘一律**全量**（R-019 V4.14 的教训）：report_hits 此时已被基线
         # 过滤过，若落它，`--baseline X --json X` 重生成基线就等于把存量债务
         # 一笔勾销。落 all_hits（未过滤的全量），并显式提示落的是全量。
-        with io.open(args.json, 'w', encoding='utf-8') as f:
+        #
+        # ⚠️ newline='\n' 必须显式指定（2026-09-12 实证）：Python 在 Windows
+        #    文本模式下会把 '\n' 翻译成 '\r\n'。基线文件由本脚本生成，
+        #    若不锁死换行符，**每次重生成都会把索引里的 LF 变成 CRLF**，
+        #    造成工作区与索引长期不一致（V4.4：本项目要求 blob 为 LF）。
+        #    实测：重生成后 `git ls-files --eol` 报 `i/lf w/crlf`。
+        with io.open(args.json, 'w', encoding='utf-8', newline='\n') as f:
             f.write(json.dumps({
                 'dir': args.dir, 'limit': args.limit,
                 'fileCount': file_count, 'violations': all_hits,
