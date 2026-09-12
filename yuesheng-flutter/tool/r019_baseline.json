@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 352,
+  "fileCount": 365,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -86,41 +86,6 @@
       "start": 27,
       "end": 132,
       "lines": 106
-    },
-    {
-      "file": "lib/widgets/bookshelf_actions.dart",
-      "func": "_handleEditInfo",
-      "start": 30,
-      "end": 97,
-      "lines": 68
-    },
-    {
-      "file": "lib/widgets/bookshelf_actions.dart",
-      "func": "_handleManuscriptLongPress",
-      "start": 136,
-      "end": 246,
-      "lines": 111
-    },
-    {
-      "file": "lib/widgets/bookshelf_page.dart",
-      "func": "build",
-      "start": 136,
-      "end": 250,
-      "lines": 115
-    },
-    {
-      "file": "lib/widgets/bookshelf_page.dart",
-      "func": "build",
-      "start": 487,
-      "end": 615,
-      "lines": 129
-    },
-    {
-      "file": "lib/widgets/bookshelf_page.dart",
-      "func": "build",
-      "start": 696,
-      "end": 891,
-      "lines": 196
     },
     {
       "file": "lib/widgets/book_import_sheet.dart",

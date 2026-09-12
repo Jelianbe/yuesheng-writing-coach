@@ -1,18 +1,10 @@
 {
   "dir": "lib",
   "limit": 300,
-  "fileCount": 352,
-  "familyCount": 6,
+  "fileCount": 365,
+  "familyCount": 5,
   "ruleCount": 3,
   "violations": [
-    {
-      "host": "widgets/bookshelf_page.dart",
-      "rule": "S2",
-      "hostLines": 892,
-      "partLines": 0,
-      "part": "",
-      "oversizedParts": {}
-    },
     {
       "host": "widgets/writing_page.dart",
       "rule": "S2",
