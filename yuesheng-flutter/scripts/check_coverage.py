@@ -11,11 +11,21 @@ Usage:
         --t2 "lib/data/repositories/diagnosis_repository.dart:85" \
         --t2 "lib/services/chat_service.dart:85" \
         --t2 "lib/services/focus_resolver.dart:85" \
+        [--expect-t2-count 5] \
         [--warn-event-file coverage/warn-event.json]
 
 Exit code:
     0  -> T1 is PASS or WARN (within tolerance) AND all T2 pass.
-    1  -> T1 FAIL (below target - margin) OR any T2 fails / missing.
+    1  -> T1 FAIL (below target - margin) OR any T2 fails / missing
+          OR --expect-t2-count is not met (silent-degradation guard).
+    2  -> environment error (lcov missing / 0 records / bad --t2 syntax).
+
+Silent-degradation guards (2026-09-12, QA 审计结论 §T2 加固):
+    The CI step (.github/workflows/flutter_ci.yaml) pins exactly 5 --t2 rules.
+    If a future edit drops one, the remaining rules still all PASS and the job
+    would go green while guarding fewer files -- a fail-open hole. Passing
+    --expect-t2-count 5 turns that into a hard FAIL. A negative --t2 min_pct
+    is rejected for the same reason (r >= -1.0 is always true -> rubber stamp).
 
 Structured event (X-029-T1WARN):
     When --warn-event-file is given, a JSON event is written for CI tracking:
@@ -97,12 +107,49 @@ def rate_pct(lf: int, lh: int) -> float:
     return 100.0 * lh / lf
 
 
+def _parse_t2_rules(raw_list: List[str]) -> Optional[List[T2Rule]]:
+    """Parse --t2 "path:pct" entries. Returns None on malformed input.
+
+    Negative min_pct is rejected: `rate >= -1.0` is trivially true, so such a
+    rule can never FAIL -- it would silently rubber-stamp the file.
+    """
+    rules: List[T2Rule] = []
+    for raw in raw_list:
+        if ":" not in raw:
+            print(f"{C.RED}ERROR{C.RESET}: bad --t2 value (missing colon): {raw!r}", file=sys.stderr)
+            return None
+        path_part, pct_part = raw.rsplit(":", 1)
+        try:
+            pct = float(pct_part)
+        except ValueError:
+            print(f"{C.RED}ERROR{C.RESET}: bad --t2 pct: {raw!r}", file=sys.stderr)
+            return None
+        if pct < 0:
+            print(f"{C.RED}ERROR{C.RESET}: --t2 min_pct must be >= 0 (got {pct}): {raw!r}",
+                  file=sys.stderr)
+            return None
+        rules.append(T2Rule(sf_cli=_norm(path_part), min_pct=pct))
+    return rules
+
+
+def _count_guard(expect: Optional[int], actual: int) -> Optional[str]:
+    """Return an error message when the T2 rule count does not match, else None."""
+    if expect is None:
+        return None
+    if actual == expect:
+        return None
+    return (f"T2 rule count mismatch: expected {expect}, got {actual} "
+            f"-- a --t2 rule was dropped or added; the gate would guard fewer files")
+
+
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lcov", default="coverage/lcov.info")
     ap.add_argument("--t1-target", type=float, default=65.0)
     ap.add_argument("--t1-margin", type=float, default=2.0)
     ap.add_argument("--t2", action="append", default=[])
+    ap.add_argument("--expect-t2-count", type=int, default=None,
+                    help="hard-fail when the number of --t2 rules differs (anti silent-degradation)")
     ap.add_argument("--warn-event-file", default=None,
                     help="optional path to write a JSON event for CI WARN tracker")
     args = ap.parse_args(argv)
@@ -110,18 +157,9 @@ def main(argv: List[str]) -> int:
     t1_target = args.t1_target
     t1_floor = max(0.0, t1_target - args.t1_margin)
 
-    t2_rules = []
-    for raw in args.t2:
-        if ":" not in raw:
-            print(f"{C.RED}ERROR{C.RESET}: bad --t2 value (missing colon): {raw!r}", file=sys.stderr)
-            return 2
-        path_part, pct_part = raw.rsplit(":", 1)
-        try:
-            pct = float(pct_part)
-        except ValueError:
-            print(f"{C.RED}ERROR{C.RESET}: bad --t2 pct: {raw!r}", file=sys.stderr)
-            return 2
-        t2_rules.append(T2Rule(sf_cli=_norm(path_part), min_pct=pct))
+    t2_rules = _parse_t2_rules(args.t2)
+    if t2_rules is None:
+        return 2
 
     if not os.path.isfile(args.lcov):
         print(f"{C.RED}ERROR{C.RESET}: lcov file not found: {args.lcov}", file=sys.stderr)
@@ -171,6 +209,8 @@ def main(argv: List[str]) -> int:
     t2_pass_cnt = sum(1 for r in t2_results if r.status == "PASS")
     t2_total = len(t2_results)
 
+    count_err = _count_guard(args.expect_t2_count, t2_total)
+
     print()
     print(f"{C.BOLD}===== Coverage Threshold Report ====={C.RESET}")
     print(f"Lcov file       : {args.lcov}")
@@ -199,11 +239,12 @@ def main(argv: List[str]) -> int:
         print()
 
     t1_fails_job = (t1_verdict == "FAIL")
+    job_fails = t1_fails_job or any_t2_bad or bool(count_err)
 
     # X-029-T1WARN: emit structured JSON event for CI WARN tracker.
     # Cross-run counter is maintained by the CI step (gh CLI + Issue), not here.
     if args.warn_event_file:
-        if t1_verdict == "FAIL" or any_t2_bad:
+        if job_fails:
             event_type = "fail"
         elif t1_verdict == "WARN":
             event_type = "warn"
@@ -217,6 +258,7 @@ def main(argv: List[str]) -> int:
             "t1_verdict": t1_verdict,
             "t2_pass_count": t2_pass_cnt,
             "t2_total": t2_total,
+            "expected_t2_count": args.expect_t2_count,
             "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         }
         try:
@@ -229,13 +271,13 @@ def main(argv: List[str]) -> int:
             print(f"{C.YELLOW}WARN{C.RESET}: failed to write warn-event file "
                   f"{args.warn_event_file!r}: {exc}", file=sys.stderr)
 
-    if t1_verdict == "WARN" and not any_t2_bad:
+    if t1_verdict == "WARN" and not any_t2_bad and not count_err:
         print(f"{C.YELLOW}{C.BOLD}T1 SOFT WARNING:{C.RESET} "
               f"overall {t1_rate:.2f}% is below target {t1_target:.1f}% but within +/-{args.t1_margin:.1f}% tolerance "
               f"(floor >= {t1_floor:.1f}%). Not blocking, but please investigate coverage drift.")
         print()
 
-    if t1_fails_job or any_t2_bad:
+    if job_fails:
         print(f"{C.RED}{C.BOLD}THRESHOLD FAIL{C.RESET}")
         if t1_fails_job:
             print(f"  - T1 FAIL: {t1_rate:.2f}% < hard floor {t1_floor:.1f}% "
@@ -245,6 +287,8 @@ def main(argv: List[str]) -> int:
                 print(f"  - T2 FAIL: {r.rule.sf_cli}  actual {r.rate_pct:.2f}% < min {r.rule.min_pct:.1f}%")
             elif r.status == "MISSING":
                 print(f"  - T2 MISSING: {r.rule.sf_cli} -- {r.detail}")
+        if count_err:
+            print(f"  - T2 COUNT GUARD FAIL: {count_err}")
         print()
         return 1
 
