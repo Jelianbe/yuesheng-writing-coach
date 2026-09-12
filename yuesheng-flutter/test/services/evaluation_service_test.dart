@@ -8,6 +8,7 @@
 //   4. 达标率聚合：confirmed 确认记录提升 passRate
 // ─────────────────────────────────────────────────────────────
 
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -271,6 +272,62 @@ void main() {
         (d) => d.syndromeId == 's1',
       );
       expect(detail.totalCount, 1);
+    });
+  });
+
+  group('E-1: 复诊闭环（跨会话复发接入评估）', () {
+    test('#E1 同症候跨会话再次出现 → 复诊字段填充 + 数据驱动复诊叙事', () async {
+      final nowSec = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      // 历史会话：同症候此前出现并已好转（L3）
+      final past = await seedSession();
+      await db
+          .into(db.activeProblems)
+          .insert(
+            ActiveProblemsCompanion.insert(
+              id: 'ap-e1-past',
+              sessionId: past,
+              syndromeId: 's1',
+              syndromeName: const Value('叙事含糊'),
+              severity: const Value('L3'),
+              status: const Value('resolved'),
+              createdAt: Value(nowSec - 3600),
+            ),
+          );
+      // 本次会话：同症候再次被诊断（L2）
+      final sessionId = await seedSession();
+      await seedDiagnosis(sessionId);
+
+      final result = await service.computeRoundEvaluation(sessionId, 0);
+
+      expect(result, isNotNull);
+      final detail = result!.syndromeDetails.firstWhere(
+        (d) => d.syndromeId == 's1',
+      );
+      expect(detail.occurrences, 2);
+      expect(detail.recurrences, 1);
+      expect(detail.previousSeverity, Severity.l3);
+      expect(detail.isRecurrence, isTrue);
+      // 叙事由真实计数驱动（陈述事实，不给结论式指令）
+      expect(result.summaryText, contains('叙事含糊'));
+      expect(result.summaryText, contains('已第 2 次出现'));
+      expect(result.summaryText, contains('再犯 1 次'));
+    });
+
+    test('#E2 首次出现 → 非复诊，文案不含复诊后缀', () async {
+      final sessionId = await seedSession();
+      await seedDiagnosis(sessionId);
+
+      final result = await service.computeRoundEvaluation(sessionId, 0);
+
+      expect(result, isNotNull);
+      final detail = result!.syndromeDetails.firstWhere(
+        (d) => d.syndromeId == 's1',
+      );
+      expect(detail.occurrences, 1);
+      expect(detail.recurrences, 0);
+      expect(detail.previousSeverity, isNull);
+      expect(detail.isRecurrence, isFalse);
+      expect(result.summaryText, isNot(contains('次出现')));
     });
   });
 

@@ -15,6 +15,7 @@ import '../data/repositories/student_model_repository.dart';
 import '../types/display_types.dart';
 import '../types/teaching_types.dart';
 import 'student_profile_compute.dart';
+import 'syndrome_recurrence.dart';
 import 'training_evaluator.dart';
 import 'training_input_builder.dart';
 import 'decode_guard.dart';
@@ -153,6 +154,7 @@ extension EvaluationRoundExtension on EvaluationService {
     List<Map<String, dynamic>> diagnosisRecords,
   ) async {
     final activeProblems = await _diagnosisRepo.listActiveProblems(sessionId);
+    final recurrence = await _loadRecurrenceMap();
     final details = <SyndromeEvaluationDetail>[];
     for (final problem in activeProblems) {
       final detail = await _buildSyndromeDetail(
@@ -160,10 +162,29 @@ extension EvaluationRoundExtension on EvaluationService {
         problem,
         confirmationRecords,
         diagnosisRecords,
+        recurrence[problem.syndromeId],
       );
       if (detail != null) details.add(detail);
     }
     return details;
+  }
+
+  /// E-1：加载跨会话复发聚合并按 syndromeId 索引。
+  ///
+  /// 只读增强数据；失败时降级为空表（不阻断评估主流程，也不编造复诊结论）。
+  Future<Map<String, SyndromeRecurrence>> _loadRecurrenceMap() async {
+    try {
+      final list = await _diagnosisRepo.getSyndromeRecurrences();
+      return {for (final r in list) r.syndromeId: r};
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'loadSyndromeRecurrences',
+        error: e,
+        stack: st,
+        category: 'database',
+      );
+      return const {};
+    }
   }
 
   /// 达标率：优先聚合症候明细 passCount/totalCount（R-019 拆出）。
@@ -291,7 +312,7 @@ extension EvaluationRoundExtension on EvaluationService {
     required int? severityDelta,
     required List<SyndromeEvaluationDetail> syndromeDetails,
   }) {
-    final summaryText = _generateSummaryText(trend, passRate);
+    final summaryText = _generateSummaryText(trend, passRate, syndromeDetails);
     return EvaluationData(
       round: round,
       trend: trend,
@@ -313,6 +334,7 @@ extension EvaluationDetailExtension on EvaluationService {
     ActiveProblemView problem,
     List<Map<String, dynamic>> confirmationRecords,
     List<Map<String, dynamic>> diagnosisRecords,
+    SyndromeRecurrence? recurrence,
   ) async {
     try {
       final trainingInput = await buildTrainingInputForActiveSyndrome(
@@ -340,7 +362,7 @@ extension EvaluationDetailExtension on EvaluationService {
             summary.teachingState,
           );
         }
-        return _buildMainDetail(problem, trainingInput, summary);
+        return _buildMainDetail(problem, trainingInput, summary, recurrence);
       }
     } catch (e, st) {
       _degradeSyndromeDetail(e, st);
@@ -352,6 +374,7 @@ extension EvaluationDetailExtension on EvaluationService {
       problem,
       confirmationRecords,
       diagnosisRecords,
+      recurrence,
     );
   }
 
@@ -370,6 +393,7 @@ extension EvaluationDetailExtension on EvaluationService {
     ActiveProblemView problem,
     EvaluationSummaryInput trainingInput,
     EvaluationSummary summary,
+    SyndromeRecurrence? recurrence,
   ) {
     final passCount = trainingInput.passRateInput.passCount;
     final totalCount = trainingInput.passRateInput.totalCount < 1
@@ -383,6 +407,9 @@ extension EvaluationDetailExtension on EvaluationService {
       passCount: passCount,
       totalCount: totalCount,
       trend: EvaluationService.mapTrendJudgment(summary.trend),
+      occurrences: recurrence?.occurrences ?? 1,
+      recurrences: recurrence?.recurrences ?? 0,
+      previousSeverity: Severity.fromString(recurrence?.previousSeverity),
     );
   }
 
@@ -429,6 +456,7 @@ extension EvaluationDetailExtension on EvaluationService {
     ActiveProblemView problem,
     List<Map<String, dynamic>> confirmationRecords,
     List<Map<String, dynamic>> diagnosisRecords,
+    SyndromeRecurrence? recurrence,
   ) {
     final syndromeConfirms = confirmationRecords.where((r) {
       final syndromes = r['syndromes'];
@@ -460,6 +488,9 @@ extension EvaluationDetailExtension on EvaluationService {
           : passRate >= EvaluationThresholds.passRateWorsening
           ? EvaluationTrend.stable
           : EvaluationTrend.worsening,
+      occurrences: recurrence?.occurrences ?? 1,
+      recurrences: recurrence?.recurrences ?? 0,
+      previousSeverity: Severity.fromString(recurrence?.previousSeverity),
     );
   }
 }
@@ -504,16 +535,50 @@ extension EvaluationPassRateExtension on EvaluationService {
     }
   }
 
-  String _generateSummaryText(EvaluationTrend trend, double passRate) {
+  /// 趋势说明文案 + E-1 复诊叙事后缀。
+  ///
+  /// 无复诊时后缀为空串 ⇒ 三条基础文案逐字不变（既有测试与文案资产不受影响）。
+  String _generateSummaryText(
+    EvaluationTrend trend,
+    double passRate,
+    List<SyndromeEvaluationDetail> details,
+  ) {
+    final suffix = _recurrenceSuffix(details);
     switch (trend) {
       case EvaluationTrend.improving:
-        return '整体进步明显，继续保持';
+        return '整体进步明显，继续保持$suffix';
       case EvaluationTrend.worsening:
-        return '需要关注，建议调整训练策略';
+        return '需要关注，建议调整训练策略$suffix';
       case EvaluationTrend.stable:
-        return passRate >= EvaluationThresholds.stableSubdivide
+        final base = passRate >= EvaluationThresholds.stableSubdivide
             ? '表现稳定，持续练习'
             : '仍有提升空间，继续加油';
+        return '$base$suffix';
     }
+  }
+
+  /// E-1 复诊叙事后缀（仅陈述真实计数，不给结论式指令）。
+  String _recurrenceSuffix(List<SyndromeEvaluationDetail> details) {
+    final top = _mostRecurrent(details);
+    if (top == null) return '';
+    final recurring = top.recurrences > 0 ? '（其中再犯 ${top.recurrences} 次）' : '';
+    return '。${top.syndromeName} 已第 ${top.occurrences} 次出现$recurring';
+  }
+
+  /// 取最突出的复诊症候：出现次数优先，其次再犯次数。
+  SyndromeEvaluationDetail? _mostRecurrent(
+    List<SyndromeEvaluationDetail> details,
+  ) {
+    SyndromeEvaluationDetail? best;
+    for (final d in details) {
+      if (!d.isRecurrence) continue;
+      final better =
+          best == null ||
+          d.occurrences > best.occurrences ||
+          (d.occurrences == best.occurrences &&
+              d.recurrences > best.recurrences);
+      if (better) best = d;
+    }
+    return best;
   }
 }

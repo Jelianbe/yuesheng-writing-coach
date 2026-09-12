@@ -221,5 +221,43 @@ void main() {
       );
       expect(restored.generatedAt, 1700000000);
     });
+
+    test('#10 E-1：复诊字段往返 + 旧 JSON 向后兼容', () {
+      // 新字段往返：occurrences / recurrences / previousSeverity 完整保留
+      const detail = SyndromeEvaluationDetail(
+        syndromeId: 's1',
+        syndromeName: '叙事含糊',
+        currentSeverity: Severity.l2,
+        teachingState: TeachingState.inProgress,
+        passCount: 2,
+        totalCount: 3,
+        trend: EvaluationTrend.improving,
+        occurrences: 3,
+        recurrences: 1,
+        previousSeverity: Severity.l3,
+      );
+      final roundTrip = SyndromeEvaluationDetail.fromJson(detail.toJson());
+      expect(roundTrip, isNotNull);
+      expect(roundTrip!.occurrences, 3);
+      expect(roundTrip.recurrences, 1);
+      expect(roundTrip.previousSeverity, Severity.l3);
+      expect(roundTrip.isRecurrence, isTrue);
+
+      // 旧 JSON（E-1 字段缺失）→ 回退为「非复诊」默认值，不抛错
+      final legacy = SyndromeEvaluationDetail.fromJson(const {
+        'syndromeId': 's0',
+        'syndromeName': '旧条目',
+        'currentSeverity': 'L2',
+        'teachingState': 'identified',
+        'passCount': 1,
+        'totalCount': 2,
+        'trend': 'stable',
+      });
+      expect(legacy, isNotNull);
+      expect(legacy!.occurrences, 1);
+      expect(legacy.recurrences, 0);
+      expect(legacy.previousSeverity, isNull);
+      expect(legacy.isRecurrence, isFalse);
+    });
   });
 }

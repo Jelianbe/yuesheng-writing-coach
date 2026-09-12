@@ -9,6 +9,7 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../services/decode_guard.dart';
+import '../../services/syndrome_recurrence.dart';
 import '../../services/teaching_state_cache.dart';
 import 'repository_write_guard.dart';
 
@@ -438,6 +439,14 @@ class DiagnosisRepository {
   Future<void> resolveProblem(String sessionId, String syndromeId) async {
     await resolveSyndromesBatch(sessionId, [syndromeId]);
   }
+
+  /// E-1：同类症候复发聚合（跨会话，只读）。
+  ///
+  /// 数据源即本仓储 Owner 的 active_problem 表；实现委托共享查询
+  /// [querySyndromeRecurrences]，与成长页（GrowthService）共用同一聚合。
+  /// 评估链路经此取「复诊」数据，使复发语义在训练反馈时刻可见。
+  Future<List<SyndromeRecurrence>> getSyndromeRecurrences() =>
+      querySyndromeRecurrences(_db);
 
   /// 批次75：移除单个活跃问题条目（物理删除行）。
   ///

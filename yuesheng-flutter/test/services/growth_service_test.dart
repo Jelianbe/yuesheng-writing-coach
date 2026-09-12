@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
+import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
@@ -139,6 +140,7 @@ void main() {
     required String status,
     required int createdAt,
     String confirmationStatus = 'confirmed',
+    String severity = 'L2',
   }) async {
     await db
         .into(db.activeProblems)
@@ -148,7 +150,7 @@ void main() {
             sessionId: sessionId,
             syndromeId: syndromeId,
             syndromeName: Value(name),
-            severity: const Value('L2'),
+            severity: Value(severity),
             status: Value(status),
             confirmationStatus: Value(confirmationStatus),
             createdAt: Value(createdAt),
@@ -563,6 +565,86 @@ void main() {
       expect(result.length, 1);
       expect(result.first.occurrences, 1);
       expect(result.first.rate, 0);
+    });
+  });
+
+  group('E-1: 共享复发查询（syndrome_recurrence）', () {
+    test('#E1 出现两次（L3→L2）→ previousSeverity 取上一次出现的严重度', () async {
+      final t = todayUtcSec();
+      final s1 = await SessionRepository(db).createBlankSession();
+      final s2 = await SessionRepository(db).createBlankSession();
+      await insertRecurrenceProblem(
+        sessionId: s1,
+        syndromeId: 'P101',
+        name: '叙事含糊',
+        status: 'resolved',
+        createdAt: t - 3600,
+        severity: 'L3',
+      );
+      await insertRecurrenceProblem(
+        sessionId: s2,
+        syndromeId: 'P101',
+        name: '叙事含糊',
+        status: 'active',
+        createdAt: t,
+        severity: 'L2',
+      );
+
+      final result = await GrowthService(db).getSyndromeRecurrences();
+
+      expect(result.length, 1);
+      expect(result.first.occurrences, 2);
+      // 上一条已 resolved → 本次出现计为复发
+      expect(result.first.recurrences, 1);
+      // E-1：上次 L3 → 本次 L2 的对比基准
+      expect(result.first.previousSeverity, 'L3');
+    });
+
+    test('#E2 仅出现一次 → previousSeverity 为 null（不编造对比基准）', () async {
+      final t = todayUtcSec();
+      await insertRecurrenceProblem(
+        sessionId: sessionId,
+        syndromeId: 'P102',
+        name: '用词重复',
+        status: 'active',
+        createdAt: t,
+      );
+
+      final result = await GrowthService(db).getSyndromeRecurrences();
+
+      expect(result.length, 1);
+      expect(result.first.occurrences, 1);
+      expect(result.first.previousSeverity, isNull);
+    });
+
+    test('#E3 DiagnosisRepository 与 GrowthService 同源（同一共享实现）', () async {
+      final t = todayUtcSec();
+      final s1 = await SessionRepository(db).createBlankSession();
+      await insertRecurrenceProblem(
+        sessionId: s1,
+        syndromeId: 'P103',
+        name: '情节断裂',
+        status: 'resolved',
+        createdAt: t - 3600,
+        severity: 'L3',
+      );
+      await insertRecurrenceProblem(
+        sessionId: sessionId,
+        syndromeId: 'P103',
+        name: '情节断裂',
+        status: 'active',
+        createdAt: t,
+        severity: 'L2',
+      );
+
+      final viaGrowth = await GrowthService(db).getSyndromeRecurrences();
+      final viaRepo = await DiagnosisRepository(db).getSyndromeRecurrences();
+
+      expect(viaRepo.length, viaGrowth.length);
+      expect(viaRepo.first.syndromeId, viaGrowth.first.syndromeId);
+      expect(viaRepo.first.occurrences, viaGrowth.first.occurrences);
+      expect(viaRepo.first.recurrences, viaGrowth.first.recurrences);
+      expect(viaRepo.first.previousSeverity, viaGrowth.first.previousSeverity);
     });
   });
 }

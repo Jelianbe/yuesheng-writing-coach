@@ -21,6 +21,12 @@ import '../data/database/database.dart';
 import '../data/repositories/training_result_repository.dart';
 import '../types/teaching_types.dart';
 import 'decode_guard.dart';
+import 'syndrome_recurrence.dart';
+
+// E-1：SyndromeRecurrence 已迁至 syndrome_recurrence.dart（与评估链路共用聚合实现）。
+// re-export 保持既有消费方（growth_providers / growth_detail_widgets /
+// growth_detail_sections）的 import 路径不变。
+export 'syndrome_recurrence.dart' show SyndromeRecurrence;
 
 /// 成长数据服务（用户级，无 sessionId 维度）
 class GrowthService {
@@ -159,33 +165,6 @@ class SyndromeHistoryEvent {
     required this.eventType,
     required this.timestamp,
     required this.sessionId,
-  });
-}
-
-/// 同类症候复发统计（批次65 B62h）：同一种症候「出现→好转→再犯」聚合
-class SyndromeRecurrence {
-  final String syndromeId;
-  final String syndromeName;
-
-  /// 出现次数（跨会话 active_problem 记录数）
-  final int occurrences;
-
-  /// 好转次数（status = resolved）
-  final int recovered;
-
-  /// 再犯次数（好转后再次出现）
-  final int recurrences;
-
-  /// 复发率 = recurrences / max(occurrences - 1, 1)，0-1
-  final double rate;
-
-  const SyndromeRecurrence({
-    required this.syndromeId,
-    required this.syndromeName,
-    required this.occurrences,
-    required this.recovered,
-    required this.recurrences,
-    required this.rate,
   });
 }
 
@@ -494,68 +473,11 @@ extension GrowthAbilityExtension on GrowthService {
 
   /// 同类症候复发率（批次65 B62h，对齐 V1.0 原则4 / V1.1 建议6）
   ///
-  /// 数据源 active_problem：UNIQUE(session_id, syndrome_id) 保证同一会话内
-  /// 同症候仅一条，跨会话多条构成「出现」序列。否定诊断（rejected）不参与。
-  /// 按 created_at 时间序判定「再犯」：某条记录之前存在一条已好转（resolved）
-  /// 记录，则该次出现计为一次复发。复发率 = 再犯 / max(出现-1, 1)。
-  Future<List<SyndromeRecurrence>> getSyndromeRecurrences() async {
-    final rows = await (_db.customSelect(
-      'SELECT syndrome_id, syndrome_name, status, created_at FROM active_problem '
-      "WHERE confirmation_status != 'rejected' "
-      'ORDER BY syndrome_id ASC, created_at ASC',
-    )).get();
-
-    final groups =
-        <String, List<({String name, String status, int createdAt})>>{};
-    for (final row in rows) {
-      final id = row.read<String>('syndrome_id');
-      groups.putIfAbsent(id, () => []).add((
-        name: row.read<String>('syndrome_name'),
-        status: row.read<String>('status'),
-        createdAt: row.read<int>('created_at'),
-      ));
-    }
-
-    final result = groups.entries
-        .map((e) => _buildRecurrence(e.key, e.value))
-        .toList();
-
-    // 复发率降序，同率按出现次数降序（高频问题优先）
-    result.sort((a, b) {
-      final byRate = b.rate.compareTo(a.rate);
-      if (byRate != 0) return byRate;
-      return b.occurrences.compareTo(a.occurrences);
-    });
-    return result;
-  }
-
-  /// 统计单个症候的出现 / 好转 / 复发次数并算复发率。
-  ///
-  /// R-019：由 [getSyndromeRecurrences] 抽出（52 → 28 行）。
-  SyndromeRecurrence _buildRecurrence(
-    String syndromeId,
-    List<({String name, String status, int createdAt})> records,
-  ) {
-    var recovered = 0;
-    var recurrences = 0;
-    var wasResolved = false;
-    for (final rec in records) {
-      // 之前一条已好转 → 本次出现计为复发（V1.0 原则4：同症候反复）
-      if (wasResolved) recurrences++;
-      final isResolved = rec.status == 'resolved';
-      if (isResolved) recovered++;
-      wasResolved = isResolved;
-    }
-    final occurrences = records.length;
-    return SyndromeRecurrence(
-      syndromeId: syndromeId,
-      syndromeName: records.first.name,
-      occurrences: occurrences,
-      recovered: recovered,
-      recurrences: recurrences,
-      rate: occurrences <= 1 ? 0 : recurrences / (occurrences - 1),
-    );
-  }
+  /// E-1：实现已抽至 [querySyndromeRecurrences]（syndrome_recurrence.dart），
+  /// 与评估链路（`DiagnosisRepository.getSyndromeRecurrences`）共用同一聚合，
+  /// 避免复发语义出现双实现。本方法保留为成长页既有调用入口。
+  Future<List<SyndromeRecurrence>> getSyndromeRecurrences() =>
+      querySyndromeRecurrences(_db);
 
   /// X-041b：症候-训练通过率聚合（用户级全局，跨会话）
   ///
