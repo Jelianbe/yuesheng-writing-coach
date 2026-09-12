@@ -5,12 +5,16 @@
 // 结构：
 //   1. Header：趋势图标 + 趋势徽章 + 达标率 + 展开/收起箭头
 //   2. 详情：训练次数 / 达标率 / 严重度变化 + 趋势文案
-//   3. 症候明细（可选）+ 关闭按钮
+//   3. 症候明细（可选，含 E-1 复诊行）+ 关闭按钮
 //
 // 配色（月色竹青矿物色，对齐 RN success/warning/danger）：
 //   improving → 竹青绿 l1Text
 //   stable    → 次级灰 textTertiary
 //   worsening → 矿物红 l3Text
+//
+// E-1（复诊闭环）：症候明细行内追加「第 N 次出现 · 较上次 L3 → L2」小字，
+//   仅在该症候跨会话复诊时出现（首次出现不渲染）。数据取自
+//   SyndromeEvaluationDetail 的复发字段，措辞只陈述真实计数、不给结论。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -35,6 +39,24 @@ import 'teaching_state_badge.dart';
     case EvaluationTrend.worsening:
       return (icon: Icons.trending_down, label: '恶化', color: AppColors.l3Text);
   }
+}
+
+/// E-1（复诊）：症候行的历史对比小字。
+///
+/// 仅当该症候此前出现过（[SyndromeEvaluationDetail.isRecurrence]）时返回文案，
+/// 否则返回 null（首次出现的症候不加此行）。
+///
+/// 措辞原则：只陈述真实计数（出现次数 / 严重度对比），不给结论式指令；
+/// 「再犯次数」已由报告 summaryText 统一叙述，此处不重复。
+String? _recurrenceNoteText(SyndromeEvaluationDetail detail) {
+  if (!detail.isRecurrence) return null;
+  final prefix = '第 ${detail.occurrences} 次出现';
+  final prev = detail.previousSeverity;
+  if (prev == null) return prefix;
+  final current = detail.currentSeverity.value;
+  return prev.value == current
+      ? '$prefix · 与上次同为 $current'
+      : '$prefix · 较上次 ${prev.value} → $current';
 }
 
 class EvaluationReportPanel extends StatefulWidget {
@@ -268,6 +290,7 @@ class _SyndromeItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trend = _trendConfig(detail.trend);
+    final note = _recurrenceNoteText(detail);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -313,8 +336,31 @@ class _SyndromeItem extends StatelessWidget {
             '达标 ${detail.passCount}/${detail.totalCount} · 严重度 ${detail.currentSeverity.value}',
             style: AppTextStyles.caption,
           ),
+          // E-1：复诊行（仅跨会话复诊时出现）
+          if (note != null) ...[
+            const SizedBox(height: 2),
+            _RecurrenceNote(text: note),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// E-1 复诊行：历史对比小字（出现次数 + 严重度对比）。
+class _RecurrenceNote extends StatelessWidget {
+  final String text;
+
+  const _RecurrenceNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.history, size: 12, color: AppColors.textTertiary),
+        const SizedBox(width: 4),
+        Expanded(child: Text(text, style: AppTextStyles.microCaption)),
+      ],
     );
   }
 }

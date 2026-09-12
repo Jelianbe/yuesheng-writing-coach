@@ -7,6 +7,7 @@
 //   3. 症候明细渲染
 //   4. 关闭回调触发
 //   5. 点击 header 收起/展开
+//   6. E-1 复诊行：复诊渲染 / 首次不渲染 / 同严重度 / 无基线
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -41,6 +42,39 @@ EvaluationData _report({
             ),
           ]
         : const [],
+    generatedAt: 1700000000,
+  );
+}
+
+/// E-1 复诊夹具：单个症候，可指定复发字段。
+EvaluationData _recurringReport({
+  required int occurrences,
+  int recurrences = 0,
+  Severity? previousSeverity,
+  EvaluationTrend trend = EvaluationTrend.improving,
+  String summaryText = '整体进步明显，继续保持',
+}) {
+  return EvaluationData(
+    round: 0,
+    trend: trend,
+    trainingCount: 3,
+    passRate: 0.8,
+    severityDelta: -1,
+    summaryText: summaryText,
+    syndromeDetails: [
+      SyndromeEvaluationDetail(
+        syndromeId: 's1',
+        syndromeName: '叙事含糊',
+        currentSeverity: Severity.l2,
+        teachingState: TeachingState.inProgress,
+        passCount: 2,
+        totalCount: 3,
+        trend: trend,
+        occurrences: occurrences,
+        recurrences: recurrences,
+        previousSeverity: previousSeverity,
+      ),
+    ],
     generatedAt: 1700000000,
   );
 }
@@ -171,6 +205,64 @@ void main() {
       await tester.tap(find.text('达标率 80%'));
       await tester.pump();
       expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+
+    // ── E-1 复诊行 ──
+
+    testWidgets('#8 复诊症候 → 渲染复诊行（第 N 次出现 + 严重度对比）', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _recurringReport(
+            occurrences: 3,
+            recurrences: 2,
+            previousSeverity: Severity.l3,
+            summaryText: '整体进步明显，继续保持。叙事含糊 已第 3 次出现（其中再犯 2 次）',
+          ),
+        ),
+      );
+
+      // 复诊行：出现次数 + 「较上次 L3 → L2」严重度对比（summaryText 未提供的信息）
+      expect(find.text('第 3 次出现 · 较上次 L3 → L2'), findsOneWidget);
+      // 历史图标标识该行是「复诊」元信息
+      expect(find.byIcon(Icons.history), findsOneWidget);
+      // 行内小字与 summaryText 全局叙事并存，两者措辞不同（不重复）
+      expect(find.textContaining('已第 3 次出现'), findsOneWidget);
+    });
+
+    testWidgets('#9 首次出现（非复诊）→ 不渲染复诊行', (tester) async {
+      await tester.pumpWidget(_wrap(_report()));
+
+      expect(find.byIcon(Icons.history), findsNothing);
+      expect(find.textContaining('次出现'), findsNothing);
+    });
+
+    testWidgets('#10 复诊且与上次严重度相同 → 「与上次同为 L2」', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _recurringReport(
+            occurrences: 2,
+            previousSeverity: Severity.l2,
+            trend: EvaluationTrend.stable,
+            summaryText: '表现稳定，持续练习。叙事含糊 已第 2 次出现',
+          ),
+        ),
+      );
+
+      expect(find.text('第 2 次出现 · 与上次同为 L2'), findsOneWidget);
+    });
+
+    testWidgets('#11 复诊但无上次严重度基线 → 仅渲染次数', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _recurringReport(
+            occurrences: 2,
+            summaryText: '整体进步明显，继续保持。叙事含糊 已第 2 次出现',
+          ),
+        ),
+      );
+
+      expect(find.text('第 2 次出现'), findsOneWidget);
+      expect(find.textContaining('上次'), findsNothing);
     });
   });
 }
