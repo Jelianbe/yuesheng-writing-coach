@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 320,
+  "fileCount": 352,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -158,34 +158,6 @@
       "lines": 105
     },
     {
-      "file": "lib/widgets/chat_page.dart",
-      "func": "build",
-      "start": 132,
-      "end": 237,
-      "lines": 106
-    },
-    {
-      "file": "lib/widgets/chat_page.dart",
-      "func": "_buildBody",
-      "start": 239,
-      "end": 430,
-      "lines": 192
-    },
-    {
-      "file": "lib/widgets/chat_teaching.dart",
-      "func": "_handleAutoDiagnose",
-      "start": 10,
-      "end": 85,
-      "lines": 76
-    },
-    {
-      "file": "lib/widgets/chat_teaching.dart",
-      "func": "_handleSend",
-      "start": 174,
-      "end": 347,
-      "lines": 174
-    },
-    {
       "file": "lib/widgets/diagnosis_failed_card.dart",
       "func": "build",
       "start": 80,
@@ -298,41 +270,6 @@
       "lines": 95
     },
     {
-      "file": "lib/widgets/growth_content.dart",
-      "func": "_buildContent",
-      "start": 16,
-      "end": 296,
-      "lines": 281
-    },
-    {
-      "file": "lib/widgets/growth_content.dart",
-      "func": "_buildSyndromeGroups",
-      "start": 300,
-      "end": 398,
-      "lines": 99
-    },
-    {
-      "file": "lib/widgets/growth_detail_page.dart",
-      "func": "build",
-      "start": 259,
-      "end": 363,
-      "lines": 105
-    },
-    {
-      "file": "lib/widgets/growth_detail_page.dart",
-      "func": "build",
-      "start": 384,
-      "end": 449,
-      "lines": 66
-    },
-    {
-      "file": "lib/widgets/growth_detail_page.dart",
-      "func": "build",
-      "start": 675,
-      "end": 734,
-      "lines": 60
-    },
-    {
       "file": "lib/widgets/growth_overview_card.dart",
       "func": "build",
       "start": 37,
@@ -352,27 +289,6 @@
       "start": 50,
       "end": 169,
       "lines": 120
-    },
-    {
-      "file": "lib/widgets/manuscript_detail_chapter.dart",
-      "func": "_showMoveToVolumeSheet",
-      "start": 34,
-      "end": 107,
-      "lines": 74
-    },
-    {
-      "file": "lib/widgets/manuscript_detail_chapter.dart",
-      "func": "_handleChapterLongPress",
-      "start": 185,
-      "end": 428,
-      "lines": 244
-    },
-    {
-      "file": "lib/widgets/manuscript_detail_volume.dart",
-      "func": "_showVolumeActions",
-      "start": 96,
-      "end": 165,
-      "lines": 70
     },
     {
       "file": "lib/widgets/material_upload_sheet.dart",
@@ -814,13 +730,6 @@
       "start": 133,
       "end": 251,
       "lines": 119
-    },
-    {
-      "file": "lib/widgets/writing_coach_panel_builders.dart",
-      "func": "_buildMessageList",
-      "start": 92,
-      "end": 278,
-      "lines": 187
     },
     {
       "file": "lib/widgets/writing_curve_chart.dart",

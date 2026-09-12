@@ -1,8 +1,8 @@
 {
   "dir": "lib",
   "limit": 300,
-  "fileCount": 347,
-  "familyCount": 7,
+  "fileCount": 352,
+  "familyCount": 6,
   "ruleCount": 3,
   "violations": [
     {
@@ -12,36 +12,6 @@
       "partLines": 0,
       "part": "",
       "oversizedParts": {}
-    },
-    {
-      "host": "widgets/chat_page.dart",
-      "rule": "S1",
-      "hostLines": 431,
-      "partLines": 405,
-      "part": "widgets/chat_teaching.dart",
-      "oversizedParts": {
-        "widgets/chat_teaching.dart": 405
-      }
-    },
-    {
-      "host": "widgets/chat_page.dart",
-      "rule": "S2",
-      "hostLines": 431,
-      "partLines": 0,
-      "part": "",
-      "oversizedParts": {
-        "widgets/chat_teaching.dart": 405
-      }
-    },
-    {
-      "host": "widgets/chat_page.dart",
-      "rule": "S3",
-      "hostLines": 431,
-      "partLines": 405,
-      "part": "widgets/chat_teaching.dart",
-      "oversizedParts": {
-        "widgets/chat_teaching.dart": 405
-      }
     },
     {
       "host": "widgets/writing_page.dart",

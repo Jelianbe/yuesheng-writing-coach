@@ -1,72 +1,35 @@
 // ─────────────────────────────────────────────────────────────
-// ChatPage — 主聊天页（T6 接线版本）
-// 串联 ChatStore + MessageList + ChatInput + chat_service
-//
-// 架构：
-//   - sessionBootstrapProvider：管理 bootstrap（sessionId + shouldShowOnboarding）
-//   - chatStoreProvider：管理聊天状态（messages / isStreaming / error）
-//   - chatServiceProvider：发送消息 + 流式回复
-//
-// MVP 范围：
-//   - 只处理 chat 类型消息
-//   - 不实现诊断卡片 / 教学建议卡片 / ChatModals 等高级特性
+// ChatPage — 主聊天页（T6 接线版本）：ChatStore + MessageList + ChatInput
+// + chat_service 接线。R-019 真分解：本文件仅保留宿主 State；48 个原
+// part/extension 动作方法 → 6 个控制器 + [ChatPageHost] 接口，UI 装配 →
+// chat_page_body.dart / chat_page_sections.dart（详见 chat_page_host.dart）。
+// MVP 范围：只处理 chat 类型消息，不实现 ChatModals 等高级特性。
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 
 import '../config/app_theme.dart';
-import 'yue_sheet.dart';
-import '../config/shared_constants.dart';
-import '../data/database/database.dart';
-import '../data/repositories/app_state_repository.dart';
-import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
-import '../providers/fact_batch_providers.dart';
-import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
-import '../providers/ui_overlay_provider.dart';
-import '../providers/capability_providers.dart'; // mentionParserProvider（ADR-C70 迁入此文件）
-import '../router/app_routes.dart';
 import '../services/attitude_advisor.dart';
-import '../services/chat_message_types.dart'
-    show SendMessageCallbacks, SendMessageOptions;
-import '../services/message_card_service.dart';
-import '../services/progressive_diagnosis.dart';
-import '../services/syndrome_tracker.dart';
-import '../services/work_import_service.dart';
 import '../types/teaching_types.dart';
-import 'attitude_suggestion_banner.dart';
-import 'abandon_practice_modal.dart';
-import 'chat_header.dart';
+import 'chat_attitude_controller.dart';
+import 'chat_diagnosis_controller.dart';
 import 'chat_input.dart';
-import 'chat_welcome.dart';
-import 'encouragement_text.dart';
-import 'import_success_sheet.dart';
-import 'message_list.dart';
+import 'chat_messages_controller.dart';
+import 'chat_page_body.dart';
+import 'chat_page_host.dart';
+import 'chat_page_sections.dart';
+import 'chat_reference_controller.dart';
+import 'chat_session_controller.dart';
+import 'chat_teaching_controller.dart';
 import 'onboarding_questionnaire.dart';
-import 'partial_agreement_card.dart';
-import 'privacy_notice_dialog.dart';
-import 'reference_bar.dart';
-import 'reference_picker.dart';
-import 'save_to_file_sheet.dart';
 import 'session_drawer.dart';
-import 'task_panel.dart';
-import 'work_import_sheet.dart';
-part 'chat_attitude.dart';
-part 'chat_teaching.dart';
-part 'chat_session.dart';
-part 'chat_reference.dart';
-part 'chat_messages.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});
@@ -75,7 +38,7 @@ class ChatPage extends ConsumerStatefulWidget {
   ConsumerState<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends ConsumerState<ChatPage> {
+class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   String _inputText = '';
 
   /// Scaffold key（ChatHeader 汉堡按钮 → openDrawer）
@@ -95,71 +58,139 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   TeachingPhase _phase = TeachingPhase.p0Engage;
 
   /// 当前会话主引用书名（references isPrimary==1 的 title），头部小字展示。
-  /// null 表示未关联书籍；点小字打开引用管理可调整主引用。
   String? _primaryRefTitle;
 
-  /// 批次 12 态度建议：当前展示的建议（null = 不展示）
   AttitudeSuggestion? _attitudeSuggestion;
 
   /// 批次 12 态度建议：上次建议时间（冷却期判定，对齐 RN lastSuggestionTime）
   int? _lastSuggestionTime;
 
-  /// 批次 18 活跃问题面板：是否展开任务面板（对齐 RN showTaskPanel）
   bool _showTaskPanel = false;
 
   /// 批次 18 活跃问题面板：当前会话活跃问题列表（对齐 RN activeProblems）
   List<ActiveProblemView> _activeProblems = [];
 
-  /// 批次 30：shell 重建时待打开会话已消费标志（防 build 期重复消费）
   bool _pendingSessionHandled = false;
 
-  /// B20：最近一次发起的消息加载目标会话 ID。快速切换会话时，
-  /// 仅最新请求的回调可写入 chatStore，旧的异步结果直接丢弃，杜绝乱序覆盖。
+  /// B20：最近一次发起的消息加载目标会话 ID；快速切换会话时仅最新回调可写入。
   String? _loadingSessionId;
 
-  /// 当前进行中的流式请求取消令牌；非 null 表示正在生成，可用于「停止生成」。
-  CancelToken? _cancelToken;
+  // ── R-019 真分解：动作控制器（经 ChatPageHost 注入）──
+  late final ChatTeachingController _teaching = ChatTeachingController(this);
+  late final ChatDiagnosisController _diagnosis = ChatDiagnosisController(
+    this,
+    _teaching,
+  );
+  late final ChatSessionController _session = ChatSessionController(this);
+  late final ChatReferenceController _reference = ChatReferenceController(
+    this,
+    _session,
+  );
+  late final ChatMessagesController _messages = ChatMessagesController(
+    this,
+    _teaching,
+  );
+  late final ChatAttitudeController _attitudeController =
+      ChatAttitudeController(this, _diagnosis);
+
+  // ── ChatPageHost 实现（共享状态读取）──
+  @override
+  String get inputText => _inputText;
+
+  @override
+  AttitudeLevel get attitude => _attitude;
+
+  @override
+  TeachingPhase get phase => _phase;
+
+  @override
+  String? get primaryRefTitle => _primaryRefTitle;
+
+  @override
+  AttitudeSuggestion? get attitudeSuggestion => _attitudeSuggestion;
+
+  @override
+  int? get lastSuggestionTime => _lastSuggestionTime;
+
+  @override
+  List<ActiveProblemView> get activeProblems => _activeProblems;
+
+  @override
+  List<SessionWithPhase> get sessions => _sessions;
+
+  @override
+  GlobalKey<ChatInputState> get chatInputKey => _chatInputKey;
+
+  // ── ChatPageHost 实现（共享状态写入，内部 setState）──
+  @override
+  void setInputText(String value) => setState(() => _inputText = value);
+
+  @override
+  void setAttitude(AttitudeLevel value) => setState(() => _attitude = value);
+
+  @override
+  void applyAttitudeState(AttitudeLevel attitude, TeachingPhase phase) =>
+      setState(() {
+        _attitude = attitude;
+        _phase = phase;
+      });
+
+  @override
+  void setPrimaryRefTitle(String? value) =>
+      setState(() => _primaryRefTitle = value);
+
+  @override
+  void setAttitudeSuggestion(
+    AttitudeSuggestion? suggestion, {
+    int? lastSuggestionTime,
+  }) => setState(() {
+    _attitudeSuggestion = suggestion;
+    if (lastSuggestionTime != null) _lastSuggestionTime = lastSuggestionTime;
+  });
+
+  @override
+  void setActiveProblems(List<ActiveProblemView> value) =>
+      setState(() => _activeProblems = value);
+
+  @override
+  void setSessions(List<SessionWithPhase> value) =>
+      setState(() => _sessions = value);
+
+  @override
+  void clearComposerState() => setState(() {
+    _inputText = '';
+    // 对齐 RN reset 模态 store（lastSuggestionTime 为页面级不清）
+    _attitudeSuggestion = null;
+  });
+
+  @override
+  void scheduleAttitudeCheck() => _attitudeController.scheduleAttitudeCheck();
 
   @override
   void initState() {
     super.initState();
-    _loadSessions();
+    _session.loadSessions();
   }
 
-  // ════════════ 批次81：三卡回调接线（H1-H3）════════════
+  /// 打开会话抽屉（打开前先释放输入框焦点：真机实证点汉堡会唤起输入法）
+  void _openSessionDrawer() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    _scaffoldKey.currentState?.openDrawer();
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final bootstrapAsync = ref.watch(sessionBootstrapProvider);
-    final chatState = ref.watch(chatStoreProvider);
+  void _toggleTaskPanel() => setState(() => _showTaskPanel = !_showTaskPanel);
 
+  /// 注册三个 ref.listen（选章自动诊断 / 待打开会话 / bootstrap 就绪）
+  void _registerListeners() {
     // 批次 13：成长页「写作诊断」选章 → 切 Tab 后自动诊断（startDiagnosis 语义）
     ref.listen<String?>(pendingDiagnosisChapterProvider, (previous, next) {
-      if (next != null && next.isNotEmpty) {
-        _handleAutoDiagnose(next);
-      }
+      if (next != null && next.isNotEmpty) _diagnosis.handleAutoDiagnose(next);
     });
 
     // 批次 30：作品详情页「相关对话」点击 → 切 Tab 后打开目标会话
-    // 常规路径（书架 push 进入详情页，shell 存活）：pending 设置后监听触发消费
     ref.listen<String?>(pendingOpenSessionProvider, (previous, next) {
-      if (next != null && next.isNotEmpty) {
-        _consumePendingSession(next);
-      }
+      if (next != null && next.isNotEmpty) _session.consumePendingSession(next);
     });
-    // 兜底：详情页可能经 context.go('/') 重建 shell，ChatPage 全新挂载时
-    // pending 已先于监听注册被设置（ref.listen 不 fire 初始值），
-    // build 时读一次并在帧后消费（_pendingSessionHandled 防重复消费）
-    if (!_pendingSessionHandled) {
-      final pending = ref.read(pendingOpenSessionProvider);
-      if (pending != null && pending.isNotEmpty) {
-        _pendingSessionHandled = true;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _consumePendingSession(pending);
-        });
-      }
-    }
 
     // bootstrap 完成后加载已有消息
     ref.listen<AsyncValue<SessionBootstrapState>>(sessionBootstrapProvider, (
@@ -168,25 +199,72 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     ) {
       final bootstrap = next.valueOrNull;
       if (bootstrap != null && !bootstrap.shouldShowOnboarding) {
-        _loadAttitude(bootstrap.sessionId);
-        _loadPrimaryRefTitle(); // 头部小字：当前主引用书名
-        _loadSessions(); // 切换/新建会话后刷新列表（updated_at/标题变化）
-        // 批次4-M3：恢复该会话的评估报告 + 当前轮次（应用重启/会话切换后）
-        ref
-            .read(evaluationReportsProvider.notifier)
-            .restoreForSession(bootstrap.sessionId);
-        final targetSessionId = bootstrap.sessionId;
-        // B20：记录最新发起的加载请求，旧请求的异步回调若已不是最新则丢弃，
-        // 避免快速切换会话时 last-write-wins 乱序覆盖（不依赖 currentSessionId 是否被设置）。
-        _loadingSessionId = targetSessionId;
-        final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
-        sessionRepo.listMessages(targetSessionId).then((messages) {
-          if (!mounted) return;
-          if (_loadingSessionId != targetSessionId) return;
-          ref.read(chatStoreProvider.notifier).setMessages(messages);
-        });
+        _onBootstrapReady(bootstrap);
       }
     });
+  }
+
+  /// bootstrap 就绪：加载态度/引用/会话列表，回读消息并恢复评估报告
+  void _onBootstrapReady(SessionBootstrapState bootstrap) {
+    final sessionId = bootstrap.sessionId;
+    _attitudeController.loadAttitude(sessionId);
+    _reference.loadPrimaryRefTitle(); // 头部小字：当前主引用书名
+    _session.loadSessions(); // 切换/新建会话后刷新列表（updated_at/标题变化）
+    // 批次4-M3：恢复该会话的评估报告 + 当前轮次（应用重启/会话切换后）
+    ref.read(evaluationReportsProvider.notifier).restoreForSession(sessionId);
+    // B20：记录最新发起的加载请求，旧请求的异步回调若已不是最新则丢弃
+    _loadingSessionId = sessionId;
+    final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
+    sessionRepo.listMessages(sessionId).then((messages) {
+      if (!mounted) return;
+      if (_loadingSessionId != sessionId) return;
+      ref.read(chatStoreProvider.notifier).setMessages(messages);
+    });
+  }
+
+  /// 兜底消费初始 pending 会话：ChatPage 全新挂载时 pending 可能已先于
+  /// 监听注册被设置（ref.listen 不 fire 初始值），build 时读一次并在帧后消费
+  void _consumeInitialPendingSession() {
+    if (_pendingSessionHandled) return;
+    final pending = ref.read(pendingOpenSessionProvider);
+    if (pending == null || pending.isEmpty) return;
+    _pendingSessionHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _session.consumePendingSession(pending);
+    });
+  }
+
+  /// bootstrap 就绪后的主体装配（渲染树见 chat_page_body.dart）
+  Widget _buildBody(ChatState chatState) {
+    return ChatPageBody(
+      chatState: chatState,
+      attitude: _attitude,
+      phase: _phase,
+      primaryRefTitle: _primaryRefTitle,
+      attitudeSuggestion: _attitudeSuggestion,
+      activeProblems: _activeProblems,
+      showTaskPanel: _showTaskPanel,
+      inputText: _inputText,
+      chatInputKey: _chatInputKey,
+      onInputChange: setInputText,
+      onToggleTaskPanel: _toggleTaskPanel,
+      onOpenSessionDrawer: _openSessionDrawer,
+      attitudeController: _attitudeController,
+      diagnosis: _diagnosis,
+      teaching: _teaching,
+      reference: _reference,
+      messages: _messages,
+      session: _session,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bootstrapAsync = ref.watch(sessionBootstrapProvider);
+    final chatState = ref.watch(chatStoreProvider);
+    _registerListeners();
+    _consumeInitialPendingSession();
 
     return Scaffold(
       key: _scaffoldKey,
@@ -195,237 +273,28 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       drawer: SessionDrawer(
         sessions: _sessions,
         currentSessionId: bootstrapAsync.valueOrNull?.sessionId,
-        onSelect: _handleSwitchSession,
-        onCreate: _handleCreateSession,
+        onSelect: _session.handleSwitchSession,
+        onCreate: _session.handleCreateSession,
         // 批次73：长按会话删除；v30：重命名/置顶/批量删除
-        onDelete: _handleDeleteSession,
-        onRename: _handleRenameSession,
-        onTogglePin: _handleTogglePinSession,
-        onBatchDelete: _handleBatchDeleteSessions,
+        onDelete: _session.handleDeleteSession,
+        onRename: _session.handleRenameSession,
+        onTogglePin: _session.handleTogglePinSession,
+        onBatchDelete: _session.handleBatchDeleteSessions,
       ),
       body: bootstrapAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          // P2-7：release 构建中不向用户展示 stack trace 技术细节
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 32,
-                color: AppColors.danger,
-              ),
-              const SizedBox(height: 8),
-              const Text('初始化失败，请重试', style: AppTextStyles.body),
-              const SizedBox(height: 4),
-              if (kDebugMode)
-                Text(
-                  '$error',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textTertiary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-            ],
-          ),
-        ),
-        data: (bootstrap) => _buildBody(bootstrap, chatState),
-      ),
-    );
-  }
-
-  Widget _buildBody(SessionBootstrapState bootstrap, ChatState chatState) {
-    // T3 训练系统：读取练习状态（activePracticeTask / trainingResult / isSubmitting）
-    final practiceState = ref.watch(practiceStoreProvider);
-    // T4 评估报告：messageId → EvaluationData
-    final evaluationState = ref.watch(evaluationReportsProvider);
-
-    // 批次 10 头部状态区：
-    // 鼓励文案显示条件（对齐 RN showEncouragement）：存在诊断结果消息
-    final hasDiagnosis = chatState.messages.any(
-      (m) => m.messageType == 'diagnosis_result',
-    );
-    final encouragementSeed = chatState.messages
-        .where((m) => m.messageType == 'diagnosis_result')
-        .map((m) => m.timestamp)
-        .fold<int>(0, (a, b) => a + b);
-    return Stack(
-      children: [
-        Column(
+        error: (error, stack) => ChatBootstrapErrorView(error: error),
+        data: (bootstrap) => Stack(
           children: [
-            // ChatHeader：聊天头部状态区（标题/入口徽章/会话列表/更多菜单）
-            ChatHeader(
-              currentAttitude: _attitude,
-              onAttitudeChange: _handleAttitudeChange,
-              // 打开会话列表前先释放输入框焦点：真机实证点汉堡会唤起
-              // 输入法（输入框焦点在 drawer 打开动画期间被恢复），先 unfocus 解耦
-              onOpenSessionDrawer: () {
-                FocusManager.instance.primaryFocus?.unfocus();
-                _scaffoldKey.currentState?.openDrawer();
-              },
-              onOpenProfile: _handleOpenProfile,
-              // 批次 29：头部 ⋯ 左侧新建对话快捷入口
-              onNewSession: _handleCreateSession,
-              // 引用管理：批次 C78-3c-2 起唯一入口为主引用小字（onTapPrimaryRef），
-              // 更多菜单里的重复入口已删
-              primaryRefTitle: _primaryRefTitle,
-              onTapPrimaryRef: _handleOpenReferences,
-            ),
-            // 批次 12：态度建议横幅（对齐 RN 位于头部下方、内容上方）
-            if (_attitudeSuggestion != null)
-              AttitudeSuggestionBanner(
-                suggestion: _attitudeSuggestion!,
-                onAccept: _handleAcceptAttitudeSuggestion,
-                onDismiss: _handleDismissAttitudeSuggestion,
-              ),
-            // 批次 18：P2 阶段任务面板开关（对齐 RN chat.tsx L396-400 taskToggle）
-            if (_phase == TeachingPhase.p2PracticeLoop)
-              InkWell(
-                onTap: () => setState(() => _showTaskPanel = !_showTaskPanel),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.smx,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: AppColors.background,
-                    border: Border(
-                      bottom: BorderSide(color: AppColors.borderSoft),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.task_alt,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _showTaskPanel
-                            ? '收起任务'
-                            : '任务 (${_activeProblems.length})',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            // 鼓励文案（对齐 RN chat.tsx L404：诊断完成后显示）
-            if (hasDiagnosis && !chatState.isStreaming)
-              EncouragementText(seed: encouragementSeed),
-            // 批次 18：P2 阶段 + 展开时显示活跃问题面板（对齐 RN taskPanelContainer height 200）
-            if (_phase == TeachingPhase.p2PracticeLoop && _showTaskPanel)
-              SizedBox(
-                height: 200,
-                child: TaskPanel(
-                  problems: _activeProblems,
-                  onMarkComplete: _handleMarkComplete,
-                  // 批次75：活跃问题条目移除入口（主观不再追踪）
-                  onRemove: _handleRemoveProblem,
-                ),
-              ),
-            Expanded(
-              child: MessageList(
-                messages: chatState.messages,
-                isStreaming: chatState.isStreaming,
-                streamingContent: chatState.streamingContent,
-                streamStageLabel: chatState.streamStageLabel,
-                failedMessageIds: chatState.failedMessageIds,
-                onRetry: _handleRetry,
-                onDelete: _handleDelete,
-                activePracticeTask: practiceState.activePracticeTask,
-                trainingResult: practiceState.trainingResult,
-                isPracticeSubmitting: practiceState.isSubmitting,
-                onSubmitPractice: _submitPractice,
-                onSkipPractice: _handleSkipPractice,
-                onDismissResult: () => ref
-                    .read(practiceStoreProvider.notifier)
-                    .setTrainingResult(null),
-                onRetryPractice: () =>
-                    ref.read(practiceStoreProvider.notifier).retryPractice(),
-                evaluationReports: evaluationState.reports,
-                // C78 批次3（FR-10）：批次沉淀提示卡数据（内存态，重启即失）
-                factBatches: ref.watch(factBatchProvider),
-                onDismissEvaluationReport: (messageId) => ref
-                    .read(evaluationReportsProvider.notifier)
-                    .dismissEvaluationReport(messageId),
-                onSaveToFile: _handleSaveToFile,
-                // 批次61：Teacher 建议卡「教我原理」→ 发消息请求讲解
-                onTeachPrinciple: _handleTeachPrinciple,
-                // 批次81：三卡回调接线（H1-H3）
-                onContinueTraining: _handleContinueTraining,
-                onViewProfile: _handleViewProfile,
-                onBackToChat: _handleFocusChatInput,
-                onAddContent: _handleFocusChatInput,
-                onContinueChat: _handleFocusChatInput,
-                onPartialAgreementSubmit: _handlePartialAgreementSubmit,
-                onPartialAgreementSkip: _handlePartialAgreementSkip,
-                // 空态 → 欢迎态（对齐 RN messages.length===0 → ChatWelcome）
-                // 批次62：空态补行动引导——「去书架写一写」切到书架 Tab
-                emptyWidget: Center(
-                  child: ChatWelcome(
-                    onStartWriting: () => context.go(AppRoutes.bookshelf),
-                  ),
-                ),
-              ),
-            ),
-            if (chatState.error != null)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.sm,
-                ),
-                color: AppColors.dangerBg,
-                child: Row(
-                  children: [
-                    const Icon(Icons.error_outline, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        // release 静默：不向用户展示异常技术细节（对齐 P2-7 铁律）
-                        kDebugMode ? chatState.error! : '发送失败，请稍后重试',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.danger,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 16),
-                      onPressed: () =>
-                          ref.read(chatStoreProvider.notifier).clearError(),
-                    ),
-                  ],
-                ),
-              ),
-            ChatInput(
-              key: _chatInputKey,
-              input: _inputText,
-              isStreaming: chatState.isStreaming,
-              onInputChange: (text) {
-                setState(() => _inputText = text);
-              },
-              onSend: _handleSend,
-              onStop: _cancelGeneration,
-              onUploadFile: _handleUploadFile,
-              onMention: _handleMention,
+            _buildBody(chatState),
+            OnboardingQuestionnaire(
+              visible: bootstrap.shouldShowOnboarding,
+              onComplete: _messages.handleOnboardingComplete,
+              onSkip: _messages.handleOnboardingSkip,
             ),
           ],
         ),
-        OnboardingQuestionnaire(
-          visible: bootstrap.shouldShowOnboarding,
-          onComplete: _handleOnboardingComplete,
-          onSkip: _handleOnboardingSkip,
-        ),
-      ],
+      ),
     );
   }
 }

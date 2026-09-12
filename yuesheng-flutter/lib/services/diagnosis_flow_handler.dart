@@ -1201,7 +1201,7 @@ class DiagnosisFlowHandler {
   }
 
   // K-9 公开 API 仅 commitDiagnosisFromContent 由 widget 端调用
-  // （lib/widgets/chat_teaching.dart L53）；ChatService 内部消费 parseAndPersist
+  // （lib/widgets/chat_diagnosis_controller.dart）；ChatService 内部消费 parseAndPersist
   // / commitDiagnosisAndSuggestions / handleTrainingResult 三步走。
   @visibleForTesting
   Type get k9Surface => DiagnosisFlowHandler;

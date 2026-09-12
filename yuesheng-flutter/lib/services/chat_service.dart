@@ -150,7 +150,7 @@ class ChatService {
 
   /// 公开委派（ADR-C74 K-9）：分块诊断生成的完整 AI 输出（D4-A）。
   ///
-  /// 由 WritingCoachPanel 调用（lib/widgets/chat_teaching.dart L53）。
+  /// 由 ChatDiagnosisController 调用（lib/widgets/chat_diagnosis_controller.dart）。
   /// 实现已迁 DiagnosisFlowHandler；本方法保留同名同参同返回以保证
   /// 调用方零改动（K-5 同款薄壳委派）。
   Future<String> commitDiagnosisFromContent({
