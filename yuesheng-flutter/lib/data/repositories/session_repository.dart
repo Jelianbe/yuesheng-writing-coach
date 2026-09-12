@@ -9,6 +9,7 @@ import '../database/database.dart';
 import '../database/utils.dart';
 import 'repository_write_guard.dart';
 import '../../services/error_handler.dart';
+import '../../services/manuscript_scope.dart';
 
 class SessionRepository {
   final AppDatabase _db;
@@ -327,51 +328,16 @@ class SessionRepository {
 
   /// 列出与某作品相关的会话（详情页「相关对话」Tab 数据源）
   ///
-  /// 命中规则（取并集，去重）：
-  ///   1. session_reference 中引用本书（refType=manuscript & refId=bookId）
-  ///   2. session_reference 中引用本书任意章节（refType=chapter & refId ∈ 本书章节）
-  ///   3. sessions.manuscript_id 冗余缓存 == bookId（getOrCreateSessionForManuscript/Chapter 写入）
+  /// 命中规则见 [collectManuscriptSessionIds]（批次 A 起由共享查询提供，
+  /// 与书籍级诊断聚合同一真源，避免同语义双实现）。
   ///
   /// 排序：按 sessions.updated_at 降序（活跃度 = 最后活动时间）
   Future<List<SessionWithPhase>> listRelatedSessions(
     String manuscriptId,
   ) async {
-    final hitIds = await _collectRelatedSessionIds(manuscriptId);
+    final hitIds = await collectManuscriptSessionIds(_db, manuscriptId);
     if (hitIds.isEmpty) return const [];
     return _querySessionsWithPhase(hitIds);
-  }
-
-  /// 汇总「与本书相关」的会话 id：章节直接归属 + session_reference 命中
-  /// （manuscript 直引 / chapter 归属本书）+ manuscript_id 冗余缓存兜底。
-  ///
-  /// R-019：由 [listRelatedSessions] 抽出（57 → 6 行）。
-  Future<Set<String>> _collectRelatedSessionIds(String manuscriptId) async {
-    // 1. 本书章节 id 集合
-    final chapters = await (_db.select(
-      _db.chapters,
-    )..where((t) => t.manuscriptId.equals(manuscriptId))).get();
-    final chapterIds = chapters.map((c) => c.id).toSet();
-
-    // 2. session_reference 命中
-    final hitIds = <String>{};
-    final allRefs = await _db.select(_db.sessionReferences).get();
-    for (final ref in allRefs) {
-      if (ref.refType == 'manuscript' && ref.refId == manuscriptId) {
-        hitIds.add(ref.sessionId);
-      }
-      if (ref.refType == 'chapter' && chapterIds.contains(ref.refId)) {
-        hitIds.add(ref.sessionId);
-      }
-    }
-
-    // 3. sessions.manuscript_id 冗余缓存兜底
-    final cached = await (_db.select(
-      _db.sessions,
-    )..where((t) => t.manuscriptId.equals(manuscriptId))).get();
-    for (final s in cached) {
-      hitIds.add(s.id);
-    }
-    return hitIds;
   }
 
   /// 按 [hitIds] 查会话并左连接教学阶段，按活跃度（updated_at 降序）返回。

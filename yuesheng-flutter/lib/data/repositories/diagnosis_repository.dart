@@ -9,6 +9,7 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../services/decode_guard.dart';
+import '../../services/manuscript_scope.dart';
 import '../../services/syndrome_recurrence.dart';
 import '../../services/teaching_state_cache.dart';
 import 'repository_write_guard.dart';
@@ -374,35 +375,7 @@ class DiagnosisRepository {
               ]))
             .get();
 
-    // Dart 层 group by syndrome_id（保留最新一条）
-    final grouped = <String, ActiveProblem>{};
-    for (final r in rows) {
-      if (!grouped.containsKey(r.syndromeId)) {
-        grouped[r.syndromeId] = r;
-      }
-    }
-
-    // 转 ActiveProblemView + 按 severity DESC 排序
-    const order = {'L3': 0, 'L2': 1, 'L1': 2};
-    final result =
-        grouped.values
-            .map(
-              (r) => ActiveProblemView(
-                syndromeId: r.syndromeId,
-                syndromeName: r.syndromeName,
-                severity: r.severity,
-                confirmationStatus: r.confirmationStatus,
-                teachingState: r.teachingState,
-                confirmedAt: r.confirmedAt,
-              ),
-            )
-            .toList()
-          ..sort(
-            (a, b) =>
-                (order[a.severity] ?? 3).compareTo(order[b.severity] ?? 3),
-          );
-
-    return result;
+    return _groupActiveProblems(rows);
   }
 
   /// 批量解决症候（resolved_at 的唯一写入入口）
@@ -447,6 +420,67 @@ class DiagnosisRepository {
   /// 评估链路经此取「复诊」数据，使复发语义在训练反馈时刻可见。
   Future<List<SyndromeRecurrence>> getSyndromeRecurrences() =>
       querySyndromeRecurrences(_db);
+
+  // ════════════ 书籍级聚合（批次 A：书籍级成长叙事）════════════
+  //
+  // 三层成长叙事的中间层：章节级（这次谈什么）/ **书籍级（这本书学到
+  // 什么）** / 全库级（我是个怎样的写作者）。本区块提供中间层的读路径。
+  //
+  // 会话范围一律经 [collectManuscriptSessionIds] 取并集——与详情页
+  // 「相关对话」Tab 同一真源。**不得**改为 `sessions.manuscript_id` 单条件
+  // 直查：存量数据中可能存在 manuscript_id 为空、仅靠 session_reference
+  // 归属的会话，单条件直查会让「Tab 显示 3 条、成长统计只算 1 条」。
+
+  /// 列出本书全部诊断行（时间升序，旧→新）。
+  ///
+  /// 无相关会话（含作品不存在 / 尚无诊断）时返回空列表，不抛异常。
+  Future<List<DiagnosisRow>> listDiagnosesForManuscript(
+    String manuscriptId,
+  ) async {
+    final ids = await collectManuscriptSessionIds(_db, manuscriptId);
+    if (ids.isEmpty) return const [];
+    return (_db.select(_db.diagnosisResults)
+          ..where((t) => t.sessionId.isIn(ids))
+          ..orderBy([
+            (t) =>
+                OrderingTerm(expression: t.timestamp, mode: OrderingMode.asc),
+          ]))
+        .get();
+  }
+
+  /// 跨会话聚合**本书**的活跃问题（group by syndrome_id，取最新严重度）。
+  ///
+  /// 语义与 [listAllActiveProblems] 一致，仅把范围收敛到本书；两方法共用
+  /// [_groupActiveProblems]，避免同语义双实现。
+  Future<List<ActiveProblemView>> listActiveProblemsForManuscript(
+    String manuscriptId,
+  ) async {
+    final ids = await collectManuscriptSessionIds(_db, manuscriptId);
+    if (ids.isEmpty) return const [];
+    final rows =
+        await (_db.select(_db.activeProblems)
+              ..where((t) => t.status.equals('active') & t.sessionId.isIn(ids))
+              ..orderBy([
+                (t) => OrderingTerm(
+                  expression: t.createdAt,
+                  mode: OrderingMode.desc,
+                ),
+              ]))
+            .get();
+    return _groupActiveProblems(rows);
+  }
+
+  /// **本书**同类症候复发聚合（只读）。
+  ///
+  /// 复用 [querySyndromeRecurrences] 的聚合实现与「复发」语义，只把范围
+  /// 收敛到本书的会话——聚合逻辑保持单一真源（见 syndrome_recurrence.dart
+  /// 头部注释）。无相关会话时返回空列表（由共享查询短路）。
+  Future<List<SyndromeRecurrence>> getSyndromeRecurrencesForManuscript(
+    String manuscriptId,
+  ) async {
+    final ids = await collectManuscriptSessionIds(_db, manuscriptId);
+    return querySyndromeRecurrences(_db, sessionIds: ids);
+  }
 
   /// 批次75：移除单个活跃问题条目（物理删除行）。
   ///
@@ -659,6 +693,33 @@ class DiagnosisRepository {
       };
     }).toList();
   }
+
+  /// 跨会话聚合 active_problem 行的公共收口：group by syndrome_id 取最新
+  /// （[rows] 须已按 created_at DESC），转视图并按 severity DESC（L3>L2>L1）排序。
+  ///
+  /// 批次 A：由 [listAllActiveProblems] 抽出，与书籍级版本
+  /// [listActiveProblemsForManuscript] 共用（R-019：原方法拆分）。
+  List<ActiveProblemView> _groupActiveProblems(List<ActiveProblem> rows) {
+    final grouped = <String, ActiveProblem>{};
+    for (final r in rows) {
+      // 先到者即最新（rows 已按 created_at DESC）
+      grouped.putIfAbsent(r.syndromeId, () => r);
+    }
+    const order = {'L3': 0, 'L2': 1, 'L1': 2};
+    return grouped.values.map(_toActiveProblemView).toList()..sort(
+      (a, b) => (order[a.severity] ?? 3).compareTo(order[b.severity] ?? 3),
+    );
+  }
+
+  /// active_problem 行 → 视图（批次 A：抽出以消除重复映射）。
+  ActiveProblemView _toActiveProblemView(ActiveProblem r) => ActiveProblemView(
+    syndromeId: r.syndromeId,
+    syndromeName: r.syndromeName,
+    severity: r.severity,
+    confirmationStatus: r.confirmationStatus,
+    teachingState: r.teachingState,
+    confirmedAt: r.confirmedAt,
+  );
 
   /// 安全解析 syndromes JSON
   /// 复刻 safeParseSyndromes

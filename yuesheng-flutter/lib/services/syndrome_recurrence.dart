@@ -13,6 +13,8 @@
 //   记录，则该次出现计为一次复发。复发率 = 再犯 / max(出现-1, 1)。
 // ─────────────────────────────────────────────────────────────
 
+import 'package:drift/drift.dart' show Variable;
+
 import '../data/database/database.dart';
 
 /// 同类症候复发统计：同一种症候「出现→好转→再犯」聚合
@@ -51,15 +53,30 @@ class SyndromeRecurrence {
 
 /// 跨会话聚合同类症候复发率。
 ///
+/// [sessionIds] 为 null 时聚合全库（原有语义，调用方不变）；给定集合时把
+/// 范围收敛到该批会话（批次 A：书籍级成长叙事按作品取复发）。
+///
 /// 排序：复发率降序，同率按出现次数降序（高频问题优先）。
 /// 无数据时返回空列表。
 Future<List<SyndromeRecurrence>> querySyndromeRecurrences(
-  AppDatabase db,
-) async {
+  AppDatabase db, {
+  Set<String>? sessionIds,
+}) async {
+  // 空集短路：避免生成 `IN ()`（SQLite 语法错误）。
+  if (sessionIds != null && sessionIds.isEmpty) return const [];
+  // 绑定变量个数 = 传入的会话数（SQLite 默认上限 999）。单作品的会话数
+  // 受章节数制约，远低于该上限，故不做分批。
+  final scopeFilter = sessionIds == null
+      ? ''
+      : 'AND session_id IN (${List.filled(sessionIds.length, '?').join(',')}) ';
   final rows = await (db.customSelect(
     'SELECT syndrome_id, syndrome_name, severity, status, created_at '
     "FROM active_problem WHERE confirmation_status != 'rejected' "
+    '$scopeFilter'
     'ORDER BY syndrome_id ASC, created_at ASC',
+    variables: sessionIds == null
+        ? const []
+        : sessionIds.map((id) => Variable.withString(id)).toList(),
   )).get();
 
   // 按 syndrome_id 分组；行序已由 SQL 保证 created_at 升序，
