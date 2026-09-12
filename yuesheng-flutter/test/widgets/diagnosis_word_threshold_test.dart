@@ -6,16 +6,25 @@
 //   因此运行时无法断言「文案里的数字来自常量」——只能以源码文本扫描
 //   守住这条不变量。
 //
+// ⚠️ 锚定方式（2026 伪拆分清偿后）：
+//   已从「硬编码文件路径」改为「**全 lib 语义自适应发现 + 引用总量守恒**」。
+//   原因：本仓库正在把 part + extension 形态的超长文件真分解为独立类，
+//   文件会被**搬迁、改名、拆分**；硬编码具体文件路径一旦被搬走，测试即炸
+//   （假红）。现改为按语义（引用了任一门槛常量）自动发现文件集，并用
+//   「全 lib 引用总数守恒」作为核心护栏——搬文件不改变引用总数，所以护栏抗
+//   搬迁，但**门槛点新增/删除/改字面量**仍会被捕获。
+//
 // 三条断言：
-//   ① 常量取值：五个门槛常量各自等于设计值（防手滑改值）
-//   ② 引用正确：每个门槛点的阈值与文案都引用 UILimits 常量、且是插值写法
-//   ③ 无裸数字：上述文件的**非注释**代码中不再出现「数字 + 字」字面量
+//   ① 常量取值：门槛常量各自等于设计值（防手滑改值）
+//   ② 引用正确：门槛常量全 lib 引用总数守恒 + 每个门槛文件至少引用 1 次
+//      + 四处门槛文案仍为常量插值写法（防文案返祖为字面量）
+//   ③ 无裸数字：自适应发现的门槛文件**非注释**代码中无「数字 + 字」字面量
 //
 // 变异验证（新护栏必须能失败）：
 //   A 文案改回字面量 '请至少输入 100 字后再提交诊断'
 //     → ② 插值断言失败 + ③ 裸数字断言失败（双重捕获）
 //   B 阈值改回字面量（如 `text.length < 20`）
-//     → ② 常量引用断言失败
+//     → ② 全 lib 引用总数断言失败（总数 6/4/2 掉 1）
 //   C 改动任一常量取值（如 diagnosisWordThreshold 100 → 150）
 //     → ① 取值断言失败
 // ─────────────────────────────────────────────────────────────
@@ -24,6 +33,44 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/config/shared_constants.dart';
+
+/// 门槛常量清单（全 lib 引用扫描目标）。
+const List<String> kThresholdConstants = [
+  'UILimits.diagnosisWordThreshold',
+  'UILimits.diagnosisSelectionWordThreshold',
+  'UILimits.quickObservationWordThreshold',
+];
+
+/// 各门槛常量在全 lib 的**引用总数守恒基准**（阈值点 1 + 每处文案插值 1）。
+///
+/// ⚠️ 维护说明：**新增门槛点属正常演进**。若本值需要上调，请务必同步确认
+/// **新点位走的是 UILimits 常量插值**（而非字面量硬编码），再更新此值。
+/// 若本值**下调** → 有门槛点被删除、或阈值/文案被改回字面量（回归，必须排查）。
+///
+/// 基准（2026 负债清偿前实测）：
+///   diagnosisWordThreshold          : chat_teaching(2) + diagnosis_picker_sheet(2)
+///                                     + writing_coach_panel_teaching(2) = 6
+///   diagnosisSelectionWordThreshold : writing_coach_panel_teaching(2)
+///                                     + writing_page_selection_ai(2) = 4
+///   quickObservationWordThreshold   : writing_coach_panel_teaching(2) = 2
+const Map<String, int> kExpectedTotalRefs = {
+  'UILimits.diagnosisWordThreshold': 6,
+  'UILimits.diagnosisSelectionWordThreshold': 4,
+  'UILimits.quickObservationWordThreshold': 2,
+};
+
+/// 自适应发现的「门槛文件」数量基准。
+///
+/// 数量变化说明门槛点新增/删除，需人工确认后同步此值（并核对 ② 的总量守恒）。
+const int kExpectedThresholdFileCount = 4;
+
+/// 必须存在的插值文案片段（全 lib 范围搜索，防文案脱钩返祖为字面量）。
+const List<String> kRequiredSnippets = [
+  r"'章节内容少于 ${UILimits.diagnosisWordThreshold} 字，请先编辑章节'",
+  r"'请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上的文本进行诊断'",
+  r"'请至少输入 ${UILimits.diagnosisWordThreshold} 字后再提交诊断'",
+  r"'请至少写 ${UILimits.quickObservationWordThreshold} 字后再快速观察'",
+];
 
 /// 包根定位：从 cwd 向上回溯，直到同时存在 lib/ 与 test/。
 ///
@@ -50,6 +97,35 @@ String _readSrc(String relPath) {
   return f.readAsStringSync();
 }
 
+/// lib/ 下全部 .dart 的相对路径（正斜杠、排序稳定），**排除生成文件**
+/// （`*.g.dart` / `*.freezed.dart`）。
+List<String> _listLibDartFiles() {
+  final libDir = Directory('${_root.path}/lib');
+  return libDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .map((f) => f.path)
+      .where((p) => p.endsWith('.dart'))
+      .where((p) => !p.endsWith('.g.dart') && !p.endsWith('.freezed.dart'))
+      .map((p) => p.substring(_root.path.length + 1).replaceAll('\\', '/'))
+      .toList()
+    ..sort();
+}
+
+/// 自适应发现：引用了**任一门槛常量**的文件（相对路径，排序稳定）。
+///
+/// 这是「抗文件搬迁」的关键——不再硬编码具体文件路径，而是按语义发现。
+List<String> _discoverThresholdFiles() =>
+    _listLibDartFiles()
+        .where(
+          (rel) => kThresholdConstants.any((c) => _readSrc(rel).contains(c)),
+        )
+        .toList()
+      ..sort();
+
+/// 只扫描一次（顶层 final 惰性初始化），避免多次全 lib 读盘。
+final List<String> _thresholdFiles = _discoverThresholdFiles();
+
 /// 去掉整行注释后的正文。
 ///
 /// 裸数字检测只针对实际代码——文件头 / 行内注释里写「≥20 字」「>4000 字」
@@ -61,66 +137,6 @@ String _stripLineComments(String src) => src
       return !(t.startsWith('//') || t.startsWith('*') || t.startsWith('/*'));
     })
     .join('\n');
-
-/// 单个门槛文件的护栏规格。
-class _Gate {
-  const _Gate(
-    this.relPath, {
-    required this.occurrences,
-    required this.snippets,
-  });
-
-  final String relPath;
-
-  /// 常量名 → 期望出现次数。
-  ///
-  /// 计法：**阈值处 1 次 + 每处文案插值 1 次**。
-  /// 只断言「出现过」不够——变异 B（阈值改回字面量、文案仍插值）会让文件
-  /// 名义上仍含该常量名而蒙混过关，实测已验证（详见文件头「变异验证」）。
-  final Map<String, int> occurrences;
-
-  /// 必须出现的插值文案片段（防文案脱钩）。
-  final List<String> snippets;
-}
-
-/// 门槛点护栏表（ADR-C66 §2.2 四处 + 顺带纳入的两处）。
-const List<_Gate> kThresholdGates = [
-  // ── 诊断门槛（N10 主体）：两处整章 + 两处选段 ──
-  _Gate(
-    'lib/widgets/chat_teaching.dart',
-    occurrences: {'UILimits.diagnosisWordThreshold': 2}, // 阈值 + 文案
-    snippets: [r"'章节内容少于 ${UILimits.diagnosisWordThreshold} 字，请先编辑章节'"],
-  ),
-  _Gate(
-    'lib/widgets/diagnosis_picker_sheet.dart',
-    occurrences: {'UILimits.diagnosisWordThreshold': 2},
-    snippets: [r"'章节内容少于 ${UILimits.diagnosisWordThreshold} 字，请先编辑章节'"],
-  ),
-  _Gate(
-    'lib/widgets/writing_coach_panel_teaching.dart',
-    occurrences: {
-      // minLength 两档各 1 次 + 对应文案各 1 次
-      'UILimits.diagnosisSelectionWordThreshold': 2,
-      'UILimits.diagnosisWordThreshold': 2,
-      // 快速观察：阈值 + 文案
-      'UILimits.quickObservationWordThreshold': 2,
-    },
-    snippets: [
-      r"'请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上的文本进行诊断'",
-      r"'请至少输入 ${UILimits.diagnosisWordThreshold} 字后再提交诊断'",
-      r"'请至少写 ${UILimits.quickObservationWordThreshold} 字后再快速观察'",
-    ],
-  ),
-  _Gate(
-    'lib/widgets/writing_page_selection_ai.dart',
-    occurrences: {
-      'UILimits.diagnosisSelectionWordThreshold': 2, // 阈值 + 文案
-    },
-    snippets: [
-      r"'请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上的文本进行诊断'",
-    ],
-  ),
-];
 
 void main() {
   group('① 常量取值（ADR-C66 §3.1）', () {
@@ -134,47 +150,60 @@ void main() {
     });
   });
 
-  group('② 各门槛点阈值与文案均取自常量', () {
-    for (final gate in kThresholdGates) {
-      test(gate.relPath, () {
-        final src = _readSrc(gate.relPath);
+  group('② 各门槛点阈值与文案均取自常量（全 lib 自适应发现）', () {
+    test('门槛常量全 lib 引用总数守恒', () {
+      final all = _thresholdFiles.map(_readSrc).join('\n');
+      for (final entry in kExpectedTotalRefs.entries) {
+        final actual = entry.key.allMatches(all).length;
+        expect(
+          actual,
+          entry.value,
+          reason:
+              '全 lib 中 ${entry.key} 出现 $actual 次，期望 ${entry.value} 次。\n'
+              '变多 → 有新增门槛点：请确认新点位引用 UILimits 常量（勿字面写死），'
+              '并同步更新 kExpectedTotalRefs。\n'
+              '变少 → 有门槛点被删除、或阈值/文案被改回字面量（回归，必须排查）。',
+        );
+      }
+    });
 
-        // ②-a 出现次数：阈值处 1 次 + 每处文案插值 1 次。
-        // 只判「含不含」会让「阈值写死、文案仍插值」蒙混过关（变异 B）。
-        for (final entry in gate.occurrences.entries) {
-          final actual = entry.key.allMatches(src).length;
-          expect(
-            actual,
-            entry.value,
-            reason:
-                '${gate.relPath} 中 ${entry.key} 出现 $actual 次，'
-                '期望 ${entry.value} 次（阈值 1 + 每处文案 1）\n'
-                '（ADR-C66：门槛数字必须来自 UILimits 常量，不得字面写死）',
-          );
-        }
+    test('自适应发现的每个门槛文件至少引用 1 次门槛常量', () {
+      expect(_thresholdFiles, isNotEmpty, reason: '未发现任何引用门槛常量的文件');
+      for (final rel in _thresholdFiles) {
+        final src = _readSrc(rel);
+        final total = kThresholdConstants
+            .map((c) => c.allMatches(src).length)
+            .fold<int>(0, (acc, n) => acc + n);
+        expect(
+          total,
+          greaterThanOrEqualTo(1),
+          reason: '$rel 未引用任何门槛常量（自适应发现逻辑或源码异常）',
+        );
+      }
+    });
 
-        // ②-b 文案必须是插值写法，而非字面量数字
-        for (final snippet in gate.snippets) {
-          expect(
-            src.contains(snippet),
-            isTrue,
-            reason:
-                '${gate.relPath} 缺少插值文案：$snippet\n'
-                '（ADR-C66：提示文案中的数字须与阈值同源）',
-          );
-        }
-      });
-    }
+    test('四处门槛文案仍为常量插值写法（全 lib 范围）', () {
+      final all = _thresholdFiles.map(_readSrc).join('\n');
+      for (final snippet in kRequiredSnippets) {
+        expect(
+          all.contains(snippet),
+          isTrue,
+          reason:
+              '全 lib 缺少插值文案：$snippet\n'
+              '（ADR-C66：提示文案中的数字须与阈值同源，不得字面写死）',
+        );
+      }
+    });
   });
 
-  group('③ 非注释代码中无裸数字门槛', () {
+  group('③ 自适应发现的门槛文件：非注释代码中无裸数字门槛', () {
     // 「数字 + 可选空格 + 字」，且前面不是标识符 / $ / } —— 后者是插值写法
     // （如 `${UILimits.diagnosisWordThreshold} 字`），属合规。
     final bareDigit = RegExp(r'(?<![\w$}])\d+\s*字');
 
-    for (final gate in kThresholdGates) {
-      test(gate.relPath, () {
-        final code = _stripLineComments(_readSrc(gate.relPath));
+    test('每个门槛文件的非注释代码无「数字 + 字」字面量', () {
+      for (final rel in _thresholdFiles) {
+        final code = _stripLineComments(_readSrc(rel));
         final hits = bareDigit
             .allMatches(code)
             .map((m) => code.substring(m.start, m.end).trim())
@@ -183,22 +212,23 @@ void main() {
           hits,
           isEmpty,
           reason:
-              '${gate.relPath} 存在硬编码字数门槛：${hits.join(' / ')}\n'
+              '$rel 存在硬编码字数门槛：${hits.join(' / ')}\n'
               '（ADR-C66：应改为 UILimits 常量插值）',
         );
-      });
-    }
+      }
+    });
   });
 
-  group('④ 护栏自检（锚点：确保扫描真的命中了目标文件）', () {
-    test('四个门槛文件均可读且非空', () {
-      for (final gate in kThresholdGates) {
-        expect(
-          _readSrc(gate.relPath).length,
-          greaterThan(100),
-          reason: '${gate.relPath} 读取异常（空或过短），扫描可能失效',
-        );
-      }
+  group('④ 护栏自检（确保自适应扫描真的命中了目标）', () {
+    test('自适应发现的文件数 == $kExpectedThresholdFileCount', () {
+      expect(
+        _thresholdFiles.length,
+        kExpectedThresholdFileCount,
+        reason:
+            '自适应发现 ${_thresholdFiles.length} 个门槛文件（期望 $kExpectedThresholdFileCount）：\n'
+            '${_thresholdFiles.join('\n')}\n'
+            '（数量变化说明门槛点新增/删除，需人工确认后同步基准，勿硬编码凑数）',
+      );
     });
 
     test('裸数字正则能命中字面量、且不误伤插值写法', () {
