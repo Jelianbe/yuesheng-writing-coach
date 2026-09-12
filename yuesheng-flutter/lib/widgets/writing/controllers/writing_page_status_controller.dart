@@ -1,26 +1,37 @@
 // ─────────────────────────────────────────────────────────────
-// writing_page 的 part 文件：状态对话框（草稿恢复 / 写作目标设置）
+// WritingPageStatusController — 状态对话框控制器（C92-6b）
 //
-// C92-6a（2026-09-12）伪拆分清偿：原文件内的「状态条 / 指示器 / 目标进度条 /
-// 完成度徽标 / 离线横幅」已提取为**独立视图类**（view/writing_status_views.dart，
-// 非 part）；本文件现仅保留两个对话框逻辑（弹窗需要宿主 store 与 context，
-// 属 State 职责，6b 将转入独立控制器）。
+// 来源：原 `writing_page_status_builders.dart`（part + extension 伪拆分）。
+// C92-6a 已把状态条/指示器/进度条/徽标/离线横幅提为独立视图类
+// （view/writing_status_views.dart）；本控制器只承接两个对话框逻辑。
+// 依赖：宿主 + 文档控制器（草稿恢复后同步编辑器正文）。
 // ─────────────────────────────────────────────────────────────
-// ignore_for_file: invalid_use_of_protected_member
-part of 'writing_page.dart';
 
-extension _WritingPageStatusBuilders on _WritingPageState {
+import 'package:flutter/material.dart';
+
+import '../../../config/app_theme.dart';
+import '../../../providers/writing_providers.dart';
+import '../goal_dialog.dart';
+import '../writing_page_host.dart';
+import 'writing_page_document_controller.dart';
+
+class WritingPageStatusController {
+  WritingPageStatusController(this._host, this._document);
+
+  final WritingPageHost _host;
+  final WritingPageDocumentController _document;
+
   /// 草稿恢复弹窗：检测到上次未保存的草稿时询问恢复/放弃
   /// 对齐 RN chapter-editor.tsx Alert「发现未保存草稿」
-  void _showDraftRestoreDialog(WritingState state) {
+  void showDraftRestoreDialog(WritingState state) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!_host.mounted) return;
       showDialog<void>(
-        context: context,
+        context: _host.context,
         barrierDismissible: false,
         builder: (ctx) {
-          final store = ref.read(
-            writingStoreProvider(widget.chapterId).notifier,
+          final store = _host.ref.read(
+            writingStoreProvider(_host.chapterId).notifier,
           );
           return AlertDialog(
             title: const Text('发现未保存草稿'),
@@ -42,7 +53,7 @@ extension _WritingPageStatusBuilders on _WritingPageState {
                   store.restoreDraft();
                   // 恢复后同步 controller（localContent 可能因 restoreDraft 变化，
                   // 而 controller 已有章节原文，不会触发「空则同步」分支）
-                  _syncEditorText(store.currentContent);
+                  _document.syncEditorText(store.currentContent);
                 },
                 child: const Text('恢复草稿'),
               ),
@@ -55,15 +66,17 @@ extension _WritingPageStatusBuilders on _WritingPageState {
 
   /// 批次82：写作目标设置对话框（AppBar 字数区点击弹出）
   /// 输入目标字数（0 或留空 = 不设目标；已有目标时可一键清除）
-  Future<void> _showGoalDialog() async {
-    final current = ref.read(writingStoreProvider(widget.chapterId)).goalWords;
+  Future<void> showGoalDialog() async {
+    final current = _host.ref
+        .read(writingStoreProvider(_host.chapterId))
+        .goalWords;
     final result = await showDialog<int>(
-      context: context,
+      context: _host.context,
       builder: (_) => GoalDialog(current: current),
     );
-    if (result != null && mounted) {
-      await ref
-          .read(writingStoreProvider(widget.chapterId).notifier)
+    if (result != null && _host.mounted) {
+      await _host.ref
+          .read(writingStoreProvider(_host.chapterId).notifier)
           .setGoalWords(result);
     }
   }

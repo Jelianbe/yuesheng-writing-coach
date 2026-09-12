@@ -1,17 +1,8 @@
 {
   "dir": "lib",
   "limit": 300,
-  "fileCount": 370,
-  "familyCount": 5,
+  "fileCount": 378,
+  "familyCount": 4,
   "ruleCount": 3,
-  "violations": [
-    {
-      "host": "widgets/writing_page.dart",
-      "rule": "S2",
-      "hostLines": 955,
-      "partLines": 0,
-      "part": "",
-      "oversizedParts": {}
-    }
-  ]
+  "violations": []
 }

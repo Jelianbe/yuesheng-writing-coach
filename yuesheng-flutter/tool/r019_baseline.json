@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 370,
+  "fileCount": 378,
   "violations": [
     {
       "file": "lib/main_dev.dart",
