@@ -13901,6 +13901,582 @@ class BackupHistoryCompanion extends UpdateCompanion<BackupHistoryRow> {
   }
 }
 
+class $WorldFactsTable extends WorldFacts
+    with TableInfo<$WorldFactsTable, WorldFact> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WorldFactsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manuscriptIdMeta = const VerificationMeta(
+    'manuscriptId',
+  );
+  @override
+  late final GeneratedColumn<String> manuscriptId = GeneratedColumn<String>(
+    'manuscript_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES manuscripts (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _firstSeenChapterMeta = const VerificationMeta(
+    'firstSeenChapter',
+  );
+  @override
+  late final GeneratedColumn<int> firstSeenChapter = GeneratedColumn<int>(
+    'first_seen_chapter',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _firstSeenAtMeta = const VerificationMeta(
+    'firstSeenAt',
+  );
+  @override
+  late final GeneratedColumn<int> firstSeenAt = GeneratedColumn<int>(
+    'first_seen_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _assertionsMeta = const VerificationMeta(
+    'assertions',
+  );
+  @override
+  late final GeneratedColumn<String> assertions = GeneratedColumn<String>(
+    'assertions',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manuscriptId,
+    name,
+    firstSeenChapter,
+    firstSeenAt,
+    assertions,
+    status,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'world_fact';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WorldFact> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manuscript_id')) {
+      context.handle(
+        _manuscriptIdMeta,
+        manuscriptId.isAcceptableOrUnknown(
+          data['manuscript_id']!,
+          _manuscriptIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manuscriptIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('first_seen_chapter')) {
+      context.handle(
+        _firstSeenChapterMeta,
+        firstSeenChapter.isAcceptableOrUnknown(
+          data['first_seen_chapter']!,
+          _firstSeenChapterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('first_seen_at')) {
+      context.handle(
+        _firstSeenAtMeta,
+        firstSeenAt.isAcceptableOrUnknown(
+          data['first_seen_at']!,
+          _firstSeenAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('assertions')) {
+      context.handle(
+        _assertionsMeta,
+        assertions.isAcceptableOrUnknown(data['assertions']!, _assertionsMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {manuscriptId, name},
+  ];
+  @override
+  WorldFact map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WorldFact(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manuscriptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manuscript_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      firstSeenChapter: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_seen_chapter'],
+      ),
+      firstSeenAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}first_seen_at'],
+      ),
+      assertions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}assertions'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WorldFactsTable createAlias(String alias) {
+    return $WorldFactsTable(attachedDatabase, alias);
+  }
+}
+
+class WorldFact extends DataClass implements Insertable<WorldFact> {
+  final String id;
+  final String manuscriptId;
+  final String name;
+  final int? firstSeenChapter;
+  final int? firstSeenAt;
+  final String assertions;
+  final String status;
+  final int createdAt;
+  final int updatedAt;
+  const WorldFact({
+    required this.id,
+    required this.manuscriptId,
+    required this.name,
+    this.firstSeenChapter,
+    this.firstSeenAt,
+    required this.assertions,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manuscript_id'] = Variable<String>(manuscriptId);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || firstSeenChapter != null) {
+      map['first_seen_chapter'] = Variable<int>(firstSeenChapter);
+    }
+    if (!nullToAbsent || firstSeenAt != null) {
+      map['first_seen_at'] = Variable<int>(firstSeenAt);
+    }
+    map['assertions'] = Variable<String>(assertions);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  WorldFactsCompanion toCompanion(bool nullToAbsent) {
+    return WorldFactsCompanion(
+      id: Value(id),
+      manuscriptId: Value(manuscriptId),
+      name: Value(name),
+      firstSeenChapter: firstSeenChapter == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstSeenChapter),
+      firstSeenAt: firstSeenAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firstSeenAt),
+      assertions: Value(assertions),
+      status: Value(status),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory WorldFact.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WorldFact(
+      id: serializer.fromJson<String>(json['id']),
+      manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
+      name: serializer.fromJson<String>(json['name']),
+      firstSeenChapter: serializer.fromJson<int?>(json['firstSeenChapter']),
+      firstSeenAt: serializer.fromJson<int?>(json['firstSeenAt']),
+      assertions: serializer.fromJson<String>(json['assertions']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manuscriptId': serializer.toJson<String>(manuscriptId),
+      'name': serializer.toJson<String>(name),
+      'firstSeenChapter': serializer.toJson<int?>(firstSeenChapter),
+      'firstSeenAt': serializer.toJson<int?>(firstSeenAt),
+      'assertions': serializer.toJson<String>(assertions),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  WorldFact copyWith({
+    String? id,
+    String? manuscriptId,
+    String? name,
+    Value<int?> firstSeenChapter = const Value.absent(),
+    Value<int?> firstSeenAt = const Value.absent(),
+    String? assertions,
+    String? status,
+    int? createdAt,
+    int? updatedAt,
+  }) => WorldFact(
+    id: id ?? this.id,
+    manuscriptId: manuscriptId ?? this.manuscriptId,
+    name: name ?? this.name,
+    firstSeenChapter: firstSeenChapter.present
+        ? firstSeenChapter.value
+        : this.firstSeenChapter,
+    firstSeenAt: firstSeenAt.present ? firstSeenAt.value : this.firstSeenAt,
+    assertions: assertions ?? this.assertions,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  WorldFact copyWithCompanion(WorldFactsCompanion data) {
+    return WorldFact(
+      id: data.id.present ? data.id.value : this.id,
+      manuscriptId: data.manuscriptId.present
+          ? data.manuscriptId.value
+          : this.manuscriptId,
+      name: data.name.present ? data.name.value : this.name,
+      firstSeenChapter: data.firstSeenChapter.present
+          ? data.firstSeenChapter.value
+          : this.firstSeenChapter,
+      firstSeenAt: data.firstSeenAt.present
+          ? data.firstSeenAt.value
+          : this.firstSeenAt,
+      assertions: data.assertions.present
+          ? data.assertions.value
+          : this.assertions,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorldFact(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('name: $name, ')
+          ..write('firstSeenChapter: $firstSeenChapter, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('assertions: $assertions, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    manuscriptId,
+    name,
+    firstSeenChapter,
+    firstSeenAt,
+    assertions,
+    status,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WorldFact &&
+          other.id == this.id &&
+          other.manuscriptId == this.manuscriptId &&
+          other.name == this.name &&
+          other.firstSeenChapter == this.firstSeenChapter &&
+          other.firstSeenAt == this.firstSeenAt &&
+          other.assertions == this.assertions &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
+  final Value<String> id;
+  final Value<String> manuscriptId;
+  final Value<String> name;
+  final Value<int?> firstSeenChapter;
+  final Value<int?> firstSeenAt;
+  final Value<String> assertions;
+  final Value<String> status;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const WorldFactsCompanion({
+    this.id = const Value.absent(),
+    this.manuscriptId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.firstSeenChapter = const Value.absent(),
+    this.firstSeenAt = const Value.absent(),
+    this.assertions = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WorldFactsCompanion.insert({
+    required String id,
+    required String manuscriptId,
+    required String name,
+    this.firstSeenChapter = const Value.absent(),
+    this.firstSeenAt = const Value.absent(),
+    this.assertions = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manuscriptId = Value(manuscriptId),
+       name = Value(name);
+  static Insertable<WorldFact> custom({
+    Expression<String>? id,
+    Expression<String>? manuscriptId,
+    Expression<String>? name,
+    Expression<int>? firstSeenChapter,
+    Expression<int>? firstSeenAt,
+    Expression<String>? assertions,
+    Expression<String>? status,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manuscriptId != null) 'manuscript_id': manuscriptId,
+      if (name != null) 'name': name,
+      if (firstSeenChapter != null) 'first_seen_chapter': firstSeenChapter,
+      if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
+      if (assertions != null) 'assertions': assertions,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WorldFactsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manuscriptId,
+    Value<String>? name,
+    Value<int?>? firstSeenChapter,
+    Value<int?>? firstSeenAt,
+    Value<String>? assertions,
+    Value<String>? status,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return WorldFactsCompanion(
+      id: id ?? this.id,
+      manuscriptId: manuscriptId ?? this.manuscriptId,
+      name: name ?? this.name,
+      firstSeenChapter: firstSeenChapter ?? this.firstSeenChapter,
+      firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+      assertions: assertions ?? this.assertions,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manuscriptId.present) {
+      map['manuscript_id'] = Variable<String>(manuscriptId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (firstSeenChapter.present) {
+      map['first_seen_chapter'] = Variable<int>(firstSeenChapter.value);
+    }
+    if (firstSeenAt.present) {
+      map['first_seen_at'] = Variable<int>(firstSeenAt.value);
+    }
+    if (assertions.present) {
+      map['assertions'] = Variable<String>(assertions.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WorldFactsCompanion(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('name: $name, ')
+          ..write('firstSeenChapter: $firstSeenChapter, ')
+          ..write('firstSeenAt: $firstSeenAt, ')
+          ..write('assertions: $assertions, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13937,6 +14513,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $AiAccountsTable aiAccounts = $AiAccountsTable(this);
   late final $BackupHistoryTable backupHistory = $BackupHistoryTable(this);
+  late final $WorldFactsTable worldFacts = $WorldFactsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13965,6 +14542,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     trainingResults,
     aiAccounts,
     backupHistory,
+    worldFacts,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -14128,6 +14706,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('training_results', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'manuscripts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('world_fact', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -14326,6 +14911,27 @@ final class $$ManuscriptsTableReferences
     final cache = $_typedResult.readTableOrNull(
       _outlineEntitiesRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$WorldFactsTable, List<WorldFact>>
+  _worldFactsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.worldFacts,
+    aliasName: $_aliasNameGenerator(
+      db.manuscripts.id,
+      db.worldFacts.manuscriptId,
+    ),
+  );
+
+  $$WorldFactsTableProcessedTableManager get worldFactsRefs {
+    final manager = $$WorldFactsTableTableManager(
+      $_db,
+      $_db.worldFacts,
+    ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_worldFactsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -14582,6 +15188,31 @@ class $$ManuscriptsTableFilterComposer
           }) => $$OutlineEntitiesTableFilterComposer(
             $db: $db,
             $table: $db.outlineEntities,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> worldFactsRefs(
+    Expression<bool> Function($$WorldFactsTableFilterComposer f) f,
+  ) {
+    final $$WorldFactsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.worldFacts,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorldFactsTableFilterComposer(
+            $db: $db,
+            $table: $db.worldFacts,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -14892,6 +15523,31 @@ class $$ManuscriptsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> worldFactsRefs<T extends Object>(
+    Expression<T> Function($$WorldFactsTableAnnotationComposer a) f,
+  ) {
+    final $$WorldFactsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.worldFacts,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WorldFactsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.worldFacts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ManuscriptsTableTableManager
@@ -14916,6 +15572,7 @@ class $$ManuscriptsTableTableManager
             bool eventFactsRefs,
             bool subplotFactsRefs,
             bool outlineEntitiesRefs,
+            bool worldFactsRefs,
           })
         > {
   $$ManuscriptsTableTableManager(_$AppDatabase db, $ManuscriptsTable table)
@@ -14999,6 +15656,7 @@ class $$ManuscriptsTableTableManager
                 eventFactsRefs = false,
                 subplotFactsRefs = false,
                 outlineEntitiesRefs = false,
+                worldFactsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -15011,6 +15669,7 @@ class $$ManuscriptsTableTableManager
                     if (eventFactsRefs) db.eventFacts,
                     if (subplotFactsRefs) db.subplotFacts,
                     if (outlineEntitiesRefs) db.outlineEntities,
+                    if (worldFactsRefs) db.worldFacts,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -15183,6 +15842,27 @@ class $$ManuscriptsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (worldFactsRefs)
+                        await $_getPrefetchedData<
+                          Manuscript,
+                          $ManuscriptsTable,
+                          WorldFact
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ManuscriptsTableReferences
+                              ._worldFactsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ManuscriptsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).worldFactsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.manuscriptId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -15212,6 +15892,7 @@ typedef $$ManuscriptsTableProcessedTableManager =
         bool eventFactsRefs,
         bool subplotFactsRefs,
         bool outlineEntitiesRefs,
+        bool worldFactsRefs,
       })
     >;
 typedef $$VolumesTableCreateCompanionBuilder =
@@ -25874,6 +26555,407 @@ typedef $$BackupHistoryTableProcessedTableManager =
       BackupHistoryRow,
       PrefetchHooks Function()
     >;
+typedef $$WorldFactsTableCreateCompanionBuilder =
+    WorldFactsCompanion Function({
+      required String id,
+      required String manuscriptId,
+      required String name,
+      Value<int?> firstSeenChapter,
+      Value<int?> firstSeenAt,
+      Value<String> assertions,
+      Value<String> status,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$WorldFactsTableUpdateCompanionBuilder =
+    WorldFactsCompanion Function({
+      Value<String> id,
+      Value<String> manuscriptId,
+      Value<String> name,
+      Value<int?> firstSeenChapter,
+      Value<int?> firstSeenAt,
+      Value<String> assertions,
+      Value<String> status,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$WorldFactsTableReferences
+    extends BaseReferences<_$AppDatabase, $WorldFactsTable, WorldFact> {
+  $$WorldFactsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ManuscriptsTable _manuscriptIdTable(_$AppDatabase db) =>
+      db.manuscripts.createAlias(
+        $_aliasNameGenerator(db.worldFacts.manuscriptId, db.manuscripts.id),
+      );
+
+  $$ManuscriptsTableProcessedTableManager get manuscriptId {
+    final $_column = $_itemColumn<String>('manuscript_id')!;
+
+    final manager = $$ManuscriptsTableTableManager(
+      $_db,
+      $_db.manuscripts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_manuscriptIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$WorldFactsTableFilterComposer
+    extends Composer<_$AppDatabase, $WorldFactsTable> {
+  $$WorldFactsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstSeenChapter => $composableBuilder(
+    column: $table.firstSeenChapter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get assertions => $composableBuilder(
+    column: $table.assertions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ManuscriptsTableFilterComposer get manuscriptId {
+    final $$ManuscriptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableFilterComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WorldFactsTableOrderingComposer
+    extends Composer<_$AppDatabase, $WorldFactsTable> {
+  $$WorldFactsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstSeenChapter => $composableBuilder(
+    column: $table.firstSeenChapter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get assertions => $composableBuilder(
+    column: $table.assertions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ManuscriptsTableOrderingComposer get manuscriptId {
+    final $$ManuscriptsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableOrderingComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WorldFactsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WorldFactsTable> {
+  $$WorldFactsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get firstSeenChapter => $composableBuilder(
+    column: $table.firstSeenChapter,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get firstSeenAt => $composableBuilder(
+    column: $table.firstSeenAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get assertions => $composableBuilder(
+    column: $table.assertions,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ManuscriptsTableAnnotationComposer get manuscriptId {
+    final $$ManuscriptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WorldFactsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WorldFactsTable,
+          WorldFact,
+          $$WorldFactsTableFilterComposer,
+          $$WorldFactsTableOrderingComposer,
+          $$WorldFactsTableAnnotationComposer,
+          $$WorldFactsTableCreateCompanionBuilder,
+          $$WorldFactsTableUpdateCompanionBuilder,
+          (WorldFact, $$WorldFactsTableReferences),
+          WorldFact,
+          PrefetchHooks Function({bool manuscriptId})
+        > {
+  $$WorldFactsTableTableManager(_$AppDatabase db, $WorldFactsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WorldFactsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WorldFactsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WorldFactsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manuscriptId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int?> firstSeenChapter = const Value.absent(),
+                Value<int?> firstSeenAt = const Value.absent(),
+                Value<String> assertions = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorldFactsCompanion(
+                id: id,
+                manuscriptId: manuscriptId,
+                name: name,
+                firstSeenChapter: firstSeenChapter,
+                firstSeenAt: firstSeenAt,
+                assertions: assertions,
+                status: status,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manuscriptId,
+                required String name,
+                Value<int?> firstSeenChapter = const Value.absent(),
+                Value<int?> firstSeenAt = const Value.absent(),
+                Value<String> assertions = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WorldFactsCompanion.insert(
+                id: id,
+                manuscriptId: manuscriptId,
+                name: name,
+                firstSeenChapter: firstSeenChapter,
+                firstSeenAt: firstSeenAt,
+                assertions: assertions,
+                status: status,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WorldFactsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({manuscriptId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (manuscriptId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.manuscriptId,
+                                referencedTable: $$WorldFactsTableReferences
+                                    ._manuscriptIdTable(db),
+                                referencedColumn: $$WorldFactsTableReferences
+                                    ._manuscriptIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WorldFactsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WorldFactsTable,
+      WorldFact,
+      $$WorldFactsTableFilterComposer,
+      $$WorldFactsTableOrderingComposer,
+      $$WorldFactsTableAnnotationComposer,
+      $$WorldFactsTableCreateCompanionBuilder,
+      $$WorldFactsTableUpdateCompanionBuilder,
+      (WorldFact, $$WorldFactsTableReferences),
+      WorldFact,
+      PrefetchHooks Function({bool manuscriptId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -25924,4 +27006,6 @@ class $AppDatabaseManager {
       $$AiAccountsTableTableManager(_db, _db.aiAccounts);
   $$BackupHistoryTableTableManager get backupHistory =>
       $$BackupHistoryTableTableManager(_db, _db.backupHistory);
+  $$WorldFactsTableTableManager get worldFacts =>
+      $$WorldFactsTableTableManager(_db, _db.worldFacts);
 }

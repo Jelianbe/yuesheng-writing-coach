@@ -2,11 +2,11 @@
 // migration_v27_test — ADR-C78 批次1 v26 → v27 迁移路径测试
 //
 // 模拟真实升级：用 sqlite3 手工构造 v26 存量库文件（character_fact 无
-// aliases/status，event_fact 无 stale/chapter_hash），user_version = 26，
+// aliases/status，event_fact 无 stale/chapter_hash），user_version = 31，
 // 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(26 → 27)。
 //
 // 覆盖：
-//   1. 升级后 user_version = 27
+//   1. 升级后 user_version = 31
 //   2. 4 个新列全部补齐（每条 ALTER 带 PRAGMA table_info 幂等守卫）
 //   3. 存量行取到正确默认值：aliases='[]'、status='active'、stale=0、
 //      chapter_hash=null
@@ -101,7 +101,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 30);
+    expect(version.read<int>('user_version'), 31);
 
     // 2. 4 个新列全部存在
     expect(
@@ -164,7 +164,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 30);
+    expect(version.read<int>('user_version'), 31);
 
     // 列数未因重复 ALTER 而膨胀
     final cfCols = await db2

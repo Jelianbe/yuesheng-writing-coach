@@ -1,10 +1,13 @@
 // ─────────────────────────────────────────────────────────────
 // FactStaleService — C78 批次2a「幽灵事实」治理
 //
-// 病根：character_fact / event_fact 的外键挂在 manuscript_id 上而非章节
-// （tables.dart:512 / :548），删章节对它们零连带影响 → 从被删章节抽出的
-// 断言变成「幽灵」，继续参与 F05 时序矛盾 / F07 因果链断裂检测，给用户报
-// 一些根本不存在的矛盾。
+// 病根：character_fact / event_fact / world_fact 的外键挂在 manuscript_id 上
+// 而非章节（tables.dart 三表定义处同形），删章节对它们零连带影响 → 从被删
+// 章节抽出的断言变成「幽灵」，继续参与 F05 时序矛盾 / F07 因果链断裂检测，
+// 给用户报一些根本不存在的矛盾。
+//
+// 批次 E1（书籍级成长叙事）把 world_fact 一并纳入本机制——三表同构、
+// 判据唯一（[markList]），仅「取行 → 写回」的表访问骨架各写一份。
 //
 // 对策：
 //   ① 抽取时记录章节内容指纹 chapterHash（D-6）
@@ -70,6 +73,15 @@ class FactStaleService {
 
   Future<bool> _hasEventTable() => _db.tableExists('event_fact');
 
+  /// 世界观表守卫（批次 E1）。
+  ///
+  /// world_fact 是 **v31** 才建的表，判据 `from < 31` 对任何存量库都可达，
+  /// 理论上不缺表（见 database.dart v31 迁移块的可达性说明）。但守卫仍保留：
+  /// ① 与 character / event 同一契约，三条路径行为一致，读代码时不必分情况；
+  /// ② `if (from < N)` 被跳过的历史事故已发生过两次（v16/v17），
+  ///    多一层 `IF NOT EXISTS` + 运行期守卫的成本近乎为零。
+  Future<bool> _hasWorldTable() => _db.tableExists('world_fact');
+
   /// 章节删除钩子：把「属于这一章」的断言 + 事件同标 stale。
   ///
   /// 调用方必须在删除/更新动作**之前**调（删完章节行就没了，拿不到
@@ -97,6 +109,14 @@ class FactStaleService {
             ),
           );
     }
+    if (await _hasWorldTable()) {
+      await _markWorldAssertions(
+        manuscriptId,
+        chapterNo,
+        chapterHash,
+        keep: true,
+      );
+    }
   }
 
   /// 清除该章的 stale 事实——**删除**而非取消标记。
@@ -121,6 +141,14 @@ class FactStaleService {
                           t.chapterHash.equals(chapterHash)),
           ))
           .go();
+    }
+    if (await _hasWorldTable()) {
+      await _markWorldAssertions(
+        manuscriptId,
+        chapterNo,
+        chapterHash,
+        keep: false,
+      );
     }
   }
 
@@ -262,9 +290,43 @@ class FactStaleService {
     return candidate.status == 'rejected' && kept.status != 'rejected';
   }
 
-  /// 遍历该作品全部人物行，按并集判据处理属于该章的断言。
+  /// 对**一行**断言列表执行「标记 / 删除」，返回新列表；无变化返回 null。
+  ///
+  /// ★ 判据唯一处（批次 E1）：character_fact 与 world_fact 两侧的删除钩子 /
+  ///   用户清除**共用本函数**，仅表访问分支不同。双实现会像
+  ///   `syndrome_recurrence.dart:1-7` 记录的那样口径分叉——一侧改了并集判据
+  ///   而另一侧没改，用户就会看到「角色断言灰了、世界观断言没灰」。
+  ///
+  /// [keep] = true → 原地标 stale；false → 从列表移除（用户「清除本章旧版」）。
+  /// 返回 null 表示该行无需写回（调用方据此跳过 DB 写，省无谓 IO）。
+  static List<CharacterAssertion>? markList(
+    List<CharacterAssertion> list,
+    int chapterNo,
+    String? chapterHash, {
+    required bool keep,
+  }) {
+    var changed = false;
+    final next = <CharacterAssertion>[];
+    for (final a in list) {
+      final hit = chapterHash == null
+          ? a.chapter == chapterNo
+          : belongsToChapter(a, chapterNo, chapterHash);
+      if (hit && (keep ? !a.stale : a.stale)) {
+        // 单独记账 changed：keep=true 时是原地标 stale，条目数不变；
+        // 不能用「长度变了」来判断是否需要写回。
+        changed = true;
+        if (keep) next.add(a.withStaleMark(stale: true));
+      } else {
+        next.add(a);
+      }
+    }
+    return changed ? next : null;
+  }
+
+  /// 遍历该作品全部**人物**行，按并集判据处理属于该章的断言。
   ///
   /// [keep] = true → 标 stale（删除钩子）；false → 从列表里删除（用户清除）。
+  /// 标记判据在 [markList]，本函数只负责「取行 → 判 → 写回」的表访问骨架。
   Future<void> _markAssertions(
     String manuscriptId,
     int chapterNo,
@@ -277,26 +339,39 @@ class FactStaleService {
     for (final row in rows) {
       final list = _parse(row.assertions);
       if (list.isEmpty) continue;
-      var changed = false;
-      final next = <CharacterAssertion>[];
-      for (final a in list) {
-        final hit = chapterHash == null
-            ? a.chapter == chapterNo
-            : belongsToChapter(a, chapterNo, chapterHash);
-        if (hit && (keep ? !a.stale : a.stale)) {
-          // 单独记账 changed：keep=true 时是原地标 stale，条目数不变；
-          // 不能用「长度变了」来判断是否需要写回。
-          changed = true;
-          if (keep) next.add(a.withStaleMark(stale: true));
-        } else {
-          next.add(a);
-        }
-      }
-      if (!changed) continue;
+      final next = markList(list, chapterNo, chapterHash, keep: keep);
+      if (next == null) continue;
       await (_db.update(
         _db.characterFacts,
       )..where((t) => t.id.equals(row.id))).write(
         CharacterFactsCompanion(
+          assertions: Value(jsonEncode(next.map((a) => a.toJson()).toList())),
+          updatedAt: Value(nowSec()),
+        ),
+      );
+    }
+  }
+
+  /// 世界观侧同上（批次 E1）。表是**类型**、无法参数化，故「取行 → 写回」
+  /// 骨架按表各写一份——这是必要的表分支，判据仍唯一在 [markList]。
+  Future<void> _markWorldAssertions(
+    String manuscriptId,
+    int chapterNo,
+    String? chapterHash, {
+    required bool keep,
+  }) async {
+    final rows = await (_db.select(
+      _db.worldFacts,
+    )..where((t) => t.manuscriptId.equals(manuscriptId))).get();
+    for (final row in rows) {
+      final list = _parse(row.assertions);
+      if (list.isEmpty) continue;
+      final next = markList(list, chapterNo, chapterHash, keep: keep);
+      if (next == null) continue;
+      await (_db.update(
+        _db.worldFacts,
+      )..where((t) => t.id.equals(row.id))).write(
+        WorldFactsCompanion(
           assertions: Value(jsonEncode(next.map((a) => a.toJson()).toList())),
           updatedAt: Value(nowSec()),
         ),

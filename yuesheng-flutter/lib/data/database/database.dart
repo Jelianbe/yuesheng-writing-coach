@@ -48,6 +48,8 @@ part 'database.g.dart';
     AiAccounts,
     // v29：数据库备份记录（外来设计文档 §二，pre_migrate/auto/manual）
     BackupHistory,
+    // v31：世界观设定条目（书籍级成长叙事 · 批次 E1）
+    WorldFacts,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -57,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -205,7 +207,18 @@ class AppDatabase extends _$AppDatabase {
       // C78 批次1：守卫上移到 27（v27 块对 from=26 存量库可达，幂等）
       // ADR-C91：守卫上移到 28（v28 块对 from=27 存量库可达，幂等）
       // v29：守卫上移到 29（v29 块对 from=28 存量库可达，幂等）
-      if (from >= 29) return;
+      // 批次E1：守卫上移到 31（v31 块对 from=30 存量库可达，幂等）
+      //   ⚠️ 契约：本守卫值必须**等于当前 schemaVersion**。理由——onUpgrade
+      //   只在 from < schemaVersion 时被调用，故守卫 == schemaVersion 时
+      //   `from >= 守卫` 恒假、区间为空，是纯粹的防御（防降级/异常库）。
+      //   若守卫**小于** schemaVersion（如 v30 时代守卫停在 29），
+      //   `from ∈ [守卫, schemaVersion)` 的库会被整段 return 跳过——
+      //   后果不是报错而是**静默跳过**：drift 之后照写 user_version = 新值，
+      //   用户看到「已是最新」，但新表/新列根本没建。
+      //   v30 块（pinned 列）正是漏上移的实例，靠 beforeOpen 的自愈兜底
+      //   才没暴露；world_fact 是 CREATE TABLE、自愈兜不住，故由
+      //   migration_v31_test #1/#3 死守这条契约。
+      if (from >= 31) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -873,6 +886,35 @@ class AppDatabase extends _$AppDatabase {
             'ALTER TABLE sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0',
           );
         }
+      }
+
+      // v31: add_world_fact_table — 书籍级成长叙事 · 批次 E1（世界观设定条目）。
+      //
+      // 可达性说明（v16/v17 的教训在此**不适用**，写下来防重犯）：
+      // character_fact / event_fact 是 v16/v17 才建的表，而最小 schema 的存量库
+      // user_version 已是 23/24 → `if (from < 16)` 为假、被整块跳过 → 表永远
+      // 补不上（见 FactStaleService._hasCharacterTable 的缺表守卫注释）。
+      // 本块判据是 `from < 31`，对**任何**存量库（含 v23/v24 最小 schema 库与
+      // v30 正常升级路径）都为真，故无「永远补不上」风险。
+      if (from < 31) {
+        await customStatement('''
+              CREATE TABLE IF NOT EXISTS world_fact (
+                id                 TEXT PRIMARY KEY,
+                manuscript_id      TEXT NOT NULL REFERENCES manuscripts(id) ON DELETE CASCADE,
+                name               TEXT NOT NULL,
+                first_seen_chapter INTEGER DEFAULT NULL,
+                first_seen_at      INTEGER DEFAULT NULL,
+                assertions         TEXT NOT NULL DEFAULT '[]',
+                status             TEXT NOT NULL DEFAULT 'active',
+                created_at         INTEGER NOT NULL DEFAULT (unixepoch()),
+                updated_at         INTEGER NOT NULL DEFAULT (unixepoch()),
+                UNIQUE(manuscript_id, name)
+              )
+            ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_world_fact_manuscript '
+          'ON world_fact(manuscript_id)',
+        );
       }
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，

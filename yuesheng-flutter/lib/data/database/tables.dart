@@ -753,3 +753,50 @@ class BackupHistory extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// ============================================================
+/// 22. world_fact — 世界观设定条目（书籍级成长叙事 · 批次 E1，v31）
+/// 作品级（manuscript_id 维度）
+///
+/// 与 character_fact **同构**：一行 = 一个设定主题（name），行内 assertions
+/// 是该主题的多条断言（attribute / value / chapter / chapterHash）。
+/// 同构的收益：白拿 C78 批次2a 的 chapterHash 幽灵治理
+/// （[FactStaleService]），无需为世界观重写一套 stale 机制。
+///
+/// ★ 判据**不复用** F05（方案 §4 E1 的关键技术判断）：世界观是「规则」，
+///   天然带例外（「灵气稀薄」+「此地有灵脉」是层次感而非矛盾）。直接套
+///   「同属性不同值 → 时序矛盾」会产出与幽灵事实同形态的**幽灵矛盾**，
+///   故世界观判据须独立设计，不在此表层耦合。
+///
+/// status 取值 active | archived——与 character_fact 的 active | merged
+/// **刻意不同**：世界观无同名合并场景（C78 §5.4 的合并源于同一角色被 AI
+/// 用多名抽出），此列仅作归档槽位，值域按本表语义自定。
+/// ============================================================
+@DataClassName('WorldFact')
+class WorldFacts extends Table {
+  @override
+  String get tableName => 'world_fact';
+
+  TextColumn get id => text()();
+  TextColumn get manuscriptId =>
+      text().references(Manuscripts, #id, onDelete: KeyAction.cascade)();
+  TextColumn get name => text()(); // 设定主题名（如「灵气体系」）
+  IntColumn get firstSeenChapter => integer().nullable()(); // 首次提出章节序号
+  IntColumn get firstSeenAt => integer().nullable()(); // 首次提出时间（unix 秒）
+  TextColumn get assertions =>
+      text().withDefault(const Constant('[]'))(); // JSON CharacterAssertion[]
+  TextColumn get status =>
+      text().withDefault(const Constant('active'))(); // active | archived
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+  IntColumn get updatedAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {manuscriptId, name},
+  ];
+}
