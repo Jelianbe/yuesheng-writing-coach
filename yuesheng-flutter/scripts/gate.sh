@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 月笙写作教练 Flutter 端 — 七道门禁 (R-027 + 宪法 §二)
+# 月笙写作教练 Flutter 端 — 十一道门禁 (R-027 + 宪法 §二)
 #
 # 门禁 0: 代码格式 (dart format --set-exit-if-changed lib) — 宪法 §二.2
 # 门禁 1: 静态分析 (dart analyze lib) — 类型检查 + Lint
@@ -30,7 +30,7 @@
 #    本脚本中 python 缺失使门禁 3 / 5 跳过、或 lcov 缺失使门禁 6 跳过时，
 #    记 `SKIP`（独立于 PASS/FAIL），并在报告的**顶部**打出醒目的
 #    `⚠️ DEGRADED` 警告，退出码非 0。
-#    这样「全绿」才真正等价于「七道都跑过且都通过」。
+#    这样「全绿」才真正等价于「十一道都跑过且都通过」。
 # ============================================================
 set -u
 
@@ -49,6 +49,10 @@ CIRCULAR_LOG="$OUT_DIR/circular.txt"
 SECURITY_LOG="$OUT_DIR/security.txt"
 R019_LOG="$OUT_DIR/r019.txt"
 COVERAGE_LOG="$OUT_DIR/coverage.txt"
+PROMPT_LINT_LOG="$OUT_DIR/prompt_lint.txt"
+META_LOG="$OUT_DIR/content_metadata.txt"
+INTERACTION_LOG="$OUT_DIR/interaction.txt"
+SPLIT_LOG="$OUT_DIR/split_shape.txt"
 
 pass=0
 fail=0
@@ -74,7 +78,7 @@ log_result() {
 }
 
 echo "=================================================="
-echo "月笙 Flutter 七道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
+echo "月笙 Flutter 十一道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================="
 
 # ---------- 公共：定位 python（门禁 3 / 5 / 6 共用）----------
@@ -89,7 +93,7 @@ else
 fi
 
 # ---------- 门禁 0: 格式（宪法 §二.2）----------
-echo "--> 门禁 0/7: 格式校验 (dart format --set-exit-if-changed lib)"
+echo "--> 门禁 0/11: 格式校验 (dart format --set-exit-if-changed lib)"
 if dart format --set-exit-if-changed -o none lib > "$FORMAT_LOG" 2>&1; then
   RC_FORMAT=0
 else
@@ -99,7 +103,7 @@ fi
 log_result "格式校验 (dart format)" "$RC_FORMAT"
 
 # ---------- 门禁 1: 静态分析 ----------
-echo "--> 门禁 1/7: 静态分析 (dart analyze lib)"
+echo "--> 门禁 1/11: 静态分析 (dart analyze lib)"
 if dart analyze lib > "$TYPECHECK_LOG" 2>&1; then
   RC_ANALYZE=0
 else
@@ -109,7 +113,7 @@ fi
 log_result "静态分析 (analyze lib)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
-echo "--> 门禁 2/7: 单元测试 (flutter test)"
+echo "--> 门禁 2/11: 单元测试 (flutter test)"
 # V4.18：会话注入的 HTTP_PROXY 会劫持 Dart VM ↔ flutter_tester 的
 # localhost WebSocket，导致全量测试加载失败（错误行同样带 [E]，
 # 看起来每个测试都失败）。门禁脚本必须主动清空代理环境变量，
@@ -147,7 +151,7 @@ log_result "单元测试 (flutter test)" "$RC_TEST"
 #    否则门禁会一直停留在「只卡新增」的弱化状态。
 #    tool/circular_baseline.json 已重生成空数组并保留在库中，
 #    供将来确需临时豁免时按同一格式使用（届时必须同时登记清偿计划）。
-echo "--> 门禁 3/7: 循环依赖扫描 (lib import 图，全量卡口)"
+echo "--> 门禁 3/11: 循环依赖扫描 (lib import 图，全量卡口)"
 if [ -n "$PY_BIN" ]; then
   if "$PY_BIN" scripts/check_circular.py . > "$CIRCULAR_LOG" 2>&1; then
     RC_CIRCULAR=0
@@ -164,7 +168,7 @@ fi
 log_result "循环依赖扫描" "$RC_CIRCULAR"
 
 # ---------- 门禁 4: 安全 / 密钥（调用独立脚本 scripts/check_secrets.sh）----------
-echo "--> 门禁 4/7: 安全/密钥扫描"
+echo "--> 门禁 4/11: 安全/密钥扫描"
 if bash scripts/check_secrets.sh "$ROOT" > "$SECURITY_LOG" 2>&1; then
   RC_SECRETS=0
 else
@@ -179,7 +183,7 @@ log_result "安全/密钥扫描" "$RC_SECRETS"
 # 债务已累积到 264 个（手写 237 个）却无人察觉。本门禁不追溯存量——
 # 以 tool/r019_baseline.json 为基线，只阻止**新增**超限，避免一次性阻塞所有提交。
 # 待债务按期清偿后，可去掉 --baseline 改为全量卡口。
-echo "--> 门禁 5/7: R-019 函数行数（基线豁免，只卡新增）"
+echo "--> 门禁 5/11: R-019 函数行数（基线豁免，只卡新增）"
 if [ -n "$PY_BIN" ] && [ -f "$ROOT/tool/r019_baseline.json" ]; then
   if "$PY_BIN" tool/check_r019.py --baseline tool/r019_baseline.json > "$R019_LOG" 2>&1; then
     RC_R019=0
@@ -229,7 +233,7 @@ log_result "R-019 函数行数" "$RC_R019"
 # 退出码语义（check_coverage.py）：0 = T1 PASS/WARN 且 T2 全过；
 #    1 = T1 FAIL 或任一 T2 FAIL/缺失 或 T2 数量不符护栏；
 #    2 = 环境错误（lcov 缺失 / 解析 0 记录 / --t2 语法错）。
-echo "--> 门禁 6/7: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
+echo "--> 门禁 6/11: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过覆盖率检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$COVERAGE_LOG"
@@ -266,6 +270,144 @@ else
 fi
 log_result "覆盖率检查" "$RC_COVERAGE"
 
+# ---------- 门禁 7: Prompt 反模式（调用 scripts/check_prompt_antipattern.py）----------
+#
+# 背景（ADR-C92）：该脚本早已写好、能跑，却**从未接入任何门禁**——它真正能拦到
+# 的 prompt 话术反模式（强制触发 / 固定格式 / 断言式下结论）被静默放过。
+#
+# ⚠️ 接入前必须先修假阳性（2026-09-12 实测）：修复前 12 条命中里 11 条是假阳性
+#    （92%）——`report-tone` 把月笙**核心协议字段「诊断置信度」**错当报告腔，
+#    `assert-conclude` 把 `❌` 标注的反例说明当断言，`cross-dup` 把**有意的
+#    跨文件教学规则一致性**当重复缺陷。带着这些假阳性接门禁，结果是「正常改
+#    prompt 就假红」→ 门禁被当噪音绕过。现已修复，并**不能反过来改 prompt 去
+#    迎合检查器**（违反 R-009/R-010）。
+#
+# ⚠️ 用 --diff-baseline 而非全量：存量 1 条真阳性（force-trigger）走基线祖父，
+#    只卡**新增**，与门禁 5/6 的先例一致（门禁 5 止血基线 / 门禁 6 T2 守卫）。
+#    cross-dup 已降级为信息型，不参与 FAIL 判定。
+#
+# ⚠️ --expect-rule-count 4 是**静默降级护栏**（类比门禁 6 的 --expect-t2-count）：
+#    若将来有人删掉一条 KEYWORD_RULES，剩余规则仍可能全 PASS → 假绿、
+#    实际少守一类反模式。加了这条护栏，规则数不符一律 FAIL。
+#
+# 退出码语义（check_prompt_antipattern.py）：0 = 无新增（diff 模式）；
+#    1 = 有新增命中 / 规则数不符护栏。
+echo "--> 门禁 7/11: Prompt 反模式（diff-baseline，只卡新增）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 prompt 反模式扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$PROMPT_LINT_LOG"
+  RC_PROMPT=SKIP
+elif [ ! -d "$ROOT/lib/services" ]; then
+  # 扫描目录不存在 ⇒ 脚本会 return 1（被误当「有反模式」），故在 wrapper 先判，
+  # 记 SKIP（环境缺失）而非 FAIL，避免把「找不到目录」误报成「有反模式」。
+  echo "  [WARN] lib/services 不存在，跳过 prompt 反模式扫描"
+  echo "SKIP: (NOT EXECUTED) lib/services missing" > "$PROMPT_LINT_LOG"
+  RC_PROMPT=SKIP
+else
+  if "$PY_BIN" scripts/check_prompt_antipattern.py \
+    --diff-baseline --expect-rule-count 4 > "$PROMPT_LINT_LOG" 2>&1; then
+    RC_PROMPT=0
+  else
+    RC_PROMPT=1
+    cat "$PROMPT_LINT_LOG"
+  fi
+fi
+log_result "Prompt 反模式" "$RC_PROMPT"
+
+# ---------- 门禁 8: 内容元数据（调用 scripts/check_content_metadata.py）----------
+#
+# 背景（ADR-C92）：同为「已写未接入」脚本。检查内容增减规范要求的元数据头
+# （体积/定位/来源/loadWhen）是否齐备。内置存量豁免，只卡新增头缺失。
+#
+# ⚠️ 必须用 --strict：非 strict 模式下有 finding 也是 rc=0（advisory），
+#    接为门禁会恒绿、零价值。--strict 才有「有 finding → 1」的阻断语义。
+echo "--> 门禁 8/11: 内容元数据（--strict，只卡新增缺失）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过内容元数据检查"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$META_LOG"
+  RC_META=SKIP
+else
+  if "$PY_BIN" scripts/check_content_metadata.py --strict > "$META_LOG" 2>&1; then
+    RC_META=0
+  else
+    RC_META=1
+    cat "$META_LOG"
+  fi
+fi
+log_result "内容元数据" "$RC_META"
+
+# ---------- 门禁 9: 交互回归（调用 scripts/check_interaction_regression.py）----------
+#
+# 背景（ADR-C92）：拦截会导致**运行时崩溃**的交互/导航缺陷（P0 级）。
+# 仅 P0 命中才 FAIL；P1 候选只报告不阻断（避免误报海啸淹没门禁）。
+#
+# ⚠️ 空 lib 扫描会假绿（2026-09-12 规格验证）：若 lib 下无 .dart 文件，
+#    脚本会 rc=0「什么都没扫到」——这不是「通过」，是「没检查」。故 wrapper
+#    先判 lib 下有 .dart，否则记 SKIP（fail-closed，绝不记 PASS）。
+echo "--> 门禁 9/11: 交互回归（仅 P0 阻断，P1 报告）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过交互回归扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$INTERACTION_LOG"
+  RC_INTERACTION=SKIP
+elif ! ls "$ROOT"/lib/**/*.dart >/dev/null 2>&1 && ! find "$ROOT/lib" -name '*.dart' -print -quit 2>/dev/null | grep -q .; then
+  echo "  [WARN] lib 下未找到 .dart 文件，跳过交互回归扫描（空扫会假绿）"
+  echo "SKIP: (NOT EXECUTED) no .dart under lib" > "$INTERACTION_LOG"
+  RC_INTERACTION=SKIP
+else
+  if "$PY_BIN" scripts/check_interaction_regression.py > "$INTERACTION_LOG" 2>&1; then
+    RC_INTERACTION=0
+  else
+    RC_INTERACTION=1
+    cat "$INTERACTION_LOG"
+  fi
+fi
+log_result "交互回归" "$RC_INTERACTION"
+
+# ---------- 门禁 10: 伪拆分形态（调用 scripts/check_split_shape.py）----------
+#
+# 背景（舰长质询 2026-09-12 / docs/audits/pseudo-split-legacy-inventory-2026-09-12.md）：
+# **R-019 的「文件 ≤300 行」与「禁止 part/extension 伪拆分」两条从来没有机器
+# 执行点**——tool/check_r019.py 只统计**函数**行数（limit=50），基线里没有
+# 任何文件行数字段。⇒ 伪拆分是**唯一一种七道门禁全绿也无法察觉**的劣化形态。
+# 本门禁补上这个执行点。
+#
+# 判据（三条，实测 S1=3 / S2=5 / S3=4）：
+#   S1 宿主>300 且家族内有 part>300 ⇒ 伪拆分（宿主没变小，还多造一个超限文件）
+#   S2 宿主>300（含「拆了没拆动」形态）
+#   S3 家族内任一 part>300
+#   A 类豁免（R-019:57-60）：skills_*.dart / skill_registry.dart /
+#     *_knowledge_base.dart / {syndrome,technique,training}_kb_content*.dart
+#     —— 纯常量知识库，part 与内容领域边界一致，不触发伪拆分审查。
+#
+# ⚠️ 基线止血模式（同门禁 5）：存量 12 条违规走基线祖父，只卡**新增**。
+#    否则本门禁一上线就红灯、阻塞所有提交，会被当噪音绕过。
+#    基线一旦生成不会自动变严 ⇒ **每清偿一条必须重生成基线**：
+#      python scripts/check_split_shape.py --json tool/split_shape_baseline.json
+#    **重生成时绝不能带 --baseline**（脚本已内置防护：同传 → exit 2）。
+#
+# 退出码语义（check_split_shape.py）：0 = 通过/无新增；1 = 有违规/新增；
+#    2 = 环境错误（lib 缺失 / 0 个 dart / --json 与 --baseline 同传）。
+echo "--> 门禁 10/11: 伪拆分形态（基线豁免，只卡新增）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过伪拆分扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$SPLIT_LOG"
+  RC_SPLIT=SKIP
+elif [ ! -f "$ROOT/tool/split_shape_baseline.json" ]; then
+  echo "  [WARN] 伪拆分基线缺失（tool/split_shape_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$SPLIT_LOG"
+  RC_SPLIT=SKIP
+else
+  if "$PY_BIN" scripts/check_split_shape.py \
+    --baseline tool/split_shape_baseline.json \
+    --expect-rule-count 3 > "$SPLIT_LOG" 2>&1; then
+    RC_SPLIT=0
+  else
+    RC_SPLIT=1
+    cat "$SPLIT_LOG"
+  fi
+fi
+log_result "伪拆分形态" "$RC_SPLIT"
+
 # ---------- 汇总报告 ----------
 #
 # 判定一律以**退出码**为准（2026-09-03 实证）：旧版对循环依赖用
@@ -292,7 +434,7 @@ if [ "$degraded" -gt 0 ]; then
 fi
 
 cat > "$REPORT" <<EOF
-# 七道门禁报告
+# 十一道门禁报告
 
 ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
@@ -306,6 +448,10 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | 安全/密钥扫描 | $(verdict "${RC_SECRETS:-SKIP}") |
 | R-019 函数行数（只卡新增） | $(verdict "${RC_R019:-SKIP}") |
 | 覆盖率检查 | $(verdict "${RC_COVERAGE:-SKIP}") |
+| Prompt 反模式（只卡新增） | $(verdict "${RC_PROMPT:-SKIP}") |
+| 内容元数据（--strict） | $(verdict "${RC_META:-SKIP}") |
+| 交互回归（仅 P0） | $(verdict "${RC_INTERACTION:-SKIP}") |
+| 伪拆分形态（只卡新增） | $(verdict "${RC_SPLIT:-SKIP}") |
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
@@ -317,6 +463,10 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 安全扫描: outputs/gate/security.txt
 - R-019 函数行数: outputs/gate/r019.txt
 - 覆盖率: outputs/gate/coverage.txt
+- Prompt 反模式: outputs/gate/prompt_lint.txt
+- 内容元数据: outputs/gate/content_metadata.txt
+- 交互回归: outputs/gate/interaction.txt
+- 伪拆分形态: outputs/gate/split_shape.txt
 EOF
 
 echo "=================================================="
@@ -328,5 +478,5 @@ echo "报告: $REPORT"
 echo "=================================================="
 
 # fail-closed：任一 FAIL 或任一 SKIP（未真正执行）都使退出码非 0。
-# 「全绿」= fail==0 且 degraded==0，此时才确信七道都真的跑过。
+# 「全绿」= fail==0 且 degraded==0，此时才确信十一道都真的跑过。
 [ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]

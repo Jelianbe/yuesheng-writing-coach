@@ -1,0 +1,126 @@
+{
+  "dir": "lib",
+  "limit": 300,
+  "fileCount": 320,
+  "familyCount": 10,
+  "ruleCount": 3,
+  "violations": [
+    {
+      "host": "widgets/bookshelf_page.dart",
+      "rule": "S2",
+      "hostLines": 892,
+      "partLines": 0,
+      "part": "",
+      "oversizedParts": {}
+    },
+    {
+      "host": "widgets/chat_page.dart",
+      "rule": "S1",
+      "hostLines": 431,
+      "partLines": 405,
+      "part": "widgets/chat_teaching.dart",
+      "oversizedParts": {
+        "widgets/chat_teaching.dart": 405
+      }
+    },
+    {
+      "host": "widgets/chat_page.dart",
+      "rule": "S2",
+      "hostLines": 431,
+      "partLines": 0,
+      "part": "",
+      "oversizedParts": {
+        "widgets/chat_teaching.dart": 405
+      }
+    },
+    {
+      "host": "widgets/chat_page.dart",
+      "rule": "S3",
+      "hostLines": 431,
+      "partLines": 405,
+      "part": "widgets/chat_teaching.dart",
+      "oversizedParts": {
+        "widgets/chat_teaching.dart": 405
+      }
+    },
+    {
+      "host": "widgets/growth_detail_page.dart",
+      "rule": "S1",
+      "hostLines": 803,
+      "partLines": 399,
+      "part": "widgets/growth_content.dart",
+      "oversizedParts": {
+        "widgets/growth_content.dart": 399
+      }
+    },
+    {
+      "host": "widgets/growth_detail_page.dart",
+      "rule": "S2",
+      "hostLines": 803,
+      "partLines": 0,
+      "part": "",
+      "oversizedParts": {
+        "widgets/growth_content.dart": 399
+      }
+    },
+    {
+      "host": "widgets/growth_detail_page.dart",
+      "rule": "S3",
+      "hostLines": 803,
+      "partLines": 399,
+      "part": "widgets/growth_content.dart",
+      "oversizedParts": {
+        "widgets/growth_content.dart": 399
+      }
+    },
+    {
+      "host": "widgets/manuscript_detail_page.dart",
+      "rule": "S1",
+      "hostLines": 1336,
+      "partLines": 462,
+      "part": "widgets/manuscript_detail_chapter.dart",
+      "oversizedParts": {
+        "widgets/manuscript_detail_chapter.dart": 462
+      }
+    },
+    {
+      "host": "widgets/manuscript_detail_page.dart",
+      "rule": "S2",
+      "hostLines": 1336,
+      "partLines": 0,
+      "part": "",
+      "oversizedParts": {
+        "widgets/manuscript_detail_chapter.dart": 462
+      }
+    },
+    {
+      "host": "widgets/manuscript_detail_page.dart",
+      "rule": "S3",
+      "hostLines": 1336,
+      "partLines": 462,
+      "part": "widgets/manuscript_detail_chapter.dart",
+      "oversizedParts": {
+        "widgets/manuscript_detail_chapter.dart": 462
+      }
+    },
+    {
+      "host": "widgets/writing_coach_panel.dart",
+      "rule": "S3",
+      "hostLines": 267,
+      "partLines": 664,
+      "part": "widgets/writing_coach_panel_teaching.dart",
+      "oversizedParts": {
+        "widgets/writing_coach_panel_teaching.dart": 664,
+        "widgets/writing_coach_panel_builders.dart": 338
+      }
+    },
+    {
+      "host": "widgets/writing_page.dart",
+      "rule": "S2",
+      "hostLines": 1187,
+      "partLines": 0,
+      "part": "",
+      "oversizedParts": {}
+    }
+  ]
+}
