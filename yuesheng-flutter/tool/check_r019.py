@@ -3,9 +3,16 @@
 
 背景
 ----
-R-019 规定**函数 ≤ 50 行**（硬上限，比文件 300 行更重要），但四道门禁
-（format / analyze / test / circular）**没有一道检查它** —— 这是 R-019 长期
-处于「已登记债务」状态却无人门禁的原因之一。本脚本补上这个测量能力。
+R-019 规定**函数 ≤ 50 行**（硬上限，比文件 300 行更重要）。
+
+【历史口径】本脚本诞生时，项目门禁尚为**四道**（format / analyze / test /
+circular），**没有一道检查 R-019** —— 这是 R-019 长期处于「已登记债务」状态却
+无人门禁的原因之一。本脚本正是为补上这个测量能力而写。
+
+【现状】口径归一后项目门禁已是**六道**（format / analyze / test / circular /
+secrets / **本脚本 R-019**），**本脚本自身即门禁 5**，由 `scripts/gate.sh` 以
+`--baseline tool/r019_baseline.json` 调用。因此上文「四道门禁无一检查 R-019」
+的问题**已闭合**，此处保留仅为记录沿革。
 
 注意：本脚本**不做任何拆分**。仓库历史上曾有 `tool/r019_split.py`（part 分片
 + 逐字节保真），但该做法已被 X-025-ARCH 定性为**伪拆分**并回退 13 个 commit，
@@ -30,6 +37,13 @@ R-019 规定**函数 ≤ 50 行**（硬上限，比文件 300 行更重要），
     python tool/check_r019.py --baseline tool/r019_baseline.json
 
 退出码：无超限 → 0；有超限 → 1（可接入 gate.sh）。
+        止血模式（--baseline）下**只卡新增**：仅当存在基线外新增项时返回 1，
+        存量豁免项不影响退出码。
+
+⚠️ `--json` 落盘一律**全量**（R-019 V4.14 的教训，对齐 check_circular.py）：
+   基线过滤只影响**终端展示与退出码**，绝不影响落盘内容。否则
+   `--baseline X --json X` 重生成基线时会写入过滤后结果，等于把全部存量
+   债务一笔勾销——这是「基线自己把自己清空」型假绿。
 
 基线文件 `tool/r019_baseline.json` 已入库——注意 `outputs/` 被 .gitignore
 （.gitignore:75），基线不能放那里，否则门禁在别人机器上取不到。
@@ -294,6 +308,13 @@ def main():
     # 但同一文件里可能有同名函数（如一个 .dart 内多个 Widget 的 build），
     # 所以按**计数**比较而非集合去重——首版用集合去重，264 条被并成 216 个 key，
     # 48 个同名函数互相顶掉，新增的同名函数会被误判为「存量」而漏报。
+    #
+    # ⚠️ 落盘/报告分离（R-019 V4.14 的教训，对齐 check_circular.py:165-172）：
+    #    `all_hits` 始终保存**全量**结果；基线过滤只产出 `report_hits` 供终端展示。
+    #    旧写法是 `all_hits = kept`（就地覆盖），于是 `--baseline X --json X`
+    #    重生成基线时写入的是**过滤后**结果——等于把全部存量债务一笔勾销。
+    #    这正是「假绿」的一种：基线自己把自己清空了。
+    report_hits = all_hits
     baseline_total = 0
     if args.baseline:
         with io.open(args.baseline, encoding='utf-8') as f:
@@ -318,10 +339,11 @@ def main():
                 continue
             kept.extend(
                 sorted(by_key[k], key=lambda r: -r['lines'])[:need])
-        all_hits = kept
+        report_hits = kept
 
-    all_hits.sort(key=lambda r: -r['lines'])
-    shown = all_hits[:args.top] if args.top else all_hits
+    # 终端展示用过滤后结果；`all_hits`（全量）仅用于落盘，绝不就地覆盖。
+    report_hits = sorted(report_hits, key=lambda r: -r['lines'])
+    shown = report_hits[:args.top] if args.top else report_hits
 
     mode = ('止血模式（基线 %s，存量 %d 个豁免，只报新增）'
             % (args.baseline, baseline_total)) if args.baseline else '全量模式'
@@ -332,11 +354,15 @@ def main():
         print('已排除生成文件 %d 个（--include-generated 可计入）' % gen_skipped)
     print('模式：%s' % mode)
     print('=' * 68)
-    if not all_hits:
-        print('无超限函数 ✓')
+    if not report_hits:
+        if args.baseline:
+            print('无**新增**超限函数 ✓（全量 %d 个均已在基线内豁免）'
+                  % len(all_hits))
+        else:
+            print('无超限函数 ✓')
     else:
         print('超 %d 行的函数：%d 个（按行数降序%s）'
-              % (args.limit, len(all_hits),
+              % (args.limit, len(report_hits),
                  '，显示前 %d' % args.top if args.top else ''))
         print('')
         print('%-8s %-6s %-40s %s' % ('行数', '起行', '函数', '文件'))
@@ -348,7 +374,7 @@ def main():
 
         # 按文件聚合
         by_file = {}
-        for r in all_hits:
+        for r in report_hits:
             by_file.setdefault(r['file'], []).append(r)
         print('')
         print('按文件聚合（超限函数数 ≥ 2 的）：')
@@ -359,14 +385,22 @@ def main():
                   % (f, len(rs), max(x['lines'] for x in rs)))
 
     if args.json:
+        # ⚠️ 落盘一律**全量**（R-019 V4.14 的教训）：report_hits 此时已被基线
+        # 过滤过，若落它，`--baseline X --json X` 重生成基线就等于把存量债务
+        # 一笔勾销。落 all_hits（未过滤的全量），并显式提示落的是全量。
         with io.open(args.json, 'w', encoding='utf-8') as f:
             f.write(json.dumps({
                 'dir': args.dir, 'limit': args.limit,
                 'fileCount': file_count, 'violations': all_hits,
             }, ensure_ascii=False, indent=2))
         print('\n已落盘：%s' % args.json)
+        print('  （--json 落的是全量结果 %d 条，非基线过滤后的 %d 条）'
+              % (len(all_hits), len(report_hits)))
 
-    return 1 if all_hits else 0
+    # 退出码语义（止血模式下只卡新增）：
+    #   全量模式 → 有任何超限即 1
+    #   止血模式 → 仅当存在**基线外新增**时 1；存量豁免不影响退出码
+    return 1 if report_hits else 0
 
 
 if __name__ == '__main__':

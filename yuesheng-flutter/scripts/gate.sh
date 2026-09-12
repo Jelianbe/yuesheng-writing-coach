@@ -14,7 +14,16 @@
 #         止血模式：以 tool/r019_baseline.json 为基线，存量豁免、只卡新增
 #
 # 用法:  bash scripts/gate.sh
-# 退出码: 任一门禁 FAIL 则非 0 (可接入 CI / 提交前自检)
+# 退出码: 任一门禁 FAIL **或** 任一门禁未真正执行 (SKIP/DEGRADED) 则非 0
+#
+# ⚠️ 失败关闭约定 (2026-09-12 实证，三脚本统一)：
+#    「无法检查 ≠ 通过」。当门禁因环境缺失（python 不可用、lib 不存在等）
+#    而**从未真正执行**时，绝不允许记为 PASS。三种此前互相矛盾的策略
+#    （check_circular.py return 2 / check_secrets.sh exit 0 / gate.sh 记 PASS）
+#    现统一为 fail-closed：一律非 0 退出 + 明确原因。
+#    本脚本中 python 缺失使门禁 3 / 5 跳过时，记 `SKIP`（独立于 PASS/FAIL），
+#    并在报告的**顶部**打出醒目的 `⚠️ DEGRADED` 警告，退出码非 0。
+#    这样「全绿」才真正等价于「六道都跑过且都通过」。
 # ============================================================
 set -u
 
@@ -35,13 +44,21 @@ R019_LOG="$OUT_DIR/r019.txt"
 
 pass=0
 fail=0
+degraded=0   # 因环境缺失而**未真正执行**的门禁数（fail-closed：计入退出码）
 
 emit() { printf '%s\n' "$1"; }
+# 记录一道门禁的结果。
+#   ok=0    → PASS
+#   ok=SKIP → SKIP（未真正执行）；不是 PASS，计入 degraded，使退出码非 0
+#   其他    → FAIL
 log_result() {
   local name="$1"; local ok="$2"
   if [ "$ok" = "0" ]; then
     emit "[PASS] $name"
     pass=$((pass + 1))
+  elif [ "$ok" = "SKIP" ]; then
+    emit "[SKIP] $name（未真正执行 → 计入 DEGRADED，退出码非 0）"
+    degraded=$((degraded + 1))
   else
     emit "[FAIL] $name"
     fail=$((fail + 1))
@@ -132,14 +149,11 @@ if [ -n "$PY_BIN" ]; then
   fi
 else
   echo "  [WARN] 未找到 python3 / python，跳过循环依赖扫描（建议本地装 Python 3.10+）"
-  echo "OK: (SKIPPED) python not available" > "$CIRCULAR_LOG"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$CIRCULAR_LOG"
   RC_CIRCULAR=SKIP
-  log_result "循环依赖扫描(跳过)" 0
 fi
-# 跳过分支（python 不可用）已单独记为 PASS，此处只在真正执行过时记录
-if [ "$RC_CIRCULAR" != "SKIP" ]; then
-  log_result "循环依赖扫描" "$RC_CIRCULAR"
-fi
+# 统一在分支外记录：真正执行过记其退出码，跳过则记 SKIP（fail-closed，非 PASS）
+log_result "循环依赖扫描" "$RC_CIRCULAR"
 
 # ---------- 门禁 4: 安全 / 密钥（调用独立脚本 scripts/check_secrets.sh）----------
 echo "--> 门禁 4/6: 安全/密钥扫描"
@@ -167,13 +181,11 @@ if [ -n "$PY_BIN" ] && [ -f "$ROOT/tool/r019_baseline.json" ]; then
   fi
 else
   echo "  [WARN] python 不可用或基线缺失（tool/r019_baseline.json），跳过 R-019 扫描"
-  echo "OK: (SKIPPED)" > "$R019_LOG"
+  echo "SKIP: (NOT EXECUTED)" > "$R019_LOG"
   RC_R019=SKIP
-  log_result "R-019 函数行数(跳过)" 0
 fi
-if [ "$RC_R019" != "SKIP" ]; then
-  log_result "R-019 函数行数" "$RC_R019"
-fi
+# 统一在分支外记录：跳过记 SKIP（fail-closed，非 PASS）
+log_result "R-019 函数行数" "$RC_R019"
 
 # ---------- 汇总报告 ----------
 #
@@ -190,10 +202,20 @@ verdict() {
   esac
 }
 
+# 顶部 DEGRADED 横幅：任一 SKIP 门禁都必须在报告最显眼处点名，
+# 防止「跳过」被埋在表格里、而汇总行仍写着「全绿」。
+DEGRADED_BANNER=""
+if [ "$degraded" -gt 0 ]; then
+  DEGRADED_BANNER="> ⚠️ **DEGRADED: ${degraded} 门未真正执行**（见下表 SKIP 项）——\
+报告**不可**视为全绿；请补齐环境后重跑。
+
+"
+fi
+
 cat > "$REPORT" <<EOF
 # 六道门禁报告
 
-- 时间: $(date '+%Y-%m-%d %H:%M:%S')
+${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
 
 | 门禁 | 结果 |
@@ -205,7 +227,7 @@ cat > "$REPORT" <<EOF
 | 安全/密钥扫描 | $(verdict "${RC_SECRETS:-SKIP}") |
 | R-019 函数行数（只卡新增） | $(verdict "${RC_R019:-SKIP}") |
 
-汇总: ${pass} 通过 / ${fail} 失败
+汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
 ## 详细日志
 - 格式: outputs/gate/format.txt
@@ -217,8 +239,13 @@ cat > "$REPORT" <<EOF
 EOF
 
 echo "=================================================="
-echo "汇总: $pass 通过 / $fail 失败"
+if [ "$degraded" -gt 0 ]; then
+  echo "⚠️  DEGRADED: ${degraded} 门未真正执行（SKIP）——不计入通过"
+fi
+echo "汇总: $pass 通过 / $fail 失败 / $degraded 未执行"
 echo "报告: $REPORT"
 echo "=================================================="
 
-[ "$fail" -eq 0 ]
+# fail-closed：任一 FAIL 或任一 SKIP（未真正执行）都使退出码非 0。
+# 「全绿」= fail==0 且 degraded==0，此时才确信六道都真的跑过。
+[ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]
