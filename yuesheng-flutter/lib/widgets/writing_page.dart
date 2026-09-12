@@ -10,6 +10,9 @@
 // 自动保存：
 //   - onChanged → updateContent + 立即 saveNow（批次 31：编辑后即时落库）
 //   - dispose 时若有未保存改动 → 强制 saveNow
+//
+// C92-6a（2026-09-12）：视图层提取为独立类（view/ 目录），本文件保留
+// State 骨架与组装。真拆 3 条 R-019 债务：build / _buildEditor / _buildAppBar。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:async';
@@ -38,14 +41,17 @@ import 'editing/focus_aware_editing_controller.dart';
 import 'editor_settings_sheet.dart';
 import '../config/editor_background_presets.dart';
 import 'outline_drawer.dart';
-import 'paragraph_format_formatter.dart';
 import 'punctuation_bar.dart';
 import 'quick_phrase_sheet.dart';
 import 'recycle_bin_sheet.dart';
 import 'search_replace_sheet.dart';
-import 'smart_punctuation_formatter.dart';
 import 'style_profile_sheet.dart';
 import 'version_time_machine_sheet.dart';
+import 'writing/view/writing_editor_view.dart';
+import 'writing/view/writing_page_app_bar.dart';
+import 'writing/view/writing_page_breadcrumb.dart';
+import 'writing/view/writing_page_chrome.dart';
+import 'writing/view/writing_status_views.dart';
 import 'writing_coach_panel.dart';
 import 'writing/goal_dialog.dart';
 import 'writing_menu_sheet.dart';
@@ -313,22 +319,6 @@ class _WritingPageState extends ConsumerState<WritingPage> {
     }
   }
 
-  /// 千位分隔符格式化（如 3256 → "3,256"）
-  String _formatNum(int n) {
-    return n.toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
-  }
-
-  /// 字数格式化：>=10000 → "1.2万字"，否则 → "3,256字"（千位分隔符）
-  String _formatWordCount(int count) {
-    if (count >= 10000) {
-      return '${(count / 10000).toStringAsFixed(1)}万字';
-    }
-    return '${_formatNum(count)}字';
-  }
-
   void _handleBack() {
     // 批次93-3：返回前发书架刷新信号（详情页/深链直接回书架时书架可感知）
     ref.read(bookshelfRefreshSignalProvider.notifier).state++;
@@ -510,55 +500,7 @@ class _WritingPageState extends ConsumerState<WritingPage> {
     final state = ref.watch(writingStoreProvider(widget.chapterId));
     // 捕获 store 引用，供 dispose 中使用
     _store = ref.read(writingStoreProvider(widget.chapterId).notifier);
-
-    // 监听状态变化以同步 controller
-    ref.listen<WritingState>(writingStoreProvider(widget.chapterId), (
-      previous,
-      next,
-    ) {
-      if (_controller.text.isEmpty && next.localContent.isNotEmpty) {
-        _syncEditorText(next.localContent);
-      }
-      // 批次60：保存失败 → SnackBar 温和提示（防刷屏标志，成功自动复位）
-      // 批次91-1：保存改由 scheduleSave 异步触发，失败检测移到状态监听处
-      if (previous?.saveError == null && next.saveError != null) {
-        if (!_saveErrorShown) {
-          _saveErrorShown = true;
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('刚才的内容没能保存成功，请稍后重试')));
-        }
-      } else if (next.saveError == null) {
-        _saveErrorShown = false;
-      }
-      // 批次 36：章节标题同步到标题输入框（仅非用户输入时；用户输入时
-      // state.chapter.title 同步为输入值 == controller.text，天然跳过）
-      final nextTitle = next.chapter?.title;
-      if (nextTitle != null && _titleController.text != nextTitle) {
-        _titleController.text = nextTitle;
-      }
-      // 批次96-9：行段聚焦开关状态同步到控制器（排版设置里切换 → 淡化渲染即时生效）
-      if (previous?.focusMode != next.focusMode) {
-        _controller.focusMode = next.focusMode;
-      }
-      // 批次96-11：跨章全文搜索定位——内容就绪后一次性定位到命中处
-      // （initialCursorOffset 来自路由 extra，搜索 sheet 点击跨章结果时携带）
-      if (widget.initialCursorOffset != null &&
-          !_searchCursorLocated &&
-          _controller.text.isNotEmpty) {
-        _searchCursorLocated = true;
-        _locateCursor(widget.initialCursorOffset!);
-      }
-      // 草稿恢复弹窗（仅一次）：打开章节检测到较新草稿 → 询问是否恢复
-      // 对齐 RN chapter-editor.tsx#L128-L133 Alert
-      if (!_draftDialogShown &&
-          next.hasDraft &&
-          !next.isLoading &&
-          next.chapter != null) {
-        _draftDialogShown = true;
-        _showDraftRestoreDialog(next);
-      }
-    });
+    _bindStoreListener();
 
     final showFab =
         !state.isLoading &&
@@ -573,119 +515,214 @@ class _WritingPageState extends ConsumerState<WritingPage> {
           ? AppColors.editorDarkSurface
           : AppColors.background,
       // 批次83：章节树抽屉（每次打开以新 key 重建 → 列表/标题保持最新）
-      drawer: ChapterTreeDrawer(
-        key: ValueKey('chapter-tree-$_treeOpenCount'),
-        currentChapterId: widget.chapterId,
-        manuscriptId: _resolvedManuscriptId,
-        onJumpToChapter: _handleJumpToChapter,
-        onCreateChapter: _handleCreateChapter,
-      ),
-      onDrawerChanged: (isOpened) {
-        if (!isOpened) return;
-        // 打开时重建抽屉 + 刷新章节 store（编辑器改标题后抽屉能读到最新）
-        setState(() => _treeOpenCount++);
-        final msId = _resolvedManuscriptId;
-        if (msId != null) {
-          ref.read(chapterStoreProvider(msId).notifier).loadChapters();
-        }
-      },
+      drawer: _buildChapterTreeDrawer(),
+      onDrawerChanged: _handleDrawerChanged,
       // 批次83：大纲边写边看（右侧抽屉；每次打开重建 + 失效缓存）
-      endDrawer: OutlineDrawer(
-        key: ValueKey('outline-$_outlineOpenCount'),
-        manuscriptId: _resolvedManuscriptId,
-        onClose: _handleCloseOutline,
-      ),
-      onEndDrawerChanged: (isOpened) {
-        if (!isOpened) return;
-        setState(() => _outlineOpenCount++);
-        final msId = _resolvedManuscriptId;
-        if (msId != null) ref.invalidate(outlineViewProvider(msId));
-      },
+      endDrawer: _buildOutlineDrawer(),
+      onEndDrawerChanged: _handleEndDrawerChanged,
       appBar: _buildAppBar(state),
       // 批次88-2：对话按钮从 Scaffold FAB 改为 body Stack 内可拖动浮层
       // （长按拖动换位 + 松手持久化；⋮ 菜单可隐藏/显示，隐藏后菜单找回）
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final area = constraints.biggest;
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: state.isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      )
-                    : state.error != null
-                    ? _buildErrorView(state)
-                    // 批次82 P0-④：面板不再以 bottomSheet 半屏覆盖正文；
-                    // 改为右侧可收起侧栏（Row 并排），正文永远可见可编辑
-                    : _buildEditorWithPanel(state),
-              ),
-              if (showFab)
-                Positioned(
-                  left: _fabOffset?.dx ?? (area.width - _fabSize - 16),
-                  top: _fabOffset?.dy ?? (area.height - _fabSize - 16),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onLongPressStart: (details) {
-                      _fabDragStart =
-                          _fabOffset ??
-                          Offset(
-                            area.width - _fabSize - 16,
-                            area.height - _fabSize - 16,
-                          );
-                      _fabDragStartGlobal = details.globalPosition;
-                    },
-                    onLongPressMoveUpdate: (details) {
-                      // 用全局位移差值：FAB 移动会带动 GestureDetector，
-                      // 局部坐标会漂移，全局坐标稳定
-                      setState(() {
-                        _fabOffset = Offset(
-                          (_fabDragStart.dx +
-                                  details.globalPosition.dx -
-                                  _fabDragStartGlobal.dx)
-                              .clamp(0.0, area.width - _fabSize),
-                          (_fabDragStart.dy +
-                                  details.globalPosition.dy -
-                                  _fabDragStartGlobal.dy)
-                              .clamp(0.0, area.height - _fabSize),
-                        );
-                      });
-                    },
-                    onLongPressEnd: (_) {
-                      final pos = _fabOffset;
-                      if (pos != null) {
-                        AppStateRepository(
-                          ref.read(appDatabaseProvider),
-                        ).setFabPosition(pos);
-                      }
-                    },
-                    child: FloatingActionButton(
-                      key: const Key('aiChatFab'),
-                      backgroundColor: AppColors.primary,
-                      // 点击 = 切换教练面板（与长按拖动互不冲突）
-                      onPressed: () {
-                        ref
-                            .read(
-                              writingStoreProvider(widget.chapterId).notifier,
-                            )
-                            .toggleAiPanel();
-                      },
-                      child: Icon(
-                        state.isAiPanelOpen
-                            ? Icons.close
-                            : Icons.chat_bubble_outline,
-                        color: AppColors.onPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
+      body: _buildBody(state, showFab),
     );
+  }
+
+  /// ref.listen 挂载（监听状态变化以同步 controller / 提示保存失败 / 定位光标）
+  void _bindStoreListener() {
+    ref.listen<WritingState>(writingStoreProvider(widget.chapterId), (
+      previous,
+      next,
+    ) {
+      _syncEditorFromState(next);
+      _handleSaveErrorTransition(previous, next);
+      _syncTitleFromState(next);
+      _syncFocusMode(previous, next);
+      _maybeLocateSearchCursor();
+      _maybeShowDraftRestore(next);
+    });
+  }
+
+  /// 章节内容就绪 → 同步 controller（仅当 controller 尚空）
+  void _syncEditorFromState(WritingState next) {
+    if (_controller.text.isEmpty && next.localContent.isNotEmpty) {
+      _syncEditorText(next.localContent);
+    }
+  }
+
+  /// 批次60/91-1：保存失败 → SnackBar 温和提示（防刷屏标志，成功自动复位）
+  void _handleSaveErrorTransition(WritingState? previous, WritingState next) {
+    if (previous?.saveError == null && next.saveError != null) {
+      if (!_saveErrorShown) {
+        _saveErrorShown = true;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('刚才的内容没能保存成功，请稍后重试')));
+      }
+    } else if (next.saveError == null) {
+      _saveErrorShown = false;
+    }
+  }
+
+  /// 批次 36：章节标题同步到标题输入框（仅非用户输入时；用户输入时
+  /// state.chapter.title 同步为输入值 == controller.text，天然跳过）
+  void _syncTitleFromState(WritingState next) {
+    final nextTitle = next.chapter?.title;
+    if (nextTitle != null && _titleController.text != nextTitle) {
+      _titleController.text = nextTitle;
+    }
+  }
+
+  /// 批次96-9：行段聚焦开关状态同步到控制器（排版设置里切换 → 淡化渲染即时生效）
+  void _syncFocusMode(WritingState? previous, WritingState next) {
+    if (previous?.focusMode != next.focusMode) {
+      _controller.focusMode = next.focusMode;
+    }
+  }
+
+  /// 批次96-11：跨章全文搜索定位——内容就绪后一次性定位到命中处
+  /// （initialCursorOffset 来自路由 extra，搜索 sheet 点击跨章结果时携带）
+  void _maybeLocateSearchCursor() {
+    if (widget.initialCursorOffset != null &&
+        !_searchCursorLocated &&
+        _controller.text.isNotEmpty) {
+      _searchCursorLocated = true;
+      _locateCursor(widget.initialCursorOffset!);
+    }
+  }
+
+  /// 草稿恢复弹窗（仅一次）：打开章节检测到较新草稿 → 询问是否恢复
+  /// 对齐 RN chapter-editor.tsx#L128-L133 Alert
+  void _maybeShowDraftRestore(WritingState next) {
+    if (!_draftDialogShown &&
+        next.hasDraft &&
+        !next.isLoading &&
+        next.chapter != null) {
+      _draftDialogShown = true;
+      _showDraftRestoreDialog(next);
+    }
+  }
+
+  /// 批次83：章节树抽屉（每次打开以新 key 重建 → 列表/标题保持最新）
+  Widget _buildChapterTreeDrawer() {
+    return ChapterTreeDrawer(
+      key: ValueKey('chapter-tree-$_treeOpenCount'),
+      currentChapterId: widget.chapterId,
+      manuscriptId: _resolvedManuscriptId,
+      onJumpToChapter: _handleJumpToChapter,
+      onCreateChapter: _handleCreateChapter,
+    );
+  }
+
+  void _handleDrawerChanged(bool isOpened) {
+    if (!isOpened) return;
+    // 打开时重建抽屉 + 刷新章节 store（编辑器改标题后抽屉能读到最新）
+    setState(() => _treeOpenCount++);
+    final msId = _resolvedManuscriptId;
+    if (msId != null) {
+      ref.read(chapterStoreProvider(msId).notifier).loadChapters();
+    }
+  }
+
+  /// 批次83：大纲边写边看（右侧抽屉；每次打开重建 + 失效缓存）
+  Widget _buildOutlineDrawer() {
+    return OutlineDrawer(
+      key: ValueKey('outline-$_outlineOpenCount'),
+      manuscriptId: _resolvedManuscriptId,
+      onClose: _handleCloseOutline,
+    );
+  }
+
+  void _handleEndDrawerChanged(bool isOpened) {
+    if (!isOpened) return;
+    setState(() => _outlineOpenCount++);
+    final msId = _resolvedManuscriptId;
+    if (msId != null) ref.invalidate(outlineViewProvider(msId));
+  }
+
+  /// 正文区（三态：加载中 / 失败 / 编辑器+面板），对话按钮浮层叠加其上
+  Widget _buildBody(WritingState state, bool showFab) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final area = constraints.biggest;
+        return Stack(
+          children: [
+            Positioned.fill(child: _buildMainContent(state)),
+            if (showFab) _buildDraggableFab(area, state),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildMainContent(WritingState state) {
+    if (state.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+    if (state.error != null) {
+      return WritingErrorView(
+        message: state.error!,
+        onRetry: () {
+          ref
+              .read(writingStoreProvider(widget.chapterId).notifier)
+              .loadChapter();
+        },
+      );
+    }
+    // 批次82 P0-④：面板不再以 bottomSheet 半屏覆盖正文；
+    // 改为右侧可收起侧栏（Row 并排），正文永远可见可编辑
+    return _buildEditorWithPanel(state);
+  }
+
+  /// 批次88-2：对话按钮浮层（长按拖动 + 点击开合面板）
+  Widget _buildDraggableFab(Size area, WritingState state) {
+    return WritingDraggableFab(
+      left: _fabOffset?.dx ?? (area.width - _fabSize - 16),
+      top: _fabOffset?.dy ?? (area.height - _fabSize - 16),
+      isPanelOpen: state.isAiPanelOpen,
+      onDragStart: (globalPosition) =>
+          _handleFabDragStart(globalPosition, area),
+      onDragUpdate: (globalPosition) =>
+          _handleFabDragUpdate(globalPosition, area),
+      onDragEnd: _handleFabDragEnd,
+      onPressed: _toggleAiPanel,
+    );
+  }
+
+  void _handleFabDragStart(Offset globalPosition, Size area) {
+    _fabDragStart =
+        _fabOffset ??
+        Offset(area.width - _fabSize - 16, area.height - _fabSize - 16);
+    _fabDragStartGlobal = globalPosition;
+  }
+
+  void _handleFabDragUpdate(Offset globalPosition, Size area) {
+    // 用全局位移差值：FAB 移动会带动 GestureDetector，
+    // 局部坐标会漂移，全局坐标稳定
+    setState(() {
+      _fabOffset = Offset(
+        (_fabDragStart.dx + globalPosition.dx - _fabDragStartGlobal.dx).clamp(
+          0.0,
+          area.width - _fabSize,
+        ),
+        (_fabDragStart.dy + globalPosition.dy - _fabDragStartGlobal.dy).clamp(
+          0.0,
+          area.height - _fabSize,
+        ),
+      );
+    });
+  }
+
+  void _handleFabDragEnd() {
+    final pos = _fabOffset;
+    if (pos != null) {
+      AppStateRepository(ref.read(appDatabaseProvider)).setFabPosition(pos);
+    }
+  }
+
+  void _toggleAiPanel() {
+    ref.read(writingStoreProvider(widget.chapterId).notifier).toggleAiPanel();
   }
 
   /// 批次82 P0-④：正文 + 右侧可收起教练侧栏（并排，正文不被覆盖）
@@ -748,397 +785,134 @@ class _WritingPageState extends ConsumerState<WritingPage> {
     _dirty = true;
   }
 
+  /// 底部标点栏点击：按当前选区插入字符（批次91-4：无效选区防御）
+  void _handlePunctuationTap(String char) {
+    final text = _controller.text;
+    final sel = _controller.selection;
+    // 批次91-4：无效选区防御（ed-p2-3）——无效/空选区时在末尾插入，
+    // 避免 replaceRange(-1, -1) 触发 RangeError
+    final start = sel.isValid ? sel.start : text.length;
+    final end = sel.isValid ? sel.end : start;
+    final newText = text.replaceRange(start, end, char);
+    _controller.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + char.length),
+    );
+    _onContentChanged(newText);
+  }
+
+  /// 编辑器主体（视图层独立类：离线横幅 / 标题 / 正文 / 划词菜单 / 保存状态条 / 标点栏）
+  Widget _buildEditor(WritingState state) {
+    return WritingEditorView(
+      state: state,
+      titleController: _titleController,
+      contentController: _controller,
+      focusNode: _focusNode,
+      editorStackKey: _editorStackKey,
+      punctBarIds: _punctBarIds,
+      punctCustomItems: _punctCustomItems,
+      showSelectionMenu: _showSelectionMenu,
+      selectionMenuPos: _selectionMenuPos,
+      onTitleChanged: _onTitleChanged,
+      onContentChanged: _onContentChanged,
+      onDiagnoseSelection: _handleDiagnoseSelection,
+      onUndo: _handleUndo,
+      onRedo: _handleRedo,
+      onPunctuationTap: _handlePunctuationTap,
+    );
+  }
+
+  /// AppBar（视图层独立类：返回 / 面包屑 / 字数指示 / 一键排版 / ⋮ 菜单）
   PreferredSizeWidget _buildAppBar(WritingState state) {
-    // 批次 X-037-P0-1 C1：暗夜色走 AppColors.editorDark* 令牌（消除 3 处硬编码 + muted 对比度 2.85→4.56 AA）
+    // 批次 X-037-P0-1 C1：暗夜色走 AppColors.editorDark* 令牌
     final darkUi = isDarkEditorPreset(state.editorBackground);
-    final barBg = darkUi ? AppColors.editorDarkSurface : AppColors.background;
     final fg = darkUi ? AppColors.editorDarkText : AppColors.textPrimary;
     final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textSecondary;
-    return AppBar(
-      backgroundColor: barBg,
-      elevation: 0,
-      toolbarHeight: 48,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: fg),
-        onPressed: _handleBack,
+    return WritingPageAppBar(
+      darkUi: darkUi,
+      foregroundColor: fg,
+      goalWords: state.goalWords,
+      breadcrumb: WritingPageBreadcrumb(
+        title: state.chapter?.title ?? widget.chapterTitle,
+        volumeId: state.chapter?.volumeId,
+        manuscriptId: _resolvedManuscriptId,
+        color: fg,
       ),
-      // 批次95-4：写作页面包屑（卷名·章名，笔落面包屑；标题大区块仍在正文上方）
-      title: _buildBreadcrumb(state, fg),
-      // 批次88-1：标题移出 AppBar，改为正文上方独立大号标题行（_buildEditor）
-      bottom: _buildGoalProgressBar(state, darkUi: darkUi),
-      actions: [
-        // 批次96-10：撤销/重做入口收敛——AppBar 不再放撤销/重做，
-        // 标点栏最前两位常驻兜底（批次91-3，操作项不参与 visibleIds 配置，永不可隐藏）
-        // 批次82：字数显示 + 写作目标（点击设置目标）
-        _buildWordCountIndicator(state, mutedColor: muted),
-        // 批次96-8：一键排版（原「记灵感」位置，参考百灵布局；按排版开关批量应用段落格式）
-        IconButton(
-          icon: Icon(Icons.format_align_left, size: 20, color: fg),
-          tooltip: '一键排版',
-          onPressed: _handleFormatChapter,
-        ),
-        IconButton(
-          icon: Icon(Icons.more_vert, color: fg),
-          onPressed: () async {
-            // E3：移除「开发中」占位菜单项，菜单只保留真实功能（保存状态 + 打开教练面板）
-            // 批次79 B：菜单「诊断本章」改名「打开教练面板」——原行为仅展开面板不诊断，
-            // 真正整章诊断在面板内同名按钮，改名如实反映行为
-            // 批次96-7：拖拽调整篇幅——打开前读取用户记忆的高度占比，松手后落库
-            final menuRepo = AppStateRepository(ref.read(appDatabaseProvider));
-            final menuHeight = await menuRepo.getEditorMenuHeight();
-            if (!mounted) return;
-            WritingMenuSheet.show(
-              context,
-              lastSavedAt: state.lastSavedAt,
-              initialHeight: menuHeight,
-              onHeightChanged: (h) => menuRepo.setEditorMenuHeight(h),
-              onDiagnose: () {
-                ref
-                    .read(writingStoreProvider(widget.chapterId).notifier)
-                    .toggleAiPanel();
-              },
-              // 批次83：章节树抽屉入口（卷-章列表 + 快速跳转 + 新建章）
-              onOpenChapterTree: _handleOpenChapterTree,
-              // 批次83：大纲边写边看入口（右侧抽屉）
-              onOpenOutline: _handleOpenOutline,
-              // C78 批次3：角色页入口（独立路由页）
-              onOpenCharacters: _handleOpenCharacters,
-              // 批次96-11：全文搜索入口（整本作品章节搜索 + 跳转定位）
-              onOpenFullTextSearch: _handleOpenFullTextSearch,
-              // 批次84-2：全文查找替换入口
-              onOpenFindReplace: _handleOpenFindReplace,
-              // 批次86-1：回收板入口（删除/剪切长文本找回）
-              onOpenRecycleBin: _handleOpenRecycleBin,
-              // 批次85-3：快捷短语入口（常用语管理 + 光标插入）
-              onOpenQuickPhrases: _handleOpenQuickPhrases,
-              // 批次85-4：当前文风展示入口（风格画像五维）
-              onOpenStyleProfile: _handleOpenStyleProfile,
-              // 批次85-5：写作统计入口（近 14 天写作曲线）
-              onOpenWritingStats: _handleOpenWritingStats,
-              // 批次96-9：三个开关（行段聚焦/智能标点/对话按钮）已移入排版设置，
-              // 菜单不再携带开关参数
-              // 批次82：排版设置入口（字号/行距/背景 + 三开关，用户级持久化）
-              onOpenSettings: () {
-                EditorSettingsSheet.show(
-                  context,
-                  chapterId: widget.chapterId,
-                  // 批次88-2：对话按钮位置恢复入口
-                  onResetFabPosition: _resetFabPosition,
-                  // 批次88-4：段落格式批量应用（按开关状态）
-                  onApplyParagraphFormat: _handleApplyParagraphFormat,
-                );
-              },
-              // 批次82：版本时光机入口（每 200 字快照，查看/恢复）
-              // 批次84-3：传入当前内容 → 详情差异对比基准
-              onOpenVersions: () {
-                VersionTimeMachineSheet.show(
-                  context,
-                  chapterId: widget.chapterId,
-                  currentContent: _controller.text,
-                  onRestore: _handleRestoreVersion,
-                );
-              },
-            );
-          },
-        ),
-      ],
+      progressBar: WritingGoalProgressBar(
+        goalWords: state.goalWords,
+        wordCount: state.wordCount,
+        darkUi: darkUi,
+      ),
+      wordCount: WritingWordCountIndicator(
+        goalWords: state.goalWords,
+        wordCount: state.wordCount,
+        mutedColor: muted,
+        onTap: _showGoalDialog,
+      ),
+      onBack: _handleBack,
+      onFormatChapter: _handleFormatChapter,
+      onOpenMenu: () => _showWritingMenu(state),
     );
   }
 
-  /// 批次95-4：写作页面包屑（「卷名 · 章名」；未分卷/加载中/无卷时仅章名）
-  Widget _buildBreadcrumb(WritingState state, Color fg) {
-    final chapter = state.chapter;
-    final chapterTitle = (chapter?.title ?? widget.chapterTitle ?? '').trim();
-    final fallback = chapterTitle.isEmpty ? '未命名章节' : chapterTitle;
-    final volumeId = chapter?.volumeId;
-    final msId = _resolvedManuscriptId;
-    if (volumeId == null || msId == null) {
-      return Text(
-        fallback,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-        overflow: TextOverflow.ellipsis,
-      );
-    }
-    final volumes = ref.watch(volumeListProvider(msId));
-    return volumes.when(
-      data: (list) {
-        String? volName;
-        for (final v in list) {
-          if (v.id == volumeId) {
-            volName = v.title;
-            break;
-          }
-        }
-        final text = (volName?.trim().isNotEmpty == true)
-            ? '$volName · $fallback'
-            : fallback;
-        return Text(
-          text,
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            color: fg,
-          ),
-          overflow: TextOverflow.ellipsis,
-        );
-      },
-      loading: () => Text(
-        fallback,
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg),
-        overflow: TextOverflow.ellipsis,
-      ),
-      error: (_, _) => Text(
-        fallback,
-        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg),
-        overflow: TextOverflow.ellipsis,
-      ),
+  /// ⋮ 菜单：读取用户记忆的篇幅占比 → 打开 WritingMenuSheet（各入口回调分发）
+  Future<void> _showWritingMenu(WritingState state) async {
+    // E3：移除「开发中」占位菜单项，菜单只保留真实功能（保存状态 + 打开教练面板）
+    // 批次79 B：「诊断本章」改名「打开教练面板」——原行为仅展开面板不诊断
+    // 批次96-7：拖拽调整篇幅——打开前读取用户记忆的高度占比，松手后落库
+    final menuRepo = AppStateRepository(ref.read(appDatabaseProvider));
+    final menuHeight = await menuRepo.getEditorMenuHeight();
+    if (!mounted) return;
+    WritingMenuSheet.show(
+      context,
+      lastSavedAt: state.lastSavedAt,
+      initialHeight: menuHeight,
+      onHeightChanged: (h) => menuRepo.setEditorMenuHeight(h),
+      onDiagnose: _toggleAiPanel,
+      // 批次83：章节树抽屉入口（卷-章列表 + 快速跳转 + 新建章）
+      onOpenChapterTree: _handleOpenChapterTree,
+      // 批次83：大纲边写边看入口（右侧抽屉）
+      onOpenOutline: _handleOpenOutline,
+      // C78 批次3：角色页入口（独立路由页）
+      onOpenCharacters: _handleOpenCharacters,
+      // 批次96-11：全文搜索入口（整本作品章节搜索 + 跳转定位）
+      onOpenFullTextSearch: _handleOpenFullTextSearch,
+      // 批次84-2：全文查找替换入口
+      onOpenFindReplace: _handleOpenFindReplace,
+      // 批次86-1：回收板入口（删除/剪切长文本找回）
+      onOpenRecycleBin: _handleOpenRecycleBin,
+      // 批次85-3：快捷短语入口（常用语管理 + 光标插入）
+      onOpenQuickPhrases: _handleOpenQuickPhrases,
+      // 批次85-4：当前文风展示入口（风格画像五维）
+      onOpenStyleProfile: _handleOpenStyleProfile,
+      // 批次85-5：写作统计入口（近 14 天写作曲线）
+      onOpenWritingStats: _handleOpenWritingStats,
+      // 批次96-9：三个开关（行段聚焦/智能标点/对话按钮）已移入排版设置
+      onOpenSettings: _showEditorSettings,
+      onOpenVersions: _showVersionTimeMachine,
     );
   }
 
-  /// 批次82 P0-④：划词浮动菜单项（icon + 文字，点击执行动作）
-  Widget _buildSelectionMenuItem({
-    required String label,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        // X-039-Batch1：12→md / 8→sm
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: AppColors.textPrimary),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
+  /// 批次82：排版设置入口（字号/行距/背景 + 三开关，用户级持久化）
+  void _showEditorSettings() {
+    EditorSettingsSheet.show(
+      context,
+      chapterId: widget.chapterId,
+      // 批次88-2：对话按钮位置恢复入口
+      onResetFabPosition: _resetFabPosition,
+      // 批次88-4：段落格式批量应用（按开关状态）
+      onApplyParagraphFormat: _handleApplyParagraphFormat,
     );
   }
 
-  Widget _buildErrorView(WritingState state) {
-    return Center(
-      child: Padding(
-        // X-039-Batch1：32→xxl
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-            const SizedBox(height: 16),
-            Text(
-              state.error!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () {
-                ref
-                    .read(writingStoreProvider(widget.chapterId).notifier)
-                    .loadChapter();
-              },
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-              child: const Text('重试'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEditor(WritingState state) {
-    // 批次82 P0-④：面板改为右侧侧栏，正文不被覆盖 → 标点栏不再随面板隐藏
-    // 批次90：标题/正文完全独立（用户参考图要求：标题独立大区块 + 正文分开）
-    final titleColor = editorTextColorFor(state.editorBackground);
-    final dividerColor = (titleColor == AppColors.textPrimary)
-        ? AppColors.divider
-        : AppColors.textTertiary.withValues(alpha: 0.25);
-
-    return Column(
-      children: [
-        _buildOfflineBanner(state),
-        Expanded(
-          // 编辑器整体容器：背景色铺满
-          child: Container(
-            key: const Key('editorContainer'),
-            color: editorBackgroundColorFor(state.editorBackground),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ────────── 标题独立大块（批次90：大字号、独占空间、可聚焦光标）──────────
-                Padding(
-                  // X-039-Batch1：20→section / 28（非标准= section+sm / 16→lg）— 28 为标题专属垂直大间距，保留字面（无法映射），后续如需令牌化单独补 largeV=28
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.section,
-                    AppSpacing.section + AppSpacing.sm,
-                    AppSpacing.section,
-                    AppSpacing.lg,
-                  ),
-                  child: TextField(
-                    key: const Key('chapterTitleField'),
-                    controller: _titleController,
-                    // 输入即保存（对齐 RN handleTitleChange）
-                    style: TextStyle(
-                      fontSize: 28,
-                      height: 1.25,
-                      color: titleColor,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.4,
-                    ),
-                    decoration: InputDecoration.collapsed(
-                      hintText: '未命名章节',
-                      hintStyle: TextStyle(
-                        fontSize: 28,
-                        height: 1.25,
-                        color: AppColors.textTertiary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    textInputAction: TextInputAction.next,
-                    // 批次95-3：键盘「下一项」→ 聚焦正文（标配）
-                    onSubmitted: (_) => _focusNode.requestFocus(),
-                    maxLines: 1,
-                    onChanged: _onTitleChanged,
-                  ),
-                ),
-                // 标题/正文分隔线（竹青细描边）
-                Padding(
-                  // X-039-Batch1：20→section
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.section,
-                  ),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.6,
-                    color: dividerColor,
-                  ),
-                ),
-                // ────────── 正文独立大块 ──────────
-                Expanded(
-                  child: Padding(
-                    // X-039-Batch1：20→section / 16→lg
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.section,
-                      AppSpacing.lg,
-                      AppSpacing.section,
-                      AppSpacing.lg,
-                    ),
-                    child: Stack(
-                      key: _editorStackKey, // 批次95-1：划词菜单位置反查用
-                      children: [
-                        TextField(
-                          key: const Key('chapterContentField'),
-                          controller: _controller,
-                          focusNode: _focusNode,
-                          maxLines: null,
-                          // 批次85-6：智能标点（左配对符自动补右符 + 右符前输入自动跳过）
-                          // 批次88-4：段落格式（回车自动补缩进 / 段间空行，随排版设置开关）
-                          inputFormatters: [
-                            if (state.smartPunctOn)
-                              const SmartPunctuationFormatter(),
-                            ParagraphFormatFormatter(
-                              indentOn: state.indentParagraph,
-                              blankLineOn: state.blankLineBetween,
-                            ),
-                          ],
-                          style: TextStyle(
-                            fontSize: state.fontSize,
-                            height: state.lineSpacing,
-                            color: titleColor,
-                          ),
-                          decoration: InputDecoration.collapsed(
-                            hintText: '请输入正文内容',
-                            hintStyle: TextStyle(
-                              color: AppColors.textTertiary,
-                              fontSize: state.fontSize,
-                              height: state.lineSpacing,
-                            ),
-                            border: InputBorder.none,
-                          ),
-                          onChanged: _onContentChanged,
-                        ),
-                        // B3 划词诊断：浮动菜单（批次82 P0-④ 扩展为 诊断/改写/续写 三动作）
-                        // 批次95-1：菜单跟随选区（RenderEditable 定位 + 屏幕外翻转）
-                        if (_showSelectionMenu &&
-                            _selectedText.isNotEmpty &&
-                            _selectionMenuPos != null)
-                          Positioned(
-                            left: _selectionMenuPos!.dx,
-                            top: _selectionMenuPos!.dy,
-                            child: Material(
-                              color: AppColors.surfaceWhite,
-                              elevation: 2,
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _buildSelectionMenuItem(
-                                    label: '诊断这段文字',
-                                    icon: Icons.search,
-                                    onTap: _handleDiagnoseSelection,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        _buildSaveStatusBar(state),
-        PunctuationBar(
-          visibleIds: _punctBarIds,
-          // 批次88-5：自定义标点项
-          customItems: _punctCustomItems,
-          // 批次91-3：标点栏最前两位常驻撤销/重做（与 AppBar 按钮同源）
-          onUndo: _handleUndo,
-          onRedo: _handleRedo,
-          // 批次 X-037-P0-1 C1/H4：标点栏暗夜联动走 AppColors 令牌（消除 3 处硬编码；actionColor 用 editorDarkMuted 4.56:1 达 AA）
-          backgroundColor: isDarkEditorPreset(state.editorBackground)
-              ? AppColors.editorDarkPanel
-              : null,
-          itemColor: isDarkEditorPreset(state.editorBackground)
-              ? AppColors.editorDarkText
-              : null,
-          actionColor: isDarkEditorPreset(state.editorBackground)
-              ? AppColors.editorDarkMuted
-              : null,
-          onTap: (char) {
-            final text = _controller.text;
-            final sel = _controller.selection;
-            // 批次91-4：无效选区防御（ed-p2-3）——无效/空选区时在末尾插入，
-            // 避免 replaceRange(-1, -1) 触发 RangeError
-            final start = sel.isValid ? sel.start : text.length;
-            final end = sel.isValid ? sel.end : start;
-            final newText = text.replaceRange(start, end, char);
-            _controller.value = TextEditingValue(
-              text: newText,
-              selection: TextSelection.collapsed(offset: start + char.length),
-            );
-            _onContentChanged(newText);
-          },
-        ),
-      ],
+  /// 批次82：版本时光机入口（每 200 字快照，查看/恢复）
+  /// 批次84-3：传入当前内容 → 详情差异对比基准
+  void _showVersionTimeMachine() {
+    VersionTimeMachineSheet.show(
+      context,
+      chapterId: widget.chapterId,
+      currentContent: _controller.text,
+      onRestore: _handleRestoreVersion,
     );
   }
 
@@ -1153,11 +927,7 @@ class _WritingPageState extends ConsumerState<WritingPage> {
       chapterTitle: state.chapter?.title ?? widget.chapterTitle ?? '',
       // B3 划词诊断：注入选中文本（面板打开后自动触发选段诊断）
       pendingDiagnoseText: _pendingDiagnoseText,
-      onClose: () {
-        ref
-            .read(writingStoreProvider(widget.chapterId).notifier)
-            .toggleAiPanel();
-      },
+      onClose: _toggleAiPanel,
       onAdopt: (suggestion) {
         // 批次5（5.1）：采纳动作收敛单一 service（suggestion_adoption_service）
         adoptSuggestionToChapter(
@@ -1183,5 +953,3 @@ class _WritingPageState extends ConsumerState<WritingPage> {
     );
   }
 }
-
-/// 批次82：写作目标设置对话框

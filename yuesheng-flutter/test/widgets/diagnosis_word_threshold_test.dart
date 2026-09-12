@@ -53,6 +53,13 @@ const List<String> kThresholdConstants = [
 ///   diagnosisSelectionWordThreshold : writing_coach_panel_teaching(2)
 ///                                     + writing_page_selection_ai(2) = 4
 ///   quickObservationWordThreshold   : writing_coach_panel_teaching(2) = 2
+///
+/// ⚠️ 搬迁约束（伪拆分清偿期间，2026-09-12）：上述文件名**仅作当前定位参考**。
+///   `writing_page` 家族正在真分解（part/extension → 独立类），文件会被搬迁、
+///   改名。搬迁时**必须把同一文件的引用收敛到同一个新文件**——例如
+///   `writing_page_selection_ai` 的 `diagnosisSelectionWordThreshold` 那 2 处，
+///   须落进同一个新类文件。否则引用被拆散到 N 个文件，下面的「文件数基准」
+///   会变化而误报；引用**总数**本身不受搬迁影响。
 const Map<String, int> kExpectedTotalRefs = {
   'UILimits.diagnosisWordThreshold': 6,
   'UILimits.diagnosisSelectionWordThreshold': 4,
@@ -62,6 +69,8 @@ const Map<String, int> kExpectedTotalRefs = {
 /// 自适应发现的「门槛文件」数量基准。
 ///
 /// 数量变化说明门槛点新增/删除，需人工确认后同步此值（并核对 ② 的总量守恒）。
+/// ⚠️ 搬迁期间：把某文件的引用**拆散到多个文件**同样会改变此值——应优先收敛
+///   而非改基准（改基准会掩盖「引用被无意义拆散」这一事实）。
 const int kExpectedThresholdFileCount = 4;
 
 /// 必须存在的插值文案片段（全 lib 范围搜索，防文案脱钩返祖为字面量）。

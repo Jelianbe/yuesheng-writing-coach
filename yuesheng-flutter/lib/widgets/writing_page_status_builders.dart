@@ -1,10 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// writing_page 的 part 文件：状态/指示器 builders + 草稿恢复对话框
-// 覆盖批次60/82/85-1/94-4 的保存状态条、离线横幅、写作目标（对话框+
-// 进度条+字数指示器+完成度徽章）与批次草稿恢复弹窗。
-// 以私有 extension on _WritingPageState 形式提供，直接访问宿主私有
-// 成员（ref / context / widget / _syncEditorText 等），行为与原内联
-// 实现完全一致，仅做物理拆分。
+// writing_page 的 part 文件：状态对话框（草稿恢复 / 写作目标设置）
+//
+// C92-6a（2026-09-12）伪拆分清偿：原文件内的「状态条 / 指示器 / 目标进度条 /
+// 完成度徽标 / 离线横幅」已提取为**独立视图类**（view/writing_status_views.dart，
+// 非 part）；本文件现仅保留两个对话框逻辑（弹窗需要宿主 store 与 context，
+// 属 State 职责，6b 将转入独立控制器）。
 // ─────────────────────────────────────────────────────────────
 // ignore_for_file: invalid_use_of_protected_member
 part of 'writing_page.dart';
@@ -53,90 +53,6 @@ extension _WritingPageStatusBuilders on _WritingPageState {
     });
   }
 
-  /// 离线横幅：断网时提示内容自动保存为本地草稿
-  /// 对齐 RN chapter-editor.tsx offlineBar
-  Widget _buildOfflineBanner(WritingState state) {
-    if (!state.isOffline) return const SizedBox.shrink();
-    return Container(
-      width: double.infinity,
-      color: AppColors.warningBg,
-      padding:
-          // X-039-Batch1：16→lg / 10→smx
-          const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.smx,
-          ),
-      child: const Row(
-        children: [
-          Icon(Icons.cloud_off, size: 16, color: AppColors.warning),
-          SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '当前离线，内容自动保存为本地草稿，恢复网络后将同步',
-              style: TextStyle(fontSize: 12, color: AppColors.warning),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 批次60：保存状态条——编辑器底部轻量指示「保存中… / 已保存 HH:MM / 保存失败」
-  /// 让用户直观确认内容已落库（数据安全感），失败时给出可见但温和的提示
-  /// 批次 X-037-P0-1 H2/C1：暗夜保存状态条联动走 AppColors.editorDark* 令牌（消除硬编码；muted 用 editorDarkMuted 4.56:1 达 AA）
-  Widget _buildSaveStatusBar(WritingState state) {
-    final darkUi = isDarkEditorPreset(state.editorBackground);
-    final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textTertiary;
-    final barBg = darkUi ? AppColors.editorDarkPanel : AppColors.background;
-    final Widget content;
-    if (state.isSaving) {
-      content = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 10,
-            height: 10,
-            child: CircularProgressIndicator(strokeWidth: 1.5, color: muted),
-          ),
-          const SizedBox(width: 6),
-          Text('保存中…', style: TextStyle(fontSize: 11, color: muted)),
-        ],
-      );
-    } else if (state.saveError != null) {
-      // 入档批次：连续失败 >= 3 暂停自动保存时给持续可见提示
-      content = Text(
-        state.autosavePaused ? '自动保存已暂停，请手动保存' : '保存失败，请稍后重试',
-        style: const TextStyle(fontSize: 11, color: AppColors.warning),
-      );
-    } else if (state.lastSavedAt != null) {
-      content = Text(
-        '已保存 ${_formatTime(state.lastSavedAt!)}',
-        style: TextStyle(fontSize: 11, color: muted),
-      );
-    } else {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      width: double.infinity,
-      color: barBg,
-      // X-039-Batch1：16→lg / 2→xxs / 4→xs
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.xxs,
-        AppSpacing.lg,
-        AppSpacing.xs,
-      ),
-      child: Align(alignment: Alignment.centerRight, child: content),
-    );
-  }
-
-  /// HH:mm 格式化（保存状态条用）
-  String _formatTime(DateTime t) {
-    final h = t.hour.toString().padLeft(2, '0');
-    final m = t.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
-
   /// 批次82：写作目标设置对话框（AppBar 字数区点击弹出）
   /// 输入目标字数（0 或留空 = 不设目标；已有目标时可一键清除）
   Future<void> _showGoalDialog() async {
@@ -150,116 +66,5 @@ extension _WritingPageStatusBuilders on _WritingPageState {
           .read(writingStoreProvider(widget.chapterId).notifier)
           .setGoalWords(result);
     }
-  }
-
-  /// 批次82：AppBar 底部 2dp 写作目标进度条（未设目标时不占位）
-  PreferredSizeWidget _buildGoalProgressBar(
-    WritingState state, {
-    bool darkUi = false,
-  }) {
-    final goal = state.goalWords;
-    if (goal <= 0) {
-      return const PreferredSize(
-        preferredSize: Size.zero,
-        child: SizedBox.shrink(),
-      );
-    }
-    final value = (state.wordCount / goal).clamp(0.0, 1.0).toDouble();
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(2),
-      child: LinearProgressIndicator(
-        value: value,
-        minHeight: 2,
-        // 批次 X-037-P0-1 H2：进度条暗夜底走 editorDarkDeepMuted 令牌（消除 0xFF3A3F45 硬编码）
-        backgroundColor: darkUi
-            ? AppColors.editorDarkDeepMuted
-            : AppColors.placeholder,
-        valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-      ),
-    );
-  }
-
-  /// 批次82：AppBar 字数区——未设目标显示「12字」；已设目标显示「1,234/5,000」，
-  /// 点击弹出目标设置对话框；达标后字数高亮为竹青
-  /// 批次85-1：字数区右侧追加「完成度徽标」——设目标显示进度百分比（达标显示「已达成」），
-  /// 未设目标显示章节体量徽标（短章/中章/长章），让学员随时看到自己产出。
-  Widget _buildWordCountIndicator(WritingState state, {Color? mutedColor}) {
-    final goal = state.goalWords;
-    final String text;
-    final Color color;
-    final secondary = mutedColor ?? AppColors.textSecondary;
-    if (goal > 0) {
-      text = '${_formatNum(state.wordCount)}/${_formatNum(goal)}';
-      color = state.wordCount >= goal ? AppColors.primary : secondary;
-    } else {
-      text = _formatWordCount(state.wordCount);
-      color = secondary;
-    }
-    return InkWell(
-      onTap: _showGoalDialog,
-      // X-039-Batch1：4→xs
-      borderRadius: BorderRadius.circular(AppRadius.xs),
-      child: Padding(
-        // X-039-Batch1：8→sm / 8→sm
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.sm,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(text, style: TextStyle(fontSize: 12, color: color)),
-            const SizedBox(width: 6),
-            _buildCompletionBadge(state),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 批次85-1：完成度徽标
-  Widget _buildCompletionBadge(WritingState state) {
-    final goal = state.goalWords;
-    final String label;
-    final Color bg;
-    final Color fg;
-    if (goal > 0) {
-      final done = state.wordCount >= goal;
-      if (done) {
-        label = '已达成';
-        bg = AppColors.successBg;
-        fg = AppColors.success;
-      } else {
-        final pct = (state.wordCount / goal * 100).round();
-        label = '$pct%';
-        bg = AppColors.primarySoft;
-        fg = AppColors.primaryDeep;
-      }
-    } else {
-      label = _chapterScaleLabel(state.wordCount);
-      bg = AppColors.primarySoft;
-      fg = AppColors.primaryDeep;
-    }
-    return Container(
-      key: const Key('completionBadge'),
-      // X-039-Batch1：6→xsm / 2→xxs
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        // X-039-Batch1：8→sm
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(label, style: TextStyle(fontSize: 10, color: fg)),
-    );
-  }
-
-  /// 章节体量徽标：<3000 短章 / 3000-9999 中章 / ≥10000 长章
-  String _chapterScaleLabel(int wordCount) {
-    if (wordCount >= 10000) return '长章';
-    if (wordCount >= 3000) return '中章';
-    return '短章';
   }
 }

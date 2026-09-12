@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 365,
+  "fileCount": 370,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -716,27 +716,6 @@
       "start": 38,
       "end": 215,
       "lines": 178
-    },
-    {
-      "file": "lib/widgets/writing_page.dart",
-      "func": "build",
-      "start": 509,
-      "end": 689,
-      "lines": 181
-    },
-    {
-      "file": "lib/widgets/writing_page.dart",
-      "func": "_buildAppBar",
-      "start": 751,
-      "end": 846,
-      "lines": 96
-    },
-    {
-      "file": "lib/widgets/writing_page.dart",
-      "func": "_buildEditor",
-      "start": 965,
-      "end": 1143,
-      "lines": 179
     },
     {
       "file": "lib/widgets/writing_stats_sheet.dart",
