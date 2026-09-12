@@ -5,59 +5,38 @@
 // （通过 getOrCreateSessionForChapter 隔离），与 Tab2 聊天互不污染。
 //
 // 结构（自上而下）：
-//   1. 拖拽手柄（全宽独立行，36x4 圆角灰条）
-//   2. 按钮行（诊断本章 | ✕ 关闭）
-//   3. Divider
-//   4. 错误横幅（chatState.error != null 时显示）
-//   5. 消息列表（Expanded，复用 MessageBubble）
-//   6. 输入栏（TextField + 发送按钮）
+//   1. 按钮行（快速观察 | 诊断本章 | ✕ 关闭）
+//   2. Divider
+//   3. 错误横幅（chatState.error != null 时显示）
+//   4. 消息列表（Expanded，复用 MessageBubble）
+//   5. 输入栏（TextField + 发送按钮）
+//
+// R-019 真分解（批次 X-025-ARCH 清偿）：
+//   本文件曾是「宿主 + 2 个 part/extension」的伪拆分形态。现已拆为多个
+//   **独立类**（正常 import，无 part）：WritingCoachMessageList /
+//   WritingCoachButtonRow·ErrorBanner·InputBar / WritingCoachTeachingController /
+//   WritingCoachSessionController / WritingCoachDeleteDialog 等。
+//   State 只保留生命周期 + 会话装配，能力经 WritingCoachPanelHost 显式暴露。
 // ─────────────────────────────────────────────────────────────
 
-import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../config/app_theme.dart';
-import '../config/shared_constants.dart';
-import '../data/database/database.dart';
-import '../data/repositories/chapter_repository.dart';
-import '../data/repositories/session_repository.dart';
-import '../data/repositories/teaching_state_repository.dart';
-import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
-import '../providers/evaluation_providers.dart';
-import '../providers/practice_providers.dart';
-import '../providers/session_providers.dart';
-import '../providers/writing_providers.dart';
-import '../router/app_routes.dart';
-import '../services/chat_message_types.dart'
-    show SendMessageCallbacks, SendMessageOptions;
-import '../services/progressive_diagnosis.dart';
-import '../services/phase_transition.dart';
 import '../types/teaching_types.dart';
-import 'message_bubble.dart';
-import 'message_card_dispatcher.dart';
-import 'partial_agreement_card.dart';
-import 'practice_result_indicator.dart';
-import 'practice_task_card.dart';
-import 'writing/thinking_placeholder.dart';
-import 'package:dio/dio.dart';
+import 'writing_coach_panel_bootstrapper.dart';
+import 'writing_coach_panel_host.dart';
+import 'writing_coach_panel_message_list.dart';
+import 'writing_coach_panel_session_controller.dart';
+import 'writing_coach_panel_store.dart';
+import 'writing_coach_panel_teaching.dart';
+import 'writing_coach_panel_view.dart';
 
-part 'writing_coach_panel_teaching.dart';
-part 'writing_coach_panel_builders.dart';
-
-/// WritingCoachPanel 专用 ChatStore（与 Tab2 chatStoreProvider 隔离）
-///
-/// 按 chapterId 隔离：每个章节拥有独立的 ChatStore 实例，
-/// 避免多个 WritingCoachPanel 实例共享同一个 store 导致会话污染。
-final writingCoachStoreProvider =
-    StateNotifierProvider.family<ChatStore, ChatState, String>((
-      ref,
-      chapterId,
-    ) {
-      return ChatStore();
-    });
+/// 对外保持旧路径可用：writingCoachStoreProvider 定义在
+/// writing_coach_panel_store.dart，此处 re-export（既有 importer 无需改动）。
+export 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
 
 class WritingCoachPanel extends ConsumerStatefulWidget {
   final String chapterId;
@@ -83,18 +62,16 @@ class WritingCoachPanel extends ConsumerStatefulWidget {
   ConsumerState<WritingCoachPanel> createState() => _WritingCoachPanelState();
 }
 
-class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
-  String? _sessionId;
+class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
+    implements WritingCoachPanelHost {
   final _scrollController = ScrollController();
   final _inputController = TextEditingController();
   final _inputFocusNode = FocusNode();
 
-  /// ADR-C87：当前流式的取消令牌（发送/快速观察/诊断共用）。
-  /// 供「停止生成」按钮在流式中段中止（避免卡死时无出口）；
-  /// 面板关闭（dispose）时也取消，防止流式在面板销毁后继续跑。
-  CancelToken? _cancelToken;
+  /// 会话 id（由教学控制器经 Host 接口读写）
+  String? _sessionId;
 
-  /// _initSession 的 Future，供 _handleDiagnose 等待会话初始化完成
+  /// _initSession 的 Future，供删除消息等待会话初始化完成
   late Future<void> _initFuture;
 
   /// P2-3：会话初始化是否完成（避免先显示空状态再突然出现消息）
@@ -112,6 +89,82 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
   /// P1（2026-09-11）：本面板态度档位。默认 doubao；会话存在时从
   /// teaching_state 恢复（与对话页切换保持同步，不再硬编码 doubao）。
   AttitudeLevel _attitude = AttitudeLevel.doubao;
+
+  /// ADR-C87：当前流式的取消令牌（发送/快速观察/诊断共用）。
+  /// 供「停止生成」按钮在流式中段中止（避免卡死时无出口）；
+  /// 面板关闭（dispose）时也取消，防止流式在面板销毁后继续跑。
+  CancelToken? _cancelToken;
+
+  /// 诊断 / 教学流程控制器（独立类，经 Host 接口注入能力）。
+  late final WritingCoachTeachingController _teacher =
+      WritingCoachTeachingController(this);
+
+  /// 发送 / 快速观察 / 练习 / 删除 会话动作控制器（独立类）。
+  late final WritingCoachSessionController _session =
+      WritingCoachSessionController(this, _teacher.observeGate);
+
+  /// 会话引导器（初始化已有会话 + 恢复评估报告 + 恢复态度档）。
+  late final WritingCoachSessionBootstrapper _bootstrap =
+      WritingCoachSessionBootstrapper(
+        ref: ref,
+        chapterId: () => widget.chapterId,
+        onSessionBound: (id) => _sessionId = id,
+        onAttitudeLoaded: (attitude) {
+          if (mounted) setState(() => _attitude = attitude);
+        },
+        isMounted: () => mounted,
+      );
+
+  // ── WritingCoachPanelHost 实现 ──
+  // 注：ref / context 由 ConsumerState 直接提供（WidgetRef / BuildContext），
+  // 天然满足 Host 接口，无需显式 override。
+
+  @override
+  String get chapterId => widget.chapterId;
+
+  @override
+  String get manuscriptId => widget.manuscriptId;
+
+  @override
+  String get chapterTitle => widget.chapterTitle;
+
+  @override
+  TextEditingController get inputController => _inputController;
+
+  @override
+  String? get sessionId => _sessionId;
+
+  @override
+  set sessionId(String? value) => _sessionId = value;
+
+  @override
+  bool get isMounted => mounted;
+
+  @override
+  AttitudeLevel get attitude => _attitude;
+
+  @override
+  set streamStageLabel(String? value) =>
+      setState(() => _streamStageLabel = value);
+
+  @override
+  set isDiagnosing(bool value) => setState(() => _isDiagnosing = value);
+
+  @override
+  set cancelToken(CancelToken? value) => _cancelToken = value;
+
+  @override
+  CancelToken? get cancelToken => _cancelToken;
+
+  @override
+  Future<void> loadAttitude(String sessionId) =>
+      _bootstrap.loadAttitude(sessionId);
+
+  @override
+  Future<void> awaitInit() => _initFuture;
+
+  @override
+  void focusInput() => _inputFocusNode.requestFocus();
 
   @override
   void initState() {
@@ -141,72 +194,16 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
     if (text == null || text.trim().isEmpty) return;
     if (_handledDiagnoseText == text) return;
     _handledDiagnoseText = text;
-    _handleDiagnoseWithText(text);
+    _teacher.diagnoseWithText(text);
   }
 
-  /// 加载章节已有会话（ADR-C81 懒创建：只查不建）
+  /// 加载章节已有会话（ADR-C81 懒创建：只查不建）后复位 loading。
   ///
-  /// 查到 → 绑定 store + 加载消息 + 恢复评估报告（原路径）；
-  /// 查不到 → 不落库任何会话，UI 落空态。首次发送/诊断/观察时由
-  /// [_ensureSession] 真正创建，避免「打开面板即产生空会话」。
+  /// 具体引导逻辑委托给 [WritingCoachSessionBootstrapper]；
+  /// 查不到会话 → 不落库任何会话，UI 落空态。
   Future<void> _initSession() async {
-    final db = ref.read(appDatabaseProvider);
-    final existing = await SessionRepository(
-      db,
-    ).findSessionForChapter(widget.chapterId);
-    if (existing != null) {
-      _sessionId = existing.id;
-      _loadAttitude(existing.id);
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setSessionId(existing.id);
-      final messages = await SessionRepository(db).listMessages(existing.id);
-      ref
-          .read(writingCoachStoreProvider(widget.chapterId).notifier)
-          .setMessages(messages);
-      // 批次6 E1：恢复该章节会话的评估报告 + 当前轮次（对齐 chat_page bootstrap）。
-      // 注意：不用 resetReports——它会清空 DB 中当前会话报告导致刚训练的数据丢失；
-      // restoreForSession 内部会覆盖内存状态并重置 _currentSessionId（防跨会话串写）。
-      await ref
-          .read(evaluationReportsProvider.notifier)
-          .restoreForSession(existing.id);
-    }
+    await _bootstrap.initSession();
     if (mounted) setState(() => _isInitLoading = false);
-  }
-
-  /// 确保章节会话存在（ADR-C81 懒创建的创建点，幂等）
-  ///
-  /// 仅由「产生内容」的入口调用（发送/诊断/快速观察）；已有会话直接复用。
-  Future<String?> _ensureSession() async {
-    final existing = _sessionId;
-    if (existing != null) return existing;
-    final sessionId = await SessionRepository(
-      ref.read(appDatabaseProvider),
-    ).getOrCreateSessionForChapter(widget.manuscriptId, widget.chapterId);
-    _sessionId = sessionId;
-    _loadAttitude(sessionId);
-    ref
-        .read(writingCoachStoreProvider(widget.chapterId).notifier)
-        .setSessionId(sessionId);
-    await ref
-        .read(evaluationReportsProvider.notifier)
-        .restoreForSession(sessionId);
-    return sessionId;
-  }
-
-  /// P1（2026-09-11）：从 teaching_state 恢复本章节会话的态度档位，
-  /// 与对话页切换保持同步。加载失败保持默认档，静默。
-  Future<void> _loadAttitude(String sessionId) async {
-    try {
-      final state = await ref
-          .read(chatServiceProvider)
-          .loadAttitudeState(sessionId);
-      if (mounted) {
-        setState(() => _attitude = state.attitude);
-      }
-    } catch (_) {
-      // 保持默认档，静默（与 chat_page._loadAttitude 一致）
-    }
   }
 
   @override
@@ -223,8 +220,46 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(writingCoachStoreProvider(widget.chapterId));
+    _listenAutoScroll();
 
-    // 消息列表变化时自动滚动到底部
+    // 批次82 P0-④：教练面板改为右侧可收起侧栏（正文不被覆盖）。
+    // 面板填满父容器高度，不再有半屏高度比 + 拖拽手柄（收起交给页面侧开关）。
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surfaceWhite,
+        border: Border(left: BorderSide(color: AppColors.borderSoft)),
+      ),
+      child: Column(
+        children: [
+          WritingCoachButtonRow(
+            isStreaming: chatState.isStreaming,
+            onObserve: _session.handleRealtimeObserve,
+            onDiagnose: _teacher.diagnoseChapter,
+            onClose: widget.onClose,
+          ),
+          const Divider(height: 1),
+          if (chatState.error != null)
+            WritingCoachErrorBanner(
+              error: chatState.error!,
+              onDismiss: () => ref
+                  .read(writingCoachStoreProvider(widget.chapterId).notifier)
+                  .clearError(),
+            ),
+          Expanded(child: _buildMessageList(chatState)),
+          WritingCoachInputBar(
+            chatState: chatState,
+            controller: _inputController,
+            focusNode: _inputFocusNode,
+            onSend: _session.handleSend,
+            onStop: _session.cancelGeneration,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 消息列表变化时自动滚动到底部。
+  void _listenAutoScroll() {
     ref.listen<ChatState>(writingCoachStoreProvider(widget.chapterId), (
       previous,
       next,
@@ -239,29 +274,24 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel> {
         });
       }
     });
+  }
 
-    // 批次82 P0-④：教练面板改为右侧可收起侧栏（正文不被覆盖）。
-    // 面板填满父容器高度，不再有半屏高度比 + 拖拽手柄（收起交给页面侧开关）。
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border(left: BorderSide(color: AppColors.borderSoft)),
-      ),
-      child: Column(
-        children: [
-          _buildButtonRow(chatState.isStreaming),
-          const Divider(height: 1),
-          if (chatState.error != null) _buildErrorBanner(chatState),
-          Expanded(child: _buildMessageList(chatState)),
-          _buildInputBar(chatState),
-        ],
-      ),
+  /// 消息列表：独立 Widget 承载（状态 + 回调显式传入）。
+  Widget _buildMessageList(ChatState chatState) {
+    return WritingCoachMessageList(
+      chatState: chatState,
+      isInitLoading: _isInitLoading,
+      sessionId: _sessionId,
+      streamStageLabel: _streamStageLabel,
+      isDiagnosing: _isDiagnosing,
+      scrollController: _scrollController,
+      onAdopt: widget.onAdopt,
+      onTeachPrinciple: _session.handleTeachPrinciple,
+      onPartialAgreementSubmit: _session.handlePartialAgreementSubmit,
+      onPartialAgreementSkip: _session.handlePartialAgreementSkip,
+      onFocusInput: _session.focusInput,
+      onDeleteMessage: _session.confirmDeleteMessage,
+      onPracticeSubmit: _session.submitPractice,
     );
   }
 }
-
-/// D5-A：思考/诊断中占位 — 竹青头像 + 转圈 + 文案
-///
-/// 流式开始但尚无内容时显示，替代空白空气泡：
-///   - 诊断中 → 「诊断中…」
-///   - 普通聊天 → 「思考中…」

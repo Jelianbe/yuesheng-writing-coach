@@ -27,14 +27,23 @@ cross-dup 语义（2026-xx 修订）:
     都需引用），属设计要求而非缺陷。因此 cross-dup **不参与 FAIL 判定**：
     --diff-baseline 模式下过滤掉 cross-dup，仅全量报告中作为「跨文件一致性参考」列出。
 
+教学流程规则白名单（PROCESS_RULE_ALLOWLIST）:
+    极窄豁免机制，专治 force-trigger 的「伪反模式」：某些 `###` 规则标题本身含
+    「必须追加/必须…」字样，但它约束的是**教学流程步骤**（如"诊断后必须追加确认提问"，
+    这正是 R-009 用户主权原则的载体），而非要求 AI 输出固定格式。
+    仅当命中行①是 Markdown 标题行 ②与白名单条目标题精确相等 ③文件路径一致时豁免，
+    且**只对 force-trigger 规则生效**。真反模式（如"必须输出…"的非标题写法）不受影响。
+    用 --show-allowlist 打印当前白名单条目以便人工复核。
+
 用法:
     python3 scripts/check_prompt_antipattern.py                 # 全量扫描
     python3 scripts/check_prompt_antipattern.py --update-baseline   # 将当前命中存为基线
     python3 scripts/check_prompt_antipattern.py --diff-baseline     # 只报相对基线的新增（CI 用）
     python3 scripts/check_prompt_antipattern.py --expect-rule-count 4   # 规则数守卫（fail-closed）
+    python3 scripts/check_prompt_antipattern.py --show-allowlist    # 打印教学流程规则白名单条目
 
 退出码:
-    0 = 无命中（--diff-baseline 时：无新增）
+    0 = 无命中（--diff-baseline 时：无新增；--show-allowlist 恒为 0）
     1 = 有命中（--diff-baseline 时：有新增；或 --expect-rule-count 不符）
 """
 import json
@@ -87,6 +96,71 @@ COUNTEREXAMPLE_MARKERS = (
     "错误示范",
     "反面",
 )
+
+# ---- 教学流程规则白名单（防伪反模式误报）----
+#
+# 背景：`force-trigger` 正则（必须输出|每轮都要|每次必须|必须加载|必须追加）无法区分两类
+# 语义截然不同的写法：
+#   (1) 真反模式 —— 强制 AI 输出**特定格式/固定话术**（削弱灵活性、诱发幻觉），必须拦。
+#   (2) 伪反模式 —— **教学流程的结构性规则标题**（如"诊断后必须追加确认提问"），
+#       它约束的是流程步骤而非 AI 的措辞，且往往正是 R-009 用户主权原则的载体。
+#
+# 判据（仅用于 (2)，宁严勿宽，四条件同时满足才豁免）：
+#   A. 命中行必须是 Markdown 标题行（以 `##`/`###`/`####` 标记开头）——即它是
+#      教学流程的"规则标题"，而非正文里要求 AI 照做的指令；
+#   B. 命中行文本（去空白后）与白名单中的规则标题**精确相等**——不做子串/模糊匹配；
+#   C. 命中的文件相对路径与白名单一致；
+#   D. 该文件须位于 `lib/services/skills_*.dart`（scan_file 已保证，此处不重复校验）。
+#
+# 该机制**只影响 force-trigger 规则**的命中过滤；其余规则与真阳性（如"必须输出诊断块"，
+# 因为它不是标题行、或标题文本不在白名单）不受影响，仍会被拦。
+#
+# 白名单条目结构: (相对文件路径, 规则标题原文)
+#   条目 1 —— skills_diagnosis_p1.dart 的「### 2.1 诊断后必须追加确认提问」
+#     豁免理由: 该行是「二、确认步骤规则」章节下一级流程规则标题，要求 AI 在诊断后
+#               向学员追问是否认同（原文引语"你觉得我刚才说的这个问题，你认同吗？…"）。
+#               这是把决定权交还学员的结构性流程约束，与 R-009「用户主权」一致，
+#               并未要求 AI 输出固定格式或照念台词，故不属 force-trigger 应拦范畴。
+#     依据: 舰长裁定（本批 prompt 反模式治理）—— 该条经主理人核验原文为伪反模式。
+#           新增条目须逐条写明豁免理由与依据，便于人工复核（--show-allowlist）。
+MARKDOWN_HEADING_RE = re.compile(r"^\s*#{2,4}\s")
+
+PROCESS_RULE_ALLOWLIST: tuple[tuple[str, str], ...] = (
+    # (相对文件路径, 规则标题原文[去首尾空白]) —— 教学流程规则标题，非强制输出话术。
+    # 1) 依据: 舰长裁定；文件 skills_diagnosis_p1.dart 的「确认步骤规则」章节。
+    ("lib/services/skills_diagnosis_p1.dart", "### 2.1 诊断后必须追加确认提问"),
+)
+
+
+def _allowlist_key(rel: str, line: str) -> tuple[str, str]:
+    """归一化白名单比对键：路径统一用正斜杠、标题去首尾空白。"""
+    return (rel.replace("\\", "/"), line.strip())
+
+
+# 预计算白名单集合，避免每次命中重复构造。
+_ALLOWLIST_SET: frozenset[tuple[str, str]] = frozenset(
+    _allowlist_key(rel, title) for rel, title in PROCESS_RULE_ALLOWLIST
+)
+
+
+def _is_process_rule_allowlisted(rel: str, line: str) -> bool:
+    """判定某命中行是否属「教学流程规则白名单」。
+
+    仅在四条件同时成立时返回 True（见 PROCESS_RULE_ALLOWLIST 注释）：
+      A. `line` 是 Markdown 标题行（`##`/`###`/`####` 开头）；
+      B. `line` 去空白后与白名单标题精确相等；
+      C. 其 (文件相对路径, 标题) 组合在白名单集合中。
+
+    Args:
+        rel: 命中所在文件的相对路径（含 `lib/services/...`）。
+        line: 命中所在的原文行（未 strip）。
+
+    Returns:
+        True 表示该命中应被豁免（属伪反模式）。
+    """
+    if not MARKDOWN_HEADING_RE.match(line):
+        return False
+    return _allowlist_key(rel, line) in _ALLOWLIST_SET
 
 
 def _diff_by_text(base, cur):
@@ -195,8 +269,14 @@ def _is_counterexample_fp(line: str, start: int, hit_text: str) -> bool:
     return any(neg in window for neg in NEGATION_WORDS)
 
 
-def scan_file(path: str) -> list[tuple[str, int, str]]:
-    """返回 [(规则名, 行号, 命中原文)]。行号为文件真实行号。"""
+def scan_file(path: str, rel: str) -> list[tuple[str, int, str]]:
+    """返回 [(规则名, 行号, 命中原文)]。行号为文件真实行号。
+
+    Args:
+        path: 文件绝对路径。
+        rel: 文件相对仓库根的路径（如 `lib/services/skills_diagnosis_p1.dart`），
+             用于「教学流程规则白名单」的按文件精确比对。
+    """
     hits: list[tuple[str, int, str]] = []
     with open(path, encoding="utf-8") as f:
         text = f.read()
@@ -210,6 +290,10 @@ def scan_file(path: str) -> list[tuple[str, int, str]]:
                     if rule == "report-tone" and _is_report_tone_fp(line, hit_text, m.start()):
                         continue
                     if rule == "assert-conclude" and _is_counterexample_fp(line, m.start(), hit_text):
+                        continue
+                    # 教学流程规则白名单：仅对 force-trigger 生效，且要求命中行是
+                    # 白名单内的 Markdown 规则标题（精确匹配），防「见词就放行」。
+                    if rule == "force-trigger" and _is_process_rule_allowlisted(rel, line):
                         continue
                     start = max(0, m.start() - 25)
                     end = min(len(line), m.end() + 25)
@@ -303,6 +387,13 @@ def main() -> int:
     update = "--update-baseline" in args
     diff = "--diff-baseline" in args
 
+    # 可选：打印当前「教学流程规则白名单」条目，便于人工复核。纯信息输出，恒返回 0。
+    if "--show-allowlist" in args:
+        print(f"[prompt-lint] 教学流程规则白名单（{len(PROCESS_RULE_ALLOWLIST)} 条）：")
+        for rel, title in PROCESS_RULE_ALLOWLIST:
+            print(f"  - {rel} :: {title}")
+        return 0
+
     # 规则数守卫（fail-closed）：防规则被静默删减。
     expect_rule_count, guard_err = _parse_expect_rule_count(args)
     if guard_err is not None:
@@ -326,7 +417,7 @@ def main() -> int:
     findings: dict[str, list[list]] = {}
     for path in files:
         rel = os.path.relpath(path, ROOT)
-        for rule, lineno, ctx in scan_file(path):
+        for rule, lineno, ctx in scan_file(path, rel):
             findings.setdefault(rule, []).append([rel, lineno, ctx])
     for rule, lineno, ctx in scan_cross_dup(files):
         # cross-dup 的行号定位是近似，统一挂在第一个文件上，这里改用文件级提示

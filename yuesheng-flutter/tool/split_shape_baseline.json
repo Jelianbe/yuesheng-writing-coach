@@ -1,8 +1,8 @@
 {
   "dir": "lib",
   "limit": 300,
-  "fileCount": 320,
-  "familyCount": 10,
+  "fileCount": 329,
+  "familyCount": 9,
   "ruleCount": 3,
   "violations": [
     {
@@ -101,17 +101,6 @@
       "part": "widgets/manuscript_detail_chapter.dart",
       "oversizedParts": {
         "widgets/manuscript_detail_chapter.dart": 462
-      }
-    },
-    {
-      "host": "widgets/writing_coach_panel.dart",
-      "rule": "S3",
-      "hostLines": 267,
-      "partLines": 664,
-      "part": "widgets/writing_coach_panel_teaching.dart",
-      "oversizedParts": {
-        "widgets/writing_coach_panel_teaching.dart": 664,
-        "widgets/writing_coach_panel_builders.dart": 338
       }
     },
     {
