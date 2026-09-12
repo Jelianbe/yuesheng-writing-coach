@@ -69,6 +69,8 @@ class ChatMessageSection extends ConsumerWidget {
       onDismissEvaluationReport: (messageId) => ref
           .read(evaluationReportsProvider.notifier)
           .dismissEvaluationReport(messageId),
+      // E1-b②：评估报告「查看成长记录」→ 成长详情页
+      onOpenGrowth: messages.handleOpenGrowth,
       onSaveToFile: reference.handleSaveToFile,
       // 批次61：Teacher 建议卡「教我原理」→ 发消息请求讲解
       onTeachPrinciple: teaching.handleTeachPrinciple,

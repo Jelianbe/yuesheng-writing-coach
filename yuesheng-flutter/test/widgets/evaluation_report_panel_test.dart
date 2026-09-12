@@ -8,6 +8,7 @@
 //   4. 关闭回调触发
 //   5. 点击 header 收起/展开
 //   6. E-1 复诊行：复诊渲染 / 首次不渲染 / 同严重度 / 无基线
+//   7. E1-b② 成长记录入口：渲染 / 点击触发 / 未接线不渲染 / 与关闭并存
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -79,10 +80,18 @@ EvaluationData _recurringReport({
   );
 }
 
-Widget _wrap(EvaluationData report, {VoidCallback? onDismiss}) {
+Widget _wrap(
+  EvaluationData report, {
+  VoidCallback? onDismiss,
+  VoidCallback? onOpenGrowth,
+}) {
   return MaterialApp(
     home: Scaffold(
-      body: EvaluationReportPanel(evaluation: report, onDismiss: onDismiss),
+      body: EvaluationReportPanel(
+        evaluation: report,
+        onDismiss: onDismiss,
+        onOpenGrowth: onOpenGrowth,
+      ),
     ),
   );
 }
@@ -263,6 +272,64 @@ void main() {
 
       expect(find.text('第 2 次出现'), findsOneWidget);
       expect(find.textContaining('上次'), findsNothing);
+    });
+
+    // ── E1-b② 成长记录入口（③「与成长页趋势贯通」）──
+
+    testWidgets('#12 onOpenGrowth 非空 → 渲染「查看成长记录」并点击触发', (tester) async {
+      var opened = false;
+      await tester.pumpWidget(
+        _wrap(_report(), onOpenGrowth: () => opened = true),
+      );
+
+      expect(find.text('查看成长记录'), findsOneWidget);
+      expect(find.byIcon(Icons.insights_outlined), findsOneWidget);
+
+      await tester.tap(find.text('查看成长记录'));
+      await tester.pump();
+
+      expect(opened, isTrue);
+    });
+
+    testWidgets('#13 onOpenGrowth 为空 → 不渲染入口（不留死按钮）', (tester) async {
+      await tester.pumpWidget(_wrap(_report()));
+
+      expect(find.text('查看成长记录'), findsNothing);
+      expect(find.byIcon(Icons.insights_outlined), findsNothing);
+      // 关闭按钮不受影响，动作区不因缺少主入口而消失
+      expect(find.text('关闭'), findsOneWidget);
+    });
+
+    testWidgets('#14 入口与关闭并存：两者互不干扰', (tester) async {
+      var opened = false;
+      var dismissed = false;
+      await tester.pumpWidget(
+        _wrap(
+          _report(),
+          onOpenGrowth: () => opened = true,
+          onDismiss: () => dismissed = true,
+        ),
+      );
+
+      await tester.tap(find.text('查看成长记录'));
+      await tester.pump();
+      expect(opened, isTrue);
+      expect(dismissed, isFalse);
+
+      await tester.tap(find.text('关闭'));
+      await tester.pump();
+      expect(dismissed, isTrue);
+    });
+
+    testWidgets('#15 收起详情 → 动作区随详情隐藏（入口显隐与关闭一致）', (tester) async {
+      await tester.pumpWidget(_wrap(_report(), onOpenGrowth: () {}));
+      expect(find.text('查看成长记录'), findsOneWidget);
+
+      await tester.tap(find.text('达标率 80%'));
+      await tester.pump();
+
+      expect(find.text('查看成长记录'), findsNothing);
+      expect(find.text('关闭'), findsNothing);
     });
   });
 }

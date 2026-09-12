@@ -97,6 +97,9 @@ class MessageList extends ConsumerStatefulWidget {
   /// T4 评估报告：关闭指定消息的报告
   final void Function(String messageId)? onDismissEvaluationReport;
 
+  /// E1-b②：评估报告「查看成长记录」回调（跳成长详情页；null 时不渲染入口）
+  final VoidCallback? onOpenGrowth;
+
   /// 空态自定义组件（缺口清单第 5 项：ChatPage 传 ChatWelcome 欢迎态；
   /// 未传时保留默认「有问题尽管问教练」引导）
   final Widget? emptyWidget;
@@ -131,6 +134,7 @@ class MessageList extends ConsumerStatefulWidget {
     this.evaluationReports = const {},
     this.factBatches = const {},
     this.onDismissEvaluationReport,
+    this.onOpenGrowth,
     this.emptyWidget,
     this.onSaveToFile,
   });
@@ -512,6 +516,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                           widget.onDismissEvaluationReport != null
                           ? () => widget.onDismissEvaluationReport!(msg.id)
                           : null,
+                      onOpenGrowth: widget.onOpenGrowth,
                       // 批次81：三卡回调透传（H1-H3）
                       onContinueTraining: widget.onContinueTraining,
                       onViewProfile: widget.onViewProfile,

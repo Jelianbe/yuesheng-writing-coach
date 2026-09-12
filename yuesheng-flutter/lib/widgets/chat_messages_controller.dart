@@ -49,6 +49,10 @@ class ChatMessagesController {
   /// H1 PhaseSummaryCard「查看学员画像」→ 能力画像页（复用批次78修复入口）
   void handleViewProfile() => handleOpenProfile();
 
+  /// E1-b②：评估报告面板「查看成长记录」→ 成长详情页
+  /// （同跳 [AppRoutes.growthDetail]，复用批次78 修复的 push 入口）
+  void handleOpenGrowth() => handleOpenProfile();
+
   /// H1「返回对话」/ H2「补充内容」「继续对话」→ 聚焦输入框继续对话
   void handleFocusChatInput() {
     host.chatInputKey.currentState?.focusInput();

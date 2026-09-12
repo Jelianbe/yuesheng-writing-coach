@@ -259,6 +259,8 @@ class WritingCoachMessageList extends ConsumerWidget {
       onDismissEvaluationReport: () => ref
           .read(evaluationReportsProvider.notifier)
           .dismissEvaluationReport(msg.id),
+      // E1-b②：评估报告「查看成长记录」→ 成长详情页（对齐本文件既有先例）
+      onOpenGrowth: () => context.push(AppRoutes.growthDetail),
       onAdoptSuggestion: onAdopt != null ? () => onAdopt!(msg.content) : null,
       // 批次81：三卡回调接线（H1-H3）
       onContinueTraining: () =>

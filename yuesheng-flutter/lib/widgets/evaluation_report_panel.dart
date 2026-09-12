@@ -65,10 +65,14 @@ class EvaluationReportPanel extends StatefulWidget {
   /// 关闭报告回调
   final VoidCallback? onDismiss;
 
+  /// E1-b②：跳转「成长记录」页回调（null 时不渲染该入口，避免死按钮）
+  final VoidCallback? onOpenGrowth;
+
   const EvaluationReportPanel({
     super.key,
     required this.evaluation,
     this.onDismiss,
+    this.onOpenGrowth,
   });
 
   @override
@@ -211,26 +215,11 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                     for (final detail in evaluation.syndromeDetails)
                       _SyndromeItem(detail: detail),
                   ],
-                  // ── 关闭 ──
+                  // ── 动作区：成长记录主入口 + 关闭（E1-b②）──
                   const SizedBox(height: 8),
-                  Center(
-                    child: TextButton(
-                      onPressed: widget.onDismiss,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textTertiary,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.lg,
-                          vertical: AppSpacing.xsm,
-                        ),
-                      ),
-                      child: const Text(
-                        '关闭',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
+                  _PanelActions(
+                    onDismiss: widget.onDismiss,
+                    onOpenGrowth: widget.onOpenGrowth,
                   ),
                 ],
               ),
@@ -361,6 +350,55 @@ class _RecurrenceNote extends StatelessWidget {
         const SizedBox(width: 4),
         Expanded(child: Text(text, style: AppTextStyles.microCaption)),
       ],
+    );
+  }
+}
+
+/// 面板底部动作区（E1-b②）：主入口「查看成长记录」+ 次级「关闭」。
+///
+/// 从 build 抽出（原内联 19 行），既控制 build 体量，也让入口显隐规则
+/// 单点可查：[onOpenGrowth] 为空时整颗按钮不渲染，不留死交互。
+class _PanelActions extends StatelessWidget {
+  final VoidCallback? onDismiss;
+  final VoidCallback? onOpenGrowth;
+
+  const _PanelActions({this.onDismiss, this.onOpenGrowth});
+
+  @override
+  Widget build(BuildContext context) {
+    const labelStyle = TextStyle(fontSize: 13, fontWeight: FontWeight.w500);
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (onOpenGrowth != null) ...[
+            TextButton.icon(
+              onPressed: onOpenGrowth,
+              icon: const Icon(Icons.insights_outlined, size: 16),
+              label: const Text('查看成长记录', style: labelStyle),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.xsm,
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+          ],
+          TextButton(
+            onPressed: onDismiss,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textTertiary,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xsm,
+              ),
+            ),
+            child: const Text('关闭', style: labelStyle),
+          ),
+        ],
+      ),
     );
   }
 }

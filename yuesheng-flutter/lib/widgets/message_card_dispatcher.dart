@@ -34,6 +34,7 @@ import 'teacher_suggestion_card.dart';
 ///   [evaluationReport] 评估报告数据（assistant 消息且命中时渲染报告面板）
 ///   [onTeachPrinciple] Teacher 建议卡「教我原理」回调（参数 = 症候名）
 ///   [onDismissEvaluationReport] 关闭评估报告回调
+///   [onOpenGrowth] 评估报告「查看成长记录」回调（E1-b②，非空才渲染入口）
 ///   [onAdoptSuggestion] suggestion 采纳回调（非空时 suggestion 消息显示采纳按钮）
 ///   [onContinueTraining] PhaseSummaryCard「继续训练」回调
 ///   [onViewProfile] PhaseSummaryCard「查看学员画像」回调
@@ -48,6 +49,7 @@ Widget? dispatchMessageCard({
   EvaluationData? evaluationReport,
   ValueChanged<String>? onTeachPrinciple,
   VoidCallback? onDismissEvaluationReport,
+  VoidCallback? onOpenGrowth,
   VoidCallback? onAdoptSuggestion,
   VoidCallback? onContinueTraining,
   VoidCallback? onViewProfile,
@@ -158,6 +160,7 @@ Widget? dispatchMessageCard({
       child: EvaluationReportPanel(
         evaluation: evaluationReport,
         onDismiss: onDismissEvaluationReport,
+        onOpenGrowth: onOpenGrowth,
       ),
     );
   }
