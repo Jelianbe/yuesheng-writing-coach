@@ -3,19 +3,9 @@
   "exemptionSource": "check_split_shape.py",
   "exemptionPatternCount": 4,
   "ruleCount": 4,
-  "fileCount": 55,
-  "partCount": 51,
-  "minPartCount": 51,
-  "allowedFunctions": {
-    "services/skills_advanced_outline_p7.dart": [
-      "_apSlice",
-      "_apSliceToEnd",
-      "advancedPhasesContentFor"
-    ],
-    "services/skills_beginner_p9.dart": [
-      "_crSlice",
-      "coachingRhythmContentFor"
-    ]
-  },
+  "fileCount": 53,
+  "partCount": 49,
+  "minPartCount": 49,
+  "allowedFunctions": {},
   "violations": []
 }

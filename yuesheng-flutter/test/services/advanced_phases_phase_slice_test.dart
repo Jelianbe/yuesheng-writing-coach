@@ -2,7 +2,7 @@
 // advanced-phases 阶段裁剪验证（Phase 3 A 组）
 //
 // 方案：docs/designs/2026-08-28-skill-orthogonal-refactor-plan.md §5
-// 背景：索引化缺检索触发源（见 skills_advanced_outline_p7.dart 头注释），
+// 背景：索引化缺检索触发源（见 skill_phase_slicing.dart 头注释），
 //      故改为状态驱动裁剪。本测试守护三件事：
 //      1. 非进阶阶段逐字节回退原文（行为与裁剪前完全一致）
 //      2. 当前阶段分段注入、非当前阶段分段不注入
@@ -11,6 +11,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
+import 'package:writingcoach/services/skill_phase_slicing.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -34,7 +35,7 @@ void main() {
         TeachingPhase.p2PracticeLoop,
       ]) {
         expect(
-          advancedPhasesContentFor(phase),
+          advancedPhasesContentFor(phase, _raw),
           _raw,
           reason: '${phase.value} 未回退完整原文',
         );
@@ -42,7 +43,7 @@ void main() {
     });
 
     test('P3 档注入 P3 分段、不含 P4 分段', () {
-      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training, _raw);
       expect(p3, contains('### P3 教学重点'));
       expect(p3, contains('### P3 态度策略'));
       expect(p3, contains('### P3 → P4'));
@@ -56,7 +57,7 @@ void main() {
     });
 
     test('P4 档注入 P4 分段、不含 P3 分段', () {
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       expect(p4, contains('### P4 教学重点'));
       expect(p4, contains('### P4 态度策略'));
       expect(p4, contains('### P4 → P2（重新开始）'));
@@ -67,8 +68,8 @@ void main() {
     });
 
     test('切片为原文子串（零编辑漂移）', () {
-      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training, _raw);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       expect(p3, contains(_slice('### P3 教学重点', '### P3 教学流程')));
       expect(p4, contains(_slice('### P4 教学重点', '### P4 教学流程')));
       expect(p3, contains(_slice('### P3 态度策略', '### P4 态度策略')));
@@ -86,8 +87,8 @@ void main() {
         isNot(contains('P5')),
         reason: 'writing-style 不得再出现幽灵阶段 P5（C56）',
       );
-      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training, _raw);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       expect(p3, isNot(contains('P5')));
       expect(p4, isNot(contains('P5')));
       // P4 唯一出口的动作行必须显式指向 P2（不再有「下一个阶段」的含糊提法）
@@ -95,7 +96,7 @@ void main() {
     });
 
     test('防复发：P4 教学流程须带示例标注与数据兜底（C59/C61/C66）', () {
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       // C61：台词必须标注「示例，不是台词」（B-23 已给 beginner 侧加过，
       // advanced 侧漏加，而这些台词还预设了症候名与解决状态，风险更高）
       expect(p4, contains('示例，不是台词'));
@@ -109,13 +110,13 @@ void main() {
     });
 
     test('防复发：P4 输出要求的示例数值须声明来源（C60）', () {
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       expect(p4, contains('数值同样是示例'));
       expect(p4, contains('指不出来源的数字不要'));
     });
 
     test('防复发：P4→P2 迁移信号为 OR 且停留 P4 是正常态（C62）', () {
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       expect(p4, contains('满足任一即可'));
       expect(p4, contains('停留在 P4 是正常状态'));
       // AND 版三条件不得回归——它每轮判定为假会把学员永久留在 P4
@@ -123,7 +124,7 @@ void main() {
     });
 
     test('防复发：复习调度不得「上限 2」与「一次聚焦一个」并存（B-22 家族第 4 次）', () {
-      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training, _raw);
       expect(p3, contains('一次聚焦一个到期症候'));
       expect(p3, contains('至多 2 个'));
       // 旧写法把上限与聚焦并列、未说清什么情况下可以用满 2 个
@@ -131,8 +132,8 @@ void main() {
     });
 
     test('裁剪确实降低体积（两档均小于原文）', () {
-      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training);
-      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review);
+      final p3 = advancedPhasesContentFor(TeachingPhase.p3Training, _raw);
+      final p4 = advancedPhasesContentFor(TeachingPhase.p4Review, _raw);
       expect(p3.length, lessThan(_raw.length));
       expect(p4.length, lessThan(_raw.length));
       // 标志文本必须保留（既有测试依赖它判定进阶组已加载）

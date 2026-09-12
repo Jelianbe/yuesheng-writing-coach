@@ -13,6 +13,7 @@ library;
 
 import 'package:writingcoach/types/teaching_types.dart';
 
+import 'skill_phase_slicing.dart';
 import 'syndrome_knowledge_base.dart';
 import 'syndrome_registry.dart';
 import 'technique_knowledge_base.dart';
@@ -34,7 +35,6 @@ part 'skills_beginner_p5.dart';
 part 'skills_beginner_p6.dart';
 part 'skills_beginner_p7.dart';
 part 'skills_beginner_p8.dart';
-part 'skills_beginner_p9.dart';
 part 'skills_diagnosis.dart';
 part 'skills_diagnosis_p1.dart';
 part 'skills_diagnosis_p2.dart';
@@ -52,7 +52,6 @@ part 'skills_advanced_outline_p3.dart';
 part 'skills_advanced_outline_p4.dart';
 part 'skills_advanced_outline_p5.dart';
 part 'skills_advanced_outline_p6.dart';
-part 'skills_advanced_outline_p7.dart';
 part 'skills_reply_voice.dart';
 
 // ─── Skill 元数据与实体 ───────────────────────────────────────
@@ -119,7 +118,10 @@ class Skill {
   ///
   /// 为 null 时退化为完整 [content]（与历史行为一致）。
   /// 切片必须返回 [content] 的原文子串，确保零编辑漂移。
-  final String Function(TeachingPhase phase)? contentForPhase;
+  /// 按教学阶段裁剪内容。签名 `(phase, content)`——[content] 即本 Skill 的
+  /// 完整原文，由 dispatcher 传入；这样裁剪逻辑可与其他 library 解耦
+  /// （P3-R3：part 私有的正文常量跨库不可见，只能由调用方把原文送来）。
+  final String Function(TeachingPhase phase, String content)? contentForPhase;
 
   const Skill({
     required this.meta,

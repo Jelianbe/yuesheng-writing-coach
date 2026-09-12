@@ -183,7 +183,9 @@ const Skill _advancedPhases = Skill(
     promptStyle: PromptStyle.guided,
   ),
   content: _advancedPhasesBody1 + _advancedPhasesBody2,
-  // Phase 3 A 组：按 ctx.phase 裁掉非当前阶段分段（非 P3/P4 返回原文）
+  // Phase 3 A 组：按 ctx.phase 裁掉非当前阶段分段（非 P3/P4 返回原文）。
+  // P3-R3：裁剪逻辑已迁至真 library；原文由 dispatcher 从 skill.content
+  // 送入（签名 (phase, content)），故此处保持顶层函数 tear-off（编译期常量）。
   contentForPhase: advancedPhasesContentFor,
 );
 

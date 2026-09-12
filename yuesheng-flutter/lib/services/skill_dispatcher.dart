@@ -160,7 +160,11 @@ void _buildL2Chunks(
     if (skill != null) {
       // 共享本体 content 只注入一次，各组语义差异由 contextHint 承载
       // Phase 3 A 组：块内按教学阶段裁剪（无裁剪钩子时退化为完整 content）
-      chunks.add(skill.contentForPhase?.call(ctx.phase) ?? skill.content);
+      // P3-R3：裁剪函数签名扩为 (phase, content)，原文由此处送入，
+      // 使裁剪逻辑得以迁出 part 家族（家族私有常量跨库不可见）。
+      chunks.add(
+        skill.contentForPhase?.call(ctx.phase, skill.content) ?? skill.content,
+      );
       loadedIds.add(ref.skillId);
       if (ref.contextHint != null) {
         chunks.add(ref.contextHint!);

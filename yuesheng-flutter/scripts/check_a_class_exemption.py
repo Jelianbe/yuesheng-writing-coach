@@ -26,16 +26,24 @@
 `docs/ADR-C92-ungated-scripts-gate-accession.md:111`：
 「**任何检查都必须显式 fail-closed：绝不允许「无法检查 ≠ 通过」**」。
 
-实测漂移（2026-09-12 侦察，`RECON-P3-knowledge-relief-2026-09-12.md`）
+实测漂移与清偿（2026-09-12，`RECON-P3-knowledge-relief-2026-09-12.md`）
 --------------------------------------------------------------------
-55 个 A 类豁免文件（4 宿主 + 51 分片）中有 **2 个分片已含逻辑**（存量，走基线祖父）：
-  - `lib/services/skills_beginner_p9.dart:38,49`
-    　　`_crSlice` / `coachingRhythmContentFor`
-  - `lib/services/skills_advanced_outline_p7.dart:37,45,55`
-    　　`_apSlice` / `_apSliceToEnd` / `advancedPhasesContentFor`
-
-二者是 Phase 3「阶段裁剪」的**行为实现**（由 `skill_dispatcher.dart:163`
+侦察发现 55 个 A 类豁免文件（4 宿主 + 51 分片）中 **2 个分片已含逻辑**：
+  - `lib/services/skills_beginner_p9.dart`：`_crSlice` / `coachingRhythmContentFor`
+  - `lib/services/skills_advanced_outline_p7.dart`：`_apSlice` / `_apSliceToEnd` /
+    `advancedPhasesContentFor`
+二者是 Phase 3「阶段裁剪」的**行为实现**（原由 `skill_dispatcher.dart:163`
 经 `Skill.contentForPhase?.call(ctx.phase)` 消费），**不是常量**。
+
+**★ P3-R3 已清偿**：5 个函数逐字迁至真 library
+`lib/services/skill_phase_slicing.dart`（纯逻辑：`(phase, raw)` → 裁剪串）；
+两个承载逻辑的分片随之删除，宿主 `skill_registry.dart` 的 `part` 声明同步
+移除。为跨越 Dart 库私有性（part 私有常量跨库不可见），
+`Skill.contentForPhase` 签名扩为 `(TeachingPhase phase, String content)`，
+原文由 dispatcher 从 `skill.content` 送入，入口保持顶层 tear-off
+（编译期常量，`const Skill(...)` 不变）。
+⇒ 现状：**49 个分片全部为纯常量**，基线 `allowedFunctions` 归零 ——
+A3 由「基线豁免」升为**硬卡**（任何新增顶层函数立即 FAIL）。
 
 四条判据（每条都锚定 R-019 的一处前提）
 ----------------------------------------

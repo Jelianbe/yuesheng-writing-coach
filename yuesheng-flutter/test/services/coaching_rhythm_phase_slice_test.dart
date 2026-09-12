@@ -11,6 +11,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
+import 'package:writingcoach/services/skill_phase_slicing.dart';
 import 'package:writingcoach/services/skill_registry.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -34,7 +35,7 @@ void main() {
         TeachingPhase.p4Review,
       ]) {
         expect(
-          coachingRhythmContentFor(phase),
+          coachingRhythmContentFor(phase, _raw),
           _raw,
           reason: '${phase.value} 未回退完整原文',
         );
@@ -42,7 +43,7 @@ void main() {
     });
 
     test('P0 档注入 P0 分段、不含 P1 分段', () {
-      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage);
+      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage, _raw);
       expect(p0, contains('## 二、阶段一：建立投入（P0_ENGAGE）'));
       expect(p0, contains('### 2.2 五步节奏'));
       expect(p0, isNot(contains('## 三、阶段二：暴露问题（P1_WORLD）')));
@@ -55,7 +56,7 @@ void main() {
     });
 
     test('P1 档注入 P1 分段、不含 P0 分段', () {
-      final p1 = coachingRhythmContentFor(TeachingPhase.p1World);
+      final p1 = coachingRhythmContentFor(TeachingPhase.p1World, _raw);
       expect(p1, contains('## 三、阶段二：暴露问题（P1_WORLD）'));
       expect(p1, contains('### 3.2 三类提问模式'));
       expect(p1, isNot(contains('## 二、阶段一：建立投入（P0_ENGAGE）')));
@@ -65,8 +66,8 @@ void main() {
     });
 
     test('切片为原文子串（零编辑漂移）', () {
-      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage);
-      final p1 = coachingRhythmContentFor(TeachingPhase.p1World);
+      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage, _raw);
+      final p1 = coachingRhythmContentFor(TeachingPhase.p1World, _raw);
       expect(
         p0,
         contains(_slice('## 二、阶段一：建立投入（P0_ENGAGE）', '## 三、阶段二：暴露问题（P1_WORLD）')),
@@ -75,8 +76,8 @@ void main() {
     });
 
     test('裁剪确实降低体积（两档均小于原文）', () {
-      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage);
-      final p1 = coachingRhythmContentFor(TeachingPhase.p1World);
+      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage, _raw);
+      final p1 = coachingRhythmContentFor(TeachingPhase.p1World, _raw);
       expect(p0.length, lessThan(_raw.length));
       expect(p1.length, lessThan(_raw.length));
     });
@@ -86,8 +87,8 @@ void main() {
     // 须有裁剪说明兜底；§2.3 的 §三 引用须自含「P1 阶段才加载」说明。
     test('C57 护栏：两档切片均含裁剪说明，悬空引用有兜底', () {
       const noteKeyword = '按学员当前阶段裁剪注入';
-      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage);
-      final p1 = coachingRhythmContentFor(TeachingPhase.p1World);
+      final p0 = coachingRhythmContentFor(TeachingPhase.p0Engage, _raw);
+      final p1 = coachingRhythmContentFor(TeachingPhase.p1World, _raw);
 
       // §六 分工表在两档都保留 → 裁剪说明必须在两档都出现
       expect(p0, contains('## 六、与本模块其他 Skill 的分工边界'));

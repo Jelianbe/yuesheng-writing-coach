@@ -254,7 +254,9 @@ const Skill _coachingRhythm = Skill(
     promptStyle: PromptStyle.guided,
   ),
   content: _coachingRhythmBody1 + _coachingRhythmBody2,
-  // Phase 3 A 组：按 ctx.phase 二选一裁 P0/P1 段（非 P0/P1 返回原文）
+  // Phase 3 A 组：按 ctx.phase 二选一裁 P0/P1 段（非 P0/P1 返回原文）。
+  // P3-R3：裁剪逻辑已迁至真 library；原文由 dispatcher 从 skill.content
+  // 送入（签名 (phase, content)），故此处保持顶层函数 tear-off（编译期常量）。
   contentForPhase: coachingRhythmContentFor,
 );
 
