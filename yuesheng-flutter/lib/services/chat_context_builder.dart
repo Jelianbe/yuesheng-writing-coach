@@ -448,6 +448,39 @@ String? buildConflictObservationsContext(
       '$lines';
 }
 
+/// 设定不一致观察上下文（批次 E1-b · ADR-C93 D5）
+///
+/// 与 [buildConflictObservationsContext] 并列而**刻意不共用**：措辞、归属、去向
+/// 三者都不同——本函数**不挂 P 编号**、不产出症候、不进诊断面板（ADR-C93 Q4），
+/// 只把「同一设定主题内前后取值不一致」的线索交给 AI 复核。
+///
+/// 措辞必须内置**规则与例外**的免责句式：世界观是规则，天然带例外
+/// （「灵气稀薄」+「此地有灵脉」是层次感，不是矛盾）。AI 有这句兜底才不会把
+/// 层次报成错误——这是本判据不得复用 F05 的用户侧配套，缺了它就等于把机械
+/// 判定直接当结论（D3 / §1.1）。
+///
+/// excerpt 恒非空（判据门槛 [_hasEvidence] 保证），仍走 `_excerptSuffix`
+/// 以保持与人物侧逐字一致的摘录格式。
+String? buildWorldSettingObservationsContext(
+  List<WorldConflictObservation> observations,
+) {
+  if (observations.isEmpty) return null;
+
+  final lines = observations
+      .map(
+        (o) =>
+            '- 「${o.themeName}」${o.attribute}：${o.description}'
+            '${_excerptSuffix(o.excerpt)}',
+      )
+      .join('\n');
+
+  return '## 设定不一致观察（设定层）\n\n'
+      '以下是作品中同一设定主题（世界规则 / 体系 / 势力）在不同章节的取值记录。'
+      '若确属**规则与例外**（同一主题在不同范围或时期下的层次，如整体灵气稀薄但'
+      '某地有灵脉），请忽略；若确属设定漂移，请温和提示学员（只定位，不代改正文）。\n\n'
+      '$lines';
+}
+
 /// 因果链断裂观察上下文（批次67 B62j，A6 第二迭代 F07，挂 P021/P016 补充）
 ///
 /// 输入 event_causality_detector 输出的观察项（关键事件缺前因，带章节维度）。

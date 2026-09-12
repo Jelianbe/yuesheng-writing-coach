@@ -24,6 +24,7 @@ import '../data/repositories/event_fact_repository.dart';
 import '../data/repositories/outline_repository.dart';
 import '../data/repositories/reference_repository.dart';
 import '../data/repositories/subplot_fact_repository.dart';
+import '../data/repositories/world_fact_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/editor_observation_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
@@ -163,6 +164,8 @@ final messageInjectorProvider = Provider<MessageInjector>((ref) {
     eventFactRepo: EventFactRepository(db),
     subplotFactRepo: SubplotFactRepository(db),
     outlineRepo: OutlineRepository(db),
+    // 批次 E1-b-2：设定层观察项（ADR-C93 Q4：只进 AI 上下文）
+    worldFactRepo: WorldFactRepository(db),
   );
 });
 

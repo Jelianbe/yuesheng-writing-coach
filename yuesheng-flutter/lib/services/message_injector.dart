@@ -51,6 +51,7 @@ import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/data/repositories/subplot_fact_repository.dart';
+import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/services/chat_context_builder.dart'
     show
         ActiveFocusContext,
@@ -68,8 +69,11 @@ import 'package:writingcoach/services/chat_context_builder.dart'
         buildReferencesContext,
         buildStructuredSyndromeContext,
         buildSubplotClosureContext,
+        buildWorldSettingObservationsContext,
         findKeywordExcerpt;
 import 'package:writingcoach/services/character_identity.dart';
+// 批次 E1-b-2：设定层适配入口（对位 character_identity 的共享判据出口）。
+import 'package:writingcoach/services/world_setting.dart';
 // C78 批次2b：conflict_detector 的 import 已移除——本文件改走
 // character_identity 的共享判据入口（detectConflictsForFacts / fillConflictExcerpts），
 // 不再直接引用 detectCharacterConflicts，避免调用方自行组合导致判据分叉。
@@ -121,6 +125,7 @@ class MessageInjector {
   final EventFactRepository? _eventFactRepo;
   final SubplotFactRepository? _subplotFactRepo;
   final OutlineRepository? _outlineRepo;
+  final WorldFactRepository? _worldFactRepo;
 
   // ─── 内部状态：4 个缓存，跟着方法一起搬 ───
   /// 引用详情预载缓存（每次 injectReferences 调用前预加载，调用后清空）
@@ -155,6 +160,7 @@ class MessageInjector {
     EventFactRepository? eventFactRepo,
     SubplotFactRepository? subplotFactRepo,
     OutlineRepository? outlineRepo,
+    WorldFactRepository? worldFactRepo,
   }) : _sessionRepo = sessionRepo,
        _diagnosisRepo = diagnosisRepo,
        _studentModelRepo = studentModelRepo,
@@ -167,7 +173,8 @@ class MessageInjector {
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
        _subplotFactRepo = subplotFactRepo,
-       _outlineRepo = outlineRepo;
+       _outlineRepo = outlineRepo,
+       _worldFactRepo = worldFactRepo;
 
   /// 懒加载大纲服务（批次7 O2 模式）
   OutlineService? _ensureOutlineService() {
@@ -278,6 +285,12 @@ class MessageInjector {
       messages: messages,
     );
     await _injectConflictObservation(
+      sessionId: sessionId,
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+    );
+    await _injectWorldSettingObservation(
       sessionId: sessionId,
       content: content,
       primaryRef: primaryRef,
@@ -845,6 +858,43 @@ class MessageInjector {
       }
     } catch (e, st) {
       _logSafeRun('冲突检测失败不阻断主流程', e, st);
+    }
+  }
+
+  /// §5.1.3b：设定层不一致观察（批次 E1-b-2，ADR-C93）
+  ///
+  /// 与 §5.1.3 的 F05 时序矛盾**并列而独立**：世界观是**规则**、天然带例外
+  /// （「灵气稀薄」+「此地有灵脉」是层次不是矛盾），套 F05 判据必产幽灵矛盾
+  /// （ADR-C93 D1）。故走独立判据 [detectConflictsForWorlds]。
+  ///
+  /// 去向**只有 AI 上下文**（ADR-C93 Q4）：不挂 P 编号、不产症候、不进诊断
+  /// 面板——判据未经实测，先让 AI 复核兜底，可见化等误报率数据。
+  ///
+  /// **通路现状**：`world_fact` 当前无生产写入方（E1-b-3 协议抽取 或 批次 B
+  /// 手动录入才产生数据），故本方法现阶段恒在 `worlds.isEmpty` 处早退。
+  /// 先建通路是为了让写入侧落地时**零改动即生效**；代价是每次诊断请求多
+  /// 一次空表 SELECT（表为空时开销可忽略）。
+  Future<void> _injectWorldSettingObservation({
+    required String sessionId,
+    required String content,
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+  }) async {
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
+    if (primaryRef?.refType != 'chapter') return;
+    if (_worldFactRepo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final worlds = await _worldFactRepo.listWorlds(chapter.manuscriptId);
+      if (worlds.isEmpty) return;
+      final observations = detectConflictsForWorlds(worlds);
+      final ctx = buildWorldSettingObservationsContext(observations);
+      if (ctx != null) {
+        messages.add(ChatMessage(role: 'system', content: ctx));
+      }
+    } catch (e, st) {
+      _logSafeRun('设定层检测失败不阻断主流程', e, st);
     }
   }
 
