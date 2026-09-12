@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 月笙写作教练 Flutter 端 — 十一道门禁 (R-027 + 宪法 §二)
+# 月笙写作教练 Flutter 端 — 十二道门禁 (R-027 + 宪法 §二)
 #
 # 门禁 0: 代码格式 (dart format --set-exit-if-changed lib) — 宪法 §二.2
 # 门禁 1: 静态分析 (dart analyze lib) — 类型检查 + Lint
@@ -18,6 +18,14 @@
 #         ⚠️ **必须**读取门禁 2 刚产出的 coverage/lcov.info（门禁 2 已带
 #            --coverage）。覆盖率不能独立跑测试：陈旧 lcov 会假绿
 #            （查的是旧代码），单文件测试产出的 lcov 会假红（T1 仅 0.83%）。
+# 门禁 7: Prompt 反模式 (scripts/check_prompt_antipattern.py --diff-baseline) — R-025
+# 门禁 8: 内容元数据 (scripts/check_content_metadata.py --strict) — R-025
+# 门禁 9: 交互回归 (scripts/check_interaction_regression.py) — 仅 P0 阻断
+# 门禁 10: 伪拆分形态 (scripts/check_split_shape.py --baseline) — R-019 §2
+#          A 类纯常量知识库按文件名豁免（见 R-019:57-60）
+# 门禁 11: A 类豁免准入 (scripts/check_a_class_exemption.py --baseline) — R-019:57-60
+#          把 A 类豁免的**前提**变成可执行判据（内容级），堵住门禁 10 的 fail-open
+#          基线 tool/a_class_exemption_baseline.json，止血模式：只卡新增
 #
 # 用法:  bash scripts/gate.sh
 # 退出码: 任一门禁 FAIL **或** 任一门禁未真正执行 (SKIP/DEGRADED) 则非 0
@@ -30,7 +38,7 @@
 #    本脚本中 python 缺失使门禁 3 / 5 跳过、或 lcov 缺失使门禁 6 跳过时，
 #    记 `SKIP`（独立于 PASS/FAIL），并在报告的**顶部**打出醒目的
 #    `⚠️ DEGRADED` 警告，退出码非 0。
-#    这样「全绿」才真正等价于「十一道都跑过且都通过」。
+#    这样「全绿」才真正等价于「十二道都跑过且都通过」。
 # ============================================================
 set -u
 
@@ -53,6 +61,7 @@ PROMPT_LINT_LOG="$OUT_DIR/prompt_lint.txt"
 META_LOG="$OUT_DIR/content_metadata.txt"
 INTERACTION_LOG="$OUT_DIR/interaction.txt"
 SPLIT_LOG="$OUT_DIR/split_shape.txt"
+A_CLASS_LOG="$OUT_DIR/a_class_exemption.txt"
 
 pass=0
 fail=0
@@ -78,7 +87,7 @@ log_result() {
 }
 
 echo "=================================================="
-echo "月笙 Flutter 十一道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
+echo "月笙 Flutter 十二道门禁 @ $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=================================================="
 
 # ---------- 公共：定位 python（门禁 3 / 5 / 6 共用）----------
@@ -93,7 +102,7 @@ else
 fi
 
 # ---------- 门禁 0: 格式（宪法 §二.2）----------
-echo "--> 门禁 0/11: 格式校验 (dart format --set-exit-if-changed lib)"
+echo "--> 门禁 0/12: 格式校验 (dart format --set-exit-if-changed lib)"
 if dart format --set-exit-if-changed -o none lib > "$FORMAT_LOG" 2>&1; then
   RC_FORMAT=0
 else
@@ -103,7 +112,7 @@ fi
 log_result "格式校验 (dart format)" "$RC_FORMAT"
 
 # ---------- 门禁 1: 静态分析 ----------
-echo "--> 门禁 1/11: 静态分析 (dart analyze lib)"
+echo "--> 门禁 1/12: 静态分析 (dart analyze lib)"
 if dart analyze lib > "$TYPECHECK_LOG" 2>&1; then
   RC_ANALYZE=0
 else
@@ -113,7 +122,7 @@ fi
 log_result "静态分析 (analyze lib)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
-echo "--> 门禁 2/11: 单元测试 (flutter test)"
+echo "--> 门禁 2/12: 单元测试 (flutter test)"
 # V4.18：会话注入的 HTTP_PROXY 会劫持 Dart VM ↔ flutter_tester 的
 # localhost WebSocket，导致全量测试加载失败（错误行同样带 [E]，
 # 看起来每个测试都失败）。门禁脚本必须主动清空代理环境变量，
@@ -151,7 +160,7 @@ log_result "单元测试 (flutter test)" "$RC_TEST"
 #    否则门禁会一直停留在「只卡新增」的弱化状态。
 #    tool/circular_baseline.json 已重生成空数组并保留在库中，
 #    供将来确需临时豁免时按同一格式使用（届时必须同时登记清偿计划）。
-echo "--> 门禁 3/11: 循环依赖扫描 (lib import 图，全量卡口)"
+echo "--> 门禁 3/12: 循环依赖扫描 (lib import 图，全量卡口)"
 if [ -n "$PY_BIN" ]; then
   if "$PY_BIN" scripts/check_circular.py . > "$CIRCULAR_LOG" 2>&1; then
     RC_CIRCULAR=0
@@ -168,7 +177,7 @@ fi
 log_result "循环依赖扫描" "$RC_CIRCULAR"
 
 # ---------- 门禁 4: 安全 / 密钥（调用独立脚本 scripts/check_secrets.sh）----------
-echo "--> 门禁 4/11: 安全/密钥扫描"
+echo "--> 门禁 4/12: 安全/密钥扫描"
 if bash scripts/check_secrets.sh "$ROOT" > "$SECURITY_LOG" 2>&1; then
   RC_SECRETS=0
 else
@@ -183,7 +192,7 @@ log_result "安全/密钥扫描" "$RC_SECRETS"
 # 债务已累积到 264 个（手写 237 个）却无人察觉。本门禁不追溯存量——
 # 以 tool/r019_baseline.json 为基线，只阻止**新增**超限，避免一次性阻塞所有提交。
 # 待债务按期清偿后，可去掉 --baseline 改为全量卡口。
-echo "--> 门禁 5/11: R-019 函数行数（基线豁免，只卡新增）"
+echo "--> 门禁 5/12: R-019 函数行数（基线豁免，只卡新增）"
 if [ -n "$PY_BIN" ] && [ -f "$ROOT/tool/r019_baseline.json" ]; then
   if "$PY_BIN" tool/check_r019.py --baseline tool/r019_baseline.json > "$R019_LOG" 2>&1; then
     RC_R019=0
@@ -233,7 +242,7 @@ log_result "R-019 函数行数" "$RC_R019"
 # 退出码语义（check_coverage.py）：0 = T1 PASS/WARN 且 T2 全过；
 #    1 = T1 FAIL 或任一 T2 FAIL/缺失 或 T2 数量不符护栏；
 #    2 = 环境错误（lcov 缺失 / 解析 0 记录 / --t2 语法错）。
-echo "--> 门禁 6/11: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
+echo "--> 门禁 6/12: 覆盖率检查 (T1 整体 ≥65%，T2 五个核心文件各 ≥85%)"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过覆盖率检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$COVERAGE_LOG"
@@ -292,7 +301,7 @@ log_result "覆盖率检查" "$RC_COVERAGE"
 #
 # 退出码语义（check_prompt_antipattern.py）：0 = 无新增（diff 模式）；
 #    1 = 有新增命中 / 规则数不符护栏。
-echo "--> 门禁 7/11: Prompt 反模式（diff-baseline，只卡新增）"
+echo "--> 门禁 7/12: Prompt 反模式（diff-baseline，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过 prompt 反模式扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$PROMPT_LINT_LOG"
@@ -321,7 +330,7 @@ log_result "Prompt 反模式" "$RC_PROMPT"
 #
 # ⚠️ 必须用 --strict：非 strict 模式下有 finding 也是 rc=0（advisory），
 #    接为门禁会恒绿、零价值。--strict 才有「有 finding → 1」的阻断语义。
-echo "--> 门禁 8/11: 内容元数据（--strict，只卡新增缺失）"
+echo "--> 门禁 8/12: 内容元数据（--strict，只卡新增缺失）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过内容元数据检查"
   echo "SKIP: (NOT EXECUTED) python not available" > "$META_LOG"
@@ -344,7 +353,7 @@ log_result "内容元数据" "$RC_META"
 # ⚠️ 空 lib 扫描会假绿（2026-09-12 规格验证）：若 lib 下无 .dart 文件，
 #    脚本会 rc=0「什么都没扫到」——这不是「通过」，是「没检查」。故 wrapper
 #    先判 lib 下有 .dart，否则记 SKIP（fail-closed，绝不记 PASS）。
-echo "--> 门禁 9/11: 交互回归（仅 P0 阻断，P1 报告）"
+echo "--> 门禁 9/12: 交互回归（仅 P0 阻断，P1 报告）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过交互回归扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$INTERACTION_LOG"
@@ -387,7 +396,7 @@ log_result "交互回归" "$RC_INTERACTION"
 #
 # 退出码语义（check_split_shape.py）：0 = 通过/无新增；1 = 有违规/新增；
 #    2 = 环境错误（lib 缺失 / 0 个 dart / --json 与 --baseline 同传）。
-echo "--> 门禁 10/11: 伪拆分形态（基线豁免，只卡新增）"
+echo "--> 门禁 10/12: 伪拆分形态（基线豁免，只卡新增）"
 if [ -z "$PY_BIN" ]; then
   echo "  [WARN] 未找到 python3 / python，跳过伪拆分扫描"
   echo "SKIP: (NOT EXECUTED) python not available" > "$SPLIT_LOG"
@@ -407,6 +416,61 @@ else
   fi
 fi
 log_result "伪拆分形态" "$RC_SPLIT"
+
+# ---------- 门禁 11: A 类豁免准入守卫（调用 scripts/check_a_class_exemption.py）----------
+#
+# 背景（2026-09-12 侦察，docs/recon-reports/RECON-P3-knowledge-relief-2026-09-12.md）：
+# 门禁 10 的 A 类豁免是**纯按文件名**（`_A_CLASS_PATTERNS`）的——它豁免「A 类纯常量
+# 知识库」，却**从不校验文件内容是否真的满足豁免前提**。⇒ 豁免是 fail-open 的，
+# 存在一条完全绕过门禁 10 的路径（代码直读）：
+#     建 `foo.dart` 声明 `part 'skills_data.dart';`，`skills_data.dart` 装 800 行逻辑
+#     ⇒ 宿主行数没超（S1/S2 不报），分片 basename 命中豁免（S3 不报）。
+# 本门禁把 R-019:57-60 的豁免**前提**变成可执行判据。
+#
+# 判据（四条，每条锚定 R-019 一处前提）：
+#   A1  **分片**不得声明 class/extension/mixin（前提②「纯常量」）
+#   A2  **任何 A 类文件**不得含 @override（前提③「无 override 契约」）
+#   A3  **分片**顶层函数须逐名登记在基线内（前提②「无逻辑耦合」）
+#   A4  **任何 A 类文件**必须是 part 家族成员（守住豁免适用范围，防命名滥用）
+#   ⚠️ 宿主不做 A1/A3 断言：宿主按设计保留「检索/渲染逻辑」（批次 96-26/96-27），
+#      对其施加「无函数」会与既定分离设计冲突（越权改规则）。宿主仍受 A2/A4 约束。
+#
+# ⚠️ 基线止血模式（同门禁 5/10）：存量漂移 2 个分片 / 5 个函数（Phase 3 阶段裁剪
+#    入口）走基线 `allowedFunctions` **透明登记**，只卡**新增**。
+#    基线一旦生成不会自动变严 ⇒ **每清偿一条必须重生成基线**：
+#       python scripts/check_a_class_exemption.py --json tool/a_class_exemption_baseline.json
+#    **重生成时绝不能带 --baseline**（脚本已内置防护：同传 → exit 2）。
+#    另：分片数由 `minPartCount` 守（G1）——把分片改名移出豁免集会触发 FAIL。
+#
+# 退出码语义（check_a_class_exemption.py）：0 = 通过/无新增；1 = 有违规/新增/守卫失败；
+#    2 = 环境错误（lib 缺失 / 0 个 dart / 0 个豁免文件 / 真源缺失或载入失败 /
+#    基线结构非法 / --json 与 --baseline 同传）。
+echo "--> 门禁 11/12: A 类豁免准入守卫（基线豁免，只卡新增）"
+if [ -z "$PY_BIN" ]; then
+  echo "  [WARN] 未找到 python3 / python，跳过 A 类豁免准入扫描"
+  echo "SKIP: (NOT EXECUTED) python not available" > "$A_CLASS_LOG"
+  RC_ACLASS=SKIP
+elif [ ! -f "$ROOT/tool/a_class_exemption_baseline.json" ]; then
+  echo "  [WARN] A 类豁免基线缺失（tool/a_class_exemption_baseline.json），跳过"
+  echo "SKIP: (NOT EXECUTED) baseline missing" > "$A_CLASS_LOG"
+  RC_ACLASS=SKIP
+elif [ ! -f "$ROOT/scripts/check_split_shape.py" ]; then
+  # 豁免模式真源缺失 ⇒ 脚本 exit 2（fail-closed）。在 wrapper 先判并记 SKIP，
+  # 避免把「环境缺失」与「真有违规」混为一谈（但仍计入 degraded → 退出码非 0）。
+  echo "  [WARN] 豁免模式真源缺失（scripts/check_split_shape.py），跳过"
+  echo "SKIP: (NOT EXECUTED) exemption source missing" > "$A_CLASS_LOG"
+  RC_ACLASS=SKIP
+else
+  if "$PY_BIN" scripts/check_a_class_exemption.py \
+    --baseline tool/a_class_exemption_baseline.json \
+    --expect-rule-count 4 > "$A_CLASS_LOG" 2>&1; then
+    RC_ACLASS=0
+  else
+    RC_ACLASS=1
+    cat "$A_CLASS_LOG"
+  fi
+fi
+log_result "A 类豁免准入" "$RC_ACLASS"
 
 # ---------- 汇总报告 ----------
 #
@@ -434,7 +498,7 @@ if [ "$degraded" -gt 0 ]; then
 fi
 
 cat > "$REPORT" <<EOF
-# 十一道门禁报告
+# 十二道门禁报告
 
 ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
@@ -452,6 +516,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | 内容元数据（--strict） | $(verdict "${RC_META:-SKIP}") |
 | 交互回归（仅 P0） | $(verdict "${RC_INTERACTION:-SKIP}") |
 | 伪拆分形态（只卡新增） | $(verdict "${RC_SPLIT:-SKIP}") |
+| A 类豁免准入（只卡新增） | $(verdict "${RC_ACLASS:-SKIP}") |
 
 汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP）
 
@@ -467,6 +532,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 内容元数据: outputs/gate/content_metadata.txt
 - 交互回归: outputs/gate/interaction.txt
 - 伪拆分形态: outputs/gate/split_shape.txt
+- A 类豁免准入: outputs/gate/a_class_exemption.txt
 EOF
 
 echo "=================================================="
@@ -478,5 +544,5 @@ echo "报告: $REPORT"
 echo "=================================================="
 
 # fail-closed：任一 FAIL 或任一 SKIP（未真正执行）都使退出码非 0。
-# 「全绿」= fail==0 且 degraded==0，此时才确信十一道都真的跑过。
+# 「全绿」= fail==0 且 degraded==0，此时才确信十二道都真的跑过。
 [ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]
