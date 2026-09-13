@@ -268,5 +268,36 @@ void main() {
       expect(find.text('章节（选填）'), findsOneWidget);
       expect(find.textContaining('留空则仅记录、不参与'), findsOneWidget);
     });
+
+    // ── W1-T05 负向守卫（UI 侧）：不填依据 → 存 null → 不进一致性检查 ──
+    testWidgets('守卫：新建时不填「原文依据」→ 落库 evidence 为 null', (tester) async {
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('＋ 新建设定主题'));
+      await tester.pumpAndSettle();
+
+      final fields = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fields.at(0), '灵气体系'); // 主题名
+      await tester.enterText(fields.at(1), '灵气浓度'); // 属性
+      await tester.enterText(fields.at(2), '稀薄'); // 取值
+      await tester.enterText(fields.at(3), '3'); // 章节
+      // fields.at(4) = 原文依据，刻意留空
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      final row = await repo.getWorld(manuscriptId, '灵气体系');
+      final assertion = WorldFactRepository.parseAssertions(
+        row!.assertions,
+      ).single;
+      expect(assertion.source, 'user');
+      expect(
+        assertion.evidence,
+        isNull,
+        reason: 'UI 留空依据须落 null —— 该断言不进一致性检查（设计态契约）',
+      );
+    });
   });
 }

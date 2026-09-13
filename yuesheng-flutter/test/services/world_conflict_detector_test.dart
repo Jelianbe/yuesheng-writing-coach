@@ -32,6 +32,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
 import 'package:writingcoach/services/conflict_detector.dart';
+import 'package:writingcoach/services/world_editor_service.dart';
 import 'package:writingcoach/services/world_setting.dart';
 import 'package:writingcoach/types/character_types.dart';
 
@@ -494,6 +495,81 @@ void main() {
 
       final worlds = await repo.listWorlds(manuscriptId);
       expect(detectConflictsForWorlds(worlds), isEmpty);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // W1-T05 ★ 负向守卫（本批核心价值）
+  //
+  // 用手动录入路径（WorldEditorService.appendAssertion）写数据，断言
+  // detectWorldConflicts **不产出** —— 把「不填依据 / 同章 → 不进检查」
+  // 这一设计态**锁死为可执行契约**，防止将来有人误以为「录了就必被检查」
+  // 而把判据门槛（_hasEvidence / 同章豁免）改宽松。
+  // ─────────────────────────────────────────────────────────────
+  group('W1-T05 负向守卫：手动录入路径 + 判据门槛（锁死设计态契约）', () {
+    late AppDatabase db;
+    late WorldFactRepository repo;
+    late WorldEditorService editor;
+    late String manuscriptId;
+
+    setUp(() async {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      repo = WorldFactRepository(db);
+      editor = WorldEditorService(db);
+      manuscriptId = await ManuscriptRepository(
+        db,
+      ).createManuscript(title: '测试稿');
+    });
+
+    tearDown(() async => db.close());
+
+    /// 走手动录入路径向「灵气体系」追加一条断言。
+    Future<void> append(String value, {int? chapter, String? evidence}) async {
+      final row = await repo.getWorld(manuscriptId, '灵气体系');
+      await editor.appendAssertion(
+        worldId: row!.id,
+        attribute: '灵气浓度',
+        value: value,
+        chapter: chapter,
+        evidence: evidence,
+      );
+    }
+
+    test('#17 无 evidence（留空）→ 不产出（守 A2/A4 前提）', () async {
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+      await append('稀薄', chapter: 3);
+      await append('充沛', chapter: 20);
+
+      final worlds = await repo.listWorlds(manuscriptId);
+      expect(
+        detectConflictsForWorlds(worlds),
+        isEmpty,
+        reason: '留空依据 = 只记录、不进检查（safe：不得误报）——此为设计态契约',
+      );
+    });
+
+    test('#18 有 evidence 但章节相同（含同为 null）→ 不产出（守同章豁免）', () async {
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+      await append('稀薄', evidence: '这方天地灵气稀薄');
+      await append('充沛', evidence: '此地灵脉充沛');
+
+      final worlds = await repo.listWorlds(manuscriptId);
+      expect(
+        detectConflictsForWorlds(worlds),
+        isEmpty,
+        reason: '两条章节同为 null → 无法判定时序差，保守不报',
+      );
+    });
+
+    test('#18b 正向反证：有 evidence + 章节不同 → 产出 1 条（守据未失效）', () async {
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+      await append('稀薄', chapter: 3, evidence: '这方天地灵气稀薄');
+      await append('充沛', chapter: 20, evidence: '此地灵脉充沛');
+
+      final worlds = await repo.listWorlds(manuscriptId);
+      final result = detectConflictsForWorlds(worlds);
+      expect(result.length, 1, reason: '手填依据 + 章节不同 → 才进检查');
+      expect(result.first.themeName, '灵气体系');
     });
   });
 
