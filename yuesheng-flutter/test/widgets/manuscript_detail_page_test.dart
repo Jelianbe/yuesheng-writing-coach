@@ -369,27 +369,67 @@ void main() {
       expect(find.byType(BookshelfPage), findsOneWidget);
     });
 
-    testWidgets('#15 批次28 三 Tab 切换：章节/文件/相关对话', (tester) async {
+    testWidgets('#15 批次28 四 Tab 切换：章节/角色/文件/相关对话', (tester) async {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
-      // 三个 Tab 标签存在
+      // 四个 Tab 标签存在（逐项存在性断言，非计数断言）
       expect(find.text('章节'), findsOneWidget);
+      expect(find.text('角色'), findsOneWidget);
       expect(find.text('文件'), findsOneWidget);
       expect(find.text('相关对话'), findsOneWidget);
 
       // 默认 Tab0 章节：空态可见
       expect(find.text('还没有章节'), findsOneWidget);
 
-      // Tab1 文件：切到文件区
+      // Tab2 文件：切到文件区
       await tester.tap(find.text('文件'));
       await tester.pumpAndSettle();
       expect(find.text('添加素材'), findsOneWidget);
 
-      // Tab2 相关对话：切到空态
+      // Tab3 相关对话：切到空态
       await tester.tap(find.text('相关对话'));
       await tester.pumpAndSettle();
       expect(find.text('还没有相关对话'), findsOneWidget);
+    });
+
+    // ── 详情页 4 Tab 结构守卫（批次：Tab 3→4，新增「角色」）──────────
+    // NT-1：4 Tab 顺序守卫（防顺序错位）
+    testWidgets('#15b 详情页 4 Tab 顺序：章节/角色/文件/相关对话', (tester) async {
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+
+      // 按 TabBar 中 Tab 的物理顺序取文本，逐一比对（顺序守卫）
+      final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+      final labels = tabBar.tabs
+          .map((t) => (t as Tab).text)
+          .toList(growable: false);
+      expect(labels, <String>['章节', '角色', '文件', '相关对话']);
+    });
+
+    // NT-5：结构性守卫 —— TabBarView.children.length == TabController.length == 4
+    // 防「加了 Tab 忘加页体」的断档（本项目历史隐患）。
+    testWidgets('#15c TabBarView children 数 == TabController.length == 4', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+
+      final tabBarView = tester.widget<TabBarView>(find.byType(TabBarView));
+      expect(tabBarView.children.length, 4);
+
+      // 与 TabBar 的 Tab 数一致（双源一致性）
+      final tabBar = tester.widget<TabBar>(find.byType(TabBar));
+      expect(tabBar.tabs.length, tabBarView.children.length);
+    });
+
+    // NT-6：负向守卫 —— 本轮「不做」的范围锁死（防越做）
+    testWidgets('#15d 详情页不出现「大纲」「世界观」（本轮不做）', (tester) async {
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('大纲'), findsNothing);
+      expect(find.text('世界观'), findsNothing);
     });
 
     testWidgets('#16 批次28 相关对话 Tab：有数据 → 列表渲染', (tester) async {
