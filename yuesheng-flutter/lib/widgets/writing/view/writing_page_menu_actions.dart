@@ -11,8 +11,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../data/repositories/app_state_repository.dart';
+import '../../../router/app_routes.dart';
 import '../../../providers/app_providers.dart';
 import '../../../providers/manuscript_providers.dart';
 import '../../../providers/writing_providers.dart';
@@ -77,6 +79,25 @@ void openCharacters(WritingPageHost host) {
   );
 }
 
+/// W1 批次：打开世界观设定页（独立路由页 /worlds）。
+///
+/// 与 [openCharacters] 的**刻意差异**（架构 §1.5 / §8-N3）：本入口走**路由常量**
+/// `context.push(AppRoutes.worlds, extra: {...})`，而非 openCharacters 的硬编码
+/// `Navigator.push`（那是既有债，不扩散）；且让 `AppRoutes.worlds` 有真实消费者。
+void openWorlds(WritingPageHost host) {
+  final manuscriptId = host.resolvedManuscriptId;
+  if (manuscriptId == null || manuscriptId.isEmpty) {
+    ScaffoldMessenger.of(host.context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('章节加载中，请稍后再试')));
+    return;
+  }
+  host.context.push(
+    AppRoutes.worlds,
+    extra: <String, dynamic>{'manuscriptId': manuscriptId},
+  );
+}
+
 /// ⋮ 菜单：读取用户记忆的篇幅占比 → 打开 WritingMenuSheet（各入口回调分发）
 Future<void> showWritingMenu(
   WritingPageHost host,
@@ -102,6 +123,8 @@ Future<void> showWritingMenu(
     onOpenOutline: c.chapterNav.handleOpenOutline,
     // C78 批次3：角色页入口（独立路由页）
     onOpenCharacters: () => openCharacters(host),
+    // W1 批次：世界观设定页入口（独立路由页 /worlds，走 context.push）
+    onOpenWorlds: () => openWorlds(host),
     // 批次96-11：全文搜索入口（整本作品章节搜索 + 跳转定位）
     onOpenFullTextSearch: c.findReplace.openFullTextSearch,
     // 批次84-2：全文查找替换入口

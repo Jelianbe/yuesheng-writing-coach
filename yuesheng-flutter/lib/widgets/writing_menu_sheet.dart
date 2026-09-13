@@ -49,6 +49,8 @@ class WritingMenuSheet {
     VoidCallback? onOpenOutline,
     // C78 批次3：角色页入口（独立路由页，ADR-C78 §3.0）
     VoidCallback? onOpenCharacters,
+    // W1 批次：世界观设定页入口（独立路由页 /worlds）
+    VoidCallback? onOpenWorlds,
     // 批次96-11：全文搜索入口（整本作品章节搜索，命中片段+高亮+跳转定位）
     VoidCallback? onOpenFullTextSearch,
     // 批次84-2：全文查找替换入口
@@ -154,6 +156,16 @@ class WritingMenuSheet {
                         onTap: () {
                           Navigator.pop(ctx);
                           onOpenQuickPhrases?.call();
+                        },
+                      ),
+                      // W1 批次：世界观设定（列表/详情/追加/归档）
+                      // 置于「写作工具」组末位：不挤占既有项位置，避免既有
+                      // 直点测试（全文搜索等）因下移出首屏而失效。
+                      _MenuItem(
+                        label: '世界观',
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onOpenWorlds?.call();
                         },
                       ),
                       // ─── 教学 ───
