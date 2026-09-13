@@ -287,4 +287,29 @@ void main() {
     );
     expect(a.single.evidence, '用户手改', reason: '用户手写版本不得被 AI 版本替换');
   });
+
+  test('#9 archiveWorld / restoreWorld：软归档往返（W1-T01）', () async {
+    await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+    final id = (await repo.getWorld(manuscriptId, '灵气体系'))!.id;
+
+    // 归档：默认视图消失，includeArchived 可见且 status='archived'
+    expect(await repo.archiveWorld(id), isTrue);
+    expect(await repo.listWorlds(manuscriptId), isEmpty);
+    final archivedView = await repo.listWorlds(
+      manuscriptId,
+      includeArchived: true,
+    );
+    expect(archivedView.single.status, 'archived');
+
+    // 恢复：回到默认视图且 status='active'
+    expect(await repo.restoreWorld(id), isTrue);
+    final restored = await repo.listWorlds(manuscriptId);
+    expect(restored.single.name, '灵气体系');
+    expect(restored.single.status, 'active');
+  });
+
+  test('#10 archiveWorld / restoreWorld：不存在的 id → false（不抛）', () async {
+    expect(await repo.archiveWorld('no-such-id'), isFalse);
+    expect(await repo.restoreWorld('no-such-id'), isFalse);
+  });
 }

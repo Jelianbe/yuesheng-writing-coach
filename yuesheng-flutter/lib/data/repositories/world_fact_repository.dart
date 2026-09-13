@@ -34,6 +34,9 @@ import 'repository_write_guard.dart';
 /// 与 character_fact 的 `active | merged` 刻意不同：世界观无同名合并场景。
 const String _kActiveStatus = 'active';
 
+/// `world_fact.status` 的归档取值（tables.dart 本表注释明列 `active | archived`）。
+const String _kArchivedStatus = 'archived';
+
 class WorldFactRepository {
   final AppDatabase _db;
   WorldFactRepository(this._db);
@@ -190,6 +193,33 @@ class WorldFactRepository {
       _db.worldFacts,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
+
+  /// 归档设定主题（软归档：`status='archived'`，**非物理删除**）。
+  ///
+  /// 返回是否有行被更新（id 不存在 → false，不抛）。归档行默认不进
+  /// [listWorlds]（`includeArchived=false`），而读侧（`message_injector`）
+  /// 正是经 `listWorlds` 取数 ⇒ **归档即自动不再参与一致性检查**，零代码联动。
+  Future<bool> archiveWorld(String id) =>
+      _updateStatus(id, _kArchivedStatus, 'archiveWorld');
+
+  /// 恢复已归档的设定主题（`status='active'`）。返回是否有行被更新。
+  Future<bool> restoreWorld(String id) =>
+      _updateStatus(id, _kActiveStatus, 'restoreWorld');
+
+  /// 软切换 `status`（归档 / 恢复共用）；R-019：由两方法抽出。
+  Future<bool> _updateStatus(String id, String status, String op) =>
+      guardRepoWrite('world_fact', op, () async {
+        final rows =
+            await (_db.update(
+              _db.worldFacts,
+            )..where((t) => t.id.equals(id))).write(
+              WorldFactsCompanion(
+                status: Value(status),
+                updatedAt: Value(nowSec()),
+              ),
+            );
+        return rows > 0;
+      });
 
   /// 解析设定条目的断言列表（JSON 非法 / 脏条目 → 保守跳过，不抛出）
   ///
