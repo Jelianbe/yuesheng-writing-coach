@@ -282,6 +282,29 @@ class MessageInjector {
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    await _injectFactTableObservations(
+      sessionId: sessionId,
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+    await _injectTextObservations(
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+  }
+
+  /// R-019 编排 helper：事实表驱动观察（声线漂移 / F05 / 设定层 / F07 / F11）。
+  Future<void> _injectFactTableObservations({
+    required String sessionId,
+    required String content,
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
     await _injectVoiceDriftObservation(
       sessionId: sessionId,
       content: content,
@@ -317,6 +340,15 @@ class MessageInjector {
       messages: messages,
       markStage: markStage,
     );
+  }
+
+  /// R-019 编排 helper：本章正文驱动观察（基础文法 / 对话标签）。
+  Future<void> _injectTextObservations({
+    required String content,
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
     await _injectGrammarObservation(
       content: content,
       primaryRef: primaryRef,
@@ -946,7 +978,6 @@ class MessageInjector {
           )
           .toList();
       final raw = detectCausalityBreaks(inputs);
-      final chapterContent = chapter.content;
       final observations = raw
           .map(
             (o) => CausalityBreakObservation(
@@ -954,7 +985,7 @@ class MessageInjector {
               chapter: o.chapter,
               eventType: o.eventType,
               description: o.description,
-              excerpt: findKeywordExcerpt(chapterContent, o.name),
+              excerpt: findKeywordExcerpt(chapter.content, o.name),
             ),
           )
           .toList();
@@ -999,7 +1030,6 @@ class MessageInjector {
         inputs,
         currentChapter: chapter.sortOrder,
       );
-      final chapterContent = chapter.content;
       final observations = raw
           .map(
             (o) => UnclosedSubplotObservation(
@@ -1007,7 +1037,7 @@ class MessageInjector {
               introducedChapter: o.introducedChapter,
               currentChapter: o.currentChapter,
               description: o.description,
-              excerpt: findKeywordExcerpt(chapterContent, o.name),
+              excerpt: findKeywordExcerpt(chapter.content, o.name),
             ),
           )
           .toList();
