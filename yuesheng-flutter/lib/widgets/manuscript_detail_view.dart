@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import 'character/character_list_view.dart';
 import 'file_section.dart';
 import 'manuscript_detail_chapter_list.dart';
 import 'manuscript_detail_chapter_list_header.dart';
@@ -91,7 +92,7 @@ class ManuscriptDetailView extends StatelessWidget {
                     manuscript: ms,
                     chapterCount: chapters.length,
                   ),
-                  // 批次 28：三 Tab（章节 / 文件 / 相关对话）
+                  // 四 Tab（章节 / 角色 / 文件 / 相关对话）
                   _buildTabBar(),
                   Expanded(child: _buildTabBarView(ms)),
                 ],
@@ -142,22 +143,25 @@ class ManuscriptDetailView extends StatelessWidget {
       unselectedLabelStyle: const TextStyle(fontSize: 14),
       tabs: const [
         Tab(text: '章节'),
+        Tab(text: '角色'),
         Tab(text: '文件'),
         Tab(text: '相关对话'),
       ],
     );
   }
 
-  /// TabBarView：章节 / 文件 / 相关对话。
+  /// TabBarView：章节 / 角色 / 文件 / 相关对话。
   Widget _buildTabBarView(Manuscript ms) {
     return TabBarView(
       controller: tabController,
       children: [
         // ── Tab0 章节 ──
         _buildChaptersTab(),
-        // ── Tab1 文件（批次 28：从章节列表尾部独立成 Tab）──
+        // ── Tab1 角色（T02：CharacterListView，无 Scaffold/AppBar）──
+        CharacterListView(manuscriptId: ms.id),
+        // ── Tab2 文件（批次 28：从章节列表尾部独立成 Tab）──
         FileSection(manuscriptId: ms.id, manuscriptTitle: ms.title),
-        // ── Tab2 相关对话（批次 28：按活跃度排序；批次 30：点击跳转打开会话）──
+        // ── Tab3 相关对话（批次 28：按活跃度排序；批次 30：点击跳转打开会话）──
         RelatedSessionsTab(manuscriptId: ms.id, onOpenSession: onOpenSession),
       ],
     );
