@@ -26,6 +26,7 @@ import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../types/character_types.dart';
 import 'world_dialogs.dart';
+import 'world_fact_detail_page.dart';
 
 /// 断言摘要最多展示的条目数（照搬 character_list_view.dart:30）
 const int _kSummaryMax = 3;
@@ -190,6 +191,21 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     final cb = widget.onCountChanged;
     if (cb == null) return;
     cb(_sorted(_filtered()).length);
+  }
+
+  /// 点列表项 → 主题详情页（R3/R4/R5 承载在详情态）；返回后刷新列表。
+  Future<void> _openDetail(WorldFact row) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => WorldFactDetailPage(
+          worldId: row.id,
+          manuscriptId: widget.manuscriptId,
+        ),
+      ),
+    );
+    // 返回后刷新列表（对齐 character_list_view.dart:177-190）。
+    await _load();
   }
 
   @override
@@ -357,6 +373,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
           ],
         ),
         subtitle: _buildItemSubtitle(row),
+        onTap: () => _openDetail(row),
       ),
     );
   }

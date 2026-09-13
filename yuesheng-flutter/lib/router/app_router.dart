@@ -34,6 +34,7 @@ import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
 import '../widgets/project_settings_page.dart';
 import '../widgets/settings_page.dart';
+import '../widgets/world/world_fact_page.dart';
 import '../widgets/writing_page.dart';
 import 'app_routes.dart';
 
@@ -218,6 +219,24 @@ final GoRouter appRouter = GoRouter(
           manuscriptId: manuscriptId,
           manuscriptTitle: extra['title'] as String?,
           sinceTimestamp: extra['since'] as int?,
+        );
+      },
+    ),
+
+    // ── 顶层路由：/worlds（W1 批次 世界观设定页）──
+    // 入口：写作页 ⋮ 菜单「世界观」（openWorlds → context.push，AppRoutes.worlds）
+    // 无 manuscriptId → PlaceholderPage（对齐 /characters 的守卫口径）
+    GoRoute(
+      path: AppRoutes.worlds,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        final manuscriptId = extra['manuscriptId'] as String? ?? '';
+        if (manuscriptId.isEmpty) {
+          return const PlaceholderPage(title: '世界观', subtitle: '未提供作品 ID');
+        }
+        return WorldFactPage(
+          manuscriptId: manuscriptId,
+          manuscriptTitle: extra['title'] as String?,
         );
       },
     ),

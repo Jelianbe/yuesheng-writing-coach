@@ -26,4 +26,7 @@ class AppRoutes {
 
   /// C78 批次3：角色页（FR-10 提示卡深链入口；写作页 ⋮ 菜单走 Navigator.push）
   static const String characters = '/characters';
+
+  /// W1 批次：世界观设定页（写作页 ⋮ 菜单「世界观」入口，走 context.push）
+  static const String worlds = '/worlds';
 }
