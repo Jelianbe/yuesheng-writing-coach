@@ -23,6 +23,7 @@ import 'package:writingcoach/services/technique_knowledge_base.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
 import 'decode_guard.dart';
+import 'observation_budget.dart';
 
 export 'package:writingcoach/contracts/material_capability.dart';
 
@@ -451,19 +452,28 @@ String? buildConflictObservationsContext(
 ) {
   if (observations.isEmpty) return null;
 
-  final lines = observations
-      .map(
-        (o) =>
-            '- ${o.characterName}「${o.attribute}」：${o.description}'
-            '${_excerptSuffix(o.excerpt)}',
-      )
-      .join('\n');
+  // S2（R3/R4）：两级预算——先条数上限砍尾（Q3 甲不重排）、后字符预算
+  // 累计超限即停；未超限 kept==输入、dropped==0，输出逐字节不变（锚点冻结）。
+  final budgeted = ObservationBudget.apply(
+    observations
+        .map(
+          (o) =>
+              '- ${o.characterName}「${o.attribute}」：${o.description}'
+              '${_excerptSuffix(o.excerpt)}',
+        )
+        .toList(),
+    section: '时序矛盾观察',
+  );
+  if (budgeted.kept.isEmpty) return null;
+  final notice = budgeted.dropped > 0
+      ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
+      : '';
 
   return '## 时序矛盾观察（F05 补充）\n\n'
       '以下是作品中已记录的人物属性前后不一致（同属性不同值，按出现章节标注）。'
       '若这些矛盾确属事实性错误（而非角色刻意隐瞒或剧情转折），请结合 P018 人设崩塌症'
       '的判断原则提示学员，温和指出矛盾位置与前后差异（只定位，不代改正文）。\n\n'
-      '$lines';
+      '${budgeted.kept.join('\n')}$notice';
 }
 
 /// 设定不一致观察上下文（批次 E1-b · ADR-C93 D5）
@@ -484,19 +494,28 @@ String? buildWorldSettingObservationsContext(
 ) {
   if (observations.isEmpty) return null;
 
-  final lines = observations
-      .map(
-        (o) =>
-            '- 「${o.themeName}」${o.attribute}：${o.description}'
-            '${_excerptSuffix(_truncateExcerpt(o.excerpt, kWorldObservationExcerptMaxChars))}',
-      )
-      .join('\n');
+  // S3（R1）：摘录先过 120 字截断（与 character 侧同口径）；
+  // S2（R3/R4）：再过两级预算（条数 → 字符），未超限输出逐字节不变。
+  final budgeted = ObservationBudget.apply(
+    observations
+        .map(
+          (o) =>
+              '- 「${o.themeName}」${o.attribute}：${o.description}'
+              '${_excerptSuffix(_truncateExcerpt(o.excerpt, kWorldObservationExcerptMaxChars))}',
+        )
+        .toList(),
+    section: '设定不一致观察',
+  );
+  if (budgeted.kept.isEmpty) return null;
+  final notice = budgeted.dropped > 0
+      ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
+      : '';
 
   return '## 设定不一致观察（设定层）\n\n'
       '以下是作品中同一设定主题（世界规则 / 体系 / 势力）在不同章节的取值记录。'
       '若确属**规则与例外**（同一主题在不同范围或时期下的层次，如整体灵气稀薄但'
       '某地有灵脉），请忽略；若确属设定漂移，请温和提示学员（只定位，不代改正文）。\n\n'
-      '$lines';
+      '${budgeted.kept.join('\n')}$notice';
 }
 
 /// 因果链断裂观察上下文（批次67 B62j，A6 第二迭代 F07，挂 P021/P016 补充）
@@ -509,15 +528,23 @@ String? buildCausalityBreakContext(
 ) {
   if (observations.isEmpty) return null;
 
-  final lines = observations
-      .map((o) => '- ${o.description}${_excerptSuffix(o.excerpt)}')
-      .join('\n');
+  // S2（R3/R4）：两级预算接入（与 F05/F05 设定侧同型，见构建器顶部注释）。
+  final budgeted = ObservationBudget.apply(
+    observations
+        .map((o) => '- ${o.description}${_excerptSuffix(o.excerpt)}')
+        .toList(),
+    section: '因果链断裂观察',
+  );
+  if (budgeted.kept.isEmpty) return null;
+  final notice = budgeted.dropped > 0
+      ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
+      : '';
 
   return '## 因果链断裂观察（F07 补充）\n\n'
       '以下是作品中已记录的关键事件（决定/转折/突发类）缺少触发事件（因果前驱缺失）。'
       '若确属「突然发生」而读者无法理解动机（而非有意留白或后续章节揭示），请结合 P021 跳跃叙事'
       '/ P016 情节巧合的判断原则提示学员，温和指出事件位置与缺位的前因（只定位，不代改正文）。\n\n'
-      '$lines';
+      '${budgeted.kept.join('\n')}$notice';
 }
 
 /// 情节闭环观察上下文（批次67 B62j，A6 第二迭代 F11，挂 P014/P017 补充）
@@ -530,18 +557,27 @@ String? buildSubplotClosureContext(
 ) {
   if (observations.isEmpty) return null;
 
-  final lines = observations
-      .map((o) => '- ${o.description}${_excerptSuffix(o.excerpt)}')
-      .join('\n');
+  // S2（R3/R4）：两级预算接入；summary 的 N 仍基于**全部**观察数
+  // （含被裁的——被裁部分由截断提示明示，两处数字语义互补）。
+  final budgeted = ObservationBudget.apply(
+    observations
+        .map((o) => '- ${o.description}${_excerptSuffix(o.excerpt)}')
+        .toList(),
+    section: '情节闭环观察',
+  );
+  if (budgeted.kept.isEmpty) return null;
   final summary = observations.length >= 2
       ? '\n\n共 ${observations.length} 条支线收束滞后。'
+      : '';
+  final notice = budgeted.dropped > 0
+      ? '\n\n${ObservationBudget.truncationNotice(budgeted.dropped)}'
       : '';
 
   return '## 情节闭环观察（F11 补充）\n\n'
       '以下是作品中已引入多章但至今未回收的支线。若这些支线并非有意留待后续收束，'
       '请结合 P014 结尾仓促 / P017 伏笔埋设回收问题的判断原则提示学员，'
       '温和指出各支线的引入位置与未回收现状（只定位，不代改正文）。\n\n'
-      '$lines$summary';
+      '${budgeted.kept.join('\n')}$summary$notice';
 }
 
 /// 基础文法观察上下文（批次70 F12，挂 P022 重复用词/基础语病 补充）

@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
 import 'package:writingcoach/services/conflict_detector.dart';
 import 'package:writingcoach/services/event_causality_detector.dart';
@@ -161,6 +162,101 @@ void main() {
         '（原文：「那柄断剑再也没有出现」）'
         '\n\n共 2 条支线收束滞后。',
       );
+    });
+  });
+
+  group('S2：观察段两级预算接入（R3/R4）', () {
+    ConflictObservation _conflict(int i, {int excerptLen = 10}) =>
+        ConflictObservation(
+          characterName: '角色${i.toString().padLeft(2, '0')}',
+          attribute: '性情',
+          orderedValues: _pair('性情', '冷静', '暴烈'),
+          description: '第1章「冷静」→ 第9章「暴烈」（样本$i）',
+          excerpt: '摘录${'字' * excerptLen}$i',
+        );
+
+    WorldConflictObservation _worldShort(int i) =>
+        _world('灵气体系${i.toString().padLeft(2, '0')}', '短依据$i');
+
+    test('R3-AC1/AC2：20 条 character 观察 → 恰 12 条注入 + 提示「另有 8 条」', () {
+      final ctx = buildConflictObservationsContext(
+        List.generate(20, _conflict),
+      )!;
+      final keptLines = ctx.split('\n').where((l) => l.startsWith('- '));
+      expect(keptLines, hasLength(ContextBudget.observationMaxItems));
+      // 条数上限砍尾（Q3 甲）：字典序前 12 条保留，尾部被裁
+      expect(ctx, contains('- 角色01「性情」'));
+      expect(ctx, isNot(contains('- 角色13「性情」')));
+      // 知情截断：提示数 == 实际丢弃数（20 − 12）
+      expect(ctx, contains('另有 8 条观察未列出'));
+    });
+
+    test('R3：world 观察 14 条 → 12 条 + 「另有 2 条」', () {
+      final ctx = buildWorldSettingObservationsContext(
+        List.generate(14, _worldShort),
+      )!;
+      final keptLines = ctx.split('\n').where((l) => l.startsWith('- '));
+      expect(keptLines, hasLength(12));
+      expect(ctx, contains('另有 2 条观察未列出'));
+    });
+
+    test('R4-AC3 叠加态：条数砍尾后字符预算继续生效（causality 长摘录）', () {
+      final ctx = buildCausalityBreakContext(
+        List.generate(15, (i) {
+          return CausalityBreakObservation(
+            name: '事件$i',
+            chapter: i + 2,
+            eventType: '转折',
+            description: '第${i + 2}章「事件$i」（转折类）缺触发事件（样本$i）',
+            excerpt: '字' * 130,
+          );
+        }),
+      )!;
+      final keptLines = ctx
+          .split('\n')
+          .where((l) => l.startsWith('- '))
+          .toList();
+      // 15 条触发条数砍尾；长摘录使单行 ~190 chars，字符预算在 12 条前
+      // 即耗尽 → kept 行数必须 < 12（叠加生效的证据）
+      expect(keptLines.length, lessThan(12));
+      expect(keptLines, isNotEmpty);
+      // R4-AC1（可变行口径）：保留行总字符 ≤ 段级预算
+      expect(
+        keptLines.join('\n').length,
+        lessThanOrEqualTo(ContextBudget.observationSectionBudgetChars),
+      );
+      expect(ctx, contains('### 观察截断提示'));
+    });
+
+    test('R3：subplot 14 条 → 12 条；summary 仍报全部 14 条 + 提示互补', () {
+      final ctx = buildSubplotClosureContext(
+        List.generate(14, (i) {
+          return UnclosedSubplotObservation(
+            name: '支线${i.toString().padLeft(2, '0')}',
+            introducedChapter: i + 1,
+            currentChapter: i + 12,
+            description: '第${i + 1}章引入的支线「支线$i」至今未回收',
+            excerpt: '短摘录$i',
+          );
+        }),
+      )!;
+      final keptLines = ctx.split('\n').where((l) => l.startsWith('- '));
+      expect(keptLines, hasLength(12));
+      expect(ctx, contains('共 14 条支线收束滞后'));
+      expect(ctx, contains('另有 2 条观察未列出'));
+    });
+
+    test('防御：单条观察行即超字符预算 → 整段降级为 null（等效无观察）', () {
+      final ctx = buildConflictObservationsContext([
+        ConflictObservation(
+          characterName: '角色超长',
+          attribute: '性情',
+          orderedValues: _pair('性情', '冷静', '暴烈'),
+          description: '描' * 1000,
+          excerpt: '摘录',
+        ),
+      ]);
+      expect(ctx, isNull);
     });
   });
 }

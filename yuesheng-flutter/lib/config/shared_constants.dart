@@ -81,6 +81,15 @@ class ContextBudget {
   static const int syndromeSectionBudget = 3500;
   static const int focusSyndromeBudget = 2000;
   static const int nonFocusSummaryPoolBudget = 1500;
+
+  // S2（R3/R4，2026-09-13）：观察段两级预算（X-043 镜像，见
+  // lib/services/observation_budget.dart）。
+  // 4 个事实表观察段 × 900 = 3600 ≤ 预算表 ruleDetectors 静态上界 3750
+  // （token_budget_table.dart），静态审计自洽；运行时再由 S1 闸门整段兜底。
+  // 单行约 60–180 chars（含 120 字摘录）⇒ 900 预算实际容纳 ~7–12 条，
+  // 与条数上限互为双保险。默认值随 R8 实测报告呈舰长终审（Q2 甲）。
+  static const int observationMaxItems = 12;
+  static const int observationSectionBudgetChars = 900;
 }
 
 /// 诊断锁定阈值
