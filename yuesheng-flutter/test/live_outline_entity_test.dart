@@ -53,10 +53,10 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 const String _kBaseUrl = 'https://api.deepseek.com';
 const String _kModel = 'deepseek-v4-flash';
 const MethodChannel _kConnectivityChannel = MethodChannel(
@@ -90,6 +90,7 @@ class _RecordingLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     dynamic cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     final sys = messages
         .where((m) => m.role == 'system')

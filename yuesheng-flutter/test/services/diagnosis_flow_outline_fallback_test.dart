@@ -58,6 +58,30 @@ class FakeLlmClient extends LlmClient {
   }
 }
 
+/// 按调用次序回放不同响应的 Fake（S4b #1b 用：第 1 次 = 主链诊断块，
+/// 第 2 次 = teacher 建议链返回空——否则 teacher 会把诊断块原文当回复，
+/// combinedContent 非空，占位路径不触发）。
+class SeqFakeLlmClient extends LlmClient {
+  SeqFakeLlmClient(this._responses);
+
+  final List<String> _responses;
+  int _cursor = 0;
+
+  @override
+  Future<void> streamChat(
+    List<ChatMessage> messages,
+    void Function(LlmStreamResponse response) callback, {
+    CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
+  }) async {
+    final response = _cursor < _responses.length ? _responses[_cursor++] : '';
+    if (response.isNotEmpty) {
+      callback(LlmStreamResponse(content: response, isDone: false));
+    }
+    callback(const LlmStreamResponse(content: '', isDone: true));
+  }
+}
+
 void main() {
   late AppDatabase db;
   late SessionRepository sessionRepo;
@@ -214,14 +238,80 @@ void main() {
 
     // 兜底成立 → 不触发 onError('AI 返回为空')
     expect(errors, isEmpty, reason: 'M5: 有 outline 实体时应判真，不 abort');
-    // assistant 消息落库，内容为兜底占位「诊断完成。」
+    // assistant 消息落库，内容为 S4b 升级占位（实体分型，R6/Q1 甲）
     final messages = await sessionRepo.listMessages(sessionId);
     final assistant = messages
         .where((m) => m.role == 'assistant')
         .map((m) => m.content)
         .toList();
     expect(assistant, isNotEmpty, reason: 'M5: 兜底成立后应写入 assistant 消息');
-    expect(assistant.last, contains('诊断完成'), reason: 'M5: 空响应判真后应写入「诊断完成。」占位');
+    expect(assistant.last, contains('大纲实体已保存'), reason: 'S4b: 空响应判真后应写入实体分型占位');
+    expect(assistant.last, contains('已保存'), reason: 'S4b 硬约束①: 必须交代「数据已保存」');
+    expect(assistant.last, contains('文字点评'), reason: 'S4b 硬约束①: 必须交代「缺文字点评」');
+    expect(assistant.last, contains('临时故障'), reason: 'S4b: 交代可能是网络或模型临时故障');
+    expect(
+      assistant.last,
+      isNot(contains('建议保存')),
+      reason: 'S4b: 实体已持久化，回执不应误降级',
+    );
+  });
+
+  test('#1b 空正文 + 有诊断块 → 升级占位（诊断分型：N 条症候），不 abort', () async {
+    final errors = <String>[];
+    final svc = buildService(
+      SeqFakeLlmClient([
+        // 第 1 次：主链流式响应 = 纯诊断块（无自然语言后缀）→ combinedContent 空
+        '[YS_DIAGNOSIS]'
+            '{"syndromes":[{"syndrome_id":"P003","name":"情绪直白","severity":"L2",'
+            '"evidence":["第3段"],"explanation":"情绪描写过于直白"}],'
+            '"suggested_actions":[],"confidence":0.8}'
+            '[/YS_DIAGNOSIS]',
+        // 第 2 次：teacher 建议链返回空（占位路径要求 combinedContent 全空）
+        '',
+      ]),
+      outlineRepo: OutlineRepository(db),
+    );
+    await svc.sendMessage(sessionId, '帮我诊断', callbacks(errors), options());
+
+    expect(errors, isEmpty, reason: 'S4b: 有诊断块时判真，不触发 onError');
+    final messages = await sessionRepo.listMessages(sessionId);
+    final assistant = messages
+        .where((m) => m.role == 'assistant')
+        .map((m) => m.content)
+        .toList();
+    expect(assistant, isNotEmpty);
+    expect(
+      assistant.last,
+      contains('诊断数据已保存（1 条症候）'),
+      reason: 'S4b: 诊断分型占位应带症候计数',
+    );
+    expect(assistant.last, contains('文字点评'), reason: 'S4b 硬约束①: 两件事齐说');
+    expect(
+      assistant.last,
+      isNot(contains('诊断完成')),
+      reason: 'S4b: 病根占位「诊断完成。」应被替换',
+    );
+  });
+
+  test('#1c 正文非空 → 逐字原样落库，不触占位（R6-AC3）', () async {
+    final errors = <String>[];
+    final svc = buildService(
+      FakeLlmClient('这段的开头张力立住了，但中段节奏偏平，建议压缩铺垫。'),
+      outlineRepo: OutlineRepository(db),
+    );
+    await svc.sendMessage(sessionId, '帮我诊断', callbacks(errors), options());
+
+    expect(errors, isEmpty);
+    final messages = await sessionRepo.listMessages(sessionId);
+    final assistant = messages
+        .where((m) => m.role == 'assistant')
+        .map((m) => m.content)
+        .toList();
+    expect(
+      assistant,
+      contains('这段的开头张力立住了，但中段节奏偏平，建议压缩铺垫。'),
+      reason: 'S4b AC3: 非空正文逐字不变，占位文案不参与',
+    );
   });
 
   test('#2 空响应 + 无诊断 + chapter 无 outline 实体 → 仍 abort', () async {

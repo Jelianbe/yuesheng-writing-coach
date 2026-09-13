@@ -104,6 +104,26 @@ typedef _ParsedOutput = ({
   String? factManuscriptId,
 });
 
+/// S4b（R6，Q1 甲）：空正文判真（treatAsValid）时的升级占位文案，
+/// 替换病根文案「诊断完成。」——后者把「正常零点评」与「输出故障」
+/// 压成一个笼统说法（半静默比全静默更伤信任）。
+///
+/// 按保存物分型（diagnosis 优先于大纲实体）：
+/// - 有诊断块：`诊断数据已保存（N 条症候），但这次教练没有附上文字点评——
+///   通常是网络或模型临时故障。`
+/// - 仅有大纲实体：`大纲实体已保存（N 条），但这次教练没有附上文字点评——
+///   通常是网络或模型临时故障。`
+///
+/// 硬约束（PRD §6.2）：①「数据已保存」+「缺文字点评」两件事齐说；
+/// ② 无「失败/错误」全盘否定措辞（数据其实落库成功）；③ 教学语气
+///（对齐 F05 免责句式的温和姿态）。
+String _emptyContentPlaceholder({int? syndromeCount, int? entityCount}) {
+  final saved = syndromeCount != null
+      ? '诊断数据已保存（$syndromeCount 条症候）'
+      : '大纲实体已保存（${entityCount ?? 0} 条）';
+  return '$saved，但这次教练没有附上文字点评——通常是网络或模型临时故障。';
+}
+
 /// K-9 中间结果：Teacher 触发输出。
 typedef _TeacherOutcome = ({String displayContent, TeacherResult? teacher});
 
@@ -810,17 +830,13 @@ class DiagnosisFlowHandler {
     required ParsedDiagnosis? diagnosis,
     required ReferenceItem? primaryRef,
   }) async {
-    bool treatAsValid = false;
-    if (combinedContent.trim().isEmpty) {
-      if (diagnosis != null) {
-        treatAsValid = true;
-      } else if (_ensureOutlineService() != null &&
-          primaryRef?.refType == 'chapter') {
-        final c = await _readOutlineEntityCount(primaryRef!.refId);
-        if (c > 0) treatAsValid = true;
-      }
-    }
-    if (combinedContent.trim().isEmpty && !treatAsValid) {
+    // S4b：判真同时记下保存物计数，供占位文案分型（诊断块优先于大纲实体）
+    final validity = await _resolveEmptyContentValidity(
+      combinedContent: combinedContent,
+      diagnosis: diagnosis,
+      primaryRef: primaryRef,
+    );
+    if (validity.isEmptyContent && !validity.treatAsValid) {
       return (
         aborted: true,
         finalContent: '',
@@ -828,11 +844,18 @@ class DiagnosisFlowHandler {
         receiptNote: '',
       );
     }
-    final finalContent = combinedContent.trim().isEmpty
-        ? '诊断完成。'
+    final finalContent = validity.isEmptyContent
+        ? _emptyContentPlaceholder(
+            syndromeCount: validity.syndromeCount,
+            entityCount: validity.entityCount,
+          )
         : combinedContent;
+    // S4b：升级占位文案显式含「已保存」声明——诊断落库（本回合）或大纲
+    // 实体已持久化（treatAsValid 判真依据即实体计数 > 0）均属事实，回执
+    // 如实登记，防止 ReplyReceiptGuard 把「已保存」误降级为「建议保存」。
     final performedActions = <ReceiptAction>{
-      if (diagnosis != null) ReceiptAction.saved,
+      if (diagnosis != null || validity.entityCount != null)
+        ReceiptAction.saved,
     };
     final receiptResult = ReplyReceiptGuard.sanitize(
       finalContent,
@@ -846,6 +869,58 @@ class DiagnosisFlowHandler {
       finalContent: finalContent,
       assistantContent: receiptResult.text,
       receiptNote: note,
+    );
+  }
+
+  /// 空响应判真判定（R-019 拆出）：combinedContent 为空时按既有判据
+  /// 判定 treatAsValid，并带回保存物计数（诊断块 → 症候数；仅大纲实体
+  /// → 实体数）。非空正文直接返回 isEmptyContent=false，零行为变更。
+  Future<
+    ({
+      bool isEmptyContent,
+      bool treatAsValid,
+      int? syndromeCount,
+      int? entityCount,
+    })
+  >
+  _resolveEmptyContentValidity({
+    required String combinedContent,
+    required ParsedDiagnosis? diagnosis,
+    required ReferenceItem? primaryRef,
+  }) async {
+    final isEmptyContent = combinedContent.trim().isEmpty;
+    if (!isEmptyContent) {
+      return (
+        isEmptyContent: false,
+        treatAsValid: false,
+        syndromeCount: null,
+        entityCount: null,
+      );
+    }
+    if (diagnosis != null) {
+      return (
+        isEmptyContent: true,
+        treatAsValid: true,
+        syndromeCount: diagnosis.syndromes.length,
+        entityCount: null,
+      );
+    }
+    if (_ensureOutlineService() != null && primaryRef?.refType == 'chapter') {
+      final c = await _readOutlineEntityCount(primaryRef!.refId);
+      if (c > 0) {
+        return (
+          isEmptyContent: true,
+          treatAsValid: true,
+          syndromeCount: null,
+          entityCount: c,
+        );
+      }
+    }
+    return (
+      isEmptyContent: true,
+      treatAsValid: false,
+      syndromeCount: null,
+      entityCount: null,
     );
   }
 
