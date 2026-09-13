@@ -163,7 +163,10 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Text('── 第一条设定（属性与取值必填）──', style: AppTextStyles.caption),
+            const Text(
+              '── 第一条设定（选填；填了属性就必须填取值）──',
+              style: AppTextStyles.caption,
+            ),
             const SizedBox(height: AppSpacing.xs),
             _AssertionFormFields(
               attrCtrl: _attrCtrl,
