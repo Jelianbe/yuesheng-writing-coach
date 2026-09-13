@@ -250,7 +250,8 @@ const Skill _coachingRhythm = Skill(
   meta: SkillMeta(
     id: 'coaching-rhythm',
     group: 'coaching',
-    estimatedTokens: 3500,
+    estimatedTokens:
+        3500, // 台账失真：实测 8,453 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.guided,
   ),
   content: _coachingRhythmBody1 + _coachingRhythmBody2,

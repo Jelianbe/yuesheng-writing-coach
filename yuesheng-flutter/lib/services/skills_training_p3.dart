@@ -8,7 +8,8 @@ const Skill _trainingEvaluationV2 = Skill(
   meta: SkillMeta(
     id: 'training-evaluation-v2',
     group: 'training',
-    estimatedTokens: 700,
+    estimatedTokens:
+        700, // 台账失真：实测 3,782 字符（锚点 len，2026-09-13，5.40×）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 训练评估指南

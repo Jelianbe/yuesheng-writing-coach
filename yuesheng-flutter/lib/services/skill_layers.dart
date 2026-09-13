@@ -1,10 +1,16 @@
 /// Skill 三级加载分层配置
 ///
 /// 架构：
-///   L1 常驻（~10000 tokens 实测）— 核心规则 + 态度档位，所有场景必加载
-///   L2 按需注入（~8000-11000 tokens/组）— 按教学语境切换，每次只加载一组
-///   L3 检索触发（~600 tokens/条）— 代码按需检索特定条目后注入
-///   注入管线（~200-800 tokens）— 代码引擎计算结果注入 prompt
+///   L1 常驻（实测 29,543 字符）— 核心规则 + 态度档位，所有场景必加载
+///   L2 按需注入（实测 24,677–44,042 字符/组）— 按教学语境切换，每次只加载一组
+///   L3 检索触发（~600 字符/条）— 代码按需检索特定条目后注入
+///   注入管线（~200-800 字符）— 代码引擎计算结果注入 prompt
+///
+/// 【体积台账 · 2026-09-13 重建（E 批）】上文/下文的「实测」口径 = 锚点快照
+/// test/snapshots/skill_prompt_anchor.json 的 skillContent[id].len（实际注入串的
+/// UTF-16 码元数，非 tokenizer 实测）。旧值 ~10000 / ~10280 等为 2026-08-11 前
+/// 口径，已作废。L2 五组实测（含 contextHint）：beginner 31,415 · diagnosis
+/// 44,042 · training 38,329 · advanced 28,773 · outline 24,677。
 ///
 /// 真源：yuesheng-android/src/assets/skills/skill-layers.ts
 library;
@@ -20,18 +26,19 @@ export 'package:writingcoach/contracts/teaching_capability.dart';
 
 // ─── L1 常驻层 ───────────────────────────────────────────────
 
-/// L1 层：所有场景均加载的核心 skill（~10000 tokens 实测总计）
+/// L1 层：所有场景均加载的核心 skill（实测 29,543 字符总计 =
+/// 九件套 28,354 + attitude-yuesheng 1,189；口径见文件头，2026-09-13）
 const List<String> l1SkillIds = [
-  'core-iron-triangle', // ~400 tokens
-  'core-product-identity', // ~630 tokens
-  'writing-anchors', // ~410 tokens (P4 批 5 新增)
-  'teaching-strategy', // ~4400 tokens
-  'phase-mapper', // ~100 tokens
-  'scenario-rules', // ~560 tokens
-  'validation-rules', // ~780 tokens
-  'teaching-modes', // ~1600 tokens
-  'reply-voice', // ~300 tokens (批次65 教练口语化去 AI 味，提炼 humanizer-zh)
-  // + attitude-* (+~1100 tokens) → 总计 ~10280
+  'core-iron-triangle', // 实测 1,466 字符
+  'core-product-identity', // 实测 2,098 字符
+  'writing-anchors', // 实测 795 字符 (P4 批 5 新增)
+  'teaching-strategy', // 实测 12,253 字符
+  'phase-mapper', // 实测 4,062 字符
+  'scenario-rules', // 实测 1,656 字符
+  'validation-rules', // 实测 2,181 字符
+  'teaching-modes', // 实测 3,225 字符
+  'reply-voice', // 实测 618 字符 (批次65 教练口语化去 AI 味，提炼 humanizer-zh)
+  // + attitude-yuesheng (实测 1,189 字符) → 总计 29,543（口径见文件头，2026-09-13）
 ];
 
 // ─── L2 按需层 ───────────────────────────────────────────────

@@ -198,10 +198,10 @@ class TokenEstimate {
   /// 旧值硬编码 128000（B26 修订）→ 公式化（T-07 落地），为 Assistant 回复
   /// 显式预留 token，避免「上下文塞满 → 输出被截断 → JSON 字段缺失」故障。
   ///
-  /// systemPrompt 本体实测 56k–68k tokens（2026-08-18 token_measure_temp 实测，
-  /// diagnosis 68010 / p1 67923 / training 63795 / beginner 56618），
-  /// [maxBudget] 下常态不超（~70–90k）、最坏超限（预算表合计 145250）→
-  /// 闸门语义保留。
+  /// systemPrompt 本体实测约 55k–75k tokens（2026-09-13 重建；口径 = 锚点快照
+  /// test/snapshots/skill_prompt_anchor.json 的 prompt[*].len，ratio=1.0：diagnosis
+  /// 74,571 / p1 72,788 / training 68,858 / beginner 60,119 / outline 55,164。原
+  /// 2026-08-18 值与出处 token_measure_temp 已过时／已删），[maxBudget] 常态不超（~70–90k）、最坏超限（预算表合计 145250）→ 闸门语义保留。
   static const int maxBudget = contextLimit - reservedForReply;
 
   // B26：中文口径。1 个中文字符 ≈ 1 token（原 0.4 为英文口径，导致中文严重低估、

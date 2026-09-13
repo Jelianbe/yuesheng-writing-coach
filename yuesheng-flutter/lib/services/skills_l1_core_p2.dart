@@ -142,7 +142,7 @@ syndrome 对象字段：
 // | 字段 | 值 |
 // |:--|:--|
 // | 归属组件 | 教学 |
-// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入）。正文「loadWhen: P1+ 必加载」为抽离时旧自述，与 skill_layers.dart 现状不符，以代码为准 |
+// | 加载范围 | L1 常驻（l1SkillIds，全部 phase 无条件注入）；正文「loadWhen: L1 常驻，全 phase 注入」与代码一致（2026-09-13 E 批更正：旧头曾称正文为「P1+ 必加载」旧自述，该正文已改，头随之更正） |
 // | 依赖数据 | 「教学策略效果追踪」注入段（teaching_plan 闭环产出）；training-evaluation 的 TeachingState；学员认知风格（分析型/直觉型） |
 // | 数据缺失兜底 | 无效果追踪数据（首轮/无历史）时正文 §六「快速判断路径」即无数据路径，按 §三切换原则判断 |
 // | 引用目标 | teaching-strategy（§八 抽离来源，同为 L1 常驻恒同注入）；training-evaluation（TeachingState 定义） |

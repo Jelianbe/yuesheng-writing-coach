@@ -165,7 +165,8 @@ final Skill _coachingActionsV2 = Skill(
   meta: SkillMeta(
     id: 'coaching-actions-v2',
     group: 'coaching',
-    estimatedTokens: 1400,
+    estimatedTokens:
+        1400, // 台账失真：实测 3,670 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.free,
   ),
   content: '''# SKILL: 教学方法目录

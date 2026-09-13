@@ -98,7 +98,7 @@ P2_PRACTICE_LOOP 下分为 DIAGNOSIS（诊断）→ PRACTICE（练习）→ FEED
 // | 字段 | 值 |
 // |:--|:--|
 // | 归属组件 | 教师态度（产品身份与底线） |
-// | 加载范围 | L1 常驻（l1SkillIds，9 场景全注入）。正文「loadWhen: P2+ 必加载」为旧自述，与 skill_layers.dart 现状不符，以代码为准 |
+// | 加载范围 | L1 常驻（l1SkillIds，全部 phase 无条件注入）；正文「loadWhen: L1 常驻，全 phase 注入（产品底线不分阶段）」与代码一致（2026-09-13 E 批更正：旧头曾称正文为「P2+ 必加载」旧自述，该正文已改，头随之更正） |
 // | 依赖数据 | 无（纯边界规则） |
 // | 数据缺失兜底 | 无依赖 |
 // | 引用目标 | scenario-rules（DP-F/DP-G/DP-I 拒绝话术，检测标准所指向）；validation-rules V-09（合规校验引用本 skill 4负4正）；core-iron-triangle §〇（本 skill 列裁决第 1 级） |

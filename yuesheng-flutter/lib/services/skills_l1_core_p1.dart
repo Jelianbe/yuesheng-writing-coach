@@ -8,7 +8,7 @@ part of 'skill_registry.dart';
 // | 字段 | 值 |
 // |:--|:--|
 // | 归属组件 | 教学 |
-// | 加载范围 | L1 常驻（P1+），全部锚点 case 注入 |
+// | 加载范围 | L1 常驻（P0+，全部 phase 无条件注入；l1SkillIds 无阶段门控）。正文「loadWhen: P1+ 加载」为旧自述、与代码不符，以代码为准（2026-09-13 E 批标注） |
 // | 依赖数据 | 无（纯规则文本） |
 // | 数据缺失兜底 | 无依赖 |
 // | 引用目标 | V-03（validation-rules）；coaching-rhythm §5.3 / feedback-cognition §7.3（语气参考，已注明各自加载组） |
@@ -20,7 +20,8 @@ const Skill _phaseMapper = Skill(
   meta: SkillMeta(
     id: 'phase-mapper',
     group: 'core',
-    estimatedTokens: 2200,
+    estimatedTokens:
+        2200, // 台账失真：实测 4,062 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: N 系与 P 系阶段映射矩阵
