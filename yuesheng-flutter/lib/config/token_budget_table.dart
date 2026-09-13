@@ -45,7 +45,9 @@ abstract final class BudgetStageNames {
   static const String references = '引用上下文（主/次）';
   static const String reviewer = 'Reviewer 门控提示';
   static const String voiceDrift = '声线漂移提示';
-  static const String ruleDetectors = '规则观察检测器（5 个全命中）';
+  // R9（2026-09-13）：旧值「5 个全命中」为过期计数——实测观察注入器 7 个
+  // （message_injector.dart :811/:846/:892/:919/:972/:1025/:1048）。
+  static const String ruleDetectors = '规则观察检测器（7 个观察注入器）';
   static const String entity = '[YS_ENTITY] 协议 + 实体索引';
   static const String fact = '[YS_FACT] 协议 + 内容';
   static const String attachedFiles = '附属文件上下文';

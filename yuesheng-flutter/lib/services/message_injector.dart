@@ -271,52 +271,63 @@ class MessageInjector {
   /// 5.1.2 - 5.1.7：章节诊断观察项注入
   ///
   /// chat_service.dart 原 _injectChapterObservations L1344-L1579 = 236 行，
-  /// 按 R-019 拆为 6 个 helper（每个观察项独立可降级注入）。
+  /// 按 R-019 拆为 7 个 helper（每个观察项独立可降级注入）。
+  /// S1（R2）：新增必需参数 [markStage]——7 个观察段在**确认要注入时**
+  /// 标记进预算闸门 [BudgetStageNames.ruleDetectors]（先标记后 add，
+  /// ctx 为 null 不标记，防产生指向后续消息的脏索引——架构风险 1 纪律）。
   Future<void> injectChapterObservations({
     required String sessionId,
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     await _injectVoiceDriftObservation(
       sessionId: sessionId,
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _injectConflictObservation(
       sessionId: sessionId,
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _injectWorldSettingObservation(
       sessionId: sessionId,
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _injectCausalityObservation(
       sessionId: sessionId,
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _injectSubplotClosureObservation(
       sessionId: sessionId,
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _injectGrammarObservation(
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _injectDialogueTagObservation(
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
   }
 
@@ -793,7 +804,7 @@ class MessageInjector {
   }
 
   // ════════════════════════════════════════════════════════════════
-  // injectChapterObservations helpers (6)
+  // injectChapterObservations helpers (7)
   // ════════════════════════════════════════════════════════════════
 
   /// §5.1.2：声线漂移检测 + 提示注入（L3 style_fingerprint → L1 实时提示）
@@ -802,6 +813,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -817,6 +829,7 @@ class MessageInjector {
       if (hints.isEmpty) {
         await _studentModelRepo.updateStyleFingerprint(sessionId, current);
       } else {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(
           ChatMessage(
             role: 'system',
@@ -835,6 +848,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -854,6 +868,7 @@ class MessageInjector {
       final observations = fillConflictExcerpts(raw, chapter.content);
       final ctx = buildConflictObservationsContext(observations);
       if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
     } catch (e, st) {
@@ -879,6 +894,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -891,6 +907,7 @@ class MessageInjector {
       final observations = detectConflictsForWorlds(worlds);
       final ctx = buildWorldSettingObservationsContext(observations);
       if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
     } catch (e, st) {
@@ -904,6 +921,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -942,6 +960,7 @@ class MessageInjector {
           .toList();
       final ctx = buildCausalityBreakContext(observations);
       if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
     } catch (e, st) {
@@ -955,6 +974,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -993,6 +1013,7 @@ class MessageInjector {
           .toList();
       final ctx = buildSubplotClosureContext(observations);
       if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
     } catch (e, st) {
@@ -1005,6 +1026,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -1014,6 +1036,7 @@ class MessageInjector {
       final issues = detectGrammarLexicalIssues(chapter.content);
       final ctx = buildGrammarLexicalContext(issues);
       if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
     } catch (e, st) {
@@ -1026,6 +1049,7 @@ class MessageInjector {
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     if (!content.contains(_kDiagnosisRequestMarker)) return;
     if (primaryRef?.refType != 'chapter') return;
@@ -1035,6 +1059,7 @@ class MessageInjector {
       final issues = detectDialogueTagIssues(chapter.content);
       final ctx = buildDialogueTagContext(issues);
       if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
       }
     } catch (e, st) {

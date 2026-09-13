@@ -72,6 +72,7 @@ import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_output_guard.dart';
 import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 token 清洗
 import 'package:writingcoach/services/skill_dispatcher.dart';
+import 'package:writingcoach/services/stage_drop_notice.dart';
 import 'package:writingcoach/services/chat_gates.dart';
 import 'package:writingcoach/services/intent_classifier.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -1026,6 +1027,7 @@ extension ChatServiceSend on ChatService {
       content: content,
       primaryRef: primaryRef,
       messages: messages,
+      markStage: markStage,
     );
     await _messageInjector.injectOutlineFactsAndFiles(
       content: content,
@@ -1208,27 +1210,15 @@ extension ChatServiceSend on ChatService {
       );
     }
     if (guardReport.dropped) {
-      final materialStages = guardReport.droppedStages
-          .where(
-            (s) =>
-                s == BudgetStageNames.references ||
-                s == BudgetStageNames.attachedFiles ||
-                s == BudgetStageNames.fact,
-          )
-          .toList();
-      if (materialStages.isNotEmpty) {
-        messages.add(
-          ChatMessage(
-            role: 'system',
-            content:
-                '# 素材缺失提示（X-040 PHI）\n\n'
-                '由于本轮 token 预算超限，已裁掉以下用户素材：${materialStages.join('、')}。\n'
-                '回复时：\n'
-                '1. 不得假定素材内容直接给出诊断结论；\n'
-                '2. 若回复需这些内容支撑，明确告知用户需重新提供或简化提供；\n'
-                '3. 可基于现有上下文（活跃症候 + 历史对话）做方向性引导。',
-          ),
-        );
+      // S1（R2）：素材/观察段缺失提示生成迁入 StageDropNotice（ADR-C74
+      // 三步法，chat_service 零净增）。X-040 素材文案逐字不变（回归测试
+      // 冻结）；ruleDetectors 为新增的知情截断提示（Q0 裁定）。
+      final notice = StageDropNotice.build(
+        guardReport.droppedStages,
+        countByStage: guardReport.droppedCountByStage,
+      );
+      if (notice != null) {
+        messages.add(ChatMessage(role: 'system', content: notice));
       }
     }
   }

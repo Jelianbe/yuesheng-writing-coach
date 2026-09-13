@@ -216,4 +216,102 @@ void main() {
     expect(report.totalAfter, expectedAfter);
     expect(report.totalAfter <= maxBudget, true);
   });
+
+  // ─── S1（R2）：ruleDetectors 接线 + droppedCountByStage（2026-09-13）───
+
+  test('S1-AC1 超限 → ruleDetectors 整段被裁，droppedCountByStage 逐阶段回填', () {
+    final messages = [
+      m(115000), // idx0 systemPrompt（保底，不标记）
+      mt(4000, 'O'), // idx1 观察段 1（ruleDetectors，priority 3）
+      mt(4000, 'P'), // idx2 观察段 2（ruleDetectors）
+      m(3000), // idx3 画像（priority 5，更低顺位）
+    ];
+    // 合计 126000 > maxBudget(123904)；L2(1)/L3(2) 未标记 → 跳过；
+    // 裁 ruleDetectors 2 条（8000）→ 118000 ≤ maxBudget 达标即停。
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.ruleDetectors: [1, 2],
+        BudgetStageNames.studentProfile: [3],
+      },
+    );
+
+    expect(report.triggered, true);
+    expect(report.droppedStages, [BudgetStageNames.ruleDetectors]);
+    expect(report.droppedMessageCount, 2);
+    expect(report.droppedCountByStage, {
+      BudgetStageNames.ruleDetectors: 2,
+    }, reason: 'map 只含被裁阶段，未裁的画像不得出现');
+    expect(report.totalAfter <= maxBudget, true);
+    // 留下的必须是保底 + 画像，被裁的必须是两条观察段
+    expect(messages.map((e) => e.content).toList(), ['x' * 115000, 'x' * 3000]);
+  });
+
+  test('S1 多阶段被裁 → droppedCountByStage 逐阶段回填条数', () {
+    final messages = [
+      m(120000), // 保底
+      mt(4000, 'C'), // idx1 L3 结构（priority 2）
+      mt(4000, 'O'), // idx2 观察段（priority 3）
+    ];
+    // 合计 128000 > 123904；裁 L3(4000) → 124000 仍超；
+    // 再裁 ruleDetectors(4000) → 120000 达标即停。
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.l3Structure: [1],
+        BudgetStageNames.ruleDetectors: [2],
+      },
+    );
+
+    expect(report.droppedStages, [
+      BudgetStageNames.l3Structure,
+      BudgetStageNames.ruleDetectors,
+    ]);
+    expect(report.droppedCountByStage, {
+      BudgetStageNames.l3Structure: 1,
+      BudgetStageNames.ruleDetectors: 1,
+    });
+    expect(messages.length, 1);
+  });
+
+  test('S1-AC2 未超限 → ruleDetectors 保留零变更，droppedCountByStage 为空', () {
+    final messages = [
+      m(115000),
+      mt(4000, 'O'), // 观察段
+    ];
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.ruleDetectors: [1],
+      },
+    );
+
+    expect(report.triggered, false);
+    expect(report.droppedCountByStage, isEmpty);
+    expect(messages.length, 2);
+  });
+
+  test('S1 架构风险 1 专项：脏索引（标记了但未落位）不崩、不误裁无辜消息', () {
+    // 注入方纪律 = 仅在确认 messages.add 之后才 markStage；若违反纪律
+    // 标记了不存在的索引（= 标记时 messages.length），本测试证明 guard 的
+    // `i < messages.length` 过滤使其**不崩、不计入条数、不误裁任何消息**
+    //（脏索引的具体危害 = 指向「之后落位的无关消息」，防线在注入方纪律，
+    // 见 message_injector 7 个 helper 的「先标记后 add」位置）。
+    final messages = [
+      m(120000), // 保底
+      m(4000), // 历史（priority 8，最后才轮到）
+    ];
+    // 合计 124000 > 123904；ruleDetectors 标记索引 5 越界（不存在）
+    final report = TokenBudgetGuard.apply(
+      messages,
+      stageIndexes: {
+        BudgetStageNames.ruleDetectors: [5],
+      },
+    );
+
+    expect(report.overBudget, true);
+    expect(report.triggered, false, reason: '脏索引被过滤 → 无可裁阶段');
+    expect(report.droppedCountByStage, isEmpty);
+    expect(messages.length, 2, reason: '历史消息不得被越界脏索引误伤');
+  });
 }
