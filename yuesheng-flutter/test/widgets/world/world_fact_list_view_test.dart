@@ -11,6 +11,7 @@
 //   ⑧   onCountChanged 正确上报过滤 + 排序后行数
 // ─────────────────────────────────────────────────────────────
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -298,6 +299,63 @@ void main() {
         isNull,
         reason: 'UI 留空依据须落 null —— 该断言不进一致性检查（设计态契约）',
       );
+    });
+  });
+
+  // ── W1-T06：列表交互覆盖（排序 / 归档开关 / 已归档角标）──
+  group('列表交互（W1-T06）：排序 / 归档开关 / 已归档角标', () {
+    testWidgets('R8 排序切换：首见章节升序 ↔ 最近更新降序', (tester) async {
+      await repo.upsertWorld(
+        manuscriptId: manuscriptId,
+        name: '早章',
+        firstSeenChapter: 1,
+      );
+      await repo.upsertWorld(
+        manuscriptId: manuscriptId,
+        name: '晚章',
+        firstSeenChapter: 9,
+      );
+      // upsert 同一秒内 updatedAt 相同 → 显式落不同 updatedAt，使两档排序可区分
+      final early = (await repo.getWorld(manuscriptId, '早章'))!;
+      final late = (await repo.getWorld(manuscriptId, '晚章'))!;
+      await (db.update(db.worldFacts)..where((t) => t.id.equals(early.id)))
+          .write(const WorldFactsCompanion(updatedAt: Value(1000)));
+      await (db.update(db.worldFacts)..where((t) => t.id.equals(late.id)))
+          .write(const WorldFactsCompanion(updatedAt: Value(9000)));
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      double yOf(String s) => tester.getTopLeft(find.text(s)).dy;
+      expect(yOf('早章') < yOf('晚章'), isTrue, reason: '默认「首见章节」升序');
+
+      await tester.tap(find.text('最近更新'));
+      await tester.pumpAndSettle();
+      expect(
+        yOf('晚章') < yOf('早章'),
+        isTrue,
+        reason: '切「最近更新」降序：updatedAt 9000 应排在 1000 之前',
+      );
+    });
+
+    testWidgets('归档开关：默认隐藏 archived；开启后显示 + 「已归档」角标', (tester) async {
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '在用');
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '废弃');
+      final gone = (await repo.getWorld(manuscriptId, '废弃'))!;
+      await repo.archiveWorld(gone.id);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('在用'), findsOneWidget);
+      expect(find.text('废弃'), findsNothing, reason: '默认排除 archived');
+      expect(find.text('已归档'), findsNothing);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(find.text('废弃'), findsOneWidget, reason: '开启「显示已归档」后应出现');
+      expect(find.text('已归档'), findsOneWidget, reason: '归档行带「已归档」角标');
     });
   });
 }

@@ -312,4 +312,39 @@ void main() {
     expect(await repo.archiveWorld('no-such-id'), isFalse);
     expect(await repo.restoreWorld('no-such-id'), isFalse);
   });
+
+  test('#11 重复归档：不得产生重复行，status 保持 archived（W1-T06）', () async {
+    await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+    final id = (await repo.getWorld(manuscriptId, '灵气体系'))!.id;
+
+    expect(await repo.archiveWorld(id), isTrue);
+    // 实测语义：重复归档 WHERE id 仍命中（rows=1）→ 返回 true；效果幂等（同值重写）
+    expect(
+      await repo.archiveWorld(id),
+      isTrue,
+      reason: '重复归档：WHERE id 仍命中该行 → _updateStatus 返回 true',
+    );
+
+    final full = await repo.listWorlds(manuscriptId, includeArchived: true);
+    expect(full.length, 1, reason: '反复归档不得产生重复行');
+    expect(full.single.status, 'archived', reason: '状态收敛于 archived');
+    expect(await repo.listWorlds(manuscriptId), isEmpty);
+  });
+
+  test('#12 重复恢复：不得产生重复行，status 保持 active（W1-T06）', () async {
+    await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+    final id = (await repo.getWorld(manuscriptId, '灵气体系'))!.id;
+    await repo.archiveWorld(id);
+
+    expect(await repo.restoreWorld(id), isTrue);
+    expect(
+      await repo.restoreWorld(id),
+      isTrue,
+      reason: '重复恢复：WHERE id 仍命中该行 → _updateStatus 返回 true',
+    );
+
+    final list = await repo.listWorlds(manuscriptId);
+    expect(list.length, 1, reason: '反复恢复不得产生重复行');
+    expect(list.single.status, 'active', reason: '状态收敛于 active');
+  });
 }

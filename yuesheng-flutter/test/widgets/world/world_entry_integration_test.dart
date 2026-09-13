@@ -21,6 +21,11 @@ import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
 import 'package:writingcoach/widgets/world/world_fact_page.dart';
 import 'package:writingcoach/widgets/writing_menu_sheet.dart';
+import 'package:writingcoach/providers/session_providers.dart';
+import 'package:writingcoach/widgets/writing/view/writing_page_menu_actions.dart';
+import 'package:writingcoach/widgets/writing/writing_page_host.dart';
+
+import '../../helpers/mock_last_session_storage.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -184,4 +189,96 @@ void main() {
       expect(find.text('未提供作品 ID'), findsOneWidget);
     });
   });
+
+  // ── W1-T06：真实 appRouter 端到端（走真实注册的 builder，非复刻路由）──
+  //
+  // 补此前缺口：原集成测试用「本地复刻 GoRouter」验证 extra 契约，未打真实
+  // appRouter 的 /worlds builder；且 `openWorlds` 无任何测试。本组用真实
+  // appRouter + 真实 openWorlds，端到端验证 openWorlds → /worlds → WorldFactPage。
+  group('真实 appRouter：openWorlds → /worlds → WorldFactPage', () {
+    late AppDatabase db;
+    late ProviderContainer container;
+
+    setUp(() {
+      db = AppDatabase.forTesting(NativeDatabase.memory());
+      container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          // flutter_secure_storage 平台通道在 testWidgets 下会挂起 → 必须 mock
+          lastSessionStorageProvider.overrideWithValue(
+            MemoryLastSessionStorage(),
+          ),
+        ],
+      );
+    });
+
+    tearDown(() {
+      container.dispose();
+      db.close();
+    });
+
+    Future<void> pumpRealApp(WidgetTester tester) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: appRouter),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // appRouter 为全局单例，跨用例可能残留 location → 复位到书架 Tab
+      GoRouter.of(
+        tester.element(find.byType(Navigator).first),
+      ).go(AppRoutes.bookshelf);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('有 manuscriptId → openWorlds 推入真实 /worlds → 渲染 WorldFactPage', (
+      tester,
+    ) async {
+      final mid = await ManuscriptRepository(
+        db,
+      ).createManuscript(title: '测试作品');
+      await pumpRealApp(tester);
+
+      final ctx = tester.element(find.byType(Navigator).first);
+      openWorlds(_FakeWritingPageHost(context: ctx, resolvedManuscriptId: mid));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WorldFactPage), findsOneWidget);
+      expect(find.text('还没有世界观设定'), findsOneWidget);
+    });
+
+    testWidgets('manuscriptId 为空 → 不跳转 + SnackBar「章节加载中，请稍后再试」', (
+      tester,
+    ) async {
+      await pumpRealApp(tester);
+
+      final ctx = tester.element(find.byType(Navigator).first);
+      openWorlds(
+        _FakeWritingPageHost(context: ctx, resolvedManuscriptId: null),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(WorldFactPage), findsNothing);
+      expect(find.text('章节加载中，请稍后再试'), findsOneWidget);
+    });
+  });
+}
+
+/// 最小 [WritingPageHost] 假件：`openWorlds` 仅使用 [context] 与
+/// [resolvedManuscriptId]（`writing_page_menu_actions.dart:87-99`），
+/// 其余成员以 noSuchMethod 兜底（本测试永不触达）。
+class _FakeWritingPageHost implements WritingPageHost {
+  @override
+  final BuildContext context;
+
+  @override
+  final String? resolvedManuscriptId;
+
+  _FakeWritingPageHost({required this.context, this.resolvedManuscriptId});
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError(
+    '未使用的 WritingPageHost 成员被调用：${invocation.memberName}',
+  );
 }

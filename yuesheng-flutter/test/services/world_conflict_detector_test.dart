@@ -541,6 +541,12 @@ void main() {
       await append('充沛', chapter: 20);
 
       final worlds = await repo.listWorlds(manuscriptId);
+      // W1-T06 前置自证：两条断言确已落库 ⇒ 下面的 isEmpty 不是「对空列表恒真」
+      expect(
+        WorldFactRepository.parseAssertions(worlds.single.assertions).length,
+        2,
+        reason: '前置自证：库中确有 2 条断言（守卫自证数据在库，不依赖 #18b 作唯一对照）',
+      );
       expect(
         detectConflictsForWorlds(worlds),
         isEmpty,
@@ -554,6 +560,12 @@ void main() {
       await append('充沛', evidence: '此地灵脉充沛');
 
       final worlds = await repo.listWorlds(manuscriptId);
+      // W1-T06 前置自证：两条断言确已落库 ⇒ 下面的 isEmpty 不是「对空列表恒真」
+      expect(
+        WorldFactRepository.parseAssertions(worlds.single.assertions).length,
+        2,
+        reason: '前置自证：库中确有 2 条断言（守卫自证数据在库，不依赖 #18b 作唯一对照）',
+      );
       expect(
         detectConflictsForWorlds(worlds),
         isEmpty,
