@@ -51,10 +51,10 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 /// 顺序 Fake LLM：每次 streamChat 返回 responses 中下一条，真实复刻
 /// 诊断→教学 的双轮 LLM 调用。所有响应发完后循环复用最后一条。
 class SequenceFakeLlmClient extends LlmClient {
@@ -68,6 +68,7 @@ class SequenceFakeLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     final r = _responses[_callIndex % _responses.length];
     _callIndex++;
@@ -89,6 +90,7 @@ class SingleFakeLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     for (int i = 0; i < _fullResponse.length; i += 12) {
       final end = i + 12 < _fullResponse.length ? i + 12 : _fullResponse.length;

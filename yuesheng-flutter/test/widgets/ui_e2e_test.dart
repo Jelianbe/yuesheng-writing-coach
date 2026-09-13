@@ -53,8 +53,8 @@ import '../helpers/mock_last_session_storage.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
+
 /// Fake LLM：一次返回含 [YS_DIAGNOSIS] + [YS_ENTITY] 协议块的完整回复，
 /// 驱动 ChatService 走真实诊断落库 + 大纲提取 + 确认卡写入链路
 class _ProtocolLlmClient extends LlmClient {
@@ -63,6 +63,7 @@ class _ProtocolLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     const body =
         '王建国这个人物目前的塑造偏单薄，情绪表达直接。\n'

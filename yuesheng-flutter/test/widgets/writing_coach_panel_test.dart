@@ -69,6 +69,7 @@ class FakeLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     capturedMessages = messages;
     if (error != null) throw error!;

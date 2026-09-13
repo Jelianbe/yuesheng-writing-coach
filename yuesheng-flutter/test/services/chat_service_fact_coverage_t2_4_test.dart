@@ -38,8 +38,8 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
+
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
   FakeLlmClient(this._fullResponse);
@@ -49,6 +49,7 @@ class FakeLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     callback(LlmStreamResponse(content: _fullResponse, isDone: false));
     callback(const LlmStreamResponse(content: '', isDone: true));

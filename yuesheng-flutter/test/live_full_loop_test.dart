@@ -54,10 +54,10 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 /// 官方 OpenAI 兼容端点（LlmClient 会拼接 /chat/completions）
 const String _kBaseUrl = 'https://api.deepseek.com';
 
@@ -88,6 +88,7 @@ class _MigrationTriggerLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     final body =
         '诊断完成。本轮复诊：该症候仍为当前教学焦点，建议继续巩固。\n'
@@ -614,8 +615,6 @@ void main() {
           chapterRepo: ChapterRepository(db),
           teacherSuggestionRepo: TeacherSuggestionRepository(db),
           llmClient: _MigrationTriggerLlmClient(
-
-
             syndromeId: resolvedRef?.syndromeId ?? 'P003',
             syndromeName: resolvedRef?.syndromeName ?? '情绪直白',
             severity: resolvedRef?.severity ?? 'L2',

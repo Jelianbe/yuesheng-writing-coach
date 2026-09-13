@@ -33,10 +33,10 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 /// 生成合法诊断块 JSON 文本（可附加 style_profile 等额外字段）
 String buildDiagnosisBlock(Map<String, dynamic>? extra) {
   final base = <String, dynamic>{
@@ -287,6 +287,7 @@ class _FakeLlm extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     for (int i = 0; i < _fullResponse.length; i += 20) {
       final end = i + 20 < _fullResponse.length ? i + 20 : _fullResponse.length;

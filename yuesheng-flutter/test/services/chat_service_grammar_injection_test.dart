@@ -32,10 +32,10 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 /// 含语病的章节正文（连续重复标点 + 连续句首重复）
 const String _flawedContent =
     '他沉默了很久。。然后他忽然站起来。忽然又坐下。忽然把桌上的信揉成一团。'
@@ -55,6 +55,7 @@ class _CaptureLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     systemContents = messages
         .where((m) => m.role == 'system')

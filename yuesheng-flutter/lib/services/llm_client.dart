@@ -20,6 +20,7 @@ import 'llm_concurrency_gate.dart';
 import 'llm_config_storage.dart';
 import 'llm_error_codes.dart';
 import 'llm_fallback.dart';
+import 'llm_model_profile.dart';
 import 'llm_retry.dart';
 import 'network_check.dart';
 import 'stream_guard.dart';
@@ -88,55 +89,6 @@ class TestConnectionResult {
     required this.message,
     this.latencyMs,
   });
-}
-
-/// OpenAI 兼容模型的参数画像（ADR-C83：扩展多供应商）。
-///
-/// 差异点：
-/// - OpenAI o 系列推理模型（o1/o3/o4/gpt-5）：不支持 `temperature`，
-///   `max_tokens` 需改用 `max_completion_tokens`，否则请求 400；
-/// - DeepSeek 系与其他 OpenAI 兼容端点：`max_tokens` + `temperature`
-///   均支持（现状保持不变）。
-/// - GLM thinking 系（glm-4.5+ / 含 thinking 的 glm 变体，如
-///   glm-4.1v-thinking-flash）：思考模式在复杂长 prompt 下易退化输出
-///   （[gMASK] 复读 / 乱码，sglang + z.ai 实证），请求体显式关闭
-///   thinking（`{"type":"disabled"}`）规避；temperature/max_tokens 照常。
-class LlmModelProfile {
-  /// true = 推理优先模型：禁 temperature，用 max_completion_tokens
-  final bool reasoningOnly;
-
-  /// true = GLM thinking 系：请求体注入 `thinking: {type: disabled}`
-  ///（防思考退化乱码；DeepSeek/OpenAI 保持 false 不受影响）
-  final bool disableThinking;
-
-  const LlmModelProfile({
-    required this.reasoningOnly,
-    this.disableThinking = false,
-  });
-}
-
-/// 按模型名识别参数画像（纯函数，前缀匹配、大小写不敏感）。
-/// 仅识别 OpenAI o 系列推理模型与 GLM thinking 系；其余（含 deepseek）
-/// 走通用 OpenAI 行为。
-LlmModelProfile classifyLlmModel(String model) {
-  final m = model.toLowerCase().trim();
-  final reasoningOnly =
-      RegExp(r'^(o1|o3|o4|gpt-5)([-.]|$)').hasMatch(m) ||
-      m.startsWith('o1-') ||
-      m.startsWith('o3-') ||
-      m.startsWith('o4-');
-  // disableThinking：GLM thinking 系（防复杂 prompt 下退化乱码）+ doubao-seed
-  // 系（火山方舟深度思考默认开启，简单诊断任务显式关闭以控延迟/成本）。
-  // 两者均用 OpenAI 兼容字段 thinking: {"type": "disabled"}。
-  // doubao-seed-character 等无深度思考能力的变体不带版本号，不命中。
-  final disableThinking =
-      RegExp(r'^glm[-_.]?(4\.[5-9]|5|5\.\d|4\.1v)').hasMatch(m) ||
-      RegExp(r'^doubao-seed-\d').hasMatch(m) ||
-      m.contains('thinking');
-  return LlmModelProfile(
-    reasoningOnly: reasoningOnly,
-    disableThinking: disableThinking,
-  );
 }
 
 /// LLM 客户端（依赖 LlmConfigStorage + Dio）
@@ -461,10 +413,17 @@ class LlmClient {
   /// B1-2/B1-1：仅在「零 token」阶段失败才重试（建连超时/断流发生在
   /// 首个 token 前，重试安全）；一旦向 UI 输出过 token，后续失败直接
   /// 抛出——重试会导致同段回答重复输出。备选端点轮换同 chatCompletion。
+  ///
+  /// ADR-C94：增可选 [extraBody]（合并进请求体；`model/messages/stream`
+  /// 保留键防御性剥离，不得覆盖请求骨架；缺省时请求体逐字节不变）。
+  /// deepseek 系「空流」（零 content token 且正常收尾）→ 分级降级：
+  /// 尝试 2 注入 [LlmConfig.teachingStreamFallbackExtraBody] 兜底重试，
+  /// 见 [_streamAttemptLoop]。
   Future<void> streamChat(
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     final cfg = await _loadConfig();
     if (cfg == null) {
@@ -483,11 +442,12 @@ class LlmClient {
 
       try {
         await executeWithRetry((attemptIndex) async {
-          await _attemptStreamRequest(
+          await _streamAttemptLoop(
             endpoints[attemptIndex - 1],
             messages,
             callback,
             cancelToken,
+            extraBody: extraBody,
           );
         });
         _breaker.onSuccess();
@@ -548,14 +508,101 @@ class LlmClient {
     callback(const LlmStreamResponse(content: '', isDone: true));
   }
 
-  /// 单次流式请求尝试（B1：仅零 token 阶段失败可安全重试，R-019 拆出）。
-  Future<void> _attemptStreamRequest(
+  /// ADR-C94 §3.3 分级降级编排（R-019 拆出）。
+  ///
+  /// 尝试 1 用现参数原样（成功路径零行为变更）；判空联合判据（§3.4：
+  /// `emitted == false`——仅 content token 计数，reasoning_content 增量
+  /// 不计入——且正常收尾达成 [DONE]）成立、且模型属降级名单
+  ///（`profile.fallbackDisableThinking`）→ 尝试 2 注入兜底 extraBody；
+  /// 仍空 → 正常返回（不抛错），上层既有 `onError('AI 返回为空')` 防线接住。
+  ///
+  /// **isDone 恰好一次契约**：isDone 帧经 [bufferedCallback] 缓存不立即投递，
+  /// 降级发生则吞掉尝试 1 的 isDone，全程对调用方恰好投递一次（见
+  /// [_flushIsDone]）。半输出（emitted == true）一律不降级——已向用户
+  /// 投递内容，重发会复读，交上层既有错误语义处理。
+  Future<void> _streamAttemptLoop(
     LlmConfigValues c,
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback,
-    CancelToken? cancelToken,
-  ) async {
-    final body = _buildStreamRequestBody(c, messages);
+    CancelToken? cancelToken, {
+    Map<String, dynamic>? extraBody,
+  }) async {
+    var isDoneSeen = false;
+    void bufferedCallback(LlmStreamResponse response) {
+      if (response.isDone) {
+        isDoneSeen = true; // 缓存，不投递（降级时吞掉尝试 1 的 isDone）
+        return;
+      }
+      callback(response);
+    }
+
+    final first = await _runStreamAttempt(
+      c,
+      messages,
+      bufferedCallback,
+      cancelToken,
+      extraBody: extraBody,
+    );
+    // 非空流（半输出不降级）或未正常收尾（[DONE] 未达成，维持现状）→ 原样结束
+    if (first.emitted || !first.done) return _flushIsDone(callback, isDoneSeen);
+    final profile = classifyLlmModel(c.model);
+    if (!profile.fallbackDisableThinking) {
+      return _flushIsDone(callback, isDoneSeen);
+    }
+    debugPrint(
+      '[ADR-C94] streamChat 空流（零 content token 且正常收尾）→ deepseek 系'
+      '兜底重试 model=${c.model}（尝试 2 注入 thinking disabled）',
+    );
+    final second = await _runStreamAttempt(
+      c,
+      messages,
+      bufferedCallback,
+      cancelToken,
+      extraBody: _fallbackExtraBody(extraBody),
+    );
+    debugPrint(
+      second.emitted
+          ? '[ADR-C94] 兜底尝试 2 救回（有内容输出）model=${c.model}'
+          : '[ADR-C94] 兜底尝试 2 仍空，正常返回交上层防线 model=${c.model}',
+    );
+    return _flushIsDone(callback, isDoneSeen);
+  }
+
+  /// isDone 恰好一次契约的补投点（R-019 拆出）：仅当某次尝试达成过 [DONE]
+  /// 时投递一次；降级后由最终尝试的 [DONE] 语义覆盖（缓存值同构）。
+  void _flushIsDone(
+    void Function(LlmStreamResponse response) callback,
+    bool isDoneSeen,
+  ) {
+    if (isDoneSeen) {
+      callback(const LlmStreamResponse(content: '', isDone: true));
+    }
+  }
+
+  /// ADR-C94 尝试 2 的合并参数：兜底参数优先于调用方 extraBody（兜底是
+  /// 纠偏动作，不得被调用方传参重新打开 thinking）；保留键剥离在
+  /// [_buildStreamRequestBody] 处统一做。
+  Map<String, dynamic> _fallbackExtraBody(
+    Map<String, dynamic>? callerExtraBody,
+  ) {
+    return <String, dynamic>{
+      ...?callerExtraBody,
+      ...LlmConfig.teachingStreamFallbackExtraBody,
+    };
+  }
+
+  /// 单次流式请求尝试（B1：仅零 token 阶段失败可安全重试，R-019 拆出）。
+  /// ADR-C94：返回 `(emitted, done)`——emitted 仅由 content token 置位
+  ///（`_handleSseData` 只认 `delta.content`，reasoning_content 增量不置位）；
+  /// done = 该次尝试是否达成 [DONE]（正常收尾判据 b）。
+  Future<({bool emitted, bool done})> _runStreamAttempt(
+    LlmConfigValues c,
+    List<ChatMessage> messages,
+    void Function(LlmStreamResponse response) callback,
+    CancelToken? cancelToken, {
+    Map<String, dynamic>? extraBody,
+  }) async {
+    final body = _buildStreamRequestBody(c, messages, extraBody: extraBody);
     // 批次55：TTFT（time-to-first-token）观测——请求发出到首个内容 token 到达。
     // 仅 debug 留痕不干预，建「流式首字延迟」基线（真实设备采集）。
     // B1：挪入重试闭包，每次尝试独立计时。
@@ -567,7 +614,7 @@ class LlmClient {
       ttftWatch,
       callback,
     );
-    if (consumed.done) return;
+    if (consumed.done) return (emitted: consumed.emitted, done: true);
 
     // 流正常结束但被取消：Dio 取消时底层流可能干净关闭而非抛错，
     // 此处补一道取消判定，确保统一走取消分支而非静默成功。
@@ -582,7 +629,7 @@ class LlmClient {
       consumed.firstTokenLogged,
       callback,
     );
-    if (trailing.done) return;
+    return (emitted: trailing.emitted, done: trailing.done);
   }
 
   /// 消费 SSE 流（含断流语义重试判定，R-019 拆出）。
@@ -665,11 +712,14 @@ class LlmClient {
     return jsonEncode(body);
   }
 
-  /// 构建流式请求体（R-019 拆出；ADR-C83 增推理模型参数差异）。
+  /// 构建流式请求体（R-019 拆出；ADR-C83 增推理模型参数差异；
+  /// ADR-C94 增 extraBody 合并——`addAll` 前防御性剥离 `model/messages/stream`
+  /// 保留键，extraBody 不得覆盖请求骨架；extraBody 缺省时请求体逐字节不变）。
   String _buildStreamRequestBody(
     LlmConfigValues c,
-    List<ChatMessage> messages,
-  ) {
+    List<ChatMessage> messages, {
+    Map<String, dynamic>? extraBody,
+  }) {
     final profile = classifyLlmModel(c.model);
     final body = <String, dynamic>{
       'model': c.model,
@@ -684,6 +734,14 @@ class LlmClient {
       body['max_completion_tokens'] = LlmConfig.chatMaxTokens;
     } else {
       body['temperature'] = LlmConfig.streamTemperature;
+    }
+    if (extraBody != null) {
+      body.addAll(
+        Map<String, dynamic>.from(extraBody)
+          ..remove('model')
+          ..remove('messages')
+          ..remove('stream'),
+      );
     }
     return jsonEncode(body);
   }

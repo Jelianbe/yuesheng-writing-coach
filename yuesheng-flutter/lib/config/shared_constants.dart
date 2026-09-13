@@ -58,6 +58,19 @@ class LlmConfig {
   static const Map<String, dynamic> chunkAnalysisFallbackExtraBody = {
     'thinking': {'type': 'disabled'},
   };
+
+  /// 教学流式路径空流兜底的请求体附加字段（ADR-C94）。
+  ///
+  /// deepseek 系教学回合「零 content token 且正常收尾」（§3.4 联合判据）
+  /// 时，尝试 2 注入；与 [chunkAnalysisFallbackExtraBody] 值同源、命名分立
+  /// （教学 / 分块两条链路独立演进，注释互指）。`thinking:
+  /// {"type": "disabled"}` 是 ADR-C80 §1.2 探针 7 参数组合中唯一被
+  /// DeepSeek API 稳定采纳的推理控制参数（reasoning_tokens 归零 3/3）；
+  /// 生效判据 = 按 C80 §1.2 镜像用同参数非流式调用读 usage 归零为准，
+  /// 参数发出 ≠ 生效。
+  static const Map<String, dynamic> teachingStreamFallbackExtraBody = {
+    'thinking': {'type': 'disabled'},
+  };
 }
 
 /// 上下文预算（chat-service 引用注入）

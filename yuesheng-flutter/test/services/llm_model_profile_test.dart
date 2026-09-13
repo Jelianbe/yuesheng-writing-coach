@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/llm_model_profile.dart';
 
 void main() {
   group('classifyLlmModel（ADR-C83）', () {

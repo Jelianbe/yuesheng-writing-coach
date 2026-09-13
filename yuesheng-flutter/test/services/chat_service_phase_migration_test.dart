@@ -38,10 +38,10 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
     show DiagnosisCapabilityImpl;
-import 'package:writingcoach/services/genui_parser.dart'
-    show GenUiParser;
+import 'package:writingcoach/services/genui_parser.dart' show GenUiParser;
 import 'package:writingcoach/services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
+
 class FakeLlmClient extends LlmClient {
   final String _fullResponse;
   final int _chunkSize;
@@ -64,6 +64,7 @@ class FakeLlmClient extends LlmClient {
     List<ChatMessage> messages,
     void Function(LlmStreamResponse response) callback, {
     CancelToken? cancelToken,
+    Map<String, dynamic>? extraBody,
   }) async {
     calls.add(messages);
     final body = calls.length == 1
@@ -209,7 +210,6 @@ void main() {
       ),
     );
   }
-
 
   /// 设置教学状态：phase + beginnerLevel
   Future<void> setTeachingState({
