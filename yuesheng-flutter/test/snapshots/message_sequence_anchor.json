@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "note": "chat_service 边界消息序列结构锚点"
+  },
+  "p0_yuesheng_none": [
+    {
+      "role": "system",
+      "len": 30424,
+      "fnv": "2c63a96ca07a3c51"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p0_yuesheng_beginner": [
+    {
+      "role": "system",
+      "len": 60428,
+      "fnv": "4ca07fbfd58a5eb6"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p1_yuesheng_diagnosis": [
+    {
+      "role": "system",
+      "len": 72788,
+      "fnv": "2e0ddd03c518f9eb"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p2_yuesheng_diagnosis": [
+    {
+      "role": "system",
+      "len": 74571,
+      "fnv": "12d7d1c3e1fba8fe"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p2_yuesheng_training": [
+    {
+      "role": "system",
+      "len": 68858,
+      "fnv": "33ff7d50f824f2aa"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p3_yuesheng_advanced": [
+    {
+      "role": "system",
+      "len": 56611,
+      "fnv": "72bd9749e0da7c78"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p3_sensei_advanced": [
+    {
+      "role": "system",
+      "len": 56419,
+      "fnv": "44dd1b801d89e89c"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ],
+  "p4_yuesheng_beginner": [
+    {
+      "role": "system",
+      "len": 61902,
+      "fnv": "704519e0b22c8bc1"
+    },
+    {
+      "role": "system",
+      "len": 154,
+      "fnv": "1f5d4395eb54f6f7"
+    },
+    {
+      "role": "user",
+      "len": 22,
+      "fnv": "e44e287a4ac8d8f"
+    },
+    {
+      "role": "system",
+      "len": 271,
+      "fnv": "4711fab4233ed44b"
+    }
+  ]
+}

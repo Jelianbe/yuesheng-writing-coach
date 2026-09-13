@@ -2,8 +2,10 @@
 """
 月笙 Flutter 端 — Prompt 话术反模式扫描（综合审阅 E.6 / AGENTS.md 四闸配套）。
 
-扫描 lib/services/skills_*.dart 中注入 LLM 的 content 文本，检测会削弱 AI 灵活性
-或诱发幻觉的写法。开发者注释（// 与 /// 开头的行）不参与检测。
+扫描 lib/services 下所有**注入 LLM 的 content 文本**——L1/L2 skill 正文
+（`skills_*.dart`）与 L3 知识库词条正文（`syndrome_kb_content*` /
+`technique_kb_content*` / `training_kb_content*`）——检测会削弱 AI 灵活性或
+诱发幻觉的写法。开发者注释（// 与 /// 开头的行）不参与检测。
 
 检测项:
     force-trigger   强制触发: 必须输出 / 每轮都要 / 每次必须 / 必须加载 / 必须追加
@@ -54,6 +56,19 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SERVICES = os.path.join(ROOT, "lib", "services")
 BASELINE = os.path.join(ROOT, "scripts", "prompt_antipattern_baseline.json")
+
+# 扫描范围前缀（注入 LLM 的 content 文本）：
+#   skills_*             —— L1/L2 skill 正文（原有范围）
+#   syndrome_kb_content* —— L3 症候词条正文（getSyndromeContent 注入）
+#   technique_kb_content*—— L3 技法词条正文（getTechniqueContent 注入）
+#   training_kb_content* —— L3 训练词条正文（getTrainingContent 注入）
+# 注：training_kb_content.dart 为索引/barrel，无 ''' 块 → 扫描为空操作（不报错、不崩）。
+SCAN_PREFIXES = (
+    "skills_",
+    "syndrome_kb_content",
+    "technique_kb_content",
+    "training_kb_content",
+)
 
 # 每条规则: (规则名, 正则)
 KEYWORD_RULES = [
@@ -411,7 +426,7 @@ def main() -> int:
     files = sorted(
         os.path.join(SERVICES, f)
         for f in os.listdir(SERVICES)
-        if f.startswith("skills_") and f.endswith(".dart")
+        if f.endswith(".dart") and f.startswith(SCAN_PREFIXES)
     )
 
     findings: dict[str, list[list]] = {}

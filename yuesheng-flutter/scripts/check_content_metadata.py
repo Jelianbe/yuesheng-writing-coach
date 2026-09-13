@@ -36,10 +36,14 @@ REQUIRED_FIELDS = [
 PLACEHOLDERS = {"", "todo", "tbd", "待定", "待补", "待写", "-"}
 
 # 默认扫描的内容分片（相对仓库根；与规范 §3.3 口径一致）
+# 注：`syndrome_*.dart` 已覆盖 syndrome_kb_content*；此处补齐 L3 侧的
+#     technique_/training_ 内容分片（此前仅 syndrome_ 被覆盖，见 P3 评估）。
 DEFAULT_PATTERNS = [
     "lib/services/skills_*.dart",
     "lib/services/*_knowledge_base.dart",
     "lib/services/syndrome_*.dart",
+    "lib/services/technique_kb_content*.dart",
+    "lib/services/training_kb_content*.dart",
     "lib/services/skill_registry.dart",
     "lib/services/skill_layers.dart",
     "lib/services/progressive_diagnosis.dart",
