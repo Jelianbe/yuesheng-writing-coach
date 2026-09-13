@@ -416,6 +416,24 @@ String _truncateAroundKeyword(String snippet, String keyword, int maxLen) {
   return '$head$keyword$clippedTail';
 }
 
+/// world 摘录（含省略号）总字符上限（S3 · R1）。
+///
+/// 与 character 侧 [findKeywordExcerpt] 的 maxLen=120 同口径（对齐两侧规则）；
+/// 默认值随 R8 实测报告呈舰长终审（架构 §7-3）。
+const int kWorldObservationExcerptMaxChars = 120;
+
+/// world 摘录 120 字截断（S3 · R1）：超 [max] → 前 max-1 字 + 单字符省略号
+/// `…`，**总长 ≤ max（含省略号）**。
+///
+/// 刻意不使用 [_truncateToOneLine]：其先按句末分隔符取首句——多句 evidence
+/// 会被砍到首句且不带省略号，既丢信息又违反 R1-AC-1「>120 字 → ≤120 字并带
+/// 省略号」。前缀截断语义最直白、可测（架构 §1.1）。省略号与
+/// [_truncateAroundKeyword] 同款单字符 `…`（§7-5 摘录格式纪律）。
+String _truncateExcerpt(String excerpt, int max) {
+  if (excerpt.length <= max) return excerpt;
+  return '${excerpt.substring(0, max - 1)}…';
+}
+
 /// 摘录后缀（O11，批次6 6.5）：excerpt 非空 → 「（原文：「…」）」，否则空串
 /// （正文反查不可得时安全降级，不输出摘录）
 String _excerptSuffix(String? excerpt) {
@@ -470,7 +488,7 @@ String? buildWorldSettingObservationsContext(
       .map(
         (o) =>
             '- 「${o.themeName}」${o.attribute}：${o.description}'
-            '${_excerptSuffix(o.excerpt)}',
+            '${_excerptSuffix(_truncateExcerpt(o.excerpt, kWorldObservationExcerptMaxChars))}',
       )
       .join('\n');
 
