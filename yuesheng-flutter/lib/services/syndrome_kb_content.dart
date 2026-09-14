@@ -83,25 +83,6 @@ final String kSyndromeIndexContent =
 }
 [/YS_DIAGNOSIS]
 
-## JSON 字段说明
-
-- **syndromes**: 识别到的所有问题（不限制数量）
-  - **syndrome_id**: 从映射表匹配的 ID
-  - **name**: 症候名称（从映射表取）
-  - **severity**: L1/L2/L3
-  - **evidence**: 原文片段数组（5-20字，精准定位）
-  - **explanation**: 问题描述 + 判断理由（自然语言，合并写）
-  - **reader_impact**: 可选，说明对读者的影响
-- **suggested_actions**: 推荐动作 ID 数组（可为空数组）
-- **confidence**: 诊断置信度 0-1
-- **feedback_summary**: 可选，整体反馈
-- **root_cause_analysis**: 可选，根因
-- **next_focus**: 可选，下次聚焦（向后兼容字段，建议改用 teaching_plan.next_step）
-- **teaching_plan**: 可选，结构化教学计划子对象
-  - **current_teaching_focus_id**: 当前教学焦点症候 ID（如 P019）。必须从本轮 syndromes 中选取。代码会以此驱动 L3 完整定义+技法注入。
-  - **focus_reason**: 为什么选这个 focus（一句话）。下一轮会被注入到 system prompt。
-  - **next_step**: 训练目标/下一步动作（自然语言）。是 next_focus 的进化版。
-
 ## 排除的"伪问题"
 
 如果文本中有"看起来像问题但实际是合理写法"的地方，在自然说明部分提及，
