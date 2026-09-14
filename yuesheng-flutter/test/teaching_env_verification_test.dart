@@ -403,6 +403,12 @@ void main() {
           isTrue,
           reason: '${entry.$1} token 预算超限: errors=${v.errors}',
         );
+        // U-04（2026-09-14）：warnings 补消费者（原「软护栏」只写不读 ⇒ 等于失效）。
+        expect(
+          v.warnings,
+          isEmpty,
+          reason: '${entry.$1} 告警: warnings=${v.warnings}',
+        );
       }
     });
 

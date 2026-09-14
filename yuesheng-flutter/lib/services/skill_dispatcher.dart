@@ -261,13 +261,13 @@ PromptValidationResult validatePrompt(String prompt) {
     warnings.add('Token 预算紧张: ~$tokenEstimate/$maxBudget');
   }
 
-  // 检查必要段是否存在
-  if (!prompt.contains('铁三角')) {
-    warnings.add('缺少"核心铁三角"规则段');
-  }
-  if (!prompt.contains('位置判断')) {
-    warnings.add('缺少"位置判断"引导语');
-  }
+  // U-04（2026-09-14）已删除原两条 contains 软护栏「铁三角」「位置判断」，理由（实测）：
+  //   · 判据恒真：'位置判断' 由 _kPositionGuidance 无条件注入（见 buildSystemPromptV2），
+  //     且该常量文本自带该串 ⇒ 除空 prompt 外永真；'铁三角' 由 L1 恒注，同样常态为真。
+  //   · 零消费者：warnings 只写不读 —— lib 内本函数零调用，2 处 test 调用只断言
+  //     v.valid（= errors.isEmpty）⇒ 判据失效不可能被察觉（静默失效）。
+  //   · 二者的真源在场性改由 ID 级装配不变量守护（比文本 contains 更早、更强）：
+  //     见 test/skill_registry_l2_test.dart「装载零静默跳过」组与 Step 3c 判据④。
 
   return PromptValidationResult(
     valid: errors.isEmpty,

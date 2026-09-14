@@ -246,6 +246,9 @@ void main() {
       );
       final v = validatePrompt(r.systemPrompt);
       expect(v.valid, isTrue, reason: 'errors: ${v.errors}');
+      // U-04（2026-09-14）：warnings 补消费者。原「软护栏」只写不读 ⇒ 等于失效；
+      // 此处把「无告警」变成可执行判据：体积涨过 maxBudget×warningRatio 即红。
+      expect(v.warnings, isEmpty, reason: 'warnings: ${v.warnings}');
       expect(r.estimatedTokens, greaterThan(1000));
     });
   });
@@ -364,16 +367,25 @@ void main() {
       }
     });
 
-    test('装配序全序 = [九件套...] + [人格块] + [L2 已注册项...]', () {
+    test('装配序全序 = [九件套...] + [人格块] + [L2 全量期望项...]', () {
       for (final a in AttitudeLevel.values) {
         for (final ctx in contextsFor(a)) {
           final r = buildSystemPromptV2(ctx);
-          // 期望的 L2 段 = getL2SkillIds(mode) 中「已注册」的 id
-          //（未注册者被 dispatcher 静默跳过，与 _buildL2Chunks 同源）
-          final expectedL2 = getL2SkillIds(r.l2Mode)
-              .map((ref) => ref.skillId)
-              .where((id) => skillRegistry[id] != null)
+          // U-04（2026-09-14）：期望的 L2 段 = getL2SkillIds(mode) 的**全量**。
+          // 原写法先 `.where((id) => skillRegistry[id] != null)` 过滤 ⇒ 期望集
+          // 会随缺陷一起缩水，反而**掩盖** _buildL2Chunks 的「未注册即静默跳过」。
+          // 现改为「缺注册项 ⇒ 显式失败」，再比对全序。
+          final expectedL2 = getL2SkillIds(
+            r.l2Mode,
+          ).map((ref) => ref.skillId).toList();
+          final missing = expectedL2
+              .where((id) => skillRegistry[id] == null)
               .toList();
+          expect(
+            missing,
+            isEmpty,
+            reason: '档=$a 模式=${r.l2Mode}：L2 缺注册项 $missing ⇒ 装配已静默跳过',
+          );
           expect(r.loadedSkillIds, [
             ...l1SkillIds,
             attitudeId(a),
@@ -448,6 +460,54 @@ void main() {
             reason: '$id 不应挂进 L2 组 ${entry.key}（会重复注入）',
           );
         }
+      }
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // 装载零静默跳过（U-04 · 判据换代，2026-09-14）
+  //
+  // 病因（实测）：_buildL1Chunks / _buildL2Chunks 均为「getSkill(id) != null 才装载」，
+  // 未注册者被**静默跳过、不报错**（_buildL2Chunks 末行注释自认「未注册的 skill
+  // 静默跳过」）⇒ 改名 / 误删 / 注册表回归会造成「装配照常成功、产物静默变薄」。
+  //
+  // 原 soft guard（validatePrompt 内两条 prompt.contains）既恒真/零消费者，又只能
+  // 间接感知；本组按 ID 级判据直接兜住：期望集一律取自 l1SkillIds / getL2SkillIds
+  // 的**全量**，不经任何「已注册」过滤。
+  // ─────────────────────────────────────────────────────────────
+  group('装载零静默跳过（U-04 · 判据换代）', () {
+    test('L1 九件套全部已注册（缺件会被装配静默跳过）', () {
+      final missing = l1SkillIds
+          .where((id) => skillRegistry[id] == null)
+          .toList();
+      expect(
+        missing,
+        isEmpty,
+        reason: 'L1 缺注册项 $missing ⇒ _buildL1Chunks 静默跳过、产物静默变薄',
+      );
+    });
+
+    test('L1 九件套全部装载：loadedSkillIds 前 9 位逐位 == l1SkillIds', () {
+      final r = buildSystemPromptV2(
+        const SkillLoadContext(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.yuesheng,
+          subphase: TeachingSubphase.diagnosis,
+        ),
+      );
+      final loadedL1 = r.loadedSkillIds.take(l1SkillIds.length).toList();
+      expect(loadedL1, l1SkillIds, reason: 'L1 有件未装载（静默跳过），实际 $loadedL1');
+    });
+
+    test('L2 五组期望项全部已注册（不过滤，缺一件即红）', () {
+      for (final mode in L2Mode.values) {
+        final ids = getL2SkillIds(mode).map((ref) => ref.skillId).toList();
+        final missing = ids.where((id) => skillRegistry[id] == null).toList();
+        expect(
+          missing,
+          isEmpty,
+          reason: '$mode 组缺注册项 $missing ⇒ _buildL2Chunks 静默跳过',
+        );
       }
     });
   });
