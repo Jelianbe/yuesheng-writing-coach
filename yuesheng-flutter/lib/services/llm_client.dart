@@ -22,6 +22,8 @@ import 'llm_error_codes.dart';
 import 'llm_fallback.dart';
 import 'llm_model_profile.dart';
 import 'llm_retry.dart';
+import 'llm_usage.dart';
+import 'llm_usage_monitor.dart';
 import 'network_check.dart';
 import 'stream_guard.dart';
 
@@ -106,16 +108,22 @@ class LlmClient {
   /// 在途请求并发闸门（入档批次）：真实请求互斥，防并发风暴
   final LlmConcurrencyGate _gate;
 
+  /// 用量上报出口（M 批）：缺省交全局累计器（仿 [_gate] 的 kSharedLlmGate
+  /// 写法），测试可注入独立实例隔离累计状态。
+  final LlmUsageSink _usageSink;
+
   LlmClient([
     LlmConfigStorage? configStorage,
     Dio? dio,
     this._configLoader,
     LlmCircuitBreaker? circuitBreaker,
     LlmConcurrencyGate? gate,
+    LlmUsageSink? usageSink,
   ]) : _configStorage = configStorage ?? LlmConfigStorage(),
        _dio = dio ?? Dio(),
        _breaker = circuitBreaker ?? LlmCircuitBreaker(),
-       _gate = gate ?? kSharedLlmGate;
+       _gate = gate ?? kSharedLlmGate,
+       _usageSink = usageSink ?? kSharedLlmUsageMonitor.record;
 
   /// 当前配置源：优先自定义 loader（多账号），否则旧单键存储
   Future<LlmConfigValues?> _loadConfig() {
@@ -165,6 +173,12 @@ class LlmClient {
       );
 
       final latencyMs = DateTime.now().difference(startTime).inMilliseconds;
+      // M 批：连通性测试同样计费（5 token 级），为保持「用量口径零遗漏」
+      // 一并采集；响应体非 JSON 对象时静默跳过。
+      final body = _asJsonMap(response.data);
+      if (body != null) {
+        _reportUsage(body['usage'], LlmUsageKind.chat, model: body['model']);
+      }
       if (response.statusCode != null &&
           response.statusCode! >= 200 &&
           response.statusCode! < 300) {
@@ -398,6 +412,8 @@ class LlmClient {
     final json = response.data is String
         ? jsonDecode(response.data as String) as Map<String, dynamic>
         : response.data as Map<String, dynamic>;
+    // M 批：非流式响应顶层 usage 此前被整块丢弃（只读 choices[0]），此处采集。
+    _reportUsage(json['usage'], LlmUsageKind.chat, model: json['model']);
     final choice = json['choices']?[0];
     return ChatCompletionResult(
       content: (choice?['message']?['content'] ?? '') as String,
@@ -787,6 +803,10 @@ class LlmClient {
   ) {
     try {
       final json = jsonDecode(data) as Map<String, dynamic>;
+      // M 批：流式 usage 随**最后一个 chunk**与 choices 同级下发（该 chunk 的
+      // delta.content 为空串，include_usage 未设时 usage 仍返回）。必须先于
+      // content 分支采集，否则会被「空 content」判定跳过。
+      _reportUsage(json['usage'], LlmUsageKind.stream, model: json['model']);
       final choices = json['choices'] as List<dynamic>?;
       if (choices != null && choices.isNotEmpty) {
         final delta = choices[0]['delta'] as Map<String, dynamic>?;
@@ -831,6 +851,43 @@ class LlmClient {
     if (!kDebugMode || alreadyLogged) return;
     watch.stop();
     debugPrint('[批次55 TTFT] 首个 token 到达 ${watch.elapsedMilliseconds}ms（仅观测）');
+  }
+
+  /// M 批：上报单次调用的 token 用量（三条链路共用出口）。
+  ///
+  /// 纪律（对齐 chat_service.dart _observeReplyLength）：观测是**旁路** ——
+  /// 解析失败、sink 抛错都**不得阻断主流程**，也不改变任何既有返回值。
+  /// [rawUsage] 为 null（端点未回 usage，如非 DeepSeek provider）时直接跳过。
+  void _reportUsage(Object? rawUsage, LlmUsageKind kind, {Object? model}) {
+    if (rawUsage == null) return;
+    try {
+      final usage = LlmUsage.fromJson(
+        rawUsage,
+        model: model is String ? model : null,
+      );
+      if (usage != null) _usageSink(usage, kind);
+    } catch (_) {
+      // 观测失败静默：绝不影响请求结果
+    }
+  }
+
+  /// 把响应体归一化为 JSON 对象（供 [_reportUsage] 取 `usage`）。
+  ///
+  /// Dio 只在对端返回 `application/json` 时才自动解析；实测既有链路里
+  /// `response.data` 可能是**未解析的 String**（`_postChatCompletion` 亦
+  /// 因此保留了 `data is String` 分支）⇒ 此处统一兜住，解析不出对象
+  /// 一律返回 null（静默跳过，不影响主流程）。
+  Map<String, dynamic>? _asJsonMap(Object? data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is String) {
+      try {
+        final decoded = jsonDecode(data);
+        return decoded is Map<String, dynamic> ? decoded : null;
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   String _buildDioError(DioException e) {
