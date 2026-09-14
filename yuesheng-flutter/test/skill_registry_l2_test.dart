@@ -249,4 +249,206 @@ void main() {
       expect(r.estimatedTokens, greaterThan(1000));
     });
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // Step 3c · 人格块（attitude）不变量守护（2026-09-14）
+  //
+  // 背景：人格档被建模为「注册表里的一个普通 skill」，但它在装配链里实际是
+  // 一个**无条件注入、位置固定、不参与阶段切片**的 pinned block —— 这份契约
+  // 此前只存在于 _buildL1Chunks 的实现细节里，没有任何判据守它。
+  // 后果：若将来有人把 attitude 挪出 _buildL1Chunks（挪到 L2 之后）、给它挂
+  // 上 contentForPhase（被阶段裁剪误伤）、或把它也挂进某个 l2SkillMap 组
+  // （重复注入），十二道门禁全绿也不会察觉。
+  //
+  // 本组把该契约变成可执行判据。判据一律**锚定注入序（生效位置）**，
+  // 不锚定注释或文件文本（V4.13：注释不是代码）。
+  //
+  // ⚠️ 本护栏已做变异验证（V4.7/V4.15 硬要求）：
+  //    把 attitude 注入点从 _buildL1Chunks 挪到 _buildL2Chunks 之后 ⇒ 本组必须红。
+  // ─────────────────────────────────────────────────────────────
+  group('Step 3c · 人格块（attitude）不变量守护', () {
+    /// 档位 → 期望注册 id（与 _buildL1Chunks 的 `'attitude-${attitude.value}'` 同源）
+    String attitudeId(AttitudeLevel a) => 'attitude-${a.value}';
+
+    /// 六个代表性语境，覆盖 resolveL2Mode 的全部返回值
+    /// （none / beginner / diagnosis / training / advanced / outline）。
+    List<SkillLoadContext> contextsFor(AttitudeLevel a) => [
+      // none：P0 + 非零基础
+      SkillLoadContext(phase: TeachingPhase.p0Engage, attitude: a),
+      // beginner
+      SkillLoadContext(
+        phase: TeachingPhase.p0Engage,
+        attitude: a,
+        isBeginner: true,
+      ),
+      // diagnosis
+      SkillLoadContext(
+        phase: TeachingPhase.p2PracticeLoop,
+        attitude: a,
+        subphase: TeachingSubphase.diagnosis,
+      ),
+      // training
+      SkillLoadContext(
+        phase: TeachingPhase.p2PracticeLoop,
+        attitude: a,
+        subphase: TeachingSubphase.practice,
+      ),
+      // advanced
+      SkillLoadContext(phase: TeachingPhase.p3Training, attitude: a),
+      // outline
+      SkillLoadContext(
+        phase: TeachingPhase.p2PracticeLoop,
+        attitude: a,
+        isOutlineContext: true,
+      ),
+    ];
+
+    test('L1 常驻恰好 9 件，且九件套内不含任何人格档（人格块是独立块）', () {
+      expect(l1SkillIds.length, 9, reason: '九件套件数变了 ⇒ 人格块位置契约需重审');
+      for (final id in l1SkillIds) {
+        expect(
+          id.startsWith('attitude-'),
+          isFalse,
+          reason: '$id 不应混入 L1 九件套（人格块应作为独立块在其后）',
+        );
+      }
+    });
+
+    test('恰好注入一次：每轮 loadedSkillIds 中人格块恰好 1 个，且就是当轮档位', () {
+      for (final a in AttitudeLevel.values) {
+        for (final ctx in contextsFor(a)) {
+          final r = buildSystemPromptV2(ctx);
+          final injected = r.loadedSkillIds
+              .where((id) => id.startsWith('attitude-'))
+              .toList();
+          expect(
+            injected,
+            [attitudeId(a)],
+            reason:
+                '档=$a 模式=${r.l2Mode}：应恰好注入 1 个人格块且为 ${attitudeId(a)}，'
+                '实际 $injected',
+          );
+        }
+      }
+    });
+
+    test('位置不变量：人格块紧跟 L1 九件套之后、且在全部 L2 之前', () {
+      for (final a in AttitudeLevel.values) {
+        for (final ctx in contextsFor(a)) {
+          final r = buildSystemPromptV2(ctx);
+          final ids = r.loadedSkillIds;
+          final iAtt = ids.indexOf(attitudeId(a));
+          expect(
+            iAtt,
+            l1SkillIds.length,
+            reason:
+                '档=$a 模式=${r.l2Mode}：人格块下标应为 ${l1SkillIds.length}'
+                '（紧跟九件套），实际 $iAtt',
+          );
+          // 前 9 位必须逐位是 l1SkillIds（顺序也算契约）
+          expect(
+            ids.sublist(0, l1SkillIds.length),
+            l1SkillIds,
+            reason: '档=$a 模式=${r.l2Mode}：L1 九件套前缀或顺序被改变',
+          );
+          // 人格块之后不得再出现任何 attitude-*（防重复注入 / 混入 L2）
+          expect(
+            ids
+                .sublist(iAtt + 1)
+                .where((id) => id.startsWith('attitude-'))
+                .toList(),
+            isEmpty,
+            reason: '档=$a 模式=${r.l2Mode}：人格块在 L2 段重复出现',
+          );
+        }
+      }
+    });
+
+    test('装配序全序 = [九件套...] + [人格块] + [L2 已注册项...]', () {
+      for (final a in AttitudeLevel.values) {
+        for (final ctx in contextsFor(a)) {
+          final r = buildSystemPromptV2(ctx);
+          // 期望的 L2 段 = getL2SkillIds(mode) 中「已注册」的 id
+          //（未注册者被 dispatcher 静默跳过，与 _buildL2Chunks 同源）
+          final expectedL2 = getL2SkillIds(r.l2Mode)
+              .map((ref) => ref.skillId)
+              .where((id) => skillRegistry[id] != null)
+              .toList();
+          expect(r.loadedSkillIds, [
+            ...l1SkillIds,
+            attitudeId(a),
+            ...expectedL2,
+          ], reason: '档=$a 模式=${r.l2Mode}：装配序偏离契约');
+        }
+      }
+    });
+
+    test('人格块不可被切片：三档均无 contentForPhase，且注入串 == content 全文', () {
+      for (final a in AttitudeLevel.values) {
+        final id = attitudeId(a);
+        final skill = skillRegistry[id];
+        expect(skill, isNotNull, reason: '缺失人格块 $id');
+        expect(
+          skill!.contentForPhase,
+          isNull,
+          reason: '$id 挂了阶段裁剪钩子 ⇒ 人格会被切片机制误伤',
+        );
+        // 注入串须逐字等于 content（未走任何裁剪路径）
+        final r = buildSystemPromptV2(contextsFor(a).first);
+        expect(
+          r.systemPrompt.contains(skill.content),
+          isTrue,
+          reason: '$id 注入串不是 content 全文（疑似被裁剪）',
+        );
+      }
+    });
+
+    test('三档人格互斥：不同档位产出的 prompt 各自只含本档正文', () {
+      final prompts = <AttitudeLevel, String>{
+        for (final a in AttitudeLevel.values)
+          a: buildSystemPromptV2(contextsFor(a).first).systemPrompt,
+      };
+      for (final a in AttitudeLevel.values) {
+        for (final b in AttitudeLevel.values) {
+          final bBody = skillRegistry[attitudeId(b)]!.content;
+          final present = prompts[a]!.contains(bBody);
+          expect(
+            present,
+            a == b,
+            reason: a == b ? '档=$a 自身正文缺失' : '档=$a 的 prompt 混入了档=$b 的正文',
+          );
+        }
+      }
+    });
+
+    test('位置引导 / 边界声明恒在末尾，且在人格块之后（chunk 序）', () {
+      for (final a in AttitudeLevel.values) {
+        // outline 模式 L2 最长，最能暴露「末段被 L2 挤走」类劣化
+        final prompt = buildSystemPromptV2(contextsFor(a).last).systemPrompt;
+        final iPosition = prompt.indexOf('## 内容位置判断（必读）');
+        final iBoundary = prompt.lastIndexOf('【边界声明】');
+        expect(iPosition, greaterThan(0), reason: '档=$a：位置引导缺失');
+        expect(iBoundary, greaterThan(0), reason: '档=$a：边界声明缺失');
+        expect(iPosition, lessThan(iBoundary), reason: '档=$a：位置引导应在边界声明之前');
+        expect(
+          prompt.indexOf(skillRegistry[attitudeId(a)]!.content),
+          lessThan(iPosition),
+          reason: '档=$a：人格块应位于位置引导之前（不得被挤到末段）',
+        );
+      }
+    });
+
+    test('人格块不参与 L2：三档 id 均不出现在任何 l2SkillMap 组内', () {
+      for (final a in AttitudeLevel.values) {
+        final id = attitudeId(a);
+        for (final entry in l2SkillMap.entries) {
+          expect(
+            entry.value.map((ref) => ref.skillId),
+            isNot(contains(id)),
+            reason: '$id 不应挂进 L2 组 ${entry.key}（会重复注入）',
+          );
+        }
+      }
+    });
+  });
 }

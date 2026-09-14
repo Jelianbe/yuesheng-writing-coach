@@ -144,6 +144,13 @@ void _buildL1Chunks(
   }
 
   // 态度档位 skill（L1 — 根据当前 attitude 加载一个）
+  //
+  // ★ 人格块契约（Step 3c，2026-09-14）：态度档在装配链中是一个 **pinned block**
+  //   —— 无条件注入、位置固定（紧跟九件套、在全部 L2 之前）、**不参与阶段切片**
+  //   （三档均不挂 contentForPhase）。该契约由
+  //   test/skill_registry_l2_test.dart 的「Step 3c · 人格块（attitude）不变量守护」
+  //   组逐条守护：移动本段位置 / 给态度档挂裁剪钩子 / 把 attitude-* 挂进
+  //   l2SkillMap，都会使该组变红。改动本段前先读该组。
   final attitudeKey = 'attitude-${ctx.attitude.value}';
   final attitudeSkill = getSkill(attitudeKey);
   if (attitudeSkill != null) {
