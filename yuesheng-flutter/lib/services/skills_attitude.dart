@@ -22,7 +22,6 @@ const Skill _attitudeDoubao = Skill(
   meta: SkillMeta(
     id: 'attitude-doubao',
     group: 'attitude',
-    estimatedTokens: 450,
     promptStyle: PromptStyle.free,
   ),
   content: '''# 态度：豆包（默认温和教练）
@@ -87,7 +86,6 @@ const Skill _attitudeYuesheng = Skill(
   meta: SkillMeta(
     id: 'attitude-yuesheng',
     group: 'attitude',
-    estimatedTokens: 500,
     promptStyle: PromptStyle.free,
   ),
   content: '''# 态度：月笙如歌（锐利教练）
@@ -148,7 +146,6 @@ const Skill _attitudeSensei = Skill(
   meta: SkillMeta(
     id: 'attitude-sensei',
     group: 'attitude',
-    estimatedTokens: 600,
     promptStyle: PromptStyle.free,
   ),
   content: '''# 态度：Sensei（严格技术教练）

@@ -8,7 +8,6 @@ final Skill _beginnerPath = Skill(
   meta: SkillMeta(
     id: 'beginner-path',
     group: 'teaching',
-    estimatedTokens: 3200,
     promptStyle: PromptStyle.guided,
   ),
   content:

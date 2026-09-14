@@ -20,8 +20,6 @@ const Skill _phaseMapper = Skill(
   meta: SkillMeta(
     id: 'phase-mapper',
     group: 'core',
-    estimatedTokens:
-        2200, // 台账失真：实测 4,062 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: N 系与 P 系阶段映射矩阵

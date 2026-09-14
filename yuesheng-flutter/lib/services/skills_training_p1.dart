@@ -8,7 +8,6 @@ const Skill _comparison = Skill(
   meta: SkillMeta(
     id: 'comparison',
     group: 'coaching',
-    estimatedTokens: 2600,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 对比教学
@@ -217,7 +216,6 @@ const Skill _textSurgeryV2 = Skill(
   meta: SkillMeta(
     id: 'text-surgery-v2',
     group: 'training',
-    estimatedTokens: 400,
     promptStyle: PromptStyle.free,
   ),
   content: '''# SKILL: 文本锚定铁律
@@ -263,7 +261,6 @@ final Skill _trainingTemplatesIndex = Skill(
   meta: SkillMeta(
     id: 'training-templates-index',
     group: 'training',
-    estimatedTokens: 1500,
     promptStyle: PromptStyle.free,
   ),
   content:

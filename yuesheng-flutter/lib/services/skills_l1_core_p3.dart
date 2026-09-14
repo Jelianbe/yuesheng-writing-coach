@@ -110,7 +110,6 @@ const Skill _coreProductIdentity = Skill(
   meta: SkillMeta(
     id: 'core-product-identity',
     group: 'core',
-    estimatedTokens: 1200,
     promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 产品身份与底线
@@ -210,7 +209,6 @@ final Skill _validationRules = Skill(
   meta: SkillMeta(
     id: 'validation-rules',
     group: 'core',
-    estimatedTokens: 1700,
     promptStyle: PromptStyle.strict,
   ),
   content:
@@ -312,7 +310,6 @@ const Skill _writingAnchors = Skill(
   meta: SkillMeta(
     id: 'writing-anchors',
     group: 'core',
-    estimatedTokens: 450,
     promptStyle: PromptStyle.free,
   ),
   content: '''# SKILL: 写作认知锚点

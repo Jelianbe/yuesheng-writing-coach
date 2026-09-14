@@ -1,7 +1,8 @@
 /// Skill 注册表 — 所有 skill 内容的单一来源
 ///
 /// 真源：yuesheng-android/src/assets/skills/*.ts（meta + content 模式）
-/// 复刻策略：直接搬运 content 文本，元数据简化为 id + estimatedTokens
+/// 复刻策略：直接搬运 content 文本，元数据简化为 id + group + promptStyle
+/// （体积不再手写：见 `Skill.estimatedTokens`，由 `content` 派生）
 ///
 /// 包含：
 ///   - L1 常驻层 8 个核心 skill
@@ -91,11 +92,15 @@ enum PromptStyle {
 }
 
 /// Skill 元数据
+///
+/// Step 1（2026-09-14）：删除手写 `estimatedTokens` 字段。原字段在 `lib/`、
+/// `test/`、`tool/`、`scripts/` 中**零读取**（只写不读的死数据），且 37 处
+/// 手写值长期失真（多处自承「台账失真」）。体积口径改为由
+/// `Skill.estimatedTokens` 从 `content` 派生，与 dispatcher 同源。
 class SkillMeta {
   final String id;
   final String
   group; // core | attitude | coaching | diagnosis | training | etc.
-  final int estimatedTokens;
 
   /// 正文表述风格（E.8）。必填——新增 skill 时强制显式声明档位，
   /// 不给默认值：默认值会让漏标静默滑过，与 N19 的教训同源。
@@ -104,7 +109,6 @@ class SkillMeta {
   const SkillMeta({
     required this.id,
     required this.group,
-    required this.estimatedTokens,
     required this.promptStyle,
   });
 }
@@ -113,6 +117,14 @@ class SkillMeta {
 class Skill {
   final SkillMeta meta;
   final String content;
+
+  /// 本 skill 正文的估算 token 数（Step 1：由 [content] 派生，不再手写）。
+  ///
+  /// 口径 = `content.length`（UTF-16 码元数）× `TokenEstimate.charToTokenRatio`
+  /// （= 1.0，B26 中文口径），与 `skill_dispatcher` 的 `_estimateTokens` 同源。
+  /// 派生值可用锚点快照 `test/snapshots/skill_prompt_anchor.json` 的
+  /// `skillContent[id].len` 逐 id 对账。
+  int get estimatedTokens => content.length;
 
   /// 按教学阶段裁剪内容的钩子（Phase 3 A 组：状态驱动裁剪）。
   ///
@@ -186,8 +198,6 @@ final Map<String, Skill> skillRegistry = {
     meta: SkillMeta(
       id: 'syndrome-diagnosis-index',
       group: 'diagnosis',
-      estimatedTokens:
-          1800, // 台账失真：实测 4,099 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
       promptStyle: PromptStyle.strict,
     ),
     content: kSyndromeIndexContent,
@@ -196,8 +206,6 @@ final Map<String, Skill> skillRegistry = {
     meta: SkillMeta(
       id: 'technique-library-index',
       group: 'training',
-      estimatedTokens:
-          900, // 台账失真：实测 2,892 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
       promptStyle: PromptStyle.free,
     ),
     content: kTechniqueIndexContent,

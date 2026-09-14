@@ -8,7 +8,6 @@ const Skill _revisionMethodology = Skill(
   meta: SkillMeta(
     id: 'revision-methodology',
     group: 'teaching',
-    estimatedTokens: 2600,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 修订方法论（章级修改与迭代）
@@ -175,25 +174,51 @@ const Skill _revisionMethodology = Skill(
 - 已修改 ≥3 处（防过度修订——改得越多不等于越好，有时会破坏原文的自然感）''',
 );
 
-const Skill _advancedPhases = Skill(
+final Skill _advancedPhases = Skill(
   meta: SkillMeta(
     id: 'advanced-phases',
     group: 'advanced',
-    estimatedTokens: 4200,
     promptStyle: PromptStyle.guided,
   ),
-  content: _advancedPhasesBody1 + _advancedPhasesBody2,
-  // Phase 3 A 组：按 ctx.phase 裁掉非当前阶段分段（非 P3/P4 返回原文）。
-  // P3-R3：裁剪逻辑已迁至真 library；原文由 dispatcher 从 skill.content
-  // 送入（签名 (phase, content)），故此处保持顶层函数 tear-off（编译期常量）。
-  contentForPhase: advancedPhasesContentFor,
+  // Step 2：content = 11 个段资源按目录顺序以 '\n\n' 装配（迁移前为
+  // _advancedPhasesBody1 + _advancedPhasesBody2，逐字节一致）。
+  // 段常量见 skills_advanced_outline_p4.dart / _p5.dart。
+  content: joinSegments([
+    kApSegHead,
+    kApSegP3Main,
+    kApSegP4Main,
+    kApSegAttHead,
+    kApSegP3Att,
+    kApSegP4Att,
+    kApSegTransHead,
+    kApSegP2toP3,
+    kApSegP3toP4,
+    kApSegP4toP2,
+    kApSegConstraint,
+  ]),
+  // 按 ctx.phase 选段（非 P3/P4 装配全部段 = 完整原文）。
+  // 具名实参即「目录」：段缺失在编译期报错，不再有字面标题失配的静默退化。
+  // 注：闭包不可为 const，故本实例为 final（skillRegistry 本就是 final Map）。
+  contentForPhase: (phase, _) => advancedPhasesSelect(
+    phase,
+    head: kApSegHead,
+    p3Main: kApSegP3Main,
+    p4Main: kApSegP4Main,
+    attHead: kApSegAttHead,
+    p3Att: kApSegP3Att,
+    p4Att: kApSegP4Att,
+    transHead: kApSegTransHead,
+    p2toP3: kApSegP2toP3,
+    p3toP4: kApSegP3toP4,
+    p4toP2: kApSegP4toP2,
+    constraint: kApSegConstraint,
+  ),
 );
 
 const Skill _outlineDiagnosis = Skill(
   meta: SkillMeta(
     id: 'outline-diagnosis',
     group: 'diagnosis',
-    estimatedTokens: 4200,
     promptStyle: PromptStyle.guided,
   ),
   content: _outlineDiagnosisBody1 + _outlineDiagnosisBody2,

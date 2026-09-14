@@ -8,7 +8,6 @@ const Skill _scenarioRules = Skill(
   meta: SkillMeta(
     id: 'scenario-rules',
     group: 'core',
-    estimatedTokens: 1100,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 场景规则扩展
@@ -108,8 +107,6 @@ final Skill _teachingStrategy = Skill(
   meta: SkillMeta(
     id: 'teaching-strategy',
     group: 'core',
-    estimatedTokens:
-        3300, // 台账失真：实测 12,253 字符（锚点 len，2026-09-13，3.71×）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.strict,
   ),
   content:

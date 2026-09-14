@@ -8,7 +8,6 @@ const Skill _readerAwareness = Skill(
   meta: SkillMeta(
     id: 'reader-awareness',
     group: 'teaching',
-    estimatedTokens: 2200,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 读者意识引导
@@ -191,7 +190,6 @@ const Skill _feedbackCognition = Skill(
   meta: SkillMeta(
     id: 'feedback-cognition',
     group: 'diagnosis',
-    estimatedTokens: 900,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 认知反馈

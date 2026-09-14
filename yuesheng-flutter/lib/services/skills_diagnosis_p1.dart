@@ -8,7 +8,6 @@ const Skill _genreGuide = Skill(
   meta: SkillMeta(
     id: 'genre-guide',
     group: 'teaching',
-    estimatedTokens: 3500,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 体裁专项指南
@@ -201,7 +200,6 @@ const Skill _diagnosisConfirmation = Skill(
   meta: SkillMeta(
     id: 'diagnosis-confirmation',
     group: 'teaching',
-    estimatedTokens: 700,
     promptStyle: PromptStyle.strict,
   ),
   content: '''# SKILL: 诊断确认机制

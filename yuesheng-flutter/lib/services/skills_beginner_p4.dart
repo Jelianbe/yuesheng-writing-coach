@@ -4,10 +4,14 @@
 // ─────────────────────────────────────────────────────────────
 part of 'skill_registry.dart';
 
-const String _coachingRhythmBody2 = '''
+// ─── coaching-rhythm 段资源（Step 2：跨文件字面标题锚点 → 具名段 + 目录导航）───
+// 段边界 = 迁移前 skill_phase_slicing.dart 的切片边界，正文一字未改。
+// 装配式（见 skills_beginner_p1.dart）：content = 各段以 '\n\n' 顺序拼接。
+// ★ kCrSegP1 段尾的 `---` 原为 skills_beginner_p4.dart 的拼接前缀，按语义归入本段；
+//   拼接结果与迁移前逐字节一致（由 coaching_rhythm_phase_slice_test 与锚点快照共同守护）。
 
----
-
+/// 段 4/4 · §四~§七（从零构建 / Layer2 桥接 / 分工边界 / 三层认知）—— 与相位无关
+const String kCrSegTail = '''
 ## 四、从零构建模式（Build-from-Zero）
 
 ### 4.1 适用场景

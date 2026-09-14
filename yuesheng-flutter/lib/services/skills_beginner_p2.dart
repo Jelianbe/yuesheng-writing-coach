@@ -8,7 +8,6 @@ const Skill _plotDesign = Skill(
   meta: SkillMeta(
     id: 'plot-design',
     group: 'teaching',
-    estimatedTokens: 3400,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 情节与结构设计引导

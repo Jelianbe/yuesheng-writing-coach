@@ -20,7 +20,6 @@ const Skill _writerPsychology = Skill(
   meta: SkillMeta(
     id: 'writer-psychology',
     group: 'coaching',
-    estimatedTokens: 3200,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 写作心理支持
@@ -246,26 +245,32 @@ const Skill _writerPsychology = Skill(
 // | 副本登记 | V-05 #2/#3/#4/#6/#8/#10（跨层同值行） |
 // | 示例标注 | 语气参考均标「不照念」 |
 // | 校验方式 | coaching_rhythm_phase_slice_test（C57 护栏）+ ADR-C75 护栏 |
-const Skill _coachingRhythm = Skill(
+final Skill _coachingRhythm = Skill(
   meta: SkillMeta(
     id: 'coaching-rhythm',
     group: 'coaching',
-    estimatedTokens:
-        3500, // 台账失真：实测 8,453 字符（锚点 len，2026-09-13）；本值属元数据、E 批不改，仅标注
     promptStyle: PromptStyle.guided,
   ),
-  content: _coachingRhythmBody1 + _coachingRhythmBody2,
-  // Phase 3 A 组：按 ctx.phase 二选一裁 P0/P1 段（非 P0/P1 返回原文）。
-  // P3-R3：裁剪逻辑已迁至真 library；原文由 dispatcher 从 skill.content
-  // 送入（签名 (phase, content)），故此处保持顶层函数 tear-off（编译期常量）。
-  contentForPhase: coachingRhythmContentFor,
+  // Step 2：content = 段资源按目录顺序以 '\n\n' 装配（迁移前为
+  // _coachingRhythmBody1 + _coachingRhythmBody2，逐字节一致）。
+  // 段常量见 skills_beginner_p3.dart（head/P0/P1）与 _p4.dart（tail）。
+  content: joinSegments([kCrSegHead, kCrSegP0, kCrSegP1, kCrSegTail]),
+  // 按 ctx.phase 选段（非 P0/P1 装配全部段 = 完整原文）。
+  // 具名实参即「目录」：段缺失在编译期报错，不再有字面标题失配的静默退化。
+  // 注：闭包不可为 const，故本实例为 final（skillRegistry 本就是 final Map）。
+  contentForPhase: (phase, _) => coachingRhythmSelect(
+    phase,
+    head: kCrSegHead,
+    p0: kCrSegP0,
+    p1: kCrSegP1,
+    tail: kCrSegTail,
+  ),
 );
 
 const Skill _narrativeDesign = Skill(
   meta: SkillMeta(
     id: 'narrative-design',
     group: 'teaching',
-    estimatedTokens: 3800,
     promptStyle: PromptStyle.guided,
   ),
   content: _narrativeDesignBody1 + _narrativeDesignBody2,

@@ -8,7 +8,6 @@ const Skill _modelRewrite = Skill(
   meta: SkillMeta(
     id: 'model-rewrite',
     group: 'coaching',
-    estimatedTokens: 1800,
     promptStyle: PromptStyle.guided,
   ),
   content: '''# SKILL: 范文对照改写

@@ -12,7 +12,6 @@ const Skill _replyVoice = Skill(
   meta: SkillMeta(
     id: 'reply-voice',
     group: 'core',
-    estimatedTokens: 300,
     promptStyle: PromptStyle.free,
   ),
   content: '''# SKILL: 回复语气（教练口语化 · 去 AI 味）

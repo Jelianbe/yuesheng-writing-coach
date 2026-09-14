@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// skill_phase_slicing — 技能内容的「按教学阶段裁剪」纯逻辑
+// skill_phase_slicing — 技能内容的「按教学阶段选择段资源」纯逻辑
 //
 // 来源：原 `skill_registry.dart` 的两个 A 类 part 分片
 //   `skills_beginner_p9.dart`（coaching-rhythm 裁剪）
@@ -7,163 +7,130 @@
 //   于 P3-R3 迁出为**真 library**——R-019 A 类豁免的前提之一是
 //   「分片无逻辑耦合」，而这两处承载的是算法而非常量数据。
 //
-// ★ 迁移时的关键约束（Dart 库可见性，务必先读）：
-//   part 的 `_` 私有性以 **library** 为单位（分片共享宿主 library），
-//   而真 library 之间只能通过 public 符号 + import 交互。两个入口原本
-//   直接读取**家族私有数据常量**
-//     `_coachingRhythmBody1/2`（位于 skills_beginner_p3/p4.dart）
-//     `_advancedPhasesBody1/2`（位于 skills_advanced_outline_p4/p5.dart）
-//   迁出后不可见 ⇒ 改为**经参数 [raw] 传入原文**，由宿主在挂载点处提供
-//   （`contentForPhase: (phase) => coachingRhythmContentFor(phase, ...)`）。
-//   ⇒ 本库是**纯逻辑**：不做任何数据引用，输入 (phase, raw) → 输出裁剪串。
+// 【Step 2 模型变更（2026-09-14）：字面标题锚点切片 → 具名段 + 目录导航】
+//
+//   旧模型：把「整篇原文」交给本库，用 `indexOf('## 三、…')` 这类**字面标题**
+//   现场切片。四类失配全部「静默不抛错」，其中「结束锚缺失 → 取到文末」与
+//   「头部锚缺失 → 静默返回全量」最危险（见 docs/research/
+//   2026-09-14-lib-anchor-scan.md §5）。
+//
+//   新模型：段资源（segment）是**具名常量**，由宿主在挂载点按名字传入；本库
+//   只做「按教学阶段选段 + 以 '\n\n' 装配」。**不再持有任何字面标题，不再
+//   indexOf**。失配后果因此从「静默」变为「编译期可见」：
+//     · 段缺失 ⇒ 编译错误（具名参数 required）
+//     · 段错位 ⇒ 分区不变量测试变红（Σ段体积 + 2×(段数−1) == content 长度）
+//     · 父标题（如「进阶阶段态度调整」）由**段本身**携带，不再由代码重拼副本
 //
 // 依据 ADR-knowledge-injection-driver-model.md §2.2 裁剪准入三问：
 //   1. 信号来源：ctx.phase（教学状态机，确定性来源，非文本猜测）✅
-//   2. 信号缺失时退化：非目标阶段返回完整原文；dispatcher 另有
-//      `?? skill.content` 兜底 ✅
+//   2. 信号缺失时退化：非目标阶段装配全部段（= 完整原文）✅
 //   3. 裁掉的段落在当前信号下确定不会被使用（各入口 dartdoc 内详述）✅
 //
+// 字节不变性：段资源迁移自原正文，装配结果与迁移前逐字节一致
+// （由 test/snapshots/skill_prompt_anchor.json 锚点快照 +
+//   test/services/*_phase_slice_test.dart 共同守护）。
+//
 // 与索引化的区别：不依赖检索、不会因检索不触发而丢失知识；原文一字未改，
-// 切片均为原文子串。
+// 装配产物是段资源原文的拼接。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:writingcoach/types/teaching_types.dart';
 
+/// 段装配式：以 `'\n\n'` 连接（与迁移前 `.trim()` + `join('\n\n')` 逐字节等价）。
+///
+/// **公开导出**：挂载点的 `Skill.content`（完整原文）与本库的阶段装配必须共用
+/// 同一分隔符定义——分隔符若在两处各写一份字面量，会出现「全文与相位输出不成
+/// 同一装配式」的隐性漂移。收敛到此处后，两者结构上同源。
+String joinSegments(List<String> segments) => segments.join('\n\n');
+
 // ══════════════════════════════════════════════════════════════
-// 一、coaching-rhythm（原 skills_beginner_p9.dart）
+// 一、coaching-rhythm（段资源见 skills_beginner_p3.dart / skills_beginner_p4.dart）
 // ══════════════════════════════════════════════════════════════
 
-/// 原文 `## ` 级标题（切片锚点，与 skills_beginner_p3/p4.dart 逐字对应）
-const String _crHead2 = '## 二、阶段一：建立投入（P0_ENGAGE）';
-const String _crHead3 = '## 三、阶段二：暴露问题（P1_WORLD）';
-const String _crHead4 = '## 四、从零构建模式（Build-from-Zero）';
-
-/// 取 [start] 到 [end] 之间的原文片段（[end] 未命中则取到文末）
-String _crSlice(String raw, String start, String end) {
-  final s = raw.indexOf(start);
-  if (s < 0) return '';
-  final e = raw.indexOf(end, s + start.length);
-  return raw.substring(s, e < 0 ? raw.length : e).trim();
-}
-
-/// coaching-rhythm 阶段裁剪入口（dispatcher 经 `Skill.contentForPhase` 调用）。
+/// coaching-rhythm 阶段装配入口（dispatcher 经 `Skill.contentForPhase` 调用）。
 ///
-/// [raw] = 完整原文，由宿主在挂载点传入
-/// （`_coachingRhythmBody1 + _coachingRhythmBody2`，见 skills_beginner_p1.dart）。
-///
-/// 非 P0/P1 阶段返回完整原文（字节一致）；切片全部为原文子串，故不存在
-/// 编辑漂移（由 test/services/coaching_rhythm_phase_slice_test.dart 断言）。
-///
-/// 裁剪策略：
-///   P0_ENGAGE → 头部(含§一总览) + §二(P0 段)   + §四~§七
-///   P1_WORLD  → 头部(含§一总览) + §三(P1 段)   + §四~§七
-///   其它阶段   → 完整原文（P2 的 beginner / diagnosis 档逐字节不变）
+/// 段清单（目录）：
+///   `head` 前言 + §一 总览             —— 全相位恒注入（P0→P1→P2 旅程地图）
+///   `p0`   §二 阶段一：建立投入         —— 仅 P0 档
+///   `p1`   §三 阶段二：暴露问题         —— 仅 P1 档（段尾自带 `---` 分隔线）
+///   `tail` §四~§七                     —— 与相位无关，恒注入
 ///
 /// 裁掉的理由：
-///   - §二 P0_ENGAGE 描述「建立投入」阶段的行为，其入口是 phase == p0Engage；
-///     P1 档下该入口不存在 → 不可达
-///   - §三 P1_WORLD 同理，P0 档下不可达
-///   - §一 总览保留：它是 P0→P1→P2 的旅程地图。裁掉非当前阶段的细节段后，
-///     AI 仍知道其他阶段存在，只是没有那一段的操作手册
-///   - §四~§七 与 phase 无关（从零构建 / Layer 2 认知桥接 / 分工边界 /
-///     贯穿 P0-P2 的三层认知模型），全部保留
+///   - `p0` 描述 phase == p0Engage 的行为，P1 档下该入口不存在 → 不可达
+///   - `p1` 同理，P0 档下不可达
+///   - `head` 保留：裁掉非当前阶段的细节段后，AI 仍知道其他阶段存在
+///   - `tail` 保留：从零构建 / Layer 2 认知桥接 / 分工边界 / 贯穿 P0-P2 的
+///     三层认知模型，均与 phase 无关
 ///
 /// 注：skill 头部自述 `loadWhen: P0-P4 全程加载`，与实际不符——
 /// resolveL2Mode 仅在 beginner(P0/P1/P2) 与 diagnosis(P2) 组加载它，
-/// P3/P4 不加载。该自述不影响本实现（裁剪只在 P0/P1 生效）。
-String coachingRhythmContentFor(TeachingPhase phase, String raw) {
-  final isP0 = phase == TeachingPhase.p0Engage;
-  final isP1 = phase == TeachingPhase.p1World;
-  if (!isP0 && !isP1) return raw;
-
-  final headEnd = raw.indexOf(_crHead2);
-  final tailStart = raw.indexOf(_crHead4);
-  if (headEnd < 0 || tailStart < 0) return raw; // 防御性兜底（R-028）
-  final head = raw.substring(0, headEnd).trim();
-  final section = isP0
-      ? _crSlice(raw, _crHead2, _crHead3)
-      : _crSlice(raw, _crHead3, _crHead4);
-  final tail = raw.substring(tailStart).trim(); // §四~§七，与阶段无关
-
-  return [head, section, tail].join('\n\n');
-}
-
-// ══════════════════════════════════════════════════════════════
-// 二、advanced-phases（原 skills_advanced_outline_p7.dart）
-// ══════════════════════════════════════════════════════════════
-
-/// 原文 `## ` 级标题（切片锚点，与 skills_advanced_outline_p4/p5.dart 逐字对应）
-const String _apHead3 = '## P3_TRAINING（深度训练阶段）';
-const String _apHead4 = '## P4_REVIEW（复盘阶段）';
-const String _apHeadAttitude = '## 进阶阶段态度调整';
-const String _apHeadTransition = '## 阶段迁移规则';
-
-/// 原文 `### ` 级子段锚点
-const String _apAttitude3 = '### P3 态度策略';
-const String _apAttitude4 = '### P4 态度策略';
-const String _apMoveP3toP4 = '### P3 → P4';
-const String _apMoveP4Out = '### P4 → P2（重新开始）';
-const String _apMoveConstraint = '### 迁移约束';
-
-/// 取 [start] 到 [end] 之间的原文片段（[end] 未命中则取到文末）
-String _apSlice(String raw, String start, String end) {
-  final s = raw.indexOf(start);
-  if (s < 0) return '';
-  final e = raw.indexOf(end, s + start.length);
-  return raw.substring(s, e < 0 ? raw.length : e).trim();
-}
-
-/// 取 [start] 至文末的原文片段
-String _apSliceToEnd(String raw, String start) {
-  final s = raw.indexOf(start);
-  if (s < 0) return '';
-  return raw.substring(s).trim();
-}
-
-/// advanced-phases 阶段裁剪入口（dispatcher 经 `Skill.contentForPhase` 调用）。
-///
-/// [raw] = 完整原文，由宿主在挂载点传入
-/// （`_advancedPhasesBody1 + _advancedPhasesBody2`，
-/// 见 skills_advanced_outline_p1.dart）。
-///
-/// 非 P3/P4 阶段返回完整原文（字节一致）；切片全部为原文子串，故不存在
-/// 编辑漂移（由 test/services/advanced_phases_phase_slice_test.dart 断言）。
-///
-/// 裁剪策略：
-///   P3_TRAINING → 前言 + P3 段 + P3 态度 + (P3→P4 + 迁移约束)
-///   P4_REVIEW   → 前言 + P4 段 + P4 态度 + (P4→P2 + 迁移约束)
-///   其它阶段     → 完整原文（行为与现状完全相同）
-///
-/// P5 段已删除（C56 幽灵阶段：TeachingPhase 无 P5 枚举值，原切片只裁掉了
-/// 「段」却注入了「通往 P5 的指令」，见 ADR-C54 §9 方案 D）；
-/// 已发生的迁移（P2→P3、P3→P4 在 P4 档）同样不注入。
-String advancedPhasesContentFor(TeachingPhase phase, String raw) {
-  // 非进阶阶段（或阶段未知）→ 完整原文，与现状逐字节一致
-  if (phase != TeachingPhase.p3Training && phase != TeachingPhase.p4Review) {
-    return raw;
+/// P3/P4 不加载。该自述不影响本实现（装配只在 P0/P1 生效）。
+String coachingRhythmSelect(
+  TeachingPhase phase, {
+  required String head,
+  required String p0,
+  required String p1,
+  required String tail,
+}) {
+  if (phase != TeachingPhase.p0Engage && phase != TeachingPhase.p1World) {
+    return joinSegments([head, p0, p1, tail]);
   }
+  final current = phase == TeachingPhase.p0Engage ? p0 : p1;
+  return joinSegments([head, current, tail]);
+}
 
-  final headEnd = raw.indexOf(_apHead3);
-  if (headEnd < 0) return raw; // 防御性兜底（R-028）：结构不符则原样返回
-  final head = raw.substring(0, headEnd).trim();
+// ══════════════════════════════════════════════════════════════
+// 二、advanced-phases（段资源见 skills_advanced_outline_p4.dart / _p5.dart）
+// ══════════════════════════════════════════════════════════════
 
+/// advanced-phases 阶段装配入口（dispatcher 经 `Skill.contentForPhase` 调用）。
+///
+/// 段清单（目录）：共 11 段，逐段职责见各段常量的 `///` 注释。
+///
+/// 关键取舍：
+///   - `attHead` / `transHead` 两个**父标题段**自身即注入内容。旧实现是把
+///     标题以常量副本重拼（`'## 进阶阶段态度调整\n\n' + attitude`），原文标题
+///     改动时副本不跟、**无任何告警**；现在标题取自段本身。
+///   - `p2toP3`（已发生的迁移）两档均不注入，只有完整原文才含它。
+///   - P5 幽灵阶段（C56：TeachingPhase 无 P5 枚举值）已不存在对应段。
+///   - `constraint`（迁移约束）是通用规则，P3/P4 两档都保留。
+String advancedPhasesSelect(
+  TeachingPhase phase, {
+  required String head,
+  required String p3Main,
+  required String p4Main,
+  required String attHead,
+  required String p3Att,
+  required String p4Att,
+  required String transHead,
+  required String p2toP3,
+  required String p3toP4,
+  required String p4toP2,
+  required String constraint,
+}) {
+  if (phase != TeachingPhase.p3Training && phase != TeachingPhase.p4Review) {
+    return joinSegments([
+      head,
+      p3Main,
+      p4Main,
+      attHead,
+      p3Att,
+      p4Att,
+      transHead,
+      p2toP3,
+      p3toP4,
+      p4toP2,
+      constraint,
+    ]);
+  }
   final isP3 = phase == TeachingPhase.p3Training;
-  final main = isP3
-      ? _apSlice(raw, _apHead3, _apHead4)
-      : _apSlice(raw, _apHead4, _apHeadAttitude);
-  final attitude = isP3
-      ? _apSlice(raw, _apAttitude3, _apAttitude4)
-      : _apSlice(raw, _apAttitude4, _apHeadTransition);
-  final moveNext = isP3
-      ? _apSlice(raw, _apMoveP3toP4, _apMoveP4Out)
-      : _apSlice(raw, _apMoveP4Out, _apMoveConstraint);
-  final moveConstraint = _apSliceToEnd(raw, _apMoveConstraint);
-
-  return [
+  return joinSegments([
     head,
-    main,
-    '$_apHeadAttitude\n\n$attitude',
-    if (moveNext.isNotEmpty) '$_apHeadTransition\n\n$moveNext',
-    if (moveConstraint.isNotEmpty) moveConstraint,
-  ].join('\n\n');
+    isP3 ? p3Main : p4Main,
+    attHead,
+    isP3 ? p3Att : p4Att,
+    transHead,
+    isP3 ? p3toP4 : p4toP2,
+    constraint,
+  ]);
 }
