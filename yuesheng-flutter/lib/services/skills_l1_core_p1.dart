@@ -24,10 +24,8 @@ const Skill _phaseMapper = Skill(
   ),
   content: '''# SKILL: N 系与 P 系阶段映射矩阵
 
-> **来源**: 后端审计（Phase 2 修复 F7）
 > **定位**: 解决 beginner-path（N0-N4 五阶段）和 teaching-strategy（P0-P4 五阶段）两套生命周期之间的结构性矛盾
 > **loadWhen**: P1+ 加载。仅当学员同时被标注了 N 系阶段和 P 系阶段时全量激活
-> **体积**: 约 800 tokens
 
 ## 问题
 
@@ -170,7 +168,6 @@ N4 创作  | 使用 P      | 使用 P     | 使用 P        | 使用 P      | �
 const String _teachingStrategyBody1 = '''
 # SKILL: 教学策略
 
-> **来源**: yuesheng-prompt-v5.md §三+§四+§五+§六
 > **loadWhen**: 所有 phase 必加载（教学策略贯穿全流程）
 
 ## 三、教学策略铁律

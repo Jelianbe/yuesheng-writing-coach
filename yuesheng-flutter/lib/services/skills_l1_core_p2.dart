@@ -158,7 +158,6 @@ const Skill _teachingModes = Skill(
   ),
   content: '''# SKILL: 教学方式选择（双轨道）
 
-> **来源**: 从 teaching-strategy §八 抽离，独立加载以便 P1+ 阶段精准控制
 > **loadWhen**: L1 常驻，全 phase 注入（教学方式选择影响诊断和训练环节）
 
 ## 一、概述
@@ -275,9 +274,7 @@ const Skill _coreIronTriangle = Skill(
   ),
   content: '''# SKILL: 铁三角（核心子集）
 
-> **来源**: yuesheng-prompt-v5.md §一 + §2.0
 > **loadWhen**: 所有 phase 必加载（最小核心，不可裁剪）
-> **体积**: 约 600 tokens
 
 ## 〇、冲突时的裁决顺序（元规则，优先于其后所有条目）
 

@@ -5,8 +5,8 @@
   "p0_yuesheng_none": [
     {
       "role": "system",
-      "len": 30424,
-      "fnv": "2c63a96ca07a3c51"
+      "len": 29913,
+      "fnv": "40ba34c76002ccdc"
     },
     {
       "role": "system",
@@ -27,8 +27,8 @@
   "p0_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 60428,
-      "fnv": "4ca07fbfd58a5eb6"
+      "len": 59670,
+      "fnv": "6e57e593cf95edd6"
     },
     {
       "role": "system",
@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 72090,
-      "fnv": "4778dbbcbf85273d"
+      "len": 71353,
+      "fnv": "2a104f4e70ecbad1"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 73873,
-      "fnv": "39720d45d196e424"
+      "len": 73136,
+      "fnv": "66c1aafe2e9818f8"
     },
     {
       "role": "system",
@@ -93,8 +93,8 @@
   "p2_yuesheng_training": [
     {
       "role": "system",
-      "len": 68858,
-      "fnv": "33ff7d50f824f2aa"
+      "len": 68086,
+      "fnv": "1911202d4d274123"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 56611,
-      "fnv": "72bd9749e0da7c78"
+      "len": 55894,
+      "fnv": "194d6e633f787eea"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 56419,
-      "fnv": "44dd1b801d89e89c"
+      "len": 55702,
+      "fnv": "69aafb60a7862a7a"
     },
     {
       "role": "system",
@@ -159,8 +159,8 @@
   "p4_yuesheng_beginner": [
     {
       "role": "system",
-      "len": 61902,
-      "fnv": "704519e0b22c8bc1"
+      "len": 61144,
+      "fnv": "7fa842f5f8016185"
     },
     {
       "role": "system",

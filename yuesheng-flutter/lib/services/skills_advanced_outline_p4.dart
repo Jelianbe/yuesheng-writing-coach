@@ -14,9 +14,7 @@ part of 'skill_registry.dart';
 const String kApSegHead = '''
 # SKILL: 进阶阶段指引
 
-> **来源**: yuesheng-prompt-v5.md 进阶阶段扩展
-> **loadWhen**: 仅在 P3/P4 加载（进阶阶段专属）
-> **体积**: 约 4200 tokens''';
+> **loadWhen**: 仅在 P3/P4 加载（进阶阶段专属）''';
 
 /// 段 2/11 · P3_TRAINING 主段 —— 仅 P3 档注入
 const String kApSegP3Main = '''

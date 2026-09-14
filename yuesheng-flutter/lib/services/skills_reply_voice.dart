@@ -16,9 +16,7 @@ const Skill _replyVoice = Skill(
   ),
   content: '''# SKILL: 回复语气（教练口语化 · 去 AI 味）
 
-> **来源**: 提炼自 humanizer-zh（op7418/Humanizer-zh）通用「去除 AI 生成痕迹」模式，适配月笙教练语境
 > **loadWhen**: 所有回复必加载（L1 常驻，不可裁剪）
-> **体积**: 约 300 tokens
 
 ## 目标
 

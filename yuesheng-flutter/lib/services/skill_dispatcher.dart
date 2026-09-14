@@ -91,7 +91,7 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 /// 构建三级分层 system prompt。
 ///
 /// 加载顺序：
-/// 1. L1 常驻层：8 个核心 skill（按 [l1SkillIds] 顺序）
+/// 1. L1 常驻层：9 个核心 skill（按 [l1SkillIds] 顺序）
 /// 2. 态度档位 skill：根据 [SkillLoadContext.attitude] 加载一个
 /// 3. L2 按需层：根据 [resolveL2Mode] 决议的 mode 加载一组 skill
 /// 4. 位置判断引导语（始终注入末尾）
@@ -99,7 +99,7 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 /// L3 检索函数通过返回值的 [SystemPromptResult.injectL3] 字段延迟调用。
 ///
 /// 注意：L2 五组 skill 内容已于 2026-08-08 批次 22 全部搬运到 [skillRegistry]
-///（注册表 39 项，含虚拟索引）。缺失的 skill 仍会被跳过（不报错），作为防御性兜底保留。
+///（注册表 37 项，含虚拟索引）。缺失的 skill 仍会被跳过（不报错），作为防御性兜底保留。
 SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
   final chunks = <String>[];
   final loadedIds = <String>[];

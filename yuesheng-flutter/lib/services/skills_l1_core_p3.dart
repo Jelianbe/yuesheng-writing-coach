@@ -114,9 +114,7 @@ const Skill _coreProductIdentity = Skill(
   ),
   content: '''# SKILL: 产品身份与底线
 
-> **来源**: yuesheng-prompt-v5.md §2.6 + 底线清单
 > **loadWhen**: L1 常驻，全 phase 注入（产品底线不分阶段）
-> **体积**: 约 900 tokens
 
 ## 一、产品身份与底线（防御点 H — 永远不可违反）
 
@@ -156,7 +154,6 @@ const Skill _coreProductIdentity = Skill(
 
 ## 三、声线保护措辞约束（反馈措辞三层，批次62 落地 A1）
 
-> **来源**: V2.0 §1.4 TombWriter「AI 是工具/发现者」+ V1.0 原则2（声线保护机制）
 > **定位**: 反馈措辞的三条硬约束——防止用"标准好写法"替换学员声线，这是教学系统的最高优先级设计目标。
 
 **措辞 1｜AI 是工具，不是合作者**：反馈要把话说成"我读出来的是……"的发现，
@@ -214,7 +211,6 @@ final Skill _validationRules = Skill(
   content:
       '''# SKILL: 输出验证
 
-> **来源**: yuesheng-prompt-v5.md §八
 > **loadWhen**: 所有 phase 必加载（合规校验是硬约束）
 
 ## 八、输出验证（回复完成后逐项检查）

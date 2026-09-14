@@ -12,7 +12,6 @@ const Skill _scenarioRules = Skill(
   ),
   content: '''# SKILL: 场景规则扩展
 
-> **来源**: yuesheng-prompt-v5.md §十一
 > **loadWhen**: 所有 phase 必加载（场景规则是触发式硬约束）
 
 > 以下场景下，必须表这个立场、必须拒绝这个请求；**怎么说由你自己组织**，

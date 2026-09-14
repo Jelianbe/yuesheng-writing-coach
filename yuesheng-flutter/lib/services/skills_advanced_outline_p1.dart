@@ -16,7 +16,6 @@ const Skill _revisionMethodology = Skill(
 > **与 text-surgery 的分工**: text-surgery 管"这句话怎么改"，本 skill 管"这章要不要留/这段放哪里/这个结构要不要重排"。
 > **与 beginner-path 修改深化路径的关系**: beginner-path 给了方向（段落功能审计、密度检测、草稿痕迹），本 skill 给了方法论（怎么判断、怎么引导决策、怎么帮用户接受"删"）。
 > **loadWhen**: P2+（用户有足够文本可以修订） / P3-P4（深度修订）
-> **体积**: 约 2600 tokens
 
 ---
 

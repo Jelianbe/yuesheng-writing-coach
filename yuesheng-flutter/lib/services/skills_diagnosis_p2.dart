@@ -15,7 +15,6 @@ const Skill _readerAwareness = Skill(
 > **定位**: 教练如何帮用户建立"读者视角"——不是教用户迎合读者，是教用户**意识到读者的存在**，从而做出有意识的叙事选择。
 > **与 coaching-actions 的关系**: coaching-actions 的 A002（回归主角）中已有"确保信息通过主角呈现"的要求——本 skill 将其系统化为一个贯穿始终的教练视角。
 > **loadWhen**: P1+（一旦用户有文本，读者意识就需要激活）
-> **体积**: 约 2200 tokens
 
 ---
 
@@ -194,7 +193,6 @@ const Skill _feedbackCognition = Skill(
   ),
   content: '''# SKILL: 认知反馈
 
-> **来源**: yuesheng-prompt-v5.md §七
 > **loadWhen**: 仅在 P2/P3/P4 加载（认知反馈是训练后环节）
 
 ## 七、认知反馈层（训练透明化）
