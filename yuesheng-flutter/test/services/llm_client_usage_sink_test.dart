@@ -172,11 +172,12 @@ void main() {
       final client = _client(adapter, sink.call);
 
       final tokens = <String>[];
-      await client.streamChat([
-        const ChatMessage(role: 'user', content: 'hi'),
-      ], (r) {
-        if (!r.isDone && r.content.isNotEmpty) tokens.add(r.content);
-      });
+      await client.streamChat(
+        [const ChatMessage(role: 'user', content: 'hi')],
+        (r) {
+          if (!r.isDone && r.content.isNotEmpty) tokens.add(r.content);
+        },
+      );
 
       expect(tokens, ['你好'], reason: '正文应正常投递（usage 采集不得干扰）');
       expect(sink.received, hasLength(1));
@@ -271,10 +272,7 @@ void main() {
       final client = _client(adapter, sink.call);
 
       client.markCallContext(
-        const LlmCallContext(
-          purpose: LlmCallPurpose.teacher,
-          sessionId: 's-1',
-        ),
+        const LlmCallContext(purpose: LlmCallPurpose.teacher, sessionId: 's-1'),
       );
       await client.streamChat([
         const ChatMessage(role: 'user', content: 'hi'),
@@ -307,7 +305,10 @@ void main() {
         const ChatMessage(role: 'user', content: 'hi'),
       ]);
 
-      expect(sink.received.single.$2.context?.purpose, LlmCallPurpose.diagnosis);
+      expect(
+        sink.received.single.$2.context?.purpose,
+        LlmCallPurpose.diagnosis,
+      );
     });
 
     test('标记是一次性消费：第二次调用回落 unknown', () async {
