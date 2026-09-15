@@ -20,6 +20,12 @@
 //     ⇒ 输入区上方不再额外占用一行垂直空间；
 //   - 「+」点击不再直接弹覆盖式 bottom sheet，而是在「+」**正上方**
 //     浮出一块小面板（上传作品 / 思考开关），点面板外任意处收起。
+//
+// 2026-09-15（真机回归修复）：浮层落点改为 LayerLink 锚定
+//   - 原实现「打开瞬间算一次绝对坐标 + Positioned(bottom)」⇒ 落点被冻结，
+//     键盘收起后面板飘到屏幕上方（实测 937 物理像素）；
+//   - 改为 CompositedTransformTarget/Follower ⇒ 渲染层每帧跟随「+」，
+//     键盘开合 / 窗口变化 / 输入框增高均自动贴合。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -74,10 +80,6 @@ class ChatInput extends StatefulWidget {
 }
 
 class ChatInputState extends State<ChatInput> {
-  /// 面板高度保守估计（**仅**用于「上方空间不足」时的钳制，非布局依据；
-  /// 真实高度随功能项增删变化，故定位用 bottom 锚定，不依赖此值）。
-  static const double _kPanelEstimatedHeight = 132;
-
   late final TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
 
@@ -90,18 +92,20 @@ class ChatInputState extends State<ChatInput> {
   /// @ 触发的位置（offset），null 表示未触发
   int? _mentionAtOffset;
 
-  /// 「+」按钮锚点：面板落点由它的全局坐标算出。
-  final GlobalKey _plusKey = GlobalKey();
+  /// 面板锚点链路：「+」为 target，浮层面板为 follower。
+  ///
+  /// **为何用 LayerLink 而非「开面板时算一次绝对坐标」**（2026-09-15 真机回归）：
+  /// 原实现用 `Positioned(left/bottom)` + 打开瞬间算出的绝对值 ⇒ 落点在打开那一刻
+  /// 就被**冻结**；此后任何布局变化（键盘收起/弹出、输入框多行增高、旋转）都会
+  /// 让「+」移位而面板不动 —— 真机实测「键盘收起后面板飘到屏幕上方 937 物理像素」。
+  /// LayerLink 由渲染层每帧按 target 的实际位置重算，天然跟随，无需手工坐标。
+  final LayerLink _panelLink = LayerLink();
 
   /// 「+」面板浮层控制器（OverlayPortal 自带生命周期，无需手动 remove）
   final OverlayPortalController _panelController = OverlayPortalController();
 
   /// 面板与「+」按钮共用的 TapRegion 组：组内点击不收面板，组外点击收。
   final Object _panelGroup = Object();
-
-  /// 面板左边缘 / 底边（overlay 坐标系）。打开前由 _updatePanelAnchor 刷新。
-  double _panelLeft = 0;
-  double _panelBottom = 0;
 
   /// 批次81：聚焦输入框（三卡「返回对话/继续对话/补充内容」复用，
   /// 让用户点击后直接接着对话）
@@ -220,34 +224,13 @@ class ChatInputState extends State<ChatInput> {
     widget.onInputChange(newText);
   }
 
-  /// 开合「+」面板：已在显示则收起，否则先刷新落点再展开。
+  /// 开合「+」面板（落点由 LayerLink 每帧自动跟随，无需在此刷新）。
   void _togglePanel() {
     if (_panelController.isShowing) {
       _panelController.hide();
-      return;
+    } else {
+      _panelController.show();
     }
-    _updatePanelAnchor();
-    _panelController.show();
-  }
-
-  /// 计算面板落点：「+」正上方 8px，左边缘与「+」对齐并钳制在屏内。
-  /// 用 bottom 而非 top 定位 ⇒ 无需预知面板高度（内容可增删）。
-  void _updatePanelAnchor() {
-    final box = _plusKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final origin = box.localToGlobal(Offset.zero);
-    final screen = MediaQuery.of(context).size;
-    final maxLeft = (screen.width - ChatPlusPanel.width - AppSpacing.md)
-        .clamp(AppSpacing.md, double.infinity)
-        .toDouble();
-    _panelLeft = origin.dx.clamp(AppSpacing.md, maxLeft).toDouble();
-    // 底边距 overlay 底边 = 屏高 −「+」顶边 + 8 ⇒ 面板正悬在「+」上方。
-    // sanity：上方空间不足（横屏 / 输入法挤压）时宁可贴顶，
-    // 也不可把面板顶出屏外变成不可见不可点。
-    final topLimit = screen.height - AppSpacing.md - _kPanelEstimatedHeight;
-    _panelBottom = (screen.height - origin.dy + AppSpacing.sm)
-        .clamp(0.0, topLimit < 0 ? 0.0 : topLimit)
-        .toDouble();
   }
 
   /// 「上传作品」项：先收面板再交给宿主（避免两层浮层叠在一起）。
@@ -299,19 +282,21 @@ class ChatInputState extends State<ChatInput> {
     );
   }
 
-  /// 左侧「+」：开合功能面板（面板本体由 OverlayPortal 渲染）
+  /// 左侧「+」：既是开合入口，也是浮层面板的**定位锚点**（LayerLink target）。
   Widget _buildPlusButton() {
-    return TapRegion(
-      groupId: _panelGroup,
-      child: InkWell(
-        key: _plusKey,
-        onTap: _togglePanel,
-        customBorder: const CircleBorder(),
-        child: const SizedBox(
-          width: 40,
-          height: 40,
-          child: Center(
-            child: Icon(Icons.add, size: 20, color: AppColors.textPrimary),
+    return CompositedTransformTarget(
+      link: _panelLink,
+      child: TapRegion(
+        groupId: _panelGroup,
+        child: InkWell(
+          onTap: _togglePanel,
+          customBorder: const CircleBorder(),
+          child: const SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(
+              child: Icon(Icons.add, size: 20, color: AppColors.textPrimary),
+            ),
           ),
         ),
       ),
@@ -384,20 +369,32 @@ class ChatInputState extends State<ChatInput> {
     );
   }
 
-  /// 「+」上方的浮层面板；点击面板外任意处收起。
+  /// 「+」正上方的浮层面板；点击面板外任意处收起。
+  ///
+  /// `Positioned(left/top: 0)` 只为脱出 Overlay 的非定位布局（拿到无界约束、
+  /// 按面板自身尺寸布局），真正位置由 `CompositedTransformFollower` 计算：
+  /// 面板**底边**对齐「+」的**顶边**再上移 `AppSpacing.sm`，左边缘与「+」对齐。
+  /// 键盘 / 窗口尺寸 / 输入框行数变化 ⇒ 渲染层下一帧即跟随，不存在冻结落点。
   Widget _buildPanelOverlay(BuildContext context) {
     return Positioned(
-      left: _panelLeft,
-      bottom: _panelBottom,
-      child: TapRegion(
-        groupId: _panelGroup,
-        onTapOutside: (_) => _panelController.hide(),
-        child: ChatPlusPanel(
-          onUpload: widget.onUploadFile == null ? null : _handleUploadTap,
-          thinkingEnabled: widget.thinkingEnabled,
-          reasoningTierLabel: widget.reasoningTierLabel,
-          onThinkingToggle: widget.onThinkingToggle,
-          isStreaming: widget.isStreaming,
+      left: 0,
+      top: 0,
+      child: CompositedTransformFollower(
+        link: _panelLink,
+        showWhenUnlinked: false,
+        targetAnchor: Alignment.topLeft,
+        followerAnchor: Alignment.bottomLeft,
+        offset: const Offset(0, -AppSpacing.sm),
+        child: TapRegion(
+          groupId: _panelGroup,
+          onTapOutside: (_) => _panelController.hide(),
+          child: ChatPlusPanel(
+            onUpload: widget.onUploadFile == null ? null : _handleUploadTap,
+            thinkingEnabled: widget.thinkingEnabled,
+            reasoningTierLabel: widget.reasoningTierLabel,
+            onThinkingToggle: widget.onThinkingToggle,
+            isStreaming: widget.isStreaming,
+          ),
         ),
       ),
     );

@@ -18,7 +18,7 @@ import '../config/app_theme.dart';
 
 /// 「+」面板内容：功能项列表（当前为 上传作品 / 思考开关）。
 class ChatPlusPanel extends StatelessWidget {
-  /// 面板固定宽度（宿主按此值做水平防溢出钳制）。
+  /// 面板固定宽度（左边缘与「+」左边缘对齐；224 < 最小支持屏宽，无需钳制）。
   static const double width = 224;
 
   /// 上传作品项回调；null 时不渲染该项。

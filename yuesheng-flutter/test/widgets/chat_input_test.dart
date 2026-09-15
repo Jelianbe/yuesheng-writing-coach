@@ -427,4 +427,57 @@ void main() {
       });
     });
   });
+
+  // 2026-09-15 真机回归：原实现「打开面板时算一次绝对坐标」⇒ 落点被冻结，
+  // 键盘收起后面板飘到屏幕上方 937 物理像素。此组锁死「面板紧贴「+」上方」。
+  group('ChatInput 面板落点（LayerLink 锚定）', () {
+    /// 「+」按钮框（取 InkWell 本体，不是其中的图标）。
+    Rect plusRect(WidgetTester tester) => tester.getRect(
+      find
+          .ancestor(of: find.byIcon(Icons.add), matching: find.byType(InkWell))
+          .first,
+    );
+
+    /// 面板底边 →「+」顶边的间距（应恒为 AppSpacing.sm = 8）。
+    double gap(WidgetTester tester) =>
+        plusRect(tester).top -
+        tester.getRect(find.byType(ChatPlusPanel)).bottom;
+
+    /// 面板左边缘 →「+」左边缘的水平偏差（应对齐）。
+    double leftDelta(WidgetTester tester) =>
+        tester.getRect(find.byType(ChatPlusPanel)).left - plusRect(tester).left;
+
+    Future<void> tapPlus(WidgetTester tester) async {
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('键盘开合 / 面板保持打开时，落点始终跟随「+」', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2340);
+      tester.view.devicePixelRatio = 2.75;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        buildInput(onUploadFile: () {}, onThinkingToggle: (_) {}),
+      );
+
+      // A 键盘未弹出时打开
+      await tapPlus(tester);
+      expect(gap(tester), closeTo(8, 0.5), reason: 'A 无键盘');
+      expect(leftDelta(tester), closeTo(0, 0.5), reason: 'A 左边缘应与「+」对齐');
+
+      // 关面板 → 键盘弹出后再打开
+      await tapPlus(tester); // 再点一次 = 收起
+      tester.view.viewInsets = const FakeViewPadding(bottom: 888);
+      await tester.pumpAndSettle();
+      await tapPlus(tester);
+      expect(gap(tester), closeTo(8, 0.5), reason: 'B 键盘已弹出');
+
+      // ★ 关键回归：面板保持打开，键盘收起 ⇒ 落点必须跟着「+」回来
+      tester.view.viewInsets = const FakeViewPadding();
+      await tester.pumpAndSettle();
+      expect(gap(tester), closeTo(8, 0.5), reason: 'C 键盘收起后落点不得冻结');
+      expect(leftDelta(tester), closeTo(0, 0.5), reason: 'C 左边缘仍对齐');
+    });
+  });
 }
