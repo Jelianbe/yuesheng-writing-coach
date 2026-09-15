@@ -113,6 +113,41 @@ class LlmClient {
   /// 写法），测试可注入独立实例隔离累计状态。
   final LlmUsageSink _usageSink;
 
+  /// 当前在途调用的业务上下文（TH 九批）。
+  ///
+  /// **为何用实例字段而非逐层传参**：[streamChat] 与 [chatCompletionWithMeta]
+  /// 共用同一 [_gate]（两入口都 enter/exit）⇒ 同一实例内真实请求天然串行，
+  /// 字段无串扰；而逐层穿透会触及 `_consumeSseStream`（R-019 实测 50 行、
+  /// 零余量），其调用行被 dart format 拆行即越界。字段由两入口在 enter 后
+  /// 设置、finally 清理；免费测试模式不走此路径 ⇒ 保持 null。
+  LlmCallContext? _activeCallContext;
+
+  /// 待消费的一次性链路标记（见 [markCallContext]）。
+  LlmCallContext? _pendingCallContext;
+
+  /// 标注**紧随其后的一次** LLM 调用所属业务链路（TH 九批）。
+  ///
+  /// 调用点用法：`client.markCallContext(ctx); await client.streamChat(...);`
+  ///
+  /// **为何不用方法形参**：给 [streamChat] / [chatCompletion] /
+  /// [chatCompletionWithMeta] 加可选具名参数，会强制**全部测试 Fake 类**
+  /// 同步改造（Dart override 契约要求子类接受父类的全部具名参数）——
+  /// 实测一次引入 40+ 处 `invalid_override`，波及 33 个测试文件。改用本
+  /// 方法可**零改动既有 override**，也零改动请求体与返回值。
+  ///
+  /// 消费语义：在 [streamChat] / [chatCompletionWithMeta] 的**入口**取走
+  /// 并清零（含免费测试模式的提前 return 分支）⇒ 不残留、不错配。
+  void markCallContext(LlmCallContext? ctx) {
+    _pendingCallContext = ctx;
+  }
+
+  /// 取走一次性标记（取后即清，防残留污染下一次调用）。
+  LlmCallContext? _consumePendingContext() {
+    final ctx = _pendingCallContext;
+    _pendingCallContext = null;
+    return ctx;
+  }
+
   LlmClient([
     LlmConfigStorage? configStorage,
     Dio? dio,
@@ -304,6 +339,8 @@ class LlmClient {
     CancelToken? cancelToken,
     LlmRetryPolicy retryPolicy = LlmRetryPolicy.standard,
   }) async {
+    // TH 九批：入口即消费一次性标记（免费模式提前 return 也不残留）。
+    final callCtx = _consumePendingContext();
     final cfg = await _loadConfig();
     if (cfg == null) {
       // 批次 E-1 免费测试模式：未配置 API Key 自动启用（无开关、无次数限制），
@@ -313,6 +350,8 @@ class LlmClient {
 
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
     _gate.enter();
+    // TH 九批：闸门内设置链路上下文（与 streamChat 同闸门 ⇒ 实例内互斥）。
+    _activeCallContext = callCtx;
     try {
       final endpoints = await _prepareEndpoints(cfg, retryPolicy.maxAttempts);
 
@@ -335,6 +374,7 @@ class LlmClient {
         throw Exception(_buildDioError(e));
       }
     } finally {
+      _activeCallContext = null;
       _gate.exit();
     }
   }
@@ -391,6 +431,7 @@ class LlmClient {
     Map<String, dynamic>? extraBody,
     CancelToken? cancelToken,
   }) async {
+    final watch = Stopwatch()..start(); // TH 九批：非流式全程耗时（埋点用）
     final response = await _dio.post<dynamic>(
       '${c.baseUrl}/chat/completions',
       data: _buildChatCompletionBody(
@@ -414,7 +455,12 @@ class LlmClient {
         ? jsonDecode(response.data as String) as Map<String, dynamic>
         : response.data as Map<String, dynamic>;
     // M 批：非流式响应顶层 usage 此前被整块丢弃（只读 choices[0]），此处采集。
-    _reportUsage(json['usage'], LlmUsageKind.chat, model: json['model']);
+    _reportUsage(
+      json['usage'],
+      LlmUsageKind.chat,
+      model: json['model'],
+      latencyMs: watch.elapsedMilliseconds,
+    );
     final choice = json['choices']?[0];
     return ChatCompletionResult(
       content: (choice?['message']?['content'] ?? '') as String,
@@ -442,6 +488,8 @@ class LlmClient {
     CancelToken? cancelToken,
     Map<String, dynamic>? extraBody,
   }) async {
+    // TH 九批：入口即消费一次性标记（免费模式提前 return 也不残留）。
+    final callCtx = _consumePendingContext();
     final cfg = await _loadConfig();
     if (cfg == null) {
       // 批次 E-1 免费测试模式：模拟流式回调（教学文案分块推送 + DONE）。
@@ -451,6 +499,8 @@ class LlmClient {
 
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
     _gate.enter();
+    // TH 九批：闸门内设置链路上下文（请求互斥 ⇒ 无串扰），finally 清理。
+    _activeCallContext = callCtx;
     try {
       final endpoints = await _prepareEndpoints(
         cfg,
@@ -477,6 +527,7 @@ class LlmClient {
         throw Exception(_buildDioError(e));
       }
     } finally {
+      _activeCallContext = null;
       _gate.exit();
     }
   }
@@ -830,7 +881,14 @@ class LlmClient {
       // M 批：流式 usage 随**最后一个 chunk**与 choices 同级下发（该 chunk 的
       // delta.content 为空串，include_usage 未设时 usage 仍返回）。必须先于
       // content 分支采集，否则会被「空 content」判定跳过。
-      _reportUsage(json['usage'], LlmUsageKind.stream, model: json['model']);
+      // TH 九批：ttftWatch 自请求发出前启动，而 usage 帧即末帧 ⇒ 其读数
+      // 就是全程耗时（无需新增计时器）。
+      _reportUsage(
+        json['usage'],
+        LlmUsageKind.stream,
+        model: json['model'],
+        latencyMs: ttftWatch.elapsedMilliseconds,
+      );
       final choices = json['choices'] as List<dynamic>?;
       if (choices != null && choices.isNotEmpty) {
         final delta = choices[0]['delta'] as Map<String, dynamic>?;
@@ -882,14 +940,25 @@ class LlmClient {
   /// 纪律（对齐 chat_service.dart _observeReplyLength）：观测是**旁路** ——
   /// 解析失败、sink 抛错都**不得阻断主流程**，也不改变任何既有返回值。
   /// [rawUsage] 为 null（端点未回 usage，如非 DeepSeek provider）时直接跳过。
-  void _reportUsage(Object? rawUsage, LlmUsageKind kind, {Object? model}) {
+  void _reportUsage(
+    Object? rawUsage,
+    LlmUsageKind kind, {
+    Object? model,
+    int? latencyMs,
+  }) {
     if (rawUsage == null) return;
     try {
       final usage = LlmUsage.fromJson(
         rawUsage,
         model: model is String ? model : null,
       );
-      if (usage != null) _usageSink(usage, kind);
+      // TH 九批：链路上下文取自入口设置的实例字段（见 [_activeCallContext]）。
+      // ⚠️ testLlmConnection 不走闸门、且已到 R-019 上限（50 行），故不加
+      // 标记 ⇒ 其记录恒为 unknown（本批诚实边界，见审计报告）。
+      if (usage != null) {
+        final ctx = _activeCallContext;
+        _usageSink(usage.withContext(ctx?.withLatency(latencyMs)), kind);
+      }
     } catch (_) {
       // 观测失败静默：绝不影响请求结果
     }

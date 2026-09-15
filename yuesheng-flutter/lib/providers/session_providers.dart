@@ -41,6 +41,7 @@ import '../services/diagnosis_committer.dart';
 import '../services/diagnosis_flow_handler.dart';
 import '../services/diagnosis_service.dart';
 import '../services/last_session_storage.dart';
+import '../services/llm_call_log_sink.dart';
 import '../services/llm_client.dart';
 import '../services/message_injector.dart';
 import '../services/onboarding_service.dart';
@@ -104,9 +105,20 @@ final diagnosisServiceProvider = Provider<DiagnosisService>((ref) {
 /// ChatService 和 runProgressiveDiagnosis 共用同一实例。
 /// ADR-C91：注入多账号 configLoader（默认账号优先 + 旧单键兼容迁移）；
 /// 测试不 override 本 provider 时经注入 loader 走真实存储，override 时不受影响。
+/// TH 九批：注入落库用量出口 —— 此前缺省走 kSharedLlmUsageMonitor
+/// （进程内计数、重启清零、无链路标识）⇒ 「Teacher 是否被调用 / 该轮花了
+/// 多少」事后不可查。改为写 error_logs（info 级 / api 类，无 UI 暴露面），
+/// 结构化字段在 context JSON。**零业务判据改动**：sink 只读不写决策。
 final llmClientProvider = Provider<LlmClient>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return LlmClient(null, null, () => resolveLlmConfig(db));
+  return LlmClient(
+    null,
+    null,
+    () => resolveLlmConfig(db),
+    null,
+    null,
+    LlmCallLogSink().call,
+  );
 });
 
 /// 诊断提交编排器 Provider（ADR-C74 K-1）

@@ -19,6 +19,7 @@ import 'package:writingcoach/services/agent_skills.dart';
 import 'package:writingcoach/services/decode_guard.dart';
 import 'package:writingcoach/services/editor_validator.dart';
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/llm_usage.dart';
 import 'package:writingcoach/services/teacher_parser.dart';
 import 'package:writingcoach/services/teacher_validator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -68,6 +69,11 @@ Future<TeacherStreamResult> callTeacherStream(
     final accumulator = _TeacherStreamAccumulator(
       onStream,
       messages: _buildTeacherMessages(input),
+    );
+    // TH 九批：标注业务链路 —— 使「Teacher 是否被调用 / 花了多少」可从
+    // error_logs 反查（TH 六/七/八 三批均卡在此点不可观测）。
+    llmClient.markCallContext(
+      const LlmCallContext(purpose: LlmCallPurpose.teacher),
     );
     await llmClient.streamChat(accumulator.messages, (response) {
       if (response.isDone) return;

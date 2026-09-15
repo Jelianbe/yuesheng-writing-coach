@@ -22,6 +22,7 @@ import '../config/shared_constants.dart';
 import 'decode_guard.dart';
 import 'error_handler.dart';
 import 'llm_client.dart';
+import 'llm_usage.dart';
 import 'syndrome_registry.dart'; // ADR-C69：分块 prompt 的症候清单改由注册表派生
 import 'output_whitelist.dart'; // L3：severity 白名单归一化
 
@@ -37,6 +38,11 @@ const int kDiagnosisChunkOverlap = 200;
 
 /// 末块最小字符数（<此值时与前块合并，避免末块只有一两句）
 const int kDiagnosisMinLastChunk = 500;
+
+/// TH 九批：诊断链路的埋点上下文（三处调用共用；顶层常量 ⇒ 不占 R-019）。
+const _kDiagnosisCallContext = LlmCallContext(
+  purpose: LlmCallPurpose.diagnosis,
+);
 
 // ── 数据类型（对齐 RN ChunkNote / ChunkAnalysisResult）──
 
@@ -478,6 +484,8 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   var fullContent = '';
 
   try {
+    // TH 九批：标注诊断链路（合流轮）。
+    llmClient.markCallContext(_kDiagnosisCallContext);
     await llmClient.streamChat(
       [
         const ChatMessage(role: 'system', content: '你是一个专业的写作诊断助手。'),
@@ -586,8 +594,12 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
 }) async {
   final messages = _chunkMessages(title, chunk, chunkIndex, chunkCount);
   try {
+    // TH 九批：分块分析（含 fallback 重发）同属诊断链路 —— 每次调用前
+    // 重新标注，因为标记是一次性消费的。
+    llmClient.markCallContext(_kDiagnosisCallContext);
     var content = await llmClient.chatCompletion(messages);
     if (content.trim().isEmpty) {
+      llmClient.markCallContext(_kDiagnosisCallContext);
       content = await llmClient.chatCompletion(
         messages,
         maxTokens: LlmConfig.chunkAnalysisFallbackMaxTokens,

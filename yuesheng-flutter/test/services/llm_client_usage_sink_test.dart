@@ -256,4 +256,105 @@ void main() {
       expect(kSharedLlmUsageMonitor.totals.promptTokens, before + 120);
     });
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // TH 九批：业务链路标注（markCallContext）
+  //
+  // 为何是「前置标记 + 一次性消费」而非方法形参：给 streamChat /
+  // chatCompletion / chatCompletionWithMeta 加可选具名参数会破坏全部
+  // 测试 Fake 的 override 契约（实测 40+ 处 invalid_override）。
+  // ─────────────────────────────────────────────────────────────
+  group('TH 九批 链路标注', () {
+    test('流式：标记 teacher ⇒ usage.context 带上 purpose 与耗时', () async {
+      final adapter = _ScriptAdapter([_sse(_kStreamWithUsage)]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+
+      client.markCallContext(
+        const LlmCallContext(
+          purpose: LlmCallPurpose.teacher,
+          sessionId: 's-1',
+        ),
+      );
+      await client.streamChat([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ], (_) {});
+
+      final usage = sink.received.single.$2;
+      expect(usage.context?.purpose, LlmCallPurpose.teacher);
+      expect(usage.context?.sessionId, 's-1');
+      expect(
+        usage.context?.latencyMs,
+        isNotNull,
+        reason: '流式 usage 随末帧下发 ⇒ 应带上全程耗时读数',
+      );
+    });
+
+    test('非流式：标记 diagnosis ⇒ purpose=diagnosis', () async {
+      final adapter = _ScriptAdapter([
+        _json(
+          '{"model":"deepseek-flash","choices":[{"message":{"role":"assistant",'
+          '"content":"你好"},"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.diagnosis),
+      );
+      await client.chatCompletionWithMeta([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ]);
+
+      expect(sink.received.single.$2.context?.purpose, LlmCallPurpose.diagnosis);
+    });
+
+    test('标记是一次性消费：第二次调用回落 unknown', () async {
+      final adapter = _ScriptAdapter([
+        _json(
+          '{"choices":[{"message":{"role":"assistant","content":"a"},'
+          '"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+        _json(
+          '{"choices":[{"message":{"role":"assistant","content":"b"},'
+          '"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+      const msgs = [ChatMessage(role: 'user', content: 'hi')];
+
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.teacher),
+      );
+      await client.chatCompletionWithMeta(msgs);
+      await client.chatCompletionWithMeta(msgs); // 无标记
+
+      expect(sink.received, hasLength(2));
+      expect(sink.received[0].$2.context?.purpose, LlmCallPurpose.teacher);
+      expect(
+        sink.received[1].$2.context,
+        isNull,
+        reason: '标记已消费 ⇒ 第二次不带 context（不残留错配）',
+      );
+    });
+
+    test('未标记 ⇒ context 为 null（既有调用零标注）', () async {
+      final adapter = _ScriptAdapter([
+        _json(
+          '{"choices":[{"message":{"role":"assistant","content":"a"},'
+          '"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call);
+
+      await client.chatCompletionWithMeta([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ]);
+
+      expect(sink.received.single.$2.context, isNull);
+    });
+  });
 }

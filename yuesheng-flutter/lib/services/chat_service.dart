@@ -71,6 +71,7 @@ import 'package:writingcoach/services/diagnosis_service.dart';
 import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_output_guard.dart';
+import 'package:writingcoach/services/llm_usage.dart';
 import 'package:writingcoach/services/prompt_sanitizer.dart'; // L2：指令 token 清洗
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/stage_drop_notice.dart';
@@ -460,6 +461,14 @@ extension ChatServiceObservers on ChatService {
 // （跟随 _injectReferences 迁入 lib/services/message_injector.dart）
 // K-9 移除: _parseAndPersist 已迁 DiagnosisFlowHandler
 // K-9 移除: _commitDiagnosisAndSuggestions + _handleTrainingResult 已迁 DiagnosisFlowHandler
+/// TH 九批：主对话链路的埋点上下文。
+///
+/// **刻意不含 sessionId**：传入它需要给 `_streamLlm` 加形参、进而给
+/// `_sendMessageCore` 的调用点加一行 —— 而后者 R-019 实测正好 50 行
+/// （零余量），加一行即破限。本批立身之本是「不改既有代码」，故不为此
+/// 改写既有结构；sessionId 留待经 `SendMessageOptions` 一次性引入。
+const _kMainChatCallContext = LlmCallContext(purpose: LlmCallPurpose.mainChat);
+
 extension ChatServiceSendRun on ChatService {
   Future<({String fullContent, bool inDiagnosisBlock})> _streamLlm({
     required List<ChatMessage> messages,
@@ -473,6 +482,8 @@ extension ChatServiceSendRun on ChatService {
     int streamChunkCount = 0;
 
     debugPrint('[ChatService] 步骤8: 开始 streamChat 调用...');
+    // TH 九批：标注主对话链路（一次性标记，LlmClient 入口即消费）。
+    _llmClient.markCallContext(_kMainChatCallContext);
     await _llmClient.streamChat(messages, (response) {
       if (response.isDone) {
         debugPrint('[ChatService] 步骤8: streamChat 收到 [DONE]');
