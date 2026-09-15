@@ -194,7 +194,12 @@ void main() {
       final plus = find.byIcon(Icons.add);
       expect(plus, findsOneWidget);
 
+      // 2026-09-15：+ 改为在「+」上方浮出功能面板，导入入口在面板内
       await tester.tap(plus);
+      await tester.pumpAndSettle();
+
+      expect(find.text('上传作品'), findsOneWidget);
+      await tester.tap(find.text('上传作品'));
       await tester.pumpAndSettle();
 
       expect(find.text('导入作品'), findsOneWidget);
@@ -210,6 +215,9 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      // 2026-09-15：先经「+」上方面板选择上传
+      await tester.tap(find.text('上传作品'));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('粘贴文本'));
@@ -1268,9 +1276,12 @@ void main() {
       return container;
     }
 
-    /// 走完整导入流程：+ 按钮 → WorkImportSheet → 粘贴文本 → 确认导入
+    /// 走完整导入流程：+ 按钮 → 上方面板「上传作品」→ WorkImportSheet
+    /// → 粘贴文本 → 确认导入
     Future<void> importViaSheet(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('上传作品'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('粘贴文本'));
       await tester.pumpAndSettle();

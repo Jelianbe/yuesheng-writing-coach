@@ -132,7 +132,7 @@ class ChatPageBody extends ConsumerWidget {
     );
   }
 
-  /// 底部输入栏区（含输入框上方思考开关的写入口）。
+  /// 底部输入栏区（含「+」上方面板内思考开关的写入口）。
   Widget _buildComposer(WidgetRef ref, BuildContext context, String tier) {
     return ChatComposerSection(
       inputText: inputText,

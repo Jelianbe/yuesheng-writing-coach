@@ -167,7 +167,8 @@ class ChatComposerSection extends StatelessWidget {
   final ChatTeachingController teaching;
   final ChatReferenceController reference;
 
-  /// 思考开关（输入框上方）：当前是否开启 + 当前档位展示名 + 切换回调。
+  /// 思考开关（2026-09-15 起位于「+」上方面板内）：
+  /// 当前是否开启 + 当前档位展示名 + 切换回调。
   final bool thinkingEnabled;
   final String reasoningTierLabel;
   final ValueChanged<bool> onThinkingToggle;
