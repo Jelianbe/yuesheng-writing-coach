@@ -197,9 +197,20 @@ void main() {
     test('#22 中文诊断请求 → true', () {
       expect(isDiagnosisRequest('请帮我诊断这段文字'), isTrue);
       expect(isDiagnosisRequest('帮我分析一下这个段落'), isTrue);
-      expect(isDiagnosisRequest('这段怎么改更好'), isTrue);
       expect(isDiagnosisRequest('提提意见吧'), isTrue);
       expect(isDiagnosisRequest('看看这段哪里不好'), isTrue);
+    });
+
+    test('#22b 弱信号措辞需「诊断上下文」佐证（TH 五批）', () {
+      // 无上下文 ⇒ 教学场景的通用措辞不再误触发协议注入
+      expect(isDiagnosisRequest('这段怎么改更好'), isFalse);
+      expect(isDiagnosisRequest('哪里不好'), isFalse);
+      expect(isDiagnosisRequest('怎么改进一下'), isFalse);
+      // 有上下文（本轮带待诊断全文 / 会话已产生活跃症候）⇒ 正常触发
+      expect(isDiagnosisRequest('这段怎么改更好', hasDiagnosisContext: true), isTrue);
+      // 强信号不受上下文影响：无上下文也触发
+      expect(isDiagnosisRequest('请诊断这段'), isTrue);
+      expect(isDiagnosisRequest('这段怎么改更好，请分析一下'), isTrue);
     });
 
     test('#23 英文诊断请求 → true（大小写不敏感）', () {

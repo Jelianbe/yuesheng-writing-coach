@@ -53,6 +53,11 @@ class _CaptureLlmClient extends LlmClient {
         .where((m) => m.role == 'system')
         .map((m) => m.content)
         .toList();
+    // TH 五批：诊断协议注入的是 **user** 消息内容，需单独捕获
+    capturedUserContent = messages
+        .where((m) => m.role == 'user')
+        .map((m) => m.content)
+        .toList();
     callback(const LlmStreamResponse(content: '收到，我们继续。', isDone: false));
     callback(const LlmStreamResponse(content: '', isDone: true));
   }
@@ -284,5 +289,68 @@ void main() {
     await service.sendMessage(sessionId, '他推开门，风灌了进来', callbacks(), options());
 
     expect(llm.systemContents.any((s) => s.contains('回复颗粒度')), false);
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // TH 五批：诊断协议注入判据（措辞 + 会话级诊断上下文）
+  //
+  // 不能只靠字符串契约验证——注入的是 **user 消息**内容，必须看实际发出去的
+  // user 消息是否带 `kDiagnosisProtocolSuffix`。命中后果不是措辞偏差：AI 出块后
+  // `diagnosis_flow_handler.parseAndPersist` 只看块存在、不看场景 ⇒ 落库诊断
+  // + 触发 Teacher 二次 API 调用。
+  // ─────────────────────────────────────────────────────────────
+  group('诊断协议注入判据（TH 五批）', () {
+    test('#9 教学轮 + 弱信号措辞 → 不注入协议', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      // 无待诊断全文、会话无活跃症候 ⇒ 教学 / 自由对话轮次
+      await service.sendMessage(
+        sessionId,
+        '这段怎么改更好一点？',
+        callbacks(),
+        options(),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, isNot(contains('[YS_DIAGNOSIS]')));
+      expect(sent, isNot(contains('用户明确请求诊断')));
+    });
+
+    test('#10 教学轮 + 强信号措辞 → 仍注入协议', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(
+        sessionId,
+        '请诊断我这段文字',
+        callbacks(),
+        options(),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('[YS_DIAGNOSIS]'));
+      expect(sent, contains('用户明确请求诊断'));
+    });
+
+    test('#11 带待诊断全文 + 弱信号措辞 → 注入协议（上下文成立）', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(
+        sessionId,
+        '这段怎么改更好一点？',
+        callbacks(),
+        const SendMessageOptions(
+          phase: TeachingPhase.p1World,
+          attitude: AttitudeLevel.doubao,
+          chapterFullText: '她推开门，发现房间里没有人。',
+        ),
+      );
+
+      final sent = llm.capturedUserContent.join('\n');
+      expect(sent, contains('[YS_DIAGNOSIS]'));
+      expect(sent, contains('待诊断全文'));
+    });
   });
 }

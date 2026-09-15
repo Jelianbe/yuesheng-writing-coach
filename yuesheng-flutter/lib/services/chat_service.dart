@@ -643,7 +643,7 @@ extension ChatServiceSend on ChatService {
       // ADR-C84：用户消息落库即通知 UI 上屏（不等 AI 回复）
       await _notifyUserMessagePersisted(ctx, callbacks);
       // ADR-C82：诊断意图 → user 消息侧注入诊断协议 + 请求结构观测
-      _injectDiagnosisFor(ctx.messages, content, options.chapterFullText);
+      _applyDiagnosisInjection(ctx, content, options);
       // 8. 流式调用 + 拦截诊断块（R-019：提取为 _streamLlm）
       final streamResult = await _streamLlm(
         messages: ctx.messages,
@@ -1184,12 +1184,14 @@ extension ChatServiceSend on ChatService {
   void _injectDiagnosisFor(
     List<ChatMessage> messages,
     String content,
-    String? chapterFullText,
-  ) {
+    String? chapterFullText, {
+    required bool hasDiagnosisContext,
+  }) {
     _injectDiagnosisProtocolAndLog(
       messages,
       content,
       chapterFullText: chapterFullText,
+      hasDiagnosisContext: hasDiagnosisContext,
     );
   }
 
@@ -1199,11 +1201,13 @@ extension ChatServiceSend on ChatService {
     List<ChatMessage> messages,
     String content, {
     String? chapterFullText,
+    required bool hasDiagnosisContext,
   }) {
     _maybeInjectDiagnosisProtocol(
       messages,
       content,
       chapterFullText: chapterFullText,
+      hasDiagnosisContext: hasDiagnosisContext,
     );
     debugPrint(
       '[ChatService] ADR-C82 请求结构: ${messages.map((m) => "${m.role}[${m.content.length}]").join(" | ")}',
@@ -1211,12 +1215,21 @@ extension ChatServiceSend on ChatService {
   }
 
   /// 诊断意图 → user 消息侧注入诊断协议（ADR-C82；R-019 ≤50 行）。
+  ///
+  /// TH 五批：判据不只有措辞 —— 弱信号措辞需 [hasDiagnosisContext] 佐证，
+  /// 否则教学场景的「这段怎么改」会误触发注入（后果见 intent_classifier）。
   void _maybeInjectDiagnosisProtocol(
     List<ChatMessage> messages,
     String content, {
     String? chapterFullText,
+    required bool hasDiagnosisContext,
   }) {
-    if (!isDiagnosisRequest(content)) return;
+    if (!isDiagnosisRequest(
+      content,
+      hasDiagnosisContext: hasDiagnosisContext,
+    )) {
+      return;
+    }
     final lastUser = messages.lastIndexWhere((m) => m.role == 'user');
     if (lastUser < 0) return;
     final m = messages[lastUser];
@@ -1228,6 +1241,34 @@ extension ChatServiceSend on ChatService {
     messages[lastUser] = ChatMessage(
       role: m.role,
       content: '${m.content}$fullTextBlock\n\n$kDiagnosisProtocolSuffix',
+    );
+  }
+
+  /// 本轮是否处于**诊断上下文** —— 确定性信号，不由措辞反推（TH 五批）。
+  ///
+  /// ① 本轮携带待诊断全文 ⇒ 「诊断本章 / 选中文本」入口；
+  /// ② 会话已产生活跃症候 ⇒ 此前诊断成功过（含诊断后续轮、反馈、重试）。
+  ///
+  /// 二者皆否即为教学 / 自由对话轮次 ⇒ 弱信号措辞不参与诊断判定。
+  bool _hasDiagnosisContext(SendMessageOptions options, _SendContext ctx) {
+    if (options.chapterFullText?.isNotEmpty ?? false) return true;
+    return ctx.activeProblems.isNotEmpty;
+  }
+
+  /// 诊断协议注入编排（ADR-C82 + TH 五批判据；R-019：_sendMessageCore 减负）。
+  ///
+  /// TH 五批：判据并入「会话级诊断上下文」——教学场景的通用措辞
+  /// （「这段怎么改」）不再注入协议，避免落库诊断 + 二次 Teacher 调用。
+  void _applyDiagnosisInjection(
+    _SendContext ctx,
+    String content,
+    SendMessageOptions options,
+  ) {
+    _injectDiagnosisFor(
+      ctx.messages,
+      content,
+      options.chapterFullText,
+      hasDiagnosisContext: _hasDiagnosisContext(options, ctx),
     );
   }
 

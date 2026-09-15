@@ -263,17 +263,16 @@ String? buildIntentInstruction(UserIntent intent, List<String> recentIntents) {
   }
 }
 
-/// 诊断请求信号（ADR-C82）：明确请求评价/诊断的措辞。
-/// 保守集合——宁可少触发（对话行为不变），避免误触发改变模型输出形态。
+/// 诊断请求信号（ADR-C82）：**明确**请求评价/诊断的措辞 —— 强信号。
+///
+/// 这些措辞语义上就是「请评价/诊断」，与教学语汇重合度低 ⇒ 任何场景均触发。
+/// 与教学语汇重合的通用措辞另见 [_contextualDiagnosisSignals]。
 const List<String> _diagnosisSignals = [
   // 中文
   '诊断',
   '评价',
   '点评',
   '看看这段',
-  '怎么改',
-  '哪里不好',
-  '怎么改进',
   '帮我分析',
   '分析一下',
   '提提意见',
@@ -289,12 +288,31 @@ const List<String> _diagnosisSignals = [
   'comment',
 ];
 
+/// 辅助诊断措辞 —— 弱信号：**需会话级诊断上下文佐证**才参与判定。
+///
+/// `怎么改` / `怎么改进` / `哪里不好` 在教学请求里几乎同形
+/// （Teacher 建议卡「教我原理」原文即「它是什么、**怎么判断**、**怎么避免**」），
+/// 单凭措辞无法与「请诊断」区分。
+///
+/// **为什么必须分开**（TH 五批，2026-09-15）：命中后
+/// [isDiagnosisRequest] 会让发送链在 user 消息侧注入诊断协议，AI 随即输出
+/// `[YS_DIAGNOSIS]` 块；而 `diagnosis_flow_handler.parseAndPersist` **只判断
+/// 块是否存在、不看场景** ⇒ 落库诊断 + 触发 Teacher 二次 API 调用。教学场景
+/// 被措辞误命中的代价是**真实 API 花费 + 诊断数据污染**，而非仅措辞偏差。
+const List<String> _contextualDiagnosisSignals = ['怎么改', '哪里不好', '怎么改进'];
+
 /// 检测是否为明确诊断请求（纯函数，无副作用）。
 ///
 /// 命中返回 true → 发送链在 user 消息侧注入诊断协议（ADR-C82）。
-bool isDiagnosisRequest(String text) {
+///
+/// [hasDiagnosisContext] 必须由调用方按**确定性信号**给出（本轮是否带待诊断
+/// 全文 / 会话是否已产生活跃症候），不得由措辞反推 —— 弱信号仅在其为 true 时
+/// 参与判定，使教学场景的「这段怎么改」不再误触发协议注入。
+bool isDiagnosisRequest(String text, {bool hasDiagnosisContext = false}) {
   final t = text.trim();
   if (t.isEmpty) return false;
   final lower = t.toLowerCase();
-  return _diagnosisSignals.any(lower.contains);
+  if (_diagnosisSignals.any(lower.contains)) return true;
+  if (!hasDiagnosisContext) return false;
+  return _contextualDiagnosisSignals.any(lower.contains);
 }

@@ -46,7 +46,10 @@ void main() {
 
     test('注入 helper 必须在流式调用前被调用', () {
       final src = File('lib/services/chat_service.dart').readAsStringSync();
-      final callIdx = src.indexOf('_injectDiagnosisFor(');
+      // TH 五批：注入聚合入口改为 _applyDiagnosisInjection（R-019 减负）
+      final callIdx = src.indexOf(
+        '_applyDiagnosisInjection(ctx, content, options);',
+      );
       expect(
         callIdx,
         greaterThan(0),
@@ -60,7 +63,14 @@ void main() {
       final src = File(
         'lib/services/intent_classifier.dart',
       ).readAsStringSync();
-      expect(src, contains('bool isDiagnosisRequest(String text)'));
+      // TH 五批：签名并入「诊断上下文」确定性信号（弱信号措辞需佐证）
+      expect(
+        src,
+        contains(
+          'bool isDiagnosisRequest(String text, '
+          '{bool hasDiagnosisContext = false})',
+        ),
+      );
       expect(src, contains('诊断'));
       expect(src, contains('diagnose'));
     });
