@@ -66,8 +66,11 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     SkillRef('writer-psychology'), // ~3200 tokens (新手心理支持：完美主义瘫痪、空白页恐惧)
   ],
   L2Mode.diagnosis: [
-    SkillRef('syndrome-diagnosis-index'), // 仅症候索引+通用规则 (~1800 tokens)
+    // ★ U1（2026-09-15）：`coaching-actions` 与 training 组共享，置组首使两组
+    // 公共前缀由 0 → 3,646 字符（coaching-actions-v2 本体），削减 L2 切换 miss。
+    // 勿「修复」为索引优先：顺序即缓存契约，改动须重生成两处锚点并做行为采样。
     SkillRef('coaching-actions', '诊断语境：把症候映射到推荐动作卡'),
+    SkillRef('syndrome-diagnosis-index'), // 仅症候索引+通用规则 (~1800 tokens)
     SkillRef('coaching-rhythm', '诊断语境：P1 暴露差距，Layer2 认知桥接，先确认当下卡点'),
     SkillRef('narrative-design', '诊断语境：核对世界观/角色构建是否薄弱，给可操作重建步骤'),
     SkillRef('plot-design', '诊断语境：定位情节断裂/张力缺失，给因果链追问工具'),
@@ -80,6 +83,8 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     SkillRef('feedback-cognition'), // ~900 tokens
   ],
   L2Mode.training: [
+    // ★ U1（2026-09-15）：见 diagnosis 组注释——共享本体前置。
+    SkillRef('coaching-actions', '训练语境：动作卡直接执行指引'),
     SkillRef('technique-library-index'), // 仅技法索引+映射表 (~900 tokens)
     SkillRef('training-loop'), // ~180 tokens
     SkillRef(
@@ -87,7 +92,6 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     ), // V2 时替换为 training-templates-index（~1500 tokens 索引，完整知识走 L3）
     SkillRef('training-evaluation'), // ~80 tokens
     SkillRef('text-surgery'), // ~1250 tokens
-    SkillRef('coaching-actions', '训练语境：动作卡直接执行指引'),
     SkillRef('demonstration'), // ~470 tokens
     SkillRef('comparison'), // ~540 tokens
     SkillRef('timed-rewrite'), // ~1600 tokens (2026-08-11 批次17 新训练形态：限时重写)
