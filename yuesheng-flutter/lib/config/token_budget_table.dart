@@ -210,9 +210,13 @@ abstract final class TokenBudgetTable {
     ),
     TokenBudgetStage(
       name: BudgetStageNames.history,
-      // 批次 B-2：派生自 LlmInputLimits.maxHistoryMessages（单一真源），
-      // 20 条 × 1000 chars ≈ 20000 tokens（最坏）；改封顶数自动跟随。
-      worstCaseTokens: LlmInputLimits.maxHistoryMessages * 1000,
+      // 批次 B-2：派生自 LlmInputLimits（单一真源）；改封顶数自动跟随。
+      // A-1b：窗口为「下限 maxHistoryMessages ~ 上限 maxHistoryMessages +
+      // historyTrimBatch − 1」，故按上限+1 取最坏 30 条 × 1000 chars。
+      worstCaseTokens:
+          (LlmInputLimits.maxHistoryMessages +
+              LlmInputLimits.historyTrimBatch) *
+          1000,
       degradePriority: 8,
     ),
   ];

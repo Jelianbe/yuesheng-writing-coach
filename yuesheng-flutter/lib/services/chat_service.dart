@@ -1154,17 +1154,22 @@ extension ChatServiceSend on ChatService {
 
   /// 追加历史消息（R-019 拆出）。
   ///
-  /// 批次 B-2（输入侧上下文细化）：历史条数封顶 [LlmInputLimits.maxHistoryMessages]，
-  /// 保序取最近 N 条——防止长会话无界增长挤占教学注入预算；当前 user 消息
-  /// 总是最后一条，必然保留。TokenBudgetGuard 阶段级裁剪仍作兜底。
+  /// 批次 B-2（输入侧上下文细化）：历史条数封顶——防止长会话无界增长
+  /// 挤占教学注入预算；当前 user 消息总是最后一条，必然保留。
+  /// TokenBudgetGuard 阶段级裁剪仍作兜底。
+  ///
+  /// A-1b（前缀稳定化）：头部改由 [LlmInputLimits.historyStartIndex]
+  /// **按批对齐**裁剪。原逐条滑窗（`sublist(total - 20)`）令历史首条每轮
+  /// 前移，它是历史块的首字节 ⇒ 缓存从该处整段失效，追加式历史每轮全价
+  /// miss。对齐后头部约每 `historyTrimBatch / 2` 轮才前移一次，其余轮次
+  /// 历史块与前轮严格前缀相同 ⇒ 命中缓存。
   void _appendHistory(
     List<Message> history,
     List<ChatMessage> messages,
     void Function(String) markStage,
   ) {
-    final capped = history.length > LlmInputLimits.maxHistoryMessages
-        ? history.sublist(history.length - LlmInputLimits.maxHistoryMessages)
-        : history;
+    final from = LlmInputLimits.historyStartIndex(history.length);
+    final capped = from == 0 ? history : history.sublist(from);
     for (final m in capped) {
       markStage(BudgetStageNames.history);
       messages.add(ChatMessage(role: m.role, content: m.content));

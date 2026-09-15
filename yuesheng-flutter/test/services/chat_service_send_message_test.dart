@@ -477,10 +477,14 @@ void main() {
     expect(sent.last.content, '当前提问');
   });
 
-  test('#11 B-2 历史 >20 条 → 仅保最近 20 条，最早丢弃、当前提问保留', () async {
+  test('#11 A-1b 历史超下限但未到批边界（21 条）→ 暂不裁，保序全送', () async {
     final fake = FakeLlmClient('收到。');
     final chatService = buildChatService(fake);
-    await seedPairs(sessionRepo, sessionId, 10); // 20 条 + 当前 1 = 21 > 20
+    await seedPairs(
+      sessionRepo,
+      sessionId,
+      10,
+    ); // 20 条 + 当前 1 = 21 < cap+batch(30)
 
     await chatService.sendMessage(
       sessionId,
@@ -494,18 +498,19 @@ void main() {
     );
 
     final sent = historySent(fake);
-    expect(sent.length, 20);
-    expect(sent.first.content, '种子回答0'); // 最早的「种子问题0」被丢弃
+    // A-1b：只有跨过批边界（cap+batch=30）才裁 ⇒ 21 条起点仍为 0
+    expect(sent.length, 21);
+    expect(sent.first.content, '种子问题0'); // 未到批边界 ⇒ 最早的也保留
     final sentContents = sent.map((m) => m.content).toList();
-    expect(sentContents, isNot(contains('种子问题0')));
+    expect(sentContents, contains('种子问题0'));
     expect(sent[sent.length - 2].content, '种子回答9');
     expect(sent.last.content, '当前提问'); // 当前 user 消息必保留
   });
 
-  test('#12 B-2 长会话封顶后仍保序且不重复', () async {
+  test('#12 A-1b 长会话跨批边界后按批裁剪，仍保序且不重复', () async {
     final fake = FakeLlmClient('收到。');
     final chatService = buildChatService(fake);
-    await seedPairs(sessionRepo, sessionId, 15); // 30 条 + 当前 1 = 31 > 20
+    await seedPairs(sessionRepo, sessionId, 15); // 30 条 + 当前 1 = 31
 
     await chatService.sendMessage(
       sessionId,
@@ -519,13 +524,40 @@ void main() {
     );
 
     final sent = historySent(fake);
-    expect(sent.length, 20);
-    // 31 条中保最近 20 → 丢弃前 11 条（索引 0~10：种子问题0/回答0 … 种子问题5），
-    // 首条应为「种子回答5」
-    expect(sent.first.content, '种子回答5');
+    // A-1b：excess = 31 − 20 = 11 ⇒ 起点 = ⌊11/10⌋ × 10 = 10（批对齐）
+    // ⇒ 丢弃前 10 条（索引 0~9：种子问题0/回答0 … 种子回答4）
+    expect(sent.length, 21);
+    expect(sent.first.content, '种子问题5');
     final contents = sent.map((m) => m.content).toList();
     expect(contents.toSet().length, contents.length); // 无重复
+    expect(contents, isNot(contains('种子回答4'))); // 裁剪点之前的被丢弃
     expect(sent.last.content, '当前提问');
+  });
+
+  test('★#13 A-1b 连续两轮：历史头部不动 ⇒ 次轮历史是首轮的严格前缀', () async {
+    final fake = FakeLlmClient('收到。');
+    final chatService = buildChatService(fake);
+    await seedPairs(sessionRepo, sessionId, 16); // 32 条种子
+
+    SendMessageCallbacks cb() => SendMessageCallbacks(
+      onStream: (_) {},
+      onComplete: (_, __) {},
+      onError: (_) {},
+    );
+
+    await chatService.sendMessage(sessionId, '第一问', cb(), defaultOptions);
+    final first = historySent(fake).map((m) => m.content).toList();
+
+    await chatService.sendMessage(sessionId, '第二问', cb(), defaultOptions);
+    final second = historySent(fake).map((m) => m.content).toList();
+
+    // 这是本批的核心收益断言：旧逐条滑窗下首条每轮前移 2 条 ⇒ 前缀断裂
+    expect(second.length - first.length, 2, reason: '两轮之间只应追加 2 条');
+    expect(
+      second.sublist(0, first.length),
+      first,
+      reason: '首轮历史必须是次轮历史的严格前缀（上下文缓存可复用）',
+    );
   });
 
   test(

@@ -221,10 +221,29 @@ class TokenEstimate {
 class LlmInputLimits {
   const LlmInputLimits._();
 
-  /// 追加进 LLM 上下文的历史消息条数上限。
+  /// 追加进 LLM 上下文的历史消息条数**下限**（裁剪后至少保留这么多）。
   ///
-  /// 与预算表历史阶段对齐：20 条 × 1000 chars ≈ 20000 tokens（最坏）。
+  /// 与预算表历史阶段对齐；实际窗口见 [historyStartIndex]：
+  /// 下限 = 本值，上限 = [maxHistoryMessages] + [historyTrimBatch] − 1。
   static const int maxHistoryMessages = 20;
+
+  /// 历史头部「按批对齐」裁剪的批大小（A-1b 前缀稳定化）。
+  ///
+  /// 逐条滑窗（`sublist(total - 20)`）会让历史首条**每轮前移**，而它是
+  /// prompt 中历史块的首字节 ⇒ 上下文缓存（严格前缀匹配）从该处整段断开
+  /// ⇒ 追加式历史每轮全价 miss。改为「超出 cap+batch 才裁、裁到 batch
+  /// 对齐点」后，头部在约 `batch / 2` 轮内保持不动，历史块即可复用缓存。
+  static const int historyTrimBatch = 10;
+
+  /// A-1b：给定历史**总条数**，返回应上送的起始下标。
+  ///
+  /// 返回值恒为 [historyTrimBatch] 的整数倍且单调不减 ⇒ 相邻轮次头部
+  /// 在多数轮次相同 ⇒ 历史字节与前轮形成严格前缀。保留条数落在
+  /// `[maxHistoryMessages, maxHistoryMessages + historyTrimBatch - 1]`。
+  static int historyStartIndex(int total) {
+    final excess = total - maxHistoryMessages;
+    return excess <= 0 ? 0 : (excess ~/ historyTrimBatch) * historyTrimBatch;
+  }
 }
 
 /// Teacher 门控配置（已启用）
