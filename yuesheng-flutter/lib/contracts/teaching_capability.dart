@@ -109,7 +109,17 @@ class SystemPromptResult {
 abstract class TeachingCapability {
   /// 根据教学语境（阶段/态度/子阶段/零基础标志）构建三级分层 system prompt。
   /// 返回完整 prompt + L2 模式 + 已加载 skill 列表 + token 估算 + L3 注入函数。
-  SystemPromptResult buildSystemPrompt(SkillLoadContext ctx);
+  ///
+  /// [modeOverride]（U2 · 2026-09-15）：非 null 时**强制**使用该 L2 组，
+  /// 跳过 [resolveL2Mode] 的决议结果 —— 用于 L2 路由迟滞
+  ///（见 lib/services/l2_route_hysteresis.dart），消掉训练轮结束后的自动回切。
+  /// 默认 null ⇒ 行为与改造前**逐字节等价**（两处锚点零漂移的依据）。
+  /// 覆盖时返回值 [SystemPromptResult.l2Mode] 与实际装配的 skill 组**必然一致**
+  ///（由 buildSystemPromptV2 内「一处决议、向下传递」保证）。
+  SystemPromptResult buildSystemPrompt(
+    SkillLoadContext ctx, {
+    L2Mode? modeOverride,
+  });
 
   /// 根据教学语境决议应加载的 L2 模式。
   L2Mode resolveL2Mode(SkillLoadContext ctx);

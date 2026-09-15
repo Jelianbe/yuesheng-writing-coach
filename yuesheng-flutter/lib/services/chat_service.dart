@@ -39,6 +39,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart' show DioException;
 import 'package:writingcoach/services/error_handler.dart';
+import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:flutter/foundation.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/config/token_budget_table.dart';
@@ -180,6 +181,9 @@ class ChatService {
     GenUiCapability genUi = const GenUiParser(),
     MaterialCapability material = const MaterialCapabilityImpl(),
     TeachingCapability teaching = const TeachingCapabilityImpl(),
+    // ★ U2（2026-09-15）：L2 路由迟滞器（会话级、纯内存）。可选装配，
+    // 不传则自建 —— 不破坏既有测试构造（与 trainingResultRepo 同模式）。
+    L2RouteHysteresis? routeHysteresis,
     DiagnosisCapability diagnosis = const DiagnosisCapabilityImpl(),
     CharacterFactRepository? characterFactRepo,
     EventFactRepository? eventFactRepo,
@@ -211,6 +215,7 @@ class ChatService {
        _genUi = genUi,
        _material = material,
        _teaching = teaching,
+       _routeHysteresis = routeHysteresis ?? L2RouteHysteresis(),
        _diagnosis = diagnosis,
        _characterFactRepo = characterFactRepo,
        _eventFactRepo = eventFactRepo,
@@ -224,6 +229,11 @@ class ChatService {
 
   // 批次59：心流判定——记录每个 session 最近一次用户消息发送时间（秒级）
   final Map<String, int> _lastUserSendAtSec = {};
+
+  /// ★ U2（2026-09-15）：L2 路由迟滞状态（会话级、纯内存、不落库）。
+  /// 消掉训练轮结束后 `updateSubphase(null)` 引起的自动回切。
+  /// 见 lib/services/l2_route_hysteresis.dart。
+  final L2RouteHysteresis _routeHysteresis;
 
   // 批次63（B62b）意图向量缓存（ADR-C74 K-7 随 _injectProfileAndIntents 迁至 MessageInjector）
 
@@ -328,8 +338,16 @@ class ChatService {
     return TeachingSubphase.fromString(ts?.currentSubphase);
   }
 
-  /// 设置子阶段
+  /// 设置子阶段（**用户动作驱动的显式入口**）
+  ///
+  /// ★ U2（2026-09-15）：显式变更同时清空 L2 路由迟滞状态 —— 否则
+  /// 「跳过练习」（chat_reference_controller.handleSkipPractice → 本方法）
+  /// 会被迟滞多留一轮训练语境，等于没听用户指令。
+  ///
+  /// 注意区分：训练轮结束后的**自动**回切走的是 `_stateRepo.updateSubphase`
+  ///（diagnosis_flow_handler.dart:1144），不经此处 ⇒ 迟滞在那边正常生效。
   Future<void> setSubphase(String sessionId, TeachingSubphase? subphase) async {
+    _routeHysteresis.reset(sessionId);
     await _stateRepo.updateSubphase(sessionId, subphase?.value);
   }
 
@@ -954,6 +972,7 @@ extension ChatServiceSend on ChatService {
       options.attitude,
       loaded.currentSubphase,
       loaded.isBeginner,
+      sessionId: sessionId,
     );
     // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
     final stageIndexes = <String, List<int>>{};
@@ -981,19 +1000,39 @@ extension ChatServiceSend on ChatService {
   }
 
   /// 拼接 system prompt（L1 + L2，R-019 拆出）。
+  ///
+  /// ★ U2（2026-09-15）：改为「先取纯函数决议 raw → 问迟滞器是否覆盖 →
+  /// **仅在被覆盖时**才传 override」。非覆盖轮不传 override，走契约默认
+  /// 路径 ⇒ 与改造前逐字节等价（两处锚点零漂移的依据）。
+  /// 一次发送只经此一处（`_assembleMessagesAndInject` 单调用链、无重试）
+  /// ⇒ 迟滞计数每轮恰好前进一格。
   List<ChatMessage> _buildSystemPrompt(
     TeachingPhase phase,
     AttitudeLevel attitude,
     TeachingSubphase? subphase,
-    bool isBeginner,
-  ) {
+    bool isBeginner, {
+    required String sessionId,
+  }) {
     final skillCtx = SkillLoadContext(
       phase: phase,
       attitude: attitude,
       subphase: subphase,
       isBeginner: isBeginner,
     );
-    final promptResult = _teaching.buildSystemPrompt(skillCtx);
+    final rawMode = _teaching.resolveL2Mode(skillCtx);
+    final override = _routeHysteresis.overrideFor(sessionId, rawMode);
+    if (override != null) {
+      // R-022 过程可见：迟滞是**静默**的行为变更（L2 组被覆盖），
+      // 只在真正抑制时打一行（正常会话极少触发，不会刷屏）。
+      debugPrint(
+        '[ChatService] U2 迟滞：L2 组由 ${rawMode.name} 抑制为 ${override.name}'
+        '（session=$sessionId）',
+      );
+    }
+    final promptResult = _teaching.buildSystemPrompt(
+      skillCtx,
+      modeOverride: override,
+    );
     return <ChatMessage>[
       ChatMessage(role: 'system', content: promptResult.systemPrompt),
     ];

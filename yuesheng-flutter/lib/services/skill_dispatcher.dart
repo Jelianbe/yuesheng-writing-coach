@@ -35,8 +35,10 @@ class TeachingCapabilityImpl implements TeachingCapability {
   const TeachingCapabilityImpl();
 
   @override
-  SystemPromptResult buildSystemPrompt(SkillLoadContext ctx) =>
-      buildSystemPromptV2(ctx);
+  SystemPromptResult buildSystemPrompt(
+    SkillLoadContext ctx, {
+    L2Mode? modeOverride,
+  }) => buildSystemPromptV2(ctx, modeOverride: modeOverride);
 
   @override
   L2Mode resolveL2Mode(SkillLoadContext ctx) => _resolveL2ModeImpl(ctx);
@@ -93,18 +95,31 @@ const String _kPositionGuidance = '''## 内容位置判断（必读）
 /// 加载顺序：
 /// 1. L1 常驻层：9 个核心 skill（按 [l1SkillIds] 顺序）
 /// 2. 态度档位 skill：根据 [SkillLoadContext.attitude] 加载一个
-/// 3. L2 按需层：根据 [resolveL2Mode] 决议的 mode 加载一组 skill
+/// 3. L2 按需层：按 `modeOverride ?? resolveL2Mode(ctx)` 的决议加载一组 skill
 /// 4. 位置判断引导语（始终注入末尾）
 ///
 /// L3 检索函数通过返回值的 [SystemPromptResult.injectL3] 字段延迟调用。
 ///
+/// [modeOverride]（U2 · 2026-09-15）：L2 路由迟滞用（见
+/// lib/services/l2_route_hysteresis.dart）。非 null 时强制使用该组；
+/// 默认 null 走 [resolveL2Mode] ⇒ 与改造前逐字节等价。
+///
 /// 注意：L2 五组 skill 内容已于 2026-08-08 批次 22 全部搬运到 [skillRegistry]
 ///（注册表 37 项，含虚拟索引）。缺失的 skill 仍会被跳过（不报错），作为防御性兜底保留。
-SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
+SystemPromptResult buildSystemPromptV2(
+  SkillLoadContext ctx, {
+  L2Mode? modeOverride,
+}) {
   final chunks = <String>[];
   final loadedIds = <String>[];
   _buildL1Chunks(ctx, chunks, loadedIds);
-  _buildL2Chunks(ctx, chunks, loadedIds);
+
+  // ★ U2（2026-09-15）：一处决议、向下传递。
+  // 原实现里 resolveL2Mode 被调两次（下文取返回值 + _buildL2Chunks 内决定装
+  // 哪些 skill）。只覆盖其中一处，会让 SystemPromptResult.l2Mode 与实际装配
+  // 的组**静默不一致** —— 本函数是唯一决议点，结果经参数下传。
+  final l2Mode = modeOverride ?? resolveL2Mode(ctx);
+  _buildL2Chunks(ctx, chunks, loadedIds, l2Mode);
 
   // 位置判断引导语（L1 末尾，始终注入）
   chunks.add(_kPositionGuidance);
@@ -115,7 +130,6 @@ SystemPromptResult buildSystemPromptV2(SkillLoadContext ctx) {
   // 拼接
   final systemPrompt = chunks.join(_kSkillSeparator);
   final estimatedTokens = _estimateTokens(systemPrompt);
-  final l2Mode = resolveL2Mode(ctx);
 
   // L3: 检索函数（返回后由调用方按需调用）
   String injectL3(L3RetrievalContext l3Ctx) => _buildL3Injection(l3Ctx);
@@ -160,12 +174,16 @@ void _buildL1Chunks(
 }
 
 /// L2 按需层加载（R-019 拆出：buildSystemPromptV2）。
+///
+/// [l2Mode] 由 [buildSystemPromptV2] 传入（U2：唯一决议点）——本函数不再
+/// 自行调 [resolveL2Mode]，否则 result.l2Mode 与实际装配组会静默不一致。
 void _buildL2Chunks(
   SkillLoadContext ctx,
   List<String> chunks,
   List<String> loadedIds,
+  L2Mode l2Mode,
 ) {
-  final l2SkillIds = getL2SkillIds(resolveL2Mode(ctx));
+  final l2SkillIds = getL2SkillIds(l2Mode);
   for (final ref in l2SkillIds) {
     final skill = getSkill(ref.skillId);
     if (skill != null) {
