@@ -75,6 +75,16 @@ const _kContentStream =
     'data: {"choices":[{"delta":{"content":"你好呀"}}]}\n\n'
     'data: [DONE]\n\n';
 
+/// 纯推理流（零 content token）但**无 [DONE]**——服务端 length 截断后直接
+/// 关闭连接的收尾形态（reasoning 吃光 completion 预算时常见）。
+const _kPureReasoningNoDoneStream =
+    'data: {"choices":[{"delta":{"reasoning_content":"思考一"}}]}\n\n'
+    'data: {"choices":[{"delta":{"reasoning_content":"思考二"}}]}\n\n';
+
+/// 有 content token 但**无 [DONE]** 的流（半输出 + 干净结束）。
+const _kContentNoDoneStream =
+    'data: {"choices":[{"delta":{"content":"你好呀"}}]}\n\n';
+
 /// 回调采集器：分帧记录 content token 与 isDone 投递次数。
 class _Collector {
   final List<String> tokens = [];
@@ -276,6 +286,80 @@ void main() {
       expect(adapter.requestBodies[1]['thinking'], {'type': 'disabled'});
       expect(adapter.requestBodies[1]['custom_field'], 'x');
       expect(collector.tokens, ['你好呀']);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // 空内容缺陷补漏（2026-09-15）：
+  // 降级判据原为「零 content token **且正常收尾达成 [DONE]**」，遗漏
+  // 「服务端 length 截断后不发 [DONE] 即关闭连接」这一空响应形态
+  //（reasoning 吃光 completion 预算时的常见收尾）。放宽后判据 =
+  // 零 content token 且本次尝试未抛异常（= 流干净结束，无论 [DONE] 是否达成）。
+  // 安全性依据：能走到降级分支说明未抛异常（零 token 阶段的断流/超时在
+  // _consumeSseStream 内 rethrow，由外层 executeWithRetry 接管），且用户侧
+  // 零内容 ⇒ 重发不复读。
+  // ─────────────────────────────────────────────────────────────
+  group('空响应降级判据放宽：零 token 且无 [DONE]（干净收尾）', () {
+    test('deepseek 零 token + 无 [DONE] → 降级重试，内容由尝试 2 救回', () async {
+      final adapter = _SseScriptAdapter([
+        _sse(_kPureReasoningNoDoneStream), // 尝试 1：无 [DONE] 收尾
+        _sse(_kContentStream), // 尝试 2：关思考后正常产出
+      ]);
+      final collector = _Collector();
+      await _client(adapter, 'deepseek-v4-flash').streamChat(const [
+        ChatMessage(role: 'user', content: 'hi'),
+      ], collector.call);
+      expect(
+        adapter.requestBodies,
+        hasLength(2),
+        reason: '零 token 且无 [DONE] 的空响应必须触发降级（本批修复点）',
+      );
+      expect(adapter.requestBodies[1]['thinking'], {'type': 'disabled'});
+      expect(collector.tokens, ['你好呀']);
+      expect(collector.isDoneCount, 1);
+    });
+
+    test('deepseek 两次尝试均无 [DONE] → 2 次请求、不抛错、isDone 不投递', () async {
+      final adapter = _SseScriptAdapter([
+        _sse(_kPureReasoningNoDoneStream),
+        _sse(_kPureReasoningNoDoneStream),
+      ]);
+      final collector = _Collector();
+      await _client(adapter, 'deepseek-reasoner').streamChat(const [
+        ChatMessage(role: 'user', content: 'hi'),
+      ], collector.call);
+      expect(adapter.requestBodies, hasLength(2));
+      expect(collector.tokens, isEmpty);
+      // 契约现状：两次尝试都未达成 [DONE] ⇒ 补投点不触发（与放宽前一致，
+      // 非本批引入）。调用方需以「流结束」而非 isDone 帧作为终结信号。
+      expect(collector.isDoneCount, 0);
+    });
+
+    test('非 deepseek 模型零 token + 无 [DONE] → 不降级（AC-3 守护）', () async {
+      final adapter = _SseScriptAdapter([
+        _sse(_kPureReasoningNoDoneStream),
+        _sse(_kContentStream),
+      ]);
+      final collector = _Collector();
+      await _client(adapter, 'some-generic-model').streamChat(const [
+        ChatMessage(role: 'user', content: 'hi'),
+      ], collector.call);
+      expect(adapter.requestBodies, hasLength(1));
+      expect(collector.tokens, isEmpty);
+    });
+
+    test('半输出 + 无 [DONE] → 不降级（已投递内容，重发会复读）', () async {
+      final adapter = _SseScriptAdapter([
+        _sse(_kContentNoDoneStream),
+        _sse(_kContentStream), // 不应被消费
+      ]);
+      final collector = _Collector();
+      await _client(adapter, 'deepseek-v4-flash').streamChat(const [
+        ChatMessage(role: 'user', content: 'hi'),
+      ], collector.call);
+      expect(adapter.requestBodies, hasLength(1));
+      expect(collector.tokens, ['你好呀']);
+      expect(collector.isDoneCount, 0);
     });
   });
 }

@@ -23,8 +23,9 @@ class LlmModelProfile {
   ///（防思考退化乱码；DeepSeek/OpenAI 保持 false 不受影响）
   final bool disableThinking;
 
-  /// true = deepseek 系：流式「空流」（零 content token 且正常收尾，
-  /// ADR-C94 §3.4 联合判据）时允许注入 `thinking: {type: disabled}` 兜底
+  /// true = deepseek 系：流式「空流」（零 content token 且流干净结束，
+  /// ADR-C94 §3.4 判据；不要求达成 [DONE]）时允许注入
+  /// `thinking: {type: disabled}` 兜底
   /// 重试（§3.3 分级降级）。**仅降级时生效**——尝试 1 请求体保持原参数，
   /// 成功路径零行为变更（C80 §3.1 价值承袭）。
   final bool fallbackDisableThinking;

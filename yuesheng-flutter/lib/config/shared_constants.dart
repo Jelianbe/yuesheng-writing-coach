@@ -61,8 +61,9 @@ class LlmConfig {
 
   /// 教学流式路径空流兜底的请求体附加字段（ADR-C94）。
   ///
-  /// deepseek 系教学回合「零 content token 且正常收尾」（§3.4 联合判据）
-  /// 时，尝试 2 注入；与 [chunkAnalysisFallbackExtraBody] 值同源、命名分立
+  /// deepseek 系教学回合「零 content token 且流干净结束」（§3.4 判据；
+  /// 不要求达成 [DONE]——length 截断后服务端可能直接关闭连接）时，
+  /// 尝试 2 注入；与 [chunkAnalysisFallbackExtraBody] 值同源、命名分立
   /// （教学 / 分块两条链路独立演进，注释互指）。`thinking:
   /// {"type": "disabled"}` 是 ADR-C80 §1.2 探针 7 参数组合中唯一被
   /// DeepSeek API 稳定采纳的推理控制参数（reasoning_tokens 归零 3/3）；

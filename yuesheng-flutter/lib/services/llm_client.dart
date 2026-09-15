@@ -526,16 +526,24 @@ class LlmClient {
 
   /// ADR-C94 §3.3 分级降级编排（R-019 拆出）。
   ///
-  /// 尝试 1 用现参数原样（成功路径零行为变更）；判空联合判据（§3.4：
-  /// `emitted == false`——仅 content token 计数，reasoning_content 增量
-  /// 不计入——且正常收尾达成 [DONE]）成立、且模型属降级名单
-  ///（`profile.fallbackDisableThinking`）→ 尝试 2 注入兜底 extraBody；
-  /// 仍空 → 正常返回（不抛错），上层既有 `onError('AI 返回为空')` 防线接住。
+  /// 尝试 1 用现参数原样（成功路径零行为变更）；判空判据（§3.4：`emitted ==
+  /// false`——仅 content token 计数，reasoning_content 增量不计入——且本次尝试
+  /// 干净结束，即未抛异常，**不再要求**必须达成 [DONE]，见 [_streamAttemptLoop]
+  /// 内注释）成立、且模型属降级名单（`profile.fallbackDisableThinking`）→
+  /// 尝试 2 注入兜底 extraBody；仍空 → 正常返回（不抛错），上层既有
+  /// `onError('AI 返回为空')` 防线接住。
   ///
   /// **isDone 恰好一次契约**：isDone 帧经 [bufferedCallback] 缓存不立即投递，
   /// 降级发生则吞掉尝试 1 的 isDone，全程对调用方恰好投递一次（见
   /// [_flushIsDone]）。半输出（emitted == true）一律不降级——已向用户
   /// 投递内容，重发会复读，交上层既有错误语义处理。
+  ///
+  /// **降级判据（2026-09-15 EC 批放宽）**：零 content token 即可降级，
+  /// **不再要求「正常收尾达成 [DONE]」**。依据：能走到判据处即本次尝试
+  /// **未抛异常** —— 零 token 阶段的断流/超时已在 [_consumeSseStream] 内
+  /// `rethrow`，由外层 `executeWithRetry` 接管 ⇒ 到达此处即「流干净结束」；
+  /// 零投递 ⇒ 重发不复读。对全部 `done == true` 形态（含真实 API 的
+  /// `finish_reason=length` 截断，探针实测 3/3 仍发 `[DONE]`）行为**逐路径等价**。
   Future<void> _streamAttemptLoop(
     LlmConfigValues c,
     List<ChatMessage> messages,
@@ -559,15 +567,15 @@ class LlmClient {
       cancelToken,
       extraBody: extraBody,
     );
-    // 非空流（半输出不降级）或未正常收尾（[DONE] 未达成，维持现状）→ 原样结束
-    if (first.emitted || !first.done) return _flushIsDone(callback, isDoneSeen);
+    // 判据见上方 doc：半输出不降级；零 content token 一律可降级（无论 [DONE]）。
+    if (first.emitted) return _flushIsDone(callback, isDoneSeen);
     final profile = classifyLlmModel(c.model);
     if (!profile.fallbackDisableThinking) {
       return _flushIsDone(callback, isDoneSeen);
     }
     debugPrint(
-      '[ADR-C94] streamChat 空流（零 content token 且正常收尾）→ deepseek 系'
-      '兜底重试 model=${c.model}（尝试 2 注入 thinking disabled）',
+      '[ADR-C94] streamChat 空流（零 content token，收尾 done=${first.done}）'
+      '→ deepseek 系兜底重试 model=${c.model}（尝试 2 注入 thinking disabled）',
     );
     final second = await _runStreamAttempt(
       c,
@@ -645,7 +653,11 @@ class LlmClient {
       consumed.firstTokenLogged,
       callback,
     );
-    return (emitted: trailing.emitted, done: trailing.done);
+    // emitted 必须**累计**流内已投递的 token：流干净结束但未达成 [DONE] 时
+    // 若只看 buffer 残片，已投递给用户的内容会被误判为零 token（原实现即
+    // 如此，因下游 `done == false` 提前返回而不可达；空响应降级判据放宽后
+    // 变为可达 ⇒ 会触发对半输出的重发复读）。此处取并集修正。
+    return (emitted: consumed.emitted || trailing.emitted, done: trailing.done);
   }
 
   /// 消费 SSE 流（含断流语义重试判定，R-019 拆出）。
