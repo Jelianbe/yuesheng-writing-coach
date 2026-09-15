@@ -10,11 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_theme.dart';
+import '../config/reasoning_tier.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
 import '../providers/fact_batch_providers.dart';
 import '../providers/practice_providers.dart';
+import '../providers/reasoning_tier_provider.dart';
 import '../services/attitude_advisor.dart';
 import '../types/teaching_types.dart';
 import 'attitude_suggestion_banner.dart';
@@ -78,18 +80,12 @@ class ChatPageBody extends ConsumerWidget {
     final practiceState = ref.watch(practiceStoreProvider);
     final evaluationState = ref.watch(evaluationReportsProvider);
     final factBatches = ref.watch(factBatchProvider);
+    // 思考档位（UI 侧唯一真源）：输入框开关 + 头部「更多」菜单共用同一
+    // provider，写操作经 notifier 落 app_state ⇒ 两处入口天然同步
+    final reasoningTier = ref.watch(reasoningTierProvider);
     return Column(
       children: [
-        ChatHeaderSection(
-          attitude: attitude,
-          primaryRefTitle: primaryRefTitle,
-          suggestion: attitudeSuggestion,
-          onOpenSessionDrawer: onOpenSessionDrawer,
-          attitudeController: attitudeController,
-          session: session,
-          reference: reference,
-          messages: messages,
-        ),
+        _buildHeader(ref, context, reasoningTier),
         ChatTaskSection(
           chatState: chatState,
           phase: phase,
@@ -110,16 +106,65 @@ class ChatPageBody extends ConsumerWidget {
           ),
         ),
         if (chatState.error != null) ChatErrorBar(chatState: chatState),
-        ChatComposerSection(
-          inputText: inputText,
-          isStreaming: chatState.isStreaming,
-          chatInputKey: chatInputKey,
-          onInputChange: onInputChange,
-          teaching: teaching,
-          reference: reference,
-        ),
+        _buildComposer(ref, context, reasoningTier),
       ],
     );
+  }
+
+  /// 头部区（含「更多」菜单的思考档位写入口）。
+  /// 拆出 build 是为了守 R-019 单函数 50 行；参数照传，无隐式状态。
+  Widget _buildHeader(WidgetRef ref, BuildContext context, String tier) {
+    return ChatHeaderSection(
+      attitude: attitude,
+      primaryRefTitle: primaryRefTitle,
+      suggestion: attitudeSuggestion,
+      onOpenSessionDrawer: onOpenSessionDrawer,
+      attitudeController: attitudeController,
+      session: session,
+      reference: reference,
+      messages: messages,
+      reasoningTier: tier,
+      onReasoningTierChange: (key) => _applyTierWrite(
+        ref,
+        context,
+        ref.read(reasoningTierProvider.notifier).setTier(key),
+      ),
+    );
+  }
+
+  /// 底部输入栏区（含输入框上方思考开关的写入口）。
+  Widget _buildComposer(WidgetRef ref, BuildContext context, String tier) {
+    return ChatComposerSection(
+      inputText: inputText,
+      isStreaming: chatState.isStreaming,
+      chatInputKey: chatInputKey,
+      onInputChange: onInputChange,
+      teaching: teaching,
+      reference: reference,
+      thinkingEnabled: isThinkingEnabled(tier),
+      reasoningTierLabel: reasoningTierOf(tier).label,
+      onThinkingToggle: (on) => _applyTierWrite(
+        ref,
+        context,
+        ref.read(reasoningTierProvider.notifier).setThinkingEnabled(on),
+      ),
+    );
+  }
+
+  /// 档位写操作收口：await 前取 messenger（避免跨 async gap 用 BuildContext），
+  /// 失败即提示（notifier 内部已回滚乐观更新）。
+  Future<void> _applyTierWrite(
+    WidgetRef ref,
+    BuildContext context,
+    Future<bool> pending,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await pending) _notifyTierSaveFailed(messenger);
+  }
+
+  /// 档位落库失败提示（两处入口共用同一文案）。
+  void _notifyTierSaveFailed(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(const SnackBar(content: Text('档位保存失败，已恢复原设置')));
   }
 }
 
@@ -134,6 +179,10 @@ class ChatHeaderSection extends StatelessWidget {
   final ChatReferenceController reference;
   final ChatMessagesController messages;
 
+  /// 思考档位（头部「更多」菜单的「思考档位」段）
+  final String reasoningTier;
+  final ValueChanged<String> onReasoningTierChange;
+
   const ChatHeaderSection({
     super.key,
     required this.attitude,
@@ -144,6 +193,8 @@ class ChatHeaderSection extends StatelessWidget {
     required this.session,
     required this.reference,
     required this.messages,
+    required this.reasoningTier,
+    required this.onReasoningTierChange,
   });
 
   @override
@@ -159,6 +210,8 @@ class ChatHeaderSection extends StatelessWidget {
           onNewSession: session.handleCreateSession,
           primaryRefTitle: primaryRefTitle,
           onTapPrimaryRef: reference.handleOpenReferences,
+          reasoningTier: reasoningTier,
+          onReasoningTierChange: onReasoningTierChange,
         ),
         // 批次 12：态度建议横幅（对齐 RN 位于头部下方、内容上方）
         if (suggestion != null)

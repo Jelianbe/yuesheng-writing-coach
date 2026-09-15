@@ -13,16 +13,21 @@ const String _kKeyApiModel = 'yuesheng_api_model';
 /// B1-1 备选端点链（JSON 数组，可选配置；未配置 = 无 fallback）
 const String _kKeyApiFallbacks = 'yuesheng_api_fallbacks';
 
-/// LLM 配置（API Key / Base URL / Model）
+/// LLM 配置（API Key / Base URL / Model / 推理档位）
 class LlmConfigValues {
   final String apiKey;
   final String baseUrl;
   final String model;
 
+  /// 推理档位 key（用户可调思考开关；真源见 config/reasoning_tier.dart）。
+  /// null = 未设置 ⇒ 标准档（不干预请求体）⇒ 请求体与改造前逐字节相同。
+  final String? reasoningTier;
+
   const LlmConfigValues({
     required this.apiKey,
     required this.baseUrl,
     required this.model,
+    this.reasoningTier,
   });
 }
 

@@ -18,10 +18,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_theme.dart';
+import '../config/reasoning_tier.dart';
 import '../data/database/database.dart';
 import '../data/repositories/ai_account_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
+import '../providers/reasoning_tier_provider.dart';
 import '../providers/session_providers.dart';
 import '../router/app_routes.dart';
 import '../services/error_handler.dart';
@@ -119,6 +121,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _accountRepo = AIAccountRepository(ref.read(appDatabaseProvider));
     _loadApiConfig();
     _loadProgressSummary();
+    // 推理档位：读 app_state 水合到共享 provider（与聊天页同源，故不存本地副本）
+    ref.read(reasoningTierProvider.notifier).hydrate();
   }
 
   /// 批次 38：加载最新会话的学习进度（对齐 RN bookshelf handleProgressPress 来源）
@@ -138,6 +142,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } catch (_) {
       // 进度摘要加载失败静默（不阻塞设置页其他区块）
     }
+  }
+
+  /// 切换推理档位：写共享 provider（乐观更新 + 落 app_state + 失败回滚）。
+  /// 聊天页头部「更多」菜单与输入框开关走同一 notifier ⇒ 改一处两处同步。
+  Future<void> _handleSelectReasoningTier(String tierKey) async {
+    final ok = await ref.read(reasoningTierProvider.notifier).setTier(tierKey);
+    if (!ok) _notify('档位保存失败，已恢复原设置', error: true);
   }
 
   /// 批次 38：点击进度区块 → 学习进度详情页
@@ -503,6 +514,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // 思考档位读共享 provider（与聊天页同源；本页不持本地副本，避免双真源）
+    final reasoningTier = ref.watch(reasoningTierProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -524,6 +537,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             const SizedBox(height: 12),
           ],
           _buildApiSection(),
+          const SizedBox(height: 12),
+          _buildModelBehaviorSection(reasoningTier),
           const SizedBox(height: 12),
           _buildMaintenanceSection(),
           const SizedBox(height: 12),
@@ -724,6 +739,39 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
+  }
+
+  // ── 模型行为（推理档位） ──
+
+  /// 推理档位选择（用户可调「思考开关」）：决定回复的速度 / 深度 / 消耗。
+  /// [tier] 由 build 从共享 provider 读取后传入（本页不再持本地副本）。
+  Widget _buildModelBehaviorSection(String tier) {
+    return _SectionCard(
+      title: '模型行为',
+      description: '控制模型回复时的思考深度（影响速度、质量与 token 消耗）',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final preset in reasoningTierPresets)
+                ChoiceChip(
+                  label: Text(preset.label),
+                  selected: tier == preset.key,
+                  onSelected: (_) => _handleSelectReasoningTier(preset.key),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            reasoningTierOf(tier).hint,
+            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildApiSection() {

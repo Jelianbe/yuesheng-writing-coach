@@ -5,10 +5,11 @@
 //   1. 标题「会话」+ 主引用小字（未关联 / 书名）
 //   2. entryPoint='manuscript' → 「诊断模式」徽章
 //   3. 汉堡按钮 → onOpenSessionDrawer
-//   4. 更多菜单 → 态度档位 + 画像入口
+//   4. 更多菜单 → 态度档位 + 思考档位 + 画像入口
 //   5. 更多菜单选态度 → onAttitudeChange
 //   6. 更多菜单点画像 → onOpenProfile
 //   7. 批次29 新建对话按钮 → onNewSession
+//   8. 批次 TH 三：更多菜单选思考档位 → onReasoningTierChange
 //
 // 批次 C78-3c：删除「子阶段」菜单相关用例（原子阶段断言 / 切换回调），
 // 因 SubphaseIndicator 展示层已废弃（详见 lib/widgets/chat_header.dart 头注）。
@@ -17,6 +18,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/reasoning_tier.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/chat_header.dart';
 
@@ -30,6 +32,8 @@ void main() {
     String? entryPoint,
     String? primaryRefTitle,
     VoidCallback? onTapPrimaryRef,
+    String reasoningTier = reasoningTierStandard,
+    void Function(String)? onReasoningTierChange,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -42,6 +46,8 @@ void main() {
           entryPoint: entryPoint,
           primaryRefTitle: primaryRefTitle,
           onTapPrimaryRef: onTapPrimaryRef,
+          reasoningTier: reasoningTier,
+          onReasoningTierChange: onReasoningTierChange ?? (_) {},
         ),
       ),
     );
@@ -81,13 +87,18 @@ void main() {
     expect(opened, isTrue);
   });
 
-  testWidgets('#4 更多菜单 → 态度档位 + 画像', (tester) async {
+  testWidgets('#4 更多菜单 → 态度档位 + 思考档位 + 画像', (tester) async {
     await tester.pumpWidget(buildHeader());
 
     await tester.tap(find.byIcon(Icons.more_horiz));
     await tester.pumpAndSettle();
 
     expect(find.text('态度档位'), findsOneWidget);
+    // 批次 TH 三：思考档位段（四档）
+    expect(find.text('思考档位'), findsOneWidget);
+    for (final preset in reasoningTierPresets) {
+      expect(find.text(preset.label), findsOneWidget);
+    }
     expect(find.text('画像'), findsOneWidget);
     // 批次 C78-3c：子阶段展示端已废弃，菜单不应再出现
     expect(find.text('子阶段'), findsNothing);
@@ -128,5 +139,42 @@ void main() {
     await tester.tap(find.byIcon(Icons.add_comment_outlined));
 
     expect(created, isTrue);
+  });
+
+  // ════════════════════════════════════════════════════════
+  // 批次 TH 三：思考档位（与设置页「模型行为」同源的完整四档入口）
+  // ════════════════════════════════════════════════════════
+
+  testWidgets('#8 更多菜单选思考档位 → onReasoningTierChange(key)', (tester) async {
+    String? picked;
+    await tester.pumpWidget(
+      buildHeader(onReasoningTierChange: (key) => picked = key),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('深度'));
+    await tester.pumpAndSettle();
+
+    expect(picked, reasoningTierDeep);
+  });
+
+  testWidgets('#8b 选中档位显示其 hint（用户能看到代价说明）', (tester) async {
+    await tester.pumpWidget(buildHeader(reasoningTier: reasoningTierOff));
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+
+    expect(find.text(reasoningTierOf(reasoningTierOff).hint), findsOneWidget);
+  });
+
+  testWidgets('#8c 默认（未接线）也显示思考档位段（入口不忽隐忽现）', (tester) async {
+    await tester.pumpWidget(buildHeader());
+
+    await tester.tap(find.byIcon(Icons.more_horiz));
+    await tester.pumpAndSettle();
+
+    expect(find.text('思考档位'), findsOneWidget);
+    expect(find.text(reasoningTierOf(reasoningTierStandard).hint), findsOneWidget);
   });
 }

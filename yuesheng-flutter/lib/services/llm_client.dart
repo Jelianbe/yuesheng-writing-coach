@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/reasoning_tier.dart';
 import '../config/shared_constants.dart';
 import 'llm_circuit_breaker.dart';
 import 'llm_concurrency_gate.dart';
@@ -729,6 +730,12 @@ class LlmClient {
     if (profile.disableThinking) {
       // GLM thinking 系：显式关闭思考模式，防复杂 prompt 下退化乱码
       body['thinking'] = {'type': 'disabled'};
+    } else {
+      // 用户推理档位（真源 config/reasoning_tier.dart）：标准档 / 未设置
+      // 不产任何键 ⇒ 请求体逐字节不变；仅对未强制关思考的模型生效
+      //（GLM/doubao 画像为最小安全兜底，优先于档位）。
+      final tierPatch = reasoningBodyPatchFor(c.reasoningTier);
+      if (tierPatch.isNotEmpty) body.addAll(tierPatch);
     }
     if (profile.reasoningOnly) {
       body['max_completion_tokens'] = maxTokens ?? LlmConfig.chatMaxTokens;
@@ -757,6 +764,11 @@ class LlmClient {
     if (profile.disableThinking) {
       // GLM thinking 系：显式关闭思考模式，防复杂 prompt 下退化乱码
       body['thinking'] = {'type': 'disabled'};
+    } else {
+      // 用户推理档位（同 _buildChatCompletionBody）：标准档不产键 ⇒
+      // 请求体逐字节不变，既有请求体锚点测试不受影响。
+      final tierPatch = reasoningBodyPatchFor(c.reasoningTier);
+      if (tierPatch.isNotEmpty) body.addAll(tierPatch);
     }
     if (profile.reasoningOnly) {
       body['max_completion_tokens'] = LlmConfig.chatMaxTokens;

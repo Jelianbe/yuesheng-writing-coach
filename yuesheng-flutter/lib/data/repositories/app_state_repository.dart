@@ -9,6 +9,7 @@ import 'dart:ui' show Offset;
 import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import '../../config/reasoning_tier.dart';
 import '../../services/decode_guard.dart';
 import '../../types/display_types.dart';
 import '../../widgets/punctuation_bar.dart';
@@ -331,6 +332,17 @@ class AppStateRepository {
   Future<void> setSmartPunctuationEnabled(bool on) async {
     await setValue('smart_punctuation_enabled', on ? '1' : '0');
   }
+
+  // ════════════ 推理档位（用户可调思考开关） ════════════
+  // key 规约：reasoning_tier → 档位 key 字符串（真源见 config/reasoning_tier.dart）
+  // 无记录返回 null；消费方按标准档（不干预请求体）处理 ⇒ 旧库零行为变更。
+
+  /// 读取推理档位 key（无记录 → null）
+  Future<String?> getReasoningTier() => getValue(kReasoningTierKey);
+
+  /// 保存推理档位（调用方保证 key 属于 [reasoningTierPresets]）
+  Future<void> setReasoningTier(String tierKey) =>
+      setValue(kReasoningTierKey, tierKey);
 
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════
   // key 规约：editor_menu_height → '0.55'（字符串小数，默认 0.55，clamp 0.30-0.85）

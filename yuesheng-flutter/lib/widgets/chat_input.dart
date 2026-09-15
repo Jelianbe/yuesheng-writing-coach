@@ -36,6 +36,15 @@ class ChatInput extends StatefulWidget {
   /// 入口标识：'manuscript' 显示诊断模式占位符
   final String? entryPoint;
 
+  /// 思考开关当前状态（true = 思考开启 ⇔ 档位非「关闭思考」）。
+  final bool thinkingEnabled;
+
+  /// 开关旁的档位副文案（当前档位展示名；关闭态由组件改写为「已关闭」）。
+  final String reasoningTierLabel;
+
+  /// 思考开关回调（null 时**不渲染**开关行，保证既有调用点零改动）。
+  final ValueChanged<bool>? onThinkingToggle;
+
   const ChatInput({
     super.key,
     required this.input,
@@ -46,6 +55,9 @@ class ChatInput extends StatefulWidget {
     this.onMention,
     this.onStop,
     this.entryPoint,
+    this.thinkingEnabled = true,
+    this.reasoningTierLabel = '标准',
+    this.onThinkingToggle,
   });
 
   @override
@@ -193,94 +205,160 @@ class ChatInputState extends State<ChatInput> {
           top: BorderSide(color: AppColors.borderSoft, width: 0.5),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Scrollbar(
-              controller: _scrollController,
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                scrollController: _scrollController,
-                enabled: !widget.isStreaming,
-                maxLines: 5,
-                minLines: 1,
-                textInputAction: TextInputAction.newline,
-                onChanged: _handleChanged,
-                decoration: InputDecoration(
-                  hintText: _placeholder,
-                  hintStyle: const TextStyle(color: AppColors.textTertiary),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                  isDense: true,
-                  border: OutlineInputBorder(
-                    // pill shape：半径取大值，由引擎 clamp 到实际高度一半，
-                    // 保证单行/多行均为完全圆角药丸形
-                    // X-039-Batch1：100→pill
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                    borderSide: BorderSide.none,
+          // 思考开关（输入框上方，批次 TH 三）：二值快捷入口，
+          // 完整四档在设置页 / 头部「更多」菜单（避免同一 true 状态两份副本）
+          if (widget.onThinkingToggle != null)
+            _ThinkingToggleBar(
+              enabled: widget.thinkingEnabled,
+              tierLabel: widget.reasoningTierLabel,
+              // 生成中禁用：避免中途换档造成「本轮已发出的请求」与界面不一致
+              onChanged: widget.isStreaming ? null : widget.onThinkingToggle,
+            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Scrollbar(
+                  controller: _scrollController,
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    scrollController: _scrollController,
+                    enabled: !widget.isStreaming,
+                    maxLines: 5,
+                    minLines: 1,
+                    textInputAction: TextInputAction.newline,
+                    onChanged: _handleChanged,
+                    decoration: InputDecoration(
+                      hintText: _placeholder,
+                      hintStyle: const TextStyle(color: AppColors.textTertiary),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        // pill shape：半径取大值，由引擎 clamp 到实际高度一半，
+                        // 保证单行/多行均为完全圆角药丸形
+                        // X-039-Batch1：100→pill
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        // X-039-Batch1：16→lg / 10→smx
+                        // 2026-09-08：vertical 10→8（isDense 配合），空态压回一行，
+                        //   对齐 36px 发送按钮；内容超 5 行后框内纵向滚动
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.sm,
+                      ),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    // X-039-Batch1：16→lg / 10→smx
-                    // 2026-09-08：vertical 10→8（isDense 配合），空态压回一行，
-                    //   对齐 36px 发送按钮；内容超 5 行后框内纵向滚动
-                    horizontal: AppSpacing.lg,
-                    vertical: AppSpacing.sm,
-                  ),
-                ),
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
                 ),
               ),
-            ),
-          ),
-          // ── + 上传按钮（secondary，带边框）——置于输入框右侧（真机反馈调整）──
-          if (widget.onUploadFile != null) ...[
-            _IconButton(
-              icon: Icons.add,
-              color: AppColors.textPrimary,
-              onTap: widget.onUploadFile!,
-              hasBorder: true,
-            ),
-            const SizedBox(width: 8),
-          ],
-          SizedBox(
-            width: 36,
-            height: 36,
-            child: widget.isStreaming
-                ? FilledButton(
-                    // 生成/识别中：发送按钮位变为「停止生成」，给用户手动逃生出口
-                    onPressed: widget.onStop,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.danger,
-                      shape: const CircleBorder(),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Icon(
-                      Icons.stop,
-                      color: AppColors.onPrimary,
-                      size: 18,
-                    ),
-                  )
-                : FilledButton(
-                    onPressed: _canSend ? _handleSend : null,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      disabledBackgroundColor: AppColors.disabled,
-                      shape: const CircleBorder(),
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_upward,
-                      color: AppColors.onPrimary,
-                      size: 18,
-                    ),
-                  ),
+              // ── + 上传按钮（secondary，带边框）——置于输入框右侧（真机反馈调整）──
+              if (widget.onUploadFile != null) ...[
+                _IconButton(
+                  icon: Icons.add,
+                  color: AppColors.textPrimary,
+                  onTap: widget.onUploadFile!,
+                  hasBorder: true,
+                ),
+                const SizedBox(width: 8),
+              ],
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: widget.isStreaming
+                    ? FilledButton(
+                        // 生成/识别中：发送按钮位变为「停止生成」，给用户手动逃生出口
+                        onPressed: widget.onStop,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.danger,
+                          shape: const CircleBorder(),
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: const Icon(
+                          Icons.stop,
+                          color: AppColors.onPrimary,
+                          size: 18,
+                        ),
+                      )
+                    : FilledButton(
+                        onPressed: _canSend ? _handleSend : null,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          disabledBackgroundColor: AppColors.disabled,
+                          shape: const CircleBorder(),
+                          padding: EdgeInsets.zero,
+                        ),
+                        child: const Icon(
+                          Icons.arrow_upward,
+                          color: AppColors.onPrimary,
+                          size: 18,
+                        ),
+                      ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+/// 输入框上方的思考开关行：图标 + 「思考」+ 档位副文案 + 开关。
+class _ThinkingToggleBar extends StatelessWidget {
+  final bool enabled;
+  final String tierLabel;
+  final ValueChanged<bool>? onChanged;
+
+  const _ThinkingToggleBar({
+    required this.enabled,
+    required this.tierLabel,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = enabled ? AppColors.primary : AppColors.textTertiary;
+    return Row(
+      children: [
+        Icon(
+          enabled ? Icons.psychology : Icons.psychology_outlined,
+          size: 16,
+          color: color,
+        ),
+        const SizedBox(width: 6),
+        const Text(
+          '思考',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          enabled ? tierLabel : '已关闭',
+          style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        ),
+        const Spacer(),
+        // shrinkWrap + scale：把 Material 默认 48 高触控区压到与单行文案等高
+        Transform.scale(
+          scale: 0.8,
+          child: Switch(
+            value: enabled,
+            onChanged: onChanged,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ),
+      ],
     );
   }
 }

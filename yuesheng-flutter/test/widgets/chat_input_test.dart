@@ -331,5 +331,100 @@ void main() {
         expect(scrollbar, findsOneWidget);
       });
     });
+
+    // ════════════════════════════════════════════════════════
+    // 批次 TH 三：输入框上方思考开关（二值快捷入口）
+    // 完整四档在设置页「模型行为」/ 头部「更多」菜单，本处只负责快关/快开。
+    // ════════════════════════════════════════════════════════
+
+    group('思考开关（输入框上方）', () {
+      Widget buildInput({
+        bool thinkingEnabled = true,
+        String reasoningTierLabel = '标准',
+        bool isStreaming = false,
+        void Function(bool)? onThinkingToggle,
+      }) {
+        return MaterialApp(
+          home: Scaffold(
+            body: ChatInput(
+              input: '',
+              isStreaming: isStreaming,
+              onInputChange: (_) {},
+              onSend: (_) {},
+              thinkingEnabled: thinkingEnabled,
+              reasoningTierLabel: reasoningTierLabel,
+              onThinkingToggle: onThinkingToggle,
+            ),
+          ),
+        );
+      }
+
+      testWidgets('未传回调 → 不渲染开关（既有调用点零改动）', (tester) async {
+        await tester.pumpWidget(buildInput());
+
+        expect(find.byType(Switch), findsNothing);
+        expect(find.text('思考'), findsNothing);
+      });
+
+      testWidgets('传回调 → 显示「思考」+ 当前档位副文案 + 开关为开', (tester) async {
+        await tester.pumpWidget(
+          buildInput(reasoningTierLabel: '深度', onThinkingToggle: (_) {}),
+        );
+
+        expect(find.text('思考'), findsOneWidget);
+        expect(find.text('深度'), findsOneWidget);
+        expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      });
+
+      testWidgets('点击开关 → onThinkingToggle(false)（关掉思考）', (tester) async {
+        bool? toggled;
+        await tester.pumpWidget(
+          buildInput(onThinkingToggle: (v) => toggled = v),
+        );
+
+        await tester.tap(find.byType(Switch));
+        await tester.pump();
+
+        expect(toggled, isFalse);
+      });
+
+      testWidgets('关闭态 → 副文案改为「已关闭」（不再显示档位名）', (tester) async {
+        await tester.pumpWidget(
+          buildInput(
+            thinkingEnabled: false,
+            reasoningTierLabel: '深度',
+            onThinkingToggle: (_) {},
+          ),
+        );
+
+        expect(find.text('已关闭'), findsOneWidget);
+        expect(find.text('深度'), findsNothing);
+        expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      });
+
+      testWidgets('开启态再点 → onThinkingToggle(true)（恢复上次档位由上层负责）', (tester) async {
+        bool? toggled;
+        await tester.pumpWidget(
+          buildInput(
+            thinkingEnabled: false,
+            onThinkingToggle: (v) => toggled = v,
+          ),
+        );
+
+        await tester.tap(find.byType(Switch));
+        await tester.pump();
+
+        expect(toggled, isTrue);
+      });
+
+      testWidgets('isStreaming → 开关禁用（防中途换档与已发请求不一致）', (tester) async {
+        await tester.pumpWidget(
+          buildInput(isStreaming: true, onThinkingToggle: (_) {}),
+        );
+
+        final sw = tester.widget<Switch>(find.byType(Switch));
+        expect(sw.onChanged, isNull);
+      });
+    });
   });
 }

@@ -167,6 +167,11 @@ class ChatComposerSection extends StatelessWidget {
   final ChatTeachingController teaching;
   final ChatReferenceController reference;
 
+  /// 思考开关（输入框上方）：当前是否开启 + 当前档位展示名 + 切换回调。
+  final bool thinkingEnabled;
+  final String reasoningTierLabel;
+  final ValueChanged<bool> onThinkingToggle;
+
   const ChatComposerSection({
     super.key,
     required this.inputText,
@@ -175,6 +180,9 @@ class ChatComposerSection extends StatelessWidget {
     required this.onInputChange,
     required this.teaching,
     required this.reference,
+    required this.thinkingEnabled,
+    required this.reasoningTierLabel,
+    required this.onThinkingToggle,
   });
 
   @override
@@ -188,6 +196,9 @@ class ChatComposerSection extends StatelessWidget {
       onStop: teaching.cancelGeneration,
       onUploadFile: reference.handleUploadFile,
       onMention: reference.handleMention,
+      thinkingEnabled: thinkingEnabled,
+      reasoningTierLabel: reasoningTierLabel,
+      onThinkingToggle: onThinkingToggle,
     );
   }
 }

@@ -11,6 +11,7 @@
 //   更多菜单（对齐 RN Modal menuSheet）：
 //   - 态度档位：行内 3 档选择（对齐 RN AttitudeIndicator 行内语义，
 //     避免 bottom sheet 内嵌套弹层）
+//   - 思考档位（批次 TH 三）：行内 4 档选择，真源 config/reasoning_tier.dart
 //   - 画像：入口 → onOpenProfile
 //
 // 批次 C78-3c 删除「子阶段」菜单段：SubphaseIndicator 组件已废弃
@@ -29,8 +30,12 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/reasoning_tier.dart';
 import 'yue_sheet.dart';
 import '../types/teaching_types.dart';
+
+/// 未接线时的思考档位回调占位：菜单入口**不随接线状态忽隐忽现**。
+void _ignoreTierChange(String _) {}
 
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
 const List<(AttitudeLevel, String, Color)> _attitudeOptions = [
@@ -65,6 +70,12 @@ class ChatHeader extends StatelessWidget {
   /// 点主引用小字 → 打开引用管理（设主/添加/移除主引用）
   final VoidCallback? onTapPrimaryRef;
 
+  /// 当前思考档位 key（真源 `config/reasoning_tier.dart`）
+  final String reasoningTier;
+
+  /// 切换思考档位（与设置页「模型行为」共用同一 provider）
+  final ValueChanged<String> onReasoningTierChange;
+
   const ChatHeader({
     super.key,
     required this.currentAttitude,
@@ -75,6 +86,8 @@ class ChatHeader extends StatelessWidget {
     this.entryPoint,
     this.primaryRefTitle,
     this.onTapPrimaryRef,
+    this.reasoningTier = reasoningTierStandard,
+    this.onReasoningTierChange = _ignoreTierChange,
   });
 
   bool get _isManuscriptEntry => entryPoint == 'manuscript';
@@ -112,6 +125,39 @@ class ChatHeader extends StatelessWidget {
                       ),
                       const SizedBox(width: AppSpacing.sm),
                     ],
+                  ],
+                ),
+              ),
+              // 思考档位（批次 TH 三）：与设置页「模型行为」同源同值，
+              // 输入框上方开关是二值快捷入口，此处是完整四档
+              _menuSection(
+                label: '思考档位',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      children: [
+                        for (final preset in reasoningTierPresets)
+                          _TierChip(
+                            label: preset.label,
+                            active: preset.key == reasoningTier,
+                            onTap: () {
+                              Navigator.pop(sheetCtx);
+                              onReasoningTierChange(preset.key);
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      reasoningTierOf(reasoningTier).hint,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -339,6 +385,49 @@ class _AttitudeChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 更多菜单中的行内思考档位选择（与 _AttitudeChip 的区别：无颜色编码，
+/// 档位不是「风格」而是「强度」，用主色描边表示选中即可）
+class _TierChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _TierChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.xsm,
+        ),
+        decoration: BoxDecoration(
+          color: active ? AppColors.surface : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: active ? AppColors.primary : AppColors.borderSoft,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+            color: active ? AppColors.primary : AppColors.textPrimary,
+          ),
         ),
       ),
     );

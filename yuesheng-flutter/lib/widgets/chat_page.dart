@@ -15,6 +15,7 @@ import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
+import '../providers/reasoning_tier_provider.dart';
 import '../providers/session_providers.dart';
 import '../services/attitude_advisor.dart';
 import '../types/teaching_types.dart';
@@ -170,6 +171,9 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   void initState() {
     super.initState();
     _session.loadSessions();
+    // 思考档位：水合 app_state（幂等，设置页亦可能触发），
+    // 使输入框开关与头部菜单首帧即为持久化值而非默认「标准」
+    ref.read(reasoningTierProvider.notifier).hydrate();
   }
 
   /// 打开会话抽屉（打开前先释放输入框焦点：真机实证点汉堡会唤起输入法）
