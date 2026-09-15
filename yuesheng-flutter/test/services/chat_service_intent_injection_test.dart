@@ -41,6 +41,9 @@ import 'package:writingcoach/services/chat_message_types.dart'
 class _CaptureLlmClient extends LlmClient {
   List<String> systemContents = [];
   List<String> capturedUserContent = [];
+  /// ★ A-1：保留完整序列，供「注入位置」回归断言（此前只捕获内容，
+  /// 导致「注入被挪走/挪错位置」无护栏）。
+  List<ChatMessage> capturedMessages = [];
 
   @override
   Future<void> streamChat(
@@ -49,6 +52,7 @@ class _CaptureLlmClient extends LlmClient {
     CancelToken? cancelToken,
     Map<String, dynamic>? extraBody,
   }) async {
+    capturedMessages = List<ChatMessage>.from(messages);
     systemContents = messages
         .where((m) => m.role == 'system')
         .map((m) => m.content)
@@ -289,6 +293,87 @@ void main() {
     await service.sendMessage(sessionId, '他推开门，风灌了进来', callbacks(), options());
 
     expect(llm.systemContents.any((s) => s.contains('回复颗粒度')), false);
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // A-1 前缀稳定契约（2026-09-15）
+  //
+  // 背景：意图向量（滚动窗口）与颗粒度（依赖当前消息措辞）逐轮必变，
+  // 且 `buildIntentInstruction` 在 compose 时返回 null ⇒ **整项消失**。
+  // 二者原先排在注入段第 3/4 位，一旦变化/消失，其后所有消息（含**追加式
+  // 历史**、Live 约束）索引整体前移 ⇒ 上下文缓存从该点起全断。
+  // 真机实测（模拟器 + 真实 API，11 次调用）：稳态每轮 miss 固定
+  // 5.0–5.3k tokens；探针确认公共前缀恰好止于注入段第 2 项之后。
+  // ⇒ 契约：二者必须排在**最后一条 user 消息之后**。
+  // ─────────────────────────────────────────────────────────────
+  group('A-1 前缀稳定契约（注入位置）', () {
+    test('#12 意图与颗粒度注入必须位于最后一条 user 消息之后', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      await service.sendMessage(sessionId, '这段对话怎么改更好？', callbacks(), options());
+      await service.sendMessage(
+        sessionId,
+        '那我再试试这段怎么改，长话短说',
+        callbacks(),
+        options(),
+      );
+
+      final msgs = llm.capturedMessages;
+      final intentIdx = msgs.indexWhere((m) => m.content.contains('## 交互意图'));
+      final detailIdx = msgs.indexWhere((m) => m.content.contains('回复颗粒度'));
+      final lastUserIdx = msgs.lastIndexWhere((m) => m.role == 'user');
+      final disciplineIdx = msgs.indexWhere(
+        (m) => m.content.contains('# 回复纪律（最后提醒）'),
+      );
+
+      expect(intentIdx, greaterThan(-1), reason: '本轮措辞应命中询问意图');
+      expect(detailIdx, greaterThan(-1), reason: '「长话短说」应命中压缩颗粒度');
+      expect(lastUserIdx, greaterThan(-1));
+
+      // ★ 核心契约：排在历史之后 ⇒ 前缀不被逐轮必变项打断
+      expect(
+        intentIdx,
+        greaterThan(lastUserIdx),
+        reason: '意图注入必须先于最后一条 user 消息之后的任何位置之前',
+      );
+      expect(detailIdx, greaterThan(lastUserIdx));
+      // 纪律重申仍居最末（保持既有「最后提醒」语义）
+      expect(disciplineIdx, greaterThan(detailIdx));
+    });
+
+    test('#13 意图由注入/不注入切换时，历史段之前的消息序列不变', () async {
+      final llm = _CaptureLlmClient();
+      final service = buildChatService(llm);
+
+      // 第一轮：ask ⇒ 注入意图；第二轮：compose ⇒ 意图整项消失
+      await service.sendMessage(sessionId, '这段对话怎么改更好？', callbacks(), options());
+      final first = List<ChatMessage>.from(llm.capturedMessages);
+      await service.sendMessage(
+        sessionId,
+        '他推开门，风灌了进来，桌上的信纸被吹落在地。',
+        callbacks(),
+        options(),
+      );
+      final second = llm.capturedMessages;
+
+      // 第二轮不再注入意图
+      expect(second.any((m) => m.content.contains('## 交互意图')), false);
+
+      // 两轮中「第一条 user 消息之前」的 system 序列必须逐字节一致
+      // （= 前缀稳定：注入段不再随意图有无而错位）
+      List<ChatMessage> headOf(List<ChatMessage> ms) {
+        final cut = ms.indexWhere((m) => m.role == 'user');
+        return cut <= 0 ? const [] : ms.sublist(0, cut);
+      }
+
+      final h1 = headOf(first);
+      final h2 = headOf(second);
+      expect(h1.length, h2.length);
+      for (var i = 0; i < h1.length; i++) {
+        expect(h2[i].content, h1[i].content, reason: '第 $i 条 system 前缀应稳定');
+      }
+    });
   });
 
   // ─────────────────────────────────────────────────────────────

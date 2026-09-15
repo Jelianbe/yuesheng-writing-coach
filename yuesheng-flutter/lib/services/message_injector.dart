@@ -188,10 +188,16 @@ class MessageInjector {
   // 公开 API：5 个注入入口（每个 ≤ 50 行 R-019 硬上限）
   // ════════════════════════════════════════════════════════════════
 
-  /// 5.0 学员画像 + 教学计划延续 + 意图 + 颗粒度注入
+  /// 5.0 学员画像 + 教学计划延续注入
   ///
   /// chat_service.dart 原 _injectProfileAndIntents L1112-L1184 = 73 行
   /// 按 R-019 已拆为 4 个 helper。
+  ///
+  /// ★ A-1（2026-09-15）：原第 3/4 项「意图向量 + 颗粒度」已迁出至
+  /// [injectTrailingHints]（历史之后注入）。原因：这两项依赖**当前 user
+  /// 消息内容**与会话滚动意图窗口，逐轮必变；在注入段中段会让其后所有
+  /// 内容（含追加式历史、Live 约束）每轮全价 miss。真机实测：注入段第 3
+  /// 项起错位 ⇒ 稳态每轮 miss 5.0–5.3k tokens。
   Future<void> injectProfileAndIntents({
     required String sessionId,
     required String content,
@@ -204,6 +210,22 @@ class MessageInjector {
       markStage: markStage,
     );
     await _injectPreviousTeachingPlan(sessionId: sessionId, messages: messages);
+  }
+
+  /// 5.0.3 A-1：每轮必变的意图/颗粒度提示（**历史之后**注入）。
+  ///
+  /// 前缀稳定契约：prompt 前缀必须逐轮逐字节相同才能命中上下文缓存。
+  /// 本方法产出的两类提示都依赖当前 user 消息：
+  ///   - [_injectUserIntentVector]：`classifyUserIntent(content)` + 最近 3 次
+  ///     意图滚动窗口 ⇒ 内容变 **或整项消失**（`compose` 返回 null）；
+  ///   - [_injectReplyDetailGuidance]：`detectReplyDetail(content)` 命中
+  ///     长话短说/详细点信号时才有内容。
+  /// 二者置于历史之后 ⇒ 前面的注入段 + Live + 历史全部保持前缀稳定。
+  void injectTrailingHints({
+    required String sessionId,
+    required String content,
+    required List<ChatMessage> messages,
+  }) {
     _injectUserIntentVector(
       sessionId: sessionId,
       content: content,

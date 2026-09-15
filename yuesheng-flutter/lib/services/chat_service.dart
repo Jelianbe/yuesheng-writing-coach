@@ -236,7 +236,8 @@ class ChatService {
   /// 见 lib/services/l2_route_hysteresis.dart。
   final L2RouteHysteresis _routeHysteresis;
 
-  // 批次63（B62b）意图向量缓存（ADR-C74 K-7 随 _injectProfileAndIntents 迁至 MessageInjector）
+  // 批次63（B62b）意图向量缓存位于 MessageInjector（ADR-C74 K-7 迁入；
+  // ★ A-1 起由 injectTrailingHints 在**历史之后**注入，见该处注释）
 
   // ════════════ 会话/态度管理 ════════════
 
@@ -883,7 +884,7 @@ extension ChatServiceSend on ChatService {
       options: options,
       loaded: loaded,
     );
-    return _finalizeSendContext(loaded, assembled, flow);
+    return _finalizeSendContext(loaded, assembled, flow, sessionId, content);
   }
 
   /// 6.5-7. 临场约束 + 历史/纪律/预算 + 返回装配（R-019 拆出）。
@@ -891,17 +892,21 @@ extension ChatServiceSend on ChatService {
     _LoadedContext loaded,
     _AssembledContext assembled,
     _FlowWindow flow,
+    String sessionId,
+    String content,
   ) {
     // 6.5 临场输出约束：在所有教学内容注入后、历史对话前追加（recency bias）
     assembled.messages.add(
       ChatMessage(role: 'system', content: kLiveOutputConstraints),
     );
-    // 7. 追加历史消息 + 纪律重申 + token 预算闸门
+    // 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门
     _appendHistoryAndConstraints(
       loaded.history,
       assembled.messages,
       assembled.markStage,
       assembled.stageIndexes,
+      sessionId: sessionId,
+      content: content,
     );
     debugPrint(
       '[ChatService] 步骤7: 发送到 LLM 的 messages 数量=${assembled.messages.length}（含 system + history）',
@@ -1101,14 +1106,28 @@ extension ChatServiceSend on ChatService {
     );
   }
 
-  /// 7. 追加历史消息 + 纪律重申 + token 预算闸门（R-019 编排 helper）。
+  /// 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门（R-019 编排 helper）。
+  ///
+  /// ★ A-1（2026-09-15）：[sessionId]/[content] 为「每轮必变提示」注入所需。
+  /// 顺序契约（上下文缓存前缀稳定性）：
+  ///   system prompt → 稳定注入段 → Live 约束 → 历史 → **本方法注入的
+  ///   意图/颗粒度提示** → 纪律重申 → 预算闸门
+  /// 意图/颗粒度依赖当前 user 消息与会话滚动意图窗口，逐轮必变；若留在
+  /// 注入段中段，会让其后的一切（含追加式历史）每轮全价 miss。
   void _appendHistoryAndConstraints(
     List<Message> history,
     List<ChatMessage> messages,
     void Function(String) markStage,
-    Map<String, List<int>> stageIndexes,
-  ) {
+    Map<String, List<int>> stageIndexes, {
+    required String sessionId,
+    required String content,
+  }) {
     _appendHistory(history, messages, markStage);
+    _messageInjector.injectTrailingHints(
+      sessionId: sessionId,
+      content: content,
+      messages: messages,
+    );
     // L2 注入纵深防御（R-027 人工确认）：发送前清洗 user 消息中的
     // 已知指令 token（<system>/[INST] 等转义），防反向注入。
     // 只作用于 LLM 输入副本，不影响落库的用户原文。
