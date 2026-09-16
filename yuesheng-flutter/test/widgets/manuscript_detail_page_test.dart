@@ -395,7 +395,7 @@ void main() {
 
     // ── 详情页 4 Tab 结构守卫（批次：Tab 3→4，新增「角色」）──────────
     // NT-1：4 Tab 顺序守卫（防顺序错位）
-    testWidgets('#15b 详情页 4 Tab 顺序：章节/角色/文件/相关对话', (tester) async {
+    testWidgets('#15b 详情页 5 Tab 顺序：章节/角色/文件/相关对话/成长', (tester) async {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
@@ -404,19 +404,19 @@ void main() {
       final labels = tabBar.tabs
           .map((t) => (t as Tab).text)
           .toList(growable: false);
-      expect(labels, <String>['章节', '角色', '文件', '相关对话']);
+      expect(labels, <String>['章节', '角色', '文件', '相关对话', '成长']);
     });
 
-    // NT-5：结构性守卫 —— TabBarView.children.length == TabController.length == 4
+    // NT-5：结构性守卫 —— TabBarView.children.length == TabController.length == 5
     // 防「加了 Tab 忘加页体」的断档（本项目历史隐患）。
-    testWidgets('#15c TabBarView children 数 == TabController.length == 4', (
+    testWidgets('#15c TabBarView children 数 == TabController.length == 5', (
       tester,
     ) async {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
       final tabBarView = tester.widget<TabBarView>(find.byType(TabBarView));
-      expect(tabBarView.children.length, 4);
+      expect(tabBarView.children.length, 5);
 
       // 与 TabBar 的 Tab 数一致（双源一致性）
       final tabBar = tester.widget<TabBar>(find.byType(TabBar));

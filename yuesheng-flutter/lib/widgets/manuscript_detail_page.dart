@@ -108,7 +108,7 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     // 4 Tab：切换时重建 AppBar actions（新建卷按钮）与 FAB 的显示条件
     _tabController.addListener(() {
       if (mounted) setState(() {});

@@ -237,10 +237,11 @@ Future<ProfileTextResult> buildStudentContext({
   required StudentModelRepository studentModelRepo,
   required SessionRepository sessionRepo,
   String? sessionId,
+  Set<String>? sessionIds,
   bool includeCognitiveStyle = true,
 }) async {
-  // M1：诊断全局聚合；onboarding 用户级回退（ADR-C71 §3.2）
-  final entries = await diagnosisRepo.getAllDiagnoses(sessionId: null);
+  // M1：诊断全局聚合（sessionIds 为 P0-2 书籍级收敛，默认 null = 全局）；onboarding 用户级回退（ADR-C71 §3.2）
+  final entries = await _loadDiagnosisEntries(diagnosisRepo, sessionIds);
   final effectiveOnboarding = await _loadEffectiveOnboarding(
     studentModelRepo,
     sessionId,
@@ -279,6 +280,15 @@ Future<ProfileTextResult> buildStudentContext({
     effectiveOnboarding,
     includeCognitiveStyle,
   );
+}
+
+/// 获取诊断条目（M1：全局或书籍级聚合）。
+/// sessionIds 非空 = 书籍级收敛（P0-2）；默认 null = 全局（行为不变）。
+Future<List<SyndromeFlatEntry>> _loadDiagnosisEntries(
+  DiagnosisRepository diagnosisRepo,
+  Set<String>? sessionIds,
+) async {
+  return diagnosisRepo.getAllDiagnoses(sessionId: null, sessionIds: sessionIds);
 }
 
 /// 组装画像文本与结果（R-019 拆出：buildStudentContext）。

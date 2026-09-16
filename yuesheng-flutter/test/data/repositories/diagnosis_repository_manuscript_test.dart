@@ -195,5 +195,51 @@ void main() {
       final scoped = await diagRepo.listDiagnosesForManuscript(ms);
       expect(scoped.length, 1, reason: '并集语义不得漏掉仅靠引用归属的会话');
     });
+    test('#8 getAllDiagnoses(sessionIds) 过滤：仅归集指定会话，默认 null = 全局', () async {
+      final m1 = await manuscriptRepo.createManuscript(title: '第一本');
+      final m2 = await manuscriptRepo.createManuscript(title: '第二本');
+      final c1 = await chapterRepo.createChapter(m1, title: '第一章');
+      final c2 = await chapterRepo.createChapter(m2, title: '第二章');
+      final s1 = await sessionRepo.getOrCreateSessionForChapter(m1, c1);
+      final s2 = await sessionRepo.getOrCreateSessionForChapter(m2, c2);
+
+      await diagRepo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: s1,
+          messageId: 'm1',
+          syndromes: [
+            {'syndrome_id': 'P003', 'name': '口语化', 'severity': 'L2'},
+          ],
+          suggestedActions: const [],
+          confidence: 0.8,
+          targetRefType: 'chapter',
+          targetRefId: c1,
+        ),
+      );
+
+      await diagRepo.commitDiagnosis(
+        DiagnosisInput(
+          sessionId: s2,
+          messageId: 'm2',
+          syndromes: [
+            {'syndrome_id': 'P003', 'name': '口语化', 'severity': 'L3'},
+          ],
+          suggestedActions: const [],
+          confidence: 0.8,
+          targetRefType: 'chapter',
+          targetRefId: c2,
+        ),
+      );
+
+      // 书籍级：仅第一本会话
+      final scoped = await diagRepo.getAllDiagnoses(sessionIds: {s1});
+      expect(scoped.length, 1);
+      expect(scoped.single.sessionId, s1);
+      expect(scoped.single.severity, 'L2');
+
+      // 默认 null = 全局（行为不变）
+      final all = await diagRepo.getAllDiagnoses();
+      expect(all.length, 2);
+    });
   });
 }

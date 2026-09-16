@@ -22,6 +22,7 @@ import 'manuscript_detail_chapter_list.dart';
 import 'manuscript_detail_chapter_list_header.dart';
 import 'manuscript_detail_states.dart';
 import 'related_sessions_tab.dart';
+import 'manuscript_growth_tab.dart';
 
 /// 作品详情页装配视图（无状态）
 class ManuscriptDetailView extends StatelessWidget {
@@ -146,6 +147,7 @@ class ManuscriptDetailView extends StatelessWidget {
         Tab(text: '角色'),
         Tab(text: '文件'),
         Tab(text: '相关对话'),
+        Tab(text: '成长'),
       ],
     );
   }
@@ -163,6 +165,8 @@ class ManuscriptDetailView extends StatelessWidget {
         FileSection(manuscriptId: ms.id, manuscriptTitle: ms.title),
         // ── Tab3 相关对话（批次 28：按活跃度排序；批次 30：点击跳转打开会话）──
         RelatedSessionsTab(manuscriptId: ms.id, onOpenSession: onOpenSession),
+        // ── Tab4 成长（P0-2 书籍级成长出前台）──
+        ManuscriptGrowthTab(manuscriptId: ms.id),
       ],
     );
   }

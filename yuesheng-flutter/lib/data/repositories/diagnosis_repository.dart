@@ -297,9 +297,14 @@ class DiagnosisRepository {
   /// 注意：时间升序（ASC，旧→新）——对齐 RN 真源 ORDER BY timestamp ASC。
   /// computeSyndromeProfile 依赖正序（latestSeverity=last 取最新、computeTrend 最近窗口在末尾）。
   /// 批次 45 修复：原实现 DESC（新→旧）导致画像聚合 latestSeverity/趋势错位（last 取到最旧）。
-  Future<List<SyndromeFlatEntry>> getAllDiagnoses({String? sessionId}) async {
+  Future<List<SyndromeFlatEntry>> getAllDiagnoses({
+    String? sessionId,
+    Set<String>? sessionIds,
+  }) async {
     final query = _db.select(_db.diagnosisResults);
-    if (sessionId != null) {
+    if (sessionIds != null) {
+      query.where((t) => t.sessionId.isIn(sessionIds));
+    } else if (sessionId != null) {
       query.where((t) => t.sessionId.equals(sessionId));
     }
     query.orderBy([
