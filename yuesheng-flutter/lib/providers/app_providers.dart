@@ -7,8 +7,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database/database.dart';
+import '../data/repositories/character_fact_repository.dart';
 import '../data/repositories/error_log_repository.dart';
+import '../data/repositories/world_fact_repository.dart';
 import '../services/error_handler.dart';
+import '../services/setting_library_service.dart';
 
 /// 全局 AppDatabase provider（单例）
 /// 生产环境自动创建；测试时可 override 传入内存 DB
@@ -23,3 +26,13 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 /// 批次64（B62g）：编辑器活动时间戳（秒）——写作页每次输入时更新。
 /// 心流判定叠加"最近 120s 内有编辑输入"时，Teacher 建议延迟触发。
 final editorActivityProvider = StateProvider<int?>((ref) => null);
+
+/// 设定资料库第一批：用户裁决服务（character + world 双表）。
+/// 确认卡 UI 经此裁决 pending 断言；测试可 override。
+final settingLibraryServiceProvider = Provider<SettingLibraryService>((ref) {
+  final db = ref.watch(appDatabaseProvider);
+  return SettingLibraryService(
+    characterRepo: CharacterFactRepository(db),
+    worldRepo: WorldFactRepository(db),
+  );
+});

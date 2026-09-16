@@ -193,6 +193,28 @@ class CharacterFactRepository {
         .get();
   }
 
+  /// 设定资料库第一批：列出作品下全部「待用户裁决」的 AI 断言（跨人物聚合）。
+  ///
+  /// 确认卡 UI 用。仅返回 `status == 'pending'` 且非 stale 的断言——
+  /// stale 的 pending（章节已改写）不再值得裁决。按 (人物名, 断言时间) 稳定排序。
+  Future<List<(CharacterFact, CharacterAssertion)>> listPendingAssertions(
+    String manuscriptId,
+  ) async {
+    final rows = await listCharacters(manuscriptId);
+    final out = <(CharacterFact, CharacterAssertion)>[];
+    for (final row in rows) {
+      for (final a in parseAssertions(row.assertions)) {
+        if (a.status == 'pending' && !a.stale) out.add((row, a));
+      }
+    }
+    out.sort((x, y) {
+      final byName = x.$1.name.compareTo(y.$1.name);
+      if (byName != 0) return byName;
+      return x.$2.timestamp.compareTo(y.$2.timestamp);
+    });
+    return out;
+  }
+
   /// 合并人物（C78 §5.4）：把源行并进目标行，事务内三步。
   ///
   /// ① 源行断言并入目标行（[FactStaleService.mergeForTransfer]，保 source）→

@@ -25,6 +25,7 @@ import '../../providers/app_providers.dart';
 import '../../types/character_types.dart';
 import 'character_detail_page.dart';
 import 'character_dialogs.dart';
+import 'pending_confirm_card.dart';
 
 /// 断言摘要最多展示的条目数
 const int _kSummaryMax = 3;
@@ -88,6 +89,9 @@ class CharacterListView extends ConsumerStatefulWidget {
 class CharacterListViewState extends ConsumerState<CharacterListView> {
   bool _loading = true;
   List<CharacterFact> _characters = const [];
+
+  /// 设定资料库第一批：AI 抽取待用户裁决的断言（确认卡数据源）
+  List<(CharacterFact, CharacterAssertion)> _pending = const [];
   String _query = '';
   int? _since;
 
@@ -111,9 +115,11 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
   Future<void> _load() async {
     final repo = CharacterFactRepository(ref.read(appDatabaseProvider));
     final items = await repo.listCharacters(widget.manuscriptId);
+    final pending = await repo.listPendingAssertions(widget.manuscriptId);
     if (!mounted) return;
     setState(() {
       _characters = items;
+      _pending = pending;
       _loading = false;
     });
     _reportCount();
@@ -201,6 +207,12 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     return Column(
       children: [
         if (_inRecentMode) _buildRecentBanner(),
+        // 设定资料库第一批：AI 抽取待用户裁决（确认 / 拒绝 → 刷新）
+        PendingConfirmCard(
+          manuscriptId: widget.manuscriptId,
+          items: _pending,
+          onChanged: _load,
+        ),
         _buildSearchField(),
         _buildSortBar(),
         // ★ A1：新建角色入口随列表走，置于列表上方。

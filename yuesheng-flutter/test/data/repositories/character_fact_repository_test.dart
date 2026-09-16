@@ -418,5 +418,72 @@ void main() {
         ['巷口冲突'],
       );
     });
+
+    test(
+      '#12 listPendingAssertions：仅 pending 且非 stale 的断言（设定资料库第一批）',
+      () async {
+        await repo.upsertCharacter(
+          manuscriptId: manuscriptId,
+          name: '阿禾',
+          firstSeenChapter: 1,
+          assertions: [
+            CharacterAssertion(
+              attribute: '性格',
+              value: '沉稳',
+              chapter: 1,
+              timestamp: 100,
+              status: 'confirmed',
+            ),
+            CharacterAssertion(
+              attribute: '职业',
+              value: '捕快',
+              chapter: 3,
+              timestamp: 300,
+              status: 'pending',
+              evidence: '原文摘录：他是一名捕快',
+            ),
+          ],
+        );
+        await repo.upsertCharacter(
+          manuscriptId: manuscriptId,
+          name: '阿晴',
+          firstSeenChapter: 2,
+          assertions: [
+            CharacterAssertion(
+              attribute: '关系',
+              value: '兄妹',
+              chapter: 2,
+              timestamp: 200,
+              status: 'pending',
+            ),
+            CharacterAssertion(
+              attribute: '旧设定',
+              value: '已改写',
+              chapter: 2,
+              timestamp: 250,
+              status: 'pending',
+              stale: true,
+            ),
+            CharacterAssertion(
+              attribute: '废弃',
+              value: '被否决',
+              chapter: 2,
+              timestamp: 260,
+              status: 'rejected',
+            ),
+          ],
+        );
+
+        final pending = await repo.listPendingAssertions(manuscriptId);
+
+        expect(pending, hasLength(2));
+        // 按人物名（SQLite 字节序：阿晴 < 阿禾）+ 断言时间稳定排序
+        expect(pending[0].$1.name, '阿晴');
+        expect(pending[0].$2.attribute, '关系');
+        expect(pending[1].$1.name, '阿禾');
+        expect(pending[1].$2.attribute, '职业');
+        expect(pending[1].$2.evidence, '原文摘录：他是一名捕快');
+      },
+    );
   });
 }
