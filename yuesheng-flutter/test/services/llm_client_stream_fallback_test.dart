@@ -10,6 +10,9 @@
 //   4. 半输出（有 content token）不降级（单次请求）
 //   5. 非 deepseek（GLM/doubao/通用）空流不降级，请求体逐字节不变（AC-3）
 //   6. caller extraBody 合并：保留键剥离 + 兜底参数优先级（尝试 2 胜出）
+//   7. A-1b 五②：空流尝试端点不回 usage 帧 ⇒ 补零 token 埋点
+//      （purpose=streamEmptyFallback，每次空流尝试各一条；半输出 /
+//      非 deepseek 不降级 ⇒ 无该埋点）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -21,6 +24,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/config/shared_constants.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
+import 'package:writingcoach/services/llm_concurrency_gate.dart';
+import 'package:writingcoach/services/llm_usage.dart';
 
 const _secureChannel = MethodChannel(
   'plugins.it_nomads.com/flutter_secure_storage',
@@ -85,6 +90,15 @@ const _kPureReasoningNoDoneStream =
 const _kContentNoDoneStream =
     'data: {"choices":[{"delta":{"content":"你好呀"}}]}\n\n';
 
+/// 采集器：记录 (kind, usage) 序列（A-1b 五② 埋点断言用）。
+class _Sink {
+  final List<(LlmUsageKind, LlmUsage)> received = [];
+
+  void call(LlmUsage usage, LlmUsageKind kind) {
+    received.add((kind, usage));
+  }
+}
+
 /// 回调采集器：分帧记录 content token 与 isDone 投递次数。
 class _Collector {
   final List<String> tokens = [];
@@ -99,7 +113,11 @@ class _Collector {
   }
 }
 
-LlmClient _client(_SseScriptAdapter adapter, String model) {
+LlmClient _client(
+  _SseScriptAdapter adapter,
+  String model, {
+  LlmUsageSink? sink,
+}) {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(_secureChannel, (call) async {
@@ -119,6 +137,10 @@ LlmClient _client(_SseScriptAdapter adapter, String model) {
   return LlmClient(
     LlmConfigStorage(const FlutterSecureStorage()),
     Dio()..httpClientAdapter = adapter,
+    null,
+    null,
+    LlmConcurrencyGate(),
+    sink,
   );
 }
 
@@ -360,6 +382,73 @@ void main() {
       expect(adapter.requestBodies, hasLength(1));
       expect(collector.tokens, ['你好呀']);
       expect(collector.isDoneCount, 0);
+    });
+  });
+  group('A-1b 五②：C94 空流尝试补零 token 埋点', () {
+    test('deepseek 双空流 → sink 收到 2 条 streamEmptyFallback（零 token）',
+        () async {
+      final adapter = _SseScriptAdapter([
+        _sse(_kPureReasoningStream),
+        _sse(_kPureReasoningStream),
+      ]);
+      final sink = _Sink();
+      final collector = _Collector();
+      await _client(adapter, 'deepseek-reasoner', sink: sink.call).streamChat(
+        const [ChatMessage(role: 'user', content: 'hi')],
+        collector.call,
+      );
+      expect(adapter.requestBodies, hasLength(2));
+      expect(sink.received, hasLength(2),
+          reason: '两次空流尝试各补一条埋点');
+      for (final (kind, usage) in sink.received) {
+        expect(kind, LlmUsageKind.stream);
+        expect(usage.context?.purpose, LlmCallPurpose.streamEmptyFallback);
+        expect(usage.promptTokens, 0);
+        expect(usage.completionTokens, 0);
+        expect(usage.reasoningTokens, 0);
+      }
+    });
+
+    test('尝试 2 救回（有内容）→ 仅尝试 1 一条 streamEmptyFallback', () async {
+      final adapter = _SseScriptAdapter([
+        _sse(_kPureReasoningStream),
+        _sse(_kContentStream),
+      ]);
+      final sink = _Sink();
+      final collector = _Collector();
+      await _client(adapter, 'deepseek-v4-flash', sink: sink.call).streamChat(
+        const [ChatMessage(role: 'user', content: 'hi')],
+        collector.call,
+      );
+      expect(adapter.requestBodies, hasLength(2));
+      expect(sink.received, hasLength(1),
+          reason: '尝试 2 有 content ⇒ 走正常流式埋点路径，不再补零 token');
+      expect(sink.received.single.$2.context?.purpose,
+          LlmCallPurpose.streamEmptyFallback);
+    });
+
+    test('半输出不降级 → 无 streamEmptyFallback 埋点', () async {
+      final adapter = _SseScriptAdapter([_sse(_kContentStream)]);
+      final sink = _Sink();
+      final collector = _Collector();
+      await _client(adapter, 'deepseek-v4-flash', sink: sink.call).streamChat(
+        const [ChatMessage(role: 'user', content: 'hi')],
+        collector.call,
+      );
+      expect(adapter.requestBodies, hasLength(1));
+      expect(sink.received, isEmpty);
+    });
+
+    test('非 deepseek 空流不降级 → 无 streamEmptyFallback 埋点', () async {
+      final adapter = _SseScriptAdapter([_sse(_kPureReasoningStream)]);
+      final sink = _Sink();
+      final collector = _Collector();
+      await _client(adapter, 'some-generic-model', sink: sink.call).streamChat(
+        const [ChatMessage(role: 'user', content: 'hi')],
+        collector.call,
+      );
+      expect(adapter.requestBodies, hasLength(1));
+      expect(sink.received, isEmpty);
     });
   });
 }

@@ -49,6 +49,12 @@ enum LlmCallPurpose {
   /// 设置页连通性测试（testLlmConnection）
   connection,
 
+  /// C94 空流兜底的零 usage 尝试（A-1b 五②）——首答零 content 且
+  /// 端点未回 usage 帧，正常流式埋点不可达 ⇒ 补零 token 标记该次调用
+  /// 真实存在（token 全 0 = 未知，非真实用量）。供审计侧计数与
+  /// reasoning_tokens=0 事后判据互证。
+  streamEmptyFallback,
+
   /// 未标注（默认，缺省不写 purpose 字段）
   unknown,
 }

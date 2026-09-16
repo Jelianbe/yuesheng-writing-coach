@@ -625,23 +625,52 @@ class LlmClient {
     if (!profile.fallbackDisableThinking) {
       return _flushIsDone(callback, isDoneSeen);
     }
+    // ADR-C94：deepseek 系空流 → 尝试 2 注入 thinking disabled 兜底重试
+    // （含 A-1b 五② 空流埋点，R-019 拆出）。
+    await _runC94Fallback(
+      c,
+      messages,
+      bufferedCallback,
+      cancelToken,
+      extraBody: extraBody,
+    );
+    return _flushIsDone(callback, isDoneSeen);
+  }
+
+  /// ADR-C94 兜底尝试 2（R-019 拆出）：deepseek 系空流降级重试。
+  ///
+  /// 语义同 [_streamAttemptLoop] doc：零 content token 一律可降级；尝试 2
+  /// 注入 [LlmConfig.teachingStreamFallbackExtraBody]（合并参数见
+  /// [_fallbackExtraBody]）。A-1b 五②：空流尝试端点不回 usage 帧 ⇒
+  /// 正常流式埋点不可达，每次空流尝试补一条零 token 埋点（旁路）。
+  Future<void> _runC94Fallback(
+    LlmConfigValues c,
+    List<ChatMessage> messages,
+    void Function(LlmStreamResponse response) callback,
+    CancelToken? cancelToken, {
+    required Map<String, dynamic>? extraBody,
+  }) async {
+    _reportEmptyStreamAttempt(c.model);
     debugPrint(
-      '[ADR-C94] streamChat 空流（零 content token，收尾 done=${first.done}）'
+      '[ADR-C94] streamChat 空流（零 content token）'
       '→ deepseek 系兜底重试 model=${c.model}（尝试 2 注入 thinking disabled）',
     );
     final second = await _runStreamAttempt(
       c,
       messages,
-      bufferedCallback,
+      callback,
       cancelToken,
       extraBody: _fallbackExtraBody(extraBody),
     );
+    if (!second.emitted) {
+      // 尝试 2 仍空：同样无 usage 帧，对称补埋点。
+      _reportEmptyStreamAttempt(c.model);
+    }
     debugPrint(
       second.emitted
           ? '[ADR-C94] 兜底尝试 2 救回（有内容输出）model=${c.model}'
           : '[ADR-C94] 兜底尝试 2 仍空，正常返回交上层防线 model=${c.model}',
     );
-    return _flushIsDone(callback, isDoneSeen);
   }
 
   /// isDone 恰好一次契约的补投点（R-019 拆出）：仅当某次尝试达成过 [DONE]
@@ -959,6 +988,39 @@ class LlmClient {
         final ctx = _activeCallContext;
         _usageSink(usage.withContext(ctx?.withLatency(latencyMs)), kind);
       }
+    } catch (_) {
+      // 观测失败静默：绝不影响请求结果
+    }
+  }
+
+  /// A-1b 五②：C94 空流尝试的**零 usage 埋点**（旁路，永不抛出）。
+  ///
+  /// 空流（零 content token 且收尾正常）时端点**不回落 usage 帧**，正常
+  /// 流式埋点 [_reportUsage] 不可达 ⇒ llm_call 口径漏记该次调用。此处
+  /// 构造零 token [LlmUsage] 补记：token 全 0 = 未知（不是真实用量），
+  /// `purpose=streamEmptyFallback` 供审计侧计数；`reasoning_tokens=0`
+  /// 与 A-1b 事后判据互证。任何异常静默吞掉，不得阻断主流程。
+  void _reportEmptyStreamAttempt(String model) {
+    try {
+      final ctx = _activeCallContext;
+      _usageSink(
+        LlmUsage(
+          promptTokens: 0,
+          completionTokens: 0,
+          cachedTokens: 0,
+          reasoningTokens: 0,
+          model: model,
+          context: ctx == null
+              ? const LlmCallContext(
+                  purpose: LlmCallPurpose.streamEmptyFallback,
+                )
+              : LlmCallContext(
+                  purpose: LlmCallPurpose.streamEmptyFallback,
+                  sessionId: ctx.sessionId,
+                ),
+        ),
+        LlmUsageKind.stream,
+      );
     } catch (_) {
       // 观测失败静默：绝不影响请求结果
     }
