@@ -52,8 +52,9 @@ void main() {
         'ai_accounts',
         'backup_history',
         'world_fact',
+        'setting_entry',
       };
-      expect(tableNames.length, 24, reason: '应有 24 张业务表');
+      expect(tableNames.length, 25, reason: '应有 25 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
@@ -66,12 +67,13 @@ void main() {
       // v29 → backup_history 备份记录表；
       // E1（书籍级成长叙事）→ 31 world_fact 世界观设定条目表；
       // P0-1 教学线 → 32 training_results 自评三维证据；
-      // 设定库第四批 → 33 character_fact/world_fact description 正文列）
+      // 设定库第四批 → 33 character_fact/world_fact description 正文列；
+      // 第二批 → 34 setting_entry「其他」开放容器表）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        33,
-        reason: 'schemaVersion 应为 33',
+        34,
+        reason: 'schemaVersion 应为 34',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

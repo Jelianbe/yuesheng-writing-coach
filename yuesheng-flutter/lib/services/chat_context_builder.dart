@@ -978,3 +978,34 @@ class ReferenceResolvers {
     this.volumeResolver,
   });
 }
+
+/// 「其他」开放容器（设定资料库第二批）：勾选参与诊断的条目注入纯函数。
+///
+/// 输入为 (category, name, description) record 列表（零 drift 依赖，单测友好）。
+/// 克制预算：每条正文截断 120 字；最多 5 条；超限追加截断提示。空输入返回 null。
+const int kParticipatingSettingMaxEntries = 5;
+const int kParticipatingSettingExcerptMaxChars = 120;
+
+String? buildParticipatingSettingsContext(
+  List<({String category, String name, String description})> entries,
+) {
+  if (entries.isEmpty) return null;
+  final kept = entries.take(kParticipatingSettingMaxEntries).toList();
+  final dropped = entries.length - kept.length;
+  final lines = kept
+      .map((e) {
+        final body = e.description.isEmpty
+            ? '（未填写正文）'
+            : _truncateExcerpt(
+                e.description,
+                kParticipatingSettingExcerptMaxChars,
+              );
+        final tag = e.category.trim().isEmpty ? '未分类' : e.category.trim();
+        return '- 类别「$tag」· ${e.name}：$body';
+      })
+      .join('\n');
+  final notice = dropped > 0 ? '\n\n（另有 $dropped 条勾选条目未注入，避免上下文膨胀）' : '';
+  return '【作品自定义设定（用户勾选参与诊断）】\n'
+      '以下为学员主动勾选的自定义设定（武器 / 规则 / 组织等）。'
+      '仅作背景参考，勿直接替学员修改正文。\n\n$lines$notice';
+}

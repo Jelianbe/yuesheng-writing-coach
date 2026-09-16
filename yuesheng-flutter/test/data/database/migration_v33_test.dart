@@ -93,7 +93,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 33);
+    expect(version.read<int>('user_version'), 34);
 
     expect(
       await _columnExists(db, 'character_fact', 'description'),
@@ -145,7 +145,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 33);
+    expect(version.read<int>('user_version'), 34);
 
     for (final t in ['character_fact', 'world_fact']) {
       final cols = await db2

@@ -45,6 +45,7 @@ import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/event_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
+import 'package:writingcoach/data/repositories/setting_entry_repository.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart' show nowSec;
 import 'package:writingcoach/data/repositories/volume_repository.dart';
@@ -71,6 +72,7 @@ import 'package:writingcoach/services/chat_context_builder.dart'
         buildStructuredSyndromeContext,
         buildSubplotClosureContext,
         buildWorldSettingObservationsContext,
+        buildParticipatingSettingsContext,
         findKeywordExcerpt;
 import 'package:writingcoach/services/character_identity.dart';
 // 批次 E1-b-2：设定层适配入口（对位 character_identity 的共享判据出口）。
@@ -131,6 +133,7 @@ class MessageInjector {
   final SubplotFactRepository? _subplotFactRepo;
   final OutlineRepository? _outlineRepo;
   final WorldFactRepository? _worldFactRepo;
+  final SettingEntryRepository? _settingEntryRepo;
 
   // ─── 内部状态：4 个缓存，跟着方法一起搬 ───
   /// 引用详情预载缓存（每次 injectReferences 调用前预加载，调用后清空）
@@ -170,6 +173,7 @@ class MessageInjector {
     SubplotFactRepository? subplotFactRepo,
     OutlineRepository? outlineRepo,
     WorldFactRepository? worldFactRepo,
+    SettingEntryRepository? settingEntryRepo,
   }) : _sessionRepo = sessionRepo,
        _diagnosisRepo = diagnosisRepo,
        _studentModelRepo = studentModelRepo,
@@ -183,7 +187,8 @@ class MessageInjector {
        _eventFactRepo = eventFactRepo,
        _subplotFactRepo = subplotFactRepo,
        _outlineRepo = outlineRepo,
-       _worldFactRepo = worldFactRepo;
+       _worldFactRepo = worldFactRepo,
+       _settingEntryRepo = settingEntryRepo;
 
   /// 懒加载大纲服务（批次7 O2 模式）
   OutlineService? _ensureOutlineService() {
@@ -372,6 +377,11 @@ class MessageInjector {
     await _injectSubplotClosureObservation(
       sessionId: sessionId,
       content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+    await _injectParticipatingSettings(
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
@@ -1141,6 +1151,43 @@ class MessageInjector {
       }
     } catch (e, st) {
       _logSafeRun('设定层检测失败不阻断主流程', e, st);
+    }
+  }
+
+  /// 「其他」开放容器（设定资料库第二批）：勾选参与诊断的条目注入。
+  ///
+  /// 用户逐条勾选 participate 后才注入（默认零注入）；克制预算
+  /// （5 条封顶 + 每条正文 120 字截断，见 buildParticipatingSettingsContext）。
+  Future<void> _injectParticipatingSettings({
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (primaryRef?.refType != 'chapter') return;
+    final repo = _settingEntryRepo;
+    if (repo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final entries = await repo.listParticipating(chapter.manuscriptId);
+      if (entries.isEmpty) return;
+      final ctx = buildParticipatingSettingsContext(
+        entries
+            .map(
+              (e) => (
+                category: e.category,
+                name: e.name,
+                description: e.description,
+              ),
+            )
+            .toList(),
+      );
+      if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
+        messages.add(ChatMessage(role: 'system', content: ctx));
+      }
+    } catch (e, st) {
+      _logSafeRun('自定义设定注入失败不阻断主流程', e, st);
     }
   }
 

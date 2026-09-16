@@ -17,6 +17,7 @@ import '../../config/app_theme.dart';
 import '../character/character_list_view.dart';
 import '../world/world_fact_list_view.dart';
 import 'outline_entity_list_view.dart';
+import 'setting_entry_list_view.dart';
 
 /// 四子列表的段标识
 enum _Section { character, outline, world, other }
@@ -66,7 +67,7 @@ class _SettingLibraryTabState extends State<SettingLibraryTab> {
               CharacterListView(manuscriptId: widget.manuscriptId),
               OutlineEntityListView(manuscriptId: widget.manuscriptId),
               WorldFactListView(manuscriptId: widget.manuscriptId),
-              const _OtherSectionPlaceholder(),
+              SettingEntryListView(manuscriptId: widget.manuscriptId),
             ],
           ),
         ),
@@ -76,20 +77,3 @@ class _SettingLibraryTabState extends State<SettingLibraryTab> {
 }
 
 /// 「其他」开放容器占位（第二批实现：用户自建类别标签 + 逐条勾选参与诊断）。
-class _OtherSectionPlaceholder extends StatelessWidget {
-  const _OtherSectionPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Text(
-          '「其他」开放容器规划中：\n武器 / 规则怪谈等自定义类别，可逐条勾选参与诊断',
-          style: AppTextStyles.body,
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-}

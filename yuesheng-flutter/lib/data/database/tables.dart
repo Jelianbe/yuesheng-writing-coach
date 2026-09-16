@@ -811,3 +811,36 @@ class WorldFacts extends Table {
     {manuscriptId, name},
   ];
 }
+
+/// 「其他」开放容器（设定资料库第二批）：用户自建类别 + 勾选参与诊断。
+///
+/// 武器 / 规则怪谈 / 组织等非角色、非世界观的自由设定。类别为自由字符串
+/// （无独立类别表），默认不注入诊断，逐条勾选 participate 后才进上下文。
+/// 刻意**不做** assertions 列：AI 抽取冻结（E1-b-3 裁定同源），无矛盾检测判据。
+class SettingEntries extends Table {
+  @override
+  String get tableName => 'setting_entry';
+
+  TextColumn get id => text()();
+  TextColumn get manuscriptId =>
+      text().references(Manuscripts, #id, onDelete: KeyAction.cascade)();
+  TextColumn get category =>
+      text().withDefault(const Constant(''))(); // 用户自建类别标签
+  TextColumn get name => text()();
+  TextColumn get description =>
+      text().withDefault(const Constant(''))(); // 自由正文（用户主权区，无 AI 写入）
+  BoolColumn get participate =>
+      boolean().withDefault(const Constant(false))(); // 勾选参与诊断
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+  IntColumn get updatedAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {manuscriptId, name},
+  ];
+}

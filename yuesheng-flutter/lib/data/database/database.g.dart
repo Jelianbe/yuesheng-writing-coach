@@ -14745,6 +14745,531 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
   }
 }
 
+class $SettingEntriesTable extends SettingEntries
+    with TableInfo<$SettingEntriesTable, SettingEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manuscriptIdMeta = const VerificationMeta(
+    'manuscriptId',
+  );
+  @override
+  late final GeneratedColumn<String> manuscriptId = GeneratedColumn<String>(
+    'manuscript_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES manuscripts (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _participateMeta = const VerificationMeta(
+    'participate',
+  );
+  @override
+  late final GeneratedColumn<bool> participate = GeneratedColumn<bool>(
+    'participate',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("participate" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manuscriptId,
+    category,
+    name,
+    description,
+    participate,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'setting_entry';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SettingEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manuscript_id')) {
+      context.handle(
+        _manuscriptIdMeta,
+        manuscriptId.isAcceptableOrUnknown(
+          data['manuscript_id']!,
+          _manuscriptIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manuscriptIdMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('participate')) {
+      context.handle(
+        _participateMeta,
+        participate.isAcceptableOrUnknown(
+          data['participate']!,
+          _participateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {manuscriptId, name},
+  ];
+  @override
+  SettingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SettingEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manuscriptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manuscript_id'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      participate: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}participate'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingEntriesTable createAlias(String alias) {
+    return $SettingEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class SettingEntry extends DataClass implements Insertable<SettingEntry> {
+  final String id;
+  final String manuscriptId;
+  final String category;
+  final String name;
+  final String description;
+  final bool participate;
+  final int createdAt;
+  final int updatedAt;
+  const SettingEntry({
+    required this.id,
+    required this.manuscriptId,
+    required this.category,
+    required this.name,
+    required this.description,
+    required this.participate,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manuscript_id'] = Variable<String>(manuscriptId);
+    map['category'] = Variable<String>(category);
+    map['name'] = Variable<String>(name);
+    map['description'] = Variable<String>(description);
+    map['participate'] = Variable<bool>(participate);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    return map;
+  }
+
+  SettingEntriesCompanion toCompanion(bool nullToAbsent) {
+    return SettingEntriesCompanion(
+      id: Value(id),
+      manuscriptId: Value(manuscriptId),
+      category: Value(category),
+      name: Value(name),
+      description: Value(description),
+      participate: Value(participate),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory SettingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SettingEntry(
+      id: serializer.fromJson<String>(json['id']),
+      manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
+      category: serializer.fromJson<String>(json['category']),
+      name: serializer.fromJson<String>(json['name']),
+      description: serializer.fromJson<String>(json['description']),
+      participate: serializer.fromJson<bool>(json['participate']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manuscriptId': serializer.toJson<String>(manuscriptId),
+      'category': serializer.toJson<String>(category),
+      'name': serializer.toJson<String>(name),
+      'description': serializer.toJson<String>(description),
+      'participate': serializer.toJson<bool>(participate),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+    };
+  }
+
+  SettingEntry copyWith({
+    String? id,
+    String? manuscriptId,
+    String? category,
+    String? name,
+    String? description,
+    bool? participate,
+    int? createdAt,
+    int? updatedAt,
+  }) => SettingEntry(
+    id: id ?? this.id,
+    manuscriptId: manuscriptId ?? this.manuscriptId,
+    category: category ?? this.category,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    participate: participate ?? this.participate,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  SettingEntry copyWithCompanion(SettingEntriesCompanion data) {
+    return SettingEntry(
+      id: data.id.present ? data.id.value : this.id,
+      manuscriptId: data.manuscriptId.present
+          ? data.manuscriptId.value
+          : this.manuscriptId,
+      category: data.category.present ? data.category.value : this.category,
+      name: data.name.present ? data.name.value : this.name,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      participate: data.participate.present
+          ? data.participate.value
+          : this.participate,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingEntry(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('category: $category, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('participate: $participate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    manuscriptId,
+    category,
+    name,
+    description,
+    participate,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SettingEntry &&
+          other.id == this.id &&
+          other.manuscriptId == this.manuscriptId &&
+          other.category == this.category &&
+          other.name == this.name &&
+          other.description == this.description &&
+          other.participate == this.participate &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class SettingEntriesCompanion extends UpdateCompanion<SettingEntry> {
+  final Value<String> id;
+  final Value<String> manuscriptId;
+  final Value<String> category;
+  final Value<String> name;
+  final Value<String> description;
+  final Value<bool> participate;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int> rowid;
+  const SettingEntriesCompanion({
+    this.id = const Value.absent(),
+    this.manuscriptId = const Value.absent(),
+    this.category = const Value.absent(),
+    this.name = const Value.absent(),
+    this.description = const Value.absent(),
+    this.participate = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettingEntriesCompanion.insert({
+    required String id,
+    required String manuscriptId,
+    this.category = const Value.absent(),
+    required String name,
+    this.description = const Value.absent(),
+    this.participate = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manuscriptId = Value(manuscriptId),
+       name = Value(name);
+  static Insertable<SettingEntry> custom({
+    Expression<String>? id,
+    Expression<String>? manuscriptId,
+    Expression<String>? category,
+    Expression<String>? name,
+    Expression<String>? description,
+    Expression<bool>? participate,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manuscriptId != null) 'manuscript_id': manuscriptId,
+      if (category != null) 'category': category,
+      if (name != null) 'name': name,
+      if (description != null) 'description': description,
+      if (participate != null) 'participate': participate,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettingEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manuscriptId,
+    Value<String>? category,
+    Value<String>? name,
+    Value<String>? description,
+    Value<bool>? participate,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return SettingEntriesCompanion(
+      id: id ?? this.id,
+      manuscriptId: manuscriptId ?? this.manuscriptId,
+      category: category ?? this.category,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      participate: participate ?? this.participate,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manuscriptId.present) {
+      map['manuscript_id'] = Variable<String>(manuscriptId.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (participate.present) {
+      map['participate'] = Variable<bool>(participate.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('category: $category, ')
+          ..write('name: $name, ')
+          ..write('description: $description, ')
+          ..write('participate: $participate, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -14782,6 +15307,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AiAccountsTable aiAccounts = $AiAccountsTable(this);
   late final $BackupHistoryTable backupHistory = $BackupHistoryTable(this);
   late final $WorldFactsTable worldFacts = $WorldFactsTable(this);
+  late final $SettingEntriesTable settingEntries = $SettingEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14811,6 +15337,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     aiAccounts,
     backupHistory,
     worldFacts,
+    settingEntries,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -14981,6 +15508,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('world_fact', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'manuscripts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('setting_entry', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -15200,6 +15734,27 @@ final class $$ManuscriptsTableReferences
     ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_worldFactsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SettingEntriesTable, List<SettingEntry>>
+  _settingEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.settingEntries,
+    aliasName: $_aliasNameGenerator(
+      db.manuscripts.id,
+      db.settingEntries.manuscriptId,
+    ),
+  );
+
+  $$SettingEntriesTableProcessedTableManager get settingEntriesRefs {
+    final manager = $$SettingEntriesTableTableManager(
+      $_db,
+      $_db.settingEntries,
+    ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_settingEntriesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -15481,6 +16036,31 @@ class $$ManuscriptsTableFilterComposer
           }) => $$WorldFactsTableFilterComposer(
             $db: $db,
             $table: $db.worldFacts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> settingEntriesRefs(
+    Expression<bool> Function($$SettingEntriesTableFilterComposer f) f,
+  ) {
+    final $$SettingEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.settingEntries,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SettingEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.settingEntries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -15816,6 +16396,31 @@ class $$ManuscriptsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> settingEntriesRefs<T extends Object>(
+    Expression<T> Function($$SettingEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$SettingEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.settingEntries,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SettingEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.settingEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ManuscriptsTableTableManager
@@ -15841,6 +16446,7 @@ class $$ManuscriptsTableTableManager
             bool subplotFactsRefs,
             bool outlineEntitiesRefs,
             bool worldFactsRefs,
+            bool settingEntriesRefs,
           })
         > {
   $$ManuscriptsTableTableManager(_$AppDatabase db, $ManuscriptsTable table)
@@ -15925,6 +16531,7 @@ class $$ManuscriptsTableTableManager
                 subplotFactsRefs = false,
                 outlineEntitiesRefs = false,
                 worldFactsRefs = false,
+                settingEntriesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -15938,6 +16545,7 @@ class $$ManuscriptsTableTableManager
                     if (subplotFactsRefs) db.subplotFacts,
                     if (outlineEntitiesRefs) db.outlineEntities,
                     if (worldFactsRefs) db.worldFacts,
+                    if (settingEntriesRefs) db.settingEntries,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -16131,6 +16739,27 @@ class $$ManuscriptsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (settingEntriesRefs)
+                        await $_getPrefetchedData<
+                          Manuscript,
+                          $ManuscriptsTable,
+                          SettingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ManuscriptsTableReferences
+                              ._settingEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ManuscriptsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).settingEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.manuscriptId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -16161,6 +16790,7 @@ typedef $$ManuscriptsTableProcessedTableManager =
         bool subplotFactsRefs,
         bool outlineEntitiesRefs,
         bool worldFactsRefs,
+        bool settingEntriesRefs,
       })
     >;
 typedef $$VolumesTableCreateCompanionBuilder =
@@ -27329,6 +27959,393 @@ typedef $$WorldFactsTableProcessedTableManager =
       WorldFact,
       PrefetchHooks Function({bool manuscriptId})
     >;
+typedef $$SettingEntriesTableCreateCompanionBuilder =
+    SettingEntriesCompanion Function({
+      required String id,
+      required String manuscriptId,
+      Value<String> category,
+      required String name,
+      Value<String> description,
+      Value<bool> participate,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$SettingEntriesTableUpdateCompanionBuilder =
+    SettingEntriesCompanion Function({
+      Value<String> id,
+      Value<String> manuscriptId,
+      Value<String> category,
+      Value<String> name,
+      Value<String> description,
+      Value<bool> participate,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$SettingEntriesTableReferences
+    extends BaseReferences<_$AppDatabase, $SettingEntriesTable, SettingEntry> {
+  $$SettingEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ManuscriptsTable _manuscriptIdTable(_$AppDatabase db) =>
+      db.manuscripts.createAlias(
+        $_aliasNameGenerator(db.settingEntries.manuscriptId, db.manuscripts.id),
+      );
+
+  $$ManuscriptsTableProcessedTableManager get manuscriptId {
+    final $_column = $_itemColumn<String>('manuscript_id')!;
+
+    final manager = $$ManuscriptsTableTableManager(
+      $_db,
+      $_db.manuscripts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_manuscriptIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SettingEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $SettingEntriesTable> {
+  $$SettingEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get participate => $composableBuilder(
+    column: $table.participate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ManuscriptsTableFilterComposer get manuscriptId {
+    final $$ManuscriptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableFilterComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettingEntriesTable> {
+  $$SettingEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get participate => $composableBuilder(
+    column: $table.participate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ManuscriptsTableOrderingComposer get manuscriptId {
+    final $$ManuscriptsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableOrderingComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettingEntriesTable> {
+  $$SettingEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get participate => $composableBuilder(
+    column: $table.participate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ManuscriptsTableAnnotationComposer get manuscriptId {
+    final $$ManuscriptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SettingEntriesTable,
+          SettingEntry,
+          $$SettingEntriesTableFilterComposer,
+          $$SettingEntriesTableOrderingComposer,
+          $$SettingEntriesTableAnnotationComposer,
+          $$SettingEntriesTableCreateCompanionBuilder,
+          $$SettingEntriesTableUpdateCompanionBuilder,
+          (SettingEntry, $$SettingEntriesTableReferences),
+          SettingEntry,
+          PrefetchHooks Function({bool manuscriptId})
+        > {
+  $$SettingEntriesTableTableManager(
+    _$AppDatabase db,
+    $SettingEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manuscriptId = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<bool> participate = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingEntriesCompanion(
+                id: id,
+                manuscriptId: manuscriptId,
+                category: category,
+                name: name,
+                description: description,
+                participate: participate,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manuscriptId,
+                Value<String> category = const Value.absent(),
+                required String name,
+                Value<String> description = const Value.absent(),
+                Value<bool> participate = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingEntriesCompanion.insert(
+                id: id,
+                manuscriptId: manuscriptId,
+                category: category,
+                name: name,
+                description: description,
+                participate: participate,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SettingEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({manuscriptId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (manuscriptId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.manuscriptId,
+                                referencedTable: $$SettingEntriesTableReferences
+                                    ._manuscriptIdTable(db),
+                                referencedColumn:
+                                    $$SettingEntriesTableReferences
+                                        ._manuscriptIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SettingEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SettingEntriesTable,
+      SettingEntry,
+      $$SettingEntriesTableFilterComposer,
+      $$SettingEntriesTableOrderingComposer,
+      $$SettingEntriesTableAnnotationComposer,
+      $$SettingEntriesTableCreateCompanionBuilder,
+      $$SettingEntriesTableUpdateCompanionBuilder,
+      (SettingEntry, $$SettingEntriesTableReferences),
+      SettingEntry,
+      PrefetchHooks Function({bool manuscriptId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -27381,4 +28398,6 @@ class $AppDatabaseManager {
       $$BackupHistoryTableTableManager(_db, _db.backupHistory);
   $$WorldFactsTableTableManager get worldFacts =>
       $$WorldFactsTableTableManager(_db, _db.worldFacts);
+  $$SettingEntriesTableTableManager get settingEntries =>
+      $$SettingEntriesTableTableManager(_db, _db.settingEntries);
 }

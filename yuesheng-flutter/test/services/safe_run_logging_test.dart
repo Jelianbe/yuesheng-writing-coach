@@ -68,7 +68,7 @@ void main() {
       final csCalls = '_logSafeRun('.allMatches(cs).length - 1;
       expect(
         miCalls + csCalls,
-        30,
+        31,
         reason: 'CR-53 应覆盖全部降级点（实际 mi=$miCalls cs=$csCalls）',
       );
     });

@@ -76,11 +76,11 @@ void main() {
     expect(find.textContaining('还没有世界观'), findsWidgets);
   });
 
-  testWidgets('#4 切其他 → 占位提示', (tester) async {
+  testWidgets('#4 切其他 → 开放容器空态', (tester) async {
     await tester.pumpWidget(buildHost());
     await tester.pumpAndSettle();
     await tester.tap(find.text('其他'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('开放容器规划中'), findsOneWidget);
+    expect(find.textContaining('记录武器、规则、组织等自定义设定'), findsOneWidget);
   });
 }
