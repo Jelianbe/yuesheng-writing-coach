@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -207,6 +209,50 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(pushedRoute, '/growth-detail');
+    });
+  });
+
+  group('P1-4 当前焦点卡', () {
+    testWidgets('#G1 有诊断记录 → 渲染「当前焦点」卡（合成四份既有计算）', (tester) async {
+      tester.view.physicalSize = const Size(800, 3000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final s = await SessionRepository(db).createBlankSession();
+      final t = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      // buildStudentContext 聚合自 diagnosis_results
+      await db
+          .into(db.diagnosisResults)
+          .insert(
+            DiagnosisResultsCompanion.insert(
+              id: 'dr-focus-1',
+              sessionId: s,
+              messageId: 'msg-focus-1',
+              syndromes: Value(
+                jsonEncode([
+                  {
+                    'syndrome_id': 'P004',
+                    'name': '信息倾泻症',
+                    'severity': 'L2',
+                    'evidence': ['例1'],
+                  },
+                ]),
+              ),
+              suggestedActions: const Value('[]'),
+              confidence: const Value(0.85),
+              timestamp: Value(t),
+              createdAt: Value(t),
+            ),
+          );
+
+      await tester.pumpWidget(buildGrowthPage());
+      await tester.pumpAndSettle();
+
+      // 焦点卡标题 + 建议先关注的症候
+      expect(find.text('当前焦点'), findsOneWidget);
+      expect(find.text('建议先关注：信息倾泻症'), findsOneWidget);
+      // 为什么（只陈述既有字段）
+      expect(find.textContaining('出现 1 次'), findsOneWidget);
     });
   });
 }

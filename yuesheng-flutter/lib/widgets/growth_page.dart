@@ -24,6 +24,8 @@ import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/growth_providers.dart';
+import '../services/focus_card_builder.dart';
+import '../widgets/focus_card.dart';
 import '../router/app_routes.dart';
 import '../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
@@ -250,9 +252,21 @@ class _GrowthContent extends StatelessWidget {
 
     final counts = _countSeverities(state.activeProblems);
 
+    // 教学线 P1-4：当前焦点卡（profile + trainingStats 合成，无症候数据时隐藏）
+    final focus = profile == null
+        ? null
+        : buildFocusCardData(
+            profile: profile,
+            trainingStats: state.trainingStats,
+          );
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
+        // 当前焦点卡（P1-4）
+        if (focus != null) ...[
+          FocusCard(data: focus),
+          const SizedBox(height: 12),
+        ],
         // 熟练度卡片
         _Card(
           child: Padding(
