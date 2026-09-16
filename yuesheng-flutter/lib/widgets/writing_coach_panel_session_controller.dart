@@ -58,7 +58,10 @@ class WritingCoachSessionController {
   void cancelGeneration() => _chat.cancelGeneration();
 
   /// 提交练习作答（T3：练习任务闭环）。
-  Future<void> submitPractice(String content) => _chat.submitPractice(content);
+  Future<void> submitPractice(
+    String content, [
+    TrainingSelfAssessment? assessment,
+  ]) => _chat.submitPractice(content, assessment);
 
   // ───────────────────────── 输入栏聚焦 / 部分认同 / 教原理 ─────────────────────────
 

@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/student_model_repository.dart';
+import '../data/repositories/training_result_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/error_handler.dart';
 import '../services/evaluation_service.dart';
@@ -152,7 +153,12 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
 /// 评估服务单例
 final evaluationServiceProvider = Provider<EvaluationService>((ref) {
   final db = ref.watch(appDatabaseProvider);
-  return EvaluationService(DiagnosisRepository(db), StudentModelRepository(db));
+  return EvaluationService(
+    DiagnosisRepository(db),
+    StudentModelRepository(db),
+    // P0-1 教学线：赋能 mastered 软门控（自评证据检查）
+    TrainingResultRepository(db),
+  );
 });
 
 /// 全局评估报告 store

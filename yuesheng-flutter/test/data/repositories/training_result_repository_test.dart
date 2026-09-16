@@ -17,6 +17,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/training_result_repository.dart';
+import 'package:writingcoach/types/teaching_types.dart';
 
 void main() {
   late AppDatabase db;
@@ -41,6 +42,7 @@ void main() {
     String result = 'passed',
     Map<String, dynamic>? feedback,
     double? score,
+    TrainingSelfAssessment? selfAssessment,
   }) {
     return InsertTrainingResultParams(
       sessionId: sessionId,
@@ -51,6 +53,7 @@ void main() {
       result: result,
       feedback: feedback,
       score: score,
+      selfAssessment: selfAssessment,
     );
   }
 
@@ -277,5 +280,48 @@ void main() {
       failed: 0,
     );
     expect(empty.passRate, 0.0);
+  });
+
+  test('#7 insert 带自评：三维证据落库', () async {
+    final sessionId = await sessionRepo.createBlankSession(title: '会话自评');
+    await repo.insertTrainingResult(
+      mkParams(
+        sessionId: sessionId,
+        selfAssessment: const TrainingSelfAssessment(
+          confidenceRating: 4,
+          explanationText: '因为主语要明确。',
+          transferText: '换成对话先写动作。',
+        ),
+      ),
+    );
+
+    final row = (await repo.queryBySession(sessionId)).first;
+    expect(row.confidenceRating, 4);
+    expect(row.explanationText, contains('主语'));
+    expect(row.transferText, contains('对话'));
+  });
+
+  test('#8 updateSelfAssessment 回写：只更新自评三列不动其他列', () async {
+    final sessionId = await sessionRepo.createBlankSession(title: '会话回写');
+    final id = await repo.insertTrainingResult(
+      mkParams(sessionId: sessionId, result: 'passed'),
+    );
+
+    await repo.updateSelfAssessment(
+      id,
+      const TrainingSelfAssessment(
+        confidenceRating: 5,
+        explanationText: '因为这样读者能看到场景。我还删了情绪词。',
+        transferText: '换个场景我会先写环境。',
+      ),
+    );
+
+    final row = (await repo.queryBySession(sessionId)).first;
+    expect(row.confidenceRating, 5);
+    expect(row.explanationText, contains('场景'));
+    expect(row.transferText, contains('环境'));
+    // 其他列不受影响
+    expect(row.result, 'passed');
+    expect(row.userContent, '夜风吹过窗台，他抬起头。');
   });
 }

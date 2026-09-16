@@ -19,6 +19,7 @@ import 'package:drift/drift.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'repository_write_guard.dart';
+import 'package:writingcoach/types/teaching_types.dart';
 
 /// 新增 Training Result 入参
 class InsertTrainingResultParams {
@@ -43,6 +44,9 @@ class InsertTrainingResultParams {
   /// 0.0-1.0 评分（nullable）
   final double? score;
 
+  /// P0-1 自评三维证据（nullable）
+  final TrainingSelfAssessment? selfAssessment;
+
   const InsertTrainingResultParams({
     required this.sessionId,
     this.suggestionId,
@@ -52,6 +56,7 @@ class InsertTrainingResultParams {
     required this.result,
     this.feedback,
     this.score,
+    this.selfAssessment,
   });
 }
 
@@ -86,12 +91,38 @@ class TrainingResultRepository {
                 score: params.score == null
                     ? const Value.absent()
                     : Value(params.score),
+                confidenceRating: params.selfAssessment == null
+                    ? const Value.absent()
+                    : Value(params.selfAssessment!.confidenceRating),
+                explanationText: params.selfAssessment == null
+                    ? const Value.absent()
+                    : Value(params.selfAssessment!.explanationText),
+                transferText: params.selfAssessment == null
+                    ? const Value.absent()
+                    : Value(params.selfAssessment!.transferText),
                 createdAt: Value(now),
               ),
             );
 
         return id;
       });
+
+  /// 回写自评（P0-1 教学线）：训练轮落库后由 onTrainingResult 回调调用。
+  /// 只更新自评三列，不动其他列。
+  Future<void> updateSelfAssessment(
+    String id,
+    TrainingSelfAssessment assessment,
+  ) => guardRepoWrite('training_result', 'updateSelfAssessment', () async {
+    await (_db.update(
+      _db.trainingResults,
+    )..where((t) => t.id.equals(id))).write(
+      TrainingResultsCompanion(
+        confidenceRating: Value(assessment.confidenceRating),
+        explanationText: Value(assessment.explanationText),
+        transferText: Value(assessment.transferText),
+      ),
+    );
+  });
 
   /// 会话级查询：本会话所有训练结果，按 created_at 倒序
   ///

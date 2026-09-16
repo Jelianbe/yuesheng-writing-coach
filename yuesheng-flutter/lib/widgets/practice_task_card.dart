@@ -8,6 +8,7 @@
 //   3. 任务描述
 //   4. 练习目标
 //   5. 作答输入（多行 TextField）
+//   5.5 自评区（P0-1 教学线，全部可选）：信心 1-5 / 解释 / 迁移
 //   6. 操作：跳过 | 提交作答
 //
 // 视觉规范（月色竹青）：
@@ -21,13 +22,15 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../providers/practice_providers.dart';
+import '../types/teaching_types.dart';
 
 class PracticeTaskCard extends StatefulWidget {
   final PracticeTask task;
   final bool submitting;
 
-  /// 提交作答（内容已 trim 非空）
-  final void Function(String content) onSubmit;
+  /// 提交作答（内容已 trim 非空）；自评可选（null = 未填）
+  final void Function(String content, TrainingSelfAssessment? assessment)
+  onSubmit;
 
   /// 跳过练习
   final VoidCallback onSkip;
@@ -46,17 +49,118 @@ class PracticeTaskCard extends StatefulWidget {
 
 class _PracticeTaskCardState extends State<PracticeTaskCard> {
   final _answerController = TextEditingController();
+  final _explanationController = TextEditingController();
+  final _transferController = TextEditingController();
+  int? _confidenceRating;
 
   @override
   void dispose() {
     _answerController.dispose();
+    _explanationController.dispose();
+    _transferController.dispose();
     super.dispose();
   }
 
   void _handleSubmit() {
     final trimmed = _answerController.text.trim();
     if (trimmed.isEmpty || widget.submitting) return;
-    widget.onSubmit(trimmed);
+    final explanation = _explanationController.text.trim();
+    final transfer = _transferController.text.trim();
+    final hasAny =
+        _confidenceRating != null ||
+        explanation.isNotEmpty ||
+        transfer.isNotEmpty;
+    widget.onSubmit(
+      trimmed,
+      hasAny
+          ? TrainingSelfAssessment(
+              confidenceRating: _confidenceRating,
+              explanationText: explanation.isEmpty ? null : explanation,
+              transferText: transfer.isEmpty ? null : transfer,
+            )
+          : null,
+    );
+  }
+
+  /// P0-1 自评区（全部可选，R-009 不强制）。
+  /// 三个字段对齐 mastery_evidence 契约：
+  /// 信心 1-5 / 解释文本 / 迁移文本。
+  Widget _buildSelfAssessmentSection() {
+    if (widget.submitting) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        Text(
+          '提交前自评（可选）',
+          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 2),
+        const Text(
+          '填得越完整，掌握判定越准',
+          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '你觉得这次改得怎么样？',
+          style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 6),
+        _buildConfidenceChips(),
+        const SizedBox(height: 10),
+        _buildAssessmentField(
+          controller: _explanationController,
+          hint: '为什么这样改？说说你的判断',
+        ),
+        const SizedBox(height: 8),
+        _buildAssessmentField(
+          controller: _transferController,
+          hint: '如果换个写法/场景，你会怎么做？',
+        ),
+      ],
+    );
+  }
+
+  /// 信心 1-5 选择（ChoiceChip 单选）。
+  Widget _buildConfidenceChips() {
+    return Row(
+      children: List.generate(5, (i) {
+        final value = i + 1;
+        return Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: ChoiceChip(
+            label: Text('$value'),
+            selected: _confidenceRating == value,
+            onSelected: (_) => setState(() => _confidenceRating = value),
+          ),
+        );
+      }),
+    );
+  }
+
+  /// 自评文本域（解释/迁移共用）。
+  Widget _buildAssessmentField({
+    required TextEditingController controller,
+    required String hint,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: 2,
+      minLines: 1,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: AppColors.textTertiary),
+        filled: true,
+        fillColor: AppColors.surface,
+        isDense: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      ),
+      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+    );
   }
 
   @override
@@ -202,6 +306,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
             ),
             style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
           ),
+          _buildSelfAssessmentSection(),
           const SizedBox(height: 12),
           // ── 操作：跳过 | 提交 ──
           Row(

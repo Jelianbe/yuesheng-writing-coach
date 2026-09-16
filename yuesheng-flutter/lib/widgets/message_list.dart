@@ -53,7 +53,8 @@ class MessageList extends ConsumerStatefulWidget {
   final bool isPracticeSubmitting;
 
   /// T3 训练系统：提交作答回调
-  final void Function(String content)? onSubmitPractice;
+  final void Function(String content, TrainingSelfAssessment? assessment)?
+  onSubmitPractice;
 
   /// T3 训练系统：跳过练习回调
   final VoidCallback? onSkipPractice;
@@ -407,7 +408,7 @@ class _MessageListState extends ConsumerState<MessageList> {
         PracticeTaskCard(
           task: widget.activePracticeTask!,
           submitting: widget.isPracticeSubmitting,
-          onSubmit: widget.onSubmitPractice ?? (_) {},
+          onSubmit: widget.onSubmitPractice ?? (_, _) {},
           onSkip: widget.onSkipPractice ?? () {},
         ),
       );

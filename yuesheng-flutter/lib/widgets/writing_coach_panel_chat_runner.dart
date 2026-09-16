@@ -7,9 +7,11 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/session_repository.dart';
+import '../data/repositories/training_result_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
@@ -143,7 +145,10 @@ class WritingCoachChatRunner {
   ///
   /// 复用 handleSend 链路，强制 subphase=FEEDBACK，使 chat_service 步骤 11 的
   /// parseTrainingResult + teaching_history 落库生效，并把结果回写到 practiceStore。
-  Future<void> submitPractice(String content) async {
+  Future<void> submitPractice(
+    String content, [
+    TrainingSelfAssessment? assessment,
+  ]) async {
     final practiceStore = _ref.read(practiceStoreProvider.notifier);
     practiceStore.setSubmitting(true);
     _host.inputController.text = content;
@@ -154,10 +159,28 @@ class WritingCoachChatRunner {
       onTrainingResult: (result) {
         practiceStore.setTrainingResult(result);
         buildEvaluationReportForLastMessage();
+        // P0-1 教学线：自评回写（异步）
+        if (assessment != null) {
+          _persistSelfAssessment(assessment);
+        }
       },
     );
     practiceStore.setSubmitting(false);
     practiceStore.submitPractice();
+  }
+
+  /// P0-1 教学线：训练轮落库后回写自评。
+  Future<void> _persistSelfAssessment(TrainingSelfAssessment assessment) async {
+    final sid = _host.sessionId;
+    if (sid == null) return;
+    try {
+      final repo = TrainingResultRepository(_ref.read(appDatabaseProvider));
+      final latest = await repo.queryBySession(sid);
+      if (latest.isEmpty) return;
+      await repo.updateSelfAssessment(latest.first.id, assessment);
+    } catch (e, s) {
+      debugPrint('[SelfAssessment] 回写失败: $e $s');
+    }
   }
 
   /// T4 评估报告：训练反馈落库后，为最后一条 assistant 消息构建评估报告。

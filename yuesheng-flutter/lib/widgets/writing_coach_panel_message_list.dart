@@ -21,6 +21,7 @@ import '../data/database/database.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
 import '../providers/practice_providers.dart';
+import '../types/teaching_types.dart';
 import '../router/app_routes.dart';
 import 'message_bubble.dart';
 import 'message_card_dispatcher.dart';
@@ -66,7 +67,8 @@ class WritingCoachMessageList extends ConsumerWidget {
   final void Function(Message message) onDeleteMessage;
 
   /// T3：练习任务卡提交（复用发送链路，由会话动作承接）
-  final void Function(String content) onPracticeSubmit;
+  final void Function(String content, TrainingSelfAssessment? assessment)
+  onPracticeSubmit;
 
   const WritingCoachMessageList({
     super.key,

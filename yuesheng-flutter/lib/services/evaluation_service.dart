@@ -17,6 +17,8 @@ import '../types/teaching_types.dart';
 import 'student_profile_compute.dart';
 import 'syndrome_recurrence.dart';
 import 'training_evaluator.dart';
+import 'mastery_evidence.dart';
+import '../data/repositories/training_result_repository.dart';
 import 'training_input_builder.dart';
 import 'decode_guard.dart';
 
@@ -37,7 +39,14 @@ class EvaluationService {
   final DiagnosisRepository _diagnosisRepo;
   final StudentModelRepository _studentModelRepo;
 
-  EvaluationService(this._diagnosisRepo, this._studentModelRepo);
+  /// P0-1 教学线：mastered 软门控用（可选，null = 放行）
+  final TrainingResultRepository? _trainingResultRepo;
+
+  EvaluationService(
+    this._diagnosisRepo,
+    this._studentModelRepo, [
+    this._trainingResultRepo,
+  ]);
 
   /// 将 training-evaluator 的 TrendJudgment（4 值）映射为 EvaluationTrend（3 值）
   /// 'insufficient_data' 映射为 'stable'（UI 不展示"数据不足"）
@@ -419,6 +428,17 @@ extension EvaluationDetailExtension on EvaluationService {
     String syndromeId,
     TeachingState state,
   ) async {
+    // P0-1 教学线：mastered 前先查理解证据（有自评时）。
+    if (state == TeachingState.mastered &&
+        !await _masteryEvidenceSatisfied(sessionId, syndromeId)) {
+      logSilentDegrade(
+        operation: 'masteryEvidenceGate',
+        error: 'mastery 证据不充分，不迁移',
+        stack: StackTrace.current,
+        category: 'general',
+      );
+      return;
+    }
     try {
       await _diagnosisRepo.updateTeachingState(
         sessionId,
@@ -448,6 +468,30 @@ extension EvaluationDetailExtension on EvaluationService {
         category: 'database',
       );
       // 持久化失败不阻断评估报告继续返回（容错降级）
+    }
+  }
+
+  /// P0-1 软门控：mastered 迁移前检查理解证据。
+  /// 无自评数据（旧数据/学员跳过）→ 放行（渐进 + R-009）；
+  /// 有自评→ mastery_evidence 三维门控，充分才放行。
+  Future<bool> _masteryEvidenceSatisfied(
+    String sessionId,
+    String syndromeId,
+  ) async {
+    final repo = _trainingResultRepo;
+    if (repo == null) return true;
+    try {
+      final latest = await repo.queryBySyndrome(syndromeId, limit: 1);
+      if (latest.isEmpty) return true;
+      return masteryEvidenceSatisfiedFromRow(latest.first);
+    } catch (e, st) {
+      logSilentDegrade(
+        operation: 'masteryEvidence',
+        error: e,
+        stack: st,
+        category: 'general',
+      );
+      return true; // 检查失败不阻断教学
     }
   }
 
@@ -581,4 +625,35 @@ extension EvaluationPassRateExtension on EvaluationService {
     }
     return best;
   }
+}
+
+/// P0-1 教学线：从最新训练结果行判定掌握证据是否充分。
+///
+/// 无自评（三列皆空）→ true（渐进放行 + R-009）；
+/// 有自评 → mastery_evidence 三维门控（解释≥2 / 信心≥3 / 近迁移≥1）。
+bool masteryEvidenceSatisfiedFromRow(TrainingResultRow row) {
+  final hasExplanation = row.explanationText?.trim().isNotEmpty ?? false;
+  final hasTransfer = row.transferText?.trim().isNotEmpty ?? false;
+  if (row.confidenceRating == null && !hasExplanation && !hasTransfer) {
+    return true;
+  }
+  final evidence = MasteryEvidence(
+    explanation: ExplanationEvidence(
+      validCount: countExplanationItems(row.explanationText),
+    ),
+    confidence: ConfidenceEvidence(rating: row.confidenceRating ?? 0),
+    nearTransfer: NearTransferEvidence(scenarioCount: hasTransfer ? 1 : 0),
+  );
+  return evaluateMasteryEvidence(evidence).passed;
+}
+
+/// 解释文本的有效条目计数：按中文句号族/换行/分号切分，空段不计。
+int countExplanationItems(String? text) {
+  if (text == null) return 0;
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return 0;
+  return trimmed
+      .split(RegExp(r'[。！？；\n;!?]'))
+      .where((s) => s.trim().isNotEmpty)
+      .length;
 }

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/session_repository.dart';
+import '../data/repositories/training_result_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
@@ -156,7 +157,10 @@ class ChatTeachingController {
   }
 
   /// T3 训练系统：提交练习作答（复用 handleSend，强制 subphase=FEEDBACK）。
-  Future<void> submitPractice(String content) async {
+  Future<void> submitPractice(
+    String content, [
+    TrainingSelfAssessment? assessment,
+  ]) async {
     final practiceStore = host.ref.read(practiceStoreProvider.notifier);
     practiceStore.setSubmitting(true);
     try {
@@ -168,11 +172,31 @@ class ChatTeachingController {
         onTrainingResult: (result) {
           practiceStore.setTrainingResult(result);
           buildEvaluationReportForLastMessage();
+          // P0-1 教学线：自评回写（异步，失败不阻断）
+          if (assessment != null) {
+            _persistSelfAssessment(assessment);
+          }
         },
       );
     } finally {
       practiceStore.setSubmitting(false);
       practiceStore.submitPractice();
+    }
+  }
+
+  /// P0-1 教学线：训练轮落库后回写自评。
+  /// 时序保证：onTrainingResult 在 handleTrainingResult
+  /// 的 _persistTrainingResult 之后触发，最新训练结果已落库。
+  Future<void> _persistSelfAssessment(TrainingSelfAssessment assessment) async {
+    try {
+      final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
+      if (bootstrap == null) return;
+      final repo = TrainingResultRepository(host.ref.read(appDatabaseProvider));
+      final latest = await repo.queryBySession(bootstrap.sessionId);
+      if (latest.isEmpty) return;
+      await repo.updateSelfAssessment(latest.first.id, assessment);
+    } catch (e, s) {
+      debugPrint('[SelfAssessment] 回写失败: $e $s');
     }
   }
 

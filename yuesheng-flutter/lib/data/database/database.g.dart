@@ -12460,6 +12460,39 @@ class $TrainingResultsTable extends TrainingResults
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _confidenceRatingMeta = const VerificationMeta(
+    'confidenceRating',
+  );
+  @override
+  late final GeneratedColumn<int> confidenceRating = GeneratedColumn<int>(
+    'confidence_rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _explanationTextMeta = const VerificationMeta(
+    'explanationText',
+  );
+  @override
+  late final GeneratedColumn<String> explanationText = GeneratedColumn<String>(
+    'explanation_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _transferTextMeta = const VerificationMeta(
+    'transferText',
+  );
+  @override
+  late final GeneratedColumn<String> transferText = GeneratedColumn<String>(
+    'transfer_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -12483,6 +12516,9 @@ class $TrainingResultsTable extends TrainingResults
     result,
     feedbackJson,
     score,
+    confidenceRating,
+    explanationText,
+    transferText,
     createdAt,
   ];
   @override
@@ -12569,6 +12605,33 @@ class $TrainingResultsTable extends TrainingResults
         score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
       );
     }
+    if (data.containsKey('confidence_rating')) {
+      context.handle(
+        _confidenceRatingMeta,
+        confidenceRating.isAcceptableOrUnknown(
+          data['confidence_rating']!,
+          _confidenceRatingMeta,
+        ),
+      );
+    }
+    if (data.containsKey('explanation_text')) {
+      context.handle(
+        _explanationTextMeta,
+        explanationText.isAcceptableOrUnknown(
+          data['explanation_text']!,
+          _explanationTextMeta,
+        ),
+      );
+    }
+    if (data.containsKey('transfer_text')) {
+      context.handle(
+        _transferTextMeta,
+        transferText.isAcceptableOrUnknown(
+          data['transfer_text']!,
+          _transferTextMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -12620,6 +12683,18 @@ class $TrainingResultsTable extends TrainingResults
         DriftSqlType.double,
         data['${effectivePrefix}score'],
       ),
+      confidenceRating: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}confidence_rating'],
+      ),
+      explanationText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}explanation_text'],
+      ),
+      transferText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transfer_text'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -12644,6 +12719,9 @@ class TrainingResultRow extends DataClass
   final String result;
   final String? feedbackJson;
   final double? score;
+  final int? confidenceRating;
+  final String? explanationText;
+  final String? transferText;
   final int createdAt;
   const TrainingResultRow({
     required this.id,
@@ -12655,6 +12733,9 @@ class TrainingResultRow extends DataClass
     required this.result,
     this.feedbackJson,
     this.score,
+    this.confidenceRating,
+    this.explanationText,
+    this.transferText,
     required this.createdAt,
   });
   @override
@@ -12674,6 +12755,15 @@ class TrainingResultRow extends DataClass
     }
     if (!nullToAbsent || score != null) {
       map['score'] = Variable<double>(score);
+    }
+    if (!nullToAbsent || confidenceRating != null) {
+      map['confidence_rating'] = Variable<int>(confidenceRating);
+    }
+    if (!nullToAbsent || explanationText != null) {
+      map['explanation_text'] = Variable<String>(explanationText);
+    }
+    if (!nullToAbsent || transferText != null) {
+      map['transfer_text'] = Variable<String>(transferText);
     }
     map['created_at'] = Variable<int>(createdAt);
     return map;
@@ -12696,6 +12786,15 @@ class TrainingResultRow extends DataClass
       score: score == null && nullToAbsent
           ? const Value.absent()
           : Value(score),
+      confidenceRating: confidenceRating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(confidenceRating),
+      explanationText: explanationText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(explanationText),
+      transferText: transferText == null && nullToAbsent
+          ? const Value.absent()
+          : Value(transferText),
       createdAt: Value(createdAt),
     );
   }
@@ -12715,6 +12814,9 @@ class TrainingResultRow extends DataClass
       result: serializer.fromJson<String>(json['result']),
       feedbackJson: serializer.fromJson<String?>(json['feedbackJson']),
       score: serializer.fromJson<double?>(json['score']),
+      confidenceRating: serializer.fromJson<int?>(json['confidenceRating']),
+      explanationText: serializer.fromJson<String?>(json['explanationText']),
+      transferText: serializer.fromJson<String?>(json['transferText']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
     );
   }
@@ -12731,6 +12833,9 @@ class TrainingResultRow extends DataClass
       'result': serializer.toJson<String>(result),
       'feedbackJson': serializer.toJson<String?>(feedbackJson),
       'score': serializer.toJson<double?>(score),
+      'confidenceRating': serializer.toJson<int?>(confidenceRating),
+      'explanationText': serializer.toJson<String?>(explanationText),
+      'transferText': serializer.toJson<String?>(transferText),
       'createdAt': serializer.toJson<int>(createdAt),
     };
   }
@@ -12745,6 +12850,9 @@ class TrainingResultRow extends DataClass
     String? result,
     Value<String?> feedbackJson = const Value.absent(),
     Value<double?> score = const Value.absent(),
+    Value<int?> confidenceRating = const Value.absent(),
+    Value<String?> explanationText = const Value.absent(),
+    Value<String?> transferText = const Value.absent(),
     int? createdAt,
   }) => TrainingResultRow(
     id: id ?? this.id,
@@ -12756,6 +12864,13 @@ class TrainingResultRow extends DataClass
     result: result ?? this.result,
     feedbackJson: feedbackJson.present ? feedbackJson.value : this.feedbackJson,
     score: score.present ? score.value : this.score,
+    confidenceRating: confidenceRating.present
+        ? confidenceRating.value
+        : this.confidenceRating,
+    explanationText: explanationText.present
+        ? explanationText.value
+        : this.explanationText,
+    transferText: transferText.present ? transferText.value : this.transferText,
     createdAt: createdAt ?? this.createdAt,
   );
   TrainingResultRow copyWithCompanion(TrainingResultsCompanion data) {
@@ -12777,6 +12892,15 @@ class TrainingResultRow extends DataClass
           ? data.feedbackJson.value
           : this.feedbackJson,
       score: data.score.present ? data.score.value : this.score,
+      confidenceRating: data.confidenceRating.present
+          ? data.confidenceRating.value
+          : this.confidenceRating,
+      explanationText: data.explanationText.present
+          ? data.explanationText.value
+          : this.explanationText,
+      transferText: data.transferText.present
+          ? data.transferText.value
+          : this.transferText,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -12793,6 +12917,9 @@ class TrainingResultRow extends DataClass
           ..write('result: $result, ')
           ..write('feedbackJson: $feedbackJson, ')
           ..write('score: $score, ')
+          ..write('confidenceRating: $confidenceRating, ')
+          ..write('explanationText: $explanationText, ')
+          ..write('transferText: $transferText, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -12809,6 +12936,9 @@ class TrainingResultRow extends DataClass
     result,
     feedbackJson,
     score,
+    confidenceRating,
+    explanationText,
+    transferText,
     createdAt,
   );
   @override
@@ -12824,6 +12954,9 @@ class TrainingResultRow extends DataClass
           other.result == this.result &&
           other.feedbackJson == this.feedbackJson &&
           other.score == this.score &&
+          other.confidenceRating == this.confidenceRating &&
+          other.explanationText == this.explanationText &&
+          other.transferText == this.transferText &&
           other.createdAt == this.createdAt);
 }
 
@@ -12837,6 +12970,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
   final Value<String> result;
   final Value<String?> feedbackJson;
   final Value<double?> score;
+  final Value<int?> confidenceRating;
+  final Value<String?> explanationText;
+  final Value<String?> transferText;
   final Value<int> createdAt;
   final Value<int> rowid;
   const TrainingResultsCompanion({
@@ -12849,6 +12985,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
     this.result = const Value.absent(),
     this.feedbackJson = const Value.absent(),
     this.score = const Value.absent(),
+    this.confidenceRating = const Value.absent(),
+    this.explanationText = const Value.absent(),
+    this.transferText = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -12862,6 +13001,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
     required String result,
     this.feedbackJson = const Value.absent(),
     this.score = const Value.absent(),
+    this.confidenceRating = const Value.absent(),
+    this.explanationText = const Value.absent(),
+    this.transferText = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -12880,6 +13022,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
     Expression<String>? result,
     Expression<String>? feedbackJson,
     Expression<double>? score,
+    Expression<int>? confidenceRating,
+    Expression<String>? explanationText,
+    Expression<String>? transferText,
     Expression<int>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -12893,6 +13038,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
       if (result != null) 'result': result,
       if (feedbackJson != null) 'feedback_json': feedbackJson,
       if (score != null) 'score': score,
+      if (confidenceRating != null) 'confidence_rating': confidenceRating,
+      if (explanationText != null) 'explanation_text': explanationText,
+      if (transferText != null) 'transfer_text': transferText,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -12908,6 +13056,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
     Value<String>? result,
     Value<String?>? feedbackJson,
     Value<double?>? score,
+    Value<int?>? confidenceRating,
+    Value<String?>? explanationText,
+    Value<String?>? transferText,
     Value<int>? createdAt,
     Value<int>? rowid,
   }) {
@@ -12921,6 +13072,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
       result: result ?? this.result,
       feedbackJson: feedbackJson ?? this.feedbackJson,
       score: score ?? this.score,
+      confidenceRating: confidenceRating ?? this.confidenceRating,
+      explanationText: explanationText ?? this.explanationText,
+      transferText: transferText ?? this.transferText,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -12956,6 +13110,15 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
     if (score.present) {
       map['score'] = Variable<double>(score.value);
     }
+    if (confidenceRating.present) {
+      map['confidence_rating'] = Variable<int>(confidenceRating.value);
+    }
+    if (explanationText.present) {
+      map['explanation_text'] = Variable<String>(explanationText.value);
+    }
+    if (transferText.present) {
+      map['transfer_text'] = Variable<String>(transferText.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -12977,6 +13140,9 @@ class TrainingResultsCompanion extends UpdateCompanion<TrainingResultRow> {
           ..write('result: $result, ')
           ..write('feedbackJson: $feedbackJson, ')
           ..write('score: $score, ')
+          ..write('confidenceRating: $confidenceRating, ')
+          ..write('explanationText: $explanationText, ')
+          ..write('transferText: $transferText, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -25557,6 +25723,9 @@ typedef $$TrainingResultsTableCreateCompanionBuilder =
       required String result,
       Value<String?> feedbackJson,
       Value<double?> score,
+      Value<int?> confidenceRating,
+      Value<String?> explanationText,
+      Value<String?> transferText,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -25571,6 +25740,9 @@ typedef $$TrainingResultsTableUpdateCompanionBuilder =
       Value<String> result,
       Value<String?> feedbackJson,
       Value<double?> score,
+      Value<int?> confidenceRating,
+      Value<String?> explanationText,
+      Value<String?> transferText,
       Value<int> createdAt,
       Value<int> rowid,
     });
@@ -25674,6 +25846,21 @@ class $$TrainingResultsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get confidenceRating => $composableBuilder(
+    column: $table.confidenceRating,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get explanationText => $composableBuilder(
+    column: $table.explanationText,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transferText => $composableBuilder(
+    column: $table.transferText,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
@@ -25770,6 +25957,21 @@ class $$TrainingResultsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get confidenceRating => $composableBuilder(
+    column: $table.confidenceRating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get explanationText => $composableBuilder(
+    column: $table.explanationText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transferText => $composableBuilder(
+    column: $table.transferText,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -25857,6 +26059,21 @@ class $$TrainingResultsTableAnnotationComposer
 
   GeneratedColumn<double> get score =>
       $composableBuilder(column: $table.score, builder: (column) => column);
+
+  GeneratedColumn<int> get confidenceRating => $composableBuilder(
+    column: $table.confidenceRating,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get explanationText => $composableBuilder(
+    column: $table.explanationText,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get transferText => $composableBuilder(
+    column: $table.transferText,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -25948,6 +26165,9 @@ class $$TrainingResultsTableTableManager
                 Value<String> result = const Value.absent(),
                 Value<String?> feedbackJson = const Value.absent(),
                 Value<double?> score = const Value.absent(),
+                Value<int?> confidenceRating = const Value.absent(),
+                Value<String?> explanationText = const Value.absent(),
+                Value<String?> transferText = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TrainingResultsCompanion(
@@ -25960,6 +26180,9 @@ class $$TrainingResultsTableTableManager
                 result: result,
                 feedbackJson: feedbackJson,
                 score: score,
+                confidenceRating: confidenceRating,
+                explanationText: explanationText,
+                transferText: transferText,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -25974,6 +26197,9 @@ class $$TrainingResultsTableTableManager
                 required String result,
                 Value<String?> feedbackJson = const Value.absent(),
                 Value<double?> score = const Value.absent(),
+                Value<int?> confidenceRating = const Value.absent(),
+                Value<String?> explanationText = const Value.absent(),
+                Value<String?> transferText = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TrainingResultsCompanion.insert(
@@ -25986,6 +26212,9 @@ class $$TrainingResultsTableTableManager
                 result: result,
                 feedbackJson: feedbackJson,
                 score: score,
+                confidenceRating: confidenceRating,
+                explanationText: explanationText,
+                transferText: transferText,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

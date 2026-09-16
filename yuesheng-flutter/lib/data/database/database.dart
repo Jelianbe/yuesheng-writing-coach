@@ -59,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -218,7 +218,8 @@ class AppDatabase extends _$AppDatabase {
       //   v30 块（pinned 列）正是漏上移的实例，靠 beforeOpen 的自愈兜底
       //   才没暴露；world_fact 是 CREATE TABLE、自愈兜不住，故由
       //   migration_v31_test #1/#3 死守这条契约。
-      if (from >= 31) return;
+      // P0-1教学线：守卫上移到 32（v32 块对 from=31 存量库可达，冪等 ALTER ADD COLUMN）
+      if (from >= 32) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -915,6 +916,36 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS idx_world_fact_manuscript '
           'ON world_fact(manuscript_id)',
         );
+      }
+
+      // v32: 自评三维证据（P0-1 教学线）
+      // training_results 加 3 列：confidence_rating / explanation_text / transfer_text。
+      // 对齐 mastery_evidence 三维门控（解释≥2 / 信心≥3 / 近迁移≥1）。
+      // 全部可空（R-009 不强制，旧数据 NULL 兼容）。
+      // 表存在才加列：真实存量库 v26+ 必有 training_results；
+      // 最小 schema 的迁移测试库（v27/v31 手工复刻）可能未建该表。
+      if (from < 32) {
+        final trCols = await customSelect(
+          "SELECT name FROM pragma_table_info('training_results')",
+        ).get();
+        final trNames = trCols.map((r) => r.read<String>('name')).toSet();
+        if (trCols.isNotEmpty) {
+          if (!trNames.contains('confidence_rating')) {
+            await customStatement(
+              'ALTER TABLE training_results ADD COLUMN confidence_rating INTEGER DEFAULT NULL',
+            );
+          }
+          if (!trNames.contains('explanation_text')) {
+            await customStatement(
+              'ALTER TABLE training_results ADD COLUMN explanation_text TEXT DEFAULT NULL',
+            );
+          }
+          if (!trNames.contains('transfer_text')) {
+            await customStatement(
+              'ALTER TABLE training_results ADD COLUMN transfer_text TEXT DEFAULT NULL',
+            );
+          }
+        }
       }
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，

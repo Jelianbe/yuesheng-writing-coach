@@ -315,6 +315,31 @@ enum TrainingResult {
   }
 }
 
+/// 训练自评（教学线 P0-1：mastery_evidence 三维证据的采集载体）
+///
+/// 对齐 `mastery_evidence.dart` 契约：
+/// - confidenceRating → ConfidenceEvidence.rating（1-5，阈值 3）
+/// - explanationText → ExplanationEvidence.validCount（按句切分，阈值 2）
+/// - transferText → NearTransferEvidence.scenarioCount（非空 = 1，阈值 1）
+///
+/// 三个字段**全部可空**（R-009 用户主权：自评不强制，跳过 = null）。
+class TrainingSelfAssessment {
+  /// 信心评分（1-5，5 为最高）
+  final int? confidenceRating;
+
+  /// 解释文本：为什么这样改（学员思路）
+  final String? explanationText;
+
+  /// 近迁移文本：换个写法/场景会怎么做
+  final String? transferText;
+
+  const TrainingSelfAssessment({
+    this.confidenceRating,
+    this.explanationText,
+    this.transferText,
+  });
+}
+
 // ─────────────────────────────────────────────────────────────
 // 学员画像类型 — 复刻 yuesheng-android/src/types/profile.ts
 // ─────────────────────────────────────────────────────────────

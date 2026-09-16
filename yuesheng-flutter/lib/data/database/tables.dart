@@ -705,6 +705,11 @@ class TrainingResults extends Table {
       text().check(result.isIn(const ['passed', 'partial', 'failed']))();
   TextColumn get feedbackJson => text().nullable()(); // AI 评分反馈 JSON
   RealColumn get score => real().nullable()(); // 0.0-1.0 评分
+  // 教学线 P0-1：自评三维证据（v32）
+  // 对齐 mastery_evidence 契约：解释≥2 / 信心≥3 / 近迁移≥1，全部可空（R-009 不强制）
+  IntColumn get confidenceRating => integer().nullable()(); // 自评信心 1-5
+  TextColumn get explanationText => text().nullable()(); // 自评解释：为什么这样改
+  TextColumn get transferText => text().nullable()(); // 自评近迁移：换个写法/场景怎么做
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
 
