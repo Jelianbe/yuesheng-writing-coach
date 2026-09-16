@@ -17,10 +17,13 @@ const String _welcomeTitle = '你好，我是月笙';
 const String _welcomeSubtitle = '你的专属写作教练，随时帮你诊断和提升写作';
 
 class ChatWelcome extends StatelessWidget {
-  const ChatWelcome({super.key, this.onStartWriting});
+  const ChatWelcome({super.key, this.onStartWriting, this.onSelfPractice});
 
   /// 批次62：空态行动引导——「去书架写一写」回调（null 时不显示按钮）
   final VoidCallback? onStartWriting;
+
+  /// P1-6：空态行动引导——「自主练习」回调（null 时不显示按钮）
+  final VoidCallback? onSelfPractice;
 
   @override
   Widget build(BuildContext context) {
@@ -45,21 +48,41 @@ class ChatWelcome extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTextStyles.body,
             ),
-            // 批次62：空态行动引导——给用户明确的下一步（写作为先）
-            if (onStartWriting != null) ...[
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton(
-                onPressed: onStartWriting,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
-                ),
-                child: const Text('去书架写一写'),
-              ),
-            ],
+            _buildActions(),
           ],
         ),
       ),
+    );
+  }
+
+  /// 空态行动按钮（批次62「去书架写一写」+ P1-6「自主练习」）。
+  Widget _buildActions() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (onStartWriting != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton(
+            onPressed: onStartWriting,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+            ),
+            child: const Text('去书架写一写'),
+          ),
+        ],
+        if (onSelfPractice != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton(
+            onPressed: onSelfPractice,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
+            ),
+            child: const Text('自主练习'),
+          ),
+        ],
+      ],
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 
 import '../config/app_theme.dart';
 import '../providers/chat_store.dart';
+import '../data/repositories/diagnosis_repository.dart';
 import '../providers/evaluation_providers.dart';
 import '../providers/fact_batch_providers.dart';
 import '../providers/practice_providers.dart';
@@ -22,6 +23,7 @@ import 'chat_reference_controller.dart';
 import 'chat_teaching_controller.dart';
 import 'chat_welcome.dart';
 import 'message_list.dart';
+import 'practice_launcher.dart';
 
 /// 消息列表分区（含练习卡 / 评估报告 / 空态欢迎）
 class ChatMessageSection extends ConsumerWidget {
@@ -33,6 +35,9 @@ class ChatMessageSection extends ConsumerWidget {
   final ChatReferenceController reference;
   final ChatMessagesController messages;
 
+  /// P1-6：活跃问题（自主练习的候选症候，反向漏斗）
+  final List<ActiveProblemView> activeProblems;
+
   const ChatMessageSection({
     super.key,
     required this.chatState,
@@ -42,6 +47,7 @@ class ChatMessageSection extends ConsumerWidget {
     required this.teaching,
     required this.reference,
     required this.messages,
+    required this.activeProblems,
   });
 
   @override
@@ -86,6 +92,8 @@ class ChatMessageSection extends ConsumerWidget {
       emptyWidget: Center(
         child: ChatWelcome(
           onStartWriting: () => context.go(AppRoutes.bookshelf),
+          // P1-6：自主练习入口（自选症候 × 类型 × 难度）
+          onSelfPractice: () => _openSelfPractice(context, ref, activeProblems),
         ),
       ),
     );
@@ -202,4 +210,38 @@ class ChatComposerSection extends StatelessWidget {
       onThinkingToggle: onThinkingToggle,
     );
   }
+}
+
+/// P1-6：打开自主练习选择器并启动练习。
+/// 反向漏斗：症候仅列当前活跃问题（chatState.activeProblems），
+/// 不铺全量症候表，避免 overwhelm。
+void _openSelfPractice(
+  BuildContext context,
+  WidgetRef ref,
+  List<ActiveProblemView> problems,
+) {
+  final syndromes = [
+    for (final p in problems)
+      PracticeSyndromeOption(id: p.syndromeId, name: p.syndromeName),
+  ];
+  PracticeLauncherSheet.show(
+    context,
+    syndromes: syndromes,
+    onStart: (choice) {
+      final typeText = kPracticeTypeText[choice.taskType] ?? choice.taskType;
+      final name = choice.syndromeName ?? '当前问题';
+      ref
+          .read(practiceStoreProvider.notifier)
+          .startPractice(
+            PracticeTask(
+              syndromeId: choice.syndromeId,
+              syndromeName: choice.syndromeName,
+              taskDescription: '针对「$name」完成一段$typeText练习',
+              taskGoal: '对照评估标准完成写作练习',
+              taskType: choice.taskType,
+              difficulty: choice.difficulty,
+            ),
+          );
+    },
+  );
 }

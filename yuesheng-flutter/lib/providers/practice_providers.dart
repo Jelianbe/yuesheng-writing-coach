@@ -25,12 +25,18 @@ class PracticeTask {
   final String? syndromeName;
   final String taskDescription;
   final String taskGoal;
+  // P1-6：自选练习的任务类型（rewrite/analyze/compare/generate）与难度（easy/medium/hard）
+  // 建议卡快捷开始时透传 AI 建议值；自主练习时来自学员自选。null = 未知/未指定。
+  final String? taskType;
+  final String? difficulty;
 
   const PracticeTask({
     this.syndromeId,
     this.syndromeName,
     required this.taskDescription,
     required this.taskGoal,
+    this.taskType,
+    this.difficulty,
   });
 }
 

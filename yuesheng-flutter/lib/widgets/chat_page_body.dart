@@ -103,6 +103,7 @@ class ChatPageBody extends ConsumerWidget {
             teaching: teaching,
             reference: reference,
             messages: messages,
+            activeProblems: activeProblems,
           ),
         ),
         if (chatState.error != null) ChatErrorBar(chatState: chatState),

@@ -173,6 +173,8 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 ? '针对「${p.targetSyndromeName ?? '当前问题'}」完成一段针对性写作练习。'
                 : p.taskDescription,
             taskGoal: criteriaText,
+            taskType: p.taskType.isEmpty ? null : p.taskType,
+            difficulty: p.difficulty.isEmpty ? null : p.difficulty,
           ),
         );
   }

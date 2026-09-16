@@ -54,4 +54,23 @@ void main() {
 
     expect(find.text('去书架写一写'), findsNothing);
   });
+
+  testWidgets('#6 P1-6 传 onSelfPractice → 显示「自主练习」并可点击', (tester) async {
+    var tapped = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: ChatWelcome(onSelfPractice: () => tapped = true)),
+      ),
+    );
+
+    expect(find.text('自主练习'), findsOneWidget);
+    await tester.tap(find.text('自主练习'));
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('#7 P1-6 未传 onSelfPractice → 不显示按钮', (tester) async {
+    await tester.pumpWidget(buildWelcome());
+
+    expect(find.text('自主练习'), findsNothing);
+  });
 }
