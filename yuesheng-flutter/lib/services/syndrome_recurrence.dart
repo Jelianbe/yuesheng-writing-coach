@@ -40,6 +40,11 @@ class SyndromeRecurrence {
   /// 「能否做上次/这次对比」，避免编造对比数据。
   final String? previousSeverity;
 
+  /// E-1：末条记录（当前最新一次出现）的严重度（L1/L2/L3）。
+  ///
+  /// 与评估面板的当前严重度同表同字段（active_problem.severity），P0-3 用于成长页复述复诊行。
+  final String? currentSeverity;
+
   const SyndromeRecurrence({
     required this.syndromeId,
     required this.syndromeName,
@@ -48,6 +53,7 @@ class SyndromeRecurrence {
     required this.recurrences,
     required this.rate,
     this.previousSeverity,
+    this.currentSeverity,
   });
 }
 
@@ -131,5 +137,21 @@ SyndromeRecurrence _buildRecurrence(
     previousSeverity: occurrences >= 2
         ? records[records.length - 2].severity
         : null,
+    currentSeverity: records.last.severity,
   );
+}
+
+/// 复诊严重度对比叙事（E-1）。
+///
+/// 评估面板与成长页共用，消除两处口径差（P0-3）。
+/// 揪辞原则：只陈述事实对比，不给结论式指令。
+String recurrenceSeverityText({
+  String? previousSeverity,
+  String? currentSeverity,
+}) {
+  if (previousSeverity == null || currentSeverity == null) return '';
+  if (previousSeverity == currentSeverity) {
+    return '与上次同为 $currentSeverity';
+  }
+  return '较上次 $previousSeverity → $currentSeverity';
 }

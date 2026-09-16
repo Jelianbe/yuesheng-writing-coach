@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../types/display_types.dart';
+import '../services/syndrome_recurrence.dart';
 import 'teaching_state_badge.dart';
 
 /// 趋势 → 图标 + 文案 + 配色
@@ -51,12 +52,11 @@ import 'teaching_state_badge.dart';
 String? _recurrenceNoteText(SyndromeEvaluationDetail detail) {
   if (!detail.isRecurrence) return null;
   final prefix = '第 ${detail.occurrences} 次出现';
-  final prev = detail.previousSeverity;
-  if (prev == null) return prefix;
-  final current = detail.currentSeverity.value;
-  return prev.value == current
-      ? '$prefix · 与上次同为 $current'
-      : '$prefix · 较上次 ${prev.value} → $current';
+  final trend = recurrenceSeverityText(
+    previousSeverity: detail.previousSeverity?.value,
+    currentSeverity: detail.currentSeverity.value,
+  );
+  return trend.isEmpty ? prefix : '$prefix · $trend';
 }
 
 class EvaluationReportPanel extends StatefulWidget {

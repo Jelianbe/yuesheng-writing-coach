@@ -302,11 +302,12 @@ void main() {
       addTearDown(tester.view.reset);
 
       // 跨会话「出现→好转→再犯」：出现 3 次、好转 1 次、再犯 1 次 → 复发率 50%
+      // P0-3：severity L1→L3→L2，复诊行补「较上次 L3 → L2」对比段
       final base = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final s1 = await SessionRepository(db).createBlankSession();
       final s2 = await SessionRepository(db).createBlankSession();
       final s3 = await SessionRepository(db).createBlankSession();
-      Future<void> ins(String sid, String status, int offset) async {
+      Future<void> ins(String sid, String status, int offset, String sev) async {
         await db
             .into(db.activeProblems)
             .insert(
@@ -315,7 +316,7 @@ void main() {
                 sessionId: sid,
                 syndromeId: 'P900',
                 syndromeName: const Value('用词重复'),
-                severity: const Value('L2'),
+                severity: Value(sev),
                 status: Value(status),
                 confirmationStatus: const Value('confirmed'),
                 createdAt: Value(base - offset),
@@ -323,9 +324,9 @@ void main() {
             );
       }
 
-      await ins(s1, 'active', 7200);
-      await ins(s2, 'resolved', 3600);
-      await ins(s3, 'active', 0);
+      await ins(s1, 'active', 7200, 'L1');
+      await ins(s2, 'resolved', 3600, 'L3');
+      await ins(s3, 'active', 0, 'L2');
 
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
@@ -334,7 +335,7 @@ void main() {
       expect(find.text('同一种问题，好转后是否再次出现'), findsOneWidget);
       // 同名症候同时出现在「症候分布」分组与复发率区块 → findsWidgets
       expect(find.text('用词重复'), findsWidgets);
-      expect(find.text('出现 3 次 · 好转 1 次 · 再犯 1 次'), findsOneWidget);
+      expect(find.text('出现 3 次 · 好转 1 次 · 再犯 1 次 · 较上次 L3 → L2'), findsOneWidget);
       expect(find.text('50%'), findsOneWidget);
     });
   });

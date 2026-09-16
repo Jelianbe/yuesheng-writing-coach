@@ -16,6 +16,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
+import 'package:writingcoach/services/syndrome_recurrence.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
@@ -598,6 +599,7 @@ void main() {
       expect(result.first.recurrences, 1);
       // E-1：上次 L3 → 本次 L2 的对比基准
       expect(result.first.previousSeverity, 'L3');
+      expect(result.first.currentSeverity, 'L2');
     });
 
     test('#E2 仅出现一次 → previousSeverity 为 null（不编造对比基准）', () async {
@@ -615,6 +617,8 @@ void main() {
       expect(result.length, 1);
       expect(result.first.occurrences, 1);
       expect(result.first.previousSeverity, isNull);
+      // 单次出现：当前严重度 = 末条记录 severity（不编造对比，但可陈述当前值）
+      expect(result.first.currentSeverity, 'L2');
     });
 
     test('#E3 DiagnosisRepository 与 GrowthService 同源（同一共享实现）', () async {
@@ -645,6 +649,34 @@ void main() {
       expect(viaRepo.first.occurrences, viaGrowth.first.occurrences);
       expect(viaRepo.first.recurrences, viaGrowth.first.recurrences);
       expect(viaRepo.first.previousSeverity, viaGrowth.first.previousSeverity);
+      expect(viaRepo.first.currentSeverity, viaGrowth.first.currentSeverity);
+    });
+
+    test('#E4 recurrenceSeverityText 严重度对比叙事（P0-3 共享，评估面板与成长页同源）', () {
+      // 恶化：上次 L3 → 当前 L2
+      expect(
+        recurrenceSeverityText(previousSeverity: 'L3', currentSeverity: 'L2'),
+        '较上次 L3 → L2',
+      );
+      // 加重：上次 L1 → 当前 L3
+      expect(
+        recurrenceSeverityText(previousSeverity: 'L1', currentSeverity: 'L3'),
+        '较上次 L1 → L3',
+      );
+      // 持平：与上次同为
+      expect(
+        recurrenceSeverityText(previousSeverity: 'L2', currentSeverity: 'L2'),
+        '与上次同为 L2',
+      );
+      // 无基准（仅出现一次）：空串，不编造对比
+      expect(
+        recurrenceSeverityText(previousSeverity: null, currentSeverity: 'L2'),
+        '',
+      );
+      expect(
+        recurrenceSeverityText(previousSeverity: 'L2', currentSeverity: null),
+        '',
+      );
     });
   });
 }

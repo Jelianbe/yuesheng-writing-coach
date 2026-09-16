@@ -12,9 +12,9 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import '../services/syndrome_recurrence.dart';
 
 import '../config/app_theme.dart';
-import '../services/growth_service.dart';
 
 /// 通用卡片（左侧 4dp 竹青色条，与 GrowthPage._Card 视觉一致）
 ///
@@ -83,6 +83,14 @@ class GrowthRecurrenceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rate = (recurrence.rate * 100).round();
+    final trend = recurrenceSeverityText(
+      previousSeverity: recurrence.previousSeverity,
+      currentSeverity: recurrence.currentSeverity,
+    );
+    final subtitle =
+        '出现 ${recurrence.occurrences} 次 · 好转 ${recurrence.recovered} 次 · '
+        '再犯 ${recurrence.recurrences} 次'
+        '${trend.isEmpty ? '' : ' · $trend'}';
     return Row(
       children: [
         Expanded(
@@ -98,11 +106,7 @@ class GrowthRecurrenceRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                '出现 ${recurrence.occurrences} 次 · 好转 ${recurrence.recovered} 次 · '
-                '再犯 ${recurrence.recurrences} 次',
-                style: AppTextStyles.microCaption,
-              ),
+              Text(subtitle, style: AppTextStyles.microCaption),
             ],
           ),
         ),
