@@ -46,6 +46,7 @@ import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/event_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/database/utils.dart' show nowSec;
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
@@ -92,6 +93,9 @@ import 'package:writingcoach/services/style_technique_router.dart';
 import 'package:writingcoach/services/student_profile.dart';
 import 'package:writingcoach/services/student_profile_format.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
+import 'package:writingcoach/services/spaced_repetition.dart';
+import 'package:writingcoach/services/syndrome_registry.dart'
+    show effectiveSyndromeId;
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/services/training_few_shot_library.dart';
@@ -393,6 +397,121 @@ class MessageInjector {
       messages: messages,
       markStage: markStage,
     );
+  }
+
+  /// P2-9：症候复习调度注入（FSRS 间隔重复，P3 档）。
+  ///
+  /// 兑现 P3 prompt 承诺（skills_advanced_outline_p4.dart「P3 复习调度」）：
+  /// 为每个活跃症候计算复习间隔，到期/临期者注入优先处理指引。
+  /// 无活跃症候或全部 fresh → 不注入（P3 指引：无到期则继续当前循环）。
+  Future<void> injectReviewSchedule({
+    required String sessionId,
+    required TeachingPhase phase,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (phase != TeachingPhase.p3Training) return;
+    try {
+      final active = await _diagnosisRepo.listActiveProblems(sessionId);
+      if (active.isEmpty) return;
+      final history = await _studentModelRepo.getTeachingHistory(sessionId);
+      final now = nowSec();
+      final scheduled = _classifyReviewSchedule(
+        active: active,
+        history: history,
+        now: now,
+      );
+      if (scheduled.due.isEmpty && scheduled.upcoming.isEmpty) return;
+      markStage(BudgetStageNames.reviewSchedule);
+      messages.add(
+        ChatMessage(
+          role: 'system',
+          content: _buildReviewScheduleSection(scheduled),
+        ),
+      );
+    } catch (_) {
+      // R-028 边界：复习调度解析失败不阻断发送（降级为不注入）
+    }
+  }
+
+  /// P2-9 helper：逐症候判定复习状态（R-019 拆出，<=50 行）。
+  ({List<String> due, List<String> upcoming}) _classifyReviewSchedule({
+    required List<ActiveProblemView> active,
+    required List<Map<String, dynamic>> history,
+    required int now,
+  }) {
+    final due = <String>[];
+    final upcoming = <String>[];
+    for (final p in active) {
+      final recs = _syndromeTrainingRecords(history, p.syndromeId);
+      if (recs.isEmpty) continue;
+      final passes = _countTrailingPasses(recs);
+      final lastTs = (recs.last['timestamp'] as num?)?.toInt() ?? now;
+      final daysSince = ((now - lastTs) / 86400).floor();
+      final label =
+          '${p.syndromeId} ${p.syndromeName}（距上次训练 $daysSince 天，间隔 ${fsrsIntervalDaysFor(passes)} 天）';
+      final status = reviewStatusFor(passes, daysSince);
+      if (status == ReviewStatus.due) {
+        due.add(label);
+      } else if (status == ReviewStatus.upcoming) {
+        upcoming.add(label);
+      }
+    }
+    return (due: due, upcoming: upcoming);
+  }
+
+  /// P2-9 helper：过滤指定症候的训练记录（按时间 ASC）。
+  List<Map<String, dynamic>> _syndromeTrainingRecords(
+    List<Map<String, dynamic>> history,
+    String syndromeId,
+  ) {
+    final target = effectiveSyndromeId(syndromeId);
+    return history
+        .where(
+          (r) =>
+              r['type'] == 'training' &&
+              r['syndromeId'] is String &&
+              effectiveSyndromeId(r['syndromeId'] as String) == target,
+        )
+        .toList()
+      ..sort((a, b) {
+        final ta = (a['timestamp'] as num?)?.toInt() ?? 0;
+        final tb = (b['timestamp'] as num?)?.toInt() ?? 0;
+        return ta.compareTo(tb);
+      });
+  }
+
+  /// P2-9 helper：末尾连续通过次数。
+  int _countTrailingPasses(List<Map<String, dynamic>> recs) {
+    var passes = 0;
+    for (final r in recs.reversed) {
+      if (r['result'] == 'passed') {
+        passes++;
+      } else {
+        break;
+      }
+    }
+    return passes;
+  }
+
+  /// P2-9 helper：复习调度段文案。
+  String _buildReviewScheduleSection(
+    ({List<String> due, List<String> upcoming}) scheduled,
+  ) {
+    final sb = StringBuffer('### 症候复习调度（FSRS 间隔重复）\n\n');
+    if (scheduled.due.isNotEmpty) {
+      sb.writeln('**到期需复习（本轮优先，至多 2 个）**：');
+      for (final l in scheduled.due.take(2)) {
+        sb.writeln('- $l —— 学员可提取性低，容易遗忘，优先安排复习');
+      }
+    }
+    if (scheduled.upcoming.isNotEmpty) {
+      sb.writeln('**即将到期（可预防性巩固）**：');
+      for (final l in scheduled.upcoming.take(3)) {
+        sb.writeln('- $l');
+      }
+    }
+    return sb.toString();
   }
 
   /// 6. 跨轮次诊断锁定注入

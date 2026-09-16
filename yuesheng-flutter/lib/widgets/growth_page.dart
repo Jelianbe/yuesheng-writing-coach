@@ -258,6 +258,8 @@ class _GrowthContent extends StatelessWidget {
         : buildFocusCardData(
             profile: profile,
             trainingStats: state.trainingStats,
+            phase: state.overview?.currentPhase,
+            beginnerLevel: state.beginnerLevel,
           );
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),

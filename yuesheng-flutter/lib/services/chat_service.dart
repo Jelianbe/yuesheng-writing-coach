@@ -607,6 +607,9 @@ typedef _LoadedContext = ({
   BeginnerLevel? beginnerLevel,
   TeachingPhase effectivePhase,
   List<ActiveProblemView> activeProblems,
+
+  /// P2-8：大纲语境（会话引用含 outline 角色文件）——驱动 L2 outline 组加载
+  bool isOutlineContext,
 });
 
 /// 消息列表 + 注入装配结果（R-019 第二层编排拆出）。
@@ -932,20 +935,8 @@ extension ChatServiceSend on ChatService {
     TeachingSubphase? subphase,
     int nowAtSec,
   ) async {
-    // 1. 写入用户消息（批次71：@ 引用快照随 user 消息落库）
-    // ADR-C84：返回 id 供发送后立即上屏（不等 AI 回复）
-    // D2：落库前显式校验会话存在性（R-028 边界防御）。会话可能已被删除/清库，
-    // UI 持有的过期 ID 直接 INSERT 会外键约束失败且报错不可读 → 明确抛错走 onError。
-    if (!await _sessionRepo.sessionExists(sessionId)) {
-      throw Exception('会话不存在或已被删除，请重新打开教练面板');
-    }
-    final userMessageId = await _sessionRepo.addMessage(
-      sessionId,
-      'user',
-      content,
-      referencesJson: options.referencesJson,
-    );
-    debugPrint('[ChatService] 步骤1: user 消息已写入 id=$userMessageId');
+    // 1. 写入用户消息（批次71：@ 引用快照随 user 消息落库；D2 落库前校验会话）
+    final userMessageId = await _writeUserMessage(sessionId, content, options);
 
     // 2. 获取历史消息（已含 user）
     final history = await _sessionRepo.listMessages(sessionId);
@@ -965,6 +956,10 @@ extension ChatServiceSend on ChatService {
     // 4. 加载活跃症候
     final activeProblems = await _diagnosisRepo.listActiveProblems(sessionId);
     debugPrint('[ChatService] 步骤4: 活跃症候 ${activeProblems.length} 个');
+
+    // 5. P2-8：大纲语境判定——会话引用含 outline 角色附属文件（用户 @ 大纲文件）
+    final isOutlineContext = await _hasOutlineReference(sessionId);
+    debugPrint('[ChatService] 步骤5: 大纲语境=$isOutlineContext');
     return (
       history: history,
       userMessageId: userMessageId,
@@ -973,6 +968,7 @@ extension ChatServiceSend on ChatService {
       beginnerLevel: beginnerLevel,
       effectivePhase: effectivePhase,
       activeProblems: activeProblems,
+      isOutlineContext: isOutlineContext,
     );
   }
 
@@ -989,6 +985,7 @@ extension ChatServiceSend on ChatService {
       loaded.currentSubphase,
       loaded.isBeginner,
       sessionId: sessionId,
+      isOutlineContext: loaded.isOutlineContext,
     );
     // 可降级阶段 → 消息索引（运行时 token 预算闸门裁剪依据）
     final stageIndexes = <String, List<int>>{};
@@ -1004,6 +1001,7 @@ extension ChatServiceSend on ChatService {
       activeProblems: loaded.activeProblems,
       currentSubphase: loaded.currentSubphase,
       beginnerLevel: loaded.beginnerLevel,
+      phase: loaded.effectivePhase,
     );
     return (
       messages: messages,
@@ -1013,6 +1011,45 @@ extension ChatServiceSend on ChatService {
       stageIndexes: stageIndexes,
       markStage: markStage,
     );
+  }
+
+  /// P2 收尾：写用户消息（会话存在性校验 + 落库 + 快照）。R-019 拆出。
+  ///
+  /// D2：会话可能已被删除/清库，UI 持有的过期 ID 直接 INSERT 会外键约束失败
+  /// 且报错不可读 → 落库前显式校验，明确抛错走 onError。
+  Future<String> _writeUserMessage(
+    String sessionId,
+    String content,
+    SendMessageOptions options,
+  ) async {
+    if (!await _sessionRepo.sessionExists(sessionId)) {
+      throw Exception('会话不存在或已被删除，请重新打开教练面板');
+    }
+    final id = await _sessionRepo.addMessage(
+      sessionId,
+      'user',
+      content,
+      referencesJson: options.referencesJson,
+    );
+    debugPrint('[ChatService] 步骤1: user 消息已写入 id=$id');
+    return id;
+  }
+
+  /// P2-8：大纲语境判定——会话引用中存在 fileRole=='outline' 的附属文件。
+  /// 引用解析失败 / 无 file 引用 → false（降级安全：不触发大纲语境即维持原行为）。
+  Future<bool> _hasOutlineReference(String sessionId) async {
+    try {
+      final refs = await _referenceRepo.listReferences(sessionId);
+      final fileRefs = refs.where((r) => r.refType == 'file').toList();
+      if (fileRefs.isEmpty) return false;
+      final files = await _referenceRepo.getAttachedFilesByIds(
+        fileRefs.map((r) => r.refId).toList(),
+      );
+      return files.any((f) => f.fileRole == 'outline');
+    } catch (_) {
+      // R-028 边界：引用查询失败不阻断发送，按非大纲语境降级
+      return false;
+    }
   }
 
   /// 拼接 system prompt（L1 + L2，R-019 拆出）。
@@ -1028,12 +1065,14 @@ extension ChatServiceSend on ChatService {
     TeachingSubphase? subphase,
     bool isBeginner, {
     required String sessionId,
+    bool isOutlineContext = false,
   }) {
     final skillCtx = SkillLoadContext(
       phase: phase,
       attitude: attitude,
       subphase: subphase,
       isBeginner: isBeginner,
+      isOutlineContext: isOutlineContext,
     );
     final rawMode = _teaching.resolveL2Mode(skillCtx);
     final override = _routeHysteresis.overrideFor(sessionId, rawMode);
@@ -1063,6 +1102,44 @@ extension ChatServiceSend on ChatService {
     required List<ActiveProblemView> activeProblems,
     required TeachingSubphase? currentSubphase,
     required BeginnerLevel? beginnerLevel,
+    required TeachingPhase phase,
+  }) async {
+    final base = await _injectBaseContext(
+      sessionId: sessionId,
+      content: content,
+      messages: messages,
+      markStage: markStage,
+    );
+    // P2-9：FSRS 复习调度（P3 档，activeProblems 数据与注入同源）
+    await _messageInjector.injectReviewSchedule(
+      sessionId: sessionId,
+      phase: phase,
+      messages: messages,
+      markStage: markStage,
+    );
+    final trainingSyndromeId = await _messageInjector.injectDiagnosisLock(
+      sessionId: sessionId,
+      content: content,
+      activeProblems: activeProblems,
+      currentSubphase: currentSubphase,
+      beginnerLevel: beginnerLevel,
+      messages: messages,
+      markStage: markStage,
+    );
+    return (
+      primaryRef: base.primaryRef,
+      chapterContent: base.chapterContent,
+      trainingSyndromeId: trainingSyndromeId,
+    );
+  }
+
+  /// P2 收尾：基础注入链（画像 → 引用 → 章节观察 → 大纲事实/文件）。
+  Future<({ReferenceItem? primaryRef, String? chapterContent})>
+  _injectBaseContext({
+    required String sessionId,
+    required String content,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
   }) async {
     await _messageInjector.injectProfileAndIntents(
       sessionId: sessionId,
@@ -1090,20 +1167,7 @@ extension ChatServiceSend on ChatService {
       messages: messages,
       markStage: markStage,
     );
-    final trainingSyndromeId = await _messageInjector.injectDiagnosisLock(
-      sessionId: sessionId,
-      content: content,
-      activeProblems: activeProblems,
-      currentSubphase: currentSubphase,
-      beginnerLevel: beginnerLevel,
-      messages: messages,
-      markStage: markStage,
-    );
-    return (
-      primaryRef: primaryRef,
-      chapterContent: chapterContent,
-      trainingSyndromeId: trainingSyndromeId,
-    );
+    return (primaryRef: primaryRef, chapterContent: chapterContent);
   }
 
   /// 7. 追加历史消息 + 每轮必变提示 + 纪律重申 + token 预算闸门（R-019 编排 helper）。

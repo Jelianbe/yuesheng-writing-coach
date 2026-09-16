@@ -61,6 +61,11 @@ class _CardBody extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
+            data.progressNarrative,
+            style: const TextStyle(fontSize: 12, color: AppColors.primary),
+          ),
+          const SizedBox(height: 6),
+          Text(
             data.reason,
             style: const TextStyle(
               fontSize: 12,

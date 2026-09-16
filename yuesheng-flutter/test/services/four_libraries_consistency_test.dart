@@ -486,7 +486,8 @@ void main() {
       final order = TokenBudgetTable.planDegradation()
           .map((s) => s.name)
           .toList();
-      expect(order.length, 8);
+      // P2-9：新增 reviewSchedule 降级项（deg 3），共 9 项
+      expect(order.length, 9);
       expect(order[0], contains('L2 按需组'), reason: '最先裁 L2 组数');
       expect(order[1], contains('L3 结构化'), reason: '其次裁 L3 非 focus 概览');
       expect(order[2], contains('规则观察检测器'), reason: '再次裁检测器注入');

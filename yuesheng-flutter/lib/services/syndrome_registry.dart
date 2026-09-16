@@ -831,4 +831,20 @@ const List<SyndromeRecord> _syndromeRegistryP3 = [
     techniques: ['T007', 'T005', 'T009'],
     actions: ['A003', 'A007'],
   ),
+  // ── 批次 P2-7（L5 风格声线建层）：P042 ──
+  SyndromeRecord(
+    id: 'P042',
+    name: '声线漂移症',
+    shortName: '声线漂移症',
+    keyword: '声线不稳定',
+    oneLine: '文风随段落漂移、前后声线不统一，读者辨不出这是谁写的',
+    typeLine: '风格声线失稳，个人风格不统一',
+    trainingLine: '声线=稳定的句式节奏+词汇偏好+叙述视角选择；漂移=情绪带动文风突变、模仿腔与本色腔混用、对话与叙述声线打架',
+    type: SyndromeType.expressiveDeficit,
+    level: SkillLevel.l5,
+    group: MaxAttemptsGroup.expression,
+    position: 'global',
+    techniques: ['T014', 'T023', 'T013'],
+    actions: ['A009', 'A016'],
+  ),
 ];

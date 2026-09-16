@@ -40,6 +40,7 @@ class GrowthState {
   final List<DiagnosisRow> diagnosisHistory;
   // 批次 51c：RN growth-detail 页面四数据源
   final GrowthOverview? overview;
+  final BeginnerLevel? beginnerLevel; // P2-10：N 系坐标（由 overview 派生）
   final List<AbilityScore> abilityScores;
   final List<WritingDataPoint> writingCurve;
   final List<SyndromeHistoryEvent> syndromeHistory;
@@ -56,6 +57,7 @@ class GrowthState {
     this.activeProblems = const [],
     this.diagnosisHistory = const [],
     this.overview,
+    this.beginnerLevel,
     this.abilityScores = const [],
     this.writingCurve = const [],
     this.syndromeHistory = const [],
@@ -72,6 +74,7 @@ class GrowthState {
     List<ActiveProblemView>? activeProblems,
     List<DiagnosisRow>? diagnosisHistory,
     GrowthOverview? overview,
+    BeginnerLevel? beginnerLevel,
     List<AbilityScore>? abilityScores,
     List<WritingDataPoint>? writingCurve,
     List<SyndromeHistoryEvent>? syndromeHistory,
@@ -88,6 +91,7 @@ class GrowthState {
       activeProblems: activeProblems ?? this.activeProblems,
       diagnosisHistory: diagnosisHistory ?? this.diagnosisHistory,
       overview: overview ?? this.overview,
+      beginnerLevel: beginnerLevel ?? this.beginnerLevel,
       abilityScores: abilityScores ?? this.abilityScores,
       writingCurve: writingCurve ?? this.writingCurve,
       syndromeHistory: syndromeHistory ?? this.syndromeHistory,
@@ -179,6 +183,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
         activeProblems: activeProblems,
         diagnosisHistory: history,
         overview: overview,
+        beginnerLevel: overview.currentBeginnerLevel,
         abilityScores: abilityScores,
         writingCurve: writingCurve,
         syndromeHistory: syndromeHistory,

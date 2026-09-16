@@ -39,6 +39,15 @@ class FocusCardData {
 
   final String? stagnationReason;
 
+  /// P2-10 三轴收束：教学阶段（P 系，来自成长总览）
+  final TeachingPhase? phase;
+
+  /// P2-10 三轴收束：零基础等级（N 系）
+  final BeginnerLevel? beginnerLevel;
+
+  /// P2-10 三轴收束：一句话坐标叙事「你在哪 → 下一步练什么」
+  final String progressNarrative;
+
   const FocusCardData({
     required this.focusId,
     required this.focusName,
@@ -48,6 +57,9 @@ class FocusCardData {
     required this.intervention,
     required this.stagnated,
     this.stagnationReason,
+    this.phase,
+    this.beginnerLevel,
+    required this.progressNarrative,
   });
 }
 
@@ -58,6 +70,8 @@ class FocusCardData {
 FocusCardData? buildFocusCardData({
   required StudentProfile profile,
   required List<SyndromeTrainingStats> trainingStats,
+  TeachingPhase? phase,
+  BeginnerLevel? beginnerLevel,
 }) {
   final prioritized = prioritizeSyndromes(profile.syndromeProfile);
   if (prioritized.isEmpty) return null;
@@ -84,6 +98,18 @@ FocusCardData? buildFocusCardData({
     ),
     stagnated: stagnation.stagnated,
     stagnationReason: stagnation.reason,
+    phase: phase,
+    beginnerLevel: beginnerLevel,
+    progressNarrative: buildProgressNarrative(
+      phase: phase,
+      beginnerLevel: beginnerLevel,
+      focusName: top.name,
+      skillLevel: record?.level ?? SkillLevel.l1,
+      intervention: interventionLevelForTrainingCount(
+        stats?.total ?? 0,
+        currentSeverity: agg.latestSeverity,
+      ),
+    ),
   );
 }
 
@@ -129,5 +155,61 @@ String _stateLabel(TeachingState state) {
       return '巩固中';
     case TeachingState.mastered:
       return '已掌握';
+  }
+}
+
+/// P2-10 三轴收束：把 P 系（阶段）/ N 系（零基础）/ 技能层级 / 介入级别
+/// 四套坐标压成一句「你在哪 → 下一步练什么」。纯展示，不评判（R-009）。
+///
+/// 规则：N 系优先（教学起点坐标）；无 N 系回退 P 系；都无 → 只报焦点。
+String buildProgressNarrative({
+  required TeachingPhase? phase,
+  required BeginnerLevel? beginnerLevel,
+  required String focusName,
+  required SkillLevel skillLevel,
+  required InterventionLevel intervention,
+}) {
+  final String position;
+  if (beginnerLevel != null) {
+    position = _beginnerLevelLabel(beginnerLevel);
+  } else if (phase != null) {
+    position = _phaseLabel(phase);
+  } else {
+    position = '当前阶段未知';
+  }
+  return '坐标：$position · 当前焦点属「${skillLevel.value} ${skillLevel.label}」层 · '
+      '介入 ${intervention.value}（${intervention.label}）——下一步：'
+      '练「$focusName」对应的 ${skillLevel.label} 练习';
+}
+
+/// N 系 → 可读标签
+String _beginnerLevelLabel(BeginnerLevel level) {
+  switch (level) {
+    case BeginnerLevel.n0Engage:
+      return '起步期（N0 兴趣激活）';
+    case BeginnerLevel.n1Elements:
+      return '打基础（N1 要素感知）';
+    case BeginnerLevel.n2Scene:
+      return '搭场景（N2 场景构建）';
+    case BeginnerLevel.n3Diagnose:
+      return '会自诊（N3 独立诊断）';
+    case BeginnerLevel.n4Independent:
+      return '独立期（N4 自主写作）';
+  }
+}
+
+/// P 系 → 可读标签
+String _phaseLabel(TeachingPhase phase) {
+  switch (phase) {
+    case TeachingPhase.p0Engage:
+      return 'P0 兴趣激活';
+    case TeachingPhase.p1World:
+      return 'P1 世界观与诊断';
+    case TeachingPhase.p2PracticeLoop:
+      return 'P2 练习循环';
+    case TeachingPhase.p3Training:
+      return 'P3 深度训练';
+    case TeachingPhase.p4Review:
+      return 'P4 毕业复核';
   }
 }

@@ -25,6 +25,7 @@ import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/services/student_profile_compute.dart';
 import 'package:writingcoach/services/syndrome_registry.dart';
+import 'package:writingcoach/services/spaced_repetition.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'decode_guard.dart';
@@ -564,7 +565,8 @@ StateTransitionInput _buildStateTransitionInput(
     trainingStarted: trainingStarted,
     consecutiveLowSeverity: consecutiveLowSeverity,
     consecutivePasses: consecutivePasses,
-    fsrsIntervalDays: 0, // FSRS 未启用；consolidating → mastered 走代理/毕业复核路径
+    // P2-9：FSRS 间隔（指数增长封顶 14，与 training_evaluator fsrsReady 判据对齐）
+    fsrsIntervalDays: fsrsIntervalDaysFor(consecutivePasses),
     consolidationObservations: consolidationObservations,
     relapseDetected: relapseDetected,
     studentAbandoned: studentAbandoned,

@@ -99,6 +99,9 @@ class GrowthOverview {
   final int totalResolved;
   final int totalActive;
   final TeachingPhase currentPhase;
+
+  /// P2-10：零基础 N 系坐标（teaching_state 最新行；无记录为 null）
+  final BeginnerLevel? currentBeginnerLevel;
   final int writingDays;
   final int? firstWritingAt;
   final int? lastWritingAt;
@@ -112,6 +115,7 @@ class GrowthOverview {
     required this.totalResolved,
     required this.totalActive,
     required this.currentPhase,
+    this.currentBeginnerLevel,
     required this.writingDays,
     this.firstWritingAt,
     this.lastWritingAt,
@@ -186,7 +190,8 @@ extension GrowthStatsExtension on GrowthService {
     )).getSingleOrNull();
 
     final phaseRow = await (_db.customSelect(
-      'SELECT current_phase AS phase FROM teaching_state '
+      'SELECT current_phase AS phase, beginner_level AS beginner '
+      'FROM teaching_state '
       'ORDER BY updated_at DESC LIMIT 1',
     )).getSingleOrNull();
 

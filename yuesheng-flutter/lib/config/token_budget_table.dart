@@ -71,6 +71,7 @@ abstract final class BudgetStageNames {
   static const String trainingKnowledge = '训练教学知识（L3，3 症候）';
   static const String l3Structure = 'L3 结构化症候详情（focus 全量+非 focus 概览）';
   static const String skillLevel = '学员技能层级软引导';
+  static const String reviewSchedule = '症候复习调度（FSRS）';
   static const String outputConstraints = '临场输出约束（最高优先级）';
   static const String history = '历史消息（最坏 20 条）';
 }
@@ -202,6 +203,11 @@ abstract final class TokenBudgetTable {
       name: BudgetStageNames.skillLevel,
       worstCaseTokens: 500,
       degradePriority: kBottomLinePriority,
+    ),
+    TokenBudgetStage(
+      name: BudgetStageNames.reviewSchedule,
+      worstCaseTokens: 500, // P2-9：FSRS 调度段（≤2 到期 + ≤3 临期）
+      degradePriority: 3,
     ),
     TokenBudgetStage(
       name: BudgetStageNames.outputConstraints,

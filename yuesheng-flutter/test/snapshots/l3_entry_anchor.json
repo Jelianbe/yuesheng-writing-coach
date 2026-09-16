@@ -1,9 +1,9 @@
 {
   "meta": {
     "note": "L3 知识库词条级行为锚点（字节级：长度 + FNV-1a 指纹）",
-    "syndromeCount": 39,
+    "syndromeCount": 40,
     "techniqueCount": 31,
-    "trainingCount": 39
+    "trainingCount": 40
   },
   "syndrome": {
     "P003": {
@@ -161,6 +161,10 @@
     "P041": {
       "len": 1093,
       "fnv": "ef2c05245bdd61"
+    },
+    "P042": {
+      "len": 1194,
+      "fnv": "12eb54e0e74f7a54"
     }
   },
   "technique": {
@@ -443,8 +447,12 @@
       "fnv": "4c31d1a25119234e"
     },
     "P041": {
-      "len": 807,
-      "fnv": "3493cc5ad0bca7cd"
+      "len": 840,
+      "fnv": "401f88bdd0375571"
+    },
+    "P042": {
+      "len": 898,
+      "fnv": "6d2ec46ea2d4e318"
     }
   }
 }
