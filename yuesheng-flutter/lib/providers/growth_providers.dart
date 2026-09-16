@@ -15,12 +15,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database/database.dart';
+import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../data/repositories/training_result_repository.dart';
 import '../services/growth_service.dart';
 import '../services/student_profile.dart';
+import '../types/display_types.dart';
 import '../types/teaching_types.dart';
 import 'app_providers.dart';
 
@@ -44,6 +46,8 @@ class GrowthState {
   final WritingStyleProfile? styleProfile; // 批次53c：最新写作风格画像
   final List<SyndromeRecurrence> syndromeRecurrences; // 批次65 B62h：同类症候复发率
   final List<SyndromeTrainingStats> trainingStats; // X-041b：症候-训练通过率聚合（近 30 天）
+  // P1-5：跨会话评估历史（按 generatedAt 升序）——能力进步曲线数据源
+  final List<EvaluationData> evaluationHistory;
   final String? error;
 
   const GrowthState({
@@ -58,6 +62,7 @@ class GrowthState {
     this.styleProfile,
     this.syndromeRecurrences = const [],
     this.trainingStats = const [],
+    this.evaluationHistory = const [],
     this.error,
   });
 
@@ -73,6 +78,7 @@ class GrowthState {
     WritingStyleProfile? styleProfile,
     List<SyndromeRecurrence>? syndromeRecurrences,
     List<SyndromeTrainingStats>? trainingStats,
+    List<EvaluationData>? evaluationHistory,
     String? error,
     bool clearError = false,
   }) {
@@ -88,6 +94,7 @@ class GrowthState {
       styleProfile: styleProfile ?? this.styleProfile,
       syndromeRecurrences: syndromeRecurrences ?? this.syndromeRecurrences,
       trainingStats: trainingStats ?? this.trainingStats,
+      evaluationHistory: evaluationHistory ?? this.evaluationHistory,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -147,6 +154,8 @@ class GrowthStore extends StateNotifier<GrowthState> {
         growthService.getSyndromeRecurrences(),
         // 10. 症候-训练通过率聚合（X-041b，近 30 天）
         growthService.getSyndromeTrainingStats(),
+        // 11. 跨会话评估历史（P1-5 能力进步曲线）
+        AppStateRepository(_db).listAllEvaluationReports(),
       ]);
 
       final profileResult = results[0] as ProfileTextResult;
@@ -159,6 +168,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
       final styleProfile = results[7] as WritingStyleProfile?;
       final syndromeRecurrences = results[8] as List<SyndromeRecurrence>;
       final trainingStats = results[9] as List<SyndromeTrainingStats>;
+      final evaluationHistory = results[10] as List<EvaluationData>;
 
       // 全量重建（此处**不**用 copyWith）：成功路径要一次性覆盖 11 项数据
       // 并把 error 清空——改 copyWith 反而得显式传 11 个参数，漏一个就静默
@@ -175,6 +185,7 @@ class GrowthStore extends StateNotifier<GrowthState> {
         styleProfile: styleProfile,
         syndromeRecurrences: syndromeRecurrences,
         trainingStats: trainingStats,
+        evaluationHistory: evaluationHistory,
       );
     } catch (e) {
       debugPrint('[GrowthStore] loadGrowthData 失败: $e');

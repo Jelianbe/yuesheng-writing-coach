@@ -14,8 +14,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/services/growth_service.dart';
+import 'package:writingcoach/types/display_types.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/ability_chart.dart';
+import 'package:writingcoach/widgets/ability_progress_chart.dart';
 import 'package:writingcoach/widgets/growth_overview_card.dart';
 import 'package:writingcoach/widgets/syndrome_history_list.dart';
 import 'package:writingcoach/widgets/writing_curve_chart.dart';
@@ -238,6 +240,112 @@ void main() {
       expect(find.text('中等'), findsOneWidget);
       expect(find.text('共 3 条记录'), findsOneWidget);
       expect(find.text('对话生硬'), findsNothing);
+    });
+  });
+
+  group('P1-5 AbilityProgressChart', () {
+    testWidgets('#C1 历史 <2 份（或无可比快照）→ 空态引导，不画折线', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.reset());
+
+      // 单份评估（带快照）也画不出「进步」→ 空态
+      final single = [
+        EvaluationData(
+          round: 1,
+          trend: EvaluationTrend.stable,
+          trainingCount: 0,
+          passRate: 0.5,
+          summaryText: 's',
+          syndromeDetails: const [],
+          abilityScores: const [
+            AbilityScore(
+              dimension: '情节构建',
+              score: 70,
+              trend: Trend.stable,
+              description: 'd',
+            ),
+          ],
+          generatedAt: 1000,
+        ),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: AbilityProgressChart(history: single)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('能力进步曲线'), findsOneWidget);
+      expect(find.text('暂无进步曲线'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AbilityProgressChart),
+          matching: find.byType(CustomPaint),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('#C2 ≥2 份评估带快照 → 渲染标题 + 折线画布 + 图例', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.reset());
+
+      final history = [
+        EvaluationData(
+          round: 1,
+          trend: EvaluationTrend.stable,
+          trainingCount: 0,
+          passRate: 0.5,
+          summaryText: 's1',
+          syndromeDetails: const [],
+          abilityScores: const [
+            AbilityScore(
+              dimension: '情节构建',
+              score: 60,
+              trend: Trend.stable,
+              description: 'd',
+            ),
+          ],
+          generatedAt: 1000,
+        ),
+        EvaluationData(
+          round: 2,
+          trend: EvaluationTrend.improving,
+          trainingCount: 2,
+          passRate: 0.8,
+          summaryText: 's2',
+          syndromeDetails: const [],
+          abilityScores: const [
+            AbilityScore(
+              dimension: '情节构建',
+              score: 75,
+              trend: Trend.improving,
+              description: 'd',
+            ),
+          ],
+          generatedAt: 2000,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: AbilityProgressChart(history: history)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('能力进步曲线'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AbilityProgressChart),
+          matching: find.byType(CustomPaint),
+        ),
+        findsOneWidget,
+      );
+      // 图例含维度名
+      expect(find.text('情节构建'), findsOneWidget);
     });
   });
 }

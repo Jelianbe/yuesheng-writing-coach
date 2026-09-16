@@ -24,6 +24,7 @@ import '../data/repositories/training_result_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/error_handler.dart';
 import '../services/evaluation_service.dart';
+import '../services/growth_service.dart';
 import '../types/display_types.dart';
 
 /// 评估报告状态
@@ -55,10 +56,13 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
   final EvaluationService _service;
   final AppStateRepository _appStateRepo;
 
+  /// P1-5：能力分快照（与成长页 AbilityChart 同口径）
+  final GrowthService _growthService;
+
   /// 当前会话 id（用于持久化 key 隔离）
   String? _currentSessionId;
 
-  EvaluationReportsStore(this._service, this._appStateRepo)
+  EvaluationReportsStore(this._service, this._appStateRepo, this._growthService)
     : super(const EvaluationReportsState());
 
   /// 持久化失败留痕（CR-39）
@@ -99,18 +103,28 @@ class EvaluationReportsStore extends StateNotifier<EvaluationReportsState> {
       );
       if (evaluation == null) return;
 
+      // P1-5：附加评估时点的全局能力分快照（同口径，非新公式）
+      final abilityScores = await _growthService.getAbilityScores();
+      final enriched = EvaluationData(
+        round: evaluation.round,
+        trend: evaluation.trend,
+        trainingCount: evaluation.trainingCount,
+        passRate: evaluation.passRate,
+        severityDelta: evaluation.severityDelta,
+        summaryText: evaluation.summaryText,
+        syndromeDetails: evaluation.syndromeDetails,
+        abilityScores: abilityScores,
+        generatedAt: evaluation.generatedAt,
+      );
+
       state = state.copyWith(
-        reports: {...state.reports, messageId: evaluation},
+        reports: {...state.reports, messageId: enriched},
         currentRound: state.currentRound + 1,
       );
 
       // 批次4-M3：落库（报告 + 轮次）
       _currentSessionId = sessionId;
-      await _appStateRepo.saveEvaluationReport(
-        sessionId,
-        messageId,
-        evaluation,
-      );
+      await _appStateRepo.saveEvaluationReport(sessionId, messageId, enriched);
       await _appStateRepo.setEvaluationRound(sessionId, state.currentRound);
     } catch (e, s) {
       _logPersistFailure('buildEvaluationReport', e, s);
@@ -170,5 +184,6 @@ final evaluationReportsProvider =
       return EvaluationReportsStore(
         ref.watch(evaluationServiceProvider),
         AppStateRepository(db),
+        GrowthService(db),
       );
     });

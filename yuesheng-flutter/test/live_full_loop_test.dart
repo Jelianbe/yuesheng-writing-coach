@@ -48,6 +48,7 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/chat_context_builder.dart'
     show MaterialCapabilityImpl;
 import 'package:writingcoach/services/evaluation_service.dart';
+import 'package:writingcoach/services/growth_service.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -458,6 +459,7 @@ void main() {
       final evalStore = EvaluationReportsStore(
         EvaluationService(diagRepo, studentModelRepo),
         appStateRepo,
+        GrowthService(db),
       );
       await evalStore.restoreForSession(sessionId);
       expect(diagMessageId, isNotNull, reason: '环节4：无诊断消息 ID');

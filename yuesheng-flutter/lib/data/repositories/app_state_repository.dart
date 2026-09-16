@@ -209,6 +209,21 @@ class AppStateRepository {
     return result;
   }
 
+  /// P1-5：读取全部会话的全部评估报告（跨会话，按 generatedAt 升序）。
+  /// 能力进步曲线数据源——评估报告已按轮次落库，此处只做跨会话聚合。
+  Future<List<EvaluationData>> listAllEvaluationReports() async {
+    final rows = await (_db.select(
+      _db.appStates,
+    )..where((t) => t.key.like('eval_report:%'))).get();
+    final result = <EvaluationData>[];
+    for (final row in rows) {
+      final data = EvaluationData.fromJsonString(row.value);
+      if (data != null) result.add(data);
+    }
+    result.sort((a, b) => a.generatedAt.compareTo(b.generatedAt));
+    return result;
+  }
+
   /// 删除单条评估报告
   Future<void> deleteEvaluationReport(String sessionId, String messageId) =>
       guardRepoWrite('app_state', 'deleteEvaluationReport', () async {

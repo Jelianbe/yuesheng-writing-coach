@@ -18,6 +18,7 @@ import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/providers/evaluation_providers.dart';
 import 'package:writingcoach/services/evaluation_service.dart';
+import 'package:writingcoach/services/growth_service.dart';
 import 'package:writingcoach/types/display_types.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
@@ -38,6 +39,7 @@ void main() {
     store = EvaluationReportsStore(
       EvaluationService(diagnosisRepo, studentModelRepo),
       appStateRepo,
+      GrowthService(db),
     );
   });
 
@@ -146,6 +148,7 @@ void main() {
       final newStore = EvaluationReportsStore(
         EvaluationService(diagnosisRepo, studentModelRepo),
         appStateRepo,
+        GrowthService(db),
       );
       await newStore.restoreForSession(sessionId);
 
@@ -258,6 +261,81 @@ void main() {
       expect(legacy.recurrences, 0);
       expect(legacy.previousSeverity, isNull);
       expect(legacy.isRecurrence, isFalse);
+    });
+  });
+
+  group('P1-5 能力分快照', () {
+    test('#E5 buildEvaluationReport 附加评估时点全局能力分（同口径，非新公式）', () async {
+      final (sessionId, messageId) = await seedSessionWithDiagnosis();
+
+      await store.buildEvaluationReport(sessionId, messageId);
+
+      final report = store.state.reports[messageId];
+      expect(report, isNotNull);
+      // 附加了六维能力分快照（与 GrowthService.getAbilityScores 同函数产物）
+      expect(report!.abilityScores, isNotEmpty);
+      expect(
+        report.abilityScores.length,
+        GrowthService.abilityDimensions.length,
+      );
+      expect(report.abilityScores.first.score, inInclusiveRange(0, 100));
+    });
+
+    test('#E6 能力快照随报告落库，重启后仍可读回', () async {
+      final (sessionId, messageId) = await seedSessionWithDiagnosis();
+      await store.buildEvaluationReport(sessionId, messageId);
+
+      final newStore = EvaluationReportsStore(
+        EvaluationService(diagnosisRepo, studentModelRepo),
+        appStateRepo,
+        GrowthService(db),
+      );
+      await newStore.restoreForSession(sessionId);
+
+      final restored = newStore.state.reports[messageId];
+      expect(restored, isNotNull);
+      expect(restored!.abilityScores, isNotEmpty);
+    });
+
+    test('#E7 旧 JSON（无 abilityScores 键）反序列化 → 空数组，不抛错', () async {
+      final legacy = EvaluationData.fromJsonString(
+        '{"round":1,"trend":"stable","trainingCount":0,"passRate":0.5,"summaryText":"旧报告","syndromeDetails":[],"generatedAt":1000}',
+      );
+      expect(legacy, isNotNull);
+      expect(legacy!.abilityScores, isEmpty);
+    });
+
+    test('#E8 能力快照序列化往返保真（toJsonString → fromJsonString）', () async {
+      final (sessionId, messageId) = await seedSessionWithDiagnosis();
+      await store.buildEvaluationReport(sessionId, messageId);
+
+      final report = store.state.reports[messageId]!;
+      final roundTrip = EvaluationData.fromJsonString(report.toJsonString());
+
+      expect(roundTrip, isNotNull);
+      expect(roundTrip!.abilityScores.length, report.abilityScores.length);
+      expect(
+        roundTrip.abilityScores.first.score,
+        report.abilityScores.first.score,
+      );
+      expect(
+        roundTrip.abilityScores.first.dimension,
+        report.abilityScores.first.dimension,
+      );
+    });
+  });
+
+  group('P1-5 跨会话能力历史', () {
+    test('#E9 listAllEvaluationReports 跨会话聚合 + 按 generatedAt 升序', () async {
+      final (s1, m1) = await seedSessionWithDiagnosis();
+      await store.buildEvaluationReport(s1, m1);
+      final (s2, m2) = await seedSessionWithDiagnosis();
+      await store.buildEvaluationReport(s2, m2);
+
+      final all = await appStateRepo.listAllEvaluationReports();
+
+      expect(all.length, 2);
+      expect(all[0].generatedAt, lessThanOrEqualTo(all[1].generatedAt));
     });
   });
 }

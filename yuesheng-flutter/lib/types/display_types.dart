@@ -6,6 +6,7 @@
 import 'dart:convert';
 
 import 'teaching_types.dart';
+import '../services/growth_service.dart';
 import '../services/decode_guard.dart';
 
 /// 评估趋势（UI 展示 3 值）
@@ -127,6 +128,10 @@ class EvaluationData {
   /// 症候维度明细
   final List<SyndromeEvaluationDetail> syndromeDetails;
 
+  /// P1-5：评估时点的全局六大能力分快照（与成长页 AbilityChart 同口径）。
+  /// 旧报告反序列化后为空数组——不编造历史分数。
+  final List<AbilityScore> abilityScores;
+
   /// 报告生成时间
   final int generatedAt;
 
@@ -138,6 +143,7 @@ class EvaluationData {
     this.severityDelta,
     required this.summaryText,
     required this.syndromeDetails,
+    this.abilityScores = const [],
     required this.generatedAt,
   });
 
@@ -150,6 +156,16 @@ class EvaluationData {
     'severityDelta': severityDelta,
     'summaryText': summaryText,
     'syndromeDetails': syndromeDetails.map((d) => d.toJson()).toList(),
+    'abilityScores': abilityScores
+        .map(
+          (a) => {
+            'dimension': a.dimension,
+            'score': a.score,
+            'trend': a.trend.value,
+            'description': a.description,
+          },
+        )
+        .toList(),
     'generatedAt': generatedAt,
   });
 
@@ -171,6 +187,22 @@ class EvaluationData {
           }
         }
       }
+      final scoresRaw = decoded['abilityScores'];
+      final abilityScores = <AbilityScore>[];
+      if (scoresRaw is List) {
+        for (final s in scoresRaw) {
+          if (s is! Map<String, dynamic>) continue;
+          final trend = Trend.fromString(s['trend'] as String? ?? '');
+          abilityScores.add(
+            AbilityScore(
+              dimension: s['dimension'] as String? ?? '',
+              score: (s['score'] as num?)?.toInt() ?? 0,
+              trend: trend,
+              description: s['description'] as String? ?? '',
+            ),
+          );
+        }
+      }
       return EvaluationData(
         round: (decoded['round'] as num?)?.toInt() ?? 0,
         trend: trend,
@@ -179,6 +211,7 @@ class EvaluationData {
         severityDelta: decoded['severityDelta'] as int?,
         summaryText: decoded['summaryText'] as String? ?? '',
         syndromeDetails: details,
+        abilityScores: abilityScores,
         generatedAt: (decoded['generatedAt'] as num?)?.toInt() ?? 0,
       );
     } catch (e, st) {

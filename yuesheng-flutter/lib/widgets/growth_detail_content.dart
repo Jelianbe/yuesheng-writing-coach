@@ -21,6 +21,7 @@ import '../config/app_theme.dart';
 import '../providers/growth_providers.dart';
 import '../types/teaching_types.dart';
 import 'ability_chart.dart';
+import 'ability_progress_chart.dart';
 import 'growth_detail_overview.dart';
 import 'growth_detail_sections.dart';
 import 'growth_detail_syndrome_groups.dart';
@@ -75,6 +76,9 @@ class GrowthDetailContent extends StatelessWidget {
         ..._buildDiagnosisSection(),
         const SizedBox(height: 12),
         AbilityChart(scores: state.abilityScores),
+        const SizedBox(height: 12),
+        // P1-5：能力进步曲线（评估时点能力分快照序列）
+        AbilityProgressChart(history: state.evaluationHistory),
         const SizedBox(height: 12),
         WritingCurveChart(points: state.writingCurve),
         const SizedBox(height: 12),
