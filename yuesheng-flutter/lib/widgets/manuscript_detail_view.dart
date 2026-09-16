@@ -16,13 +16,13 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
-import 'character/character_list_view.dart';
 import 'file_section.dart';
 import 'manuscript_detail_chapter_list.dart';
 import 'manuscript_detail_chapter_list_header.dart';
 import 'manuscript_detail_states.dart';
 import 'related_sessions_tab.dart';
 import 'manuscript_growth_tab.dart';
+import 'setting/setting_library_tab.dart';
 
 /// 作品详情页装配视图（无状态）
 class ManuscriptDetailView extends StatelessWidget {
@@ -144,7 +144,7 @@ class ManuscriptDetailView extends StatelessWidget {
       unselectedLabelStyle: const TextStyle(fontSize: 14),
       tabs: const [
         Tab(text: '章节'),
-        Tab(text: '角色'),
+        Tab(text: '资料'),
         Tab(text: '文件'),
         Tab(text: '相关对话'),
         Tab(text: '成长'),
@@ -159,8 +159,8 @@ class ManuscriptDetailView extends StatelessWidget {
       children: [
         // ── Tab0 章节 ──
         _buildChaptersTab(),
-        // ── Tab1 角色（T02：CharacterListView，无 Scaffold/AppBar）──
-        CharacterListView(manuscriptId: ms.id),
+        // ── Tab1 资料（设定资料库第三批：收编角色/大纲/世界观/其他）──
+        SettingLibraryTab(manuscriptId: ms.id),
         // ── Tab2 文件（批次 28：从章节列表尾部独立成 Tab）──
         FileSection(manuscriptId: ms.id, manuscriptTitle: ms.title),
         // ── Tab3 相关对话（批次 28：按活跃度排序；批次 30：点击跳转打开会话）──

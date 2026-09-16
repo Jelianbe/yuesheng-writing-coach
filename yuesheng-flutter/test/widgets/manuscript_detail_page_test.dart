@@ -375,7 +375,7 @@ void main() {
 
       // 四个 Tab 标签存在（逐项存在性断言，非计数断言）
       expect(find.text('章节'), findsOneWidget);
-      expect(find.text('角色'), findsOneWidget);
+      expect(find.text('资料'), findsOneWidget);
       expect(find.text('文件'), findsOneWidget);
       expect(find.text('相关对话'), findsOneWidget);
 
@@ -404,7 +404,7 @@ void main() {
       final labels = tabBar.tabs
           .map((t) => (t as Tab).text)
           .toList(growable: false);
-      expect(labels, <String>['章节', '角色', '文件', '相关对话', '成长']);
+      expect(labels, <String>['章节', '资料', '文件', '相关对话', '成长']);
     });
 
     // NT-5：结构性守卫 —— TabBarView.children.length == TabController.length == 5
