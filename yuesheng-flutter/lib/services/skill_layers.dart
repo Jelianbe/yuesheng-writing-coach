@@ -14,6 +14,10 @@
 /// （含 contextHint）：beginner 31,168 · diagnosis 43,118 · training 38,068 ·
 /// advanced 28,567 · outline 24,557。
 ///
+/// 沿革续二：2026-09-16「改法 B」`coaching-rhythm` 挪至 beginner/diagnosis
+/// 组末（A-1b §三十三 六·B：phase 转换事件成本 −77%；顺序即缓存契约，
+/// 已重生成锚点 + 行为采样）。
+///
 /// 沿革续：2026-09-14「Q2 批」单点压密 `teaching-strategy`（§9.1 七处 AI 台词、
 /// §3.2.1 列名与三行台词、§7.2 两处示例问答 → 「要点 + 一句意图」，Δ=−175，方法
 /// 承 ADR-C77）⇒ L1 常驻 29,032→28,857、九件套 27,843→27,668、Σ注册 122,887→122,712、
@@ -60,10 +64,13 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
   L2Mode.beginner: [
     SkillRef('beginner-path'),
     SkillRef('gap-detector'),
-    SkillRef('coaching-rhythm', '新手语境：用「确认→选择→倾听→梳理→循环」节奏扶着走，少评判多给台阶'),
     SkillRef('narrative-design', '新手语境：只推世界观差异与角色第一层，不追深度地层'),
     SkillRef('plot-design', '新手语境：先讲清因果链，不急着铺情节'),
     SkillRef('writer-psychology'), // ~3200 tokens (新手心理支持：完美主义瘫痪、空白页恐惧)
+    // 改法 B（2026-09-16）：coaching-rhythm 挪组末——phase/attitude 等
+    // 动态项落在其后时，缓存失效面从 36,444 字符收窄到仅其后内容（−77%）。
+    // 顺序即缓存契约：本组任何顺序改动须重生成锚点 + 行为采样。
+    SkillRef('coaching-rhythm', '新手语境：用「确认→选择→倾听→梳理→循环」节奏扶着走，少评判多给台阶'),
   ],
   L2Mode.diagnosis: [
     // ★ U1（2026-09-15）：`coaching-actions` 与 training 组共享，置组首使两组
@@ -71,7 +78,6 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     // 勿「修复」为索引优先：顺序即缓存契约，改动须重生成两处锚点并做行为采样。
     SkillRef('coaching-actions', '诊断语境：把症候映射到推荐动作卡'),
     SkillRef('syndrome-diagnosis-index'), // 仅症候索引+通用规则 (~1800 tokens)
-    SkillRef('coaching-rhythm', '诊断语境：P1 暴露差距，Layer2 认知桥接，先确认当下卡点'),
     SkillRef('narrative-design', '诊断语境：核对世界观/角色构建是否薄弱，给可操作重建步骤'),
     SkillRef('plot-design', '诊断语境：定位情节断裂/张力缺失，给因果链追问工具'),
     SkillRef('reader-awareness', '诊断语境：审视读者视角漏洞（信息/情绪/认知）'),
@@ -81,6 +87,9 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
       'diagnosis-confirmation',
     ), // ~700 tokens (↓ from 1800, FSM code-fied)
     SkillRef('feedback-cognition'), // ~900 tokens
+    // 改法 B（2026-09-16）：coaching-rhythm 挪组末（见 beginner 组注释）。
+    // 顺序即缓存契约：本组任何顺序改动须重生成锚点 + 行为采样。
+    SkillRef('coaching-rhythm', '诊断语境：P1 暴露差距，Layer2 认知桥接，先确认当下卡点'),
   ],
   L2Mode.training: [
     // ★ U1（2026-09-15）：见 diagnosis 组注释——共享本体前置。
