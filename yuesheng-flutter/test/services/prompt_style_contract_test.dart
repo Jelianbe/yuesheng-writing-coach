@@ -8,14 +8,14 @@ import 'package:writingcoach/services/skill_registry.dart';
 ///
 /// 三层：
 /// 1. 语料自检 —— 注册表塌了会让下面所有断言"两边皆空"而假绿
-/// 2. 档位期望表 —— 37 条显式映射，改档必须同步改这里（防误改）
+/// 2. 档位期望表 —— 36 条显式映射，改档必须同步改这里（防误改）
 /// 3. 档位与正文自洽 —— 档位声明必须与正文实际形态对得上
 ///
 /// 注意：本护栏只校验**元数据与正文是否自洽**，不校验档位判得"对不对"——
 /// 后者是设计裁决，理由见 skill_registry.dart 的 PromptStyle 文档注释。
 /// 若某条判定被推翻，改期望表 + 枚举注释，并在台账记一行。
 
-/// 37 条档位期望表。改动任何一条的档位，必须同步改这里。
+/// 36 条档位期望表。改动任何一条的档位，必须同步改这里。
 const Map<String, PromptStyle> kExpectedPromptStyle = {
   // ── strict（10）：输出契约或铁律级硬约束 ──
   'core-iron-triangle': PromptStyle.strict, // 铁三角「必须遵守」+ 元规则裁决顺序
@@ -28,7 +28,7 @@ const Map<String, PromptStyle> kExpectedPromptStyle = {
   'diagnosis-confirmation': PromptStyle.strict, // 确认步骤规则 + 严禁行为
   'training-evaluation-v2': PromptStyle.strict, // 评估输出格式 + 训练结果协议
   'syndrome-diagnosis-index': PromptStyle.strict, // JSON 输出格式 + 字段说明
-  // ── guided（17）：示例话术 / 示例文本，示例仅参考 ──
+  // ── guided（16）：示例话术 / 示例文本，示例仅参考 ──
   'scenario-rules': PromptStyle.guided, // 「怎么说由你自己组织…不是必须复述的台词」
   'teaching-modes': PromptStyle.guided, // 切换原则 + 映射，含示例话术
   'coaching-rhythm': PromptStyle.guided, // 五步节奏 + 大量话术示例
@@ -36,7 +36,6 @@ const Map<String, PromptStyle> kExpectedPromptStyle = {
   'model-rewrite': PromptStyle.guided, // 范文是参考靶子，非格式
   'writer-psychology': PromptStyle.guided, // 话术示例 + 「不是诊断」
   'beginner-path': PromptStyle.guided, // N0 开场「根据状态选择」「三种选一种」
-  'genre-guide': PromptStyle.guided, // 体裁调整指南；「必须」是描述体裁特征
   'narrative-design': PromptStyle.guided, // 五层递进提问框架 + 示例提问
   'outline-diagnosis': PromptStyle.guided, // 五步诊断法属方法论，非输出契约
   'plot-design': PromptStyle.guided, // 「引擎启动三问（必问，顺序不绑死）」
@@ -62,7 +61,7 @@ const Map<String, PromptStyle> kExpectedPromptStyle = {
 /// 分布期望。改动分布时提醒复核：是新增 skill，还是档位被误改。
 const Map<PromptStyle, int> kExpectedDistribution = {
   PromptStyle.strict: 10,
-  PromptStyle.guided: 17,
+  PromptStyle.guided: 16,
   PromptStyle.free: 10,
 };
 

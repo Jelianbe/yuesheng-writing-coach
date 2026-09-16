@@ -26,7 +26,7 @@
 //
 // 变异验证（预期）：
 //   A 删掉 N35 段落                     → ① 失败
-//   B 把 N35 段落挪到 _genreGuide 之外  → ② 失败（① 是存在性判定，本就通过）
+//   B 把 N35 段落挪到 _diagnosisConfirmation 之外  → ② 失败（① 是存在性判定，本就通过）
 //   C 删掉③（JSON 段说明）              → ②③⑤ 失败（⑤ 独立计数，不被②掩盖）
 //   D 把②挪到 index 内容最末端          → ③⑤ 失败（仍可注入，但脱离小节 → 由 ③ 管）
 //   E 把③挪到「### JSON 数据部分」之前  → ③⑤ 失败
@@ -141,7 +141,7 @@ void main() {
         greaterThanOrEqualTo(2),
         reason:
             '「$kN35BaselineWord」在 $kDiagnosisP1 中出现次数应 ≥ 2'
-            '（§一 容忍度矩阵一处 + N35 裁决一段落一处）。\n'
+            '（A7 后：N35 段内两处——「先按通用标准标定」+「阈值与通用标准不同」）。\n'
             '若只剩 1 处，说明容忍度矩阵的基准表述被改掉了——N35 的接线会悬空。',
       );
 
@@ -158,16 +158,16 @@ void main() {
   });
 
   group('② 生效性：三段说明都落在会被注入的区间内', () {
-    test('N35 段落落在 _genreGuide 的 content 区间内', () {
+    test('N35 段落落在 _diagnosisConfirmation 的 content 区间内（A7 迁移后宿主）', () {
       final src = _readSrc(kDiagnosisP1);
 
-      final genreStart = src.indexOf("Skill(\n  id: 'genre-guide'");
-      final fallbackStart = src.indexOf("id: 'genre-guide'");
-      final skillStart = genreStart != -1 ? genreStart : fallbackStart;
+      final dcStart = src.indexOf("Skill(\n  id: 'diagnosis-confirmation'");
+      final fallbackStart = src.indexOf("id: 'diagnosis-confirmation'");
+      final skillStart = dcStart != -1 ? dcStart : fallbackStart;
       expect(
         skillStart,
         isNot(-1),
-        reason: '在 $kDiagnosisP1 中找不到 genre-guide 的 Skill 声明',
+        reason: '在 $kDiagnosisP1 中找不到 diagnosis-confirmation 的 Skill 声明',
       );
 
       final note = src.indexOf(kN35Head);
@@ -175,10 +175,10 @@ void main() {
       expect(
         note,
         greaterThan(skillStart),
-        reason: 'N35 裁决段落必须位于 genre-guide 声明之后（即落在该 skill 内）',
+        reason: 'N35 裁决段落必须位于 diagnosis-confirmation 声明之后（即落在该 skill 内）',
       );
 
-      // 下边界：不得越过 genre-guide 之后的下一个 Skill 声明
+      // 下边界：不得越过 diagnosis-confirmation 之后的下一个 Skill 声明
       final rest = src.substring(skillStart + 20);
       final m = RegExp(r'^\s*Skill\(', multiLine: true).firstMatch(rest);
       if (m != null) {
@@ -187,8 +187,8 @@ void main() {
           note,
           lessThan(nextSkill),
           reason:
-              'N35 裁决段落越过了 genre-guide 的边界，落进下一个 Skill 的 content 里。\n'
-              '（genre-guide 经 skill_registry 注册后按整段注入；落在别的 skill 内 '
+              'N35 裁决段落越过了 diagnosis-confirmation 的边界，落进下一个 Skill 的 content 里。\n'
+              '（A7 迁移：N35 段随 genre-guide 删除迁入 diagnosis-confirmation；落在别的 skill 内 '
               '要么不生效，要么污染别的 skill）',
         );
       }

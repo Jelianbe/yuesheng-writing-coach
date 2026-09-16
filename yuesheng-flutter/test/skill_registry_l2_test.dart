@@ -46,7 +46,6 @@ void main() {
         // diagnosis 组（新增 6；coaching-rhythm/narrative-design/plot-design 与 beginner 共用）
         // 注：v1 coaching-actions 已于 B12 死负载清理中移除，仅保留 v2 变体
         'reader-awareness',
-        'genre-guide',
         'writing-style',
         'diagnosis-confirmation',
         'feedback-cognition',
@@ -135,7 +134,6 @@ void main() {
         // V2 开关下 coaching-actions 被替换为 coaching-actions-v2（diagnosis 模式同样替换）
         'coaching-actions-v2',
         'reader-awareness',
-        'genre-guide',
         'writing-style',
         'diagnosis-confirmation',
         'feedback-cognition',

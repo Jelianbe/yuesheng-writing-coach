@@ -173,7 +173,6 @@ final Map<String, Skill> skillRegistry = {
   'writer-psychology': _writerPsychology,
   // L2 按需层 — diagnosis 组（2026-08-08 批次 17）
   'reader-awareness': _readerAwareness,
-  'genre-guide': _genreGuide,
   'writing-style': _writingStyle,
   'diagnosis-confirmation': _diagnosisConfirmation,
   'feedback-cognition': _feedbackCognition,

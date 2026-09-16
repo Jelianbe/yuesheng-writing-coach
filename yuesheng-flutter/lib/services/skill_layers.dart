@@ -81,7 +81,6 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     SkillRef('narrative-design', '诊断语境：核对世界观/角色构建是否薄弱，给可操作重建步骤'),
     SkillRef('plot-design', '诊断语境：定位情节断裂/张力缺失，给因果链追问工具'),
     SkillRef('reader-awareness', '诊断语境：审视读者视角漏洞（信息/情绪/认知）'),
-    SkillRef('genre-guide'), // ~3500 tokens (体裁感知诊断调整)
     SkillRef('writing-style'), // ~2800 tokens (正向风格识别，与症候诊断互补)
     SkillRef(
       'diagnosis-confirmation',
@@ -116,7 +115,6 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     SkillRef('revision-methodology'), // ~2600 tokens (深度修订)
     SkillRef('reader-awareness', '进阶语境：P4 复盘中的读者视角深化'),
     SkillRef('writing-style'), // ~2800 tokens (P3/P4 风格深化)
-    SkillRef('genre-guide'), // ~3500 tokens (P3 体裁专项突破)
   ],
   L2Mode.outline: [
     SkillRef('plot-design', '大纲语境：对齐情节结构与因果链，检测引擎是否成立'),
