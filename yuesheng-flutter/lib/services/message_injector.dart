@@ -296,7 +296,7 @@ class MessageInjector {
     )) {
       await _injectEntityIndex(primaryRef: primaryRef, messages: messages);
     }
-    _injectFactProtocol(primaryRef: primaryRef, messages: messages);
+    await _injectFactProtocol(primaryRef: primaryRef, messages: messages);
     await _injectAttachedFiles(
       primaryRef: primaryRef,
       messages: messages,
@@ -935,22 +935,60 @@ class MessageInjector {
   }
 
   /// 5.1.9：时序知识图谱事实提取协议注入
-  void _injectFactProtocol({
+  ///
+  /// 2026-09-16 设定资料库第一批：注入「拒绝记忆」清单（源头抑制——
+  /// AI 不得再次提议学员已否决的 (实体,属性,值)）。
+  Future<void> _injectFactProtocol({
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
-  }) {
+  }) async {
     if (primaryRef?.refType != 'chapter') return;
     if (_characterFactRepo == null &&
         _eventFactRepo == null &&
         _subplotFactRepo == null) {
       return;
     }
+    final rejected = await _collectRejectedFacts(primaryRef);
     messages.add(
       ChatMessage(
         role: 'system',
-        content: _diagnosisCommitter.buildFactProtocolContext(),
+        content: _diagnosisCommitter.buildFactProtocolContext(rejected),
       ),
     );
+  }
+
+  /// 设定资料库第一批：聚合当前作品全部 rejected 断言为拒绝记忆清单。
+  /// 从 character 表遍历（world 侧 AI 写入通道未接线，暂无 rejected 来源）。
+  Future<List<RejectedFact>> _collectRejectedFacts(
+    ReferenceItem? primaryRef,
+  ) async {
+    if (primaryRef?.refType != 'chapter') return const [];
+    final repo = _characterFactRepo;
+    if (repo == null) return const [];
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return const [];
+      final out = <RejectedFact>[];
+      for (final c in await repo.listCharacters(chapter.manuscriptId)) {
+        for (final a in CharacterFactRepository.parseAssertions(c.assertions)) {
+          if (a.status == 'rejected' &&
+              a.attribute.isNotEmpty &&
+              a.value.isNotEmpty) {
+            out.add(
+              RejectedFact(
+                entity: c.name,
+                attribute: a.attribute,
+                value: a.value,
+              ),
+            );
+          }
+        }
+      }
+      return out;
+    } catch (e, st) {
+      _logSafeRun('拒绝记忆聚合失败不阻断主流程', e, st);
+      return const [];
+    }
   }
 
   /// 5.2：附属文件上下文注入（V3：AI 可读取书籍下所有文件）

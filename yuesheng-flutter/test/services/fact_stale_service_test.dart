@@ -290,6 +290,7 @@ void main() {
           chapter: 3,
           chapterHash: 'deadbeef',
           timestamp: 100,
+          status: 'pending', // 2026-09-16：AI 旧提议 = pending（可被新提议顶替）
         ),
       ];
       final incoming = [assertion('性格', '冷静', chapter: 3, timestamp: 200)];
@@ -345,6 +346,63 @@ void main() {
       expect(merged.length, 1);
       expect(merged.first.evidence, '用户手写');
       expect(merged.first.source, 'user', reason: 'AI 不得覆盖用户手写值');
+    });
+
+    test("#24 (c) 既有断言已 confirmed → 保留既有、丢弃 AI pending 提议", () async {
+      // 2026-09-16 设定资料库第一批：内容校准语义——AI 未确认提议
+      // （pending）不得顶替用户已确认的事实（R-009）。
+      final existing = [
+        assertion(
+          '职业',
+          '捕快',
+          chapter: 3,
+          status: 'confirmed',
+          evidence: '用户已确认',
+        ),
+      ];
+      final incoming = [
+        assertion(
+          '职业',
+          '捕快',
+          chapter: 3,
+          status: 'pending',
+          evidence: 'AI 重复抽取',
+        ),
+      ];
+
+      final merged = FactStaleService.mergeAssertions(
+        existing,
+        incoming,
+        hashA,
+        chapterNo: 3,
+      );
+
+      expect(merged.length, 1);
+      expect(
+        merged.first.status,
+        'confirmed',
+        reason: 'pending 不得顶替 confirmed',
+      );
+      expect(merged.first.evidence, '用户已确认');
+    });
+
+    test("#25 pending 对 pending → AI 新提议顶替旧提议（同属未裁决）", () async {
+      final existing = [
+        assertion('职业', '捕快', chapter: 3, status: 'pending', evidence: '旧提议'),
+      ];
+      final incoming = [
+        assertion('职业', '捕快', chapter: 3, status: 'pending', evidence: '新提议'),
+      ];
+
+      final merged = FactStaleService.mergeAssertions(
+        existing,
+        incoming,
+        hashA,
+        chapterNo: 3,
+      );
+
+      expect(merged.length, 1);
+      expect(merged.first.evidence, '新提议', reason: '未裁决的旧提议可被 AI 更新');
     });
 
     test('#11 决策2：无指纹的既有断言即使章号命中也不标 stale', () async {

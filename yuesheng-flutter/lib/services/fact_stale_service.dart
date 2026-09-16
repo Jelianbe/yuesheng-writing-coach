@@ -220,7 +220,11 @@ class FactStaleService {
       final key = tripleKey(e);
       if (incomingKeys.contains(key)) {
         // (b) 用户裁决优先（保留既有）；否则 (a) 让 incoming 顶替，此处不输出。
-        if (e.status == 'rejected' || e.source == 'user') {
+        // 2026-09-16 设定资料库第一批：confirmed 亦保留——AI 未确认提议
+        // （pending）不得顶替用户已确认的事实（R-009 / 内容校准语义）。
+        if (e.status == 'rejected' ||
+            e.source == 'user' ||
+            e.status == 'confirmed') {
           kept.add(key);
           result.add(e);
         }

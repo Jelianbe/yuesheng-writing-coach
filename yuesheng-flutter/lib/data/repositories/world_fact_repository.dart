@@ -50,6 +50,25 @@ class WorldFactRepository {
   /// [chapterHash] + [chapterNo] 同时给出才启用 stale 机制（填指纹 / 标旧版 /
   /// 三元组合并全部委托 [FactStaleService.mergeAssertions]）；二者缺一即退化成
   /// 纯三元组去重——与 character 侧同一契约，保护未接线的调用点。
+  /// 设定资料库第一批：用户裁决**原样写回**（确认/拒绝/superseded）。
+  ///
+  /// 不走 [upsertWorld]——merge 语义会把用户裁决当 incoming 重新合并
+  /// （R-009：用户操作不经过 AI 合并逻辑）。行不存在则静默跳过。
+  Future<void> replaceAssertions({
+    required String manuscriptId,
+    required String name,
+    required List<CharacterAssertion> assertions,
+  }) => guardRepoWrite('world_fact', 'replaceAssertions', () async {
+    final row = await _findWorld(manuscriptId, name);
+    if (row == null) return;
+    await (_db.update(_db.worldFacts)..where((t) => t.id.equals(row.id))).write(
+      WorldFactsCompanion(
+        assertions: Value(_encodeAssertions(assertions)),
+        updatedAt: Value(nowSec()),
+      ),
+    );
+  });
+
   Future<void> upsertWorld({
     required String manuscriptId,
     required String name,

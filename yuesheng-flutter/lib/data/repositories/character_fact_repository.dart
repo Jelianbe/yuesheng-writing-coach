@@ -32,6 +32,27 @@ class CharacterFactRepository {
   /// C78 批次2a：[chapterHash] + [chapterNo] 同时给出才启用 stale 机制
   /// （填指纹 / 标旧版 / 三元组合并全部委托 [FactStaleService.mergeAssertions]）；
   /// 二者缺一即退化成批次3-D2 的纯三元组去重，保护未接线的调用点。
+  /// 设定资料库第一批：用户裁决**原样写回**（确认/拒绝/superseded）。
+  ///
+  /// 不走 [upsertCharacter]——merge 语义会把用户裁决当 incoming 重新合并
+  /// （R-009：用户操作不经过 AI 合并逻辑）。行不存在则静默跳过。
+  Future<void> replaceAssertions({
+    required String manuscriptId,
+    required String name,
+    required List<CharacterAssertion> assertions,
+  }) => guardRepoWrite('character_fact', 'replaceAssertions', () async {
+    final row = await _findCharacter(manuscriptId, name);
+    if (row == null) return;
+    await (_db.update(
+      _db.characterFacts,
+    )..where((t) => t.id.equals(row.id))).write(
+      CharacterFactsCompanion(
+        assertions: Value(_encodeAssertions(assertions)),
+        updatedAt: Value(nowSec()),
+      ),
+    );
+  });
+
   Future<void> upsertCharacter({
     required String manuscriptId,
     required String name,

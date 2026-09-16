@@ -24,6 +24,7 @@
 // ignore_for_file: prefer_initializing_formals
 
 import 'package:flutter/foundation.dart';
+import '../types/character_types.dart';
 import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'package:writingcoach/contracts/genui_capability.dart';
 import 'package:writingcoach/contracts/material_capability.dart';
@@ -488,53 +489,68 @@ class DiagnosisCommitter {
   /// 指导 AI 在诊断回复中附加 [YS_FACT] 块，提取人物/事件/支线三类结构化事实，
   /// 供系统 upsert 到 TKG 三表，驱动时序矛盾/因果链/情节闭环检测。
   /// 与 [YS_DIAGNOSIS]、[YS_ENTITY] 并列独立，输出顺序排在最后。
-  String buildFactProtocolContext() {
+  ///
+  /// 2026-09-16 设定资料库第一批：[rejected] 为「拒绝记忆」清单
+  /// （(实体, 属性, 值) 三元组），注入后 AI 不得再次提议同值——
+  /// 源头抑制，与 mergeAssertions 的客户端过滤构成双保险。
+  String buildFactProtocolContext([List<RejectedFact> rejected = const []]) {
+    final rejectBlock = _buildRejectBlock(rejected);
     return '## 时序知识图谱事实沉淀（输出顺序约束）\n\n'
-        '【输出顺序】若同时输出诊断块、实体块与事实块，**必须严格按此顺序**：\n'
-        '  1. [YS_DIAGNOSIS] 症候块（若诊断要求）；\n'
-        '  2. [YS_ENTITY] 实体记忆块；\n'
-        '  3. [YS_FACT] 事实块（本条）；\n'
-        '  4. 之后再写面向学员的自然语言诊断与教学建议。\n\n'
-        '若章节正文出现值得长期记住的**结构化事实**（人物属性断言、关键事件、'
-        '支线收束），请在回复中附加 [YS_FACT] JSON 块，供系统沉淀为时序知识图谱。'
-        '增量更新：仅记录当前章节新增或变化的事实，不重复已沉淀内容。'
-        '完全无新事实（无人物属性变化、无关键事件、无支线进展）可不输出该块。\n\n'
-        '格式：\n'
-        '[YS_FACT]\n'
-        '{\n'
-        '  "characters": [\n'
-        '    {"name":"人物名","assertions":[\n'
-        '      {"attribute":"属性名(如独生子女状态/性格/职业/身份)","value":"属性值",'
-        '"chapter":3,"evidence":"原文摘录（≤30字）"}\n'
-        '    ]}\n'
-        '  ],\n'
-        '  "events": [\n'
-        '    {"name":"事件名","event_type":"决定|转折|突发|冲突|日常",'
-        '"chapter":5,"participants":["人物名"],"description":"一句话概述",'
-        '"cause_event_name":"触发本事件的前因事件名（无前因则省略）"}\n'
-        '  ],\n'
-        '  "subplots": [\n'
-        '    {"name":"支线名","introduced_chapter":3,"resolved_chapter":null,'
-        '"description":"支线梗概"}\n'
-        '  ]\n'
-        '}\n'
-        '[/YS_FACT]\n\n'
-        '规则：\n'
-        '- characters：记录本章新增或变化的人物属性断言。attribute 用规范属性名'
-        '（如「独生子女状态」「性格」「职业」「身份」「关系」），value 为原文可验证的具体值，'
-        'chapter 为该断言出现的章节序号。同一人物可多条断言。'
-        'evidence 为该断言在正文中的原句摘录（非转述、非概括），供学员核对依据；'
-        '无对应原文时省略该字段（不填空串）。\n'
-        '- events：记录关键事件（决定/转折/突发类必记，冲突/日常视重要性）。'
-        'event_type 从「决定|转折|突发|冲突|日常」中选一。participants 为参与人物名列表。'
-        'description 一句话概述事件（≤30字）。'
-        'cause_event_name 填触发本事件的前因事件名（须与既有事件 name 一致），'
-        '用于构建因果链；无前因触发（如开篇事件）则省略此字段。\n'
-        '- subplots：记录支线引入或回收。introduced_chapter 填首次引入章节，'
-        'resolved_chapter 填本章回收章节（未回收填 null）。'
-        '若本章回收了既有支线，必须输出该条并填入 resolved_chapter。\n'
-        '- **完整性硬约束**：[YS_FACT] 包裹的 JSON 必须语法合法、完整闭合。'
-        '如担心篇幅，请压缩自然语言诊断说明以保证事实块完整。';
+            '【输出顺序】若同时输出诊断块、实体块与事实块，**必须严格按此顺序**：\n'
+            '  1. [YS_DIAGNOSIS] 症候块（若诊断要求）；\n'
+            '  2. [YS_ENTITY] 实体记忆块；\n'
+            '  3. [YS_FACT] 事实块（本条）；\n'
+            '  4. 之后再写面向学员的自然语言诊断与教学建议。\n\n'
+            '若章节正文出现值得长期记住的**结构化事实**（人物属性断言、关键事件、'
+            '支线收束），请在回复中附加 [YS_FACT] JSON 块，供系统沉淀为时序知识图谱。'
+            '增量更新：仅记录当前章节新增或变化的事实，不重复已沉淀内容。'
+            '完全无新事实（无人物属性变化、无关键事件、无支线进展）可不输出该块。' +
+        rejectBlock +
+        '\n\n格式：\n'
+            '[YS_FACT]\n'
+            '{\n'
+            '  "characters": [\n'
+            '    {"name":"人物名","assertions":[\n'
+            '      {"attribute":"属性名(如独生子女状态/性格/职业/身份)","value":"属性值",'
+            '"chapter":3,"evidence":"原文摘录（≤30字）"}\n'
+            '    ]}\n'
+            '  ],\n'
+            '  "events": [\n'
+            '    {"name":"事件名","event_type":"决定|转折|突发|冲突|日常",'
+            '"chapter":5,"participants":["人物名"],"description":"一句话概述",'
+            '"cause_event_name":"触发本事件的前因事件名（无前因则省略）"}\n'
+            '  ],\n'
+            '  "subplots": [\n'
+            '    {"name":"支线名","introduced_chapter":3,"resolved_chapter":null,'
+            '"description":"支线梗概"}\n'
+            '  ]\n'
+            '}\n'
+            '[/YS_FACT]\n\n'
+            '规则：\n'
+            '- characters：记录本章新增或变化的人物属性断言。attribute 用规范属性名'
+            '（如「独生子女状态」「性格」「职业」「身份」「关系」），value 为原文可验证的具体值，'
+            'chapter 为该断言出现的章节序号。同一人物可多条断言。'
+            'evidence 为该断言在正文中的原句摘录（非转述、非概括），供学员核对依据；'
+            '无对应原文时省略该字段（不填空串）。\n'
+            '- events：记录关键事件（决定/转折/突发类必记，冲突/日常视重要性）。'
+            'event_type 从「决定|转折|突发|冲突|日常」中选一。participants 为参与人物名列表。'
+            'description 一句话概述事件（≤30字）。'
+            'cause_event_name 填触发本事件的前因事件名（须与既有事件 name 一致），'
+            '用于构建因果链；无前因触发（如开篇事件）则省略此字段。\n'
+            '- subplots：记录支线引入或回收。introduced_chapter 填首次引入章节，'
+            'resolved_chapter 填本章回收章节（未回收填 null）。'
+            '若本章回收了既有支线，必须输出该条并填入 resolved_chapter。\n'
+            '- **完整性硬约束**：[YS_FACT] 包裹的 JSON 必须语法合法、完整闭合。'
+            '如担心篇幅，请压缩自然语言诊断说明以保证事实块完整。';
+  }
+
+  /// 拒绝记忆段（源头抑制）：把已否决三元组格式化为协议规则。
+  /// R-019：从 [buildFactProtocolContext] 拆出，控制函数行数 ≤ 50。
+  static String _buildRejectBlock(List<RejectedFact> rejected) {
+    if (rejected.isEmpty) return '';
+    return '\n\n【用户已否决的事实（拒绝记忆）】以下 (人物/设定, 属性, 值) 已被学员'
+        '明确否决，**不得再次作为新事实提议**：\n'
+        '- ${rejected.map((r) => '${r.entity} · ${r.attribute} = ${r.value}').join('\n- ')}';
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -776,7 +792,7 @@ class DiagnosisCommitter {
         name: c.name,
         firstSeenChapter: chapterNo,
         firstSeenAt: now,
-        assertions: c.assertions,
+        assertions: _asAiPending(c.assertions),
         chapterHash: currentHash,
         chapterNo: chapterNo,
       );
@@ -784,6 +800,27 @@ class DiagnosisCommitter {
       added += after - before;
     }
     return added;
+  }
+
+  /// 设定资料库第一批：AI 协议写入的断言统一置 pending（内容校准——
+  /// 待用户裁决后才成为事实）。user 来源（手动录入）与 rejected（拒绝
+  /// 记忆）不动，避免覆写用户主权。
+  static List<CharacterAssertion> _asAiPending(List<CharacterAssertion> input) {
+    return input.map((a) {
+      if (a.source == 'user' || a.status == 'rejected') return a;
+      return CharacterAssertion(
+        attribute: a.attribute,
+        value: a.value,
+        chapter: a.chapter,
+        timestamp: a.timestamp,
+        status: 'pending',
+        source: a.source,
+        evidence: a.evidence,
+        chapterHash: a.chapterHash,
+        stale: a.stale,
+        rejectReason: a.rejectReason,
+      );
+    }).toList();
   }
 
   /// 该角色行当前的断言条数（净新增对账用；行不存在计 0）。
@@ -889,4 +926,21 @@ class DiagnosisCommitter {
       );
     }
   }
+}
+
+/// 拒绝记忆三元组（设定资料库第一批）：(实体, 属性, 值)。
+///
+/// 由 message_injector 从 character/world 表的 rejected 断言聚合，
+/// 经 [DiagnosisCommitter.buildFactProtocolContext] 注入协议规则区，
+/// 源头抑制 AI 重复提议已否决的事实。
+class RejectedFact {
+  final String entity;
+  final String attribute;
+  final String value;
+
+  const RejectedFact({
+    required this.entity,
+    required this.attribute,
+    required this.value,
+  });
 }

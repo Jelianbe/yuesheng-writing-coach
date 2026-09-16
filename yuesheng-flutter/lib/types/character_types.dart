@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────
+﻿// ─────────────────────────────────────────────────────────────
 // character_types — A6 人物知识结构数据类（批次66 B62i）
 //
 // 对齐 V2.0 §1.2 DOME + §3.2 L2 轻量知识结构（TKG）：
@@ -23,7 +23,12 @@ class CharacterAssertion {
   /// 断言时间（unix 秒，时间维度）
   final int timestamp;
 
-  /// C78 D-2：确认状态 confirmed | rejected（无 pending，存量断言默认 confirmed）
+  /// C78 D-2（2026-09-16 修订 · 设定资料库第一批）：确认状态四态
+  /// \pending | confirmed | rejected | superseded\。
+  /// - \pending\：AI 新抽取待用户裁决（AI 协议写入默认；不参与检测/注入）
+  /// - \confirmed\：用户已确认 / 存量断言（默认值，isActiveAssertion 仅认它）
+  /// - ejected\：用户已否决（拒绝记忆本体；不参与检测/注入）
+  /// - \superseded\：合并裁决中被取代（留库不进列表；不参与检测/注入）
   final String status;
 
   /// C78 D-4：来源 ai | user（用户手动修正的断言为 user，不被 AI 覆写）
@@ -104,6 +109,23 @@ class CharacterAssertion {
       chapterHash: chapterHash ?? this.chapterHash,
       stale: stale ?? this.stale,
       rejectReason: rejectReason,
+    );
+  }
+
+  /// 2026-09-16 设定资料库第一批：用户裁决写回（status + 可选拒绝理由）。
+  /// 仿 [withStaleMark]：只改裁决字段，其余原样保留（R-019）。
+  CharacterAssertion withStatus(String status, {String? rejectReason}) {
+    return CharacterAssertion(
+      attribute: attribute,
+      value: value,
+      chapter: chapter,
+      timestamp: timestamp,
+      status: status,
+      source: source,
+      evidence: evidence,
+      chapterHash: chapterHash,
+      stale: stale,
+      rejectReason: rejectReason ?? this.rejectReason,
     );
   }
 
