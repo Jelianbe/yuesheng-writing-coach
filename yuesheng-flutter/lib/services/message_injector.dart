@@ -90,6 +90,7 @@ import 'package:writingcoach/services/outline_service.dart';
 import 'package:writingcoach/services/style_fingerprint.dart';
 import 'package:writingcoach/services/style_technique_router.dart';
 import 'package:writingcoach/services/student_profile.dart';
+import 'package:writingcoach/services/student_profile_format.dart';
 import 'package:writingcoach/services/subplot_closure_detector.dart';
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/services/training_evaluator.dart';
@@ -141,6 +142,10 @@ class MessageInjector {
   /// 批次63（B62b）：L1 意图向量——每个 session 最近 3 次交互意图
   /// 随 _injectProfileAndIntents 迁入
   final Map<String, List<String>> _recentIntentsBySession = {};
+
+  /// A-1c：认知风格注文（无 onboarding 时随画像计算，历史之后追加）。
+  /// 依赖当前会话消息关键词计数，属消息级动态项，不得留在稳定注入段。
+  String? _cognitiveStyleNote;
 
   /// 懒加载大纲服务缓存
   ///（与 ChatService._ensureOutlineService / DiagnosisCommitter._ensureOutlineService 同语义）
@@ -232,6 +237,11 @@ class MessageInjector {
       messages: messages,
     );
     _injectReplyDetailGuidance(content: content, messages: messages);
+    // A-1c：认知风格注文（消息级动态项）追加在历史之后——前缀保持稳定。
+    final note = _cognitiveStyleNote;
+    if (note != null) {
+      messages.add(ChatMessage(role: 'system', content: note));
+    }
   }
 
   /// 5.1 引用内容注入（含 K-8 合并的 _preloadReferenceDetails）。
@@ -475,12 +485,20 @@ class MessageInjector {
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    // A-1c：认知风格段随消息关键词计数变化（消息级动态项），
+    // 从稳定注入段移除，改由 injectTrailingHints 在历史之后追加。
+    _cognitiveStyleNote = null;
     try {
       final profileResult = await buildStudentContext(
         diagnosisRepo: _diagnosisRepo,
         studentModelRepo: _studentModelRepo,
         sessionRepo: _sessionRepo,
         sessionId: sessionId,
+        includeCognitiveStyle: false,
+      );
+      _cognitiveStyleNote = buildCognitiveStyleNote(
+        profileResult.profile,
+        hasOnboarding: profileResult.hasOnboarding,
       );
       if (profileResult.text.isNotEmpty) {
         markStage(BudgetStageNames.studentProfile);

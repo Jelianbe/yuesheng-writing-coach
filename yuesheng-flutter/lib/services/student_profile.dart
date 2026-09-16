@@ -237,6 +237,7 @@ Future<ProfileTextResult> buildStudentContext({
   required StudentModelRepository studentModelRepo,
   required SessionRepository sessionRepo,
   String? sessionId,
+  bool includeCognitiveStyle = true,
 }) async {
   // M1：诊断全局聚合；onboarding 用户级回退（ADR-C71 §3.2）
   final entries = await diagnosisRepo.getAllDiagnoses(sessionId: null);
@@ -271,14 +272,36 @@ Future<ProfileTextResult> buildStudentContext({
     sessionId,
   );
   final styleProfileText = await _loadStyleProfileText(studentModelRepo);
+  return _assembleResult(
+    built,
+    effectivenessText,
+    styleProfileText,
+    effectiveOnboarding,
+    includeCognitiveStyle,
+  );
+}
+
+/// 组装画像文本与结果（R-019 拆出：buildStudentContext）。
+ProfileTextResult _assembleResult(
+  _ProfileWithStagnation built,
+  String? effectivenessText,
+  String? styleProfileText,
+  OnboardingData? effectiveOnboarding,
+  bool includeCognitiveStyle,
+) {
   final fullText = _assembleProfileText(
     built.profile,
     built.stagnation,
     effectivenessText,
     effectiveOnboarding,
     styleProfileText,
+    includeCognitiveStyle,
   );
-  return ProfileTextResult(text: fullText, profile: built.profile);
+  return ProfileTextResult(
+    text: fullText,
+    profile: built.profile,
+    hasOnboarding: effectiveOnboarding != null,
+  );
 }
 
 /// 画像 + 停滞结果（R-019 拆出）。
@@ -317,6 +340,7 @@ ProfileTextResult _emptyProfileResult() {
       syndromeProfile: const {},
       totalSessions: 0,
     ),
+    hasOnboarding: false,
   );
 }
 
@@ -327,12 +351,14 @@ String _assembleProfileText(
   String? effectivenessText,
   OnboardingData? effectiveOnboarding,
   String? styleProfileText,
+  bool includeCognitiveStyle,
 ) {
   final text = formatProfileText(
     profile,
     stagnation,
     effectivenessText,
     effectiveOnboarding,
+    includeCognitiveStyle: includeCognitiveStyle,
   );
   return styleProfileText != null ? '$text\n\n$styleProfileText' : text;
 }

@@ -155,6 +155,27 @@ void main() {
       expect(text, isNot(contains('教学加权')));
     });
 
+    test('A-1c：LLM 注入路径 includeCognitiveStyle=false 时画像不含认知风格段', () {
+      final text = formatProfileText(
+        StudentProfile(
+          proficiency: ProficiencyLevel.elementary,
+          confidence: 0.4,
+          cognitiveStyle: CognitiveStyleInference(
+            style: CognitiveStyle.analytical,
+            confidence: 0.6,
+          ),
+          syndromeProfile: const {},
+          totalSessions: 2,
+        ),
+        null,
+        null,
+        null,
+        includeCognitiveStyle: false,
+      );
+
+      expect(text, isNot(contains('认知风格：')));
+    });
+
     test('totalDiagnoses==3 + 无停滞 → 状态评估正常推进', () {
       final text = formatProfileText(
         StudentProfile(
@@ -220,6 +241,57 @@ void main() {
       // 锚定「训练中的症候」分组段（同 state 两症候都必须列出）
       expect(text, contains('训练中的症候：\n  - 症候甲'));
       expect(text, contains('  - 症候乙：'));
+    });
+  });
+  group('buildCognitiveStyleNote（A-1c）', () {
+    test('onboarding 缺失 + 风格存在：返回注文', () {
+      final note = buildCognitiveStyleNote(
+        StudentProfile(
+          proficiency: ProficiencyLevel.beginner,
+          confidence: 0.5,
+          cognitiveStyle: CognitiveStyleInference(
+            style: CognitiveStyle.analytical,
+            confidence: 0.65,
+          ),
+          syndromeProfile: const {},
+          totalSessions: 1,
+        ),
+        hasOnboarding: false,
+      );
+      expect(note, isNotNull);
+      expect(note, contains('认知风格：'));
+      expect(note, contains('65%'));
+      expect(note, contains('关键词使用频率推断'));
+    });
+
+    test('onboarding 存在：返回 null（与学习偏好同源去重）', () {
+      final note = buildCognitiveStyleNote(
+        StudentProfile(
+          proficiency: ProficiencyLevel.beginner,
+          confidence: 0.5,
+          cognitiveStyle: CognitiveStyleInference(
+            style: CognitiveStyle.intuitive,
+            confidence: 0.5,
+          ),
+          syndromeProfile: const {},
+          totalSessions: 1,
+        ),
+        hasOnboarding: true,
+      );
+      expect(note, isNull);
+    });
+
+    test('风格缺失：返回 null', () {
+      final note = buildCognitiveStyleNote(
+        StudentProfile(
+          proficiency: ProficiencyLevel.beginner,
+          confidence: 0.5,
+          syndromeProfile: const {},
+          totalSessions: 1,
+        ),
+        hasOnboarding: false,
+      );
+      expect(note, isNull);
     });
   });
 }

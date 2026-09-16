@@ -74,8 +74,9 @@ String formatProfileText(
   StudentProfile profile,
   StagnationResult? stagnation,
   String? effectivenessText,
-  OnboardingData? onboarding,
-) {
+  OnboardingData? onboarding, {
+  bool includeCognitiveStyle = true,
+}) {
   final sections = <String>[];
   sections.add('# 学员画像（三步推理，内部使用，不可对用户暴露编号）');
   sections.add('');
@@ -93,6 +94,7 @@ String formatProfileText(
     onboarding,
     stagnation,
     totalDiagnoses,
+    includeCognitiveStyle,
   );
 
   // ── 第三步：教学策略建议 ──
@@ -175,6 +177,7 @@ void _appendProficiencyAssessment(
   OnboardingData? onboarding,
   StagnationResult? stagnation,
   int totalDiagnoses,
+  bool includeCognitiveStyle,
 ) {
   sections.add('## 第二步：能力等级评估');
   sections.add('');
@@ -190,9 +193,32 @@ void _appendProficiencyAssessment(
   // ADR-C71 §3.4：onboarding 存在时，认知风格与上方「学习偏好」同源同值，
   // 重复输出且「依据」行会失实（声称关键词推断，实为问卷自报）——跳过本段，
   // 仅在画像来自关键词推断时展示。
-  _appendCognitiveStyleInfo(sections, profile, onboarding);
+  _appendCognitiveStyleInfo(
+    sections,
+    profile,
+    onboarding,
+    includeCognitiveStyle,
+  );
   _appendStateAssessment(sections, profile, stagnation, totalDiagnoses);
   sections.add('');
+}
+
+/// 认知风格注文（A-1c）：供 LLM 注入路径在历史之后单独追加。
+/// onboarding 存在（与「学习偏好」同源去重，ADR-C71 §3.4）或风格缺失时返回 null。
+String? buildCognitiveStyleNote(
+  StudentProfile profile, {
+  required bool hasOnboarding,
+}) {
+  final style = profile.cognitiveStyle;
+  if (style == null || hasOnboarding) return null;
+  final styleLabel = _cognitiveStyleLabel(style.style);
+  final styleBasis = style.style == CognitiveStyle.analytical
+      ? '分析型'
+      : style.style == CognitiveStyle.intuitive
+      ? '直觉型'
+      : '混合型';
+  return '认知风格：$styleLabel（置信度 ${(style.confidence * 100).toStringAsFixed(0)}%）\n'
+      '依据：基于用户历史 $styleBasis 关键词使用频率推断';
 }
 
 /// 认知风格段（R-019 拆出：_appendProficiencyAssessment）。
@@ -200,18 +226,15 @@ void _appendCognitiveStyleInfo(
   List<String> sections,
   StudentProfile profile,
   OnboardingData? onboarding,
+  bool includeCognitiveStyle,
 ) {
-  if (profile.cognitiveStyle == null || onboarding != null) return;
-  final styleLabel = _cognitiveStyleLabel(profile.cognitiveStyle!.style);
-  sections.add(
-    '认知风格：$styleLabel（置信度 ${(profile.cognitiveStyle!.confidence * 100).toStringAsFixed(0)}%）',
+  if (!includeCognitiveStyle) return;
+  final note = buildCognitiveStyleNote(
+    profile,
+    hasOnboarding: onboarding != null,
   );
-  final styleBasis = profile.cognitiveStyle!.style == CognitiveStyle.analytical
-      ? '分析型'
-      : profile.cognitiveStyle!.style == CognitiveStyle.intuitive
-      ? '直觉型'
-      : '混合型';
-  sections.add('依据：基于用户历史 $styleBasis 关键词使用频率推断');
+  if (note == null) return;
+  sections.add(note);
   sections.add('');
 }
 

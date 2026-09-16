@@ -590,7 +590,15 @@ class StudentProfile {
 class ProfileTextResult {
   final String text;
   final StudentProfile profile;
-  const ProfileTextResult({required this.text, required this.profile});
+
+  /// A-1c：本次构建是否命中有效 onboarding（决定认知风格是否单独注入）
+  final bool hasOnboarding;
+
+  const ProfileTextResult({
+    required this.text,
+    required this.profile,
+    this.hasOnboarding = false,
+  });
 }
 
 /// 能力等级推断结果
