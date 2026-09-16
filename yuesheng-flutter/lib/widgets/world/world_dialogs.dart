@@ -24,6 +24,7 @@ import '../../config/app_theme.dart';
 /// 一空一非空被表单拦截，不会出现在结果里。
 typedef CreateWorldThemeResult = ({
   String name,
+  String description,
   String? attribute,
   String? value,
   int? chapter,
@@ -107,6 +108,7 @@ class _CreateWorldThemeDialog extends StatefulWidget {
 
 class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
   final TextEditingController _nameCtrl = TextEditingController();
+  final TextEditingController _descCtrl = TextEditingController();
   final TextEditingController _attrCtrl = TextEditingController();
   final TextEditingController _valueCtrl = TextEditingController();
   final TextEditingController _chapterCtrl = TextEditingController();
@@ -117,6 +119,7 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
   @override
   void dispose() {
     _nameCtrl.dispose();
+    _descCtrl.dispose();
     _attrCtrl.dispose();
     _valueCtrl.dispose();
     _chapterCtrl.dispose();
@@ -137,6 +140,7 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
     final evidence = _evidenceCtrl.text.trim();
     Navigator.pop(context, (
       name: name,
+      description: _descCtrl.text.trim(),
       attribute: attr.isEmpty ? null : attr,
       value: value.isEmpty ? null : value,
       chapter: int.tryParse(_chapterCtrl.text.trim()),
@@ -153,27 +157,20 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _nameCtrl,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: '主题名（必填）',
-                hintText: '如：灵气体系',
-                errorText: _nameError,
-              ),
-            ),
+            ..._buildTitleFields(),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
-              '── 第一条设定（选填；填了属性就必须填取值）──',
-              style: AppTextStyles.caption,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            _AssertionFormFields(
-              attrCtrl: _attrCtrl,
-              valueCtrl: _valueCtrl,
-              chapterCtrl: _chapterCtrl,
-              evidenceCtrl: _evidenceCtrl,
-              errorText: _assertionError,
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: const Text('结构化这条设定（可选）', style: AppTextStyles.caption),
+              children: [
+                _AssertionFormFields(
+                  attrCtrl: _attrCtrl,
+                  valueCtrl: _valueCtrl,
+                  chapterCtrl: _chapterCtrl,
+                  evidenceCtrl: _evidenceCtrl,
+                  errorText: _assertionError,
+                ),
+              ],
             ),
           ],
         ),
@@ -186,6 +183,32 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
         FilledButton(onPressed: _submit, child: const Text('保存')),
       ],
     );
+  }
+
+  /// R-019 真分解：主题名 + 设定正文（正文优先：正文是主输入，断言收折叠区）。
+  List<Widget> _buildTitleFields() {
+    return [
+      TextField(
+        controller: _nameCtrl,
+        autofocus: true,
+        decoration: InputDecoration(
+          labelText: '主题名（必填）',
+          hintText: '如：灵气体系',
+          errorText: _nameError,
+        ),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      TextField(
+        controller: _descCtrl,
+        minLines: 4,
+        maxLines: 8,
+        decoration: const InputDecoration(
+          labelText: '设定正文（推荐）',
+          hintText: '先写下这个设定的内容——它是什么、怎么运作、有什么规则……',
+          alignLabelWithHint: true,
+        ),
+      ),
+    ];
   }
 }
 

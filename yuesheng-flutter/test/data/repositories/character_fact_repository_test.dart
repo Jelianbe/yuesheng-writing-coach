@@ -486,4 +486,36 @@ void main() {
       },
     );
   });
+
+  test('#12 设定库第四批：updateCharacterDescription 写正文（用户主权区）', () async {
+    await repo.upsertCharacter(manuscriptId: manuscriptId, name: '林晚');
+    // 行不存在 → 静默跳过
+    await repo.updateCharacterDescription(
+      manuscriptId: manuscriptId,
+      name: '不存在的人',
+      description: 'x',
+    );
+    // 写正文 → 读回
+    await repo.updateCharacterDescription(
+      manuscriptId: manuscriptId,
+      name: '林晚',
+      description: '外冷内热，出身灵修世家',
+    );
+    final got = await repo.getCharacter(manuscriptId, '林晚');
+    expect(got!.description, '外冷内热，出身灵修世家');
+    // 覆盖写（编辑正文）
+    await repo.updateCharacterDescription(
+      manuscriptId: manuscriptId,
+      name: '林晚',
+      description: '外冷内热，出身灵修世家；后叛出师门',
+    );
+    final got2 = await repo.getCharacter(manuscriptId, '林晚');
+    expect(got2!.description, contains('叛出师门'));
+  });
+
+  test('#13 AI 链路不失效：upsertCharacter 不传 description → 空串', () async {
+    await repo.upsertCharacter(manuscriptId: manuscriptId, name: '阿禾');
+    final got = await repo.getCharacter(manuscriptId, '阿禾');
+    expect(got!.description, '');
+  });
 }

@@ -1,4 +1,4 @@
-﻿// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 // migration_v27_test — ADR-C78 批次1 v26 → v27 迁移路径测试
 //
 // 模拟真实升级：用 sqlite3 手工构造 v26 存量库文件（character_fact 无
@@ -101,7 +101,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 32);
+    expect(version.read<int>('user_version'), 33);
 
     // 2. 4 个新列全部存在
     expect(
@@ -164,7 +164,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 32);
+    expect(version.read<int>('user_version'), 33);
 
     // 列数未因重复 ALTER 而膨胀
     final cfCols = await db2
@@ -172,7 +172,11 @@ void main() {
           "SELECT COUNT(*) AS c FROM pragma_table_info('character_fact')",
         )
         .getSingle();
-    expect(cfCols.read<int>('c'), 10, reason: 'character_fact 列被重复添加');
+    expect(
+      cfCols.read<int>('c'),
+      11,
+      reason: 'character_fact 列被重复添加（v33 加 description）',
+    );
     final efCols = await db2
         .customSelect(
           "SELECT COUNT(*) AS c FROM pragma_table_info('event_fact')",

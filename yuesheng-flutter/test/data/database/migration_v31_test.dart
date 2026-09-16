@@ -141,7 +141,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 32);
+    expect(version.read<int>('user_version'), 33);
 
     expect(
       await _tableExists(db, 'world_fact'),
@@ -175,7 +175,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 32);
+    expect(version.read<int>('user_version'), 33);
 
     expect(
       await _tableExists(db, 'world_fact'),
@@ -205,7 +205,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 32);
+    expect(version.read<int>('user_version'), 33);
     expect(await _tableExists(db2, 'world_fact'), isTrue);
 
     final dup = await db2

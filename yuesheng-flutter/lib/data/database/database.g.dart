@@ -9333,6 +9333,18 @@ class $CharacterFactsTable extends CharacterFacts
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _aliasesMeta = const VerificationMeta(
     'aliases',
   );
@@ -9387,6 +9399,7 @@ class $CharacterFactsTable extends CharacterFacts
     firstSeenChapter,
     firstSeenAt,
     assertions,
+    description,
     aliases,
     status,
     createdAt,
@@ -9452,6 +9465,15 @@ class $CharacterFactsTable extends CharacterFacts
         assertions.isAcceptableOrUnknown(data['assertions']!, _assertionsMeta),
       );
     }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('aliases')) {
       context.handle(
         _aliasesMeta,
@@ -9513,6 +9535,10 @@ class $CharacterFactsTable extends CharacterFacts
         DriftSqlType.string,
         data['${effectivePrefix}assertions'],
       )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
       aliases: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}aliases'],
@@ -9545,6 +9571,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
   final int? firstSeenChapter;
   final int? firstSeenAt;
   final String assertions;
+  final String description;
   final String aliases;
   final String status;
   final int createdAt;
@@ -9556,6 +9583,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     this.firstSeenChapter,
     this.firstSeenAt,
     required this.assertions,
+    required this.description,
     required this.aliases,
     required this.status,
     required this.createdAt,
@@ -9574,6 +9602,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       map['first_seen_at'] = Variable<int>(firstSeenAt);
     }
     map['assertions'] = Variable<String>(assertions);
+    map['description'] = Variable<String>(description);
     map['aliases'] = Variable<String>(aliases);
     map['status'] = Variable<String>(status);
     map['created_at'] = Variable<int>(createdAt);
@@ -9593,6 +9622,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           ? const Value.absent()
           : Value(firstSeenAt),
       assertions: Value(assertions),
+      description: Value(description),
       aliases: Value(aliases),
       status: Value(status),
       createdAt: Value(createdAt),
@@ -9612,6 +9642,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       firstSeenChapter: serializer.fromJson<int?>(json['firstSeenChapter']),
       firstSeenAt: serializer.fromJson<int?>(json['firstSeenAt']),
       assertions: serializer.fromJson<String>(json['assertions']),
+      description: serializer.fromJson<String>(json['description']),
       aliases: serializer.fromJson<String>(json['aliases']),
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
@@ -9628,6 +9659,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       'firstSeenChapter': serializer.toJson<int?>(firstSeenChapter),
       'firstSeenAt': serializer.toJson<int?>(firstSeenAt),
       'assertions': serializer.toJson<String>(assertions),
+      'description': serializer.toJson<String>(description),
       'aliases': serializer.toJson<String>(aliases),
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<int>(createdAt),
@@ -9642,6 +9674,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     Value<int?> firstSeenChapter = const Value.absent(),
     Value<int?> firstSeenAt = const Value.absent(),
     String? assertions,
+    String? description,
     String? aliases,
     String? status,
     int? createdAt,
@@ -9655,6 +9688,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
         : this.firstSeenChapter,
     firstSeenAt: firstSeenAt.present ? firstSeenAt.value : this.firstSeenAt,
     assertions: assertions ?? this.assertions,
+    description: description ?? this.description,
     aliases: aliases ?? this.aliases,
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
@@ -9676,6 +9710,9 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       assertions: data.assertions.present
           ? data.assertions.value
           : this.assertions,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       aliases: data.aliases.present ? data.aliases.value : this.aliases,
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -9692,6 +9729,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           ..write('firstSeenChapter: $firstSeenChapter, ')
           ..write('firstSeenAt: $firstSeenAt, ')
           ..write('assertions: $assertions, ')
+          ..write('description: $description, ')
           ..write('aliases: $aliases, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
@@ -9708,6 +9746,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     firstSeenChapter,
     firstSeenAt,
     assertions,
+    description,
     aliases,
     status,
     createdAt,
@@ -9723,6 +9762,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           other.firstSeenChapter == this.firstSeenChapter &&
           other.firstSeenAt == this.firstSeenAt &&
           other.assertions == this.assertions &&
+          other.description == this.description &&
           other.aliases == this.aliases &&
           other.status == this.status &&
           other.createdAt == this.createdAt &&
@@ -9736,6 +9776,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
   final Value<int?> firstSeenChapter;
   final Value<int?> firstSeenAt;
   final Value<String> assertions;
+  final Value<String> description;
   final Value<String> aliases;
   final Value<String> status;
   final Value<int> createdAt;
@@ -9748,6 +9789,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     this.firstSeenChapter = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
     this.assertions = const Value.absent(),
+    this.description = const Value.absent(),
     this.aliases = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -9761,6 +9803,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     this.firstSeenChapter = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
     this.assertions = const Value.absent(),
+    this.description = const Value.absent(),
     this.aliases = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -9776,6 +9819,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     Expression<int>? firstSeenChapter,
     Expression<int>? firstSeenAt,
     Expression<String>? assertions,
+    Expression<String>? description,
     Expression<String>? aliases,
     Expression<String>? status,
     Expression<int>? createdAt,
@@ -9789,6 +9833,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
       if (firstSeenChapter != null) 'first_seen_chapter': firstSeenChapter,
       if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
       if (assertions != null) 'assertions': assertions,
+      if (description != null) 'description': description,
       if (aliases != null) 'aliases': aliases,
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
@@ -9804,6 +9849,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     Value<int?>? firstSeenChapter,
     Value<int?>? firstSeenAt,
     Value<String>? assertions,
+    Value<String>? description,
     Value<String>? aliases,
     Value<String>? status,
     Value<int>? createdAt,
@@ -9817,6 +9863,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
       firstSeenChapter: firstSeenChapter ?? this.firstSeenChapter,
       firstSeenAt: firstSeenAt ?? this.firstSeenAt,
       assertions: assertions ?? this.assertions,
+      description: description ?? this.description,
       aliases: aliases ?? this.aliases,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
@@ -9846,6 +9893,9 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     if (assertions.present) {
       map['assertions'] = Variable<String>(assertions.value);
     }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (aliases.present) {
       map['aliases'] = Variable<String>(aliases.value);
     }
@@ -9873,6 +9923,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
           ..write('firstSeenChapter: $firstSeenChapter, ')
           ..write('firstSeenAt: $firstSeenAt, ')
           ..write('assertions: $assertions, ')
+          ..write('description: $description, ')
           ..write('aliases: $aliases, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
@@ -14139,6 +14190,18 @@ class $WorldFactsTable extends WorldFacts
     requiredDuringInsert: false,
     defaultValue: const Constant('[]'),
   );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   @override
   late final GeneratedColumn<String> status = GeneratedColumn<String>(
@@ -14181,6 +14244,7 @@ class $WorldFactsTable extends WorldFacts
     firstSeenChapter,
     firstSeenAt,
     assertions,
+    description,
     status,
     createdAt,
     updatedAt,
@@ -14245,6 +14309,15 @@ class $WorldFactsTable extends WorldFacts
         assertions.isAcceptableOrUnknown(data['assertions']!, _assertionsMeta),
       );
     }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('status')) {
       context.handle(
         _statusMeta,
@@ -14300,6 +14373,10 @@ class $WorldFactsTable extends WorldFacts
         DriftSqlType.string,
         data['${effectivePrefix}assertions'],
       )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
       status: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}status'],
@@ -14328,6 +14405,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
   final int? firstSeenChapter;
   final int? firstSeenAt;
   final String assertions;
+  final String description;
   final String status;
   final int createdAt;
   final int updatedAt;
@@ -14338,6 +14416,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
     this.firstSeenChapter,
     this.firstSeenAt,
     required this.assertions,
+    required this.description,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -14355,6 +14434,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
       map['first_seen_at'] = Variable<int>(firstSeenAt);
     }
     map['assertions'] = Variable<String>(assertions);
+    map['description'] = Variable<String>(description);
     map['status'] = Variable<String>(status);
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
@@ -14373,6 +14453,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
           ? const Value.absent()
           : Value(firstSeenAt),
       assertions: Value(assertions),
+      description: Value(description),
       status: Value(status),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
@@ -14391,6 +14472,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
       firstSeenChapter: serializer.fromJson<int?>(json['firstSeenChapter']),
       firstSeenAt: serializer.fromJson<int?>(json['firstSeenAt']),
       assertions: serializer.fromJson<String>(json['assertions']),
+      description: serializer.fromJson<String>(json['description']),
       status: serializer.fromJson<String>(json['status']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
@@ -14406,6 +14488,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
       'firstSeenChapter': serializer.toJson<int?>(firstSeenChapter),
       'firstSeenAt': serializer.toJson<int?>(firstSeenAt),
       'assertions': serializer.toJson<String>(assertions),
+      'description': serializer.toJson<String>(description),
       'status': serializer.toJson<String>(status),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
@@ -14419,6 +14502,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
     Value<int?> firstSeenChapter = const Value.absent(),
     Value<int?> firstSeenAt = const Value.absent(),
     String? assertions,
+    String? description,
     String? status,
     int? createdAt,
     int? updatedAt,
@@ -14431,6 +14515,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
         : this.firstSeenChapter,
     firstSeenAt: firstSeenAt.present ? firstSeenAt.value : this.firstSeenAt,
     assertions: assertions ?? this.assertions,
+    description: description ?? this.description,
     status: status ?? this.status,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -14451,6 +14536,9 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
       assertions: data.assertions.present
           ? data.assertions.value
           : this.assertions,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       status: data.status.present ? data.status.value : this.status,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -14466,6 +14554,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
           ..write('firstSeenChapter: $firstSeenChapter, ')
           ..write('firstSeenAt: $firstSeenAt, ')
           ..write('assertions: $assertions, ')
+          ..write('description: $description, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
@@ -14481,6 +14570,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
     firstSeenChapter,
     firstSeenAt,
     assertions,
+    description,
     status,
     createdAt,
     updatedAt,
@@ -14495,6 +14585,7 @@ class WorldFact extends DataClass implements Insertable<WorldFact> {
           other.firstSeenChapter == this.firstSeenChapter &&
           other.firstSeenAt == this.firstSeenAt &&
           other.assertions == this.assertions &&
+          other.description == this.description &&
           other.status == this.status &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
@@ -14507,6 +14598,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
   final Value<int?> firstSeenChapter;
   final Value<int?> firstSeenAt;
   final Value<String> assertions;
+  final Value<String> description;
   final Value<String> status;
   final Value<int> createdAt;
   final Value<int> updatedAt;
@@ -14518,6 +14610,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
     this.firstSeenChapter = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
     this.assertions = const Value.absent(),
+    this.description = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -14530,6 +14623,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
     this.firstSeenChapter = const Value.absent(),
     this.firstSeenAt = const Value.absent(),
     this.assertions = const Value.absent(),
+    this.description = const Value.absent(),
     this.status = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -14544,6 +14638,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
     Expression<int>? firstSeenChapter,
     Expression<int>? firstSeenAt,
     Expression<String>? assertions,
+    Expression<String>? description,
     Expression<String>? status,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
@@ -14556,6 +14651,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
       if (firstSeenChapter != null) 'first_seen_chapter': firstSeenChapter,
       if (firstSeenAt != null) 'first_seen_at': firstSeenAt,
       if (assertions != null) 'assertions': assertions,
+      if (description != null) 'description': description,
       if (status != null) 'status': status,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -14570,6 +14666,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
     Value<int?>? firstSeenChapter,
     Value<int?>? firstSeenAt,
     Value<String>? assertions,
+    Value<String>? description,
     Value<String>? status,
     Value<int>? createdAt,
     Value<int>? updatedAt,
@@ -14582,6 +14679,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
       firstSeenChapter: firstSeenChapter ?? this.firstSeenChapter,
       firstSeenAt: firstSeenAt ?? this.firstSeenAt,
       assertions: assertions ?? this.assertions,
+      description: description ?? this.description,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -14610,6 +14708,9 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
     if (assertions.present) {
       map['assertions'] = Variable<String>(assertions.value);
     }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
@@ -14634,6 +14735,7 @@ class WorldFactsCompanion extends UpdateCompanion<WorldFact> {
           ..write('firstSeenChapter: $firstSeenChapter, ')
           ..write('firstSeenAt: $firstSeenAt, ')
           ..write('assertions: $assertions, ')
+          ..write('description: $description, ')
           ..write('status: $status, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
@@ -23494,6 +23596,7 @@ typedef $$CharacterFactsTableCreateCompanionBuilder =
       Value<int?> firstSeenChapter,
       Value<int?> firstSeenAt,
       Value<String> assertions,
+      Value<String> description,
       Value<String> aliases,
       Value<String> status,
       Value<int> createdAt,
@@ -23508,6 +23611,7 @@ typedef $$CharacterFactsTableUpdateCompanionBuilder =
       Value<int?> firstSeenChapter,
       Value<int?> firstSeenAt,
       Value<String> assertions,
+      Value<String> description,
       Value<String> aliases,
       Value<String> status,
       Value<int> createdAt,
@@ -23574,6 +23678,11 @@ class $$CharacterFactsTableFilterComposer
 
   ColumnFilters<String> get assertions => $composableBuilder(
     column: $table.assertions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -23655,6 +23764,11 @@ class $$CharacterFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get aliases => $composableBuilder(
     column: $table.aliases,
     builder: (column) => ColumnOrderings(column),
@@ -23726,6 +23840,11 @@ class $$CharacterFactsTableAnnotationComposer
 
   GeneratedColumn<String> get assertions => $composableBuilder(
     column: $table.assertions,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => column,
   );
 
@@ -23801,6 +23920,7 @@ class $$CharacterFactsTableTableManager
                 Value<int?> firstSeenChapter = const Value.absent(),
                 Value<int?> firstSeenAt = const Value.absent(),
                 Value<String> assertions = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<String> aliases = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -23813,6 +23933,7 @@ class $$CharacterFactsTableTableManager
                 firstSeenChapter: firstSeenChapter,
                 firstSeenAt: firstSeenAt,
                 assertions: assertions,
+                description: description,
                 aliases: aliases,
                 status: status,
                 createdAt: createdAt,
@@ -23827,6 +23948,7 @@ class $$CharacterFactsTableTableManager
                 Value<int?> firstSeenChapter = const Value.absent(),
                 Value<int?> firstSeenAt = const Value.absent(),
                 Value<String> assertions = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<String> aliases = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -23839,6 +23961,7 @@ class $$CharacterFactsTableTableManager
                 firstSeenChapter: firstSeenChapter,
                 firstSeenAt: firstSeenAt,
                 assertions: assertions,
+                description: description,
                 aliases: aliases,
                 status: status,
                 createdAt: createdAt,
@@ -26792,6 +26915,7 @@ typedef $$WorldFactsTableCreateCompanionBuilder =
       Value<int?> firstSeenChapter,
       Value<int?> firstSeenAt,
       Value<String> assertions,
+      Value<String> description,
       Value<String> status,
       Value<int> createdAt,
       Value<int> updatedAt,
@@ -26805,6 +26929,7 @@ typedef $$WorldFactsTableUpdateCompanionBuilder =
       Value<int?> firstSeenChapter,
       Value<int?> firstSeenAt,
       Value<String> assertions,
+      Value<String> description,
       Value<String> status,
       Value<int> createdAt,
       Value<int> updatedAt,
@@ -26866,6 +26991,11 @@ class $$WorldFactsTableFilterComposer
 
   ColumnFilters<String> get assertions => $composableBuilder(
     column: $table.assertions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -26942,6 +27072,11 @@ class $$WorldFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get status => $composableBuilder(
     column: $table.status,
     builder: (column) => ColumnOrderings(column),
@@ -27008,6 +27143,11 @@ class $$WorldFactsTableAnnotationComposer
 
   GeneratedColumn<String> get assertions => $composableBuilder(
     column: $table.assertions,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
     builder: (column) => column,
   );
 
@@ -27078,6 +27218,7 @@ class $$WorldFactsTableTableManager
                 Value<int?> firstSeenChapter = const Value.absent(),
                 Value<int?> firstSeenAt = const Value.absent(),
                 Value<String> assertions = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
@@ -27089,6 +27230,7 @@ class $$WorldFactsTableTableManager
                 firstSeenChapter: firstSeenChapter,
                 firstSeenAt: firstSeenAt,
                 assertions: assertions,
+                description: description,
                 status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
@@ -27102,6 +27244,7 @@ class $$WorldFactsTableTableManager
                 Value<int?> firstSeenChapter = const Value.absent(),
                 Value<int?> firstSeenAt = const Value.absent(),
                 Value<String> assertions = const Value.absent(),
+                Value<String> description = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
@@ -27113,6 +27256,7 @@ class $$WorldFactsTableTableManager
                 firstSeenChapter: firstSeenChapter,
                 firstSeenAt: firstSeenAt,
                 assertions: assertions,
+                description: description,
                 status: status,
                 createdAt: createdAt,
                 updatedAt: updatedAt,

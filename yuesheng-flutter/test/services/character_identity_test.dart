@@ -76,6 +76,7 @@ void main() {
       assertions: jsonEncode(
         assertions.map((x) => x.toJson()).toList(growable: false),
       ),
+      description: '',
       aliases: jsonEncode(aliases),
       status: status,
       createdAt: 1000,

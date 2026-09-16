@@ -251,14 +251,14 @@ void main() {
       await tester.tap(find.text('+ 新建'));
       await tester.pumpAndSettle();
 
-      // 弹窗内两个输入框：0 = 名字，1 = 首见章节
+      // 弹窗内三个输入框：0 = 名字，1 = 设定正文（可空），2 = 首见章节
       //（必须限定在 AlertDialog 内——页面搜索框也是 TextField）
       final dialogFields = find.descendant(
         of: find.byType(AlertDialog),
         matching: find.byType(TextField),
       );
       await tester.enterText(dialogFields.at(0), '王建国');
-      await tester.enterText(dialogFields.at(1), '2');
+      await tester.enterText(dialogFields.at(2), '2');
       await tester.tap(find.text('创建'));
       await tester.pumpAndSettle();
 

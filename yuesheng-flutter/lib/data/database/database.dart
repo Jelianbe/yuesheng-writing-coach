@@ -59,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -219,7 +219,8 @@ class AppDatabase extends _$AppDatabase {
       //   才没暴露；world_fact 是 CREATE TABLE、自愈兜不住，故由
       //   migration_v31_test #1/#3 死守这条契约。
       // P0-1教学线：守卫上移到 32（v32 块对 from=31 存量库可达，冪等 ALTER ADD COLUMN）
-      if (from >= 32) return;
+      // 设定库第四批：守卫上移到 33（v33 块对 from=32 存量库可达，冪等 ALTER ADD COLUMN）
+      if (from >= 33) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -950,6 +951,26 @@ class AppDatabase extends _$AppDatabase {
 
       // A-2：稳定 ID 标记语法已在解析层（mention_parser）落地，
       //      不再需要 ref_title 快照列（死 schema，评审移除）。
+
+      // v33: 设定资料库第四批 — 用户视角设定库（正文优先）
+      // character_fact / world_fact 加 description 列（条目正文，用户自由写作）。
+      // KV 断言（assertions）不变：AI 抽取 / 矛盾检测 / merge 的地基零改动。
+      // 默认 '' 兼容现有写入（不传 description = 空正文，AI 链路不失效）。
+      if (from < 33) {
+        for (final t in const ['character_fact', 'world_fact']) {
+          if (await tableExists(t)) {
+            final cols = await customSelect(
+              "SELECT name FROM pragma_table_info('$t')",
+            ).get();
+            final names = cols.map((r) => r.read<String>('name')).toSet();
+            if (cols.isNotEmpty && !names.contains('description')) {
+              await customStatement(
+                "ALTER TABLE $t ADD COLUMN description TEXT NOT NULL DEFAULT ''",
+              );
+            }
+          }
+        }
+      }
     },
 
     beforeOpen: (details) async {

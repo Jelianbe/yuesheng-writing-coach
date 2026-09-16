@@ -15,6 +15,8 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+
+import '../setting/setting_description_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
@@ -89,6 +91,22 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
     if (ok) _load();
   }
 
+  Future<void> _editDescription() async {
+    final next = await showDescriptionEditDialog(
+      context,
+      initial: _row?.description ?? '',
+    );
+    if (next == null || !mounted) return;
+    await WorldFactRepository(
+      ref.read(appDatabaseProvider),
+    ).updateWorldDescription(
+      manuscriptId: widget.manuscriptId,
+      name: _row!.name,
+      description: next,
+    );
+    _load();
+  }
+
   /// 归档本主题（R5）：确认弹窗 → 软归档 → §6-F SnackBar → 返回列表。
   Future<void> _archive() async {
     final row = _row;
@@ -136,6 +154,10 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
                   firstSeenChapter: row!.firstSeenChapter,
                   assertionCount: _assertions.length,
                   onAppend: _append,
+                ),
+                SettingDescriptionCard(
+                  description: row.description,
+                  onEdit: _editDescription,
                 ),
                 ..._assertionWidgets(),
                 _WorldArchiveAction(

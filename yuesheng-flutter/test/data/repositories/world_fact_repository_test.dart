@@ -347,4 +347,33 @@ void main() {
     expect(list.length, 1, reason: '反复恢复不得产生重复行');
     expect(list.single.status, 'active', reason: '状态收敛于 active');
   });
+
+  test('#12 设定库第四批：updateWorldDescription 写正文（用户主权区）', () async {
+    await repo.upsertWorld(manuscriptId: manuscriptId, name: '灵气体系');
+    await repo.updateWorldDescription(
+      manuscriptId: manuscriptId,
+      name: '不存在',
+      description: 'x',
+    );
+    await repo.updateWorldDescription(
+      manuscriptId: manuscriptId,
+      name: '灵气体系',
+      description: '灵气浓度由北方向南方递减',
+    );
+    final got = await repo.getWorld(manuscriptId, '灵气体系');
+    expect(got!.description, '灵气浓度由北方向南方递减');
+    await repo.updateWorldDescription(
+      manuscriptId: manuscriptId,
+      name: '灵气体系',
+      description: '灵气浓度由北方向南方递减；北方灵脉枯竭',
+    );
+    final got2 = await repo.getWorld(manuscriptId, '灵气体系');
+    expect(got2!.description, contains('灵脉枯竭'));
+  });
+
+  test('#13 AI 链路不失效：upsertWorld 不传 description → 空串', () async {
+    await repo.upsertWorld(manuscriptId: manuscriptId, name: '炼器');
+    final got = await repo.getWorld(manuscriptId, '炼器');
+    expect(got!.description, '');
+  });
 }

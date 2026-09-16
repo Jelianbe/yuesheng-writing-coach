@@ -11,6 +11,8 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+
+import '../setting/setting_description_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -142,6 +144,10 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   onMerge: _mergeInto,
                   onEditAliases: _editAliases,
                 ),
+                SettingDescriptionCard(
+                  description: row.description,
+                  onEdit: _editDescription,
+                ),
                 if (_since != null)
                   CharacterRecentBanner(
                     visibleCount: _visibleAssertions.length,
@@ -216,6 +222,22 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     final next = await showAliasEditDialog(context, _aliases);
     if (next == null || !mounted) return;
     await _editor.updateAliases(characterId: widget.characterId, aliases: next);
+    _load();
+  }
+
+  Future<void> _editDescription() async {
+    final next = await showDescriptionEditDialog(
+      context,
+      initial: _row?.description ?? '',
+    );
+    if (next == null || !mounted) return;
+    await CharacterFactRepository(
+      ref.read(appDatabaseProvider),
+    ).updateCharacterDescription(
+      manuscriptId: widget.manuscriptId,
+      name: _row!.name,
+      description: next,
+    );
     _load();
   }
 

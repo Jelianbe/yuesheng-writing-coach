@@ -77,6 +77,13 @@ Future<bool> showAndCreateWorldTheme(
         ),
     ],
   );
+  if (created.description.isNotEmpty) {
+    await repo.updateWorldDescription(
+      manuscriptId: manuscriptId,
+      name: created.name,
+      description: created.description,
+    );
+  }
   return true;
 }
 

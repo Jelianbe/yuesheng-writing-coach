@@ -53,6 +53,27 @@ class CharacterFactRepository {
     );
   });
 
+  /// 设定资料库第四批：写条目正文（用户自由写作；R-009 用户主权区）。
+  /// 不走 [upsertCharacter]——AI 合并语义只管 assertions，正文是独立列。
+  /// 行不存在则静默跳过（与 [replaceAssertions] 同语义）。
+  Future<void> updateCharacterDescription({
+    required String manuscriptId,
+    required String name,
+    required String description,
+  }) =>
+      guardRepoWrite('character_fact', 'updateCharacterDescription', () async {
+        final row = await _findCharacter(manuscriptId, name);
+        if (row == null) return;
+        await (_db.update(
+          _db.characterFacts,
+        )..where((t) => t.id.equals(row.id))).write(
+          CharacterFactsCompanion(
+            description: Value(description),
+            updatedAt: Value(nowSec()),
+          ),
+        );
+      });
+
   Future<void> upsertCharacter({
     required String manuscriptId,
     required String name,

@@ -16,8 +16,12 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 
-/// 新建角色结果：(名字, 首见章节?)
-typedef CreateCharacterResult = ({String name, int? firstSeenChapter});
+/// 新建角色结果：(名字, 首见章节?, 正文?（用户自由写作，正文优先）)
+typedef CreateCharacterResult = ({
+  String name,
+  int? firstSeenChapter,
+  String description,
+});
 
 /// 断言表单结果：(属性, 值, 章节?)
 typedef AssertionFormResult = ({String attribute, String value, int? chapter});
@@ -28,25 +32,21 @@ const List<String> kRejectReasons = ['抽取错误', '章节已改写', '重复'
 Future<CreateCharacterResult?> showCreateCharacterDialog(BuildContext context) {
   final nameCtrl = TextEditingController();
   final chapterCtrl = TextEditingController();
+  final descCtrl = TextEditingController();
   return showDialog<CreateCharacterResult>(
     context: context,
     builder: (ctx) => AlertDialog(
       title: const Text('新建角色', style: AppTextStyles.titleLg),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: nameCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: '名字（必填）'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _buildCreateCharacterFields(
+            nameCtrl,
+            chapterCtrl,
+            descCtrl,
           ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: chapterCtrl,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: '首次登场章节（可选）'),
-          ),
-        ],
+        ),
       ),
       actions: [
         TextButton(
@@ -58,13 +58,49 @@ Future<CreateCharacterResult?> showCreateCharacterDialog(BuildContext context) {
             final name = nameCtrl.text.trim();
             if (name.isEmpty) return;
             final chapter = int.tryParse(chapterCtrl.text.trim());
-            Navigator.pop(ctx, (name: name, firstSeenChapter: chapter));
+            Navigator.pop(ctx, (
+              name: name,
+              firstSeenChapter: chapter,
+              description: descCtrl.text.trim(),
+            ));
           },
           child: const Text('创建'),
         ),
       ],
     ),
   );
+}
+
+/// R-019 真分解：新建角色表单字段（名字 + 角色设定正文 + 首见章节，正文优先）。
+List<Widget> _buildCreateCharacterFields(
+  TextEditingController nameCtrl,
+  TextEditingController chapterCtrl,
+  TextEditingController descCtrl,
+) {
+  return [
+    TextField(
+      controller: nameCtrl,
+      autofocus: true,
+      decoration: const InputDecoration(labelText: '名字（必填）'),
+    ),
+    const SizedBox(height: AppSpacing.sm),
+    TextField(
+      controller: descCtrl,
+      minLines: 3,
+      maxLines: 6,
+      decoration: const InputDecoration(
+        labelText: '角色设定（可选）',
+        hintText: '先写下这个角色是谁——外貌、性格、背景、动机……',
+        alignLabelWithHint: true,
+      ),
+    ),
+    const SizedBox(height: AppSpacing.md),
+    TextField(
+      controller: chapterCtrl,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(labelText: '首次登场章节（可选）'),
+    ),
+  ];
 }
 
 /// 断言表单：[title] 区分「补充断言」/「修正断言」；初值来自被修正条。

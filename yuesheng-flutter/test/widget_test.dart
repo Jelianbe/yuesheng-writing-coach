@@ -64,12 +64,14 @@ void main() {
       // C78 批次1 → 27 角色标签页列：character_fact.aliases/status，
       // event_fact.stale/chapter_hash；ADR-C91 → 28 ai_accounts 表；
       // v29 → backup_history 备份记录表；
-      // E1（书籍级成长叙事）→ 31 world_fact 世界观设定条目表）
+      // E1（书籍级成长叙事）→ 31 world_fact 世界观设定条目表；
+      // P0-1 教学线 → 32 training_results 自评三维证据；
+      // 设定库第四批 → 33 character_fact/world_fact description 正文列）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        32,
-        reason: 'schemaVersion 应为 31',
+        33,
+        reason: 'schemaVersion 应为 33',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

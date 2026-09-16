@@ -46,12 +46,20 @@ Future<bool> showAndCreateCharacter(
 ) async {
   final created = await showCreateCharacterDialog(context);
   if (created == null) return false;
-  await CharacterFactRepository(ref.read(appDatabaseProvider)).upsertCharacter(
+  final repo = CharacterFactRepository(ref.read(appDatabaseProvider));
+  await repo.upsertCharacter(
     manuscriptId: manuscriptId,
     name: created.name,
     firstSeenChapter: created.firstSeenChapter,
     firstSeenAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
   );
+  if (created.description.isNotEmpty) {
+    await repo.updateCharacterDescription(
+      manuscriptId: manuscriptId,
+      name: created.name,
+      description: created.description,
+    );
+  }
   return true;
 }
 

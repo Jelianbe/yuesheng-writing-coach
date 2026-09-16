@@ -516,6 +516,9 @@ class CharacterFacts extends Table {
   IntColumn get firstSeenAt => integer().nullable()(); // 首次出现时间（unix 秒）
   TextColumn get assertions =>
       text().withDefault(const Constant('[]'))(); // JSON CharacterAssertion[]
+  TextColumn get description => text().withDefault(
+    const Constant(''),
+  )(); // 设定资料库第四批：条目正文（用户自由写作；AI 抽取的 KV 断言仍走 assertions）
   TextColumn get aliases =>
       text().withDefault(const Constant('[]'))(); // C78 D-1：并入主角色的源名归档
   TextColumn get status =>
@@ -790,6 +793,9 @@ class WorldFacts extends Table {
   IntColumn get firstSeenAt => integer().nullable()(); // 首次提出时间（unix 秒）
   TextColumn get assertions =>
       text().withDefault(const Constant('[]'))(); // JSON CharacterAssertion[]
+  TextColumn get description => text().withDefault(
+    const Constant(''),
+  )(); // 设定资料库第四批：条目正文（用户自由写作；AI 抽取的 KV 断言仍走 assertions）
   TextColumn get status =>
       text().withDefault(const Constant('active'))(); // active | archived
   IntColumn get createdAt =>

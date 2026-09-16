@@ -69,6 +69,24 @@ class WorldFactRepository {
     );
   });
 
+  /// 设定资料库第四批：写条目正文（用户自由写作；R-009 用户主权区）。
+  /// 不走 [upsertWorld]——AI 合并语义只管 assertions，正文是独立列。
+  /// 行不存在则静默跳过（与 [replaceAssertions] 同语义）。
+  Future<void> updateWorldDescription({
+    required String manuscriptId,
+    required String name,
+    required String description,
+  }) => guardRepoWrite('world_fact', 'updateWorldDescription', () async {
+    final row = await _findWorld(manuscriptId, name);
+    if (row == null) return;
+    await (_db.update(_db.worldFacts)..where((t) => t.id.equals(row.id))).write(
+      WorldFactsCompanion(
+        description: Value(description),
+        updatedAt: Value(nowSec()),
+      ),
+    );
+  });
+
   Future<void> upsertWorld({
     required String manuscriptId,
     required String name,

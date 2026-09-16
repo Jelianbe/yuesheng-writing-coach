@@ -197,6 +197,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
+      // 设定库第四批：断言区收进「结构化这条设定（可选）」折叠区（正文优先）
+      await tester.tap(find.text('结构化这条设定（可选）'));
+      await tester.pumpAndSettle();
       expect(find.text('原文依据（选填）'), findsOneWidget);
       expect(find.text('章节（选填）'), findsOneWidget);
       expect(find.textContaining('填了「原文依据」的设定才会参与一致性检查'), findsOneWidget);
@@ -220,12 +223,15 @@ void main() {
       await tester.tap(find.text('＋ 新建设定主题'));
       await tester.pumpAndSettle();
 
+      // 展开「结构化这条设定」折叠区（正文优先：断言区默认收起）
+      await tester.tap(find.text('结构化这条设定（可选）'));
+      await tester.pumpAndSettle();
       final fields = find.descendant(
         of: find.byType(AlertDialog),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '灵气体系'); // 主题名
-      await tester.enterText(fields.at(1), '灵气浓度'); // 属性
+      await tester.enterText(fields.at(2), '灵气浓度'); // 属性（0=名 1=正文 2=属性）
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
       expect(find.text('属性和取值不能为空'), findsOneWidget);
@@ -277,15 +283,18 @@ void main() {
       await tester.tap(find.text('＋ 新建设定主题'));
       await tester.pumpAndSettle();
 
+      // 展开「结构化这条设定」折叠区（正文优先：断言区默认收起）
+      await tester.tap(find.text('结构化这条设定（可选）'));
+      await tester.pumpAndSettle();
       final fields = find.descendant(
         of: find.byType(AlertDialog),
         matching: find.byType(TextField),
       );
       await tester.enterText(fields.at(0), '灵气体系'); // 主题名
-      await tester.enterText(fields.at(1), '灵气浓度'); // 属性
-      await tester.enterText(fields.at(2), '稀薄'); // 取值
-      await tester.enterText(fields.at(3), '3'); // 章节
-      // fields.at(4) = 原文依据，刻意留空
+      await tester.enterText(fields.at(2), '灵气浓度'); // 属性
+      await tester.enterText(fields.at(3), '稀薄'); // 取值
+      await tester.enterText(fields.at(4), '3'); // 章节
+      // fields.at(5) = 原文依据，刻意留空
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
@@ -300,6 +309,29 @@ void main() {
         reason: 'UI 留空依据须落 null —— 该断言不进一致性检查（设计态契约）',
       );
     });
+  });
+
+  testWidgets('设定库第四批：新建填正文 → description 落库（用户写入优先）', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('＋ 新建设定主题'));
+    await tester.pumpAndSettle();
+
+    final fields = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(fields.at(0), '灵气体系'); // 主题名
+    await tester.enterText(
+      fields.at(1),
+      '灵气是天地间流动的能量，浓度由北方向南方递减。',
+    ); // 设定正文（正文优先：首个可选输入）
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('灵气体系'), findsOneWidget);
+    final row = await repo.getWorld(manuscriptId, '灵气体系');
+    expect(row!.description, contains('浓度由北方向南方递减'));
   });
 
   // ── W1-T06：列表交互覆盖（排序 / 归档开关 / 已归档角标）──
