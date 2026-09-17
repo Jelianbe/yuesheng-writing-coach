@@ -58,7 +58,8 @@ void main() {
       // 全量：message_injector 28 + chat_service 2 = 30 处降级点
       // （批次 E1-b 新增 1 处：设定层观察注入的降级 catch；
       //  2026-09-16 设定资料库第一批新增 1 处：拒绝记忆聚合降级 catch；
-      //  2026-09-17 设定资料库第二批新增 1 处：负断言聚合降级 catch）。
+      //  2026-09-17 设定资料库第二批新增 1 处：负断言聚合降级 catch；
+      //  2026-09-17 设定资料库第二批新增 1 处：设定命中展开降级 catch）。
       // 注：审查文档估算 30（含诊断编排 helper 或重复计数），
       // 实际全仓 grep 无裸 debugPrint('[SafeRun] 残留。
       // ⚠️ 本用例是**纯文本计数**型护栏：注释里若写出 helper 的完整调用串
@@ -69,7 +70,7 @@ void main() {
       final csCalls = '_logSafeRun('.allMatches(cs).length - 1;
       expect(
         miCalls + csCalls,
-        32,
+        33,
         reason: 'CR-53 应覆盖全部降级点（实际 mi=$miCalls cs=$csCalls）',
       );
     });

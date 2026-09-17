@@ -381,21 +381,28 @@ class MessageInjector {
       messages: messages,
       markStage: markStage,
     );
-    // R-019 拆分（2026-09-17）：设定类观察（自定义设定 + 负断言）
-    // 独立成方法，避免 _injectFactTableObservations 逼近 50 行硬上限。
+    // R-019 拆分（2026-09-17）：设定类观察独立成方法防超 50 行。
     await _injectSettingObservations(
+      content: content,
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
     );
   }
 
-  /// 设定类观察注入（设定资料库第二批拆分）：自定义设定 + 负断言。
+  /// 设定类观察注入（设定资料库第二批拆分）：命中展开 + 自定义设定 + 负断言。
   Future<void> _injectSettingObservations({
+    required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
+    await _injectHitSettings(
+      content: content,
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
     await _injectParticipatingSettings(
       primaryRef: primaryRef,
       messages: messages,
@@ -1209,6 +1216,53 @@ class MessageInjector {
     } catch (e, st) {
       _logSafeRun('自定义设定注入失败不阻断主流程', e, st);
     }
+  }
+
+  /// 分级供给 L1（设定资料库第二批）：正文命中实体的设定全量展开。
+  ///
+  /// 本轮正文/用户消息精确匹配人物名（name ∪ aliases）→ 该实体断言全量
+  /// 展开；冷实体零注入 + 「设定库共 N 条」元信息（立项备忘 §2.3）。
+  Future<void> _injectHitSettings({
+    required String content,
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (!content.contains(_kDiagnosisRequestMarker)) return;
+    if (primaryRef?.refType != 'chapter') return;
+    final repo = _characterFactRepo;
+    if (repo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final characters = await repo.listCharacters(chapter.manuscriptId);
+      if (characters.isEmpty) return;
+      final userText = _lastUserText(messages);
+      final hits = matchHitEntities(
+        chapterContent: chapter.content,
+        userText: userText,
+        characters: characters,
+      );
+      final ctx = buildHitSettingsContext(
+        hitNames: hits,
+        characters: characters,
+      );
+      if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
+        messages.add(ChatMessage(role: 'system', content: ctx));
+      }
+    } catch (e, st) {
+      _logSafeRun('设定命中展开失败不阻断主流程', e, st);
+    }
+  }
+
+  /// 分级供给 L1 helper：取最后一条用户消息正文（无则空串）。
+  String _lastUserText(List<ChatMessage> messages) {
+    for (var i = messages.length - 1; i >= 0; i--) {
+      final m = messages[i];
+      if (m.role == 'user') return m.content;
+    }
+    return '';
   }
 
   /// 设定资料库第二批：负断言注入（拒绝即负断言）。

@@ -979,3 +979,68 @@ String buildNegativeAssertionsContext(List<NegativeFact> negatives) {
       '诊断与建议中不得默认或暗示其成立；若学员正文恰好出现与之相符的'
       '表述，应识别为偏离并温和指出。';
 }
+
+/// 分级供给 L1：本轮正文/用户消息中命中的人物名（name ∪ aliases 精确匹配）。
+///
+/// 立项备忘 §2.3：信号 = 确定性字符串匹配（非关键词猜测）。命中的实体
+/// 后续「全量展开」进诊断上下文；冷实体零注入 + 元信息兜底。
+/// 单字名不参与匹配（防误伤）；命中按名字升序去重。
+List<String> matchHitEntities({
+  required String chapterContent,
+  required String userText,
+  required List<CharacterFact> characters,
+}) {
+  final text = '$chapterContent\n$userText';
+  final hits = <String>{};
+  for (final c in characters) {
+    if (c.name.length < 2) continue;
+    if (text.contains(c.name)) {
+      hits.add(c.name);
+      continue;
+    }
+    for (final alias in parseJsonStringList(c.aliases)) {
+      if (alias.length >= 2 && text.contains(alias)) {
+        hits.add(c.name);
+        break;
+      }
+    }
+  }
+  final out = hits.toList()..sort();
+  return out;
+}
+
+/// 分级供给 L1：命中实体全量展开 + 冷实体元信息（「设定库共 N 条」）。
+///
+/// [hitNames] 命中人物名（[matchHitEntities] 产出）；[characters] 全量人物。
+/// 每条人物断言取 confirmed/pending/user（rejected/superseded/stale 排除），
+/// 每人物至多 [kHitSettingMaxPerEntity] 条（克制预算）；未命中数计入元信息。
+/// 空输入 → null（零注入）。
+const int kHitSettingMaxPerEntity = 8;
+
+String? buildHitSettingsContext({
+  required List<String> hitNames,
+  required List<CharacterFact> characters,
+}) {
+  if (hitNames.isEmpty) return null;
+  final byName = {for (final c in characters) c.name: c};
+  final lines = <String>[];
+  for (final name in hitNames) {
+    final c = byName[name];
+    if (c == null) continue;
+    final assertions = CharacterFactRepository.parseAssertions(c.assertions)
+        .where(
+          (a) => a.status != 'rejected' && a.status != 'superseded' && !a.stale,
+        )
+        .take(kHitSettingMaxPerEntity)
+        .map((a) => '${a.attribute}=${a.value}')
+        .toList();
+    if (assertions.isEmpty) continue;
+    lines.add('- 人物「$name」：${assertions.join('；')}');
+  }
+  if (lines.isEmpty) return null;
+  final coldCount = characters.length - hitNames.length;
+  final meta = coldCount > 0 ? '\n\n未提及的设定共 $coldCount 条：如需使用可主动向学员询问。' : '';
+  return '## 设定资料库（正文命中展开）\n\n'
+      '以下设定在本轮正文/消息中被提及，已展开供参考：\n'
+      '${lines.join('\n')}$meta';
+}
