@@ -29,6 +29,7 @@ import '../../services/world_editor_service.dart';
 import '../../types/character_types.dart';
 import '../../data/repositories/setting_link_repository.dart';
 import '../setting/setting_links_section.dart';
+import '../setting/setting_tags_section.dart';
 import 'world_dialogs.dart';
 
 class WorldFactDetailPage extends ConsumerStatefulWidget {
@@ -143,6 +144,15 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
       ..showSnackBar(SnackBar(content: Text(text)));
   }
 
+  /// 标签区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
+  Widget _buildTagsSection() {
+    return SettingTagsSection(
+      manuscriptId: widget.manuscriptId,
+      kind: SettingEntityKind.world,
+      entityId: widget.worldId,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final row = _row;
@@ -164,6 +174,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
                   onEdit: _editDescription,
                 ),
                 ..._assertionWidgets(),
+                _buildTagsSection(),
                 SettingLinksSection(
                   manuscriptId: widget.manuscriptId,
                   kind: SettingEntityKind.world,

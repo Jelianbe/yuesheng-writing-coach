@@ -882,3 +882,36 @@ class SettingEntries extends Table {
     {manuscriptId, name},
   ];
 }
+
+/// 条目标签（设定资料库·标签批次，v37）：Codex 式自由多标签。
+///
+/// 覆盖 character / world / setting（「其他」）三类实体，多对多自由字符串
+/// （无独立标签表）。与 category 的关系：category 是「其他」的单值类别且
+/// **参与诊断**（AI 上下文）；tag 是管理性自由多标签，**不参与诊断注入**
+/// （克制清单）。outline 不纳入（大纲实体无直接写入路径，AI 沉淀）。
+///
+/// - 幂等：UNIQUE(manuscript_id, entity_kind, entity_id, tag)，addTag 先查后插
+/// - 软引用：entity_id 跨表无 FK（类型由 entity_kind 决定），与 setting_link 同构
+/// - 本批不做全稿标签聚合/筛选（后续批）
+@DataClassName('SettingTag')
+class SettingTags extends Table {
+  @override
+  String get tableName => 'setting_tag';
+
+  TextColumn get id => text()();
+  TextColumn get manuscriptId =>
+      text().references(Manuscripts, #id, onDelete: KeyAction.cascade)();
+  TextColumn get entityKind => text()(); // character | world | setting
+  TextColumn get entityId => text()();
+  TextColumn get tag => text()();
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {manuscriptId, entityKind, entityId, tag},
+  ];
+}

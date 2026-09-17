@@ -15836,6 +15836,426 @@ class SettingLinksCompanion extends UpdateCompanion<SettingLink> {
   }
 }
 
+class $SettingTagsTable extends SettingTags
+    with TableInfo<$SettingTagsTable, SettingTag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingTagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manuscriptIdMeta = const VerificationMeta(
+    'manuscriptId',
+  );
+  @override
+  late final GeneratedColumn<String> manuscriptId = GeneratedColumn<String>(
+    'manuscript_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES manuscripts (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _entityKindMeta = const VerificationMeta(
+    'entityKind',
+  );
+  @override
+  late final GeneratedColumn<String> entityKind = GeneratedColumn<String>(
+    'entity_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tagMeta = const VerificationMeta('tag');
+  @override
+  late final GeneratedColumn<String> tag = GeneratedColumn<String>(
+    'tag',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manuscriptId,
+    entityKind,
+    entityId,
+    tag,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'setting_tag';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SettingTag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manuscript_id')) {
+      context.handle(
+        _manuscriptIdMeta,
+        manuscriptId.isAcceptableOrUnknown(
+          data['manuscript_id']!,
+          _manuscriptIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manuscriptIdMeta);
+    }
+    if (data.containsKey('entity_kind')) {
+      context.handle(
+        _entityKindMeta,
+        entityKind.isAcceptableOrUnknown(data['entity_kind']!, _entityKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityKindMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    if (data.containsKey('tag')) {
+      context.handle(
+        _tagMeta,
+        tag.isAcceptableOrUnknown(data['tag']!, _tagMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {manuscriptId, entityKind, entityId, tag},
+  ];
+  @override
+  SettingTag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SettingTag(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manuscriptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manuscript_id'],
+      )!,
+      entityKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_kind'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+      tag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingTagsTable createAlias(String alias) {
+    return $SettingTagsTable(attachedDatabase, alias);
+  }
+}
+
+class SettingTag extends DataClass implements Insertable<SettingTag> {
+  final String id;
+  final String manuscriptId;
+  final String entityKind;
+  final String entityId;
+  final String tag;
+  final int createdAt;
+  const SettingTag({
+    required this.id,
+    required this.manuscriptId,
+    required this.entityKind,
+    required this.entityId,
+    required this.tag,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manuscript_id'] = Variable<String>(manuscriptId);
+    map['entity_kind'] = Variable<String>(entityKind);
+    map['entity_id'] = Variable<String>(entityId);
+    map['tag'] = Variable<String>(tag);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  SettingTagsCompanion toCompanion(bool nullToAbsent) {
+    return SettingTagsCompanion(
+      id: Value(id),
+      manuscriptId: Value(manuscriptId),
+      entityKind: Value(entityKind),
+      entityId: Value(entityId),
+      tag: Value(tag),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SettingTag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SettingTag(
+      id: serializer.fromJson<String>(json['id']),
+      manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
+      entityKind: serializer.fromJson<String>(json['entityKind']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+      tag: serializer.fromJson<String>(json['tag']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manuscriptId': serializer.toJson<String>(manuscriptId),
+      'entityKind': serializer.toJson<String>(entityKind),
+      'entityId': serializer.toJson<String>(entityId),
+      'tag': serializer.toJson<String>(tag),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  SettingTag copyWith({
+    String? id,
+    String? manuscriptId,
+    String? entityKind,
+    String? entityId,
+    String? tag,
+    int? createdAt,
+  }) => SettingTag(
+    id: id ?? this.id,
+    manuscriptId: manuscriptId ?? this.manuscriptId,
+    entityKind: entityKind ?? this.entityKind,
+    entityId: entityId ?? this.entityId,
+    tag: tag ?? this.tag,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SettingTag copyWithCompanion(SettingTagsCompanion data) {
+    return SettingTag(
+      id: data.id.present ? data.id.value : this.id,
+      manuscriptId: data.manuscriptId.present
+          ? data.manuscriptId.value
+          : this.manuscriptId,
+      entityKind: data.entityKind.present
+          ? data.entityKind.value
+          : this.entityKind,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+      tag: data.tag.present ? data.tag.value : this.tag,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingTag(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('entityKind: $entityKind, ')
+          ..write('entityId: $entityId, ')
+          ..write('tag: $tag, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, manuscriptId, entityKind, entityId, tag, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SettingTag &&
+          other.id == this.id &&
+          other.manuscriptId == this.manuscriptId &&
+          other.entityKind == this.entityKind &&
+          other.entityId == this.entityId &&
+          other.tag == this.tag &&
+          other.createdAt == this.createdAt);
+}
+
+class SettingTagsCompanion extends UpdateCompanion<SettingTag> {
+  final Value<String> id;
+  final Value<String> manuscriptId;
+  final Value<String> entityKind;
+  final Value<String> entityId;
+  final Value<String> tag;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const SettingTagsCompanion({
+    this.id = const Value.absent(),
+    this.manuscriptId = const Value.absent(),
+    this.entityKind = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.tag = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettingTagsCompanion.insert({
+    required String id,
+    required String manuscriptId,
+    required String entityKind,
+    required String entityId,
+    required String tag,
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manuscriptId = Value(manuscriptId),
+       entityKind = Value(entityKind),
+       entityId = Value(entityId),
+       tag = Value(tag);
+  static Insertable<SettingTag> custom({
+    Expression<String>? id,
+    Expression<String>? manuscriptId,
+    Expression<String>? entityKind,
+    Expression<String>? entityId,
+    Expression<String>? tag,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manuscriptId != null) 'manuscript_id': manuscriptId,
+      if (entityKind != null) 'entity_kind': entityKind,
+      if (entityId != null) 'entity_id': entityId,
+      if (tag != null) 'tag': tag,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettingTagsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manuscriptId,
+    Value<String>? entityKind,
+    Value<String>? entityId,
+    Value<String>? tag,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return SettingTagsCompanion(
+      id: id ?? this.id,
+      manuscriptId: manuscriptId ?? this.manuscriptId,
+      entityKind: entityKind ?? this.entityKind,
+      entityId: entityId ?? this.entityId,
+      tag: tag ?? this.tag,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manuscriptId.present) {
+      map['manuscript_id'] = Variable<String>(manuscriptId.value);
+    }
+    if (entityKind.present) {
+      map['entity_kind'] = Variable<String>(entityKind.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (tag.present) {
+      map['tag'] = Variable<String>(tag.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingTagsCompanion(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('entityKind: $entityKind, ')
+          ..write('entityId: $entityId, ')
+          ..write('tag: $tag, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -15875,6 +16295,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WorldFactsTable worldFacts = $WorldFactsTable(this);
   late final $SettingEntriesTable settingEntries = $SettingEntriesTable(this);
   late final $SettingLinksTable settingLinks = $SettingLinksTable(this);
+  late final $SettingTagsTable settingTags = $SettingTagsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15906,6 +16327,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     worldFacts,
     settingEntries,
     settingLinks,
+    settingTags,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -16090,6 +16512,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('setting_link', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'manuscripts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('setting_tag', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -16351,6 +16780,27 @@ final class $$ManuscriptsTableReferences
     ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_settingLinksRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SettingTagsTable, List<SettingTag>>
+  _settingTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.settingTags,
+    aliasName: $_aliasNameGenerator(
+      db.manuscripts.id,
+      db.settingTags.manuscriptId,
+    ),
+  );
+
+  $$SettingTagsTableProcessedTableManager get settingTagsRefs {
+    final manager = $$SettingTagsTableTableManager(
+      $_db,
+      $_db.settingTags,
+    ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_settingTagsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -16682,6 +17132,31 @@ class $$ManuscriptsTableFilterComposer
           }) => $$SettingLinksTableFilterComposer(
             $db: $db,
             $table: $db.settingLinks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> settingTagsRefs(
+    Expression<bool> Function($$SettingTagsTableFilterComposer f) f,
+  ) {
+    final $$SettingTagsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.settingTags,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SettingTagsTableFilterComposer(
+            $db: $db,
+            $table: $db.settingTags,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -17067,6 +17542,31 @@ class $$ManuscriptsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> settingTagsRefs<T extends Object>(
+    Expression<T> Function($$SettingTagsTableAnnotationComposer a) f,
+  ) {
+    final $$SettingTagsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.settingTags,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SettingTagsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.settingTags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ManuscriptsTableTableManager
@@ -17094,6 +17594,7 @@ class $$ManuscriptsTableTableManager
             bool worldFactsRefs,
             bool settingEntriesRefs,
             bool settingLinksRefs,
+            bool settingTagsRefs,
           })
         > {
   $$ManuscriptsTableTableManager(_$AppDatabase db, $ManuscriptsTable table)
@@ -17180,6 +17681,7 @@ class $$ManuscriptsTableTableManager
                 worldFactsRefs = false,
                 settingEntriesRefs = false,
                 settingLinksRefs = false,
+                settingTagsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -17195,6 +17697,7 @@ class $$ManuscriptsTableTableManager
                     if (worldFactsRefs) db.worldFacts,
                     if (settingEntriesRefs) db.settingEntries,
                     if (settingLinksRefs) db.settingLinks,
+                    if (settingTagsRefs) db.settingTags,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -17430,6 +17933,27 @@ class $$ManuscriptsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (settingTagsRefs)
+                        await $_getPrefetchedData<
+                          Manuscript,
+                          $ManuscriptsTable,
+                          SettingTag
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ManuscriptsTableReferences
+                              ._settingTagsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ManuscriptsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).settingTagsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.manuscriptId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -17462,6 +17986,7 @@ typedef $$ManuscriptsTableProcessedTableManager =
         bool worldFactsRefs,
         bool settingEntriesRefs,
         bool settingLinksRefs,
+        bool settingTagsRefs,
       })
     >;
 typedef $$VolumesTableCreateCompanionBuilder =
@@ -29416,6 +29941,346 @@ typedef $$SettingLinksTableProcessedTableManager =
       SettingLink,
       PrefetchHooks Function({bool manuscriptId})
     >;
+typedef $$SettingTagsTableCreateCompanionBuilder =
+    SettingTagsCompanion Function({
+      required String id,
+      required String manuscriptId,
+      required String entityKind,
+      required String entityId,
+      required String tag,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$SettingTagsTableUpdateCompanionBuilder =
+    SettingTagsCompanion Function({
+      Value<String> id,
+      Value<String> manuscriptId,
+      Value<String> entityKind,
+      Value<String> entityId,
+      Value<String> tag,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$SettingTagsTableReferences
+    extends BaseReferences<_$AppDatabase, $SettingTagsTable, SettingTag> {
+  $$SettingTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ManuscriptsTable _manuscriptIdTable(_$AppDatabase db) =>
+      db.manuscripts.createAlias(
+        $_aliasNameGenerator(db.settingTags.manuscriptId, db.manuscripts.id),
+      );
+
+  $$ManuscriptsTableProcessedTableManager get manuscriptId {
+    final $_column = $_itemColumn<String>('manuscript_id')!;
+
+    final manager = $$ManuscriptsTableTableManager(
+      $_db,
+      $_db.manuscripts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_manuscriptIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SettingTagsTableFilterComposer
+    extends Composer<_$AppDatabase, $SettingTagsTable> {
+  $$SettingTagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tag => $composableBuilder(
+    column: $table.tag,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ManuscriptsTableFilterComposer get manuscriptId {
+    final $$ManuscriptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableFilterComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingTagsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettingTagsTable> {
+  $$SettingTagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tag => $composableBuilder(
+    column: $table.tag,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ManuscriptsTableOrderingComposer get manuscriptId {
+    final $$ManuscriptsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableOrderingComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingTagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettingTagsTable> {
+  $$SettingTagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entityKind => $composableBuilder(
+    column: $table.entityKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+
+  GeneratedColumn<String> get tag =>
+      $composableBuilder(column: $table.tag, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ManuscriptsTableAnnotationComposer get manuscriptId {
+    final $$ManuscriptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingTagsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SettingTagsTable,
+          SettingTag,
+          $$SettingTagsTableFilterComposer,
+          $$SettingTagsTableOrderingComposer,
+          $$SettingTagsTableAnnotationComposer,
+          $$SettingTagsTableCreateCompanionBuilder,
+          $$SettingTagsTableUpdateCompanionBuilder,
+          (SettingTag, $$SettingTagsTableReferences),
+          SettingTag,
+          PrefetchHooks Function({bool manuscriptId})
+        > {
+  $$SettingTagsTableTableManager(_$AppDatabase db, $SettingTagsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingTagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingTagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingTagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manuscriptId = const Value.absent(),
+                Value<String> entityKind = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<String> tag = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingTagsCompanion(
+                id: id,
+                manuscriptId: manuscriptId,
+                entityKind: entityKind,
+                entityId: entityId,
+                tag: tag,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manuscriptId,
+                required String entityKind,
+                required String entityId,
+                required String tag,
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingTagsCompanion.insert(
+                id: id,
+                manuscriptId: manuscriptId,
+                entityKind: entityKind,
+                entityId: entityId,
+                tag: tag,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SettingTagsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({manuscriptId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (manuscriptId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.manuscriptId,
+                                referencedTable: $$SettingTagsTableReferences
+                                    ._manuscriptIdTable(db),
+                                referencedColumn: $$SettingTagsTableReferences
+                                    ._manuscriptIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SettingTagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SettingTagsTable,
+      SettingTag,
+      $$SettingTagsTableFilterComposer,
+      $$SettingTagsTableOrderingComposer,
+      $$SettingTagsTableAnnotationComposer,
+      $$SettingTagsTableCreateCompanionBuilder,
+      $$SettingTagsTableUpdateCompanionBuilder,
+      (SettingTag, $$SettingTagsTableReferences),
+      SettingTag,
+      PrefetchHooks Function({bool manuscriptId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -29472,4 +30337,6 @@ class $AppDatabaseManager {
       $$SettingEntriesTableTableManager(_db, _db.settingEntries);
   $$SettingLinksTableTableManager get settingLinks =>
       $$SettingLinksTableTableManager(_db, _db.settingLinks);
+  $$SettingTagsTableTableManager get settingTags =>
+      $$SettingTagsTableTableManager(_db, _db.settingTags);
 }

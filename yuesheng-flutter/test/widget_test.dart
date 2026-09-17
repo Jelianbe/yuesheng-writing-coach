@@ -54,8 +54,9 @@ void main() {
         'world_fact',
         'setting_entry',
         'setting_link',
+        'setting_tag',
       };
-      expect(tableNames.length, 26, reason: '应有 26 张业务表');
+      expect(tableNames.length, 27, reason: '应有 27 张业务表');
       for (final t in expectedTables) {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
@@ -71,12 +72,13 @@ void main() {
       // 设定库第四批 → 33 character_fact/world_fact description 正文列；
       // 第二批 → 34 setting_entry「其他」开放容器表；
       // 第二批 L2 → 35 character_fact.pinned 用户钉选列；
-      // 互链 → 36 setting_link 条目互链表）
+      // 互链 → 36 setting_link 条目互链表；
+      // 标签 → 37 setting_tag 条目标签表）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        36,
-        reason: 'schemaVersion 应为 36',
+        37,
+        reason: 'schemaVersion 应为 37',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

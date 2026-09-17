@@ -12,6 +12,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/setting_entry_repository.dart';
+import '../../data/repositories/setting_link_repository.dart'
+    show SettingEntityKind;
+import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
 
 /// 新建/编辑「其他」设定条目。成功写入返回 true（调用方据此刷新）。
@@ -54,7 +57,9 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
   final _nameCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _newCategoryCtrl = TextEditingController();
+  final _tagCtrl = TextEditingController();
   String _category = '';
+  List<String> _tags = const [];
   bool _saving = false;
 
   @override
@@ -65,7 +70,15 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
       _nameCtrl.text = e.name;
       _descCtrl.text = e.description;
       _category = e.category;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadTags(e.id));
     }
+  }
+
+  Future<void> _loadTags(String entityId) async {
+    final repo = SettingTagRepository(ref.read(appDatabaseProvider));
+    final items = await repo.listForEntity(SettingEntityKind.setting, entityId);
+    if (!mounted) return;
+    setState(() => _tags = items);
   }
 
   @override
@@ -73,6 +86,7 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
     _nameCtrl.dispose();
     _descCtrl.dispose();
     _newCategoryCtrl.dispose();
+    _tagCtrl.dispose();
     super.dispose();
   }
 
@@ -82,6 +96,18 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
     return _newCategoryCtrl.text.trim();
   }
 
+  void _addTag() {
+    final tag = _tagCtrl.text.trim();
+    if (tag.isEmpty) return;
+    if (_tags.contains(tag)) return;
+    setState(() => _tags = [..._tags, tag]);
+    _tagCtrl.clear();
+  }
+
+  void _removeTag(String tag) {
+    setState(() => _tags = [..._tags]..remove(tag));
+  }
+
   Future<void> _submit() async {
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) return;
@@ -89,9 +115,11 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
     final description = _descCtrl.text.trim();
     setState(() => _saving = true);
     final repo = SettingEntryRepository(ref.read(appDatabaseProvider));
+    final tagRepo = SettingTagRepository(ref.read(appDatabaseProvider));
     final e = widget.existing;
+    String entityId;
     if (e == null) {
-      await repo.createEntry(
+      entityId = await repo.createEntry(
         manuscriptId: widget.manuscriptId,
         category: category,
         name: name,
@@ -104,8 +132,67 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
         name: name,
         description: description,
       );
+      entityId = e.id;
     }
+    await tagRepo.replaceTags(
+      widget.manuscriptId,
+      SettingEntityKind.setting,
+      entityId,
+      _tags,
+    );
     if (mounted) Navigator.of(context).pop(true);
+  }
+
+  /// 标签区（R-019 拆分：chips + 行内输入独立成方法，弹窗字段保持 ≤50 行）。
+  Widget _buildTags() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.md),
+        Text('标签', style: AppTextStyles.titleMd),
+        const SizedBox(height: AppSpacing.xs),
+        if (_tags.isNotEmpty)
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.xs,
+            children: [
+              for (final tag in _tags)
+                InputChip(
+                  label: Text(tag),
+                  visualDensity: VisualDensity.compact,
+                  onDeleted: () => _removeTag(tag),
+                ),
+            ],
+          ),
+        const SizedBox(height: AppSpacing.xs),
+        TextField(
+          controller: _tagCtrl,
+          decoration: const InputDecoration(
+            labelText: '添加标签',
+            hintText: '回车添加，如：悬疑 / 关键道具',
+            isDense: true,
+          ),
+          onSubmitted: (_) => _addTag(),
+        ),
+      ],
+    );
+  }
+
+  /// 已有类别 chips（R-019 拆分：_buildFields 临界，抽出类别选择）。
+  Widget _buildCategoryChips() {
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.xs,
+      children: [
+        for (final c in widget.categories)
+          ChoiceChip(
+            label: Text(c),
+            selected: _category == c,
+            onSelected: (_) =>
+                setState(() => _category = _category == c ? '' : c),
+          ),
+      ],
+    );
   }
 
   Widget _buildFields() {
@@ -123,19 +210,7 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
         const SizedBox(height: AppSpacing.md),
         // 类别：已有 chips + 自建输入
         if (widget.categories.isNotEmpty) ...[
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.xs,
-            children: [
-              for (final c in widget.categories)
-                ChoiceChip(
-                  label: Text(c),
-                  selected: _category == c,
-                  onSelected: (_) =>
-                      setState(() => _category = _category == c ? '' : c),
-                ),
-            ],
-          ),
+          _buildCategoryChips(),
           const SizedBox(height: AppSpacing.sm),
         ],
         TextField(
@@ -155,6 +230,7 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
             alignLabelWithHint: true,
           ),
         ),
+        _buildTags(),
       ],
     );
   }

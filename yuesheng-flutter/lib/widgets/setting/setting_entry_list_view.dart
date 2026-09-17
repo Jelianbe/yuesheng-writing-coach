@@ -15,6 +15,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/setting_entry_repository.dart';
+import '../../data/repositories/setting_link_repository.dart'
+    show SettingEntityKind;
+import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
 import 'setting_entry_dialogs.dart';
 
@@ -32,6 +35,7 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
   bool _loading = true;
   bool _error = false;
   List<SettingEntry> _entries = const [];
+  Map<String, List<String>> _tagsByEntry = const {};
 
   @override
   void initState() {
@@ -42,10 +46,19 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
   Future<void> _load() async {
     try {
       final repo = SettingEntryRepository(ref.read(appDatabaseProvider));
+      final tagRepo = SettingTagRepository(ref.read(appDatabaseProvider));
       final items = await repo.listEntries(widget.manuscriptId);
+      final tagMap = <String, List<String>>{};
+      for (final e in items) {
+        tagMap[e.id] = await tagRepo.listForEntity(
+          SettingEntityKind.setting,
+          e.id,
+        );
+      }
       if (!mounted) return;
       setState(() {
         _entries = items;
+        _tagsByEntry = tagMap;
         _loading = false;
         _error = false;
       });
@@ -90,6 +103,7 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, i) => _EntryCard(
                     entry: _entries[i],
+                    tags: _tagsByEntry[_entries[i].id] ?? const [],
                     onToggle: _toggleParticipate,
                     onTap: () => _showEdit(_entries[i]),
                   ),
@@ -183,14 +197,16 @@ class _EmptyHint extends StatelessWidget {
   }
 }
 
-/// 条目卡：类别徽标 + 名称 + 正文摘要 + 参与诊断开关。
+/// 条目卡：类别徽标 + 名称 + 标签 + 正文摘要 + 参与诊断开关。
 class _EntryCard extends StatelessWidget {
   final SettingEntry entry;
+  final List<String> tags;
   final Future<void> Function(SettingEntry, bool) onToggle;
   final VoidCallback onTap;
 
   const _EntryCard({
     required this.entry,
+    required this.tags,
     required this.onToggle,
     required this.onTap,
   });
@@ -210,6 +226,27 @@ class _EntryCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildTitleRow(category),
+              if (tags.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    for (final tag in tags)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                        ),
+                        child: Text('#$tag', style: AppTextStyles.caption),
+                      ),
+                  ],
+                ),
+              ],
               if (summary.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(

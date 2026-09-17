@@ -204,48 +204,126 @@ void main() {
         final seed = sqlite3.sqlite3.open(path);
         seed.execute('PRAGMA user_version = 23');
         seed.execute('''
+
+
         CREATE TABLE manuscripts (
+
+
           id          TEXT PRIMARY KEY,
+
+
           title       TEXT NOT NULL DEFAULT '',
+
+
           description TEXT NOT NULL DEFAULT '',
+
+
           genre       TEXT NOT NULL DEFAULT '',
+
+
           language    TEXT NOT NULL DEFAULT '中文',
+
+
           status      TEXT NOT NULL DEFAULT 'active',
+
+
           sort_order  INTEGER NOT NULL DEFAULT 0,
+
+
           created_at  INTEGER NOT NULL DEFAULT 0,
+
+
           updated_at  INTEGER NOT NULL DEFAULT 0
+
+
         )
+
+
       ''');
         seed.execute('''
+
+
         CREATE TABLE volumes (
+
+
           id            TEXT PRIMARY KEY,
+
+
           manuscript_id TEXT NOT NULL REFERENCES manuscripts(id) ON DELETE CASCADE,
+
+
           title         TEXT NOT NULL DEFAULT '',
+
+
           sort_order    INTEGER NOT NULL DEFAULT 0,
+
+
           created_at    INTEGER NOT NULL DEFAULT 0,
+
+
           updated_at    INTEGER NOT NULL DEFAULT 0
+
+
         )
+
+
       ''');
         seed.execute('''
+
+
         CREATE TABLE chapters (
+
+
           id                TEXT PRIMARY KEY,
+
+
           manuscript_id     TEXT NOT NULL REFERENCES manuscripts(id) ON DELETE CASCADE,
+
+
           volume_id         TEXT DEFAULT NULL REFERENCES volumes(id) ON DELETE SET NULL,
+
+
           title             TEXT NOT NULL DEFAULT '',
+
+
           content           TEXT NOT NULL DEFAULT '',
+
+
           previous_content  TEXT DEFAULT NULL,
+
+
           word_count        INTEGER NOT NULL DEFAULT 0,
+
+
           sort_order        INTEGER NOT NULL DEFAULT 0,
+
+
           status            TEXT NOT NULL DEFAULT 'draft'
+
+
                             CHECK(status IN ('draft','revising','complete')),
+
+
           last_diagnosed_at INTEGER DEFAULT NULL,
+
+
           created_at        INTEGER NOT NULL DEFAULT 0,
+
+
           updated_at        INTEGER NOT NULL DEFAULT 0
+
+
         )
+
+
       ''');
         // sessions (onUpgrade v22→v23 其它表也需要，最小集合：migration 链各表不炸即可)
         seed.execute('''
+
+
         CREATE TABLE sessions (id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '', preview TEXT NOT NULL DEFAULT '', manuscript_id TEXT DEFAULT NULL REFERENCES manuscripts(id) ON DELETE SET NULL, chapter_id TEXT DEFAULT NULL, diagnosis_summary TEXT NOT NULL DEFAULT '{}', created_at INTEGER NOT NULL DEFAULT 0, updated_at INTEGER NOT NULL DEFAULT 0)
+
+
       ''');
         seed.execute(
           "INSERT INTO manuscripts(id,title,description,genre,language,status,sort_order,created_at,updated_at) "
@@ -265,7 +343,7 @@ void main() {
         final db = AppDatabase.forTesting(NativeDatabase(File(path)));
         addTearDown(db.close);
         final ver = await db.customSelect('PRAGMA user_version').getSingle();
-        expect(ver.read<int>('user_version'), 35);
+        expect(ver.read<int>('user_version'), 37);
 
         // 3. 升级后 createManuscript
         final upgradedRepo = ManuscriptRepository(db);

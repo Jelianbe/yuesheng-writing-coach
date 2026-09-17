@@ -75,7 +75,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 36);
+    expect(version.read<int>('user_version'), 37);
 
     // 表存在且可写（含 UNIQUE 约束）
     await db.customStatement(
@@ -103,7 +103,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 36);
+    expect(version.read<int>('user_version'), 37);
 
     final tables = await db2
         .customSelect(

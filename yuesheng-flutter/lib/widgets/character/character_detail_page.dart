@@ -39,6 +39,7 @@ import '../../types/character_types.dart';
 import 'character_detail_sections.dart';
 import 'character_dialogs.dart';
 import '../setting/setting_links_section.dart';
+import '../setting/setting_tags_section.dart';
 import 'character_events_section.dart';
 
 class CharacterDetailPage extends ConsumerStatefulWidget {
@@ -144,6 +145,15 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     });
   }
 
+  /// 标签区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
+  Widget _buildTagsSection() {
+    return SettingTagsSection(
+      manuscriptId: widget.manuscriptId,
+      kind: SettingEntityKind.character,
+      entityId: widget.characterId,
+    );
+  }
+
   /// 互链跳转：角色详情页只处理「跳到世界观详情页」（区块回调注入）。
   void _jumpToWorld(SettingEntityKind kind, String id) {
     if (kind != SettingEntityKind.world) return;
@@ -202,6 +212,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   onToggleNegative: _toggleNegative,
                 ),
                 CharacterEventsSection(events: _events, onJump: _jumpToChapter),
+                _buildTagsSection(),
                 SettingLinksSection(
                   manuscriptId: widget.manuscriptId,
                   kind: SettingEntityKind.character,

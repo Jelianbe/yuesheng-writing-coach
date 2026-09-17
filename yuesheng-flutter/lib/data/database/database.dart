@@ -53,6 +53,8 @@ part 'database.g.dart';
     SettingEntries,
     // v36：条目互链（Codex 式跨实体引用，第一批）
     SettingLinks,
+    // v37：条目标签（Codex 式自由多标签，第二批）
+    SettingTags,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -62,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 37;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -225,8 +227,8 @@ class AppDatabase extends _$AppDatabase {
       // 设定库第四批：守卫上移到 33（v33 块对 from=32 存量库可达，冪等 ALTER ADD COLUMN）
       // 第二批：守卫上移到 34（v34 块对 from=33 存量库可达，建 setting_entry）
       // L2 钉选：守卫上移到 35（v35 块对 from=34 存量库可达，冪等 ALTER ADD COLUMN）
-      // 条目互链：守卫上移到 36（v36 块对 from=35 存量库可达，建 setting_link）
-      if (from >= 36) return;
+      // 条目标签：守卫上移到 37（v37 块对 from=36 存量库可达，建 setting_tag）
+      if (from >= 37) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1029,6 +1031,23 @@ class AppDatabase extends _$AppDatabase {
           'label TEXT NOT NULL DEFAULT \'\', '
           'created_at INTEGER NOT NULL DEFAULT (unixepoch()), '
           'UNIQUE (manuscript_id, source_kind, source_id, target_kind, target_id)'
+          ')',
+        );
+      }
+
+      // v37: 条目标签（Codex 式自由多标签，第二批）— setting_tag 表。
+      // 覆盖 character/world/setting 三类实体，多对多自由字符串；不参与诊断注入。
+      if (from < 37) {
+        await customStatement(
+          'CREATE TABLE IF NOT EXISTS setting_tag ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'manuscript_id TEXT NOT NULL REFERENCES manuscripts(id) '
+          'ON DELETE CASCADE, '
+          'entity_kind TEXT NOT NULL, '
+          'entity_id TEXT NOT NULL, '
+          'tag TEXT NOT NULL, '
+          'created_at INTEGER NOT NULL DEFAULT (unixepoch()), '
+          'UNIQUE (manuscript_id, entity_kind, entity_id, tag)'
           ')',
         );
       }
