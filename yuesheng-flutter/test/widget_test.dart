@@ -68,12 +68,13 @@ void main() {
       // E1（书籍级成长叙事）→ 31 world_fact 世界观设定条目表；
       // P0-1 教学线 → 32 training_results 自评三维证据；
       // 设定库第四批 → 33 character_fact/world_fact description 正文列；
-      // 第二批 → 34 setting_entry「其他」开放容器表）
+      // 第二批 → 34 setting_entry「其他」开放容器表；
+      // 第二批 L2 → 35 character_fact.pinned 用户钉选列）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        34,
-        reason: 'schemaVersion 应为 34',
+        35,
+        reason: 'schemaVersion 应为 35',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

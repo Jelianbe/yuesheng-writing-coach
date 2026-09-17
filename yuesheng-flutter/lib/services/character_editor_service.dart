@@ -67,6 +67,11 @@ class CharacterEditorService {
     });
   }
 
+  /// 设定钉选（分级供给 L2，v35）：用户主权区，直接写 pinned 列。
+  Future<void> setPinned(String characterId, {required bool pinned}) {
+    return CharacterFactRepository(_db).setPinned(characterId, pinned: pinned);
+  }
+
   /// 修正断言（FR-5）：原条标 rejected（留痕）+ 落一条 `source=user` 的新断言。
   ///
   /// 为什么自动拒绝原条：修正 = 用户已裁决该属性值，若原条留在 confirmed，

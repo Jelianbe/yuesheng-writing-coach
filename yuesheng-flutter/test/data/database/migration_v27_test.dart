@@ -101,7 +101,7 @@ void main() {
 
     // 1. user_version 升到 27
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 34);
+    expect(version.read<int>('user_version'), 35);
 
     // 2. 4 个新列全部存在
     expect(
@@ -164,7 +164,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 34);
+    expect(version.read<int>('user_version'), 35);
 
     // 列数未因重复 ALTER 而膨胀
     final cfCols = await db2
@@ -174,8 +174,8 @@ void main() {
         .getSingle();
     expect(
       cfCols.read<int>('c'),
-      11,
-      reason: 'character_fact 列被重复添加（v33 加 description）',
+      12,
+      reason: 'character_fact 列被重复添加（v33 description + v35 pinned）',
     );
     final efCols = await db2
         .customSelect(

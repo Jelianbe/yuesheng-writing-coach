@@ -60,7 +60,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -222,7 +222,8 @@ class AppDatabase extends _$AppDatabase {
       // P0-1教学线：守卫上移到 32（v32 块对 from=31 存量库可达，冪等 ALTER ADD COLUMN）
       // 设定库第四批：守卫上移到 33（v33 块对 from=32 存量库可达，冪等 ALTER ADD COLUMN）
       // 第二批：守卫上移到 34（v34 块对 from=33 存量库可达，建 setting_entry）
-      if (from >= 34) return;
+      // L2 钉选：守卫上移到 35（v35 块对 from=34 存量库可达，冪等 ALTER ADD COLUMN）
+      if (from >= 35) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -987,6 +988,24 @@ class AppDatabase extends _$AppDatabase {
                 "ALTER TABLE $t ADD COLUMN description TEXT NOT NULL DEFAULT ''",
               );
             }
+          }
+        }
+      }
+
+      // v35: 分级供给 L2 — 用户钉选（character_fact 加 pinned 列）。
+      // 学员主动「钉住」的角色 = 即使在当轮正文未命中，也作为退化层
+      // 注入其核心断言名片（母备忘 §2.3 L2 用户钉选，R-009 用户主权）。
+      // 默认 0 不钉；表存在才加列（最小 schema 迁移测试库可能未建表）。
+      if (from < 35) {
+        if (await tableExists('character_fact')) {
+          final cols = await customSelect(
+            "SELECT name FROM pragma_table_info('character_fact')",
+          ).get();
+          final names = cols.map((r) => r.read<String>('name')).toSet();
+          if (cols.isNotEmpty && !names.contains('pinned')) {
+            await customStatement(
+              'ALTER TABLE character_fact ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0',
+            );
           }
         }
       }

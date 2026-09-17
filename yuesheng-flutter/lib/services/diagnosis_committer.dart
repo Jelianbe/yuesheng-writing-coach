@@ -1044,3 +1044,31 @@ String? buildHitSettingsContext({
       '以下设定在本轮正文/消息中被提及，已展开供参考：\n'
       '${lines.join('\n')}$meta';
 }
+
+/// 分级供给 L2（用户钉选）：钉住角色的核心断言名片。
+///
+/// 母备忘 §2.3：实体识别失败（代词/昵称/正文未命中）时退到这里，
+/// 不退化为空上下文。每实体至多 [kPinnedCardMaxAssertions] 条
+/// confirmed/user 断言（rejected/superseded/stale 排除）。
+/// 空列表 → null（零注入）。
+const int kPinnedCardMaxAssertions = 3;
+
+String? buildPinnedCardsContext(List<CharacterFact> pinned) {
+  if (pinned.isEmpty) return null;
+  final lines = <String>[];
+  for (final c in pinned) {
+    final assertions = CharacterFactRepository.parseAssertions(c.assertions)
+        .where(
+          (a) => a.status != 'rejected' && a.status != 'superseded' && !a.stale,
+        )
+        .take(kPinnedCardMaxAssertions)
+        .map((a) => '${a.attribute}=${a.value}')
+        .toList();
+    if (assertions.isEmpty) continue;
+    lines.add('- 人物「${c.name}」：${assertions.join('；')}');
+  }
+  if (lines.isEmpty) return null;
+  return '## 设定资料库（学员钉选）\n\n'
+      '以下角色是学员主动钉住的常驻设定，即使本轮正文未提及也请保持设定连贯：\n'
+      '${lines.join('\n')}';
+}

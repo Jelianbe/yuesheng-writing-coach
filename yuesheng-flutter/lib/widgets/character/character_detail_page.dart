@@ -147,7 +147,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     final row = _row;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(row?.name ?? '角色详情')),
+      appBar: _buildAppBar(row),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -192,6 +192,24 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   }
 
   // ── 动作：拒绝 / 修正 / 补充 / 别名 / 并入 / 清除旧版 / 跳章 / 原文 ──
+
+  /// R-019 拆分（v35 钉住）：AppBar（标题 + 钉住开关）独立成方法。
+  AppBar _buildAppBar(CharacterFact? row) {
+    return AppBar(
+      title: Text(row?.name ?? '角色详情'),
+      actions: [
+        if (row != null)
+          IconButton(
+            tooltip: row.pinned == 1 ? '取消钉住（不再常驻注入）' : '钉住（当轮正文未提及也常驻注入设定）',
+            icon: Icon(
+              row.pinned == 1 ? Icons.push_pin : Icons.push_pin_outlined,
+              color: row.pinned == 1 ? AppColors.primary : null,
+            ),
+            onPressed: () => _togglePinned(row),
+          ),
+      ],
+    );
+  }
 
   Future<void> _reject(CharacterAssertion a) async {
     final choice = await showRejectReasonSheet(context);
@@ -267,6 +285,12 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       target: a,
       negative: value,
     );
+    _load();
+  }
+
+  /// 设定钉选（分级供给 L2，v35）：切换 AppBar 钉住，直接落库。
+  Future<void> _togglePinned(CharacterFact row) async {
+    await _editor.setPinned(row.id, pinned: row.pinned != 1);
     _load();
   }
 

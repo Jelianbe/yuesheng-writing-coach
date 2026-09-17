@@ -523,6 +523,8 @@ class CharacterFacts extends Table {
       text().withDefault(const Constant('[]'))(); // C78 D-1：并入主角色的源名归档
   TextColumn get status =>
       text().withDefault(const Constant('active'))(); // C78：active | merged
+  IntColumn get pinned =>
+      integer().withDefault(const Constant(0))(); // v35：用户钉选（L2 退化层名片）
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
   IntColumn get updatedAt =>

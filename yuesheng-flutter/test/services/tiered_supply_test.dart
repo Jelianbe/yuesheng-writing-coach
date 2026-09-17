@@ -30,6 +30,7 @@ CharacterFact makeCharacter(
     description: '',
     aliases: aliases,
     status: 'active',
+    pinned: 0,
     createdAt: 1,
     updatedAt: 1,
   );

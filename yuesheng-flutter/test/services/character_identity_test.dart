@@ -79,6 +79,7 @@ void main() {
       description: '',
       aliases: jsonEncode(aliases),
       status: status,
+      pinned: 0,
       createdAt: 1000,
       updatedAt: 1000,
     );

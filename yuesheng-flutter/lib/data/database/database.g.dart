@@ -9367,6 +9367,16 @@ class $CharacterFactsTable extends CharacterFacts
     requiredDuringInsert: false,
     defaultValue: const Constant('active'),
   );
+  static const VerificationMeta _pinnedMeta = const VerificationMeta('pinned');
+  @override
+  late final GeneratedColumn<int> pinned = GeneratedColumn<int>(
+    'pinned',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -9402,6 +9412,7 @@ class $CharacterFactsTable extends CharacterFacts
     description,
     aliases,
     status,
+    pinned,
     createdAt,
     updatedAt,
   ];
@@ -9486,6 +9497,12 @@ class $CharacterFactsTable extends CharacterFacts
         status.isAcceptableOrUnknown(data['status']!, _statusMeta),
       );
     }
+    if (data.containsKey('pinned')) {
+      context.handle(
+        _pinnedMeta,
+        pinned.isAcceptableOrUnknown(data['pinned']!, _pinnedMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -9547,6 +9564,10 @@ class $CharacterFactsTable extends CharacterFacts
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      pinned: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pinned'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}created_at'],
@@ -9574,6 +9595,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
   final String description;
   final String aliases;
   final String status;
+  final int pinned;
   final int createdAt;
   final int updatedAt;
   const CharacterFact({
@@ -9586,6 +9608,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     required this.description,
     required this.aliases,
     required this.status,
+    required this.pinned,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -9605,6 +9628,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     map['description'] = Variable<String>(description);
     map['aliases'] = Variable<String>(aliases);
     map['status'] = Variable<String>(status);
+    map['pinned'] = Variable<int>(pinned);
     map['created_at'] = Variable<int>(createdAt);
     map['updated_at'] = Variable<int>(updatedAt);
     return map;
@@ -9625,6 +9649,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       description: Value(description),
       aliases: Value(aliases),
       status: Value(status),
+      pinned: Value(pinned),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -9645,6 +9670,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       description: serializer.fromJson<String>(json['description']),
       aliases: serializer.fromJson<String>(json['aliases']),
       status: serializer.fromJson<String>(json['status']),
+      pinned: serializer.fromJson<int>(json['pinned']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
     );
@@ -9662,6 +9688,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
       'description': serializer.toJson<String>(description),
       'aliases': serializer.toJson<String>(aliases),
       'status': serializer.toJson<String>(status),
+      'pinned': serializer.toJson<int>(pinned),
       'createdAt': serializer.toJson<int>(createdAt),
       'updatedAt': serializer.toJson<int>(updatedAt),
     };
@@ -9677,6 +9704,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     String? description,
     String? aliases,
     String? status,
+    int? pinned,
     int? createdAt,
     int? updatedAt,
   }) => CharacterFact(
@@ -9691,6 +9719,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     description: description ?? this.description,
     aliases: aliases ?? this.aliases,
     status: status ?? this.status,
+    pinned: pinned ?? this.pinned,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -9715,6 +9744,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           : this.description,
       aliases: data.aliases.present ? data.aliases.value : this.aliases,
       status: data.status.present ? data.status.value : this.status,
+      pinned: data.pinned.present ? data.pinned.value : this.pinned,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -9732,6 +9762,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           ..write('description: $description, ')
           ..write('aliases: $aliases, ')
           ..write('status: $status, ')
+          ..write('pinned: $pinned, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -9749,6 +9780,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
     description,
     aliases,
     status,
+    pinned,
     createdAt,
     updatedAt,
   );
@@ -9765,6 +9797,7 @@ class CharacterFact extends DataClass implements Insertable<CharacterFact> {
           other.description == this.description &&
           other.aliases == this.aliases &&
           other.status == this.status &&
+          other.pinned == this.pinned &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -9779,6 +9812,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
   final Value<String> description;
   final Value<String> aliases;
   final Value<String> status;
+  final Value<int> pinned;
   final Value<int> createdAt;
   final Value<int> updatedAt;
   final Value<int> rowid;
@@ -9792,6 +9826,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     this.description = const Value.absent(),
     this.aliases = const Value.absent(),
     this.status = const Value.absent(),
+    this.pinned = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -9806,6 +9841,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     this.description = const Value.absent(),
     this.aliases = const Value.absent(),
     this.status = const Value.absent(),
+    this.pinned = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -9822,6 +9858,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     Expression<String>? description,
     Expression<String>? aliases,
     Expression<String>? status,
+    Expression<int>? pinned,
     Expression<int>? createdAt,
     Expression<int>? updatedAt,
     Expression<int>? rowid,
@@ -9836,6 +9873,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
       if (description != null) 'description': description,
       if (aliases != null) 'aliases': aliases,
       if (status != null) 'status': status,
+      if (pinned != null) 'pinned': pinned,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -9852,6 +9890,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     Value<String>? description,
     Value<String>? aliases,
     Value<String>? status,
+    Value<int>? pinned,
     Value<int>? createdAt,
     Value<int>? updatedAt,
     Value<int>? rowid,
@@ -9866,6 +9905,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
       description: description ?? this.description,
       aliases: aliases ?? this.aliases,
       status: status ?? this.status,
+      pinned: pinned ?? this.pinned,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -9902,6 +9942,9 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (pinned.present) {
+      map['pinned'] = Variable<int>(pinned.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
     }
@@ -9926,6 +9969,7 @@ class CharacterFactsCompanion extends UpdateCompanion<CharacterFact> {
           ..write('description: $description, ')
           ..write('aliases: $aliases, ')
           ..write('status: $status, ')
+          ..write('pinned: $pinned, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -24229,6 +24273,7 @@ typedef $$CharacterFactsTableCreateCompanionBuilder =
       Value<String> description,
       Value<String> aliases,
       Value<String> status,
+      Value<int> pinned,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -24244,6 +24289,7 @@ typedef $$CharacterFactsTableUpdateCompanionBuilder =
       Value<String> description,
       Value<String> aliases,
       Value<String> status,
+      Value<int> pinned,
       Value<int> createdAt,
       Value<int> updatedAt,
       Value<int> rowid,
@@ -24323,6 +24369,11 @@ class $$CharacterFactsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get pinned => $composableBuilder(
+    column: $table.pinned,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24409,6 +24460,11 @@ class $$CharacterFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get pinned => $composableBuilder(
+    column: $table.pinned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -24484,6 +24540,9 @@ class $$CharacterFactsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
+  GeneratedColumn<int> get pinned =>
+      $composableBuilder(column: $table.pinned, builder: (column) => column);
+
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -24553,6 +24612,7 @@ class $$CharacterFactsTableTableManager
                 Value<String> description = const Value.absent(),
                 Value<String> aliases = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<int> pinned = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -24566,6 +24626,7 @@ class $$CharacterFactsTableTableManager
                 description: description,
                 aliases: aliases,
                 status: status,
+                pinned: pinned,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -24581,6 +24642,7 @@ class $$CharacterFactsTableTableManager
                 Value<String> description = const Value.absent(),
                 Value<String> aliases = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<int> pinned = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
                 Value<int> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -24594,6 +24656,7 @@ class $$CharacterFactsTableTableManager
                 description: description,
                 aliases: aliases,
                 status: status,
+                pinned: pinned,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

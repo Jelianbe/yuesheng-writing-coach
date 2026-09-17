@@ -390,19 +390,27 @@ class MessageInjector {
     );
   }
 
-  /// 设定类观察注入（设定资料库第二批拆分）：命中展开 + 自定义设定 + 负断言。
+  /// 设定类观察注入（第二批）：命中展开 →（无命中退化）钉选名片 +
+  /// 自定义设定 + 负断言。
   Future<void> _injectSettingObservations({
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
-    await _injectHitSettings(
+    final hit = await _injectHitSettings(
       content: content,
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
     );
+    if (!hit) {
+      await _injectPinnedCards(
+        primaryRef: primaryRef,
+        messages: messages,
+        markStage: markStage,
+      );
+    }
     await _injectParticipatingSettings(
       primaryRef: primaryRef,
       messages: messages,
@@ -1222,21 +1230,21 @@ class MessageInjector {
   ///
   /// 本轮正文/用户消息精确匹配人物名（name ∪ aliases）→ 该实体断言全量
   /// 展开；冷实体零注入 + 「设定库共 N 条」元信息（立项备忘 §2.3）。
-  Future<void> _injectHitSettings({
+  Future<bool> _injectHitSettings({
     required String content,
     required ReferenceItem? primaryRef,
     required List<ChatMessage> messages,
     required void Function(String) markStage,
   }) async {
-    if (!content.contains(_kDiagnosisRequestMarker)) return;
-    if (primaryRef?.refType != 'chapter') return;
+    if (!content.contains(_kDiagnosisRequestMarker)) return false;
+    if (primaryRef?.refType != 'chapter') return false;
     final repo = _characterFactRepo;
-    if (repo == null) return;
+    if (repo == null) return false;
     try {
       final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
-      if (chapter == null) return;
+      if (chapter == null) return false;
       final characters = await repo.listCharacters(chapter.manuscriptId);
-      if (characters.isEmpty) return;
+      if (characters.isEmpty) return false;
       final userText = _lastUserText(messages);
       final hits = matchHitEntities(
         chapterContent: chapter.content,
@@ -1250,10 +1258,12 @@ class MessageInjector {
       if (ctx != null) {
         markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));
+        return true;
       }
     } catch (e, st) {
       _logSafeRun('设定命中展开失败不阻断主流程', e, st);
     }
+    return false;
   }
 
   /// 分级供给 L1 helper：取最后一条用户消息正文（无则空串）。
@@ -1263,6 +1273,32 @@ class MessageInjector {
       if (m.role == 'user') return m.content;
     }
     return '';
+  }
+
+  /// 分级供给 L2（用户钉选）：L1 无命中时的退化层。
+  ///
+  /// 学员钉住角色的核心断言名片注入（母备忘 §2.3：实体识别失败时
+  /// 退到这里，不退化为空上下文）。仅 active 角色；降级不阻断。
+  Future<void> _injectPinnedCards({
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (primaryRef?.refType != 'chapter') return;
+    final repo = _characterFactRepo;
+    if (repo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final pinned = await repo.listPinned(chapter.manuscriptId);
+      final ctx = buildPinnedCardsContext(pinned);
+      if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
+        messages.add(ChatMessage(role: 'system', content: ctx));
+      }
+    } catch (e, st) {
+      _logSafeRun('钉选名片注入失败不阻断主流程', e, st);
+    }
   }
 
   /// 设定资料库第二批：负断言注入（拒绝即负断言）。

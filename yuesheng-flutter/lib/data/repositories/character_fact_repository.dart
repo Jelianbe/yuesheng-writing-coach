@@ -364,6 +364,32 @@ class CharacterFactRepository {
         .getSingleOrNull();
   }
 
+  /// 设定钉选（分级供给 L2，v35）
+  ///
+  /// 用户主权区：学员主动「钉住」的角色 = 当轮正文未命中时作为退化层
+  /// 注入其核心断言名片（母备忘 §2.3）。行不存在则静默跳过。
+  Future<void> setPinned(String id, {required bool pinned}) async {
+    await (_db.update(_db.characterFacts)..where((t) => t.id.equals(id))).write(
+      CharacterFactsCompanion(
+        pinned: Value(pinned ? 1 : 0),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch ~/ 1000),
+      ),
+    );
+  }
+
+  /// 钉选角色列表（注入用）：仅 active（merged 源行不驻留），按名字升序。
+  Future<List<CharacterFact>> listPinned(String manuscriptId) async {
+    return (_db.select(_db.characterFacts)
+          ..where(
+            (t) =>
+                t.manuscriptId.equals(manuscriptId) &
+                t.status.equals(_kActiveStatus) &
+                t.pinned.equals(1),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.name)]))
+        .get();
+  }
+
   /// 按主键获取人物（批次3 详情页用：列表项携带的是 id，且合并后源行
   /// 可能是 merged 状态，按 name 查会与目标行别名重合）。
   Future<CharacterFact?> getCharacterById(String id) async {
