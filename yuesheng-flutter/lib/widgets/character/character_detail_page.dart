@@ -164,6 +164,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   onReject: _reject,
                   onCorrect: _correct,
                   onSupplement: _supplement,
+                  onToggleNegative: _toggleNegative,
                 ),
                 CharacterEventsSection(events: _events, onJump: _jumpToChapter),
               ],
@@ -180,6 +181,17 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       characterId: widget.characterId,
       target: a,
       reason: choice.reason,
+    );
+    _load();
+  }
+
+  Future<void> _toggleNegative(CharacterAssertion a, bool value) async {
+    final row = _row;
+    if (row == null) return;
+    await _editor.setNegative(
+      characterId: widget.characterId,
+      target: a,
+      negative: value,
     );
     _load();
   }

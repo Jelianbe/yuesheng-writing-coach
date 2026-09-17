@@ -381,7 +381,27 @@ class MessageInjector {
       messages: messages,
       markStage: markStage,
     );
+    // R-019 拆分（2026-09-17）：设定类观察（自定义设定 + 负断言）
+    // 独立成方法，避免 _injectFactTableObservations 逼近 50 行硬上限。
+    await _injectSettingObservations(
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+  }
+
+  /// 设定类观察注入（设定资料库第二批拆分）：自定义设定 + 负断言。
+  Future<void> _injectSettingObservations({
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
     await _injectParticipatingSettings(
+      primaryRef: primaryRef,
+      messages: messages,
+      markStage: markStage,
+    );
+    await _injectNegativeAssertions(
       primaryRef: primaryRef,
       messages: messages,
       markStage: markStage,
@@ -1188,6 +1208,40 @@ class MessageInjector {
       }
     } catch (e, st) {
       _logSafeRun('自定义设定注入失败不阻断主流程', e, st);
+    }
+  }
+
+  /// 设定资料库第二批：负断言注入（拒绝即负断言）。
+  ///
+  /// 学员在角色标签页勾选「参与诊断」的拒绝断言 → 以「这扇门不能开」形态
+  /// 注入诊断上下文（防矛盾）。默认零注入，勾选才注入。
+  Future<void> _injectNegativeAssertions({
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (primaryRef?.refType != 'chapter') return;
+    final repo = _characterFactRepo;
+    if (repo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final items = await repo.listNegativeAssertions(chapter.manuscriptId);
+      if (items.isEmpty) return;
+      final ctx = buildNegativeAssertionsContext([
+        for (final (row, a) in items)
+          NegativeFact(
+            entity: row.name,
+            attribute: a.attribute,
+            value: a.value,
+          ),
+      ]);
+      if (ctx.isNotEmpty) {
+        markStage(BudgetStageNames.ruleDetectors);
+        messages.add(ChatMessage(role: 'system', content: ctx));
+      }
+    } catch (e, st) {
+      _logSafeRun('负断言注入失败不阻断主流程', e, st);
     }
   }
 

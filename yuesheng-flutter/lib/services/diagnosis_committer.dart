@@ -944,3 +944,38 @@ class RejectedFact {
     required this.value,
   });
 }
+
+/// 负断言三元组（设定资料库第二批）：(实体, 属性, 值)。
+///
+/// 由 message_injector 从 character 表 `status == rejected && negative`
+/// 的断言聚合，经 [DiagnosisCommitter.buildNegativeAssertionsContext] 注入
+/// 诊断上下文——与 [RejectedFact]（源头抑制：不得再提议）不同，负断言是
+/// **正向教学资产**：学员明确否决并勾选，诊断/建议不得暗示其成立。
+class NegativeFact {
+  final String entity;
+  final String attribute;
+  final String value;
+
+  const NegativeFact({
+    required this.entity,
+    required this.attribute,
+    required this.value,
+  });
+}
+
+/// 设定资料库第二批：负断言上下文（纯字符串构造，零 IO 依赖可单测）。
+///
+/// 注入语义：学员已明确否决的设定 = 既定事实的「反」。诊断与写作建议中
+/// 不得默认或暗示其成立；若学员正文恰好写出的内容与负断言相符，应识别
+/// 为偏离并温和提示（防矛盾 = 垃圾处理升级为教学资产）。
+String buildNegativeAssertionsContext(List<NegativeFact> negatives) {
+  if (negatives.isEmpty) return '';
+  final lines = negatives
+      .map((n) => '- ${n.entity} · ${n.attribute} ≠ ${n.value}')
+      .join('\n');
+  return '## 负断言（学员明确否决的设定）\n\n'
+      '以下 (人物/设定, 属性, 值) 已被学员明确否决为**不成立**'
+      '（学员主动勾选参与诊断）：\n$lines\n\n'
+      '诊断与建议中不得默认或暗示其成立；若学员正文恰好出现与之相符的'
+      '表述，应识别为偏离并温和指出。';
+}

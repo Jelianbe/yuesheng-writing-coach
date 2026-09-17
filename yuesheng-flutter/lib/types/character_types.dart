@@ -47,6 +47,12 @@ class CharacterAssertion {
   /// 仅 status == rejected 时可能有值，批次3 UI 写入，AI 协议不上报）
   final String? rejectReason;
 
+  /// 设定资料库第二批：拒绝即负断言（「这扇门不能开」）。
+  /// 仅 status == rejected 时可能有值（默认 false）；用户勾选后该拒绝断言
+  /// 以「负断言」形态注入诊断上下文做防矛盾——垃圾处理升级为教学资产。
+  /// UI 写入，AI 协议不上报（tryFromJson 不读）。
+  final bool negative;
+
   const CharacterAssertion({
     required this.attribute,
     required this.value,
@@ -58,6 +64,7 @@ class CharacterAssertion {
     this.chapterHash,
     this.stale = false,
     this.rejectReason,
+    this.negative = false,
   });
 
   Map<String, dynamic> toJson() => {
@@ -71,6 +78,7 @@ class CharacterAssertion {
     'chapterHash': chapterHash,
     'stale': stale,
     'rejectReason': rejectReason,
+    'negative': negative,
   };
 
   /// DB 回读入口（C78 批次2a）——与 [tryFromJson] **严格分工，勿混用**
@@ -90,6 +98,7 @@ class CharacterAssertion {
       chapterHash: json['chapterHash'] as String?,
       stale: json['stale'] == true,
       rejectReason: json['rejectReason'] as String?,
+      negative: json['negative'] == true,
     );
   }
 
@@ -109,6 +118,7 @@ class CharacterAssertion {
       chapterHash: chapterHash ?? this.chapterHash,
       stale: stale ?? this.stale,
       rejectReason: rejectReason,
+      negative: negative,
     );
   }
 
@@ -126,6 +136,24 @@ class CharacterAssertion {
       chapterHash: chapterHash,
       stale: stale,
       rejectReason: rejectReason ?? this.rejectReason,
+      negative: negative,
+    );
+  }
+
+  /// 设定资料库第二批：负断言开关写回（仿 [withStatus]，只改 negative）。
+  CharacterAssertion withNegative(bool negative) {
+    return CharacterAssertion(
+      attribute: attribute,
+      value: value,
+      chapter: chapter,
+      timestamp: timestamp,
+      status: status,
+      source: source,
+      evidence: evidence,
+      chapterHash: chapterHash,
+      stale: stale,
+      rejectReason: rejectReason,
+      negative: negative,
     );
   }
 

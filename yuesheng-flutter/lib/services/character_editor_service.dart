@@ -50,6 +50,23 @@ class CharacterEditorService {
     });
   }
 
+  /// 设定资料库第二批：负断言开关（拒绝即负断言）。
+  ///
+  /// 仅对 rejected 断言生效；勾选后该断言以「这扇门不能开」形态注入诊断
+  /// 上下文做防矛盾。复用 [_rewriteAssertions]（R-009：用户操作不经 AI 合并）。
+  Future<bool> setNegative({
+    required String characterId,
+    required CharacterAssertion target,
+    required bool negative,
+  }) {
+    return _rewriteAssertions(characterId, (list) {
+      return [
+        for (final a in list)
+          if (_sameAssertion(a, target)) a.withNegative(negative) else a,
+      ];
+    });
+  }
+
   /// 修正断言（FR-5）：原条标 rejected（留痕）+ 落一条 `source=user` 的新断言。
   ///
   /// 为什么自动拒绝原条：修正 = 用户已裁决该属性值，若原条留在 confirmed，

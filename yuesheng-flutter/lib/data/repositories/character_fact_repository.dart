@@ -53,6 +53,59 @@ class CharacterFactRepository {
     );
   });
 
+  /// 设定资料库第二批：负断言开关（拒绝即负断言）。
+  /// 仅对 `status == rejected` 的断言生效（目标断言按 attribute/value/chapter
+  /// 匹配；不满足则静默跳过）。开关落库走 [replaceAssertions] 原样写回——
+  /// R-009：用户操作不经过 AI 合并逻辑。
+  Future<void> setNegative({
+    required String manuscriptId,
+    required String name,
+    required CharacterAssertion target,
+    required bool negative,
+  }) => guardRepoWrite('character_fact', 'setNegative', () async {
+    final row = await _findCharacter(manuscriptId, name);
+    if (row == null) return;
+    final assertions = parseAssertions(row.assertions);
+    final next = [
+      for (final a in assertions)
+        if (_sameAssertion(a, target)) a.withNegative(negative) else a,
+    ];
+    if (next.length != assertions.length) return; // 目标断言不存在，不落写
+    await replaceAssertions(
+      manuscriptId: manuscriptId,
+      name: name,
+      assertions: next,
+    );
+  });
+
+  static bool _sameAssertion(CharacterAssertion a, CharacterAssertion b) {
+    return a.attribute == b.attribute &&
+        a.value == b.value &&
+        a.chapter == b.chapter;
+  }
+
+  /// 设定资料库第二批：列出作品下全部「负断言」（用户勾选参与诊断的拒绝断言）。
+  ///
+  /// 诊断注入用：仅返回 `status == rejected && negative` 的断言——
+  /// 负断言 = 学员明确否决且主动勾选的教学资产（「这扇门不能开」）。
+  Future<List<(CharacterFact, CharacterAssertion)>> listNegativeAssertions(
+    String manuscriptId,
+  ) async {
+    final rows = await listCharacters(manuscriptId);
+    final out = <(CharacterFact, CharacterAssertion)>[];
+    for (final row in rows) {
+      for (final a in parseAssertions(row.assertions)) {
+        if (a.status == 'rejected' && a.negative) out.add((row, a));
+      }
+    }
+    out.sort((x, y) {
+      final byName = x.$1.name.compareTo(y.$1.name);
+      if (byName != 0) return byName;
+      return x.$2.attribute.compareTo(y.$2.attribute);
+    });
+    return out;
+  }
+
   /// 设定资料库第四批：写条目正文（用户自由写作；R-009 用户主权区）。
   /// 不走 [upsertCharacter]——AI 合并语义只管 assertions，正文是独立列。
   /// 行不存在则静默跳过（与 [replaceAssertions] 同语义）。

@@ -244,7 +244,12 @@ class CharacterAssertionGroups extends StatelessWidget {
     required this.onReject,
     required this.onCorrect,
     required this.onSupplement,
+    this.onToggleNegative,
   });
+
+  /// 负断言开关（仅 rejected 断言显示；null = 不显示开关）
+  final void Function(CharacterAssertion assertion, bool value)?
+  onToggleNegative;
 
   @override
   Widget build(BuildContext context) {
@@ -297,6 +302,9 @@ class CharacterAssertionGroups extends StatelessWidget {
               resolveOriginalText: () => resolveOriginalText(a),
               onReject: () => onReject(a),
               onCorrect: () => onCorrect(a),
+              onToggleNegative: onToggleNegative == null
+                  ? null
+                  : (v) => onToggleNegative!(a, v),
             ),
         ],
       ),

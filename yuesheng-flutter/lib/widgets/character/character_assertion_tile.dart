@@ -25,6 +25,10 @@ class CharacterAssertionTile extends StatelessWidget {
   /// 修正（详情页弹表单后落库）
   final VoidCallback? onCorrect;
 
+  /// 负断言开关（仅 rejected 显示）：拒绝即负断言——勾选后该拒绝断言
+  /// 注入诊断上下文做防矛盾（设定资料库第二批）。
+  final ValueChanged<bool>? onToggleNegative;
+
   /// 查看原文：返回 null = 未定位到（弹层如实显示）；返回文本 = 原文摘录
   final Future<String?> Function() resolveOriginalText;
 
@@ -34,6 +38,7 @@ class CharacterAssertionTile extends StatelessWidget {
     required this.resolveOriginalText,
     this.onReject,
     this.onCorrect,
+    this.onToggleNegative,
   });
 
   bool get _rejected => assertion.status == 'rejected';
@@ -123,6 +128,7 @@ class CharacterAssertionTile extends StatelessWidget {
             '理由·${assertion.rejectReason}',
             style: AppTextStyles.microCaption,
           ),
+        if (_rejected && onToggleNegative != null) _buildNegativeSwitch(),
         if (_actionable) ...[
           TextButton(
             style: TextButton.styleFrom(
@@ -143,6 +149,21 @@ class CharacterAssertionTile extends StatelessWidget {
             child: const Text('修正', style: AppTextStyles.caption),
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _buildNegativeSwitch() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('负断言', style: AppTextStyles.microCaption),
+        const SizedBox(width: 2),
+        Switch(
+          value: assertion.negative,
+          onChanged: onToggleNegative,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       ],
     );
   }
