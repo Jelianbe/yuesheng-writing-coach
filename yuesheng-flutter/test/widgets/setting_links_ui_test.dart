@@ -129,6 +129,8 @@ void main() {
     );
     await tester.pumpWidget(buildHost());
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('灵气体系'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('灵气体系'));
     await tester.pumpAndSettle();
     // 世界观详情页 AppBar 标题 = 主题名
@@ -159,6 +161,8 @@ void main() {
       targetId: worldId,
     );
     await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byIcon(Icons.link_off));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.link_off));
     await tester.pumpAndSettle();

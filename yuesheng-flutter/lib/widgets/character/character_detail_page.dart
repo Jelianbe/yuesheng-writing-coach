@@ -39,6 +39,7 @@ import '../../types/character_types.dart';
 import 'character_detail_sections.dart';
 import 'character_dialogs.dart';
 import '../setting/setting_links_section.dart';
+import '../setting/setting_progressions_section.dart';
 import '../setting/setting_tags_section.dart';
 import 'character_events_section.dart';
 
@@ -154,6 +155,15 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     );
   }
 
+  /// Progressions 章节演进区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
+  Widget _buildProgressionsSection() {
+    return SettingProgressionsSection(
+      assertions: _assertions,
+      events: _events,
+      firstSeenChapter: _row?.firstSeenChapter,
+    );
+  }
+
   /// 互链跳转：角色详情页只处理「跳到世界观详情页」（区块回调注入）。
   void _jumpToWorld(SettingEntityKind kind, String id) {
     if (kind != SettingEntityKind.world) return;
@@ -169,6 +179,21 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     return CharacterRecentBanner(
       visibleCount: _visibleAssertions.length,
       onShowAll: () => setState(() => _since = null),
+    );
+  }
+
+  /// 一致性卡片区（R-019 拆分：冲突卡 + 冲突横幅 + 陈旧清除合并）。
+  Widget _buildConsistencyCards() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CharacterConflictsCard(conflicts: _conflicts),
+        _buildConflictBanner(),
+        CharacterStaleClearBar(
+          staleByChapter: _staleByChapter,
+          onClear: _clearStaleChapter,
+        ),
+      ],
     );
   }
 
@@ -197,12 +222,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   onEdit: _editDescription,
                 ),
                 _buildRecentBanner(),
-                CharacterConflictsCard(conflicts: _conflicts),
-                _buildConflictBanner(),
-                CharacterStaleClearBar(
-                  staleByChapter: _staleByChapter,
-                  onClear: _clearStaleChapter,
-                ),
+                _buildConsistencyCards(),
                 CharacterAssertionGroups(
                   assertions: _visibleAssertions,
                   resolveOriginalText: _resolveOriginalText,
@@ -212,6 +232,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   onToggleNegative: _toggleNegative,
                 ),
                 CharacterEventsSection(events: _events, onJump: _jumpToChapter),
+                _buildProgressionsSection(),
                 _buildTagsSection(),
                 SettingLinksSection(
                   manuscriptId: widget.manuscriptId,
