@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 # ============================================================================
-# 月笙写作教练 — git pre-commit hook（五道门禁本地拦截）
+# 月笙写作教练 — git pre-commit hook（快道拦截）
 #
 # 行为：
-#   - 仅当本次 staged 变更触及 yuesheng-flutter/ 或 flutter_ci.yaml 时运行五闸
+#   - 仅当本次 staged 变更触及 yuesheng-flutter/ 或 flutter_ci.yaml 时运行
+#   - 跑的是**快道** scripts/gate-fast.sh（约 40 秒），**不是**收尾十二道
+#     ⇒ 门禁 6（覆盖率）不在快道内；声称「完成」前仍须手工跑 gate.sh
 #   - 若本地缺 dart/flutter 工具链，警告但不阻断（CI 仍会事后拦截）
 #   - 紧急跳过：    SKIP_GIT_GATE=1 git commit ...
+#
+# ★ 为什么调快道而不是全量 gate.sh（2026-09-17 口径收口）：
+#   本 hook 的历史版本直接调 `bash scripts/gate.sh`（十二道全量，约 4~6 分钟），
+#   文案也写着「五道门禁」。但实测：`.git/hooks/` 里**一个 hook 都没装**
+#   （全是 `.sample`）、`core.hooksPath` 未设、安装脚本自身还有一个拼写 bug
+#   （见 install-git-hooks.ps1）。让「每次提交」等 4.5 分钟的设计方向是反的——
+#   难怪它从未被装上。**快的才可能被人接受**，所以这里换成约 40 秒的快道。
+#
+#   代价必须讲清：快道**不覆盖**门禁 6（覆盖率），且门禁 2 只跑受影响的测试。
+#   它拦截的是「格式/类型/循环依赖/密钥/函数行数/prompt/元数据/交互/伪拆分/
+#   A 类豁免」这十道 + 窄范围回归，**不等于**收尾全绿。
 #
 # 安装：        pwsh yuesheng-flutter/scripts/install-git-hooks.ps1
 # 卸载：        rm .git/hooks/pre-commit
@@ -14,14 +27,14 @@ set -u
 
 # -------- 绕过开关 --------
 if [ "${SKIP_GIT_GATE:-0}" = "1" ]; then
-  echo "[pre-commit] ⚙  SKIP_GIT_GATE=1，已跳过本地四闸（CI 仍会在 push 后拦截）"
+  echo "[pre-commit] ⚙  SKIP_GIT_GATE=1，已跳过本地快道（CI 仍会在 push 后拦截）"
   exit 0
 fi
 
 # -------- 仓库根定位 --------
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 if [ -z "$REPO_ROOT" ]; then
-  echo "[pre-commit] ⚠  无法定位 git 仓库根，跳过四闸"
+  echo "[pre-commit] ⚠  无法定位 git 仓库根，跳过本地快道"
   exit 0
 fi
 
@@ -36,15 +49,16 @@ if printf '%s\n' "$staged" | grep -qE '^\.github/workflows/flutter_ci\.yaml$'; t
 fi
 
 if [ "$hit" -eq 0 ]; then
-  # 本次改动不涉及 Flutter，五闸跳过（节省 ~5 分钟等待）
-  echo "[pre-commit] ⏭  未触及 yuesheng-flutter/ 或 flutter_ci.yaml，跳过五闸"
+  # 本次改动不涉及 Flutter，快道跳过（省一次无谓等待）
+  echo "[pre-commit] ⏭  未触及 yuesheng-flutter/ 或 flutter_ci.yaml，跳过快道"
   exit 0
 fi
 
 echo ""
 echo "======================================================================"
-echo "[pre-commit] 🚦 检测到 Flutter / CI 变更，触发本地五道门禁..."
-echo "              （耗时约 4~6 分钟；紧急提交用 SKIP_GIT_GATE=1 跳过）"
+echo "[pre-commit] 🚦 检测到 Flutter / CI 变更，触发本地快道门禁..."
+echo "              （约 40 秒；紧急提交用 SKIP_GIT_GATE=1 跳过）"
+echo "              ⚠️ 快道不含门禁 6（覆盖率）—— 收尾请跑 scripts/gate.sh"
 echo "======================================================================"
 
 # -------- 工具存在性自检 --------
@@ -58,31 +72,34 @@ done
 
 if [ "$missing" -eq 1 ]; then
   echo ""
-  echo "[pre-commit] ⚠  本地 Flutter 工具链缺失，四闸不做阻断拦截。"
+  echo "[pre-commit] ⚠  本地 Flutter 工具链缺失，快道不做阻断拦截。"
   echo "              请在 PATH 中加入 Flutter/bin，或依赖 push 后 CI 拦截。"
   echo "              安装指引：https://docs.flutter.dev/get-started/install"
   exit 0
 fi
 
-# -------- 执行四闸 --------
+# -------- 执行快道 --------
 FLUTTER_DIR="$REPO_ROOT/yuesheng-flutter"
-if [ ! -f "$FLUTTER_DIR/scripts/gate.sh" ]; then
-  echo "[pre-commit] ❌ 找不到 gate.sh：$FLUTTER_DIR/scripts/gate.sh"
+if [ ! -f "$FLUTTER_DIR/scripts/gate-fast.sh" ]; then
+  echo "[pre-commit] ❌ 找不到快道脚本：$FLUTTER_DIR/scripts/gate-fast.sh"
+  echo "              （若该脚本尚未落地，可临时改回 bash scripts/gate.sh）"
   exit 1
 fi
 
 cd "$FLUTTER_DIR" || exit 1
-if bash scripts/gate.sh; then
+if bash scripts/gate-fast.sh; then
   echo ""
-  echo "[pre-commit] ✅ 五道门禁全部通过，允许提交"
+  echo "[pre-commit] ✅ 快道门禁通过，允许提交"
+  echo "[pre-commit] ⚠️  提醒：这不是收尾全绿。声称「完成」前须跑"
+  echo "[pre-commit]     cd yuesheng-flutter && bash scripts/gate.sh（十二道）"
   exit 0
 else
   echo ""
   echo "======================================================================"
-  echo "[pre-commit] ❌ 五道门禁未通过，提交被拦截。"
+  echo "[pre-commit] ❌ 快道门禁未通过，提交被拦截。"
   echo ""
   echo "  👉 请修复上方 FAIL 的门禁后再次提交；"
-  echo "     或查看 yuesheng-flutter/outputs/gate/gate-report.md 获取报告。"
+  echo "     或查看 yuesheng-flutter/outputs/gate-fast/gate-report.md 获取报告。"
   echo ""
   echo "  👉 紧急提交（仍会被 CI 事后拦截）："
   echo "     SKIP_GIT_GATE=1 git commit ..."

@@ -18,7 +18,15 @@
 #            故 info 级风格问题不阻断（那是门禁 0 的职责）。
 #            **复现门禁请用 `dart analyze`，勿用 `flutter analyze`**——
 #            后者 infos 也 fatal，会得到 rc=1 的假红（2026-09-17 实测踩过）。
-# 门禁 2: 单元测试 (flutter test --coverage) — 同时产出 coverage/lcov.info
+# 门禁 2: 单元测试 (scripts/_run_flutter_test.sh → flutter test --coverage
+#            --exclude-tags live,external) — 同时产出 coverage/lcov.info
+#         ⚠️ 固定参数以 scripts/_run_flutter_test.sh 为**单一真源**，此处不复述。
+#            其中 --exclude-tags live,external 于 2026-09-17 补齐：此前**只有 CI**
+#            有标签排除、本地门禁 2 没有 ⇒ 同一仓库两套口径。CI 注释写明该参数是
+#            「双保险：即使某条 live 测试的 markTestSkipped 位置没提前到
+#            LlmClient() 构造之前，也不会触发出站网络调用」。本地同样需要。
+#         ⚠️ 快道（gate-fast.sh）置 RUN_FLUTTER_TEST_COVERAGE=0 关掉 --coverage：
+#            窄范围测试若写了 lcov，会盖掉 coverage/lcov.info，使收尾门禁 6 假红。
 # 门禁 3: 循环依赖扫描 (scripts/check_circular.py) — 宪法 §二.4 / R-020
 #         **全量卡口**：2026-09-03 ADR-C70 解开全部 3 个存量环后已撤除豁免基线
 #         ⚠️ 本门禁曾长期假绿（路径不可解析 + lib 缺失时 return 0 放行 +
@@ -41,7 +49,9 @@
 #          把 A 类豁免的**前提**变成可执行判据（内容级），堵住门禁 10 的 fail-open
 #          基线 tool/a_class_exemption_baseline.json，止血模式：只卡新增
 #
-# 用法:  bash scripts/gate.sh
+# 用法:  bash scripts/gate.sh          ← **收尾门禁**：十二道全量（约 4~5 分钟）
+#        bash scripts/gate-fast.sh     ← **迭代快道**：门禁 2 只跑受影响测试、
+#                                         门禁 6 按设计不跑（约 40 秒）
 # 退出码: 任一门禁 FAIL **或** 任一门禁未真正执行 (SKIP/DEGRADED) 则非 0
 #
 # ⚠️ 失败关闭约定 (2026-09-12 实证，三脚本统一)：

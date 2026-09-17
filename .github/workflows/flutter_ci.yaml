@@ -1,5 +1,24 @@
 name: Flutter CI (yuesheng-flutter)
 
+# ---------------------------------------------------------------------------
+# ★ 本地十二道 vs 本 CI 实际覆盖（2026-09-17 口径收口 —— 事实登记，非待办）
+#
+# 本地权威口径 = yuesheng-flutter/scripts/gate.sh（十二道，编号 0–11）。
+# 本 workflow 只跑其中一部分。这是**已知且被接受**的设计，不是遗漏：
+# R-027 的 machine_check 明确写着「门禁 5 目前只在本地 gate.sh 执行，CI 未接入」。
+#
+#   CI 覆盖：0 format · 1 analyze · 2 test · 3 circular · 4 secrets · 6 coverage
+#   CI 未跑：5 R-019 函数行数 · 7 Prompt 反模式 · 8 内容元数据 ·
+#           9 交互回归 · 10 伪拆分形态 · 11 A 类豁免准入
+#           （六道均为**纯静态 python 脚本**，不依赖 Flutter SDK，具备接入条件；
+#             未接入的理由是控制 CI 时长与失败面，而非不可行。）
+#   仅 CI 有：依赖健康（dart pub outdated）—— 本地十二道里**没有**这一道。
+#
+# ⇒ 判据：**本地全绿才是收尾**；CI 全绿 ≠ 十二道全绿。
+# ⇒ 编号纪律：本地编号 0–11 见 gate.sh 头部注释（唯一真源）。写 CI step 名时
+#    不得把「本地没有的门禁」也标成某个本地编号（历史上 "Gate 5" 撞号过一次）。
+# ---------------------------------------------------------------------------
+
 # 教训落地：报告第四节 #4「测试覆盖用机器保证」——把 analyze + test 设进 CI 门禁，
 # 不允许「没测试也提交 / 靠人工跑」。仅当 Flutter 子目录或本工作流变更时触发，
 # 避免 RN 工程改动无谓消耗 CI。
@@ -45,11 +64,20 @@ jobs:
 
       - name: Check formatting (Gate 0)
         # 宪法 §二.2：dart format --set-exit-if-changed 通过。
-        # X-034-FORMAT 基线 commit 3c95534c 之后，任何格式漂移都会被阻断。基线：276 文件 0 变动。
-        run: dart format --set-exit-if-changed -o none lib
+        # X-034-FORMAT 基线 commit 3c95534c 之后，任何格式漂移都会被阻断。
+        # 2026-09-17 范围收口：原为 `lib`，现与本地 gate.sh 门禁 0 对齐为
+        #   `lib test integration_test tool` —— 此前 test/ 从未被格式检查
+        #   （本地扩范围后实测 rc=0，test/ 的格式债已于同期批次清零）。
+        run: dart format --set-exit-if-changed -o none lib test integration_test tool
 
-      - name: Static analysis
-        run: flutter analyze lib
+      - name: Static analysis (Gate 1)
+        # ⚠️ 必须用 `dart analyze`，**不要**改成 `flutter analyze`：
+        #    前者默认 --fatal-infos=off，后者 infos 也 fatal ⇒ 会得到 rc=1 的假红
+        #    （本地 gate.sh 头部注释已记载该坑）。
+        # 2026-09-17 范围收口：原为 `flutter analyze lib`，现与本地 gate.sh 门禁 1
+        #    对齐为 lib + integration_test + tool + test。扩范围的动因是实证代价：
+        #    integration_test/ 与 test/ 里各躺着一个**编译级 error**长达一个月无人察觉。
+        run: dart analyze lib integration_test tool test
 
       - name: Check circular dependencies (Gate 3)
         # 宪法 §二.4 + R-020 循环依赖零容忍：lib 内 import 图 DFS，0 环必过。
@@ -61,7 +89,11 @@ jobs:
         # 与本地 gate.sh / pre-commit 调用同一脚本 scripts/check_secrets.sh，行为一致。
         run: bash scripts/check_secrets.sh
 
-      - name: Check dependency health (Gate 5 — advisory, non-blocking for push/main)
+      - name: Check dependency health (advisory, non-blocking for push/main)
+        # ⚠️ 本条**不是**本地十二道里的「门禁 5」——本地门禁 5 = R-019 函数行数
+        #    （tool/check_r019.py）。历史上这里写作 "Gate 5"，与本地编号体系撞号：
+        #    两个「5」指两件完全不同的事。2026-09-17 收口时去掉该编号，避免歧义。
+        #    依赖健康在本地十二道里**没有**对应门禁，是 CI 独有的一道。
         # 宪法 §二.6 依赖审计：dart pub outdated --json 解析（CLI 更名）。
         # 分级：CRITICAL（命中官方安全公告 isCurrentAffectedByAdvisory）/ HIGH（停更/撤回）/ MEDIUM / LOW。
         # push/main 模式 = 仅告警不阻断（exit 0），CRITICAL/HIGH 通过 ::warning 注解在 Actions UI 标红。
@@ -69,10 +101,13 @@ jobs:
         # 高危豁免：scripts/dependency_exemptions.json（until_date + D# 决策号登记，过期自动失效）。
         run: dart pub outdated --json --no-dependency-overrides | python3 scripts/check_outdated.py --mode push
 
-      - name: Run tests
+      - name: Run tests (Gate 2)
         # 含 LLM 的 live 测试组在无 DEEPSEEK_API_KEY 时会 markTestSkipped（见 flutter-llm-coach-validation skill），
         # 无需密钥。此处额外 --exclude-tags 做双保险（B2-5 方案）：即使某条 live 测试 markTestSkipped 位置没提前到
         # LlmClient() 构造之前，也不会触发出站 LLM/External 网络调用，直接跳过整个标签组，从根源避免 CI 因外网静默 hang。
+        # 2026-09-17 口径收口：该 --exclude-tags 本地也已补上（原先**只有 CI 有**，本地
+        #   gate.sh 门禁 2 不排除 live/external ⇒ 同一仓库两套口径）。本地由
+        #   scripts/_run_flutter_test.sh 固定附加，且本地会另加 --coverage（CI 在此也加了）。
         run: flutter test --exclude-tags live,external --coverage
       - name: Verify coverage artifact
         # 仅做存在性+大小校验；防止 --coverage 没生效（test 全 PASS 但 coverage 生成失败时能立即暴露）。

@@ -14,6 +14,8 @@
 # 代理清空：复用 gate.sh V4.18 的兜底（HTTP_PROXY / HTTPS_PROXY 设为空）。
 #
 # 用法：bash scripts/_run_flutter_test.sh [flutter test args...]
+#   固定附加：--exclude-tags live,external（可覆盖：再传同参数由 flutter 取后者）
+#   覆盖率：默认 --coverage；快道置 RUN_FLUTTER_TEST_COVERAGE=0 关闭
 # 退出码：透传 flutter test 自身退出码。
 # ============================================================
 set -u
@@ -45,9 +47,9 @@ cleanup_lock() {
     rm -f "$LOCK"
   fi
 }
-# exec 之后本进程被 flutter 替换，EXIT trap 在该场景下不可靠；
-# 真正的兜底是「陈旧锁自愈」——pid 不存在时下一个调用者会自动清理。
-# trap 仍保留，覆盖 flutter 未启动就失败的路径。
+# ★ 2026-09-17 起**不再用 exec** 启动 flutter（理由见文件末尾注释），
+EXIT trap 因此恢复正常工作；下面这行 trap 保留作兜底，
+覆盖「flutter 尚未启动就失败」的路径。
 trap cleanup_lock EXIT INT TERM
 echo "$$" > "$LOCK"
 
@@ -60,9 +62,34 @@ PROG_FILES_X86="${PROGRAMFILES_X86:-C:\\Program Files (x86)}"
 # 2. 清代理（V4.18）+ 注入 PROGRAMFILES(X86) + 透传所有 flutter test 参数
 #    V4.27：必须写 /usr/bin/env 绝对路径——uv 遗留 shim（~/.local/bin/env）
 #    会遮蔽裸 env（只 export PATH 不 exec），导致 flutter 静默不执行、假绿。
-#    --coverage 自 2026-09-12 起固定开启（门禁 6 依赖门禁 2 产出的 lcov）；
-#    锁文件保证同一时刻只有一个 --coverage 写入者。
-exec /usr/bin/env "PROGRAMFILES(X86)=${PROG_FILES_X86}" \
+#
+#    --coverage：默认开启（门禁 6 依赖门禁 2 产出的 lcov；锁文件保证同一时刻
+#      只有一个 --coverage 写入者）。**快道**（gate-fast.sh）会置
+#      RUN_FLUTTER_TEST_COVERAGE=0 关掉它 —— 窄范围测试若写 lcov，会把只含
+#      几个文件的覆盖率文件留在 coverage/lcov.info 上，之后收尾门禁 6 读到它
+#      必然 T1 假红（实测：单文件 lcov 的 T1 仅 0.83%）。
+#
+#    --exclude-tags live,external：**固定开启**（2026-09-17 口径收口）。
+#      此前只有 CI 加了标签排除、本地门禁 2 不加 ⇒ 本地与 CI 口径分叉。
+#      CI 注释写明它是「双保险：即使某条 live 测试的 markTestSkipped 位置没提前
+#      到 LlmClient() 构造之前，也不会触发出站网络调用」。本地同样需要。
+#      ⇒ **单一真源在此**，调用方不要再重复传 --exclude-tags。
+COV_FLAG="--coverage"
+if [ "${RUN_FLUTTER_TEST_COVERAGE:-1}" = "0" ]; then
+  COV_FLAG=""
+fi
+# ★ 这里**故意不用 `exec`**（2026-09-17 实测修正）：
+#   旧实现 `exec ... flutter test` 会让 bash 被 flutter 替换进程映像，
+#   于是 EXIT trap 永不触发 ⇒ **每次跑完都在工作区留下一个 .flutter_test.lock**。
+#   它靠「下次发现 pid 已死就自愈」才没阻塞，但每次都会：①污染 git status；
+#   ②若该 pid 被系统复用给别的进程，会误报「已有 flutter test 在跑」而拒绝执行
+#     （exit 75），看起来像门禁故障。
+#   实测：快道首跑结束后锁仍在，内容 pid 已不存在、且全机无 dart/flutter 进程。
+#   代价：多一个常驻 bash 等子进程（可忽略）；Ctrl+C 仍经进程组送达 flutter。
+/usr/bin/env "PROGRAMFILES(X86)=${PROG_FILES_X86}" \
   HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= \
   NO_PROXY=localhost,127.0.0.1 \
-  flutter test --coverage "$@"
+  flutter test $COV_FLAG --exclude-tags live,external "$@"
+RC=$?
+cleanup_lock
+exit $RC
