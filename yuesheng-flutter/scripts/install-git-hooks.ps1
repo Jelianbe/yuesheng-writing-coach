@@ -1,4 +1,4 @@
-#Requires -Version 5
+﻿#Requires -Version 5
 # ============================================================================
 # 月笙写作教练 —— 本地 pre-commit hook 一键安装脚本
 #
@@ -13,7 +13,10 @@
 #      ⇒ throw「Hook 源文件不存在」。
 #   b) 旧版把 hook 写进 `<repo>/.githooks/pre-commit`，但**从不设置
 #      core.hooksPath** —— 该目录不是 git 的默认 hook 位置，即便装上也不生效。
-#      现改为写入 git 的默认生效路径 `.git/hooks/pre-commit`（零配置）。
+#      现改为写入 git 的默认生效路径 `<git-dir>/hooks/pre-commit`（零配置）。
+#   c) （2026-09-17 安装前复核追加）目标目录原用**字面量 `.git`** 拼接，违反
+#      AGENTS.md §9 硬纪律（`.git/` 路径必须走 `git rev-parse`）；改用
+#      `--absolute-git-dir`。
 #
 # 用法（在仓库任意子目录执行）：
 #   pwsh yuesheng-flutter/scripts/install-git-hooks.ps1
@@ -43,8 +46,16 @@ try {
         throw "Hook 源文件不存在：$SrcHook"
     }
 
-    # ---- 目标：git 的默认生效路径 .git/hooks/（★ 修点 b）----
-    $HooksDir = Join-Path (Join-Path $RepoRoot '.git') 'hooks'
+    # ---- 目标：git 的默认生效路径 <git-dir>/hooks/（★ 修点 b）----
+    # ★ 修点 c（2026-09-17 安装前复核）：旧写法用**字面量 `.git`**，违反项目硬纪律
+    #   「任何 `.git/` 路径操作都要用 `git rev-parse --git-dir`，不要写字面量 `.git`」
+    #   （AGENTS.md §9；2026-09-06 实证：在子目录里建出**假 `.git`**，ref 全不生效）。
+    #   改用 `--absolute-git-dir`：对 cwd 在子目录 / worktree / 子模块等情形均正确。
+    $GitDir = & git rev-parse --absolute-git-dir 2>$null
+    if (-not $GitDir) {
+        throw '无法定位 git 目录（git rev-parse --absolute-git-dir 失败）。'
+    }
+    $HooksDir = Join-Path $GitDir 'hooks'
     if (-not (Test-Path $HooksDir)) {
         New-Item -ItemType Directory -Path $HooksDir -Force | Out-Null
     }

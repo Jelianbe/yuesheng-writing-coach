@@ -28,6 +28,12 @@
 # 退出码: 任一门禁 FAIL 或任一门禁未真正执行 (SKIP) 则非 0。
 #         门禁 6「按设计未执行」**不计入** degraded（快道本就不含它），
 #         但在报告顶部显著标注，防止被误读为「全绿」。
+#
+# ★ 计数口径（2026-09-17 修）：通过 / 失败 / SKIP（未真正执行）/ 未执行（门禁 2）
+#   **各占一个数**，四者之和 = 11；再加「门禁 6 恒不执行」= 12 道齐。
+#   修因：此前门禁 2 的 NOTRUN 既不走 log_result 也不单独计数，11 道只跑了 10 道，
+#   汇总行却打印「10 通过 / 0 失败 / 0 未执行」—— 差额被藏起来，读起来像全绿。
+#   ⇒ **任何「未执行」都必须自己占一个数**，否则它只能藏在差额里。
 # ============================================================
 set -u
 
@@ -80,6 +86,10 @@ COVERAGE_LOG="$OUT_DIR/coverage.txt"
 pass=0
 fail=0
 degraded=0
+# ★ 2026-09-17 修：`notrun` 计数。此前门禁 2 的 NOTRUN 既不走 log_result 也不计数，
+# 于是 11 道里只跑了 10 道，汇总行却打印「10 通过 / 0 失败 / 0 未执行」——
+# 读起来像全绿。**「未执行」必须自己占一个数**，否则它就只能藏在差额里。
+notrun=0
 
 emit() { printf '%s\n' "$1"; }
 log_result() {
@@ -117,23 +127,50 @@ fi
 #   b) lib/**.dart 改动 ⇒ 在 test/ 下按**同名约定**找 `<basename>_test.dart`
 # `core.quotepath=false` 必须有：否则含中文的路径会被 git 转义成 \"\\346...\" 形式，
 # 后续 [ -f ] / find 全部失配（静默少跑测试 = 快道最危险的失效形态）。
+# lib/ 下改动但**找不到同名测试**的文件清单。
+# 必须落文件：derive_tests 在 `$( )` 子壳里跑，变量赋值传不出来，只能靠文件当侧信道。
+NOMATCH_FILE="$OUT_DIR/_lib_nomatch.txt"
+: > "$NOMATCH_FILE"
+
+# ★★ 2026-09-17 修：`git status --porcelain` 的路径**恒相对仓库根**（与人读格式
+#    不同，后者相对 cwd），而本脚本 cd 在 `yuesheng-flutter/`（Flutter 项目是公仓的
+#    子目录）。原写法 `case "$f" in lib/*.dart)` 直接匹配 ⇒ **永远不匹配** ⇒
+#    默认 auto 模式一个测试都推不出来，门禁 2 每次都静默记 NOTRUN。
+#    （讽刺的是：脚本自己的注释早就写明「静默少跑测试 = 快道最危险的失效形态」。）
+#    ⇒ 用 `git rev-parse --show-prefix` 取前缀（本仓 = `yuesheng-flutter/`；
+#    若 ROOT 恰为仓库根则为空串），**匹配时带上、取用时剥掉**。
+PREFIX="$(git rev-parse --show-prefix 2>/dev/null)"
+
 derive_tests() {
-  local changed base
+  local changed f rel base hits
   changed="$(git -c core.quotepath=false status --porcelain -uall 2>/dev/null \
     | awk '{ $1=""; sub(/^ /,""); print }')"
-  for f in $changed; do
-    case "$f" in
-      test/*.dart) [ -f "$f" ] && printf '%s\n' "$f" ;;
-    esac
-  done
-  for f in $changed; do
-    case "$f" in
-      lib/*.dart)
-        base="$(basename "$f" .dart)"
-        find test -type f -name "${base}_test.dart" 2>/dev/null
-        ;;
-    esac
-  done | sort -u
+  # ★ `sort -u` 必须罩住**两个循环**：原写法 `done | sort -u` 只绑在第二个循环上，
+  #   同一个测试文件若同时被 a) 自身改动、b) lib 同名推导 命中，就会被计两次
+  #   ⇒ TEST_COUNT 虚高（实测 1 个文件报成「2 个测试文件」）。
+  {
+    for f in $changed; do
+      case "$f" in
+        "${PREFIX}test/"*.dart)
+          rel="${f#"$PREFIX"}"
+          [ -f "$rel" ] && printf '%s\n' "$rel" ;;
+      esac
+    done
+    for f in $changed; do
+      case "$f" in
+        "${PREFIX}lib/"*.dart)
+          rel="${f#"$PREFIX"}"
+          base="$(basename "$rel" .dart)"
+          hits="$(find test -type f -name "${base}_test.dart" 2>/dev/null)"
+          if [ -n "$hits" ]; then
+            printf '%s\n' "$hits"
+          else
+            printf '%s\n' "$rel" >> "$NOMATCH_FILE"
+          fi
+          ;;
+      esac
+    done
+  } | sort -u
 }
 
 TEST_SCOPE=""
@@ -149,9 +186,22 @@ if [ -n "$TEST_SCOPE" ] && [ "$TEST_SCOPE" != "__ALL__" ]; then
   TEST_COUNT="$(printf '%s\n' "$TEST_SCOPE" | sed '/^$/d' | wc -l | tr -d ' ')"
 fi
 
+LIB_NOMATCH_COUNT=0
+if [ -s "$NOMATCH_FILE" ]; then
+  LIB_NOMATCH_COUNT="$(sed '/^$/d' "$NOMATCH_FILE" | wc -l | tr -d ' ')"
+fi
+
 echo "门禁 2 范围: ${MODE}（${TEST_COUNT} 个测试文件${TEST_SCOPE:+；__ALL__ 表示全量}）"
 if [ "$MODE" = "auto" ] && [ "$TEST_COUNT" = "0" ]; then
   echo "  [WARN] 未能从改动推导出任何测试文件 —— 门禁 2 将记为 NOTRUN（不是通过！）"
+  # ★ 「零测试」有两种完全不同的成因，外观一样，必须分开报：
+  #   a) 本次没动 lib/ 或 test/ 下的 .dart（改的是脚本/文档）⇒ 零测试是**正确的**
+  #   b) 动了 lib/**.dart 但找不到同名测试 ⇒ 零测试是**真空档**，必须点名
+  if [ "$LIB_NOMATCH_COUNT" -gt 0 ]; then
+    echo "  [WARN] ★ 本次有 ${LIB_NOMATCH_COUNT} 个 lib/ 下 .dart 改动**找不到同名测试**，一行测试都没跑："
+    sed '/^$/d' "$NOMATCH_FILE" | sed 's/^/           /'
+    echo "         若确属纯声明/纯常量的改动可接受；否则请补测试或显式 --all 全量。"
+  fi
   echo "         如需强制全量：bash scripts/gate-fast.sh --all"
 fi
 
@@ -221,6 +271,7 @@ else
   echo "  [NOTRUN] 门禁 2 未执行（未推导出受影响测试 / --no-test）—— 这不是通过"
   echo "NOTRUN: gate 2 not executed (no affected test derived, or --no-test)" > "$TEST_LOG"
   RC_TEST="NOTRUN"
+  notrun=$((notrun + 1))
 fi
 
 # ---------- 门禁 3: 循环依赖（全量卡口）----------
@@ -429,7 +480,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | 10 伪拆分形态 | $(verdict "${RC_SPLIT:-SKIP}") |
 | 11 A 类豁免准入 | $(verdict "${RC_ACLASS:-SKIP}") |
 
-汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} 未执行（SKIP） / 门禁 6 按设计未跑
+汇总: ${pass} 通过 / ${fail} 失败 / ${degraded} SKIP（未真正执行） / ${notrun} 未执行（门禁 2） / 门禁 6 按设计未跑
 
 ## 详细日志
 - 格式: outputs/gate-fast/format.txt
@@ -450,9 +501,17 @@ echo "=================================================="
 if [ "$degraded" -gt 0 ]; then
   echo "⚠️  DEGRADED: ${degraded} 门未真正执行（SKIP）——不计入通过"
 fi
-echo "汇总: $pass 通过 / $fail 失败 / $degraded 未执行（门禁 6 按设计未跑）"
+if [ "$notrun" -gt 0 ]; then
+  echo "⚠️  按设计未执行: ${notrun} 道（门禁 2 测试）—— 「通过」数不含它们，别读成全绿"
+fi
+echo "汇总: $pass 通过 / $fail 失败 / $degraded SKIP / $notrun 未执行（门禁 2） / 门禁 6 按设计未跑"
 echo "报告: $REPORT"
 echo "⚠️  这不是收尾门禁 —— 收尾请跑 bash scripts/gate.sh"
 echo "=================================================="
 
+# ★ 退出码只由 fail / degraded 决定，**不含 notrun**：
+#   门禁 2 的 NOTRUN（本次没动 .dart，或动了但无同名测试）**不阻断**提交 ——
+#   理由：它不代表「门禁坏了」，且 push 后 CI 的门禁 2 会跑全量兜住。
+#   门禁 6 恒为 NOTRUN，若并入计数则快道**永远**退出非 0，等于永远红。
+#   ⇒ 若要把「lib 改了却零测试」升级为**阻断**，改这一行即可（属语义变更，须先裁定）。
 [ "$fail" -eq 0 ] && [ "$degraded" -eq 0 ]
