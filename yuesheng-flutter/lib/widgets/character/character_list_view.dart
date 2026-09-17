@@ -60,6 +60,12 @@ Future<bool> showAndCreateCharacter(
       description: created.description,
     );
   }
+  if (!context.mounted) return false;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(content: Text('已创建角色「${created.name}」，可打标签、关联设定或补充断言')),
+    );
   return true;
 }
 

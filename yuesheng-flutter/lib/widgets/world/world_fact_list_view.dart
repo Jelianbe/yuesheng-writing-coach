@@ -84,7 +84,16 @@ Future<bool> showAndCreateWorldTheme(
       description: created.description,
     );
   }
+  if (!context.mounted) return false;
+  _notifyWorldCreated(context, created.name);
   return true;
+}
+
+/// 创建成功轻提示（A1：用户写入视角的下一步引导）。
+void _notifyWorldCreated(BuildContext context, String name) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text('已创建设定主题「$name」，可打标签、关联角色或补充断言')));
 }
 
 /// 世界观设定列表主体（无 Scaffold / 无 AppBar），可嵌入任意页面 body。

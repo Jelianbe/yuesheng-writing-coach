@@ -132,7 +132,7 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
           FilledButton.tonalIcon(
             onPressed: () => _showCreate(),
             icon: const Icon(Icons.add, size: 18),
-            label: const Text('新建'),
+            label: const Text('＋ 新建设定'),
           ),
         ],
       ),
@@ -145,7 +145,13 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
       ref,
       manuscriptId: widget.manuscriptId,
     );
-    if (created == true) await _load();
+    if (created == true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('已创建设定，可打标签、关联设定或补充内容')));
+      await _load();
+    }
   }
 
   Future<void> _showEdit(SettingEntry entry) async {

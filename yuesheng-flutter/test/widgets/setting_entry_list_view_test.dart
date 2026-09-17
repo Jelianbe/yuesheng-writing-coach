@@ -73,7 +73,7 @@ void main() {
   testWidgets('#3 新建弹窗：填名称类别正文 → 落库', (tester) async {
     await tester.pumpWidget(buildHost());
     await tester.pumpAndSettle();
-    await tester.tap(find.text('新建'));
+    await tester.tap(find.text('＋ 新建设定'));
     await tester.pumpAndSettle();
     // 弹窗表单
     await tester.enterText(find.widgetWithText(TextField, '名称'), '青霜剑');
