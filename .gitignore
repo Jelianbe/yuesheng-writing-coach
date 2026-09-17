@@ -12,12 +12,20 @@
 !yuesheng-flutter/
 !.github/
 
+# PRODUCT.md：产品定位真源（用户画像 / 品牌人格 / 反参考 / 设计原则 / 无障碍要求）。
+# 与 README.md 互补（README 面向外部读者，本文档面向设计决策），无敏感信息，故放行。
+# 2026-09-17 加入：此前被上方 /* 静默忽略，从未被跟踪（同级的 README/LICENSE 因入库早于
+# 该规则而一直正常跟踪，故只有它漏了）。
+!PRODUCT.md
+
 # 项目内忽略规则
 **/node_modules/
 **/dist/
 **/.cache/
 **/*.tsbuildinfo
 **/coverage/
+# mutation_test 的输出目录（报告含全量源码快照，体积大）。配置文件 mutation-test.xml 要跟踪。
+**/mutation-test-report/
 **/.env
 **/.env.local
 **/.env.*.local
@@ -58,6 +66,11 @@ historical-archive/
 /.workbuddy/
 /.trae/
 /AGENTS.md
+
+# skills-lock.json：AI 工具链的 skill 包锁（source/来源为外部 GitHub 仓库 + computedHash），
+# 与本产品代码无关，仅本地使用。2026-09-17 显式列出 —— 此前它只被首行 `/*` 隐式忽略，
+# 不显眼（同批把 PRODUCT.md 显式放行，两者一并明确）。
+/skills-lock.json
 /yuesheng-flutter/docs/
 /yuesheng-writing-coach/novel-chapters/
 /yuesheng-writing-coach/dev-docs/

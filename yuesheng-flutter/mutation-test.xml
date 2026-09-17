@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  定点变异测试配置 —— mutation_test 1.8.1（2026-09-17 引入）
+
+  用途：不是「跑全库」（README 警告全库可能耗时数小时，本项目 lib/ 有 400+ 文件），
+  而是**定点验证某个护栏模块的测试是否真的能发现失效**。
+
+  用法：
+    dart run mutation_test -d mutation-test.xml     # 只统计变异点，不跑测试
+    dart run mutation_test mutation-test.xml        # 真跑（每变异点跑一次 flutter test）
+    dart run mutation_test -c coverage/lcov.info mutation-test.xml   # 用覆盖率加速
+
+  ★ 默认行为不适用本项目：工具默认假定「dart test」+「lib/ 下所有 .dart」。
+    本项目用 flutter_test，且测试必须走 flutter test runner ⇒ 必须显式给 <commands>。
+
+  换目标模块时，同步改 <files> 与 <commands> 里的测试路径。
+-->
+<mutations version="1.2">
+  <files>
+    <!-- 并查集（角色身份归并），纯逻辑无 IO ⇒ 单次 flutter test 约十几秒，适合做定点样本 -->
+    <file>lib/services/character_identity.dart</file>
+  </files>
+  <commands>
+    <command group="test" expected-return="0" working-directory="." timeout="600">flutter test test/services/character_identity_test.dart</command>
+  </commands>
+</mutations>

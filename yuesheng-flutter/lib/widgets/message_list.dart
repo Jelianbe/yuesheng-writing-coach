@@ -247,7 +247,10 @@ class _MessageListState extends ConsumerState<MessageList> {
     );
     if (action == 'copy') {
       await Clipboard.setData(ClipboardData(text: message.content));
-      if (context.mounted) {
+      // 此处 context 是 State.context ⇒ 守卫须用 State 的 mounted（同文件 164/183 行同例）。
+      // 写成 context.mounted 会被判为「unrelated mounted check」（lint 只看守卫形式，
+      // 而 State.context 与 BuildContext.mounted 的配对不是它认可的形式）。
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('内容已复制')));

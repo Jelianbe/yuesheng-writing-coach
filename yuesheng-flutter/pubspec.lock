@@ -711,6 +711,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.0"
+  mutation_test:
+    dependency: "direct dev"
+    description:
+      name: mutation_test
+      sha256: "016d5a217e344c09397d770db244a9a648961d2fd4c1c80b958faf887904ae90"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.8.1"
   nested:
     dependency: transitive
     description:

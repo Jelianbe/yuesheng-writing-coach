@@ -22,10 +22,12 @@
 //   8. 合并不得绕过 F05 判据（stale 断言合并后仍被过滤）
 //   9. fillConflictExcerpts：命中填摘录 / 不命中 null
 //  10. detectConflictsForFacts 判据入口：空输入 → 空
+//  13. 别名 JSON 损坏 → 降级为空别名 + 留痕（由变异测试暴露的盲区，见用例内注释）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // 不 import drift：drift 导出 isNull / isNotNull 与 matcher 撞名（实测：
@@ -307,6 +309,42 @@ void main() {
       viaEntry.map((o) => '${o.characterName}|${o.description}').toList(),
       handMerged.map((o) => '${o.characterName}|${o.description}').toList(),
       reason: '对外只暴露判据入口，就是要让「漏掉先合并」这件事无从发生',
+    );
+  });
+
+  test('#13 别名 JSON 损坏 → 降级为空别名 + 留痕（decode_guard）', () {
+    // 本用例由**变异测试**暴露（mutation_test 1.8.1，2026-09-17 首次定点跑）：
+    // 删掉 _parseAliases catch 块里的 logDecodeFailure 调用，原用例全部照过
+    // —— 说明「解码失败要留痕」这一可观测行为此前**无任何断言**。
+    // 本用例同时锁两件事：降级结果不变（行为面）+ 留痕可见（可观测面）。
+    final logs = <String>[];
+    final originalDebugPrint = debugPrint;
+    debugPrint = (String? message, {int? wrapWidth}) {
+      logs.add(message ?? '');
+    };
+    addTearDown(() => debugPrint = originalDebugPrint);
+
+    // 不走 fact() helper —— 它内部用 jsonEncode()，造不出非法 JSON。
+    final brokenAliases = CharacterFact(
+      id: 'cf_broken',
+      manuscriptId: 'ms_1',
+      name: '林晚晴',
+      assertions: '[]',
+      description: '',
+      aliases: '{这不是合法 JSON',
+      status: 'active',
+      pinned: 0,
+      createdAt: 1000,
+      updatedAt: 1000,
+    );
+
+    final grouped = groupByIdentity([brokenAliases, fact('阿晴')]);
+    expect(grouped.length, 2, reason: '别名损坏 → 降级为空集合，不得据此与他人合并（行为零变更）');
+
+    expect(
+      logs.any((l) => l.contains('aliases') && l.contains('解析失败')),
+      isTrue,
+      reason: 'R-028：确需静默降级必须留痕，否则数据问题事后无从追溯',
     );
   });
 }
