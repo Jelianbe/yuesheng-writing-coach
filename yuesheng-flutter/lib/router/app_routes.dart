@@ -36,4 +36,7 @@ class AppRoutes {
 
   /// 标签批次后续：全稿标签总览页（设定库入口）
   static const String settingTagOverview = '/setting-tag-overview';
+
+  /// 大纲结构化批次：大纲实体详情页（互链承载；标签克制不纳入）
+  static const String outlineDetail = '/setting-outline-detail';
 }

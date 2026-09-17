@@ -10,11 +10,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/outline_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../router/app_routes.dart';
 import '../outline_drawer.dart' show kOutlineTypeOrder;
 
 /// 实体可展示的状态（rejected/superseded/expired 视为无效跳过，与大纲抽屉同）
@@ -104,6 +106,10 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
         subtitle: Text(
           '${_typeLabel(entity.entityType)} · ${_statusLabel(entity.status)}',
           style: AppTextStyles.caption,
+        ),
+        onTap: () => context.push(
+          AppRoutes.outlineDetail,
+          extra: {'manuscriptId': widget.manuscriptId, 'id': entity.id},
         ),
         trailing: isPending
             ? FilledButton(
