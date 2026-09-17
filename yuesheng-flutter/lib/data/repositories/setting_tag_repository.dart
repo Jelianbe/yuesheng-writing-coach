@@ -40,6 +40,14 @@ class SettingTagRepository {
     return [for (final r in rows) r.tag];
   }
 
+  /// 全稿标签聚合（标签总览用）：返回该作品的全部标签行（跨实体）。
+  Future<List<SettingTag>> listAllForManuscript(String manuscriptId) async {
+    final rows = await (_db.select(
+      _db.settingTags,
+    )..where((t) => t.manuscriptId.equals(manuscriptId))).get();
+    return rows;
+  }
+
   /// 幂等添加（先查后插，避开 UniqueConstraintViolationException 路径）。
   Future<void> addTag(
     String manuscriptId,

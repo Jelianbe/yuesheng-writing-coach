@@ -12,8 +12,10 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../config/app_theme.dart';
+import '../../router/app_routes.dart';
 import '../character/character_list_view.dart';
 import '../world/world_fact_list_view.dart';
 import 'outline_entity_list_view.dart';
@@ -38,28 +40,8 @@ class _SettingLibraryTabState extends State<SettingLibraryTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.page,
-            AppSpacing.sm,
-            AppSpacing.page,
-            AppSpacing.xs,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: SegmentedButton<_Section>(
-              segments: const [
-                ButtonSegment(value: _Section.character, label: Text('角色')),
-                ButtonSegment(value: _Section.outline, label: Text('大纲')),
-                ButtonSegment(value: _Section.world, label: Text('世界观')),
-                ButtonSegment(value: _Section.other, label: Text('其他')),
-              ],
-              selected: {_section},
-              showSelectedIcon: false,
-              onSelectionChanged: (s) => setState(() => _section = s.first),
-            ),
-          ),
-        ),
+        _buildSegmentedRow(),
+        _buildTagOverviewEntry(),
         Expanded(
           child: IndexedStack(
             index: _section.index,
@@ -72,6 +54,48 @@ class _SettingLibraryTabState extends State<SettingLibraryTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSegmentedRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.page,
+        AppSpacing.sm,
+        AppSpacing.page,
+        AppSpacing.xs,
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<_Section>(
+          segments: const [
+            ButtonSegment(value: _Section.character, label: Text('角色')),
+            ButtonSegment(value: _Section.outline, label: Text('大纲')),
+            ButtonSegment(value: _Section.world, label: Text('世界观')),
+            ButtonSegment(value: _Section.other, label: Text('其他')),
+          ],
+          selected: {_section},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) => setState(() => _section = s.first),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagOverviewEntry() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.only(right: AppSpacing.page),
+        child: TextButton.icon(
+          onPressed: () => context.push(
+            AppRoutes.settingTagOverview,
+            extra: {'manuscriptId': widget.manuscriptId},
+          ),
+          icon: const Icon(Icons.sell_outlined, size: 16),
+          label: const Text('标签总览'),
+        ),
+      ),
     );
   }
 }

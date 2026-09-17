@@ -34,6 +34,7 @@ import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
 import '../widgets/project_settings_page.dart';
 import '../widgets/settings_page.dart';
+import '../widgets/setting/setting_tag_overview_page.dart';
 import '../widgets/character/character_detail_page.dart';
 import '../widgets/world/world_fact_detail_page.dart';
 import '../widgets/world/world_fact_page.dart';
@@ -266,6 +267,19 @@ final GoRouter appRouter = GoRouter(
           return const PlaceholderPage(title: '世界观详情', subtitle: '未提供参数');
         }
         return WorldFactDetailPage(worldId: id, manuscriptId: manuscriptId);
+      },
+    ),
+
+    // ── 标签批次后续：全稿标签总览页（设定库「标签总览」入口）──
+    GoRoute(
+      path: AppRoutes.settingTagOverview,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        final manuscriptId = extra['manuscriptId'] as String? ?? '';
+        if (manuscriptId.isEmpty) {
+          return const PlaceholderPage(title: '标签总览', subtitle: '未提供作品 ID');
+        }
+        return SettingTagOverviewPage(manuscriptId: manuscriptId);
       },
     ),
 

@@ -79,4 +79,25 @@ void main() {
       '武器',
     ]);
   });
+
+  test('#6 listAllForManuscript 全稿聚合（跨实体）', () async {
+    await repo.addTag(manuscriptId, SettingEntityKind.character, 'c1', '主角团');
+    await repo.addTag(manuscriptId, SettingEntityKind.world, 'w1', '主角团');
+    await repo.addTag(manuscriptId, SettingEntityKind.setting, 's1', '武器');
+    final rows = await repo.listAllForManuscript(manuscriptId);
+    expect(rows.length, 3);
+    final kinds = {for (final r in rows) r.entityKind};
+    expect(kinds, {'character', 'world', 'setting'});
+  });
+
+  test('#7 按作品隔离：不同稿件互不串', () async {
+    final otherId = await ManuscriptRepository(
+      db,
+    ).createManuscript(title: '另一部作品');
+    await repo.addTag(manuscriptId, SettingEntityKind.character, 'c1', '主角团');
+    await repo.addTag(otherId, SettingEntityKind.character, 'c9', '悬疑');
+    final rows = await repo.listAllForManuscript(manuscriptId);
+    expect(rows.length, 1);
+    expect(rows.single.tag, '主角团');
+  });
 }

@@ -33,4 +33,7 @@ class AppRoutes {
   /// 互链批次：角色/世界观详情页（互链区块跳转用，走 context.push + extra）
   static const String characterDetail = '/setting-link-character-detail';
   static const String worldDetail = '/setting-link-world-detail';
+
+  /// 标签批次后续：全稿标签总览页（设定库入口）
+  static const String settingTagOverview = '/setting-tag-overview';
 }
