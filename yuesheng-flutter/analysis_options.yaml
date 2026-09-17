@@ -4,6 +4,34 @@ analyzer:
   exclude:
     - '**/*.g.dart'
     - '**/*.freezed.dart'
+    # ── 2026-09-17 新增：隔离「非源码产物」──
+    # 动因：全仓扫描 404 条诊断中 323 条落在非源码产物上，噪音淹没信号。
+    #   · outputs/  下单个 _manuscript_fixed.bak.dart 就贡献 244 条
+    #   · docs/audits/_prompt_dump/ 是 prompt 审计 dump 出的**代码片段**，
+    #     非完整源码，缺上下文必然 undefined_class/undefined_function 满天飞
+    # 注：本项对门禁 1 **无影响**——门禁 1 只扫 lib/integration_test/tool，
+    #     不含这些路径；作用是让「全仓扫描」可用于诊断。
+    - '**/*.bak.dart'
+    - 'outputs/**'
+    - 'docs/**'
+
+  # ── 2026-09-17 新增：严格模式三开关（批 4）──────────────────────────
+  # 动因：影子目录实测在 lib/ 揪出 36 条诊断，其中 **21 条是 error 级**，
+  #   且全部集中在 LLM JSON 解析边界 —— 正是 decode_guard.dart 事后兜底的
+  #   那类崩溃源。实例：chat_service.dart 用 `dynamic parsed` 主动放弃类型
+  #   系统（派生 8 条）；genui_parser.dart 把 dynamic 当 Iterable 遍历。
+  #   严格模式把「事后兜底」变成「事前暴露」。
+  # 前置：2026-09-17 已修复全部 36 条（12 个文件 / 21 处改动，逐处零行为
+  #   变更或有据的行为收紧，详见 .ai/reports/2026-09-17-生态方案落地执行.md）。
+  # 实测：开启后 lib(6 info) / integration_test(0) / tool(5 info) 三目录
+  #   均 rc=0，与开启前完全一致。
+  language:
+    # 隐式 downcast（dynamic → 具体类型）不再静默通过
+    strict-casts: true
+    # 推断失败即报（裸 Future.delayed、泛型函数调用无类型实参等）
+    strict-inference: true
+    # 裸泛型（Map / List 未给类型参数）即报
+    strict-raw-types: true
 
 linter:
   rules:
@@ -11,3 +39,122 @@ linter:
     recursive_getters: false
     # drift 生成类的构造函数签名导致 super parameter 语法不兼容
     use_super_parameters: false
+
+    # ── 2026-09-17 新增：正确性规则补强（批 1 · 实测零影响）─────────────
+    # 依据：`.ai/tools/probe_lint_rules.py` 影子目录对照实测（扫 lib/，增量全为 0）。
+    # 本批规则当前**无一条违反**，启用成本为零；价值在防止**未来新代码**引入。
+    # 另有 10 条候选规则实测有影响（+1 ~ +298 条），**刻意未启用**，
+    # 见 `.ai/reports/2026-09-17-生态方案对照与检查体系整改.md`。
+    #
+    # 资源生命周期
+    cancel_subscriptions: true
+    close_sinks: true
+    # 异步
+    # ⚠️ 2026-09-17 移除 `async_return_with_no_await` / `no_dynamic_casts`（下方）
+    #   / `future_sync_value`（下方）三条 —— **本地 Dart SDK 3.12.2 不认识它们**
+    #   （属 Dart 3.13 新增），写着只会产生 `undefined_lint` 且**永不生效**。
+    #   ⇒ 批 1 当时报的「19 条零影响」实为「16 条生效 + 3 条不存在」，
+    #     属**假验证**，已在 `.ai/reports/2026-09-17-lint规则全集落地.md` 订正。
+    #   复现命令：`python .ai/tools/_probe_unknown_rules.py`
+    #   待 SDK ≥ 3.13 后重新评估启用。
+    # 异常处理
+    avoid_catching_errors: true
+    throw_in_finally: true
+    # 类型安全
+    tighten_type_of_initializing_formals: true
+    unsafe_variance: true
+    # 相等性 / 类型契约
+    test_types_in_equals: true
+    # ⚠️ 2026-09-17 移除 `avoid_null_checks_in_equality_operators`：
+    #   官方已将其标记为 **deprecated**（analyzer 报 `deprecated_lint`：
+    #   "The lint rule ... is deprecated and shouldn't be enabled"）。
+    #   ⇒ 批 1 当时把它当作有效规则启用，属**未核对规则生命周期**。
+    #   复现：`python .ai/tools/check_config_health.py`
+    avoid_equals_and_hash_code_on_mutable_classes: true
+    avoid_implementing_value_types: true
+    # 控制流与可达性
+    invalid_case_patterns: true
+    unreachable_from_main: true
+    literal_only_boolean_expressions: true
+    # 运行时陷阱
+    avoid_type_to_string: true
+    no_runtimetype_tostring: true
+    avoid_js_rounded_ints: true
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 批 6 —— 官方规则全集补全（2026-09-17）
+    #   依据：官方全集 250 条（`dart.dev/tools/linter-rules/all`，SDK 3.13.3）
+    #   逐条影子实测，见 `.ai/tools/lint_rules_official.txt`
+    #   + `.ai/reports/2026-09-17-lint规则全集落地.md`。
+    #
+    #   本批 43 条，**实测 `lib/` + `test/` 双目录增量均为 0**
+    #   （A/B 对照：94 条 → 94 条，逐规则一致）。
+    #   零影响 ⇒ 现有代码已全部符合 ⇒ 启用无返工，价值在防止未来新代码漂移。
+    #
+    #   ▸ 剔除 · 本地不认（9 条）：本地 SDK 3.12.2 不认识这些（属 Dart 3.13 新增），
+    #     写进配置只会产生 `undefined_lint` 且**永不生效**。
+    #     复现：`python .ai/tools/_probe_unknown_rules.py`
+    #   ▸ 剔除 · 非零影响（6 条）：`use_raw_strings` / `matching_super_parameters` /
+    #     `no_adjacent_strings_in_list` / `type_annotate_public_apis` /
+    #     `use_named_constants` / `prefer_foreach`
+    #     —— 在 `test/` 合计 **+27 条**，在 `lib/` 为 0。门禁 1 不含 `test/`，
+    #     故不影响门禁，但会加重「批 5：test/ 纳入门禁」的清理清单 ⇒ **刻意暂缓**。
+    #   ▸ 未启用 · 有影响（72 条，含 4 对互斥规则）：全开将 **+42,455 条**诊断
+    #     （仅 `prefer_double_quotes` 一项就 +10,491）。分档方案见报告 §3。
+    #
+    #   ⚠️ 改本文件后**必须**跑配置自检：
+    #      `python .ai/tools/check_config_health.py`
+    #      —— 检「未识别 / 互斥 / 已弃用 / 同名重复键」四类**不会触发门禁**的静默失效。
+    #      2026-09-17 已因 camelCase 规则名漏去重产生重复键，
+    #      导致 analyzer **丢弃整份 lint 配置**（诊断 121 → 41 静默蒸发）。
+    # ═══════════════════════════════════════════════════════════════════════
+    # ── A. 声明与类型显式化 ──
+    always_declare_return_types: true
+    annotate_redeclares: true
+    avoid_double_and_int_checks: true
+    avoid_field_initializers_in_const_classes: true
+    avoid_returning_this: true
+    conditional_uri_does_not_exist: true
+    implicit_reopen: true
+    prefer_void_to_null: true
+    switch_on_type: true
+    use_enums: true
+    # ── B. 空安全陷阱（"多余"操作恰是意图写错的信号）──
+    prefer_null_aware_method_calls: true
+    unnecessary_await_in_return: true
+    unnecessary_null_aware_operator_on_extension_on_nullable: true
+    unnecessary_unawaited: true
+    # ── C. 真 bug 捕获类 ──
+    no_literal_bool_comparisons: true          # 恒真/恒假
+    no_self_assignments: true
+    unnecessary_statements: true               # 无副作用的无效语句
+    use_truncating_division: true              # 整数除法陷阱
+    # ── D. 资源与生命周期 ──
+    use_late_for_private_fields_and_variables: true
+    # ── E. 弃用与发布卫生 ──
+    deprecated_consistency: true
+    deprecated_member_use_from_same_package: true
+    eol_at_end_of_file: true
+    library_names: true
+    package_prefixed_library_names: true
+    remove_deprecations_in_breaking_versions: true
+    unnecessary_library_directive: true
+    # ── F. 集合与迭代 ──
+    prefer_final_in_for_each: true
+    prefer_for_elements_to_map_fromIterable: true
+    prefer_iterable_whereType: true            # whereType 优于 where+cast
+    prefer_mixin: true
+    # ── G. 可读性与一致性 ──
+    avoid_final_parameters: true
+    avoid_private_typedef_functions: true
+    flutter_style_todos: true
+    no_default_cases: true
+    prefer_asserts_in_initializer_lists: true
+    prefer_asserts_with_message: true
+    require_trailing_commas: true
+    simplify_variable_pattern: true
+    sized_box_shrink_expand: true
+    sort_unnamed_constructors_first: true
+    use_test_throws_matchers: true
+    use_to_and_as_if_applicable: true
+    var_with_no_type_annotation: true

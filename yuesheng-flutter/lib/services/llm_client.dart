@@ -276,8 +276,10 @@ class LlmClient {
     if (data is String && data.isNotEmpty) {
       try {
         final errJson = jsonDecode(data) as Map<String, dynamic>;
-        final msg = errJson['error']?['message'];
-        if (msg != null) preview = msg;
+        final Object? msg = errJson['error']?['message'];
+        // 显式判 String（严格模式 invalid_assignment）：原写法 dynamic 赋值给 String?
+        // 在 message 非字符串时会抛 TypeError 落入下方 catch、结果同为响应体预览。
+        if (msg is String) preview = msg;
       } catch (_) {
         preview = data.length > LlmConfig.errorPreviewLength
             ? data.substring(0, LlmConfig.errorPreviewLength)

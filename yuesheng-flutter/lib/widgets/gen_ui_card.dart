@@ -224,7 +224,7 @@ class _GenUiStat extends StatelessWidget {
     final rawItems = data['items'];
     final items = (rawItems is List)
         ? rawItems
-              .whereType<Map>()
+              .whereType<Map<dynamic, dynamic>>()
               .map((m) => Map<String, dynamic>.from(m))
               .toList()
         : <Map<String, dynamic>>[];
@@ -324,7 +324,7 @@ class _GenUiProgress extends StatelessWidget {
     final rawSteps = data['steps'];
     final steps = (rawSteps is List)
         ? rawSteps
-              .whereType<Map>()
+              .whereType<Map<dynamic, dynamic>>()
               .map((m) => Map<String, dynamic>.from(m))
               .toList()
         : <Map<String, dynamic>>[];
@@ -468,7 +468,7 @@ class _GenUiTimeline extends StatelessWidget {
     final rawEvents = data['events'];
     final events = (rawEvents is List)
         ? rawEvents
-              .whereType<Map>()
+              .whereType<Map<dynamic, dynamic>>()
               .map((m) => Map<String, dynamic>.from(m))
               .toList()
         : <Map<String, dynamic>>[];

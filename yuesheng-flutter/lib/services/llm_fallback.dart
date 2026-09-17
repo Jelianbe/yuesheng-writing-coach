@@ -38,7 +38,7 @@ List<LlmFallbackEntry> parseFallbacks(String? raw) {
     final decoded = jsonDecode(raw);
     if (decoded is! List) return const [];
     return decoded
-        .whereType<Map>()
+        .whereType<Map<dynamic, dynamic>>()
         .map((m) => m.cast<String, dynamic>())
         .where((m) => (m['baseUrl'] as String?)?.isNotEmpty ?? false)
         .map(

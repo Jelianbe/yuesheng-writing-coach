@@ -44,7 +44,7 @@ class AdoptSuggestionSheet extends ConsumerStatefulWidget {
     required String suggestion,
     required VoidCallback onAdopted,
   }) {
-    showYueModalBottomSheet(
+    showYueModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (_) => AdoptSuggestionSheet(

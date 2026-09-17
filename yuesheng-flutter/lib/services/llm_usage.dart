@@ -174,7 +174,7 @@ class LlmUsage {
   }
 
   /// 缓存命中数：优先 DeepSeek 顶层键，其次 OpenAI 的详情嵌套键
-  static int _cachedFrom(Map raw) {
+  static int _cachedFrom(Map<dynamic, dynamic> raw) {
     final top = _intOrNull(raw['prompt_cache_hit_tokens']);
     if (top != null) return top;
     final details = raw['prompt_tokens_details'];
@@ -183,7 +183,7 @@ class LlmUsage {
   }
 
   /// 推理 token 数：`completion_tokens_details.reasoning_tokens`
-  static int _reasoningFrom(Map raw) {
+  static int _reasoningFrom(Map<dynamic, dynamic> raw) {
     final details = raw['completion_tokens_details'];
     if (details is Map) return _intOrNull(details['reasoning_tokens']) ?? 0;
     return 0;

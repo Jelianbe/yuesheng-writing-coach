@@ -363,29 +363,37 @@ ParsedDiagnosis _mapToParsedDiagnosis(Map<String, dynamic> data) {
 
 /// 可选字段安全读取（ADR-C64：schema 不校验类型，非 String 按缺失处理）。
 /// 由 _collectOptionalFieldDrifts 产出 warning（R-019 拆出）。
+///
+/// 2026-09-17：字段类型由 `dynamic` 收紧为 `String?`。本函数已是「非 String
+/// 一律按缺失」的唯一收敛点，就地收敛后上游 `_mapToParsedDiagnosis` 里 7 处
+/// `is String ? x : null` 的类型在编译期即可证明（严格模式下原报 7 条
+/// argument_type_not_assignable）。收敛逻辑与原逐处判断完全等价 ⇒ 零行为变更。
+/// 注：漂移检测走 _collectOptionalFieldDrifts(data) 读**原始** Map，不经本函数，
+/// 故收敛不影响漂移告警。
 ({
-  dynamic nextFocusRaw,
-  dynamic rootCauseRaw,
-  dynamic feedbackRaw,
-  dynamic phaseRaw,
-  dynamic levelRaw,
-  dynamic modeRaw,
-  dynamic focusIdRaw,
-  dynamic focusReasonRaw,
+  String? nextFocusRaw,
+  String? rootCauseRaw,
+  String? feedbackRaw,
+  String? phaseRaw,
+  String? levelRaw,
+  String? modeRaw,
+  String? focusIdRaw,
+  String? focusReasonRaw,
 })
 _readOptionalRawFields(
   Map<String, dynamic> data,
   Map<String, dynamic>? teachingPlan,
 ) {
+  String? asText(Object? v) => v is String ? v : null;
   return (
-    nextFocusRaw: data['next_focus'],
-    rootCauseRaw: data['root_cause_analysis'],
-    feedbackRaw: data['feedback_summary'],
-    phaseRaw: data['suggested_phase'],
-    levelRaw: data['suggested_beginner_level'],
-    modeRaw: data['teaching_mode'],
-    focusIdRaw: teachingPlan?['current_teaching_focus_id'],
-    focusReasonRaw: teachingPlan?['focus_reason'],
+    nextFocusRaw: asText(data['next_focus']),
+    rootCauseRaw: asText(data['root_cause_analysis']),
+    feedbackRaw: asText(data['feedback_summary']),
+    phaseRaw: asText(data['suggested_phase']),
+    levelRaw: asText(data['suggested_beginner_level']),
+    modeRaw: asText(data['teaching_mode']),
+    focusIdRaw: asText(teachingPlan?['current_teaching_focus_id']),
+    focusReasonRaw: asText(teachingPlan?['focus_reason']),
   );
 }
 

@@ -90,8 +90,12 @@ void _tryAddComponents(List<GenUiComponent> out, String jsonStr) {
     }
   } else if (parsed is Map) {
     final map = Map<String, dynamic>.from(parsed);
-    if (map['components'] is List) {
-      for (final e in map['components']) {
+    // 索引访问不参与类型提升（提升仅对局部变量生效）⇒ 先取出再判。
+    // 严格模式下原写法（if (map['components'] is List) 后直接遍历该索引）
+    // 报 for_in_of_invalid_type。取出是等价取值，零行为变更。
+    final comps = map['components'];
+    if (comps is List) {
+      for (final e in comps) {
         if (e is Map) _addIfValid(out, Map<String, dynamic>.from(e));
       }
     } else {

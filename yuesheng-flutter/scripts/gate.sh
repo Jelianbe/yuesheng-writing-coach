@@ -3,7 +3,16 @@
 # 月笙写作教练 Flutter 端 — 十二道门禁 (R-027 + 宪法 §二)
 #
 # 门禁 0: 代码格式 (dart format --set-exit-if-changed lib) — 宪法 §二.2
-# 门禁 1: 静态分析 (dart analyze lib) — 类型检查 + Lint
+# 门禁 1: 静态分析 (dart analyze lib integration_test tool) — 类型检查 + Lint
+#         ⚠️ 2026-09-17 扩范围：原为 `dart analyze lib`，只覆盖 lib/ ⇒ test/ ·
+#            integration_test/ · tool/ 从未被静态分析。实证代价：integration_test/
+#            内一个**编译级 error**（FakeLlmClient 未跟进 LlmClient.extraBody）
+#            躺了整整一个月无人察觉（该目录最后提交 08-16，最后改动 08-14）。
+#            test/ 待清理 32 条 warning 后再纳入（方案见 .ai/CHECKS.md）。
+#         ⚠️ fatal 语义：`dart analyze` 默认 --fatal-warnings=on / --fatal-infos=off，
+#            故 info 级风格问题不阻断（那是门禁 0 的职责）。
+#            **复现门禁请用 `dart analyze`，勿用 `flutter analyze`**——
+#            后者 infos 也 fatal，会得到 rc=1 的假红（2026-09-17 实测踩过）。
 # 门禁 2: 单元测试 (flutter test --coverage) — 同时产出 coverage/lcov.info
 # 门禁 3: 循环依赖扫描 (scripts/check_circular.py) — 宪法 §二.4 / R-020
 #         **全量卡口**：2026-09-03 ADR-C70 解开全部 3 个存量环后已撤除豁免基线
@@ -112,14 +121,15 @@ fi
 log_result "格式校验 (dart format)" "$RC_FORMAT"
 
 # ---------- 门禁 1: 静态分析 ----------
-echo "--> 门禁 1/12: 静态分析 (dart analyze lib)"
-if dart analyze lib > "$TYPECHECK_LOG" 2>&1; then
+# 2026-09-17 扩范围 lib → lib + integration_test + tool（实测 rc=0，零新增阻断）。
+echo "--> 门禁 1/12: 静态分析 (dart analyze lib integration_test tool)"
+if dart analyze lib integration_test tool > "$TYPECHECK_LOG" 2>&1; then
   RC_ANALYZE=0
 else
   RC_ANALYZE=1
   tail -n 30 "$TYPECHECK_LOG"
 fi
-log_result "静态分析 (analyze lib)" "$RC_ANALYZE"
+log_result "静态分析 (analyze lib+integration_test+tool)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
 echo "--> 门禁 2/12: 单元测试 (flutter test)"

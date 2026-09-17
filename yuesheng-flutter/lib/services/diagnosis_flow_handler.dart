@@ -398,7 +398,10 @@ class DiagnosisFlowHandler {
             .substring(startIndex + kDiagnosisStart.length, endIndex)
             .trim();
         try {
-          final rawJson = jsonDecode(jsonStr);
+          // jsonDecode 返回 dynamic。本调用位于 try 内：cast 失败与原先「传入
+          // 非 Map 再由下游取键抛错」走的是同一个 catch ⇒ 零行为变更
+          // （严格模式 argument_type_not_assignable）。
+          final rawJson = jsonDecode(jsonStr) as Map<String, dynamic>;
           final validation = _diagnosis.validateDiagnosisOutput(
             rawParse.displayContent,
             rawJson,
@@ -701,7 +704,7 @@ class DiagnosisFlowHandler {
             .substring(startIndex + kDiagnosisStart.length, endIndex)
             .trim();
         try {
-          final rawJson = jsonDecode(jsonStr);
+          final rawJson = jsonDecode(jsonStr) as Map<String, dynamic>;
           final validation = _diagnosis.validateDiagnosisOutput(
             rawParse.displayContent,
             rawJson,

@@ -46,7 +46,7 @@ Stream<String> guardStream(
       arm();
       controller.add(text);
     },
-    onError: (e, st) {
+    onError: (Object e, StackTrace st) {
       timer?.cancel();
       controller.addError(e, st);
     },

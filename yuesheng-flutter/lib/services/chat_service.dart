@@ -1482,7 +1482,11 @@ extension ChatServiceSend on ChatService {
   Future<void> _commitDiagnosisAndSuggestions({
     required String sessionId,
     required String content,
-    required dynamic parsed,
+    // 由 dynamic 收窄为具体类型：严格模式下 4 处字段访问（parsed.diagnosis /
+    // messageId / teacherResult / genuiComponents）报 argument_type_not_assignable。
+    // 实参本就是 ParseAndPersistResult（_parseAndPersistDiagnosis 返回类型），
+    // 属纯类型层修正、零行为变更。
+    required ParseAndPersistResult parsed,
     required ReferenceItem? primaryRef,
     required bool rapidFire,
     required bool flowBypassed,
@@ -1513,7 +1517,9 @@ extension ChatServiceSend on ChatService {
   Future<void> _finishTrainingAndComplete({
     required String sessionId,
     required String content,
-    required dynamic parsed,
+    // 同 _commitDiagnosisAndSuggestions：dynamic → 具体类型（严格模式
+    // argument_type_not_assignable ×4）。
+    required ParseAndPersistResult parsed,
     required String? trainingSyndromeId,
     required List<ActiveProblemView> activeProblems,
     required TeachingSubphase? currentSubphase,

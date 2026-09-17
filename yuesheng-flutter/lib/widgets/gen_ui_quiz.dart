@@ -51,7 +51,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
     final rawItems = widget.data['items'];
     _items = (rawItems is List)
         ? rawItems
-              .whereType<Map>()
+              .whereType<Map<dynamic, dynamic>>()
               .map((m) => Map<String, dynamic>.from(m))
               .toList()
         : <Map<String, dynamic>>[];
