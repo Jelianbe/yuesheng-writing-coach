@@ -20,6 +20,74 @@ import '../types/character_types.dart';
 /// 合并裁决：保留 A / 保留 B / 两者皆是（被取代者标 superseded）。
 enum MergeVerdict { keepA, keepB, keepBoth }
 
+/// 疑似重复断言对（AI 辅助比较入口）：同人物 + 同属性 + 同章（或均未标章）
+/// + 异值。跨章异值属时序演进，不构成冲突。
+class AssertionConflictPair {
+  final String name;
+  final CharacterAssertion a;
+  final CharacterAssertion b;
+
+  const AssertionConflictPair({
+    required this.name,
+    required this.a,
+    required this.b,
+  });
+}
+
+/// 侦测规则（立项备忘 §2.2，防误杀人物弧光）：同章（或均未标章）+
+/// 同实体 + 同属性 + 异值 → 疑似重复提示。跨章异值 = 时序演进，不算。
+///
+/// 输入 = 已按人物解析的断言列表（[items]）；输出按 (人物, 属性, 章节) 稳定
+/// 排序。每组冲突只取**首对**（避免同属性三值以上的 N² 爆炸）；rejected /
+/// superseded 断言不参与（已裁决或已被取代）。
+List<AssertionConflictPair> detectCharacterConflicts(
+  List<(String name, CharacterAssertion a)> items,
+) {
+  final byKey = <(String, String, int?), List<CharacterAssertion>>{};
+  for (final (name, a) in items) {
+    if (a.status == 'rejected' || a.status == 'superseded') continue;
+    byKey.putIfAbsent((name, a.attribute, a.chapter), () => []).add(a);
+  }
+  final out = <AssertionConflictPair>[];
+  for (final entry in byKey.entries) {
+    final list = entry.value;
+    if (list.length < 2) continue;
+    final first = list.first;
+    for (final other in list.skip(1)) {
+      if (other.value != first.value) {
+        out.add(AssertionConflictPair(name: entry.key.$1, a: first, b: other));
+        break; // 首对即可，避免 N²
+      }
+    }
+  }
+  out.sort((x, y) {
+    final byName = x.name.compareTo(y.name);
+    if (byName != 0) return byName;
+    final byAttr = x.a.attribute.compareTo(y.a.attribute);
+    if (byAttr != 0) return byAttr;
+    return (x.a.chapter ?? -1).compareTo(y.a.chapter ?? -1);
+  });
+  return out;
+}
+
+/// AI 辅助比较 prompt（纯分析不代决）：输入冲突对，输出对比要点与
+/// 倾向建议；最终决定权在用户（R-009）。空冲突对 → 空串（零调用）。
+String buildConflictComparisonPrompt({
+  required String name,
+  required CharacterAssertion a,
+  required CharacterAssertion b,
+}) {
+  final chapterA = a.chapter == null ? '未标注' : '第${a.chapter}章';
+  final chapterB = b.chapter == null ? '未标注' : '第${b.chapter}章';
+  return '请纯分析以下两条同属性设定（不替你决定，只给参考）：\n'
+      '人物：$name\n'
+      'A（$chapterA）：${a.attribute} = ${a.value}\n'
+      'B（$chapterB）：${b.attribute} = ${b.value}\n\n'
+      '请给出：1) 两条设定的差异要点；2) 结合写作常识，两者是否可能'
+      '并存（如性格侧面 / 阶段变化）；3) 若只能保留一条，你的倾向与理由。'
+      '最后注明「最终由你决定」。';
+}
+
 /// 设定资料库用户裁决服务（character + world 双表同构）。
 class SettingLibraryService {
   final CharacterFactRepository _characterRepo;

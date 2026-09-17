@@ -15,6 +15,8 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
+import '../../services/setting_library_service.dart';
+import '../../types/character_types.dart';
 
 /// 新建角色结果：(名字, 首见章节?, 正文?（用户自由写作，正文优先）)
 typedef CreateCharacterResult = ({
@@ -413,4 +415,174 @@ Future<CharacterFact?> showMergePickerDialog(
       ],
     ),
   );
+}
+
+/// 疑似重复对照面板（AI 辅助比较）：A/B 两断言 + 三选一裁决。
+///
+/// [aiCompare] 非空时显示「AI 帮我比较」按钮（纯分析不代决，由调用方
+/// 接 LlmClient）；返回 null = 用户取消（不落库）。
+Future<MergeVerdict?> showConflictResolutionDialog(
+  BuildContext context, {
+  required AssertionConflictPair pair,
+  Future<String> Function()? aiCompare,
+}) {
+  return showDialog<MergeVerdict>(
+    context: context,
+    builder: (ctx) =>
+        _ConflictResolutionDialog(pair: pair, aiCompare: aiCompare),
+  );
+}
+
+class _ConflictResolutionDialog extends StatefulWidget {
+  final AssertionConflictPair pair;
+  final Future<String> Function()? aiCompare;
+
+  const _ConflictResolutionDialog({required this.pair, this.aiCompare});
+
+  @override
+  State<_ConflictResolutionDialog> createState() =>
+      _ConflictResolutionDialogState();
+}
+
+class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
+  bool _aiLoading = false;
+  String? _aiAnalysis;
+
+  Future<void> _runAiCompare() async {
+    final fn = widget.aiCompare;
+    if (fn == null) return;
+    setState(() => _aiLoading = true);
+    try {
+      final text = await fn();
+      if (!mounted) return;
+      setState(() {
+        _aiAnalysis = text;
+        _aiLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _aiAnalysis = 'AI 比较失败（不影响你手动裁决）';
+        _aiLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pair = widget.pair;
+    return AlertDialog(
+      title: Text('疑似重复：${pair.a.attribute}', style: AppTextStyles.titleLg),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ConflictCard(
+              label: 'A',
+              assertion: pair.a,
+              onKeep: () => Navigator.pop(context, MergeVerdict.keepA),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _ConflictCard(
+              label: 'B',
+              assertion: pair.b,
+              onKeep: () => Navigator.pop(context, MergeVerdict.keepB),
+            ),
+            _buildAiCompareSection(context),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, MergeVerdict.keepBoth),
+          child: const Text('两者都保留'),
+        ),
+      ],
+    );
+  }
+
+  /// R-019 拆分：AI 辅助比较区（按钮 + 分析结果）
+  Widget _buildAiCompareSection(BuildContext context) {
+    final widgets = <Widget>[];
+    if (widget.aiCompare != null) {
+      widgets.add(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: _aiLoading
+              ? const Text('AI 比较中…', style: AppTextStyles.microCaption)
+              : TextButton.icon(
+                  onPressed: _runAiCompare,
+                  icon: const Icon(Icons.auto_awesome, size: 16),
+                  label: const Text('AI 帮我比较（纯分析）'),
+                ),
+        ),
+      );
+    }
+    if (_aiAnalysis != null) {
+      widgets.addAll([
+        const SizedBox(height: AppSpacing.sm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.sm),
+          ),
+          child: Text(_aiAnalysis!, style: AppTextStyles.subBody),
+        ),
+      ]);
+    }
+    if (widgets.isEmpty) return const SizedBox.shrink();
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.md),
+        ...widgets,
+      ],
+    );
+  }
+}
+
+/// 冲突单卡：断言 + 保留按钮（A/B 共用）
+class _ConflictCard extends StatelessWidget {
+  final String label;
+  final CharacterAssertion assertion;
+  final VoidCallback onKeep;
+
+  const _ConflictCard({
+    required this.label,
+    required this.assertion,
+    required this.onKeep,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chapter = assertion.chapter == null
+        ? '未标注'
+        : '第${assertion.chapter}章';
+    return Card(
+      margin: EdgeInsets.zero,
+      child: ListTile(
+        leading: CircleAvatar(
+          radius: 14,
+          child: Text(label, style: AppTextStyles.microCaption),
+        ),
+        title: Text(
+          '${assertion.attribute} = ${assertion.value}',
+          style: AppTextStyles.body,
+        ),
+        subtitle: Text('来源：$chapter', style: AppTextStyles.microCaption),
+        trailing: FilledButton.tonal(
+          onPressed: onKeep,
+          child: const Text('保留'),
+        ),
+      ),
+    );
+  }
 }

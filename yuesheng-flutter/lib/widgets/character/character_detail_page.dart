@@ -23,13 +23,17 @@ import '../../data/database/utils.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/character_fact_repository.dart';
 import '../../data/repositories/event_fact_repository.dart';
+import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/session_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/character_editor_service.dart';
+import '../../services/llm_client.dart';
 import '../../services/character_identity.dart';
 import '../../services/chat_context_builder.dart';
 import '../../services/conflict_detector.dart';
 import '../../services/fact_stale_service.dart';
+import '../../services/setting_library_service.dart' as sls;
 import '../../types/character_types.dart';
 import 'character_detail_sections.dart';
 import 'character_dialogs.dart';
@@ -88,6 +92,19 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       }
     }
     return counts;
+  }
+
+  /// 疑似重复（AI 辅助比较入口）：当前人物断言内的同章同属性异值对。
+  List<sls.AssertionConflictPair> get _conflictPairs =>
+      sls.detectCharacterConflicts([
+        for (final a in _visibleAssertions) (_row?.name ?? '', a),
+      ]);
+
+  /// R-019 拆分：疑似重复提示条（无冲突返回空组件）。
+  Widget _buildConflictBanner() {
+    final count = _conflictPairs.length;
+    if (count == 0) return const SizedBox.shrink();
+    return _ConflictBanner(count: count, onTap: _resolveNextConflict);
   }
 
   Future<void> _load() async {
@@ -155,6 +172,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                     onShowAll: () => setState(() => _since = null),
                   ),
                 CharacterConflictsCard(conflicts: _conflicts),
+                _buildConflictBanner(),
                 CharacterStaleClearBar(
                   staleByChapter: _staleByChapter,
                   onClear: _clearStaleChapter,
@@ -196,6 +214,49 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       for (final s in [...AttributeTemplate.suggestions, ...learned])
         if (seen.add(s)) s,
     ];
+  }
+
+  /// 逐一处理疑似重复：打开对照面板 → 裁决 → 落库刷新。
+  Future<void> _resolveNextConflict() async {
+    final pairs = _conflictPairs;
+    if (pairs.isEmpty) return;
+    final pair = pairs.first;
+    final verdict = await showConflictResolutionDialog(
+      context,
+      pair: pair,
+      aiCompare: () => _aiCompare(pair),
+    );
+    if (verdict == null || !mounted) return;
+    final row = _row;
+    if (row == null) return;
+    await sls.SettingLibraryService(
+      characterRepo: CharacterFactRepository(ref.read(appDatabaseProvider)),
+      worldRepo: WorldFactRepository(ref.read(appDatabaseProvider)),
+    ).resolveCharacterConflict(
+      manuscriptId: row.manuscriptId,
+      name: row.name,
+      attribute: pair.a.attribute,
+      a: pair.a,
+      b: pair.b,
+      verdict: verdict,
+    );
+    _load();
+  }
+
+  /// AI 辅助比较（纯分析不代决）：走共享 LlmClient 非流式，失败降级文案。
+  Future<String> _aiCompare(sls.AssertionConflictPair pair) async {
+    final prompt = sls.buildConflictComparisonPrompt(
+      name: pair.name,
+      a: pair.a,
+      b: pair.b,
+    );
+    try {
+      return await ref.read(llmClientProvider).chatCompletion([
+        ChatMessage(role: 'system', content: prompt),
+      ]);
+    } catch (_) {
+      return 'AI 比较调用失败（仍可手动裁决）。';
+    }
   }
 
   Future<void> _toggleNegative(CharacterAssertion a, bool value) async {
@@ -404,6 +465,49 @@ class _MergeConfirmDialog extends StatelessWidget {
           child: const Text('并入'),
         ),
       ],
+    );
+  }
+}
+
+/// 疑似重复提示条（AI 辅助比较入口）：点击逐一处理。
+class _ConflictBanner extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _ConflictBanner({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.sm),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.sm),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.report_problem_outlined,
+                  size: 18,
+                  color: AppColors.warning,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    '疑似重复 $count 处（同章同属性异值）',
+                    style: AppTextStyles.subBody,
+                  ),
+                ),
+                const Icon(Icons.chevron_right, size: 18),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
