@@ -13,14 +13,27 @@
   ★ 默认行为不适用本项目：工具默认假定「dart test」+「lib/ 下所有 .dart」。
     本项目用 flutter_test，且测试必须走 flutter test runner ⇒ 必须显式给 <commands>。
 
+  ★ 多模块注意：<files> 可列多个模块，但 <commands> 是**全局**的（每个变异点都会跑
+    全部 command）。故此处只挂这三个模块各自的测试文件 —— 若把 command 写成「全量
+    flutter test」，单变异点耗时会从秒级升到分钟级，配置即不可用。
+
+  选模块的三条标准（2026-09-17 定）：
+    ① 在 P0 链路或门禁 6 的 T2 覆盖率清单内（有明确的护栏职责）
+    ② 纯逻辑优先（无网络 / 无 DB 副作用）⇒ 单次测试快且确定性高
+    ③ 对应测试文件存在且覆盖充分（覆盖率低 ⇒ 变异分数无意义）
+
   换目标模块时，同步改 <files> 与 <commands> 里的测试路径。
 -->
 <mutations version="1.2">
   <files>
-    <!-- 并查集（角色身份归并），纯逻辑无 IO ⇒ 单次 flutter test 约十几秒，适合做定点样本 -->
+    <!-- ① 并查集（角色身份归并），纯逻辑无 IO。191 行 / 10 变异点 -->
     <file>lib/services/character_identity.dart</file>
+    <!-- ② 焦点解析（P0 链路：写作焦点 → 教学动作），纯逻辑。398 行 -->
+    <file>lib/services/focus_resolver.dart</file>
+    <!-- ③ 训练评估（门禁 6 T2 清单，覆盖率要求 ≥85%）。610 行 -->
+    <file>lib/services/training_evaluator.dart</file>
   </files>
   <commands>
-    <command group="test" expected-return="0" working-directory="." timeout="600">flutter test test/services/character_identity_test.dart</command>
+    <command group="test" expected-return="0" working-directory="." timeout="900">flutter test test/services/character_identity_test.dart test/services/focus_resolver_coverage_test.dart test/services/training_evaluator_test.dart</command>
   </commands>
 </mutations>

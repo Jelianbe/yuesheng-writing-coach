@@ -18,6 +18,7 @@ import '../providers/chat_store.dart';
 import '../providers/evaluation_providers.dart';
 import '../providers/practice_providers.dart';
 import '../providers/session_providers.dart';
+import '../services/decode_guard.dart';
 import 'chat_page_host.dart';
 
 /// 聊天页会话管理动作
@@ -111,7 +112,11 @@ class ChatSessionController {
         host.ref.read(appDatabaseProvider),
       ).renameSession(sessionId, title);
       await loadSessions();
-    } catch (_) {}
+    } catch (e, st) {
+      // R-028：写库失败不崩 UI（降级行为不变），但**必须留痕** ——
+      // 否则用户看到「改名没生效」而日志全无痕迹，事后无法追溯。
+      logSilentDegrade(operation: 'handleRenameSession', error: e, stack: st);
+    }
   }
 
   /// v30：切换会话置顶（读当前值翻转）
@@ -123,7 +128,14 @@ class ChatSessionController {
           .firstOrNull;
       await repo.setPinned(sessionId, current?.session.pinned != 1);
       await loadSessions();
-    } catch (_) {}
+    } catch (e, st) {
+      // 同上：置顶写库失败不崩 UI，但留痕以便追溯
+      logSilentDegrade(
+        operation: 'handleTogglePinSession',
+        error: e,
+        stack: st,
+      );
+    }
   }
 
   /// v30：批量删除会话（逐个复用 deleteSession 链路）
