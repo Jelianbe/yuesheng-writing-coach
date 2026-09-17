@@ -5,7 +5,7 @@
 //   INTEGER NOT NULL DEFAULT 0
 //
 // 覆盖：
-//   1. v34 存量库升级 → pinned 列建立、默认值 0、可写、user_version = 35
+//   1. v34 存量库升级 → pinned 列建立、默认值 0、可写、user_version = 38
 //   2. 幂等：v35 库重复打开不报错、不重复加列
 // ─────────────────────────────────────────────────────────────
 
@@ -153,7 +153,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     // pinned 列存在且默认 0
     final dflt = await db
@@ -191,7 +191,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     final cols = await db2
         .customSelect(

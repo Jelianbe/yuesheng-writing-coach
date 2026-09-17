@@ -495,12 +495,15 @@ class MessageInjector {
     for (final p in active) {
       final recs = _syndromeTrainingRecords(history, p.syndromeId);
       if (recs.isEmpty) continue;
-      final passes = _countTrailingPasses(recs);
+      // 批1·N2：有效通过次数（含用户回忆难度自评折算；无自评 = 原值，
+      // 与改造前逐字节相同）。间隔与到期状态**共用同一个有效次数** ——
+      // 否则会出现「间隔 8 天」与「已到期」并存的自相矛盾。
+      final effectivePasses = _effectivePasses(recs);
       final lastTs = (recs.last['timestamp'] as num?)?.toInt() ?? now;
       final daysSince = ((now - lastTs) / 86400).floor();
       final label =
-          '${p.syndromeId} ${p.syndromeName}（距上次训练 $daysSince 天，间隔 ${fsrsIntervalDaysFor(passes)} 天）';
-      final status = reviewStatusFor(passes, daysSince);
+          '${p.syndromeId} ${p.syndromeName}（距上次训练 $daysSince 天，间隔 ${fsrsIntervalDaysFor(effectivePasses)} 天）';
+      final status = reviewStatusFor(effectivePasses, daysSince);
       if (status == ReviewStatus.due) {
         due.add(label);
       } else if (status == ReviewStatus.upcoming) {
@@ -542,6 +545,17 @@ class MessageInjector {
       }
     }
     return passes;
+  }
+
+  /// 批1·N2 helper：**有效**连续通过次数（含用户回忆难度自评折算）。
+  ///
+  /// - 无自评（旧数据 / 学员跳过 / 值无法解析）⇒ **原值返回**，与改造前逐字节相同
+  /// - 有自评 ⇒ `effectivePassesFor` 折算（again 归零 / hard −1 / good 0 / easy +1）
+  int _effectivePasses(List<Map<String, dynamic>> recs) {
+    if (recs.isEmpty) return 0;
+    final passes = _countTrailingPasses(recs);
+    final rating = FsrsRating.fromValue(recs.last['userRating'] as String?);
+    return rating == null ? passes : effectivePassesFor(passes, rating);
   }
 
   /// P2-9 helper：复习调度段文案。

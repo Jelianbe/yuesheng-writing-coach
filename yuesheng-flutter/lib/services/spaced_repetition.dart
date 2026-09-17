@@ -16,10 +16,64 @@
 /// - n=0（最近一次未通过 / 无记录）→ 1 天（尽快重测）
 /// - n=1..4 → 2^(n-1) 天
 /// - n>=5 → 14 天（封顶；达到 training_evaluator 的 FSRS 毕业阈值）
+///
+/// ★ 本函数**签名刻意保持单参数不变**（批1·N2 决定）：用户自评的折算由调用方
+/// 经 [effectivePassesFor] 完成，再把**同一个有效次数**喂给本函数与
+/// [reviewStatusFor] —— 若改为「本函数内部折算」，则 `reviewStatusFor`
+/// 仍用原始次数，会造成**「间隔」与「到期状态」口径不一致**（同一症候
+/// 报「间隔 8 天」却同时判「已到期」）。折算在调用方做一次，两处必然一致。
 int fsrsIntervalDaysFor(int consecutivePasses) {
   if (consecutivePasses <= 0) return 1;
   if (consecutivePasses >= 5) return 14;
   return 1 << (consecutivePasses - 1); // 2^(n-1)
+}
+
+/// FSRS 回忆难度自评档位（批1·N2，Anki 四档）。
+///
+/// ★ 与「掌握证据」三维自评（`TrainingSelfAssessment.confidenceRating` /
+/// explanationText / transferText，v32）**语义不同**，勿混用：
+/// 三维 = 「对这次改动的把握」（喂 `mastery_evidence` 门控）；
+/// 本档 = 「这次回忆/作答有多难」（喂间隔调度）。
+enum FsrsRating {
+  again('again'),
+  hard('hard'),
+  good('good'),
+  easy('easy');
+
+  const FsrsRating(this.value);
+
+  /// 落库值（`training_results.user_rating`）。
+  final String value;
+
+  /// 解析落库值。未知 / `null` ⇒ `null`（**不抛异常**）。
+  ///
+  /// 该列是 TEXT 裸列（无 CHECK 约束）：旧数据、人工写入、跨版本都可能出现
+  /// 无法识别的值。解析失败**降级为「无自评」**（退回既有行为）而非报错——
+  /// 与 R-028「降级不阻断」一致。
+  static FsrsRating? fromValue(String? raw) {
+    if (raw == null) return null;
+    for (final r in FsrsRating.values) {
+      if (r.value == raw) return r;
+    }
+    return null;
+  }
+}
+
+/// 自评档位 → 「有效连续通过次数」（批1·N2）。
+///
+/// - `again` **归零**（不是减一）：语义是「这次没能想起来」⇒ 稳定度重置
+/// - `hard` −1（保守一档）/ `good` 0（不变）/ `easy` +1（加速一档）
+///
+/// 结果非负（下界 0）。**只在有自评时调用**；无自评的路径不经过本函数，
+/// 以保证 `fsrsIntervalDaysFor` 的缺省行为与改造前一致。
+int effectivePassesFor(int consecutivePasses, FsrsRating rating) {
+  final adjusted = switch (rating) {
+    FsrsRating.again => 0,
+    FsrsRating.hard => consecutivePasses - 1,
+    FsrsRating.good => consecutivePasses,
+    FsrsRating.easy => consecutivePasses + 1,
+  };
+  return adjusted < 0 ? 0 : adjusted;
 }
 
 /// 是否到期需复习：距上次训练 ≥ 计算间隔。

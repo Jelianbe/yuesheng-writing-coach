@@ -9,6 +9,8 @@
 //   4. 练习目标
 //   5. 作答输入（多行 TextField）
 //   5.5 自评区（P0-1 教学线，全部可选）：信心 1-5 / 解释 / 迁移
+//       + 5.6 回忆难度自评（批1·N2，可选）：again/hard/good/easy 四档
+//         （FSRS 间隔调度输入——与上面三维证据语义不同，见 spaced_repetition.dart）
 //   6. 操作：跳过 | 提交作答
 //
 // 视觉规范（月色竹青）：
@@ -22,6 +24,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../providers/practice_providers.dart';
+import '../services/spaced_repetition.dart';
 import '../types/teaching_types.dart';
 
 class PracticeTaskCard extends StatefulWidget {
@@ -52,6 +55,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
   final _explanationController = TextEditingController();
   final _transferController = TextEditingController();
   int? _confidenceRating;
+  FsrsRating? _userRating; // 批1·N2：回忆难度自评（null = 未填）
 
   @override
   void dispose() {
@@ -68,6 +72,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
     final transfer = _transferController.text.trim();
     final hasAny =
         _confidenceRating != null ||
+        _userRating != null ||
         explanation.isNotEmpty ||
         transfer.isNotEmpty;
     widget.onSubmit(
@@ -77,6 +82,8 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
               confidenceRating: _confidenceRating,
               explanationText: explanation.isEmpty ? null : explanation,
               transferText: transfer.isEmpty ? null : transfer,
+              // 批1·N2：枚举 → 落库字符串（与 DB TEXT 列同形）
+              userRating: _userRating?.value,
             )
           : null,
     );
@@ -108,6 +115,14 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
         const SizedBox(height: 6),
         _buildConfidenceChips(),
         const SizedBox(height: 10),
+        // ── 5.6 回忆难度自评（批1·N2，可跳过）──
+        const Text(
+          '这次练习对你来说有多难？',
+          style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 6),
+        _buildRecallRatingChips(),
+        const SizedBox(height: 10),
         _buildAssessmentField(
           controller: _explanationController,
           hint: '为什么这样改？说说你的判断',
@@ -137,6 +152,34 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
       }),
     );
   }
+
+  /// 回忆难度自评 4 档（批1·N2，可跳过 = null）。
+  ///
+  /// 形态照抄 `_buildConfidenceChips`（ChoiceChip 单选）；用 `Wrap` 而非 `Row`：
+  /// 4 个**中文**标签在窄屏 / 大字体下比 5 个数字更易超出，Wrap 放不下时自动换行，
+  /// 不牺牲可用性（一行放得下时与 Row 视觉一致）。
+  Widget _buildRecallRatingChips() {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final r in FsrsRating.values)
+          ChoiceChip(
+            label: Text(_recallRatingLabel(r)),
+            selected: _userRating == r,
+            onSelected: (_) => setState(() => _userRating = r),
+          ),
+      ],
+    );
+  }
+
+  /// 四档界面文案（**非落库值**；落库值见 `FsrsRating.value`）。
+  String _recallRatingLabel(FsrsRating rating) => switch (rating) {
+    FsrsRating.again => '再来一次',
+    FsrsRating.hard => '有点难',
+    FsrsRating.good => '还行',
+    FsrsRating.easy => '很轻松',
+  };
 
   /// 自评文本域（解释/迁移共用）。
   Widget _buildAssessmentField({

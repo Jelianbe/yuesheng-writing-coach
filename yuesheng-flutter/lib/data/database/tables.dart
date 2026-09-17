@@ -715,6 +715,10 @@ class TrainingResults extends Table {
   IntColumn get confidenceRating => integer().nullable()(); // 自评信心 1-5
   TextColumn get explanationText => text().nullable()(); // 自评解释：为什么这样改
   TextColumn get transferText => text().nullable()(); // 自评近迁移：换个写法/场景怎么做
+  // 批1·N2（FSRS 自评档位，v38）：回忆难度自评 'again'|'hard'|'good'|'easy'。
+  // ★ 与上面三维自评语义不同：三维是「掌握证据」（供 mastery_evidence 门控），
+  //   本列是「回忆难度」（供 FSRS 间隔调度）。可空 = 旧数据/未自评。
+  TextColumn get userRating => text().nullable()();
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
 

@@ -82,6 +82,69 @@ class StudentModelRepository {
     });
   });
 
+  /// 批1·N2：把「回忆难度自评」补进**最近一条 `training` 记录**。
+  ///
+  /// **为什么是「补」而不是「写」**：自评在 UI 上采集于「提交作答」，但
+  /// teaching_history 的写入发生在 **feedback 轮**（`_recordTrainingFeedback`），
+  /// 而 `updateSelfAssessment` 在 feedback 轮**之后**才回写（时序契约见
+  /// `chat_teaching_controller._persistSelfAssessment` 的注释）。
+  /// ⇒ 写 history 那一刻 rating 尚不可得，只能在其后补齐。
+  ///
+  /// **只改最近一条**（不新增记录）：追加会在 `teaching_history` 里产生第二条
+  /// 训练记录，污染 `_countTrailingPasses` 的「连续通过」计数（该计数只看
+  /// 尾部连续 `passed`）。找不到目标记录 ⇒ **静默返回 false**。
+  ///
+  /// [syndromeId] 非空时要求记录同症候；为空则只按「最近一条 training」定位。
+  /// 返回是否命中并写入。
+  Future<bool> updateLatestTrainingRating(
+    String sessionId, {
+    required String rating,
+    String? syndromeId,
+  }) => guardRepoWrite('student_model', 'updateLatestTrainingRating', () async {
+    var updated = false;
+    await _db.transaction(() async {
+      final model = await (_db.select(
+        _db.studentModels,
+      )..where((t) => t.sessionId.equals(sessionId))).getSingleOrNull();
+      if (model == null) return;
+
+      List<dynamic> history = [];
+      try {
+        final decoded = jsonDecode(model.teachingHistory);
+        if (decoded is List) history = decoded;
+      } catch (e, st) {
+        logDecodeFailure(
+          field: 'student_model.teachingHistory',
+          error: e,
+          stack: st,
+        );
+        return;
+      }
+
+      for (var i = history.length - 1; i >= 0; i--) {
+        final rec = history[i];
+        // JSON decode 产出 Map<String, dynamic>；用精确类型测试以保持类型安全
+        if (rec is! Map<String, dynamic>) continue;
+        if (rec['type'] != 'training') continue;
+        if (syndromeId != null && rec['syndromeId'] != syndromeId) continue;
+        rec['userRating'] = rating;
+        updated = true;
+        break;
+      }
+      if (!updated) return;
+
+      await (_db.update(
+        _db.studentModels,
+      )..where((t) => t.id.equals(model.id))).write(
+        StudentModelsCompanion(
+          teachingHistory: Value(jsonEncode(history)),
+          updatedAt: Value(nowSec()),
+        ),
+      );
+    });
+    return updated;
+  });
+
   /// 获取教学历史
   /// 复刻 getTeachingHistory(sessionId)
   Future<List<Map<String, dynamic>>> getTeachingHistory(

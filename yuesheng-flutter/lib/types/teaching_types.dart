@@ -333,10 +333,21 @@ class TrainingSelfAssessment {
   /// 近迁移文本：换个写法/场景会怎么做
   final String? transferText;
 
+  /// FSRS 回忆难度自评（批1·N2，v38）：'again'|'hard'|'good'|'easy'。
+  ///
+  /// ★ 与上面三维证据**语义不同**，勿混用：三维 = 掌握证据（供 mastery_evidence
+  /// 门控）；本字段 = 回忆难度（供 FSRS 间隔调度）。
+  ///
+  /// 取值的枚举真源是 `FsrsRating`（`services/spaced_repetition.dart`）；
+  /// 此处刻意用裸 `String?` 而非该 enum —— **types 层不依赖 services 层**，
+  /// 保持依赖方向单向（与 `result` 列用 String 同一惯例）。
+  final String? userRating;
+
   const TrainingSelfAssessment({
     this.confidenceRating,
     this.explanationText,
     this.transferText,
+    this.userRating,
   });
 }
 

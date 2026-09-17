@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/session_repository.dart';
+import '../data/repositories/student_model_repository.dart';
 import '../data/repositories/training_result_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
@@ -178,6 +179,17 @@ class WritingCoachChatRunner {
       final latest = await repo.queryBySession(sid);
       if (latest.isEmpty) return;
       await repo.updateSelfAssessment(latest.first.id, assessment);
+      // 批1·N2：回忆难度自评补进 teaching_history 的最近一条 training 记录
+      // （供 message_injector 的 FSRS 复习调度消费）。无 rating 时跳过。
+      if (assessment.userRating != null) {
+        await StudentModelRepository(
+          _ref.read(appDatabaseProvider),
+        ).updateLatestTrainingRating(
+          sid,
+          rating: assessment.userRating!,
+          syndromeId: latest.first.syndromeId,
+        );
+      }
     } catch (e, s) {
       debugPrint('[SelfAssessment] 回写失败: $e $s');
     }

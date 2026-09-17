@@ -61,7 +61,7 @@ void main() {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
 
-      // 2. 验证 user_version = 31（drift schemaVersion；批次89 → 23，批次94-2 → 24
+      // 2. 验证 user_version = 38（drift schemaVersion；批次89 → 23，批次94-2 → 24
       // chapters.status CHECK 扩 'archived'；批次94-5 → 25 manuscripts.tags 列；
       // 批次96+ → 26 新增 volumes 之外的 schema bump；
       // C78 批次1 → 27 角色标签页列：character_fact.aliases/status，
@@ -73,12 +73,13 @@ void main() {
       // 第二批 → 34 setting_entry「其他」开放容器表；
       // 第二批 L2 → 35 character_fact.pinned 用户钉选列；
       // 互链 → 36 setting_link 条目互链表；
-      // 标签 → 37 setting_tag 条目标签表）
+      // 标签 → 37 setting_tag 条目标签表；
+      // 批1·N2 → 38 training_results.user_rating 自评档位）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        37,
-        reason: 'schemaVersion 应为 37',
+        38,
+        reason: 'schemaVersion 应为 38',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

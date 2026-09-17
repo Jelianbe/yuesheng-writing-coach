@@ -5,7 +5,7 @@
 //   confidence_rating INTEGER / explanation_text TEXT / transfer_text TEXT
 //
 // 覆盖：
-//   1. v31 存量库升级 → 3 列建立且可写（含存量行 NULL 兼容），user_version = 32
+//   1. v31 存量库升级 → 3 列建立且可写（含存量行 NULL 兼容），user_version = 38
 //   2. 幂等：v32 库重复打开不报错、不重复加列
 // ─────────────────────────────────────────────────────────────
 
@@ -119,14 +119,14 @@ void main() {
     }
   });
 
-  test('#1 v31 → v32 升级：3 列建立且可写，user_version = 32', () async {
+  test('#1 v31 → v32 升级：3 列建立且可写，user_version = 38', () async {
     final db = AppDatabase.forTesting(
       NativeDatabase(File(createV31LegacyDbFile())),
     );
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     expect(
       await _columnExists(db, 'confidence_rating'),
@@ -184,7 +184,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     // 列存在且唯一
     final cols = await db2

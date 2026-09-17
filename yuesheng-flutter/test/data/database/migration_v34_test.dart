@@ -6,7 +6,7 @@
 //   / created_at / updated_at，UNIQUE(manuscript_id, name)
 //
 // 覆盖：
-//   1. v33 存量库升级 → setting_entry 表建立、默认值正确、user_version = 34
+//   1. v33 存量库升级 → setting_entry 表建立、默认值正确、user_version = 38
 //   2. 幂等：v34 库重复打开不报错、不重复建表
 // ─────────────────────────────────────────────────────────────
 
@@ -157,7 +157,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     // 表存在
     final tables = await db
@@ -200,7 +200,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     final tables = await db2
         .customSelect(

@@ -11,7 +11,7 @@
 //   本测试专防 world_fact 重演：判据 `from < 31` 对存量库与最小库**都可达**。
 //
 // 覆盖：
-//   1. v30 存量库升级 → world_fact 建立且可写，user_version = 31
+//   1. v30 存量库升级 → world_fact 建立且可写，user_version = 38
 //   2. 最小 schema 库（v24）升级 → world_fact 建立（可达性验证）
 //   3. 幂等：v31 库重复打开不报错、不重复建表
 // ─────────────────────────────────────────────────────────────
@@ -232,14 +232,14 @@ void main() {
     }
   });
 
-  test('#1 v30 → v31 升级：world_fact 建立且可写，user_version = 31', () async {
+  test('#1 v30 → v31 升级：world_fact 建立且可写，user_version = 38', () async {
     final db = AppDatabase.forTesting(
       NativeDatabase(File(createV30LegacyDbFile())),
     );
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     expect(
       await _tableExists(db, 'world_fact'),
@@ -273,7 +273,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     expect(
       await _tableExists(db, 'world_fact'),
@@ -303,7 +303,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
     expect(await _tableExists(db2, 'world_fact'), isTrue);
 
     final dup = await db2

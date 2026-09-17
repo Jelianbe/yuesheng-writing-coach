@@ -6,7 +6,7 @@
 //   + UNIQUE(manuscript_id, entity_kind, entity_id, tag)
 //
 // 覆盖：
-//   1. v36 存量库升级 → setting_tag 表建立、可写、user_version = 37
+//   1. v36 存量库升级 → setting_tag 表建立、可写、user_version = 38
 //   2. 幂等：v37 库重复打开不报错、不重复建表
 //   3. 表级 UNIQUE 防重复（重复插同键抛异常）
 // ─────────────────────────────────────────────────────────────
@@ -65,13 +65,13 @@ void main() {
     }
   });
 
-  test('#1 v36 → v37 升级：setting_tag 表建立、可写、user_version=37', () async {
+  test('#1 v36 → v37 升级：setting_tag 表建立、可写、user_version=38', () async {
     final db = AppDatabase.forTesting(
       NativeDatabase(File(createV36LegacyDbFile())),
     );
     addTearDown(db.close);
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
 
     await db
         .into(db.settingTags)
@@ -95,7 +95,7 @@ void main() {
     await db1.close();
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 37);
+    expect(version.read<int>('user_version'), 38);
     await db2.close();
   });
 

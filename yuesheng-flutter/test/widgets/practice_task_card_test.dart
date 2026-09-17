@@ -178,5 +178,62 @@ void main() {
 
       expect(captured, isNull);
     });
+
+    // ── 批1·N2：回忆难度自评 4 按钮 ──
+    testWidgets('#9 回忆难度 4 按钮渲染', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(600, 1800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(buildCard(onSubmit: (_, _) {}, onSkip: () {}));
+
+      expect(find.textContaining('这次练习对你来说有多难'), findsOneWidget);
+      expect(find.text('再来一次'), findsOneWidget);
+      expect(find.text('有点难'), findsOneWidget);
+      expect(find.text('还行'), findsOneWidget);
+      expect(find.text('很轻松'), findsOneWidget);
+    });
+
+    testWidgets('#10 仅选难度提交 → assessment 非 null 且 userRating 落库值正确', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(600, 1800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      TrainingSelfAssessment? captured;
+      await tester.pumpWidget(
+        buildCard(onSubmit: (_, a) => captured = a, onSkip: () {}),
+      );
+
+      await tester.enterText(find.byType(TextField).first, '只选难度。');
+      await tester.tap(find.text('很轻松'));
+      await tester.pump();
+      await tester.tap(find.text('提交作答'));
+      await tester.pump();
+
+      // 难度单独也算「填了自评」（hasAny 判据含 _userRating）
+      expect(captured, isNotNull);
+      expect(captured!.userRating, 'easy');
+      // 三维互不干扰：未填仍为 null
+      expect(captured!.confidenceRating, isNull);
+      expect(captured!.explanationText, isNull);
+      expect(captured!.transferText, isNull);
+    });
+
+    testWidgets('#11 难度为单选：改选后只保留最后一档', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(600, 1800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      TrainingSelfAssessment? captured;
+      await tester.pumpWidget(
+        buildCard(onSubmit: (_, a) => captured = a, onSkip: () {}),
+      );
+
+      await tester.enterText(find.byType(TextField).first, '先选再改。');
+      await tester.tap(find.text('有点难'));
+      await tester.pump();
+      await tester.tap(find.text('再来一次'));
+      await tester.pump();
+      await tester.tap(find.text('提交作答'));
+      await tester.pump();
+
+      expect(captured!.userRating, 'again');
+    });
   });
 }

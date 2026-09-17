@@ -100,6 +100,10 @@ class TrainingResultRepository {
                 transferText: params.selfAssessment == null
                     ? const Value.absent()
                     : Value(params.selfAssessment!.transferText),
+                // 批1·N2：FSRS 回忆难度自评（'again'|'hard'|'good'|'easy'）
+                userRating: params.selfAssessment == null
+                    ? const Value.absent()
+                    : Value(params.selfAssessment!.userRating),
                 createdAt: Value(now),
               ),
             );
@@ -120,6 +124,8 @@ class TrainingResultRepository {
         confidenceRating: Value(assessment.confidenceRating),
         explanationText: Value(assessment.explanationText),
         transferText: Value(assessment.transferText),
+        // 批1·N2：FSRS 回忆难度自评
+        userRating: Value(assessment.userRating),
       ),
     );
   });

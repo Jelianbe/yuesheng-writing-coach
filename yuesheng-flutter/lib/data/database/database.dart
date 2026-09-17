@@ -64,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -228,7 +228,8 @@ class AppDatabase extends _$AppDatabase {
       // 第二批：守卫上移到 34（v34 块对 from=33 存量库可达，建 setting_entry）
       // L2 钉选：守卫上移到 35（v35 块对 from=34 存量库可达，冪等 ALTER ADD COLUMN）
       // 条目标签：守卫上移到 37（v37 块对 from=36 存量库可达，建 setting_tag）
-      if (from >= 37) return;
+      // 批1·N2（FSRS 自评档位）：守卫上移到 38（v38 块对 from=37 存量库可达，幂等 ALTER ADD COLUMN）
+      if (from >= 38) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1050,6 +1051,26 @@ class AppDatabase extends _$AppDatabase {
           'UNIQUE (manuscript_id, entity_kind, entity_id, tag)'
           ')',
         );
+      }
+
+      // v38: FSRS 用户自评档位（批1 · N2）— training_results 加 user_rating 列。
+      // ★ 与 v32 三维自评**语义不同**，不可混用：
+      //   - v32 confidence_rating/explanation_text/transfer_text = 「掌握证据」
+      //     （供 mastery_evidence 三维门控消费，阈值 解释≥2/信心≥3/近迁移≥1）
+      //   - v38 user_rating = 「回忆难度自评」（Anki 四档 again/hard/good/easy）
+      //     （供 FSRS 间隔调度消费 —— 无自评时 FSRS 退化为只看「连续通过次数」）
+      // 可空：旧数据 NULL ⇒ 间隔计算**退回既有行为**（不传 rating 时结果逐字节不变）。
+      // 表存在才加列（同 v32：最小 schema 的迁移测试库可能未建该表）。
+      if (from < 38) {
+        final trCols = await customSelect(
+          "SELECT name FROM pragma_table_info('training_results')",
+        ).get();
+        final trNames = trCols.map((r) => r.read<String>('name')).toSet();
+        if (trCols.isNotEmpty && !trNames.contains('user_rating')) {
+          await customStatement(
+            'ALTER TABLE training_results ADD COLUMN user_rating TEXT DEFAULT NULL',
+          );
+        }
       }
     },
 
