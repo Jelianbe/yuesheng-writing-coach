@@ -405,7 +405,13 @@ class MessageInjector {
       markStage: markStage,
     );
     if (!hit) {
+      // L2 退化层：先用户显式钉选，再近轮热度（都不退化为空上下文）。
       await _injectPinnedCards(
+        primaryRef: primaryRef,
+        messages: messages,
+        markStage: markStage,
+      );
+      await _injectHotCards(
         primaryRef: primaryRef,
         messages: messages,
         markStage: markStage,
@@ -1298,6 +1304,53 @@ class MessageInjector {
       }
     } catch (e, st) {
       _logSafeRun('钉选名片注入失败不阻断主流程', e, st);
+    }
+  }
+
+  /// 分级供给 L2（热度驻留）：近 [kHotWindowMessages] 条学员消息中被
+  /// 反复提及的人物 → Top N 名片（母备忘 §2.3：代词/昵称兜底）。
+  ///
+  /// 热度**无状态推导**（历史 user 消息即历史正文）；降级不阻断。
+  Future<void> _injectHotCards({
+    required ReferenceItem? primaryRef,
+    required List<ChatMessage> messages,
+    required void Function(String) markStage,
+  }) async {
+    if (primaryRef?.refType != 'chapter') return;
+    final repo = _characterFactRepo;
+    if (repo == null) return;
+    try {
+      final chapter = await _chapterRepo.getChapter(primaryRef!.refId);
+      if (chapter == null) return;
+      final characters = await repo.listCharacters(chapter.manuscriptId);
+      if (characters.isEmpty) return;
+      final recent = <String>[];
+      for (
+        var i = messages.length - 1;
+        i >= 0 && recent.length < kHotWindowMessages;
+        i--
+      ) {
+        final m = messages[i];
+        if (m.role == 'user' && m.content.trim().isNotEmpty) {
+          recent.add(m.content);
+        }
+      }
+      final hotNames = computeHotEntities(
+        recentUserTexts: recent,
+        characters: characters,
+      );
+      final byName = {for (final c in characters) c.name: c};
+      final hot = [
+        for (final n in hotNames)
+          if (byName[n] != null) byName[n]!,
+      ];
+      final ctx = buildHotCardsContext(hot);
+      if (ctx != null) {
+        markStage(BudgetStageNames.ruleDetectors);
+        messages.add(ChatMessage(role: 'system', content: ctx));
+      }
+    } catch (e, st) {
+      _logSafeRun('热度名片注入失败不阻断主流程', e, st);
     }
   }
 

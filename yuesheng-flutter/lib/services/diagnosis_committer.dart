@@ -1072,3 +1072,69 @@ String? buildPinnedCardsContext(List<CharacterFact> pinned) {
       '以下角色是学员主动钉住的常驻设定，即使本轮正文未提及也请保持设定连贯：\n'
       '${lines.join('\n')}';
 }
+
+/// 分级供给 L2（热度驻留）：近 [kHotWindowMessages] 条学员消息中
+/// 被反复提及的人物 → Top N 名片。
+///
+/// 母备忘 §2.3：实体识别失败（代词/昵称/本轮正文未命中）时退到这里，
+/// 不退化为空。热度**无状态推导**：历史 user 消息即历史正文
+/// （chat_service._writeUserMessage 原样落库），逐条精确匹配计数。
+/// 单字名不参与；命中次数降序 + 名字升序稳定排序。
+const int kHotWindowMessages = 6;
+const int kHotTopN = 3;
+const int kHotCardMaxAssertions = 3;
+
+List<String> computeHotEntities({
+  required List<String> recentUserTexts,
+  required List<CharacterFact> characters,
+  int max = kHotTopN,
+}) {
+  final counts = <String, int>{};
+  for (final text in recentUserTexts) {
+    for (final c in characters) {
+      if (c.name.length < 2) continue;
+      if (text.contains(c.name)) {
+        counts[c.name] = (counts[c.name] ?? 0) + 1;
+        continue;
+      }
+      final matchedAlias = parseJsonStringList(
+        c.aliases,
+      ).any((alias) => alias.length >= 2 && text.contains(alias));
+      if (matchedAlias) {
+        counts[c.name] = (counts[c.name] ?? 0) + 1;
+      }
+    }
+  }
+  final entries = counts.entries.toList()
+    ..sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      if (byCount != 0) return byCount;
+      return a.key.compareTo(b.key);
+    });
+  return entries.take(max).map((e) => e.key).toList();
+}
+
+/// 分级供给 L2（热度驻留）：热度实体的核心断言名片（≤3 条/实体）。
+///
+/// 与 [buildPinnedCardsContext] 同构，仅标题与语义不同（热度是近轮
+/// 提及的自动信号，钉选是用户显式意图）；rejected/superseded/stale
+/// 一律排除。空列表 → null（零注入）。
+String? buildHotCardsContext(List<CharacterFact> hot) {
+  if (hot.isEmpty) return null;
+  final lines = <String>[];
+  for (final c in hot) {
+    final assertions = CharacterFactRepository.parseAssertions(c.assertions)
+        .where(
+          (a) => a.status != 'rejected' && a.status != 'superseded' && !a.stale,
+        )
+        .take(kHotCardMaxAssertions)
+        .map((a) => '${a.attribute}=${a.value}')
+        .toList();
+    if (assertions.isEmpty) continue;
+    lines.add('- 人物「${c.name}」：${assertions.join('；')}');
+  }
+  if (lines.isEmpty) return null;
+  return '## 设定资料库（近几轮常被提及）\n\n'
+      '以下人物在最近几轮中反复出现，本轮若以代词/昵称指代，请优先对应：\n'
+      '${lines.join('\n')}';
+}
