@@ -110,6 +110,7 @@ Future<AssertionFormResult?> showAssertionFormDialog(
   String? initialAttribute,
   String? initialValue,
   int? initialChapter,
+  List<String> suggestions = const [],
 }) {
   final attrCtrl = TextEditingController(text: initialAttribute ?? '');
   final valueCtrl = TextEditingController(text: initialValue ?? '');
@@ -124,6 +125,7 @@ Future<AssertionFormResult?> showAssertionFormDialog(
         attrCtrl: attrCtrl,
         valueCtrl: valueCtrl,
         chapterCtrl: chapterCtrl,
+        suggestions: suggestions,
       ),
       actions: [
         TextButton(
@@ -154,10 +156,14 @@ class _AssertionFormFields extends StatelessWidget {
   final TextEditingController valueCtrl;
   final TextEditingController chapterCtrl;
 
+  /// 属性名建议 chips（模板可学习：静态基础 + 作品内 user 属性 ≥2 次回填）
+  final List<String> suggestions;
+
   const _AssertionFormFields({
     required this.attrCtrl,
     required this.valueCtrl,
     required this.chapterCtrl,
+    this.suggestions = const [],
   });
 
   @override
@@ -169,6 +175,18 @@ class _AssertionFormFields extends StatelessWidget {
           controller: attrCtrl,
           decoration: const InputDecoration(labelText: '属性（如：性格）'),
         ),
+        if (suggestions.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          _AttributeSuggestionChips(
+            suggestions: suggestions,
+            onTap: (attr) {
+              attrCtrl.text = attr;
+              attrCtrl.selection = TextSelection.collapsed(
+                offset: attrCtrl.text.length,
+              );
+            },
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         TextField(
           controller: valueCtrl,
@@ -179,6 +197,41 @@ class _AssertionFormFields extends StatelessWidget {
           controller: chapterCtrl,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(labelText: '章节（可选，如：7）'),
+        ),
+      ],
+    );
+  }
+}
+
+/// 属性名建议 chips（模板可学习；点击回填属性框，不强制）
+class _AttributeSuggestionChips extends StatelessWidget {
+  final List<String> suggestions;
+  final ValueChanged<String> onTap;
+
+  const _AttributeSuggestionChips({
+    required this.suggestions,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('常用属性', style: AppTextStyles.microCaption),
+        const SizedBox(height: AppSpacing.xs),
+        Wrap(
+          spacing: AppSpacing.xs,
+          runSpacing: AppSpacing.xs,
+          children: [
+            for (final s in suggestions)
+              ActionChip(
+                label: Text(s, style: AppTextStyles.microCaption),
+                visualDensity: VisualDensity.compact,
+                onPressed: () => onTap(s),
+              ),
+          ],
         ),
       ],
     );

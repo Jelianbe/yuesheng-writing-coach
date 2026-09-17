@@ -345,6 +345,31 @@ class AttitudeThresholds {
   static const int downgradeSyndromeCount = 1;
 }
 
+/// 设定资料库第二批·模板可学习：属性名建议常量。
+class AttributeTemplate {
+  const AttributeTemplate._();
+
+  /// 静态基础模板（chips 建议，非强制表单）
+  static const List<String> suggestions = [
+    '性格',
+    '职业',
+    '身份',
+    '外貌',
+    '关系',
+    '经历',
+    '目标',
+    '习惯',
+    '口头禅',
+    '背景',
+  ];
+
+  /// 可学习阈值：作品内 `source == user` 断言属性名出现 ≥2 次回填建议
+  static const int learnedMinUses = 2;
+
+  /// 学习到的属性名截断上限（防 chips 过长）
+  static const int learnedLimit = 8;
+}
+
 /// 判决词黑名单（editor-validator / teacher-validator 共享）
 const List<String> verdictDangerousWords = [
   '应该',

@@ -9,6 +9,7 @@ import 'package:drift/drift.dart';
 
 import '../../services/fact_stale_service.dart';
 import '../../types/character_types.dart';
+import '../../config/shared_constants.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
 import 'repository_write_guard.dart';
@@ -287,6 +288,35 @@ class CharacterFactRepository {
       return x.$2.timestamp.compareTo(y.$2.timestamp);
     });
     return out;
+  }
+
+  /// 设定资料库第二批·模板可学习：作品级属性名建议（可学习回填）。
+  ///
+  /// 统计作品内全部 `source == 'user'` 断言属性名出现次数，≥ [AttributeTemplate
+  /// .learnedMinUses] 次回填进建议（chips）。按次数降序 + 属性名升序稳定排序，
+  /// 截断 [AttributeTemplate.learnedLimit] 个；与静态基础模板合并由 UI 侧去重。
+  Future<List<String>> listLearnedAttributes(String manuscriptId) async {
+    final rows = await listCharacters(manuscriptId);
+    final counts = <String, int>{};
+    for (final row in rows) {
+      for (final a in parseAssertions(row.assertions)) {
+        if (a.source == 'user' && a.attribute.isNotEmpty) {
+          counts[a.attribute] = (counts[a.attribute] ?? 0) + 1;
+        }
+      }
+    }
+    final learned =
+        counts.entries
+            .where((e) => e.value >= AttributeTemplate.learnedMinUses)
+            .toList()
+          ..sort((x, y) {
+            final byCount = y.value.compareTo(x.value);
+            if (byCount != 0) return byCount;
+            return x.key.compareTo(y.key);
+          });
+    return [
+      for (final e in learned.take(AttributeTemplate.learnedLimit)) e.key,
+    ];
   }
 
   /// 合并人物（C78 §5.4）：把源行并进目标行，事务内三步。

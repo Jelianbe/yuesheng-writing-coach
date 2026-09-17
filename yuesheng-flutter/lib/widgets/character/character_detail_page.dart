@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/app_theme.dart';
+import '../../config/shared_constants.dart';
 import '../../data/database/database.dart';
 import '../../data/database/utils.dart';
 import '../../data/repositories/chapter_repository.dart';
@@ -185,6 +186,18 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     _load();
   }
 
+  /// 模板可学习：属性名建议 = 静态基础模板 + 作品内 user 属性 ≥2 次回填（去重）。
+  Future<List<String>> _attributeSuggestions() async {
+    final learned = await CharacterFactRepository(
+      ref.read(appDatabaseProvider),
+    ).listLearnedAttributes(widget.manuscriptId);
+    final seen = <String>{};
+    return [
+      for (final s in [...AttributeTemplate.suggestions, ...learned])
+        if (seen.add(s)) s,
+    ];
+  }
+
   Future<void> _toggleNegative(CharacterAssertion a, bool value) async {
     final row = _row;
     if (row == null) return;
@@ -197,12 +210,15 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   }
 
   Future<void> _correct(CharacterAssertion a) async {
+    final suggestions = await _attributeSuggestions();
+    if (!mounted) return;
     final form = await showAssertionFormDialog(
       context,
       title: '修正断言',
       initialAttribute: a.attribute,
       initialValue: a.value,
       initialChapter: a.chapter,
+      suggestions: suggestions,
     );
     if (form == null || !mounted) return;
     await _editor.correctAssertion(
@@ -215,10 +231,13 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   }
 
   Future<void> _supplement(String? attribute) async {
+    final suggestions = await _attributeSuggestions();
+    if (!mounted) return;
     final form = await showAssertionFormDialog(
       context,
       title: '补充断言',
       initialAttribute: attribute,
+      suggestions: suggestions,
     );
     if (form == null || !mounted) return;
     await _editor.addUserAssertion(
