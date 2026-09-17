@@ -43,6 +43,9 @@ TMP_XML="mutation-test.audit.tmp.xml"
 
 # 模块 → 源文件 / 测试文件 映射。
 # ★ 新增模块时**必须同时**更新这里与 mutation-test.xml（两处不一致会导致审计漏跑）
+# ★★ 且**必须先 `git add` + commit**：mutation_test 就地改写源文件，**未被跟踪**的文件
+#    没有 HEAD 版本可还原（跑后给出的 `git checkout --` 也会失败）⇒ 本脚本会直接 ABORT。
+#    auto 模式已把 `lib/` 下的**未跟踪**文件纳入变更集，故新模块不再被静默跳过（2026-09-17 修）。
 declare -A SRC=(
   [character_identity]="lib/services/character_identity.dart"
   [focus_resolver]="lib/services/focus_resolver.dart"
@@ -51,7 +54,7 @@ declare -A SRC=(
 declare -A TST=(
   [character_identity]="test/services/character_identity_test.dart"
   [focus_resolver]="test/services/focus_resolver_coverage_test.dart test/services/focus_resolver_discrimination_test.dart"
-  [training_evaluator]="test/services/training_evaluator_test.dart"
+  [training_evaluator]="test/services/training_evaluator_test.dart test/services/training_evaluator_discrimination_test.dart"
 )
 ALL_MODULES=(character_identity focus_resolver training_evaluator)
 
@@ -94,8 +97,10 @@ case "$MODE" in
     SELECTED=("$TARGET")
     ;;
   auto)
-    # 只取**本次改动**触及的护栏模块（工作区 vs HEAD，含已暂存）
-    CHANGED="$(git diff --name-only HEAD 2>/dev/null || true)"
+    # 只取**本次改动**触及的护栏模块。
+    # 变更集 = 工作区 vs HEAD（含已暂存）**+ `lib/` 下尚未跟踪的新文件** ——
+    # 后者若漏掉，新增的护栏模块会被静默跳过（2026-09-17 修）。
+    CHANGED="$( { git diff --name-only HEAD 2>/dev/null; git ls-files --others --exclude-standard -- lib 2>/dev/null; } || true)"
     if [ -z "$CHANGED" ]; then
       echo "[SKIP] 工作区无改动 ⇒ 无需变异审计"
       exit 0
@@ -114,7 +119,23 @@ case "$MODE" in
     ;;
 esac
 
-# ── 跑前断言：目标模块必须干净（否则无法区分「残留变异」与「你的正常改动」）──
+# ── 跑前断言 ①：目标模块必须**已被跟踪**（未跟踪文件没有 HEAD 版本可还原）──
+UNTRACKED=()
+for m in "${SELECTED[@]}"; do
+  if ! git ls-files --error-unmatch -- "${SRC[$m]}" >/dev/null 2>&1; then
+    UNTRACKED+=("${SRC[$m]}")
+  fi
+done
+if [ ${#UNTRACKED[@]} -gt 0 ]; then
+  echo "[ABORT] 以下**待审计模块**尚未被 git 跟踪："
+  printf '          %s\n' "${UNTRACKED[@]}"
+  echo "        mutation_test 就地改写源文件；未跟踪文件若在运行中被打断，"
+  echo "        **没有 HEAD 版本可还原**（跑后给出的 git checkout -- 也会失败）。"
+  echo "        请先 git add + commit 该模块后再跑审计。"
+  exit 3
+fi
+
+# ── 跑前断言 ②：目标模块必须干净（否则无法区分「残留变异」与「你的正常改动」）──
 DIRTY=()
 for m in "${SELECTED[@]}"; do
   if ! git diff --quiet -- "${SRC[$m]}"; then DIRTY+=("${SRC[$m]}"); fi
@@ -191,8 +212,11 @@ if [ $RC -eq 0 ]; then
   echo "       （等价变异体杀不死，不是缺陷）。"
 else
   echo "[注意] mutation_test 退出码 $RC —— **这不是「审计失败」**。"
-  echo "       2026-09-17 实测：工具在**存在未检出变异**时即返回非 0"
-  echo "       （79/309 未检出 ⇒ rc=127），与 dry-run 同码。"
+  echo "       该码跟的是工具自己的 Success 判定（**评级是否达标**），"
+  echo "       **不是「有无未检出」**（此表述 2026-09-17 已订正，见 PRACTICES A5.44）。"
+  echo "       实测：79/309 未检出 · rating C ⇒ rc=127"
+  echo "             21/117 未检出 · rating B ⇒ **rc=0**  ← 有未检出照样 0"
+  echo "             --dry-run（没跑测试）     ⇒ rc=127"
   echo "       判定一律看上面的 Undetected 计数与 Quality rating。"
 fi
 echo "       报告目录：mutation-test-report/（已 gitignore）"

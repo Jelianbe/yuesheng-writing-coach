@@ -34,6 +34,6 @@
     <file>lib/services/training_evaluator.dart</file>
   </files>
   <commands>
-    <command group="test" expected-return="0" working-directory="." timeout="900">flutter test test/services/character_identity_test.dart test/services/focus_resolver_coverage_test.dart test/services/focus_resolver_discrimination_test.dart test/services/training_evaluator_test.dart</command>
+    <command group="test" expected-return="0" working-directory="." timeout="900">flutter test test/services/character_identity_test.dart test/services/focus_resolver_coverage_test.dart test/services/focus_resolver_discrimination_test.dart test/services/training_evaluator_test.dart test/services/training_evaluator_discrimination_test.dart</command>
   </commands>
 </mutations>
