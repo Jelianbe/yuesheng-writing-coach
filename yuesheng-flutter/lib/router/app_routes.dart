@@ -29,4 +29,8 @@ class AppRoutes {
 
   /// W1 批次：世界观设定页（写作页 ⋮ 菜单「世界观」入口，走 context.push）
   static const String worlds = '/worlds';
+
+  /// 互链批次：角色/世界观详情页（互链区块跳转用，走 context.push + extra）
+  static const String characterDetail = '/setting-link-character-detail';
+  static const String worldDetail = '/setting-link-world-detail';
 }

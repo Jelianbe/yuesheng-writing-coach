@@ -15,6 +15,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../setting/setting_description_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,8 +24,11 @@ import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../router/app_routes.dart';
 import '../../services/world_editor_service.dart';
 import '../../types/character_types.dart';
+import '../../data/repositories/setting_link_repository.dart';
+import '../setting/setting_links_section.dart';
 import 'world_dialogs.dart';
 
 class WorldFactDetailPage extends ConsumerStatefulWidget {
@@ -160,6 +164,19 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
                   onEdit: _editDescription,
                 ),
                 ..._assertionWidgets(),
+                SettingLinksSection(
+                  manuscriptId: widget.manuscriptId,
+                  kind: SettingEntityKind.world,
+                  entityId: widget.worldId,
+                  onJump: (kind, id) {
+                    if (kind == SettingEntityKind.character) {
+                      context.push(
+                        AppRoutes.characterDetail,
+                        extra: {'manuscriptId': widget.manuscriptId, 'id': id},
+                      );
+                    }
+                  },
+                ),
                 _WorldArchiveAction(
                   archived: row.status != 'active',
                   onArchive: _archive,

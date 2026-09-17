@@ -814,6 +814,42 @@ class WorldFacts extends Table {
   ];
 }
 
+/// 条目互链（设定资料库·Codex 式互链第一批，schema v36）。
+///
+/// 四类设定实体（character / world / outline / setting）之间的跨实体引用。
+/// - **方向性**：link(A→B) 与 link(B→A) 是两行——用户自定义方向与关系名；
+///   详情页展示「涉及本实体的全部互链」（出链 + 入链）
+/// - **软引用**：source_id / target_id 跨表无 FK（类型由 kind 决定），
+///   目标行被删后展示容错（「已删除的条目」不可点）
+/// - **本批不参与诊断注入**：仅管理 / 展示 / 详情页互跳（克制清单转正）
+/// - UNIQUE 防重复互链（幂等 create）
+@DataClassName('SettingLink')
+class SettingLinks extends Table {
+  @override
+  String get tableName => 'setting_link';
+
+  TextColumn get id => text()();
+  TextColumn get manuscriptId =>
+      text().references(Manuscripts, #id, onDelete: KeyAction.cascade)();
+  TextColumn get sourceKind =>
+      text()(); // character | world | outline | setting
+  TextColumn get sourceId => text()();
+  TextColumn get targetKind => text()();
+  TextColumn get targetId => text()();
+  TextColumn get label =>
+      text().withDefault(const Constant(''))(); // 可选关系名（如「所属世界」）
+  IntColumn get createdAt =>
+      integer().withDefault(const CustomExpression<int>('unixepoch()'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {manuscriptId, sourceKind, sourceId, targetKind, targetId},
+  ];
+}
+
 /// 「其他」开放容器（设定资料库第二批）：用户自建类别 + 勾选参与诊断。
 ///
 /// 武器 / 规则怪谈 / 组织等非角色、非世界观的自由设定。类别为自由字符串

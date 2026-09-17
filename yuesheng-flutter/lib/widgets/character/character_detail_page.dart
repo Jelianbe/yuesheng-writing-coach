@@ -23,6 +23,7 @@ import '../../data/database/utils.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/character_fact_repository.dart';
 import '../../data/repositories/event_fact_repository.dart';
+import '../../data/repositories/setting_link_repository.dart';
 import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_providers.dart';
@@ -37,6 +38,7 @@ import '../../services/setting_library_service.dart' as sls;
 import '../../types/character_types.dart';
 import 'character_detail_sections.dart';
 import 'character_dialogs.dart';
+import '../setting/setting_links_section.dart';
 import 'character_events_section.dart';
 
 class CharacterDetailPage extends ConsumerStatefulWidget {
@@ -142,6 +144,24 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     });
   }
 
+  /// 互链跳转：角色详情页只处理「跳到世界观详情页」（区块回调注入）。
+  void _jumpToWorld(SettingEntityKind kind, String id) {
+    if (kind != SettingEntityKind.world) return;
+    context.push(
+      AppRoutes.worldDetail,
+      extra: {'manuscriptId': widget.manuscriptId, 'id': id},
+    );
+  }
+
+  /// 近轮过滤横幅（R-019 拆分：build 临界，抽出 _since 分支）。
+  Widget _buildRecentBanner() {
+    if (_since == null) return const SizedBox.shrink();
+    return CharacterRecentBanner(
+      visibleCount: _visibleAssertions.length,
+      onShowAll: () => setState(() => _since = null),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final row = _row;
@@ -166,11 +186,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   description: row.description,
                   onEdit: _editDescription,
                 ),
-                if (_since != null)
-                  CharacterRecentBanner(
-                    visibleCount: _visibleAssertions.length,
-                    onShowAll: () => setState(() => _since = null),
-                  ),
+                _buildRecentBanner(),
                 CharacterConflictsCard(conflicts: _conflicts),
                 _buildConflictBanner(),
                 CharacterStaleClearBar(
@@ -186,6 +202,12 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   onToggleNegative: _toggleNegative,
                 ),
                 CharacterEventsSection(events: _events, onJump: _jumpToChapter),
+                SettingLinksSection(
+                  manuscriptId: widget.manuscriptId,
+                  kind: SettingEntityKind.character,
+                  entityId: widget.characterId,
+                  onJump: _jumpToWorld,
+                ),
               ],
             ),
     );

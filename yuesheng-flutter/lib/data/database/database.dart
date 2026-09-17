@@ -51,6 +51,8 @@ part 'database.g.dart';
     // v31：世界观设定条目（书籍级成长叙事 · 批次 E1）
     WorldFacts,
     SettingEntries,
+    // v36：条目互链（Codex 式跨实体引用，第一批）
+    SettingLinks,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -60,7 +62,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -223,7 +225,8 @@ class AppDatabase extends _$AppDatabase {
       // 设定库第四批：守卫上移到 33（v33 块对 from=32 存量库可达，冪等 ALTER ADD COLUMN）
       // 第二批：守卫上移到 34（v34 块对 from=33 存量库可达，建 setting_entry）
       // L2 钉选：守卫上移到 35（v35 块对 from=34 存量库可达，冪等 ALTER ADD COLUMN）
-      if (from >= 35) return;
+      // 条目互链：守卫上移到 36（v36 块对 from=35 存量库可达，建 setting_link）
+      if (from >= 36) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1008,6 +1011,26 @@ class AppDatabase extends _$AppDatabase {
             );
           }
         }
+      }
+
+      // v36: 条目互链（Codex 式跨实体引用，第一批）— setting_link 表。
+      // 四类设定实体（character/world/outline/setting）双向引用，软引用无 FK；
+      // 本批仅管理/展示/详情页互跳，不参与诊断注入。
+      if (from < 36) {
+        await customStatement(
+          'CREATE TABLE IF NOT EXISTS setting_link ('
+          'id TEXT NOT NULL PRIMARY KEY, '
+          'manuscript_id TEXT NOT NULL REFERENCES manuscripts(id) '
+          'ON DELETE CASCADE, '
+          'source_kind TEXT NOT NULL, '
+          'source_id TEXT NOT NULL, '
+          'target_kind TEXT NOT NULL, '
+          'target_id TEXT NOT NULL, '
+          'label TEXT NOT NULL DEFAULT \'\', '
+          'created_at INTEGER NOT NULL DEFAULT (unixepoch()), '
+          'UNIQUE (manuscript_id, source_kind, source_id, target_kind, target_id)'
+          ')',
+        );
       }
     },
 

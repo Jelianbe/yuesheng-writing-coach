@@ -34,6 +34,8 @@ import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
 import '../widgets/project_settings_page.dart';
 import '../widgets/settings_page.dart';
+import '../widgets/character/character_detail_page.dart';
+import '../widgets/world/world_fact_detail_page.dart';
 import '../widgets/world/world_fact_page.dart';
 import '../widgets/writing_page.dart';
 import 'app_routes.dart';
@@ -238,6 +240,32 @@ final GoRouter appRouter = GoRouter(
           manuscriptId: manuscriptId,
           manuscriptTitle: extra['title'] as String?,
         );
+      },
+    ),
+
+    // ── 互链批次：角色/世界观详情页（详情页「关联设定」区块跳转）──
+    GoRoute(
+      path: AppRoutes.characterDetail,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        final manuscriptId = extra['manuscriptId'] as String? ?? '';
+        final id = extra['id'] as String? ?? '';
+        if (manuscriptId.isEmpty || id.isEmpty) {
+          return const PlaceholderPage(title: '角色详情', subtitle: '未提供参数');
+        }
+        return CharacterDetailPage(characterId: id, manuscriptId: manuscriptId);
+      },
+    ),
+    GoRoute(
+      path: AppRoutes.worldDetail,
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        final manuscriptId = extra['manuscriptId'] as String? ?? '';
+        final id = extra['id'] as String? ?? '';
+        if (manuscriptId.isEmpty || id.isEmpty) {
+          return const PlaceholderPage(title: '世界观详情', subtitle: '未提供参数');
+        }
+        return WorldFactDetailPage(worldId: id, manuscriptId: manuscriptId);
       },
     ),
 

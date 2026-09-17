@@ -15314,6 +15314,528 @@ class SettingEntriesCompanion extends UpdateCompanion<SettingEntry> {
   }
 }
 
+class $SettingLinksTable extends SettingLinks
+    with TableInfo<$SettingLinksTable, SettingLink> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SettingLinksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _manuscriptIdMeta = const VerificationMeta(
+    'manuscriptId',
+  );
+  @override
+  late final GeneratedColumn<String> manuscriptId = GeneratedColumn<String>(
+    'manuscript_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES manuscripts (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sourceKindMeta = const VerificationMeta(
+    'sourceKind',
+  );
+  @override
+  late final GeneratedColumn<String> sourceKind = GeneratedColumn<String>(
+    'source_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceIdMeta = const VerificationMeta(
+    'sourceId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceId = GeneratedColumn<String>(
+    'source_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetKindMeta = const VerificationMeta(
+    'targetKind',
+  );
+  @override
+  late final GeneratedColumn<String> targetKind = GeneratedColumn<String>(
+    'target_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  @override
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const CustomExpression<int>('unixepoch()'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    manuscriptId,
+    sourceKind,
+    sourceId,
+    targetKind,
+    targetId,
+    label,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'setting_link';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SettingLink> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('manuscript_id')) {
+      context.handle(
+        _manuscriptIdMeta,
+        manuscriptId.isAcceptableOrUnknown(
+          data['manuscript_id']!,
+          _manuscriptIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_manuscriptIdMeta);
+    }
+    if (data.containsKey('source_kind')) {
+      context.handle(
+        _sourceKindMeta,
+        sourceKind.isAcceptableOrUnknown(data['source_kind']!, _sourceKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceKindMeta);
+    }
+    if (data.containsKey('source_id')) {
+      context.handle(
+        _sourceIdMeta,
+        sourceId.isAcceptableOrUnknown(data['source_id']!, _sourceIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceIdMeta);
+    }
+    if (data.containsKey('target_kind')) {
+      context.handle(
+        _targetKindMeta,
+        targetKind.isAcceptableOrUnknown(data['target_kind']!, _targetKindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetKindMeta);
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetIdMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {manuscriptId, sourceKind, sourceId, targetKind, targetId},
+  ];
+  @override
+  SettingLink map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SettingLink(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      manuscriptId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}manuscript_id'],
+      )!,
+      sourceKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_kind'],
+      )!,
+      sourceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_id'],
+      )!,
+      targetKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_kind'],
+      )!,
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SettingLinksTable createAlias(String alias) {
+    return $SettingLinksTable(attachedDatabase, alias);
+  }
+}
+
+class SettingLink extends DataClass implements Insertable<SettingLink> {
+  final String id;
+  final String manuscriptId;
+  final String sourceKind;
+  final String sourceId;
+  final String targetKind;
+  final String targetId;
+  final String label;
+  final int createdAt;
+  const SettingLink({
+    required this.id,
+    required this.manuscriptId,
+    required this.sourceKind,
+    required this.sourceId,
+    required this.targetKind,
+    required this.targetId,
+    required this.label,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['manuscript_id'] = Variable<String>(manuscriptId);
+    map['source_kind'] = Variable<String>(sourceKind);
+    map['source_id'] = Variable<String>(sourceId);
+    map['target_kind'] = Variable<String>(targetKind);
+    map['target_id'] = Variable<String>(targetId);
+    map['label'] = Variable<String>(label);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  SettingLinksCompanion toCompanion(bool nullToAbsent) {
+    return SettingLinksCompanion(
+      id: Value(id),
+      manuscriptId: Value(manuscriptId),
+      sourceKind: Value(sourceKind),
+      sourceId: Value(sourceId),
+      targetKind: Value(targetKind),
+      targetId: Value(targetId),
+      label: Value(label),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory SettingLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SettingLink(
+      id: serializer.fromJson<String>(json['id']),
+      manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
+      sourceKind: serializer.fromJson<String>(json['sourceKind']),
+      sourceId: serializer.fromJson<String>(json['sourceId']),
+      targetKind: serializer.fromJson<String>(json['targetKind']),
+      targetId: serializer.fromJson<String>(json['targetId']),
+      label: serializer.fromJson<String>(json['label']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'manuscriptId': serializer.toJson<String>(manuscriptId),
+      'sourceKind': serializer.toJson<String>(sourceKind),
+      'sourceId': serializer.toJson<String>(sourceId),
+      'targetKind': serializer.toJson<String>(targetKind),
+      'targetId': serializer.toJson<String>(targetId),
+      'label': serializer.toJson<String>(label),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  SettingLink copyWith({
+    String? id,
+    String? manuscriptId,
+    String? sourceKind,
+    String? sourceId,
+    String? targetKind,
+    String? targetId,
+    String? label,
+    int? createdAt,
+  }) => SettingLink(
+    id: id ?? this.id,
+    manuscriptId: manuscriptId ?? this.manuscriptId,
+    sourceKind: sourceKind ?? this.sourceKind,
+    sourceId: sourceId ?? this.sourceId,
+    targetKind: targetKind ?? this.targetKind,
+    targetId: targetId ?? this.targetId,
+    label: label ?? this.label,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  SettingLink copyWithCompanion(SettingLinksCompanion data) {
+    return SettingLink(
+      id: data.id.present ? data.id.value : this.id,
+      manuscriptId: data.manuscriptId.present
+          ? data.manuscriptId.value
+          : this.manuscriptId,
+      sourceKind: data.sourceKind.present
+          ? data.sourceKind.value
+          : this.sourceKind,
+      sourceId: data.sourceId.present ? data.sourceId.value : this.sourceId,
+      targetKind: data.targetKind.present
+          ? data.targetKind.value
+          : this.targetKind,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      label: data.label.present ? data.label.value : this.label,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingLink(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('sourceKind: $sourceKind, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('targetId: $targetId, ')
+          ..write('label: $label, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    manuscriptId,
+    sourceKind,
+    sourceId,
+    targetKind,
+    targetId,
+    label,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SettingLink &&
+          other.id == this.id &&
+          other.manuscriptId == this.manuscriptId &&
+          other.sourceKind == this.sourceKind &&
+          other.sourceId == this.sourceId &&
+          other.targetKind == this.targetKind &&
+          other.targetId == this.targetId &&
+          other.label == this.label &&
+          other.createdAt == this.createdAt);
+}
+
+class SettingLinksCompanion extends UpdateCompanion<SettingLink> {
+  final Value<String> id;
+  final Value<String> manuscriptId;
+  final Value<String> sourceKind;
+  final Value<String> sourceId;
+  final Value<String> targetKind;
+  final Value<String> targetId;
+  final Value<String> label;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const SettingLinksCompanion({
+    this.id = const Value.absent(),
+    this.manuscriptId = const Value.absent(),
+    this.sourceKind = const Value.absent(),
+    this.sourceId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SettingLinksCompanion.insert({
+    required String id,
+    required String manuscriptId,
+    required String sourceKind,
+    required String sourceId,
+    required String targetKind,
+    required String targetId,
+    this.label = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       manuscriptId = Value(manuscriptId),
+       sourceKind = Value(sourceKind),
+       sourceId = Value(sourceId),
+       targetKind = Value(targetKind),
+       targetId = Value(targetId);
+  static Insertable<SettingLink> custom({
+    Expression<String>? id,
+    Expression<String>? manuscriptId,
+    Expression<String>? sourceKind,
+    Expression<String>? sourceId,
+    Expression<String>? targetKind,
+    Expression<String>? targetId,
+    Expression<String>? label,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (manuscriptId != null) 'manuscript_id': manuscriptId,
+      if (sourceKind != null) 'source_kind': sourceKind,
+      if (sourceId != null) 'source_id': sourceId,
+      if (targetKind != null) 'target_kind': targetKind,
+      if (targetId != null) 'target_id': targetId,
+      if (label != null) 'label': label,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SettingLinksCompanion copyWith({
+    Value<String>? id,
+    Value<String>? manuscriptId,
+    Value<String>? sourceKind,
+    Value<String>? sourceId,
+    Value<String>? targetKind,
+    Value<String>? targetId,
+    Value<String>? label,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return SettingLinksCompanion(
+      id: id ?? this.id,
+      manuscriptId: manuscriptId ?? this.manuscriptId,
+      sourceKind: sourceKind ?? this.sourceKind,
+      sourceId: sourceId ?? this.sourceId,
+      targetKind: targetKind ?? this.targetKind,
+      targetId: targetId ?? this.targetId,
+      label: label ?? this.label,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (manuscriptId.present) {
+      map['manuscript_id'] = Variable<String>(manuscriptId.value);
+    }
+    if (sourceKind.present) {
+      map['source_kind'] = Variable<String>(sourceKind.value);
+    }
+    if (sourceId.present) {
+      map['source_id'] = Variable<String>(sourceId.value);
+    }
+    if (targetKind.present) {
+      map['target_kind'] = Variable<String>(targetKind.value);
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SettingLinksCompanion(')
+          ..write('id: $id, ')
+          ..write('manuscriptId: $manuscriptId, ')
+          ..write('sourceKind: $sourceKind, ')
+          ..write('sourceId: $sourceId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('targetId: $targetId, ')
+          ..write('label: $label, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -15352,6 +15874,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BackupHistoryTable backupHistory = $BackupHistoryTable(this);
   late final $WorldFactsTable worldFacts = $WorldFactsTable(this);
   late final $SettingEntriesTable settingEntries = $SettingEntriesTable(this);
+  late final $SettingLinksTable settingLinks = $SettingLinksTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -15382,6 +15905,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     backupHistory,
     worldFacts,
     settingEntries,
+    settingLinks,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -15559,6 +16083,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('setting_entry', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'manuscripts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('setting_link', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -15799,6 +16330,27 @@ final class $$ManuscriptsTableReferences
     ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_settingEntriesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$SettingLinksTable, List<SettingLink>>
+  _settingLinksRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.settingLinks,
+    aliasName: $_aliasNameGenerator(
+      db.manuscripts.id,
+      db.settingLinks.manuscriptId,
+    ),
+  );
+
+  $$SettingLinksTableProcessedTableManager get settingLinksRefs {
+    final manager = $$SettingLinksTableTableManager(
+      $_db,
+      $_db.settingLinks,
+    ).filter((f) => f.manuscriptId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_settingLinksRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -16105,6 +16657,31 @@ class $$ManuscriptsTableFilterComposer
           }) => $$SettingEntriesTableFilterComposer(
             $db: $db,
             $table: $db.settingEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> settingLinksRefs(
+    Expression<bool> Function($$SettingLinksTableFilterComposer f) f,
+  ) {
+    final $$SettingLinksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.settingLinks,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SettingLinksTableFilterComposer(
+            $db: $db,
+            $table: $db.settingLinks,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16465,6 +17042,31 @@ class $$ManuscriptsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> settingLinksRefs<T extends Object>(
+    Expression<T> Function($$SettingLinksTableAnnotationComposer a) f,
+  ) {
+    final $$SettingLinksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.settingLinks,
+      getReferencedColumn: (t) => t.manuscriptId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$SettingLinksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.settingLinks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ManuscriptsTableTableManager
@@ -16491,6 +17093,7 @@ class $$ManuscriptsTableTableManager
             bool outlineEntitiesRefs,
             bool worldFactsRefs,
             bool settingEntriesRefs,
+            bool settingLinksRefs,
           })
         > {
   $$ManuscriptsTableTableManager(_$AppDatabase db, $ManuscriptsTable table)
@@ -16576,6 +17179,7 @@ class $$ManuscriptsTableTableManager
                 outlineEntitiesRefs = false,
                 worldFactsRefs = false,
                 settingEntriesRefs = false,
+                settingLinksRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -16590,6 +17194,7 @@ class $$ManuscriptsTableTableManager
                     if (outlineEntitiesRefs) db.outlineEntities,
                     if (worldFactsRefs) db.worldFacts,
                     if (settingEntriesRefs) db.settingEntries,
+                    if (settingLinksRefs) db.settingLinks,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -16804,6 +17409,27 @@ class $$ManuscriptsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (settingLinksRefs)
+                        await $_getPrefetchedData<
+                          Manuscript,
+                          $ManuscriptsTable,
+                          SettingLink
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ManuscriptsTableReferences
+                              ._settingLinksRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ManuscriptsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).settingLinksRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.manuscriptId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -16835,6 +17461,7 @@ typedef $$ManuscriptsTableProcessedTableManager =
         bool outlineEntitiesRefs,
         bool worldFactsRefs,
         bool settingEntriesRefs,
+        bool settingLinksRefs,
       })
     >;
 typedef $$VolumesTableCreateCompanionBuilder =
@@ -28409,6 +29036,386 @@ typedef $$SettingEntriesTableProcessedTableManager =
       SettingEntry,
       PrefetchHooks Function({bool manuscriptId})
     >;
+typedef $$SettingLinksTableCreateCompanionBuilder =
+    SettingLinksCompanion Function({
+      required String id,
+      required String manuscriptId,
+      required String sourceKind,
+      required String sourceId,
+      required String targetKind,
+      required String targetId,
+      Value<String> label,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+typedef $$SettingLinksTableUpdateCompanionBuilder =
+    SettingLinksCompanion Function({
+      Value<String> id,
+      Value<String> manuscriptId,
+      Value<String> sourceKind,
+      Value<String> sourceId,
+      Value<String> targetKind,
+      Value<String> targetId,
+      Value<String> label,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$SettingLinksTableReferences
+    extends BaseReferences<_$AppDatabase, $SettingLinksTable, SettingLink> {
+  $$SettingLinksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ManuscriptsTable _manuscriptIdTable(_$AppDatabase db) =>
+      db.manuscripts.createAlias(
+        $_aliasNameGenerator(db.settingLinks.manuscriptId, db.manuscripts.id),
+      );
+
+  $$ManuscriptsTableProcessedTableManager get manuscriptId {
+    final $_column = $_itemColumn<String>('manuscript_id')!;
+
+    final manager = $$ManuscriptsTableTableManager(
+      $_db,
+      $_db.manuscripts,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_manuscriptIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$SettingLinksTableFilterComposer
+    extends Composer<_$AppDatabase, $SettingLinksTable> {
+  $$SettingLinksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceKind => $composableBuilder(
+    column: $table.sourceKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ManuscriptsTableFilterComposer get manuscriptId {
+    final $$ManuscriptsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableFilterComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingLinksTableOrderingComposer
+    extends Composer<_$AppDatabase, $SettingLinksTable> {
+  $$SettingLinksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceKind => $composableBuilder(
+    column: $table.sourceKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceId => $composableBuilder(
+    column: $table.sourceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ManuscriptsTableOrderingComposer get manuscriptId {
+    final $$ManuscriptsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableOrderingComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingLinksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SettingLinksTable> {
+  $$SettingLinksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceKind => $composableBuilder(
+    column: $table.sourceKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourceId =>
+      $composableBuilder(column: $table.sourceId, builder: (column) => column);
+
+  GeneratedColumn<String> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ManuscriptsTableAnnotationComposer get manuscriptId {
+    final $$ManuscriptsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.manuscriptId,
+      referencedTable: $db.manuscripts,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ManuscriptsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.manuscripts,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$SettingLinksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SettingLinksTable,
+          SettingLink,
+          $$SettingLinksTableFilterComposer,
+          $$SettingLinksTableOrderingComposer,
+          $$SettingLinksTableAnnotationComposer,
+          $$SettingLinksTableCreateCompanionBuilder,
+          $$SettingLinksTableUpdateCompanionBuilder,
+          (SettingLink, $$SettingLinksTableReferences),
+          SettingLink,
+          PrefetchHooks Function({bool manuscriptId})
+        > {
+  $$SettingLinksTableTableManager(_$AppDatabase db, $SettingLinksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SettingLinksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SettingLinksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SettingLinksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> manuscriptId = const Value.absent(),
+                Value<String> sourceKind = const Value.absent(),
+                Value<String> sourceId = const Value.absent(),
+                Value<String> targetKind = const Value.absent(),
+                Value<String> targetId = const Value.absent(),
+                Value<String> label = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingLinksCompanion(
+                id: id,
+                manuscriptId: manuscriptId,
+                sourceKind: sourceKind,
+                sourceId: sourceId,
+                targetKind: targetKind,
+                targetId: targetId,
+                label: label,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String manuscriptId,
+                required String sourceKind,
+                required String sourceId,
+                required String targetKind,
+                required String targetId,
+                Value<String> label = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SettingLinksCompanion.insert(
+                id: id,
+                manuscriptId: manuscriptId,
+                sourceKind: sourceKind,
+                sourceId: sourceId,
+                targetKind: targetKind,
+                targetId: targetId,
+                label: label,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$SettingLinksTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({manuscriptId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (manuscriptId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.manuscriptId,
+                                referencedTable: $$SettingLinksTableReferences
+                                    ._manuscriptIdTable(db),
+                                referencedColumn: $$SettingLinksTableReferences
+                                    ._manuscriptIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$SettingLinksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SettingLinksTable,
+      SettingLink,
+      $$SettingLinksTableFilterComposer,
+      $$SettingLinksTableOrderingComposer,
+      $$SettingLinksTableAnnotationComposer,
+      $$SettingLinksTableCreateCompanionBuilder,
+      $$SettingLinksTableUpdateCompanionBuilder,
+      (SettingLink, $$SettingLinksTableReferences),
+      SettingLink,
+      PrefetchHooks Function({bool manuscriptId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -28463,4 +29470,6 @@ class $AppDatabaseManager {
       $$WorldFactsTableTableManager(_db, _db.worldFacts);
   $$SettingEntriesTableTableManager get settingEntries =>
       $$SettingEntriesTableTableManager(_db, _db.settingEntries);
+  $$SettingLinksTableTableManager get settingLinks =>
+      $$SettingLinksTableTableManager(_db, _db.settingLinks);
 }
