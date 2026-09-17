@@ -14,6 +14,19 @@
 #   ② 新写了一批测试 ⇒ 用 --module 验证「测试是否真有牙齿」
 #   ③ 怀疑某模块测试变空壳 ⇒ 同上
 #
+# 【★★★ 必读风险：mutation_test 会**就地改写源文件】★★★（2026-09-17 实测取证）
+#   它按变异点逐个「写入源文件 → 跑测试 → 还原」，**不创建副本**（报告目录里
+#   只有 HTML，没有源码快照）。由此带来两个必须防的坑：
+#     · 运行期间**源码处于变异态** ⇒ 此刻读源文件/跑其他测试都会得到假象。
+#       实测踩坑：审计中读 focus_resolver.dart 看到 `if (!(problems.isEmpty))`，
+#       差点据此断言「fallback 表永不可达」——那其实是当前生效的变异体。
+#       ⇒ **审计期间禁止读源码下结论、禁止跑其他门禁**。
+#     · 进程被中断（Ctrl-C / 超时 / 崩溃）时，**当前变异体不会还原** ⇒
+#       残留会混进提交。本脚本因此加了跑前/跑后双向校验（见下方断言）。
+#
+# 【report 目录的坑】HTML 是在 run **开始时**初始化为「Detected: 0 / 全部未检出」
+#   的快照，run 结束后才写最终结果。⇒ 运行中途读报告会看到「全部未检出」的假象。
+#
 # 用法：
 #   bash scripts/mutation_audit.sh                 # 自动：只审计 git diff 触及的模块
 #   bash scripts/mutation_audit.sh --module focus_resolver
@@ -37,7 +50,7 @@ declare -A SRC=(
 )
 declare -A TST=(
   [character_identity]="test/services/character_identity_test.dart"
-  [focus_resolver]="test/services/focus_resolver_coverage_test.dart"
+  [focus_resolver]="test/services/focus_resolver_coverage_test.dart test/services/focus_resolver_discrimination_test.dart"
   [training_evaluator]="test/services/training_evaluator_test.dart"
 )
 ALL_MODULES=(character_identity focus_resolver training_evaluator)
@@ -101,6 +114,19 @@ case "$MODE" in
     ;;
 esac
 
+# ── 跑前断言：目标模块必须干净（否则无法区分「残留变异」与「你的正常改动」）──
+DIRTY=()
+for m in "${SELECTED[@]}"; do
+  if ! git diff --quiet -- "${SRC[$m]}"; then DIRTY+=("${SRC[$m]}"); fi
+done
+if [ ${#DIRTY[@]} -gt 0 ]; then
+  echo "[ABORT] 以下**待审计模块**有未提交改动："
+  printf '          %s\n' "${DIRTY[@]}"
+  echo "        mutation_test 就地改写源文件、跑完还原；基线不干净时无法判别"
+  echo "        「运行残留」与「你的改动」。请先提交或 stash 后再跑。"
+  exit 3
+fi
+
 # ── 生成临时 XML（只含选中模块 + 对应测试命令）──
 {
   echo '<?xml version="1.0" encoding="UTF-8"?>'
@@ -136,12 +162,41 @@ dart run mutation_test $DRY "$TMP_XML"
 RC=$?
 
 echo
-if [ $RC -eq 0 ]; then
-  echo "[注意] 退出码 0 **不代表变异全部被检测** —— mutation_test 在「有未检出变异」时"
-  echo "       也可能返回 0。判定必须看报告里的 Quality rating 与 Undetected 计数，"
-  echo "       并**逐条区分「真盲区」与「等价变异体」**（等价变异体杀不死，不是缺陷）。"
-  echo "       报告目录：mutation-test-report/（已 gitignore）"
-else
-  echo "[FAIL] mutation_test 退出码 $RC"
+# ── 跑后断言：源码必须已还原（就地改写 ⇒ 中断会留残留）──
+RESIDUE=()
+for m in "${SELECTED[@]}"; do
+  if ! git diff --quiet -- "${SRC[$m]}"; then RESIDUE+=("${SRC[$m]}"); fi
+done
+if [ ${#RESIDUE[@]} -gt 0 ]; then
+  echo "  ╔════════════════════════════════════════════════════════════════════╗"
+  echo "  ║  [★ 危险] 变异残留：以下文件跑完后与 HEAD 不一致                    ║"
+  echo "  ╚════════════════════════════════════════════════════════════════════╝"
+  printf '      %s\n' "${RESIDUE[@]}"
+  echo "  mutation_test 就地改写源文件；进程若被中断，当前变异体不会还原。"
+  echo "  **切勿提交**。先核对 diff 确认是变异体（而非你的正常改动），然后执行："
+  printf '      git checkout -- %s\n' "${RESIDUE[@]}"
+  exit 4
 fi
+echo "[OK] 源码完整性：${#SELECTED[@]} 个待审计模块均已还原（与 HEAD 一致）"
+
+# ★ --dry-run 的退出码**不是失败信号**（2026-09-17 实测 rc=127）：
+#   没跑测试 ⇒ 全部变异点必然报「未检出」、rating F、非零退出码，属预期行为。
+if [ -n "$DRY" ]; then
+  echo "[OK] --dry-run 完成：已统计变异点（**未执行测试**，故不判定检出率）。"
+  exit 0
+fi
+if [ $RC -eq 0 ]; then
+  echo "[注意] 退出码 0 **不代表变异全部被检测**。判定一律看上面的 Undetected"
+  echo "       计数与 Quality rating，并**逐条区分「真盲区」与「等价变异体」**"
+  echo "       （等价变异体杀不死，不是缺陷）。"
+else
+  echo "[注意] mutation_test 退出码 $RC —— **这不是「审计失败」**。"
+  echo "       2026-09-17 实测：工具在**存在未检出变异**时即返回非 0"
+  echo "       （79/309 未检出 ⇒ rc=127），与 dry-run 同码。"
+  echo "       判定一律看上面的 Undetected 计数与 Quality rating。"
+fi
+echo "       报告目录：mutation-test-report/（已 gitignore）"
+echo "       未检出清单（结构化提取：行号 / 变异类型 / 真实改动点）："
+echo "         python .ai/tools/_parse_mutation_report.py \\"
+echo "             mutation-test-report/lib/services/<模块>.dart.html --stats"
 exit $RC
