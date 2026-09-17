@@ -194,15 +194,25 @@ fi
 echo "门禁 2 范围: ${MODE}（${TEST_COUNT} 个测试文件${TEST_SCOPE:+；__ALL__ 表示全量}）"
 if [ "$MODE" = "auto" ] && [ "$TEST_COUNT" = "0" ]; then
   echo "  [WARN] 未能从改动推导出任何测试文件 —— 门禁 2 将记为 NOTRUN（不是通过！）"
-  # ★ 「零测试」有两种完全不同的成因，外观一样，必须分开报：
-  #   a) 本次没动 lib/ 或 test/ 下的 .dart（改的是脚本/文档）⇒ 零测试是**正确的**
-  #   b) 动了 lib/**.dart 但找不到同名测试 ⇒ 零测试是**真空档**，必须点名
+  echo "         如需强制全量：bash scripts/gate-fast.sh --all"
+fi
+
+# ★★ 2026-09-17 修：lib-nomatch 告警**必须独立于 `TEST_COUNT == 0`**。
+#    原写法把这段嵌在上面那个分支里 ⇒ 只要 `test/` 侧另有 1 个改动文件把
+#    TEST_COUNT 顶到 >0，「有 lib 文件没被任何测试覆盖」这一事实就**被静默吞掉**。
+#    与「NOTRUN 不计数」是同一族缺陷：信息存在，但不出现/不显眼。
+#    （「测量没跑起来」与「测量结果为零」外观相同——第三次同型事故，故此处独立成块。）
+#    非 auto 模式**不做**此统计（derive_tests 未被调用），必须写成 N/A 而不是 0，
+#    否则报告会把「未统计」读成「零个」。
+LIB_NOMATCH_DESC="N/A（仅 auto 模式统计；本次为 ${MODE} 模式）"
+if [ "$MODE" = "auto" ]; then
+  LIB_NOMATCH_DESC="${LIB_NOMATCH_COUNT} 个"
   if [ "$LIB_NOMATCH_COUNT" -gt 0 ]; then
-    echo "  [WARN] ★ 本次有 ${LIB_NOMATCH_COUNT} 个 lib/ 下 .dart 改动**找不到同名测试**，一行测试都没跑："
+    echo "  [WARN] ★ 本次有 ${LIB_NOMATCH_COUNT} 个 lib/ 下 .dart 改动**找不到同名测试**（未纳入本次门禁 2 范围）："
     sed '/^$/d' "$NOMATCH_FILE" | sed 's/^/           /'
     echo "         若确属纯声明/纯常量的改动可接受；否则请补测试或显式 --all 全量。"
+    echo "         （快道**不阻断**此项；由收尾道全量测试兜底）"
   fi
-  echo "         如需强制全量：bash scripts/gate-fast.sh --all"
 fi
 
 if [ "$DRY_RUN" = "1" ]; then
@@ -446,6 +456,19 @@ if [ "$degraded" -gt 0 ]; then
 "
 fi
 
+# ★ 2026-09-17：lib-nomatch 也必须进报告。hook 的 stdout 一闪而过，
+#   事后唯一可查的是本文件；只打在 stdout 上等于**没留痕**。
+#   ⚠️ 本串会被下面 unquoted heredoc 展开，故**不得含裸反引号**。
+LIB_NOMATCH_BANNER=""
+if [ "$MODE" = "auto" ] && [ "$LIB_NOMATCH_COUNT" -gt 0 ]; then
+  LIB_NOMATCH_BANNER="> ⚠️ **${LIB_NOMATCH_COUNT} 个 lib/ 下 .dart 改动未纳入本次测试范围**（同名测试不存在）——
+> 快道**不阻断**（收尾道 gate.sh 的全量测试会兜底）；若属真改动，请补测试。
+>
+$(sed '/^$/d' "$NOMATCH_FILE" | sed 's/^/  - /')
+
+"
+fi
+
 # 测试范围描述（写进报告，保证「过了」这句话有范围）
 if [ "$TEST_SCOPE" = "__ALL__" ]; then
   TEST_SCOPE_DESC="全量（--all）"
@@ -461,9 +484,10 @@ cat > "$REPORT" <<EOF
 > 🚦 这是**迭代快道**，不是十二道收尾门禁。它**不执行门禁 6（覆盖率）**。
 > 声称「完成」前必须跑 \`bash scripts/gate.sh\` 并全绿。
 
-${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
+${DEGRADED_BANNER}${LIB_NOMATCH_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 - 项目: yuesheng-flutter
 - 门禁 2 范围: ${TEST_SCOPE_DESC}
+- lib 改动无同名测试: ${LIB_NOMATCH_DESC}
 
 | 门禁 | 结果 |
 |------|------|
