@@ -71,7 +71,6 @@ import 'package:writingcoach/services/chat_context_builder.dart'
         buildReferencesContext,
         buildStructuredSyndromeContext,
         buildSubplotClosureContext,
-        buildWorldSettingObservationsContext,
         buildParticipatingSettingsContext,
         findKeywordExcerpt;
 import 'package:writingcoach/services/character_identity.dart';
@@ -1184,8 +1183,24 @@ class MessageInjector {
       if (chapter == null) return;
       final worlds = await _worldFactRepo.listWorlds(chapter.manuscriptId);
       if (worlds.isEmpty) return;
-      final observations = detectConflictsForWorlds(worlds);
-      final ctx = buildWorldSettingObservationsContext(observations);
+      // 分级供给 L1（世界观侧，2026-09-17）：命中主题展开 + 命中矛盾 +
+      // 冷元信息，替代原「每轮全量检测」——成本随对话复杂度而非库容增长
+      // （母备忘 §2.3 成本模型）。
+      final userText = _lastUserText(messages);
+      final hits = matchHitWorlds(
+        chapterContent: chapter.content,
+        userText: userText,
+        worlds: worlds,
+      );
+      final hitWorlds = [
+        for (final w in worlds)
+          if (hits.contains(w.name)) w,
+      ];
+      final ctx = buildWorldHitContext(
+        hitNames: hits,
+        worlds: worlds,
+        conflicts: detectConflictsForWorlds(hitWorlds),
+      );
       if (ctx != null) {
         markStage(BudgetStageNames.ruleDetectors);
         messages.add(ChatMessage(role: 'system', content: ctx));

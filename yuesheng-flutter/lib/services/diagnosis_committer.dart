@@ -47,7 +47,10 @@ import 'package:writingcoach/services/fact_parser.dart';
 import 'package:writingcoach/services/fact_stale_service.dart';
 import 'package:writingcoach/services/message_card_service.dart';
 import 'package:writingcoach/services/outline_parser.dart';
+import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/services/outline_service.dart';
+import 'package:writingcoach/services/conflict_detector.dart'
+    show WorldConflictObservation;
 import 'package:writingcoach/services/chat_context_builder.dart'
     show ReferenceItem;
 import 'package:writingcoach/services/phase_mapper_resolver.dart';
@@ -1137,4 +1140,77 @@ String? buildHotCardsContext(List<CharacterFact> hot) {
   return '## 设定资料库（近几轮常被提及）\n\n'
       '以下人物在最近几轮中反复出现，本轮若以代词/昵称指代，请优先对应：\n'
       '${lines.join('\n')}';
+}
+
+/// 分级供给 L1（世界观侧）：本轮正文/用户消息中命中的世界观主题名。
+///
+/// world_fact 无 aliases 列（E1-a 已定），仅按 name 精确匹配；
+/// 单字名不参与（防误伤）；命中按名升序去重。
+List<String> matchHitWorlds({
+  required String chapterContent,
+  required String userText,
+  required List<WorldFact> worlds,
+}) {
+  final text = '$chapterContent\n$userText';
+  final hits = <String>{};
+  for (final w in worlds) {
+    if (w.name.length < 2) continue;
+    if (text.contains(w.name)) hits.add(w.name);
+  }
+  return hits.toList()..sort();
+}
+
+/// 分级供给 L1（世界观侧）：命中主题展开 + 命中矛盾 + 冷元信息。
+///
+/// - 命中主题：断言全量展开（≤8 条/主题，rejected/superseded/stale 排除）
+/// - 命中主题间的设定不一致观察（[conflicts] 过滤，仅命中主题）
+/// - 未命中主题：冷实体零注入 + 「世界观共 N 条」元信息供 AI 主动询问
+/// - 世界观为空 → null（零注入）
+const int kWorldHitMaxPerEntity = 8;
+
+String? buildWorldHitContext({
+  required List<String> hitNames,
+  required List<WorldFact> worlds,
+  required List<WorldConflictObservation> conflicts,
+}) {
+  if (worlds.isEmpty) return null;
+  final byName = {for (final w in worlds) w.name: w};
+  final lines = <String>[];
+  for (final name in hitNames) {
+    final w = byName[name];
+    if (w == null) continue;
+    final assertions = WorldFactRepository.parseAssertions(w.assertions)
+        .where(
+          (a) => a.status != 'rejected' && a.status != 'superseded' && !a.stale,
+        )
+        .take(kWorldHitMaxPerEntity)
+        .map((a) => '${a.attribute}=${a.value}')
+        .toList();
+    if (assertions.isEmpty) continue;
+    lines.add('- 主题「$name」：${assertions.join('；')}');
+  }
+  final hitSet = hitNames.toSet();
+  final conflictLines = conflicts
+      .where((o) => hitSet.contains(o.themeName))
+      .map((o) => '- 「${o.themeName}」${o.attribute}：${o.description}')
+      .toList();
+  final cold = worlds.length - hitNames.length;
+  final parts = <String>[];
+  if (lines.isNotEmpty) {
+    parts.add(
+      '以下设定主题在本轮正文/消息中被提及，已展开供参考：\n'
+      '${lines.join('\n')}',
+    );
+  }
+  if (conflictLines.isNotEmpty) {
+    parts.add(
+      '命中主题存在设定不一致，请结合规则与例外判断（世界观天然带例外'
+      '，勿把层次感报成错误）：\n${conflictLines.join('\n')}',
+    );
+  }
+  if (cold > 0) {
+    parts.add('未提及的设定主题共 $cold 条：如需使用可主动向学员询问。');
+  }
+  if (parts.isEmpty) return null;
+  return '## 设定资料库（世界观·正文命中）\n\n${parts.join('\n\n')}';
 }
