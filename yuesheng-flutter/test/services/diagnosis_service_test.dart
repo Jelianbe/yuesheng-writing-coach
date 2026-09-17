@@ -20,7 +20,7 @@ import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/services/diagnosis_service.dart';
 
 class _ThrowingDiagRepo extends DiagnosisRepository {
-  _ThrowingDiagRepo(super.db);
+  _ThrowingDiagRepo(AppDatabase db) : super(db);
 
   @override
   Future<String> commitDiagnosis(DiagnosisInput input) async {

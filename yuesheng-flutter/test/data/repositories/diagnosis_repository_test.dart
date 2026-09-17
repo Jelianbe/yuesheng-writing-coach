@@ -41,7 +41,7 @@ void main() {
       );
 
       // 确保 created_at 有秒级时间差（nowSec 精度到秒）
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
 
       // session B — 同一 syndrome 但更严重
       final sidB = await sessionRepo.createBlankSession();
@@ -129,7 +129,7 @@ void main() {
           confidence: 0.8,
         ),
       );
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
       await repo.commitDiagnosis(
         DiagnosisInput(
           sessionId: sidB,
@@ -163,7 +163,7 @@ void main() {
             confidence: 0.5,
           ),
         );
-        await Future.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(seconds: 1));
       }
 
       final result = await repo.listRecentDiagnoses(limit: 3);
@@ -302,7 +302,7 @@ void main() {
       final session = await (db.select(
         db.sessions,
       )..where((t) => t.id.equals(sid))).getSingle();
-      return jsonDecode(session.diagnosisSummary!) as Map<String, dynamic>;
+      return jsonDecode(session.diagnosisSummary) as Map<String, dynamic>;
     }
 
     test('#1 active 4 个 → top_syndromes 截断前 3 且 L3 排首', () async {

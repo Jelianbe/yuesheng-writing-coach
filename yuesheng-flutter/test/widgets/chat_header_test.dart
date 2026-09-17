@@ -175,6 +175,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('思考档位'), findsOneWidget);
-    expect(find.text(reasoningTierOf(reasoningTierStandard).hint), findsOneWidget);
+    expect(
+      find.text(reasoningTierOf(reasoningTierStandard).hint),
+      findsOneWidget,
+    );
   });
 }

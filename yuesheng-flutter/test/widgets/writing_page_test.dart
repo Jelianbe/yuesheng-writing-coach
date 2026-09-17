@@ -133,12 +133,6 @@ class _FailingSaveStore extends WritingStore {
   }
 }
 
-/// 批次83：择选弹层两批响应（第一批生成 + 第二批换一换）
-const String _v1s =
-    '【版本一】雪地旅人裹紧了大衣，脚步更快了。\n【版本二】大雪里，旅人缩了缩脖子，继续前行。\n【版本三】旅人顶着风雪，一步一步往前走。';
-const String _v2s =
-    '【版本一】北风里，旅人的围巾被吹得猎猎作响。\n【版本二】旅人停下脚步，望了望灰蒙蒙的天。\n【版本三】雪越下越大，旅人却越走越坚定。';
-
 void main() {
   late AppDatabase db;
   late ProviderContainer container;
@@ -201,20 +195,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-  }
-
-  /// 批次83：构造带择选响应（非流式 chatCompletion）的容器
-  ProviderContainer buildSelectionContainer(List<String> chatResponses) {
-    final c = ProviderContainer(
-      overrides: [
-        appDatabaseProvider.overrideWithValue(db),
-        llmClientProvider.overrideWithValue(
-          FakeLlmClient('已收到，我来看一下。', chatResponses: chatResponses),
-        ),
-      ],
-    );
-    addTearDown(c.dispose);
-    return c;
   }
 
   /// 批次88-2：菜单已 16 项，底部项在滚动区外 → 打开菜单（若已开则复用）+ 滚动到可见后点击
@@ -1735,50 +1715,6 @@ void main() {
       // 抽屉闭合后内容 offstage → finder 跳过
       expect(find.text('还没有大纲'), findsNothing);
     });
-  });
-
-  group('批次83：划词选区 AI 菜单完整版（P0-P1）', () {
-    /// 批次90：页面有标题+正文两个 TextField → 正文用专用 key 下的 EditableText
-    Finder editorEditable() => find.descendant(
-      of: find.byKey(const Key('chapterContentField')),
-      matching: find.byType(EditableText),
-    );
-
-    /// 预置长章（≥20 字，供选区）
-    Future<({String msId, String chapterId})> presetLongChapter() async {
-      final msRepo = ManuscriptRepository(db);
-      final chRepo = ChapterRepository(db);
-      final msId = await msRepo.createManuscript(title: '择选测试');
-      final chapterId = await chRepo.createChapter(
-        msId,
-        title: '长章',
-        content: '这是一个大雪纷飞的夜晚，北风呼啸着穿过空旷的原野，远处的山峦在暮色中显得格外孤寂。',
-      );
-      return (msId: msId, chapterId: chapterId);
-    }
-
-    /// 选中 [start, end) 区间
-    Future<void> selectText(WidgetTester tester, {required int end}) async {
-      final editable = tester.state<EditableTextState>(
-        find.descendant(
-          of: find.byKey(const Key('chapterContentField')),
-          matching: find.byType(EditableText),
-        ),
-      );
-      editable.updateEditingValue(
-        TextEditingValue(
-          text: editable.textEditingValue.text,
-          selection: TextSelection(baseOffset: 0, extentOffset: end),
-        ),
-      );
-      await tester.pump();
-    }
-
-    /// 收尾：SnackBar 自动关闭
-    Future<void> settleSnackBar(WidgetTester tester) async {
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
-    }
   });
 
   group('批次84-②：全文查找替换（P1）', () {

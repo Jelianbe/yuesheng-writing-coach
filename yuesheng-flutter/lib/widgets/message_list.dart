@@ -9,6 +9,7 @@
 //   4. 自动滚动到底部（didUpdateWidget 检测变化 → scrollToBottom）
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -165,12 +166,14 @@ class _MessageListState extends ConsumerState<MessageList> {
         _showMentionGone('该章节已不存在，无法打开');
         return;
       }
-      context.push(
-        '/writing/$refId',
-        extra: <String, dynamic>{
-          'manuscriptId': chapter.manuscriptId,
-          'chapterTitle': chapter.title,
-        },
+      unawaited(
+        context.push(
+          '/writing/$refId',
+          extra: <String, dynamic>{
+            'manuscriptId': chapter.manuscriptId,
+            'chapterTitle': chapter.title,
+          },
+        ),
       );
       return;
     }
@@ -182,9 +185,11 @@ class _MessageListState extends ConsumerState<MessageList> {
       _showMentionGone('该作品已不存在，无法打开');
       return;
     }
-    context.push(
-      AppRoutes.manuscriptDetail,
-      extra: <String, dynamic>{'manuscriptId': ms.id, 'title': ms.title},
+    unawaited(
+      context.push(
+        AppRoutes.manuscriptDetail,
+        extra: <String, dynamic>{'manuscriptId': ms.id, 'title': ms.title},
+      ),
     );
   }
 

@@ -13,6 +13,7 @@
 // 无宿主私有状态依赖：仅经 ref 读取 provider。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,9 +47,11 @@ class GrowthDetailNavigator {
         return;
       }
       if (!context.mounted) return;
-      context.push(
-        AppRoutes.progressDetail,
-        extra: <String, dynamic>{'sessionId': sessions.first.id},
+      unawaited(
+        context.push(
+          AppRoutes.progressDetail,
+          extra: <String, dynamic>{'sessionId': sessions.first.id},
+        ),
       );
     } catch (_) {
       // 查询失败静默（不进入死页）

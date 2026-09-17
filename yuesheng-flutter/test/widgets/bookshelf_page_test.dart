@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/contracts/reference_capability.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
@@ -39,11 +40,11 @@ import 'package:writingcoach/widgets/writing_page.dart';
 /// 覆写 importBookFromFile 直接走真实 importWork 入库链路。
 class _FakeImportService extends WorkImportService {
   _FakeImportService(
-    super.db,
-    super.manuscriptRepo,
-    super.chapterRepo,
-    super.referenceRepo,
-  );
+    AppDatabase db,
+    ManuscriptRepository manuscriptRepo,
+    ChapterRepository chapterRepo,
+    ReferenceCapability referenceRepo,
+  ) : super(db, manuscriptRepo, chapterRepo, referenceRepo);
 
   @override
   Future<WorkImportResult?> importBookFromFile() async {

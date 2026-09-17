@@ -116,7 +116,7 @@ List<String> _listLibDartFiles() {
       .map((f) => f.path)
       .where((p) => p.endsWith('.dart'))
       .where((p) => !p.endsWith('.g.dart') && !p.endsWith('.freezed.dart'))
-      .map((p) => p.substring(_root.path.length + 1).replaceAll('\\', '/'))
+      .map((p) => p.substring(_root.path.length + 1).replaceAll(r'\', '/'))
       .toList()
     ..sort();
 }
@@ -247,7 +247,7 @@ void main() {
       // 插值写法不得被误伤
       expect(
         bareDigit.hasMatch(
-          "'请至少输入 \${UILimits.diagnosisWordThreshold} 字后再提交诊断'",
+          r"'请至少输入 ${UILimits.diagnosisWordThreshold} 字后再提交诊断'",
         ),
         isFalse,
       );
@@ -257,7 +257,7 @@ void main() {
       // 模拟「阈值写死 + 文案仍插值」的源码：计数应低于 2
       final mutated =
           "if (text.length < 20) {}\n"
-          "Text('请至少选择 \${UILimits.diagnosisSelectionWordThreshold} 字以上')";
+          r"Text('请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上')";
       expect(
         'UILimits.diagnosisSelectionWordThreshold'.allMatches(mutated).length,
         1,
@@ -265,7 +265,7 @@ void main() {
       // 正规则样本：阈值 + 文案各 1 次
       final correct =
           "if (text.length < UILimits.diagnosisSelectionWordThreshold) {}\n"
-          "Text('请至少选择 \${UILimits.diagnosisSelectionWordThreshold} 字以上')";
+          r"Text('请至少选择 ${UILimits.diagnosisSelectionWordThreshold} 字以上')";
       expect(
         'UILimits.diagnosisSelectionWordThreshold'.allMatches(correct).length,
         2,

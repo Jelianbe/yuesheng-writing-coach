@@ -138,9 +138,9 @@ void main() {
       var storeNotifies = 0;
       container.listen(
         manuscriptStoreProvider.select((s) => s.manuscripts),
-        (_, __) => selectNotifies++,
+        (_, _) => selectNotifies++,
       );
-      container.listen(manuscriptStoreProvider, (_, __) => storeNotifies++);
+      container.listen(manuscriptStoreProvider, (_, _) => storeNotifies++);
 
       await store.loadManuscripts();
 

@@ -9,6 +9,7 @@
 //      避免与其他测试文件共享 GoRouter 内部状态造成竞态污染。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -210,9 +211,14 @@ void main() {
       expect(find.text('测试作品'), findsWidgets);
 
       // Step B: 模拟作品详情 -> 写作页 push（带 manuscriptId）
-      GoRouter.of(ctx).push(
-        '/writing/$chapterId',
-        extra: <String, dynamic>{'chapterTitle': '测试章节', 'manuscriptId': msId},
+      unawaited(
+        GoRouter.of(ctx).push(
+          '/writing/$chapterId',
+          extra: <String, dynamic>{
+            'chapterTitle': '测试章节',
+            'manuscriptId': msId,
+          },
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.byType(WritingPage), findsOneWidget);

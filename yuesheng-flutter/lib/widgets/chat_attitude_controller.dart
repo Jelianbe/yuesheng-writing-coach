@@ -10,6 +10,7 @@
 // [ChatDiagnosisController]。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -136,7 +137,7 @@ class ChatAttitudeController {
       host.applyAttitudeState(state.attitude, state.phase);
       // 批次 18：P2 阶段进入时加载活跃问题（对齐 RN useEffect currentPhase 依赖）
       if (state.phase == TeachingPhase.p2PracticeLoop) {
-        diagnosis.loadActiveProblems(sessionId);
+        unawaited(diagnosis.loadActiveProblems(sessionId));
       }
     } catch (_) {
       // 加载失败保持默认档位，静默（release 不暴露技术细节）

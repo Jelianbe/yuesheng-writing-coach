@@ -521,9 +521,9 @@ class LlmClient {
         });
         _breaker.onSuccess();
       } on LlmNonRetryableException catch (wrapped) {
-        // 解包：断流/超时等原始错误原样冒泡（调用方已有对应处理链路）
+        // 解包：原始错误原样冒泡——其**具体类型**即调用方分派依据（已有处理链路）
         _reportStreamFailure(wrapped.cause);
-        throw wrapped.cause;
+        throw wrapped.cause; // ignore: only_throw_errors
       } on DioException catch (e) {
         if (LlmCircuitBreaker.shouldCount(e)) _breaker.onFailure();
         throw Exception(_buildDioError(e));

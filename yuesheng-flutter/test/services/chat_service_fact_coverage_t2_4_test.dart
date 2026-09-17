@@ -33,7 +33,6 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/chat_context_builder.dart'
     show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
-import 'package:writingcoach/types/teaching_types.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'
@@ -214,7 +213,7 @@ void main() {
     );
   }
 
-  const String _factBlock = '''
+  const String factBlock = '''
 [YS_FACT]
 {
   "characters":[{"name":"王建国","assertions":[{"attribute":"性格","value":"沉默寡言","chapter":1}]}],
@@ -229,7 +228,7 @@ void main() {
 
     await chatService.commitDiagnosisFromContent(
       sessionId: sessionId,
-      fullContent: _factBlock,
+      fullContent: factBlock,
     );
 
     final characters = await characterFactRepo.listCharacters(manuscriptId);
@@ -247,7 +246,7 @@ void main() {
 
     final fullContent =
         '诊断说明。\n'
-        '$_factBlock'
+        '$factBlock'
         '[YS_DIAGNOSIS]'
         '{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"测试"}],"suggested_actions":[],"confidence":0.8}'
         '[/YS_DIAGNOSIS]';
@@ -273,7 +272,7 @@ void main() {
 
     await chatService.commitDiagnosisFromContent(
       sessionId: sessionId,
-      fullContent: _factBlock,
+      fullContent: factBlock,
     );
 
     final messages = await sessionRepo.listMessages(sessionId);

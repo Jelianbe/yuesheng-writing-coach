@@ -14,7 +14,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
-import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/setting_entry_repository.dart';
 import 'package:writingcoach/data/repositories/setting_link_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
@@ -26,7 +25,6 @@ void main() {
   late String charId;
   late String worldId;
   late String entryId;
-  late String outlineId;
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -50,14 +48,6 @@ void main() {
       category: '武器',
       name: '血月刃',
     );
-    final outlineRepo = OutlineRepository(db);
-    final outline = await outlineRepo.listEntities(manuscriptId);
-    if (outline.isEmpty) {
-      // outline 无直接写入方法（AI 沉淀路径）；跳过 outline 用例时用空列表断言
-      outlineId = '';
-    } else {
-      outlineId = outline.first.id;
-    }
   });
 
   tearDown(() => db.close());

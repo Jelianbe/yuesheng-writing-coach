@@ -9,6 +9,7 @@
 //   #5 持久化：隐藏后重开弹层 → 仍隐藏（用户级跨章节生效）
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,7 +53,7 @@ void main() {
       ),
     );
     final ctx = tester.element(find.byType(Scaffold));
-    EditorSettingsSheet.show(ctx, chapterId: chapterId);
+    unawaited(EditorSettingsSheet.show(ctx, chapterId: chapterId));
     await tester.pumpAndSettle();
   }
 

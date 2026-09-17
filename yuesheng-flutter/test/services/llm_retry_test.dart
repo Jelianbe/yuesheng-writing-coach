@@ -585,10 +585,9 @@ void main() {
         Dio()..httpClientAdapter = adapter,
       );
 
-      await client.streamChat(
-        [const ChatMessage(role: 'user', content: 'hi')],
-        (_) {},
-      );
+      await client.streamChat([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ], (_) {});
       expect(adapter.urls, ['https://main/v1/chat/completions']);
       expect(adapter.authorizations, ['Bearer k0']);
     });

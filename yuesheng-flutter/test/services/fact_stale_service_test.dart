@@ -133,7 +133,7 @@ void main() {
   }) async {
     final id = await chapterRepo.createChapter(
       manuscriptId,
-      title: '第${order}章',
+      title: '第$order章',
       content: content,
       sortOrder: order,
       volumeId: volumeId,

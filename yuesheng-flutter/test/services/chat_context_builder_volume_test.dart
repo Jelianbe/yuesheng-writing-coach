@@ -21,7 +21,7 @@ ChapterBrief _chapter(String id, String title, int wordCount, int sortOrder) {
 
 void main() {
   group('buildReferencesContext 卷引用注入（方案2b）', () {
-    VolumeDetail _volume() {
+    VolumeDetail volume() {
       return VolumeDetail(
         title: '第一卷',
         manuscriptTitle: '长篇',
@@ -41,7 +41,7 @@ void main() {
       );
     }
 
-    ReferenceItem _volRef() {
+    ReferenceItem volRef() {
       return ReferenceItem(
         refType: 'volume',
         refId: 'vol-1',
@@ -54,8 +54,8 @@ void main() {
 
     test('volume 引用 → 注入卷结构信息（卷名+章节清单，不含正文）', () {
       final ctx = buildReferencesContext([
-        _volRef(),
-      ], resolvers: resolvers(vol: (_) => _volume()));
+        volRef(),
+      ], resolvers: resolvers(vol: (_) => volume()));
       expect(ctx, contains('### 【次要引用】 卷：长篇 · 第一卷'));
       expect(ctx, contains('- 所属作品：长篇'));
       expect(ctx, contains('- 卷内章节数：2'));
@@ -69,7 +69,7 @@ void main() {
     });
 
     test('主引用 volume → 标记【主引用】', () {
-      final ref = _volRef();
+      final ref = volRef();
       final primary = ReferenceItem(
         refType: 'volume',
         refId: 'vol-1',
@@ -80,14 +80,14 @@ void main() {
       );
       final ctx = buildReferencesContext([
         primary,
-      ], resolvers: resolvers(vol: (_) => _volume()));
+      ], resolvers: resolvers(vol: (_) => volume()));
       expect(ctx, contains('### 【主引用】 卷：长篇 · 第一卷'));
       expect(ref, isNotNull);
     });
 
     test('volumeResolver 未装配 → 卷引用跳过（不注入、不报错）', () {
       final ctx = buildReferencesContext([
-        _volRef(),
+        volRef(),
       ], resolvers: resolvers(vol: null));
       expect(ctx, isNot(contains('卷：')));
       expect(ctx, isNot(contains('长篇')));

@@ -158,10 +158,10 @@ void main() {
 
   group('exportFileName', () {
     test('清洗 Windows/Unix 非法字符', () {
-      expect(exportFileName('山/月\\记:*?"<>|', ExportFormat.txt), '山月记.txt');
+      expect(exportFileName(r'山/月\记:*?"<>|', ExportFormat.txt), '山月记.txt');
     });
     test('全非法字符回退「导出」', () {
-      expect(exportFileName('///\\\\', ExportFormat.markdown), '导出.md');
+      expect(exportFileName(r'///\\', ExportFormat.markdown), '导出.md');
     });
     test('扩展名跟随格式', () {
       expect(exportFileName('测试', ExportFormat.txt), '测试.txt');

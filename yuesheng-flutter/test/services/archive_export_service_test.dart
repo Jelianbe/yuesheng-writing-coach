@@ -151,10 +151,9 @@ void main() {
       expect(dxList.length, 2);
       expect((dxList[0] as Map)['id'], 'd1');
       expect((dxList[1] as Map)['id'], 'd2');
-      expect(
-        (dxList[0] as Map)['timestamp'],
-        lessThan((dxList[1] as Map)['timestamp']),
-      );
+      final t0 = (dxList[0] as Map)['timestamp'] as int;
+      final t1 = (dxList[1] as Map)['timestamp'] as int;
+      expect(t0, lessThan(t1));
     });
 
     test('#5 非法 JSON 字符串 → 防御性降级为空值，不抛出', () {

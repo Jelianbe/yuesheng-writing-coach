@@ -47,7 +47,7 @@ const List<String> _segmentOrder = [
 
 void main() {
   group('advanced-phases 段资源与分区不变量', () {
-    test("content == 段资源按目录顺序的 '\\n\\n' 拼接", () {
+    test(r"content == 段资源按目录顺序的 '\n\n' 拼接", () {
       expect(_segmentOrder.join('\n\n'), _raw);
     });
 

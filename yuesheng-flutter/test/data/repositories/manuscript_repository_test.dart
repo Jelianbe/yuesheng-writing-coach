@@ -8,7 +8,6 @@
 //   4. 未传 tags 的 update 不清空既有 tags
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -134,13 +133,13 @@ void main() {
   // =========================================================================
   group('ABN-02 复现：on-disk / 存量迁移后 createManuscript', () {
     /// 构造独立 on-disk 路径：模拟真实 release 机的持久化文件（非 memory）
-    String _tmpDbPath(String suffix) {
+    String tmpDbPath(String suffix) {
       _dbSeq++;
       return '${Directory.systemTemp.path}${Platform.pathSeparator}abn02_${suffix}_$_dbSeq.db';
     }
 
     test('#A1 on-disk fresh DB (onCreate v26) → createManuscript 成功', () async {
-      final path = _tmpDbPath('fresh');
+      final path = tmpDbPath('fresh');
       final db1 = AppDatabase.forTesting(NativeDatabase(File(path)));
       addTearDown(() async {
         await db1.close();
@@ -164,7 +163,7 @@ void main() {
     });
 
     test('#A2 on-disk DB 关闭后重开 → createManuscript 成功 (跨会话写入)', () async {
-      final path = _tmpDbPath('reopen');
+      final path = tmpDbPath('reopen');
       addTearDown(() {
         try {
           File(path).deleteSync();
@@ -194,7 +193,7 @@ void main() {
         // chapters.volume_id + chapters.previous_content。migration 测试从 v23→v25→v26
         // 升级链本就应该正确。本用例作用：验证升级后 createManuscript INSERT 正常，
         // 不是测试 migration 本体。真机 ABN-02 的真因极可能在 Provider/文件权限，不在 schema。
-        final path = _tmpDbPath('v23_upgrade');
+        final path = tmpDbPath('v23_upgrade');
         addTearDown(() {
           try {
             File(path).deleteSync();

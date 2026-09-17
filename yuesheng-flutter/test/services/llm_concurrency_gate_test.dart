@@ -65,9 +65,9 @@ void main() {
       gate.enter(); // 模拟已有请求在途
 
       await expectLater(
-        () => client.chatCompletionWithMeta(
-          const [ChatMessage(role: 'user', content: 'hi')],
-        ),
+        () => client.chatCompletionWithMeta(const [
+          ChatMessage(role: 'user', content: 'hi'),
+        ]),
         throwsA(isA<LlmInFlightException>()),
       );
       gate.exit();
@@ -77,10 +77,12 @@ void main() {
       final gate = LlmConcurrencyGate();
       final client = LlmClient(
         LlmConfigStorage(const FlutterSecureStorage()),
-        Dio(BaseOptions(
-          connectTimeout: const Duration(milliseconds: 1),
-          receiveTimeout: const Duration(milliseconds: 1),
-        )),
+        Dio(
+          BaseOptions(
+            connectTimeout: const Duration(milliseconds: 1),
+            receiveTimeout: const Duration(milliseconds: 1),
+          ),
+        ),
         () async => const LlmConfigValues(
           apiKey: 'k',
           baseUrl: 'https://10.255.255.1', // 不可达
@@ -92,9 +94,9 @@ void main() {
 
       // 网络失败 → 异常
       await expectLater(
-        () => client.chatCompletionWithMeta(
-          const [ChatMessage(role: 'user', content: 'hi')],
-        ),
+        () => client.chatCompletionWithMeta(const [
+          ChatMessage(role: 'user', content: 'hi'),
+        ]),
         throwsA(isA<Exception>()),
       );
       // finally 已释放
@@ -110,9 +112,9 @@ void main() {
         null,
         gate,
       );
-      final result = await client.chatCompletionWithMeta(
-        const [ChatMessage(role: 'user', content: 'hi')],
-      );
+      final result = await client.chatCompletionWithMeta(const [
+        ChatMessage(role: 'user', content: 'hi'),
+      ]);
       expect(result.content, contains('免费测试模式'));
       expect(gate.isBusy, isFalse);
     });

@@ -64,7 +64,7 @@ void main() {
     ];
 
     for (final (name, color) in bodyTokens) {
-      for (final (i, bg) in backgrounds.indexed) {
+      for (final bg in backgrounds) {
         final ratio = _contrastRatio(color, bg);
         test(
           '$name 对背景#${bg.toARGB32().toRadixString(16).substring(2)} ≥4.5:1（实际 ${ratio.toStringAsFixed(2)}:1）',

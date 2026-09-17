@@ -62,7 +62,10 @@ void main() {
 
     test('sink tear-off 与 record 等价（可注入 LlmClient）', () {
       final LlmUsageSink sink = monitor.sink;
-      sink(const LlmUsage(promptTokens: 7, completionTokens: 3), LlmUsageKind.chat);
+      sink(
+        const LlmUsage(promptTokens: 7, completionTokens: 3),
+        LlmUsageKind.chat,
+      );
       expect(monitor.totals.calls, 1);
       expect(monitor.totals.totalTokens, 10);
     });

@@ -209,9 +209,7 @@ void main() {
       notifier.setStreaming(true);
 
       // 2. 逐块推送
-      for (final chunk in chunks) {
-        notifier.appendStreamingContent(chunk);
-      }
+      chunks.forEach(notifier.appendStreamingContent);
 
       // 验证累加正确
       expect(container.read(chatStoreProvider).streamingContent, fullContent);

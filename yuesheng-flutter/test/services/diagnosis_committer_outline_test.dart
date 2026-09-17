@@ -64,7 +64,6 @@ void main() {
 
   test('#O1 章节主引用 + 大纲块 → 实体落库 + 确认卡', () async {
     final refRepo = ReferenceRepository(db);
-    final chRepo = ChapterRepository(db);
     await refRepo.addReference(
       sessionId,
       'chapter',
@@ -150,7 +149,6 @@ void main() {
   });
   test('#O3 无大纲块 → 静默跳过', () async {
     final refRepo = ReferenceRepository(db);
-    final chRepo = ChapterRepository(db);
     await refRepo.addReference(
       sessionId,
       'chapter',

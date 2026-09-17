@@ -21,7 +21,7 @@ void main() {
       routes: [
         GoRoute(
           path: '/chat',
-          builder: (_, __) => Scaffold(
+          builder: (_, _) => Scaffold(
             body: FactBatchCard(
               record: FactBatchRecord(
                 count: 3,

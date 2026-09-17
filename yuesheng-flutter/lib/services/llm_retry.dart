@@ -121,6 +121,8 @@ Future<T> executeWithRetry<T>(
     }
   }
   // 不可达（循环要么 return 要么 rethrow），保险兜底。
+  // 原样透传最后一次错误的具体类型，调用方按其类型分派。
+  // ignore: only_throw_errors
   throw lastError;
 }
 

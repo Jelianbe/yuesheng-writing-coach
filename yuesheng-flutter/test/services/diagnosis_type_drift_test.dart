@@ -322,7 +322,7 @@ void main() {
     });
 
     test('suggested_beginner_level 漂移 → 解析为 null', () {
-      final j = _baseJson()..['suggested_beginner_level'] = [];
+      final j = _baseJson()..['suggested_beginner_level'] = <String>[];
       final r = validateDiagnosisOutput(_kLeakyText, j);
       expect(r.diagnosis!.suggestedBeginnerLevel, isNull);
     });

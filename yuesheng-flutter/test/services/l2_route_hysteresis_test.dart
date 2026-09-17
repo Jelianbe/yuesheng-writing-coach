@@ -122,7 +122,11 @@ void main() {
       h.overrideFor('s1', L2Mode.training);
       h.overrideFor('s2', L2Mode.diagnosis);
       expect(h.overrideFor('s2', L2Mode.training), isNull, reason: 's2 独立');
-      expect(h.overrideFor('s1', L2Mode.diagnosis), L2Mode.training, reason: 's1 仍抑制');
+      expect(
+        h.overrideFor('s1', L2Mode.diagnosis),
+        L2Mode.training,
+        reason: 's1 仍抑制',
+      );
     });
 
     test('超出 maxSessions ⇒ 按插入序清最陈旧的会话', () {

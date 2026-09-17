@@ -64,10 +64,7 @@ void main() {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        home: WritingPage(
-          chapterId: chapterId,
-          manuscriptId: manuscriptId,
-        ),
+        home: WritingPage(chapterId: chapterId, manuscriptId: manuscriptId),
       ),
     );
   }
@@ -116,7 +113,11 @@ void main() {
     expect(find.text('第一章：晨雾'), findsWidgets, reason: '章节标题应显示');
     expect(find.text('12字'), findsOneWidget, reason: '字数应显示');
     expect(find.byType(PunctuationBar), findsOneWidget, reason: '标点栏应在');
-    expect(find.byType(FloatingActionButton), findsOneWidget, reason: 'AI 面板 FAB 应在');
+    expect(
+      find.byType(FloatingActionButton),
+      findsOneWidget,
+      reason: 'AI 面板 FAB 应在',
+    );
     // 保存状态行在 ⋮ 菜单内
     await tester.tap(find.byIcon(Icons.more_vert));
     await tester.pumpAndSettle();
@@ -256,15 +257,17 @@ void main() {
     await tester.pumpAndSettle();
 
     // 标题独立行：正文上方大号可编辑标题（Key 定位）
-    expect(find.byKey(const Key('chapterTitleField')), findsOneWidget,
-        reason: '正文上方独立标题行应在');
+    expect(
+      find.byKey(const Key('chapterTitleField')),
+      findsOneWidget,
+      reason: '正文上方独立标题行应在',
+    );
 
     // 回车自动补两格缩进（段落格式默认开）
     await tester.enterText(editor(), '第一段。\n');
     await tester.pumpAndSettle();
     final controller = tester.widget<TextField>(editor()).controller!;
-    expect(controller.text, '第一段。\n\u3000\u3000',
-        reason: '回车应自动补两格全角空格缩进');
+    expect(controller.text, '第一段。\n\u3000\u3000', reason: '回车应自动补两格全角空格缩进');
 
     // 对话按钮开关已移入排版设置（批次96-9：菜单不再有开关项）
     await tapMenuItem(tester, '排版设置');
@@ -280,16 +283,25 @@ void main() {
     );
     await tester.tap(find.text('显示对话按钮'));
     await tester.pumpAndSettle();
-    expect(await AppStateRepository(db).getFabVisible(), isFalse,
-        reason: '对话按钮开关应可隐藏并落库');
+    expect(
+      await AppStateRepository(db).getFabVisible(),
+      isFalse,
+      reason: '对话按钮开关应可隐藏并落库',
+    );
     // 再点恢复显示
     await tester.tap(find.text('显示对话按钮'));
     await tester.pumpAndSettle();
-    expect(await AppStateRepository(db).getFabVisible(), isTrue,
-        reason: '对话按钮应从排版设置恢复');
+    expect(
+      await AppStateRepository(db).getFabVisible(),
+      isTrue,
+      reason: '对话按钮应从排版设置恢复',
+    );
     await closeSheet(tester);
-    expect(find.byKey(const Key('aiChatFab')), findsOneWidget,
-        reason: '恢复后 FAB 应回到页面');
+    expect(
+      find.byKey(const Key('aiChatFab')),
+      findsOneWidget,
+      reason: '恢复后 FAB 应回到页面',
+    );
   });
 
   testWidgets('10 批次89：卷分组冒烟（分组展示 + 新建卷 + 删卷回未分卷）', (tester) async {

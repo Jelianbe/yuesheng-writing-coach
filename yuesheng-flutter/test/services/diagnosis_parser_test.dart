@@ -27,7 +27,7 @@ void main() {
     });
 
     test('#2b 无诊断块但含 FACT 块：displayContent 剥离 FACT 协议 JSON', () {
-      final r = parseDiagnosis('前导[YS_FACT]{\"fact\":1}[/YS_FACT]收尾');
+      final r = parseDiagnosis('前导[YS_FACT]{"fact":1}[/YS_FACT]收尾');
       expect(r.diagnosis, isNull);
       expect(r.displayContent, isNot(contains('[YS_FACT]')));
       expect(r.displayContent, isNot(contains('"fact"')));

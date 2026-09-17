@@ -13,6 +13,7 @@
 //   3. 详情入口（onOpenDetail 回调存在时显示）
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -122,9 +123,11 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
       if (!mounted) return;
       final latestId = sessions.first.id;
       if (!mounted) return;
-      context.push(
-        AppRoutes.progressDetail,
-        extra: <String, dynamic>{'sessionId': latestId},
+      unawaited(
+        context.push(
+          AppRoutes.progressDetail,
+          extra: <String, dynamic>{'sessionId': latestId},
+        ),
       );
     } catch (_) {
       // 查询失败静默（不进入死页）

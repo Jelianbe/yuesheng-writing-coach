@@ -9,15 +9,12 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/contracts/diagnosis_capability.dart';
 import 'package:writingcoach/contracts/capability_registry.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart';
 import 'package:writingcoach/services/diagnosis_validator.dart';
 import 'package:writingcoach/services/chat_training_parser.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 
-import 'package:writingcoach/services/diagnosis_parser.dart'
-    show DiagnosisCapabilityImpl;
 void main() {
   group('DiagnosisCapability 契约', () {
     test('接口在注册表中注册', () {
@@ -53,7 +50,7 @@ void main() {
       expect(parsed, isA<ParseResult>());
       expect(parsed.diagnosis, isNull);
 
-      final validated = validateDiagnosisOutput('文本', {});
+      final validated = validateDiagnosisOutput('文本', <String, dynamic>{});
       expect(validated, isA<FullValidationResult>());
 
       final trained = parseTrainingResult('你的练习已达标');

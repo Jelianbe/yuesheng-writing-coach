@@ -678,7 +678,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   /// 点击账号行：载入表单进入编辑模式
-  void _editAccount(AiAccountRow account) async {
+  Future<void> _editAccount(AiAccountRow account) async {
     final key = await _accountRepo.getApiKey(account.id);
     if (!mounted) return;
     setState(() {

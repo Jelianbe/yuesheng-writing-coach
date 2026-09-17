@@ -7,6 +7,7 @@
 // 覆盖批次83/96-11 的章节树抽屉、大纲抽屉、跨章跳转与新建章节。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -145,7 +146,9 @@ class WritingPageChapterNavController {
         volumeId: volumeId,
       );
       // ADR-C90：直写 repo 后刷新 store——下次打开抽屉读到新章节
-      _host.ref.read(chapterStoreProvider(msId).notifier).loadChapters();
+      unawaited(
+        _host.ref.read(chapterStoreProvider(msId).notifier).loadChapters(),
+      );
       if (!_host.mounted) return;
       jumpToChapter(newId, title);
     } catch (e) {

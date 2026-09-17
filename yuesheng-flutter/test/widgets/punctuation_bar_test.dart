@@ -77,7 +77,7 @@ void main() {
       expect(calls, ['，']);
     });
 
-    testWidgets('点击换行(↵)按钮 → onTap 收到 "\\n"', (tester) async {
+    testWidgets(r'点击换行(↵)按钮 → onTap 收到 "\n"', (tester) async {
       final calls = <String>[];
       await pumpBar(tester, onTap: calls.add);
 

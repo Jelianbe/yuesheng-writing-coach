@@ -379,7 +379,7 @@ void main() {
         for (var i = 0; i < sysList.length; i++) {
           final s = sysList[i];
           print(
-            '│   #$i [${s.length} 字] ${s.substring(0, s.length > 80 ? 80 : s.length).replaceAll("\n", "\\n")}\n',
+            '│   #$i [${s.length} 字] ${s.substring(0, s.length > 80 ? 80 : s.length).replaceAll("\n", r"\n")}\n',
           );
         }
         print('└─────────────────────────────────────────────────────────');

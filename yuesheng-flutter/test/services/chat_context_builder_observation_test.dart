@@ -166,7 +166,7 @@ void main() {
   });
 
   group('S2：观察段两级预算接入（R3/R4）', () {
-    ConflictObservation _conflict(int i, {int excerptLen = 10}) =>
+    ConflictObservation conflict(int i, {int excerptLen = 10}) =>
         ConflictObservation(
           characterName: '角色${i.toString().padLeft(2, '0')}',
           attribute: '性情',
@@ -175,12 +175,12 @@ void main() {
           excerpt: '摘录${'字' * excerptLen}$i',
         );
 
-    WorldConflictObservation _worldShort(int i) =>
+    WorldConflictObservation worldShort(int i) =>
         _world('灵气体系${i.toString().padLeft(2, '0')}', '短依据$i');
 
     test('R3-AC1/AC2：20 条 character 观察 → 恰 12 条注入 + 提示「另有 8 条」', () {
       final ctx = buildConflictObservationsContext(
-        List.generate(20, _conflict),
+        List.generate(20, conflict),
       )!;
       final keptLines = ctx.split('\n').where((l) => l.startsWith('- '));
       expect(keptLines, hasLength(ContextBudget.observationMaxItems));
@@ -193,7 +193,7 @@ void main() {
 
     test('R3：world 观察 14 条 → 12 条 + 「另有 2 条」', () {
       final ctx = buildWorldSettingObservationsContext(
-        List.generate(14, _worldShort),
+        List.generate(14, worldShort),
       )!;
       final keptLines = ctx.split('\n').where((l) => l.startsWith('- '));
       expect(keptLines, hasLength(12));

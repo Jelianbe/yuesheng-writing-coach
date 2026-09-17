@@ -69,7 +69,7 @@ void main() {
     test('#F3 非法条目被跳过，合法条目保留（逐条隔离）', () {
       final result = validateFactSchema({
         'characters': [
-          {'name': '', 'assertions': []}, // 非法：空 name
+          {'name': '', 'assertions': <Map<String, dynamic>>[]}, // 非法：空 name
           {
             'name': '林晚',
             'assertions': [
@@ -92,10 +92,13 @@ void main() {
     });
 
     test('#F4 三类全空/全非法 → invalid + data null', () {
-      expect(validateFactSchema({'characters': []}).valid, isFalse);
+      expect(
+        validateFactSchema({'characters': <Map<String, dynamic>>[]}).valid,
+        isFalse,
+      );
       final onlyBad = validateFactSchema({
         'characters': [
-          {'name': '', 'assertions': []},
+          {'name': '', 'assertions': <Map<String, dynamic>>[]},
         ],
       });
       expect(onlyBad.valid, isFalse);

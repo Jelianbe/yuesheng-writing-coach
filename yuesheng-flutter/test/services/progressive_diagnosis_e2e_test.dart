@@ -23,7 +23,7 @@ import 'package:writingcoach/services/progressive_diagnosis.dart';
 
 void main() {
   group('splitContent e2e 真机复核', () {
-    test('E2E-1 5000 字无 \\n\\n 单段长文（原死循环触发路径）秒级返回', () {
+    test(r'E2E-1 5000 字无 \n\n 单段长文（原死循环触发路径）秒级返回', () {
       // 真机最坏场景：用户复制整篇没分段的长文粘贴
       // 长度 5000 > kDiagnosisChunkSize=3000，且无段落边界
       // 批次 H 侦察实证：未修复时会**同步死循环**（timeout 失效）
@@ -49,7 +49,7 @@ void main() {
       // 验证：(1) 至少切 2 块 (2) 首段必在前块 (3) 末段必在某个块
       final paragraphs = <String>[];
       for (var i = 0; i < 10; i++) {
-        paragraphs.add('第${i}段：' + '中文字符' * 130); // 约 800 字/段
+        paragraphs.add('第$i段：${'中文字符' * 130}'); // 约 800 字/段
       }
       final content = paragraphs.join('\n\n');
 
@@ -69,9 +69,7 @@ void main() {
       final paragraphs = <String>[];
       for (var i = 0; i < 15; i++) {
         paragraphs.add(
-          '段落${i.toString().padLeft(2, '0')}的内容：'
-                  '上下文标记ABC${i.toString().padLeft(2, '0')}XYZ' +
-              'X' * 300,
+          '段落${i.toString().padLeft(2, '0')}的内容：上下文标记ABC${i.toString().padLeft(2, '0')}XYZ${'X' * 300}',
         );
       }
       final content = paragraphs.join('\n\n');

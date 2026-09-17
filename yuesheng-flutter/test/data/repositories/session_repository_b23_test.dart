@@ -42,37 +42,37 @@ void main() {
 
   tearDown(() async => db.close());
 
-  Future<int> _teachingStateCount(String sessionId) async => (await (db.select(
+  Future<int> teachingStateCount(String sessionId) async => (await (db.select(
     db.teachingState,
   )..where((t) => t.sessionId.equals(sessionId))).get()).length;
 
-  Future<List<String>> _refTypes(String sessionId) async =>
+  Future<List<String>> refTypes(String sessionId) async =>
       (await (db.select(
             db.sessionReferences,
           )..where((t) => t.sessionId.equals(sessionId))).get())
           .map((r) => r.refType)
           .toList();
 
-  Future<int> _sessionCount(String sessionId) async => (await (db.select(
+  Future<int> sessionCount(String sessionId) async => (await (db.select(
     db.sessions,
   )..where((t) => t.id.equals(sessionId))).get()).length;
-  Future<String> _sessionTitle(String sessionId) async => (await (db.select(
+  Future<String> sessionTitle(String sessionId) async => (await (db.select(
     db.sessions,
   )..where((t) => t.id.equals(sessionId))).getSingle()).title;
 
   test('B23 createBlankSession 原子建会话 + teaching_state', () async {
     final id = await sessionRepo.createBlankSession(title: 't');
-    expect(await _sessionCount(id), 1, reason: '会话行应存在');
-    expect(await _teachingStateCount(id), 1, reason: '教学态行应随会话建立（B23 根因修复）');
+    expect(await sessionCount(id), 1, reason: '会话行应存在');
+    expect(await teachingStateCount(id), 1, reason: '教学态行应随会话建立（B23 根因修复）');
   });
 
   test(
     'B23 getOrCreateSessionForManuscript 原子建会话 + teaching_state + 主引用',
     () async {
       final id = await sessionRepo.getOrCreateSessionForManuscript(ms1);
-      expect(await _sessionCount(id), 1);
-      expect(await _teachingStateCount(id), 1);
-      final refs = await _refTypes(id);
+      expect(await sessionCount(id), 1);
+      expect(await teachingStateCount(id), 1);
+      final refs = await refTypes(id);
       expect(refs, contains('manuscript'), reason: '主引用（manuscript）应齐备');
     },
   );
@@ -81,12 +81,12 @@ void main() {
     'B23 getOrCreateSessionForChapter 原子建会话 + teaching_state + 双引用',
     () async {
       final id = await sessionRepo.getOrCreateSessionForChapter(ms2, ch2);
-      expect(await _sessionCount(id), 1);
-      expect(await _teachingStateCount(id), 1);
-      final refs = await _refTypes(id);
+      expect(await sessionCount(id), 1);
+      expect(await teachingStateCount(id), 1);
+      final refs = await refTypes(id);
       expect(refs, contains('chapter'), reason: '主引用（chapter）应齐备');
       expect(refs, contains('manuscript'), reason: '次要引用（manuscript）应齐备');
-      expect(await _sessionTitle(id), '诊断·ch-2', reason: '章节标题命名（批次61：诊断·标题）');
+      expect(await sessionTitle(id), '诊断·ch-2', reason: '章节标题命名（批次61：诊断·标题）');
     },
   );
 
@@ -94,9 +94,9 @@ void main() {
     final first = await sessionRepo.getOrCreateSessionForManuscript(ms3);
     final second = await sessionRepo.getOrCreateSessionForManuscript(ms3);
     expect(first, second, reason: '应复用现有会话');
-    expect(await _teachingStateCount(first), 1, reason: 'teaching_state 不应重复建');
+    expect(await teachingStateCount(first), 1, reason: 'teaching_state 不应重复建');
     expect(
-      (await _refTypes(first)).where((r) => r == 'manuscript').length,
+      (await refTypes(first)).where((r) => r == 'manuscript').length,
       1,
       reason: 'manuscript 引用不应重复建',
     );

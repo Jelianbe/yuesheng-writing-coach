@@ -10,7 +10,6 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
@@ -25,7 +24,10 @@ const _kStorageChannel = MethodChannel(
 const _kConnChannel = MethodChannel('dev.fluttercommunity.plus/connectivity');
 
 /// 以内存 map 替换 secure_storage / connectivity 两个 platform channel。
-void _mockChannels(Map<String, String> store, {List<String> conn = const ['wifi']}) {
+void _mockChannels(
+  Map<String, String> store, {
+  List<String> conn = const ['wifi'],
+}) {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(_kStorageChannel, (call) async {
@@ -73,7 +75,9 @@ class _CapturingAdapter implements HttpClientAdapter {
     return ResponseBody(
       Stream.value(Uint8List.fromList(utf8.encode(jsonEncode({'ok': true})))),
       status,
-      headers: {'content-type': ['application/json']},
+      headers: {
+        'content-type': ['application/json'],
+      },
     );
   }
 
@@ -95,7 +99,9 @@ class _SequenceAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    requestBodies.add(jsonDecode(options.data as String) as Map<String, dynamic>);
+    requestBodies.add(
+      jsonDecode(options.data as String) as Map<String, dynamic>,
+    );
     final r = responses[_cursor++];
     final data = {
       'choices': [
@@ -108,7 +114,9 @@ class _SequenceAdapter implements HttpClientAdapter {
     return ResponseBody(
       Stream.value(Uint8List.fromList(utf8.encode(jsonEncode(data)))),
       200,
-      headers: {'content-type': ['application/json']},
+      headers: {
+        'content-type': ['application/json'],
+      },
     );
   }
 
@@ -222,9 +230,9 @@ void main() {
       dio,
     );
 
-    final r = await client.chatCompletionWithContinuation(
-      const [ChatMessage(role: 'user', content: 'hi')],
-    );
+    final r = await client.chatCompletionWithContinuation(const [
+      ChatMessage(role: 'user', content: 'hi'),
+    ]);
 
     expect(r.content, '第一段第二段');
     expect(r.isTruncated, isFalse);
@@ -237,10 +245,7 @@ void main() {
     expect(secondMessages[1]['role'], 'assistant');
     expect(secondMessages[1]['content'], '第一段');
     expect(secondMessages[2]['role'], 'user');
-    expect(
-      (secondMessages[2]['content'] as String),
-      contains('继续'),
-    );
+    expect((secondMessages[2]['content'] as String), contains('继续'));
   });
 
   test('续接：连续截断达到上限 → 返回拼接内容且仍标记截断（批次B）', () async {
@@ -260,10 +265,9 @@ void main() {
       dio,
     );
 
-    final r = await client.chatCompletionWithContinuation(
-      const [ChatMessage(role: 'user', content: 'hi')],
-      maxContinuations: 2,
-    );
+    final r = await client.chatCompletionWithContinuation(const [
+      ChatMessage(role: 'user', content: 'hi'),
+    ], maxContinuations: 2);
 
     expect(r.content, 'ABC');
     expect(r.isTruncated, isTrue);
@@ -277,18 +281,16 @@ void main() {
       'yuesheng_api_base_url': 'https://api.custom.example.com',
       'yuesheng_api_model': 'custom-model',
     });
-    final adapter = _SequenceAdapter([
-      (content: '完整内容', finishReason: 'stop'),
-    ]);
+    final adapter = _SequenceAdapter([(content: '完整内容', finishReason: 'stop')]);
     final dio = Dio()..httpClientAdapter = adapter;
     final client = LlmClient(
       LlmConfigStorage(const FlutterSecureStorage()),
       dio,
     );
 
-    final r = await client.chatCompletionWithContinuation(
-      const [ChatMessage(role: 'user', content: 'hi')],
-    );
+    final r = await client.chatCompletionWithContinuation(const [
+      ChatMessage(role: 'user', content: 'hi'),
+    ]);
 
     expect(r.content, '完整内容');
     expect(r.isTruncated, isFalse);
@@ -300,9 +302,9 @@ void main() {
       LlmConfigStorage(const FlutterSecureStorage()),
       Dio(),
     );
-    final r = await client.chatCompletionWithMeta(
-      const [ChatMessage(role: 'user', content: 'hi')],
-    );
+    final r = await client.chatCompletionWithMeta(const [
+      ChatMessage(role: 'user', content: 'hi'),
+    ]);
     expect(r.content, contains('免费测试模式'));
     expect(r.content, contains('设置'));
   });
@@ -328,20 +330,23 @@ void main() {
     expect(chunks.join(), contains('设置'));
   });
 
-  test('免费模式：无配置 streamChat 提前取消 → LlmRequestCancelledException（批次E）', () async {
-    final client = LlmClient(
-      LlmConfigStorage(const FlutterSecureStorage()),
-      Dio(),
-    );
-    final cancelToken = CancelToken();
-    cancelToken.cancel();
-    await expectLater(
-      client.streamChat(
-        const [ChatMessage(role: 'user', content: 'hi')],
-        (_) {},
-        cancelToken: cancelToken,
-      ),
-      throwsA(isA<LlmRequestCancelledException>()),
-    );
-  });
+  test(
+    '免费模式：无配置 streamChat 提前取消 → LlmRequestCancelledException（批次E）',
+    () async {
+      final client = LlmClient(
+        LlmConfigStorage(const FlutterSecureStorage()),
+        Dio(),
+      );
+      final cancelToken = CancelToken();
+      cancelToken.cancel();
+      await expectLater(
+        client.streamChat(
+          const [ChatMessage(role: 'user', content: 'hi')],
+          (_) {},
+          cancelToken: cancelToken,
+        ),
+        throwsA(isA<LlmRequestCancelledException>()),
+      );
+    },
+  );
 }

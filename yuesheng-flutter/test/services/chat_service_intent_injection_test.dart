@@ -41,6 +41,7 @@ import 'package:writingcoach/services/chat_message_types.dart'
 class _CaptureLlmClient extends LlmClient {
   List<String> systemContents = [];
   List<String> capturedUserContent = [];
+
   /// ★ A-1：保留完整序列，供「注入位置」回归断言（此前只捕获内容，
   /// 导致「注入被挪走/挪错位置」无护栏）。
   List<ChatMessage> capturedMessages = [];
@@ -311,7 +312,12 @@ void main() {
       final llm = _CaptureLlmClient();
       final service = buildChatService(llm);
 
-      await service.sendMessage(sessionId, '这段对话怎么改更好？', callbacks(), options());
+      await service.sendMessage(
+        sessionId,
+        '这段对话怎么改更好？',
+        callbacks(),
+        options(),
+      );
       await service.sendMessage(
         sessionId,
         '那我再试试这段怎么改，长话短说',
@@ -347,7 +353,12 @@ void main() {
       final service = buildChatService(llm);
 
       // 第一轮：ask ⇒ 注入意图；第二轮：compose ⇒ 意图整项消失
-      await service.sendMessage(sessionId, '这段对话怎么改更好？', callbacks(), options());
+      await service.sendMessage(
+        sessionId,
+        '这段对话怎么改更好？',
+        callbacks(),
+        options(),
+      );
       final first = List<ChatMessage>.from(llm.capturedMessages);
       await service.sendMessage(
         sessionId,
@@ -406,12 +417,7 @@ void main() {
       final llm = _CaptureLlmClient();
       final service = buildChatService(llm);
 
-      await service.sendMessage(
-        sessionId,
-        '请诊断我这段文字',
-        callbacks(),
-        options(),
-      );
+      await service.sendMessage(sessionId, '请诊断我这段文字', callbacks(), options());
 
       final sent = llm.capturedUserContent.join('\n');
       expect(sent, contains('[YS_DIAGNOSIS]'));

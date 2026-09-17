@@ -64,7 +64,7 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (_, __) => CharacterDetailPage(
+          builder: (_, _) => CharacterDetailPage(
             characterId: charId,
             manuscriptId: manuscriptId,
           ),

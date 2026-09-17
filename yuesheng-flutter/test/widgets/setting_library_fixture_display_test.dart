@@ -16,8 +16,6 @@
 //      6. 钉住：AppBar push_pin → 点击切换实心/空心
 // ─────────────────────────────────────────────────────────────
 
-import 'dart:convert';
-
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -62,32 +60,6 @@ void main() {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(home: Scaffold(body: child)),
-    );
-  }
-
-  /// 注入一个伪角色（#1 用）。
-  Future<void> seedCharacter() async {
-    await charRepo.upsertCharacter(
-      manuscriptId: manuscriptId,
-      name: '林晚',
-      firstSeenChapter: 1,
-      firstSeenAt: 1000,
-      assertions: [
-        const CharacterAssertion(
-          attribute: '身份',
-          value: '捕快',
-          chapter: 1,
-          timestamp: 1,
-          status: 'confirmed',
-        ),
-        const CharacterAssertion(
-          attribute: '职业',
-          value: '画师',
-          chapter: 2,
-          timestamp: 2,
-          status: 'rejected',
-        ),
-      ],
     );
   }
 

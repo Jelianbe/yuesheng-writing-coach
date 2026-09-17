@@ -27,7 +27,7 @@ import 'package:writingcoach/providers/writing_providers.dart';
 /// 可控失败/成功的仓库替身（入档批次：保存失败暂停测试用）
 class _FakeChapterRepo extends ChapterRepository {
   bool fail = false;
-  _FakeChapterRepo(super.db);
+  _FakeChapterRepo(AppDatabase db) : super(db);
   @override
   Future<void> saveChapterContent(String chapterId, String content) async {
     if (fail) throw Exception('模拟保存失败');
@@ -284,7 +284,7 @@ void main() {
       final notifier = container.read(writingStoreProvider(chapterId).notifier);
 
       await notifier.loadChapter();
-      notifier.setOffline(true);
+      await notifier.setOffline(true);
 
       notifier.updateContent('离线编辑的内容');
       await notifier.saveNow();
@@ -311,7 +311,7 @@ void main() {
       final notifier = container.read(writingStoreProvider(chapterId).notifier);
 
       await notifier.loadChapter();
-      notifier.setOffline(true);
+      await notifier.setOffline(true);
       notifier.updateContent('离线编辑待同步');
       await notifier.saveNow();
       expect(container.read(writingStoreProvider(chapterId)).hasDraft, true);
@@ -692,37 +692,30 @@ void main() {
       expect(container.read(writingStoreProvider(chapterId)).canUndo, isFalse);
     });
 
-    test(
-      '#CR-26 updateChapterTitle 后卷归属保持（回归：手写重建漏 volumeId）',
-      () async {
-        final container = buildContainer();
-        final msId = await ManuscriptRepository(
-          db,
-        ).createManuscript(title: '卷归属测试');
-        final vid = await VolumeRepository(db).createVolume(msId);
-        final cid = await ChapterRepository(
-          db,
-        ).createChapter(msId, title: '原标题', volumeId: vid);
+    test('#CR-26 updateChapterTitle 后卷归属保持（回归：手写重建漏 volumeId）', () async {
+      final container = buildContainer();
+      final msId = await ManuscriptRepository(
+        db,
+      ).createManuscript(title: '卷归属测试');
+      final vid = await VolumeRepository(db).createVolume(msId);
+      final cid = await ChapterRepository(
+        db,
+      ).createChapter(msId, title: '原标题', volumeId: vid);
 
-        final notifier = container.read(writingStoreProvider(cid).notifier);
-        await notifier.loadChapter();
-        expect(notifier.state.chapter?.volumeId, vid);
+      final notifier = container.read(writingStoreProvider(cid).notifier);
+      await notifier.loadChapter();
+      expect(notifier.state.chapter?.volumeId, vid);
 
-        await notifier.updateChapterTitle('新标题');
+      await notifier.updateChapterTitle('新标题');
 
-        // 修复前：逐字段重建 Chapter 漏传 volumeId → state 中卷归属丢失
-        // （DB 仍在，刷新才恢复，用户感知为「章节跑出卷外」）
-        expect(notifier.state.chapter?.title, '新标题');
-        expect(
-          notifier.state.chapter?.volumeId,
-          vid,
-          reason: 'CR-26：改标题不得丢失卷归属',
-        );
-        final dbCh = await ChapterRepository(db).getChapter(cid);
-        expect(dbCh?.title, '新标题');
-        expect(dbCh?.volumeId, vid);
-      },
-    );
+      // 修复前：逐字段重建 Chapter 漏传 volumeId → state 中卷归属丢失
+      // （DB 仍在，刷新才恢复，用户感知为「章节跑出卷外」）
+      expect(notifier.state.chapter?.title, '新标题');
+      expect(notifier.state.chapter?.volumeId, vid, reason: 'CR-26：改标题不得丢失卷归属');
+      final dbCh = await ChapterRepository(db).getChapter(cid);
+      expect(dbCh?.title, '新标题');
+      expect(dbCh?.volumeId, vid);
+    });
   });
 
   group('入档批次：保存失败连续 3 次暂停自动保存', () {

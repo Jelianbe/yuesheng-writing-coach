@@ -130,7 +130,7 @@ void main() {
       final saved = await smRepo.getOnboardingData(sessionId);
       expect(saved, isNotNull);
       expect(saved!['proficiency'], 'beginner');
-      expect(saved['focusAreas'], []);
+      expect(saved['focusAreas'], <String>[]);
       expect(saved['cognitiveStyle'], 'mixed');
       expect(saved['writingGoal'], '');
       expect(saved['skipped'], true);
@@ -191,7 +191,7 @@ void main() {
       await service.submitOnboarding(sessionId, makeData(focusAreas: []));
 
       final saved = await smRepo.getOnboardingData(sessionId);
-      expect(saved!['focusAreas'], []);
+      expect(saved!['focusAreas'], <String>[]);
     });
 
     test('全部 4 项 focusAreas 能正确持久化', () async {

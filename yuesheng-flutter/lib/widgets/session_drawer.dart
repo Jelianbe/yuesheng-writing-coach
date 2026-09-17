@@ -7,6 +7,7 @@
 //      多选模式可批量删除。置顶后会话排最前（pinned DESC, updatedAt DESC）。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
@@ -336,11 +337,11 @@ class _SessionDrawerState extends State<SessionDrawer> {
     if (!mounted || !context.mounted || result == null) return;
     switch (result) {
       case 'rename':
-        _showRenameDialog(context, item.session.id, title);
+        unawaited(_showRenameDialog(context, item.session.id, title));
       case 'pin':
         widget.onTogglePin?.call(item.session.id);
       case 'delete':
-        _confirmDelete(context, item);
+        unawaited(_confirmDelete(context, item));
     }
   }
 

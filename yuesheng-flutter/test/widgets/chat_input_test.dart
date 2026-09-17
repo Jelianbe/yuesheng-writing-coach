@@ -474,7 +474,7 @@ void main() {
       expect(gap(tester), closeTo(8, 0.5), reason: 'B 键盘已弹出');
 
       // ★ 关键回归：面板保持打开，键盘收起 ⇒ 落点必须跟着「+」回来
-      tester.view.viewInsets = const FakeViewPadding();
+      tester.view.viewInsets = FakeViewPadding.zero;
       await tester.pumpAndSettle();
       expect(gap(tester), closeTo(8, 0.5), reason: 'C 键盘收起后落点不得冻结');
       expect(leftDelta(tester), closeTo(0, 0.5), reason: 'C 左边缘仍对齐');

@@ -12,6 +12,7 @@
 //   - 跳转/新建动作通过回调交给 WritingPage 执行（本组件保持纯 UI）
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -297,7 +298,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       final repo = ChapterRepository(db);
       await repo.updateChapterTitle(chapter.id, trimmed);
       // ADR-C90：chapterListProvider 已派生自 store——直写 repo 后刷新 store
-      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
       if (!mounted) return;
       _snack(trimmed.isEmpty ? '已重命名为「未命名章节」' : '已重命名为《$trimmed》');
     } catch (e) {
@@ -410,7 +411,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       await repo.createVolume(_msId, title: title);
       ref.invalidate(volumeListProvider(_msId));
       // ADR-C90：直写 repo 后刷新 store（建卷不影响章节，删卷会软删卷内章节）
-      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
       if (!mounted) return;
       _snack('已创建《$title》');
     } catch (e) {
@@ -548,7 +549,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       await repo.deleteVolume(volume.id);
       ref.invalidate(volumeListProvider(_msId));
       // ADR-C90：删卷会软删卷内章节——刷新 store 让列表同步
-      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
       if (!mounted) return;
       _snack('已删除《$title》');
     } catch (e) {
@@ -584,7 +585,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       await repo.moveChapterToVolumeEnd(chapter.id, target);
       ref.invalidate(volumeListProvider(_msId));
       // ADR-C90：移章改了 volumeId/sortOrder——刷新 store
-      ref.read(chapterStoreProvider(_msId).notifier).loadChapters();
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
     } catch (e) {
       debugPrint('[ChapterTreeDrawer] 移动章节失败: $e');
       if (!mounted) return;

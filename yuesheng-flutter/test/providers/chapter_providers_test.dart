@@ -60,7 +60,10 @@ void main() {
       volumeId,
       reason: '改标题不得丢失卷归属（DB 里仍在）',
     );
-    expect(store.state.chapters.first.volumeId, (await chRepo.getChapter(id))!.volumeId);
+    expect(
+      store.state.chapters.first.volumeId,
+      (await chRepo.getChapter(id))!.volumeId,
+    );
   });
 
   test('#2 CR-22 回归：保存内容后 state 的 volumeId 不丢失', () async {
@@ -90,12 +93,16 @@ void main() {
     await store.loadChapters();
 
     final newId = (await store.createChapter(title: 'D'))!;
-    final inState = store.state.chapters.firstWhere((c) => c.id == newId).sortOrder;
+    final inState = store.state.chapters
+        .firstWhere((c) => c.id == newId)
+        .sortOrder;
     final inDb = (await chRepo.getChapter(newId))!.sortOrder;
 
     expect(inState, inDb, reason: '乐观更新值必须与 DB 实际落库值一致');
     // 且不得与列表中任一现存章节撞 sort_order
-    final others = store.state.chapters.where((c) => c.id != newId).map((c) => c.sortOrder);
+    final others = store.state.chapters
+        .where((c) => c.id != newId)
+        .map((c) => c.sortOrder);
     expect(others, isNot(contains(inState)));
   });
 

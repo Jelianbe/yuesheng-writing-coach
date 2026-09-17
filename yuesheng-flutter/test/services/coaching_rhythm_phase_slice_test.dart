@@ -35,7 +35,7 @@ const List<String> _segmentOrder = [kCrSegHead, kCrSegP0, kCrSegP1, kCrSegTail];
 
 void main() {
   group('coaching-rhythm 段资源与分区不变量', () {
-    test("content == 段资源按目录顺序的 '\\n\\n' 拼接", () {
+    test(r"content == 段资源按目录顺序的 '\n\n' 拼接", () {
       expect(_segmentOrder.join('\n\n'), _raw);
     });
 

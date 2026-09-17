@@ -58,7 +58,7 @@ List<String> _listLibDartFiles() {
       .map((f) => f.path)
       .where((p) => p.endsWith('.dart'))
       .where((p) => !p.endsWith('.g.dart') && !p.endsWith('.freezed.dart'))
-      .map((p) => p.substring(_root.path.length + 1).replaceAll('\\', '/'))
+      .map((p) => p.substring(_root.path.length + 1).replaceAll(r'\', '/'))
       .toList()
     ..sort();
 }
@@ -79,7 +79,7 @@ int _skipString(String src, int start) {
   final quote = src[start];
   var i = start + 1;
   while (i < src.length) {
-    if (src[i] == '\\') {
+    if (src[i] == r'\') {
       i += 2;
       continue;
     }
@@ -330,12 +330,7 @@ void main() {
 
   testWidgets('#6 mention 模式：显示路径徽章 + 选择回调 @路径', (tester) async {
     final msId = await msRepo.createManuscript(title: '测试小说');
-    final chId = await chRepo.createChapter(
-      msId,
-      title: '第一章',
-      content: '正文',
-      sortOrder: 0,
-    );
+    await chRepo.createChapter(msId, title: '第一章', content: '正文', sortOrder: 0);
     String? gotPath;
     String? gotTitle;
 
@@ -531,10 +526,10 @@ void main() {
   });
 
   test('契约扫描自检：花括号配对能穿过字符串与插值（防体截断漏检）', () {
-    const sample = '''
+    const sample = r'''
       ReferencePicker(
         onSelect: (a, b) {
-          log('前缀 \$a 与 \${b.id} 含 } 花括号');
+          log('前缀 $a 与 ${b.id} 含 } 花括号');
           if (a != null) {
             Navigator.pop(sheetCtx);
           }

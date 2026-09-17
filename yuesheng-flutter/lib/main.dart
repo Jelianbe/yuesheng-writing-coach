@@ -198,7 +198,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
       final db = ref.read(appDatabaseProvider);
       final done = await AppStateRepository(db).getOnboardingCompleted();
       // 演示数据种子（SEED_DEMO）：仅演示模式注入，不阻塞 UI
-      _seedDemoIfEmpty();
+      unawaited(_seedDemoIfEmpty());
       if (!mounted) return;
       setState(() => _introDone = done);
     } catch (_) {

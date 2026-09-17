@@ -261,6 +261,8 @@ void main() {
     final svc = buildService(
       SeqFakeLlmClient([
         // 第 1 次：主链流式响应 = 纯诊断块（无自然语言后缀）→ combinedContent 空
+        // 有意分行的 JSON 拼接（相邻字面量在编译期合并，非漏逗号）
+        // ignore: no_adjacent_strings_in_list
         '[YS_DIAGNOSIS]'
             '{"syndromes":[{"syndrome_id":"P003","name":"情绪直白","severity":"L2",'
             '"evidence":["第3段"],"explanation":"情绪描写过于直白"}],'
@@ -352,11 +354,7 @@ void main() {
     final refRepo = ReferenceRepository(db);
 
     final manuscriptId = await msRepo.createManuscript(title: 'M5 对照手稿 2');
-    final chapterId = await chapterRepo.createChapter(
-      manuscriptId,
-      title: '第一章',
-      content: '正文',
-    );
+    await chapterRepo.createChapter(manuscriptId, title: '第一章', content: '正文');
     // 主引用类型为 manuscript（非 chapter）→ `primaryRef?.refType == 'chapter'` 不成立
     await refRepo.addReference(
       sessionId,

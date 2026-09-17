@@ -126,7 +126,11 @@ void main() {
     });
 
     test('cached 超过 prompt 时 missTokens 不为负（脏数据防御）', () {
-      const u = LlmUsage(promptTokens: 10, completionTokens: 1, cachedTokens: 99);
+      const u = LlmUsage(
+        promptTokens: 10,
+        completionTokens: 1,
+        cachedTokens: 99,
+      );
       expect(u.missTokens, 0);
     });
 

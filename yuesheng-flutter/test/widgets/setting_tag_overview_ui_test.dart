@@ -60,8 +60,7 @@ void main() {
       routes: [
         GoRoute(
           path: AppRoutes.settingTagOverview,
-          builder: (_, __) =>
-              SettingTagOverviewPage(manuscriptId: manuscriptId),
+          builder: (_, _) => SettingTagOverviewPage(manuscriptId: manuscriptId),
         ),
         GoRoute(
           path: AppRoutes.characterDetail,

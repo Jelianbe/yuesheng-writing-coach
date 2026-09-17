@@ -6,11 +6,9 @@
 //       + replaceAssertions 原样写回（merge 不干扰用户裁决）
 // ─────────────────────────────────────────────────────────────
 
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
-import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';

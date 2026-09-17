@@ -7,7 +7,6 @@
 // 归因：docs/audits/U1批-共享前置落地与缓存偏移实证-2026-09-15.md §5.2
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/contracts/teaching_capability.dart';
 import 'package:writingcoach/services/skill_dispatcher.dart';
 import 'package:writingcoach/services/l2_route_hysteresis.dart';
 import 'package:writingcoach/services/skill_layers.dart';

@@ -158,3 +158,53 @@ linter:
     use_test_throws_matchers: true
     use_to_and_as_if_applicable: true
     var_with_no_type_annotation: true
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 批 6 尾 —— `test/` 纳入门禁后补入（2026-09-17）
+    #   批 6 曾把这 6 条**刻意剔除**，理由是它们在 `test/` 有命中，
+    #   会让「批 5：test/ 纳入门禁」落地那天突然变红。
+    #   现 `test/` 已达标（88 → 0）并纳入门禁 0/1，故一并启用。
+    #   `lib/` 侧实测零影响；`test/` 侧命中已全部清零（见 `.ai/reports/`）。
+    # ═══════════════════════════════════════════════════════════════════════
+    use_raw_strings: true
+    matching_super_parameters: true
+    no_adjacent_strings_in_list: true
+    type_annotate_public_apis: true
+    use_named_constants: true
+    prefer_foreach: true
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # 批 7 —— 「正确性 · 值得清债」档（2026-09-17）
+    #   来源：全开实测中增量可控、且**指向真实缺陷**的一档（报告 §4「乙档」）。
+    #   判据不是"看着有用"，而是**实测增量 + 缺陷性质**：
+    #   ▸ 7a（本组 8 条）：语义明确的正确性规则，多为机械修改。
+    #   ▸ 7b：`unawaited_futures` —— 未等待的 Future 会**吞异常**，与
+    #     `lib/services/decode_guard.dart` 想防的属同一类问题，单独一步做。
+    #   ▸ 7c **刻意不开**：`cast_nullable_to_non_nullable` / `avoid_dynamic_calls`
+    #     —— 命中集中在 LLM JSON 解析边界（正是批 4 严格模式刚收紧的那片区域），
+    #     再叠一层与既有 `decode_guard` 设计重叠，噪音大于收益。
+    # ═══════════════════════════════════════════════════════════════════════
+    only_throw_errors: true
+    avoid_bool_literals_in_conditional_expressions: true
+    parameter_assignments: true
+    avoid_void_async: true
+    # ── 7b：未等待的 Future 会**吞异常**（与 decode_guard 同源问题）──
+    #   命中需逐个判断：该等的补 `await`；有意 fire-and-forget 的显式 `unawaited(...)`
+    #   —— 后者本身就是一种"把意图写出来"的收益。
+    unawaited_futures: true
+    # ── 实测剔除 4 条（原在候选清单里）—— 命中 **100% 为场景误报** ──
+    #   `avoid_slow_async_io`（5 处）：报的全是 `File.exists()` / `Directory.exists()`
+    #     之类。本规则面向命令行工具；Flutter 中改同步会**阻塞主 isolate**，
+    #     异步才是正确写法 ⇒ 开了只会凭空产出 5 个 ignore。
+    #   `one_member_abstracts`（1 处）：报的是 `lib/contracts/` 下的能力契约类。
+    #     单方法抽象类在本项目是**故意的依赖倒置设计**（配 CapabilityContractRegistry）。
+    #   `do_not_use_environment`（1 处）：报的是 `bool.fromEnvironment('SEED_DEMO')`，
+    #     即 `--dart-define`，Flutter 官方标准配置机制。
+    #   `avoid_futureor_void`（1 处）：`FutureOr<void>` 回调是**有意的
+    #     "同步/异步实现均可"契约**，收紧会无谓地限制调用方。
+    #
+    # ▸ 7b：`unawaited_futures` —— 未等待的 Future 会**吞异常**，与
+    #   `lib/services/decode_guard.dart` 想防的属同一类问题，单独一步做。
+    # ▸ 7c **刻意不开**：`cast_nullable_to_non_nullable` / `avoid_dynamic_calls`
+    #   —— 命中集中在 LLM JSON 解析边界（正是批 4 严格模式刚收紧的那片区域），
+    #   再叠一层与既有 `decode_guard` 设计重叠，噪音大于收益。

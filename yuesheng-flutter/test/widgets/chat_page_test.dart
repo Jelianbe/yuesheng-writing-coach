@@ -2103,13 +2103,13 @@ class _FakeChatService extends ChatService {
     await sessionRepo.addMessage(sessionId, 'user', content);
 
     // 初始延迟，让 UI 有机会显示 ThinkingIndicator
-    await Future.delayed(const Duration(milliseconds: 50));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
 
     // 模拟流式分块推送
     callbacks.onStream('你好，');
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     callbacks.onStream('我是月笙。');
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
 
     // 写入 assistant 消息并触发完成
     final messageId = await sessionRepo.addMessage(

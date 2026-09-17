@@ -14,7 +14,10 @@ DioException _ex(DioExceptionType type, {int? status}) => DioException(
   type: type,
   response: status == null
       ? null
-      : Response(requestOptions: RequestOptions(path: '/test'), statusCode: status),
+      : Response(
+          requestOptions: RequestOptions(path: '/test'),
+          statusCode: status,
+        ),
 );
 
 void main() {
@@ -37,33 +40,48 @@ void main() {
     });
 
     test('401/403 → unauthorized', () {
-      expect(classifyLlmError(_ex(DioExceptionType.badResponse, status: 401)),
-          LlmErrorKind.unauthorized);
-      expect(classifyLlmError(_ex(DioExceptionType.badResponse, status: 403)),
-          LlmErrorKind.unauthorized);
+      expect(
+        classifyLlmError(_ex(DioExceptionType.badResponse, status: 401)),
+        LlmErrorKind.unauthorized,
+      );
+      expect(
+        classifyLlmError(_ex(DioExceptionType.badResponse, status: 403)),
+        LlmErrorKind.unauthorized,
+      );
     });
 
     test('429 → rateLimited', () {
-      expect(classifyLlmError(_ex(DioExceptionType.badResponse, status: 429)),
-          LlmErrorKind.rateLimited);
+      expect(
+        classifyLlmError(_ex(DioExceptionType.badResponse, status: 429)),
+        LlmErrorKind.rateLimited,
+      );
     });
 
     test('5xx → server', () {
       for (final s in [500, 502, 503]) {
-        expect(classifyLlmError(_ex(DioExceptionType.badResponse, status: s)),
-            LlmErrorKind.server);
+        expect(
+          classifyLlmError(_ex(DioExceptionType.badResponse, status: s)),
+          LlmErrorKind.server,
+        );
       }
     });
 
     test('400 → invalidRequest', () {
-      expect(classifyLlmError(_ex(DioExceptionType.badResponse, status: 400)),
-          LlmErrorKind.invalidRequest);
+      expect(
+        classifyLlmError(_ex(DioExceptionType.badResponse, status: 400)),
+        LlmErrorKind.invalidRequest,
+      );
     });
 
     test('其他状态/无状态 → unknown', () {
-      expect(classifyLlmError(_ex(DioExceptionType.badResponse, status: 404)),
-          LlmErrorKind.unknown);
-      expect(classifyLlmError(_ex(DioExceptionType.unknown)), LlmErrorKind.unknown);
+      expect(
+        classifyLlmError(_ex(DioExceptionType.badResponse, status: 404)),
+        LlmErrorKind.unknown,
+      );
+      expect(
+        classifyLlmError(_ex(DioExceptionType.unknown)),
+        LlmErrorKind.unknown,
+      );
     });
   });
 
@@ -76,10 +94,7 @@ void main() {
     });
 
     test('network → 检查网络引导', () {
-      expect(
-        llmErrorMessage(LlmErrorKind.network),
-        '网络连接失败，请检查网络后重试',
-      );
+      expect(llmErrorMessage(LlmErrorKind.network), '网络连接失败，请检查网络后重试');
     });
 
     test('unauthorized → 去设置检查 Key', () {
@@ -89,10 +104,7 @@ void main() {
     });
 
     test('rateLimited → 稍后再试', () {
-      expect(
-        llmErrorMessage(LlmErrorKind.rateLimited),
-        contains('请求过于频繁'),
-      );
+      expect(llmErrorMessage(LlmErrorKind.rateLimited), contains('请求过于频繁'));
     });
 
     test('server → 含状态码 + 重试引导', () {

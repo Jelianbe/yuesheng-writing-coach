@@ -10,6 +10,7 @@
 // 角色/世界观详情页同构复用（kind 区分）。本批不参与诊断注入。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -78,7 +79,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
       label: result.label,
     );
     if (!mounted) return;
-    _load();
+    unawaited(_load());
   }
 
   Future<void> _removeLink(SettingLinkView view) async {
@@ -104,7 +105,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
       ref.read(appDatabaseProvider),
     ).deleteLink(view.link.id);
     if (!mounted) return;
-    _load();
+    unawaited(_load());
   }
 
   void _jump(SettingLinkView view) {

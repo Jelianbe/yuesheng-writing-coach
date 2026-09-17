@@ -21,10 +21,7 @@ void main() {
   }
 
   testWidgets('#1 有正文 → 展示正文 + 编辑按钮', (tester) async {
-    var edited = false;
-    await tester.pumpWidget(
-      host(description: '灵气浓度由北方向南方递减。', onEdit: () => edited = true),
-    );
+    await tester.pumpWidget(host(description: '灵气浓度由北方向南方递减。', onEdit: () {}));
     expect(find.text('设定正文'), findsOneWidget);
     expect(find.textContaining('灵气浓度'), findsOneWidget);
     expect(find.text('编辑'), findsOneWidget);

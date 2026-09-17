@@ -30,7 +30,10 @@ class _FakeLlmClient extends LlmClient {
   final List<ChatMessage> chatMessages = [];
   final List<int?> chatMaxTokens = [];
   final List<Map<String, dynamic>?> chatExtraBodies = [];
-  final Object? _chatError;
+
+  /// 与构造参数同型（`Exception?`）—— 收窄为 `Object?` 会让 `throw _chatError`
+  /// 触发 `only_throw_errors`（`Object` 不是 Exception/Error 子类型）。
+  final Exception? _chatError;
 
   /// streamChat 收到的 messages（merge 阶段），供端到端断言 notes 进入合并。
   final List<List<ChatMessage>> streamMessages = [];
@@ -47,7 +50,7 @@ class _FakeLlmClient extends LlmClient {
     String chatResponse = '{"notes":[]}',
     String streamResponse = '',
     List<String>? chatResponses,
-    Object? chatError,
+    Exception? chatError,
     this.onChatCall,
   }) : _chatResponse = chatResponse,
        _streamResponse = streamResponse,
@@ -66,7 +69,7 @@ class _FakeLlmClient extends LlmClient {
     chatExtraBodies.add(extraBody);
     _chatCallCount++;
     onChatCall?.call(_chatCallCount);
-    if (_chatError != null) throw _chatError!;
+    if (_chatError != null) throw _chatError;
     if (_chatResponses.isEmpty) return _chatResponse;
     return _chatResponses.length == 1
         ? _chatResponses.first
@@ -182,7 +185,7 @@ void main() {
       expect(chunks.single, exact);
     });
 
-    test('#6 单段超长（>= SIZE 且无 \\n\\n）不挂死，整段成块', () {
+    test(r'#6 单段超长（>= SIZE 且无 \n\n）不挂死，整段成块', () {
       // 死循环判据（ADR-C73 §2）：批次 H 实锤，单段 ≥3000 + 总长 >3000
       // 会让 while(startIndex < paragraphs.length) 永真（endIndex=startIndex
       // → overlapStart ≤ startIndex → startIndex 不变）。
@@ -195,7 +198,7 @@ void main() {
       expect(chunks.single, longSingle); // 整段成块
     });
 
-    test('#7 字符串中间夹杂 \\n\\n 但首段即 ≥ SIZE → 首段成块 + 后续正常切', () {
+    test(r'#7 字符串中间夹杂 \n\n 但首段即 ≥ SIZE → 首段成块 + 后续正常切', () {
       // 边界组合：首段超长触发修复路径，第二段短且合并到末块。
       // 验证修复不影响后续段落的常规分块。
       final first = 'A' * 4000; // 单段超长
@@ -381,9 +384,9 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.failedChunks, result!.chunkCount);
+      expect(result!.failedChunks, result.chunkCount);
       // 每块两次调用（尝试 1 + 兜底重试）
-      expect(fake.chatMaxTokens.length, result!.chunkCount * 2);
+      expect(fake.chatMaxTokens.length, result.chunkCount * 2);
       for (var i = 0; i < fake.chatMaxTokens.length; i += 2) {
         expect(fake.chatMaxTokens[i], isNull);
         expect(
@@ -404,7 +407,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.failedChunks, 0);
-      expect(fake.chatMaxTokens.length, result!.chunkCount); // 无重试
+      expect(fake.chatMaxTokens.length, result.chunkCount); // 无重试
       expect(fake.chatMaxTokens[0], isNull);
       expect(fake.chatExtraBodies[0], isNull);
     });
@@ -419,9 +422,9 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.failedChunks, result!.chunkCount);
+      expect(result!.failedChunks, result.chunkCount);
       // 异常路径只调用一次（无兜底重试——异常不是空 content）
-      expect(fake.chatMaxTokens.length, result!.chunkCount);
+      expect(fake.chatMaxTokens.length, result.chunkCount);
     });
 
     test('#9 ADR-C87 取消令牌已取消 → 分块前抛，LLM 未被调用', () async {
@@ -488,7 +491,8 @@ void main() {
 
     test('#L3 越界 severity 白名单：L4 条目不进 merge，合法条目保留', () async {
       // 分块分析返回：一条合法（L1）+ 一条越界（L4）
-      const notes = '{"notes":['
+      const notes =
+          '{"notes":['
           '{"syndromeId":"P003","description":"情绪标签化","evidence":["她很愤怒"],"severity":"L1"},'
           '{"syndromeId":"P999","description":"伪造症候","evidence":["x"],"severity":"L4"}'
           ']}';
@@ -503,8 +507,9 @@ void main() {
       expect(result, isNotNull);
       expect(result!.failedChunks, 0);
       // merge 阶段 prompt：合法 P003 保留，越界 L4 条目被剔除
-      final mergeText =
-          fake.streamMessages.last.map((m) => m.content).join('\n');
+      final mergeText = fake.streamMessages.last
+          .map((m) => m.content)
+          .join('\n');
       expect(mergeText, contains('P003'));
       expect(mergeText, isNot(contains('P999')));
       expect(mergeText, isNot(contains('L4')));

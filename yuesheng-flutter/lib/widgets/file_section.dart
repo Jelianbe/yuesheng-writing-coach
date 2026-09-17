@@ -9,6 +9,7 @@
 // 内容查看器（FileViewerModal）留后续批次
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -89,7 +90,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
     try {
       final refRepo = ref.read(referenceCapabilityProvider);
       await refRepo.deleteAttachedFile(file.id);
-      _load();
+      unawaited(_load());
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(

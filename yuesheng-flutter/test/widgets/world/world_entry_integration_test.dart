@@ -8,6 +8,7 @@
 //   ⑥ /worlds 落地页 extra 契约：带 manuscriptId → WorldFactPage；无 → PlaceholderPage
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -147,7 +148,7 @@ void main() {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (_, __) => const Scaffold(body: Text('home')),
+            builder: (_, _) => const Scaffold(body: Text('home')),
           ),
           GoRoute(
             path: AppRoutes.worlds,
@@ -175,16 +176,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // 带 manuscriptId → 落地 WorldFactPage（初始空态）
-      router.push(
-        AppRoutes.worlds,
-        extra: <String, dynamic>{'manuscriptId': manuscriptId},
+      unawaited(
+        router.push(
+          AppRoutes.worlds,
+          extra: <String, dynamic>{'manuscriptId': manuscriptId},
+        ),
       );
       await tester.pumpAndSettle();
       expect(find.byType(WorldFactPage), findsOneWidget);
       expect(find.text('还没有世界观设定'), findsOneWidget);
 
       // 无 manuscriptId → PlaceholderPage（对齐 /characters 守卫口径）
-      router.push(AppRoutes.worlds);
+      unawaited(router.push(AppRoutes.worlds));
       await tester.pumpAndSettle();
       expect(find.text('未提供作品 ID'), findsOneWidget);
     });

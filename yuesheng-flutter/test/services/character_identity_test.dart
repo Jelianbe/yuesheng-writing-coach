@@ -33,7 +33,6 @@ import 'package:flutter_test/flutter_test.dart';
 // database.dart + flutter_test 用 isNull 编译通过，已探针验证）。
 // 本文件只需 CharacterFact，无谓地引 drift 等于自找命名冲突。
 import 'package:writingcoach/data/database/database.dart';
-import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/services/character_identity.dart';
 import 'package:writingcoach/services/conflict_detector.dart';
 import 'package:writingcoach/types/character_types.dart';

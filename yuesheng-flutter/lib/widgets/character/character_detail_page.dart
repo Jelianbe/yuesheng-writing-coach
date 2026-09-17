@@ -10,6 +10,7 @@
 //   查看原文走 §4.4 采信决策树（evidence 校验 → 反查 → 诚实降级）。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../setting/setting_description_card.dart';
@@ -298,7 +299,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       target: a,
       reason: choice.reason,
     );
-    _load();
+    unawaited(_load());
   }
 
   /// 模板可学习：属性名建议 = 静态基础模板 + 作品内 user 属性 ≥2 次回填（去重）。
@@ -337,7 +338,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       b: pair.b,
       verdict: verdict,
     );
-    _load();
+    unawaited(_load());
   }
 
   /// AI 辅助比较（纯分析不代决）：走共享 LlmClient 非流式，失败降级文案。
@@ -364,13 +365,13 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       target: a,
       negative: value,
     );
-    _load();
+    unawaited(_load());
   }
 
   /// 设定钉选（分级供给 L2，v35）：切换 AppBar 钉住，直接落库。
   Future<void> _togglePinned(CharacterFact row) async {
     await _editor.setPinned(row.id, pinned: row.pinned != 1);
-    _load();
+    unawaited(_load());
   }
 
   Future<void> _correct(CharacterAssertion a) async {
@@ -391,7 +392,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       newValue: form.value,
       chapter: form.chapter,
     );
-    _load();
+    unawaited(_load());
   }
 
   Future<void> _supplement(String? attribute) async {
@@ -410,14 +411,14 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       value: form.value,
       chapter: form.chapter,
     );
-    _load();
+    unawaited(_load());
   }
 
   Future<void> _editAliases() async {
     final next = await showAliasEditDialog(context, _aliases);
     if (next == null || !mounted) return;
     await _editor.updateAliases(characterId: widget.characterId, aliases: next);
-    _load();
+    unawaited(_load());
   }
 
   Future<void> _editDescription() async {
@@ -433,7 +434,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       name: _row!.name,
       description: next,
     );
-    _load();
+    unawaited(_load());
   }
 
   /// D-5 并入主角色：本页 = 目标行，选另一行作源。断言迁移保 source，
@@ -455,7 +456,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     ).mergeCharacter(targetId: widget.characterId, sourceId: source.id);
     if (!mounted) return;
     _snack(ok ? '已并入「${source.name}」' : '并入失败');
-    if (ok) _load();
+    if (ok) unawaited(_load());
   }
 
   Future<void> _clearStaleChapter(int chapterNo) async {
@@ -484,7 +485,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       manuscriptId: widget.manuscriptId,
       chapterNo: chapterNo,
     );
-    _load();
+    unawaited(_load());
   }
 
   /// 相关事件跳章节（章节已删/未记录 → 轻提示，不假装跳转）

@@ -2,13 +2,18 @@
 # ============================================================
 # 月笙写作教练 Flutter 端 — 十二道门禁 (R-027 + 宪法 §二)
 #
-# 门禁 0: 代码格式 (dart format --set-exit-if-changed lib) — 宪法 §二.2
-# 门禁 1: 静态分析 (dart analyze lib integration_test tool) — 类型检查 + Lint
-#         ⚠️ 2026-09-17 扩范围：原为 `dart analyze lib`，只覆盖 lib/ ⇒ test/ ·
-#            integration_test/ · tool/ 从未被静态分析。实证代价：integration_test/
-#            内一个**编译级 error**（FakeLlmClient 未跟进 LlmClient.extraBody）
-#            躺了整整一个月无人察觉（该目录最后提交 08-16，最后改动 08-14）。
-#            test/ 待清理 32 条 warning 后再纳入（方案见 .ai/CHECKS.md）。
+# 门禁 0: 代码格式 (dart format --set-exit-if-changed lib test integration_test tool)
+#         ⚠️ 2026-09-17 扩范围：原为 `lib`，**test/ 从未被格式检查**——实测 325 个
+#            test 文件里 35 个格式不符，其中 27 个与本批改动无关（纯存量无人管）。
+# 门禁 1: 静态分析 (dart analyze lib integration_test tool test) — 类型检查 + Lint
+#         ⚠️ 2026-09-17 扩范围（两段）：原为 `dart analyze lib`，只覆盖 lib/ ⇒
+#            integration_test/ · tool/ · test/ 从未被静态分析。实证代价：
+#            ① integration_test/ 内一个**编译级 error**（FakeLlmClient 未跟进
+#               LlmClient.extraBody）躺了整整一个月无人察觉；
+#            ② test/ 内另有一个**编译级 error**（archive_export_service_test.dart
+#               在 strict-casts 下 dynamic→Object 报 argument_type_not_assignable）
+#               ＋ 47 warning ＋ 40 info，同样无人察觉。
+#            test/ 已于本批清零（88 → 0）并纳入。
 #         ⚠️ fatal 语义：`dart analyze` 默认 --fatal-warnings=on / --fatal-infos=off，
 #            故 info 级风格问题不阻断（那是门禁 0 的职责）。
 #            **复现门禁请用 `dart analyze`，勿用 `flutter analyze`**——
@@ -111,8 +116,8 @@ else
 fi
 
 # ---------- 门禁 0: 格式（宪法 §二.2）----------
-echo "--> 门禁 0/12: 格式校验 (dart format --set-exit-if-changed lib)"
-if dart format --set-exit-if-changed -o none lib > "$FORMAT_LOG" 2>&1; then
+echo "--> 门禁 0/12: 格式校验 (dart format lib test integration_test tool)"
+if dart format --set-exit-if-changed -o none lib test integration_test tool > "$FORMAT_LOG" 2>&1; then
   RC_FORMAT=0
 else
   RC_FORMAT=1
@@ -122,14 +127,14 @@ log_result "格式校验 (dart format)" "$RC_FORMAT"
 
 # ---------- 门禁 1: 静态分析 ----------
 # 2026-09-17 扩范围 lib → lib + integration_test + tool（实测 rc=0，零新增阻断）。
-echo "--> 门禁 1/12: 静态分析 (dart analyze lib integration_test tool)"
-if dart analyze lib integration_test tool > "$TYPECHECK_LOG" 2>&1; then
+echo "--> 门禁 1/12: 静态分析 (dart analyze lib integration_test tool test)"
+if dart analyze lib integration_test tool test > "$TYPECHECK_LOG" 2>&1; then
   RC_ANALYZE=0
 else
   RC_ANALYZE=1
   tail -n 30 "$TYPECHECK_LOG"
 fi
-log_result "静态分析 (analyze lib+integration_test+tool)" "$RC_ANALYZE"
+log_result "静态分析 (analyze lib+integration_test+tool+test)" "$RC_ANALYZE"
 
 # ---------- 门禁 2: 测试 ----------
 echo "--> 门禁 2/12: 单元测试 (flutter test)"
@@ -516,7 +521,7 @@ ${DEGRADED_BANNER}- 时间: $(date '+%Y-%m-%d %H:%M:%S')
 | 门禁 | 结果 |
 |------|------|
 | 格式校验 (dart format) | $(verdict "${RC_FORMAT:-SKIP}") |
-| 静态分析 (dart analyze lib) | $(verdict "${RC_ANALYZE:-SKIP}") |
+| 静态分析 (analyze lib+integration_test+tool+test) | $(verdict "${RC_ANALYZE:-SKIP}") |
 | 单元测试 (flutter test) | $(verdict "${RC_TEST:-SKIP}") |
 | 循环依赖扫描 | $(verdict "${RC_CIRCULAR:-SKIP}") |
 | 安全/密钥扫描 | $(verdict "${RC_SECRETS:-SKIP}") |

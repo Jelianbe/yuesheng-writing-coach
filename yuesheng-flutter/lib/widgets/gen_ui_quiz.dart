@@ -136,7 +136,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
         : <String>[];
     final explanation = item['explanation'] as String?;
     final chosen = _selected[itemIdx];
-    final isCorrect = _results.length > itemIdx ? _results[itemIdx] : false;
+    final isCorrect = _results.length > itemIdx && _results[itemIdx];
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.smx),

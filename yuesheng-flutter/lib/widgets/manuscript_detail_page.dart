@@ -24,6 +24,7 @@
 //   - UI 装配 → manuscript_detail_view.dart
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -167,9 +168,11 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
     // P3-3：标记加载完成，区分加载中和作品不存在
     if (mounted) setState(() => _isLoaded = true);
     // 加载章节
-    ref
-        .read(chapterStoreProvider(widget.args.manuscriptId).notifier)
-        .loadChapters();
+    unawaited(
+      ref
+          .read(chapterStoreProvider(widget.args.manuscriptId).notifier)
+          .loadChapters(),
+    );
   }
 
   /// 批次93-3：返回书架前发刷新信号（书架 listen 后失效章节统计缓存）

@@ -11,7 +11,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/ai_account_repository.dart';
 import 'package:writingcoach/services/llm_config_resolver.dart';
-import 'package:writingcoach/services/llm_config_storage.dart';
 
 const _kStorageChannel = MethodChannel(
   'plugins.it_nomads.com/flutter_secure_storage',

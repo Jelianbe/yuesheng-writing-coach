@@ -37,13 +37,15 @@ import 'package:writingcoach/widgets/teacher_suggestion_card.dart';
 import 'package:writingcoach/widgets/writing_coach_panel.dart';
 
 /// 诊断 LLM 响应（合法 YS_DIAGNOSIS 块；severity L2 → 触发 Teacher 二次调用）
-const String diagResponse = '诊断完成。本章的结构清晰，但情绪描写过于直白。'
+const String diagResponse =
+    '诊断完成。本章的结构清晰，但情绪描写过于直白。'
     '\n[YS_DIAGNOSIS]'
     '\n{"syndromes":[{"syndrome_id":"s1","name":"叙事含糊","severity":"L2","evidence":[],"explanation":"情绪描写直接说出而非展现"}],"suggested_actions":[],"confidence":0.8}'
     '\n[/YS_DIAGNOSIS]';
 
 /// Teacher LLM 响应（合法 YS_TEACHER 块：teaching_decision + training_task）
-const String teacherResponse = '建议：针对「叙事含糊」做一次专项改写练习。'
+const String teacherResponse =
+    '建议：针对「叙事含糊」做一次专项改写练习。'
     '\n[YS_TEACHER]'
     '\n{"teaching_decision":"train","teaching_reason":"症候已确认且需专项练习","natural_language":"建议针对「叙事含糊」做一次改写练习，把情绪写含蓄。","training_task":{"task_type":"rewrite","task_description":"请改写这段对话，让情绪描写更含蓄。","difficulty":"easy","evaluation_criteria":["情绪更含蓄","描写更具体"],"target_syndrome_id":"s1"}}'
     '\n[/YS_TEACHER]';
@@ -106,7 +108,11 @@ void main() {
       overrides: [
         appDatabaseProvider.overrideWithValue(db),
         llmClientProvider.overrideWithValue(
-          FakeLlmClient(const [diagResponse, teacherResponse, feedbackResponse]),
+          FakeLlmClient(const [
+            diagResponse,
+            teacherResponse,
+            feedbackResponse,
+          ]),
         ),
       ],
     );
@@ -166,7 +172,11 @@ void main() {
     // ── 5. 练：点「开始练习」→ PracticeTaskCard ──
     await tester.tap(find.text('开始练习'));
     await waitFor(tester, find.byType(PracticeTaskCard));
-    expect(find.byType(PracticeTaskCard), findsOneWidget, reason: '练习任务卡应出现（练）');
+    expect(
+      find.byType(PracticeTaskCard),
+      findsOneWidget,
+      reason: '练习任务卡应出现（练）',
+    );
 
     // ── 6. 评：作答 → 提交 → 训练结果指示器 ──
     // 任务卡内作答输入框（限任务卡范围内）

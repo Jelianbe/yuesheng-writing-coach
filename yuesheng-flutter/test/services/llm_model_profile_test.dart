@@ -75,10 +75,7 @@ void main() {
     });
 
     test('doubao-seed 深度思考系 → disableThinking=true（默认思考控延迟）', () {
-      expect(
-        classifyLlmModel('doubao-seed-2.1-turbo').disableThinking,
-        isTrue,
-      );
+      expect(classifyLlmModel('doubao-seed-2.1-turbo').disableThinking, isTrue);
       expect(classifyLlmModel('doubao-seed-2.1-pro').disableThinking, isTrue);
       expect(classifyLlmModel('doubao-seed-1.6-flash').disableThinking, isTrue);
       expect(classifyLlmModel('doubao-seed-2.1-turbo').reasoningOnly, isFalse);

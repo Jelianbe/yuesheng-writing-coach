@@ -142,7 +142,7 @@ void main() {
               m.messageType == 'diagnosis_result' ||
               m.messageType == 'phase_upgrade',
         )
-        .map((m) => m.messageType!)
+        .map((m) => m.messageType)
         .toList();
   }
 

@@ -194,6 +194,9 @@ const List<L3Case> kL3Cases = [
 /// FNV-1a 64 位指纹（VM 原生 int 乘法回绕，输出恒为正；任一字节变化
 /// 都会改变指纹，与长度断言共同构成字节级判定）
 int _fnv1a64(String s) {
+  // FNV-1a 64 位偏移基数（14695981039346656037）。项目仅发布 Android、不编译 JS，
+  // VM 上 int 即 64 位；改用 BigInt 会改变哈希值 ⇒ 锚点快照全量失配，故保留字面量。
+  // ignore: avoid_js_rounded_ints
   var h = 0xcbf29ce484222325;
   for (final cu in s.codeUnits) {
     h ^= cu;

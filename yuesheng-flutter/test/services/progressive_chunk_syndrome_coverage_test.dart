@@ -169,7 +169,7 @@ void main() {
             '必须写成由 _syndromeIdRange() 派生的插值，不得回退为手写区间。',
       );
       expect(
-        _count(src, '症候编号 \${_syndromeIdRange()}'),
+        _count(src, r'症候编号 ${_syndromeIdRange()}'),
         1,
         reason: '「症候编号」应由 _syndromeIdRange() 派生，出现 1 次',
       );

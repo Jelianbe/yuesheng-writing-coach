@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 378,
+  "fileCount": 424,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -20,9 +20,9 @@
     {
       "file": "lib/providers/growth_providers.dart",
       "func": "loadGrowthData",
-      "start": 115,
-      "end": 183,
-      "lines": 69
+      "start": 126,
+      "end": 199,
+      "lines": 74
     },
     {
       "file": "lib/providers/writing_providers.dart",
@@ -104,23 +104,16 @@
     {
       "file": "lib/widgets/chat_header.dart",
       "func": "_showMoreMenu",
-      "start": 82,
-      "end": 155,
-      "lines": 74
+      "start": 95,
+      "end": 201,
+      "lines": 107
     },
     {
       "file": "lib/widgets/chat_header.dart",
       "func": "build",
-      "start": 183,
-      "end": 290,
+      "start": 229,
+      "end": 336,
       "lines": 108
-    },
-    {
-      "file": "lib/widgets/chat_input.dart",
-      "func": "build",
-      "start": 181,
-      "end": 285,
-      "lines": 105
     },
     {
       "file": "lib/widgets/diagnosis_failed_card.dart",
@@ -188,16 +181,16 @@
     {
       "file": "lib/widgets/evaluation_report_panel.dart",
       "func": "build",
-      "start": 60,
-      "end": 220,
-      "lines": 161
+      "start": 86,
+      "end": 231,
+      "lines": 146
     },
     {
       "file": "lib/widgets/evaluation_report_panel.dart",
       "func": "build",
-      "start": 269,
-      "end": 319,
-      "lines": 51
+      "start": 280,
+      "end": 336,
+      "lines": 57
     },
     {
       "file": "lib/widgets/excerpt_picker_sheet.dart",
@@ -209,8 +202,8 @@
     {
       "file": "lib/widgets/file_section.dart",
       "func": "build",
-      "start": 118,
-      "end": 314,
+      "start": 119,
+      "end": 315,
       "lines": 197
     },
     {
@@ -244,9 +237,9 @@
     {
       "file": "lib/widgets/growth_page.dart",
       "func": "build",
-      "start": 240,
-      "end": 367,
-      "lines": 128
+      "start": 245,
+      "end": 386,
+      "lines": 142
     },
     {
       "file": "lib/widgets/import_success_sheet.dart",
@@ -279,23 +272,23 @@
     {
       "file": "lib/widgets/message_card_dispatcher.dart",
       "func": "dispatchMessageCard",
-      "start": 45,
-      "end": 196,
-      "lines": 152
+      "start": 46,
+      "end": 199,
+      "lines": 154
     },
     {
       "file": "lib/widgets/message_list.dart",
       "func": "_showDeleteConfirm",
-      "start": 252,
-      "end": 304,
+      "start": 262,
+      "end": 314,
       "lines": 53
     },
     {
       "file": "lib/widgets/message_list.dart",
       "func": "build",
-      "start": 359,
-      "end": 583,
-      "lines": 225
+      "start": 369,
+      "end": 594,
+      "lines": 226
     },
     {
       "file": "lib/widgets/observation_audit_card.dart",
@@ -419,9 +412,9 @@
     {
       "file": "lib/widgets/practice_task_card.dart",
       "func": "build",
-      "start": 63,
-      "end": 268,
-      "lines": 206
+      "start": 167,
+      "end": 373,
+      "lines": 207
     },
     {
       "file": "lib/widgets/project_settings_page.dart",
@@ -566,15 +559,15 @@
     {
       "file": "lib/widgets/settings_page.dart",
       "func": "_buildApiSection",
-      "start": 729,
-      "end": 951,
+      "start": 777,
+      "end": 999,
       "lines": 223
     },
     {
       "file": "lib/widgets/settings_page.dart",
       "func": "build",
-      "start": 1152,
-      "end": 1279,
+      "start": 1200,
+      "end": 1327,
       "lines": 128
     },
     {
@@ -636,22 +629,22 @@
     {
       "file": "lib/widgets/teacher_suggestion_card.dart",
       "func": "_buildHeader",
-      "start": 228,
-      "end": 280,
+      "start": 230,
+      "end": 282,
       "lines": 53
     },
     {
       "file": "lib/widgets/teacher_suggestion_card.dart",
       "func": "_buildButtons",
-      "start": 315,
-      "end": 429,
+      "start": 317,
+      "end": 431,
       "lines": 115
     },
     {
       "file": "lib/widgets/teacher_suggestion_card.dart",
       "func": "_buildDetails",
-      "start": 484,
-      "end": 570,
+      "start": 486,
+      "end": 572,
       "lines": 87
     },
     {
@@ -714,8 +707,8 @@
       "file": "lib/widgets/writing_menu_sheet.dart",
       "func": "show",
       "start": 38,
-      "end": 215,
-      "lines": 178
+      "end": 227,
+      "lines": 190
     },
     {
       "file": "lib/widgets/writing_stats_sheet.dart",

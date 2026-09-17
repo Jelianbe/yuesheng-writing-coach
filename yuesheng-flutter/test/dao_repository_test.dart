@@ -387,7 +387,7 @@ void main() {
               'syndrome_id': 's1',
               'name': '症候A',
               'severity': 'L2',
-              'evidence': [],
+              'evidence': <String>[],
               'explanation': '',
             },
           ],

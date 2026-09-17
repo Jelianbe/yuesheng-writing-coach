@@ -9,6 +9,7 @@
 // 新建弹窗 UI 已提为公有 [BookshelfCreateModal]。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -126,9 +127,11 @@ class BookshelfCreateController {
       // （bookshelf 是栈底唯一页面 → 空栈断言崩溃）。
       Navigator.of(host.context, rootNavigator: true).pop();
       // 批次93-4：新建书后立即跳详情页（阅文「去写作」模型，不再是留在书架 + SnackBar）
-      host.context.push(
-        AppRoutes.manuscriptDetail,
-        extra: {'manuscriptId': id, 'title': title},
+      unawaited(
+        host.context.push(
+          AppRoutes.manuscriptDetail,
+          extra: {'manuscriptId': id, 'title': title},
+        ),
       );
     } else if (host.context.mounted) {
       // P2-5：创建失败时给用户明确反馈

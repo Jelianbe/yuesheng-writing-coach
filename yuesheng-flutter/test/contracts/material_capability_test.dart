@@ -6,7 +6,6 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/contracts/material_capability.dart';
 import 'package:writingcoach/contracts/capability_registry.dart';
 import 'package:writingcoach/services/chat_context_builder.dart';
 

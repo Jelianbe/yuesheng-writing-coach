@@ -11,6 +11,7 @@
 // 依赖经 [ChatPageHost] 显式注入；消息刷新委托 [ChatSessionController]。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,12 +48,14 @@ class ChatReferenceController {
   Future<void> handleUploadFile() async {
     final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
     if (bootstrap == null || !host.mounted) return;
-    showYueModalBottomSheet<void>(
-      context: host.context,
-      isScrollControlled: true,
-      builder: (_) => WorkImportSheet(
-        sessionId: bootstrap.sessionId,
-        onUploadComplete: handleUploadComplete,
+    unawaited(
+      showYueModalBottomSheet<void>(
+        context: host.context,
+        isScrollControlled: true,
+        builder: (_) => WorkImportSheet(
+          sessionId: bootstrap.sessionId,
+          onUploadComplete: handleUploadComplete,
+        ),
       ),
     );
   }
@@ -205,7 +208,7 @@ class ChatReferenceController {
           try {
             // 从管理入口添加的引用保持附加身份（主引用可在弹层内切换）
             await refRepo.addReference(sessionId, refType, refId);
-            handleReferencesChanged('add', refType, title);
+            unawaited(handleReferencesChanged('add', refType, title));
             if (host.context.mounted) {
               ScaffoldMessenger.of(
                 host.context,
@@ -249,7 +252,7 @@ class ChatReferenceController {
       // 卡片写入失败不阻断主操作（引用变更本身已生效）
     }
     // 设主/添加/移除后主引用可能变了，刷新头部小字
-    loadPrimaryRefTitle();
+    unawaited(loadPrimaryRefTitle());
   }
 
   /// 加载当前会话主引用书名（头部小字展示）。

@@ -45,8 +45,10 @@ const MethodChannel _kSecureStorageChannel = MethodChannel(
 String _buildLongSystem() {
   final sb = StringBuffer('# SKILL: 用量观测探针\n\n');
   for (var i = 0; i < 40; i++) {
-    sb.write('第 ${i + 1} 条教学纪律：先判断学员所处环节，再决定回应方式。'
-        '不替学员写句子、不替学员做决定，一次只抛一个可执行的点。\n');
+    sb.write(
+      '第 ${i + 1} 条教学纪律：先判断学员所处环节，再决定回应方式。'
+      '不替学员写句子、不替学员做决定，一次只抛一个可执行的点。\n',
+    );
   }
   return sb.toString();
 }
@@ -96,61 +98,61 @@ void main() {
     messenger.setMockMethodCallHandler(_kSecureStorageChannel, null);
   });
 
-  test(
-    '真实链路用量读数（流式 + 非流式 + 缓存命中观察）',
-    () async {
-      if (!hasKey) {
-        markTestSkipped('未设置 DEEPSEEK_API_KEY，跳过真实链路');
-        return;
-      }
-      final key = Platform.environment['DEEPSEEK_API_KEY']!;
-      final cfg = LlmConfigValues(
-        apiKey: key,
-        baseUrl: _kBaseUrl,
-        model: _kModel,
-      );
-      final monitor = LlmUsageMonitor();
-      final client = LlmClient(
-        null,
-        null,
-        () async => cfg,
-        null,
-        LlmConcurrencyGate(),
-        monitor.sink,
-      );
+  test('真实链路用量读数（流式 + 非流式 + 缓存命中观察）', () async {
+    if (!hasKey) {
+      markTestSkipped('未设置 DEEPSEEK_API_KEY，跳过真实链路');
+      return;
+    }
+    final key = Platform.environment['DEEPSEEK_API_KEY']!;
+    final cfg = LlmConfigValues(
+      apiKey: key,
+      baseUrl: _kBaseUrl,
+      model: _kModel,
+    );
+    final monitor = LlmUsageMonitor();
+    final client = LlmClient(
+      null,
+      null,
+      () async => cfg,
+      null,
+      LlmConcurrencyGate(),
+      monitor.sink,
+    );
 
-      final messages = [
-        ChatMessage(role: 'system', content: _buildLongSystem()),
-        const ChatMessage(role: 'user', content: '只回复两个字：收到'),
-      ];
+    final messages = [
+      ChatMessage(role: 'system', content: _buildLongSystem()),
+      const ChatMessage(role: 'user', content: '只回复两个字：收到'),
+    ];
 
-      // ① 首次调用（预期缓存未命中）
-      await client.chatCompletionWithMeta(messages);
-      final afterFirst = monitor.totals;
+    // ① 首次调用（预期缓存未命中）
+    await client.chatCompletionWithMeta(messages);
+    final afterFirst = monitor.totals;
 
-      // ② 同前缀再调一次（观察自动上下文缓存是否命中）
-      await client.streamChat(messages, (_) {});
-      final afterSecond = monitor.totals;
+    // ② 同前缀再调一次（观察自动上下文缓存是否命中）
+    await client.streamChat(messages, (_) {});
+    final afterSecond = monitor.totals;
 
-      // ignore: avoid_print
-      print('[M 批 真实读数] 第 1 次（非流式）: $afterFirst');
-      // ignore: avoid_print
-      print('[M 批 真实读数] 两次累计（第 2 次为流式）: $afterSecond');
+    // ignore: avoid_print
+    print('[M 批 真实读数] 第 1 次（非流式）: $afterFirst');
+    // ignore: avoid_print
+    print('[M 批 真实读数] 两次累计（第 2 次为流式）: $afterSecond');
 
-      expect(afterSecond.calls, 2, reason: '两次调用都应被采集');
-      expect(afterSecond.promptTokens, greaterThan(0), reason: '应读到真实输入 token');
-      expect(afterSecond.completionTokens, greaterThan(0), reason: '应读到真实输出 token');
-      expect(
-        afterSecond.hitRate,
-        inInclusiveRange(0.0, 1.0),
-        reason: '命中率须落在合法区间（尺子不得给出越界读数）',
-      );
-      expect(
-        afterSecond.cachedTokens,
-        greaterThanOrEqualTo(0),
-        reason: '缓存读数不得为负',
-      );
-    },
-    timeout: const Timeout(Duration(seconds: 180)),
-  );
+    expect(afterSecond.calls, 2, reason: '两次调用都应被采集');
+    expect(afterSecond.promptTokens, greaterThan(0), reason: '应读到真实输入 token');
+    expect(
+      afterSecond.completionTokens,
+      greaterThan(0),
+      reason: '应读到真实输出 token',
+    );
+    expect(
+      afterSecond.hitRate,
+      inInclusiveRange(0.0, 1.0),
+      reason: '命中率须落在合法区间（尺子不得给出越界读数）',
+    );
+    expect(
+      afterSecond.cachedTokens,
+      greaterThanOrEqualTo(0),
+      reason: '缓存读数不得为负',
+    );
+  }, timeout: const Timeout(Duration(seconds: 180)));
 }

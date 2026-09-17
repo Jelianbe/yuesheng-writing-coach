@@ -56,12 +56,7 @@ class FakeLlmClient extends LlmClient {
   }) async {
     callCount++;
     lastMessages = messages;
-    callback(
-      LlmStreamResponse(
-        content: _fullResponse,
-        isDone: false,
-      ),
-    );
+    callback(LlmStreamResponse(content: _fullResponse, isDone: false));
     callback(const LlmStreamResponse(content: '', isDone: true));
   }
 }
@@ -179,85 +174,76 @@ void main() {
     return manuscriptRepo.createManuscript(title: '测试书');
   }
 
-  test(
-    '#P2-8-1 outline 引用存在 → 大纲语境激活（L2Mode.outline 加载大纲诊断）',
-    () async {
-      final bookId = await createBook();
-      final file = await referenceRepo.createAttachedFile(
-        bookId: bookId,
-        fileName: '大纲.md',
-        fileRole: 'outline',
-        content: '第一卷：…',
-      );
-      await referenceRepo.addReference(sessionId, 'file', file.id);
+  test('#P2-8-1 outline 引用存在 → 大纲语境激活（L2Mode.outline 加载大纲诊断）', () async {
+    final bookId = await createBook();
+    final file = await referenceRepo.createAttachedFile(
+      bookId: bookId,
+      fileName: '大纲.md',
+      fileRole: 'outline',
+      content: '第一卷：…',
+    );
+    await referenceRepo.addReference(sessionId, 'file', file.id);
 
-      final llm = FakeLlmClient('好的，我们来看大纲。');
-      final chatService = buildChatService(llm);
-      await chatService.sendMessage(
-        sessionId,
-        '帮我看一下这个大纲的结构',
-        SendMessageCallbacks(
-          onStream: (_) {},
-          onComplete: (_, __) {},
-          onError: (_) {},
-        ),
-        defaultOptions,
-      );
+    final llm = FakeLlmClient('好的，我们来看大纲。');
+    final chatService = buildChatService(llm);
+    await chatService.sendMessage(
+      sessionId,
+      '帮我看一下这个大纲的结构',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
 
-      expect(llm.lastMessages, isNotNull);
-      expect(systemPromptOf(llm), contains('大纲结构诊断'));
-      expect(systemPromptOf(llm), contains('大纲'));
-    },
-  );
+    expect(llm.lastMessages, isNotNull);
+    expect(systemPromptOf(llm), contains('大纲结构诊断'));
+    expect(systemPromptOf(llm), contains('大纲'));
+  });
 
-  test(
-    '#P2-8-2 无引用（对照）→ 不加载大纲诊断',
-    () async {
-      final llm = FakeLlmClient('你好。');
-      final chatService = buildChatService(llm);
-      await chatService.sendMessage(
-        sessionId,
-        '你好',
-        SendMessageCallbacks(
-          onStream: (_) {},
-          onComplete: (_, __) {},
-          onError: (_) {},
-        ),
-        defaultOptions,
-      );
+  test('#P2-8-2 无引用（对照）→ 不加载大纲诊断', () async {
+    final llm = FakeLlmClient('你好。');
+    final chatService = buildChatService(llm);
+    await chatService.sendMessage(
+      sessionId,
+      '你好',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
 
-      expect(llm.lastMessages, isNotNull);
-      expect(systemPromptOf(llm), isNot(contains('大纲结构诊断')));
-    },
-  );
+    expect(llm.lastMessages, isNotNull);
+    expect(systemPromptOf(llm), isNot(contains('大纲结构诊断')));
+  });
 
-  test(
-    '#P2-8-3 general 文件引用 → 不触发大纲语境',
-    () async {
-      final bookId = await createBook();
-      final file = await referenceRepo.createAttachedFile(
-        bookId: bookId,
-        fileName: '素材.md',
-        fileRole: 'general',
-        content: '设定资料…',
-      );
-      await referenceRepo.addReference(sessionId, 'file', file.id);
+  test('#P2-8-3 general 文件引用 → 不触发大纲语境', () async {
+    final bookId = await createBook();
+    final file = await referenceRepo.createAttachedFile(
+      bookId: bookId,
+      fileName: '素材.md',
+      fileRole: 'general',
+      content: '设定资料…',
+    );
+    await referenceRepo.addReference(sessionId, 'file', file.id);
 
-      final llm = FakeLlmClient('收到。');
-      final chatService = buildChatService(llm);
-      await chatService.sendMessage(
-        sessionId,
-        '参考一下素材',
-        SendMessageCallbacks(
-          onStream: (_) {},
-          onComplete: (_, __) {},
-          onError: (_) {},
-        ),
-        defaultOptions,
-      );
+    final llm = FakeLlmClient('收到。');
+    final chatService = buildChatService(llm);
+    await chatService.sendMessage(
+      sessionId,
+      '参考一下素材',
+      SendMessageCallbacks(
+        onStream: (_) {},
+        onComplete: (_, __) {},
+        onError: (_) {},
+      ),
+      defaultOptions,
+    );
 
-      expect(llm.lastMessages, isNotNull);
-      expect(systemPromptOf(llm), isNot(contains('大纲结构诊断')));
-    },
-  );
+    expect(llm.lastMessages, isNotNull);
+    expect(systemPromptOf(llm), isNot(contains('大纲结构诊断')));
+  });
 }

@@ -11,6 +11,7 @@
 //   ⑧   onCountChanged 正确上报过滤 + 排序后行数
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -267,7 +268,7 @@ void main() {
           ),
         ),
       );
-      showAppendAssertionDialog(ctx, themeName: '灵气体系');
+      unawaited(showAppendAssertionDialog(ctx, themeName: '灵气体系'));
       await tester.pumpAndSettle();
 
       expect(find.text('追加设定 · 灵气体系'), findsOneWidget);

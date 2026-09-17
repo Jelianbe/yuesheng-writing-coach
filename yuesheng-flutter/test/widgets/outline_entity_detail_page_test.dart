@@ -63,7 +63,7 @@ void main() {
     final router = GoRouter(
       initialLocation: '/',
       routes: [
-        GoRoute(path: '/', builder: (_, __) => home),
+        GoRoute(path: '/', builder: (_, _) => home),
         GoRoute(
           path: AppRoutes.outlineDetail,
           builder: (_, state) {

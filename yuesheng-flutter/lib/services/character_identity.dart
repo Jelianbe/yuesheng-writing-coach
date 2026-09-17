@@ -174,10 +174,11 @@ class _IdentityUnion {
     while (_parent[root] != root) {
       root = _parent[root];
     }
-    while (_parent[i] != root) {
-      final next = _parent[i];
-      _parent[i] = root;
-      i = next;
+    var cur = i;
+    while (_parent[cur] != root) {
+      final next = _parent[cur];
+      _parent[cur] = root;
+      cur = next;
     }
     return root;
   }

@@ -98,9 +98,7 @@ Map<String, dynamic> _snapshotCase(String id, String file) {
   final t = tp.teacher;
   final task = t?.trainingTask;
   final cons = t != null ? checkTeacherConsistency(t) : null;
-  final leak = t != null
-      ? RegExp(r'P0\d{2}').hasMatch(t.naturalLanguage)
-      : false;
+  final leak = t != null && RegExp(r'P0\d{2}').hasMatch(t.naturalLanguage);
 
   return {
     'id': id,

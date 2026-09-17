@@ -32,11 +32,7 @@ void main() {
     });
 
     test('元文本：模型身份声明 → hasMetaText', () {
-      const samples = [
-        '我是一个AI，无法完成这个任务',
-        '好的，我作为语言模型来回答',
-        '作为一个AI，我不能直接',
-      ];
+      const samples = ['我是一个AI，无法完成这个任务', '好的，我作为语言模型来回答', '作为一个AI，我不能直接'];
       for (final s in samples) {
         expect(assessLlmOutput(s).hasMetaText, isTrue, reason: s);
         expect(assessLlmOutput(s).detail, contains('meta'));

@@ -672,7 +672,7 @@ void main() {
   // 取「上一轮 / 当前轮」，必须钉死「列表末位 = 最新一轮」这一语义，
   // 否则顺序一翻、趋势就反。以下用例不依赖 slice 巧合，直接锁定方向。
   group('A11 取数方向断言：最新/最旧不靠 slice 巧合', () {
-    DiagnosisRow _diag(String id, String severity) => DiagnosisRow(
+    DiagnosisRow diag(String id, String severity) => DiagnosisRow(
       id: id,
       sessionId: 's',
       messageId: 'm$id',
@@ -684,18 +684,18 @@ void main() {
     );
 
     test('ASC [旧L2→新L1] 趋势=improving（当前取最新一轮）', () {
-      final list = [_diag('a', 'L2'), _diag('b', 'L1')];
+      final list = [diag('a', 'L2'), diag('b', 'L1')];
       expect(service.classifyTrend(0.5, list), EvaluationTrend.improving);
     });
 
     test('ASC [旧L1→新L2] 趋势=worsening（当前取最新一轮）', () {
-      final list = [_diag('a', 'L1'), _diag('b', 'L2')];
+      final list = [diag('a', 'L1'), diag('b', 'L2')];
       expect(service.classifyTrend(0.5, list), EvaluationTrend.worsening);
     });
 
     test('方向反转保护：同一组严重度，逆序必得相反趋势', () {
-      final asc = [_diag('a', 'L2'), _diag('b', 'L1')]; // 末位 L1 → 改善
-      final desc = [_diag('b', 'L1'), _diag('a', 'L2')]; // 末位 L2 → 恶化
+      final asc = [diag('a', 'L2'), diag('b', 'L1')]; // 末位 L1 → 改善
+      final desc = [diag('b', 'L1'), diag('a', 'L2')]; // 末位 L2 → 恶化
       final tAsc = service.classifyTrend(0.5, asc);
       final tDesc = service.classifyTrend(0.5, desc);
       expect(tAsc, EvaluationTrend.improving);

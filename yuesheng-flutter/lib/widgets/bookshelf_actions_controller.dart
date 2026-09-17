@@ -12,6 +12,7 @@
 // 「组装回调 / 校验 / 落库」编排，全部 ≤50 行。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -40,16 +41,20 @@ class BookshelfActionsController {
       ).listChapters(ms.id);
       if (!host.context.mounted) return;
       if (chapters.isEmpty) {
-        host.context.push(
-          '/manuscript-detail',
-          extra: {'manuscriptId': ms.id, 'title': ms.title},
+        unawaited(
+          host.context.push(
+            '/manuscript-detail',
+            extra: {'manuscriptId': ms.id, 'title': ms.title},
+          ),
         );
         return;
       }
       final last = chapters.last; // listChapters 按 sort_order 升序
-      host.context.push(
-        '/writing/${last.id}',
-        extra: {'manuscriptId': ms.id, 'chapterTitle': last.title},
+      unawaited(
+        host.context.push(
+          '/writing/${last.id}',
+          extra: {'manuscriptId': ms.id, 'chapterTitle': last.title},
+        ),
       );
     } catch (_) {
       // 读取失败静默（书架加载正常时不会发生）
@@ -88,7 +93,9 @@ class BookshelfActionsController {
           .manuscripts
           .fold<int>(0, (min, m) => m.sortOrder < min ? m.sortOrder : min);
       await repo.updateSortOrder(ms.id, minOrder - 1);
-      host.ref.read(manuscriptStoreProvider.notifier).loadManuscripts();
+      unawaited(
+        host.ref.read(manuscriptStoreProvider.notifier).loadManuscripts(),
+      );
       if (!host.context.mounted) return;
       ScaffoldMessenger.of(host.context)
         ..hideCurrentSnackBar()

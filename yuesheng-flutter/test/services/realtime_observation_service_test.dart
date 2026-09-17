@@ -246,7 +246,7 @@ void main() {
     // 与 observation 均为空——若不写消息，用户看到「正在快速观察…」后
     // 直接消失，没有任何反馈。修复：写明确失败提示。
     final llm = _RecordingLlmClient(
-      fullResponse: '[YS_EDITOR]\n{\"bad\": json}\n[/YS_EDITOR]',
+      fullResponse: '[YS_EDITOR]\n{"bad": json}\n[/YS_EDITOR]',
     );
     final service = buildService(llm);
 

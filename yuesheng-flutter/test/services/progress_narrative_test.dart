@@ -4,7 +4,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/services/focus_card_builder.dart';
-import 'package:writingcoach/services/syndrome_skill_types.dart';
 import 'package:writingcoach/services/syndrome_skill_levels.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 

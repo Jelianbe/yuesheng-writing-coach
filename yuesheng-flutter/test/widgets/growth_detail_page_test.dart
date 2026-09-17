@@ -307,7 +307,12 @@ void main() {
       final s1 = await SessionRepository(db).createBlankSession();
       final s2 = await SessionRepository(db).createBlankSession();
       final s3 = await SessionRepository(db).createBlankSession();
-      Future<void> ins(String sid, String status, int offset, String sev) async {
+      Future<void> ins(
+        String sid,
+        String status,
+        int offset,
+        String sev,
+      ) async {
         await db
             .into(db.activeProblems)
             .insert(
@@ -335,7 +340,10 @@ void main() {
       expect(find.text('同一种问题，好转后是否再次出现'), findsOneWidget);
       // 同名症候同时出现在「症候分布」分组与复发率区块 → findsWidgets
       expect(find.text('用词重复'), findsWidgets);
-      expect(find.text('出现 3 次 · 好转 1 次 · 再犯 1 次 · 较上次 L3 → L2'), findsOneWidget);
+      expect(
+        find.text('出现 3 次 · 好转 1 次 · 再犯 1 次 · 较上次 L3 → L2'),
+        findsOneWidget,
+      );
       expect(find.text('50%'), findsOneWidget);
     });
   });

@@ -31,14 +31,13 @@ void main() {
     tempDir.deleteSync(recursive: true);
   });
 
-  AppDatabase openDb() =>
-      AppDatabase.forTesting(NativeDatabase(File(dbPath)));
+  AppDatabase openDb() => AppDatabase.forTesting(NativeDatabase(File(dbPath)));
 
   DatabaseBackupService service(AppDatabase db) => DatabaseBackupService(
-        database: db,
-        backupRootOverride: tempDir.path,
-        dbPathOverride: dbPath,
-      );
+    database: db,
+    backupRootOverride: tempDir.path,
+    dbPathOverride: dbPath,
+  );
 
   test('createBackup 生成备份文件 + backup_history success 记录', () async {
     final db = openDb();
@@ -87,8 +86,9 @@ void main() {
     await dir.create(recursive: true);
     // 造 13 份假备份（文件名带递增时间戳，越新字典序越大）
     for (var i = 0; i < 13; i++) {
-      File(p.join(dir.path, 'backup_${2026000000000 + i}_manual.db'))
-          .writeAsStringSync('x');
+      File(
+        p.join(dir.path, 'backup_${2026000000000 + i}_manual.db'),
+      ).writeAsStringSync('x');
     }
     // 先创建一份真实备份触发 cleanup（校验只删假备份不动新备份）
     final realPath = await s.createBackup(type: BackupType.manual);
@@ -99,11 +99,7 @@ void main() {
         .where((f) => f.path.endsWith('.db'))
         .toList();
     expect(remaining.length, 10, reason: '应只保留最近 10 份');
-    expect(
-      remaining.any((f) => f.path == realPath),
-      true,
-      reason: '最新备份不应被清理',
-    );
+    expect(remaining.any((f) => f.path == realPath), true, reason: '最新备份不应被清理');
   });
 
   test('listBackups 按创建时间倒序', () async {

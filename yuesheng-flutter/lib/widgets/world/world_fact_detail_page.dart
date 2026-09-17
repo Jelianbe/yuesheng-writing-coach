@@ -14,6 +14,7 @@
 // ref.read(appDatabaseProvider) 直建服务/仓储；**不建 provider**。
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -119,7 +120,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
       evidence: form.evidence,
     );
     if (!mounted) return;
-    if (ok) _load();
+    if (ok) unawaited(_load());
   }
 
   Future<void> _editDescription() async {
@@ -135,7 +136,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
       name: _row!.name,
       description: next,
     );
-    _load();
+    unawaited(_load());
   }
 
   /// 归档本主题（R5）：确认弹窗 → 软归档 → §6-F SnackBar → 返回列表。

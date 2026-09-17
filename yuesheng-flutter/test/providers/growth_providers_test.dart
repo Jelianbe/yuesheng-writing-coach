@@ -87,7 +87,7 @@ void main() {
           confidence: 0.7,
         ),
       );
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
       // 第二条诊断(新)
       await diagRepo.commitDiagnosis(
         DiagnosisInput(

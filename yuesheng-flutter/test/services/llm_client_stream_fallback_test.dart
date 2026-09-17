@@ -102,7 +102,7 @@ class _Sink {
 /// 回调采集器：分帧记录 content token 与 isDone 投递次数。
 class _Collector {
   final List<String> tokens = [];
-  var isDoneCount = 0;
+  int isDoneCount = 0;
 
   void call(LlmStreamResponse resp) {
     if (resp.isDone) {
@@ -385,8 +385,7 @@ void main() {
     });
   });
   group('A-1b 五②：C94 空流尝试补零 token 埋点', () {
-    test('deepseek 双空流 → sink 收到 2 条 streamEmptyFallback（零 token）',
-        () async {
+    test('deepseek 双空流 → sink 收到 2 条 streamEmptyFallback（零 token）', () async {
       final adapter = _SseScriptAdapter([
         _sse(_kPureReasoningStream),
         _sse(_kPureReasoningStream),
@@ -398,8 +397,7 @@ void main() {
         collector.call,
       );
       expect(adapter.requestBodies, hasLength(2));
-      expect(sink.received, hasLength(2),
-          reason: '两次空流尝试各补一条埋点');
+      expect(sink.received, hasLength(2), reason: '两次空流尝试各补一条埋点');
       for (final (kind, usage) in sink.received) {
         expect(kind, LlmUsageKind.stream);
         expect(usage.context?.purpose, LlmCallPurpose.streamEmptyFallback);
@@ -421,10 +419,15 @@ void main() {
         collector.call,
       );
       expect(adapter.requestBodies, hasLength(2));
-      expect(sink.received, hasLength(1),
-          reason: '尝试 2 有 content ⇒ 走正常流式埋点路径，不再补零 token');
-      expect(sink.received.single.$2.context?.purpose,
-          LlmCallPurpose.streamEmptyFallback);
+      expect(
+        sink.received,
+        hasLength(1),
+        reason: '尝试 2 有 content ⇒ 走正常流式埋点路径，不再补零 token',
+      );
+      expect(
+        sink.received.single.$2.context?.purpose,
+        LlmCallPurpose.streamEmptyFallback,
+      );
     });
 
     test('半输出不降级 → 无 streamEmptyFallback 埋点', () async {
