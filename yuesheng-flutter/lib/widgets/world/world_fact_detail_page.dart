@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../setting/setting_description_card.dart';
+import '../setting/setting_extract_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_theme.dart';
@@ -78,6 +79,30 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
       _assertions = WorldFactRepository.parseAssertions(row.assertions);
       _loading = false;
     });
+  }
+
+  /// 提炼断言落库：upsertWorld 增量合并（不覆盖既有）+ 刷新。
+  Future<int> _extractAssertions(List<CharacterAssertion> extracted) async {
+    final row = _row;
+    if (row == null) return 0;
+    await WorldFactRepository(ref.read(appDatabaseProvider)).upsertWorld(
+      manuscriptId: widget.manuscriptId,
+      name: row.name,
+      assertions: extracted,
+    );
+    await _load();
+    return _assertions.length;
+  }
+
+  /// 「从正文提炼断言」条（A2：正文非空才显示）。
+  Widget _buildExtractBar(WorldFact row) {
+    return SettingExtractBar(
+      manuscriptId: widget.manuscriptId,
+      entityName: row.name,
+      description: row.description,
+      chapter: row.firstSeenChapter,
+      onExtracted: _extractAssertions,
+    );
   }
 
   /// ＋ 追加设定（R4）：表单同款（含原文依据）→ 服务追加 → 重载。
@@ -182,6 +207,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
                   description: row.description,
                   onEdit: _editDescription,
                 ),
+                _buildExtractBar(row),
                 ..._assertionWidgets(),
                 _buildProgressionsSection(),
                 _buildTagsSection(),

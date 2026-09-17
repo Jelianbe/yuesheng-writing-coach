@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 
 import '../setting/setting_description_card.dart';
+import '../setting/setting_extract_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -146,6 +147,29 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     });
   }
 
+  /// 提炼断言落库：upsertCharacter 增量合并（不覆盖既有）+ 刷新。
+  Future<int> _extractAssertions(List<CharacterAssertion> extracted) async {
+    final repo = CharacterFactRepository(ref.read(appDatabaseProvider));
+    await repo.upsertCharacter(
+      manuscriptId: widget.manuscriptId,
+      name: _row!.name,
+      assertions: extracted,
+    );
+    await _load();
+    return _assertions.length;
+  }
+
+  /// 「从正文提炼断言」条（A2：正文非空才显示）。
+  Widget _buildExtractBar(CharacterFact row) {
+    return SettingExtractBar(
+      manuscriptId: widget.manuscriptId,
+      entityName: row.name,
+      description: row.description,
+      chapter: row.firstSeenChapter,
+      onExtracted: _extractAssertions,
+    );
+  }
+
   /// 标签区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
   Widget _buildTagsSection() {
     return SettingTagsSection(
@@ -221,6 +245,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   description: row.description,
                   onEdit: _editDescription,
                 ),
+                _buildExtractBar(row),
                 _buildRecentBanner(),
                 _buildConsistencyCards(),
                 CharacterAssertionGroups(
