@@ -10,6 +10,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
@@ -18,6 +19,9 @@ import 'package:writingcoach/data/repositories/setting_link_repository.dart'
 import 'package:writingcoach/data/repositories/setting_tag_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/router/app_routes.dart';
+import 'package:writingcoach/types/character_types.dart';
+import 'package:writingcoach/widgets/character/character_detail_page.dart';
 import 'package:writingcoach/widgets/setting/setting_tag_overview_page.dart';
 
 void main() {
@@ -46,6 +50,34 @@ void main() {
       child: MaterialApp(
         home: SettingTagOverviewPage(manuscriptId: manuscriptId),
       ),
+    );
+  }
+
+  /// 带路由的 host（跳转测试用）：总览页 → 角色/世界观详情页。
+  Widget buildHost() {
+    final router = GoRouter(
+      initialLocation: AppRoutes.settingTagOverview,
+      routes: [
+        GoRoute(
+          path: AppRoutes.settingTagOverview,
+          builder: (_, __) =>
+              SettingTagOverviewPage(manuscriptId: manuscriptId),
+        ),
+        GoRoute(
+          path: AppRoutes.characterDetail,
+          builder: (_, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            return CharacterDetailPage(
+              characterId: extra['id'] as String? ?? '',
+              manuscriptId: extra['manuscriptId'] as String? ?? '',
+            );
+          },
+        ),
+      ],
+    );
+    return UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp.router(routerConfig: router),
     );
   }
 
@@ -112,5 +144,61 @@ void main() {
     final lin = tester.getTopLeft(find.text('林晚'));
     final wu = tester.getTopLeft(find.text('雾都'));
     expect(lin.dy < wu.dy, true, reason: '角色条目应排在世界观条目前');
+  });
+
+  testWidgets('#4 e2e：AI 抽取落库（pending）→ 打标签 → 总览展示', (tester) async {
+    // 模拟 AI 抽取落库（_persistCharacterFacts 同款：断言 pending 待确认）
+    await CharacterFactRepository(db).upsertCharacter(
+      manuscriptId: manuscriptId,
+      name: '林晚',
+      firstSeenChapter: 1,
+      assertions: [
+        CharacterAssertion(
+          attribute: '身份',
+          value: '守夜人',
+          chapter: 1,
+          timestamp: 1,
+          status: 'pending',
+          source: 'ai',
+        ),
+      ],
+    );
+    final charId = (await CharacterFactRepository(
+      db,
+    ).getCharacter(manuscriptId, '林晚'))!.id;
+    // 用户打标签（AI 写入条目与用户组织链路互通）
+    await SettingTagRepository(
+      db,
+    ).addTag(manuscriptId, SettingEntityKind.character, charId, '主角团');
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+    expect(find.text('#主角团 (1)'), findsOneWidget);
+    expect(find.text('林晚'), findsOneWidget);
+    // 条目已落库且标签链路生效 → AI 写入未失效
+    final row = await CharacterFactRepository(
+      db,
+    ).getCharacter(manuscriptId, '林晚');
+    expect(row, isNotNull);
+    expect(row!.assertions, contains('pending'));
+  });
+
+  testWidgets('#5 跳转：总览点击角色条目 → 角色详情页', (tester) async {
+    await CharacterFactRepository(db).upsertCharacter(
+      manuscriptId: manuscriptId,
+      name: '林晚',
+      firstSeenChapter: 1,
+    );
+    final charId = (await CharacterFactRepository(
+      db,
+    ).getCharacter(manuscriptId, '林晚'))!.id;
+    await SettingTagRepository(
+      db,
+    ).addTag(manuscriptId, SettingEntityKind.character, charId, '主角团');
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('林晚'));
+    await tester.pumpAndSettle();
+    // 角色详情页 AppBar 标题 = 角色名
+    expect(find.widgetWithText(AppBar, '林晚'), findsOneWidget);
   });
 }
