@@ -64,6 +64,7 @@ void main() {
     WidgetTester tester, {
     String? msId,
     VoidCallback? onClose,
+    VoidCallback? onOpenCoach,
   }) async {
     final scaffoldKey = GlobalKey<ScaffoldState>();
     await tester.pumpWidget(
@@ -75,6 +76,7 @@ void main() {
             endDrawer: OutlineDrawer(
               manuscriptId: msId ?? manuscriptId,
               onClose: onClose ?? () {},
+              onOpenCoach: onOpenCoach,
             ),
             body: const SizedBox.shrink(),
           ),
@@ -86,13 +88,20 @@ void main() {
   }
 
   /// 直接嵌入内容体（不套任何抽屉外壳）。
-  Future<void> pumpContentView(WidgetTester tester, {String? msId}) async {
+  Future<void> pumpContentView(
+    WidgetTester tester, {
+    String? msId,
+    VoidCallback? onOpenCoach,
+  }) async {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
           home: Scaffold(
-            body: OutlineContentView(manuscriptId: msId ?? manuscriptId),
+            body: OutlineContentView(
+              manuscriptId: msId ?? manuscriptId,
+              onOpenCoach: onOpenCoach,
+            ),
           ),
         ),
       ),
@@ -283,6 +292,35 @@ void main() {
     expect(find.text('还没有大纲'), findsOneWidget);
     // 负例：库里确实有实体，但空 id 不得把它渲染出来
     expect(find.text('林晚'), findsNothing);
+  });
+
+  // ── 6b. N4-3 空态可操作 ────────────────────────────────────────
+  group('N4-3：空态可操作（只说不做 → 有按钮）', () {
+    testWidgets('#N4-3 注入 onOpenCoach → 空态出现「打开教练面板」且点击回调被调用', (tester) async {
+      var called = 0;
+      await pumpDrawer(tester, onOpenCoach: () => called++);
+
+      // 空态文案仍在（不改变既有契约）
+      expect(find.text('还没有大纲'), findsOneWidget);
+      // 主行动按钮在场，且以 Key 可定位（供端到端用例复用）
+      final btn = find.byKey(const Key('outline-empty-open-coach'));
+      expect(btn, findsOneWidget);
+      expect(find.text('打开教练面板'), findsOneWidget);
+
+      await tester.tap(btn);
+      await tester.pumpAndSettle();
+
+      expect(called, 1);
+    });
+
+    testWidgets('#N4-3 未注入 onOpenCoach → 不渲染按钮（独立承载零变化）', (tester) async {
+      // 负例：既有七处调用点（含 pumpContentView）都不传该参数
+      await pumpContentView(tester);
+
+      expect(find.text('还没有大纲'), findsOneWidget);
+      expect(find.byKey(const Key('outline-empty-open-coach')), findsNothing);
+      expect(find.text('打开教练面板'), findsNothing);
+    });
   });
 
   // ── 7. 章号口径（子批 N12-F1 · ADR-C95）───────────────────────

@@ -49,11 +49,17 @@ class WritingPageChapterNavController {
   }
 
   /// 批次83：大纲边写边看（右侧抽屉；每次打开重建 + 失效缓存）
-  Widget buildOutlineDrawer() {
+  ///
+  /// N4-3：[onOpenCoach] 注入给空态的「打开教练面板」按钮；
+  /// 为 null 时抽屉空态与原实现逐字等价（不渲染按钮）。
+  Widget buildOutlineDrawer({VoidCallback? onOpenCoach}) {
     return OutlineDrawer(
       key: ValueKey('outline-${_host.outlineOpenCount}'),
       manuscriptId: _host.resolvedManuscriptId,
       onClose: handleCloseOutline,
+      onOpenCoach: onOpenCoach == null
+          ? null
+          : () => handleCloseOutlineThen(onOpenCoach),
     );
   }
 
@@ -72,6 +78,27 @@ class WritingPageChapterNavController {
     });
   }
 
+  /// N4-1：AppBar 面包屑点击 → 章节切换（打开既有章节树抽屉）。
+  ///
+  /// 与 [handleOpenChapterTree]（⋮ 菜单入口）同目标，但**多一层前置校验**：
+  /// 无 `manuscriptId` 时抽屉只能渲染空态、「新建章节」也必然失败 ⇒
+  /// 直接给提示而不打开，避免「点了没反应」的静默失败
+  /// （文案复用 `openCharacters` / `openWorlds` 既有范式）。
+  ///
+  /// **刻意不改 [handleOpenChapterTree] 本身**：该路径已被
+  /// `writing_page_test.dart` 的 `#83-1` 等直点用例钉住，本批只新增更快路径、
+  /// 不替换旧路径（渐进优先）。
+  void handleTapBreadcrumb() {
+    if (_host.resolvedManuscriptId == null) {
+      if (!_host.mounted) return;
+      ScaffoldMessenger.of(_host.context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('章节加载中，请稍后再试')));
+      return;
+    }
+    handleOpenChapterTree();
+  }
+
   /// 批次83：⋮ 菜单「大纲」→ 打开大纲抽屉（endDrawer）
   void handleOpenOutline() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,6 +109,19 @@ class WritingPageChapterNavController {
   /// 批次83：大纲抽屉右上角关闭
   void handleCloseOutline() {
     Navigator.of(_host.context).pop(); // 关闭 endDrawer（LocalHistoryEntry）
+  }
+
+  /// N4-3：关闭 endDrawer **之后**再执行 [action]。
+  ///
+  /// 顺序紧要有因：窄屏下教练面板是**底部覆盖层**、大纲是 `endDrawer`，
+  /// 两个覆盖层同时在场会互相遮挡 ⇒ 先 pop 掉抽屉，待退场帧再开面板
+  /// （`addPostFrameCallback`，同 `handleOpenChapterTree` 的手法）。
+  void handleCloseOutlineThen(VoidCallback action) {
+    Navigator.of(_host.context).pop(); // 关闭 endDrawer（LocalHistoryEntry）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_host.mounted) return;
+      action();
+    });
   }
 
   /// 批次83：抽屉点击某章 → 关抽屉 + 快速跳转（当前章仅关抽屉）

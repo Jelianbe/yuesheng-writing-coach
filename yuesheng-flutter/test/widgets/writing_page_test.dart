@@ -55,6 +55,7 @@ import 'package:writingcoach/widgets/version_time_machine_sheet.dart';
 import 'package:writingcoach/widgets/writing_coach_panel.dart';
 import 'package:writingcoach/widgets/writing_curve_chart.dart';
 import 'package:writingcoach/widgets/writing_page.dart';
+import 'package:writingcoach/widgets/writing/view/writing_page_breadcrumb.dart';
 import 'package:writingcoach/widgets/editing/focus_aware_editing_controller.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
@@ -1621,6 +1622,25 @@ void main() {
 
       expect(find.text('还没有大纲'), findsOneWidget);
       expect(find.textContaining('去教练面板做次诊断'), findsOneWidget);
+    });
+
+    testWidgets('N4-3 大纲空态「打开教练面板」→ 关抽屉 + 展开面板（端到端）', (tester) async {
+      // 预创建会话（面板 _initSession 复用，避免空 manuscript_id 外键失败）
+      await SessionRepository(
+        db,
+      ).getOrCreateSessionForChapter(manuscriptId, chapterId);
+      await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
+      await tester.pumpAndSettle();
+
+      await openOutline(tester);
+      expect(find.byType(Drawer), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('outline-empty-open-coach')));
+      await tester.pumpAndSettle();
+
+      // 两个覆盖层不同时在场：抽屉已退场 + 教练面板已展开
+      expect(find.byType(Drawer), findsNothing);
+      expect(find.byType(WritingCoachPanel), findsOneWidget);
     });
 
     testWidgets('#83-7 有实体 → 抽屉按类型分组展示 + 印象 + 第N章标签', (tester) async {
@@ -3508,6 +3528,72 @@ void main() {
 
       // AppBar 面包屑 + 标题大区块 = 2 处
       expect(find.text('第一章：启程'), findsNWidgets(2));
+    });
+  });
+
+  group('N4-1：面包屑提级为章节切换一级入口', () {
+    testWidgets('#N4-1 点击面包屑 → 章节树抽屉打开（1 击，不经 ⋮）', (tester) async {
+      await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
+      await tester.pumpAndSettle();
+
+      // 前置：改造前面包屑是纯 Text（不可点）；现须为可点区且命中区 ≥48dp
+      final target = find.byKey(WritingPageBreadcrumb.tapTargetKey);
+      expect(target, findsOneWidget);
+      expect(tester.getSize(target).height, greaterThanOrEqualTo(48));
+
+      // 命中区与 leading 返回键不重叠（title 起点在 leading 之后）
+      final backRect = tester.getRect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.widgetWithIcon(IconButton, Icons.arrow_back),
+        ),
+      );
+      final targetRect = tester.getRect(target);
+      expect(targetRect.left, greaterThanOrEqualTo(backRect.right));
+
+      // 1 击即达（改造前须 ⋮ →「章节列表」2 击）
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(of: find.byType(Drawer), matching: find.text('章节列表')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: find.byType(Drawer), matching: find.text('第一章：启程')),
+        findsOneWidget,
+      );
+      // 既有 ⋮ 入口保留（本批是新增更快路径，不是替换）
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
+    });
+
+    testWidgets('#N4-1 未分卷（volumeId 为 null）→ 面包屑同样可点', (tester) async {
+      await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
+      await tester.pumpAndSettle();
+
+      // 未分卷 ⇒ 面包屑仅章名，但 manuscriptId 仍在 ⇒ 必须同样可点（行为一致）
+      expect(find.text('第一章：启程'), findsNWidgets(2));
+      await tester.tap(find.byKey(WritingPageBreadcrumb.tapTargetKey));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(Drawer), findsOneWidget);
+    });
+
+    testWidgets('#N4-1 无 manuscriptId → 提示且不打开抽屉、不崩（负例）', (tester) async {
+      // 章节不存在 ⇒ 加载失败 ⇒ resolvedManuscriptId 反查亦无源（null）
+      await tester.pumpWidget(buildWritingPage(id: '__missing__'));
+      await tester.pumpAndSettle();
+
+      // 面包屑不随 body 三态消失（AppBar 恒定渲染）
+      final target = find.byKey(WritingPageBreadcrumb.tapTargetKey);
+      expect(target, findsOneWidget);
+
+      await tester.tap(target);
+      await tester.pumpAndSettle();
+
+      // 不静默失败：给出与既有范式一致的提示，且不打开空抽屉
+      expect(find.text('章节加载中，请稍后再试'), findsOneWidget);
+      expect(find.byType(Drawer), findsNothing);
     });
   });
 

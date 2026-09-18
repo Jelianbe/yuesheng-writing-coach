@@ -422,5 +422,39 @@ void main() {
       );
       expect(find.text('✓ 已保存 15:32'), findsOneWidget);
     });
+
+    // ─────────────────────────────────────────────────────────────
+    // N4-2：首屏容量契约（防「重分组 / 加项」把既有直点路径顶掉）
+    //
+    // 来历：N4-2 原计划按语义重分组（世界观上移与角色同组）。**实测否掉了它**——
+    // 默认 0.55 下 sheet 高 351.6dp，「章节列表/大纲/角色/全文搜索」四行已
+    // **恰好占满**（全文搜索底 599.4 vs 视口底 600.0，余量 0.6dp），
+    // 在其之前插入任何一行（项 48 / 组头 23）都会把它顶出首屏，
+    // 而 `writing_menu_sheet_test.dart` 与 `writing_page_test.dart:1947`
+    // 对它是**直点**（非 scrollUntilVisible）。
+    //
+    // ⇒ 本断言把「实测事实」升级为**契约**：重分组/加项时必须先解决容量。
+    // ─────────────────────────────────────────────────────────────
+    testWidgets('N4-2 首屏容量契约：默认高度下 4 项直点入口必须在首屏内', (tester) async {
+      await pumpSheet(tester, lastSavedAt: null, onDiagnose: () {});
+
+      final sheet = tester.getRect(find.byType(BottomSheet));
+      // 正例：这四项在既有测试里是 tester.tap 直点 ⇒ 必须整行落在可视区内
+      for (final label in const ['章节列表', '大纲', '角色', '全文搜索']) {
+        final r = tester.getRect(find.text(label));
+        expect(
+          r.bottom,
+          lessThanOrEqualTo(sheet.bottom + 0.5),
+          reason: '「$label」被顶出首屏 ⇒ 既有直点路径失效（N4-2 实测约束）',
+        );
+      }
+      // 阴性对照（§4-28 鉴别力）：本次断言若只是「全都在首屏」就会被它证伪——
+      // 滚动区外的项**本来就不在**首屏，它必须是「不在」。
+      expect(
+        tester.getRect(find.text('版本时光机')).bottom,
+        greaterThan(sheet.bottom),
+        reason: '阴性对照失败 ⇒ 本断言未真正测「首屏」边界',
+      );
+    });
   });
 }

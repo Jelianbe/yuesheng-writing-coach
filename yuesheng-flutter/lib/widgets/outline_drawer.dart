@@ -37,10 +37,17 @@ class OutlineDrawer extends StatelessWidget {
   /// 右上角关闭按钮（由 WritingPage 关闭 endDrawer）
   final VoidCallback onClose;
 
+  /// N4-3：空态「打开教练面板」回调（null = 不渲染该按钮）。
+  ///
+  /// **可选参数** ⇒ N12 记录的「公开构造器签名原样保留（manuscriptId / onClose）」
+  /// 仍然成立：既有消费者与既有测试**零改动**。
+  final VoidCallback? onOpenCoach;
+
   const OutlineDrawer({
     super.key,
     required this.manuscriptId,
     required this.onClose,
+    this.onOpenCoach,
   });
 
   @override
@@ -53,7 +60,12 @@ class OutlineDrawer extends StatelessWidget {
           children: [
             _DrawerHeader(onClose: onClose),
             const Divider(height: 1),
-            Expanded(child: OutlineContentView(manuscriptId: manuscriptId)),
+            Expanded(
+              child: OutlineContentView(
+                manuscriptId: manuscriptId,
+                onOpenCoach: onOpenCoach,
+              ),
+            ),
           ],
         ),
       ),

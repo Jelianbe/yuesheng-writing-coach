@@ -48,7 +48,10 @@ class WritingPageScaffold extends ConsumerWidget {
       drawer: controllers.chapterNav.buildChapterTreeDrawer(),
       onDrawerChanged: controllers.chapterNav.handleDrawerChanged,
       // 批次83：大纲边写边看（右侧抽屉；每次打开重建 + 失效缓存）
-      endDrawer: controllers.chapterNav.buildOutlineDrawer(),
+      // N4-3：空态注入「打开教练面板」（先关抽屉再开面板，见控制器注释）
+      endDrawer: controllers.chapterNav.buildOutlineDrawer(
+        onOpenCoach: controllers.fab.toggleAiPanel,
+      ),
       onEndDrawerChanged: controllers.chapterNav.handleEndDrawerChanged,
       appBar: _buildAppBar(ref),
       // 批次88-2：对话按钮从 Scaffold FAB 改为 body Stack 内可拖动浮层
@@ -197,6 +200,9 @@ class WritingPageScaffold extends ConsumerWidget {
         volumeId: state.chapter?.volumeId,
         manuscriptId: host.resolvedManuscriptId,
         color: fg,
+        // N4-1：面包屑提级为「章节切换」一级入口（点击开既有章节树抽屉，
+        // 即 ⋮「章节列表」的同一目标；⋮ 里的旧入口保留不动）
+        onTap: controllers.chapterNav.handleTapBreadcrumb,
       ),
       progressBar: WritingGoalProgressBar(
         goalWords: state.goalWords,

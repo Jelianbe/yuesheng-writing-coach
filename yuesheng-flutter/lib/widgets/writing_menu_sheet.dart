@@ -8,23 +8,35 @@
 // 移入排版设置 EditorSettingsSheet（reactive SwitchListTile），菜单只留
 // 跳转入口。菜单项分三组：写作工具 / 教学 / 设置。
 //
-// 菜单内容（13 项 = 10 入口 + 教练面板 + 取消 + 保存状态行）：
+// 菜单内容（N4-2 校正：**15 行 = 13 入口 + 取消 + 保存状态行**，
+// 其中可点 `_MenuItem` **14 个** + 不可点保存状态行 1 个 + 组头 3 个）：
 //   1. 保存状态行（不可点）
-//   ─── 写作工具 ───
+//   ─── 写作工具 ───（组头 1）
 //   2. 章节列表（批次83：章节树抽屉入口）→ onOpenChapterTree
 //   3. 大纲（批次83：大纲边写边看入口）→ onOpenOutline
-//   4. 全文搜索（批次96-11：整本作品章节标题+正文搜索，命中片段+高亮+跳转定位）→ onOpenFullTextSearch
-//   5. 查找替换（批次84-2：当前章查找替换入口）→ onOpenFindReplace
-//   6. 回收板（批次86-1：删除/剪切长文本找回）→ onOpenRecycleBin
-//   7. 快捷短语（批次85-3：常用语管理 + 光标插入）→ onOpenQuickPhrases
-//   ─── 教学 ───
-//   8. 当前文风（批次85-4：风格画像五维展示）→ onOpenStyleProfile
-//   9. 写作统计（批次85-5：近 14 天写作曲线）→ onOpenWritingStats
-//   10. 打开教练面板（竹青加粗）→ onDiagnose
-//   ─── 设置 ───
-//   11. 排版设置（批次82；含行段聚焦/智能标点/对话按钮开关）→ onOpenSettings
-//   12. 版本时光机（批次82）→ onOpenVersions
-//   13. 取消
+//   4. 角色（C78 批次3：角色页独立路由）→ onOpenCharacters
+//   5. 全文搜索（批次96-11：整本作品章节搜索）→ onOpenFullTextSearch
+//   6. 查找替换（批次84-2：当前章查找替换）→ onOpenFindReplace
+//   7. 回收板（批次86-1：删除/剪切长文本找回）→ onOpenRecycleBin
+//   8. 快捷短语（批次85-3：常用语管理 + 光标插入）→ onOpenQuickPhrases
+//   9. 世界观（W1：世界观设定独立路由 /worlds）→ onOpenWorlds
+//   ─── 教学 ───（组头 2）
+//   10. 当前文风（批次85-4：风格画像五维展示）→ onOpenStyleProfile
+//   11. 写作统计（批次85-5：近 14 天写作曲线）→ onOpenWritingStats
+//   12. 打开教练面板（竹青加粗）→ onDiagnose
+//   ─── 设置 ───（组头 3）
+//   13. 排版设置（批次82；含行段聚焦/智能标点/对话按钮开关）→ onOpenSettings
+//   14. 版本时光机（批次82）→ onOpenVersions
+//   15. 取消
+//
+// ★ 首屏容量实测（N4-2，测试视口 800×600、默认 initialHeight 0.55）：
+//   sheet 351.6dp（top 248.4）· 项高 48 · 组头高 23 ·
+//   「章节列表/大纲/角色/全文搜索」四行**恰好占满**可用高度
+//   （全文搜索底 599.4 vs 视口底 600.0 ⇒ **余量 0.6dp**）。
+//   ⇒ 在「全文搜索」之前**插入任何一行（项 48 / 组头 23）都会顶掉它**，
+//     而 `writing_menu_sheet_test.dart:356` 与
+//     `writing_page_test.dart:1947`（openFullTextSearch）都是**直点**该行。
+//   ⇒ **改分组/加项前必须先解决容量**（见 `.ai/DECISIONS.md`）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';

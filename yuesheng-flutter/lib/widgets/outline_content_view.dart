@@ -44,7 +44,17 @@ class OutlineContentView extends ConsumerWidget {
   /// 所属作品 ID（null/空 = 无法加载，走空态）
   final String? manuscriptId;
 
-  const OutlineContentView({super.key, required this.manuscriptId});
+  /// N4-3：空态的**主行动**——去教练面板做次诊断（null = 不渲染该按钮）
+  ///
+  /// 缺省为 null：既保证 `writePages` 之外的独立承载（如被嵌进别的页面）
+  /// 与原行为**逐字等价**，也让「动作」永远由**有路由权限的外壳**注入。
+  final VoidCallback? onOpenCoach;
+
+  const OutlineContentView({
+    super.key,
+    required this.manuscriptId,
+    this.onOpenCoach,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,7 +69,7 @@ class OutlineContentView extends ConsumerWidget {
       msId.isEmpty ? const <Chapter>[] : ref.watch(chapterListProvider(msId)),
     );
 
-    if (viewAsync == null) return const _OutlineEmpty();
+    if (viewAsync == null) return _OutlineEmpty(onOpenCoach: onOpenCoach);
     return viewAsync.when(
       loading: () => const Center(
         child: SizedBox(
@@ -71,9 +81,9 @@ class OutlineContentView extends ConsumerWidget {
           ),
         ),
       ),
-      error: (e, _) => const _OutlineEmpty(),
+      error: (e, _) => _OutlineEmpty(onOpenCoach: onOpenCoach),
       data: (view) => view.entities.isEmpty
-          ? const _OutlineEmpty()
+          ? _OutlineEmpty(onOpenCoach: onOpenCoach)
           : _OutlineList(
               view: view,
               chapterNoMap: chapterNoMap,
@@ -457,30 +467,47 @@ class _Tag extends StatelessWidget {
 }
 
 /// 空态：还没有大纲记忆 → 引导去教练面板诊断
+///
+/// N4-3：从「只说不做」改为「可操作」——文案本就写着「去教练面板做次诊断」，
+/// 但此前**没有任何按钮**承载该动作。现由外壳注入 [onOpenCoach]；
+/// 未注入时（独立承载）渲染同原实现，**零变化**。
 class _OutlineEmpty extends StatelessWidget {
-  const _OutlineEmpty();
+  /// N4-3：主行动回调（null = 不渲染按钮）
+  final VoidCallback? onOpenCoach;
+
+  const _OutlineEmpty({this.onOpenCoach});
 
   @override
   Widget build(BuildContext context) {
+    final onOpenCoach = this.onOpenCoach;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.article_outlined,
               size: 40,
               color: AppColors.placeholder,
             ),
-            SizedBox(height: 12),
-            Text('还没有大纲', style: AppTextStyles.body),
-            SizedBox(height: 4),
-            Text(
+            const SizedBox(height: 12),
+            const Text('还没有大纲', style: AppTextStyles.body),
+            const SizedBox(height: 4),
+            const Text(
               '写一段后去教练面板做次诊断，AI 会帮你记住人物、设定和情节梗概',
               textAlign: TextAlign.center,
               style: AppTextStyles.caption,
             ),
+            if (onOpenCoach != null) ...[
+              const SizedBox(height: 20),
+              ElevatedButton(
+                key: const Key('outline-empty-open-coach'),
+                onPressed: onOpenCoach,
+                style: AppButtonStyles.primary,
+                child: const Text('打开教练面板'),
+              ),
+            ],
           ],
         ),
       ),
