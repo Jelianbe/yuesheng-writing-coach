@@ -73,6 +73,3 @@ screen_*.png
 
 # 门禁产物（scripts/gate.sh 输出）
 outputs/
-
-# 门禁产物（scripts/gate.sh 输出）
-outputs/
