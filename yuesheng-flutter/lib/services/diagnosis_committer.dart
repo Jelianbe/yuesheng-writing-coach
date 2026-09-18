@@ -864,6 +864,11 @@ class DiagnosisCommitter {
   /// 用户来源/rejected 的断言同样需要它（否则它们永远是「读不出身份」的存量行）。
   /// 顺带补齐原先漏传的 `negative`（与类型层 `withStatus`、服务层 `_withStatus`
   /// 同族的保真缺口：既然逐字段重建，就不该有字段靠默认值兜底）。
+  ///
+  /// ⚠️ [CharacterAssertion.chapter] 此处**原样透传** AI 协议值（= 标称号），
+  /// **刻意不归一**：R1′ 不改已存值，且 `FactStaleService.tripleKey` 的去重键
+  /// 正建立在「同一写入方重复抽取时该字段稳定」之上（`.ai/DECISIONS §4-40`）。
+  /// 归一后的身份只进新载体 `chapterSortOrder`。
   static List<CharacterAssertion> _asAiPending(
     List<CharacterAssertion> input,
     Map<int?, int> identities,

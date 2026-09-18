@@ -66,6 +66,33 @@ class FactStaleService {
   }
 
   /// 三元组键：(attribute, value, chapter)——同三元组的断言视为同一条事实。
+  ///
+  /// 消费方（4 处，改本函数前**逐个过一遍**）：[mergeAssertions] 的两个分支、
+  /// [mergeForTransfer]、`CharacterEditorService._sameAssertion`（键 + timestamp）。
+  ///
+  /// ★ **第三项刻意取旧列 [CharacterAssertion.chapter] 原文，不是 [CharacterAssertion.chapterIdentity]**
+  ///   —— `X1` 侦察后裁定（`.ai/DECISIONS §2` X1 行 / `.ai/DECISIONS §4-40`）。理由不是
+  ///   「懒得改」，而是两类判据的**比较方向相反**：
+  ///   - [belongsToChapter] 是**跨源比较**：拿「已存的值」比「外部传入的章号」
+  ///     ⇒ 两侧基号不同（旧列 = AI 标称号，参数 = `sort_order`）⇒ 干净稿上**恒假**。
+  ///     那是真缺陷，故 phase 1 改比 `chapterIdentity`。
+  ///   - 本函数是**自洽比较**：拿「两条已存断言的同一字段」互比 ⇒ 两侧同基 ⇒ 本就能对上。
+  ///     改成 `chapterIdentity` 会**新增**分歧：存量行无新载体 ⇒ 回退值 = AI 标称号（3），
+  ///     新行载体 = 身份（2）⇒ 不等 ⇒ **每章重诊都会把旧断言重复一条**（旧行不被顶替，
+  ///     且因 `chapterIdentity != chapterNo` 也不会被标灰 ⇒ 用户看到两条一模一样的断言）。
+  ///
+  /// ⇒ 判据：**跨源比较必须归一，自洽比较保持原列。**
+  ///
+  /// ⚠️ **已知残余代价**（记录在案、不外推）：提炼条（`SettingAssertionExtractor`，
+  ///   旧列留空 = `null`）与诊断行（旧列 = AI 标称号）写同一章同一事实时键不等 ⇒
+  ///   待确认列表里出现**两条同章同值**的断言。已实测两害相权：
+  ///   - 维持现状 ⇒ 只在用户**显式**点「从正文提炼断言」时出现；
+  ///   - 改 `chapterIdentity` ⇒ 修掉本条，但踩上面那条主力路径（每章重诊都中）。
+  ///   故**保留现状**。若将来要治本，方向是**给存量行补载体**（迁移），
+  ///   **不是**放宽容器的键口径。
+  ///
+  /// 契约测试（正负例 + 3 个实现变体的负向验证）：`test/services/fact_triple_key_contract_test.dart`、
+  /// 驱动脚本 `.ai/tools/_x1_negctl.py`、证据 `.ai/reports/X1-assets/negctl.log`。
   static String tripleKey(CharacterAssertion a) {
     return '${a.attribute}\u0000${a.value}\u0000${a.chapter}';
   }

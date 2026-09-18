@@ -39,6 +39,13 @@ class CharacterAssertion {
   /// 断言所在章节序号 —— ★ **语义未定，勿当身份用**（`ADR-C96 §1`）：
   /// 机器链路写 `sort_order`（**身份**）、AI 抽取写**标称号**（抄自章标题）、
   /// 用户弹层写**他自己填的数** ⇒ **一列多源、读时无法分辨**。
+  /// ⚠️ 三源**逐点位实测**（2026-09-18 `X1`）：① AI 抽取 —— `tryFromJson` 读协议
+  /// `chapter`，`DiagnosisCommitter._asAiPending` **原样透传**（`chapter: a.chapter`，
+  /// 无兜底）⇒ 标称号；② 用户弹层 —— `CharacterEditorService._appendUserAssertion`
+  /// 写 `chapter: <原写值>`；③ 设定正文提炼（`SettingAssertionExtractor`）——
+  /// `N12-F3c` 之前写的是**身份**、此**后**旧列留空 ⇒ 同一列上还并存着第三、第四种基号。
+  /// ⇒ 「机器链路写 `sort_order`」一句只对**事件 / 支线**侧成立（`e.chapter ?? chapterNo`），
+  /// **断言侧没有**这样的写入方 —— 别据此认为旧列能当身份用。
   /// **R1′：此值原样保留、永不篡改**（用户手填输入是 R-009 的保护对象）。
   ///
   /// ⇒ 「读作身份」的地方一律改走 [chapterIdentity]。
@@ -111,10 +118,24 @@ class CharacterAssertion {
 
   /// 「读作身份」的**唯一入口**：优先新载体，存量行退回 [chapter]。
   ///
-  /// **为什么不直接返回 null**：存量行里**机器写入的那些**，[chapter] 装的本就是
-  /// 身份（`diagnosis_committer` 的 `?? chapterNo`）；若一律 null，删章钩子/重诊
-  /// 判据将不再命中它们 ⇒ **凭空引入**「幽灵事实回归」这个新缺陷。
-  /// 退回 ⇒ 对存量行**行为逐字不变**，对新行**口径正确**（新行必有新载体）。
+  /// **为什么不直接返回 null**：存量行没有新载体，若一律 null，凡以本 getter 为判据
+  /// 的路径（删章钩子 / 重诊）在存量行上会**整体失联** ⇒ 「幽灵事实回归」——
+  /// 那是引入「另存载体」这件事本身**新造**的缺陷。退回旧列 ⇒ 存量行行为与引入载体
+  /// **之前逐字相同**。注意措辞：**兼容，不是治愈**。
+  ///
+  /// ⚠️ **回退值不一定等于身份**（2026-09-18 `X1` 实测订正，原文此处写错的 ·
+  /// 「机器链路写 `sort_order` / `?? chapterNo`」只对一侧成立）：旧列一列多源，
+  /// 回退到什么取决于**当初谁写的** ——
+  /// - **事件 / 支线**侧：原写入方为 `chapter: e.chapter ?? chapterNo`
+  ///   （`diagnosis_committer._persistEventFacts`）⇒ AI 未报号的那些**装的确是真身份**；
+  /// - **`character_fact` 断言**侧：原写入方 `DiagnosisCommitter._asAiPending` 写的是
+  ///   `chapter: a.chapter`（AI 协议原值 = **标称号**），**没有** `?? chapterNo`
+  ///   ⇒ 回退值**不是身份**（干净稿上比身份大 1）。
+  ///
+  /// ⇒ 判据：本 getter 只可用于**「可能是身份、也可能不是」的兼容判据**（如
+  /// [FactStaleService.belongsToChapter]，那里「宁可少判」优于「判错」）；
+  /// **不得**用于「两条已存值互比」的**自洽比较**键（`FactStaleService.tripleKey`），
+  /// 那会让存量行回退值与别章的载体值撞车 ⇒ 跨章误合并。见 `.ai/DECISIONS §4-40`。
   int? get chapterIdentity => chapterSortOrder ?? chapter;
 
   Map<String, dynamic> toJson() => {
