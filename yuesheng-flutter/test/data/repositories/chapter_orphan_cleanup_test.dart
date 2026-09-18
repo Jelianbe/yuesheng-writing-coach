@@ -11,10 +11,16 @@
 //   2. 只清被删章节：相邻章节三键不受影响
 //   3. 软删（回收站）**不**清；恢复后版本仍可读回（回归守卫）
 //   4. 键名契约（漂移绊线）
+//   5. 源码级绊线：lib/ 内不得残留未登记的章节级键字面量
+//      —— #4 只拦「键名漂移」，拦不住「新增第 4 个键却忘记登记」，
+//         而后者才是 B25 的根因
 // ─────────────────────────────────────────────────────────────
+
+import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
@@ -22,6 +28,29 @@ import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_scoped_keys.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/services/error_handler.dart';
+
+/// 章节级键字面量：`'<prefix>:$chapterId'` 或 `'<prefix>:${chapterId}'`。
+final RegExp _chapterKeyLiteral = RegExp(r"'([a-z_]+):\$\{?chapterId\}?'");
+
+/// 提取源码里命中 [_chapterKeyLiteral] 的全部 prefix。
+Set<String> _prefixesIn(String source, RegExp pattern) => <String>{
+  for (final m in pattern.allMatches(source)) m.group(1)!,
+};
+
+/// lib/ 下全部 `.dart` 文件。找不到 lib/ 时 `fail`（宁可红，也不静默跳过）。
+List<File> _libDartFiles() {
+  for (final root in <String>[p.join('lib'), p.join('..', 'lib')]) {
+    final dir = Directory(root);
+    if (dir.existsSync()) {
+      return dir
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))
+          .toList();
+    }
+  }
+  fail('找不到 lib/ 目录（CWD=${Directory.current.path}）');
+}
 
 void main() {
   late AppDatabase db;
@@ -121,5 +150,64 @@ void main() {
     expect(chapterDraftKey('c1'), 'chapter_draft:c1');
     expect(chapterVersionsKey('c1'), 'chapter_versions:c1');
     expect(chapterGoalKey('c1'), 'chapter_goal:c1');
+  });
+
+  test('#5 源码级绊线：lib/ 内不得有未登记的章节级键字面量', () {
+    // ── 正则正例自检（缺这一步，正则写错就退化成「永远 0 命中 ⇒ 永远绿」）──
+    // 本项目先例：`\blog\w*\s*\(` 的 `\b` 在 `_logSafeRun` 的 `_` 与 `l` 之间不成立，
+    // 导致 20 个 `_logXxx` 私有函数被整体漏检、得出错误的「留痕率」结论。
+    const String sample = r"final k = 'chapter_notes:$chapterId';";
+    const String sampleBraced = r"final k = 'chapter_notes:${chapterId}';";
+    expect(
+      _prefixesIn(sample, _chapterKeyLiteral),
+      contains('chapter_notes'),
+      reason: r"正例自检 1：必须能匹配 '<prefix>:$chapterId'",
+    );
+    expect(
+      _prefixesIn(sampleBraced, _chapterKeyLiteral),
+      contains('chapter_notes'),
+      reason: r"正例自检 2：必须能匹配 '<prefix>:${chapterId}'",
+    );
+
+    // ── 全集完整性：lib/ 内实际出现的 prefix ⊆ 已登记 prefix ──
+    // ⚠️ 边界（如实写明）：当前 lib 内**字面量 0 命中**（写侧已全走构造器）
+    //    ⇒ 这是**面向将来的绊线**，不是当下的证据；doc / 行内注释里的字面量
+    //    同样会被计入（保守方向，宁可误报也不漏报）。
+    final files = _libDartFiles();
+    expect(
+      files.length,
+      greaterThan(100),
+      reason: '扫描面自检：lib/ 下 .dart 文件数过少 ⇒ 路径算错，本用例会假绿',
+    );
+
+    // ★ 端到端正例：扫描器必须能从**真实源码文件**里读出 3 个已登记前缀。
+    //   只测内存样例不够 —— 路径枚举 / 读文件任一环坏掉，都会退化成「0 命中 ⇒ 绿」。
+    final selfSource = files
+        .firstWhere(
+          (f) => p.basename(f.path) == 'chapter_scoped_keys.dart',
+          orElse: () => fail('lib/ 下找不到 chapter_scoped_keys.dart'),
+        )
+        .readAsStringSync();
+    expect(
+      _prefixesIn(selfSource, _chapterKeyLiteral),
+      <String>{'chapter_draft', 'chapter_versions', 'chapter_goal'},
+      reason: '端到端正例：真实源码扫描必须命中单点来源里的 3 个键',
+    );
+
+    final registered = chapterScopedKeys(
+      'X',
+    ).map((k) => k.substring(0, k.indexOf(':'))).toSet();
+    final found = <String>{};
+    for (final f in files) {
+      if (p.basename(f.path) == 'chapter_scoped_keys.dart') continue; // 单点来源本身
+      found.addAll(_prefixesIn(f.readAsStringSync(), _chapterKeyLiteral));
+    }
+    expect(
+      found.difference(registered),
+      isEmpty,
+      reason:
+          '发现未登记的章节级键 prefix ⇒ 删章时会漏清（B25 复发），'
+          '请把它加进 chapterScopedKeys',
+    );
   });
 }
