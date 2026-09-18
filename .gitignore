@@ -24,6 +24,17 @@
 # （同级的 README/LICENSE 因入库早于该规则而一直正常跟踪，故只有它漏了）。
 !PRODUCT.md
 
+# 仓库门面 · 业界必需文件（2026-09-18 批次 5 新增）。
+# ⚠️ 首行 `/*` 会忽略根目录全部内容。README/LICENSE 之所以能跟踪，是因为它们
+#    **入库早于**该规则（gitignore 不影响已跟踪文件）；**此后新增的根目录文件
+#    必须显式放行**，否则会像 PRODUCT.md 当初那样被静默忽略、从未被跟踪。
+#    这五条属同组，末尾「内部内容不公开」段不覆盖它们（路径不同）。
+!CONTRIBUTING.md
+!CHANGELOG.md
+!SECURITY.md
+!CODE_OF_CONDUCT.md
+!CODEOWNERS
+
 # 项目内忽略规则
 **/node_modules/
 **/dist/

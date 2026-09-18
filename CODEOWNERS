@@ -1,0 +1,21 @@
+# CODEOWNERS — 默认审查人
+#
+# 位置说明：GitHub 会按 `.github/CODEOWNERS` → `CODEOWNERS`（根）→ `docs/CODEOWNERS`
+# 的顺序取**第一个存在的**。本仓 `docs/` 被 .gitignore 排除，故放在仓库根。
+#
+# 生效规则：仓库启用 "Require review from Code Owners" 后，
+# 匹配到的路径发生变更时，对应 owner 会被自动请求审查。
+# 语法参考：https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# 默认：全部路径
+*                   @Jelianbe
+
+# 活跃真源（Flutter 实现）—— 所有开发在此
+/yuesheng-flutter/  @Jelianbe
+
+# 仓库门面与安全相关
+/AGENTS.md          @Jelianbe
+/CONTRIBUTING.md    @Jelianbe
+/SECURITY.md        @Jelianbe
+/CODE_OF_CONDUCT.md @Jelianbe
+/LICENSE            @Jelianbe
