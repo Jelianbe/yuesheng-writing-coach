@@ -15,7 +15,7 @@
 // ★ 已删章的引用：解析**失败**（返回 null）⇒ 调用方应**隐藏**章标，
 //   不得编造一个数（ADR 裁定 2）。
 //
-// ★ 覆盖范围（2026-09-18 `N12-F3a` / `N12-F3b` phase 1+2+3；取证见
+// ★ 覆盖范围（2026-09-18 `N12-F3a` / `N12-F3b` phase 1+2+3 / `N12-F3c`；取证见
 //   `.ai/reports/2026-09-18-N12-F3-侦察.md §3` 与 `...-N12-F3b-侦察.md §1`）：
 //   ✅ `outline_impression.source_chapter_no` —— `N12-F1`
 //   ✅ `character_fact.first_seen_chapter` —— `N12-F3a`；同时用 [sortOrderAtPosition]
@@ -36,14 +36,26 @@
 //      —— 分组键 = `chapterSortOrder`，标签经 `chapterLabel`；**无身份不进时间轴**
 //      （位置有序视图里「无位序」≡「无章节」；**刻意不建「未知」桶**，那会伪造「同章」
 //      语义，见 `DECISIONS §4-33`）。
-//      ⚠️ **世界观侧同一区块当前不出节点** —— 它的两个来源都不是身份载体（见下方 ❌）。
-//      这不是缺陷，是 `S1` 的一致应用；补齐项 = **世界观身份写入方**（报告 §10）。
+//      ⚠️ **世界观侧同一区块**：`N12-F3c` 起其来源已有身份载体（见下方 ✅）⇒
+//      该区块**开始出节点**；phase 3 当时「刻意不传 `firstSeenChapter`」的理由
+//      （该列不是身份）**已随本次归一失效**，故 `world_fact_detail_page` 已恢复传参。
 //   ❌ `world_fact.first_seen_chapter` —— 实测**无机器写入方**（唯一写入方 = 用户
 //      「新建设定主题」对话框，存的是**手填的展示数**、未归一），与 `character_fact`
 //      **同名不同基** ⇒ **不得**套用本文件任何函数（报告 §3.1）。
-//   ❌ `world_fact` 断言的 `chapter` —— 由用户对话框 / 追加表单写入，**无
-//      `chapterSortOrder` 写入方** ⇒ 世界观断言瓦片（`world_fact_detail_page.dart`
-//      的 `_WorldAssertionTile`）与世界观时间轴**均未切换**；该列同样**不得**喂进本文件。
+//      ⇒ **2026-09-18 `N12-F3c` 起本节为历史**：该列已归一为**身份**（写入前经
+//        [identityForUserPosition]），展示侧（列表行 + 详情头部卡）经 [chapterLabel]
+//        解析回序位 ⇒ 与 `character_fact` **同基同口径**。
+//        ⚠️ 上一条描述的是**归一之前**的状态，勿再据此判「世界观侧不同基」
+//        （判据 = 写入方清单，见 `DECISIONS §4-35`）。
+//   ✅ `world_fact` 断言的 `chapterSortOrder` —— `N12-F3c`：**三个写入方**（新建对话框
+//      的首条断言 / `WorldEditorService.appendAssertion` / 提炼条）均已落身份；
+//      旧列 `chapter` 保留**用户原写的数**（R1′，不覆盖）⇒ 世界观断言瓦片与世界观
+//      时间轴均只吃身份。
+//   ✅ **提炼条（`SettingExtractBar` → `SettingAssertionExtractor`）** —— `N12-F3c`：
+//      参数由 `chapter` 更名 **`chapterIdentity`**，落点由旧列改为 `chapterSortOrder`。
+//      ⚠️ 更名前的形态（把实体的首见章当 `chapter` 写进**旧列**）在角色侧已存在多时，
+//      且 `N12-F3b` phase 2 之后**后果可见**：提炼出的断言 `chapterSortOrder` 为 null
+//      ⇒ 瓦片按 `S1` 不渲染章标 —— 即「章号是已知的，却显示成未知」。
 //   ❌ **服务层生成的文本**（`subplot_closure_detector` / `event_causality_detector` /
 //      `conflict_detector` 的 observation · `setting_library_service` 的 LLM prompt）
 //      —— 它们进 **AI 上下文 / prompt**、不进 widget 树，且**拿不到 `chapterNoMap`**
@@ -96,6 +108,28 @@ int? sortOrderAtPosition(Map<int, int> chapterNoMap, int position) {
     if (entry.value == position) return entry.key;
   }
   return null;
+}
+
+/// **用户手填的序位**（1 基，他在界面上看得见的那个数）→ 该章的 `sortOrder`。
+///
+/// 与 [resolveChapterIdentity] 的**分工必须分清**（`ADR-C96 §2` 裁定 2）：
+///   - 本函数：**语义已定**的输入 —— 弹层标签是「章节（选填，如：3）」，
+///     用户填的必然是他看得见的**序位**，故直接按序位归一，**不走**编码阶梯
+///     （阶梯是为**语义未定的 AI 自报数**准备的，套在这里会把「序位 2」
+///     先按标称号试一遍而错锚）。
+///   - [resolveChapterIdentity]：语义未定的 AI 值 + 「当前章优先」。
+///
+/// 解析不到（越界 / 该章在回收站）⇒ **null，不猜**（`ADR-C95` 裁定 2）；
+/// 调用方应**如实告知**用户「该序位不存在」，不得静默丢弃（那会让用户以为
+/// 「填了没反应」，同族见 `character_list_view._notifyCharacterCreated`）。
+///
+/// 入参须是**已按 `sort_order` 升序**的列表（`ChapterRepository.listChapters` 保证）。
+/// ★ **调用方必须读库、不要读 `chapterListProvider`**：后者派生自
+///   `chapterStoreProvider`，首次读时其异步加载可能尚未完成 ⇒ 空列表 ⇒
+///   把用户填的**合法**序位静默归一成 null（**输入丢失**）。库读是权威值。
+int? identityForUserPosition(List<Chapter> sortedChapters, int? position) {
+  if (position == null) return null;
+  return sortOrderAtPosition(buildChapterNoMap(sortedChapters), position);
 }
 
 /// 该章的**三种编码**（身份 / 标称号 / 序位）——「当前章优先」判据的取值面。

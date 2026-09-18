@@ -16,12 +16,18 @@
 // 指纹口径（承架构 §8-N4）：手动录入多属设计态（章节可能尚未写），
 // 追加断言**不计 chapterHash** ⇒ chapterHash/chapterNo 均不传，
 // upsertWorld 的 mergeAssertions 退化为纯三元组去重（历史断言不被覆盖）。
+//
+// 章号口径（`N12-F3c`）：用户填的是**序位**，库里旧列 `chapter` 存的是他原写的
+// 数、新载体 `chapterSortOrder` 存**归一后的身份** —— 两者分别落库，不互相推导。
+// 展示侧只吃身份（见 `utils/chapter_number.dart` 文件头覆盖表）。
 // ─────────────────────────────────────────────────────────────
 
 import '../data/database/database.dart';
 import '../data/database/utils.dart';
+import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/world_fact_repository.dart';
 import '../types/character_types.dart';
+import '../utils/chapter_number.dart';
 
 /// 世界观设定的人工写入服务（追加断言 / 归档 / 恢复）。
 class WorldEditorService {
@@ -41,6 +47,10 @@ class WorldEditorService {
   ///
   /// 属性 / 取值去空格后为空 → 返回 false（不写，防 `parseAssertions`
   /// 静默丢弃空条目）；主题不存在 → 返回 false。
+  ///
+  /// `N12-F3c`：[chapter]（用户原写的数）与 `chapterSortOrder`（归一后的身份）
+  /// **语义不同、必须分别传入** —— 与 `CharacterEditorService._appendUserAssertion`
+  /// 同口径同形状。旧列**原样保留**用户写的数（R1′：不覆盖、不篡改），身份走新载体。
   Future<bool> appendAssertion({
     required String worldId,
     required String attribute,
@@ -53,6 +63,7 @@ class WorldEditorService {
     if (attr.isEmpty || val.isEmpty) return false;
     final row = await _repo.getWorldById(worldId);
     if (row == null) return false;
+    final identity = await _identityForUserInput(row.manuscriptId, chapter);
     await _repo.upsertWorld(
       manuscriptId: row.manuscriptId,
       name: row.name,
@@ -61,6 +72,7 @@ class WorldEditorService {
           attribute: attr,
           value: val,
           chapter: chapter,
+          chapterSortOrder: identity,
           timestamp: nowSec(),
           status: 'confirmed',
           source: 'user',
@@ -69,6 +81,24 @@ class WorldEditorService {
       ],
     );
     return true;
+  }
+
+  /// 用户在弹层手填的章号 → **身份**（`chapters.sort_order`）。
+  ///
+  /// 弹层标签是「章节（选填，如：3）」⇒ 用户填的必然是他**看得见**的那个数
+  /// （= 序位），不是内部身份。归一必须发生在写入前，否则将来按
+  /// `sortOrder == 3` 读会落到**另一章**（只在无删除无重排的稿上偶然相等）。
+  ///
+  /// 与 `CharacterEditorService._identityForUserInput` / `N12-F3a` 的
+  /// `character_list_view._firstSeenSortOrder` **同口径、同实现、同理由**：
+  /// ① 不走 `resolveChapterIdentity`（那是给语义未定的 AI 自报数用的）；
+  /// ② 读 `ChapterRepository.listChapters` 而非 provider（库读是权威值，不依赖订阅时序，
+  ///    否则可能把合法序位静默归一成 null ⇒ **用户输入丢失**）；
+  /// ③ 解析不到 ⇒ null（**不猜**，`ADR-C95` 裁定 2）。
+  Future<int?> _identityForUserInput(String manuscriptId, int? position) async {
+    if (position == null) return null;
+    final chapters = await ChapterRepository(_db).listChapters(manuscriptId);
+    return identityForUserPosition(chapters, position);
   }
 
   /// 归档主题（软归档，委派仓储；**非物理删除**）。

@@ -9,6 +9,15 @@
 //   ⑥   表单常驻依据提示、无阻断（Q2）
 //   ⑦   空主题（无有效断言）列表项有视觉标识（Q3）
 //   ⑧   onCountChanged 正确上报过滤 + 排序后行数
+//
+// `N12-F3c` 追加（章号口径）：
+//   ⑨   `first_seen_chapter` 是**身份**（`chapters.sort_order`）⇒ 列表经 map 解析成
+//       **序位**渲染；解析不出 ⇒ 「首次提出章节未知」，**不编造数字**
+//   ⑩   新建弹层里用户填的是**序位** ⇒ 落库前归一到**身份**
+//
+// ★ 夹具关键：章节刻意取 `sortOrder` 5 / 7 / 9（序位 1 / 2 / 3）—— 「归一」与
+//   「不归一」、「读身份」与「读旧列」在这些夹具上**结果必然不同**（`§4-28`）。
+//   若用默认稿（身份 == 序位 − 1），两种实现渲染逐字相同 ⇒ 用例无鉴别力。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:async';
@@ -18,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
@@ -31,6 +41,11 @@ void main() {
   late WorldFactRepository repo;
   late String manuscriptId;
 
+  /// 三章，身份 5 / 7 / 9 ⇔ 序位 1 / 2 / 3（模拟「删过首章、删除不重编号」的稿）。
+  const identityOfChapter1 = 5;
+  const identityOfChapter2 = 7;
+  const identityOfChapter3 = 9;
+
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     container = ProviderContainer(
@@ -40,6 +55,25 @@ void main() {
     manuscriptId = await ManuscriptRepository(
       db,
     ).createManuscript(title: '测试作品');
+    final chapterRepo = ChapterRepository(db);
+    await chapterRepo.createChapter(
+      manuscriptId,
+      title: '第一章',
+      content: 'a',
+      sortOrder: identityOfChapter1,
+    );
+    await chapterRepo.createChapter(
+      manuscriptId,
+      title: '第二章',
+      content: 'b',
+      sortOrder: identityOfChapter2,
+    );
+    await chapterRepo.createChapter(
+      manuscriptId,
+      title: '第三章',
+      content: 'c',
+      sortOrder: identityOfChapter3,
+    );
   });
 
   tearDown(() {
@@ -65,12 +99,14 @@ void main() {
     String attr,
     String val, {
     int? chapter,
+    int? chapterSortOrder,
     int ts = 1000,
     String? evidence,
   }) => CharacterAssertion(
     attribute: attr,
     value: val,
     chapter: chapter,
+    chapterSortOrder: chapterSortOrder,
     timestamp: ts,
     evidence: evidence,
   );
@@ -82,18 +118,23 @@ void main() {
       expect(find.byType(AppBar), findsNothing);
     });
 
-    testWidgets('列表项：主题名 + 首见章节 + 有效断言摘要', (tester) async {
+    testWidgets('列表项：主题名 + 首见章节 + 有效断言摘要（章标经**身份**解析）', (tester) async {
       await repo.upsertWorld(
         manuscriptId: manuscriptId,
         name: '灵气体系',
-        firstSeenChapter: 3,
-        assertions: [a('灵气浓度', '稀薄', chapter: 3), a('形态', '气态', chapter: 3)],
+        firstSeenChapter: identityOfChapter2, // 身份 7 ⇒ 序位 2
+        assertions: [a('灵气浓度', '稀薄'), a('形态', '气态')],
       );
       await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
 
       expect(find.text('灵气体系'), findsOneWidget);
-      expect(find.text('第3章首次提出'), findsOneWidget);
+      expect(find.text('第2章首次提出'), findsOneWidget, reason: '身份 7 ⇒ 序位 2');
+      expect(
+        find.text('第7章首次提出'),
+        findsNothing,
+        reason: '身份键**不是**展示号：直出它会显示「第7章」（`DECISIONS §4-35`）',
+      );
       expect(find.text('灵气浓度·稀薄 / 形态·气态'), findsOneWidget);
     });
 
@@ -101,12 +142,12 @@ void main() {
       await repo.upsertWorld(
         manuscriptId: manuscriptId,
         name: '多断言',
-        firstSeenChapter: 1,
+        firstSeenChapter: identityOfChapter1,
         assertions: [
-          a('甲', '1', chapter: 1),
-          a('乙', '2', chapter: 1),
-          a('丙', '3', chapter: 1),
-          a('丁', '4', chapter: 1),
+          a('甲', '1', chapterSortOrder: identityOfChapter1),
+          a('乙', '2', chapterSortOrder: identityOfChapter1),
+          a('丙', '3', chapterSortOrder: identityOfChapter1),
+          a('丁', '4', chapterSortOrder: identityOfChapter1),
         ],
       );
       await tester.pumpWidget(buildHost());
@@ -120,6 +161,25 @@ void main() {
       await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
       expect(find.text('首次提出章节未知'), findsOneWidget);
+    });
+
+    testWidgets('身份指向已删章 ⇒ 「首次提出章节未知」，**不编造数字**', (tester) async {
+      // 身份 99 不在当前章节列表里（该章已删 / 在回收站）。
+      await repo.upsertWorld(
+        manuscriptId: manuscriptId,
+        name: '孤章',
+        firstSeenChapter: 99,
+      );
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('孤章'), findsOneWidget, reason: '阳性对照：行本身渲染了');
+      expect(find.text('首次提出章节未知'), findsOneWidget);
+      expect(
+        find.text('第99章首次提出'),
+        findsNothing,
+        reason: '解析失败必须隐藏章标（`ADR-C95` 裁定 2：不编造数字）',
+      );
     });
 
     testWidgets('空主题（无有效断言）列表项有视觉标识 暂无设定（Q3）', (tester) async {
@@ -310,6 +370,71 @@ void main() {
         reason: 'UI 留空依据须落 null —— 该断言不进一致性检查（设计态契约）',
       );
     });
+
+    // ── `N12-F3c`：写侧归一（端到端，经真实弹层） ──
+    testWidgets('N12-F3c：新建填**序位** ⇒ 落库为**身份**、列表显示回原序位', (tester) async {
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('＋ 新建设定主题'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('结构化这条设定（可选）'));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fields.at(0), '灵气体系'); // 主题名
+      await tester.enterText(fields.at(2), '灵气浓度'); // 属性
+      await tester.enterText(fields.at(3), '稀薄'); // 取值
+      await tester.enterText(fields.at(4), '2'); // 章节 = 用户看得见的**序位**
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      final row = await repo.getWorld(manuscriptId, '灵气体系');
+      expect(
+        row!.firstSeenChapter,
+        identityOfChapter2,
+        reason: '用户填「第2章」⇒ 库里存**身份 7**（不归一则存成 2）',
+      );
+      expect(find.text('第2章首次提出'), findsOneWidget, reason: '展示回到用户填的那个序位');
+      final assertion = WorldFactRepository.parseAssertions(
+        row.assertions,
+      ).single;
+      expect(assertion.chapter, 2, reason: 'R1′：用户原写的数原样保留在旧列');
+      expect(
+        assertion.chapterSortOrder,
+        identityOfChapter2,
+        reason: '身份落**新载体** —— 展示侧只吃它',
+      );
+    });
+
+    testWidgets('N12-F3c：填不存在的序位 ⇒ 不落身份，且**如实提示**（不静默丢弃）', (tester) async {
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('＋ 新建设定主题'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('结构化这条设定（可选）'));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fields.at(0), '无此章');
+      await tester.enterText(fields.at(4), '99'); // 序位 99 不存在
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+
+      expect(
+        (await repo.getWorld(manuscriptId, '无此章'))!.firstSeenChapter,
+        isNull,
+        reason: '解析不到 ⇒ 不猜（`ADR-C95` 裁定 2）',
+      );
+      expect(
+        find.textContaining('该作品当前没有第 99 章'),
+        findsOneWidget,
+        reason: '静默丢弃会让用户以为「填了没反应」⇒ 必须如实告知',
+      );
+    });
   });
 
   testWidgets('设定库第四批：新建填正文 → description 落库（用户写入优先）', (tester) async {
@@ -341,12 +466,12 @@ void main() {
       await repo.upsertWorld(
         manuscriptId: manuscriptId,
         name: '早章',
-        firstSeenChapter: 1,
+        firstSeenChapter: identityOfChapter1,
       );
       await repo.upsertWorld(
         manuscriptId: manuscriptId,
         name: '晚章',
-        firstSeenChapter: 9,
+        firstSeenChapter: identityOfChapter3,
       );
       // upsert 同一秒内 updatedAt 相同 → 显式落不同 updatedAt，使两档排序可区分
       final early = (await repo.getWorld(manuscriptId, '早章'))!;

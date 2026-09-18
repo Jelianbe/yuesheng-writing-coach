@@ -103,7 +103,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
       manuscriptId: widget.manuscriptId,
       entityName: row.name,
       description: row.description,
-      chapter: row.firstSeenChapter,
+      chapterIdentity: row.firstSeenChapter,
       onExtracted: _extractAssertions,
     );
   }
@@ -184,76 +184,85 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
 
   /// Progressions 章节演进区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
   ///
-  /// `N12-F3b` phase 3：本区块已改吃**身份**，而世界观侧**尚无身份载体** ⇒ 当前
-  /// **不出节点**：
-  ///   ① `world_fact.first_seen_chapter` 的唯一写入方是「新建设定主题」对话框
-  ///      （`world_fact_list_view.dart:65`），存的是**用户手填的展示数**，未归一；
-  ///   ② 世界观断言**没有** `chapterSortOrder` 写入方（写侧只填旧列 `chapter`）。
-  /// ⇒ 这是 `S1`（无身份不渲染、不编造数字）在**位置有序视图**上的一致应用，
-  ///   **不是缺陷**；本区块不承载独有信息 —— 世界观断言在 `_assertionWidgets()`
-  ///   的瓦片里照常可见（含其章标）。
-  /// ⇒ **刻意不传 `firstSeenChapter`**：该列不是身份，喂进来会被当身份解析，
-  ///   在有删除 / 重排的稿上渲染成**另一章**（`ADR-C96 §3` 反例）。
-  /// ⇒ **前置补齐项 = 世界观身份写入方**（`DECISIONS §2` / 报告 §10）。map 现在就
-  ///   传真值：写入方落地那天，本区块**无需再改**即可出节点。
-  Widget _buildProgressionsSection() {
+  /// `N12-F3c`：世界观侧**已有身份写入方** —— `world_fact.first_seen_chapter` 在写入前
+  /// 经 `identityForUserPosition` 归一到身份；断言在三个写入点带上 `chapterSortOrder`
+  /// ⇒ 本区块**开始出节点**（此前两个来源都不是身份载体，故静默为空）。
+  ///
+  /// ⚠️ **phase 3 在本方法留下的旧注释已失效，勿据它回退**：当时写「刻意不传
+  /// `firstSeenChapter`」，理由是「该列不是身份」—— 该前提已被本批写侧归一**消除**；
+  /// 继续不传反而让时间轴少一个「首次出现」节点，与角色侧不对称。
+  ///
+  /// ★ phase 3 的**其余裁定仍然有效**：分组键必须是**严格身份载体**（不是
+  /// `chapterIdentity` 那种带回退的读法）；**无身份的行跳过、不建「未知」桶** ——
+  /// 位置有序视图里位序本身就是语义（`DECISIONS §4-33`）。
+  Widget _buildProgressionsSection(Map<int, int> chapterNoMap) {
     return SettingProgressionsSection(
       assertions: _assertions,
-      chapterNoMap: buildChapterNoMap(
-        ref.watch(chapterListProvider(widget.manuscriptId)),
-      ),
+      firstSeenChapter: _row?.firstSeenChapter,
+      chapterNoMap: chapterNoMap,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final row = _row;
+    // `N12-F3c`：本页三处章标（头部卡 / 断言瓦片 / 时间轴）都只吃**身份载体** ⇒
+    // 映射算一次、下传三处（每处各 watch 一次会重复订阅同一个 provider）。
+    final chapterNoMap = buildChapterNoMap(
+      ref.watch(chapterListProvider(widget.manuscriptId)),
+    );
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: Text(row?.name ?? '设定主题')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(AppSpacing.page),
-              children: [
-                _WorldHeaderCard(
-                  firstSeenChapter: row!.firstSeenChapter,
-                  assertionCount: _assertions.length,
-                  onAppend: _append,
-                ),
-                SettingDescriptionCard(
-                  description: row.description,
-                  onEdit: _editDescription,
-                ),
-                _buildExtractBar(row),
-                ..._assertionWidgets(),
-                _buildProgressionsSection(),
-                _buildTagsSection(),
-                SettingLinksSection(
-                  manuscriptId: widget.manuscriptId,
-                  kind: SettingEntityKind.world,
-                  entityId: widget.worldId,
-                  onJump: (kind, id) {
-                    if (kind == SettingEntityKind.character) {
-                      context.push(
-                        AppRoutes.characterDetail,
-                        extra: {'manuscriptId': widget.manuscriptId, 'id': id},
-                      );
-                    }
-                  },
-                ),
-                _WorldArchiveAction(
-                  archived: row.status != 'active',
-                  onArchive: _archive,
-                  onRestore: _restore,
-                ),
-              ],
-            ),
+          : _buildContent(row!, chapterNoMap),
+    );
+  }
+
+  /// 详情页正文（R-019 真分解：由 `build` 抽出，`N12-F3c` 起同时下传章号映射）。
+  Widget _buildContent(WorldFact row, Map<int, int> chapterNoMap) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.page),
+      children: [
+        _WorldHeaderCard(
+          firstSeenChapter: row.firstSeenChapter,
+          chapterNoMap: chapterNoMap,
+          assertionCount: _assertions.length,
+          onAppend: _append,
+        ),
+        SettingDescriptionCard(
+          description: row.description,
+          onEdit: _editDescription,
+        ),
+        _buildExtractBar(row),
+        ..._assertionWidgets(chapterNoMap),
+        _buildProgressionsSection(chapterNoMap),
+        _buildTagsSection(),
+        SettingLinksSection(
+          manuscriptId: widget.manuscriptId,
+          kind: SettingEntityKind.world,
+          entityId: widget.worldId,
+          onJump: (kind, id) {
+            if (kind == SettingEntityKind.character) {
+              context.push(
+                AppRoutes.characterDetail,
+                extra: {'manuscriptId': widget.manuscriptId, 'id': id},
+              );
+            }
+          },
+        ),
+        _WorldArchiveAction(
+          archived: row.status != 'active',
+          onArchive: _archive,
+          onRestore: _restore,
+        ),
+      ],
     );
   }
 
   /// 断言区块（R-019 真分解：由 build 抽出）；空主题 → 「暂无设定」。
-  List<Widget> _assertionWidgets() {
+  List<Widget> _assertionWidgets(Map<int, int> chapterNoMap) {
     if (_assertions.isEmpty) {
       return const [
         Padding(
@@ -262,26 +271,35 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
         ),
       ];
     }
-    return [for (final a in _assertions) _WorldAssertionTile(assertion: a)];
+    return [
+      for (final a in _assertions)
+        _WorldAssertionTile(assertion: a, chapterNoMap: chapterNoMap),
+    ];
   }
 }
 
 /// 头部卡：首见章节文案 + 断言计数 + 「＋ 追加设定」（R4 入口）。
 class _WorldHeaderCard extends StatelessWidget {
   final int? firstSeenChapter;
+
+  /// 章号映射（`sortOrder → 展示序位`）。`N12-F3c`：`firstSeenChapter` 是**身份**，
+  /// 必须经它解析才能显示成用户认得的「第N章」。
+  final Map<int, int> chapterNoMap;
   final int assertionCount;
   final VoidCallback onAppend;
 
   const _WorldHeaderCard({
     required this.firstSeenChapter,
+    required this.chapterNoMap,
     required this.assertionCount,
     required this.onAppend,
   });
 
   @override
   Widget build(BuildContext context) {
-    final ch = firstSeenChapter;
-    final firstSeen = ch == null ? '首次提出章节未知' : '第$ch章首次提出';
+    // 只吃身份载体；解析不出 ⇒ 「未知」，不编造数字（`ADR-C95` 裁定 2）。
+    final label = chapterLabel(chapterNoMap, firstSeenChapter);
+    final firstSeen = label == null ? '首次提出章节未知' : '$label首次提出';
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -312,12 +330,24 @@ class _WorldHeaderCard extends StatelessWidget {
 class _WorldAssertionTile extends StatelessWidget {
   final CharacterAssertion assertion;
 
-  const _WorldAssertionTile({required this.assertion});
+  /// 章号映射（`sortOrder → 展示序位`）。`N12-F3c` 起章标**只吃身份载体**。
+  final Map<int, int> chapterNoMap;
+
+  const _WorldAssertionTile({
+    required this.assertion,
+    required this.chapterNoMap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final ch = assertion.chapter;
-    final chapterText = ch == null ? '章节未知' : '第$ch章';
+    // ★ 读 `chapterSortOrder`（**身份载体**），**不是** `assertion.chapter` ——
+    // 后者装的是**用户原写的数**（R1′ 不覆盖），一列多源、读时无法分辨；
+    // 直出它等于把「用户写的序位」当身份再解析一遍，在有删除 / 重排的稿上
+    // 会渲染成**另一章**（`DECISIONS §4-35` / `ADR-C96 §3` 反例）。
+    // 无身份 ⇒ 「章节未知」：本视图**逐条陈列**，位置不承载语义，故保留条目并标注
+    // 未知是对的（与位置有序的时间轴不同，见 `DECISIONS §4-33`）。
+    final chapterText =
+        chapterLabel(chapterNoMap, assertion.chapterSortOrder) ?? '章节未知';
     final hasEvidence = (assertion.evidence ?? '').isNotEmpty;
     return Card(
       child: ListTile(

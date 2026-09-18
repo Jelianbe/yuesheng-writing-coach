@@ -45,7 +45,7 @@ void main() {
             manuscriptId: 'm1',
             entityName: '林晚',
             description: description,
-            chapter: 1,
+            chapterIdentity: 1,
             onExtracted:
                 onExtracted ??
                 (extracted) async {

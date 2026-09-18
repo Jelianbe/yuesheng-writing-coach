@@ -13,6 +13,9 @@
 //   （`ADR-C96 §2` 的**身份解析**）与 `chapterAt`。本节是 `ADR-C96 §5` 判据 1–4 的直接实现，
 //   两条反例分别杀死被否方案 **R4**（身份恒 = 当前章）与 **R5**（解析失败落 NULL）。
 //
+// `N12-F3c` 追加：`identityForUserPosition`（**用户手填序位** → 身份，写侧唯一入口）。
+//   反例杀死「顺手复用 `resolveChapterIdentity`」—— 那会先按**标称号**试一遍而错锚。
+//
 // 口径与理由见 `docs/ADR-C95-chapter-number-convention.md` / `ADR-C96-fact-chapter-identity.md`；
 // 实现 `lib/utils/chapter_number.dart`。
 // ─────────────────────────────────────────────────────────────
@@ -151,6 +154,73 @@ void main() {
       );
       expect(sortOrderAtPosition(map, 1), 0);
       expect(sortOrderAtPosition(map, 3), 1);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // `N12-F3c`：`identityForUserPosition` —— **用户手填序位** → 身份。
+  //
+  // 与 `sortOrderAtPosition` 的关系是「薄封装」（后者收 map、前者收列表），
+  // 但**契约不同**，故单独成组：本函数是**写入侧的唯一入口**，
+  // 其行为决定了 `world_fact.first_seen_chapter` / 断言 `chapterSortOrder`
+  // 里到底存的是序位还是身份。
+  //
+  // ★ 夹具刻意取身份 5 / 7 / 9（序位 1 / 2 / 3）：在默认稿（身份 = 序位 − 1）上
+  //   「归一」与「不归一」的结果**处处不同**，用例才有鉴别力（`DECISIONS §4-28`）。
+  // ─────────────────────────────────────────────────────────────
+  group('identityForUserPosition：用户手填序位 → 身份（写侧唯一入口，N12-F3c）', () {
+    /// 删过首章、且中间有空洞的稿：身份 5 / 7 / 9 ⇔ 序位 1 / 2 / 3。
+    List<Chapter> sparse() => [chapter(5), chapter(7), chapter(9)];
+
+    test('#C95-13 正例：填「第2章」⇒ 落身份 7（**不是** 2）', () {
+      expect(
+        identityForUserPosition(sparse(), 2),
+        7,
+        reason: '不归一（直接存 2）在真稿上会被读成「sortOrder==2 的那章」= 不存在',
+      );
+      expect(identityForUserPosition(sparse(), 1), 5);
+      expect(identityForUserPosition(sparse(), 3), 9);
+    });
+
+    test('#C95-14 写读闭环：归一后经 chapterLabel 必回到用户填的那个序位', () {
+      final chapters = sparse();
+      final map = buildChapterNoMap(chapters);
+      for (var p = 1; p <= 3; p++) {
+        expect(
+          chapterLabel(map, identityForUserPosition(chapters, p)),
+          '第$p章',
+          reason: '用户填 p、界面显示 p —— 中间无论怎么编码都不该漂移',
+        );
+      }
+    });
+
+    test('#C95-15 负例：未填 / 越界 / 空稿 ⇒ null（**不猜**，ADR-C95 裁定 2）', () {
+      expect(
+        identityForUserPosition(sparse(), null),
+        isNull,
+        reason: '没填 ≠ 第1章',
+      );
+      expect(identityForUserPosition(sparse(), 0), isNull, reason: '序位从 1 起');
+      expect(identityForUserPosition(sparse(), 99), isNull, reason: '该章不存在');
+      expect(identityForUserPosition(const [], 1), isNull);
+    });
+
+    test('#C95-16 反例：**不得**走 resolveChapterIdentity 的编码阶梯', () {
+      // 标称号与序位刻意错位：序位 2 的章，标题写的是「第7章」。
+      final chapters = [titled(5, '第7章'), titled(7, '第1章'), titled(9, '第2章')];
+
+      expect(
+        identityForUserPosition(chapters, 2),
+        7,
+        reason: '用户填的是**序位** ⇒ 语义已定，直接归一',
+      );
+      expect(
+        resolveByEncoding(2, chapters),
+        9,
+        reason:
+            '同一输入若走阶梯会先试**标称号**「第2章」⇒ 错锚到身份 9；'
+            '这正是 `ADR-C96 §2` 裁定 2 把两条路分工写死的理由',
+      );
     });
   });
 

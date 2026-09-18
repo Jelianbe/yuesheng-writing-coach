@@ -9,6 +9,10 @@
 //   - 不自动提炼（详情页显式按钮触发）
 //   - 提炼结果一律 pending（AI 协议写入，用户裁决后才成为事实）
 //   - 失败由调用方降级（无 key / 网络异常 → SnackBar，不阻塞）
+//
+// 章号口径（`N12-F3c`）：提炼协议里**不含章号** ⇒ 本模块不产生章号，只把宿主给的
+// 实体首见章节作为**身份**落到 `chapterSortOrder`（旧列 `chapter` 留空）。
+// 展示侧只吃身份（`utils/chapter_number.dart` 文件头）。
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -23,16 +27,22 @@ class SettingAssertionExtractor {
   SettingAssertionExtractor(this._llmClient);
 
   /// 调用 LLM 提炼；失败向上抛，由调用方降级提示。
+  ///
+  /// [chapterIdentity] 是**身份键**（`chapters.sort_order`），不是展示号 ——
+  /// 宿主传的是该实体的首见章节（`first_seen_chapter`，写侧已归一为身份）。
   Future<List<CharacterAssertion>> extractFromText({
     required String entityName,
     required String text,
-    int? chapter,
+    int? chapterIdentity,
   }) async {
     final completion = await _llmClient.chatCompletionWithContinuation(
       _buildMessages(entityName, text),
       maxTokens: 2048,
     );
-    return parseExtractedAssertions(completion.content, chapter: chapter);
+    return parseExtractedAssertions(
+      completion.content,
+      chapterIdentity: chapterIdentity,
+    );
   }
 
   List<ChatMessage> _buildMessages(String entityName, String text) {
@@ -58,7 +68,16 @@ class SettingAssertionExtractor {
 ///
 /// 容错：```json 围栏 / 前导说明文字 / 缺字段项跳过 / 空数组返回空。
 /// 全部失败（非 JSON）返回空列表——调用方按「提炼出 0 条」处理，不抛。
-List<CharacterAssertion> parseExtractedAssertions(String raw, {int? chapter}) {
+///
+/// `N12-F3c`：[chapterIdentity] 落**新载体** `chapterSortOrder`。
+/// 此前它落旧列 `chapter` —— 而该列装的是「用户原写的数 / AI 标称号」，
+/// 我们却往里塞了一个**身份键**；`N12-F3b` phase 2 之后后果可见
+/// （瓦片只读新载体 ⇒ 章号其实已知却显示成「章节未知」）。
+/// 旧列此处**不写**：没有任何一方上报过它（提炼协议里不含章号）。
+List<CharacterAssertion> parseExtractedAssertions(
+  String raw, {
+  int? chapterIdentity,
+}) {
   final jsonText = _extractJsonArray(raw);
   if (jsonText == null) return const [];
   final Object? decoded;
@@ -79,7 +98,7 @@ List<CharacterAssertion> parseExtractedAssertions(String raw, {int? chapter}) {
       CharacterAssertion(
         attribute: attribute.trim(),
         value: value.trim(),
-        chapter: chapter,
+        chapterSortOrder: chapterIdentity,
         timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         status: 'pending',
         source: 'ai',

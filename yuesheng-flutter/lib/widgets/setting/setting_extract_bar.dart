@@ -21,8 +21,10 @@ class SettingExtractBar extends ConsumerStatefulWidget {
   /// 正文（非空才显示本条）。
   final String description;
 
-  /// 提炼断言按此章节标注（角色/世界观首见章节）。
-  final int? chapter;
+  /// 提炼断言的章号标注 = 该实体的首见章节的**身份键**（`chapters.sort_order`），
+  /// **不是**展示号（`N12-F3c` 更名，原名 `chapter` 会被误当「用户原写的数」）。
+  /// 宿主传 `row.firstSeenChapter` —— 该列在角色 / 世界观两侧均已归一为身份。
+  final int? chapterIdentity;
 
   /// 落库：增量合并写入（upsertCharacter 语义），返回最新断言数。
   final Future<int> Function(List<CharacterAssertion> extracted) onExtracted;
@@ -32,7 +34,7 @@ class SettingExtractBar extends ConsumerStatefulWidget {
     required this.manuscriptId,
     required this.entityName,
     required this.description,
-    required this.chapter,
+    required this.chapterIdentity,
     required this.onExtracted,
   });
 
@@ -51,7 +53,7 @@ class _SettingExtractBarState extends ConsumerState<SettingExtractBar> {
       final extracted = await extractor.extractFromText(
         entityName: widget.entityName,
         text: widget.description,
-        chapter: widget.chapter,
+        chapterIdentity: widget.chapterIdentity,
       );
       if (!mounted) return;
       if (extracted.isEmpty) {

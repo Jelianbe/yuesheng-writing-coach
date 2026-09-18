@@ -22,9 +22,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/database/utils.dart';
+import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/manuscript_providers.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 import 'world_dialogs.dart';
 import 'world_fact_detail_page.dart';
 
@@ -58,11 +61,38 @@ Future<bool> showAndCreateWorldTheme(
         SnackBar(content: Text('该主题已存在，可进入「${created.name}」直接追加设定')),
       );
   }
+  // ADR-C95 / `N12-F3c`：弹层填的是**序位**，库里存的是**身份键** ⇒ 写入前归一。
+  final identity = await _identityForPosition(
+    ref,
+    manuscriptId,
+    created.chapter,
+  );
+  await _persistWorldTheme(repo, manuscriptId, created, identity);
+  if (!context.mounted) return false;
+  _notifyWorldCreated(context, created.name, created.chapter, identity);
+  return true;
+}
+
+/// 落库：主题行 + 首条设定断言（R-019：由 [showAndCreateWorldTheme] 抽出）。
+///
+/// `N12-F3c`：[identity] 与 `created.chapter` **语义不同、分别落库** ——
+/// 旧列 `chapter` 存**用户原写的数**（R1′：不覆盖、不篡改），新载体
+/// `chapterSortOrder` 存归一后的**身份**（展示侧只吃后者）。
+///
+/// `firstSeenChapter` 收的是 [identity]（不是用户写的序位）—— 该列此后
+/// **单语义 = 身份**，与 `character_fact` 同基（`DECISIONS §4-35` 的判据是
+/// **写入方清单**，本函数就是世界观侧的唯一写入方）。
+Future<void> _persistWorldTheme(
+  WorldFactRepository repo,
+  String manuscriptId,
+  CreateWorldThemeResult created,
+  int? identity,
+) async {
   final evidence = created.evidence;
   await repo.upsertWorld(
     manuscriptId: manuscriptId,
     name: created.name,
-    firstSeenChapter: created.chapter,
+    firstSeenChapter: identity,
     firstSeenAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
     assertions: [
       if (created.attribute != null && created.value != null)
@@ -70,6 +100,7 @@ Future<bool> showAndCreateWorldTheme(
           attribute: created.attribute!,
           value: created.value!,
           chapter: created.chapter,
+          chapterSortOrder: identity,
           timestamp: nowSec(),
           status: 'confirmed',
           source: 'user',
@@ -84,16 +115,48 @@ Future<bool> showAndCreateWorldTheme(
       description: created.description,
     );
   }
-  if (!context.mounted) return false;
-  _notifyWorldCreated(context, created.name);
-  return true;
 }
 
 /// 创建成功轻提示（A1：用户写入视角的下一步引导）。
-void _notifyWorldCreated(BuildContext context, String name) {
+///
+/// `N12-F3c`：用户填了章号、而**该序位在作品里不存在**时**如实告知** —— 该值按
+/// `ADR-C95` 裁定 2 **不落库**（不编造章号），但静默丢弃会让用户以为「填了没反应」
+/// （与 `character_list_view._notifyCharacterCreated` 同款处理）。
+void _notifyWorldCreated(
+  BuildContext context,
+  String name,
+  int? typed,
+  int? identity,
+) {
+  final msg = (typed != null && identity == null)
+      ? '已创建设定主题「$name」；该作品当前没有第 $typed 章，首次提出章节未记录'
+      : '已创建设定主题「$name」，可打标签、关联角色或补充断言';
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text('已创建设定主题「$name」，可打标签、关联角色或补充断言')));
+    ..showSnackBar(SnackBar(content: Text(msg)));
+}
+
+/// 用户在弹层手填的章号 → **身份**（`chapters.sort_order`）。
+///
+/// 弹层标签是「章节（选填，如：3）」⇒ 用户填的必然是他**看得见**的那个数
+/// （= 序位），不是内部身份；不归一则该列会混装序位与身份两种基号，展示层
+/// 无从分辨（`N12-F3` 报告 §3.1）。
+///
+/// 与 `N12-F3a` 的 `character_list_view._firstSeenSortOrder`、与
+/// `WorldEditorService._identityForUserInput` **同口径、同实现、同理由**：
+/// 读 `ChapterRepository.listChapters` 而非 `chapterListProvider`（后者派生自
+/// `chapterStoreProvider`，首次读时其异步加载可能未完成 ⇒ 空列表 ⇒ 把用户填的
+/// **合法**序位静默归一成 null，那是**输入丢失**）。库读是权威值。解析不到 ⇒ null。
+Future<int?> _identityForPosition(
+  WidgetRef ref,
+  String manuscriptId,
+  int? position,
+) async {
+  if (position == null) return null;
+  final chapters = await ChapterRepository(
+    ref.read(appDatabaseProvider),
+  ).listChapters(manuscriptId);
+  return identityForUserPosition(chapters, position);
 }
 
 /// 世界观设定列表主体（无 Scaffold / 无 AppBar），可嵌入任意页面 body。
@@ -191,6 +254,10 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
         ).any((a) => a.attribute.contains(q) || a.value.contains(q));
   }
 
+  /// 「首见章节」档 = 按 `first_seen_chapter` 升序。
+  ///
+  /// `N12-F3c`：该列存的是**身份** ⇒ 升序即**作品当前章节顺序**，删除 / 交换 /
+  /// 跨卷移动后**自动跟随**；未标注（null）的排在末尾（哨兵 `1 << 30`）。
   List<WorldFact> _sorted(List<WorldFact> rows) {
     final sorted = [...rows];
     sorted.sort((a, b) {
@@ -230,10 +297,18 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error) return _buildErrorState();
-    return _buildBody(_sorted(_filtered()));
+    // `N12-F3c`：`first_seen_chapter` 存的是**身份键**（`chapter.sortOrder`，0 基、
+    // 可空洞、删除不重编号）⇒ 展示必须解析成「当前章节列表里的序位」；解析失败
+    // （章已删 / 在回收站）⇒ **不显示数字、不编造**（`ADR-C95` 裁定 2）。
+    // 此处用 provider 而非库读：**读**侧要的正是「UI 当前认定的章节序」，且 store
+    // 加载完成会自动通知重建；**写**侧才必须读库（理由见 `_identityForPosition`）。
+    final chapterNoMap = buildChapterNoMap(
+      ref.watch(chapterListProvider(widget.manuscriptId)),
+    );
+    return _buildBody(_sorted(_filtered()), chapterNoMap);
   }
 
-  Widget _buildBody(List<WorldFact> rows) {
+  Widget _buildBody(List<WorldFact> rows, Map<int, int> chapterNoMap) {
     return Column(
       children: [
         // 已有主题才显示搜索 / 排序 / 归档开关 / 列表头新建按钮（空态由 CTA 承担入口）。
@@ -243,16 +318,18 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
           _buildArchivedToggle(),
           _CreateWorldThemeButton(onPressed: _create),
         ],
-        Expanded(child: rows.isEmpty ? _buildEmpty() : _buildList(rows)),
+        Expanded(
+          child: rows.isEmpty ? _buildEmpty() : _buildList(rows, chapterNoMap),
+        ),
       ],
     );
   }
 
-  Widget _buildList(List<WorldFact> rows) {
+  Widget _buildList(List<WorldFact> rows, Map<int, int> chapterNoMap) {
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: AppSpacing.xl),
       itemCount: rows.length,
-      itemBuilder: (_, i) => _buildListItem(rows[i]),
+      itemBuilder: (_, i) => _buildListItem(rows[i], chapterNoMap),
     );
   }
 
@@ -371,7 +448,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     );
   }
 
-  Widget _buildListItem(WorldFact row) {
+  Widget _buildListItem(WorldFact row, Map<int, int> chapterNoMap) {
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.page,
@@ -388,7 +465,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
               _buildTag(kWorldThemeEmptyHint, AppColors.textTertiary),
           ],
         ),
-        subtitle: _buildItemSubtitle(row),
+        subtitle: _buildItemSubtitle(row, chapterNoMap),
         onTap: () => _openDetail(row),
       ),
     );
@@ -414,7 +491,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
   }
 
   /// 副标题：首见章节 + 有效断言摘要（前 3 条 confirmed 且非 stale）
-  Widget _buildItemSubtitle(WorldFact row) {
+  Widget _buildItemSubtitle(WorldFact row, Map<int, int> chapterNoMap) {
     final summary = _parsedOf(row)
         .where((a) => a.status == 'confirmed' && !a.stale)
         .take(_kSummaryMax)
@@ -423,7 +500,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_firstSeenText(row), style: AppTextStyles.caption),
+        Text(_firstSeenText(row, chapterNoMap), style: AppTextStyles.caption),
         if (summary.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
@@ -438,9 +515,14 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     );
   }
 
-  String _firstSeenText(WorldFact row) {
-    final ch = row.firstSeenChapter;
-    return ch == null ? '首次提出章节未知' : '第$ch章首次提出';
+  /// 首见章节文案（`N12-F3c`）：只吃**身份键**，经 map 解析成序位。
+  ///
+  /// 解析不出（为 null / 该章已不在列表中）⇒ 「首次提出章节未知」—— 不编造数字
+  /// （`ADR-C95` 裁定 2）。★ **不得**改成 `'第$ch章'` 直出：那会把**身份键**当展示号
+  /// （`DECISIONS §4-35`，实现文件头也写着「传错参数不报错、只会显示一个错的号」）。
+  String _firstSeenText(WorldFact row, Map<int, int> chapterNoMap) {
+    final label = chapterLabel(chapterNoMap, row.firstSeenChapter);
+    return label == null ? '首次提出章节未知' : '$label首次提出';
   }
 }
 

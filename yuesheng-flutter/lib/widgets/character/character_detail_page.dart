@@ -176,7 +176,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       manuscriptId: widget.manuscriptId,
       entityName: row.name,
       description: row.description,
-      chapter: row.firstSeenChapter,
+      chapterIdentity: row.firstSeenChapter,
       onExtracted: _extractAssertions,
     );
   }
