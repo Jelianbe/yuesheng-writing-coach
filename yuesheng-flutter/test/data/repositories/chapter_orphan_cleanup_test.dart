@@ -14,6 +14,8 @@
 //   5. 源码级绊线：lib/ 内不得残留未登记的章节级键字面量
 //      —— #4 只拦「键名漂移」，拦不住「新增第 4 个键却忘记登记」，
 //         而后者才是 B25 的根因
+//      ⚠️ 但**本绊线自身有三处盲区**（硬编码变量名 / 只认单引号 / prefix 仅
+//         `[a-z_]+`）⇒ 它**不是完备性证明**，详见 `_chapterKeyLiteral` 的 doc
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -30,6 +32,16 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/services/error_handler.dart';
 
 /// 章节级键字面量：`'<prefix>:$chapterId'` 或 `'<prefix>:${chapterId}'`。
+///
+/// ⚠️ **三处已知盲区 —— 本绊线不是完备性证明**（勿据「它绿了」推断「没有新键」）：
+///   1. **硬编码变量名 `chapterId`**：改写为其它变量名（`id`、`c.id`、
+///      `chapter.id`）的同类键**一处也扫不到**；
+///   2. **只认单引号**：改用双引号 `"<prefix>:$chapterId"` 即漏；
+///   3. **prefix 仅 `[a-z_]+`**：含数字/大写的键（`chapterNoteV2`、`chapter_2`）即漏。
+/// 这三条正是「绊线自身写法」造成的盲区（同类教训：`\blog\w*\s*\(` 的 `\b` 在 `_`
+/// 与 `l` 之间不成立、导致 `_logXxx` 整体漏检）。
+/// 更彻底的方案是加「写侧必须走 [chapterScopedKeys] 构造器」的 lint（禁裸字面量拼接），
+/// 而不是继续加固正则 —— 属**后续批次**，此处只登记，不实现。
 final RegExp _chapterKeyLiteral = RegExp(r"'([a-z_]+):\$\{?chapterId\}?'");
 
 /// 提取源码里命中 [_chapterKeyLiteral] 的全部 prefix。
@@ -153,6 +165,8 @@ void main() {
   });
 
   test('#5 源码级绊线：lib/ 内不得有未登记的章节级键字面量', () {
+    // ⚠️ 三处盲区（硬编码变量名 `chapterId` · 只认单引号 · prefix 仅 `[a-z_]+`）
+    //    详见 `_chapterKeyLiteral` 的 doc —— 绿了≠没有新键，别把本用例当完备性证明。
     // ── 正则正例自检（缺这一步，正则写错就退化成「永远 0 命中 ⇒ 永远绿」）──
     // 本项目先例：`\blog\w*\s*\(` 的 `\b` 在 `_logSafeRun` 的 `_` 与 `l` 之间不成立，
     // 导致 20 个 `_logXxx` 私有函数被整体漏检、得出错误的「留痕率」结论。

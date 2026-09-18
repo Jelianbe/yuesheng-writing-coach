@@ -246,6 +246,9 @@ void main() {
       // 漂移绊线：改值必须**显式**改这里 —— 逼改动人回看设计稿
       // （.ai/reports/2026-09-18-N3-版本时间机器-设计.md §6.1.4）
       // 与 UI 文案（lib/widgets/version_time_machine_sheet.dart 的措辞依赖这套参数）。
+      // 另：`AppStateRepository.maxChapterVersions` 别名是否与叶子**脱钩**，由
+      // `chapter_version_guard_test.dart#5` 守 —— 本文件刻意不 import 仓库，
+      // 以保持「纯函数单测（无需 DB）」这一属性。
       expect(kMaxChapterVersions, 40);
       expect(kMaxChapterVersionBytes, 512 * 1024);
       expect(kRecentKeepFloor, 10);
