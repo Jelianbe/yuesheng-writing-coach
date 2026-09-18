@@ -121,4 +121,39 @@ void main() {
     expect(restored.previousContent, isNull);
     expect(restored.volumeId, volumeId);
   });
+
+  test('#6 D-W1 回归：软删 sort_order **最大**的章后新建，两层仍一致', () async {
+    // ★ 为什么必须单独立这一条：上面 #4 软删的是**中间**章（b=1）——
+    // 那种稿上「可见 max」与「库 MAX」恰好相等（都是 2）⇒ 旧实现照样绿，
+    // **该夹具对 D-W1 零鉴别力**（真机走查的 `§4-28` 教训在这里重演）。
+    // 本条的判别点是「被删掉的正是最大的那一章」：库行仍在（softDelete 只改
+    // status、**不动 sort_order**）⇒ 两套推算**必然分叉**。
+    await chRepo.createChapter(mid, title: 'A'); // sort_order 0
+    await chRepo.createChapter(mid, title: 'B'); // sort_order 1
+    final maxId = await chRepo.createChapter(
+      mid,
+      title: 'C',
+    ); // sort_order 2 ← 最大
+    await chRepo.softDeleteChapter(maxId);
+    await store.loadChapters();
+
+    final visibleMax = store.state.chapters
+        .map((c) => c.sortOrder)
+        .reduce((a, b) => a > b ? a : b);
+    expect(visibleMax, 1, reason: '前置条件：可见列表的最大 sort_order 已被软删');
+
+    final newId = (await store.createChapter(title: 'D'))!;
+    final inState = store.state.chapters
+        .firstWhere((c) => c.id == newId)
+        .sortOrder;
+    final inDb = (await chRepo.getChapter(newId))!.sortOrder;
+
+    expect(inState, inDb, reason: 'D-W1：内存态必须等于库侧真实值');
+    expect(inState, 3, reason: '库侧 MAX(sort_order) 含归档行 2 ⇒ 3');
+    expect(
+      inState,
+      isNot(visibleMax + 1),
+      reason: '★ 鉴别力：旧公式（可见 max + 1 = 2）**必错** —— 这才是 D-W1 的红线',
+    );
+  });
 }

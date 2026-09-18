@@ -7,6 +7,8 @@
 //   3. cleanupOldBackups：只保留最近 N 份（默认 10）
 //   4. listBackups：按创建时间倒序
 //   5. 备份目录按类型分目录（manual/pre_migrate/auto）
+//   6. ★ preMigrate 的清理走「按套淘汰」而不是 `.db` 计数
+//      （它落盘形态是三件套、**没有 `.db` 扩展名** ⇒ 旧实现对它是空操作）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:io';
@@ -129,5 +131,30 @@ void main() {
     expect(p.dirname(manual), p.join(tempDir.path, 'backups', 'manual'));
     expect(p.dirname(auto), p.join(tempDir.path, 'backups', 'auto'));
     expect(p.dirname(pre), p.join(tempDir.path, 'backups', 'pre_migrate'));
+  });
+
+  test('cleanupOldBackups(type: preMigrate) 按「套」保留（旧实现对它是空操作）', () async {
+    final db = openDb();
+    addTearDown(db.close);
+    final s = service(db);
+    final dir = Directory(p.join(tempDir.path, 'backups', 'pre_migrate'));
+    await dir.create(recursive: true);
+    // 造 12 套三件套（命名与 _preMigrateBackup 的落盘约定逐字一致）
+    for (var i = 0; i < 12; i++) {
+      final base = 'backup_${1700000000000 + i}_pre_migrate_v29';
+      for (final suffix in const ['', '-wal', '-shm']) {
+        File(p.join(dir.path, '$base$suffix')).writeAsStringSync('x');
+      }
+    }
+
+    await s.cleanupOldBackups(keep: 10, type: BackupType.preMigrate);
+
+    final left = dir.listSync().whereType<File>().toList();
+    expect(left.length, 30, reason: '10 套 × 3 件（**整套**保留，不得留半套）');
+    expect(
+      left.any((f) => p.basename(f.path).contains('1700000000000')),
+      false,
+      reason: '最旧两套应被整套淘汰',
+    );
   });
 }

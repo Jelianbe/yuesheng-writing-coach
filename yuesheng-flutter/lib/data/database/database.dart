@@ -16,6 +16,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'backup_retention.dart';
 import 'tables.dart';
 
 part 'database.g.dart';
@@ -1162,6 +1163,10 @@ class AppDatabase extends _$AppDatabase {
   /// SQLite 状态；WAL 中即使含未提交帧，恢复时 SQLite 会自动回滚 → 得到的
   /// 快照等价于「迁移前一致状态」。测试环境（flutter test 内存库，无真实
   /// 文件且 path_provider 无 binding）直接跳过，不阻断任何迁移。
+  /// 复制完成后执行**保留上限**（只留最近 N 套，防无上限增长）。
+  /// ★ 因为上面那句跳过，本函数在 `flutter test` 下**整体不执行** ⇒
+  /// 保留策略的**逻辑**由 `backup_retention.dart` 的单测覆盖，
+  /// **接线**由 `test/data/database/backup_retention_test.dart` 的源码级契约用例钉住。
   Future<void> _preMigrateBackup(int from) async {
     try {
       if (Platform.environment['FLUTTER_TEST'] == 'true') return;
@@ -1179,6 +1184,14 @@ class AppDatabase extends _$AppDatabase {
           );
         }
       }
+      // 保留上限：同一次迁移的 db / -wal / -shm 算「一套」，只留最近 N 套。
+      // 落点是**共享叶子模块**（见 lib/data/database/backup_retention.dart 头部说明）。
+      // 失败不阻断迁移：外层 try 兜住，逐文件失败由 onError 留痕。
+      await prunePreMigrateBackupSets(
+        dir,
+        onError: (name, e) =>
+            debugPrint('[DB] pre_migrate 备份清理失败（已跳过）: $name $e'),
+      );
     } catch (e) {
       debugPrint('[DB] pre_migrate 备份失败（不阻断迁移）: $e');
     }

@@ -9,7 +9,7 @@
 //
 // 状态转换：
 //   - loadChapters()：从 DB 拉取章节列表
-//   - createChapter()：DB 写入 + 乐观更新列表
+//   - createChapter()：DB 写入 + **回读库侧真实行**后入列（禁止本地另算 sort_order）
 //   - updateChapterTitle()：更新章节标题
 //   - saveChapterContent()：保存章节内容
 //   - adoptContentToChapter()：采纳内容（备份旧内容）
@@ -86,8 +86,18 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
     }
   }
 
-  /// 创建章节：DB 写入 + 追加到列表尾部
+  /// 创建章节：DB 写入 + **回读库侧真实行**后追加到列表尾部
   /// 批次92-3：volumeId 可空——新建章节直接落入指定卷（null = 未分卷）
+  ///
+  /// ★ `D-W1`（2026-09-18）：**不再在本层另算 `sort_order`**。旧写法
+  /// `sortOrder ?? _maxSortOrder() + 1` 遍历的是**可见列表**，而 repository 用的是
+  /// `MAX(sort_order)`（**含回收站行** —— `softDeleteChapter` 只把 status 改 archived、
+  /// **不动 sort_order**）⇒ 删掉 `sort_order` 最大的章再新建，两层**必然分叉**
+  /// （真机实测：内存对象自称 **2** / 库行实为 **4**）⇒ 章标映射查不到该号
+  /// ⇒ **新章在所有展示点渲染「章节未知」**，强停重启才自愈（store 从库重载）。
+  /// 现在整行取库里的值 ⇒ **「两处推算」降为一处**，唯一真源 = DB。
+  /// ★ 顺带消灭同族漂移：`wordCount` / `createdAt` / `volumeId` / `status` 也不再
+  /// 用本地重建值 —— 此前逐字段重建 Chapter，与 `CR-22`（漏传 volumeId）是同一类隐患。
   Future<String?> createChapter({
     String? title,
     String? content,
@@ -103,31 +113,31 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
         sortOrder: sortOrder,
         volumeId: volumeId,
       );
-      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      // CR-23：与 repository 的 MAX(sort_order)+1 对齐。此前取
-      // state.chapters.length——软删章节后列表变短，新章会与现存章节撞
-      // sort_order（实测 state=2 / DB=3，且两章同为 2）。
-      final finalSortOrder = sortOrder ?? _maxSortOrder() + 1;
-      final newChapter = Chapter(
-        id: id,
-        manuscriptId: manuscriptId,
-        title: title ?? '',
-        content: content ?? '',
-        wordCount: (content ?? '').length,
-        sortOrder: finalSortOrder,
-        status: 'draft',
-        lastDiagnosedAt: null,
-        previousContent: null,
-        volumeId: volumeId,
-        createdAt: now,
-        updatedAt: now,
-      );
+      final row = await repo.getChapter(id);
+      if (row == null) {
+        // 「写成功却读不到」是不该发生的状态 ⇒ **不静默**：留痕 + 让上层看见失败。
+        debugPrint('[ChapterListStore] createChapter 回读失败（库行不存在）: id=$id');
+        state = state.copyWith(error: '章节创建后回读失败');
+        return null;
+      }
+      // ★ 按 id 去重后追加 —— 这不是防御性编程，是**必须**的：
+      // `chapterStoreProvider` 在**首次 read 时**会排一个 microtask
+      // `loadChapters()`（`ADR-C90` 单一真源：watch 即自动加载）。本函数改为
+      // 「回读库侧整行」后比旧实现**多一次 DB 往返**，该 microtask 因而可能在
+      // **本行之前**完成 —— 那时 `state.chapters` 已含刚提交的这一行
+      // ⇒ 直接 append 会**重复一条**（实测 `manuscript_detail_page_test #3`：
+      // `Expected: <1>  Actual: <2>`）。
+      // 旧写法（本地构造 + 无条件 append）看起来正常，只是因为它**更快**、
+      // 抢在 `loadChapters` 之前 append、随后被 `loadChapters` 的结果**覆盖**
+      // （**侥幸正确**：正确性依赖执行时序，而非不变量）。
+      // 去重后，两种时序都收敛到同一结果 ⇒ 正确性回到不变量上。
       state = state.copyWith(
-        chapters: [...state.chapters, newChapter],
+        chapters: [...state.chapters.where((c) => c.id != row.id), row],
         clearError: true,
       );
       debugPrint(
-        '[ChapterListStore] createChapter 成功: id=$id title="${title ?? '未命名章节'}"',
+        '[ChapterListStore] createChapter 成功: id=$id '
+        'title="${title ?? '未命名章节'}" sortOrder=${row.sortOrder}',
       );
       return id;
     } catch (e) {
@@ -137,18 +147,6 @@ class ChapterListStore extends StateNotifier<ChapterListState> {
       state = state.copyWith(error: e.toString());
       return null;
     }
-  }
-
-  /// 当前列表中的最大 sort_order（无章节时 -1）。
-  ///
-  /// 与 repository 侧 `MAX(sort_order)` 对齐——repository 算 order 时用的是
-  /// MAX+1，乐观更新必须用同一公式，否则两层排序值漂移（CR-23）。
-  int _maxSortOrder() {
-    var max = -1;
-    for (final c in state.chapters) {
-      if (c.sortOrder > max) max = c.sortOrder;
-    }
-    return max;
   }
 
   /// 更新章节标题
