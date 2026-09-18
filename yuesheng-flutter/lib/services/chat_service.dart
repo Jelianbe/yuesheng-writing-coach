@@ -1241,19 +1241,28 @@ extension ChatServiceSend on ChatService {
   }
 
   /// 历史后追加 L1 核心纪律重申（批次4 4.3 + X-040 PHI P2，R-019 拆出）。
+  ///
+  /// ★ UW 批（2026-09-19）：**压缩**。本块位于「增长区之后」⇒ 每轮落在缓存前缀
+  /// 分叉点之后 ⇒ 全价 miss。实测 271 字符 ≈ 146 token，占稳态同组连续轮 miss
+  /// （≈247 token）的 59%，是稳态输入侧 miss 的**最大单项**。6 条纪律的内容在
+  /// 稳定前缀中**全部已有**（`skills_l1_core_p1.dart:99` / `p2:309` / `p3:149`、
+  /// `shared_constants.dart:464`、`skills_reply_voice.dart`）⇒ 本块的独特价值仅是
+  /// **末位重申**（PHI：尾部注意力偏好）⇒ 保留位置、压缩文案。
+  /// 依据：`.ai/reports/2026-09-19-UW组-收益口径重算.md` · `.ai/tools/cost_model_uw.py`
+  ///
+  /// 被三处锁定，改动须同步：`chat_service_intent_injection_test.dart`（须含标题
+  /// 且必须最末）· `chat_discipline_contract_test.dart`（「诊断块按」后 120 字符内
+  /// 须含 `[YS_DIAGNOSIS]`）· `test/snapshots/message_sequence_anchor.json`（末条 len/fnv）。
   void _appendDisciplineReminder(List<ChatMessage> messages) {
     messages.add(
       ChatMessage(
         role: 'system',
         content:
             '# 回复纪律（最后提醒）\n\n'
-            '长历史易稀释前置约束，此处重申 L1 核心纪律，回复时严格遵守：\n\n'
-            '1. 不替用户写句子、不替用户做决定；\n'
-            '2. 一次只抛一个点，删掉铺垫；\n'
-            '3. 示范按当前态度档位执行：doubao/yuesheng 最小示范，sensei 零示范只给方向；\n'
-            '4. 诊断结论必须基于用户实际文本，不假定被预算闸门裁掉的素材内容；\n'
-            '5. 回复去 AI 味，不用"让我来帮你"等套话；\n'
-            '6. 诊断块按 [YS_DIAGNOSIS]...[/YS_DIAGNOSIS] 标记输出（用户请求诊断时），卡片块用对应标签，不裸露 JSON。',
+            '长历史易稀释前置约束，末位重申 L1 核心纪律：'
+            '①不代写不代决定；②一次一个点、删铺垫；③示范按态度档位；'
+            '④结论基于实际文本、不假定被裁素材；⑤去 AI 味；'
+            '⑥诊断块按 [YS_DIAGNOSIS] 标记输出，不裸露 JSON。',
       ),
     );
   }
