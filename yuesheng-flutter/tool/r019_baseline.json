@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 424,
+  "fileCount": 426,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -279,15 +279,15 @@
     {
       "file": "lib/widgets/message_list.dart",
       "func": "_showDeleteConfirm",
-      "start": 262,
-      "end": 314,
+      "start": 265,
+      "end": 317,
       "lines": 53
     },
     {
       "file": "lib/widgets/message_list.dart",
       "func": "build",
-      "start": 369,
-      "end": 594,
+      "start": 372,
+      "end": 597,
       "lines": 226
     },
     {
@@ -340,24 +340,17 @@
       "lines": 81
     },
     {
-      "file": "lib/widgets/outline_drawer.dart",
+      "file": "lib/widgets/outline_content_view.dart",
       "func": "build",
-      "start": 49,
-      "end": 141,
-      "lines": 93
-    },
-    {
-      "file": "lib/widgets/outline_drawer.dart",
-      "func": "build",
-      "start": 297,
-      "end": 379,
+      "start": 226,
+      "end": 308,
       "lines": 83
     },
     {
-      "file": "lib/widgets/outline_drawer.dart",
+      "file": "lib/widgets/outline_content_view.dart",
       "func": "build",
-      "start": 397,
-      "end": 472,
+      "start": 326,
+      "end": 401,
       "lines": 76
     },
     {
@@ -412,8 +405,8 @@
     {
       "file": "lib/widgets/practice_task_card.dart",
       "func": "build",
-      "start": 167,
-      "end": 373,
+      "start": 210,
+      "end": 416,
       "lines": 207
     },
     {

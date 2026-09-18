@@ -20,7 +20,7 @@ import '../../data/repositories/outline_repository.dart';
 import '../../data/repositories/setting_link_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
-import '../outline_drawer.dart' show kOutlineTypeOrder;
+import '../outline_shared.dart';
 import 'setting_links_section.dart';
 
 class OutlineEntityDetailPage extends ConsumerStatefulWidget {
@@ -71,13 +71,6 @@ class _OutlineEntityDetailPageState
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _typeLabel(String type) {
-    for (final g in kOutlineTypeOrder) {
-      if (g.type == type) return g.label;
-    }
-    return type;
-  }
-
   String _statusLabel(String status) => switch (status) {
     'pending' => '待确认',
     'active' => '已生效',
@@ -118,7 +111,7 @@ class _OutlineEntityDetailPageState
               padding: const EdgeInsets.all(AppSpacing.page),
               children: [
                 _HeaderCard(
-                  typeLabel: _typeLabel(entity.entityType),
+                  typeLabel: outlineTypeLabel(entity.entityType),
                   statusLabel: _statusLabel(entity.status),
                 ),
                 if (entity.aliases.isNotEmpty)

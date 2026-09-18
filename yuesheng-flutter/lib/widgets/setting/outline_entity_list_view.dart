@@ -17,10 +17,7 @@ import '../../data/database/database.dart';
 import '../../data/repositories/outline_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
-import '../outline_drawer.dart' show kOutlineTypeOrder;
-
-/// 实体可展示的状态（rejected/superseded/expired 视为无效跳过，与大纲抽屉同）
-const Set<String> _visibleStatuses = {'pending', 'active'};
+import '../outline_shared.dart';
 
 /// 状态 → 中文徽标
 String _statusLabel(String status) => switch (status) {
@@ -57,17 +54,10 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
     if (!mounted) return;
     setState(() {
       _entities = items
-          .where((e) => _visibleStatuses.contains(e.status))
+          .where((e) => kOutlineVisibleStatuses.contains(e.status))
           .toList();
       _loading = false;
     });
-  }
-
-  String _typeLabel(String type) {
-    for (final g in kOutlineTypeOrder) {
-      if (g.type == type) return g.label;
-    }
-    return type;
   }
 
   Future<void> _confirm(OutlineEntity entity) async {
@@ -104,7 +94,7 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
       child: ListTile(
         title: Text(entity.entityKey, style: AppTextStyles.titleMd),
         subtitle: Text(
-          '${_typeLabel(entity.entityType)} · ${_statusLabel(entity.status)}',
+          '${outlineTypeLabel(entity.entityType)} · ${_statusLabel(entity.status)}',
           style: AppTextStyles.caption,
         ),
         onTap: () => context.push(
