@@ -19,6 +19,13 @@
 // ★ 本批次的行为边界
 //   **不改任何表现**：字号、文案、过滤条件、动作时序与迁出前**逐字一致**。
 //   分类常量与类型标签查找已改指 `outline_shared.dart`（同值同语义，仅去重）。
+//
+// ★ 后续批次 N12-F1 的**有意**表现变更（ADR-C95）
+//   来源章标由「直渲染 `sourceChapterNo`」→ 「按**作品当前章节列表的序位**解析」。
+//   原因：`sourceChapterNo` 存的是 0 基 `chapter.sortOrder`（**身份键**，删除不重编号），
+//   原实现会把首章渲染成「第0章」。解析失败（章已删/在回收站）⇒ **不显示章标**。
+//   这是本文件**唯一**有意的表现变更；其余仍与迁出前逐字一致。
+//   口径与反例：`docs/ADR-C95-chapter-number-convention.md` · 实现 `utils/chapter_number.dart`。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -29,6 +36,7 @@ import '../data/database/database.dart';
 import '../data/repositories/outline_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/manuscript_providers.dart';
+import '../utils/chapter_number.dart';
 import 'outline_shared.dart';
 
 /// 大纲记忆内容体（可嵌入组件：无 Drawer / 无 SafeArea / 无头部）。
@@ -44,6 +52,12 @@ class OutlineContentView extends ConsumerWidget {
     final viewAsync = msId.isEmpty
         ? null
         : ref.watch(outlineViewProvider(msId));
+    // ADR-C95：来源章标按「作品当前章节列表中的序位」解析——库里的
+    // `sourceChapterNo` 是 **0 基身份键**（`chapter.sortOrder`），**不得**直接渲染，
+    // 也不得用 `+1` 兜底（删除不重编号 ⇒ 会算错）。
+    final chapterNoMap = buildChapterNoMap(
+      msId.isEmpty ? const <Chapter>[] : ref.watch(chapterListProvider(msId)),
+    );
 
     if (viewAsync == null) return const _OutlineEmpty();
     return viewAsync.when(
@@ -62,6 +76,7 @@ class OutlineContentView extends ConsumerWidget {
           ? const _OutlineEmpty()
           : _OutlineList(
               view: view,
+              chapterNoMap: chapterNoMap,
               onConfirmEntity: _confirmEntity(context, ref, msId),
               onConfirmImpression: _confirmImpression(context, ref, msId),
               onRejectImpression: _rejectImpression(context, ref, msId),
@@ -127,6 +142,9 @@ class OutlineContentView extends ConsumerWidget {
 class _OutlineList extends StatelessWidget {
   final OutlineView view;
 
+  /// ADR-C95：`sortOrder → 展示章号(1 基)` 映射（由外壳解析后下传）
+  final Map<int, int> chapterNoMap;
+
   /// 批次87-4：快速确认/拒绝回调（id 参数）
   final ValueChanged<String> onConfirmEntity;
   final ValueChanged<String> onConfirmImpression;
@@ -134,6 +152,7 @@ class _OutlineList extends StatelessWidget {
 
   const _OutlineList({
     required this.view,
+    required this.chapterNoMap,
     required this.onConfirmEntity,
     required this.onConfirmImpression,
     required this.onRejectImpression,
@@ -153,6 +172,7 @@ class _OutlineList extends StatelessWidget {
         entities.map(
           (e) => _EntityCard(
             entity: e,
+            chapterNoMap: chapterNoMap,
             impressions:
                 view.impressionsByEntity[e.id] ?? const <OutlineImpression>[],
             onConfirm: () => onConfirmEntity(e.id),
@@ -207,6 +227,9 @@ class _EntityCard extends StatelessWidget {
   final OutlineEntity entity;
   final List<OutlineImpression> impressions;
 
+  /// ADR-C95：`sortOrder → 展示章号(1 基)` 映射
+  final Map<int, int> chapterNoMap;
+
   /// 批次87-4：pending 实体快速确认回调
   final VoidCallback onConfirm;
 
@@ -217,6 +240,7 @@ class _EntityCard extends StatelessWidget {
   const _EntityCard({
     required this.entity,
     required this.impressions,
+    required this.chapterNoMap,
     required this.onConfirm,
     required this.onConfirmImpression,
     required this.onRejectImpression,
@@ -298,6 +322,7 @@ class _EntityCard extends StatelessWidget {
             ...visibleImps.map(
               (im) => _ImpressionRow(
                 impression: im,
+                chapterNoMap: chapterNoMap,
                 onConfirm: () => onConfirmImpression(im.id),
                 onReject: () => onRejectImpression(im.id),
               ),
@@ -312,12 +337,16 @@ class _EntityCard extends StatelessWidget {
 class _ImpressionRow extends StatelessWidget {
   final OutlineImpression impression;
 
+  /// ADR-C95：`sortOrder → 展示章号(1 基)` 映射
+  final Map<int, int> chapterNoMap;
+
   /// 批次87-4：确认/拒绝回调（仅 pending 时显示按钮）
   final VoidCallback onConfirm;
   final VoidCallback onReject;
 
   const _ImpressionRow({
     required this.impression,
+    required this.chapterNoMap,
     required this.onConfirm,
     required this.onReject,
   });
@@ -325,6 +354,8 @@ class _ImpressionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPending = impression.status == 'pending';
+    // ADR-C95 裁定 2：解析失败（章已删/在回收站）⇒ **不显示章标**，不编造数字。
+    final chapterTag = chapterLabel(chapterNoMap, impression.sourceChapterNo);
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Column(
@@ -333,9 +364,9 @@ class _ImpressionRow extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (impression.sourceChapterNo != null) ...[
+              if (chapterTag != null) ...[
                 _Tag(
-                  label: '第${impression.sourceChapterNo}章',
+                  label: chapterTag,
                   bg: AppColors.primarySoft,
                   fg: AppColors.primary,
                 ),

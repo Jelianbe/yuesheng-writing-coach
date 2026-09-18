@@ -1638,10 +1638,15 @@ void main() {
       );
       final entities = await repo.listEntities(manuscriptId);
       final linwan = entities.firstWhere((e) => e.entityKey == '林晚');
+      // ADR-C95（批次 N12-F1）：`sourceChapterNo` 是 **0 基 `sort_order`**（身份键）。
+      // 本测试的稿件只有 1 章（setUp 造，`sort_order = 0`）⇒ 要断言「第1章」，
+      // 必须指向 sortOrder **0**。原夹具写 1（指向**不存在的章**），旧实现直渲染
+      // 才恰好显示「第1章」——**夹具本身在编码缺陷**。
+      // ⚠️ 本次只改**夹具**，其后的断言（`expect(find.text('第1章'), …)`）**未动**。
       final impId = await repo.insertImpression(
         entityId: linwan.id,
         impression: '怕黑，小时候在巷口走丢过',
-        sourceChapterNo: 1,
+        sourceChapterNo: 0,
       );
       // 确认后：印象 active + 实体 active
       await repo.approveImpression(impId);

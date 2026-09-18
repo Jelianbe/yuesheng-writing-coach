@@ -16,9 +16,11 @@
 //     5. 未知类型（volume/chapter）不展示 —— **锁当前行为**，N6 开工时随实现改
 //     6. 外壳契约：右上角关闭回调被调用
 //
-// ⚠️ 已知缺陷（**另批处理**，本文件刻意不断言、以免把缺陷固化成预期）：
-//   `_ImpressionRow` 的 `第${sourceChapterNo}章` 用 0 基的 `chapter.sortOrder`
-//   原值 ⇒ 首章会显示「第0章」。故本文件的来源章节一律取 > 0 的值。
+// ★ 修订（同批后续子批 **N12-F1 · ADR-C95**）：上述缺陷**已修**。
+//   `_ImpressionRow` 现按「作品当前章节列表中的序位」解析章号
+//   （实现 `lib/utils/chapter_number.dart`，裁定 `docs/ADR-C95-chapter-number-convention.md`）。
+//   ⇒ 本文件的章标用例改为**播种真实章节**，并补 F1 专项正负例
+//     （含「删除不重编号」反例与「引用已删章」负例）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:drift/native.dart';
@@ -26,9 +28,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/providers/chapter_providers.dart';
 import 'package:writingcoach/providers/manuscript_providers.dart';
 import 'package:writingcoach/widgets/outline_content_view.dart';
 import 'package:writingcoach/widgets/outline_drawer.dart';
@@ -111,6 +115,26 @@ void main() {
     return all.firstWhere((e) => e.entityKey == key).id;
   }
 
+  /// 播种章节（ADR-C95：章标解析的数据源）。
+  ///
+  /// `sortOrder` **显式指定** —— 本批核心正是「`sort_order` ≠ 展示序位」；
+  /// 若用默认的 `MAX+1`，就永远造不出「删除留下的空洞」，§反例也就测不出来。
+  Future<void> seedChapters(List<int> sortOrders) async {
+    final chapterRepo = ChapterRepository(db);
+    for (final o in sortOrders) {
+      await chapterRepo.createChapter(
+        manuscriptId,
+        title: '第${o + 1}章',
+        sortOrder: o,
+      );
+    }
+    // chapterStoreProvider 的加载是**微任务异步**；显式 await 一次，避免
+    // 首帧 pump 时章节列表尚空 ⇒ 章标偶发缺失（会把正例误判成缺陷）。
+    await container
+        .read(chapterStoreProvider(manuscriptId).notifier)
+        .loadChapters();
+  }
+
   // ── 1. 解绑本身 ──────────────────────────────────────────────
   group('N12 解绑：内容体与抽屉外壳分离', () {
     testWidgets('#N12-0 内容体可脱离 Drawer 独立承载（目的判据）', (tester) async {
@@ -180,11 +204,14 @@ void main() {
   });
 
   testWidgets('#N12-3 来源章节 tag：有章节号渲染 / 无则无 tag（正负例）', (tester) async {
+    // ADR-C95：`sourceChapterNo` 是 0 基 `sort_order`（身份键）；
+    // 播种 [0,1,2] ⇒ `sortOrder = 2` 的展示序位是 **3**。
+    await seedChapters([0, 1, 2]);
     final id = await insertEntity(type: 'character', key: '林晚');
     await repo.insertImpression(
       entityId: id,
       impression: '怕黑',
-      sourceChapterNo: 3,
+      sourceChapterNo: 2,
     );
     await repo.insertImpression(entityId: id, impression: '会辨草药');
 
@@ -199,16 +226,17 @@ void main() {
 
   // ── 4. 状态过滤（正负例） ─────────────────────────────────────
   testWidgets('#N12-4 状态过滤：pending 展示 / rejected 不展示（正负例）', (tester) async {
+    await seedChapters([0, 1, 2]);
     final id = await insertEntity(type: 'character', key: '林晚');
     await repo.insertImpression(
       entityId: id,
       impression: '怕黑',
-      sourceChapterNo: 5,
+      sourceChapterNo: 1,
     );
     final dropId = await repo.insertImpression(
       entityId: id,
       impression: '曾落水',
-      sourceChapterNo: 6,
+      sourceChapterNo: 2,
     );
 
     // 正例：两条都可见
@@ -255,5 +283,72 @@ void main() {
     expect(find.text('还没有大纲'), findsOneWidget);
     // 负例：库里确实有实体，但空 id 不得把它渲染出来
     expect(find.text('林晚'), findsNothing);
+  });
+
+  // ── 7. 章号口径（子批 N12-F1 · ADR-C95）───────────────────────
+  //
+  // 三条判据一一对应 ADR §7：
+  //   正例（判据1）· 杀死 `sortOrder + 1` 兜底（判据2）· 杀死「非 null 即渲染」（判据3）
+  group('N12-F1 章号口径（ADR-C95）', () {
+    testWidgets('#N12-F1-1 首章渲染「第1章」而**非**「第0章」（原缺陷直接回归）', (tester) async {
+      await seedChapters([0]);
+      final id = await insertEntity(type: 'character', key: '林晚');
+      await repo.insertImpression(
+        entityId: id,
+        impression: '怕黑',
+        sourceChapterNo: 0,
+      );
+
+      await pumpDrawer(tester);
+
+      expect(find.text('第1章'), findsOneWidget);
+      expect(
+        find.text('第0章'),
+        findsNothing,
+        reason: '0 基 sort_order 是身份键，不得直接渲染',
+      );
+    });
+
+    testWidgets('#N12-F1-2 删过首章的稿 ⇒ 序位正确（**杀死 `sortOrder + 1` 兜底**）', (
+      tester,
+    ) async {
+      // 章节 [1,2]：0 号那章已被删 ⇒ 这两章现在是第 1、2 章。
+      // `sortOrder + 1` 会给出 2、3 —— 与序位不等价（ADR-C95 §3 反例 1）。
+      await seedChapters([1, 2]);
+      final id = await insertEntity(type: 'character', key: '林晚');
+      await repo.insertImpression(
+        entityId: id,
+        impression: '怕黑',
+        sourceChapterNo: 2,
+      );
+
+      await pumpDrawer(tester);
+
+      expect(find.text('第2章'), findsOneWidget);
+      expect(
+        find.text('第3章'),
+        findsNothing,
+        reason: '删除不重编号 ⇒ `sortOrder + 1` 在这里是错的',
+      );
+    });
+
+    testWidgets('#N12-F1-3 引用已删章 ⇒ 不渲染章标（不编造数字）', (tester) async {
+      await seedChapters([0, 1]);
+      final id = await insertEntity(type: 'character', key: '林晚');
+      await repo.insertImpression(
+        entityId: id,
+        impression: '雨天落水',
+        sourceChapterNo: 9, // 该章已不在列表中（已删 / 回收站 / 越界）
+      );
+
+      await pumpDrawer(tester);
+
+      expect(find.text('雨天落水'), findsOneWidget, reason: '梗概本身照常展示');
+      expect(
+        find.textContaining('章'),
+        findsNothing,
+        reason: '解析失败 ⇒ 隐藏章标，而不是编造「第10章」或保留「第9章」',
+      );
+    });
   });
 }
