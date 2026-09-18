@@ -3,7 +3,8 @@
 //
 // 背景：inferCognitiveStyle / buildStrategyEffectiveness / inferProficiency
 // 在 test/ 里**零直接引用**，此前只有经 buildStudentContext 的间接覆盖
-// ——6 个变异全部漏网（见 tool/_verify_profile_r019_batch.py），
+// ——6 个变异全部漏网（见 .trae/documents/probes/_verify_profile_r019_batch.py；
+//    该探针已于 2026-09-18 批次 6 移出公开仓、归档至 `.trae/documents/probes/`），
 // 即「测试全绿」并不代表这些分支被验证过。本文件补的正是这块真空。
 //
 // 每个用例都锚定一处判据边界，变异验证要求：改动该判据 → 本文件必须变红。
