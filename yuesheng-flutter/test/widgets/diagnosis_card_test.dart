@@ -1044,6 +1044,65 @@ void main() {
     });
   });
 
+  // ── 批次 N11：「为什么」行视觉提档（独立验证带出的负向观察）──
+  // 原状：正文 = noteCaption（12px + textSecondary），与同块「证据」正文
+  // **同级同色** ⇒ 长卡片里易被当作辅助说明略过。本组把「提档」变成可执行断言，
+  // 防止后人一次无意的样式回收又把该行压回辅助层。
+  group('批次 N11：「为什么」行视觉提档', () {
+    testWidgets('N11-1 正文与标签同档 13px + textDeep，且严于同块「证据」正文', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: const [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P028',
+                name: '画面感缺失症',
+                severity: 'L2',
+                evidenceCount: 0, // 走「（无证据列表）」分支 = 同块参照物
+                explanation: '全段五句均为概括性叙述，没有一个具体可感的细节',
+              ),
+            ],
+            suggestedActions: const [],
+            confidence: 0.8,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      final label = tester.widget<Text>(find.text('为什么：'));
+      final body = tester.widget<Text>(find.textContaining('全段五句均为概括性叙述'));
+      final evidenceBody = tester.widget<Text>(find.text('（无证据列表）'));
+
+      // 提档后的档位：13px（本卡片既有次级档：header meta / 改写建议 / 13px 散文行）
+      expect(label.style?.fontSize, 13, reason: '标签随正文同档，避免标签小于正文');
+      expect(body.style?.fontSize, 13, reason: '正文提档到 13px');
+      // 深青：整行读作一个「教学解释」单元，与灰色证据行靠色相区分
+      // （色相差比 1px 字号差更抗弱视/弱光）
+      expect(label.style?.color, AppColors.textDeep);
+      expect(body.style?.color, AppColors.textDeep);
+      // 唯一的整段散文行：给足行高
+      expect(body.style?.height, 1.5, reason: '多行散文需 1.5 行高');
+
+      // ★ 本组真正要锁定的**关系**（而非某个具体值）：
+      //   提档后的「为什么」必须严格严于同块「证据」正文。
+      expect(
+        body.style!.fontSize!,
+        greaterThan(evidenceBody.style!.fontSize!),
+        reason: '「为什么」必须比「证据」正文更大，否则又会被略过',
+      );
+      expect(
+        evidenceBody.style!.color,
+        isNot(AppColors.textDeep),
+        reason: '参照物应仍是灰色系；两者同色即层级塌陷',
+      );
+    });
+  });
+
   // ── 批次 D-B：payload 往返（focusReason 序列化）──
   group('DiagnosisResultCardPayload focusReason 往返', () {
     test('D5 toJson 含 focusReason / fromJson 读回', () {

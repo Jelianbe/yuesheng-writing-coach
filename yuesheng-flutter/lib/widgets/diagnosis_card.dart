@@ -816,6 +816,13 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
   /// 该字段此前从未进入卡片 payload，故恒不渲染；接线后**默认展示、不需额外点击**，
   /// 与同块内「证据」行（指出位置）共同构成用户诉求的「指出位置 + 为什么」。
   /// null / 空串时不渲染（数据诚实：不编造理由）。
+  ///
+  /// 视觉提档（批次 N11，2026-09-18）：原与「证据」正文**同级同色**
+  /// （`noteCaption` = 12px + textSecondary）⇒ 独立验证判断「长卡片里易被当作
+  /// 辅助说明略过，有重演『接出来了但用户仍不看』的风险」。
+  /// 现提为 13px + `textDeep`（深青）+ `height: 1.5`，成为症候块内的**视觉次强项**
+  /// （仅弱于严重度 chip），且 13px 与本卡片既有次级档一致
+  /// （header meta / 改写建议 / 本文件 1087 行的 13px textDeep 散文行）。
   Widget _buildWhyRow() {
     final why = widget.syndrome.explanation?.trim();
     if (why == null || why.isEmpty) return const SizedBox.shrink();
@@ -827,13 +834,19 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           const Text(
             _CardText.whyLabel,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.textDeep,
             ),
           ),
           const SizedBox(height: 2),
-          Text(why, style: AppTextStyles.noteCaption),
+          Text(
+            why,
+            style: AppTextStyles.subBody.copyWith(
+              color: AppColors.textDeep,
+              height: 1.5,
+            ),
+          ),
         ],
       ),
     );
