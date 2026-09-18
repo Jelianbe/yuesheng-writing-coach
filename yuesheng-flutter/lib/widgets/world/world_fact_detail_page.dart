@@ -26,9 +26,11 @@ import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/manuscript_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/world_editor_service.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 import '../../data/repositories/setting_link_repository.dart';
 import '../setting/setting_links_section.dart';
 import '../setting/setting_progressions_section.dart';
@@ -181,10 +183,25 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
   }
 
   /// Progressions 章节演进区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
+  ///
+  /// `N12-F3b` phase 3：本区块已改吃**身份**，而世界观侧**尚无身份载体** ⇒ 当前
+  /// **不出节点**：
+  ///   ① `world_fact.first_seen_chapter` 的唯一写入方是「新建设定主题」对话框
+  ///      （`world_fact_list_view.dart:65`），存的是**用户手填的展示数**，未归一；
+  ///   ② 世界观断言**没有** `chapterSortOrder` 写入方（写侧只填旧列 `chapter`）。
+  /// ⇒ 这是 `S1`（无身份不渲染、不编造数字）在**位置有序视图**上的一致应用，
+  ///   **不是缺陷**；本区块不承载独有信息 —— 世界观断言在 `_assertionWidgets()`
+  ///   的瓦片里照常可见（含其章标）。
+  /// ⇒ **刻意不传 `firstSeenChapter`**：该列不是身份，喂进来会被当身份解析，
+  ///   在有删除 / 重排的稿上渲染成**另一章**（`ADR-C96 §3` 反例）。
+  /// ⇒ **前置补齐项 = 世界观身份写入方**（`DECISIONS §2` / 报告 §10）。map 现在就
+  ///   传真值：写入方落地那天，本区块**无需再改**即可出节点。
   Widget _buildProgressionsSection() {
     return SettingProgressionsSection(
       assertions: _assertions,
-      firstSeenChapter: _row?.firstSeenChapter,
+      chapterNoMap: buildChapterNoMap(
+        ref.watch(chapterListProvider(widget.manuscriptId)),
+      ),
     );
   }
 

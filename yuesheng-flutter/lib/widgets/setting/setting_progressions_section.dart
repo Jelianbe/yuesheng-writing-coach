@@ -6,6 +6,11 @@
 // 本区块=章节视角（Codex Progressions「按时间点演进」）。
 //
 // 纯展示层：零 schema 变更、不参与诊断注入。空态隐藏（无任何节点）。
+//
+// ★ 章标口径（`N12-F3b` phase 3，2026-09-18）：节点的键是**身份**
+//   （`ProgressionPoint.chapterIdentity`），「第N章」文案**只能**经
+//   `chapterLabel(chapterNoMap, …)` 解析 —— 见 `utils/chapter_number.dart` 文件头。
+//   解析不出（已删章 / 回收站 / 越界）⇒ 渲染「章节未知」，**不编造数字**。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -14,6 +19,7 @@ import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../services/progression_builder.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 
 /// 详情页「章节演进」区块（角色/世界观同构挂载）。
 class SettingProgressionsSection extends StatelessWidget {
@@ -21,11 +27,20 @@ class SettingProgressionsSection extends StatelessWidget {
   final List<EventFact> events;
   final int? firstSeenChapter;
 
+  /// `sortOrder → 展示章号(1 基)`（`utils/chapter_number.dart` 的
+  /// [buildChapterNoMap]；入参须是已按 `sort_order` 升序的章节列表）。
+  ///
+  /// **必填、且刻意不给默认值**：给个默认空表会让「忘了传」编译通过、运行成
+  /// 每节点都「章节未知」—— 那是「传错参数不报错、只是显示错东西」的同一类坑
+  /// （见 `chapter_number.dart` 文件头对 `S1` 的说明）。
+  final Map<int, int> chapterNoMap;
+
   const SettingProgressionsSection({
     super.key,
     required this.assertions,
     this.events = const [],
     this.firstSeenChapter,
+    required this.chapterNoMap,
   });
 
   @override
@@ -76,7 +91,8 @@ class SettingProgressionsSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '第 ${point.chapter} 章',
+                    // 只吃身份；解析不出 ⇒ 「章节未知」，不编造数字（`S1`）。
+                    chapterLabel(chapterNoMap, point.chapterIdentity) ?? '章节未知',
                     style: AppTextStyles.microCaption,
                   ),
                   const SizedBox(height: 2),

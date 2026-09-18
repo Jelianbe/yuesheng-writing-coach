@@ -191,11 +191,15 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   }
 
   /// Progressions 章节演进区块（R-019 拆分：详情页 build 临界，挂载抽方法）。
+  ///
+  /// `N12-F3b` phase 3：时间轴改吃**身份** —— 断言/事件走各自 `chapterSortOrder`，
+  /// `firstSeenChapter` 本就是身份键（`N12-F3a` 已在写入前归一），故直接透传。
   Widget _buildProgressionsSection() {
     return SettingProgressionsSection(
       assertions: _assertions,
       events: _events,
       firstSeenChapter: _row?.firstSeenChapter,
+      chapterNoMap: _chapterNoMap(),
     );
   }
 

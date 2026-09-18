@@ -15,7 +15,7 @@
 // ★ 已删章的引用：解析**失败**（返回 null）⇒ 调用方应**隐藏**章标，
 //   不得编造一个数（ADR 裁定 2）。
 //
-// ★ 覆盖范围（2026-09-18 `N12-F3a` / `N12-F3b` phase 1+2；取证见
+// ★ 覆盖范围（2026-09-18 `N12-F3a` / `N12-F3b` phase 1+2+3；取证见
 //   `.ai/reports/2026-09-18-N12-F3-侦察.md §3` 与 `...-N12-F3b-侦察.md §1`）：
 //   ✅ `outline_impression.source_chapter_no` —— `N12-F1`
 //   ✅ `character_fact.first_seen_chapter` —— `N12-F3a`；同时用 [sortOrderAtPosition]
@@ -31,8 +31,19 @@
 //        （裁定见 `DECISIONS §3-7`），与下方裁定 2「解析失败即隐藏、不编造」同源。
 //        ⇒ **传错参数不会报错，只会显示一个错的号**：本函数收的是「假定已是身份」
 //        的值，**不得**传 `assertion.chapter` / `event_fact.chapter` 等旧列原值。
-//   ❌ `world_fact.first_seen_chapter` —— 实测**无机器写入方**（只有用户手填路径），
-//      与 `character_fact` **同名不同基** ⇒ **不得**套用本文件任何函数（报告 §3.1）。
+//   ✅ **展示侧 phase 3（同日）**：`services/progression_builder.dart` +
+//      `widgets/setting/setting_progressions_section.dart`（章节演进时间轴）已改吃身份
+//      —— 分组键 = `chapterSortOrder`，标签经 `chapterLabel`；**无身份不进时间轴**
+//      （位置有序视图里「无位序」≡「无章节」；**刻意不建「未知」桶**，那会伪造「同章」
+//      语义，见 `DECISIONS §4-33`）。
+//      ⚠️ **世界观侧同一区块当前不出节点** —— 它的两个来源都不是身份载体（见下方 ❌）。
+//      这不是缺陷，是 `S1` 的一致应用；补齐项 = **世界观身份写入方**（报告 §10）。
+//   ❌ `world_fact.first_seen_chapter` —— 实测**无机器写入方**（唯一写入方 = 用户
+//      「新建设定主题」对话框，存的是**手填的展示数**、未归一），与 `character_fact`
+//      **同名不同基** ⇒ **不得**套用本文件任何函数（报告 §3.1）。
+//   ❌ `world_fact` 断言的 `chapter` —— 由用户对话框 / 追加表单写入，**无
+//      `chapterSortOrder` 写入方** ⇒ 世界观断言瓦片（`world_fact_detail_page.dart`
+//      的 `_WorldAssertionTile`）与世界观时间轴**均未切换**；该列同样**不得**喂进本文件。
 //   ❌ **服务层生成的文本**（`subplot_closure_detector` / `event_causality_detector` /
 //      `conflict_detector` 的 observation · `setting_library_service` 的 LLM prompt）
 //      —— 它们进 **AI 上下文 / prompt**、不进 widget 树，且**拿不到 `chapterNoMap`**

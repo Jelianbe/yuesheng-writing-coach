@@ -48,8 +48,8 @@ cleanup_lock() {
   fi
 }
 # ★ 2026-09-17 起**不再用 exec** 启动 flutter（理由见文件末尾注释），
-EXIT trap 因此恢复正常工作；下面这行 trap 保留作兜底，
-覆盖「flutter 尚未启动就失败」的路径。
+# EXIT trap 因此恢复正常工作；下面这行 trap 保留作兜底，
+# 覆盖「flutter 尚未启动就失败」的路径。
 trap cleanup_lock EXIT INT TERM
 echo "$$" > "$LOCK"
 
