@@ -3,10 +3,10 @@
 //
 // 模拟真实升级：用 sqlite3 手工构造 v23 存量库文件（含 volumes 表 +
 // chapters.volume_id，status CHECK 无 'archived'，manuscripts 无 tags），
-// user_version = 23，再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(23 → … → 38)。
+// user_version = 23，再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(23 → … → kSchemaHead)。
 //
 // 覆盖：
-//   1. 升级后 user_version = 38
+//   1. 升级后 user_version = kSchemaHead
 //   2. 存量章节数据完整保留（含 volume_id 卷归属）
 //   3. status CHECK 已扩展：可写入 status='archived'（回收站软删）
 //   4. manuscripts.tags 列已补（v25 标签落库）
@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -192,9 +193,9 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 38
+    // 1. user_version 升到 kSchemaHead
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     // 2. 存量章节保留（含 volume_id）
     final chapter = await ChapterRepository(db).getChapter('c1');
@@ -231,6 +232,6 @@ void main() {
     final chapter = await ChapterRepository(db2).getChapter('c1');
     expect(chapter!.status, 'draft');
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
   });
 }

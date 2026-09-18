@@ -11,7 +11,7 @@
 //   本测试专防 world_fact 重演：判据 `from < 31` 对存量库与最小库**都可达**。
 //
 // 覆盖：
-//   1. v30 存量库升级 → world_fact 建立且可写，user_version = 38
+//   1. v30 存量库升级 → world_fact 建立且可写，user_version = kSchemaHead
 //   2. 最小 schema 库（v24）升级 → world_fact 建立（可达性验证）
 //   3. 幂等：v31 库重复打开不报错、不重复建表
 // ─────────────────────────────────────────────────────────────
@@ -22,6 +22,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -232,39 +233,42 @@ void main() {
     }
   });
 
-  test('#1 v30 → v31 升级：world_fact 建立且可写，user_version = 38', () async {
-    final db = AppDatabase.forTesting(
-      NativeDatabase(File(createV30LegacyDbFile())),
-    );
-    addTearDown(db.close);
+  test(
+    '#1 v30 → v31 升级：world_fact 建立且可写，user_version = $kSchemaHead',
+    () async {
+      final db = AppDatabase.forTesting(
+        NativeDatabase(File(createV30LegacyDbFile())),
+      );
+      addTearDown(db.close);
 
-    final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), kSchemaHead);
 
-    expect(
-      await _tableExists(db, 'world_fact'),
-      isTrue,
-      reason: '存量库升级后 world_fact 必须存在（DoD #1）',
-    );
+      expect(
+        await _tableExists(db, 'world_fact'),
+        isTrue,
+        reason: '存量库升级后 world_fact 必须存在（DoD #1）',
+      );
 
-    // 可写 + 默认值与 DDL 一致
-    await db.customStatement(
-      "INSERT INTO world_fact (id, manuscript_id, name) "
-      "VALUES ('wf1', 'm1', '灵气体系')",
-    );
-    final row = await db
-        .customSelect("SELECT * FROM world_fact WHERE id = 'wf1'")
-        .getSingle();
-    expect(row.read<String>('name'), '灵气体系');
-    expect(row.read<String>('assertions'), '[]');
-    expect(row.read<String>('status'), 'active');
+      // 可写 + 默认值与 DDL 一致
+      await db.customStatement(
+        "INSERT INTO world_fact (id, manuscript_id, name) "
+        "VALUES ('wf1', 'm1', '灵气体系')",
+      );
+      final row = await db
+          .customSelect("SELECT * FROM world_fact WHERE id = 'wf1'")
+          .getSingle();
+      expect(row.read<String>('name'), '灵气体系');
+      expect(row.read<String>('assertions'), '[]');
+      expect(row.read<String>('status'), 'active');
 
-    // 存量数据未受影响
-    final ms = await db
-        .customSelect("SELECT * FROM manuscripts WHERE id = 'm1'")
-        .getSingle();
-    expect(ms.read<String>('title'), '存量测试稿');
-  });
+      // 存量数据未受影响
+      final ms = await db
+          .customSelect("SELECT * FROM manuscripts WHERE id = 'm1'")
+          .getSingle();
+      expect(ms.read<String>('title'), '存量测试稿');
+    },
+  );
 
   test('#2 最小 schema 库（v24）→ v31：world_fact 仍建立（可达性）', () async {
     final db = AppDatabase.forTesting(
@@ -273,7 +277,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     expect(
       await _tableExists(db, 'world_fact'),
@@ -303,7 +307,7 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
     expect(await _tableExists(db2, 'world_fact'), isTrue);
 
     final dup = await db2

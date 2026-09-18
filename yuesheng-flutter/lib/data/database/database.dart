@@ -64,7 +64,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   /// 表是否存在（C78 批次 1 加；批次 2a 提为公开）
   ///
@@ -229,7 +229,8 @@ class AppDatabase extends _$AppDatabase {
       // L2 钉选：守卫上移到 35（v35 块对 from=34 存量库可达，冪等 ALTER ADD COLUMN）
       // 条目标签：守卫上移到 37（v37 块对 from=36 存量库可达，建 setting_tag）
       // 批1·N2（FSRS 自评档位）：守卫上移到 38（v38 块对 from=37 存量库可达，幂等 ALTER ADD COLUMN）
-      if (from >= 38) return;
+      // N12-F3b（fact 层章号身份）：守卫上移到 39（v39 块对 from=38 存量库可达，幂等 ALTER ADD COLUMN）
+      if (from >= 39) return;
 
       // v29 起：迁移前自动备份（pre_migrate，三件套文件快照）。
       // 备份失败仅留痕，绝不阻断迁移（数据安全尽力而为）。
@@ -1070,6 +1071,48 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(
             'ALTER TABLE training_results ADD COLUMN user_rating TEXT DEFAULT NULL',
           );
+        }
+      }
+
+      // v39: fact 层章号**身份载体**（N12-F3b / ADR-C96）。
+      // 病根：`event_fact.chapter` / `subplot_fact.*_chapter` 是**一列多源**——
+      // 机器链路写 sort_order（身份）、AI 抽取写**标称号**（抄自章标题）、
+      // 用户弹层写他自己填的数 ⇒ 读时无法分辨，而读取方按**互不相同的基数**在读
+      // （当身份查库 / 当序位渲染 / 拿来做减法）。
+      // 对策（R1′）：**不动已存值**，另存一个身份载体与之并列；解析规则见
+      // `lib/utils/chapter_number.dart` 的 `resolveChapterIdentity`。
+      // ★ 本块**必须是 DDL-only**：本仓 38 个版本**零数据变换先例**，不得开这个头。
+      //   存量行身份留 NULL ⇒ 读取侧 `?? chapter` 兼容回退，行为与升级前逐字一致。
+      // ★ 表存在才加列（同 v32/v38 范式）：最小 schema 的迁移测试库
+      //   （只复刻 manuscripts / volumes / chapters 的 v23/v24 库）**未建这两张表**，
+      //   且 `if (from < 16/17)` 已被跳过 ⇒ 这两张表在那种库上永远补不上。
+      if (from < 39) {
+        final evCols = await customSelect(
+          "SELECT name FROM pragma_table_info('event_fact')",
+        ).get();
+        final evNames = evCols.map((r) => r.read<String>('name')).toSet();
+        if (evCols.isNotEmpty && !evNames.contains('chapter_sort_order')) {
+          await customStatement(
+            'ALTER TABLE event_fact ADD COLUMN chapter_sort_order INTEGER DEFAULT NULL',
+          );
+        }
+        final spCols = await customSelect(
+          "SELECT name FROM pragma_table_info('subplot_fact')",
+        ).get();
+        final spNames = spCols.map((r) => r.read<String>('name')).toSet();
+        if (spCols.isNotEmpty) {
+          if (!spNames.contains('introduced_chapter_sort_order')) {
+            await customStatement(
+              'ALTER TABLE subplot_fact ADD COLUMN '
+              'introduced_chapter_sort_order INTEGER DEFAULT NULL',
+            );
+          }
+          if (!spNames.contains('resolved_chapter_sort_order')) {
+            await customStatement(
+              'ALTER TABLE subplot_fact ADD COLUMN '
+              'resolved_chapter_sort_order INTEGER DEFAULT NULL',
+            );
+          }
         }
       }
     },

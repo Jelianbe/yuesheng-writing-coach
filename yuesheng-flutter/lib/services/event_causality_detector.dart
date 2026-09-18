@@ -39,6 +39,12 @@ class CausalityBreakObservation {
 /// C78 批次2b（§5.3）：`stale` 写进类型而非在调用点 `.where((e) => !e.stale)` 过滤
 /// ——生产侧目前只有 1 个构造点，省事的调用点过滤将来新增时会**静默漏过滤**、
 /// 重新长出幽灵 F07。写进 typedef 则**让编译器强制每个构造点表态**。
+///
+/// ★ N12-F3b（`ADR-C96 §2` 消费侧冲突表）：本检测器**有意不接身份键**。
+///   `chapter` 在此**只用于展示文案与排序**，**没有任何算术判据**（对比
+///   `subplot_closure_detector` 的 `current − introduced`）⇒ 不存在「基线不一致
+///   导致的判据偏移」。若在此改成身份，只会把用户可见的「第N章」文案改成另一个
+///   数 —— 那是 ADR 冻结的**9 处展示渲染**，属 phase 2（被 `S1/S2/S3` 阻塞）。
 typedef EventFactInput = ({
   String name,
   int? chapter,

@@ -9,7 +9,12 @@
 // `N12-F3a` 追加：`sortOrderAtPosition`（**写侧**归一 —— 用户能填的只有序位，库里存的是身份）。
 //   反例 1：杀死「序位 == sortOrder」的朴素假设（删过首章的稿）；越界 ⇒ null，**禁**兜底成 0/+1。
 //
-// 口径与理由见 `docs/ADR-C95-chapter-number-convention.md`；实现 `lib/utils/chapter_number.dart`。
+// `N12-F3b` 追加：`chapterEncodings` / `resolveByEncoding` / `resolveChapterIdentity`
+//   （`ADR-C96 §2` 的**身份解析**）与 `chapterAt`。本节是 `ADR-C96 §5` 判据 1–4 的直接实现，
+//   两条反例分别杀死被否方案 **R4**（身份恒 = 当前章）与 **R5**（解析失败落 NULL）。
+//
+// 口径与理由见 `docs/ADR-C95-chapter-number-convention.md` / `ADR-C96-fact-chapter-identity.md`；
+// 实现 `lib/utils/chapter_number.dart`。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +26,19 @@ Chapter chapter(int sortOrder) => Chapter(
   id: 'ch-$sortOrder',
   manuscriptId: 'ms-c95',
   title: '第${sortOrder + 1}章',
+  content: '',
+  wordCount: 0,
+  sortOrder: sortOrder,
+  status: 'draft',
+  createdAt: 0,
+  updatedAt: 0,
+);
+
+/// 带**自定义标题**的章节 —— 标称号与序位刻意错位时用（`N12-F3b`）。
+Chapter titled(int sortOrder, String title) => Chapter(
+  id: 'ch-$sortOrder',
+  manuscriptId: 'ms-c96',
+  title: title,
   content: '',
   wordCount: 0,
   sortOrder: sortOrder,
@@ -133,6 +151,150 @@ void main() {
       );
       expect(sortOrderAtPosition(map, 1), 0);
       expect(sortOrderAtPosition(map, 3), 1);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // `N12-F3b` / `ADR-C96 §2`：**身份解析**（「当前章优先」四步 + 三编码阶梯）
+  //
+  // 本节是 `ADR-C96 §5` 验收判据 1–4 的**直接**实现。反例刻意杀死被否方案：
+  //   · **R4**「身份恒 = 当前章」（不做解析）⇒ `current − introduced ≡ 0`
+  //     ⇒ F11 情节闭环**永不触发**（功能回退）
+  //   · **R5**「解析失败落 NULL」⇒ detector 跳过无锚点支线 ⇒ F11 **覆盖率回退**
+  //   · 「不做当前章优先、直接上编码阶梯」⇒ 误锚到另一章
+  // ─────────────────────────────────────────────────────────────
+  group('chapterEncodings：一个章有三个「都叫章号」的数', () {
+    test('#C96-1 默认标题：身份 / 标称号 / 序位 三者同时给出', () {
+      final chapters = [chapter(0), chapter(1), chapter(2)];
+
+      // 第 3 章：身份 = sortOrder 2、标称号 = 标题里的 3、序位 = 3。
+      expect(chapterEncodings(chapters[2], chapters), [2, 3, 3]);
+    });
+
+    test('#C96-2 无编号标题（如「楔子」）⇒ 只给身份与序位', () {
+      final chapters = [titled(0, '楔子'), titled(1, '第1章')];
+
+      expect(
+        chapterEncodings(chapters[0], chapters),
+        [0, 1],
+        reason: '标题里没有「第X章」⇒ 标称号这一项**不出现**（不是补 0、也不是补 null）',
+      );
+    });
+  });
+
+  group('resolveByEncoding：标称号 → 序位 → 身份（编码序不可换）', () {
+    test('#C96-3 标称号优先于序位：两编码指向不同章时取标称号', () {
+      // 标题序号与列表序位**刻意错位**（重排过的稿）。
+      final chapters = [titled(0, '第2章'), titled(1, '第1章'), titled(2, '第7章')];
+
+      expect(
+        resolveByEncoding(1, chapters),
+        1,
+        reason: '标称号「第1章」落在 sortOrder=1 ⇒ 1；若序位优先会错得 0',
+      );
+    });
+
+    test('#C96-4 序位优先于身份（身份排最后）', () {
+      final chapters = [titled(0, '第9章'), titled(1, '第5章')];
+
+      expect(
+        resolveByEncoding(1, chapters),
+        0,
+        reason: '标题无「1」⇒ 序位 1 归 sortOrder=0；若身份优先会取 sortOrder==1',
+      );
+    });
+
+    test('#C96-5 身份编码仅在标题与序位**都**落空时生效', () {
+      // 两章的 sortOrder 都大于章节数 ⇒ 序位编码取不到它们。
+      final chapters = [titled(0, '第9章'), titled(4, '第2章')];
+
+      expect(
+        resolveByEncoding(4, chapters),
+        4,
+        reason: '标题（9/2）与序位（1/2）都命中不了 4 ⇒ 落到身份编码',
+      );
+    });
+
+    test('#C96-6 三编码全落空 ⇒ null（本函数不猜，兜底交给调用方）', () {
+      final chapters = [chapter(0), chapter(1)];
+
+      expect(resolveByEncoding(99, chapters), isNull);
+      expect(resolveByEncoding(0, const []), isNull, reason: '空稿没有可归的章');
+    });
+  });
+
+  group('resolveChapterIdentity：ADR-C96 §5 判据 1–4', () {
+    // 默认标题 3 章：身份 0/1/2 ↔ 标称号 1/2/3 ↔ 序位 1/2/3。
+    final three = [chapter(0), chapter(1), chapter(2)];
+
+    test('#C96-7 判据1 正例（写读闭环）：诊断第 3 章、AI 报 3 ⇒ 身份 2', () {
+      expect(resolveChapterIdentity(3, three, currentSortOrder: 2), 2);
+    });
+
+    test('#C96-8 判据2 反例：**杀死 R4「身份恒 = 当前章」**', () {
+      // 诊断第 3 章（sortOrder=2）时 AI 报 1 —— 那是指第 1 章 ⇒ 身份必须是 0。
+      expect(
+        resolveChapterIdentity(1, three, currentSortOrder: 2),
+        0,
+        reason: 'R4（恒取当前章）会给 2；AI 报的是真跨章引用，必须解析出来',
+      );
+    });
+
+    test('#C96-9 判据3 反例：**杀死 R5「解析失败落 NULL」**', () {
+      final id = resolveChapterIdentity(99, three, currentSortOrder: 2);
+
+      expect(id, isNotNull, reason: 'R5 会给 null ⇒ detector 跳过该支线 ⇒ F11 覆盖率回退');
+      expect(
+        id,
+        2,
+        reason: '兜底到当前章是**确定成立**的（本章正文正是本次抽取来源，chapter_hash 已如此断言）',
+      );
+    });
+
+    test('#C96-10 判据4 反例：**杀死「身份编码优先」**（会错锚到第 3 章）', () {
+      // 默认标题下 身份 = 序位 − 1：AI 报 2、当前章是第 2 章（sortOrder=1）。
+      expect(
+        resolveChapterIdentity(2, three, currentSortOrder: 1),
+        1,
+        reason: '当前章优先 ⇒ 1；若身份编码优先会取 sortOrder==2 的第 3 章',
+      );
+    });
+
+    test('#C96-11 反例：杀死「不做当前章优先、直接上阶梯」的误锚', () {
+      // 当前章是「楔子」（sortOrder=0，**无编号标题**），它的**序位**恰是 1；
+      // 而另一章的标题写着「第1章」（sortOrder=1，实为第 2 章）。
+      final chapters = [titled(0, '楔子'), titled(1, '第1章'), titled(2, '第2章')];
+
+      expect(
+        resolveChapterIdentity(1, chapters, currentSortOrder: 0),
+        0,
+        reason:
+            'AI 报的 1 命中**当前章**的序位 ⇒ 按裁定 2 第 2 步归当前章；'
+            '阶梯会把它锚到「第1章」那一章 —— 这正是要消灭的误锚',
+      );
+    });
+
+    test('#C96-12 第 1 步：AI 未给号 ⇒ 当前章（保留现行为）', () {
+      expect(resolveChapterIdentity(null, three, currentSortOrder: 1), 1);
+      expect(
+        resolveChapterIdentity(null, const [], currentSortOrder: 7),
+        7,
+        reason: '章节列表为空也必须给出确定值（同行 chapter_hash 的假设）',
+      );
+    });
+  });
+
+  group('chapterAt：从已升序列表取章（不猜不存在的章）', () {
+    final chapters = [chapter(1), chapter(3)];
+
+    test('#C96-13 命中 ⇒ 返回该章；不在列表 ⇒ null', () {
+      expect(chapterAt(chapters, 3)?.id, 'ch-3');
+      expect(
+        chapterAt(chapters, 0),
+        isNull,
+        reason: '0 号章已删 ⇒ 不得凭 sortOrder 编造',
+      );
+      expect(chapterAt(const [], 1), isNull);
     });
   });
 }

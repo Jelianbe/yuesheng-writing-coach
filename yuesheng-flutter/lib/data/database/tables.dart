@@ -554,6 +554,10 @@ class EventFacts extends Table {
       text().references(Manuscripts, #id, onDelete: KeyAction.cascade)();
   TextColumn get name => text()(); // 事件名（如「阿禾决定去金陵」）
   IntColumn get chapter => integer().nullable()(); // 发生章节序号
+  // N12-F3b / ADR-C96：事件所属章节的**身份键**（chapters.sort_order，0 基）。
+  // 与上一列**物理分开**：`chapter` 保留 AI 原值（标称号，R1′ 不篡改），身份另存
+  // 于此。存量行为 NULL ⇒ 读取侧走 `CharacterAssertion.chapterIdentity` 式回退。
+  IntColumn get chapterSortOrder => integer().nullable()();
   TextColumn get eventType => text()(); // 事件类型（决定/转折/突发/冲突/日常）
   TextColumn get causeEventId => text().nullable()(); // 因果前驱事件 id（可空）
   TextColumn get effectEventId => text().nullable()(); // 因果后继事件 id（可空）
@@ -594,6 +598,12 @@ class SubplotFacts extends Table {
   TextColumn get name => text()(); // 支线名（如「钥匙的秘密」）
   IntColumn get introducedChapter => integer().nullable()(); // 引入章节序号
   IntColumn get resolvedChapter => integer().nullable()(); // 回收章节序号（null=未回收）
+  // N12-F3b / ADR-C96：两列的**身份键**（chapters.sort_order，0 基），与上两列并列。
+  // 为什么必须有它：`subplot_closure_detector` 拿 `currentChapter`（**恒身份**）与
+  // `introducedChapter` 做减法判阈值，而后者一列两基号（AI 值 / 缺字段时退回身份）
+  // ⇒ 相减无意义。身份落地后判据才有单一基线。
+  IntColumn get introducedChapterSortOrder => integer().nullable()();
+  IntColumn get resolvedChapterSortOrder => integer().nullable()();
   IntColumn get resolvedAt => integer().nullable()(); // 回收时间（unix 秒）
   TextColumn get description =>
       text().withDefault(const Constant(''))(); // 一句话描述

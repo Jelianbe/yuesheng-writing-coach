@@ -57,6 +57,7 @@ import 'package:writingcoach/services/phase_mapper_resolver.dart';
 import 'package:writingcoach/services/phase_transition.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/types/teaching_types.dart';
+import 'package:writingcoach/utils/chapter_number.dart';
 
 /// 诊断提交编排器
 ///
@@ -723,21 +724,70 @@ class DiagnosisCommitter {
     final chapterNo = chapter.sortOrder;
     final now = nowSec();
     final content = chapter.content;
+    // N12-F3b（`ADR-C96` 裁定 2）：身份解析要走「标称号 → 序位 → 身份」三编码阶梯，
+    // 需要**全量章节**；一次抽取里出现的 AI 章号通常只有 1~3 个 ⇒ 算一次共用。
+    final identities = _identityByAiNo(
+      extraction,
+      await _chapterRepo.listChapters(manuscriptId),
+      chapterNo,
+    );
     final added = await _persistCharacterFacts(
       extraction,
       manuscriptId,
       chapterNo,
       now,
+      identities: identities,
       chapterContent: content,
     );
     await _persistEventFacts(
       extraction,
       manuscriptId,
       chapterNo,
+      identities: identities,
       chapterContent: content,
     );
-    await _persistSubplotFacts(extraction, manuscriptId, chapterNo, now);
+    await _persistSubplotFacts(
+      extraction,
+      manuscriptId,
+      chapterNo,
+      now,
+      identities: identities,
+    );
     return added;
+  }
+
+  /// 本次抽取涉及的全部 AI 章号 → 身份（`ADR-C96 §2` 裁定 2 的唯一实现点）。
+  ///
+  /// 三个落库函数共用一份。`null` 也入表并映射到当前章 —— 对应裁定 2 第 1 条
+  /// （AI 未给号 ⇒ 当前章），且与同行 `chapter_hash` 的假设一致。
+  Map<int?, int> _identityByAiNo(
+    FactExtraction extraction,
+    List<Chapter> chapters,
+    int chapterNo,
+  ) {
+    final aiNos = <int?>{};
+    for (final c in extraction.characters) {
+      aiNos.addAll(c.assertions.map((a) => a.chapter));
+    }
+    for (final e in extraction.events) {
+      aiNos.add(e.chapter);
+    }
+    for (final s in extraction.subplots) {
+      aiNos.addAll([s.introducedChapter, s.resolvedChapter]);
+    }
+    return {
+      for (final n in aiNos)
+        n: resolveChapterIdentity(n, chapters, currentSortOrder: chapterNo),
+    };
+  }
+
+  /// 支线**回收侧**的身份：未回收（原值为 null）时必须仍为 null。
+  ///
+  /// 若照搬 `_identityByAiNo`（null 映射到当前章），「未回收」会被记成
+  /// 「在**本章**回收」⇒ `subplot_closure_detector` 立刻跳过该支线
+  /// ⇒ **F11 检测覆盖率回退**（`ADR-C96` 裁定 2 末段明确要避免的那个坑）。
+  int? _resolvedIdentity(int? raw, Map<int?, int> identities) {
+    return raw == null ? null : identities[raw];
   }
 
   /// 解析 primaryRef（同 _applyOutlineEntitiesFromContent 模式）（R-019 拆出）。
@@ -782,6 +832,7 @@ class DiagnosisCommitter {
     String manuscriptId,
     int chapterNo,
     int now, {
+    required Map<int?, int> identities,
     required String chapterContent,
   }) async {
     final repo = _characterFactRepo;
@@ -795,7 +846,7 @@ class DiagnosisCommitter {
         name: c.name,
         firstSeenChapter: chapterNo,
         firstSeenAt: now,
-        assertions: _asAiPending(c.assertions),
+        assertions: _asAiPending(c.assertions, identities),
         chapterHash: currentHash,
         chapterNo: chapterNo,
       );
@@ -808,20 +859,31 @@ class DiagnosisCommitter {
   /// 设定资料库第一批：AI 协议写入的断言统一置 pending（内容校准——
   /// 待用户裁决后才成为事实）。user 来源（手动录入）与 rejected（拒绝
   /// 记忆）不动，避免覆写用户主权。
-  static List<CharacterAssertion> _asAiPending(List<CharacterAssertion> input) {
+  ///
+  /// N12-F3b：**每条断言先补身份**，再决定是否置 pending —— 身份与 status 正交，
+  /// 用户来源/rejected 的断言同样需要它（否则它们永远是「读不出身份」的存量行）。
+  /// 顺带补齐原先漏传的 `negative`（与类型层 `withStatus`、服务层 `_withStatus`
+  /// 同族的保真缺口：既然逐字段重建，就不该有字段靠默认值兜底）。
+  static List<CharacterAssertion> _asAiPending(
+    List<CharacterAssertion> input,
+    Map<int?, int> identities,
+  ) {
     return input.map((a) {
-      if (a.source == 'user' || a.status == 'rejected') return a;
+      final withId = a.withChapterSortOrder(identities[a.chapter]);
+      if (withId.source == 'user' || withId.status == 'rejected') return withId;
       return CharacterAssertion(
-        attribute: a.attribute,
-        value: a.value,
-        chapter: a.chapter,
-        timestamp: a.timestamp,
+        attribute: withId.attribute,
+        value: withId.value,
+        chapter: withId.chapter,
+        chapterSortOrder: withId.chapterSortOrder,
+        timestamp: withId.timestamp,
         status: 'pending',
-        source: a.source,
-        evidence: a.evidence,
-        chapterHash: a.chapterHash,
-        stale: a.stale,
-        rejectReason: a.rejectReason,
+        source: withId.source,
+        evidence: withId.evidence,
+        chapterHash: withId.chapterHash,
+        stale: withId.stale,
+        rejectReason: withId.rejectReason,
+        negative: withId.negative,
       );
     }).toList();
   }
@@ -865,6 +927,7 @@ class DiagnosisCommitter {
     FactExtraction extraction,
     String manuscriptId,
     int chapterNo, {
+    required Map<int?, int> identities,
     required String chapterContent,
   }) async {
     final repo = _eventFactRepo;
@@ -876,6 +939,7 @@ class DiagnosisCommitter {
         name: e.name,
         eventType: e.eventType,
         chapter: e.chapter ?? chapterNo,
+        chapterSortOrder: identities[e.chapter],
         participants: e.participants,
         description: e.description,
         chapterHash: currentHash,
@@ -910,12 +974,16 @@ class DiagnosisCommitter {
   }
 
   /// 支线事实 → subplot_fact（R-019 拆出）。
+  ///
+  /// N12-F3b：两个身份键与 AI 原值**并列写入**（`R1′` 不改原值）。
+  /// 回收侧原值为 null 时身份必须也为 null（见 [_resolvedIdentity]）。
   Future<void> _persistSubplotFacts(
     FactExtraction extraction,
     String manuscriptId,
     int chapterNo,
-    int now,
-  ) async {
+    int now, {
+    required Map<int?, int> identities,
+  }) async {
     final repo = _subplotFactRepo;
     if (repo == null) return;
     for (final s in extraction.subplots) {
@@ -923,7 +991,12 @@ class DiagnosisCommitter {
         manuscriptId: manuscriptId,
         name: s.name,
         introducedChapter: s.introducedChapter ?? chapterNo,
+        introducedChapterSortOrder: identities[s.introducedChapter],
         resolvedChapter: s.resolvedChapter,
+        resolvedChapterSortOrder: _resolvedIdentity(
+          s.resolvedChapter,
+          identities,
+        ),
         resolvedAt: s.resolvedChapter != null ? now : null,
         description: s.description,
       );

@@ -14,11 +14,15 @@ class EventFactRepository {
   EventFactRepository(this._db);
 
   /// 写入/更新事件（同作品内按 name 唯一，UNIQUE(manuscript_id, name)）
+  ///
+  /// N12-F3b：新增 [chapterSortOrder] —— 事件所属章节的**身份键**（`ADR-C96`）。
+  /// [chapter] 保持 AI 原值不动（R1′），二者由调用方分别给出。
   Future<void> upsertEvent({
     required String manuscriptId,
     required String name,
     required String eventType,
     int? chapter,
+    int? chapterSortOrder,
     String? causeEventId,
     String? effectEventId,
     List<String> participants = const [],
@@ -34,6 +38,7 @@ class EventFactRepository {
           manuscriptId: manuscriptId,
           name: name,
           chapter: chapter,
+          chapterSortOrder: chapterSortOrder,
           eventType: eventType,
           causeEventId: causeEventId,
           effectEventId: effectEventId,
@@ -47,6 +52,7 @@ class EventFactRepository {
           existing.id,
           name: name,
           chapter: chapter,
+          chapterSortOrder: chapterSortOrder,
           eventType: eventType,
           causeEventId: causeEventId,
           effectEventId: effectEventId,
@@ -78,6 +84,7 @@ class EventFactRepository {
     required String description,
     required int now,
     int? chapter,
+    int? chapterSortOrder,
     String? causeEventId,
     String? effectEventId,
     String? chapterHash,
@@ -90,6 +97,7 @@ class EventFactRepository {
             manuscriptId: manuscriptId,
             name: name,
             chapter: Value(chapter),
+            chapterSortOrder: Value(chapterSortOrder),
             eventType: eventType,
             causeEventId: Value(causeEventId),
             effectEventId: Value(effectEventId),
@@ -111,6 +119,7 @@ class EventFactRepository {
     required String description,
     required int now,
     int? chapter,
+    int? chapterSortOrder,
     String? causeEventId,
     String? effectEventId,
     String? chapterHash,
@@ -119,6 +128,7 @@ class EventFactRepository {
       EventFactsCompanion(
         name: Value(name),
         chapter: Value(chapter),
+        chapterSortOrder: Value(chapterSortOrder),
         eventType: Value(eventType),
         causeEventId: Value(causeEventId),
         effectEventId: Value(effectEventId),

@@ -12,6 +12,9 @@ import '../data/database/database.dart';
 
 const String _chapterTitlePattern = r'第\s*([零〇一二三四五六七八九十百千\d]+)\s*章';
 
+/// 章标题序号解析的**唯一实现点**（正则只在此编译一次）。
+final RegExp _chapterTitleRe = RegExp(_chapterTitlePattern);
+
 /// 中文数字字符 → 数值（零/〇/一~九）
 int? _chineseDigitToInt(String ch) {
   switch (ch) {
@@ -92,14 +95,25 @@ String intToChineseNumber(int n) {
   return result;
 }
 
+/// 从章节**标题**里提取「第X章」的 X（中文/阿拉伯数字均可）；无序号返回 null。
+///
+/// 这是「**标称号**」的读取入口 —— 用户自撰标题里写的那个数，**既不是**
+/// `sort_order`（身份）**也不是**列表序位（见 `docs/ADR-C95` / `ADR-C96`）。
+/// 默认标题（[nextChapterTitle] 生成）下三者恰好同值，故最易被误当同一物。
+///
+/// `chapter_number.dart` 的 `resolveChapterIdentity` 复用它解析 AI 自报章号；
+/// 与 [nextChapterTitle] 共用同一正则与同一中文字数转换，杜绝第二套解析。
+int? chapterTitleNumber(String title) {
+  final m = _chapterTitleRe.firstMatch(title);
+  if (m == null) return null;
+  return chineseNumberToInt(m.group(1)!);
+}
+
 /// 计算新建章节的自动标题（「第X章」，X = 最大序号 + 1；无序号则按章节数 + 1）
 String nextChapterTitle(List<Chapter> chapters) {
-  final re = RegExp(_chapterTitlePattern);
   var maxIndex = 0;
   for (final ch in chapters) {
-    final m = re.firstMatch(ch.title);
-    if (m == null) continue;
-    final n = chineseNumberToInt(m.group(1)!);
+    final n = chapterTitleNumber(ch.title);
     if (n != null && n > maxIndex) maxIndex = n;
   }
   if (maxIndex == 0) maxIndex = chapters.length;

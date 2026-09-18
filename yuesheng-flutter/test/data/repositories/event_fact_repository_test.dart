@@ -140,4 +140,29 @@ void main() {
     decision = await repo.getEvent(manuscriptId, '阿禾决定去金陵');
     expect(decision!.causeEventId, trigger.id);
   });
+
+  test('#6 身份列往返（N12-F3b）：chapter 与 chapterSortOrder 互不干扰', () async {
+    await repo.upsertEvent(
+      manuscriptId: manuscriptId,
+      name: '跨章事件',
+      eventType: '转折',
+      chapter: 3, // AI 原值（标称号）
+      chapterSortOrder: 2, // 身份
+    );
+
+    final got = await repo.getEvent(manuscriptId, '跨章事件');
+    expect(got!.chapter, 3, reason: 'R1′：AI 原值原样保留');
+    expect(got.chapterSortOrder, 2, reason: '身份另存于新列');
+
+    // 未给身份的调用点（存量语义）⇒ 列为 null，读取侧走兼容回退，chapter 不受影响
+    await repo.upsertEvent(
+      manuscriptId: manuscriptId,
+      name: '无身份事件',
+      eventType: '日常',
+      chapter: 3,
+    );
+    final legacy = await repo.getEvent(manuscriptId, '无身份事件');
+    expect(legacy!.chapterSortOrder, isNull);
+    expect(legacy.chapter, 3);
+  });
 }

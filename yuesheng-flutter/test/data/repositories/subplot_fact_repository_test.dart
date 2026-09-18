@@ -107,4 +107,39 @@ void main() {
     expect(got.resolvedChapter, 12);
     expect(got.resolvedAt, 12000);
   });
+
+  test('#5 身份双列往返（N12-F3b）：引入 / 回收各带身份', () async {
+    await repo.upsertSubplot(
+      manuscriptId: manuscriptId,
+      name: '钥匙的秘密',
+      introducedChapter: 3,
+      introducedChapterSortOrder: 2,
+      resolvedChapter: 8,
+      resolvedChapterSortOrder: 7,
+      resolvedAt: 8000,
+    );
+
+    final got = await repo.getSubplot(manuscriptId, '钥匙的秘密');
+    expect(got!.introducedChapter, 3, reason: 'R1′：AI 原值原样保留');
+    expect(got.introducedChapterSortOrder, 2, reason: '身份另存新列');
+    expect(got.resolvedChapter, 8);
+    expect(got.resolvedChapterSortOrder, 7);
+  });
+
+  test('#6 未回收支线：回收侧两列**同时**为 null（否则 F11 覆盖回退）', () async {
+    await repo.upsertSubplot(
+      manuscriptId: manuscriptId,
+      name: '未回收支线',
+      introducedChapter: 3,
+      introducedChapterSortOrder: 2,
+    );
+
+    final open = await repo.getSubplot(manuscriptId, '未回收支线');
+    expect(open!.resolvedChapter, isNull);
+    expect(
+      open.resolvedChapterSortOrder,
+      isNull,
+      reason: '回收身份若被填成当前章 ⇒ detector 以为「本章已回收」⇒ 直接跳过该支线',
+    );
+  });
 }

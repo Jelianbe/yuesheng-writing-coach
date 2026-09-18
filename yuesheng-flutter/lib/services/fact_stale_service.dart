@@ -37,17 +37,32 @@ class FactStaleService {
 
   /// 决策4 并集判据：该断言是否「属于这一章」
   ///
-  /// 并集 = (指纹命中) ∪ (章号命中)。理由：CharacterAssertion.chapter 是
-  /// **AI 自报值**，写入路径既不校验也不覆写（tryFromJson 直接穿透），只按
-  /// 章号匹配会漏掉 AI 报错章号的断言；chapterHash 按章节正文算、与 AI 自报
-  /// 无关。两支取并集才补得上。
+  /// 并集 = (指纹命中) ∪ (**身份命中**)。理由：`CharacterAssertion.chapter` 是
+  /// **一列多源值**（AI 标称号 / 机器身份 / 用户手填，`ADR-C96 §1`），写入路径既不
+  /// 校验也不覆写（`tryFromJson` 直接穿透），只按它匹配会漏掉 AI 报标称号的断言；
+  /// `chapterHash` 按章节正文算、与 AI 自报无关。两支取并集才补得上。
+  ///
+  /// ★ `N12-F3b`（`ADR-C96 §1.4`）：第二支由 `a.chapter ==` 改为
+  /// **`a.chapterIdentity ==`** —— 原先比的是 AI 标称号与 `sort_order`，**干净稿上
+  /// 差 1 ⇒ 该支在实际数据上恒假**，「章节改写 ⇒ 断言灰显」对 AI 抽取的断言失效。
+  /// `chapterIdentity` 自带存量回退（见其 getter），故旧行行为逐字不变。
   static bool belongsToChapter(
     CharacterAssertion a,
     int chapterNo,
     String chapterHash,
   ) {
     return (a.chapterHash != null && a.chapterHash == chapterHash) ||
-        a.chapter == chapterNo;
+        a.chapterIdentity == chapterNo;
+  }
+
+  /// `event_fact`「属于该章」的**列级判据**（同一身份口径的 SQL 侧唯一实现点）。
+  ///
+  /// 存量行 `chapter_sort_order` 为 NULL ⇒ 退回比 `chapter`：那些行里**机器写入的**
+  /// 装的正是身份；若一律只比新列，删章钩子 / 重诊将不再命中它们 ⇒ **幽灵事件回归**
+  /// ——那是本批**新引入**的缺陷。回退 ⇒ 存量行为逐字不变、新行口径正确。
+  static Expression<bool> eventChapterMatch($EventFactsTable t, int chapterNo) {
+    return t.chapterSortOrder.equals(chapterNo) |
+        (t.chapterSortOrder.isNull() & t.chapter.equals(chapterNo));
   }
 
   /// 三元组键：(attribute, value, chapter)——同三元组的断言视为同一条事实。
@@ -99,7 +114,7 @@ class FactStaleService {
             (t) =>
                 t.manuscriptId.equals(manuscriptId) &
                 (t.chapterHash.equals(chapterHash) |
-                    t.chapter.equals(chapterNo)),
+                    eventChapterMatch(t, chapterNo)),
           ))
           .write(
             // event_fact.stale 是 **int**（SQLite 布尔惯例），不是 bool。
@@ -136,8 +151,8 @@ class FactStaleService {
                 t.manuscriptId.equals(manuscriptId) &
                 t.stale.equals(1) &
                 (chapterHash == null
-                    ? t.chapter.equals(chapterNo)
-                    : t.chapter.equals(chapterNo) |
+                    ? eventChapterMatch(t, chapterNo)
+                    : eventChapterMatch(t, chapterNo) |
                           t.chapterHash.equals(chapterHash)),
           ))
           .go();
@@ -166,7 +181,7 @@ class FactStaleService {
     await (_db.update(_db.eventFacts)..where(
           (t) =>
               t.manuscriptId.equals(manuscriptId) &
-              t.chapter.equals(chapterNo) &
+              eventChapterMatch(t, chapterNo) &
               t.chapterHash.isNotNull() &
               t.chapterHash.equals(chapterHash).not(),
         ))
@@ -232,10 +247,14 @@ class FactStaleService {
       }
       // stale 必须限定在同章内：否则重诊第 3 章时，第 5 章抽出来的断言
       // （哈希必然是第 5 章的）会被全库误伤。
+      // ★ N12-F3b（`ADR-C96 §1.4`）：第三项由 `e.chapter ==` 改为
+      //   **`e.chapterIdentity ==`**。原写法拿 AI 标称号比 `sort_order`，干净稿上
+      //   差 1 ⇒ **整体恒假**（该判据在实际数据上失效，样本见报告 §4）；改比身份后
+      //   自愈。`chapterIdentity` 自带存量回退 ⇒ 旧行行为逐字不变。
       final outdated =
           e.chapterHash != null &&
           e.chapterHash != currentHash &&
-          e.chapter == chapterNo;
+          e.chapterIdentity == chapterNo;
       result.add(outdated ? e.withStaleMark(stale: true) : e);
     }
     for (final a in incoming) {
@@ -313,7 +332,7 @@ class FactStaleService {
     final next = <CharacterAssertion>[];
     for (final a in list) {
       final hit = chapterHash == null
-          ? a.chapter == chapterNo
+          ? a.chapterIdentity == chapterNo
           : belongsToChapter(a, chapterNo, chapterHash);
       if (hit && (keep ? !a.stale : a.stale)) {
         // 单独记账 changed：keep=true 时是原地标 stale，条目数不变；

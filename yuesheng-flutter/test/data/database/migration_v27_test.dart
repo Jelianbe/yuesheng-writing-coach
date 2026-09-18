@@ -6,7 +6,7 @@
 // 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(26 → 27)。
 //
 // 覆盖：
-//   1. 升级后 user_version = 38
+//   1. 升级后 user_version = kSchemaHead
 //   2. 4 个新列全部补齐（每条 ALTER 带 PRAGMA table_info 幂等守卫）
 //   3. 存量行取到正确默认值：aliases='[]'、status='active'、stale=0、
 //      chapter_hash=null
@@ -20,6 +20,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -173,9 +174,9 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 38
+    // 1. user_version 升到 kSchemaHead
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     // 2. 4 个新列全部存在
     expect(
@@ -238,25 +239,26 @@ void main() {
     addTearDown(db2.close);
 
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
-    // 列数未因重复 ALTER 而膨胀
-    final cfCols = await db2
-        .customSelect(
-          "SELECT COUNT(*) AS c FROM pragma_table_info('character_fact')",
-        )
-        .getSingle();
-    expect(
-      cfCols.read<int>('c'),
-      12,
-      reason: 'character_fact 列被重复添加（v33 description + v35 pinned）',
-    );
-    final efCols = await db2
-        .customSelect(
-          "SELECT COUNT(*) AS c FROM pragma_table_info('event_fact')",
-        )
-        .getSingle();
-    expect(efCols.read<int>('c'), 13, reason: 'event_fact 列被重复添加');
+    // 列数未因重复 ALTER 而膨胀。
+    //
+    // `N12-F3b`：原先此处写死「总列数 = 12 / 13」，于是**每次给这两张表加列都要
+    // 回来改这个数**（v39 加 `chapter_sort_order` 时就撞了一次，报出的却是
+    // 「列被重复添加」的假警 —— 数字漂移伪装成幂等失败）。改写成断言「无重复
+    // 列名」，那正是 reason 所说的失效形态，且不随 schema 增长再次漂移。
+    // 「列存在」方向由各自版本的迁移测试断言（如 `migration_v39_test`），不靠这里。
+    for (final t in ['character_fact', 'event_fact']) {
+      final cols = await db2
+          .customSelect(
+            "SELECT COUNT(*) AS total, COUNT(DISTINCT name) AS uniq "
+            "FROM pragma_table_info('$t')",
+          )
+          .getSingle();
+      final total = cols.read<int>('total');
+      expect(total, greaterThan(0), reason: '$t 表不存在或列为空');
+      expect(cols.read<int>('uniq'), total, reason: '$t 存在重名列（ALTER 被重复执行）');
+    }
 
     // 存量行仍在
     final cf = await db2

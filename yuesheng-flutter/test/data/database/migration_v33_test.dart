@@ -5,7 +5,7 @@
 //   description TEXT NOT NULL DEFAULT ''
 //
 // 覆盖：
-//   1. v32 存量库升级 → 两表 description 列建立、存量行默认 ''、可写，user_version = 38
+//   1. v32 存量库升级 → 两表 description 列建立、存量行默认 ''、可写，user_version = kSchemaHead
 //   2. 幂等：v33 库重复打开不报错、不重复加列
 // ─────────────────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -143,7 +144,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     expect(
       await _columnExists(db, 'character_fact', 'description'),
@@ -195,7 +196,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     for (final t in ['character_fact', 'world_fact']) {
       final cols = await db2

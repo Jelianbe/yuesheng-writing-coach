@@ -7,7 +7,7 @@
 // 再用 AppDatabase.forTesting 打开 → 触发 onUpgrade(22 → … → 27)。
 //
 // 覆盖：
-//   1. 升级后 user_version = 38
+//   1. 升级后 user_version = kSchemaHead
 //   2. volumes 表已建（VolumeRepository 可写可读）
 //   3. chapters 新增 volume_id 列，存量章节 volume_id 为 NULL（未分卷）
 //   4. 存量章节数据完整保留
@@ -22,6 +22,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -151,10 +152,10 @@ void main() {
     );
     addTearDown(db.close);
 
-    // 1. user_version 升到 38（v23 卷分组 + v24 回收站 CHECK + v25 标签列
+    // 1. user_version 升到 kSchemaHead（v23 卷分组 + v24 回收站 CHECK + v25 标签列
     //    + v26 schema bump + v27 角色标签页列一并迁移）
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     // 2. chapters 新增 volume_id，存量章节未分卷
     final chapter = await ChapterRepository(db).getChapter('c1');

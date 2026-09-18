@@ -22,6 +22,7 @@ import '../data/database/utils.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/character_fact_repository.dart';
 import '../types/character_types.dart';
+import '../utils/chapter_number.dart';
 import 'fact_stale_service.dart';
 
 /// 人物断言的人工裁决服务（拒绝 / 修正 / 补充 / 别名编辑）。
@@ -87,6 +88,12 @@ class CharacterEditorService {
     final row = await _findById(characterId);
     if (row == null) return false;
     final finalChapter = chapter ?? target.chapter;
+    // 用户填了章号 ⇒ 那是**序位**（弹层标签「章节（可选，如：7）」），与
+    // `N12-F3a` 的 user 入口同口径，写入前归一成身份；未填 ⇒ **继承被修正那条
+    // 断言的身份**（修正 = 同一章内改值，不该借机换章）。
+    final identity = chapter == null
+        ? target.chapterIdentity
+        : await _identityForUserInput(row.manuscriptId, chapter);
     final replaced = await _rewriteAssertions(characterId, (list) {
       return [
         for (final a in list)
@@ -94,7 +101,13 @@ class CharacterEditorService {
       ];
     });
     if (!replaced) return false;
-    return _appendUserAssertion(row, target.attribute, newValue, finalChapter);
+    return _appendUserAssertion(
+      row,
+      target.attribute,
+      newValue,
+      finalChapter,
+      identity,
+    );
   }
 
   /// 补充断言（FR-5 / R-009：纯手动，无 AI 代填建议值）。
@@ -107,7 +120,14 @@ class CharacterEditorService {
     if (attribute.trim().isEmpty || value.trim().isEmpty) return false;
     final row = await _findById(characterId);
     if (row == null) return false;
-    return _appendUserAssertion(row, attribute.trim(), value.trim(), chapter);
+    final identity = await _identityForUserInput(row.manuscriptId, chapter);
+    return _appendUserAssertion(
+      row,
+      attribute.trim(),
+      value.trim(),
+      chapter,
+      identity,
+    );
   }
 
   /// 编辑别名（FR-3 / V-05 #11 引用式副本语义）：整表写回，去重去空。
@@ -133,13 +153,18 @@ class CharacterEditorService {
 
   /// 追加一条用户断言：confirmed / user / 带该章当前指纹（§5.1(c)，
   /// 与 AI 断言统一 stale 规则——手写断言也参与「章节改写 → 灰显」）。
+  ///
+  /// `N12-F3b`（重建点 #6）：[chapter] 与 [identity] **语义不同、必须分别传入** ——
+  /// 前者是用户原写的数（R1′ 原样保留、展示侧仍在用），后者是归一后的身份
+  /// （写入新载体 `chapterSortOrder`）。两者不可互相推导，故不做「传一个推另一个」。
   Future<bool> _appendUserAssertion(
     CharacterFact row,
     String attribute,
     String value,
     int? chapter,
+    int? identity,
   ) async {
-    final hash = await _hashForChapter(row.manuscriptId, chapter);
+    final hash = await _hashForIdentity(row.manuscriptId, identity);
     return _rewriteAssertions(row.id, (list) {
       return [
         ...list,
@@ -147,6 +172,7 @@ class CharacterEditorService {
           attribute: attribute,
           value: value,
           chapter: chapter,
+          chapterSortOrder: identity,
           timestamp: nowSec(),
           status: 'confirmed',
           source: 'user',
@@ -156,12 +182,40 @@ class CharacterEditorService {
     });
   }
 
-  /// 用户断言的章节指纹（§5.1(c)）；章号空 / 章节不存在 → null（不猜）。
-  Future<String?> _hashForChapter(String manuscriptId, int? chapterNo) async {
-    if (chapterNo == null) return null;
+  /// 用户在弹层手填的章号 → **身份**（`chapters.sort_order`）。
+  ///
+  /// 弹层标签是「章节（可选，如：7）」⇒ 用户填的必然是他**看得见**的那个数
+  /// （= 序位），不是内部身份。归一必须发生在写入前，否则将来按
+  /// `sortOrder == 7` 读会落到**另一章**（只在无删除无重排的稿上偶然相等）。
+  ///
+  /// 与 `N12-F3a` 的 `character_list_view._firstSeenSortOrder` 同口径、同实现
+  /// ——用户手填入口只有这一种语义，故**不走** `resolveChapterIdentity`（那条路
+  /// 的「当前章优先」是给**语义未定的 AI 自报数**用的，见 `ADR-C96 §2` 裁定 2）。
+  ///
+  /// 用 `ChapterRepository.listChapters` 而非 Provider 列表：库读是权威值，
+  /// 不依赖订阅时序（否则可能把合法序位静默归一成 null ⇒ **用户输入丢失**）。
+  ///
+  /// 解析不到（越界 / 该序位在回收站）⇒ null（**不猜**，ADR-C95 裁定 2）。
+  /// 此时断言的 [CharacterAssertion.chapter] 仍是用户原写的数，新载体为空 ⇒
+  /// 读取侧退回旧值，行为与改动前**逐字一致**。
+  Future<int?> _identityForUserInput(String manuscriptId, int? position) async {
+    if (position == null) return null;
+    final chapters = await ChapterRepository(_db).listChapters(manuscriptId);
+    return sortOrderAtPosition(buildChapterNoMap(chapters), position);
+  }
+
+  /// 用户断言的章节指纹（§5.1(c)）；身份为空 / 章不存在 → null（不猜）。
+  ///
+  /// ★ `N12-F3b`：入参从**用户手填的数**改成**身份**（函数名随之改，避免旧名
+  ///   继续诱导「传章号」）。原实现把用户填的数直接送 `getChapterByOrder`
+  ///   —— 那是 `sort_order` 等值查询 —— 于是用户填「3」绑的是 `sortOrder == 3`
+  ///   那一章的正文，而展示层把同一个数渲染成「第3章」⇒ **指纹与展示指向不同章**
+  ///   （`ADR-C96 §1.3` 第 1 行；本批修的就是它）。
+  Future<String?> _hashForIdentity(String manuscriptId, int? sortOrder) async {
+    if (sortOrder == null) return null;
     final chapter = await ChapterRepository(
       _db,
-    ).getChapterByOrder(manuscriptId, chapterNo);
+    ).getChapterByOrder(manuscriptId, sortOrder);
     if (chapter == null) return null;
     return chapterFingerprint(chapter.content);
   }
@@ -197,6 +251,14 @@ class CharacterEditorService {
   }
 
   /// 状态改写（拒绝 / 修正留痕共用）。其余字段原样保留。
+  ///
+  /// `N12-F3b`：本方法是 `CharacterAssertion` 的**重建点 #7**，逐字段手写
+  /// ⇒ 新增字段极易在此静默丢失。本次修两处：
+  ///   ① 补 `chapterSortOrder` **保真** —— 漏掉的话「修正断言」把原条标 rejected
+  ///      时会把它的身份抹掉（同一个对象此前刚被读出来用过）；
+  ///   ② 补 `negative` —— 这是**本批之前就存在的潜伏缺口**（非本次引入）：
+  ///      `rejectAssertion` 与 `setNegative` 都经本方法 / 邻接路径，
+  ///      用户「先勾负断言 → 再改拒绝理由」会让负断言开关被无声清掉。
   CharacterAssertion _withStatus(
     CharacterAssertion a,
     String status, {
@@ -206,6 +268,7 @@ class CharacterEditorService {
       attribute: a.attribute,
       value: a.value,
       chapter: a.chapter,
+      chapterSortOrder: a.chapterSortOrder, // 保真 #7
       timestamp: a.timestamp,
       status: status,
       source: a.source,
@@ -213,6 +276,7 @@ class CharacterEditorService {
       chapterHash: a.chapterHash,
       stale: a.stale,
       rejectReason: reason ?? (status == 'rejected' ? a.rejectReason : null),
+      negative: a.negative, // 补潜伏缺口
     );
   }
 

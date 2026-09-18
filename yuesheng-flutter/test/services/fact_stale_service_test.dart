@@ -60,6 +60,7 @@ void main() {
     String attribute,
     String value, {
     int? chapter,
+    int? chapterSortOrder,
     String? chapterHash,
     bool staleFlag = false,
     String status = 'confirmed',
@@ -71,6 +72,7 @@ void main() {
       attribute: attribute,
       value: value,
       chapter: chapter,
+      chapterSortOrder: chapterSortOrder,
       timestamp: timestamp,
       status: status,
       source: source,
@@ -107,6 +109,7 @@ void main() {
   Future<void> seedEvent(
     String name, {
     required int chapter,
+    int? chapterSortOrder,
     String? chapterHash,
     int staleValue = 0,
   }) async {
@@ -119,6 +122,7 @@ void main() {
             name: name,
             eventType: '决定',
             chapter: Value(chapter),
+            chapterSortOrder: Value(chapterSortOrder),
             chapterHash: Value(chapterHash),
             stale: Value(staleValue),
           ),
@@ -625,6 +629,147 @@ void main() {
       );
       final events = await eventRepo.listEvents(manuscriptId);
       expect(events.map((e) => e.name).toList(), ['第3章新事件', '第4章旧事件']);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // N12-F3b / `ADR-C96 §1.4`：**身份口径**（判据改指身份后的自愈）
+  //
+  // 改前：第二支比 `a.chapter`（AI 抄的**标称号**）与 `chapterNo`（`sort_order`）
+  //       ⇒ 干净稿上默认标题差 1 ⇒ **该支在实际数据上恒假**，「章节改写 ⇒ 断言
+  //       灰显」对 AI 抽取的断言失效。
+  // 改后：比 `a.chapterIdentity`（新载体优先、存量回退 `chapter`）。
+  //   ⚠️ 边界：**存量行救不回来** —— 它们的 `chapterSortOrder` 为 NULL，回退值
+  //   仍是标称号 ⇒ 判据与改前**逐字相同**。自愈只对新写入的行生效。
+  // ─────────────────────────────────────────────────────────────
+  group('身份口径（ADR-C96 §1.4）', () {
+    test('#22 正例：读的是**新载体** ⇒ 命中本章（旧口径读标称号会恒假）', () async {
+      // 新行形态：旧载体 = AI 标称号 3、新载体 = 身份 2，两者刻意不同。
+      // chapterHash 给一个**不等**的值，确保命中只能来自身份支。
+      await seedCharacter('阿禾', [
+        assertion(
+          '性格',
+          '冷静',
+          chapter: 3,
+          chapterSortOrder: 2,
+          chapterHash: hashB,
+        ),
+      ]);
+
+      await stale.markChapterStale(
+        manuscriptId: manuscriptId,
+        chapterNo: 2,
+        chapterHash: hashA,
+      );
+
+      expect(
+        (await readAssertions('阿禾')).single.stale,
+        isTrue,
+        reason: '旧口径 `chapter == chapterNo` 即 3 == 2 ⇒ 恒假 ⇒ 该断言漏标为幽灵',
+      );
+    });
+
+    test('#23 反例：**别章的断言不得被误标**（身份不同且指纹不同）', () async {
+      await seedCharacter('阿禾', [
+        assertion(
+          '年龄',
+          '十七',
+          chapter: 2,
+          chapterSortOrder: 7,
+          chapterHash: hashB,
+        ),
+      ]);
+
+      await stale.markChapterStale(
+        manuscriptId: manuscriptId,
+        chapterNo: 2,
+        chapterHash: hashA,
+      );
+
+      expect(
+        (await readAssertions('阿禾')).single.stale,
+        isFalse,
+        reason: '身份 7 ⇒ 不属本章；旧口径拿 `chapter`（2）比会**误标**它',
+      );
+    });
+
+    test('#24 存量行（无新载体）⇒ 判据与改前逐字相同（自愈的**边界**）', () async {
+      await seedCharacter('阿禾', [
+        assertion('性格', '冷静', chapter: 3, chapterHash: hashB),
+      ]);
+
+      await stale.markChapterStale(
+        manuscriptId: manuscriptId,
+        chapterNo: 2,
+        chapterHash: hashA,
+      );
+
+      expect(
+        (await readAssertions('阿禾')).single.stale,
+        isFalse,
+        reason: '存量行的身份**无法回溯** ⇒ 回退到标称号 3 ⇒ 仍不命中（不得假装能治）',
+      );
+    });
+
+    test('#25 事件侧 SQL 判据：新列优先、存量为 NULL 时退回旧列', () async {
+      await seedEvent(
+        '新行-命中',
+        chapter: 9,
+        chapterSortOrder: 2,
+        chapterHash: hashB,
+      );
+      await seedEvent(
+        '新行-别章',
+        chapter: 2,
+        chapterSortOrder: 7,
+        chapterHash: hashB,
+      );
+      await seedEvent('存量行-命中', chapter: 2, chapterHash: hashB);
+      await seedEvent('存量行-别章', chapter: 5, chapterHash: hashB);
+
+      await stale.markChapterStale(
+        manuscriptId: manuscriptId,
+        chapterNo: 2,
+        chapterHash: hashA,
+      );
+
+      final byName = {
+        for (final e in await eventRepo.listEvents(manuscriptId))
+          e.name: e.stale,
+      };
+      expect(byName['新行-命中'], 1, reason: '新列 = 2 ⇒ 命中（旧列是 9，只比旧列会漏）');
+      expect(byName['新行-别章'], 0, reason: '新列 = 7 ⇒ 不属本章（旧列是 2，只比旧列会误标）');
+      expect(byName['存量行-命中'], 1, reason: '新列为 NULL ⇒ 退回旧列（机器写入的行装的正是身份）');
+      expect(byName['存量行-别章'], 0, reason: '存量为 NULL 且旧列 ≠ 2 ⇒ 不标');
+    });
+
+    test('#26 mergeAssertions：第三项比身份 ⇒ 本章旧断言标灰、别章安然', () {
+      final existing = [
+        assertion(
+          '性格',
+          '冷静',
+          chapter: 3,
+          chapterSortOrder: 2,
+          chapterHash: hashB,
+        ),
+        assertion(
+          '年龄',
+          '十七',
+          chapter: 2,
+          chapterSortOrder: 7,
+          chapterHash: hashB,
+        ),
+      ];
+
+      final merged = FactStaleService.mergeAssertions(
+        existing,
+        const [],
+        hashA,
+        chapterNo: 2,
+      );
+
+      expect(merged[0].stale, isTrue, reason: '身份 2 = 本章 且指纹已变 ⇒ 标 stale');
+      expect(merged[1].stale, isFalse, reason: '身份 7 ⇒ 别章，不得误标（同章限定）');
     });
   });
 }

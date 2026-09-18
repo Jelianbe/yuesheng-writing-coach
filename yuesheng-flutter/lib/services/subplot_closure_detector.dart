@@ -34,11 +34,16 @@ class UnclosedSubplotObservation {
   });
 }
 
-/// 检测输入：支线名 + 引入章节 + 回收章节（null=未回收）
+/// 检测输入：支线名 + 引入章节 + 回收章节（null=未回收）+ 引入章**身份键**
+///
+/// `N12-F3b`（`ADR-C96`）：新增 [introducedSortOrder] 专供**减法判据**用 ——
+/// [introducedChapter] 是**一列多源值**（AI 标称号 / 机器身份），与恒为身份的
+/// `currentChapter` 相减没有单一基线；存量行无身份 ⇒ 传 null，判据退回原值。
 typedef SubplotFactInput = ({
   String name,
   int? introducedChapter,
   int? resolvedChapter,
+  int? introducedSortOrder,
 });
 
 /// 引入后超过该章节数仍未回收 → 视为「收束滞后」（给作者留回收空间，避免误报）
@@ -62,7 +67,14 @@ List<UnclosedSubplotObservation> detectUnclosedSubplots(
     final introduced = subplot.introducedChapter;
     if (subplot.resolvedChapter != null) continue; // 已回收
     if (introduced == null) continue; // 无时间锚点，保守跳过
-    if (currentChapter - introduced < graceChapterCount) continue;
+    // ★ N12-F3b（`ADR-C96 §2` 消费侧冲突表第 4 行）：**减法判据吃身份** ——
+    //   `currentChapter` 恒为身份（`message_injector` 传 `chapter.sortOrder`），
+    //   与一列多源的 `introducedChapter` 相减本无单一基线 ⇒ 阈值判据会偏移。
+    //   存量行无身份 ⇒ 退回原值，行为逐字不变。
+    //   ⚠️ 下方 description 仍用 `introduced`（AI 原值）：它属 ADR 冻结的
+    //   **9 处展示渲染**之一，phase 1 不改，切换留 phase 2（被 S1/S2/S3 阻塞）。
+    final introducedKey = subplot.introducedSortOrder ?? introduced;
+    if (currentChapter - introducedKey < graceChapterCount) continue;
 
     observations.add(
       UnclosedSubplotObservation(

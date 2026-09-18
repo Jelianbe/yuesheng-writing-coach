@@ -105,4 +105,27 @@ void main() {
       expect(nextChapterTitle([_chapter('第二十章')]), '第二十一章');
     });
   });
+
+  // N12-F3b：`chapterTitleNumber` 成为「标称号」的**公开读取入口**（`ADR-C96`），
+  // 且 `nextChapterTitle` 改由它实现 ⇒ 本节给正负例，防两处口径分叉。
+  group('chapterTitleNumber（标称号读取入口，N12-F3b）', () {
+    test('#T1 正例：阿拉伯 / 中文数字、含空格、带后缀标题', () {
+      expect(chapterTitleNumber('第1章'), 1);
+      expect(chapterTitleNumber('第一章'), 1);
+      expect(chapterTitleNumber('第 7 章'), 7, reason: '正则容许「第」与数字间空格');
+      expect(chapterTitleNumber('第2章 迷雾'), 2, reason: '取标题里**第一个**序号');
+      expect(chapterTitleNumber('第二章：启程'), 2);
+      expect(chapterTitleNumber('第十二章'), 12);
+      expect(chapterTitleNumber('第一百二十三章'), 123);
+    });
+
+    test('#T2 阴性：无「第X章」形态 ⇒ null（**不编造**，不返回 0）', () {
+      expect(chapterTitleNumber('楔子'), isNull);
+      expect(chapterTitleNumber('序言'), isNull);
+      expect(chapterTitleNumber('序章'), isNull, reason: '缺「第」字');
+      expect(chapterTitleNumber('第二天'), isNull, reason: '缺「章」字');
+      expect(chapterTitleNumber('第X章'), isNull, reason: '序号必须是数字或中文数字');
+      expect(chapterTitleNumber(''), isNull);
+    });
+  });
 }

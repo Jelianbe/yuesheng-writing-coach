@@ -1487,15 +1487,7 @@ class MessageInjector {
         chapter.manuscriptId,
       );
       if (subplots.isEmpty) return;
-      final inputs = subplots
-          .map(
-            (s) => (
-              name: s.name,
-              introducedChapter: s.introducedChapter,
-              resolvedChapter: s.resolvedChapter,
-            ),
-          )
-          .toList();
+      final inputs = _subplotInputs(subplots);
       final raw = detectUnclosedSubplots(
         inputs,
         currentChapter: chapter.sortOrder,
@@ -1519,6 +1511,26 @@ class MessageInjector {
     } catch (e, st) {
       _logSafeRun('情节闭环检测失败不阻断主流程', e, st);
     }
+  }
+
+  /// 支线行 → F11 检测器输入（`N12-F3b` / `ADR-C96`）。
+  ///
+  /// ★ 身份与展示值**分开传**：减法判据吃 [SubplotFactInput.introducedSortOrder]
+  ///   （= `subplot_fact.introduced_chapter_sort_order`）；存量行该列为 null ⇒
+  ///   检测器退回 [SubplotFactInput.introducedChapter]。描述文案仍用 AI 原报的
+  ///   那个数 —— phase 1 不改任何可见输出。
+  /// 独立成方法（而非内联 `.map`）：它承载了一条**语义**（两个数不同义），
+  /// 内联时只能以注释形式飘在列表字面量里。
+  List<SubplotFactInput> _subplotInputs(List<SubplotFact> rows) {
+    return [
+      for (final s in rows)
+        (
+          name: s.name,
+          introducedChapter: s.introducedChapter,
+          resolvedChapter: s.resolvedChapter,
+          introducedSortOrder: s.introducedChapterSortOrder,
+        ),
+    ];
   }
 
   /// §5.1.6：基础文法观察

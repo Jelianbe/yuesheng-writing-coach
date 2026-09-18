@@ -6,7 +6,7 @@
 //   + UNIQUE(manuscript_id, entity_kind, entity_id, tag)
 //
 // 覆盖：
-//   1. v36 存量库升级 → setting_tag 表建立、可写、user_version = 38
+//   1. v36 存量库升级 → setting_tag 表建立、可写、user_version = kSchemaHead
 //   2. 幂等：v37 库重复打开不报错、不重复建表
 //   3. 表级 UNIQUE 防重复（重复插同键抛异常）
 // ─────────────────────────────────────────────────────────────
@@ -17,6 +17,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -65,29 +66,32 @@ void main() {
     }
   });
 
-  test('#1 v36 → v37 升级：setting_tag 表建立、可写、user_version=38', () async {
-    final db = AppDatabase.forTesting(
-      NativeDatabase(File(createV36LegacyDbFile())),
-    );
-    addTearDown(db.close);
-    final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+  test(
+    '#1 v36 → v37 升级：setting_tag 表建立、可写、user_version=$kSchemaHead',
+    () async {
+      final db = AppDatabase.forTesting(
+        NativeDatabase(File(createV36LegacyDbFile())),
+      );
+      addTearDown(db.close);
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), kSchemaHead);
 
-    await db
-        .into(db.settingTags)
-        .insert(
-          SettingTagsCompanion.insert(
-            id: 't1',
-            manuscriptId: 'm1',
-            entityKind: 'character',
-            entityId: 'c1',
-            tag: '主角团',
-          ),
-        );
-    final rows = await db.select(db.settingTags).get();
-    expect(rows.length, 1);
-    expect(rows.single.tag, '主角团');
-  });
+      await db
+          .into(db.settingTags)
+          .insert(
+            SettingTagsCompanion.insert(
+              id: 't1',
+              manuscriptId: 'm1',
+              entityKind: 'character',
+              entityId: 'c1',
+              tag: '主角团',
+            ),
+          );
+      final rows = await db.select(db.settingTags).get();
+      expect(rows.length, 1);
+      expect(rows.single.tag, '主角团');
+    },
+  );
 
   test('#2 幂等：v37 库重复打开不报错、不重复建表', () async {
     final path = createV36LegacyDbFile();
@@ -95,7 +99,7 @@ void main() {
     await db1.close();
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
     await db2.close();
   });
 

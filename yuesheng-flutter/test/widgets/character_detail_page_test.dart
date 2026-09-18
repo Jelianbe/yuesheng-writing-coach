@@ -235,15 +235,29 @@ void main() {
         matching: find.byType(TextField),
       );
       await tester.enterText(dialogFields.at(1), '孤儿');
-      await tester.enterText(dialogFields.at(2), '3');
+      // 弹层标签是「章节（可选，如：7）」⇒ 用户填的是他看得见的**序位**。
+      // 本 fixture 只有一章（`sortOrder: 3`、标题「第三章」）⇒ 序位 1 才是能
+      // 解析到的那个数。此处是**判别性**选择：旧实现拿用户填的数直接查
+      // `sort_order == 1` ⇒ 必然查不到 ⇒ 指纹为 null；新实现先归一到身份 3
+      // ⇒ 才算得出指纹（`ADR-C96 §1.3` 第 1 行，本批修的就是它）。
+      await tester.enterText(dialogFields.at(2), '1');
       await tester.tap(find.text('保存'));
       await tester.pumpAndSettle();
 
       final list = await dbAssertions();
       final added = list.firstWhere((a) => a.value == '孤儿');
       expect(added.source, 'user');
-      expect(added.chapter, 3);
-      expect(added.chapterHash, isNotNull);
+      expect(added.chapter, 1, reason: 'R1′：用户原写的数原样保留，不被归一改写');
+      expect(
+        added.chapterSortOrder,
+        3,
+        reason: '序位 1 → 身份 sortOrder 3（ADR-C96 §2 裁定 2 的写侧归一）',
+      );
+      expect(
+        added.chapterHash,
+        isNotNull,
+        reason: '身份解析成功 ⇒ 该章指纹算得出（旧实现此处恒 null）',
+      );
     });
   });
 

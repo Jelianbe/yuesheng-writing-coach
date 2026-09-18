@@ -7,7 +7,7 @@
 //   target_kind, target_id)
 //
 // 覆盖：
-//   1. v35 存量库升级 → setting_link 表建立、可写、user_version = 38
+//   1. v35 存量库升级 → setting_link 表建立、可写、user_version = kSchemaHead
 //   2. 幂等：v36 库重复打开不报错、不重复建表
 // ─────────────────────────────────────────────────────────────
 
@@ -17,6 +17,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
+import '../../test_support/schema_head.dart';
 
 var _dbSeq = 0;
 
@@ -75,7 +76,7 @@ void main() {
     addTearDown(db.close);
 
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     // 表存在且可写（含 UNIQUE 约束）
     await db.customStatement(
@@ -103,7 +104,7 @@ void main() {
     final db2 = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db2.close);
     final version = await db2.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 38);
+    expect(version.read<int>('user_version'), kSchemaHead);
 
     final tables = await db2
         .customSelect(

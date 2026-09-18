@@ -499,14 +499,20 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   }
 
   /// 相关事件跳章节（章节已删/未记录 → 轻提示，不假装跳转）
+  ///
+  /// `N12-F3b`（`ADR-C96 §1.3` 第 1 行）：查库用的是**身份**，故先取
+  /// `chapterSortOrder`（存量行为 null ⇒ 退回 `chapter`，行为逐字不变）。
+  /// 原实现直接拿 `event.chapter` 去 `getChapterByOrder` —— 而那一列装的是
+  /// **AI 标称号**，于是 AI 给号时会**跳错章**、末章直接查不到。
   Future<void> _jumpToChapter(EventFact event) async {
-    if (event.chapter == null) {
+    final sortOrder = event.chapterSortOrder ?? event.chapter;
+    if (sortOrder == null) {
       _snack('该事件未记录章节');
       return;
     }
     final chapter = await ChapterRepository(
       ref.read(appDatabaseProvider),
-    ).getChapterByOrder(widget.manuscriptId, event.chapter!);
+    ).getChapterByOrder(widget.manuscriptId, sortOrder);
     if (!mounted) return;
     if (chapter == null) {
       _snack('该章节已不存在，无法打开');
@@ -527,10 +533,14 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   ///   未命中 / 缺失 → findKeywordExcerpt(value) 用「断言所属章」正文反查；
   ///   都失败 → null（弹层如实显示「未定位到原文」）。
   Future<String?> _resolveOriginalText(CharacterAssertion a) async {
-    if (a.chapter == null) return null;
+    // N12-F3b：查库用**身份**（`a.chapterIdentity` 自带存量回退）。
+    // 原实现拿 `a.chapter`（AI 标称号）当身份查 ⇒ AI 给号时**定位到另一章**的正文，
+    // 或直接「未定位到原文」。
+    final sortOrder = a.chapterIdentity;
+    if (sortOrder == null) return null;
     final chapter = await ChapterRepository(
       ref.read(appDatabaseProvider),
-    ).getChapterByOrder(widget.manuscriptId, a.chapter!);
+    ).getChapterByOrder(widget.manuscriptId, sortOrder);
     if (chapter == null) return null;
     final evidence = a.evidence;
     if (evidence != null && evidence.isNotEmpty) {

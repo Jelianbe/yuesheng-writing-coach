@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
+import '../../test_support/schema_head.dart';
 
 void main() {
   late AppDatabase db;
@@ -342,7 +343,7 @@ void main() {
         final db = AppDatabase.forTesting(NativeDatabase(File(path)));
         addTearDown(db.close);
         final ver = await db.customSelect('PRAGMA user_version').getSingle();
-        expect(ver.read<int>('user_version'), 38);
+        expect(ver.read<int>('user_version'), kSchemaHead);
 
         // 3. 升级后 createManuscript
         final upgradedRepo = ManuscriptRepository(db);

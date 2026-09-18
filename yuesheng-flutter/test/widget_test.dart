@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/main.dart';
+import 'test_support/schema_head.dart';
 
 void main() {
   // 批次 0 占位测试：仅验证 YueshengApp 类型存在（批次63 改为 ConsumerStatefulWidget 启动门）。
@@ -61,7 +62,7 @@ void main() {
         expect(tableNames.contains(t), true, reason: '缺少表: $t');
       }
 
-      // 2. 验证 user_version = 38（drift schemaVersion；批次89 → 23，批次94-2 → 24
+      // 2. 验证 user_version = kSchemaHead（drift schemaVersion；批次89 → 23，批次94-2 → 24
       // chapters.status CHECK 扩 'archived'；批次94-5 → 25 manuscripts.tags 列；
       // 批次96+ → 26 新增 volumes 之外的 schema bump；
       // C78 批次1 → 27 角色标签页列：character_fact.aliases/status，
@@ -74,12 +75,14 @@ void main() {
       // 第二批 L2 → 35 character_fact.pinned 用户钉选列；
       // 互链 → 36 setting_link 条目互链表；
       // 标签 → 37 setting_tag 条目标签表；
-      // 批1·N2 → 38 training_results.user_rating 自评档位）
+      // 批1·N2 → 38 training_results.user_rating 自评档位；
+      // N12-F3b → 39 fact 层章号身份列：event_fact.chapter_sort_order，
+      //   subplot_fact.introduced/resolved_chapter_sort_order）
       final version = await db.customSelect('PRAGMA user_version').getSingle();
       expect(
         version.read<int>('user_version'),
-        38,
-        reason: 'schemaVersion 应为 38',
+        kSchemaHead,
+        reason: 'schemaVersion 应为 $kSchemaHead',
       );
 
       // 2.5 批次71：验证 messages.references_json 列存在

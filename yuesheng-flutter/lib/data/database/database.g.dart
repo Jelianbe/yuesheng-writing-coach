@@ -10027,6 +10027,17 @@ class $EventFactsTable extends EventFacts
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _chapterSortOrderMeta = const VerificationMeta(
+    'chapterSortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> chapterSortOrder = GeneratedColumn<int>(
+    'chapter_sort_order',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _eventTypeMeta = const VerificationMeta(
     'eventType',
   );
@@ -10135,6 +10146,7 @@ class $EventFactsTable extends EventFacts
     manuscriptId,
     name,
     chapter,
+    chapterSortOrder,
     eventType,
     causeEventId,
     effectEventId,
@@ -10185,6 +10197,15 @@ class $EventFactsTable extends EventFacts
       context.handle(
         _chapterMeta,
         chapter.isAcceptableOrUnknown(data['chapter']!, _chapterMeta),
+      );
+    }
+    if (data.containsKey('chapter_sort_order')) {
+      context.handle(
+        _chapterSortOrderMeta,
+        chapterSortOrder.isAcceptableOrUnknown(
+          data['chapter_sort_order']!,
+          _chapterSortOrderMeta,
+        ),
       );
     }
     if (data.containsKey('event_type')) {
@@ -10287,6 +10308,10 @@ class $EventFactsTable extends EventFacts
         DriftSqlType.int,
         data['${effectivePrefix}chapter'],
       ),
+      chapterSortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}chapter_sort_order'],
+      ),
       eventType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}event_type'],
@@ -10337,6 +10362,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
   final String manuscriptId;
   final String name;
   final int? chapter;
+  final int? chapterSortOrder;
   final String eventType;
   final String? causeEventId;
   final String? effectEventId;
@@ -10351,6 +10377,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     required this.manuscriptId,
     required this.name,
     this.chapter,
+    this.chapterSortOrder,
     required this.eventType,
     this.causeEventId,
     this.effectEventId,
@@ -10369,6 +10396,9 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || chapter != null) {
       map['chapter'] = Variable<int>(chapter);
+    }
+    if (!nullToAbsent || chapterSortOrder != null) {
+      map['chapter_sort_order'] = Variable<int>(chapterSortOrder);
     }
     map['event_type'] = Variable<String>(eventType);
     if (!nullToAbsent || causeEventId != null) {
@@ -10396,6 +10426,9 @@ class EventFact extends DataClass implements Insertable<EventFact> {
       chapter: chapter == null && nullToAbsent
           ? const Value.absent()
           : Value(chapter),
+      chapterSortOrder: chapterSortOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chapterSortOrder),
       eventType: Value(eventType),
       causeEventId: causeEventId == null && nullToAbsent
           ? const Value.absent()
@@ -10424,6 +10457,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
       manuscriptId: serializer.fromJson<String>(json['manuscriptId']),
       name: serializer.fromJson<String>(json['name']),
       chapter: serializer.fromJson<int?>(json['chapter']),
+      chapterSortOrder: serializer.fromJson<int?>(json['chapterSortOrder']),
       eventType: serializer.fromJson<String>(json['eventType']),
       causeEventId: serializer.fromJson<String?>(json['causeEventId']),
       effectEventId: serializer.fromJson<String?>(json['effectEventId']),
@@ -10443,6 +10477,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
       'manuscriptId': serializer.toJson<String>(manuscriptId),
       'name': serializer.toJson<String>(name),
       'chapter': serializer.toJson<int?>(chapter),
+      'chapterSortOrder': serializer.toJson<int?>(chapterSortOrder),
       'eventType': serializer.toJson<String>(eventType),
       'causeEventId': serializer.toJson<String?>(causeEventId),
       'effectEventId': serializer.toJson<String?>(effectEventId),
@@ -10460,6 +10495,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     String? manuscriptId,
     String? name,
     Value<int?> chapter = const Value.absent(),
+    Value<int?> chapterSortOrder = const Value.absent(),
     String? eventType,
     Value<String?> causeEventId = const Value.absent(),
     Value<String?> effectEventId = const Value.absent(),
@@ -10474,6 +10510,9 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     manuscriptId: manuscriptId ?? this.manuscriptId,
     name: name ?? this.name,
     chapter: chapter.present ? chapter.value : this.chapter,
+    chapterSortOrder: chapterSortOrder.present
+        ? chapterSortOrder.value
+        : this.chapterSortOrder,
     eventType: eventType ?? this.eventType,
     causeEventId: causeEventId.present ? causeEventId.value : this.causeEventId,
     effectEventId: effectEventId.present
@@ -10494,6 +10533,9 @@ class EventFact extends DataClass implements Insertable<EventFact> {
           : this.manuscriptId,
       name: data.name.present ? data.name.value : this.name,
       chapter: data.chapter.present ? data.chapter.value : this.chapter,
+      chapterSortOrder: data.chapterSortOrder.present
+          ? data.chapterSortOrder.value
+          : this.chapterSortOrder,
       eventType: data.eventType.present ? data.eventType.value : this.eventType,
       causeEventId: data.causeEventId.present
           ? data.causeEventId.value
@@ -10523,6 +10565,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
           ..write('manuscriptId: $manuscriptId, ')
           ..write('name: $name, ')
           ..write('chapter: $chapter, ')
+          ..write('chapterSortOrder: $chapterSortOrder, ')
           ..write('eventType: $eventType, ')
           ..write('causeEventId: $causeEventId, ')
           ..write('effectEventId: $effectEventId, ')
@@ -10542,6 +10585,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
     manuscriptId,
     name,
     chapter,
+    chapterSortOrder,
     eventType,
     causeEventId,
     effectEventId,
@@ -10560,6 +10604,7 @@ class EventFact extends DataClass implements Insertable<EventFact> {
           other.manuscriptId == this.manuscriptId &&
           other.name == this.name &&
           other.chapter == this.chapter &&
+          other.chapterSortOrder == this.chapterSortOrder &&
           other.eventType == this.eventType &&
           other.causeEventId == this.causeEventId &&
           other.effectEventId == this.effectEventId &&
@@ -10576,6 +10621,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
   final Value<String> manuscriptId;
   final Value<String> name;
   final Value<int?> chapter;
+  final Value<int?> chapterSortOrder;
   final Value<String> eventType;
   final Value<String?> causeEventId;
   final Value<String?> effectEventId;
@@ -10591,6 +10637,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     this.manuscriptId = const Value.absent(),
     this.name = const Value.absent(),
     this.chapter = const Value.absent(),
+    this.chapterSortOrder = const Value.absent(),
     this.eventType = const Value.absent(),
     this.causeEventId = const Value.absent(),
     this.effectEventId = const Value.absent(),
@@ -10607,6 +10654,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     required String manuscriptId,
     required String name,
     this.chapter = const Value.absent(),
+    this.chapterSortOrder = const Value.absent(),
     required String eventType,
     this.causeEventId = const Value.absent(),
     this.effectEventId = const Value.absent(),
@@ -10626,6 +10674,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     Expression<String>? manuscriptId,
     Expression<String>? name,
     Expression<int>? chapter,
+    Expression<int>? chapterSortOrder,
     Expression<String>? eventType,
     Expression<String>? causeEventId,
     Expression<String>? effectEventId,
@@ -10642,6 +10691,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
       if (manuscriptId != null) 'manuscript_id': manuscriptId,
       if (name != null) 'name': name,
       if (chapter != null) 'chapter': chapter,
+      if (chapterSortOrder != null) 'chapter_sort_order': chapterSortOrder,
       if (eventType != null) 'event_type': eventType,
       if (causeEventId != null) 'cause_event_id': causeEventId,
       if (effectEventId != null) 'effect_event_id': effectEventId,
@@ -10660,6 +10710,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     Value<String>? manuscriptId,
     Value<String>? name,
     Value<int?>? chapter,
+    Value<int?>? chapterSortOrder,
     Value<String>? eventType,
     Value<String?>? causeEventId,
     Value<String?>? effectEventId,
@@ -10676,6 +10727,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
       manuscriptId: manuscriptId ?? this.manuscriptId,
       name: name ?? this.name,
       chapter: chapter ?? this.chapter,
+      chapterSortOrder: chapterSortOrder ?? this.chapterSortOrder,
       eventType: eventType ?? this.eventType,
       causeEventId: causeEventId ?? this.causeEventId,
       effectEventId: effectEventId ?? this.effectEventId,
@@ -10703,6 +10755,9 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
     }
     if (chapter.present) {
       map['chapter'] = Variable<int>(chapter.value);
+    }
+    if (chapterSortOrder.present) {
+      map['chapter_sort_order'] = Variable<int>(chapterSortOrder.value);
     }
     if (eventType.present) {
       map['event_type'] = Variable<String>(eventType.value);
@@ -10744,6 +10799,7 @@ class EventFactsCompanion extends UpdateCompanion<EventFact> {
           ..write('manuscriptId: $manuscriptId, ')
           ..write('name: $name, ')
           ..write('chapter: $chapter, ')
+          ..write('chapterSortOrder: $chapterSortOrder, ')
           ..write('eventType: $eventType, ')
           ..write('causeEventId: $causeEventId, ')
           ..write('effectEventId: $effectEventId, ')
@@ -10819,6 +10875,28 @@ class $SubplotFactsTable extends SubplotFacts
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _introducedChapterSortOrderMeta =
+      const VerificationMeta('introducedChapterSortOrder');
+  @override
+  late final GeneratedColumn<int> introducedChapterSortOrder =
+      GeneratedColumn<int>(
+        'introduced_chapter_sort_order',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _resolvedChapterSortOrderMeta =
+      const VerificationMeta('resolvedChapterSortOrder');
+  @override
+  late final GeneratedColumn<int> resolvedChapterSortOrder =
+      GeneratedColumn<int>(
+        'resolved_chapter_sort_order',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _resolvedAtMeta = const VerificationMeta(
     'resolvedAt',
   );
@@ -10873,6 +10951,8 @@ class $SubplotFactsTable extends SubplotFacts
     name,
     introducedChapter,
     resolvedChapter,
+    introducedChapterSortOrder,
+    resolvedChapterSortOrder,
     resolvedAt,
     description,
     createdAt,
@@ -10929,6 +11009,24 @@ class $SubplotFactsTable extends SubplotFacts
         resolvedChapter.isAcceptableOrUnknown(
           data['resolved_chapter']!,
           _resolvedChapterMeta,
+        ),
+      );
+    }
+    if (data.containsKey('introduced_chapter_sort_order')) {
+      context.handle(
+        _introducedChapterSortOrderMeta,
+        introducedChapterSortOrder.isAcceptableOrUnknown(
+          data['introduced_chapter_sort_order']!,
+          _introducedChapterSortOrderMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resolved_chapter_sort_order')) {
+      context.handle(
+        _resolvedChapterSortOrderMeta,
+        resolvedChapterSortOrder.isAcceptableOrUnknown(
+          data['resolved_chapter_sort_order']!,
+          _resolvedChapterSortOrderMeta,
         ),
       );
     }
@@ -10992,6 +11090,14 @@ class $SubplotFactsTable extends SubplotFacts
         DriftSqlType.int,
         data['${effectivePrefix}resolved_chapter'],
       ),
+      introducedChapterSortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}introduced_chapter_sort_order'],
+      ),
+      resolvedChapterSortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resolved_chapter_sort_order'],
+      ),
       resolvedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}resolved_at'],
@@ -11023,6 +11129,8 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
   final String name;
   final int? introducedChapter;
   final int? resolvedChapter;
+  final int? introducedChapterSortOrder;
+  final int? resolvedChapterSortOrder;
   final int? resolvedAt;
   final String description;
   final int createdAt;
@@ -11033,6 +11141,8 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
     required this.name,
     this.introducedChapter,
     this.resolvedChapter,
+    this.introducedChapterSortOrder,
+    this.resolvedChapterSortOrder,
     this.resolvedAt,
     required this.description,
     required this.createdAt,
@@ -11049,6 +11159,16 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
     }
     if (!nullToAbsent || resolvedChapter != null) {
       map['resolved_chapter'] = Variable<int>(resolvedChapter);
+    }
+    if (!nullToAbsent || introducedChapterSortOrder != null) {
+      map['introduced_chapter_sort_order'] = Variable<int>(
+        introducedChapterSortOrder,
+      );
+    }
+    if (!nullToAbsent || resolvedChapterSortOrder != null) {
+      map['resolved_chapter_sort_order'] = Variable<int>(
+        resolvedChapterSortOrder,
+      );
     }
     if (!nullToAbsent || resolvedAt != null) {
       map['resolved_at'] = Variable<int>(resolvedAt);
@@ -11070,6 +11190,13 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
       resolvedChapter: resolvedChapter == null && nullToAbsent
           ? const Value.absent()
           : Value(resolvedChapter),
+      introducedChapterSortOrder:
+          introducedChapterSortOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(introducedChapterSortOrder),
+      resolvedChapterSortOrder: resolvedChapterSortOrder == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolvedChapterSortOrder),
       resolvedAt: resolvedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(resolvedAt),
@@ -11090,6 +11217,12 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
       name: serializer.fromJson<String>(json['name']),
       introducedChapter: serializer.fromJson<int?>(json['introducedChapter']),
       resolvedChapter: serializer.fromJson<int?>(json['resolvedChapter']),
+      introducedChapterSortOrder: serializer.fromJson<int?>(
+        json['introducedChapterSortOrder'],
+      ),
+      resolvedChapterSortOrder: serializer.fromJson<int?>(
+        json['resolvedChapterSortOrder'],
+      ),
       resolvedAt: serializer.fromJson<int?>(json['resolvedAt']),
       description: serializer.fromJson<String>(json['description']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
@@ -11105,6 +11238,12 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
       'name': serializer.toJson<String>(name),
       'introducedChapter': serializer.toJson<int?>(introducedChapter),
       'resolvedChapter': serializer.toJson<int?>(resolvedChapter),
+      'introducedChapterSortOrder': serializer.toJson<int?>(
+        introducedChapterSortOrder,
+      ),
+      'resolvedChapterSortOrder': serializer.toJson<int?>(
+        resolvedChapterSortOrder,
+      ),
       'resolvedAt': serializer.toJson<int?>(resolvedAt),
       'description': serializer.toJson<String>(description),
       'createdAt': serializer.toJson<int>(createdAt),
@@ -11118,6 +11257,8 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
     String? name,
     Value<int?> introducedChapter = const Value.absent(),
     Value<int?> resolvedChapter = const Value.absent(),
+    Value<int?> introducedChapterSortOrder = const Value.absent(),
+    Value<int?> resolvedChapterSortOrder = const Value.absent(),
     Value<int?> resolvedAt = const Value.absent(),
     String? description,
     int? createdAt,
@@ -11132,6 +11273,12 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
     resolvedChapter: resolvedChapter.present
         ? resolvedChapter.value
         : this.resolvedChapter,
+    introducedChapterSortOrder: introducedChapterSortOrder.present
+        ? introducedChapterSortOrder.value
+        : this.introducedChapterSortOrder,
+    resolvedChapterSortOrder: resolvedChapterSortOrder.present
+        ? resolvedChapterSortOrder.value
+        : this.resolvedChapterSortOrder,
     resolvedAt: resolvedAt.present ? resolvedAt.value : this.resolvedAt,
     description: description ?? this.description,
     createdAt: createdAt ?? this.createdAt,
@@ -11150,6 +11297,12 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
       resolvedChapter: data.resolvedChapter.present
           ? data.resolvedChapter.value
           : this.resolvedChapter,
+      introducedChapterSortOrder: data.introducedChapterSortOrder.present
+          ? data.introducedChapterSortOrder.value
+          : this.introducedChapterSortOrder,
+      resolvedChapterSortOrder: data.resolvedChapterSortOrder.present
+          ? data.resolvedChapterSortOrder.value
+          : this.resolvedChapterSortOrder,
       resolvedAt: data.resolvedAt.present
           ? data.resolvedAt.value
           : this.resolvedAt,
@@ -11169,6 +11322,8 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
           ..write('name: $name, ')
           ..write('introducedChapter: $introducedChapter, ')
           ..write('resolvedChapter: $resolvedChapter, ')
+          ..write('introducedChapterSortOrder: $introducedChapterSortOrder, ')
+          ..write('resolvedChapterSortOrder: $resolvedChapterSortOrder, ')
           ..write('resolvedAt: $resolvedAt, ')
           ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
@@ -11184,6 +11339,8 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
     name,
     introducedChapter,
     resolvedChapter,
+    introducedChapterSortOrder,
+    resolvedChapterSortOrder,
     resolvedAt,
     description,
     createdAt,
@@ -11198,6 +11355,8 @@ class SubplotFact extends DataClass implements Insertable<SubplotFact> {
           other.name == this.name &&
           other.introducedChapter == this.introducedChapter &&
           other.resolvedChapter == this.resolvedChapter &&
+          other.introducedChapterSortOrder == this.introducedChapterSortOrder &&
+          other.resolvedChapterSortOrder == this.resolvedChapterSortOrder &&
           other.resolvedAt == this.resolvedAt &&
           other.description == this.description &&
           other.createdAt == this.createdAt &&
@@ -11210,6 +11369,8 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
   final Value<String> name;
   final Value<int?> introducedChapter;
   final Value<int?> resolvedChapter;
+  final Value<int?> introducedChapterSortOrder;
+  final Value<int?> resolvedChapterSortOrder;
   final Value<int?> resolvedAt;
   final Value<String> description;
   final Value<int> createdAt;
@@ -11221,6 +11382,8 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
     this.name = const Value.absent(),
     this.introducedChapter = const Value.absent(),
     this.resolvedChapter = const Value.absent(),
+    this.introducedChapterSortOrder = const Value.absent(),
+    this.resolvedChapterSortOrder = const Value.absent(),
     this.resolvedAt = const Value.absent(),
     this.description = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -11233,6 +11396,8 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
     required String name,
     this.introducedChapter = const Value.absent(),
     this.resolvedChapter = const Value.absent(),
+    this.introducedChapterSortOrder = const Value.absent(),
+    this.resolvedChapterSortOrder = const Value.absent(),
     this.resolvedAt = const Value.absent(),
     this.description = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -11247,6 +11412,8 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
     Expression<String>? name,
     Expression<int>? introducedChapter,
     Expression<int>? resolvedChapter,
+    Expression<int>? introducedChapterSortOrder,
+    Expression<int>? resolvedChapterSortOrder,
     Expression<int>? resolvedAt,
     Expression<String>? description,
     Expression<int>? createdAt,
@@ -11259,6 +11426,10 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
       if (name != null) 'name': name,
       if (introducedChapter != null) 'introduced_chapter': introducedChapter,
       if (resolvedChapter != null) 'resolved_chapter': resolvedChapter,
+      if (introducedChapterSortOrder != null)
+        'introduced_chapter_sort_order': introducedChapterSortOrder,
+      if (resolvedChapterSortOrder != null)
+        'resolved_chapter_sort_order': resolvedChapterSortOrder,
       if (resolvedAt != null) 'resolved_at': resolvedAt,
       if (description != null) 'description': description,
       if (createdAt != null) 'created_at': createdAt,
@@ -11273,6 +11444,8 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
     Value<String>? name,
     Value<int?>? introducedChapter,
     Value<int?>? resolvedChapter,
+    Value<int?>? introducedChapterSortOrder,
+    Value<int?>? resolvedChapterSortOrder,
     Value<int?>? resolvedAt,
     Value<String>? description,
     Value<int>? createdAt,
@@ -11285,6 +11458,10 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
       name: name ?? this.name,
       introducedChapter: introducedChapter ?? this.introducedChapter,
       resolvedChapter: resolvedChapter ?? this.resolvedChapter,
+      introducedChapterSortOrder:
+          introducedChapterSortOrder ?? this.introducedChapterSortOrder,
+      resolvedChapterSortOrder:
+          resolvedChapterSortOrder ?? this.resolvedChapterSortOrder,
       resolvedAt: resolvedAt ?? this.resolvedAt,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
@@ -11310,6 +11487,16 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
     }
     if (resolvedChapter.present) {
       map['resolved_chapter'] = Variable<int>(resolvedChapter.value);
+    }
+    if (introducedChapterSortOrder.present) {
+      map['introduced_chapter_sort_order'] = Variable<int>(
+        introducedChapterSortOrder.value,
+      );
+    }
+    if (resolvedChapterSortOrder.present) {
+      map['resolved_chapter_sort_order'] = Variable<int>(
+        resolvedChapterSortOrder.value,
+      );
     }
     if (resolvedAt.present) {
       map['resolved_at'] = Variable<int>(resolvedAt.value);
@@ -11337,6 +11524,8 @@ class SubplotFactsCompanion extends UpdateCompanion<SubplotFact> {
           ..write('name: $name, ')
           ..write('introducedChapter: $introducedChapter, ')
           ..write('resolvedChapter: $resolvedChapter, ')
+          ..write('introducedChapterSortOrder: $introducedChapterSortOrder, ')
+          ..write('resolvedChapterSortOrder: $resolvedChapterSortOrder, ')
           ..write('resolvedAt: $resolvedAt, ')
           ..write('description: $description, ')
           ..write('createdAt: $createdAt, ')
@@ -25938,6 +26127,7 @@ typedef $$EventFactsTableCreateCompanionBuilder =
       required String manuscriptId,
       required String name,
       Value<int?> chapter,
+      Value<int?> chapterSortOrder,
       required String eventType,
       Value<String?> causeEventId,
       Value<String?> effectEventId,
@@ -25955,6 +26145,7 @@ typedef $$EventFactsTableUpdateCompanionBuilder =
       Value<String> manuscriptId,
       Value<String> name,
       Value<int?> chapter,
+      Value<int?> chapterSortOrder,
       Value<String> eventType,
       Value<String?> causeEventId,
       Value<String?> effectEventId,
@@ -26012,6 +26203,11 @@ class $$EventFactsTableFilterComposer
 
   ColumnFilters<int> get chapter => $composableBuilder(
     column: $table.chapter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get chapterSortOrder => $composableBuilder(
+    column: $table.chapterSortOrder,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -26108,6 +26304,11 @@ class $$EventFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get chapterSortOrder => $composableBuilder(
+    column: $table.chapterSortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get eventType => $composableBuilder(
     column: $table.eventType,
     builder: (column) => ColumnOrderings(column),
@@ -26194,6 +26395,11 @@ class $$EventFactsTableAnnotationComposer
 
   GeneratedColumn<int> get chapter =>
       $composableBuilder(column: $table.chapter, builder: (column) => column);
+
+  GeneratedColumn<int> get chapterSortOrder => $composableBuilder(
+    column: $table.chapterSortOrder,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get eventType =>
       $composableBuilder(column: $table.eventType, builder: (column) => column);
@@ -26288,6 +26494,7 @@ class $$EventFactsTableTableManager
                 Value<String> manuscriptId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<int?> chapter = const Value.absent(),
+                Value<int?> chapterSortOrder = const Value.absent(),
                 Value<String> eventType = const Value.absent(),
                 Value<String?> causeEventId = const Value.absent(),
                 Value<String?> effectEventId = const Value.absent(),
@@ -26303,6 +26510,7 @@ class $$EventFactsTableTableManager
                 manuscriptId: manuscriptId,
                 name: name,
                 chapter: chapter,
+                chapterSortOrder: chapterSortOrder,
                 eventType: eventType,
                 causeEventId: causeEventId,
                 effectEventId: effectEventId,
@@ -26320,6 +26528,7 @@ class $$EventFactsTableTableManager
                 required String manuscriptId,
                 required String name,
                 Value<int?> chapter = const Value.absent(),
+                Value<int?> chapterSortOrder = const Value.absent(),
                 required String eventType,
                 Value<String?> causeEventId = const Value.absent(),
                 Value<String?> effectEventId = const Value.absent(),
@@ -26335,6 +26544,7 @@ class $$EventFactsTableTableManager
                 manuscriptId: manuscriptId,
                 name: name,
                 chapter: chapter,
+                chapterSortOrder: chapterSortOrder,
                 eventType: eventType,
                 causeEventId: causeEventId,
                 effectEventId: effectEventId,
@@ -26420,6 +26630,8 @@ typedef $$SubplotFactsTableCreateCompanionBuilder =
       required String name,
       Value<int?> introducedChapter,
       Value<int?> resolvedChapter,
+      Value<int?> introducedChapterSortOrder,
+      Value<int?> resolvedChapterSortOrder,
       Value<int?> resolvedAt,
       Value<String> description,
       Value<int> createdAt,
@@ -26433,6 +26645,8 @@ typedef $$SubplotFactsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<int?> introducedChapter,
       Value<int?> resolvedChapter,
+      Value<int?> introducedChapterSortOrder,
+      Value<int?> resolvedChapterSortOrder,
       Value<int?> resolvedAt,
       Value<String> description,
       Value<int> createdAt,
@@ -26490,6 +26704,16 @@ class $$SubplotFactsTableFilterComposer
 
   ColumnFilters<int> get resolvedChapter => $composableBuilder(
     column: $table.resolvedChapter,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get introducedChapterSortOrder => $composableBuilder(
+    column: $table.introducedChapterSortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get resolvedChapterSortOrder => $composableBuilder(
+    column: $table.resolvedChapterSortOrder,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -26566,6 +26790,16 @@ class $$SubplotFactsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get introducedChapterSortOrder => $composableBuilder(
+    column: $table.introducedChapterSortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get resolvedChapterSortOrder => $composableBuilder(
+    column: $table.resolvedChapterSortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get resolvedAt => $composableBuilder(
     column: $table.resolvedAt,
     builder: (column) => ColumnOrderings(column),
@@ -26632,6 +26866,16 @@ class $$SubplotFactsTableAnnotationComposer
 
   GeneratedColumn<int> get resolvedChapter => $composableBuilder(
     column: $table.resolvedChapter,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get introducedChapterSortOrder => $composableBuilder(
+    column: $table.introducedChapterSortOrder,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get resolvedChapterSortOrder => $composableBuilder(
+    column: $table.resolvedChapterSortOrder,
     builder: (column) => column,
   );
 
@@ -26708,6 +26952,8 @@ class $$SubplotFactsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<int?> introducedChapter = const Value.absent(),
                 Value<int?> resolvedChapter = const Value.absent(),
+                Value<int?> introducedChapterSortOrder = const Value.absent(),
+                Value<int?> resolvedChapterSortOrder = const Value.absent(),
                 Value<int?> resolvedAt = const Value.absent(),
                 Value<String> description = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -26719,6 +26965,8 @@ class $$SubplotFactsTableTableManager
                 name: name,
                 introducedChapter: introducedChapter,
                 resolvedChapter: resolvedChapter,
+                introducedChapterSortOrder: introducedChapterSortOrder,
+                resolvedChapterSortOrder: resolvedChapterSortOrder,
                 resolvedAt: resolvedAt,
                 description: description,
                 createdAt: createdAt,
@@ -26732,6 +26980,8 @@ class $$SubplotFactsTableTableManager
                 required String name,
                 Value<int?> introducedChapter = const Value.absent(),
                 Value<int?> resolvedChapter = const Value.absent(),
+                Value<int?> introducedChapterSortOrder = const Value.absent(),
+                Value<int?> resolvedChapterSortOrder = const Value.absent(),
                 Value<int?> resolvedAt = const Value.absent(),
                 Value<String> description = const Value.absent(),
                 Value<int> createdAt = const Value.absent(),
@@ -26743,6 +26993,8 @@ class $$SubplotFactsTableTableManager
                 name: name,
                 introducedChapter: introducedChapter,
                 resolvedChapter: resolvedChapter,
+                introducedChapterSortOrder: introducedChapterSortOrder,
+                resolvedChapterSortOrder: resolvedChapterSortOrder,
                 resolvedAt: resolvedAt,
                 description: description,
                 createdAt: createdAt,
