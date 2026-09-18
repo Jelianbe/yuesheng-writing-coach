@@ -164,7 +164,14 @@ class CharacterRecentBanner extends StatelessWidget {
 class CharacterConflictsCard extends StatelessWidget {
   final List<ConflictObservation> conflicts;
 
-  const CharacterConflictsCard({super.key, required this.conflicts});
+  /// `sortOrder → 展示章号(1 基)`（`N12-F3b` phase 2：章标只吃身份载体）。
+  final Map<int, int> chapterNoMap;
+
+  const CharacterConflictsCard({
+    super.key,
+    required this.conflicts,
+    required this.chapterNoMap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,22 +205,38 @@ class CharacterConflictsCard extends StatelessWidget {
     );
   }
 
+  /// `N12-F3b` phase 2：章标**只吃身份载体**（`a.chapterSortOrder`，经 map 解析）。
+  /// 无身份（存量行）⇒ 不渲染号，改说「早期」—— **不回退到 `a.chapter`**：
+  /// 那一列是 AI 标称号，回退会让矛盾卡显示一个错的号（方案 `S1`）。
   String _conflictText(ConflictObservation o) {
-    final parts = [
-      for (final a in o.orderedValues) '第${a.chapter ?? '?'}章「${a.value}」',
-    ];
+    final parts = [for (final a in o.orderedValues) _valueWithChapter(a)];
     return '${o.attribute}：${parts.join(' → ')}';
+  }
+
+  String _valueWithChapter(CharacterAssertion a) {
+    final chapter = chapterLabel(chapterNoMap, a.chapterSortOrder) ?? '早期';
+    return '$chapter「${a.value}」';
   }
 }
 
 /// FR-9 一键清除本章旧版断言（章号 → stale 条数）
+///
+/// `N12-F3b` phase 2：`staleByChapter` 的 **key 是身份**（`chapterSortOrder` 优先），
+/// 与 `FactStaleService.clearStaleChapter` → `_markAssertions` 的匹配口径
+/// （`a.chapterIdentity == chapterNo`）**同源** —— 此前 key 取 `a.chapter`，
+/// 新行上两者不等 ⇒ 按钮点了清 0 条（静默失效），本批一并修正。
 class CharacterStaleClearBar extends StatelessWidget {
   final Map<int, int> staleByChapter;
+
+  /// `sortOrder → 展示章号(1 基)`（`N12-F3b` phase 2：显示侧只吃身份）。
+  final Map<int, int> chapterNoMap;
+
   final ValueChanged<int> onClear;
 
   const CharacterStaleClearBar({
     super.key,
     required this.staleByChapter,
+    required this.chapterNoMap,
     required this.onClear,
   });
 
@@ -229,17 +252,27 @@ class CharacterStaleClearBar extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => onClear(entry.key),
               icon: const Icon(Icons.auto_delete_outlined, size: 16),
-              label: Text('清除第${entry.key}章旧版断言 (${entry.value})'),
+              label: Text(_label(entry.key, entry.value)),
             ),
         ],
       ),
     );
+  }
+
+  /// 无章标（无身份 / 该章已删）⇒ 只说数量，**不编造一个数字**。
+  String _label(int identity, int count) {
+    final chapter = chapterLabel(chapterNoMap, identity);
+    return chapter == null ? '清除旧版断言 ($count)' : '清除$chapter旧版断言 ($count)';
   }
 }
 
 /// 断言按属性分组卡（含每组的「+ 补充」入口）
 class CharacterAssertionGroups extends StatelessWidget {
   final List<CharacterAssertion> assertions;
+
+  /// `sortOrder → 展示章号(1 基)`（`N12-F3b` phase 2：下传给每条断言瓦片）。
+  final Map<int, int> chapterNoMap;
+
   final Future<String?> Function(CharacterAssertion) resolveOriginalText;
   final ValueChanged<CharacterAssertion> onReject;
   final ValueChanged<CharacterAssertion> onCorrect;
@@ -248,6 +281,7 @@ class CharacterAssertionGroups extends StatelessWidget {
   const CharacterAssertionGroups({
     super.key,
     required this.assertions,
+    required this.chapterNoMap,
     required this.resolveOriginalText,
     required this.onReject,
     required this.onCorrect,
@@ -307,6 +341,7 @@ class CharacterAssertionGroups extends StatelessWidget {
           for (final a in items)
             CharacterAssertionTile(
               assertion: a,
+              chapterNoMap: chapterNoMap,
               resolveOriginalText: () => resolveOriginalText(a),
               onReject: () => onReject(a),
               onCorrect: () => onCorrect(a),

@@ -14,10 +14,19 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 
 /// 断言条目。纯展示 + 动作回调上抛，数据访问全部留在详情页。
 class CharacterAssertionTile extends StatelessWidget {
   final CharacterAssertion assertion;
+
+  /// `sortOrder → 展示章号(1 基)`（`buildChapterNoMap` 产出）。
+  ///
+  /// `N12-F3b` phase 2：本瓦片**只由身份载体**渲染章标 —— 即
+  /// `assertion.chapterSortOrder`，**不是** `assertion.chapter`（后者一列三源：
+  /// 机器写身份 / AI 写标称号 / 用户手填，**读时不可分辨**）。
+  /// 无身份（存量行）⇒ 显示「章节未知」，遵 `ADR-C95` 裁定 2「不编造数字」。
+  final Map<int, int> chapterNoMap;
 
   /// 拒绝（详情页弹理由 chips 后落库）
   final VoidCallback? onReject;
@@ -35,6 +44,7 @@ class CharacterAssertionTile extends StatelessWidget {
   const CharacterAssertionTile({
     super.key,
     required this.assertion,
+    required this.chapterNoMap,
     required this.resolveOriginalText,
     this.onReject,
     this.onCorrect,
@@ -168,9 +178,20 @@ class CharacterAssertionTile extends StatelessWidget {
     );
   }
 
-  String _chapterText() {
-    final ch = assertion.chapter;
-    return ch == null ? '章节未知' : '第$ch章';
+  /// 身份载体解析出的章标；无身份 / 该章已删 ⇒ **null**（**不编造**）。
+  ///
+  /// `N12-F3b` phase 2 的唯一读法：**只吃 `assertion.chapterSortOrder`**，
+  /// **不回退到 `assertion.chapter`** —— 后者一列三源（机器写身份 / AI 写标称号 /
+  /// 用户手填）、**读时不可分辨**，回退会渲染一个错的号（`ADR-C96` 存量行方案 `S1`）。
+  String? get _chapterLabel =>
+      chapterLabel(chapterNoMap, assertion.chapterSortOrder);
+
+  String _chapterText() => _chapterLabel ?? '章节未知';
+
+  /// 原文弹层标题：无章标 ⇒ 只写「原文摘录」，**不塞一个问号当数字**。
+  String _originalTextTitle() {
+    final label = _chapterLabel;
+    return label == null ? '原文摘录' : '原文摘录（$label）';
   }
 
   /// 查看原文弹层：null → 「未定位到原文」（诚实降级，验收红线 5）
@@ -187,10 +208,7 @@ class CharacterAssertionTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '原文摘录（第${assertion.chapter ?? '?'}章）',
-                style: AppTextStyles.titleMd,
-              ),
+              Text(_originalTextTitle(), style: AppTextStyles.titleMd),
               const SizedBox(height: AppSpacing.md),
               if (text == null || text.isEmpty)
                 const Text('未定位到原文', style: AppTextStyles.body)

@@ -42,7 +42,15 @@ class CharacterAssertion {
   /// **R1′：此值原样保留、永不篡改**（用户手填输入是 R-009 的保护对象）。
   ///
   /// ⇒ 「读作身份」的地方一律改走 [chapterIdentity]。
-  /// 展示侧（9 处）**仍在用本字段** —— phase 2 才切换（被存量读取口径阻塞）。
+  /// ★ **展示侧已不再读本字段**（`N12-F3b` phase 2，2026-09-18）：用户可见的章标
+  /// 一律由身份载体经 `chapterLabel` 渲染，**无身份 ⇒ 不渲染**（存量行方案 `S1`）。
+  /// 本字段此后只承担两件事：① **原样保留** AI/用户写入的原值（R1′ / R-009）；
+  /// ② 作存量行的 [chapterIdentity] **回退源**。
+  /// ⚠️ 仍有**未切换**的同族展示点（另行批次，**勿**据此认为全仓已切换）：
+  /// `services/progression_builder.dart:38/43` → `widgets/setting/
+  /// setting_progressions_section.dart:79`（章节演进时间轴，角色/世界观共用，站名被
+  /// 侦察清单漏收）· `widgets/world/world_fact_detail_page.dart:302`（世界观断言瓦片；
+  /// 实测真机 `world_fact` 断言 `chapter` 全空 ⇒ 当前无可见缺陷、亦无身份写入方）。
   final int? chapter;
 
   /// 断言所属章节的**身份键**（`chapters.sort_order`，0 基）—— `ADR-C96` 裁定 1。

@@ -15,7 +15,7 @@
 // ★ 已删章的引用：解析**失败**（返回 null）⇒ 调用方应**隐藏**章标，
 //   不得编造一个数（ADR 裁定 2）。
 //
-// ★ 覆盖范围（2026-09-18 `N12-F3a` / `N12-F3b` 更新；取证见
+// ★ 覆盖范围（2026-09-18 `N12-F3a` / `N12-F3b` phase 1+2；取证见
 //   `.ai/reports/2026-09-18-N12-F3-侦察.md §3` 与 `...-N12-F3b-侦察.md §1`）：
 //   ✅ `outline_impression.source_chapter_no` —— `N12-F1`
 //   ✅ `character_fact.first_seen_chapter` —— `N12-F3a`；同时用 [sortOrderAtPosition]
@@ -24,9 +24,19 @@
 //      `N12-F3b`：这三列实测是**第三个语义**（AI 抄用户自撰的**标称号**），
 //      **一列多源、读时无法分辨** ⇒ 不在这列上做转换，而是由写入侧**另存身份**
 //      （`chapterSortOrder` / `chapter_sort_order` / `*_sort_order`），
-//      取值走 [resolveChapterIdentity]。展示侧切换留 phase 2（被存量读取口径阻塞）。
+//      取值走 [resolveChapterIdentity]。
+//   ✅ **展示侧（phase 2，同日）**：**用户可见的章标一律只由身份载体渲染** ——
+//      即 `chapterLabel(map, <身份载体>)`。**旧列不再作展示号**。
+//      ★ **无身份（null）⇒ 不渲染**：这是 `ADR-C96` 的存量行方案 **`S1`**
+//        （裁定见 `DECISIONS §3-7`），与下方裁定 2「解析失败即隐藏、不编造」同源。
+//        ⇒ **传错参数不会报错，只会显示一个错的号**：本函数收的是「假定已是身份」
+//        的值，**不得**传 `assertion.chapter` / `event_fact.chapter` 等旧列原值。
 //   ❌ `world_fact.first_seen_chapter` —— 实测**无机器写入方**（只有用户手填路径），
 //      与 `character_fact` **同名不同基** ⇒ **不得**套用本文件任何函数（报告 §3.1）。
+//   ❌ **服务层生成的文本**（`subplot_closure_detector` / `event_causality_detector` /
+//      `conflict_detector` 的 observation · `setting_library_service` 的 LLM prompt）
+//      —— 它们进 **AI 上下文 / prompt**、不进 widget 树，且**拿不到 `chapterNoMap`**
+//      ⇒ 不在展示侧切换范围（phase 2 范围裁定见 `.ai/reports/2026-09-18-N12-F3b-phase2.md`）。
 // ─────────────────────────────────────────────────────────────
 
 import '../data/database/database.dart';

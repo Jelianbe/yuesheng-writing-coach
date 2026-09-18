@@ -17,6 +17,7 @@ import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../services/setting_library_service.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 
 /// 新建角色结果：(名字, 首见章节?, 正文?（用户自由写作，正文优先）)
 typedef CreateCharacterResult = ({
@@ -421,23 +422,35 @@ Future<CharacterFact?> showMergePickerDialog(
 ///
 /// [aiCompare] 非空时显示「AI 帮我比较」按钮（纯分析不代决，由调用方
 /// 接 LlmClient）；返回 null = 用户取消（不落库）。
+///
+/// [chapterNoMap]（`N12-F3b` phase 2）：A/B 卡片上的章标**只吃身份载体**
+/// （`chapterSortOrder`），**不是** `chapter`（一列三源、读时不可分辨）。
 Future<MergeVerdict?> showConflictResolutionDialog(
   BuildContext context, {
   required AssertionConflictPair pair,
+  required Map<int, int> chapterNoMap,
   Future<String> Function()? aiCompare,
 }) {
   return showDialog<MergeVerdict>(
     context: context,
-    builder: (ctx) =>
-        _ConflictResolutionDialog(pair: pair, aiCompare: aiCompare),
+    builder: (ctx) => _ConflictResolutionDialog(
+      pair: pair,
+      chapterNoMap: chapterNoMap,
+      aiCompare: aiCompare,
+    ),
   );
 }
 
 class _ConflictResolutionDialog extends StatefulWidget {
   final AssertionConflictPair pair;
+  final Map<int, int> chapterNoMap;
   final Future<String> Function()? aiCompare;
 
-  const _ConflictResolutionDialog({required this.pair, this.aiCompare});
+  const _ConflictResolutionDialog({
+    required this.pair,
+    required this.chapterNoMap,
+    this.aiCompare,
+  });
 
   @override
   State<_ConflictResolutionDialog> createState() =>
@@ -481,12 +494,14 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
             _ConflictCard(
               label: 'A',
               assertion: pair.a,
+              chapterNoMap: widget.chapterNoMap,
               onKeep: () => Navigator.pop(context, MergeVerdict.keepA),
             ),
             const SizedBox(height: AppSpacing.md),
             _ConflictCard(
               label: 'B',
               assertion: pair.b,
+              chapterNoMap: widget.chapterNoMap,
               onKeep: () => Navigator.pop(context, MergeVerdict.keepB),
             ),
             _buildAiCompareSection(context),
@@ -553,19 +568,22 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
 class _ConflictCard extends StatelessWidget {
   final String label;
   final CharacterAssertion assertion;
+  final Map<int, int> chapterNoMap;
   final VoidCallback onKeep;
 
   const _ConflictCard({
     required this.label,
     required this.assertion,
+    required this.chapterNoMap,
     required this.onKeep,
   });
 
   @override
   Widget build(BuildContext context) {
-    final chapter = assertion.chapter == null
-        ? '未标注'
-        : '第${assertion.chapter}章';
+    // `N12-F3b` phase 2：章标**只吃身份载体**，无身份 ⇒ 「未标注」。
+    // **不回退到 `assertion.chapter`** —— 那是 AI 标称号，回退会显示一个错的号（`S1`）。
+    final chapter =
+        chapterLabel(chapterNoMap, assertion.chapterSortOrder) ?? '未标注';
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(

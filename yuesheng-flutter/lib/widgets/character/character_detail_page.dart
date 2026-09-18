@@ -92,11 +92,19 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     return _assertions.where((a) => a.timestamp >= since).toList();
   }
 
+  /// 章号 → stale 条数。**key 取身份**（`chapterIdentity`，`chapterSortOrder` 优先）。
+  ///
+  /// `N12-F3b` phase 2：此前 key 取 `a.chapter`（AI 标称号），而清除侧
+  /// `FactStaleService.clearStaleChapter` → `_markAssertions` 已按
+  /// `a.chapterIdentity == chapterNo` 匹配 ⇒ **两侧口径不等**：新行上按钮点了清 0 条
+  /// （静默失效）。改用身份后两者同源；存量行两边都走 `chapterIdentity` 的回退，
+  /// 故**逐字不变**。（存量断言 `chapterHash == null` ⇒ 永不被标 stale ⇒ 本bar不显示它们。）
   Map<int, int> get _staleByChapter {
     final counts = <int, int>{};
     for (final a in _assertions) {
-      if (a.stale && a.status != 'rejected' && a.chapter != null) {
-        counts[a.chapter!] = (counts[a.chapter!] ?? 0) + 1;
+      final identity = a.chapterIdentity;
+      if (a.stale && a.status != 'rejected' && identity != null) {
+        counts[identity] = (counts[identity] ?? 0) + 1;
       }
     }
     return counts;
@@ -198,6 +206,11 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   Map<int, int> _chapterNoMap() =>
       buildChapterNoMap(ref.watch(chapterListProvider(widget.manuscriptId)));
 
+  /// 同上，但走 `ref.read` —— 供 **async 回调**（对话框 / 确认框）使用：
+  /// build 之外不允许 `ref.watch`。
+  Map<int, int> _chapterNoMapRead() =>
+      buildChapterNoMap(ref.read(chapterListProvider(widget.manuscriptId)));
+
   /// 互链跳转：角色详情页只处理「跳到世界观详情页」（区块回调注入）。
   void _jumpToWorld(SettingEntityKind kind, String id) {
     if (kind != SettingEntityKind.world) return;
@@ -221,10 +234,14 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        CharacterConflictsCard(conflicts: _conflicts),
+        CharacterConflictsCard(
+          conflicts: _conflicts,
+          chapterNoMap: _chapterNoMap(),
+        ),
         _buildConflictBanner(),
         CharacterStaleClearBar(
           staleByChapter: _staleByChapter,
+          chapterNoMap: _chapterNoMap(),
           onClear: _clearStaleChapter,
         ),
       ],
@@ -239,45 +256,59 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
       appBar: _buildAppBar(row),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(AppSpacing.page),
-              children: [
-                CharacterHeaderCard(
-                  name: row!.name,
-                  aliases: _aliases,
-                  assertionCount: _assertions.length,
-                  firstSeenChapter: row.firstSeenChapter,
-                  chapterNoMap: _chapterNoMap(),
-                  mergeEnabled: _candidates.isNotEmpty,
-                  onMerge: _mergeInto,
-                  onEditAliases: _editAliases,
-                ),
-                SettingDescriptionCard(
-                  description: row.description,
-                  onEdit: _editDescription,
-                ),
-                _buildExtractBar(row),
-                _buildRecentBanner(),
-                _buildConsistencyCards(),
-                CharacterAssertionGroups(
-                  assertions: _visibleAssertions,
-                  resolveOriginalText: _resolveOriginalText,
-                  onReject: _reject,
-                  onCorrect: _correct,
-                  onSupplement: _supplement,
-                  onToggleNegative: _toggleNegative,
-                ),
-                CharacterEventsSection(events: _events, onJump: _jumpToChapter),
-                _buildProgressionsSection(),
-                _buildTagsSection(),
-                SettingLinksSection(
-                  manuscriptId: widget.manuscriptId,
-                  kind: SettingEntityKind.character,
-                  entityId: widget.characterId,
-                  onJump: _jumpToWorld,
-                ),
-              ],
-            ),
+          : _buildBody(row!),
+    );
+  }
+
+  /// 页面主体列表（R-019 拆分：`build` 临界，抽出 ListView 内容 —— 与
+  /// `_buildAppBar` / `_buildConsistencyCards` / `_buildProgressionsSection` 同构）。
+  ///
+  /// `N12-F3b` phase 2：三处传 `chapterNoMap` —— **展示侧一律只由身份载体渲染章标**
+  /// （读法说明见 `utils/chapter_number.dart` 文件头）。
+  Widget _buildBody(CharacterFact row) {
+    return ListView(
+      padding: const EdgeInsets.all(AppSpacing.page),
+      children: [
+        CharacterHeaderCard(
+          name: row.name,
+          aliases: _aliases,
+          assertionCount: _assertions.length,
+          firstSeenChapter: row.firstSeenChapter,
+          chapterNoMap: _chapterNoMap(),
+          mergeEnabled: _candidates.isNotEmpty,
+          onMerge: _mergeInto,
+          onEditAliases: _editAliases,
+        ),
+        SettingDescriptionCard(
+          description: row.description,
+          onEdit: _editDescription,
+        ),
+        _buildExtractBar(row),
+        _buildRecentBanner(),
+        _buildConsistencyCards(),
+        CharacterAssertionGroups(
+          assertions: _visibleAssertions,
+          chapterNoMap: _chapterNoMap(),
+          resolveOriginalText: _resolveOriginalText,
+          onReject: _reject,
+          onCorrect: _correct,
+          onSupplement: _supplement,
+          onToggleNegative: _toggleNegative,
+        ),
+        CharacterEventsSection(
+          events: _events,
+          chapterNoMap: _chapterNoMap(),
+          onJump: _jumpToChapter,
+        ),
+        _buildProgressionsSection(),
+        _buildTagsSection(),
+        SettingLinksSection(
+          manuscriptId: widget.manuscriptId,
+          kind: SettingEntityKind.character,
+          entityId: widget.characterId,
+          onJump: _jumpToWorld,
+        ),
+      ],
     );
   }
 
@@ -332,6 +363,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     final verdict = await showConflictResolutionDialog(
       context,
       pair: pair,
+      chapterNoMap: _chapterNoMapRead(),
       aiCompare: () => _aiCompare(pair),
     );
     if (verdict == null || !mounted) return;
@@ -469,13 +501,24 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     if (ok) unawaited(_load());
   }
 
+  /// 删除确认文案里的章标（`N12-F3b` phase 2：**只吃身份**，无章标 ⇒ 说「该章」）。
+  ///
+  /// 用 `ref.read` 而非 `_chapterNoMap()`（后者 `watch`）—— 本方法在 async 回调里跑，
+  /// build 之外不允许 `watch`。
+  String _clearStalePrompt(int identity) {
+    final chapter = chapterLabel(_chapterNoMapRead(), identity);
+    return chapter == null
+        ? '删除该章的全部旧版断言（含该章旧版事件）？'
+        : '删除$chapter的全部旧版断言（含该章旧版事件）？';
+  }
+
   Future<void> _clearStaleChapter(int chapterNo) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('清除旧版断言', style: AppTextStyles.titleLg),
         content: Text(
-          '删除第$chapterNo章的全部旧版断言（含该章旧版事件）？此操作不可撤销。',
+          '${_clearStalePrompt(chapterNo)}此操作不可撤销。',
           style: AppTextStyles.body,
         ),
         actions: [

@@ -27,6 +27,11 @@ const _b = CharacterAssertion(
   timestamp: 2,
 );
 
+/// `N12-F3b` phase 2：面板上的章标**只吃身份载体**（`chapterSortOrder`）。
+/// `_a` / `_b` 都没有身份 ⇒ 面板显示「未标注」；本组断言的是**裁决返回值**，
+/// 不是章标，故给空映射即可。章标本身的行为由 `character_detail_page_test` 覆盖。
+const _emptyChapters = <int, int>{};
+
 void main() {
   group('1. detectCharacterConflicts 纯函数', () {
     test('#1 同章同属性异值 → 命中', () {
@@ -156,6 +161,7 @@ void main() {
                         a: _a,
                         b: _b,
                       ),
+                      chapterNoMap: _emptyChapters,
                     );
                   },
                   child: const Text('打开'),
@@ -193,6 +199,7 @@ void main() {
                         a: _a,
                         b: _b,
                       ),
+                      chapterNoMap: _emptyChapters,
                     );
                   },
                   child: const Text('打开'),
@@ -225,6 +232,7 @@ void main() {
                         a: _a,
                         b: _b,
                       ),
+                      chapterNoMap: _emptyChapters,
                     );
                   },
                   child: const Text('打开'),
@@ -251,6 +259,7 @@ void main() {
                   onPressed: () => showConflictResolutionDialog(
                     context,
                     pair: const AssertionConflictPair(name: '林晚', a: _a, b: _b),
+                    chapterNoMap: _emptyChapters,
                     aiCompare: () async => '分析：捕快 vs 画师可能并存（职业侧面）。',
                   ),
                   child: const Text('打开'),
