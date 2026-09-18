@@ -16,6 +16,10 @@
 //   `writing_page_scaffold` 的 `endDrawer:`）与既有测试**零改动**。
 //   手法同构先例：`CharacterPage → CharacterListView`（薄壳保留类名 + 签名）。
 //
+// ★ 批次 N6（2026-09-18）：内容体新增「章节结构」只读投影段，其**章节点跳转**
+//   回调经本薄壳**可选追加**下传（`onJumpToChapter`）⇒ 上述签名冻结仍然成立。
+//   本文件**未**新增任何分组逻辑：全部改动落在 `OutlineContentView`。
+//
 //   表现零变更：头部标题「大纲」、关闭按钮、背景色、分隔线、内容全同。
 //   头部单独成类（`_DrawerHeader`）—— 否则薄壳 `build` 会落在 52 行、
 //   **仍超 R-019 的 50 行硬限**（拆分后实测 16 + 28 行，两者均合规）。
@@ -43,11 +47,16 @@ class OutlineDrawer extends StatelessWidget {
   /// 仍然成立：既有消费者与既有测试**零改动**。
   final VoidCallback? onOpenCoach;
 
+  /// N6：「章节结构」投影里章节点点击 → 跳转到该章（null = 不可点）。
+  /// 同样是**可选追加**，签名冻结仍然成立。
+  final void Function(String chapterId, String title)? onJumpToChapter;
+
   const OutlineDrawer({
     super.key,
     required this.manuscriptId,
     required this.onClose,
     this.onOpenCoach,
+    this.onJumpToChapter,
   });
 
   @override
@@ -64,6 +73,7 @@ class OutlineDrawer extends StatelessWidget {
               child: OutlineContentView(
                 manuscriptId: manuscriptId,
                 onOpenCoach: onOpenCoach,
+                onJumpToChapter: onJumpToChapter,
               ),
             ),
           ],

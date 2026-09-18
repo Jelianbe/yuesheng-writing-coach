@@ -49,8 +49,11 @@ class WritingPageScaffold extends ConsumerWidget {
       onDrawerChanged: controllers.chapterNav.handleDrawerChanged,
       // 批次83：大纲边写边看（右侧抽屉；每次打开重建 + 失效缓存）
       // N4-3：空态注入「打开教练面板」（先关抽屉再开面板，见控制器注释）
+      // N6：「章节结构」投影段注入跨章跳转（复用既有 handleJumpToChapter：
+      //     关抽屉 + 跳转；目标即当前章时只关抽屉）
       endDrawer: controllers.chapterNav.buildOutlineDrawer(
         onOpenCoach: controllers.fab.toggleAiPanel,
+        onJumpToChapter: controllers.chapterNav.handleJumpToChapter,
       ),
       onEndDrawerChanged: controllers.chapterNav.handleEndDrawerChanged,
       appBar: _buildAppBar(ref),

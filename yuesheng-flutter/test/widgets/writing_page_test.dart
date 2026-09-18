@@ -48,6 +48,7 @@ import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/chapter_tree_drawer.dart';
+import 'package:writingcoach/widgets/outline_content_view.dart';
 import 'package:writingcoach/widgets/punctuation_bar.dart';
 import 'package:writingcoach/widgets/recycle_bin_sheet.dart';
 import 'package:writingcoach/widgets/search_replace_sheet.dart';
@@ -1739,6 +1740,33 @@ void main() {
 
       // 抽屉闭合后内容 offstage → finder 跳过
       expect(find.text('还没有大纲'), findsNothing);
+    });
+
+    testWidgets('#N6-5 端到端：大纲「章节结构」章节点 → 跨章跳转（**接线契约**）', (tester) async {
+      // 生产接线：`writing_page_scaffold` → `controller.buildOutlineDrawer`
+      //   → `OutlineDrawer` → `OutlineContentView` → 章节点
+      // 本用例是**唯一**能发现该接线断裂的网眼：`outline_drawer_test` 的
+      // `#N6-2` 是**直接**给抽屉注入回调，**绕过**了 scaffold 那一跳
+      // ⇒ 两处要分别钉（N4 的教训：能力与接线是两件事）。
+      final ch2 = await ChapterRepository(
+        db,
+      ).createChapter(manuscriptId, title: '第二章：码头', sortOrder: 1);
+
+      final jumps = <String>[];
+      await tester.pumpWidget(
+        buildWritingPage(
+          msId: manuscriptId,
+          onJumpToChapter: (id, title) => jumps.add('$id|$title'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await openOutline(tester);
+
+      // 正例：跨章（点的是**非当前章**）
+      await tester.tap(find.byKey(outlineStructureChapterKey(ch2)));
+      await tester.pumpAndSettle();
+
+      expect(jumps, ['$ch2|第二章：码头']);
     });
   });
 

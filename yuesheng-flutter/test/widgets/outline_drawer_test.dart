@@ -21,8 +21,24 @@
 //   （实现 `lib/utils/chapter_number.dart`，裁定 `docs/ADR-C95-chapter-number-convention.md`）。
 //   ⇒ 本文件的章标用例改为**播种真实章节**，并补 F1 专项正负例
 //     （含「删除不重编号」反例与「引用已删章」负例）。
+//
+// ★ 修订（批次 **N6**，2026-09-18）：上述第 5 条**换代**——
+//   行为由「静默不展示（且整页全白）」改为「**归入「其他」分组**」，
+//   `#N12-6` 契约随之**整体替换**为 `#N6-1` 组（含投影正例与新负例）。
+//
+//   ⚠️ 本次同时暴露一处**判据陷阱**，全文件受影响：
+//     N6 起抽屉顶部多出「章节结构」只读投影段，它会渲染**章标题**；而
+//     ADR-C95 的**来源章标**在文案上可能与章标题**完全相同**（用户把章
+//     命名为「第3章」时）⇒ **同名不同物**，`find.textContaining('章')`
+//     这类**文本计数**判据从此无法区分二者。
+//     ⇒ 凡涉及章标的断言一律改用**锚点**（`outlineImpressionTagKey`）或
+//       **分段作用域**（`kOutlineStructureSectionKey`）定位。
+//       这不是放宽判据：**被测命题未变**，变的是测量手段 ——
+//       旧判据在新形态下已测不出该命题（`DECISIONS §4-47`：校验器自身缺陷
+//       与被测对象缺陷外观相同，故先确认「测量还测得到」）。
 // ─────────────────────────────────────────────────────────────
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +47,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/outline_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/chapter_providers.dart';
 import 'package:writingcoach/providers/manuscript_providers.dart';
@@ -65,6 +82,7 @@ void main() {
     String? msId,
     VoidCallback? onClose,
     VoidCallback? onOpenCoach,
+    void Function(String chapterId, String title)? onJumpToChapter,
   }) async {
     final scaffoldKey = GlobalKey<ScaffoldState>();
     await tester.pumpWidget(
@@ -77,6 +95,7 @@ void main() {
               manuscriptId: msId ?? manuscriptId,
               onClose: onClose ?? () {},
               onOpenCoach: onOpenCoach,
+              onJumpToChapter: onJumpToChapter,
             ),
             body: const SizedBox.shrink(),
           ),
@@ -92,6 +111,7 @@ void main() {
     WidgetTester tester, {
     String? msId,
     VoidCallback? onOpenCoach,
+    void Function(String chapterId, String title)? onJumpToChapter,
   }) async {
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -101,6 +121,7 @@ void main() {
             body: OutlineContentView(
               manuscriptId: msId ?? manuscriptId,
               onOpenCoach: onOpenCoach,
+              onJumpToChapter: onJumpToChapter,
             ),
           ),
         ),
@@ -142,6 +163,42 @@ void main() {
     await container
         .read(chapterStoreProvider(manuscriptId).notifier)
         .loadChapters();
+  }
+
+  /// 播种一个卷，并**等它进 provider**（N6：「章节结构」投影的数据源之一）。
+  ///
+  /// `volumeListProvider` 是 **FutureProvider**：首次 watch 才触发加载。
+  /// 与此处 `seedChapters` 的「微任务异步」是同一个坑 ⇒ 同样显式落地，
+  /// 否则首帧断言会看到**空卷列表**（投影只剩散落章节，正例被误判成缺陷）。
+  Future<String> seedVolume(String title, {int sortOrder = 0}) async {
+    final id = await VolumeRepository(
+      db,
+    ).createVolume(manuscriptId, title: title, sortOrder: sortOrder);
+    await container.read(volumeListProvider(manuscriptId).future);
+    return id;
+  }
+
+  /// 播种一章并载入 `chapterStore`（投影段读的就是这个 store）。
+  ///
+  /// 比 `seedChapters` 多两项：可指定 `volumeId`（卷内/散落）与 `content`
+  /// （`wordCount = content.length`，即卷头「N 章 · M字」里的 M）。
+  Future<String> seedChapter({
+    required String title,
+    required int sortOrder,
+    String? volumeId,
+    String content = '',
+  }) async {
+    final id = await ChapterRepository(db).createChapter(
+      manuscriptId,
+      title: title,
+      content: content,
+      sortOrder: sortOrder,
+      volumeId: volumeId,
+    );
+    await container
+        .read(chapterStoreProvider(manuscriptId).notifier)
+        .loadChapters();
+    return id;
   }
 
   // ── 1. 解绑本身 ──────────────────────────────────────────────
@@ -217,20 +274,31 @@ void main() {
     // 播种 [0,1,2] ⇒ `sortOrder = 2` 的展示序位是 **3**。
     await seedChapters([0, 1, 2]);
     final id = await insertEntity(type: 'character', key: '林晚');
-    await repo.insertImpression(
+    final tagged = await repo.insertImpression(
       entityId: id,
       impression: '怕黑',
       sourceChapterNo: 2,
     );
-    await repo.insertImpression(entityId: id, impression: '会辨草药');
+    final untagged = await repo.insertImpression(
+      entityId: id,
+      impression: '会辨草药',
+    );
 
     await pumpDrawer(tester);
 
-    expect(find.text('第3章'), findsOneWidget);
+    // ★ N6：章标改用**锚点**定位 —— 抽屉顶部「章节结构」投影段会渲染同名
+    //   章标题（本用例正把章命名为「第1/2/3章」）⇒ 文本计数已无法区分二者。
+    expect(
+      find.descendant(
+        of: find.byKey(outlineImpressionTagKey(tagged)),
+        matching: find.text('第3章'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('怕黑'), findsOneWidget);
     expect(find.text('会辨草药'), findsOneWidget);
-    // 负例：无来源章节那条不得产生任何「…章」标签
-    expect(find.textContaining('章'), findsOneWidget);
+    // 负例：无来源章节那条**不得产生任何章标**（锚点不存在，而非「总数少 1」）
+    expect(find.byKey(outlineImpressionTagKey(untagged)), findsNothing);
   });
 
   // ── 4. 状态过滤（正负例） ─────────────────────────────────────
@@ -262,25 +330,147 @@ void main() {
     expect(find.text('曾落水'), findsNothing, reason: 'rejected 印象必须被过滤掉');
   });
 
-  // ── 5. 未知类型（锁当前行为） ─────────────────────────────────
-  testWidgets('#N12-6 volume/chapter 不在展示序 → 不渲染（N6 开工时随实现改）', (tester) async {
-    // ⚠️ 这是**当前行为**（非期望行为）：AI 侧白名单为 character|setting|plot，
-    //    故 volume/chapter 无生产写入方；但库里若存在，抽屉**静默不展示**。
-    //    本断言的作用是「防止无提示地改变」——N6 大纲类型体系落地时须一并改。
-    await insertEntity(type: 'volume', key: '第一卷：乡村起步');
-    await insertEntity(type: 'chapter', key: '第一章：进城');
+  // ── 5. N6：章节结构只读投影 + 「其他」兜底分组 ─────────────────
+  //
+  // 本组**整体替换**原 `#N12-6`（「volume/chapter 不在展示序 → 不渲染」）。
+  // 旧契约只断言**「什么都不显示」**，其隐含缺陷是：`entities` 非空但一条都
+  // 不属于可见分组时，抽屉既不进空态、也渲染不出分组 ⇒ **整页全白**。
+  // ⇒ 新契约必须能区分两种情形（`DECISIONS §4-28` fixture 鉴别力）：
+  //     · **真的没有** → 空态（「还没有大纲」）
+  //     · **有但认不出** → 「其他」分组（有行、有类型原值）
+  group('N6：章节结构只读投影 + 「其他」兜底分组', () {
+    testWidgets('#N6-1 卷/章由投影出现；有结构数据不进空态；仍只有一个 ListView', (tester) async {
+      // 结构数据来自**真源表**（`volumes` / `chapters`）的只读投影，
+      // 与 `outline_entity` 里有没有行**无关** ⇒ 本用例只播真源。
+      final volId = await seedVolume('第一卷：乡村起步');
+      await seedChapter(
+        title: '第一章：进城',
+        sortOrder: 0,
+        volumeId: volId,
+        content: '一二三四五',
+      );
+      await seedChapter(
+        title: '第二章：码头',
+        sortOrder: 1,
+        volumeId: volId,
+        content: '一二三四五六七',
+      );
+      await seedChapter(title: '第三章：雨夜', sortOrder: 2); // 散落章节
 
-    await pumpDrawer(tester);
+      await pumpDrawer(tester);
 
-    expect(find.text('第一卷：乡村起步'), findsNothing);
-    expect(find.text('第一章：进城'), findsNothing);
-    expect(find.text('人物'), findsNothing);
-    // ⚠️ 实测行为，**比「被静默过滤」更差**（本批新发现，另立批次）：
-    //    `entities` 非空 ⇒ 不进空态分支；而三条分组全被跳过 ⇒
-    //    抽屉渲染成**一片空白** —— 连「还没有大纲」的引导文案都没有。
-    //    故此处不断言空态，而是把「空白 ListView」这一事实钉住。
-    expect(find.text('还没有大纲'), findsNothing);
-    expect(find.byType(ListView), findsOneWidget);
+      // ① 卷名 / 章名由投影出现（标题真源 = volumes.title / chapters.title）
+      expect(find.text('第一卷：乡村起步'), findsOneWidget);
+      expect(find.text('第一章：进城'), findsOneWidget);
+      expect(find.text('第二章：码头'), findsOneWidget);
+      expect(find.text('第三章：雨夜'), findsOneWidget);
+      // ② 卷头 meta：章节数 + 字数（wordCount 来自 content.length：5 + 7 = 12）
+      expect(find.text('2 章 · 12字'), findsOneWidget);
+      // ③ 有结构数据 ⇒ **结构段在场**（即「没进整页空态」的判据）
+      expect(find.byKey(kOutlineStructureSectionKey), findsOneWidget);
+      // ④ 本用例**未播实体** ⇒ 要素段走**分段**空态（N6 判据，理由见
+      //    `outline_content_view.dart` 头部注释）：引导**文案在**、按钮**不在**
+      //    （本用例未注入 onOpenCoach）。
+      //    ⚠️ 与设计稿 §4.4「有结构数据 ⇒ 不进空态」的差异就在这一条：
+      //    设计稿写的是**整页**判据，落地为**分段**判据 ⇒
+      //    「未进整页空态」由 ③ 结构段在场来判，而**不是**由「空态文案不出现」判
+      //    （整页判据下，本用例的**结构段会被整段撤掉** —— 见文件头部注释）。
+      expect(find.text('还没有大纲'), findsOneWidget);
+      expect(
+        find.byKey(const Key('outline-empty-open-coach')),
+        findsNothing,
+        reason: '未注入 onOpenCoach ⇒ 分段空态只渲染文案，不渲染按钮',
+      );
+      // ⑤ 两段共处**同一个**ListView（不嵌套滚动视图）
+      expect(find.byType(ListView), findsOneWidget);
+    });
+
+    testWidgets('#N6-2 投影章节点点击 → 以 (chapterId, title) 跳转（正例）', (tester) async {
+      final chId = await seedChapter(title: '第一章：进城', sortOrder: 0);
+
+      final jumps = <String>[];
+      await pumpDrawer(
+        tester,
+        onJumpToChapter: (id, title) => jumps.add('$id|$title'),
+      );
+
+      await tester.tap(find.byKey(outlineStructureChapterKey(chId)));
+      await tester.pumpAndSettle();
+
+      expect(jumps, ['$chId|第一章：进城']);
+    });
+
+    testWidgets('#N6-2b 未注入 onJumpToChapter ⇒ 章节点不可点、无箭头（独立承载零变化）', (
+      tester,
+    ) async {
+      final chId = await seedChapter(title: '第一章：进城', sortOrder: 0);
+
+      await pumpDrawer(tester); // 刻意不注入跳转回调
+
+      // 阳性对照：标题照常渲染 ⇒ 证明下面的 findsNothing 是「锚点不在」，
+      // 而不是「整个投影段没渲染」（否则会假绿）
+      expect(find.text('第一章：进城'), findsOneWidget);
+      expect(find.byKey(outlineStructureChapterKey(chId)), findsNothing);
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+    });
+
+    testWidgets('#N6-3 ★ 仅含未知类型实体 ⇒ 必须渲染「其他」分组（关键负例）', (tester) async {
+      // 这是本组的**重点负例**：旧契约下这一条会让抽屉**整页全白**。
+      await insertEntity(type: 'unknown_xyz', key: '幽灵条目');
+
+      await pumpDrawer(tester);
+
+      // ① 有显式出口：不静默丢弃
+      expect(find.text('其他'), findsOneWidget);
+      expect(find.text('幽灵条目'), findsOneWidget);
+      // ② 类型**原值**一并打出，使「有但认不出」与「真的没有」可区分
+      expect(find.text('unknown_xyz'), findsOneWidget);
+      // ③ 负例对照：**不得**进空态 —— 空态的语义是「真的没有」，而这里有行
+      expect(find.text('还没有大纲'), findsNothing);
+      expect(find.byType(ListView), findsOneWidget);
+    });
+
+    /// 构造旧缺陷的触发条件：`entities` **非空**，但**没有任何可见项**。
+    ///
+    /// `rejected` 是 `outline_entity` 的合法状态（`tables.dart:627/642`），
+    /// 但当前**无生产写入口**（仓储只有 `approveEntity: pending→active`）
+    /// ⇒ 此处经直写构造该状态；这是**构造**，不是生产路径的复现。
+    Future<void> seedRejectedEntity() async {
+      final id = await insertEntity(type: 'character', key: '林晚');
+      await (db.update(db.outlineEntities)..where((t) => t.id.equals(id)))
+          .write(const OutlineEntitiesCompanion(status: Value('rejected')));
+    }
+
+    testWidgets('#N6-4 有章节结构 + 实体全被状态过滤 ⇒ 结构照常 + 要素段分段空态', (tester) async {
+      await seedRejectedEntity();
+      await seedChapter(title: '第一章：进城', sortOrder: 0);
+
+      final opened = <int>[];
+      await pumpDrawer(tester, onOpenCoach: () => opened.add(1));
+
+      expect(find.text('林晚'), findsNothing, reason: 'rejected 实体不得展示');
+      // 旧行为：`entities` 非空 ⇒ 不进空态；分组又全被跳过 ⇒ **整页空白**。
+      // 新行为：结构段照常渲染 + 要素段**分段**空态（文案与主行动都在）。
+      expect(find.byKey(kOutlineStructureSectionKey), findsOneWidget);
+      expect(find.text('第一章：进城'), findsOneWidget);
+      expect(find.text('还没有大纲'), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('outline-empty-open-coach')));
+      await tester.pumpAndSettle();
+      expect(opened, [1], reason: '分段空态的主行动仍可用');
+    });
+
+    testWidgets('#N6-4b 无章节结构 + 实体全被状态过滤 ⇒ 整页空态（判据的另一分支）', (tester) async {
+      await seedRejectedEntity();
+
+      await pumpDrawer(tester);
+
+      // 两段皆空 ⇒ **整页**空态：结构段锚点**不在**，且**没有 ListView**
+      // —— 这正是与 `#N6-4` 的判别点：同样「可见分组为空」，两条不同出口。
+      expect(find.byKey(kOutlineStructureSectionKey), findsNothing);
+      expect(find.text('还没有大纲'), findsOneWidget);
+      expect(find.byType(ListView), findsNothing);
+    });
   });
 
   // ── 6. 空 manuscriptId ───────────────────────────────────────
@@ -331,7 +521,7 @@ void main() {
     testWidgets('#N12-F1-1 首章渲染「第1章」而**非**「第0章」（原缺陷直接回归）', (tester) async {
       await seedChapters([0]);
       final id = await insertEntity(type: 'character', key: '林晚');
-      await repo.insertImpression(
+      final impId = await repo.insertImpression(
         entityId: id,
         impression: '怕黑',
         sourceChapterNo: 0,
@@ -339,7 +529,14 @@ void main() {
 
       await pumpDrawer(tester);
 
-      expect(find.text('第1章'), findsOneWidget);
+      // N6：定位**章标**（不是投影段里同名的章标题）⇒ 用锚点作用域
+      expect(
+        find.descendant(
+          of: find.byKey(outlineImpressionTagKey(impId)),
+          matching: find.text('第1章'),
+        ),
+        findsOneWidget,
+      );
       expect(
         find.text('第0章'),
         findsNothing,
@@ -354,7 +551,7 @@ void main() {
       // `sortOrder + 1` 会给出 2、3 —— 与序位不等价（ADR-C95 §3 反例 1）。
       await seedChapters([1, 2]);
       final id = await insertEntity(type: 'character', key: '林晚');
-      await repo.insertImpression(
+      final impId = await repo.insertImpression(
         entityId: id,
         impression: '怕黑',
         sourceChapterNo: 2,
@@ -362,18 +559,32 @@ void main() {
 
       await pumpDrawer(tester);
 
-      expect(find.text('第2章'), findsOneWidget);
+      final tag = find.byKey(outlineImpressionTagKey(impId));
       expect(
-        find.text('第3章'),
+        find.descendant(of: tag, matching: find.text('第2章')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: tag, matching: find.text('第3章')),
         findsNothing,
         reason: '删除不重编号 ⇒ `sortOrder + 1` 在这里是错的',
+      );
+      // ★ 阳性对照：投影段**确实**渲染了「第3章」这个**章标题**
+      //   ⇒ 证明上一条 findsNothing 是「章标不等于第3章」，
+      //     而不是「第3章 全抽屉不存在」（否则该断言毫无鉴别力）
+      expect(
+        find.descendant(
+          of: find.byKey(kOutlineStructureSectionKey),
+          matching: find.text('第3章'),
+        ),
+        findsOneWidget,
       );
     });
 
     testWidgets('#N12-F1-3 引用已删章 ⇒ 不渲染章标（不编造数字）', (tester) async {
       await seedChapters([0, 1]);
       final id = await insertEntity(type: 'character', key: '林晚');
-      await repo.insertImpression(
+      final impId = await repo.insertImpression(
         entityId: id,
         impression: '雨天落水',
         sourceChapterNo: 9, // 该章已不在列表中（已删 / 回收站 / 越界）
@@ -383,9 +594,19 @@ void main() {
 
       expect(find.text('雨天落水'), findsOneWidget, reason: '梗概本身照常展示');
       expect(
-        find.textContaining('章'),
+        find.byKey(outlineImpressionTagKey(impId)),
         findsNothing,
         reason: '解析失败 ⇒ 隐藏章标，而不是编造「第10章」或保留「第9章」',
+      );
+      // ★ 阳性对照：投影段照常渲染两个章标题 ⇒ 证明「无章标」不是整段没渲染
+      final section = find.byKey(kOutlineStructureSectionKey);
+      expect(
+        find.descendant(of: section, matching: find.text('第1章')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: section, matching: find.text('第2章')),
+        findsOneWidget,
       );
     });
   });

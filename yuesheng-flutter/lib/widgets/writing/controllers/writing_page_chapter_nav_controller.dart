@@ -52,7 +52,14 @@ class WritingPageChapterNavController {
   ///
   /// N4-3：[onOpenCoach] 注入给空态的「打开教练面板」按钮；
   /// 为 null 时抽屉空态与原实现逐字等价（不渲染按钮）。
-  Widget buildOutlineDrawer({VoidCallback? onOpenCoach}) {
+  ///
+  /// N6：[onJumpToChapter] 注入给「章节结构」投影段的章节点（点击 = 跳转）。
+  /// 生产侧传 [handleJumpToChapter]（本类内既有实现：关抽屉 + 跨章跳转，
+  /// 目标即当前章时只关抽屉）；为 null 时投影段为**纯只读**列表。
+  Widget buildOutlineDrawer({
+    VoidCallback? onOpenCoach,
+    void Function(String chapterId, String title)? onJumpToChapter,
+  }) {
     return OutlineDrawer(
       key: ValueKey('outline-${_host.outlineOpenCount}'),
       manuscriptId: _host.resolvedManuscriptId,
@@ -60,6 +67,7 @@ class WritingPageChapterNavController {
       onOpenCoach: onOpenCoach == null
           ? null
           : () => handleCloseOutlineThen(onOpenCoach),
+      onJumpToChapter: onJumpToChapter,
     );
   }
 
