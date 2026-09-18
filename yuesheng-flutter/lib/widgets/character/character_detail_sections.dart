@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../services/conflict_detector.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 import 'character_assertion_tile.dart';
 
 /// 头部卡：名字 + 并入主角色入口 + 别名行 + 元信息
@@ -22,7 +23,13 @@ class CharacterHeaderCard extends StatelessWidget {
   final String name;
   final List<String> aliases;
   final int assertionCount;
+
+  /// `character_fact.first_seen_chapter` —— **身份键**（`chapter.sortOrder`），
+  /// 不是展示号；必须经 [chapterNoMap] 解析（ADR-C95 裁定 4 / `N12-F3a`）。
   final int? firstSeenChapter;
+
+  /// `sortOrder → 展示章号(1 基)`（[buildChapterNoMap] 产出）。
+  final Map<int, int> chapterNoMap;
   final bool mergeEnabled;
   final VoidCallback onMerge;
   final VoidCallback onEditAliases;
@@ -33,6 +40,7 @@ class CharacterHeaderCard extends StatelessWidget {
     required this.aliases,
     required this.assertionCount,
     required this.firstSeenChapter,
+    required this.chapterNoMap,
     required this.mergeEnabled,
     required this.onMerge,
     required this.onEditAliases,
@@ -60,7 +68,7 @@ class CharacterHeaderCard extends StatelessWidget {
             _buildAliasRow(),
             const SizedBox(height: AppSpacing.xsm),
             Text(
-              '首次登场：${firstSeenChapter == null ? '未知' : '第$firstSeenChapter章'}'
+              '首次登场：${chapterLabel(chapterNoMap, firstSeenChapter) ?? '未知'}'
               ' · 断言 $assertionCount 条',
               style: AppTextStyles.caption,
             ),

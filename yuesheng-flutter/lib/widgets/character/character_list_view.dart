@@ -20,9 +20,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/database/utils.dart';
+import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/character_fact_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/manuscript_providers.dart';
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 import 'character_detail_page.dart';
 import 'character_dialogs.dart';
 import 'pending_confirm_card.dart';
@@ -46,11 +49,17 @@ Future<bool> showAndCreateCharacter(
 ) async {
   final created = await showCreateCharacterDialog(context);
   if (created == null) return false;
+  // ADR-C95 / `N12-F3a`：弹层填的是**章序位**，本列存的是**身份键** ⇒ 写入前归一。
+  final firstSeen = await _firstSeenSortOrder(
+    ref,
+    manuscriptId,
+    created.firstSeenChapter,
+  );
   final repo = CharacterFactRepository(ref.read(appDatabaseProvider));
   await repo.upsertCharacter(
     manuscriptId: manuscriptId,
     name: created.name,
-    firstSeenChapter: created.firstSeenChapter,
+    firstSeenChapter: firstSeen,
     firstSeenAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
   );
   if (created.description.isNotEmpty) {
@@ -61,12 +70,53 @@ Future<bool> showAndCreateCharacter(
     );
   }
   if (!context.mounted) return false;
+  _notifyCharacterCreated(
+    context,
+    created.name,
+    created.firstSeenChapter,
+    firstSeen,
+  );
+  return true;
+}
+
+/// 创建角色后的结果提示（R-019：由 [showAndCreateCharacter] 抽出）。
+///
+/// 用户填了章号、而**该序位在作品里不存在**时**如实告知**：该值按 ADR-C95 裁定 2
+/// **不落库**（不编造章号），但静默丢弃会让用户以为「填了没反应」。
+void _notifyCharacterCreated(
+  BuildContext context,
+  String name,
+  int? typed,
+  int? stored,
+) {
+  final msg = (typed != null && stored == null)
+      ? '已创建角色「$name」；该作品当前没有第 $typed 章，首见章节未记录'
+      : '已创建角色「$name」，可打标签、关联设定或补充断言';
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(content: Text('已创建角色「${created.name}」，可打标签、关联设定或补充断言')),
-    );
-  return true;
+    ..showSnackBar(SnackBar(content: Text(msg)));
+}
+
+/// 用户输入的「第几章」（**序位**，1 基）→ 该章 `sortOrder`（**身份键**）。
+///
+/// 归一后 `first_seen_chapter` **只有一个语义**（身份），展示层才能可靠解析成序位；
+/// 不归一则该列继续混装身份与序位两种基号（`N12-F3` 报告 §3.1）。
+///
+/// 序位不存在（越界 / 空作品）→ `null`：**不编造**（ADR-C95 裁定 2），由调用方如实提示。
+///
+/// 用 `ChapterRepository.listChapters` 而非 `chapterListProvider`：后者由 microtask
+/// 触发**异步**加载，此刻可能仍是空列表 —— 那会把用户填的合法序位静默归一成 null
+/// （**输入丢失**）。库读是权威值，不依赖订阅时序。
+Future<int?> _firstSeenSortOrder(
+  WidgetRef ref,
+  String manuscriptId,
+  int? position,
+) async {
+  if (position == null) return null;
+  final chapters = await ChapterRepository(
+    ref.read(appDatabaseProvider),
+  ).listChapters(manuscriptId);
+  return sortOrderAtPosition(buildChapterNoMap(chapters), position);
 }
 
 /// 角色列表主体（无 Scaffold / 无 AppBar），可嵌入任意 TabBarView 或页面 body。
@@ -214,10 +264,16 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
-    return _buildBody(_sorted(_filtered()));
+    // ADR-C95 裁定 4（`N12-F3a`）：`first_seen_chapter` 存的是**身份键**
+    // （`chapter.sortOrder`），展示必须解析为「当前章节列表里的序位」；
+    // 解析失败（章已删 / 在回收站）⇒ 不显示数字，不编造。
+    final chapterNoMap = buildChapterNoMap(
+      ref.watch(chapterListProvider(widget.manuscriptId)),
+    );
+    return _buildBody(_sorted(_filtered()), chapterNoMap);
   }
 
-  Widget _buildBody(List<CharacterFact> rows) {
+  Widget _buildBody(List<CharacterFact> rows, Map<int, int> chapterNoMap) {
     return Column(
       children: [
         if (_inRecentMode) _buildRecentBanner(),
@@ -239,7 +295,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                   itemCount: rows.length,
-                  itemBuilder: (_, i) => _buildListItem(rows[i]),
+                  itemBuilder: (_, i) => _buildListItem(rows[i], chapterNoMap),
                 ),
         ),
       ],
@@ -329,7 +385,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     );
   }
 
-  Widget _buildListItem(CharacterFact row) {
+  Widget _buildListItem(CharacterFact row, Map<int, int> chapterNoMap) {
     return Card(
       margin: const EdgeInsets.symmetric(
         horizontal: AppSpacing.page,
@@ -344,7 +400,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
             _buildNewBadge(row),
           ],
         ),
-        subtitle: _buildItemSubtitle(row),
+        subtitle: _buildItemSubtitle(row, chapterNoMap),
         onTap: () => _openDetail(row),
       ),
     );
@@ -371,7 +427,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
   }
 
   /// 副标题：首见章节 + 有效断言摘要（前 3 条 confirmed 且非 stale）
-  Widget _buildItemSubtitle(CharacterFact row) {
+  Widget _buildItemSubtitle(CharacterFact row, Map<int, int> chapterNoMap) {
     final summary = _parsedOf(row)
         .where((a) => a.status == 'confirmed' && !a.stale)
         .take(_kSummaryMax)
@@ -380,7 +436,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_firstSeenText(row), style: AppTextStyles.caption),
+        Text(_firstSeenText(row, chapterNoMap), style: AppTextStyles.caption),
         if (summary.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
@@ -395,9 +451,10 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     );
   }
 
-  String _firstSeenText(CharacterFact row) {
-    final ch = row.firstSeenChapter;
-    return ch == null ? '首次登场章节未知' : '第$ch章登场';
+  String _firstSeenText(CharacterFact row, Map<int, int> chapterNoMap) {
+    // 解析失败（章已删 / 在回收站）与「从未记录」同样显示未知 —— 不编造数字。
+    final label = chapterLabel(chapterNoMap, row.firstSeenChapter);
+    return label == null ? '首次登场章节未知' : '$label登场';
   }
 }
 

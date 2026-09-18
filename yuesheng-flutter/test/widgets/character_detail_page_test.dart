@@ -118,6 +118,24 @@ void main() {
     );
   }
 
+  group('首见章节口径（ADR-C95 · 批次 N12-F3a）', () {
+    testWidgets('头部卡「首次登场」按**序位**解析（本稿 sortOrder=3 ⇒ 第1章）', (tester) async {
+      // 本文件 setUp 只造 1 章（`sortOrder = 3`，即删过首章的稿），角色也指向 3。
+      // 两种错法都要杀掉：**直渲染身份键** ⇒ 「首次登场：第3章」；
+      // **`sortOrder + 1` 兜底** ⇒ 「首次登场：第4章」。正确解是序位 ⇒ 第1章。
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('首次登场：第1章'), findsOneWidget);
+      expect(
+        find.textContaining('首次登场：第4章'),
+        findsNothing,
+        reason: '身份键 3 不得直出，也不得 +1（ADR-C95 §3）',
+      );
+      expect(find.textContaining('首次登场：未知'), findsNothing);
+    });
+  });
+
   Future<List<CharacterAssertion>> dbAssertions() async {
     final row = await repo.getCharacterById(characterId);
     return CharacterFactRepository.parseAssertions(row!.assertions);

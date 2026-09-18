@@ -28,6 +28,7 @@ import '../../data/repositories/event_fact_repository.dart';
 import '../../data/repositories/setting_link_repository.dart';
 import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../providers/manuscript_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/character_editor_service.dart';
@@ -38,6 +39,7 @@ import '../../services/conflict_detector.dart';
 import '../../services/fact_stale_service.dart';
 import '../../services/setting_library_service.dart' as sls;
 import '../../types/character_types.dart';
+import '../../utils/chapter_number.dart';
 import 'character_detail_sections.dart';
 import 'character_dialogs.dart';
 import '../setting/setting_links_section.dart';
@@ -189,6 +191,13 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     );
   }
 
+  /// `sortOrder → 展示章号(1 基)`（ADR-C95 裁定 4 / `N12-F3a`）。
+  ///
+  /// `first_seen_chapter` 是**身份键**不是展示号；本页只做解析，口径的唯一实现点在
+  /// `utils/chapter_number.dart`（此处**禁止**写 `firstSeenChapter + 1` 之类的换算）。
+  Map<int, int> _chapterNoMap() =>
+      buildChapterNoMap(ref.watch(chapterListProvider(widget.manuscriptId)));
+
   /// 互链跳转：角色详情页只处理「跳到世界观详情页」（区块回调注入）。
   void _jumpToWorld(SettingEntityKind kind, String id) {
     if (kind != SettingEntityKind.world) return;
@@ -238,6 +247,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
                   aliases: _aliases,
                   assertionCount: _assertions.length,
                   firstSeenChapter: row.firstSeenChapter,
+                  chapterNoMap: _chapterNoMap(),
                   mergeEnabled: _candidates.isNotEmpty,
                   onMerge: _mergeInto,
                   onEditAliases: _editAliases,

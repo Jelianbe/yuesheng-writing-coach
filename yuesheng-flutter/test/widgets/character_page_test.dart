@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
@@ -64,6 +65,22 @@ void main() {
     }
   }
 
+  /// 播种章节（`sortOrder` 即**身份键**：0 基、删除不重编号、可空洞）。
+  ///
+  /// ADR-C95 / `N12-F3a`：`first_seen_chapter` 存的是身份键，展示要经**当前章节列表**
+  /// 解析成序位 ⇒ 「首见章节」相关用例**必须**先有真实章节，否则断言的是一个
+  /// 解析不出来的值（旧实现在这种夹具上「恰好」也能显示数字，是新网要杀掉的形态）。
+  Future<void> seedChapters(List<int> sortOrders) async {
+    final chapterRepo = ChapterRepository(db);
+    for (final o in sortOrders) {
+      await chapterRepo.createChapter(
+        manuscriptId,
+        title: '第${o + 1}章',
+        sortOrder: o,
+      );
+    }
+  }
+
   Widget buildHost({int? since}) {
     return UncontrolledProviderScope(
       container: container,
@@ -93,9 +110,14 @@ void main() {
 
   group('列表渲染', () {
     testWidgets('名字 / 首见章节 / 断言摘要展示', (tester) async {
+      // ADR-C95 / `N12-F3a`：`firstSeen` 是**身份键**（`chapter.sortOrder`），展示必须
+      // 经章节列表解析。旧夹具写 `3` 而该稿**一章都没有** ⇒ 该值不可解析，是旧实现
+      // 直渲染才「恰好」显示「第3章登场」—— **夹具本身在编码缺陷**。
+      // 现改为「三章 + 序位第 3 的章（sortOrder=2）」，**断言一字未动**。
+      await seedChapters([0, 1, 2]);
       await seedCharacter(
         '林晚晴',
-        firstSeen: 3,
+        firstSeen: 2,
         assertions: [
           assertion('性格', '冷静', chapter: 3),
           assertion('职业', '捕快', chapter: 3),
@@ -245,6 +267,7 @@ void main() {
 
   group('新建角色（FR-7）', () {
     testWidgets('填名字创建 → 落库并出现在列表', (tester) async {
+      await seedChapters([0, 1, 2]);
       await tester.pumpWidget(buildHost());
       await tester.pumpAndSettle();
 
@@ -265,7 +288,120 @@ void main() {
       expect(find.text('王建国'), findsOneWidget);
       final row = await repo.getCharacter(manuscriptId, '王建国');
       expect(row, isNotNull);
-      expect(row!.firstSeenChapter, 2);
+      // ★ ADR-C95 / `N12-F3a`：用户填的是**章序位**（他在章节列表里看到的「第2章」），
+      //   而本列存的是**身份键** ⇒ 落库必须是「序位 2 那一章的 sortOrder = 1」。
+      //   旧断言 `2` 等于「原样存用户输入」，与展示口径**不同基**，同屏必然矛盾。
+      expect(
+        row!.firstSeenChapter,
+        1,
+        reason: '序位 2 ⇒ sortOrder 1（0 基身份键），不是用户输入的 2',
+      );
+      expect(find.text('第2章登场'), findsOneWidget, reason: '往返一致：序位 2 ⇒ 第2章');
+    });
+  });
+
+  group('首见章节口径（ADR-C95 · 批次 N12-F3a）', () {
+    /// 打开弹层 → 填名字 + 章号 → 创建。
+    Future<void> createViaDialog(
+      WidgetTester tester, {
+      required String name,
+      required String chapter,
+    }) async {
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('+ 新建'));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fields.at(0), name);
+      await tester.enterText(fields.at(2), chapter);
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('N12F3a-1 首章 sortOrder=0 ⇒ 「第1章登场」（原实现渲染「第0章登场」）', (
+      tester,
+    ) async {
+      await seedChapters([0, 1]);
+      await seedCharacter('林晚晴', firstSeen: 0, assertions: []);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('第1章登场'), findsOneWidget);
+      expect(
+        find.text('第0章登场'),
+        findsNothing,
+        reason: '0 基身份键**不得**直出为展示号（ADR-C95 §3）',
+      );
+    });
+
+    testWidgets('N12F3a-2 删过首章（sortOrder 从 1 起）⇒ 序位正确，杀死 `sortOrder + 1`', (
+      tester,
+    ) async {
+      await seedChapters([1, 2, 3]);
+      await seedCharacter('梁叔', firstSeen: 3, assertions: []);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('第3章登场'), findsOneWidget);
+      expect(
+        find.text('第4章登场'),
+        findsNothing,
+        reason: '`sortOrder + 1` 会给出「第4章」，是错的',
+      );
+    });
+
+    testWidgets('N12F3a-3 引用已删章 ⇒ 解析失败即「未知」，不编造数字', (tester) async {
+      await seedChapters([1, 2]); // 0 号章已被删（身份键可空洞）
+      await seedCharacter('林闲', firstSeen: 0, assertions: []);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('首次登场章节未知'), findsOneWidget);
+      expect(find.text('第0章登场'), findsNothing);
+      expect(find.text('第1章登场'), findsNothing, reason: '不得退化成「首个现有章」');
+    });
+
+    testWidgets('N12F3a-4 用户填的序位**越界** ⇒ 不落库（不编造）+ 如实提示', (tester) async {
+      await seedChapters([0]); // 只有 1 章
+      await createViaDialog(tester, name: '王建国', chapter: '5');
+
+      final row = await repo.getCharacter(manuscriptId, '王建国');
+      expect(row, isNotNull);
+      expect(
+        row!.firstSeenChapter,
+        isNull,
+        reason: '作品里没有第 5 章 ⇒ 该序位不存在，**不存**（ADR-C95 裁定 2）',
+      );
+      expect(
+        find.textContaining('没有第 5 章'),
+        findsOneWidget,
+        reason: '静默丢弃会让用户以为「填了没反应」——必须如实告知',
+      );
+    });
+
+    testWidgets('N12F3a-5 未填章号 ⇒ 仍为「未知」（不因口径改动而回归）', (tester) async {
+      await seedChapters([0]);
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('+ 新建'));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fields.at(0), '无名氏');
+      await tester.tap(find.text('创建'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('首次登场章节未知'), findsOneWidget);
+      final row = await repo.getCharacter(manuscriptId, '无名氏');
+      expect(row!.firstSeenChapter, isNull);
     });
   });
 }
