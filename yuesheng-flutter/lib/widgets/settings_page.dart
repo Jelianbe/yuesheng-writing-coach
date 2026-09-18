@@ -29,6 +29,8 @@ import '../router/app_routes.dart';
 import '../services/error_handler.dart';
 import '../services/llm_client.dart';
 import '../services/llm_config_storage.dart';
+import '../services/llm_cost.dart';
+import '../services/llm_usage_report.dart';
 import '../services/progress_service.dart';
 import '../services/session_export_service.dart';
 import 'privacy_notice_dialog.dart';
@@ -113,6 +115,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// 进度对应的会话 ID（点击进入 progress-detail）
   String? _progressSessionId;
 
+  /// `N7`：本周 LLM 用量 / 花费（数据源 = error_logs 的 llm_call 埋点，纯读取）
+  LlmUsageReport? _usageReport;
+
   @override
   void initState() {
     super.initState();
@@ -121,8 +126,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _accountRepo = AIAccountRepository(ref.read(appDatabaseProvider));
     _loadApiConfig();
     _loadProgressSummary();
+    _loadUsageReport();
     // 推理档位：读 app_state 水合到共享 provider（与聊天页同源，故不存本地副本）
     ref.read(reasoningTierProvider.notifier).hydrate();
+  }
+
+  /// `N7`：加载「本周用量」。
+  ///
+  /// 失败**静默降级**（与 `_loadProgressSummary` 同纪律：不阻塞设置页其他区块），
+  /// 但**不塞一个 0 元凑数** —— 加载失败时该区块整体不渲染，避免把
+  /// 「查不到」显示成「这周没花钱」（两者外观相同，本仓已栽过多次）。
+  Future<void> _loadUsageReport() async {
+    try {
+      final report = await loadWeekLlmUsage(
+        ref.read(appDatabaseProvider),
+        nowUtc: DateTime.now().toUtc(),
+      );
+      if (!mounted) return;
+      setState(() => _usageReport = report);
+    } catch (_) {
+      // 静默：区块不渲染
+    }
   }
 
   /// 批次 38：加载最新会话的学习进度（对齐 RN bookshelf handleProgressPress 来源）
@@ -538,6 +562,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ],
           _buildApiSection(),
           const SizedBox(height: 12),
+          _buildUsageSection(),
+          const SizedBox(height: 12),
           _buildModelBehaviorSection(reasoningTier),
           const SizedBox(height: 12),
           _buildMaintenanceSection(),
@@ -772,6 +798,93 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ],
       ),
     );
+  }
+
+  // ── 本周用量（`N7`） ──
+
+  /// 注脚统一样式（12px 三级灰）—— 抽出来避免同一字面量重复四次
+  /// （R-019 职责提取的顺手产物）。
+  static const TextStyle _usageNoteStyle = TextStyle(
+    fontSize: 12,
+    color: AppColors.textTertiary,
+  );
+
+  /// 本周花费 / 用量卡片。
+  ///
+  /// 读数**未就绪时整块不渲染**（加载中或查询失败）—— 不用 0 元占位，
+  /// 否则「查不到」与「这周没花钱」外观完全相同。
+  Widget _buildUsageSection() {
+    final report = _usageReport;
+    if (report == null) return const SizedBox.shrink();
+    return _SectionCard(
+      title: '本周用量',
+      description:
+          '${_weekStartLabel(report.sinceEpochSec)} 起本机调用统计 · '
+          '按闲时 / 峰时单价逐笔折算（峰时 = 闲时 ×2，时段为北京时间）',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _usageHeadline(report),
+          const SizedBox(height: 10),
+          _UsageStatRow(
+            stats: [
+              ('输入命中', _compactTokens(report.cachedTokens)),
+              ('输入未命中', _compactTokens(report.missTokens)),
+              ('输出', _compactTokens(report.completionTokens)),
+              ('缓存命中率', '${(report.cacheHitRate * 100).toStringAsFixed(0)}%'),
+            ],
+          ),
+          ..._usageNotes(report),
+        ],
+      ),
+    );
+  }
+
+  /// 卡片首行：金额（主读数）+ 调用次数（次级）。
+  Widget _usageHeadline(LlmUsageReport report) => Row(
+    crossAxisAlignment: CrossAxisAlignment.baseline,
+    textBaseline: TextBaseline.alphabetic,
+    children: [
+      Text(
+        '¥${report.costCny.toStringAsFixed(4)}',
+        style: AppTextStyles.titleLg,
+      ),
+      const SizedBox(width: 8),
+      Text('${report.calls} 次调用', style: _usageNoteStyle),
+    ],
+  );
+
+  /// 两条**条件**注脚：峰时次数 / 坏行条数。
+  ///
+  /// 无内容时返回空列表（由调用点 `...` 展开），故卡片不会留空行。
+  List<Widget> _usageNotes(LlmUsageReport report) => [
+    if (report.peakCalls > 0) ...[
+      const SizedBox(height: 8),
+      Text('其中 ${report.peakCalls} 次落在高峰时段（单价 ×2）', style: _usageNoteStyle),
+    ],
+    if (report.skippedRows > 0) ...[
+      const SizedBox(height: 8),
+      Text(
+        '另有 ${report.skippedRows} 条调用埋点缺少 token 明细，未计入（不是 0 消耗）',
+        style: _usageNoteStyle,
+      ),
+    ],
+  ];
+
+  /// 周起点（UTC epoch 秒）→ 「M月d日」的**北京时间**表述。
+  static String _weekStartLabel(int sinceEpochSec) {
+    final cst = DateTime.fromMillisecondsSinceEpoch(
+      sinceEpochSec * 1000,
+      isUtc: true,
+    ).add(kCstOffset);
+    return '${cst.month}月${cst.day}日';
+  }
+
+  /// token 数的紧凑写法（千 / 百万），避免长数字撑破窄屏。
+  static String _compactTokens(int n) {
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(2)}M';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}k';
+    return '$n';
   }
 
   Widget _buildApiSection() {
@@ -1343,6 +1456,37 @@ class _ProgressStat extends StatelessWidget {
           Text(label, style: AppTextStyles.caption),
         ],
       ),
+    );
+  }
+}
+
+/// `N7` 本周用量：四格统计行（token 拆解 + 缓存命中率）。
+///
+/// 与 [_ProgressStat] 同形但**不共用**：后者的 `value` 是主读数、字号 `titleLg`，
+/// 这里四格并排是**次级明细**，用 `body` 级字号才不会与卡片首行的金额抢层级。
+class _UsageStatRow extends StatelessWidget {
+  /// (标签, 值) 四元组，顺序即展示顺序
+  final List<(String, String)> stats;
+
+  const _UsageStatRow({required this.stats});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (label, value) in stats)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: AppTextStyles.body),
+                const SizedBox(height: 2),
+                Text(label, style: AppTextStyles.caption),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -12,7 +12,11 @@
 //   8. 清除缓存 → 删除无消息的孤儿会话（保留有消息的）
 //   9. 关于区块 → 应用名称/版本/包名
 //  10. 反馈对话框 → 邮箱展示
+//  11. `N7` 本周用量区块 → 金额/次数/token 拆解/命中率/峰时与坏行提示
+//      （★ 埋点由**真写入方** `LlmCallLogEntry.toJson()` 生成，见 #N7 段注释）
 // ─────────────────────────────────────────────────────────────
+
+import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -29,8 +33,11 @@ import 'package:writingcoach/providers/session_providers.dart';
 import '../helpers/mock_last_session_storage.dart';
 import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
+import 'package:writingcoach/services/llm_call_log_sink.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
+import 'package:writingcoach/services/llm_cost.dart';
+import 'package:writingcoach/services/llm_usage.dart';
 import 'package:writingcoach/widgets/settings_page.dart';
 
 /// Fake 配置存储：内存 map，避免触碰 flutter_secure_storage
@@ -774,5 +781,166 @@ void main() {
       tester.widget<TextField>(find.byType(TextField).at(2)).controller!.text,
       'kimi-k3',
     );
+  });
+
+  // ── `N7`（批次 3）：设置页「本周用量」 ──
+  //
+  // ★ 本段的**鉴别力设计**：埋点载荷由**真写入方** `LlmCallLogEntry.toJson()`
+  //   生成，**不手抄键名**。手抄一份 = 把「context 键口径」推算两遍，写入方
+  //   改名后手抄副本静默不同步（同 `DECISIONS §4-41`）。走真写入方，则
+  //   「写入方 ↔ 查询方键名不一致」会被本段直接判红。
+
+  /// 落一条**真** llm_call 埋点（level=info / category=api，与
+  /// `LlmCallLogSink._defaultWriter` 同形）。
+  Future<void> insertLlmCall({
+    required String id,
+    required int at,
+    required int cached,
+    required int miss,
+    required int completion,
+    int reasoning = 0,
+  }) async {
+    final entry = LlmCallLogEntry(
+      sessionId: 's1',
+      purpose: LlmCallPurpose.mainChat,
+      kind: LlmUsageKind.stream,
+      promptTokens: cached + miss,
+      completionTokens: completion,
+      cachedTokens: cached,
+      reasoningTokens: reasoning,
+      latencyMs: 1200,
+      model: 'deepseek-v4-flash',
+    );
+    await db
+        .into(db.errorLogs)
+        .insert(
+          ErrorLogsCompanion.insert(
+            id: id,
+            level: const Value('info'),
+            category: const Value('api'),
+            message: '[llm_call] mainChat/stream',
+            context: Value(jsonEncode(entry.toJson())),
+            createdAt: Value(at),
+          ),
+        );
+  }
+
+  /// 滚到「本周用量」区块（它在 API 区块之后 ⇒ 首屏外，必须滚动；
+  /// `ListView` 惰性构建，不滚动则节点**根本不在树里**）。
+  Future<void> scrollToUsage(WidgetTester tester) async {
+    await tester.dragUntilVisible(
+      find.text('本周用量'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('#N7-1 一条闲时 + 一条峰时 → 金额/次数/拆解/命中率/峰时提示', (tester) async {
+    // 用「相对本周起点」而非写死的日历时刻 ⇒ 无论哪天跑本用例都落在窗口内。
+    // 起点恒为北京时间周一 00:00 ⇒ +1h = 周一 01:00（闲）；+11h = 周一 11:00（峰）。
+    final since = weekStartEpochSecCst(DateTime.now().toUtc());
+    await insertLlmCall(
+      id: 'u-off',
+      at: since + 3600,
+      cached: 1000,
+      miss: 2000,
+      completion: 3000,
+    );
+    await insertLlmCall(
+      id: 'u-peak',
+      at: since + 11 * 3600,
+      cached: 1000,
+      miss: 2000,
+      completion: 3000,
+    );
+
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    await scrollToUsage(tester);
+
+    expect(find.text('2 次调用'), findsOneWidget);
+    expect(find.text('2.0k'), findsOneWidget); // 命中 1000+1000
+    expect(find.text('4.0k'), findsOneWidget); // 未命中 2000+2000
+    expect(find.text('6.0k'), findsOneWidget); // 输出 3000+3000
+    expect(find.text('33%'), findsOneWidget); // 2000 / 6000
+    expect(find.textContaining('其中 1 次落在高峰时段'), findsOneWidget);
+    // 金额：闲 1000×0.02+2000×1+3000×4 = 14020/1e6 = 0.01402
+    //      峰 同上 ×2                     = 0.02804
+    //      ⇒ 合计 0.04206 → ¥0.0421（断言前缀，避开末位浮点表示差异）
+    expect(find.textContaining('¥0.04'), findsOneWidget);
+  });
+
+  testWidgets('#N7-2 窗口前一行不计入；坏行单列（不是 0 消耗）', (tester) async {
+    final since = weekStartEpochSecCst(DateTime.now().toUtc());
+    // 负例①：起点前 1 秒 ⇒ 若实现漏了 since 过滤，次数会变 2
+    await insertLlmCall(
+      id: 'u-before',
+      at: since - 1,
+      cached: 100,
+      miss: 100,
+      completion: 100,
+    );
+    await insertLlmCall(
+      id: 'u-in',
+      at: since + 3600,
+      cached: 100,
+      miss: 100,
+      completion: 100,
+    );
+    // 负例②：category 对但 event 不是 llm_call ⇒ 只计 skipped，不吞成 0 token
+    await db
+        .into(db.errorLogs)
+        .insert(
+          ErrorLogsCompanion.insert(
+            id: 'u-bad',
+            level: const Value('info'),
+            category: const Value('api'),
+            message: '[other] 非调用埋点',
+            context: const Value('{"event":"other"}'),
+            createdAt: Value(since + 3600),
+          ),
+        );
+    // 负例③：**event 对但关键字段缺失** —— 与②是**两个不同分支**。
+    // ★ 本行由负向验证 `NEG-D` 补出：最初本用例只有②，而 `NEG-D`
+    //   （把「字段缺失」从 `return null` 改成补 0）**red 不到本用例**
+    //   ⇒ 说明本用例当时**只覆盖了 event 分支**。补上「缺 `miss_tokens`」
+    //   后才真正覆盖「字段缺失 ⇒ 不补零」这一支。
+    await db
+        .into(db.errorLogs)
+        .insert(
+          ErrorLogsCompanion.insert(
+            id: 'u-bad2',
+            level: const Value('info'),
+            category: const Value('api'),
+            message: '[llm_call] 缺字段',
+            context: const Value(
+              '{"event":"llm_call","cached_tokens":10,"completion_tokens":10}',
+            ),
+            createdAt: Value(since + 3600),
+          ),
+        );
+
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    await scrollToUsage(tester);
+
+    expect(find.text('1 次调用'), findsOneWidget);
+    // ②③两类坏行**都**要进同一条提示（2 条）
+    expect(find.textContaining('另有 2 条调用埋点缺少 token 明细'), findsOneWidget);
+    // 坏行**没有**被当成 0 消耗增计次数
+    expect(find.text('2 次调用'), findsNothing);
+  });
+
+  testWidgets('#N7-3 零埋点 → 仍渲染空读数（诚实报 0），无峰时/坏行提示', (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    await scrollToUsage(tester);
+
+    // 「这周确实没花钱」= 真 0，应如实显示（与「查询失败整块不渲染」区分开）
+    expect(find.text('¥0.0000'), findsOneWidget);
+    expect(find.text('0 次调用'), findsOneWidget);
+    expect(find.textContaining('高峰时段'), findsNothing);
+    expect(find.textContaining('缺少 token 明细'), findsNothing);
   });
 }
