@@ -7,6 +7,7 @@ import 'package:drift/drift.dart';
 import '../../services/fact_stale_service.dart';
 import '../database/database.dart';
 import '../database/utils.dart';
+import 'chapter_scoped_keys.dart';
 import 'repository_write_guard.dart';
 
 class ChapterRepository {
@@ -237,6 +238,14 @@ class ChapterRepository {
             (t) => t.refType.equals('chapter') & t.refId.equals(chapterId),
           ))
           .go();
+      // 存量缺陷 B25：删章未清章节级 KV ⇒ 孤儿行永久残留。
+      //   出处 `docs/verify-B-series-prompt-audit-2026-08-18.md:16`。
+      //   键名单点来源是 `chapter_scoped_keys.dart`（勿在此写字面量）。
+      //   只在硬删（deleteChapter / purgeChapter）时清；softDeleteChapter（回收站）
+      //   **不清** —— 否则用户从回收站恢复章节时会丢掉草稿与全部历史版本。
+      await (_db.delete(
+        _db.appStates,
+      )..where((t) => t.key.isIn(chapterScopedKeys(chapterId)))).go();
     });
   }
 

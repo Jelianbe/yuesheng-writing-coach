@@ -34,6 +34,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/database/database.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/chapter_repository.dart';
+import '../data/repositories/chapter_scoped_keys.dart';
 import '../services/error_handler.dart';
 import 'app_providers.dart';
 
@@ -570,7 +571,7 @@ class WritingStore extends StateNotifier<WritingState> {
     try {
       final raw = await AppStateRepository(
         _db,
-      ).getValue('chapter_goal:$chapterId');
+      ).getValue(chapterGoalKey(chapterId));
       final goal = int.tryParse(raw ?? '') ?? 0;
       state = state.copyWith(goalWords: goal < 0 ? 0 : goal);
     } catch (e, st) {
@@ -592,7 +593,7 @@ class WritingStore extends StateNotifier<WritingState> {
     state = state.copyWith(goalWords: safe);
     await AppStateRepository(
       _db,
-    ).setValue('chapter_goal:$chapterId', safe.toString());
+    ).setValue(chapterGoalKey(chapterId), safe.toString());
   }
 
   /// 批次82：跨 200 字边界 → 落一章版本快照（时光机留痕）

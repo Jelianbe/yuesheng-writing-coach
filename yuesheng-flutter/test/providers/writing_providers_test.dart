@@ -17,9 +17,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
+import 'package:writingcoach/data/repositories/version_retention.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
@@ -567,16 +569,27 @@ void main() {
       );
     });
 
-    test('#82-3-3 快照上限 50：超出丢弃最旧，最新在前', () async {
+    test('#82-3-3 分级保留：旧格式同秒 60 条 + 新增 1 条 → 收敛到保底下限', () async {
       final repo = AppStateRepository(db);
-      for (int i = 0; i < 60; i++) {
-        await repo.addChapterVersion(chapterId, '版本内容$i');
-      }
+      final now = nowSec();
+      // 直写旧格式数据：60 条快照 savedAt 全部同秒、content 倒序（最新在前），
+      // 顺带覆盖「兼容旧格式分支」此前零测试的缺口。
+      final legacy = <Map<String, dynamic>>[
+        for (int i = 0; i < 60; i++)
+          <String, dynamic>{
+            'savedAt': now,
+            'wordCount': '版本内容${59 - i}'.length,
+            'content': '版本内容${59 - i}',
+          },
+      ];
+      await repo.setValue('chapter_versions:$chapterId', jsonEncode(legacy));
+
+      await repo.addChapterVersion(chapterId, '最新内容');
+
       final versions = await repo.listChapterVersions(chapterId);
-      expect(versions.length, 50);
-      // 最新在前：第一个是 版本内容59，最后是 版本内容10
-      expect(versions.first.content, '版本内容59');
-      expect(versions.last.content, '版本内容10');
+      expect(versions.length, kRecentKeepFloor);
+      expect(versions.first.content, '最新内容');
+      expect(versions.last.content, '版本内容51');
     });
 
     test('#82-3-4 restoreVersion：当前内容先存新版本 + 状态回退（恢复可逆）', () async {

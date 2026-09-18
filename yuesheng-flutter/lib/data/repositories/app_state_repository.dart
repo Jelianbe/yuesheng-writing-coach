@@ -7,13 +7,17 @@
 import 'dart:convert';
 import 'dart:ui' show Offset;
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import '../database/database.dart';
 import '../database/utils.dart';
 import '../../config/reasoning_tier.dart';
 import '../../services/decode_guard.dart';
+import '../../services/error_handler.dart';
 import '../../types/display_types.dart';
 import '../../widgets/punctuation_bar.dart';
+import 'chapter_scoped_keys.dart';
 import 'repository_write_guard.dart';
+import 'version_retention.dart';
 
 class AppStateRepository {
   final AppDatabase _db;
@@ -101,7 +105,7 @@ class AppStateRepository {
   Future<ChapterDraft?> getChapterDraft(String chapterId) async {
     final row =
         await (_db.select(_db.appStates)
-              ..where((t) => t.key.equals('chapter_draft:$chapterId')))
+              ..where((t) => t.key.equals(chapterDraftKey(chapterId))))
             .getSingleOrNull();
     if (row == null) return null;
 
@@ -134,7 +138,7 @@ class AppStateRepository {
       'content': content,
       'savedAt': nowSec(),
     };
-    await setValue('chapter_draft:$chapterId', jsonEncode(draft));
+    await setValue(chapterDraftKey(chapterId), jsonEncode(draft));
   }
 
   /// 清除章节草稿
@@ -143,7 +147,7 @@ class AppStateRepository {
       guardRepoWrite('app_state', 'clearChapterDraft', () async {
         await (_db.delete(
           _db.appStates,
-        )..where((t) => t.key.equals('chapter_draft:$chapterId'))).go();
+        )..where((t) => t.key.equals(chapterDraftKey(chapterId)))).go();
       });
 
   /// 是否有章节草稿
@@ -151,7 +155,7 @@ class AppStateRepository {
   Future<bool> hasChapterDraft(String chapterId) async {
     final row =
         await (_db.select(_db.appStates)
-              ..where((t) => t.key.equals('chapter_draft:$chapterId')))
+              ..where((t) => t.key.equals(chapterDraftKey(chapterId))))
             .getSingleOrNull();
     return row != null;
   }
@@ -249,36 +253,75 @@ class AppStateRepository {
   // key 规约：chapter_versions:`<chapterId>` → JSON 数组（时间倒序存，最新在前）
   //   [{"savedAt":<unixSec>,"wordCount":<int>,"content":"<全文>"}, ...]
 
-  /// 每章版本快照上限（超出丢弃最旧）
-  static const int maxChapterVersions = 50;
+  /// 每章版本快照条数上限（**单一真源在 version_retention.dart**，此处仅为向后兼容的别名）
+  /// 分级保留策略见 version_retention.dart。
+  static const int maxChapterVersions = kMaxChapterVersions;
 
   /// 版本快照间隔（每多少字落一次快照）
   static const int chapterVersionInterval = 200;
 
-  /// 写入一章的版本快照（超出上限丢弃最旧）
+  /// 写入一章的版本快照（按分级保留策略淘汰：见 version_retention.dart）
   Future<void> addChapterVersion(String chapterId, String content) =>
       guardRepoWrite('app_state', 'addChapterVersion', () async {
+        final now = nowSec();
         final versions = await listChapterVersions(chapterId);
         versions.insert(
           0,
           ChapterVersion(
-            savedAt: nowSec(),
+            savedAt: now,
             wordCount: content.length,
             content: content,
           ),
         );
-        if (versions.length > maxChapterVersions) {
-          versions.removeRange(maxChapterVersions, versions.length);
+        final kept = retainVersions<ChapterVersion>(
+          versions,
+          savedAtOf: (v) => v.savedAt,
+          bytesOf: (v) => chapterVersionBytes(v.content),
+          nowSec: now,
+        );
+        if (kept.length != versions.length) {
+          // R-029：只打计数与 id，禁止打印正文。
+          debugPrint(
+            '[AppStateRepository] 版本淘汰: chapterId=$chapterId '
+            '${versions.length} → ${kept.length}',
+          );
         }
+        _warnIfOverVersionBytes(chapterId, kept);
         await setValue(
-          'chapter_versions:$chapterId',
-          jsonEncode(versions.map((v) => v.toJson()).toList()),
+          chapterVersionsKey(chapterId),
+          jsonEncode(kept.map((v) => v.toJson()).toList()),
         );
       });
 
+  /// 单章版本快照落库前体积护栏：仅留痕，**不**阻断保存。
+  ///
+  /// 走到这里时能丢的旧条目已按 [retainVersions] 丢光，仍超 [kMaxChapterVersionBytes]
+  /// 意味着**单条即超预算**（典型：一次粘贴数万字的整段正文）。此时保留最新 1 条
+  /// 是设计选择（否则时光机会失去「恢复到刚过去状态」的能力），故只记 warn。
+  void _warnIfOverVersionBytes(String chapterId, List<ChapterVersion> kept) {
+    final bytes = kept.fold<int>(
+      0,
+      (sum, v) => sum + chapterVersionBytes(v.content),
+    );
+    if (bytes <= kMaxChapterVersionBytes) return;
+    ErrorHandler.instance.captureError(
+      level: 'warn',
+      category: 'database',
+      message: '单章版本快照超体积预算',
+      context: <String, dynamic>{
+        'repo': 'app_state',
+        'op': 'addChapterVersion',
+        'chapterId': chapterId,
+        'count': kept.length,
+        'bytes': bytes,
+        'limit': kMaxChapterVersionBytes,
+      },
+    );
+  }
+
   /// 读取一章的全部版本快照（新→旧）
   Future<List<ChapterVersion>> listChapterVersions(String chapterId) async {
-    final json = await getValue('chapter_versions:$chapterId');
+    final json = await getValue(chapterVersionsKey(chapterId));
     if (json == null || json.isEmpty) return [];
     try {
       final decoded = jsonDecode(json);
@@ -287,7 +330,12 @@ class AppStateRepository {
           .whereType<Map<String, dynamic>>()
           .map((e) => ChapterVersion.fromJson(e))
           .toList();
-    } catch (_) {
+    } catch (e, st) {
+      logDecodeFailure(
+        field: 'app_state.chapter_versions',
+        error: e,
+        stack: st,
+      );
       return [];
     }
   }

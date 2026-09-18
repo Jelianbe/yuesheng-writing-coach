@@ -293,7 +293,7 @@ class _VersionTimeMachineSheetState
           if (_selected == null) ...[
             const SizedBox(height: 4),
             const Text(
-              '每 200 字自动保存一个版本，最多保留 50 个',
+              '每 200 字自动保存一个版本，越早的版本保留间隔越大',
               style: AppTextStyles.noteCaption,
             ),
           ],
