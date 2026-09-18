@@ -1064,6 +1064,9 @@ class DiagnosisFlowHandler {
                   severity: s.severity.value,
                   evidenceCount: s.evidence.length,
                   evidence: s.evidence,
+                  // 批次 N10：透传症候教学解释。此前 payload 未接该字段，
+                  // 导致「这条症候为什么被判定」用户侧完全不可见。
+                  explanation: s.explanation,
                 ),
               )
               .toList(),

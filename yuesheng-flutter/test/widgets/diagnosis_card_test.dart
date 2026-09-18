@@ -825,7 +825,7 @@ void main() {
 
   // ── 批次 D-B：归因步骤（focus_reason 接线）──
   group('批次 D-B：诊断依据链「归因」步骤', () {
-    testWidgets('D1 有 focus_reason：链首步为归因，共 5 步', (tester) async {
+    testWidgets('D1 有 focus_reason：归因随卡片展开即可见（批次 N10 提出折叠外）', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 2200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
@@ -840,21 +840,29 @@ void main() {
         ),
       );
 
+      // 只展开卡片本身：批次 N10 起归因不再需要第二次点击「诊断依据」
       await tester.tap(find.text('本次诊断'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('诊断依据'));
-      await tester.pumpAndSettle();
 
-      expect(find.text('5 步'), findsOneWidget);
-      expect(find.text('归因'), findsOneWidget);
+      expect(
+        find.text('归因'),
+        findsOneWidget,
+        reason: '归因应随卡片展开即见（折叠层数由 2 降为 0）',
+      );
       expect(
         find.textContaining('本轮先处理情绪标签化'),
         findsOneWidget,
         reason: 'focus_reason 原文应展示（不摘要、不改写）',
       );
-      // 原 4 步仍在
+      // 「诊断依据」链恒为 4 步推理步骤（归因不再是链首步——语义错层已修正）
+      expect(find.text('4 步'), findsOneWidget);
+
+      await tester.tap(find.text('诊断依据'));
+      await tester.pumpAndSettle();
+      // 原 4 步仍在，且归因移出链后展开链不影响其可见性
       expect(find.text('文本分析'), findsOneWidget);
       expect(find.text('建议生成'), findsOneWidget);
+      expect(find.text('归因'), findsOneWidget);
     });
 
     testWidgets('D2 无 focus_reason：链退化为原 4 步，不出现归因', (tester) async {
@@ -937,6 +945,105 @@ void main() {
     });
   });
 
+  // ── 批次 N10：症候教学解释（syndromes[].explanation 接线）──
+  group('批次 N10：症候教学解释「为什么」行', () {
+    testWidgets('N10-1 有 explanation：展开卡片后每症候块直接显示（无需二次点击）', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 2,
+            syndromes: const [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P028',
+                name: '画面感缺失症',
+                severity: 'L2',
+                evidenceCount: 1,
+                explanation: '全段五句均为概括性叙述，没有一个具体可感的细节',
+              ),
+              DiagnosisSyndromeCard(
+                syndromeId: 'P003',
+                name: '情绪标签化',
+                severity: 'L1',
+                evidenceCount: 2,
+                explanation: '用评价性结论直接告诉读者感受，没有让读者自己产生这个判断',
+              ),
+            ],
+            suggestedActions: const ['改一处'],
+            confidence: 0.85,
+            focusReason: '本轮先处理画面感',
+          ),
+        ),
+      );
+
+      // 批次 N10 前该字段从未进入卡片 payload，故恒不可见；现展开卡片即见
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('为什么：'), findsNWidgets(2), reason: '每条症候各一行「为什么」');
+      expect(find.textContaining('全段五句均为概括性叙述'), findsOneWidget);
+      expect(find.textContaining('用评价性结论直接告诉读者感受'), findsOneWidget);
+    });
+
+    testWidgets('N10-2 无 explanation（旧卡片 JSON）→ 不渲染该行，不编造', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: const [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P003',
+                name: '情绪标签化',
+                severity: 'L2',
+                evidenceCount: 1,
+              ),
+            ],
+            suggestedActions: const [],
+            confidence: 0.5,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('为什么：'), findsNothing, reason: '数据缺失不得编造理由');
+      // 同块内其他内容不受影响
+      expect(find.text('证据：'), findsOneWidget);
+    });
+
+    testWidgets('N10-3 空串 / 纯空白 explanation 视同缺失', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        _wrap(
+          DiagnosisCard(
+            syndromeCount: 1,
+            syndromes: const [
+              DiagnosisSyndromeCard(
+                syndromeId: 'P003',
+                name: '情绪标签化',
+                severity: 'L2',
+                evidenceCount: 1,
+                explanation: '   ',
+              ),
+            ],
+            suggestedActions: const [],
+            confidence: 0.5,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('为什么：'), findsNothing);
+    });
+  });
+
   // ── 批次 D-B：payload 往返（focusReason 序列化）──
   group('DiagnosisResultCardPayload focusReason 往返', () {
     test('D5 toJson 含 focusReason / fromJson 读回', () {
@@ -989,6 +1096,60 @@ void main() {
         DiagnosisResultCardPayload.fromJson(const {
           'focusReason': 123,
         }).focusReason,
+        matcher.isNull,
+        reason: '非字符串类型降级为 null，不抛',
+      );
+    });
+  });
+
+  // ── 批次 N10：payload 往返（DiagnosisSyndromeCard.explanation）──
+  group('批次 N10：DiagnosisSyndromeCard explanation 往返', () {
+    test('N10-4 toJson 含 explanation / fromJson 读回', () {
+      const card = DiagnosisSyndromeCard(
+        syndromeId: 'P028',
+        name: '画面感缺失症',
+        severity: 'L2',
+        evidenceCount: 1,
+        evidence: ['午后'],
+        explanation: '全段五句均为概括性叙述，没有一个具体可感的细节',
+      );
+      expect(card.toJson()['explanation'], '全段五句均为概括性叙述，没有一个具体可感的细节');
+
+      final back = DiagnosisSyndromeCard.fromJson(card.toJson());
+      expect(back.explanation, '全段五句均为概括性叙述，没有一个具体可感的细节');
+      expect(back.name, '画面感缺失症');
+      expect(back.evidence, ['午后']);
+      expect(back.evidenceCount, 1);
+    });
+
+    test('N10-5 缺失 / 空串 / 非字符串 → null，且 toJson 省略该键（旧卡片兼容）', () {
+      const noWhy = DiagnosisSyndromeCard(
+        syndromeId: 'P003',
+        name: '情绪标签化',
+        severity: 'L1',
+        evidenceCount: 1,
+      );
+      expect(noWhy.toJson().containsKey('explanation'), isFalse);
+      expect(
+        DiagnosisSyndromeCard.fromJson(noWhy.toJson()).explanation,
+        matcher.isNull,
+      );
+
+      const blank = DiagnosisSyndromeCard(
+        syndromeId: 'P003',
+        name: '情绪标签化',
+        severity: 'L1',
+        evidenceCount: 1,
+        explanation: '',
+      );
+      expect(blank.toJson().containsKey('explanation'), isFalse);
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {'explanation': ''}).explanation,
+        matcher.isNull,
+        reason: '空串在 fromJson 归一为 null',
+      );
+      expect(
+        DiagnosisSyndromeCard.fromJson(const {'explanation': 123}).explanation,
         matcher.isNull,
         reason: '非字符串类型降级为 null，不抛',
       );

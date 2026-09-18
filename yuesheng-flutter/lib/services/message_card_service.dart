@@ -91,15 +91,29 @@ class DiagnosisSyndromeCard {
   /// 批次 D-Evidence：由 Syndrome.evidence 透传，供诊断卡展开查看。
   final List<String> evidence;
 
+  /// 症候教学解释（诊断 payload `syndromes[].explanation`）。
+  ///
+  /// AI 侧定义为「问题描述 + 判断理由（合并写，自然语言）」——
+  /// 即**该症候为什么被判定存在**，是 N10 命题的正解字段。
+  ///
+  /// 批次 N10：该字段此前只落 `diagnosis_results.syndromes` JSON，
+  /// **从未进入卡片 payload**，因而用户侧完全不可见（走查报告
+  /// `.ai/reports/2026-09-18-N10-走查.md` §1.3）。此处把它接出来，
+  /// 属**已有数据接线**，不是新造数据。
+  /// null / 空串时该行不渲染（数据诚实：不编造理由）。
+  final String? explanation;
+
   const DiagnosisSyndromeCard({
     required this.syndromeId,
     required this.name,
     required this.severity,
     required this.evidenceCount,
     this.evidence = const [],
+    this.explanation,
   });
 
   factory DiagnosisSyndromeCard.fromJson(Map<String, dynamic> json) {
+    final ex = json['explanation'];
     return DiagnosisSyndromeCard(
       syndromeId:
           (json['syndrome_id'] as String?) ??
@@ -116,6 +130,7 @@ class DiagnosisSyndromeCard {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
+      explanation: (ex is String && ex.isNotEmpty) ? ex : null,
     );
   }
 
@@ -125,6 +140,10 @@ class DiagnosisSyndromeCard {
     'severity': severity,
     'evidence_count': evidenceCount,
     'evidence': evidence,
+    // 空串与 null 同等对待：都不落 key（fromJson 亦把空串归一为 null，
+    // 保证 toJson→fromJson 往返稳定）——与 focusReason 同一约定。
+    if (explanation != null && explanation!.isNotEmpty)
+      'explanation': explanation,
   };
 }
 

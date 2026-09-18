@@ -67,6 +67,9 @@ class _CardText {
   static const String problemSuffix = ' 个问题';
   static const String confidenceSuffix = '% 信心';
   static const String evidenceLabel = '证据：';
+
+  /// 症候教学解释行标签（批次 N10）。
+  static const String whyLabel = '为什么：';
   static const String rewriteTitle = '改写建议';
   static const String emptyHint = '本次未发现显著问题';
   static const String noEvidence = '（无证据列表）';
@@ -315,29 +318,48 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   }
 
   // ── 诊断依据区（批次 C：ConfidenceBar + ThinkingChain 竹青化接入）──
-  /// 展开详情顶部：诊断信心置信条 + 诊断依据步骤链（默认折叠）。
+  /// 展开详情顶部：归因（焦点理由）+ 诊断信心置信条 + 诊断依据步骤链（默认折叠）。
+  ///
+  /// 批次 N10：`focus_reason` 原埋在「卡片展开 + 诊断依据链展开」两重折叠内，
+  /// 走查实测需 **2 次点击**才可见（`.ai/reports/2026-09-18-N10-走查.md` §2.8）。
+  /// 现提到展开区首行直接渲染 ⇒ 折叠层数归零（展开卡片即见）。
   Widget _buildReasoningSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_focusReasonText != null) ...[
+          _buildFocusReasonBlock(),
+          const SizedBox(height: AppSpacing.md),
+        ],
         ConfidenceBar(label: '诊断信心', value: widget.confidence),
         const SizedBox(height: AppSpacing.md),
-        ThinkingChain(title: '诊断依据', steps: _buildReasoningSteps()),
+        ThinkingChain(title: '诊断依据', steps: _buildDiagnosisSteps()),
       ],
     );
   }
 
-  /// 诊断依据步骤链（诚实派生：每一步都来自诊断 payload 真实字段，
-  /// 不伪造推理过程；步骤不含置信点——置信只经 ConfidenceBar 展示）。
+  /// 归因块：本轮教学焦点理由（`teaching_plan.focus_reason`）。
   ///
-  /// 批次 D-B：AI 未给出 `focus_reason` 时退化为原有 4 步（文本分析 →
-  /// 症候匹配 → 严重度评估 → 建议生成）；给出时才在前面接「归因」。
-  List<ThinkingStep> _buildReasoningSteps() {
-    return [
-      if (_focusReasonText != null)
-        ThinkingStep(label: '归因', detail: _focusReasonText),
-      ..._buildDiagnosisSteps(),
-    ];
+  /// 语义：AI 定义为「为什么**选这个 focus**（一句话）」——是教学焦点的
+  /// **选择**理由，而非「该症候为何被判定存在」（后者由每症候 `explanation`
+  /// 承担）。故它独立于「诊断依据」推理链渲染，不再充当链的首步
+  /// （原挂法属语义借用，见走查报告 §2.5）。文案仍沿用「归因」不引入新术语。
+  Widget _buildFocusReasonBlock() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '归因',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textDeep,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(_focusReasonText!, style: AppTextStyles.noteCaption),
+      ],
+    );
   }
 
   /// focus_reason 的展示文本（null = 不渲染归因步骤）。
@@ -753,26 +775,9 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 症候名小 chip
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xxs,
-                ),
-                decoration: BoxDecoration(
-                  color: cfg.bgColor,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Text(
-                  widget.syndrome.name,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: cfg.textColor,
-                  ),
-                ),
-              ),
+              _buildNameChip(cfg),
               const SizedBox(height: 8),
+              _buildWhyRow(),
               _buildTrendRow(),
               const SizedBox(height: 4),
               _buildEvidenceRow(),
@@ -780,6 +785,57 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 症候名小 chip（R-019 清偿：批次 N10 由 build 拆出，为「为什么」行腾额）。
+  Widget _buildNameChip(_SeverityConfig cfg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: cfg.bgColor,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        widget.syndrome.name,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: cfg.textColor,
+        ),
+      ),
+    );
+  }
+
+  /// 教学解释行（批次 N10）：`syndromes[].explanation` —— 该症候
+  /// **为什么被判定存在**（AI 定义为「问题描述 + 判断理由」）。
+  ///
+  /// 该字段此前从未进入卡片 payload，故恒不渲染；接线后**默认展示、不需额外点击**，
+  /// 与同块内「证据」行（指出位置）共同构成用户诉求的「指出位置 + 为什么」。
+  /// null / 空串时不渲染（数据诚实：不编造理由）。
+  Widget _buildWhyRow() {
+    final why = widget.syndrome.explanation?.trim();
+    if (why == null || why.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            _CardText.whyLabel,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDeep,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(why, style: AppTextStyles.noteCaption),
+        ],
+      ),
     );
   }
 
