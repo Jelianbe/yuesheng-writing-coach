@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 429,
+  "fileCount": 433,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -9,6 +9,20 @@
       "start": 38,
       "end": 140,
       "lines": 103
+    },
+    {
+      "file": "lib/config/app_palette.dart",
+      "func": "copyWith",
+      "start": 372,
+      "end": 464,
+      "lines": 93
+    },
+    {
+      "file": "lib/config/app_palette.dart",
+      "func": "lerp",
+      "start": 467,
+      "end": 525,
+      "lines": 59
     },
     {
       "file": "lib/preview/message_list_preview.dart",
@@ -27,8 +41,8 @@
     {
       "file": "lib/providers/writing_providers.dart",
       "func": "copyWith",
-      "start": 120,
-      "end": 173,
+      "start": 121,
+      "end": 174,
       "lines": 54
     },
     {
@@ -328,15 +342,15 @@
     {
       "file": "lib/widgets/outline_confirmation_card.dart",
       "func": "_buildHeader",
-      "start": 189,
-      "end": 247,
+      "start": 184,
+      "end": 242,
       "lines": 59
     },
     {
       "file": "lib/widgets/outline_confirmation_card.dart",
       "func": "_buildImpressionRow",
-      "start": 251,
-      "end": 331,
+      "start": 246,
+      "end": 326,
       "lines": 81
     },
     {
@@ -469,8 +483,8 @@
       "file": "lib/widgets/reference_change_card.dart",
       "func": "build",
       "start": 73,
-      "end": 164,
-      "lines": 92
+      "end": 159,
+      "lines": 87
     },
     {
       "file": "lib/widgets/reference_picker.dart",
@@ -545,8 +559,8 @@
     {
       "file": "lib/widgets/settings_page.dart",
       "func": "build",
-      "start": 1313,
-      "end": 1440,
+      "start": 1316,
+      "end": 1443,
       "lines": 128
     },
     {
@@ -581,14 +595,14 @@
       "file": "lib/widgets/syndrome_history_list.dart",
       "func": "build",
       "start": 26,
-      "end": 93,
-      "lines": 68
+      "end": 89,
+      "lines": 64
     },
     {
       "file": "lib/widgets/syndrome_history_list.dart",
       "func": "build",
-      "start": 128,
-      "end": 233,
+      "start": 124,
+      "end": 229,
       "lines": 106
     },
     {
@@ -608,36 +622,36 @@
     {
       "file": "lib/widgets/teacher_suggestion_card.dart",
       "func": "_buildHeader",
-      "start": 230,
-      "end": 282,
+      "start": 225,
+      "end": 277,
       "lines": 53
     },
     {
       "file": "lib/widgets/teacher_suggestion_card.dart",
       "func": "_buildButtons",
-      "start": 317,
-      "end": 431,
+      "start": 312,
+      "end": 426,
       "lines": 115
     },
     {
       "file": "lib/widgets/teacher_suggestion_card.dart",
       "func": "_buildDetails",
-      "start": 486,
-      "end": 572,
+      "start": 481,
+      "end": 567,
       "lines": 87
     },
     {
       "file": "lib/widgets/training_pass_rate_card.dart",
       "func": "build",
       "start": 86,
-      "end": 182,
-      "lines": 97
+      "end": 178,
+      "lines": 93
     },
     {
       "file": "lib/widgets/training_pass_rate_card.dart",
       "func": "build",
-      "start": 214,
-      "end": 267,
+      "start": 210,
+      "end": 263,
       "lines": 54
     },
     {
@@ -672,14 +686,14 @@
       "file": "lib/widgets/writing_curve_chart.dart",
       "func": "build",
       "start": 25,
-      "end": 123,
-      "lines": 99
+      "end": 119,
+      "lines": 95
     },
     {
       "file": "lib/widgets/writing_curve_chart.dart",
       "func": "build",
-      "start": 148,
-      "end": 244,
+      "start": 144,
+      "end": 240,
       "lines": 97
     },
     {

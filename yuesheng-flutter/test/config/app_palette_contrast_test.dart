@@ -74,11 +74,7 @@ final List<(String, Color, Color)> _lightParity = [
   ('primary', AppPalette.light.primary, AppColors.primary),
   ('onPrimary', AppPalette.light.onPrimary, AppColors.onPrimary),
   ('onPrimaryDim', AppPalette.light.onPrimaryDim, AppColors.onPrimaryDim),
-  (
-    'onPrimaryFaint',
-    AppPalette.light.onPrimaryFaint,
-    AppColors.onPrimaryFaint,
-  ),
+  ('onPrimaryFaint', AppPalette.light.onPrimaryFaint, AppColors.onPrimaryFaint),
   ('primarySoft', AppPalette.light.primarySoft, AppColors.primarySoft),
   ('primaryDeep', AppPalette.light.primaryDeep, AppColors.primaryDeep),
   ('primaryAccent', AppPalette.light.primaryAccent, AppColors.primaryAccent),
@@ -243,7 +239,7 @@ const Map<String, String> _darkExempt = {
   'disabled': '禁用底',
   'disabledText':
       '禁用前景：暗色 #6B7076 对 background = 3.42:1 < 4.5；'
-          'WCAG 1.4.3 明文豁免禁用控件（与亮色口径一致）',
+      'WCAG 1.4.3 明文豁免禁用控件（与亮色口径一致）',
   // 死令牌
   'primaryAccent': '0 调用点（V-3 全仓复核实测；P2 项：删孤岛）',
 };
@@ -408,9 +404,23 @@ void _darkContrastTests() {
       final p = _contrastRatio(AppPalette.dark.textPrimary, bg);
       final s = _contrastRatio(AppPalette.dark.textSecondary, bg);
       final t = _contrastRatio(AppPalette.dark.textTertiary, bg);
-      expect(p, greaterThan(s), reason: 'dark primary(${p.toStringAsFixed(2)}) 应亮于 secondary(${s.toStringAsFixed(2)})');
-      expect(s, greaterThan(t), reason: 'dark secondary(${s.toStringAsFixed(2)}) 应亮于 tertiary(${t.toStringAsFixed(2)})');
-      expect(s - t, greaterThan(0.5), reason: 'dark secondary 与 tertiary 层级差不足');
+      expect(
+        p,
+        greaterThan(s),
+        reason:
+            'dark primary(${p.toStringAsFixed(2)}) 应亮于 secondary(${s.toStringAsFixed(2)})',
+      );
+      expect(
+        s,
+        greaterThan(t),
+        reason:
+            'dark secondary(${s.toStringAsFixed(2)}) 应亮于 tertiary(${t.toStringAsFixed(2)})',
+      );
+      expect(
+        s - t,
+        greaterThan(0.5),
+        reason: 'dark secondary 与 tertiary 层级差不足',
+      );
     });
 
     // G. 暗色唯一未达 AA 的项 —— 显式登记为「已知例外」，防止它被
@@ -467,12 +477,14 @@ void _metaTests() {
       expect(
         declared.difference(colorsDeclared),
         isEmpty,
-        reason: 'AppPalette 多出 AppColors 没有的字段：${declared.difference(colorsDeclared)}',
+        reason:
+            'AppPalette 多出 AppColors 没有的字段：${declared.difference(colorsDeclared)}',
       );
       expect(
         colorsDeclared.difference(declared),
         isEmpty,
-        reason: 'AppColors 有但 AppPalette 缺的令牌：${colorsDeclared.difference(declared)}',
+        reason:
+            'AppColors 有但 AppPalette 缺的令牌：${colorsDeclared.difference(declared)}',
       );
     });
 
@@ -499,8 +511,7 @@ void _metaTests() {
       expect(
         unregistered,
         isEmpty,
-        reason:
-            '暗色令牌未登记：$unregistered —— 请补断言或加入 _darkExempt 并写明原因',
+        reason: '暗色令牌未登记：$unregistered —— 请补断言或加入 _darkExempt 并写明原因',
       );
     });
 
