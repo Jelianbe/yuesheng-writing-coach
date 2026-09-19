@@ -177,11 +177,12 @@ class ManuscriptDetailView extends StatelessWidget {
     // 作品新建的卷被章节空态吞掉，必须再建一章才可见。
     if (chaptersLoading) return const ManuscriptLoadingView();
     if (chapters.isEmpty && volumes.isEmpty) {
+      // 横向 padding 已收进 ChapterListHeader 自身，此处再加一次即双重缩进，
+      // 且与数据态（ChapterList 的 CustomScrollView 未传 padding = 0）不一致
+      // ⇒ 整型归零，使两态横向基准同为 AppSpacing.lg。
+      // EmptyChaptersState 自带 all(AppSpacing.xxl)，不依赖外层 padding。
       return ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.sm,
-        ),
+        padding: EdgeInsets.zero,
         children: [
           ChapterListHeader(onImport: onImport, chapterCount: 0),
           SizedBox(

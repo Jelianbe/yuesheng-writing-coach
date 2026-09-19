@@ -26,7 +26,13 @@ class ChapterListHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.sm),
+      // 横向 padding 收进组件自身：此前只声明纵向，横向定位由父级提供，
+      // 而两个父级给的横向基准不同（空态 ListView 给 lg、数据态 CustomScrollView
+      // 未传 padding 即 0）⇒ 建章后整行左移 16dp（「字串漂移」根因）。
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: [
           const Text(

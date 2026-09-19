@@ -19,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
@@ -278,18 +279,39 @@ void main() {
       expect(find.byType(WritingPage), findsOneWidget);
     });
 
-    testWidgets('#11 章节列表「导入」按钮存在（空态 + 有章节）', (tester) async {
-      // 空态
+    testWidgets('#11 章节列表「导入」存在，且空态/有章节两态行首基准一致', (tester) async {
+      // ⚠️ 落点 finder 必须是**文字**而非 `ChapterListHeader` 组件本身：
+      //    `byType(ChapterListHeader)` 拿到的是其最外层 Padding 容器（整宽），
+      //    left 恒为 0 ⇒ 两态「相等」永远成立、把 padding 回滚也照样绿（零鉴别力）。
+      final header = find.text('章节列表');
+
+      // ── 空态 ──
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
       expect(find.text('导入'), findsOneWidget);
+      expect(find.text('还没有章节'), findsOneWidget); // 分支到达证据（空态）
 
-      // 有章节
+      // ① 绝对锚定：不只看两态「相等」—— 两态同时退化时「相等」仍会绿
+      final emptyLeft = tester.getRect(header).left;
+      expect(emptyLeft, AppSpacing.lg);
+
+      // ② 必须销毁旧树：不销毁则 State 被复用、initState 不重跑，
+      //    下一次 pumpWidget 实际只是空态重渲染 ⇒ 第二态从未真正被测到。
+      //    （本用例历史上的「双重假绿」：既无位置断言，又没进入非空分支）
+      await tester.pumpWidget(const SizedBox());
+
+      // ── 有章节 ──
       final repo = ChapterRepository(db);
       await repo.createChapter(manuscriptId, title: '第一章');
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
       expect(find.text('导入'), findsOneWidget);
+      // ③ 分支到达证据：空态是「0 章」，只有真进入非空分支才会出现「1 章」
+      expect(find.text('1 章'), findsOneWidget);
+      expect(find.text('还没有章节'), findsNothing);
+
+      // ④ 两态横向基准一致 ——「章节列表」字串漂移回归锁
+      expect(tester.getRect(header).left, emptyLeft);
     });
 
     testWidgets('#12 更多菜单 → 菜单项显示（项目设置/删除项目/取消，WIP 已移除）', (tester) async {
