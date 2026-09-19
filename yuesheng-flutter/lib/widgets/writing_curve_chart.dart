@@ -38,84 +38,81 @@ class WritingCurveChart extends StatelessWidget {
           color: AppColors.surface,
           border: Border.all(color: AppColors.border),
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '写作成长曲线',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '写作成长曲线',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        '每日字数与诊断次数趋势',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      '每日字数与诊断次数趋势',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    if (points.isEmpty)
+                      const _EmptyState(
+                        icon: Icons.trending_up,
+                        title: '暂无写作记录',
+                        description: '持续写作，这里会展示你的成长轨迹',
+                      )
+                    else ...[
+                      // 摘要行
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Row(
+                          children: [
+                            _SummaryItem(
+                              value: formatWordCount(totalWords),
+                              label: '字数',
+                            ),
+                            const _SummaryDivider(),
+                            _SummaryItem(value: '$totalDiag', label: '诊断'),
+                            const _SummaryDivider(),
+                            _SummaryItem(value: '$activeDays', label: '活跃天数'),
+                          ],
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      if (points.isEmpty)
-                        const _EmptyState(
-                          icon: Icons.trending_up,
-                          title: '暂无写作记录',
-                          description: '持续写作，这里会展示你的成长轨迹',
-                        )
-                      else ...[
-                        // 摘要行
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.sm,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          child: Row(
-                            children: [
-                              _SummaryItem(
-                                value: formatWordCount(totalWords),
-                                label: '字数',
-                              ),
-                              const _SummaryDivider(),
-                              _SummaryItem(value: '$totalDiag', label: '诊断'),
-                              const _SummaryDivider(),
-                              _SummaryItem(value: '$activeDays', label: '活跃天数'),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        // 图例
-                        const Row(
-                          children: [
-                            _LegendItem(color: AppColors.primary, label: '字数'),
-                            SizedBox(width: AppSpacing.lg),
-                            _LegendItem(color: AppColors.warning, label: '诊断'),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        // 柱状图（横向滚动）
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: _ChartBody(points: points, maxWords: maxWords),
-                        ),
-                      ],
+                      // 图例
+                      const Row(
+                        children: [
+                          _LegendItem(color: AppColors.primary, label: '字数'),
+                          SizedBox(width: AppSpacing.lg),
+                          _LegendItem(color: AppColors.warning, label: '诊断'),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      // 柱状图（横向滚动）
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: _ChartBody(points: points, maxWords: maxWords),
+                      ),
                     ],
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

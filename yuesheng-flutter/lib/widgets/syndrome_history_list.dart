@@ -35,57 +35,54 @@ class SyndromeHistoryList extends StatelessWidget {
           color: AppColors.surface,
           border: Border.all(color: AppColors.border),
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '症候追踪历史',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '症候追踪历史',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
-                      const SizedBox(height: 2),
-                      const Text('问题发现与解决的时间线', style: AppTextStyles.caption),
-                      const SizedBox(height: AppSpacing.md),
-                      if (displayed.isEmpty)
-                        const _EmptyState(
-                          icon: Icons.inventory_2_outlined,
-                          title: '暂无症候记录',
-                          description: '完成诊断后，这里会显示问题发现与解决的时间线',
-                        )
-                      else ...[
-                        for (var i = 0; i < displayed.length; i++) ...[
-                          _TimelineItem(
-                            event: displayed[i],
-                            isLast: i == displayed.length - 1,
-                          ),
-                        ],
-                        if (limit != null && events.length > limit!)
-                          Padding(
-                            padding: const EdgeInsets.only(top: AppSpacing.sm),
-                            child: Center(
-                              child: Text(
-                                '共 ${events.length} 条记录',
-                                style: AppTextStyles.caption,
-                              ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text('问题发现与解决的时间线', style: AppTextStyles.caption),
+                    const SizedBox(height: AppSpacing.md),
+                    if (displayed.isEmpty)
+                      const _EmptyState(
+                        icon: Icons.inventory_2_outlined,
+                        title: '暂无症候记录',
+                        description: '完成诊断后，这里会显示问题发现与解决的时间线',
+                      )
+                    else ...[
+                      for (var i = 0; i < displayed.length; i++) ...[
+                        _TimelineItem(
+                          event: displayed[i],
+                          isLast: i == displayed.length - 1,
+                        ),
+                      ],
+                      if (limit != null && events.length > limit!)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.sm),
+                          child: Center(
+                            child: Text(
+                              '共 ${events.length} 条记录',
+                              style: AppTextStyles.caption,
                             ),
                           ),
-                      ],
+                        ),
                     ],
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

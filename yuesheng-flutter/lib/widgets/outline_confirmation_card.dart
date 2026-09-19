@@ -153,30 +153,27 @@ class _OutlineConfirmationCardState
             color: AppColors.background,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(context),
-                        const SizedBox(height: 8),
-                        if (pending.isEmpty)
-                          _buildAllDone(context)
-                        else
-                          ...pending.map(
-                            (im) => _buildImpressionRow(context, im),
-                          ),
-                      ],
-                    ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(context),
+                      const SizedBox(height: 8),
+                      if (pending.isEmpty)
+                        _buildAllDone(context)
+                      else
+                        ...pending.map(
+                          (im) => _buildImpressionRow(context, im),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

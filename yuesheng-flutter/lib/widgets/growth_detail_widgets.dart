@@ -34,12 +34,7 @@ class GrowthInfoCard extends StatelessWidget {
           color: AppColors.surface,
           border: Border.all(color: AppColors.border),
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [Expanded(child: child)],
-          ),
-        ),
+        child: Row(children: [Expanded(child: child)]),
       ),
     );
   }

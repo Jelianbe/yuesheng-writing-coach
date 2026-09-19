@@ -193,31 +193,28 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
             color: AppColors.background,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(p),
+          child: Row(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(p),
+                      const SizedBox(height: 10),
+                      _buildDescription(p),
+                      const SizedBox(height: 10),
+                      _buildButtons(),
+                      if (_expanded) ...[
                         const SizedBox(height: 10),
-                        _buildDescription(p),
-                        const SizedBox(height: 10),
-                        _buildButtons(),
-                        if (_expanded) ...[
-                          const SizedBox(height: 10),
-                          _buildDetails(p),
-                        ],
+                        _buildDetails(p),
                       ],
-                    ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

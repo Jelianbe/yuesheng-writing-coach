@@ -103,78 +103,75 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
           color: AppColors.surface,
           border: Border.all(color: AppColors.border),
         ),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 标题行：左标题 + 右时间窗切换
-                      Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              '训练通过率',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                          _buildWindowSelector(),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${_stats.length} 个症候 · 共 $totalPractices 次练习 · '
-                        '整体通过率 ${(overallRate * 100).round()}%',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_loading)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          child: Center(
-                            child: SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                        )
-                      else if (_stats.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 标题行：左标题 + 右时间窗切换
+                    Row(
+                      children: [
+                        const Expanded(
                           child: Text(
-                            '该时段暂无训练记录',
+                            '训练通过率',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textTertiary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        )
-                      else
-                        for (int i = 0; i < _stats.length; i++) ...[
-                          _StatsRow(stat: _stats[i]),
-                          if (i < _stats.length - 1) const SizedBox(height: 10),
-                        ],
-                    ],
-                  ),
+                        ),
+                        _buildWindowSelector(),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${_stats.length} 个症候 · 共 $totalPractices 次练习 · '
+                      '整体通过率 ${(overallRate * 100).round()}%',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_loading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (_stats.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          '该时段暂无训练记录',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      )
+                    else
+                      for (int i = 0; i < _stats.length; i++) ...[
+                        _StatsRow(stat: _stats[i]),
+                        if (i < _stats.length - 1) const SizedBox(height: 10),
+                      ],
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

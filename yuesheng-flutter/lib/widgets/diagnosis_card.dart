@@ -263,12 +263,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             color: AppColors.surface,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [Expanded(child: _buildCardBody(confPct))],
-            ),
-          ),
+          child: Row(children: [Expanded(child: _buildCardBody(confPct))]),
         ),
       ),
     );
@@ -664,33 +659,30 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: const BoxDecoration(color: AppColors.l1),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        _CardText.rewriteTitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      _CardText.rewriteTitle,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
-                      const SizedBox(height: 8),
-                      for (var i = 0; i < widget.suggestedActions.length; i++)
-                        _buildRewriteAction(i),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 8),
+                    for (var i = 0; i < widget.suggestedActions.length; i++)
+                      _buildRewriteAction(i),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
