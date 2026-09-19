@@ -4,6 +4,9 @@
 // 从 manuscript_detail_page.dart 真分解而来（R-019：根除宿主塞满私有 Widget）。
 //   - ChapterStatusConfig   章节状态 → 中文标签 + 矿物色配色
 //   - chapterStatusConfig   状态配置表（draft/revising/complete）
+//       ★ V-5 起为**全库单一真源**：章节树抽屉（chapter_tree_drawer.dart）
+//       原自持逐字相同的私有表且兜底分叉，已改引用本表；表外状态统一
+//       「不渲染徽标」（不编造状态）。回归网：test/widgets/chapter_status_badge_test.dart
 //   - ChapterCard           章节卡片（修复1：纯文字无序号色块；修复3：行尾编辑图标）
 //
 // 无状态纯渲染，仅经构造注入数据与回调。
@@ -69,8 +72,11 @@ class ChapterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusCfg =
-        chapterStatusConfig[chapter.status] ?? chapterStatusConfig['draft']!;
+    // V-5：兜底与章节树抽屉统一 —— **表外状态不渲染徽标、不编造状态**
+    //（原 `?? chapterStatusConfig['draft']!` 会把未知状态显示成「草稿」）。
+    // 实测 chapters.status 带 CHECK 约束（tables.dart，v24 重建即带），
+    // 表外值 DB 层进不来 ⇒ 本次统一不动任何线上呈现，消的是两表分叉。
+    final statusCfg = chapterStatusConfig[chapter.status];
 
     return Material(
       color: Colors.transparent,
@@ -108,7 +114,9 @@ class ChapterCard extends StatelessWidget {
   }
 
   /// 标题行：章节名 + 状态标签（R-019 清偿拆出）。
-  Widget _buildTitleRow(ChapterStatusConfig statusCfg) {
+  /// V-5：`statusCfg == null`（表外状态）时不渲染徽标 —— 与章节树抽屉
+  /// 的 `if (status != null)` 同一判据、同一张表（单一真源）。
+  Widget _buildTitleRow(ChapterStatusConfig? statusCfg) {
     return Row(
       children: [
         Expanded(
@@ -124,24 +132,25 @@ class ChapterCard extends StatelessWidget {
           ),
         ),
         // 状态标签
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xxs,
-          ),
-          decoration: BoxDecoration(
-            color: statusCfg.bgColor,
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-          ),
-          child: Text(
-            statusCfg.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: statusCfg.textColor,
+        if (statusCfg != null)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xxs,
+            ),
+            decoration: BoxDecoration(
+              color: statusCfg.bgColor,
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+            ),
+            child: Text(
+              statusCfg.label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: statusCfg.textColor,
+              ),
             ),
           ),
-        ),
       ],
     );
   }

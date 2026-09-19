@@ -24,21 +24,18 @@ import '../providers/app_providers.dart';
 import '../providers/chapter_providers.dart';
 import '../providers/manuscript_providers.dart';
 import '../utils/volume_group.dart';
+import 'manuscript_detail_chapter_card.dart';
 import 'yue_sheet.dart';
 
-/// 章节状态 → 中文标签 + 矿物色配色（对齐稿件详情页章节卡）
-class _StatusConfig {
-  final String label;
-  final Color bgColor;
-  final Color textColor;
-  const _StatusConfig(this.label, this.bgColor, this.textColor);
-}
-
-const Map<String, _StatusConfig> _statusConfig = {
-  'draft': _StatusConfig('草稿', AppColors.border, AppColors.textDeep),
-  'revising': _StatusConfig('修改中', AppColors.warningBg, AppColors.warning),
-  'complete': _StatusConfig('完成', AppColors.l1, AppColors.primary),
-};
+// V-5：章节状态→配色收敛到**单一真源** `chapterStatusConfig`
+// （定义在 manuscript_detail_chapter_card.dart）。本文件曾自持一张与其 9 值
+// 逐字相同的私有表 `_statusConfig`，且**兜底已分叉**（详情页 `?? draft` 渲染
+// 「草稿」/ 抽屉判空不渲染）⇒ 同一份数据两个页面在「表外状态」上呈现不同。
+// 统一语义 = **表外状态不渲染徽标、不编造状态**（取抽屉侧行为；与 S1
+// 「无身份不渲染数字，不编造」同纪律）。实测 chapters.status 带 CHECK 约束
+// （tables.dart，v24 重建即带），表外值 DB 层进不来 ⇒ 本次统一不动任何线上
+// 呈现，消的是「改一处漏一处」的复发土壤。回归网见
+// test/widgets/chapter_status_badge_test.dart（值域锁 + 兜底行为锁 + 源码对账）。
 
 class ChapterTreeDrawer extends ConsumerStatefulWidget {
   final String currentChapterId;
@@ -117,7 +114,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             size: 18,
             color: AppColors.primary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           const Text(
             '章节列表',
             style: TextStyle(
@@ -364,7 +361,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             title: const Text('移动到卷'),
             onTap: () => Navigator.pop(ctx, 'move'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
         ],
       ),
     );
@@ -474,7 +471,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
             onTap: () => Navigator.pop(ctx, 'delete'),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
         ],
       ),
     );
@@ -622,7 +619,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
         ),
         const Divider(height: 1),
         ..._buildVolumeOptions(ctx, volumes, chapter, unassignedMarker),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
       ],
     );
   }
@@ -705,7 +702,7 @@ class _VolumeHeader extends StatelessWidget {
               size: 18,
               color: AppColors.textTertiary,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpacing.xs),
             Icon(
               isUnassigned
                   ? Icons.notes_outlined
@@ -713,7 +710,7 @@ class _VolumeHeader extends StatelessWidget {
               size: 16,
               color: isUnassigned ? AppColors.textTertiary : AppColors.primary,
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: AppSpacing.xsm),
             Expanded(
               child: Text(
                 title,
@@ -802,7 +799,7 @@ class _ChapterTreeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = _statusConfig[chapter.status];
+    final status = chapterStatusConfig[chapter.status];
     final title = chapter.title.trim().isEmpty ? '未命名章节' : chapter.title;
     return InkWell(
       onTap: onTap,
@@ -841,7 +838,7 @@ class _ChapterTreeItem extends StatelessWidget {
                 ),
               ),
             if (status != null) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               _buildStatusBadge(status),
             ],
           ],
@@ -864,8 +861,8 @@ class _ChapterTreeItem extends StatelessWidget {
     );
   }
 
-  /// 状态徽章（草稿/修改中/完成；R-019 清偿拆出）。
-  Widget _buildStatusBadge(_StatusConfig status) {
+  /// 状态徽章（草稿/修改中/完成；表外状态由调用侧判空跳过，不编造）。
+  Widget _buildStatusBadge(ChapterStatusConfig status) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.xsm,
@@ -898,9 +895,9 @@ class _EmptyChapters extends StatelessWidget {
             size: 40,
             color: AppColors.placeholder,
           ),
-          SizedBox(height: 12),
+          SizedBox(height: AppSpacing.md),
           Text('还没有章节', style: AppTextStyles.body),
-          SizedBox(height: 4),
+          SizedBox(height: AppSpacing.xs),
           Text('点下面的「新建章节」开个头吧', style: AppTextStyles.caption),
         ],
       ),
@@ -931,7 +928,7 @@ class _NewChapterRow extends StatelessWidget {
               size: 18,
               color: AppColors.primary,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.sm),
             Text(
               '新建章节',
               style: const TextStyle(
