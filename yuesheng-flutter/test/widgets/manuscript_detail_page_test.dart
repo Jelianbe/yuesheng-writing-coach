@@ -36,6 +36,7 @@ import 'package:writingcoach/widgets/bookshelf_page.dart';
 import 'package:writingcoach/widgets/chapter_recycle_bin_page.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 import 'package:writingcoach/widgets/manuscript_detail_page.dart';
+import 'package:writingcoach/widgets/manuscript_detail_volume.dart';
 import 'package:writingcoach/widgets/project_settings_page.dart';
 import 'package:writingcoach/widgets/writing_page.dart';
 
@@ -747,6 +748,37 @@ void main() {
         ),
       );
       expect(completeLabel, findsOneWidget);
+    });
+
+    testWidgets('#V9 行首基准：卷头图标区 + 空卷提示 均在 AppSpacing.lg（V-2 删条后）', (
+      tester,
+    ) async {
+      // 1 卷 + 0 章 ⇒ 卷头 +「暂无章节」空卷提示（DetailEmptyVolumeHint）
+      await VolumeRepository(db).createVolume(manuscriptId, title: '第一卷');
+
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+
+      // 阳性对照：两者都真的渲染了（否则下面全是真空断言）
+      expect(find.text('第一卷'), findsOneWidget);
+      expect(find.text('暂无章节'), findsOneWidget);
+
+      // ① 卷头首个元素（折叠箭头）left —— 原为「3dp 色条 + 10dp 间距」的合成值 13，
+      //    V-2 删条后回归页面内容基准 16。
+      //    ⚠️ finder 必须是**图标/文字落点**；`byType(DetailVolumeHeader)` 取到的是
+      //    吸顶容器（整宽，left 恒 0）⇒ 零鉴别力（见 flutter-widget-test-false-green §⑤）。
+      final chevron = find.descendant(
+        of: find.byType(DetailVolumeHeader),
+        matching: find.byIcon(Icons.expand_more),
+      );
+      expect(chevron, findsOneWidget);
+      expect(tester.getRect(chevron).left, AppSpacing.lg);
+
+      // ② 空卷提示文字 left —— 原为父级 SliverPadding(lg) + 自身 sm = 24，
+      //    V-2 去掉自身横向缩进后 = 16。
+      //    注：卷名本身**不**在 16（其前有折叠箭头 + 卷图标），
+      //    故「同页统一 16」只适用于**内容块行首**，不适用于卷名。
+      expect(tester.getRect(find.text('暂无章节')).left, AppSpacing.lg);
     });
   });
 

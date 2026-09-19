@@ -88,8 +88,6 @@ class ReferenceChangeCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 左竹青色条
-                Container(width: 4, color: AppColors.primary),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(

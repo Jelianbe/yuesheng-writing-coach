@@ -540,22 +540,27 @@ void main() {
       expect(scaffold.backgroundColor, const Color(0xFFF7F8F6));
     });
 
-    testWidgets('#V3 作品卡片左侧 4dp 竹青色条', (tester) async {
+    testWidgets('#V3 作品卡片无左侧色条（V-2 删装饰条，反转防回归）', (tester) async {
       final repo = ManuscriptRepository(db);
       await repo.createManuscript(title: '边框测试');
 
       await tester.pumpWidget(buildBookshelfPage());
       await tester.pumpAndSettle();
 
-      // 卡片内部有 width=4 + 竹青色 Container（作为左侧主色锚点）
-      // 由于 Border + borderRadius 不支持非均匀颜色，改用 ClipRRect + 内部色条
+      // 阳性对照：先证明卡片真的渲染了，否则 findsNothing 会真空通过
+      expect(find.text('边框测试'), findsOneWidget);
+
+      // 批次 V-2：左侧纯装饰色条已删（旧写法 = ClipRRect + 内部 4dp 竹青条，
+      // 起因是 Border + borderRadius 不支持非均匀颜色）。
+      // 本用例**反转保留**而非删除 —— 删护栏是降低守护面，
+      // 反转后它仍在防「色条被重新引入」。
       final colorBar = find.byWidgetPredicate(
         (w) =>
             w is Container &&
             w.constraints?.maxWidth == 4 &&
             w.color == const Color(0xFF2D5A52),
       );
-      expect(colorBar, findsOneWidget);
+      expect(colorBar, findsNothing);
     });
 
     testWidgets('#V4 首字封面（批次93-1：体裁色；无体裁用弱化灰 textTertiary）', (tester) async {

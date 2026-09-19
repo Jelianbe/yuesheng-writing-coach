@@ -181,17 +181,24 @@ void main() {
       expect(scaffold.backgroundColor, const Color(0xFFF7F8F6));
     });
 
-    testWidgets('#V3 卡片左侧 4dp 竹青色条', (tester) async {
+    testWidgets('#V3 卡片无左侧色条（V-2 删装饰条，反转防回归）', (tester) async {
       await tester.pumpWidget(buildDetailPage());
       await tester.pumpAndSettle();
 
+      // 阳性对照：页面本体确实渲染了
+      expect(find.byType(GrowthDetailPage), findsOneWidget);
+
+      // 批次 V-2：左侧纯装饰色条已删。
+      // 本用例**反转保留**（原断言为 findsWidgets）—— 同一夹具在 V-2 之前
+      // 实测命中过 ≥1 条，故 findsNothing 在此夹具下**非真空**。
+      // 删护栏是降低守护面，反转后它仍在防「色条被重新引入」。
       final colorBar = find.byWidgetPredicate(
         (w) =>
             w is Container &&
             w.constraints?.maxWidth == 4 &&
             w.color == const Color(0xFF2D5A52),
       );
-      expect(colorBar, findsWidgets);
+      expect(colorBar, findsNothing);
     });
   });
 

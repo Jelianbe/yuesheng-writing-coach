@@ -197,8 +197,6 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 左侧 4dp 竹青主色条
-                Container(width: 4, color: AppColors.primary),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),

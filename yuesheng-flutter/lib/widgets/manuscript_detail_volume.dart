@@ -67,8 +67,8 @@ class VolumeHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-/// 详情页卷头（批次92-4 视觉加厚）：
-/// 左侧色条 + 浅背景 + 卷名 + 卷总字数 + 章节数 + 铅笔重命名 + 折叠箭头
+/// 详情页卷头（批次92-4 视觉加厚；批次 V-2 删左侧色条）：
+/// 浅背景 + 卷名 + 卷总字数 + 章节数 + 铅笔重命名 + 折叠箭头
 /// 整行可点击折叠（非小箭头），48px 高；吸顶背景不透明（内容不透出）
 class DetailVolumeHeader extends StatelessWidget {
   final Volume? volume;
@@ -138,17 +138,13 @@ class DetailVolumeHeader extends StatelessWidget {
     );
   }
 
-  /// 左侧：3dp 色条 + 折叠箭头 + 卷图标（R-019 清偿拆出）。
+  /// 左侧：折叠箭头 + 卷图标（R-019 清偿拆出；批次 V-2 删左侧色条）。
+  /// 首间距取页面内容基准 16 —— 原为「3dp 色条 + 10dp 间距」的合成值 13。
   Widget _buildLeading(bool isUnassigned, bool collapsed) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 左侧 3dp 色条（卷 → 竹青；未分卷 → 弱化灰）
-        Container(
-          width: 3,
-          color: isUnassigned ? AppColors.placeholder : AppColors.primary,
-        ),
-        const SizedBox(width: 10),
+        const SizedBox(width: AppSpacing.lg),
         Icon(
           collapsed ? Icons.chevron_right : Icons.expand_more,
           size: 18,
@@ -208,12 +204,9 @@ class DetailEmptyVolumeHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.sm,
-        AppSpacing.xs,
-        AppSpacing.sm,
-        AppSpacing.sm,
-      ),
+      // 横向由父级 SliverPadding(horizontal: lg) 提供；自身再加 sm ⇒ 文字落点 24，
+      // 与章节卡 16 不对齐（批次 V-2 订正）。纵向保持原值不动。
+      padding: EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.sm),
       child: Text('暂无章节', style: AppTextStyles.caption),
     );
   }

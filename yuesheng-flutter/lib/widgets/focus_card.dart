@@ -122,10 +122,7 @@ class _Card extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(left: BorderSide(color: AppColors.primary, width: 4)),
-        ),
+        decoration: const BoxDecoration(color: AppColors.surface),
         child: child,
       ),
     );

@@ -240,10 +240,7 @@ class _GrowthCard extends StatelessWidget {
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 4, color: AppColors.primary),
-              Expanded(child: child),
-            ],
+            children: [Expanded(child: child)],
           ),
         ),
       ),

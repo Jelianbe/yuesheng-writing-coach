@@ -81,8 +81,6 @@ class BookshelfManuscriptCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 左侧 4dp 竹青色条（月色竹青主色锚点）
-            Container(width: 4, color: AppColors.primary),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(

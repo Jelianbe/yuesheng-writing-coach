@@ -39,7 +39,6 @@ class SyndromeHistoryList extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(width: 4, color: AppColors.primary),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.lg),

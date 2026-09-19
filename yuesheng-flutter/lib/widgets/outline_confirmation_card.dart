@@ -157,8 +157,6 @@ class _OutlineConfirmationCardState
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 左 4dp 竹青色条
-                Container(width: 4, color: AppColors.primary),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(AppSpacing.md),
