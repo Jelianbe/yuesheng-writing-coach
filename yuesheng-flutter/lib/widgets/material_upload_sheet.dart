@@ -284,7 +284,6 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  onChanged: (_) {},
                   controller: _nameController,
                   decoration: InputDecoration(
                     hintText: '请输入文件名',

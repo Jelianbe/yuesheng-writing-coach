@@ -44,7 +44,10 @@ const Map<String, String> _difficultyText = {
 class TeacherSuggestionCard extends ConsumerStatefulWidget {
   final TeacherSuggestionCardPayload payload;
 
-  /// 「开始练习」回调；为空时点击提示"训练功能即将上线"
+  /// 「开始练习」回调；为空时走内部兜底 —— 从 payload 构造 PracticeTask 启动
+  /// 全局练习（见 `_handleStartPractice`，T3 已接线）。
+  /// ★ 交互批 P0-3 注释债修正：原注释「为空时点击提示"训练功能即将上线"」**从未存在于代码**
+  ///   （全库「即将上线」仅此一条注释命中）⇒ 文档漂移，非功能缺失。
   final VoidCallback? onStartPractice;
 
   /// 批次61：「教我原理」回调（参数 = 症候名）；为空时点击提示兜底文案
