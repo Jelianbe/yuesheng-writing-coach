@@ -75,17 +75,53 @@ class LlmCallContext {
   /// 故该值 ≈ 全程耗时；非流式紧随响应到达，亦为全程。
   final int? latencyMs;
 
-  const LlmCallContext({required this.purpose, this.sessionId, this.latencyMs});
+  /// 本次请求**实际使用的推理档位**（`config/reasoning_tier.dart` 的档位
+  /// key，经 `reasoningTierOf` 归一 ⇒ 恒为确定值；未设置时即 `standard`）。
+  ///
+  /// 由 [LlmClient] 在两入口从**当次配置**填入 —— 调用点拿不到配置，故构造
+  /// 时恒为 null（同 [latencyMs] 的分工）。
+  ///
+  /// **为何落在这里**（`TH-2` 批）：档位此前只活在**请求体**里 ⇒ 事后从
+  /// `error_logs` 读不回，审计只能靠「切档 + 重启 + rowid 段」归属，**无法
+  /// 自证**。落进本上下文后，每条 `llm_call` 记录自带档位。
+  ///
+  /// ⚠️ 语义边界：本字段 = **用户设置的档位**，**不等于「档位一定生效」** ——
+  /// GLM / doubao 画像（`disableThinking`）会旁路档位；判读时须用同一条记录的
+  /// `model` 配合 `classifyLlmModel` 还原。
+  final String? reasoningTier;
+
+  const LlmCallContext({
+    required this.purpose,
+    this.sessionId,
+    this.latencyMs,
+    this.reasoningTier,
+  });
 
   /// 附上耗时读数（[LlmClient] 专用 —— 调用点拿不到计时器）。
-  LlmCallContext withLatency(int? ms) =>
-      LlmCallContext(purpose: purpose, sessionId: sessionId, latencyMs: ms);
+  ///
+  /// **必须保留 [reasoningTier]**：实测调用链是「先 withTier（入口）→ 后
+  /// withLatency（usage 帧处）」⇒ 若此处丢掉档位，落库载荷会静默变 null。
+  LlmCallContext withLatency(int? ms) => LlmCallContext(
+    purpose: purpose,
+    sessionId: sessionId,
+    latencyMs: ms,
+    reasoningTier: reasoningTier,
+  );
+
+  /// 附上推理档位（[LlmClient] 专用 —— 调用点拿不到配置）。
+  LlmCallContext withTier(String? tier) => LlmCallContext(
+    purpose: purpose,
+    sessionId: sessionId,
+    latencyMs: latencyMs,
+    reasoningTier: tier,
+  );
 
   @override
   String toString() =>
       'LlmCallContext(purpose: ${purpose.name}'
       '${sessionId == null ? '' : ', sessionId: $sessionId'}'
-      '${latencyMs == null ? '' : ', latency: ${latencyMs}ms'})';
+      '${latencyMs == null ? '' : ', latency: ${latencyMs}ms'}'
+      '${reasoningTier == null ? '' : ', tier: $reasoningTier'})';
 }
 
 /// 单次 LLM 调用的用量读数（不可变值对象）

@@ -49,6 +49,11 @@ class LlmCallLogEntry {
 
   final String? model;
 
+  /// 本次请求的**推理档位 key**（语义与边界见 [LlmCallContext.reasoningTier]）。
+  ///
+  /// null = 调用点未标注链路（与 [sessionId] 同源缺省）；正常链路恒有值。
+  final String? reasoningTier;
+
   const LlmCallLogEntry({
     required this.sessionId,
     required this.purpose,
@@ -59,6 +64,7 @@ class LlmCallLogEntry {
     required this.reasoningTokens,
     this.latencyMs,
     this.model,
+    this.reasoningTier,
   });
 
   /// 未命中缓存的输入 token（全价计费部分）——预计算，免查询侧重复算。
@@ -80,6 +86,10 @@ class LlmCallLogEntry {
     'miss_tokens': missTokens,
     'latency_ms': latencyMs,
     'model': model,
+    // TH-2：档位随写入方固化 ⇒ 审计侧可**事后回溯**「这一笔用的哪一档」，
+    // 不再依赖「切档 + 重启 + rowid 段」的时间段归属（该归属法已入
+    // `DECISIONS §4-68` 被列为不可采信）。
+    'reasoning_tier': reasoningTier,
   };
 
   @override
@@ -88,7 +98,8 @@ class LlmCallLogEntry {
       'prompt=$promptTokens completion=$completionTokens '
       'cached=$cachedTokens miss=$missTokens reasoning=$reasoningTokens'
       '${latencyMs == null ? '' : ' latency=${latencyMs}ms'}'
-      '${model == null ? '' : ' model=$model'})';
+      '${model == null ? '' : ' model=$model'}'
+      '${reasoningTier == null ? '' : ' tier=$reasoningTier'})';
 }
 
 /// 落库通道签名（便于测试注入收集器，不触碰 DB / 全局单例）
@@ -139,6 +150,7 @@ class LlmCallLogSink {
       reasoningTokens: usage.reasoningTokens,
       latencyMs: ctx?.latencyMs,
       model: usage.model,
+      reasoningTier: ctx?.reasoningTier,
     );
   }
 }

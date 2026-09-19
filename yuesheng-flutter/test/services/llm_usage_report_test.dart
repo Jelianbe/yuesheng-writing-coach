@@ -17,7 +17,9 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
+import 'package:writingcoach/services/llm_call_log_sink.dart';
 import 'package:writingcoach/services/llm_cost.dart';
+import 'package:writingcoach/services/llm_usage.dart';
 import 'package:writingcoach/services/llm_usage_report.dart';
 
 /// 由**北京时间墙钟**构造绝对时刻
@@ -26,25 +28,28 @@ DateTime cst(int y, int m, int d, int h, [int min = 0]) =>
 
 int sec(DateTime at) => at.millisecondsSinceEpoch ~/ 1000;
 
-/// 一条 llm_call 埋点的 context 载荷（键名与 `LlmCallLogEntry.toJson` 对齐）
+/// 一条 llm_call 埋点的 context 载荷 —— **由真写入方生成，不手抄键名**。
+///
+/// 手抄一份 = 把「context 键口径」推算两遍：写入方改名后手抄副本静默不同步
+/// （同 `DECISIONS §4-41`；`settings_page_test` 的 `#N7` 段早已按此改）。
+/// **`TH-2` 新增 `reasoning_tier` 时本处暴露了该偏差** ⇒ 统一走
+/// `LlmCallLogEntry.toJson()`，此后写入方加/改键自动跟随。
 Map<String, dynamic> llmCtx({
   required int cached,
   required int miss,
   required int completion,
   int reasoning = 0,
-}) => {
-  'event': 'llm_call',
-  'session_id': 's1',
-  'purpose': 'mainChat',
-  'kind': 'stream',
-  'prompt_tokens': cached + miss,
-  'completion_tokens': completion,
-  'cached_tokens': cached,
-  'reasoning_tokens': reasoning,
-  'miss_tokens': miss,
-  'latency_ms': 1200,
-  'model': 'deepseek-v4-flash',
-};
+}) => LlmCallLogEntry(
+  sessionId: 's1',
+  purpose: LlmCallPurpose.mainChat,
+  kind: LlmUsageKind.stream,
+  promptTokens: cached + miss,
+  completionTokens: completion,
+  cachedTokens: cached,
+  reasoningTokens: reasoning,
+  latencyMs: 1200,
+  model: 'deepseek-v4-flash',
+).toJson();
 
 void main() {
   late AppDatabase db;

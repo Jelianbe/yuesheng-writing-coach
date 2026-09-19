@@ -103,7 +103,7 @@ const _kStreamNoUsage =
     'data: {"choices":[{"delta":{"content":"你好"}}]}\n\n'
     'data: [DONE]\n\n';
 
-LlmClient _client(_ScriptAdapter adapter, LlmUsageSink? sink) {
+LlmClient _client(_ScriptAdapter adapter, LlmUsageSink? sink, {String? tier}) {
   final messenger =
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
   messenger.setMockMethodCallHandler(_secureChannel, (call) async {
@@ -122,7 +122,18 @@ LlmClient _client(_ScriptAdapter adapter, LlmUsageSink? sink) {
   return LlmClient(
     LlmConfigStorage(const FlutterSecureStorage()),
     Dio()..httpClientAdapter = adapter,
-    null,
+    // TH-2：档位经 **config loader** 下发 —— 与生产同路径
+    //（`resolveLlmConfig(db)` 读 `app_state.reasoning_tier` 后填入
+    //  `LlmConfigValues.reasoningTier`，见 llm_config_resolver.dart:25/34）。
+    // 传 null ⇒ 保持既有路径（旧单键存储不产档位 ⇒ 归一为 standard）。
+    tier == null
+        ? null
+        : () async => LlmConfigValues(
+            apiKey: 'k0',
+            baseUrl: 'https://main/v1',
+            model: 'deepseek-chat',
+            reasoningTier: tier,
+          ),
     null,
     LlmConcurrencyGate(),
     sink,
@@ -356,6 +367,112 @@ void main() {
       ]);
 
       expect(sink.received.single.$2.context, isNull);
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // TH-2：档位入埋点（可事后回溯）
+  //
+  // 缺口（本组要堵的）：`test/config/reasoning_tier_test.dart` 只断言「档位 →
+  // 补丁**映射**」这一纯函数；`test/services/reasoning_tier_request_body_test.dart`
+  // 只断言档位**进了请求体**。**没有任何用例断言「档位进了埋点载荷」** ——
+  // 而审计侧读的正是 `error_logs`。
+  //
+  // 鉴别力（为何走 LlmClient 而非直接调 withTier）：
+  //   · 真实链路顺序 = **入口 withTier → usage 帧处 withLatency**。
+  //     若 `withLatency` 丢掉档位，**只调 withTier 的用例照样绿**（假绿）；
+  //     本组经 `streamChat` / `chatCompletionWithMeta` 走完整链路 ⇒ 必红。
+  //   · `未设置档位 ⇒ standard` 一条同时锁住「归一」，防实现把 null 原样落库。
+  // ─────────────────────────────────────────────────────────────
+  group('TH-2 档位入埋点', () {
+    test('流式 deep ⇒ 埋点带 deep，且与请求体同源（reasoning_effort=max）', () async {
+      final adapter = _ScriptAdapter([_sse(_kStreamWithUsage)]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call, tier: 'deep');
+
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.mainChat),
+      );
+      await client.streamChat([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ], (_) {});
+
+      final ctx = sink.received.single.$2.context;
+      expect(ctx?.reasoningTier, 'deep');
+      expect(ctx?.latencyMs, isNotNull, reason: 'withLatency 不得把档位冲掉（两者必须共存）');
+      expect(ctx?.purpose, LlmCallPurpose.mainChat);
+      expect(
+        adapter.requestBodies.single['reasoning_effort'],
+        'max',
+        reason: '埋点档位必须与请求体同源 —— 防「记 deep、发 standard」',
+      );
+    });
+
+    test('非流式 low ⇒ 埋点带 low，请求体 reasoning_effort=low', () async {
+      final adapter = _ScriptAdapter([
+        _json(
+          '{"model":"deepseek-flash","choices":[{"message":{"role":"assistant",'
+          '"content":"你好"},"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call, tier: 'low');
+
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.diagnosis),
+      );
+      await client.chatCompletionWithMeta([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ]);
+
+      expect(sink.received.single.$2.context?.reasoningTier, 'low');
+      expect(adapter.requestBodies.single['reasoning_effort'], 'low');
+    });
+
+    test('未设置档位 ⇒ 归一为 standard（键恒有值，不留 null 歧义）', () async {
+      final adapter = _ScriptAdapter([
+        _json(
+          '{"choices":[{"message":{"role":"assistant","content":"a"},'
+          '"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call); // tier 缺省
+
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.mainChat),
+      );
+      await client.chatCompletionWithMeta([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ]);
+
+      expect(sink.received.single.$2.context?.reasoningTier, 'standard');
+      expect(
+        adapter.requestBodies.single.containsKey('reasoning_effort'),
+        isFalse,
+        reason: 'standard 不产请求体键（既有锚点不变）',
+      );
+    });
+
+    test('off 档 ⇒ 埋点带 off（不是 null，也不是 standard）', () async {
+      final adapter = _ScriptAdapter([
+        _json(
+          '{"choices":[{"message":{"role":"assistant","content":"a"},'
+          '"finish_reason":"stop"}],"usage":$_kUsageJson}',
+        ),
+      ]);
+      final sink = _Sink();
+      final client = _client(adapter, sink.call, tier: 'off');
+
+      client.markCallContext(
+        const LlmCallContext(purpose: LlmCallPurpose.mainChat),
+      );
+      await client.chatCompletionWithMeta([
+        const ChatMessage(role: 'user', content: 'hi'),
+      ]);
+
+      expect(sink.received.single.$2.context?.reasoningTier, 'off');
+      expect(adapter.requestBodies.single['thinking'], {'type': 'disabled'});
     });
   });
 }

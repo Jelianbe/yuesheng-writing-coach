@@ -148,6 +148,20 @@ class LlmClient {
     return ctx;
   }
 
+  /// 给在途上下文附上**本次请求的推理档位**（`TH-2` 批）。
+  ///
+  /// **动因**：档位此前只活在请求体里 —— 事后从 `error_logs` 读不回，审计只能
+  /// 靠「切档 + 重启 + rowid 段」归属，**无法自证**。此处把档位并入埋点上下文，
+  /// 使每条记录自带「这一笔用的是哪一档」。
+  ///
+  /// **归一为真源 key**（经 `reasoningTierOf`；未设置 ⇒ `standard`）⇒ 记录恒有
+  /// 确定档位，不留「null 到底是哪一档」的歧义。`null` 进 `null` 出：免费测试
+  /// 模式 / 未标注 purpose 不产记录（与既有语义一致）。
+  ///
+  /// **零行为变更**：只影响埋点载荷，不参与请求体构造、不触碰任何判据。
+  LlmCallContext? _withTier(LlmCallContext? ctx, LlmConfigValues cfg) =>
+      ctx?.withTier(reasoningTierOf(cfg.reasoningTier).key);
+
   LlmClient([
     LlmConfigStorage? configStorage,
     Dio? dio,
@@ -352,8 +366,9 @@ class LlmClient {
 
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
     _gate.enter();
-    // TH 九批：闸门内设置链路上下文（与 streamChat 同闸门 ⇒ 实例内互斥）。
-    _activeCallContext = callCtx;
+    // TH 九批：闸门内设置链路上下文（与 streamChat 同闸门 ⇒ 实例内互斥）；
+    // TH-2：并入本次请求的推理档位（归一 key）⇒ 档位可事后回溯。
+    _activeCallContext = _withTier(callCtx, cfg);
     try {
       final endpoints = await _prepareEndpoints(cfg, retryPolicy.maxAttempts);
 
@@ -501,8 +516,9 @@ class LlmClient {
 
     // 入档批次：在途请求并发闸门——真实请求互斥，异常/取消经 finally 必释放（免费模式本地模拟不占闸门）
     _gate.enter();
-    // TH 九批：闸门内设置链路上下文（请求互斥 ⇒ 无串扰），finally 清理。
-    _activeCallContext = callCtx;
+    // TH 九批：闸门内设置链路上下文（请求互斥 ⇒ 无串扰），finally 清理；
+    // TH-2：并入本次请求的推理档位（归一 key）⇒ 档位可事后回溯。
+    _activeCallContext = _withTier(callCtx, cfg);
     try {
       final endpoints = await _prepareEndpoints(
         cfg,
@@ -1019,6 +1035,8 @@ class LlmClient {
               : LlmCallContext(
                   purpose: LlmCallPurpose.streamEmptyFallback,
                   sessionId: ctx.sessionId,
+                  // TH-2：空流补记同样带上档位（否则同一次调用的两笔记录口径分叉）
+                  reasoningTier: ctx.reasoningTier,
                 ),
         ),
         LlmUsageKind.stream,
