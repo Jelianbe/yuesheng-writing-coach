@@ -23,12 +23,26 @@ class EditorBackgroundPreset {
   final String key;
   final String label;
   final Color color;
+
+  /// 正文/标题的输入文字色
   final Color textColor;
+
+  /// 输入框占位提示（hint）色 —— 批次 V-3（P0-5）新增。
+  ///
+  /// 动因：此前两处 `hintStyle` **硬编码** `AppColors.textTertiary`、**不随预设联动**
+  /// ⇒ 切到「暗夜」预设时空输入框的提示（「未命名章节」/「请输入正文内容」）
+  /// 对 `editorDarkPanel` 仅 **2.79:1** —— 连非文字的 3:1（WCAG 1.4.11）都不到，
+  /// 用户几乎看不见。同缺陷类此前已复发一次（书架排序菜单「深底深字」）。
+  ///
+  /// 契约（由护栏强制）：`hintColor` 对**本预设的 `color`** 必须 ≥4.5:1。
+  final Color hintColor;
+
   const EditorBackgroundPreset({
     required this.key,
     required this.label,
     required this.color,
     required this.textColor,
+    required this.hintColor,
   });
 }
 
@@ -39,18 +53,25 @@ const List<EditorBackgroundPreset> editorBackgroundPresets = [
     label: '米纸',
     color: AppColors.paper,
     textColor: AppColors.textInk,
+    // 4.70:1（薄但达标 —— 与正文 15.44 保持明显弱化层级）
+    hintColor: AppColors.textTertiary,
   ),
   EditorBackgroundPreset(
     key: editorBgGreen,
     label: '护眼',
     color: AppColors.successBg,
     textColor: AppColors.textInk,
+    // 4.55:1（全系统最薄余量之一，已由护栏锁死）
+    hintColor: AppColors.textTertiary,
   ),
   EditorBackgroundPreset(
     key: editorBgDark,
     label: '暗夜',
     color: AppColors.editorDarkPanel,
     textColor: AppColors.editorDarkText,
+    // 7.48:1 —— 取 editorDarkMuted（次级文字）而非 editorDarkText（12.26）：
+    // 提示是**弱化**层级，须明显弱于正文，同时远高于 AA 线。
+    hintColor: AppColors.editorDarkMuted,
   ),
 ];
 
@@ -68,6 +89,9 @@ Color editorBackgroundColorFor(String key) =>
 
 /// 编辑器文字色（暗夜用浅色，其余墨色）
 Color editorTextColorFor(String key) => editorBackgroundPresetOf(key).textColor;
+
+/// 编辑器占位提示色（随预设联动，批次 V-3 P0-5）
+Color editorHintColorFor(String key) => editorBackgroundPresetOf(key).hintColor;
 
 /// 是否为暗夜背景预设（写作页周边 UI 取反联动判断，批次 94-4）
 bool isDarkEditorPreset(String key) => key == editorBgDark;

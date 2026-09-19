@@ -1151,7 +1151,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.placeholder),
+      // 批次 V-3：原为 AppColors.placeholder（#D8DCE0）—— 它是**图形/装饰**色，
+      // 压在 filled 底 surface(#F2F4F2) 上仅 1.25:1，提示几乎不可见。
+      // 提示是文字 ⇒ 改用 textTertiary（对 surface 4.80:1，达 AA 正文）。
+      hintStyle: const TextStyle(color: AppColors.textTertiary),
       filled: true,
       fillColor: AppColors.surface,
       contentPadding: const EdgeInsets.symmetric(

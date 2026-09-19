@@ -63,7 +63,10 @@ abstract final class AppColors {
   static const Color l1 = Color(0xFFE8F0EE); // 轻微
   static const Color l1Text = Color(0xFF2D5A52);
   static const Color l2 = Color(0xFFF5E6B8); // 中等
-  static const Color l2Text = Color(0xFF8B6914);
+  // 批次 V-3（P0-2）加深：旧值 #8B6914 对自身底 l2 仅 4.09:1（< AA 4.5）
+  // —— 这是全项目唯一与「与自身底色配对」不达标的文字令牌。
+  // 新值对 l2 = 5.53:1，与 l3Text×l3（5.60）同档（l1Text×l1 = 6.72 为最高档）。
+  static const Color l2Text = Color(0xFF725610);
   static const Color l3 = Color(0xFFE8C5C5); // 严重
   static const Color l3Text = Color(0xFF8B2323);
 
@@ -81,15 +84,26 @@ abstract final class AppColors {
   static const Color hintText = Color(0xFF6B6E76); // 问卷示例文字
 
   // ── 编辑器暗夜联动色（批次 X-037-P0-1 UI 审查，供写作页 AppBar/goal bar 与暗夜 preset 配平）──
-  //   对比度（对 #26282B 基底）：editorDarkText 15.1:1 / editorDarkMuted 4.56:1 / editorDarkDeepMuted 6.28:1 —— 全达 WCAG AA
+  //   对比度（对 #26282B 基底，批次 V-3 复算订正）：
+  //     editorDarkText       12.26:1  （前行内注释写 15.1，偏高，已订正）
+  //     editorDarkMuted       7.48:1  （前行内注释写 4.56，偏低，已订正）
+  //     editorDarkDeepMuted   1.39:1  —— ⚠️ 它**不是前景**：见下行自陈「输入框/分隔底」，
+  //                                     属**底色**，不适用 WCAG 前景阈值；前行内注释写
+  //                                     6.28 并称「全达 AA」，是**方向性错误**（把底色当前景算）。
   static const Color editorDarkSurface = Color(0xFF1E2126); // AppBar/工具条暗夜底
   static const Color editorDarkPanel = Color(0xFF26282B); // 暗夜正文底（与预设「暗夜」一致）
   static const Color editorDarkText = Color(0xFFE8EAED); // 暗夜主文字
-  static const Color editorDarkMuted = Color(0xFFB4B9BE); // 暗夜次级文字
+  static const Color editorDarkMuted = Color(
+    0xFFB4B9BE,
+  ); // 暗夜次级文字（亦作暗夜预设的提示文字色）
   static const Color editorDarkDeepMuted = Color(0xFF3A3F45); // 暗夜输入框/分隔底（深灰）
 
   // ── 正向色（成功/已解决，矿物色系延伸，批次22）──
-  static const Color success = Color(0xFF3E7C5B); // 正向绿（深青偏绿，与竹青同色调系）
+  // 批次 V-3（P0-2）加深：旧值 #3E7C5B 对 successBg 仅 4.25:1、对卡片底 4.48:1
+  // —— 两处均为**有真实调用点**的配对（`version_time_machine_sheet.dart:403` /
+  // `gen_ui_quiz.dart:170` 用 successBg 底；`gen_ui_card.dart:302` 是卡片上的真文字）。
+  // 新值：successBg 4.78 / 卡片 5.05 / 白 5.58 / 页 5.24 / 米纸 4.95 —— 全浅底 ≥4.5。
+  static const Color success = Color(0xFF3A7355); // 正向绿（深青偏绿，与竹青同色调系）
   static const Color successBg = Color(0xFFE6F0E9); // 正向淡底（L1 同族）
 }
 

@@ -67,6 +67,10 @@ class WritingEditorView extends StatelessWidget {
     // 批次82 P0-④：面板改为右侧侧栏，正文不被覆盖 → 标点栏不再随面板隐藏
     // 批次90：标题/正文完全独立（用户参考图要求：标题独立大区块 + 正文分开）
     final titleColor = editorTextColorFor(state.editorBackground);
+    // 批次 V-3（P0-5）：占位提示色随预设联动。
+    // 此前两处 hintStyle 硬编码 AppColors.textTertiary ⇒「暗夜」预设下
+    // 提示对 editorDarkPanel 仅 2.79:1，几乎不可见。
+    final hintColor = editorHintColorFor(state.editorBackground);
     final dividerColor = (titleColor == AppColors.textPrimary)
         ? AppColors.divider
         : AppColors.textTertiary.withValues(alpha: 0.25);
@@ -76,30 +80,7 @@ class WritingEditorView extends StatelessWidget {
       children: [
         WritingOfflineBanner(isOffline: state.isOffline),
         Expanded(
-          // 编辑器整体容器：背景色铺满
-          child: Container(
-            key: const Key('editorContainer'),
-            color: editorBackgroundColorFor(state.editorBackground),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildTitleField(titleColor),
-                // 标题/正文分隔线（竹青细描边）
-                Padding(
-                  // X-039-Batch1：20→section
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.section,
-                  ),
-                  child: Divider(
-                    height: 1,
-                    thickness: 0.6,
-                    color: dividerColor,
-                  ),
-                ),
-                Expanded(child: _buildContentArea(titleColor)),
-              ],
-            ),
-          ),
+          child: _buildEditorContainer(titleColor, hintColor, dividerColor),
         ),
         WritingSaveStatusBar(
           isSaving: state.isSaving,
@@ -113,8 +94,36 @@ class WritingEditorView extends StatelessWidget {
     );
   }
 
+  /// 编辑器整体容器（背景色铺满 + 标题块 + 分隔线 + 正文块）
+  ///
+  /// 批次 V-3 从 `build` 抽出：`build` 因新增 hint 联动已达 53 行（R-019 上限 50）。
+  /// 抽的是**独立方法 + 显式参数**（真分解），不是 `part`/`extension` 伪拆分。
+  Widget _buildEditorContainer(
+    Color titleColor,
+    Color hintColor,
+    Color dividerColor,
+  ) {
+    return Container(
+      key: const Key('editorContainer'),
+      color: editorBackgroundColorFor(state.editorBackground),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildTitleField(titleColor, hintColor),
+          // 标题/正文分隔线（竹青细描边）
+          Padding(
+            // X-039-Batch1：20→section
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.section),
+            child: Divider(height: 1, thickness: 0.6, color: dividerColor),
+          ),
+          Expanded(child: _buildContentArea(titleColor, hintColor)),
+        ],
+      ),
+    );
+  }
+
   /// ────────── 标题独立大块（批次90：大字号、独占空间、可聚焦光标）──────────
-  Widget _buildTitleField(Color titleColor) {
+  Widget _buildTitleField(Color titleColor, Color hintColor) {
     return Padding(
       // X-039-Batch1：20→section / 28（非标准= section+sm / 16→lg）— 28 为标题专属
       // 垂直大间距，保留字面（无法映射），后续如需令牌化单独补 largeV=28
@@ -140,7 +149,7 @@ class WritingEditorView extends StatelessWidget {
           hintStyle: TextStyle(
             fontSize: 28,
             height: 1.25,
-            color: AppColors.textTertiary,
+            color: hintColor,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -154,7 +163,7 @@ class WritingEditorView extends StatelessWidget {
   }
 
   /// ────────── 正文独立大块 ──────────
-  Widget _buildContentArea(Color titleColor) {
+  Widget _buildContentArea(Color titleColor, Color hintColor) {
     return Padding(
       // X-039-Batch1：20→section / 16→lg
       padding: const EdgeInsets.fromLTRB(
@@ -166,7 +175,7 @@ class WritingEditorView extends StatelessWidget {
       child: Stack(
         key: editorStackKey, // 批次95-1：划词菜单位置反查用
         children: [
-          _buildContentField(titleColor),
+          _buildContentField(titleColor, hintColor),
           // B3 划词诊断：浮动菜单跟随选区（批次95-1：RenderEditable 定位 + 屏幕外翻转）
           if (showSelectionMenu && selectionMenuPos != null)
             WritingSelectionMenu(
@@ -178,7 +187,7 @@ class WritingEditorView extends StatelessWidget {
     );
   }
 
-  Widget _buildContentField(Color titleColor) {
+  Widget _buildContentField(Color titleColor, Color hintColor) {
     return TextField(
       key: const Key('chapterContentField'),
       controller: contentController,
@@ -201,7 +210,7 @@ class WritingEditorView extends StatelessWidget {
       decoration: InputDecoration.collapsed(
         hintText: '请输入正文内容',
         hintStyle: TextStyle(
-          color: AppColors.textTertiary,
+          color: hintColor,
           fontSize: state.fontSize,
           height: state.lineSpacing,
         ),
