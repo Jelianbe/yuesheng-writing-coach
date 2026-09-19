@@ -51,10 +51,23 @@ class LlmConfig {
 
   /// 分块分析兜底重试的请求体附加字段（ADR-C80）。
   ///
-  /// `thinking: {"type": "disabled"}` 是探针实测唯一被 DeepSeek API 采纳的
-  /// 推理控制参数（reasoning_tokens 归零 3/3）；reasoning_effort /
-  /// enable_thinking / reasoning.enabled / budget_tokens 均被静默忽略。
-  /// 生效判据以 usage 里 reasoning_tokens 归零为准，参数发出 ≠ 生效。
+  /// `thinking: {"type": "disabled"}` 是探针实测**能可靠把 `reasoning_tokens`
+  /// 归零**的推理控制参数（ADR-C80，3/3）。生效判据以 usage 里
+  /// `reasoning_tokens` 的变化为准 —— **参数发出 ≠ 生效**。
+  ///
+  /// ★ **2026-09-19 订正（原断言已被实测推翻）**：本注释此前写
+  /// 「`reasoning_effort` / `enable_thinking` / `reasoning.enabled` /
+  /// `budget_tokens` **均被静默忽略**」—— **该断言是错的，不得再据此判断**。
+  /// TH 批 E4 扩样（`deepseek-flash`，n=10/3，高峰价）实测 `reasoning_effort`
+  /// **确实生效**：`low` ⇒ reasoning **−30.5%（Welch t=−2.52）**、
+  /// `max` ⇒ reasoning **+319.1%（t=15.01）**。
+  /// 出处：`docs/audits/TH批-思考档位用户可调-2026-09-15.md` §6.1 —— 该报告
+  /// 「§6 目的」原文即写明这批是为了**推翻本注释**，但**本注释当时漏改**，
+  /// 导致「`reasoning_effort` 无效」的错误口径在此后多份文档里继续流转
+  /// （`docs/audits/累计整改成本总账-2026-09-15.md:143` 亦沿用，且已被
+  /// `docs/external-review/2026-09-15-外部意见复核-成本模型订正与杠杆重排.md`
+  /// §6.1（C6）独立标为「疑似过期」）。
+  /// 产品侧档位真源 = `lib/config/reasoning_tier.dart`。
   static const Map<String, dynamic> chunkAnalysisFallbackExtraBody = {
     'thinking': {'type': 'disabled'},
   };
