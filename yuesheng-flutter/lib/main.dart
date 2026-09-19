@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'config/app_motion.dart';
+import 'config/app_palette.dart';
 import 'config/app_theme.dart';
 import 'data/repositories/app_state_repository.dart';
 import 'data/repositories/chapter_repository.dart';
@@ -111,14 +112,29 @@ ThemeData buildAppTheme() {
       bodyMedium: TextStyle(fontSize: 15, color: AppColors.textPrimary),
       bodySmall: AppTextStyles.subBody,
     ),
+    // V-4：注册运行期调色板（亮色实例）。供后续批次页面逐文件迁移使用：
+    // `context.palette.textPrimary`。存量 AppColors 静态引用不受影响（本批不改页面）。
+    extensions: const [AppPalette.light],
   );
 }
 
 /// 暗夜主题（批次94-3：ThemeMode.system 跟随系统暗色，Material 层暗色）
 ///
-/// 渐进说明：AppColors 为静态亮色令牌（76 文件 1668 处引用、含 147 处 const
-/// 上下文），全量双 token 不可行（dynamic getter 触发 invalid_constant）；
+/// 渐进说明：AppColors 为静态亮色令牌（**433 文件 1737 处引用、含 831 处 const
+/// 上下文**），全量双 token 不可行（dynamic getter 触发 invalid_constant）；
 /// 自定义页面底色与文字均用亮色令牌，全量令牌化列入后续批次。
+///
+/// ⚠️ 上述三个数字于 2026-09-19（V-4 侦察）实测订正：原注释写
+/// 「76 文件 1668 处引用、含 147 处 const 上下文」，三项全部漂移。
+/// 判据：`.ai/tmp/const_ctx_v3c.txt`（const 判定器经 **9 条正负例校准全绿**，
+/// 其中 4 条为可判 False 的负例）。
+/// 该数经三版判据迭代：1021（大范围启发式）→ 785（括号配对，漏检泛型 const 表）
+/// → **831**（修正 `const Map<X,Y> _t = {` 类顶层表的漏检）。详见
+/// `.ai/tmp/V4-路线复核-待裁定.md`。
+///
+/// 「831 处 const」的**意义是锁定范围，不是收益** —— const 内的颜色是编译期
+/// 常量，保壳只能保「不动它」，不能保「它变暗」。形态分类见
+/// `.ai/reports/2026-09-19-V4试点实测-const改造难度.md`。
 ///
 /// 批次99（暗色可读修复）：surface 由暗色 #26282B 改回亮色。
 /// 根因：onSurface/textTheme 仍用深色亮系令牌（textPrimary/textSecondary），
@@ -167,6 +183,11 @@ ThemeData buildDarkTheme() {
       bodyMedium: TextStyle(fontSize: 15, color: AppColors.textPrimary),
       bodySmall: TextStyle(fontSize: 13, color: AppColors.textSecondary),
     ),
+    // V-4：注册运行期调色板（暗色实例）。
+    // ⚠️ 本批**只注册不启用**：themeMode 仍固定 light（见下方 build()），
+    // 且本 ThemeData 内其余令牌仍为亮色（批次99 的假暗色降级未动）。
+    // ⇒ 用户可见行为零变化，本实例仅为后续增量迁移预留。
+    extensions: const [AppPalette.dark],
   );
 }
 
