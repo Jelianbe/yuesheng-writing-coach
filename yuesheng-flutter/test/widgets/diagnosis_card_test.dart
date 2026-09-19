@@ -25,8 +25,13 @@ import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/database/utils.dart';
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
+import 'package:writingcoach/data/repositories/error_log_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/data/repositories/student_model_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/providers/session_providers.dart';
+import 'package:writingcoach/services/diagnosis_service.dart';
+import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/services/message_card_service.dart';
 import 'package:writingcoach/services/teaching_state_cache.dart';
 import 'package:writingcoach/types/teaching_types.dart';
@@ -36,6 +41,35 @@ import 'package:writingcoach/widgets/diagnosis_card.dart';
 Widget _wrap(Widget child) => ProviderScope(
   child: MaterialApp(home: Scaffold(body: child)),
 );
+
+/// 交互批 P0-2：确认/质疑落库**必然失败**的诊断服务（测失败路径反馈用）。
+/// 覆盖 confirm/dispute 两个写入口；其余方法保持真实实现（本测试不触）。
+class _ThrowingDiagnosisService extends DiagnosisService {
+  _ThrowingDiagnosisService({
+    required super.diagnosisRepo,
+    required super.studentModelRepo,
+  });
+
+  @override
+  Future<void> confirmDiagnosis(
+    String sessionId,
+    String syndromeId,
+    String syndromeName,
+    Severity severity, {
+    String level = 'confirmed',
+  }) async {
+    throw StateError('test-confirm-diagnosis-fail');
+  }
+
+  @override
+  Future<void> disputeDiagnosis(
+    String sessionId,
+    String syndromeId,
+    String syndromeName,
+  ) async {
+    throw StateError('test-dispute-diagnosis-fail');
+  }
+}
 
 void main() {
   // ── 数据构造：典型诊断 payload ──
@@ -411,6 +445,86 @@ void main() {
           .where((m) => m.messageType == 'partial_agreement')
           .toList();
       expect(pa, hasLength(1));
+    });
+
+    // ── 交互批 P0-2：失败路径三件套 —— 用户可见反馈 + 保持 pending 可重试 + error_logs 留痕。
+    //    判别力设计：若实现退回「空 catch」⇒ SnackBar 与留痕两条断言同时红；
+    //    若失败被误当成功（切状态）⇒ pending 断言红。 ──
+    Future<void> pumpWithFailingService(WidgetTester tester) async {
+      container.dispose(); // 弃用 setUp 的真服务容器，防泄漏（tearDown 释放当前值）
+      // overrideWithValue 不执行 provider 本体 ⇒ ErrorHandler 不会被自动 attach，
+      // 留痕断言须显式接线（先例：chat_session_controller_test 的 setUp 同款）。
+      ErrorHandler.instance.resetForTesting();
+      ErrorHandler.instance.attachRepository(ErrorLogRepository(db));
+      addTearDown(ErrorHandler.instance.resetForTesting);
+      container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(db),
+          diagnosisServiceProvider.overrideWithValue(
+            _ThrowingDiagnosisService(
+              diagnosisRepo: DiagnosisRepository(db),
+              studentModelRepo: StudentModelRepository(db),
+            ),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(child: cardWithSession()),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('D5B-6 认同落库失败 → SnackBar 告知 + 保持 pending + error_logs 留痕', (
+      tester,
+    ) async {
+      await pumpWithFailingService(tester);
+      await tester.tap(find.text('认同'));
+      // SnackBar 有 4s 生命期，pumpAndSettle 会快进掉它 ⇒ 先手动推进入场动画
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // ① NN/g：点了但没成，必须被告知（否则与死按钮不可分）
+      expect(find.text('确认失败，请稍后重试'), findsOneWidget);
+      // ② 状态未被谎切：仍在 pending（三按钮可重试）
+      expect(find.text('部分认同'), findsOneWidget);
+      expect(find.text('已认同'), findsNothing);
+
+      // ③ R-028：静默降级必须可追溯 —— error_logs 有 confirmDiagnosis 降级行
+      await tester.pumpAndSettle();
+      final logs = await ErrorLogRepository(db).queryErrorLogs();
+      expect(
+        logs.any((l) => l.message.contains('confirmDiagnosis')),
+        isTrue,
+        reason: '留痕缺失：失败降级未落 error_logs（事后不可追溯）',
+      );
+    });
+
+    testWidgets('D5B-7 不认同落库失败 → SnackBar 告知 + 保持 pending + error_logs 留痕', (
+      tester,
+    ) async {
+      await pumpWithFailingService(tester);
+      await tester.tap(find.text('不认同'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('提交异议失败，请稍后重试'), findsOneWidget);
+      expect(find.text('已质疑'), findsNothing);
+
+      await tester.pumpAndSettle();
+      final logs = await ErrorLogRepository(db).queryErrorLogs();
+      expect(
+        logs.any((l) => l.message.contains('disputeDiagnosis')),
+        isTrue,
+        reason: '留痕缺失：质疑降级未落 error_logs',
+      );
     });
   });
 

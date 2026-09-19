@@ -28,6 +28,7 @@ import 'thinking_chain.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
+import '../services/decode_guard.dart';
 import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/session_providers.dart';
@@ -1007,6 +1008,14 @@ class _SyndromeConfirmationBarState
   String _status = 'pending';
   bool _submitting = false;
 
+  /// 失败反馈单一出口（R-019 真分解：确认/质疑/插入三路降级共用）。
+  /// 纪律 = NN/g「点了就要被告知为什么没成」+ 文案必须与「状态未切换、可重试」
+  /// 的真实行为一致，不制造「已生效」假象。
+  void _showFailureSnack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   Future<void> _confirm(String level) async {
     if (_submitting) return;
     setState(() => _submitting = true);
@@ -1035,12 +1044,22 @@ class _SyndromeConfirmationBarState
             ref.read(appDatabaseProvider),
           ).listMessages(widget.sessionId);
           ref.read(chatStoreProvider.notifier).setMessages(messages);
-        } catch (_) {
-          // 部分认同卡片写入失败不阻断确认主流程
+        } catch (e, st) {
+          // 部分认同卡片插入失败**不阻断确认主流程**（确认本身已落库成功）——
+          // 但必须留痕 + 告知用户降级去向（否则「部分认同」看起来像只生效了一半）。
+          logSilentDegrade(
+            operation: 'insertPartialAgreementCard',
+            error: e,
+            stack: st,
+          );
+          _showFailureSnack('部分认同已记录；反馈卡片暂不可用，可在对话中直接补充差异');
         }
       }
-    } catch (_) {
-      // 落库失败不切换状态（保持 pending，用户可重试）
+    } catch (e, st) {
+      // 落库失败不切换状态（保持 pending，可重试）。R-028：静默降级必须留痕；
+      // NN/g《Disabled/失败》判据：用户点了就要告诉他为什么没成——否则与「死按钮」不可分。
+      logSilentDegrade(operation: 'confirmDiagnosis', error: e, stack: st);
+      _showFailureSnack('确认失败，请稍后重试');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -1057,8 +1076,10 @@ class _SyndromeConfirmationBarState
         widget.syndrome.name,
       );
       if (mounted) setState(() => _status = 'disputed');
-    } catch (_) {
-      // 落库失败保持 pending
+    } catch (e, st) {
+      // 质疑落库失败保持 pending（可重试）——留痕 + 用户可见失败反馈（同确认栏判据）。
+      logSilentDegrade(operation: 'disputeDiagnosis', error: e, stack: st);
+      _showFailureSnack('提交异议失败，请稍后重试');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

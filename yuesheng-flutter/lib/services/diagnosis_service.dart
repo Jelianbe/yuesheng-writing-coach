@@ -204,7 +204,13 @@ class DiagnosisService {
   /// 真源：diagnosis-service.ts confirmDiagnosis
   /// D2/D6 修复：无论 level=confirmed 还是 partial，都追加 teaching_history，
   /// action 统一为 'confirmed'（消费者 evaluation_service / training_input_builder
-  /// 均读 'confirmed'），partial 时额外加 'level':'partial' 区分。
+  /// 均读 'confirmed'）。
+  /// ★ 交互批 P0-1 定性（2026-09-19 实测）：本方法**无条件**写 `level` 字段
+  ///   （旧注释「partial 时额外加」系漂移 ⇒ 已订正），且 `level` 当前
+  ///   **全库零下游消费者**（唯一写入方 = 此处）⇒ 定性为**留痕设计**、非功能缺失：
+  ///   「部分认同」的功能路径走**消息路径**（buildPartialAgreementMessage → AI
+  ///   重新诊断，R-009 有意不用硬编码分支）。后人勿把「字段零消费者」再报成缺陷；
+  ///   未来需结构化消费（如按 level 分流评估权重）时从本字段接。
   Future<void> confirmDiagnosis(
     String sessionId,
     String syndromeId,
@@ -224,7 +230,7 @@ class DiagnosisService {
       'syndromeName': syndromeName,
       'severity': severity.value,
       'action': 'confirmed',
-      'level': level, // 'confirmed' 或 'partial'，消费者按需读取
+      'level': level, // 'confirmed' | 'partial' —— 留痕字段，现无消费者（定性见上方文档注释）
       'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
       'sessionId': sessionId,
     });
