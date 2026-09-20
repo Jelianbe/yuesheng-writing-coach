@@ -19,6 +19,7 @@ import 'package:flutter/material.dart';
 import '../config/app_motion.dart';
 import '../config/app_palette.dart';
 import '../config/app_theme.dart';
+import 'app_typography.dart';
 
 /// 页面转场（各主题共用）。
 const PageTransitionsTheme _kPageTransitions = PageTransitionsTheme(
@@ -82,7 +83,7 @@ ThemeData buildTheme(AppPalette p, Brightness brightness) {
     inputDecorationTheme: _inputTheme(p),
     textTheme: _textTheme(p),
     pageTransitionsTheme: _kPageTransitions,
-    extensions: [p],
+    extensions: [p, AppTypography.from(p)],
   );
 }
 
