@@ -23,6 +23,7 @@ import '../config/app_theme.dart';
 import '../types/display_types.dart';
 import '../services/syndrome_recurrence.dart';
 import 'teaching_state_badge.dart';
+import '../theme/app_typography.dart';
 
 /// 趋势 → 图标 + 文案 + 配色
 ({IconData icon, String label, Color color}) _trendConfig(
@@ -200,14 +201,14 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                   const SizedBox(height: 10),
                   Text(
                     evaluation.summaryText,
-                    style: AppTextStyles.subBody.copyWith(height: 1.5),
+                    style: context.text.subBody.copyWith(height: 1.5),
                   ),
                   // ── 症候明细 ──
                   if (evaluation.syndromeDetails.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
                       '症候明细',
-                      style: AppTextStyles.subBody.copyWith(
+                      style: context.text.subBody.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -253,7 +254,7 @@ class _StatItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.caption),
+          Text(label, style: context.text.caption),
         ],
       ),
     );
@@ -323,7 +324,7 @@ class _SyndromeItem extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '达标 ${detail.passCount}/${detail.totalCount} · 严重度 ${detail.currentSeverity.value}',
-            style: AppTextStyles.caption,
+            style: context.text.caption,
           ),
           // E-1：复诊行（仅跨会话复诊时出现）
           if (note != null) ...[
@@ -348,7 +349,7 @@ class _RecurrenceNote extends StatelessWidget {
       children: [
         const Icon(Icons.history, size: 12, color: AppColors.textTertiary),
         const SizedBox(width: 4),
-        Expanded(child: Text(text, style: AppTextStyles.microCaption)),
+        Expanded(child: Text(text, style: context.text.microCaption)),
       ],
     );
   }

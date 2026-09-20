@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 空状态视图（批次93-6：包在可滚动容器内，支持 RefreshIndicator 下拉刷新）
 class BookshelfEmptyState extends StatelessWidget {
@@ -34,12 +35,12 @@ class BookshelfEmptyState extends StatelessWidget {
                     color: AppColors.textTertiary,
                   ),
                   const SizedBox(height: 20),
-                  const Text('还没有作品', style: AppTextStyles.titleLg),
+                  Text('还没有作品', style: context.text.titleLg),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     '点击「新建」创建你的第一部作品',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.body,
+                    style: context.text.body,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(

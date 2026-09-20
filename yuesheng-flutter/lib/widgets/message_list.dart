@@ -31,6 +31,7 @@ import 'message_bubble.dart';
 import 'message_card_dispatcher.dart';
 import 'practice_result_indicator.dart';
 import 'practice_task_card.dart';
+import '../theme/app_typography.dart';
 
 class MessageList extends ConsumerStatefulWidget {
   final List<Message> messages;
@@ -229,7 +230,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                 Icons.copy_rounded,
                 color: AppColors.textPrimary,
               ),
-              title: const Text('复制内容', style: AppTextStyles.body),
+              title: Text('复制内容', style: context.text.body),
               onTap: () => Navigator.pop(ctx, 'copy'),
             ),
             if (widget.onDelete != null)
@@ -238,7 +239,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                   Icons.delete_outline,
                   color: AppColors.danger,
                 ),
-                title: const Text('删除', style: AppTextStyles.body),
+                title: Text('删除', style: context.text.body),
                 onTap: () => Navigator.pop(ctx, 'delete'),
               ),
           ],
@@ -269,11 +270,11 @@ class _MessageListState extends ConsumerState<MessageList> {
       barrierColor: AppColors.overlay,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('确认删除', style: AppTextStyles.titleLg),
-          content: const Text(
+          title: Text('确认删除', style: context.text.titleLg),
+          content: Text(
             '确定要删除这条消息吗？此操作不可撤销。',
             textAlign: TextAlign.center,
-            style: AppTextStyles.body,
+            style: context.text.body,
           ),
           actions: [
             TextButton(
@@ -575,7 +576,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                               ),
                               child: Text(
                                 widget.streamStageLabel!,
-                                style: AppTextStyles.microCaption,
+                                style: context.text.microCaption,
                               ),
                             ),
                             streamBubble,
@@ -625,7 +626,7 @@ class ThinkingIndicator extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(label ?? '正在思考…', style: AppTextStyles.subBody),
+          Text(label ?? '正在思考…', style: context.text.subBody),
         ],
       ),
     );

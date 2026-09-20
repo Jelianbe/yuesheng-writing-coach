@@ -20,6 +20,7 @@ import '../providers/app_providers.dart';
 import '../providers/writing_providers.dart';
 import 'punctuation_bar.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 class EditorSettingsSheet extends ConsumerWidget {
   final String chapterId;
@@ -85,6 +86,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             _buildSliderRow(
+              context: context,
               label: '字号',
               value: state.fontSize,
               min: 14,
@@ -96,6 +98,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             _buildSliderRow(
+              context: context,
               label: '行距',
               value: state.lineSpacing,
               min: 1.2,
@@ -108,9 +111,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             const SizedBox(height: 14),
             Text(
               '背景',
-              style: AppTextStyles.subBody.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
             Row(
@@ -130,16 +131,16 @@ class EditorSettingsSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 14),
             // 批次88-4：段落格式——自动首行缩进 / 段间空行（开关即时生效 + 全文批量应用）
-            _buildParagraphSection(store, state),
+            _buildParagraphSection(context, store, state),
             const SizedBox(height: 14),
             // 批次96-9：三个开关从 ⋮ 菜单移入排版设置（reactive SwitchListTile）
-            _buildTogglesSection(store, state),
+            _buildTogglesSection(context, store, state),
             const SizedBox(height: 14),
             // 批次86-2：自定义工具栏——标点栏隐藏/排序
             const _PunctuationBarConfigSection(),
             // 批次88-2：对话按钮可见性开关 + 位置恢复（批次96-9：开关从菜单移入）
             const SizedBox(height: 14),
-            _buildFabSection(store, state),
+            _buildFabSection(context, store, state),
           ],
         ),
       ),
@@ -148,13 +149,17 @@ class EditorSettingsSheet extends ConsumerWidget {
 
   /// 批次96-9：三个开关从 ⋮ 菜单移入排版设置——行段聚焦 / 智能标点
   /// （reactive SwitchListTile，store setter 即时生效 + persistEditorSettings 落库）
-  Widget _buildTogglesSection(WritingStore store, WritingState state) {
+  Widget _buildTogglesSection(
+    BuildContext context,
+    WritingStore store,
+    WritingState state,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '辅助',
-          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+          style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         SwitchListTile(
           dense: true,
@@ -163,10 +168,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '行段聚焦',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text(
-            '淡化当前段以外的内容，专注当前行段',
-            style: AppTextStyles.caption,
-          ),
+          subtitle: Text('淡化当前段以外的内容，专注当前行段', style: context.text.caption),
           value: state.focusMode,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -181,7 +183,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '智能标点',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text('输入「自动补全对应右符', style: AppTextStyles.caption),
+          subtitle: Text('输入「自动补全对应右符', style: context.text.caption),
           value: state.smartPunctOn,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -194,13 +196,17 @@ class EditorSettingsSheet extends ConsumerWidget {
   }
 
   /// 批次96-9：对话按钮可见性开关 + 位置恢复（开关从菜单移入，位置恢复沿用原有入口）
-  Widget _buildFabSection(WritingStore store, WritingState state) {
+  Widget _buildFabSection(
+    BuildContext context,
+    WritingStore store,
+    WritingState state,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '对话按钮',
-          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+          style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         SwitchListTile(
           dense: true,
@@ -209,10 +215,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '显示对话按钮',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text(
-            '底部悬浮的 AI 对话入口，长按可拖动位置',
-            style: AppTextStyles.caption,
-          ),
+          subtitle: Text('底部悬浮的 AI 对话入口，长按可拖动位置', style: context.text.caption),
           value: state.fabVisible,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -242,7 +245,11 @@ class EditorSettingsSheet extends ConsumerWidget {
   }
 
   /// 批次88-4：段落格式节——两个开关 + 「应用到全文」批量按钮
-  Widget _buildParagraphSection(WritingStore store, WritingState state) {
+  Widget _buildParagraphSection(
+    BuildContext context,
+    WritingStore store,
+    WritingState state,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -250,9 +257,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           children: [
             Text(
               '段落',
-              style: AppTextStyles.subBody.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
             ),
             const Spacer(),
             TextButton(
@@ -278,7 +283,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '自动首行缩进',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text('回车换行时自动补两格缩进', style: AppTextStyles.caption),
+          subtitle: Text('回车换行时自动补两格缩进', style: context.text.caption),
           value: state.indentParagraph,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -293,7 +298,7 @@ class EditorSettingsSheet extends ConsumerWidget {
             '段间空行',
             style: TextStyle(fontSize: 14, color: AppColors.textInk),
           ),
-          subtitle: const Text('段落之间留出空行', style: AppTextStyles.caption),
+          subtitle: Text('段落之间留出空行', style: context.text.caption),
           value: state.blankLineBetween,
           activeTrackColor: AppColors.primary,
           onChanged: (v) {
@@ -307,6 +312,7 @@ class EditorSettingsSheet extends ConsumerWidget {
 
   /// 滑条行：label + 当前值 + Slider
   Widget _buildSliderRow({
+    required BuildContext context,
     required String label,
     required double value,
     required double min,
@@ -322,7 +328,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           width: 40,
           child: Text(
             label,
-            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+            style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
         ),
         Expanded(
@@ -349,7 +355,7 @@ class EditorSettingsSheet extends ConsumerWidget {
           child: Text(
             display,
             textAlign: TextAlign.right,
-            style: AppTextStyles.subCaption,
+            style: context.text.subCaption,
           ),
         ),
       ],
@@ -574,9 +580,7 @@ class _PunctuationBarConfigSectionState
           children: [
             Text(
               '标点栏',
-              style: AppTextStyles.subBody.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
             ),
             const Spacer(),
             // 批次88-5：添加自定义标点（主操作）
@@ -602,10 +606,7 @@ class _PunctuationBarConfigSectionState
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
-          '隐藏不常用的，把常用的排在前面；也可以添加自己的常用标点',
-          style: AppTextStyles.caption,
-        ),
+        Text('隐藏不常用的，把常用的排在前面；也可以添加自己的常用标点', style: context.text.caption),
         const SizedBox(height: 6),
         for (var i = 0; i < visible.length; i++)
           _ConfigRow(
@@ -622,7 +623,7 @@ class _PunctuationBarConfigSectionState
           ),
         if (hidden.isNotEmpty) ...[
           const Divider(height: 16),
-          const Text('已隐藏', style: AppTextStyles.caption),
+          Text('已隐藏', style: context.text.caption),
           for (final it in hidden)
             _ConfigRow(
               item: it,

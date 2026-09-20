@@ -17,6 +17,7 @@ import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/editor_observation_repository.dart';
 import '../providers/app_providers.dart';
+import '../theme/app_typography.dart';
 
 /// Editor 观察记录审计卡片（用户态）
 class ObservationAuditCard extends ConsumerStatefulWidget {
@@ -161,12 +162,12 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
           ),
           if (_expanded) ...[
             const SizedBox(height: 8),
-            const Text('Editor 对你写作的叙事层观察记录', style: AppTextStyles.caption),
+            Text('Editor 对你写作的叙事层观察记录', style: context.text.caption),
             const SizedBox(height: 12),
             if (!hasSession)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text('无当前会话', style: AppTextStyles.subBody),
+                child: Text('无当前会话', style: context.text.subBody),
               )
             else if (_error != null)
               Text(
@@ -181,9 +182,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                 ),
               )
             else if (_total == null)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Text('暂无数据', style: AppTextStyles.subBody),
+                child: Text('暂无数据', style: context.text.subBody),
               )
             else ...[
               // 统计行
@@ -198,9 +199,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
               ),
               const SizedBox(height: 12),
               if (_total == 0)
-                const Text('暂无 observation 数据', style: AppTextStyles.subBody)
+                Text('暂无 observation 数据', style: context.text.subBody)
               else if (_recent.isEmpty)
-                const Text('暂无最近 observation', style: AppTextStyles.subBody)
+                Text('暂无最近 observation', style: context.text.subBody)
               else
                 ..._recent.map((obs) {
                   final triggerTag = obs.teacherTriggered == 1 ? '触发' : '未触发';
@@ -227,14 +228,14 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                           'pronounced ${obs.pronouncedCount} / against ${obs.againstCount}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.microCaption,
+                          style: context.text.microCaption,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           preview,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.noteCaption,
+                          style: context.text.noteCaption,
                         ),
                       ],
                     ),

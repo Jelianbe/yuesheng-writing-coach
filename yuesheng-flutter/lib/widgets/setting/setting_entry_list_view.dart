@@ -21,6 +21,7 @@ import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
 import 'setting_empty_state.dart';
 import 'setting_entry_dialogs.dart';
+import '../../theme/app_typography.dart';
 
 class SettingEntryListView extends ConsumerStatefulWidget {
   final String manuscriptId;
@@ -129,7 +130,7 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
           Expanded(
             child: Text(
               '其他设定（${_entries.length}）',
-              style: AppTextStyles.titleMd,
+              style: context.text.titleMd,
             ),
           ),
           FilledButton.tonalIcon(
@@ -217,7 +218,7 @@ class _EntryCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTitleRow(category),
+              _buildTitleRow(context, category),
               if (tags.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Wrap(
@@ -234,7 +235,7 @@ class _EntryCard extends StatelessWidget {
                           color: AppColors.surface,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
-                        child: Text('#$tag', style: AppTextStyles.caption),
+                        child: Text('#$tag', style: context.text.caption),
                       ),
                   ],
                 ),
@@ -243,7 +244,7 @@ class _EntryCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   summary,
-                  style: AppTextStyles.body,
+                  style: context.text.body,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -255,7 +256,7 @@ class _EntryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTitleRow(String category) {
+  Widget _buildTitleRow(BuildContext context, String category) {
     return Row(
       children: [
         if (category.isNotEmpty) ...[
@@ -268,19 +269,19 @@ class _EntryCard extends StatelessWidget {
               color: AppColors.primarySoft,
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
-            child: Text(category, style: AppTextStyles.caption),
+            child: Text(category, style: context.text.caption),
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
         Expanded(
           child: Text(
             entry.name,
-            style: AppTextStyles.titleMd,
+            style: context.text.titleMd,
             overflow: TextOverflow.ellipsis,
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Text('参与诊断', style: AppTextStyles.caption),
+        Text('参与诊断', style: context.text.caption),
         Switch(
           value: entry.participate,
           onChanged: (v) => onToggle(entry, v),

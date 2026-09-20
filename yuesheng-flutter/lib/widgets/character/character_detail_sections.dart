@@ -17,6 +17,7 @@ import '../../services/conflict_detector.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
 import 'character_assertion_tile.dart';
+import '../../theme/app_typography.dart';
 
 /// 头部卡：名字 + 并入主角色入口 + 别名行 + 元信息
 class CharacterHeaderCard extends StatelessWidget {
@@ -56,7 +57,7 @@ class CharacterHeaderCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(name, style: AppTextStyles.titleLg)),
+                Expanded(child: Text(name, style: context.text.titleLg)),
                 TextButton.icon(
                   onPressed: mergeEnabled ? onMerge : null,
                   icon: const Icon(Icons.merge, size: 16),
@@ -65,12 +66,12 @@ class CharacterHeaderCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.xsm),
-            _buildAliasRow(),
+            _buildAliasRow(context),
             const SizedBox(height: AppSpacing.xsm),
             Text(
               '首次登场：${chapterLabel(chapterNoMap, firstSeenChapter) ?? '未知'}'
               ' · 断言 $assertionCount 条',
-              style: AppTextStyles.caption,
+              style: context.text.caption,
             ),
           ],
         ),
@@ -78,15 +79,15 @@ class CharacterHeaderCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAliasRow() {
+  Widget _buildAliasRow(BuildContext context) {
     return Wrap(
       spacing: AppSpacing.xsm,
       runSpacing: AppSpacing.xsm,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        const Text('别名', style: AppTextStyles.caption),
+        Text('别名', style: context.text.caption),
         if (aliases.isEmpty)
-          const Text('暂无', style: AppTextStyles.caption)
+          Text('暂无', style: context.text.caption)
         else
           for (final alias in aliases)
             Container(
@@ -98,7 +99,7 @@ class CharacterHeaderCard extends StatelessWidget {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
-              child: Text(alias, style: AppTextStyles.noteCaption),
+              child: Text(alias, style: context.text.noteCaption),
             ),
         GestureDetector(
           onTap: onEditAliases,
@@ -142,9 +143,7 @@ class CharacterRecentBanner extends StatelessWidget {
           Expanded(
             child: Text(
               '正在查看最近批次沉淀（$visibleCount 条，按落库时间过滤）',
-              style: AppTextStyles.noteCaption.copyWith(
-                color: AppColors.l1Text,
-              ),
+              style: context.text.noteCaption.copyWith(color: AppColors.l1Text),
             ),
           ),
           GestureDetector(
@@ -186,7 +185,7 @@ class CharacterConflictsCard extends StatelessWidget {
           children: [
             Text(
               '⚠ 时序矛盾（${conflicts.length}）',
-              style: AppTextStyles.titleMd.copyWith(color: AppColors.warning),
+              style: context.text.titleMd.copyWith(color: AppColors.warning),
             ),
             const SizedBox(height: AppSpacing.xsm),
             for (final o in conflicts)
@@ -194,7 +193,7 @@ class CharacterConflictsCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                 child: Text(
                   _conflictText(o),
-                  style: AppTextStyles.noteCaption.copyWith(
+                  style: context.text.noteCaption.copyWith(
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -307,17 +306,21 @@ class CharacterAssertionGroups extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (groups.isEmpty)
-              const Text('暂无断言', style: AppTextStyles.body)
+              Text('暂无断言', style: context.text.body)
             else
               for (final entry in groups.entries)
-                _buildGroup(entry.key, entry.value),
+                _buildGroup(context, entry.key, entry.value),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildGroup(String attribute, List<CharacterAssertion> items) {
+  Widget _buildGroup(
+    BuildContext context,
+    String attribute,
+    List<CharacterAssertion> items,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Column(
@@ -328,7 +331,7 @@ class CharacterAssertionGroups extends StatelessWidget {
               Expanded(
                 child: Text(
                   '$attribute (${items.length})',
-                  style: AppTextStyles.titleMd,
+                  style: context.text.titleMd,
                 ),
               ),
               TextButton.icon(

@@ -18,6 +18,7 @@ import '../../data/database/database.dart';
 import '../../services/setting_library_service.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
+import '../../theme/app_typography.dart';
 
 /// 新建角色结果：(名字, 首见章节?, 正文?（用户自由写作，正文优先）)
 typedef CreateCharacterResult = ({
@@ -39,7 +40,7 @@ Future<CreateCharacterResult?> showCreateCharacterDialog(BuildContext context) {
   return showDialog<CreateCharacterResult>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('新建角色', style: AppTextStyles.titleLg),
+      title: Text('新建角色', style: context.text.titleLg),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -123,7 +124,7 @@ Future<AssertionFormResult?> showAssertionFormDialog(
   return showDialog<AssertionFormResult>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text(title, style: AppTextStyles.titleLg),
+      title: Text(title, style: context.text.titleLg),
       content: _AssertionFormFields(
         attrCtrl: attrCtrl,
         valueCtrl: valueCtrl,
@@ -222,7 +223,7 @@ class _AttributeSuggestionChips extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('常用属性', style: AppTextStyles.microCaption),
+        Text('常用属性', style: context.text.microCaption),
         const SizedBox(height: AppSpacing.xs),
         Wrap(
           spacing: AppSpacing.xs,
@@ -230,7 +231,7 @@ class _AttributeSuggestionChips extends StatelessWidget {
           children: [
             for (final s in suggestions)
               ActionChip(
-                label: Text(s, style: AppTextStyles.microCaption),
+                label: Text(s, style: context.text.microCaption),
                 visualDensity: VisualDensity.compact,
                 onPressed: () => onTap(s),
               ),
@@ -256,7 +257,7 @@ Future<({bool confirmed, String? reason})?> showRejectReasonSheet(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('选择拒绝理由（可选）', style: AppTextStyles.titleMd),
+            Text('选择拒绝理由（可选）', style: context.text.titleMd),
             const SizedBox(height: AppSpacing.md),
             Wrap(
               spacing: AppSpacing.sm,
@@ -322,13 +323,13 @@ class _AliasEditorDialogState extends State<_AliasEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('编辑别名', style: AppTextStyles.titleLg),
+      title: Text('编辑别名', style: context.text.titleLg),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('别名参与时序矛盾检测与相关事件关联（主名 ∪ 别名匹配）', style: AppTextStyles.caption),
+            Text('别名参与时序矛盾检测与相关事件关联（主名 ∪ 别名匹配）', style: context.text.caption),
             const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.xsm,
@@ -386,12 +387,12 @@ Future<CharacterFact?> showMergePickerDialog(
   return showDialog<CharacterFact>(
     context: context,
     builder: (ctx) => SimpleDialog(
-      title: const Text('并入主角色：选择要并入的重复行', style: AppTextStyles.titleLg),
+      title: Text('并入主角色：选择要并入的重复行', style: context.text.titleLg),
       children: [
         if (candidates.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(AppSpacing.section),
-            child: Text('没有其他角色行可并入', style: AppTextStyles.body),
+            child: Text('没有其他角色行可并入', style: context.text.body),
           )
         else
           for (final c in candidates)
@@ -399,10 +400,10 @@ Future<CharacterFact?> showMergePickerDialog(
               onPressed: () => Navigator.pop(ctx, c),
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(c.name, style: AppTextStyles.titleMd),
+                title: Text(c.name, style: context.text.titleMd),
                 subtitle: Text(
                   '该行的断言将迁入本角色，源名收进别名',
-                  style: AppTextStyles.caption,
+                  style: context.text.caption,
                 ),
               ),
             ),
@@ -485,7 +486,7 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
   Widget build(BuildContext context) {
     final pair = widget.pair;
     return AlertDialog(
-      title: Text('疑似重复：${pair.a.attribute}', style: AppTextStyles.titleLg),
+      title: Text('疑似重复：${pair.a.attribute}', style: context.text.titleLg),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -529,7 +530,7 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
         Align(
           alignment: Alignment.centerLeft,
           child: _aiLoading
-              ? const Text('AI 比较中…', style: AppTextStyles.microCaption)
+              ? Text('AI 比较中…', style: context.text.microCaption)
               : TextButton.icon(
                   onPressed: _runAiCompare,
                   icon: const Icon(Icons.auto_awesome, size: 16),
@@ -548,7 +549,7 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppSpacing.sm),
           ),
-          child: Text(_aiAnalysis!, style: AppTextStyles.subBody),
+          child: Text(_aiAnalysis!, style: context.text.subBody),
         ),
       ]);
     }
@@ -589,13 +590,13 @@ class _ConflictCard extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           radius: 14,
-          child: Text(label, style: AppTextStyles.microCaption),
+          child: Text(label, style: context.text.microCaption),
         ),
         title: Text(
           '${assertion.attribute} = ${assertion.value}',
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
-        subtitle: Text('来源：$chapter', style: AppTextStyles.microCaption),
+        subtitle: Text('来源：$chapter', style: context.text.microCaption),
         trailing: FilledButton.tonal(
           onPressed: onKeep,
           child: const Text('保留'),

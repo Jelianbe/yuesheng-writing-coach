@@ -37,6 +37,7 @@ import '../services/llm_usage_report.dart';
 import '../services/progress_service.dart';
 import '../services/session_export_service.dart';
 import 'privacy_notice_dialog.dart';
+import '../theme/app_typography.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
 const String _appVersion = '0.1.0';
@@ -348,11 +349,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('清空配置', style: AppTextStyles.titleLg),
-        content: const Text(
+        title: Text('清空配置', style: context.text.titleLg),
+        content: Text(
           '确定清空所有 API 配置吗？',
           textAlign: TextAlign.center,
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -388,11 +389,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('清除缓存', style: AppTextStyles.titleLg),
-        content: const Text(
+        title: Text('清除缓存', style: context.text.titleLg),
+        content: Text(
           '这将清除所有本地缓存数据（不包括作品和章节内容）。确定继续吗？',
           textAlign: TextAlign.center,
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -431,11 +432,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('反馈', style: AppTextStyles.titleLg),
+        title: Text('反馈', style: context.text.titleLg),
         content: Text(
           '遇到问题或有建议？欢迎加入 QQ 群交流反馈：\n\nQQ 群：$_feedbackQQGroup',
           textAlign: TextAlign.center,
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -472,13 +473,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('如何获取 API Key', style: AppTextStyles.titleLg),
-        content: const Text(
+        title: Text('如何获取 API Key', style: context.text.titleLg),
+        content: Text(
           '1. 在所选 AI 服务商官网注册 / 登录（DeepSeek 为 platform.deepseek.com）；\n'
           '2. 进入「API keys」页面，创建并复制你的密钥（多为 sk- 开头）；\n'
           '3. 回到本页，粘贴到上方 API Key 输入框保存。\n\n'
           '费用按实际用量计入你对应服务商账户余额，具体价格见各平台充值页。',
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -495,11 +496,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('导出会话记录', style: AppTextStyles.titleLg),
-        content: const Text(
+        title: Text('导出会话记录', style: context.text.titleLg),
+        content: Text(
           '将导出最近一个会话的完整记录（JSON 文件），其中包含你的作品原文与练习内容。\n\n'
           '是否脱敏由你自行判断；文件发给谁也由你决定。继续导出吗？',
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -738,11 +739,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('删除账号', style: AppTextStyles.titleLg),
+        title: Text('删除账号', style: context.text.titleLg),
         content: Text(
           '确定删除账号「${account.name}」吗？',
           textAlign: TextAlign.center,
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -889,7 +890,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     crossAxisAlignment: CrossAxisAlignment.baseline,
     textBaseline: TextBaseline.alphabetic,
     children: [
-      Text(_compactTokens(report.totalTokens), style: AppTextStyles.titleLg),
+      Text(_compactTokens(report.totalTokens), style: context.text.titleLg),
       const SizedBox(width: 4),
       Text('tokens', style: _usageNoteStyle),
       const SizedBox(width: 8),
@@ -1279,7 +1280,7 @@ class _FieldLabel extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w500),
+        style: context.text.subBody.copyWith(fontWeight: FontWeight.w500),
       ),
     );
   }
@@ -1330,7 +1331,7 @@ class _AboutRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: AppTextStyles.body)),
+          Expanded(child: Text(label, style: context.text.body)),
           Text(
             value,
             style: const TextStyle(
@@ -1400,7 +1401,7 @@ class _ProgressSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text('完成度', style: AppTextStyles.caption),
+                  Text('完成度', style: context.text.caption),
                 ],
               ),
             ],
@@ -1493,9 +1494,9 @@ class _ProgressStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: AppTextStyles.titleLg),
+          Text(value, style: context.text.titleLg),
           const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.caption),
+          Text(label, style: context.text.caption),
         ],
       ),
     );
@@ -1522,9 +1523,9 @@ class _UsageStatRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value, style: AppTextStyles.body),
+                Text(value, style: context.text.body),
                 const SizedBox(height: 2),
-                Text(label, style: AppTextStyles.caption),
+                Text(label, style: context.text.caption),
               ],
             ),
           ),

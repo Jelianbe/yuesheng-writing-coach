@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 /// 新建主题结果：(主题名, 属性?, 取值?, 章节?, 原文依据?)
 ///
@@ -75,13 +76,13 @@ Future<bool?> showArchiveWorldConfirmDialog(
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('归档设定主题', style: AppTextStyles.titleLg),
+      title: Text('归档设定主题', style: context.text.titleLg),
       content: Text(
         '归档「$themeName」？\n\n'
         '· 该主题及其 $assertionCount 条设定将不再出现在列表中\n'
         '· 不再参与一致性检查\n'
         '· 数据保留（归档非删除）',
-        style: AppTextStyles.body,
+        style: context.text.body,
       ),
       actions: [
         TextButton(
@@ -151,7 +152,7 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('新建设定主题', style: AppTextStyles.titleLg),
+      title: Text('新建设定主题', style: context.text.titleLg),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -161,7 +162,7 @@ class _CreateWorldThemeDialogState extends State<_CreateWorldThemeDialog> {
             const SizedBox(height: AppSpacing.sm),
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
-              title: const Text('结构化这条设定（可选）', style: AppTextStyles.caption),
+              title: Text('结构化这条设定（可选）', style: context.text.caption),
               children: [
                 _AssertionFormFields(
                   attrCtrl: _attrCtrl,
@@ -257,7 +258,7 @@ class _AppendAssertionDialogState extends State<_AppendAssertionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('追加设定 · ${widget.themeName}', style: AppTextStyles.titleLg),
+      title: Text('追加设定 · ${widget.themeName}', style: context.text.titleLg),
       content: SingleChildScrollView(
         child: _AssertionFormFields(
           attrCtrl: _attrCtrl,
@@ -334,7 +335,7 @@ class _AssertionFormFields extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        const Text(kWorldEvidenceHint, style: AppTextStyles.caption),
+        Text(kWorldEvidenceHint, style: context.text.caption),
       ],
     );
   }

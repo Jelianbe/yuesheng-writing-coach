@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
+import '../../theme/app_typography.dart';
 
 /// 断言条目。纯展示 + 动作回调上抛，数据访问全部留在详情页。
 class CharacterAssertionTile extends StatelessWidget {
@@ -70,8 +71,8 @@ class CharacterAssertionTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(child: _buildValueText()),
-                    _buildStateBadge(),
+                    Expanded(child: _buildValueText(context)),
+                    _buildStateBadge(context),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.xxs),
@@ -85,11 +86,11 @@ class CharacterAssertionTile extends StatelessWidget {
   }
 
   /// 值文本：rejected 加删除线；stale 仅变灰（无删除线，语义分离红线）
-  Widget _buildValueText() {
+  Widget _buildValueText(BuildContext context) {
     final gray = _rejected || _stale;
     return Text(
       assertion.value,
-      style: AppTextStyles.body.copyWith(
+      style: context.text.body.copyWith(
         color: gray ? AppColors.textTertiary : AppColors.textInk,
         decoration: _rejected ? TextDecoration.lineThrough : null,
         fontSize: 15,
@@ -97,13 +98,17 @@ class CharacterAssertionTile extends StatelessWidget {
     );
   }
 
-  Widget _buildStateBadge() {
-    if (_rejected) return _badge('已拒绝', AppColors.dangerBg, AppColors.danger);
-    if (_stale) return _badge('章节已改写', AppColors.warningBg, AppColors.warning);
+  Widget _buildStateBadge(BuildContext context) {
+    if (_rejected) {
+      return _badge(context, '已拒绝', AppColors.dangerBg, AppColors.danger);
+    }
+    if (_stale) {
+      return _badge(context, '章节已改写', AppColors.warningBg, AppColors.warning);
+    }
     return const SizedBox.shrink();
   }
 
-  Widget _badge(String text, Color bg, Color fg) {
+  Widget _badge(BuildContext context, String text, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.xsm,
@@ -113,7 +118,7 @@ class CharacterAssertionTile extends StatelessWidget {
         color: bg,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(text, style: AppTextStyles.microCaption.copyWith(color: fg)),
+      child: Text(text, style: context.text.microCaption.copyWith(color: fg)),
     );
   }
 
@@ -123,7 +128,7 @@ class CharacterAssertionTile extends StatelessWidget {
       spacing: AppSpacing.xsm,
       runSpacing: AppSpacing.xxs,
       children: [
-        Text(_chapterText(), style: AppTextStyles.microCaption),
+        Text(_chapterText(), style: context.text.microCaption),
         TextButton(
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
@@ -131,14 +136,15 @@ class CharacterAssertionTile extends StatelessWidget {
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           onPressed: () => _showOriginalText(context),
-          child: const Text('查看原文', style: AppTextStyles.caption),
+          child: Text('查看原文', style: context.text.caption),
         ),
         if (_rejected && assertion.rejectReason != null)
           Text(
             '理由·${assertion.rejectReason}',
-            style: AppTextStyles.microCaption,
+            style: context.text.microCaption,
           ),
-        if (_rejected && onToggleNegative != null) _buildNegativeSwitch(),
+        if (_rejected && onToggleNegative != null)
+          _buildNegativeSwitch(context),
         if (_actionable) ...[
           TextButton(
             style: TextButton.styleFrom(
@@ -147,7 +153,7 @@ class CharacterAssertionTile extends StatelessWidget {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: onReject,
-            child: const Text('拒绝 ✗', style: AppTextStyles.caption),
+            child: Text('拒绝 ✗', style: context.text.caption),
           ),
           TextButton(
             style: TextButton.styleFrom(
@@ -156,18 +162,18 @@ class CharacterAssertionTile extends StatelessWidget {
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             onPressed: onCorrect,
-            child: const Text('修正', style: AppTextStyles.caption),
+            child: Text('修正', style: context.text.caption),
           ),
         ],
       ],
     );
   }
 
-  Widget _buildNegativeSwitch() {
+  Widget _buildNegativeSwitch(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('负断言', style: AppTextStyles.microCaption),
+        Text('负断言', style: context.text.microCaption),
         const SizedBox(width: 2),
         Switch(
           value: assertion.negative,
@@ -208,12 +214,12 @@ class CharacterAssertionTile extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_originalTextTitle(), style: AppTextStyles.titleMd),
+              Text(_originalTextTitle(), style: context.text.titleMd),
               const SizedBox(height: AppSpacing.md),
               if (text == null || text.isEmpty)
-                const Text('未定位到原文', style: AppTextStyles.body)
+                Text('未定位到原文', style: context.text.body)
               else
-                SelectableText(text, style: AppTextStyles.body),
+                SelectableText(text, style: context.text.body),
             ],
           ),
         ),
@@ -243,7 +249,7 @@ class _SourceBadge extends StatelessWidget {
       ),
       child: Text(
         isUser ? '手' : 'AI',
-        style: AppTextStyles.microCaption.copyWith(
+        style: context.text.microCaption.copyWith(
           color: isUser ? AppColors.primary : AppColors.textTertiary,
           fontWeight: FontWeight.w600,
         ),

@@ -24,6 +24,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 /// 差异段类型：same=两版共有 / added=版本新增（相对当前）/ removed=当前有而版本删掉的
 enum DiffKind { same, added, removed }
@@ -292,9 +293,9 @@ class _VersionTimeMachineSheetState
           ),
           if (_selected == null) ...[
             const SizedBox(height: 4),
-            const Text(
+            Text(
               '每 200 字自动保存一个版本，越早的版本保留间隔越大',
-              style: AppTextStyles.noteCaption,
+              style: context.text.noteCaption,
             ),
           ],
           const SizedBox(height: 12),
@@ -321,7 +322,7 @@ class _VersionTimeMachineSheetState
       children: [
         Text(
           '${_formatTime(v.savedAt)} · ${v.wordCount}字',
-          style: AppTextStyles.noteCaption,
+          style: context.text.noteCaption,
         ),
         const SizedBox(height: 6),
         const Text(
@@ -429,13 +430,13 @@ class _VersionTimeMachineSheetState
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
+          children: [
             Icon(Icons.history, size: 40, color: AppColors.placeholder),
             SizedBox(height: 8),
             Text(
               '还没有版本记录\n写到 200 字时会自动保存一个版本',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
           ],
         ),
@@ -458,12 +459,12 @@ class _VersionTimeMachineSheetState
                   width: 92,
                   child: Text(
                     _formatTime(v.savedAt),
-                    style: AppTextStyles.subBody,
+                    style: context.text.subBody,
                   ),
                 ),
                 SizedBox(
                   width: 48,
-                  child: Text('${v.wordCount}字', style: AppTextStyles.subBody),
+                  child: Text('${v.wordCount}字', style: context.text.subBody),
                 ),
                 Expanded(
                   child: Text(

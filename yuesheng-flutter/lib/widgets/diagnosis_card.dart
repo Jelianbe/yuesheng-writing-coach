@@ -38,6 +38,7 @@ import '../services/syndrome_tracker.dart';
 import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
+import '../theme/app_typography.dart';
 
 /// 严重度 → 矿物色 + 文字色
 class _SeverityConfig {
@@ -349,7 +350,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           ),
         ),
         const SizedBox(height: 4),
-        Text(_focusReasonText!, style: AppTextStyles.noteCaption),
+        Text(_focusReasonText!, style: context.text.noteCaption),
       ],
     );
   }
@@ -443,14 +444,14 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       children: [
         Text(
           '${widget.syndromeCount}${_CardText.problemSuffix}',
-          style: AppTextStyles.subBody,
+          style: context.text.subBody,
         ),
         const SizedBox(width: 6),
         const Text('·', style: TextStyle(color: AppColors.textTertiary)),
         const SizedBox(width: 6),
         Text(
           '$confPct${_CardText.confidenceSuffix}',
-          style: AppTextStyles.subBody,
+          style: context.text.subBody,
         ),
         const SizedBox(width: 8),
         RotationTransition(
@@ -627,9 +628,9 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   // ── 症候详情块：每块左色条 + 标签 + 证据 + 说明 ──
   Widget _buildSyndromesDetail() {
     if (widget.syndromes.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        child: Text(_CardText.emptyHint, style: AppTextStyles.subBody),
+        child: Text(_CardText.emptyHint, style: context.text.subBody),
       );
     }
 
@@ -830,7 +831,7 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           const SizedBox(height: 2),
           Text(
             why,
-            style: AppTextStyles.subBody.copyWith(
+            style: context.text.subBody.copyWith(
               color: AppColors.textDeep,
               height: 1.5,
             ),
@@ -896,7 +897,7 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
         ),
         const SizedBox(height: 4),
         if (count == 0)
-          const Text(_CardText.noEvidence, style: AppTextStyles.noteCaption)
+          Text(_CardText.noEvidence, style: context.text.noteCaption)
         else if (evidence.isNotEmpty)
           _buildEvidenceToggle(evidence, count)
         else
@@ -1256,7 +1257,7 @@ class _SyndromeConfirmationBarState
         Text(
           hint,
           textAlign: TextAlign.center,
-          style: AppTextStyles.noteCaption,
+          style: context.text.noteCaption,
         ),
       ],
     );

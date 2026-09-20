@@ -73,6 +73,7 @@ import '../providers/manuscript_providers.dart';
 import '../utils/chapter_number.dart';
 import '../utils/volume_group.dart';
 import 'outline_shared.dart';
+import '../theme/app_typography.dart';
 
 /// 「章节结构」投影段的根节点 Key（N6）。
 ///
@@ -382,17 +383,17 @@ class _ChapterStructureSection extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _header(),
+        _header(context),
         for (final section in sections)
           if (section.volume != null)
-            ..._volumeRows(section)
+            ..._volumeRows(context, section)
           else
-            _chapterRow(section.looseChapter!),
+            _chapterRow(context, section.looseChapter!),
       ],
     );
   }
 
-  Widget _header() {
+  Widget _header(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(
         top: AppSpacing.sm,
@@ -402,19 +403,19 @@ class _ChapterStructureSection extends StatelessWidget {
         children: [
           Text(
             '章节结构',
-            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+            style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
           const Spacer(),
           Text(
             onJumpToChapter == null ? '来自章节列表' : '来自章节列表 · 点按跳转',
-            style: AppTextStyles.microCaption,
+            style: context.text.microCaption,
           ),
         ],
       ),
     );
   }
 
-  List<Widget> _volumeRows(ChapterSection section) {
+  List<Widget> _volumeRows(BuildContext context, ChapterSection section) {
     final volume = section.volume!;
     final words = section.chapters.fold<int>(0, (sum, c) => sum + c.wordCount);
     return [
@@ -430,7 +431,7 @@ class _ChapterStructureSection extends StatelessWidget {
                 volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.subBody.copyWith(
+                style: context.text.subBody.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -438,17 +439,17 @@ class _ChapterStructureSection extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Text(
               '${section.chapters.length} 章 · ${formatWordCount(words)}',
-              style: AppTextStyles.microCaption,
+              style: context.text.microCaption,
             ),
           ],
         ),
       ),
-      ...section.chapters.map(_chapterRow),
+      ...section.chapters.map((c) => _chapterRow(context, c)),
     ];
   }
 
   /// 章节点：整行可点 → 跳转到该章；未注入回调时不可点、无箭头（零变化）。
-  Widget _chapterRow(Chapter chapter) {
+  Widget _chapterRow(BuildContext context, Chapter chapter) {
     final onJump = onJumpToChapter;
     final title = chapter.title.trim().isEmpty ? '未命名章节' : chapter.title;
     final row = SizedBox(
@@ -460,7 +461,7 @@ class _ChapterStructureSection extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.body,
+              style: context.text.body,
             ),
           ),
           if (onJump != null)
@@ -503,10 +504,10 @@ class _TypeSection extends StatelessWidget {
         children: [
           Text(
             label,
-            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+            style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(width: 6),
-          Text('$count', style: AppTextStyles.caption),
+          Text('$count', style: context.text.caption),
         ],
       ),
     );
@@ -565,17 +566,17 @@ class _EntityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTitleRow(entity.status == 'pending'),
+          _buildTitleRow(context, entity.status == 'pending'),
           if (aliases.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(
               '别名：${aliases.join('、')}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.microCaption,
+              style: context.text.microCaption,
             ),
           ],
-          ..._buildImpressions(visibleImps),
+          ..._buildImpressions(context, visibleImps),
         ],
       ),
     );
@@ -586,12 +587,15 @@ class _EntityCard extends StatelessWidget {
   /// **R-019 清偿拆出（N6）**：原内联在 [build] 内。本批加类型标签块后
   /// `build` 达 84 行（> 50 硬限）⇒ 按职责拆出（标题行 / 印象区各成一段），
   /// 手法同 [_buildTitleRow]。
-  List<Widget> _buildImpressions(List<OutlineImpression> visibleImps) {
+  List<Widget> _buildImpressions(
+    BuildContext context,
+    List<OutlineImpression> visibleImps,
+  ) {
     if (visibleImps.isEmpty) {
-      return const [
+      return [
         Padding(
           padding: EdgeInsets.only(top: AppSpacing.xsm),
-          child: Text('还没有梗概', style: AppTextStyles.caption),
+          child: Text('还没有梗概', style: context.text.caption),
         ),
       ];
     }
@@ -612,7 +616,7 @@ class _EntityCard extends StatelessWidget {
   /// **R-019 清偿拆出（N6）**：本行原内联在 [build] 内。加上 N6 的类型标签块后
   /// `build` 达 93 行（> 50 硬限）⇒ 拆出；两者现均 < 50 行。
   /// 手法同既有先例（本章节树抽屉的 `_buildStatusBadge` / `_buildTrailing`）。
-  Widget _buildTitleRow(bool isPendingEntity) {
+  Widget _buildTitleRow(BuildContext context, bool isPendingEntity) {
     return Row(
       children: [
         Flexible(
@@ -620,7 +624,7 @@ class _EntityCard extends StatelessWidget {
             entity.entityKey,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.titleMd,
+            style: context.text.titleMd,
           ),
         ),
         // N6：「其他」分组内打出类型**原值**（认不出的类型也要说明它是什么）
@@ -828,12 +832,12 @@ class _OutlineEmpty extends StatelessWidget {
               color: AppColors.placeholder,
             ),
             const SizedBox(height: 12),
-            const Text('还没有大纲', style: AppTextStyles.body),
+            Text('还没有大纲', style: context.text.body),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               '写一段后去教练面板做次诊断，AI 会帮你记住人物、设定和情节梗概',
               textAlign: TextAlign.center,
-              style: AppTextStyles.caption,
+              style: context.text.caption,
             ),
             if (onOpenCoach != null) ...[
               const SizedBox(height: 20),

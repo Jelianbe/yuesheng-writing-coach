@@ -30,6 +30,7 @@ import '../setting/setting_empty_state.dart';
 import 'character_detail_page.dart';
 import 'character_dialogs.dart';
 import 'pending_confirm_card.dart';
+import '../../theme/app_typography.dart';
 
 /// 断言摘要最多展示的条目数
 const int _kSummaryMax = 3;
@@ -376,9 +377,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
           Expanded(
             child: Text(
               '最近批次沉淀 $total 条（按断言落库时间过滤；提示卡仅本次会话内有效）',
-              style: AppTextStyles.noteCaption.copyWith(
-                color: AppColors.l1Text,
-              ),
+              style: context.text.noteCaption.copyWith(color: AppColors.l1Text),
             ),
           ),
           GestureDetector(
@@ -424,7 +423,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
       ),
       child: Row(
         children: [
-          const Text('排序', style: AppTextStyles.caption),
+          Text('排序', style: context.text.caption),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: SegmentedButton<bool>(
@@ -455,7 +454,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
         title: Row(
           children: [
             Expanded(
-              child: Text(row.name, style: AppTextStyles.titleMd, maxLines: 1),
+              child: Text(row.name, style: context.text.titleMd, maxLines: 1),
             ),
             _buildNewBadge(row),
           ],
@@ -481,7 +480,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
       ),
       child: Text(
         '+$newCount 新',
-        style: AppTextStyles.microCaption.copyWith(color: AppColors.l1Text),
+        style: context.text.microCaption.copyWith(color: AppColors.l1Text),
       ),
     );
   }
@@ -496,13 +495,13 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_firstSeenText(row, chapterNoMap), style: AppTextStyles.caption),
+        Text(_firstSeenText(row, chapterNoMap), style: context.text.caption),
         if (summary.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               summary,
-              style: AppTextStyles.noteCaption,
+              style: context.text.noteCaption,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

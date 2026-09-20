@@ -26,6 +26,7 @@ import '../providers/manuscript_providers.dart';
 import '../utils/volume_group.dart';
 import 'manuscript_detail_chapter_card.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 // V-5：章节状态→配色收敛到**单一真源** `chapterStatusConfig`
 // （定义在 manuscript_detail_chapter_card.dart）。本文件曾自持一张与其 9 值
@@ -136,7 +137,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
               color: AppColors.primary,
             ),
           ),
-          Text('$chapterCount 章', style: AppTextStyles.caption),
+          Text('$chapterCount 章', style: context.text.caption),
         ],
       ),
     );
@@ -716,10 +717,10 @@ class _VolumeHeader extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.titleMd,
+                style: context.text.titleMd,
               ),
             ),
-            _buildTrailing(),
+            _buildTrailing(context),
           ],
         ),
       ),
@@ -727,7 +728,7 @@ class _VolumeHeader extends StatelessWidget {
   }
 
   /// 尾部：重命名按钮 + 章节数（R-019 清偿拆出）。
-  Widget _buildTrailing() {
+  Widget _buildTrailing(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -747,7 +748,7 @@ class _VolumeHeader extends StatelessWidget {
               ),
             ),
           ),
-        Text('$count 章', style: AppTextStyles.microCaption),
+        Text('$count 章', style: context.text.microCaption),
       ],
     );
   }
@@ -759,14 +760,14 @@ class _EmptyVolumeHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.xxl + AppSpacing.lg,
         AppSpacing.xs,
         AppSpacing.lg,
         AppSpacing.sm,
       ),
-      child: Text('暂无章节', style: AppTextStyles.caption),
+      child: Text('暂无章节', style: context.text.caption),
     );
   }
 }
@@ -834,7 +835,7 @@ class _ChapterTreeItem extends StatelessWidget {
                 padding: const EdgeInsets.only(left: AppSpacing.xs),
                 child: Text(
                   '${_formatNum(chapter.wordCount)}字',
-                  style: AppTextStyles.microCaption,
+                  style: context.text.microCaption,
                 ),
               ),
             if (status != null) ...[
@@ -889,16 +890,16 @@ class _EmptyChapters extends StatelessWidget {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: const [
+        children: [
           Icon(
             Icons.menu_book_outlined,
             size: 40,
             color: AppColors.placeholder,
           ),
           SizedBox(height: AppSpacing.md),
-          Text('还没有章节', style: AppTextStyles.body),
+          Text('还没有章节', style: context.text.body),
           SizedBox(height: AppSpacing.xs),
-          Text('点下面的「新建章节」开个头吧', style: AppTextStyles.caption),
+          Text('点下面的「新建章节」开个头吧', style: context.text.caption),
         ],
       ),
     );

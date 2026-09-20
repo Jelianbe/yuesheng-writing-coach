@@ -46,6 +46,7 @@ import '../setting/setting_links_section.dart';
 import '../setting/setting_progressions_section.dart';
 import '../setting/setting_tags_section.dart';
 import 'character_events_section.dart';
+import '../../theme/app_typography.dart';
 
 class CharacterDetailPage extends ConsumerStatefulWidget {
   final String characterId;
@@ -520,10 +521,10 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('清除旧版断言', style: AppTextStyles.titleLg),
+        title: Text('清除旧版断言', style: context.text.titleLg),
         content: Text(
           '${_clearStalePrompt(chapterNo)}此操作不可撤销。',
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -618,13 +619,13 @@ class _MergeConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('确认并入', style: AppTextStyles.titleLg),
+      title: Text('确认并入', style: context.text.titleLg),
       content: Text(
         '把「$sourceName」并入「$targetName」？\n\n'
         '· 该行全部断言迁入本角色（AI/手来源保留）\n'
         '· 「$sourceName」自动收进本角色别名\n'
         '· 源行不再出现在角色列表',
-        style: AppTextStyles.body,
+        style: context.text.body,
       ),
       actions: [
         TextButton(
@@ -670,7 +671,7 @@ class _ConflictBanner extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '疑似重复 $count 处（同章同属性异值）',
-                    style: AppTextStyles.subBody,
+                    style: context.text.subBody,
                   ),
                 ),
                 const Icon(Icons.chevron_right, size: 18),

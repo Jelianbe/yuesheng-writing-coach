@@ -27,6 +27,7 @@ import '../services/progress_service.dart';
 import '../services/syndrome_tracker.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
+import '../theme/app_typography.dart';
 
 /// 学习进度详情页
 class ProgressDetailPage extends ConsumerStatefulWidget {
@@ -179,7 +180,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
     return _SectionCard(
       title: '症候趋势追踪',
       child: _trends.isEmpty
-          ? const Padding(
+          ? Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
               child: Column(
                 children: [
@@ -189,12 +190,12 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
                     color: AppColors.textTertiary,
                   ),
                   SizedBox(height: 8),
-                  Text('暂无症候追踪', style: AppTextStyles.body),
+                  Text('暂无症候追踪', style: context.text.body),
                   SizedBox(height: 4),
                   Text(
                     '完成几次诊断后，这里会显示你的问题变化趋势',
                     textAlign: TextAlign.center,
-                    style: AppTextStyles.caption,
+                    style: context.text.caption,
                   ),
                 ],
               ),
@@ -310,7 +311,7 @@ class _SummaryItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: AppTextStyles.caption),
+        Text(label, style: context.text.caption),
       ],
     );
   }
@@ -334,14 +335,14 @@ class _DiagnosisHistory extends StatelessWidget {
       title: '诊断历史',
       child: Column(
         children: [
-          for (var i = 0; i < records.length; i++) _buildHistoryRow(i),
+          for (var i = 0; i < records.length; i++) _buildHistoryRow(context, i),
         ],
       ),
     );
   }
 
   /// 单条诊断历史行（R-019 清偿拆出）。
-  Widget _buildHistoryRow(int i) {
+  Widget _buildHistoryRow(BuildContext context, int i) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
@@ -366,7 +367,7 @@ class _DiagnosisHistory extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '置信度 ${(records[i].confidence * 100).round()}%',
-                  style: AppTextStyles.caption,
+                  style: context.text.caption,
                 ),
               ],
             ),
@@ -583,7 +584,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
       child: Text(
         '共 ${widget.problems.length} 条诊断 · $resolved 已处理 · $active 待处理',
         textAlign: TextAlign.center,
-        style: AppTextStyles.caption,
+        style: context.text.caption,
       ),
     );
   }
@@ -851,7 +852,7 @@ class _ErrorView extends StatelessWidget {
             color: AppColors.textTertiary,
           ),
           const SizedBox(height: 12),
-          Text(message, style: AppTextStyles.body),
+          Text(message, style: context.text.body),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: onRetry,

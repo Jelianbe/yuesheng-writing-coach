@@ -17,6 +17,7 @@ import '../../data/database/database.dart';
 import '../../providers/app_providers.dart';
 import '../../services/setting_library_service.dart';
 import '../../types/character_types.dart';
+import '../../theme/app_typography.dart';
 
 /// C78 D-7 拒绝理由 chips（与角色详情页拒绝理由同一枚举，见 character_dialogs）
 const List<String> _kRejectReasons = ['抽取错误', '章节已改写', '重复', '其他'];
@@ -60,7 +61,7 @@ class PendingConfirmCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           // 条目区限高可滚：确认卡位于列表上方（Expanded 之外），
           // 不做限高会在 pending 较多时把列表挤出屏幕。
           ConstrainedBox(
@@ -79,7 +80,7 @@ class PendingConfirmCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
         const Icon(
@@ -90,7 +91,7 @@ class PendingConfirmCard extends ConsumerWidget {
         const SizedBox(width: AppSpacing.xsm),
         Text(
           'AI 抽取待确认 · ${items.length} 条',
-          style: AppTextStyles.caption.copyWith(color: AppColors.l1Text),
+          style: context.text.caption.copyWith(color: AppColors.l1Text),
         ),
       ],
     );
@@ -108,7 +109,7 @@ class PendingConfirmCard extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildItemText(row, a)),
+          Expanded(child: _buildItemText(context, row, a)),
           const SizedBox(width: AppSpacing.sm),
           _VerdictButtons(
             onConfirm: () async {
@@ -138,20 +139,24 @@ class PendingConfirmCard extends ConsumerWidget {
   }
 
   /// 条目文本列：人物 · 属性 · 值 + 证据摘录（可选）
-  Widget _buildItemText(CharacterFact row, CharacterAssertion a) {
+  Widget _buildItemText(
+    BuildContext context,
+    CharacterFact row,
+    CharacterAssertion a,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           '${row.name} · ${a.attribute} · ${a.value}',
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         if (a.evidence != null && a.evidence!.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               a.evidence!,
-              style: AppTextStyles.noteCaption,
+              style: context.text.noteCaption,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -171,16 +176,16 @@ class PendingConfirmCard extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text('拒绝理由（可选）', style: AppTextStyles.titleMd),
+              child: Text('拒绝理由（可选）', style: context.text.titleMd),
             ),
             for (final r in _kRejectReasons)
               ListTile(
-                title: Text(r, style: AppTextStyles.body),
+                title: Text(r, style: context.text.body),
                 onTap: () => Navigator.pop(ctx, r),
               ),
             const Divider(height: 1),
             ListTile(
-              title: const Text('不填理由，直接拒绝', style: AppTextStyles.body),
+              title: Text('不填理由，直接拒绝', style: context.text.body),
               onTap: () => Navigator.pop(ctx),
             ),
           ],
@@ -241,7 +246,7 @@ class _VerdictButton extends StatelessWidget {
       children: [
         Icon(icon, size: 14),
         const SizedBox(width: 2),
-        Text(label, style: AppTextStyles.microCaption),
+        Text(label, style: context.text.microCaption),
       ],
     );
     return filled

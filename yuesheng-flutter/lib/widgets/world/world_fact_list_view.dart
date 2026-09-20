@@ -31,6 +31,7 @@ import '../../utils/chapter_number.dart';
 import '../setting/setting_empty_state.dart';
 import 'world_dialogs.dart';
 import 'world_fact_detail_page.dart';
+import '../../theme/app_typography.dart';
 
 /// 断言摘要最多展示的条目数（照搬 character_list_view.dart:30）
 const int _kSummaryMax = 3;
@@ -446,7 +447,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
       ),
       child: Row(
         children: [
-          const Text('排序', style: AppTextStyles.caption),
+          Text('排序', style: context.text.caption),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: SegmentedButton<bool>(
@@ -472,7 +473,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.page),
       child: Row(
         children: [
-          const Expanded(child: Text('显示已归档', style: AppTextStyles.caption)),
+          Expanded(child: Text('显示已归档', style: context.text.caption)),
           Switch(
             value: _showArchived,
             onChanged: (v) {
@@ -495,7 +496,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
         title: Row(
           children: [
             Expanded(
-              child: Text(row.name, style: AppTextStyles.titleMd, maxLines: 1),
+              child: Text(row.name, style: context.text.titleMd, maxLines: 1),
             ),
             if (_isArchived(row)) _buildTag('已归档', AppColors.l2Text),
             if (!_hasValidAssertion(row))
@@ -522,7 +523,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
       ),
       child: Text(
         label,
-        style: AppTextStyles.microCaption.copyWith(color: color),
+        style: context.text.microCaption.copyWith(color: color),
       ),
     );
   }
@@ -537,13 +538,13 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(_firstSeenText(row, chapterNoMap), style: AppTextStyles.caption),
+        Text(_firstSeenText(row, chapterNoMap), style: context.text.caption),
         if (summary.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               summary,
-              style: AppTextStyles.noteCaption,
+              style: context.text.noteCaption,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

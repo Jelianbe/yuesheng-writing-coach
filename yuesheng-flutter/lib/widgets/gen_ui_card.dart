@@ -18,6 +18,7 @@ import '../config/app_theme.dart';
 import '../services/genui_parser.dart';
 import '../services/message_card_service.dart';
 import 'gen_ui_quiz.dart';
+import '../theme/app_typography.dart';
 
 class GenUICard extends StatelessWidget {
   final String content;
@@ -153,7 +154,7 @@ class _GenUiDiff extends StatelessWidget {
         ),
         if (note != null && note.isNotEmpty) ...[
           const SizedBox(height: 8),
-          Text(note, style: AppTextStyles.noteCaption),
+          Text(note, style: context.text.noteCaption),
         ],
       ],
     );
@@ -244,7 +245,7 @@ class _GenUiStat extends StatelessWidget {
           const SizedBox(height: 8),
         ],
         if (items.isEmpty)
-          Text('（无维度数据）', style: AppTextStyles.caption)
+          Text('（无维度数据）', style: context.text.caption)
         else
           ...items.map(
             (m) => _StatBar(
@@ -274,7 +275,7 @@ class _StatBar extends StatelessWidget {
         children: [
           SizedBox(
             width: 72,
-            child: Text(label, style: AppTextStyles.noteCaption),
+            child: Text(label, style: context.text.noteCaption),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -344,7 +345,7 @@ class _GenUiProgress extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         if (steps.isEmpty)
-          Text('（无步骤数据）', style: AppTextStyles.caption)
+          Text('（无步骤数据）', style: context.text.caption)
         else
           _ProgressRow(steps: steps),
       ],
@@ -488,7 +489,7 @@ class _GenUiTimeline extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         if (events.isEmpty)
-          Text('（无成长记录）', style: AppTextStyles.caption)
+          Text('（无成长记录）', style: context.text.caption)
         else
           ...events.asMap().entries.map(
             (e) => _TimelineEntry(
@@ -562,7 +563,7 @@ class _TimelineEntry extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (date.isNotEmpty)
-                    Text(date, style: AppTextStyles.microCaption),
+                    Text(date, style: context.text.microCaption),
                   const SizedBox(height: 2),
                   Text(
                     title,
@@ -574,7 +575,7 @@ class _TimelineEntry extends StatelessWidget {
                   ),
                   if (desc != null && desc!.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(desc!, style: AppTextStyles.noteCaption),
+                    Text(desc!, style: context.text.noteCaption),
                   ],
                 ],
               ),
@@ -612,7 +613,7 @@ class _GenUiPlaceholder extends StatelessWidget {
           Expanded(
             child: Text(
               '「$type」组件${title != null ? '（$title）' : ''}将在后续版本支持',
-              style: AppTextStyles.noteCaption,
+              style: context.text.noteCaption,
             ),
           ),
         ],

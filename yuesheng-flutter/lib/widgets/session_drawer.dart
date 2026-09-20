@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../utils/time_format.dart';
+import '../theme/app_typography.dart';
 
 class SessionDrawer extends StatefulWidget {
   /// 会话列表（listSessionsWithPhase，pinned DESC, updatedAt DESC）
@@ -167,10 +168,10 @@ class _SessionDrawerState extends State<SessionDrawer> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             '发起你的第一次对话，开始写作诊断之旅',
             textAlign: TextAlign.center,
-            style: AppTextStyles.subCaption,
+            style: context.text.subCaption,
           ),
           const SizedBox(height: 20),
           FilledButton(
@@ -275,7 +276,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
             const SizedBox(width: 8),
             Text(
               formatRelativeTime(item.session.updatedAt),
-              style: AppTextStyles.microCaption,
+              style: context.text.microCaption,
             ),
           ],
         ),
@@ -384,7 +385,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
     final newTitle = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('重命名会话', style: AppTextStyles.titleLg),
+        title: Text('重命名会话', style: context.text.titleLg),
         content: TextField(
           controller: controller,
           autofocus: true,
@@ -421,11 +422,11 @@ class _SessionDrawerState extends State<SessionDrawer> {
       barrierDismissible: true,
       barrierColor: AppColors.overlay,
       builder: (ctx) => AlertDialog(
-        title: const Text('删除会话', style: AppTextStyles.titleLg),
+        title: Text('删除会话', style: context.text.titleLg),
         content: Text(
           '删除「$title」？该会话的全部对话记录将一并删除，此操作不可撤销。',
           textAlign: TextAlign.center,
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         actions: [
           TextButton(
@@ -507,8 +508,8 @@ class _SessionDrawerState extends State<SessionDrawer> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('批量删除', style: AppTextStyles.titleLg),
-        content: Text('删除选中的 $count 个会话？此操作不可撤销。', style: AppTextStyles.body),
+        title: Text('批量删除', style: context.text.titleLg),
+        content: Text('删除选中的 $count 个会话？此操作不可撤销。', style: context.text.body),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),

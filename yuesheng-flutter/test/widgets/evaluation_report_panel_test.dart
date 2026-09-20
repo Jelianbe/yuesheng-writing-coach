@@ -14,6 +14,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/app_palette.dart';
+import 'package:writingcoach/config/app_theme.dart' show AppColors;
+import 'package:writingcoach/theme/app_theme.dart'
+    show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/types/display_types.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/evaluation_report_panel.dart';
@@ -330,6 +334,34 @@ void main() {
 
       expect(find.text('查看成长记录'), findsNothing);
       expect(find.text('关闭'), findsNothing);
+    });
+  });
+
+  // ── P1 轨道A 成对主题断言：迁移点随主题翻色（端到端，非仅令牌层）──
+  // _statTile 的 label 用 context.text.caption（→ textTertiary）。
+  group('轨道A 主题翻色：label(caption) 随主题', () {
+    Future<void> pumpTheme(WidgetTester tester, ThemeData theme) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(body: EvaluationReportPanel(evaluation: _report())),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Color _labelColor(WidgetTester tester) =>
+        tester.widget<Text>(find.text('训练次数')).style!.color!;
+
+    testWidgets('亮色 == AppColors.textTertiary', (tester) async {
+      await pumpTheme(tester, buildAppTheme());
+      expect(_labelColor(tester), AppColors.textTertiary);
+    });
+
+    testWidgets('暗色 == AppPalette.dark.textTertiary（且 != 亮色）', (tester) async {
+      await pumpTheme(tester, buildDarkTheme());
+      expect(_labelColor(tester), AppPalette.dark.textTertiary);
+      expect(_labelColor(tester), isNot(AppColors.textTertiary));
     });
   });
 }
