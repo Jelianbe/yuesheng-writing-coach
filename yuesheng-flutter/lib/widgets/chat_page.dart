@@ -9,7 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
@@ -272,7 +272,7 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       // SessionDrawer：会话管理抽屉（ChatHeader 汉堡按钮入口）
       drawer: SessionDrawer(
         sessions: _sessions,

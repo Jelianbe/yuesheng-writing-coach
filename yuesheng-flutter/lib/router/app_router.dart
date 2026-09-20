@@ -21,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_motion.dart';
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../widgets/bookshelf_page.dart';
 import '../widgets/chat_page.dart';
@@ -371,8 +372,8 @@ class _AppShell extends StatelessWidget {
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        backgroundColor: AppColors.background,
-        indicatorColor: AppColors.primarySoft,
+        backgroundColor: context.palette.background,
+        indicatorColor: context.palette.primarySoft,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),

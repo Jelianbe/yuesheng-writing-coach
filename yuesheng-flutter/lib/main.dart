@@ -11,12 +11,9 @@
 
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'config/app_motion.dart';
-import 'config/app_palette.dart';
 import 'config/app_theme.dart';
 import 'data/repositories/app_state_repository.dart';
 import 'data/repositories/chapter_repository.dart';
@@ -26,6 +23,7 @@ import 'providers/app_error_observer.dart';
 import 'providers/app_providers.dart';
 import 'router/app_router.dart';
 import 'services/error_handler.dart';
+import 'theme/theme_controller.dart';
 import 'widgets/onboarding_flow.dart';
 import 'widgets/privacy_notice_dialog.dart';
 import 'package:writingcoach/widgets/ui_overlay_host.dart';
@@ -68,128 +66,8 @@ void main() {
   );
 }
 
-/// 应用主题（主壳与引导页共用，月色竹青令牌真源）
-ThemeData buildAppTheme() {
-  return ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      primary: AppColors.primary,
-      onPrimary: AppColors.onPrimary,
-      surface: AppColors.background,
-      onSurface: AppColors.textPrimary,
-      error: AppColors.danger,
-    ),
-    useMaterial3: true,
-    // 排序/更多菜单浮层钉白底深字（门3 设计系统）：
-    // M3 PopupMenu 背景读 surfaceContainer，fromSeed 可能漂移；
-    // 显式钉 surfaceWhite + transparent surfaceTint 杜绝深底深字（真机反馈三批#3）
-    popupMenuTheme: const PopupMenuThemeData(
-      color: AppColors.surfaceWhite,
-      surfaceTintColor: Colors.transparent,
-      textStyle: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-    ),
-    // 批次67：页面转场收敛——Android/桌面用自定义轻量过渡
-    // （YueFadeSlidePageTransitionsBuilder：fade+轻微上滑 220ms easeOutCubic，
-    // 替代 PredictiveBack/FadeForwards 的 450ms 长过渡与 Zoom 的缩放感）；
-    // iOS/macOS 保留 Cupertino（滑动返回手势是平台核心交互，不能破坏）
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {
-        TargetPlatform.android: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.fuchsia: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.linux: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.windows: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-      },
-    ),
-    scaffoldBackgroundColor: AppColors.background,
-    textTheme: const TextTheme(
-      titleMedium: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-      bodyMedium: TextStyle(fontSize: 15, color: AppColors.textPrimary),
-      bodySmall: AppTextStyles.subBody,
-    ),
-    // V-4：注册运行期调色板（亮色实例）。供后续批次页面逐文件迁移使用：
-    // `context.palette.textPrimary`。存量 AppColors 静态引用不受影响（本批不改页面）。
-    extensions: const [AppPalette.light],
-  );
-}
-
-/// 暗夜主题（批次94-3：ThemeMode.system 跟随系统暗色，Material 层暗色）
-///
-/// 渐进说明：AppColors 为静态亮色令牌（**433 文件 1737 处引用、含 831 处 const
-/// 上下文**），全量双 token 不可行（dynamic getter 触发 invalid_constant）；
-/// 自定义页面底色与文字均用亮色令牌，全量令牌化列入后续批次。
-///
-/// ⚠️ 上述三个数字于 2026-09-19（V-4 侦察）实测订正：原注释写
-/// 「76 文件 1668 处引用、含 147 处 const 上下文」，三项全部漂移。
-/// 判据：`.ai/tmp/const_ctx_v3c.txt`（const 判定器经 **9 条正负例校准全绿**，
-/// 其中 4 条为可判 False 的负例）。
-/// 该数经三版判据迭代：1021（大范围启发式）→ 785（括号配对，漏检泛型 const 表）
-/// → **831**（修正 `const Map<X,Y> _t = {` 类顶层表的漏检）。详见
-/// `.ai/tmp/V4-路线复核-待裁定.md`。
-///
-/// 「831 处 const」的**意义是锁定范围，不是收益** —— const 内的颜色是编译期
-/// 常量，保壳只能保「不动它」，不能保「它变暗」。形态分类见
-/// `.ai/reports/2026-09-19-V4试点实测-const改造难度.md`。
-///
-/// 批次99（暗色可读修复）：surface 由暗色 #26282B 改回亮色。
-/// 根因：onSurface/textTheme 仍用深色亮系令牌（textPrimary/textSecondary），
-/// surface 走暗色 → BottomSheet/DropdownMenu/未显式填色的 TextField 等浮层
-/// 「暗底深字」不可读（用户反馈：暗色模式下输入与应用默认文字看不清）。
-/// 修复：surface 对齐 surfaceWhite（亮底深字），全 App 无论系统亮暗均为
-/// 亮色外观，可读性一致；brightness: dark 保留，系统状态栏/导航栏仍按暗色适配。
-ThemeData buildDarkTheme() {
-  return ThemeData(
-    brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.dark,
-      primary: AppColors.primary,
-      onPrimary: AppColors.onPrimary,
-      surface: AppColors.surfaceWhite,
-      onSurface: AppColors.textPrimary,
-      error: AppColors.danger,
-    ),
-    useMaterial3: true,
-    // 同亮主题钉 popupMenu（真机反馈三批#3 根因：dark seed 的 surfaceContainer 深色，
-    // 批次99 只修了 surface 漏修浮层容器 → 深底 + textTheme 深字 对比度≈0）
-    popupMenuTheme: const PopupMenuThemeData(
-      color: AppColors.surfaceWhite,
-      surfaceTintColor: Colors.transparent,
-      textStyle: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-    ),
-    pageTransitionsTheme: const PageTransitionsTheme(
-      builders: {
-        TargetPlatform.android: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.fuchsia: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.linux: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.windows: YueFadeSlidePageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-        TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
-      },
-    ),
-    scaffoldBackgroundColor: AppColors.background,
-    dialogTheme: const DialogThemeData(backgroundColor: AppColors.surfaceWhite),
-    textTheme: const TextTheme(
-      titleMedium: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-      bodyMedium: TextStyle(fontSize: 15, color: AppColors.textPrimary),
-      bodySmall: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-    ),
-    // V-4：注册运行期调色板（暗色实例）。
-    // ⚠️ 本批**只注册不启用**：themeMode 仍固定 light（见下方 build()），
-    // 且本 ThemeData 内其余令牌仍为亮色（批次99 的假暗色降级未动）。
-    // ⇒ 用户可见行为零变化，本实例仅为后续增量迁移预留。
-    extensions: const [AppPalette.dark],
-  );
-}
+// buildAppTheme / buildDarkTheme 已迁至 lib/theme/app_theme.dart（2026-09-20 主题架构）。
+// 主题选择经 lib/theme/theme_registry.dart + theme_controller.dart 单一真源驱动。
 
 /// 应用根组件（批次63：首启功能引导门）
 ///
@@ -212,6 +90,8 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
   void initState() {
     super.initState();
     _checkIntro();
+    // 主题：首帧后从 app_state 水合（幂等，读失败保持 light）
+    unawaited(ref.read(themeControllerProvider.notifier).hydrate());
   }
 
   Future<void> _checkIntro() async {
@@ -315,14 +195,16 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
   @override
   Widget build(BuildContext context) {
     final done = _introDone;
+    // 主题单一真源：注册表按当前 ThemeId 出 ThemeData；themeMode 恒 light
+    // ⇒ 强制使用 `theme`（即所选主题），不跟随系统（系统深色在 ColorOS 上不可控）。
+    final theme = themeDataFor(ref.watch(themeControllerProvider));
     if (done == false) {
       // 批次63：首启功能引导页
       return MaterialApp(
         title: '月笙写作教练',
         debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        darkTheme: buildDarkTheme(),
-        themeMode: ThemeMode.light, // 固定亮色：暗色主题代码保留但暂不启用（绕开系统暗色切换红屏，后续再议）
+        theme: theme,
+        themeMode: ThemeMode.light,
         home: OnboardingFlow(onComplete: _completeIntro),
       );
     }
@@ -331,9 +213,8 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
       return MaterialApp(
         title: '月笙写作教练',
         debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        darkTheme: buildDarkTheme(),
-        themeMode: ThemeMode.light, // 固定亮色：暗色主题代码保留但暂不启用（绕开系统暗色切换红屏，后续再议）
+        theme: theme,
+        themeMode: ThemeMode.light,
         home: const Scaffold(
           backgroundColor: AppColors.background,
           body: SizedBox.shrink(),
@@ -342,9 +223,8 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
     }
     return MaterialApp.router(
       title: '月笙写作教练',
-      theme: buildAppTheme(),
-      darkTheme: buildDarkTheme(),
-      themeMode: ThemeMode.light, // 固定亮色：暗色主题代码保留但暂不启用（绕开系统暗色切换红屏，后续再议）
+      theme: theme,
+      themeMode: ThemeMode.light,
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
       // 入档批次：全局 Toast/Dialog 覆盖层（纯增量能力）

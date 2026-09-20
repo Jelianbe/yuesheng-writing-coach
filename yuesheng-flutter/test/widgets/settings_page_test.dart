@@ -28,8 +28,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/ai_account_repository.dart';
+import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/theme/theme_controller.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import '../helpers/mock_last_session_storage.dart';
 import 'package:writingcoach/router/app_router.dart';
@@ -952,5 +954,24 @@ void main() {
     expect(find.text('0%'), findsOneWidget); // 命中率不产生 NaN
     expect(find.textContaining('缺少 token 明细'), findsNothing);
     expect(find.textContaining('¥'), findsNothing);
+  });
+
+  testWidgets('#A1 外观区块：点「暗色」⇒ theme_id 落库 dark（不跟随系统）', (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    // 外观区块在 ListView 靠后，滚动到可见
+    await tester.scrollUntilVisible(
+      find.text('外观'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('外观'), findsOneWidget);
+    expect(find.text('亮色'), findsOneWidget);
+    expect(find.text('暗色'), findsOneWidget);
+
+    await tester.tap(find.text('暗色'));
+    await tester.pumpAndSettle();
+    expect(await AppStateRepository(db).getValue(kThemeIdKey), 'dark');
   });
 }

@@ -25,6 +25,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../providers/manuscript_providers.dart';
@@ -133,7 +134,7 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
     final searching = _query.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: _buildAppBar(),
       body: _buildBody(state, visible, statsMap, searching),
       // FAB 已移除：百灵极简，仅 AppBar + 按钮入口
@@ -145,8 +146,8 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: _searchMode ? _filter.buildSearchField() : const Text('书架'),
-      backgroundColor: AppColors.background,
-      foregroundColor: AppColors.textPrimary,
+      backgroundColor: context.palette.background,
+      foregroundColor: context.palette.textPrimary,
       toolbarHeight: 48,
       elevation: 0,
       leading: _searchMode ? _buildSearchLeading() : null,

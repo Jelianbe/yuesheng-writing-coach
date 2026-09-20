@@ -24,6 +24,7 @@
 //   child: Text('标题', style: TextStyle(color: palette.textPrimary)),
 // ─────────────────────────────────────────────────────────────
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// 运行期调色板：44 个语义令牌，light / dark 两套实例。
@@ -527,24 +528,26 @@ class AppPalette extends ThemeExtension<AppPalette> {
 
 /// 便捷取用扩展：`context.palette.textPrimary`
 ///
-/// 迁移时比 `Theme.of(context).extension<AppPalette>()!` 更短，且把
-/// 「扩展未注册」这一失败模式收敛到一处（失败时抛 FlutterError 并给出
-/// 明确指引，而非 `null!` 的裸 NPE）。
+/// 迁移时比 `Theme.of(context).extension<AppPalette>()!` 更短。
+///
+/// ⚠️ 取不到扩展时**回退 [AppPalette.light] 并 debugPrint 告警**，而非抛错。
+///   理由：生产里 MaterialApp 恒由主题注册表提供 extensions（不会缺）；缺扩展只会
+///   发生在「未注册 AppPalette 的测试 harness（裸 MaterialApp）」或「局部 Theme 覆盖漏带
+///   extensions」。抛错会让前者整批 widget 测试崩、后者难定位；回退 light 语义安全
+///   （最坏是某子树在暗色下仍显示亮色 —— 视觉不一致，非崩溃/非数据错误），且 debug 下
+///   仍打印告警保留可观测性。
 extension AppPaletteContext on BuildContext {
-  /// 取当前主题的运行期调色板。
-  ///
-  /// 若主题未注册 [AppPalette]（例如某个 `Theme(...)` 局部覆盖时漏带
-  /// `extensions`），抛出带指引的 [FlutterError] 而非静默回退 —— 静默
-  /// 回退会让「暗色失效」变成不可见的 bug。
+  /// 取当前主题的运行期调色板；未注册时回退亮色并告警（见上）。
   AppPalette get palette {
     final p = Theme.of(this).extension<AppPalette>();
     if (p == null) {
-      throw FlutterError(
-        'AppPalette 未注册到当前 Theme。\n'
-        '请检查该 Theme / ThemeData 的 extensions 是否包含 '
-        'AppPalette.light 或 AppPalette.dark。\n'
-        '（局部 Theme 覆盖时最易漏此项）',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          '[AppPalette] 当前 Theme 未注册 AppPalette 扩展，已回退 AppPalette.light。'
+          '常见原因：测试用裸 MaterialApp，或局部 Theme(...) 覆盖漏带 extensions。',
+        );
+      }
+      return AppPalette.light;
     }
     return p;
   }

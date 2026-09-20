@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../config/reasoning_tier.dart';
 import '../data/database/database.dart';
@@ -25,6 +26,8 @@ import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/reasoning_tier_provider.dart';
 import '../providers/session_providers.dart';
+import '../theme/theme_controller.dart';
+import '../theme/theme_registry.dart';
 import '../router/app_routes.dart';
 import '../services/error_handler.dart';
 import '../services/llm_client.dart';
@@ -540,12 +543,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     // 思考档位读共享 provider（与聊天页同源；本页不持本地副本，避免双真源）
     final reasoningTier = ref.watch(reasoningTierProvider);
+    final themeId = ref.watch(themeControllerProvider);
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('设置'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
       ),
@@ -563,6 +567,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _buildApiSection(),
           const SizedBox(height: 12),
           _buildUsageSection(),
+          const SizedBox(height: 12),
+          _buildAppearanceSection(themeId),
           const SizedBox(height: 12),
           _buildModelBehaviorSection(reasoningTier),
           const SizedBox(height: 12),
@@ -765,6 +771,40 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
+  }
+
+  // ── 外观（手动主题选择） ──
+
+  /// 外观区块：从主题注册表列出所有可用主题，二选一（不跟随系统）。
+  ///
+  /// 主题经 [themeControllerProvider] 单一真源驱动，写操作乐观更新 + 落 app_state。
+  /// 注册表加新主题后，此处自动出现新选项（无需改本 widget）。
+  Widget _buildAppearanceSection(ThemeId current) {
+    return _SectionCard(
+      title: '外观',
+      description: '手动选择配色主题（不跟随系统深色）',
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final id in ThemeId.values)
+            ChoiceChip(
+              label: Text(_themeLabel(id)),
+              selected: current == id,
+              onSelected: (_) => _handleSelectTheme(id),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static String _themeLabel(ThemeId id) => switch (id) {
+    ThemeId.light => '亮色',
+    ThemeId.dark => '暗色',
+  };
+
+  Future<void> _handleSelectTheme(ThemeId id) async {
+    await ref.read(themeControllerProvider.notifier).select(id);
   }
 
   // ── 模型行为（推理档位） ──

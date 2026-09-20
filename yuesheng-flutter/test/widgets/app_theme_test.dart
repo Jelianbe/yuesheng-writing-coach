@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/app_motion.dart';
-import 'package:writingcoach/main.dart';
+import 'package:writingcoach/theme/app_theme.dart';
 
 void main() {
   group('批次67 页面转场收敛', () {

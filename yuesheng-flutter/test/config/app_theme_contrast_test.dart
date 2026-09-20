@@ -35,9 +35,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/config/editor_background_presets.dart';
-import 'package:writingcoach/main.dart' show buildAppTheme, buildDarkTheme;
+import 'package:writingcoach/theme/app_theme.dart'
+    show buildAppTheme, buildDarkTheme;
 
 /// WCAG 相对亮度（0-1）
 double _relativeLuminance(Color c) {
@@ -331,22 +333,35 @@ void _editorPresetTests() {
   }
 }
 
-/// H. PopupMenu 浮层钉白底深字（真机三批#3 护栏，批次99b 既有）
+/// H. PopupMenu 浮层钉底/字（真机三批#3 护栏，批次99b 既有；2026-09-20 暗色启用后按主题分档）
+///
+/// ★ 契约变更留痕：批次99 把暗主题降级为「假暗色」，popupMenu 刻意钉**亮色**
+///   surfaceWhite + textPrimary。2026-09-20 主题架构把暗主题改为真暗色后，暗主题
+///   popupMenu 改钉 [AppPalette.dark] 的暗底亮字 —— 期望值随主题分档，但
+///   **对比度 ≥4.5 的实质护栏不变**（那才是真正要守的可读性）。
 void _popupMenuTests() {
-  final themes = [('亮主题', buildAppTheme()), ('暗主题', buildDarkTheme())];
+  final cases = <(String, ThemeData, Color, Color)>[
+    ('亮主题', buildAppTheme(), AppColors.surfaceWhite, AppColors.textPrimary),
+    (
+      '暗主题',
+      buildDarkTheme(),
+      AppPalette.dark.surfaceWhite,
+      AppPalette.dark.textPrimary,
+    ),
+  ];
 
-  for (final (name, theme) in themes) {
-    test('$name popupMenu 底=surfaceWhite、字=textPrimary', () {
+  for (final (name, theme, expBg, expFg) in cases) {
+    test('$name popupMenu 底/字钉死（防 M3 surfaceContainer 漂移）', () {
       final pm = theme.popupMenuTheme;
       expect(
         pm.color,
-        AppColors.surfaceWhite,
-        reason: 'popupMenu 底色必须钉 surfaceWhite，防 M3 surfaceContainer 漂移',
+        expBg,
+        reason: 'popupMenu 底色必须钉死主题对应 surfaceWhite，防 M3 漂移',
       );
       expect(
         pm.textStyle?.color,
-        AppColors.textPrimary,
-        reason: 'popupMenu 文字必须钉 textPrimary',
+        expFg,
+        reason: 'popupMenu 文字必须钉死主题对应 textPrimary',
       );
     });
 

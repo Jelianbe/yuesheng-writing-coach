@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/main.dart';
+import 'package:writingcoach/theme/app_theme.dart';
 import 'package:writingcoach/widgets/yue_sheet.dart';
 
 Widget _host(Widget Function(BuildContext) triggerBuilder) {

@@ -18,6 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/diagnosis_repository.dart';
@@ -59,11 +60,11 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
     final currentSessionId = ref.watch(chatStoreProvider).currentSessionId;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('成长'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         actions: [
