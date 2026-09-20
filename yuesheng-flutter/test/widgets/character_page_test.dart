@@ -152,6 +152,99 @@ void main() {
     });
   });
 
+  group('空态与控件收敛（2026-09-20 观感批）', () {
+    // 本轮改造的核心：**空态下搜索框 / 排序条 / 新建按钮不再占位**。
+    // 改造前实测它们占掉可区 252.0/913.0 dp = 27.6%，把唯一的空白区压在下面。
+    //
+    // ★ 本组必须**成对**断言（空态无 / 有数据有）：只断言「空态下不存在」
+    //   的话，一个「永远不渲染这三个控件」的退化实现也能全绿 —— 那是把
+    //   功能删掉冒充改进。
+
+    testWidgets('空态：搜索框 / 排序条 / 新建按钮 均不渲染；主 CTA 存在', (tester) async {
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('还没有角色'), findsOneWidget);
+      // 三个「用不上」的控件必须收起
+      expect(find.byType(TextField), findsNothing, reason: '零数据时搜索框无从搜索，不应占位');
+      expect(find.text('排序'), findsNothing, reason: '零数据时排序条无意义');
+      expect(find.text('新建角色'), findsNothing, reason: '改为只在空态 CTA 里出现一次');
+      // 空态主打动作：一个够显眼的主 CTA
+      expect(find.text('＋ 新建角色'), findsOneWidget);
+    });
+
+    testWidgets('有数据：三个控件回归（负例，防「一律不渲染」冒充改进）', (tester) async {
+      await seedCharacter('林晚晴', firstSeen: 3, assertions: []);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(find.text('还没有角色'), findsNothing);
+      expect(find.byType(TextField), findsOneWidget, reason: '有数据时搜索可用了');
+      expect(find.text('排序'), findsOneWidget);
+      expect(find.text('新建角色'), findsOneWidget);
+      // 有数据时不该出现空态的 CTA 文案（两个按钮文案刻意不同，便于区分）
+      expect(find.text('＋ 新建角色'), findsNothing);
+    });
+
+    testWidgets('搜索无命中：走「筛选空态」而非「首见空态」', (tester) async {
+      await seedCharacter('林晚晴', firstSeen: 3, assertions: []);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '查无此人');
+      await tester.pumpAndSettle();
+
+      expect(find.text('没有匹配「查无此人」的结果'), findsOneWidget);
+      // ★ 鉴别点：不能掉回首见空态（那会谎称「还没有角色」，而库里明明有）
+      expect(find.text('还没有角色'), findsNothing);
+    });
+
+    testWidgets('筛选空态的「清除筛选」→ 回到全量且控件仍在', (tester) async {
+      await seedCharacter('林晚晴', firstSeen: 3, assertions: []);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '查无此人');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('清除筛选'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('林晚晴'), findsOneWidget);
+      expect(find.text('没有匹配「查无此人」的结果'), findsNothing);
+    });
+
+    testWidgets('待裁决卡不受「控件收起」影响（库空但有待裁决）', (tester) async {
+      // ★ 这是一条**防误伤**用例。`listPendingAssertions` 经 `listCharacters`
+      //   默认排除 merged 行 ⇒ 完全可能出现「_characters 空、_pending 非空」。
+      //   若把待裁决卡跟着 `if (hasAny)` 一起收起，用户的待裁决条目会**永久
+      //   无法触达** —— 这是「收拾界面」最危险的副作用。
+      await seedCharacter(
+        '林晚晴',
+        firstSeen: 3,
+        assertions: [
+          CharacterAssertion(
+            attribute: '性格',
+            value: '冷静',
+            timestamp: 2000,
+            status: 'pending',
+            source: 'ai',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      // 角色本身在列表里（pending 断言不属于 merged，角色行照常显示）
+      expect(find.text('林晚晴'), findsOneWidget);
+      // 待裁决卡必须在（它的存在与「控件收起」无关）
+      expect(find.textContaining('待确认'), findsWidgets);
+    });
+  });
+
   group('搜索与排序', () {
     Future<void> seedTwo() async {
       await seedCharacter('林晚晴', firstSeen: 3, assertions: []);

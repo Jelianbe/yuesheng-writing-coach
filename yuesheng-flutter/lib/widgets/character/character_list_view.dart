@@ -26,6 +26,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
+import '../setting/setting_empty_state.dart';
 import 'character_detail_page.dart';
 import 'character_dialogs.dart';
 import 'pending_confirm_card.dart';
@@ -274,6 +275,20 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
   }
 
   Widget _buildBody(List<CharacterFact> rows, Map<int, int> chapterNoMap) {
+    // ★ 2026-09-20 观感批：控件按**使用条件**收敛，与 `world_fact_list_view`
+    //   对齐（该页早已是 `if (_worlds.isNotEmpty)` 写法，两页此前判据不一致）。
+    //
+    //   判据取 `_characters.isEmpty`（**全量**）而非 `rows.isEmpty`（过滤后）：
+    //   搜索框 / 排序条 / 新建按钮服务的是「库里有东西可管」的场景；库里确实
+    //   一条都没有时，它们全是死控件 —— 上一轮实测空态下它们占掉可区
+    //   252.0/913.0 dp = 27.6%，把唯一的空白区压在下面。
+    //
+    // ★ 但**待裁决卡不在此列**：待裁决断言挂在**可能已合并/归档**的人物行上
+    //   （`listPendingAssertions` 经 `listCharacters` 默认排除 merged），
+    //   完全可能出现「_characters 空、_pending 非空」—— 若把它一起收起，
+    //   用户的待裁决条目会**永久无法触达**。故它无条件保留（空时自身
+    //   渲染 `SizedBox.shrink()`，见 `pending_confirm_card.dart:42`）。
+    final hasAny = _characters.isNotEmpty;
     return Column(
       children: [
         if (_inRecentMode) _buildRecentBanner(),
@@ -283,15 +298,15 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
           items: _pending,
           onChanged: _load,
         ),
-        _buildSearchField(),
-        _buildSortBar(),
-        // ★ A1：新建角色入口随列表走，置于列表上方。
-        _CreateCharacterButton(onPressed: _create),
+        if (hasAny) ...[
+          _buildSearchField(),
+          _buildSortBar(),
+          // ★ A1：新建角色入口随列表走，置于列表上方。
+          _CreateCharacterButton(onPressed: _create),
+        ],
         Expanded(
           child: rows.isEmpty
-              ? const Center(
-                  child: Text('还没有角色，诊断一章或手动新建试试', style: AppTextStyles.body),
-                )
+              ? _buildEmpty(hasAny)
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xl),
                   itemCount: rows.length,
@@ -300,6 +315,37 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
         ),
       ],
     );
+  }
+
+  /// 空态分流：**首见空态**（库里没有）与**筛选空态**（搜不到 / 最近批次无命中）
+  /// 是两件事，给的东西也不同 —— 前者要「怎么开始」，后者要「怎么回到全量」。
+  ///
+  /// ★ 区分判据不能只看 `rows.isEmpty`：本轮就踩过这个（世界观页同型缺陷）。
+  ///   这里用「有没有生效中的筛选条件」判定，而不是猜。
+  Widget _buildEmpty(bool hasAny) {
+    if (!hasAny) {
+      return SettingEmptyState(
+        icon: Icons.person_outline,
+        title: '还没有角色',
+        description: '诊断一章，AI 会自动沉淀人物的属性与关系；也可以先手动建一个。',
+        actionLabel: '＋ 新建角色',
+        onAction: _create,
+      );
+    }
+    return SettingSearchEmptyState(
+      query: _query.trim(),
+      onClear: _clearFilters,
+      excludedHint: _inRecentMode ? '当前处于「最近批次」视图，可清除后查看全部角色' : null,
+    );
+  }
+
+  /// 清除全部筛选（搜索词 + 最近批次模式）—— 供筛选空态的「清除筛选」用。
+  void _clearFilters() {
+    setState(() {
+      _query = '';
+      _since = null;
+    });
+    _reportCount();
   }
 
   Widget _buildRecentBanner() {

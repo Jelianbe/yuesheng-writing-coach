@@ -18,6 +18,7 @@ import '../../data/repositories/outline_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../outline_shared.dart';
+import 'setting_empty_state.dart';
 
 /// 状态 → 中文徽标
 String _statusLabel(String status) => switch (status) {
@@ -73,8 +74,16 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_entities.isEmpty) {
-      return const Center(
-        child: Text('还没有大纲实体，诊断一章后 AI 会沉淀', style: AppTextStyles.body),
+      // ★ 2026-09-20 观感批：本页**没有手动新建入口** —— 大纲实体全部由
+      //   AI 从正文沉淀（`_load()` 只读 `listEntities`），没有任何 UI 路径
+      //   能凭空造一条。故空态**不给 CTA 按钮**：塞一个按钮就得编造一个
+      //   不存在的动作（本仓「不编造」纪律）。
+      //   上一版是光秃秃一行 14px 小字，与同容器内世界观页的「图标+标题+
+      //   说明+按钮」形态断裂，是「太丑」的组成部分。
+      return const SettingEmptyState(
+        icon: Icons.account_tree_outlined,
+        title: '还没有大纲实体',
+        description: '诊断一章，AI 会从正文里抽出事件与线索，沉淀到这里供你确认。',
       );
     }
     return ListView.builder(

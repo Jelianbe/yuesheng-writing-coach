@@ -19,6 +19,7 @@ import '../../data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
+import 'setting_empty_state.dart';
 import 'setting_entry_dialogs.dart';
 
 class SettingEntryListView extends ConsumerStatefulWidget {
@@ -166,6 +167,9 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
 }
 
 /// 空态引导（新建入口与列表头按钮共用）。
+///
+/// 2026-09-20 观感批：改用公共 [SettingEmptyState]，与角色 / 大纲 / 世界观
+/// 三页形态统一（图标 → 标题 → 说明 → 主 CTA）。**文案与动作不变**。
 class _EmptyHint extends StatelessWidget {
   final VoidCallback onCreate;
 
@@ -173,32 +177,12 @@ class _EmptyHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.page),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '记录武器、规则、组织等自定义设定',
-              style: AppTextStyles.body,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '勾选「参与诊断」后进入诊断上下文',
-              style: AppTextStyles.caption,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
-              onPressed: onCreate,
-              icon: const Icon(Icons.add),
-              label: const Text('新建第一条'),
-            ),
-          ],
-        ),
-      ),
+    return SettingEmptyState(
+      icon: Icons.bookmark_border,
+      title: '还没有其他设定',
+      description: '记录武器、规则、组织等自定义设定；勾选「参与诊断」后进入诊断上下文。',
+      actionLabel: '新建第一条',
+      onAction: onCreate,
     );
   }
 }

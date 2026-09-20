@@ -28,6 +28,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
+import '../setting/setting_empty_state.dart';
 import 'world_dialogs.dart';
 import 'world_fact_detail_page.dart';
 
@@ -183,6 +184,18 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
   List<WorldFact> _worlds = const [];
   String _query = '';
 
+  /// ★ 2026-09-20 观感批：**库里到底有没有行**（含归档），与 `_worlds`
+  /// （当前视图的集合）**分开放**。
+  ///
+  /// 不分开就会出「假空」——实证：库里唯一一条已被归档、而「显示已归档」
+  /// 关着 ⇒ `_worlds` 为空 ⇒ 旧逻辑报「还没有世界观设定」，**谎称库里没有**。
+  /// 空态分流必须看这个字段，不能看 `_worlds`。
+  int _totalCount = 0;
+
+  /// 库里有多少条**已归档**行 —— 决定「搜不到」时要不要提示「归档被排除」。
+  /// 没有归档行却提示归档，是**过度提示**（同样在误导用户）。
+  int _archivedCount = 0;
+
   /// false = 按首见章节升序；true = 按最近更新降序（R8 两档排序）
   bool _sortByUpdate = false;
 
@@ -205,9 +218,17 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
         widget.manuscriptId,
         includeArchived: _showArchived,
       );
+      // 另取全量（含归档）仅用于**计数** —— 空态分流需要知道「库里有没有」，
+      // 而 `items` 是「当前视图有没有」。两个问题，两个答案，不能混用。
+      final all = await repo.listWorlds(
+        widget.manuscriptId,
+        includeArchived: true,
+      );
       if (!mounted) return;
       setState(() {
         _worlds = items;
+        _totalCount = all.length;
+        _archivedCount = all.where(_isArchived).length;
         _loading = false;
         _error = false;
       });
@@ -333,32 +354,55 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
     );
   }
 
+  /// 空态分流（2026-09-20 观感批重写）。
+  ///
+  /// ★ 旧实现是 `if (_worlds.isEmpty) 首见空态 else '没有匹配「$_query」'`，
+  ///   有两处**判据错位**（本轮由新增用例当场判红，非推测）：
+  ///     ① **假空**：`_worlds` 取数带 `includeArchived: _showArchived` ⇒
+  ///        库里唯一一条已归档、开关关着 ⇒ `_worlds` 空 ⇒ 报「还没有世界观
+  ///        设定」，而库里**明明有**。故首见空态必须看 [_totalCount]。
+  ///     ② **过度提示**：无归档行时也提示「已归档的默认不参与搜索」⇒ 用户
+  ///        会去找一个不存在的开关。故该提示必须看 [_archivedCount]。
+  ///   现按「库里有没有（[_totalCount]）」与「有没有生效筛选」两级分流。
   Widget _buildEmpty() {
-    if (_worlds.isEmpty) return _buildFirstRunEmpty();
-    return Center(
-      child: Text('没有匹配「${_query.trim()}」的设定主题', style: AppTextStyles.body),
+    // 一级：库里确实一条都没有 ⇒ 首见空态（引导怎么开始）
+    if (_totalCount == 0) return _buildFirstRunEmpty();
+
+    // 二级：库里有行，但当前视图被过滤空 ⇒ 筛选空态（引导怎么回到全量）。
+    // 归档行被默认排除时补一句说明 —— 这是「搜不到 ≠ 不存在」的唯一线索。
+    final q = _query.trim();
+    final excludeHint = _archivedCount > 0 && !_showArchived
+        ? '另有 $_archivedCount 条已归档的主题被默认排除，可开启「显示已归档」后查看'
+        : null;
+    return SettingSearchEmptyState(
+      query: q,
+      onClear: _clearFilters,
+      excludedHint: excludeHint,
     );
   }
 
+  /// 清除搜索词；若当前是「归档行被排除」造成的空列表，一并打开开关
+  /// （否则按了「清除筛选」还是空的，用户会以为按钮坏了）。
+  void _clearFilters() {
+    setState(() {
+      _query = '';
+      if (_archivedCount > 0 && !_showArchived) _showArchived = true;
+    });
+    _load();
+  }
+
+  /// 首见空态（**库里一条都没有**，与「筛选空态」是两件事）。
+  ///
+  /// 2026-09-20 观感批：改用公共 [SettingEmptyState]，与角色 / 大纲 / 其他
+  /// 三页形态统一。**文案与动作一字未改** —— 本页原先就是四页里形态最正的
+  /// 一版（公共组件正是照它抽的），此处只做容器替换，不做行为变更。
   Widget _buildFirstRunEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.section),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('还没有世界观设定', style: AppTextStyles.titleLg),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              '手动记录你的世界规则与设定，写作时教练会据此复查前后是否一致。',
-              style: AppTextStyles.body,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            FilledButton(onPressed: _create, child: const Text('＋ 新建设定主题')),
-          ],
-        ),
-      ),
+    return SettingEmptyState(
+      icon: Icons.public_outlined,
+      title: '还没有世界观设定',
+      description: '手动记录你的世界规则与设定，写作时教练会据此复查前后是否一致。',
+      actionLabel: '＋ 新建设定主题',
+      onAction: _create,
     );
   }
 

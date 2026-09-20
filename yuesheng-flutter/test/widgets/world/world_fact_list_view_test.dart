@@ -215,7 +215,61 @@ void main() {
 
       await tester.enterText(find.byType(TextField), '不存在');
       await tester.pumpAndSettle();
-      expect(find.text('没有匹配「不存在」的设定主题'), findsOneWidget);
+      // 2026-09-20 观感批：文案由「没有匹配「X」的设定主题」改为
+      // 「没有匹配「X」的结果」（公共 `SettingSearchEmptyState`）。
+      expect(find.text('没有匹配「不存在」的结果'), findsOneWidget);
+      // ★ 鉴别点：必须落**搜索空态**，不是首见空态 —— 否则「一律显示
+      //   『还没有世界观设定』」这种退化实现也能让上一行断言绿。
+      expect(find.text('还没有世界观设定'), findsNothing);
+      // ★ 负例（2026-09-20 新增）：「灵气体系」是 **active** 行、库里没有
+      //   任何归档行 ⇒ **不得**提示「归档被排除」（那是过度提示，会让用户
+      //   去找一个不存在的开关）。本断言由实现首版误报当场判红后补上。
+      //   ⚠️ 只查「另有 N 条已归档的主题被默认排除」这一整句 —— 不可用
+      //   宽泛的 `textContaining('已归档')`：页面常驻的「显示已归档」开关
+      //   标签同样含这三个字，会命中而**误判**为提示存在。
+      expect(find.textContaining('被默认排除'), findsNothing);
+    });
+
+    testWidgets('搜索无结果 · 命中归档行 ⇒ 提示归档被排除（2026-09-20 新增）', (tester) async {
+      // 「在用」是 active（保证 `_totalCount > 0` 且列表非空，搜索框可见）；
+      // 「废弃」已归档 ⇒ 搜索框搜它必然无命中，而它**确实存在**。
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '在用');
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '废弃');
+      final gone = (await repo.getWorld(manuscriptId, '废弃'))!;
+      await repo.archiveWorld(gone.id);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), '废弃');
+      await tester.pumpAndSettle();
+
+      // 用户看到「没有匹配」会以为「不存在」⇒ 必须说明归档行被排除了
+      expect(find.text('没有匹配「废弃」的结果'), findsOneWidget);
+      expect(
+        find.textContaining('另有 1 条已归档的主题被默认排除'),
+        findsOneWidget,
+        reason: '搜不到归档行时必须说明「不是不存在，是被默认隐藏了」',
+      );
+    });
+
+    testWidgets('库里仅有归档行 ⇒ 不得谎称「还没有」（假空，2026-09-20 新增）', (tester) async {
+      // ★ 这是本轮最关键的一条：库里**有**一条，只是已归档且开关默认关。
+      //   旧实现用 `_worlds.isEmpty` 判首见空态 ⇒ 报「还没有世界观设定」，
+      //   对用户而言等于「我的设定丢了」。新实现按 `_totalCount` 分流。
+      await repo.upsertWorld(manuscriptId: manuscriptId, name: '已废弃设定');
+      final row = (await repo.getWorld(manuscriptId, '已废弃设定'))!;
+      await repo.archiveWorld(row.id);
+
+      await tester.pumpWidget(buildHost());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('还没有世界观设定'),
+        findsNothing,
+        reason: '库里存在归档行 ⇒ 不能走首见空态（那是「一条都没有」的文案）',
+      );
+      expect(find.textContaining('另有 1 条已归档的主题被默认排除'), findsOneWidget);
     });
 
     testWidgets('搜索按属性 / 取值过滤', (tester) async {
