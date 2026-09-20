@@ -1610,4 +1610,26 @@ void main() {
       expect(find.text('还没有章节'), findsNothing);
     });
   });
+
+  // ── 三态债收敛（2026-09-20）：章节加载失败不得伪装成「还没有章节」 ──
+  group('章节加载失败态', () {
+    testWidgets('#E1 读章节抛错 ⇒ 错误态 + 重试，不谎报「还没有章节」', (tester) async {
+      // chapterStore.loadChapters 读 chapters 表；drop 掉它 ⇒ 抛错 → state.error
+      await db.customStatement('DROP TABLE chapters');
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+
+      expect(find.text('还没有章节'), findsNothing);
+      expect(find.text('新建章节'), findsNothing);
+      expect(find.text('加载章节失败，请重试'), findsOneWidget);
+      expect(find.text('重试'), findsOneWidget);
+    });
+
+    testWidgets('#E2 成对负例：正常空库仍走空态（防「永远错误」退化）', (tester) async {
+      await tester.pumpWidget(buildDetailPage());
+      await tester.pumpAndSettle();
+      expect(find.text('加载章节失败，请重试'), findsNothing);
+      expect(find.text('还没有章节'), findsOneWidget);
+    });
+  });
 }

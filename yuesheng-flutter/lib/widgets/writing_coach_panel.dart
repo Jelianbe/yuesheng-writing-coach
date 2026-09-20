@@ -149,6 +149,8 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
 
   @override
   set isDiagnosing(bool value) => setState(() => _isDiagnosing = value);
+  @override
+  bool get isDiagnosing => _isDiagnosing;
 
   @override
   set cancelToken(CancelToken? value) => _cancelToken = value;
@@ -291,6 +293,7 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
       onPartialAgreementSkip: _session.handlePartialAgreementSkip,
       onFocusInput: _session.focusInput,
       onDeleteMessage: _session.confirmDeleteMessage,
+      onRetry: _session.handleRetry,
       onPracticeSubmit: _session.submitPractice,
     );
   }

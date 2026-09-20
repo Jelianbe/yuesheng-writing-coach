@@ -20,6 +20,7 @@ import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/setting_tag_overview.dart';
+import 'setting_empty_state.dart';
 
 /// 标签总览页（全稿聚合）。
 class SettingTagOverviewPage extends ConsumerStatefulWidget {
@@ -35,6 +36,7 @@ class SettingTagOverviewPage extends ConsumerStatefulWidget {
 class _SettingTagOverviewPageState
     extends ConsumerState<SettingTagOverviewPage> {
   bool _loading = true;
+  bool _error = false;
   List<TagOverviewGroup> _groups = const [];
 
   @override
@@ -76,10 +78,16 @@ class _SettingTagOverviewPageState
       setState(() {
         _groups = groups;
         _loading = false;
+        _error = false;
       });
     } catch (_) {
+      // 读库失败：置 error（不得静默退回空态谎报「还没有标签」——
+      // 库里其实可能有标签，只是这次没读到。见 EMPTY-STATE-MATRIX §3.1 判据 5）
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
     }
   }
 
@@ -114,6 +122,9 @@ class _SettingTagOverviewPageState
   Widget _buildBody() {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_error) {
+      return SettingErrorState(message: '加载标签失败，请重试', onRetry: _load);
     }
     if (_groups.isEmpty) {
       return Center(

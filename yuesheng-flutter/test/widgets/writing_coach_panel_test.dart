@@ -1115,4 +1115,38 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  // ── 写作教练面板失败重试接线（2026-09-20 三态债收敛） ──
+  group('教练面板失败重试接线', () {
+    testWidgets('#R1 用户消息 setError ⇒ 气泡渲染「发送失败，点击重试」（此前结构性缺失）', (tester) async {
+      await tester.pumpWidget(buildPanel());
+      await tester.pumpAndSettle();
+      final store = container.read(
+        writingCoachStoreProvider(chapterId).notifier,
+      );
+      store.addMessage(
+        Message(
+          id: 'u-fail-1',
+          sessionId: chapterId,
+          role: 'user',
+          content: '这段写得怎么样',
+          timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          messageType: 'text',
+        ),
+      );
+      await tester.pump();
+      // 未标记失败前不应出现重试入口
+      expect(find.text('发送失败，点击重试'), findsNothing);
+
+      // setError 把最后一条 user 消息加入 failedMessageIds
+      store.setError('网络错误');
+      await tester.pump();
+
+      // 接线生效：WritingCoachMessageList 把 isFailed + onRetry 传给
+      // MessageBubble（此前两者都没传 ⇒ 写作页遇 AI 报错无法原地重试）。
+      // 「发送失败，点击重试」仅在 isFailed && onRetry != null 时渲染，
+      // 故它的出现同时证明两个参数都已接上。
+      expect(find.text('发送失败，点击重试'), findsOneWidget);
+    });
+  });
 }

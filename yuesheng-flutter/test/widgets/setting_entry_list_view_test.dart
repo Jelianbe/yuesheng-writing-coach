@@ -109,4 +109,34 @@ void main() {
     expect(participating, hasLength(1), reason: '勾选后进诊断上下文');
     expect(participating.single.name, '镜中人');
   });
+
+  // ── 三态债收敛（2026-09-20）：错误态此前是纯文字「加载失败」无按钮 = 死路 ──
+
+  testWidgets('#5 读库抛错 ⇒ 错误态带可点重试（不再是死路纯文字）', (tester) async {
+    // 先建一条设定（库里其实有），再 drop setting_tag ⇒ _load 里 listForEntity 抛错
+    await SettingEntryRepository(db).createEntry(
+      manuscriptId: manuscriptId,
+      category: '武器',
+      name: '血月刃',
+      description: '以血养刃。',
+    );
+    await db.customStatement('DROP TABLE setting_tag');
+
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+
+    expect(find.text('加载设定失败，请重试'), findsOneWidget);
+    // 判据 6：错误态必须可重试 ⇒ 有「重试」按钮（此前是纯文字 = 死路）
+    expect(find.text('重试'), findsOneWidget);
+    // 不伪装成空态引导
+    expect(find.textContaining('记录武器、规则'), findsNothing);
+  });
+
+  testWidgets('#6 成对负例：正常空库走空态，不误报错误', (tester) async {
+    await tester.pumpWidget(buildHost());
+    await tester.pumpAndSettle();
+    expect(find.text('加载设定失败，请重试'), findsNothing);
+    expect(find.text('重试'), findsNothing);
+    expect(find.textContaining('记录武器、规则'), findsOneWidget);
+  });
 }

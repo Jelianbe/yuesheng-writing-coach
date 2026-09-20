@@ -84,7 +84,9 @@ class _SettingEntryListViewState extends ConsumerState<SettingEntryListView> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_error) {
-      return Center(child: Text('加载失败', style: AppTextStyles.body));
+      // 此前是纯文字「加载失败」无按钮 = 死路（IndexedStack 下切走再切回不重载，
+      // 用户只能退出整页）。改为可重试错误态。见 EMPTY-STATE-MATRIX §3.1 判据 6。
+      return SettingErrorState(message: '加载设定失败，请重试', onRetry: _load);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

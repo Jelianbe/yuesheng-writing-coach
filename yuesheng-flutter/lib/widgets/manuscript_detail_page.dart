@@ -203,6 +203,10 @@ class _ManuscriptDetailPageState extends ConsumerState<ManuscriptDetailPage>
       chapters: chapterState.chapters,
       volumes: volumes,
       chaptersLoading: chapterState.isLoading,
+      chaptersError: chapterState.error,
+      onRetryChapters: () => ref
+          .read(chapterStoreProvider(widget.args.manuscriptId).notifier)
+          .loadChapters(),
       collapsedVolumes: _collapsedVolumes,
       appBarTitle: _manuscript?.title ?? widget.args.title ?? '作品详情',
       onBack: _handleBack,

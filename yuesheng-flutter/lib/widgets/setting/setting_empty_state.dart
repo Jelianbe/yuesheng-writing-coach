@@ -121,6 +121,60 @@ class SettingEmptyState extends StatelessWidget {
   }
 }
 
+/// 资料库子列表「**加载失败**」态（与空态严格区分）。
+///
+/// ★ 为什么单列一个错误态（2026-09-20 三态债收敛）：全仓大量页面把
+///   「读库抛错」静默降级成「没有数据」（catch 只置 loading=false），
+///   用户看到「还没有标签 / 还没有章节」会理解成**自己的东西丢了**。
+///   标准 `EMPTY-STATE-MATRIX §3.1` 判据 5（失败不得伪装空数据）+ 6（错误态
+///   必须可重试）要求：失败态必须**独立于空态**且**带重试入口**。
+///   本组件是四子列表 + 世界观页共用的**唯一**错误态实现（此前只有世界观页
+///   自带一套手写 Text+TextButton ⇒ 统一了空态长相却漏了三态契约）。
+class SettingErrorState extends StatelessWidget {
+  /// 失败说明文案（必填）—— 说清「加载失败」而非「没有数据」
+  final String message;
+
+  /// 重试回调（必填）—— 无重试入口即死路，故不给可空
+  final VoidCallback onRetry;
+
+  /// 图标（默认错误轮廓）
+  final IconData icon;
+
+  const SettingErrorState({
+    super.key,
+    required this.message,
+    required this.onRetry,
+    this.icon = Icons.error_outline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 32, color: AppColors.danger),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              message,
+              style: AppTextStyles.body,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// 搜索 / 筛选**无结果**时的空态（与「首见空态」区分开）。
 ///
 /// ★ 两者必须分开（2026-09-20 改造的实证教训）：`world_fact_list_view.dart`

@@ -71,6 +71,10 @@ class WritingCoachTeachingController {
   ///   2. updateChapterDiagnosedAt：写章节最后诊断时间（仅整章诊断）
   ///   3. updatePhase(P1_WORLD)：状态机流转，否则 syndrome-diagnosis-index 不加载
   Future<void> diagnoseWithText(String? selectedText) async {
+    // 再入守卫：`isDiagnosing` 的置位发生在下方首个 await 之后（见 :82），
+    // 存在「按钮尚未变灰」的点击空窗 ⇒ 连点会并发进本方法 ⇒ 重复请求 + 重复计费。
+    // 在入口即挡（早于任何 await），与流式守卫同理。
+    if (_host.isDiagnosing) return;
     // ADR-C81 懒创建：诊断（整章/划词）是「产生内容」入口，此处才真正创建会话
     final sid = await ensureSession();
     if (sid == null) return;

@@ -41,6 +41,7 @@ class OutlineEntityListView extends ConsumerStatefulWidget {
 
 class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
   bool _loading = true;
+  bool _error = false;
   List<OutlineEntity> _entities = const [];
 
   @override
@@ -50,15 +51,25 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
   }
 
   Future<void> _load() async {
-    final repo = OutlineRepository(ref.read(appDatabaseProvider));
-    final items = await repo.listEntities(widget.manuscriptId);
-    if (!mounted) return;
-    setState(() {
-      _entities = items
-          .where((e) => kOutlineVisibleStatuses.contains(e.status))
-          .toList();
-      _loading = false;
-    });
+    try {
+      final repo = OutlineRepository(ref.read(appDatabaseProvider));
+      final items = await repo.listEntities(widget.manuscriptId);
+      if (!mounted) return;
+      setState(() {
+        _entities = items
+            .where((e) => kOutlineVisibleStatuses.contains(e.status))
+            .toList();
+        _loading = false;
+        _error = false;
+      });
+    } catch (_) {
+      // 读库失败：置 error（不得退回空态谎报「还没有大纲实体」）。
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
   }
 
   Future<void> _confirm(OutlineEntity entity) async {
@@ -72,6 +83,9 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_error) {
+      return SettingErrorState(message: '加载大纲实体失败，请重试', onRetry: _load);
     }
     if (_entities.isEmpty) {
       // ★ 2026-09-20 观感批：本页**没有手动新建入口** —— 大纲实体全部由

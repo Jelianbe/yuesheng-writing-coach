@@ -66,6 +66,9 @@ class WritingCoachMessageList extends ConsumerWidget {
   /// 长按消息 → 删除
   final void Function(Message message) onDeleteMessage;
 
+  /// 失败消息「重试」→ 以原文重发（对齐聊天页 message_list 的 onRetry）
+  final void Function(String messageId) onRetry;
+
   /// T3：练习任务卡提交（复用发送链路，由会话动作承接）
   final void Function(String content, TrainingSelfAssessment? assessment)
   onPracticeSubmit;
@@ -84,6 +87,7 @@ class WritingCoachMessageList extends ConsumerWidget {
     required this.onPartialAgreementSkip,
     required this.onFocusInput,
     required this.onDeleteMessage,
+    required this.onRetry,
     required this.onPracticeSubmit,
   });
 
@@ -252,8 +256,42 @@ class WritingCoachMessageList extends ConsumerWidget {
     Message msg,
     EvaluationReportsState evaluationState,
   ) {
-    // 批次5（5.1）：卡片分派统一走 MessageCardDispatcher
-    final card = dispatchMessageCard(
+    // 批次5（5.1）：卡片分派统一走 MessageCardDispatcher（R-019：抽到 _dispatchCard）
+    final card = _dispatchCard(ref, context, msg, evaluationState);
+    if (card != null) {
+      // 批次53：RepaintBoundary 隔离；批次74：卡片消息支持长按删除
+      return RepaintBoundary(
+        key: ValueKey('coach-item-${msg.id}'),
+        child: GestureDetector(
+          onLongPress: () => onDeleteMessage(msg),
+          child: card,
+        ),
+      );
+    }
+    // 批次74：普通气泡长按删除（对齐对话页长按删除心智）
+    // 失败气泡：接 isFailed/onRetry（对齐聊天页 message_list:557-558）——
+    // 此前写作教练面板未接，AI 报错时用户无法原地重试，只能重开面板。
+    final isFailed = chatState.failedMessageIds.contains(msg.id);
+    return RepaintBoundary(
+      key: ValueKey('coach-item-${msg.id}'),
+      child: MessageBubble(
+        message: msg,
+        onLongPress: onDeleteMessage,
+        isFailed: isFailed,
+        onRetry: isFailed ? onRetry : null,
+      ),
+    );
+  }
+
+  /// 卡片分派（批次5.1）：命中卡片则返回，否则 null（由调用方回落普通气泡）。
+  /// R-019：从 [_buildMessageItem] 提取，避免单函数超 50 行硬限。
+  Widget? _dispatchCard(
+    WidgetRef ref,
+    BuildContext context,
+    Message msg,
+    EvaluationReportsState evaluationState,
+  ) {
+    return dispatchMessageCard(
       msg: msg,
       isStreamingBubble: false,
       evaluationReport: evaluationState.reports[msg.id],
@@ -273,21 +311,6 @@ class WritingCoachMessageList extends ConsumerWidget {
       onContinueChat: onFocusInput,
       onPartialAgreementSubmit: onPartialAgreementSubmit,
       onPartialAgreementSkip: onPartialAgreementSkip,
-    );
-    if (card != null) {
-      // 批次53：RepaintBoundary 隔离；批次74：卡片消息支持长按删除
-      return RepaintBoundary(
-        key: ValueKey('coach-item-${msg.id}'),
-        child: GestureDetector(
-          onLongPress: () => onDeleteMessage(msg),
-          child: card,
-        ),
-      );
-    }
-    // 批次74：普通气泡长按删除（对齐对话页长按删除心智）
-    return RepaintBoundary(
-      key: ValueKey('coach-item-${msg.id}'),
-      child: MessageBubble(message: msg, onLongPress: onDeleteMessage),
     );
   }
 }

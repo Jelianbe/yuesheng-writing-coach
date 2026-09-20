@@ -51,6 +51,9 @@ abstract class WritingCoachPanelHost {
   /// 写入诊断中标志
   set isDiagnosing(bool value);
 
+  /// 读取诊断中标志（供诊断入口做再入守卫，防连点重复请求/重复计费）
+  bool get isDiagnosing;
+
   /// 会话创建/绑定后恢复态度档位
   Future<void> loadAttitude(String sessionId);
 

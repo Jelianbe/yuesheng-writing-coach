@@ -200,4 +200,41 @@ void main() {
     // 角色详情页 AppBar 标题 = 角色名
     expect(find.widgetWithText(AppBar, '林晚'), findsOneWidget);
   });
+
+  // ── 三态债收敛（2026-09-20）：加载失败不得伪装成「还没有标签」 ──
+
+  testWidgets('#6 读库抛错 ⇒ 显示错误态 + 重试，不谎报「还没有标签」', (tester) async {
+    // 先让库里**确实有标签**（证明「有数据却读失败」≠「没数据」）
+    await CharacterFactRepository(db).upsertCharacter(
+      manuscriptId: manuscriptId,
+      name: '林晚',
+      firstSeenChapter: 1,
+    );
+    final charId = (await CharacterFactRepository(
+      db,
+    ).getCharacter(manuscriptId, '林晚'))!.id;
+    await SettingTagRepository(
+      db,
+    ).addTag(manuscriptId, SettingEntityKind.character, charId, '主角团');
+    // 制造真实读库异常：_load 会读 world_fact 表，drop 掉它 ⇒ listWorlds 抛错
+    await db.customStatement('DROP TABLE world_fact');
+
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+
+    // 判据 5：不得伪装空数据 ⇒ 不出现「还没有标签」
+    expect(find.textContaining('还没有标签'), findsNothing);
+    // 判据 6：错误态可重试 ⇒ 出现重试按钮
+    expect(find.text('加载标签失败，请重试'), findsOneWidget);
+    expect(find.text('重试'), findsOneWidget);
+  });
+
+  testWidgets('#7 成对负例：正常空库（未抛错）仍显示空态，不误报错误', (tester) async {
+    // 防「永远显示错误态」的退化实现：库正常、无标签 ⇒ 走空态而非错误态
+    await tester.pumpWidget(buildPage());
+    await tester.pumpAndSettle();
+    expect(find.text('加载标签失败，请重试'), findsNothing);
+    expect(find.text('重试'), findsNothing);
+    expect(find.textContaining('还没有标签'), findsOneWidget);
+  });
 }

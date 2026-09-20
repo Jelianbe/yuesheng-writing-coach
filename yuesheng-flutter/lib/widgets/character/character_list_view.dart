@@ -153,6 +153,7 @@ class CharacterListView extends ConsumerStatefulWidget {
 /// 未重建 ⇒ 列表不更新」的陈旧数据缺陷。
 class CharacterListViewState extends ConsumerState<CharacterListView> {
   bool _loading = true;
+  bool _error = false;
   List<CharacterFact> _characters = const [];
 
   /// 设定资料库第一批：AI 抽取待用户裁决的断言（确认卡数据源）
@@ -178,16 +179,26 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
   Future<void> refresh() => _load();
 
   Future<void> _load() async {
-    final repo = CharacterFactRepository(ref.read(appDatabaseProvider));
-    final items = await repo.listCharacters(widget.manuscriptId);
-    final pending = await repo.listPendingAssertions(widget.manuscriptId);
-    if (!mounted) return;
-    setState(() {
-      _characters = items;
-      _pending = pending;
-      _loading = false;
-    });
-    _reportCount();
+    try {
+      final repo = CharacterFactRepository(ref.read(appDatabaseProvider));
+      final items = await repo.listCharacters(widget.manuscriptId);
+      final pending = await repo.listPendingAssertions(widget.manuscriptId);
+      if (!mounted) return;
+      setState(() {
+        _characters = items;
+        _pending = pending;
+        _loading = false;
+        _error = false;
+      });
+      _reportCount();
+    } catch (_) {
+      // 读库失败：置 error（不得退回空态谎报「还没有角色」，库里可能真有）。
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = true;
+      });
+    }
   }
 
   /// 列表头「＋ 新建角色」（A1）：与独立页 AppBar action 共用共享逻辑。
@@ -264,6 +275,9 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_error) {
+      return SettingErrorState(message: '加载角色失败，请重试', onRetry: _load);
     }
     // ADR-C95 裁定 4（`N12-F3a`）：`first_seen_chapter` 存的是**身份键**
     // （`chapter.sortOrder`），展示必须解析为「当前章节列表里的序位」；

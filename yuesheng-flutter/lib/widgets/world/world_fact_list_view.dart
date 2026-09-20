@@ -407,16 +407,9 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('加载世界观设定失败，请重试', style: AppTextStyles.body),
-          const SizedBox(height: AppSpacing.md),
-          TextButton(onPressed: _load, child: const Text('重试')),
-        ],
-      ),
-    );
+    // 收敛到公共错误态件（此前本页自带一套手写 Text+TextButton ⇒
+    // 统一了空态长相却漏了三态契约，是「四子列表三态不齐」的根因之一）。
+    return SettingErrorState(message: '加载世界观设定失败，请重试', onRetry: _load);
   }
 
   Widget _buildSearchField() {

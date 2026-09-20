@@ -22,6 +22,7 @@ import 'manuscript_detail_chapter_list_header.dart';
 import 'manuscript_detail_states.dart';
 import 'related_sessions_tab.dart';
 import 'manuscript_growth_tab.dart';
+import 'setting/setting_empty_state.dart';
 import 'setting/setting_library_tab.dart';
 
 /// 作品详情页装配视图（无状态）
@@ -33,6 +34,7 @@ class ManuscriptDetailView extends StatelessWidget {
   final List<Chapter> chapters;
   final List<Volume> volumes;
   final bool chaptersLoading;
+  final String? chaptersError;
   final Set<String> collapsedVolumes;
   final String appBarTitle;
 
@@ -48,6 +50,7 @@ class ManuscriptDetailView extends StatelessWidget {
   final ValueChanged<Volume> onVolumeLongPress;
   final ValueChanged<Volume> onRenameVolume;
   final ValueChanged<String> onOpenSession;
+  final VoidCallback onRetryChapters;
 
   const ManuscriptDetailView({
     super.key,
@@ -58,6 +61,7 @@ class ManuscriptDetailView extends StatelessWidget {
     required this.chapters,
     required this.volumes,
     required this.chaptersLoading,
+    required this.chaptersError,
     required this.collapsedVolumes,
     required this.appBarTitle,
     required this.onBack,
@@ -72,6 +76,7 @@ class ManuscriptDetailView extends StatelessWidget {
     required this.onVolumeLongPress,
     required this.onRenameVolume,
     required this.onOpenSession,
+    required this.onRetryChapters,
   });
 
   @override
@@ -176,6 +181,11 @@ class ManuscriptDetailView extends StatelessWidget {
     // 空态判据必须是「章与卷皆空」：只按 chapters 判会让零章节
     // 作品新建的卷被章节空态吞掉，必须再建一章才可见。
     if (chaptersLoading) return const ManuscriptLoadingView();
+    // 加载失败：显式错误态 + 重试，绝不退回「还没有章节」空态（库里可能有章节，
+    // 只是这次读库抛错）。见 EMPTY-STATE-MATRIX §3.1 判据 5/6。
+    if (chaptersError != null) {
+      return SettingErrorState(message: '加载章节失败，请重试', onRetry: onRetryChapters);
+    }
     if (chapters.isEmpty && volumes.isEmpty) {
       // 横向 padding 已收进 ChapterListHeader 自身，此处再加一次即双重缩进，
       // 且与数据态（ChapterList 的 CustomScrollView 未传 padding = 0）不一致

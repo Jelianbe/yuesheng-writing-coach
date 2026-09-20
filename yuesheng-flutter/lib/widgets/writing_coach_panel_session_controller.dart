@@ -91,7 +91,31 @@ class WritingCoachSessionController {
 
   /// 批次61：Teacher 建议卡「教我原理」→ 填入输入框并发送（复用 _handleSend 链路）
   Future<void> handleTeachPrinciple(String syndromeName) async {
+    // 与 handlePartialAgreementSubmit / handlePartialAgreementSkip 同守卫：
+    // 流式生成中直接返回，否则连点「教我原理」会重复发请求（重复计费）。
+    if (_ref.read(writingCoachStoreProvider(_chapterId)).isStreaming) return;
     _host.inputController.text = buildTeachPrincipleMessage(syndromeName);
+    await _chat.handleSend();
+  }
+
+  /// 重试失败的消息：清失败标记 → 用原内容重发（对齐聊天页 `handleRetry`）。
+  ///
+  /// 失败标记由 `writingCoachStoreProvider`（复用 ChatStore）的 `setError` 写入，
+  /// 本方法把它清掉并以原文重发。此前写作教练面板**无重试入口**（MessageBubble
+  /// 未接 isFailed/onRetry），用户遇 AI 报错只能重开面板。
+  Future<void> handleRetry(String failedMessageId) async {
+    final store = _ref.read(writingCoachStoreProvider(_chapterId).notifier);
+    final state = _ref.read(writingCoachStoreProvider(_chapterId));
+    Message? failedMsg;
+    for (final m in state.messages) {
+      if (m.id == failedMessageId) {
+        failedMsg = m;
+        break;
+      }
+    }
+    store.clearMessageFailed(failedMessageId);
+    if (failedMsg == null) return;
+    _host.inputController.text = failedMsg.content;
     await _chat.handleSend();
   }
 
