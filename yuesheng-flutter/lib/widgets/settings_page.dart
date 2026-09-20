@@ -131,11 +131,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     ref.read(reasoningTierProvider.notifier).hydrate();
   }
 
-  /// `N7`：加载「本周用量」。
+  /// `N7`：加载「本周调用统计」。
   ///
   /// 失败**静默降级**（与 `_loadProgressSummary` 同纪律：不阻塞设置页其他区块），
-  /// 但**不塞一个 0 元凑数** —— 加载失败时该区块整体不渲染，避免把
-  /// 「查不到」显示成「这周没花钱」（两者外观相同，本仓已栽过多次）。
+  /// 但**不塞一个 0 凑数** —— 加载失败时该区块整体不渲染，避免把
+  /// 「查不到」显示成「这周没调用」（两者外观相同，本仓已栽过多次）。
   Future<void> _loadUsageReport() async {
     try {
       final report = await loadWeekLlmUsage(
@@ -800,7 +800,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  // ── 本周用量（`N7`） ──
+  // ── 本周调用统计（`N7`，2026-09-20 改全模型通用口径） ──
 
   /// 注脚统一样式（12px 三级灰）—— 抽出来避免同一字面量重复四次
   /// （R-019 职责提取的顺手产物）。
@@ -809,18 +809,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     color: AppColors.textTertiary,
   );
 
-  /// 本周花费 / 用量卡片。
+  /// 本周调用统计卡片（**全模型通用**：次数 / token 消耗 / 缓存命中率）。
   ///
-  /// 读数**未就绪时整块不渲染**（加载中或查询失败）—— 不用 0 元占位，
-  /// 否则「查不到」与「这周没花钱」外观完全相同。
+  /// ★ 2026-09-20 改造：不再显示折算金额。原「峰时 = 闲时 ×2」只对
+  /// DeepSeek 成立，套到其它厂商会**凭空捏造费用**（详见 `llm_cost.dart`
+  /// 文件头）。现只统计**不依赖厂商计价规则**的客观量。
+  ///
+  /// 读数**未就绪时整块不渲染**（加载中或查询失败）—— 不用 0 占位，
+  /// 否则「查不到」与「这周没调用」外观完全相同。
   Widget _buildUsageSection() {
     final report = _usageReport;
     if (report == null) return const SizedBox.shrink();
     return _SectionCard(
-      title: '本周用量',
+      title: '本周调用统计',
       description:
           '${_weekStartLabel(report.sinceEpochSec)} 起本机调用统计 · '
-          '按闲时 / 峰时单价逐笔折算（峰时 = 闲时 ×2，时段为北京时间）',
+          '按各厂商实际返回的 token 计量，不折算金额',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -840,28 +844,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
-  /// 卡片首行：金额（主读数）+ 调用次数（次级）。
+  /// 卡片首行：**总消耗 token**（主读数）+ 调用次数（次级）。
   Widget _usageHeadline(LlmUsageReport report) => Row(
     crossAxisAlignment: CrossAxisAlignment.baseline,
     textBaseline: TextBaseline.alphabetic,
     children: [
-      Text(
-        '¥${report.costCny.toStringAsFixed(4)}',
-        style: AppTextStyles.titleLg,
-      ),
+      Text(_compactTokens(report.totalTokens), style: AppTextStyles.titleLg),
+      const SizedBox(width: 4),
+      Text('tokens', style: _usageNoteStyle),
       const SizedBox(width: 8),
       Text('${report.calls} 次调用', style: _usageNoteStyle),
     ],
   );
 
-  /// 两条**条件**注脚：峰时次数 / 坏行条数。
+  /// 一条**条件**注脚：坏行条数。
   ///
   /// 无内容时返回空列表（由调用点 `...` 展开），故卡片不会留空行。
   List<Widget> _usageNotes(LlmUsageReport report) => [
-    if (report.peakCalls > 0) ...[
-      const SizedBox(height: 8),
-      Text('其中 ${report.peakCalls} 次落在高峰时段（单价 ×2）', style: _usageNoteStyle),
-    ],
     if (report.skippedRows > 0) ...[
       const SizedBox(height: 8),
       Text(
@@ -1463,10 +1462,10 @@ class _ProgressStat extends StatelessWidget {
   }
 }
 
-/// `N7` 本周用量：四格统计行（token 拆解 + 缓存命中率）。
+/// `N7` 本周调用统计：四格统计行（token 拆解 + 缓存命中率）。
 ///
 /// 与 [_ProgressStat] 同形但**不共用**：后者的 `value` 是主读数、字号 `titleLg`，
-/// 这里四格并排是**次级明细**，用 `body` 级字号才不会与卡片首行的金额抢层级。
+/// 这里四格并排是**次级明细**，用 `body` 级字号才不会与卡片首行的主读数抢层级。
 class _UsageStatRow extends StatelessWidget {
   /// (标签, 值) 四元组，顺序即展示顺序
   final List<(String, String)> stats;

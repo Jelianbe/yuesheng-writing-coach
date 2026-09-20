@@ -12,8 +12,9 @@
 //   8. 清除缓存 → 删除无消息的孤儿会话（保留有消息的）
 //   9. 关于区块 → 应用名称/版本/包名
 //  10. 反馈对话框 → 邮箱展示
-//  11. `N7` 本周用量区块 → 金额/次数/token 拆解/命中率/峰时与坏行提示
+//  11. `N7` 本周调用统计区块 → 总消耗/次数/token 拆解/命中率与坏行提示
 //      （★ 埋点由**真写入方** `LlmCallLogEntry.toJson()` 生成，见 #N7 段注释）
+//      （2026-09-20 改造：原「金额 / 峰时提示」断言随计价移除而重写）
 // ─────────────────────────────────────────────────────────────
 
 import 'dart:convert';
@@ -783,7 +784,7 @@ void main() {
     );
   });
 
-  // ── `N7`（批次 3）：设置页「本周用量」 ──
+  // ── `N7`（批次 3）：设置页「本周调用统计」 ──
   //
   // ★ 本段的**鉴别力设计**：埋点载荷由**真写入方** `LlmCallLogEntry.toJson()`
   //   生成，**不手抄键名**。手抄一份 = 把「context 键口径」推算两遍，写入方
@@ -825,30 +826,33 @@ void main() {
         );
   }
 
-  /// 滚到「本周用量」区块（它在 API 区块之后 ⇒ 首屏外，必须滚动；
+  /// 滚到「本周调用统计」区块（它在 API 区块之后 ⇒ 首屏外，必须滚动；
   /// `ListView` 惰性构建，不滚动则节点**根本不在树里**）。
   Future<void> scrollToUsage(WidgetTester tester) async {
     await tester.dragUntilVisible(
-      find.text('本周用量'),
+      find.text('本周调用统计'),
       find.byType(ListView),
       const Offset(0, -200),
     );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('#N7-1 一条闲时 + 一条峰时 → 金额/次数/拆解/命中率/峰时提示', (tester) async {
-    // 用「相对本周起点」而非写死的日历时刻 ⇒ 无论哪天跑本用例都落在窗口内。
-    // 起点恒为北京时间周一 00:00 ⇒ +1h = 周一 01:00（闲）；+11h = 周一 11:00（峰）。
+  testWidgets('#N7-1 两次调用 → 总消耗/次数/拆解/命中率（全模型通用口径）', (tester) async {
+    // 2026-09-20 改造：原用例断言「峰时金额」，随计价移除而重写。
+    // 现断言**总 token 消耗**（不依赖任何厂商计价规则）。
     final since = weekStartEpochSecCst(DateTime.now().toUtc());
     await insertLlmCall(
-      id: 'u-off',
+      id: 'u-1',
       at: since + 3600,
       cached: 1000,
       miss: 2000,
       completion: 3000,
     );
+    // 第二笔刻意落在「周一 11:00」—— 旧口径下这是峰时；新口径**不区分时段**
+    // ⇒ 若有人把时段逻辑加回来，本用例的总额断言仍成立但语义已变，
+    //   故下方另有一条「无峰时提示」的负例断言兜住。
     await insertLlmCall(
-      id: 'u-peak',
+      id: 'u-2',
       at: since + 11 * 3600,
       cached: 1000,
       miss: 2000,
@@ -863,12 +867,13 @@ void main() {
     expect(find.text('2.0k'), findsOneWidget); // 命中 1000+1000
     expect(find.text('4.0k'), findsOneWidget); // 未命中 2000+2000
     expect(find.text('6.0k'), findsOneWidget); // 输出 3000+3000
-    expect(find.text('33%'), findsOneWidget); // 2000 / 6000
-    expect(find.textContaining('其中 1 次落在高峰时段'), findsOneWidget);
-    // 金额：闲 1000×0.02+2000×1+3000×4 = 14020/1e6 = 0.01402
-    //      峰 同上 ×2                     = 0.02804
-    //      ⇒ 合计 0.04206 → ¥0.0421（断言前缀，避开末位浮点表示差异）
-    expect(find.textContaining('¥0.04'), findsOneWidget);
+    expect(find.text('33%'), findsOneWidget); // 2000 / 6000 命中率
+    // 总消耗 = 2000 + 4000 + 6000 = 12000 → 紧凑写 12.0k
+    expect(find.text('12.0k'), findsOneWidget);
+    expect(find.text('tokens'), findsOneWidget);
+    // ★ 负例：计价与峰时提示必须**彻底消失**
+    expect(find.textContaining('¥'), findsNothing);
+    expect(find.textContaining('高峰时段'), findsNothing);
   });
 
   testWidgets('#N7-2 窗口前一行不计入；坏行单列（不是 0 消耗）', (tester) async {
@@ -932,15 +937,20 @@ void main() {
     expect(find.text('2 次调用'), findsNothing);
   });
 
-  testWidgets('#N7-3 零埋点 → 仍渲染空读数（诚实报 0），无峰时/坏行提示', (tester) async {
+  testWidgets('#N7-3 零埋点 → 仍渲染空读数（诚实报 0），无坏行提示', (tester) async {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();
     await scrollToUsage(tester);
 
-    // 「这周确实没花钱」= 真 0，应如实显示（与「查询失败整块不渲染」区分开）
-    expect(find.text('¥0.0000'), findsOneWidget);
+    // 「这周确实没调用」= 真 0，应如实显示（与「查询失败整块不渲染」区分开）
     expect(find.text('0 次调用'), findsOneWidget);
-    expect(find.textContaining('高峰时段'), findsNothing);
+    // 总消耗是「数字」与「tokens」两个相邻 Text，不是一个拼接串。
+    // ⚠️ 不能写 findsOneWidget：四个统计格（命中/未命中/输出）也都是 0
+    // ⇒ 单查 `find.text('0')` 会命中 4 个。此处只钉「存在且未崩」。
+    expect(find.text('0'), findsWidgets);
+    expect(find.text('tokens'), findsOneWidget);
+    expect(find.text('0%'), findsOneWidget); // 命中率不产生 NaN
     expect(find.textContaining('缺少 token 明细'), findsNothing);
+    expect(find.textContaining('¥'), findsNothing);
   });
 }

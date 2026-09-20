@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is on -->
-    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+    <!-- ⚠️ 2026-09-20 暗色模式关闭（可达入口摘除）：本文件曾用 Theme.Black.NoTitleBar，
+         导致手机系统深色时窗口底色变黑，与 Flutter 侧硬钉的亮色 UI（main.dart:325
+         themeMode: ThemeMode.light）冲突 ⇒ 表现为「系统开深色后界面无法正常显示」。
+
+         ★ 关键认知：`themeMode` 只管 Flutter 内部，**管不到 Android 窗口层**。
+         `android:configChanges` 含 `uiMode` ⇒ 系统切亮暗不重建 Activity，
+         仅换 values-night 资源 ⇒ 窗口底色单独翻黑。
+
+         处置：与亮色侧 parent 统一为 Theme.Light，使窗口层不随系统深色变化。
+         本文件**保留**（非删除）以承载此结论，防止后人再次改回 Theme.Black。 -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <!-- Show a splash screen on the activity. Automatically removed when
              the Flutter engine draws its first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
@@ -16,7 +25,8 @@
          running.
 
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
-    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <item name="android:windowBackground">?android:colorBackground</item>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <!-- 钉死亮色底（不用 ?android:colorBackground —— 该属性仍可能随系统解析成深色） -->
+        <item name="android:windowBackground">@color/yuesheng_paper</item>
     </style>
 </resources>

@@ -1,126 +1,87 @@
 // ─────────────────────────────────────────────────────────────
-// llm_cost — LLM 成本折算的**唯一实现点**（`N7` 批次）
+// llm_cost — LLM 用量统计的**唯一实现点**
 //
-// 为什么需要本文件：用量埋点（`llm_call_log_sink.dart`）**刻意只存原始
-// token、不存成本** —— 理由写在它自己的文件头：「单价会变，且成本结论须
-// 显式声明峰/闲时段 ⇒ 折算留给查询侧」。因此**折算侧此前只存在于 Python
-// 审计脚本与台账文字里，`lib/` 下一个实现都没有**。本文件把那个口径
-// **搬进产品代码**，供 UI（设置页「本周用量」）复用。
+// ## 2026-09-20 改造：从「DeepSeek 专属计价」改为「全模型通用用量」
 //
-// ## 单价口径（**不得在本文件之外另立一套**）
+// 改造前本文件按「峰时 = 闲时 × 2」折算 —— 该规则**只对 DeepSeek 成立**
+// （DeepSeek 有错峰折扣时段）。对其它厂商（豆包 / OpenAI / 通义 / 智谱 …）
+// 该假设**是错的**：它们没有错峰计价，强行套时段会产生**凭空捏造的费用**。
 //
-// | 项 | 闲时（元 / 百万 token） |
-// |---|---|
-// | 命中缓存的输入（hit） | 0.02 |
-// | 未命中缓存的输入（miss） | 1.00 |
-// | 输出（含推理） | 4.00 |
+// 舰长裁定：**「花多少记多少」** ⇒ 不再推算费用，改为**只统计客观用量**：
+//   · 调用次数
+//   · 总 token 消耗（输入 / 输出）
+//   · 缓存命中率
 //
-// **峰时 = 闲时 × 2**（`kPeakMultiplier`）。
+// 这三项**不依赖任何厂商的计价规则** ⇒ 对全部模型通用、也永不会因调价而失真。
 //
-// ## 峰 / 闲时段定义
+// ## 为什么不再显示「元」
 //
-// ★ **高峰时段 = 北京时间 周一至周五 09:00–12:00、14:00–18:00；其余空闲**
-//   —— 出处 `.ai/LEDGER-DETAIL.md:806`（原文即此，含「×0.5」的等价表述）。
+// 单价是**厂商私有且会变**的事实，本机无从核实用户实际签约价。此前那套
+// 单价表（0.02 / 1.00 / 4.00）来自单次 DeepSeek 账单回填，**不具备跨厂商
+// 普适性**。继续显示折算金额等于向用户**断言一个我们无法保证的数字**。
+// ⇒ 本文件不再输出货币金额，只输出**可核实的 token 计数**。
 //
-// ## 口径的实测背书（不是照抄单价表）
+// ## 时区（唯一保留的时间逻辑）
 //
-// `.ai/LEDGER-DETAIL.md:1572`：结算后**实花 ¥0.1500** vs 脚本按
-// **闲时 0.02 / 1.00 / 4.00** 折算 **¥0.15135** ⇒ **1.009×**（折算准确）。
-// ⇒ 该三档单价**已被真实账单回填验证**，故本文件直接采用，不再另采样本。
+// 「本周」起点仍是**北京时间周一 00:00**：这是**用户视角的日历归属**，
+// 与厂商计价无关，故保留。设备若不在 UTC+8，用 `DateTime.now().hour`
+// 会把周界算错 ⇒ 一律显式 `toUtc() + 8h`。
 //
-// ## ⚠️ 两条最容易错的点（本文件刻意防住）
+// ## ⚠️ 最容易错的一点
 //
-// 1. **时区**：峰闲窗是**北京时间**定义的，**不是设备本地时**。设备若不在
-//    UTC+8（模拟器 / 海外用户 / 用户改了系统时区），用 `DateTime.now().hour`
-//    判档会**整体错档**（成本差 2 倍）。故本文件**一律显式 `toUtc() + 8h`**，
-//    调用方只传 UTC 时刻、**不传本地时刻**。
-// 2. **别把 reasoning 再加一遍**：`completion_tokens` 在协议层**已含**推理
-//    token（`LlmUsageTotals.completionTokens` 注释、`llm_usage.dart` 同），
-//    `reasoning_tokens` 是**拆解视图**而非额外计费项 ⇒ 输出档只乘
-//    `completionTokens`，**不得**再加 `reasoningTokens`。
+// `completion_tokens` 在协议层**已含**推理 token（`LlmUsageTotals.completionTokens`
+// 注释、`llm_usage.dart` 同），`reasoning_tokens` 是**拆解视图**而非额外项
+// ⇒ 统计总量时**不得**再加 `reasoningTokens`。
 // ─────────────────────────────────────────────────────────────
-
-/// 三档单价（元 / **百万** token）。不可变。
-class LlmPrice {
-  /// 命中缓存的输入 token 单价
-  final double cachedPerM;
-
-  /// 未命中缓存的输入 token 单价
-  final double missPerM;
-
-  /// 输出 token 单价（**已含推理**，别再单独加 `reasoning_tokens`）
-  final double outputPerM;
-
-  const LlmPrice({
-    required this.cachedPerM,
-    required this.missPerM,
-    required this.outputPerM,
-  });
-
-  @override
-  String toString() =>
-      'LlmPrice(hit=$cachedPerM, miss=$missPerM, out=$outputPerM / 百万)';
-}
-
-/// 闲时单价（= 基准档）。出处见文件头。
-const LlmPrice kLlmOffPeakPrice = LlmPrice(
-  cachedPerM: 0.02,
-  missPerM: 1.00,
-  outputPerM: 4.00,
-);
-
-/// 峰时倍数（峰时单价 = 闲时 × 本值）。
-const double kPeakMultiplier = 2.0;
 
 /// 北京时区相对 UTC 的固定偏移。
 ///
 /// 中国全境单一时区、**无夏令时** ⇒ 用固定偏移即可，无需时区库。
 const Duration kCstOffset = Duration(hours: 8);
 
-/// 高峰时段的整点区间（**北京时间**，左闭右开）。
-const List<({int from, int to})> kPeakHourRangesCst = [
-  (from: 9, to: 12),
-  (from: 14, to: 18),
-];
-
 /// 北京时间墙钟视图。
 ///
 /// 返回的 `DateTime` 其 **UTC 标记位被复用为「北京时间字段」**（不吃设备时区）。
-/// 私有：只供本文件的判档 / 求周起点使用，不外泄以免被误当真实 UTC。
+/// 私有：只供求周起点使用，不外泄以免被误当真实 UTC。
 DateTime _cstWallClock(DateTime atUtc) => atUtc.toUtc().add(kCstOffset);
 
-/// 该时刻是否落在**高峰时段**（北京时间 周一至周五 09:00–12:00 / 14:00–18:00）。
+/// 一次调用的用量（**客观 token 计数**，不含任何金额）。
 ///
-/// ★ 入参必须是 **UTC 时刻**（`DateTime` 若带本地时区会自动 `toUtc()`，
-///   但要显式传 UTC 才不会被误读；本函数**不读设备时区**）。
-bool isPeakHourCst(DateTime atUtc) {
-  final cst = _cstWallClock(atUtc);
-  // DateTime.weekday: 1=周一 … 7=周日 ⇒ 仅周一至周五计高峰。
-  if (cst.weekday > DateTime.friday) return false;
-  for (final r in kPeakHourRangesCst) {
-    if (cst.hour >= r.from && cst.hour < r.to) return true;
-  }
-  return false;
-}
+/// 不可变。字段全部来自厂商 response 的 `usage` 帧，无一由本机推算。
+class LlmTokenUsage {
+  /// 输入中**命中缓存**的 token（通常单价更低，但本类不涉及单价）
+  final int cachedTokens;
 
-/// 单次 / 累计 cost（元）。**逐笔按该笔的发生时刻判峰闲**后再求和 ——
-/// 一批调用跨了峰闲边界时，不能整批乘同一个倍数。
-///
-/// [missTokens] 用埋点里现成的 `miss_tokens` 字段（勿自行用
-/// `prompt - cached` 重算：两处算会分叉，同 `DECISIONS §4-41` 的教训）。
-double llmCostCny({
-  required int cachedTokens,
-  required int missTokens,
-  required int completionTokens,
-  required DateTime atUtc,
-  LlmPrice price = kLlmOffPeakPrice,
-}) {
-  final mult = isPeakHourCst(atUtc) ? kPeakMultiplier : 1.0;
-  final weighted =
-      cachedTokens * price.cachedPerM +
-      missTokens * price.missPerM +
-      completionTokens * price.outputPerM;
-  return weighted * mult / 1000000.0;
+  /// 输入中**未命中缓存**的 token
+  final int missTokens;
+
+  /// 输出 token（**已含推理**，勿再加 `reasoningTokens`）
+  final int completionTokens;
+
+  /// 推理 token（**拆解视图**：已含在 [completionTokens] 内，仅用于展示）
+  final int reasoningTokens;
+
+  const LlmTokenUsage({
+    this.cachedTokens = 0,
+    this.missTokens = 0,
+    this.completionTokens = 0,
+    this.reasoningTokens = 0,
+  });
+
+  /// 输入侧总 token
+  int get promptTokens => cachedTokens + missTokens;
+
+  /// 总 token（输入 + 输出）
+  int get totalTokens => promptTokens + completionTokens;
+
+  /// 缓存命中率（0.0–1.0）；无输入 token 时 0.0（不除零）
+  double get cacheHitRate =>
+      promptTokens > 0 ? cachedTokens / promptTokens : 0.0;
+
+  @override
+  String toString() =>
+      'LlmTokenUsage(hit=$cachedTokens, miss=$missTokens, '
+      'out=$completionTokens, reasoning=$reasoningTokens)';
 }
 
 /// 「本周」起点 = 北京时间**本周一 00:00**，返回其 **UTC epoch 秒**
