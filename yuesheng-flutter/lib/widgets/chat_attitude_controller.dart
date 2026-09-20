@@ -20,6 +20,7 @@ import '../data/database/database.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/session_providers.dart';
+import '../services/decode_guard.dart';
 import '../services/attitude_advisor.dart';
 import '../types/teaching_types.dart';
 import 'chat_diagnosis_controller.dart';
@@ -102,8 +103,11 @@ class ChatAttitudeController {
         final sev = Severity.fromString((raw as Map)['severity'] as String?);
         if (sev != null) syndromes.add(sev);
       }
-    } catch (_) {
-      // 解析失败按无诊断处理，静默
+    } catch (e) {
+      // 解析失败按无诊断处理（降级不变）。B24 定性（2026-09-20）：**有意成立、
+      // 静默违反 R-028** ⇒ 补留痕；否则「建议横幅再不出现」无从区分
+      // 「无诊断 / 冷却期 / 脏数据」三种成因。
+      logDecodeFailure(field: 'attitudeDiagnosisPayload', error: e);
     }
     return syndromes;
   }
@@ -139,8 +143,10 @@ class ChatAttitudeController {
       if (state.phase == TeachingPhase.p2PracticeLoop) {
         unawaited(diagnosis.loadActiveProblems(sessionId));
       }
-    } catch (_) {
-      // 加载失败保持默认档位，静默（release 不暴露技术细节）
+    } catch (e, st) {
+      // 加载失败保持默认档位——「release 不向用户暴露技术细节」**成立**（不加
+      // SnackBar）；但 B24 定性：日志侧同样零痕迹违反 R-028 ⇒ 只补留痕。
+      logSilentDegrade(operation: 'loadAttitudeState', error: e, stack: st);
     }
   }
 }
