@@ -677,7 +677,12 @@ class OutlineImpressions extends Table {
   TextColumn get conflictWith => text().nullable()(); // 冲突的印象 id（待用户裁决）
   TextColumn get status => text().withDefault(
     const Constant('pending'),
-  )(); // pending | active | rejected | superseded
+  )(); // pending | active | rejected | superseded | expired
+  //     ↑ B13 低风险对齐（2026-09-20）：`expired` 由 cleanupPendingImpressions
+  //     写入（outline_repository 两处：超 7 天未确认 + 归档作品联动），读路径以
+  //     `status='pending'` 排除 = 隐性退场终态，语义闭环。
+  //     **无 DB CHECK 是 08-17 裁定的既定状态**（「夸大，勿当 P0 动刀」）——
+  //     补 CHECK 属 schema 变更，需重建迁移 + ADR，非注释级对齐，勿顺手做。
   IntColumn get createdAt =>
       integer().withDefault(const CustomExpression<int>('unixepoch()'))();
 
