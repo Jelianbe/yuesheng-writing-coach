@@ -247,7 +247,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: error ? AppColors.danger : null,
+        backgroundColor: error ? context.palette.danger : null,
       ),
     );
   }
@@ -362,7 +362,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('清空', style: TextStyle(color: AppColors.danger)),
+            child: Text('清空', style: TextStyle(color: context.palette.danger)),
           ),
         ],
       ),
@@ -402,7 +402,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('清除', style: TextStyle(color: AppColors.danger)),
+            child: Text('清除', style: TextStyle(color: context.palette.danger)),
           ),
         ],
       ),
@@ -607,10 +607,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         vertical: AppSpacing.smx,
       ),
       decoration: BoxDecoration(
-        color: editing ? AppColors.primarySoft : AppColors.surface,
+        color: editing ? context.palette.primarySoft : context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: editing ? AppColors.primary : AppColors.border,
+          color: editing ? context.palette.primary : context.palette.border,
         ),
       ),
       child: Row(
@@ -627,7 +627,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               style: TextButton.styleFrom(
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                foregroundColor: AppColors.primary,
+                foregroundColor: context.palette.primary,
               ),
               onPressed: busy ? null : () => _handleSetDefault(account.id),
               child: const Text('设默认', style: TextStyle(fontSize: 12)),
@@ -636,7 +636,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             visualDensity: VisualDensity.compact,
             iconSize: 18,
             tooltip: '删除账号',
-            icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+            icon: Icon(Icons.delete_outline, color: context.palette.danger),
             onPressed: busy ? null : () => _handleDeleteAccount(account),
           ),
         ],
@@ -656,9 +656,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Text(
             '${account.model} · ${account.baseUrl}',
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
         ],
@@ -674,10 +674,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           child: Text(
             account.name,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
         ),
@@ -686,12 +686,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
+              color: context.palette.primarySoft,
               borderRadius: BorderRadius.circular(4),
             ),
-            child: const Text(
+            child: Text(
               '默认',
-              style: TextStyle(fontSize: 10, color: AppColors.primary),
+              style: TextStyle(fontSize: 10, color: context.palette.primary),
             ),
           ),
         ],
@@ -752,8 +752,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: context.palette.danger,
+              foregroundColor: context.palette.onPrimary,
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('删除'),
@@ -834,7 +834,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           const SizedBox(height: 8),
           Text(
             reasoningTierOf(tier).hint,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
           ),
         ],
       ),
@@ -843,12 +843,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   // ── 本周调用统计（`N7`，2026-09-20 改全模型通用口径） ──
 
-  /// 注脚统一样式（12px 三级灰）—— 抽出来避免同一字面量重复四次
-  /// （R-019 职责提取的顺手产物）。
-  static const TextStyle _usageNoteStyle = TextStyle(
-    fontSize: 12,
-    color: AppColors.textTertiary,
-  );
+  /// 注脚统一样式（12px 三级灰）—— 抽出来避免同一字面量重复四次。
+  /// 取运行期调色板色 → 随主题翻；故为实例 getter（依赖 State.context），非 static const。
+  TextStyle get _usageNoteStyle =>
+      TextStyle(fontSize: 12, color: context.palette.textTertiary);
 
   /// 本周调用统计卡片（**全模型通用**：次数 / token 消耗 / 缓存命中率）。
   ///
@@ -943,13 +941,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 vertical: AppSpacing.smx,
               ),
               decoration: BoxDecoration(
-                color: AppColors.dangerBg,
+                color: context.palette.dangerBg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: AppColors.dangerBorder),
+                border: Border.all(color: context.palette.dangerBorder),
               ),
-              child: const Text(
+              child: Text(
                 '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
-                style: TextStyle(fontSize: 13, color: AppColors.danger),
+                style: TextStyle(fontSize: 13, color: context.palette.danger),
               ),
             ),
           _buildAccountList(),
@@ -960,7 +958,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 style: TextButton.styleFrom(
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  foregroundColor: AppColors.primary,
+                  foregroundColor: context.palette.primary,
                 ),
                 onPressed: (_isSaving || _isTestingConn || _isDeleting)
                     ? null
@@ -999,14 +997,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ActionChip(
                   label: Text(
                     preset.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                   visualDensity: VisualDensity.compact,
-                  side: const BorderSide(color: AppColors.border),
-                  backgroundColor: AppColors.surface,
+                  side: BorderSide(color: context.palette.border),
+                  backgroundColor: context.palette.surface,
                   onPressed: (_isSaving || _isTestingConn)
                       ? null
                       : () => _applyPreset(preset),
@@ -1020,8 +1018,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: FilledButton(
                   onPressed: _isSaving ? null : _handleSaveConfig,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
+                    backgroundColor: context.palette.primary,
+                    foregroundColor: context.palette.onPrimary,
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.md,
                     ),
@@ -1030,12 +1028,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ),
                   ),
                   child: _isSaving
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.onPrimary,
+                            color: context.palette.onPrimary,
                           ),
                         )
                       : const Text(
@@ -1049,8 +1047,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 child: OutlinedButton(
                   onPressed: _isTestingConn ? null : _handleTestConnection,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
+                    foregroundColor: context.palette.primary,
+                    side: BorderSide(color: context.palette.primary),
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.md,
                     ),
@@ -1059,12 +1057,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ),
                   ),
                   child: _isTestingConn
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.primary,
+                            color: context.palette.primary,
                           ),
                         )
                       : const Text(
@@ -1086,8 +1084,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     });
                   },
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
-              side: const BorderSide(color: AppColors.border),
+              foregroundColor: context.palette.textSecondary,
+              side: BorderSide(color: context.palette.border),
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1100,20 +1098,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             onPressed: (_isSaving || _isTestingConn)
                 ? null
                 : _handleClearConfig,
-            child: const Text(
+            child: Text(
               '清空配置',
               style: TextStyle(
-                color: AppColors.danger,
+                color: context.palette.danger,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           TextButton(
             onPressed: _handleShowKeyGuide,
-            child: const Text(
+            child: Text(
               '如何获取 API Key →',
               style: TextStyle(
-                color: AppColors.primary,
+                color: context.palette.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1127,13 +1125,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
               decoration: BoxDecoration(
                 color: _connResult!.success
-                    ? AppColors.primarySoft
-                    : AppColors.dangerBg,
+                    ? context.palette.primarySoft
+                    : context.palette.dangerBg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(
                   color: _connResult!.success
-                      ? AppColors.primary
-                      : AppColors.dangerBorder,
+                      ? context.palette.primary
+                      : context.palette.dangerBorder,
                 ),
               ),
               child: Text(
@@ -1141,8 +1139,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 style: TextStyle(
                   fontSize: 13,
                   color: _connResult!.success
-                      ? AppColors.primary
-                      : AppColors.danger,
+                      ? context.palette.primary
+                      : context.palette.danger,
                 ),
               ),
             ),
@@ -1158,9 +1156,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         children: [
           _ActionRow(label: '导出会话记录（JSON）', onTap: _handleExportSession),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           _ActionRow(label: '清除缓存', onTap: _handleClearCache),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           _ActionRow(label: '反馈建议', onTap: _handleFeedback),
         ],
       ),
@@ -1174,11 +1172,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         children: [
           const _AboutRow(label: '应用名称', value: '月笙写作教练'),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           _AboutRow(label: '版本', value: 'v$_appVersion'),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           const _AboutRow(label: '包名', value: _packageName),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           _ActionRow(
             label: '隐私与费用说明',
             onTap: () => showPrivacyNoticeDialog(context),
@@ -1191,27 +1189,27 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      // 批次 V-3：原为 AppColors.placeholder（#D8DCE0）—— 它是**图形/装饰**色，
+      // 批次 V-3：原为 context.palette.placeholder（#D8DCE0）—— 它是**图形/装饰**色，
       // 压在 filled 底 surface(#F2F4F2) 上仅 1.25:1，提示几乎不可见。
       // 提示是文字 ⇒ 改用 textTertiary（对 surface 4.80:1，达 AA 正文）。
-      hintStyle: const TextStyle(color: AppColors.textTertiary),
+      hintStyle: TextStyle(color: context.palette.textTertiary),
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: context.palette.surface,
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.md,
       ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: context.palette.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: context.palette.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: context.palette.primary),
       ),
     );
   }
@@ -1234,28 +1232,28 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.palette.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           if (description != null) ...[
             const SizedBox(height: 4),
             Text(
               description!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
           ],
@@ -1302,16 +1300,16 @@ class _ActionRow extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 20,
-              color: AppColors.disabledText,
+              color: context.palette.disabledText,
             ),
           ],
         ),
@@ -1334,9 +1332,9 @@ class _AboutRow extends StatelessWidget {
           Expanded(child: Text(label, style: context.text.body)),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
         ],
@@ -1376,15 +1374,15 @@ class _ProgressSection extends StatelessWidget {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: context.palette.primarySoft,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
                   phaseLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                   ),
                 ),
               ),
@@ -1394,10 +1392,10 @@ class _ProgressSection extends StatelessWidget {
                 children: [
                   Text(
                     '${progress.round()}%',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -1413,8 +1411,8 @@ class _ProgressSection extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress / 100,
               minHeight: 6,
-              backgroundColor: AppColors.background,
-              valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+              backgroundColor: context.palette.background,
+              valueColor: AlwaysStoppedAnimation(context.palette.primary),
             ),
           ),
           const SizedBox(height: 12),
@@ -1422,18 +1420,18 @@ class _ProgressSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
             decoration: BoxDecoration(
-              color: AppColors.background,
+              color: context.palette.background,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(
               children: [
                 _ProgressStat(value: '${summary.totalProblems}', label: '总问题'),
-                Container(width: 1, height: 28, color: AppColors.divider),
+                Container(width: 1, height: 28, color: context.palette.divider),
                 _ProgressStat(
                   value: '${summary.resolvedProblems}',
                   label: '已解决',
                 ),
-                Container(width: 1, height: 28, color: AppColors.divider),
+                Container(width: 1, height: 28, color: context.palette.divider),
                 _ProgressStat(value: '${summary.activeProblems}', label: '待改进'),
               ],
             ),
@@ -1450,26 +1448,26 @@ class _ProgressSection extends StatelessWidget {
                 children: [
                   Text(
                     '诊断 ${summary.totalDiagnoses} 次',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.disabledText,
+                      color: context.palette.disabledText,
                     ),
                   ),
-                  const Row(
+                  Row(
                     children: [
                       Text(
                         '查看详情',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
+                          color: context.palette.primary,
                         ),
                       ),
                       SizedBox(width: 2),
                       Icon(
                         Icons.chevron_right,
                         size: 18,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ],
                   ),

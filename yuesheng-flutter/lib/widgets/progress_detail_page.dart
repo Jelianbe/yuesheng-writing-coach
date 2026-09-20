@@ -28,6 +28,7 @@ import '../services/syndrome_tracker.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 学习进度详情页
 class ProgressDetailPage extends ConsumerStatefulWidget {
@@ -124,11 +125,11 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('学习进度'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         leading: IconButton(
@@ -140,8 +141,10 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
       ),
       body: SafeArea(
         child: _loading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+            ? Center(
+                child: CircularProgressIndicator(
+                  color: context.palette.primary,
+                ),
               )
             : _error != null
             ? _ErrorView(message: _error!, onRetry: _load)
@@ -187,7 +190,7 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
                   Icon(
                     Icons.trending_up,
                     size: 32,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                   SizedBox(height: 8),
                   Text('暂无症候追踪', style: context.text.body),
@@ -215,26 +218,26 @@ class _ProgressDetailPageState extends ConsumerState<ProgressDetailPage> {
       onPressed: _generating ? null : _handleGenerateReport,
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.palette.primary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
       ),
       child: _generating
-          ? const SizedBox(
+          ? SizedBox(
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
               ),
             )
-          : const Text(
+          : Text(
               '生成学习报告',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
               ),
             ),
     );
@@ -266,7 +269,7 @@ class _ProgressSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
@@ -304,10 +307,10 @@ class _SummaryItem extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -348,7 +351,7 @@ class _DiagnosisHistory extends StatelessWidget {
       decoration: BoxDecoration(
         border: i == records.length - 1
             ? null
-            : const Border(bottom: BorderSide(color: AppColors.divider)),
+            : Border(bottom: BorderSide(color: context.palette.divider)),
       ),
       child: Row(
         children: [
@@ -358,10 +361,10 @@ class _DiagnosisHistory extends StatelessWidget {
               children: [
                 Text(
                   _formatDate(records[i].timestamp),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -372,24 +375,29 @@ class _DiagnosisHistory extends StatelessWidget {
               ],
             ),
           ),
-          Column(
-            children: [
-              Text(
-                '${records[i].syndromeCount}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-              const Text(
-                '症候',
-                style: TextStyle(fontSize: 11, color: AppColors.disabledText),
-              ),
-            ],
-          ),
+          _buildSyndromeCountColumn(context, i),
         ],
       ),
+    );
+  }
+
+  /// 症候计数列（数值 + 「症候」标签）——从 _buildHistoryRow 抽出（R-019 职责提取）。
+  Widget _buildSyndromeCountColumn(BuildContext context, int i) {
+    return Column(
+      children: [
+        Text(
+          '${records[i].syndromeCount}',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: context.palette.primary,
+          ),
+        ),
+        Text(
+          '症候',
+          style: TextStyle(fontSize: 11, color: context.palette.disabledText),
+        ),
+      ],
     );
   }
 }
@@ -400,25 +408,25 @@ class _TrendRow extends StatelessWidget {
   final VoidCallback onTap;
   const _TrendRow({required this.tracked, required this.onTap});
 
-  Color _severityColor(String severity) {
+  Color _severityColor(BuildContext context, String severity) {
     switch (severity) {
       case 'L3':
-        return AppColors.l3Text;
+        return context.palette.l3Text;
       case 'L2':
-        return AppColors.l2Text;
+        return context.palette.l2Text;
       default:
-        return AppColors.l1Text;
+        return context.palette.l1Text;
     }
   }
 
-  Color _trendColor(String trend) {
+  Color _trendColor(BuildContext context, String trend) {
     switch (trend) {
       case 'improving':
-        return AppColors.primary;
+        return context.palette.primary;
       case 'worsening':
-        return AppColors.danger;
+        return context.palette.danger;
       default:
-        return AppColors.textTertiary;
+        return context.palette.textTertiary;
     }
   }
 
@@ -440,21 +448,21 @@ class _TrendRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: _severityColor(tracked.currentSeverity),
+                      color: _severityColor(context, tracked.currentSeverity),
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '出现 ${tracked.occurrenceCount} 次',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.disabledText,
+                      color: context.palette.disabledText,
                     ),
                   ),
                 ],
               ),
             ),
-            _buildMiniTrend(),
+            _buildMiniTrend(context),
           ],
         ),
       ),
@@ -462,7 +470,7 @@ class _TrendRow extends StatelessWidget {
   }
 
   /// 迷你趋势条：最近几次严重度色点 + 趋势文案（R-019 清偿拆出）。
-  Widget _buildMiniTrend() {
+  Widget _buildMiniTrend(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -472,7 +480,7 @@ class _TrendRow extends StatelessWidget {
             height: 18,
             margin: const EdgeInsets.only(right: AppSpacing.xxs),
             decoration: BoxDecoration(
-              color: _severityColor(p.severity),
+              color: _severityColor(context, p.severity),
               borderRadius: BorderRadius.circular(AppRadius.xs),
             ),
           ),
@@ -482,7 +490,7 @@ class _TrendRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: _trendColor(tracked.trend),
+            color: _trendColor(context, tracked.trend),
           ),
         ),
       ],
@@ -543,13 +551,13 @@ class _ProblemStatsState extends State<_ProblemStats> {
                   ),
                   decoration: BoxDecoration(
                     color: _filter == f
-                        ? AppColors.primarySoft
-                        : AppColors.surface,
+                        ? context.palette.primarySoft
+                        : context.palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                     border: Border.all(
                       color: _filter == f
-                          ? AppColors.primary
-                          : AppColors.divider,
+                          ? context.palette.primary
+                          : context.palette.divider,
                     ),
                   ),
                   child: Text(
@@ -558,8 +566,8 @@ class _ProblemStatsState extends State<_ProblemStats> {
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: _filter == f
-                          ? AppColors.primary
-                          : AppColors.textTertiary,
+                          ? context.palette.primary
+                          : context.palette.textTertiary,
                     ),
                   ),
                 ),
@@ -577,9 +585,9 @@ class _ProblemStatsState extends State<_ProblemStats> {
       margin: const EdgeInsets.only(top: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Text(
         '共 ${widget.problems.length} 条诊断 · $resolved 已处理 · $active 待处理',
@@ -608,14 +616,14 @@ class _ProblemStatsState extends State<_ProblemStats> {
               const SizedBox(height: 8),
               // 批次78 L5：筛选后无匹配项时渲染空态提示（原为空白）
               if (_filtered.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   child: Center(
                     child: Text(
                       '该档暂无问题',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                   ),
@@ -624,7 +632,7 @@ class _ProblemStatsState extends State<_ProblemStats> {
                 for (var i = 0; i < _filtered.length; i++) ...[
                   _ProblemRow(problem: _filtered[i]),
                   if (i != _filtered.length - 1)
-                    const Divider(height: 1, color: AppColors.divider),
+                    Divider(height: 1, color: context.palette.divider),
                 ],
             ],
           ),
@@ -639,14 +647,14 @@ class _ProblemRow extends StatelessWidget {
   final ProblemStat problem;
   const _ProblemRow({required this.problem});
 
-  Color _severityColor(Severity s) {
+  Color _severityColor(BuildContext context, Severity s) {
     switch (s) {
       case Severity.l3:
-        return AppColors.l3Text;
+        return context.palette.l3Text;
       case Severity.l2:
-        return AppColors.l2Text;
+        return context.palette.l2Text;
       case Severity.l1:
-        return AppColors.l1Text;
+        return context.palette.l1Text;
     }
   }
 
@@ -657,7 +665,7 @@ class _ProblemRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          _buildStatusBadge(isResolved),
+          _buildStatusBadge(context, isResolved),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -665,10 +673,10 @@ class _ProblemRow extends StatelessWidget {
               children: [
                 Text(
                   problem.syndromeName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -677,27 +685,27 @@ class _ProblemRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: _severityColor(problem.severity),
+                    color: _severityColor(context, problem.severity),
                   ),
                 ),
               ],
             ),
           ),
-          _buildDateColumn(),
+          _buildDateColumn(context),
         ],
       ),
     );
   }
 
   /// 状态标签：已解决 / 待改进（R-019 清偿拆出）。
-  Widget _buildStatusBadge(bool isResolved) {
+  Widget _buildStatusBadge(BuildContext context, bool isResolved) {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: isResolved ? AppColors.primarySoft : AppColors.l3,
+        color: isResolved ? context.palette.primarySoft : context.palette.l3,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
@@ -705,25 +713,25 @@ class _ProblemRow extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w500,
-          color: isResolved ? AppColors.primary : AppColors.l3Text,
+          color: isResolved ? context.palette.primary : context.palette.l3Text,
         ),
       ),
     );
   }
 
   /// 右侧时间列（R-019 清偿拆出）。
-  Widget _buildDateColumn() {
+  Widget _buildDateColumn(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
           _ProblemStatsState._formatDate(problem.firstDetectedAt),
-          style: const TextStyle(fontSize: 11, color: AppColors.disabledText),
+          style: TextStyle(fontSize: 11, color: context.palette.disabledText),
         ),
         if (problem.resolvedAt != null)
           Text(
             '→ ${_ProblemStatsState._formatDate(problem.resolvedAt!)}',
-            style: const TextStyle(fontSize: 11, color: AppColors.disabledText),
+            style: TextStyle(fontSize: 11, color: context.palette.disabledText),
           ),
       ],
     );
@@ -758,11 +766,11 @@ class _ProgressReportView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('学习报告'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         leading: IconButton(
@@ -788,10 +796,10 @@ class _ProgressReportView extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: SelectableText(
             report,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               height: 1.7,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
         ),
@@ -812,7 +820,7 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
@@ -820,10 +828,10 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -846,17 +854,19 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.error_outline,
             size: 40,
-            color: AppColors.textTertiary,
+            color: context.palette.textTertiary,
           ),
           const SizedBox(height: 12),
           Text(message, style: context.text.body),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: onRetry,
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
             child: const Text('重试'),
           ),
         ],

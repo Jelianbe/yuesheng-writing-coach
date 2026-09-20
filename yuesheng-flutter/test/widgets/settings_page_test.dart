@@ -26,6 +26,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/app_palette.dart';
+import 'package:writingcoach/config/app_theme.dart' show AppColors;
+import 'package:writingcoach/theme/app_theme.dart'
+    show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/ai_account_repository.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
@@ -112,6 +116,7 @@ void main() {
   Widget buildSettings({
     _FakeLlmClient? llm,
     MemoryLastSessionStorage? lastStorage,
+    ThemeData? theme,
   }) {
     return ProviderScope(
       overrides: [
@@ -121,6 +126,7 @@ void main() {
         ),
       ],
       child: MaterialApp(
+        theme: theme,
         home: SettingsPage(
           configStorage: storage,
           llmClient: llm ?? _FakeLlmClient(),
@@ -136,6 +142,27 @@ void main() {
     // 首屏（ListView 懒加载：「维护」「关于」在 #9 滚动后验证）
     expect(find.text('API 配置'), findsOneWidget);
     expect(find.text('尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能'), findsOneWidget);
+  });
+
+  // P1 轨道B 成对断言：迁移后本屏区块标题色随主题翻（端到端，非仅令牌层）
+  testWidgets('#1-dark API 配置标题亮色 == AppColors.textPrimary', (tester) async {
+    await tester.pumpWidget(buildSettings(theme: buildAppTheme()));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('API 配置')).style!.color,
+      AppColors.textPrimary,
+    );
+  });
+
+  testWidgets('#1-dark API 配置标题暗色 == AppPalette.dark.textPrimary', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildSettings(theme: buildDarkTheme()));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('API 配置')).style!.color,
+      AppPalette.dark.textPrimary,
+    );
   });
 
   testWidgets('#2 表单加载已有配置', (tester) async {

@@ -21,6 +21,7 @@ import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/manuscript_providers.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 体裁选项（对齐 RN project-settings.tsx GENRES：长篇小说/中篇/短篇）
 const List<String> _genres = ['长篇小说', '中篇', '短篇'];
@@ -164,7 +165,9 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: const Text('删除'),
           ),
         ],
@@ -209,7 +212,9 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           FilledButton(
             onPressed: () =>
                 Navigator.of(dialogContext).pop(controller.text.trim()),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
             child: const Text('添加'),
           ),
         ],
@@ -228,11 +233,11 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('项目设置'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         leading: IconButton(
@@ -244,20 +249,20 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
         actions: [
           TextButton(
             onPressed: _saving ? null : _handleSave,
-            child: const Text(
+            child: Text(
               '保存',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ),
         ],
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+          ? Center(
+              child: CircularProgressIndicator(color: context.palette.primary),
             )
           : SafeArea(
               child: SingleChildScrollView(
@@ -288,12 +293,12 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _SectionTitle('作品信息'),
-        const Text(
+        Text(
           '作品名称',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
+            color: context.palette.textBody,
           ),
         ),
         const SizedBox(height: 6),
@@ -303,12 +308,12 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           decoration: _inputDecoration('作品名称'),
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           '体裁',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
+            color: context.palette.textBody,
           ),
         ),
         const SizedBox(height: 8),
@@ -326,13 +331,13 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                   ),
                   decoration: BoxDecoration(
                     color: _genre == g
-                        ? AppColors.primarySoft
-                        : AppColors.surface,
+                        ? context.palette.primarySoft
+                        : context.palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                     border: Border.all(
                       color: _genre == g
-                          ? AppColors.primary
-                          : AppColors.divider,
+                          ? context.palette.primary
+                          : context.palette.divider,
                     ),
                   ),
                   child: Text(
@@ -341,8 +346,8 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: _genre == g
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
+                          ? context.palette.primary
+                          : context.palette.textSecondary,
                     ),
                   ),
                 ),
@@ -350,12 +355,12 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           ],
         ),
         const SizedBox(height: 14),
-        const Text(
+        Text(
           '简介',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
+            color: context.palette.textBody,
           ),
         ),
         const SizedBox(height: 6),
@@ -389,7 +394,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                   bottom: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: context.palette.primarySoft,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                 ),
                 child: Row(
@@ -397,21 +402,21 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                   children: [
                     Text(
                       _tags[i],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                     InkWell(
                       onTap: _saving ? null : () => _handleRemoveTag(i),
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: const Padding(
+                      child: Padding(
                         padding: EdgeInsets.all(AppSpacing.xsm),
                         child: Icon(
                           Icons.close,
                           size: 13,
-                          color: AppColors.primary,
+                          color: context.palette.primary,
                         ),
                       ),
                     ),
@@ -430,7 +435,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.pill),
                   border: Border.all(
-                    color: AppColors.border,
+                    color: context.palette.border,
                     style: BorderStyle.solid,
                   ),
                 ),
@@ -460,9 +465,9 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                       vertical: AppSpacing.xsm,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: AppColors.divider),
+                      border: Border.all(color: context.palette.divider),
                     ),
                     child: Text('+ $preset', style: context.text.subBody),
                   ),
@@ -483,13 +488,13 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.palette.divider),
           ),
           child: Text(
             '创建于 $_createdAtText',
-            style: const TextStyle(fontSize: 14, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 14, color: context.palette.textTertiary),
           ),
         ),
       ],
@@ -506,20 +511,20 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
           onPressed: _deleting ? null : _handleDelete,
           style: OutlinedButton.styleFrom(
             minimumSize: const Size.fromHeight(44),
-            side: const BorderSide(color: AppColors.danger),
-            foregroundColor: AppColors.danger,
-            backgroundColor: AppColors.dangerBg,
+            side: BorderSide(color: context.palette.danger),
+            foregroundColor: context.palette.danger,
+            backgroundColor: context.palette.dangerBg,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
           ),
           child: _deleting
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.danger,
+                    color: context.palette.danger,
                   ),
                 )
               : const Text(
@@ -542,20 +547,20 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textTertiary),
+      hintStyle: TextStyle(color: context.palette.textTertiary),
       filled: true,
-      fillColor: AppColors.surfaceWhite,
+      fillColor: context.palette.surfaceWhite,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: context.palette.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide(color: context.palette.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: AppColors.primary),
+        borderSide: BorderSide(color: context.palette.primary),
       ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -580,7 +585,9 @@ class _SectionTitle extends StatelessWidget {
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: danger ? AppColors.danger : AppColors.textSecondary,
+          color: danger
+              ? context.palette.danger
+              : context.palette.textSecondary,
         ),
       ),
     );
