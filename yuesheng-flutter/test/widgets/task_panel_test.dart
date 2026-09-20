@@ -10,6 +10,8 @@
 //   5. 无 onMarkComplete → 不显示完成按钮
 // ─────────────────────────────────────────────────────────────
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -130,5 +132,59 @@ void main() {
 
     expect(find.text('移除'), findsNothing);
     expect(find.text('完成'), findsOneWidget);
+  });
+
+  // ── 交互批 #5：「练」常驻可达点（页脚自选入口）三态钉 ──
+
+  testWidgets('#8 非空 + onSelfPractice → 页脚入口在场且点击可达', (tester) async {
+    var opened = 0;
+    await tester.pumpWidget(
+      buildPanel(
+        TaskPanel(
+          problems: [problem('P001', '视角跳跃症', 'L2')],
+          onSelfPractice: () => opened++,
+        ),
+      ),
+    );
+    expect(find.text('换个问题练？自选练习'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('self-practice-footer')));
+    expect(opened, 1);
+  });
+
+  testWidgets('#9 判别：非空但未注入回调 → 页脚不渲染（不留假按钮）', (tester) async {
+    await tester.pumpWidget(
+      buildPanel(
+        TaskPanel(
+          problems: [problem('P001', '视角跳跃症', 'L2')],
+          onMarkComplete: (_) {},
+        ),
+      ),
+    );
+    expect(find.text('换个问题练？自选练习'), findsNothing);
+    // 阳性对照：列表本身在场（防「整列没渲染」冒充 findsNothing 假绿）
+    expect(find.text('练习任务'), findsOneWidget);
+  });
+
+  testWidgets('#10 判别：空态即使注入回调也不显示页脚（空候选给按钮=假按钮）', (tester) async {
+    await tester.pumpWidget(
+      buildPanel(TaskPanel(problems: const [], onSelfPractice: () {})),
+    );
+    expect(find.text('暂无活跃问题'), findsOneWidget); // 阳性对照：空态已渲染
+    expect(find.text('换个问题练？自选练习'), findsNothing);
+  });
+
+  test('#11 源码对账：自选练习唯一实存在，两处接线引用同一函数（防 copy 复辟）', () {
+    // #6/V-5 教训：共享逻辑一旦私有化在消费文件里，第二处必然复制。
+    final impl = File('lib/widgets/chat_self_practice.dart').readAsStringSync();
+    final sections = File(
+      'lib/widgets/chat_page_sections.dart',
+    ).readAsStringSync();
+    final body = File('lib/widgets/chat_page_body.dart').readAsStringSync();
+    expect(impl.contains('void openSelfPracticeSheet('), isTrue);
+    expect(sections.contains('openSelfPracticeSheet(context, ref'), isTrue);
+    expect(body.contains('openSelfPracticeSheet(context, ref'), isTrue);
+    // 旧私有实现必须绝迹（出现 = 有人把逻辑抄回了消费文件）
+    expect(sections.contains('_openSelfPractice'), isFalse);
+    expect(body.contains('_openSelfPractice'), isFalse);
   });
 }

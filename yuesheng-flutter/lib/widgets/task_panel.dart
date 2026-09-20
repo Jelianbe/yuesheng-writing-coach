@@ -46,11 +46,16 @@ class TaskPanel extends StatelessWidget {
   /// 语义与「完成」不同——移除 = 学员主观不想再追踪该条目（物理删行）。
   final void Function(String syndromeId)? onRemove;
 
+  /// 交互批 #5：「自选练习」页脚入口回调；为 null 时**整行不渲染**（不留死按钮）。
+  /// 只在**非空态**接线——空态下自选候选必空，给按钮=假按钮（P0-3 护栏同纪律）。
+  final VoidCallback? onSelfPractice;
+
   const TaskPanel({
     super.key,
     required this.problems,
     this.onMarkComplete,
     this.onRemove,
+    this.onSelfPractice,
   });
 
   @override
@@ -139,6 +144,35 @@ class TaskPanel extends StatelessWidget {
           const Divider(height: 1, color: AppColors.divider),
           // 问题行
           for (final problem in problems) _buildProblemRow(problem),
+          // 交互批 #5：「练」的常驻可达点——「练」是六步闭环一环，此前唯一
+          // 自选入口只挂在欢迎态（有历史即消失）。页脚挂在面板非空态：
+          // 活跃问题在场 = 反向漏斗有候选 = 入口赚到了它的位置。
+          if (onSelfPractice != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.sm,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('self-practice-footer'),
+                  onPressed: onSelfPractice,
+                  icon: const Icon(Icons.tune, size: 18),
+                  label: const Text(
+                    '换个问题练？自选练习',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

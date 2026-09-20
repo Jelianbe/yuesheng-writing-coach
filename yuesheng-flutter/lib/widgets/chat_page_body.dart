@@ -21,6 +21,7 @@ import '../services/attitude_advisor.dart';
 import '../types/teaching_types.dart';
 import 'attitude_suggestion_banner.dart';
 import 'chat_attitude_controller.dart';
+import 'chat_self_practice.dart';
 import 'chat_diagnosis_controller.dart';
 import 'chat_header.dart';
 import 'chat_input.dart';
@@ -93,6 +94,9 @@ class ChatPageBody extends ConsumerWidget {
           activeProblems: activeProblems,
           onToggle: onToggleTaskPanel,
           diagnosis: diagnosis,
+          // 交互批 #5：此处是持 ref 的父 build——闭包在这里造，向下传
+          onSelfPractice: () =>
+              openSelfPracticeSheet(context, ref, activeProblems),
         ),
         Expanded(
           child: ChatMessageSection(
@@ -235,6 +239,10 @@ class ChatTaskSection extends StatelessWidget {
   final VoidCallback onToggle;
   final ChatDiagnosisController diagnosis;
 
+  /// 交互批 #5：自选练习入口（由持有 ref 的父 build 构造闭包，见
+  /// `openSelfPracticeSheet`；本组件是 StatelessWidget 无 ref，不就近造）。
+  final VoidCallback? onSelfPractice;
+
   const ChatTaskSection({
     super.key,
     required this.chatState,
@@ -243,6 +251,7 @@ class ChatTaskSection extends StatelessWidget {
     required this.activeProblems,
     required this.onToggle,
     required this.diagnosis,
+    this.onSelfPractice,
   });
 
   @override
@@ -277,6 +286,9 @@ class ChatTaskSection extends StatelessWidget {
               onMarkComplete: diagnosis.handleMarkComplete,
               // 批次75：活跃问题条目移除入口（主观不再追踪）
               onRemove: diagnosis.handleRemoveProblem,
+              // 交互批 #5：「练」常驻可达点——页脚自选入口与欢迎态共享
+              // chat_self_practice 唯一实现（非空态才显示由 TaskPanel 内部判定）
+              onSelfPractice: onSelfPractice,
             ),
           ),
       ],
