@@ -18,6 +18,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/decode_guard.dart';
+
 import '../config/app_theme.dart';
 import '../data/repositories/outline_repository.dart';
 import '../providers/app_providers.dart';
@@ -54,8 +56,10 @@ class OutlineConfirmationCard extends ConsumerStatefulWidget {
         ),
         repoOverride: repoOverride,
       );
-    } catch (_) {
-      // 兜底：空确认卡（正常不会触发）
+    } catch (e) {
+      // 兜底：空确认卡（正常不会触发）。交互批 #4：触发即脏数据 ⇒ logDecodeFailure
+      // 留痕（原纯静默：用户看到空卡而日志无痕，事后不可追溯）。降级行为不变。
+      logDecodeFailure(field: 'outlineConfirmationPayload', error: e);
       return const OutlineConfirmationCard(
         payload: OutlineConfirmationPayload(
           confirmationId: '',

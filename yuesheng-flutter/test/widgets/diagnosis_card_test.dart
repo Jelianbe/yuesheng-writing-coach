@@ -526,6 +526,58 @@ void main() {
         reason: '留痕缺失：质疑降级未落 error_logs',
       );
     });
+
+    // ── 交互批 #8：裁决态持久化（缺陷本体 = _status 硬编码 pending、从不 hydrate）。
+    //    重复质疑会累积 shouldUnlockSyndrome 计数（≥2 反驳向解锁）⇒ 是教学态机
+    //    数据污染，不只是 UX。特征测试顺序：D5B-8/9 对旧实现必红（钉缺陷），
+    //    D5B-10 恒绿（防「一律隐藏」式过度修复）。 ──
+    Future<void> confirmThenRebuild(WidgetTester tester, String button) async {
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(button));
+      await tester.pumpAndSettle();
+      // 销毁重建 = 退出会话再进（新 State 实例，本地内存态清零）
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle(); // 等 hydrate 异步查询落定
+    }
+
+    testWidgets('D5B-8 重建后：已认同的症候直接显示已裁决态，不再提问', (tester) async {
+      await confirmThenRebuild(tester, '认同');
+      expect(find.text('这个诊断符合你的实际情况吗？'), findsNothing);
+      expect(find.text('认同'), findsNothing);
+      expect(find.text('已认同'), findsOneWidget);
+    });
+
+    testWidgets('D5B-9 重建后：已质疑的症候不再给第二次裁决机会', (tester) async {
+      await confirmThenRebuild(tester, '不认同');
+      expect(find.text('不认同'), findsNothing);
+      expect(find.text('已质疑'), findsOneWidget);
+    });
+
+    testWidgets('D5B-10 负向防护：未裁决症候重建后必须照常提问（勿过度修复）', (tester) async {
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      // 不点任何按钮，直接重建
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        wrapWithSession(SingleChildScrollView(child: cardWithSession())),
+      );
+      await tester.tap(find.text('本次诊断'));
+      await tester.pumpAndSettle();
+      expect(find.text('这个诊断符合你的实际情况吗？'), findsOneWidget);
+      expect(find.text('认同'), findsOneWidget);
+      expect(find.text('不认同'), findsOneWidget);
+    });
   });
 
   // ── 批次8: SyndromeDetailModal 接线（症候 chip 点击 → 详情弹层）──

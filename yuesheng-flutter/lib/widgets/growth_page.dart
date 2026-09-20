@@ -21,8 +21,6 @@ import 'package:go_router/go_router.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/diagnosis_repository.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
 import '../providers/chat_store.dart';
 import '../providers/growth_providers.dart';
 import '../services/focus_card_builder.dart';
@@ -30,6 +28,7 @@ import '../widgets/focus_card.dart';
 import '../router/app_routes.dart';
 import '../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
+import 'growth_detail_nav.dart';
 import 'observation_audit_card.dart';
 import 'proficiency_ring.dart';
 import 'severity_bar.dart';
@@ -107,32 +106,10 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
 
   /// 批次 38：学习进度入口 → 最新会话的学习进度详情页
   /// 学习进度从书架移至设置页（设置页区块 + 成长页入口），书架保持纯洁
-  /// 批次78：无会话静默 return → 对齐 growth_detail_page 批次77 SnackBar 轻提示
-  Future<void> _openProgressDetail() async {
-    try {
-      final sessionRepo = SessionRepository(ref.read(appDatabaseProvider));
-      final sessions = await sessionRepo.listSessions(); // updated_at DESC
-      if (sessions.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('还没有写作会话，先写一章吧')));
-        }
-        return;
-      }
-      if (!mounted) return;
-      final latestId = sessions.first.id;
-      if (!mounted) return;
-      unawaited(
-        context.push(
-          AppRoutes.progressDetail,
-          extra: <String, dynamic>{'sessionId': latestId},
-        ),
-      );
-    } catch (_) {
-      // 查询失败静默（不进入死页）
-    }
-  }
+  /// 交互批 #6：实现收敛到 growth_detail_nav.openLatestSessionProgressDetail
+  /// （原与详情页导航 helper 是逐字重复的两份 copy，且各自带静默 catch）
+  Future<void> _openProgressDetail() =>
+      openLatestSessionProgressDetail(context, ref);
 
   /// 批次 13：打开「选择要诊断的章节」弹层（对齐 RN DiagnosisPickerModal）
   ///

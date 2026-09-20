@@ -1008,6 +1008,45 @@ class _SyndromeConfirmationBarState
   String _status = 'pending';
   bool _submitting = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _hydrateStatusFromDb();
+  }
+
+  /// 交互批 #8：从 active_problems.confirmation_status **回灌裁决态**。
+  /// 缺陷本体 = `_status` 硬编码 pending、重建后已裁决的症候会再次提问并允许
+  /// 重复裁决；重复质疑累积 `shouldUnlockSyndrome` 的「≥2 质疑」计数 ⇒ 是
+  /// 教学状态机的数据污染，不只是 UX。
+  /// 已知近似：「部分认同」落库同为 'confirmed'（区分仅存于留痕字段 level）
+  /// ⇒ 重进后 partial 显示为「已认同」——比重新提问诚实，登记为边界。
+  Future<void> _hydrateStatusFromDb() async {
+    try {
+      final problems = await DiagnosisRepository(
+        ref.read(appDatabaseProvider),
+      ).listActiveProblems(widget.sessionId);
+      // 查询期间用户已点击 ⇒ 以本次真实操作优先，不回收
+      if (!mounted || _status != 'pending') return;
+      final dbStatus = problems
+          .where((p) => p.syndromeId == widget.syndrome.syndromeId)
+          .firstOrNull
+          ?.confirmationStatus;
+      final mapped = switch (dbStatus) {
+        'confirmed' => 'confirmed',
+        'rejected' => 'disputed',
+        _ => null, // suspected / ignored / 无行 ⇒ 维持 pending，照常提问
+      };
+      if (mapped != null) setState(() => _status = mapped);
+    } catch (e, st) {
+      // hydrate 失败 = 退回旧行为（多问一次，不崩不猜）——留痕可追溯
+      logSilentDegrade(
+        operation: 'hydrateConfirmationStatus',
+        error: e,
+        stack: st,
+      );
+    }
+  }
+
   /// 失败反馈单一出口（R-019 真分解：确认/质疑/插入三路降级共用）。
   /// 纪律 = NN/g「点了就要被告知为什么没成」+ 文案必须与「状态未切换、可重试」
   /// 的真实行为一致，不制造「已生效」假象。

@@ -15,6 +15,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/decode_guard.dart';
+
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/session_repository.dart';
@@ -248,8 +250,13 @@ class ChatReferenceController {
         host.ref.read(appDatabaseProvider),
       ).listMessages(bootstrap.sessionId);
       host.ref.read(chatStoreProvider.notifier).setMessages(messages);
-    } catch (_) {
-      // 卡片写入失败不阻断主操作（引用变更本身已生效）
+    } catch (e, st) {
+      // 卡片写入失败不阻断主操作（引用变更本身已生效）——交互批 #4：补留痕
+      logSilentDegrade(
+        operation: 'appendReferenceChangeCard',
+        error: e,
+        stack: st,
+      );
     }
     // 设主/添加/移除后主引用可能变了，刷新头部小字
     unawaited(loadPrimaryRefTitle());

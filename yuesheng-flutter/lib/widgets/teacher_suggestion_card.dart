@@ -17,6 +17,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../services/decode_guard.dart';
+
 import '../config/app_theme.dart';
 import '../data/repositories/teacher_suggestion_repository.dart';
 import '../providers/app_providers.dart';
@@ -76,8 +78,9 @@ class TeacherSuggestionCard extends ConsumerStatefulWidget {
         onStartPractice: onStartPractice,
         onTeachPrinciple: onTeachPrinciple,
       );
-    } catch (_) {
-      // 兜底：空建议卡（正常不会触发）
+    } catch (e) {
+      // 兜底：空建议卡（正常不会触发）。交互批 #4：脏数据必留痕（降级不变）。
+      logDecodeFailure(field: 'teacherSuggestionPayload', error: e);
       return TeacherSuggestionCard(
         key: key,
         payload: TeacherSuggestionCardPayload(
@@ -121,8 +124,14 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
         ref.read(appDatabaseProvider),
       ).isDismissed(id);
       if (dismissed && mounted) setState(() => _dismissed = true);
-    } catch (_) {
-      // 反查失败保持显示（兜底）
+    } catch (e, st) {
+      // 反查失败保持显示（fail-open 兜底）。交互批 #4：补留痕——否则「已关闭的
+      // 卡重启后重现」这类反馈只能靠用户报障，日志侧全无锚点。
+      logSilentDegrade(
+        operation: 'restoreSuggestionDismissed',
+        error: e,
+        stack: st,
+      );
     }
   }
 
@@ -133,8 +142,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     final db = ref.read(appDatabaseProvider);
     try {
       await TeacherSuggestionRepository(db).markAdopted(id);
-    } catch (_) {
-      // 落库失败不影响练习启动
+    } catch (e, st) {
+      // 落库失败不影响练习启动（有意降级）——交互批 #4：写路径必须留痕，
+      // 否则「采纳过又重现」无锚点可查。
+      logSilentDegrade(operation: 'markSuggestionAdopted', error: e, stack: st);
     }
   }
 
@@ -146,8 +157,13 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
       if (id.isNotEmpty) {
         await TeacherSuggestionRepository(db).markDismissed(id);
       }
-    } catch (_) {
-      // 落库失败仍本地隐藏（卡片消息仍在，下次拉取可重现）
+    } catch (e, st) {
+      // 落库失败仍本地隐藏（下次拉取可重现）——交互批 #4：写路径留痕
+      logSilentDegrade(
+        operation: 'markSuggestionDismissed',
+        error: e,
+        stack: st,
+      );
     }
     if (mounted) setState(() => _dismissed = true);
   }
