@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../utils/volume_group.dart';
+import '../theme/app_typography.dart';
 
 /// 吸顶卷头 delegate（批次92-5：SliverPersistentHeader pinned）
 class VolumeHeaderDelegate extends SliverPersistentHeaderDelegate {
@@ -126,10 +127,10 @@ class DetailVolumeHeader extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.titleMd,
+                  style: context.text.titleMd,
                 ),
               ),
-              _buildTrailingInfo(),
+              _buildTrailingInfo(context),
               const SizedBox(width: 8),
             ],
           ),
@@ -164,15 +165,15 @@ class DetailVolumeHeader extends StatelessWidget {
   }
 
   /// 尾部：字数 + 章数 + 重命名铅笔（R-019 清偿拆出）。
-  Widget _buildTrailingInfo() {
+  Widget _buildTrailingInfo(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (totalWords > 0) ...[
-          Text(_formatWords(totalWords), style: AppTextStyles.microCaption),
+          Text(_formatWords(totalWords), style: context.text.microCaption),
           const SizedBox(width: 8),
         ],
-        Text('$count 章', style: AppTextStyles.microCaption),
+        Text('$count 章', style: context.text.microCaption),
         if (onRename != null) ...[
           const SizedBox(width: 4),
           // 批次92-2：卷头铅笔图标 → 直接重命名
@@ -203,11 +204,11 @@ class DetailEmptyVolumeHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
+    return Padding(
       // 横向由父级 SliverPadding(horizontal: lg) 提供；自身再加 sm ⇒ 文字落点 24，
       // 与章节卡 16 不对齐（批次 V-2 订正）。纵向保持原值不动。
       padding: EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.sm),
-      child: Text('暂无章节', style: AppTextStyles.caption),
+      child: Text('暂无章节', style: context.text.caption),
     );
   }
 }

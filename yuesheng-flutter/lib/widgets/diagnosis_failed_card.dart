@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../config/shared_constants.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 /// 默认诊断失败建议列表（对齐 RN DEFAULT_DIAGNOSIS_SUGGESTIONS）
 const List<String> defaultDiagnosisSuggestions = [
@@ -120,12 +121,12 @@ class DiagnosisFailedCard extends StatelessWidget {
               Text(
                 '你可以尝试补充更多写作内容或具体描述遇到的问题。',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.body.copyWith(height: 1.4),
+                style: context.text.body.copyWith(height: 1.4),
               ),
               const SizedBox(height: 12),
-              _buildSuggestions(),
+              _buildSuggestions(context),
               const SizedBox(height: 12),
-              _buildButtonRow(),
+              _buildButtonRow(context),
               if (showHint) ...[
                 const SizedBox(height: 8),
                 const Text(
@@ -142,7 +143,7 @@ class DiagnosisFailedCard extends StatelessWidget {
   }
 
   /// 建议列表（对齐 RN suggestionsSection）
-  Widget _buildSuggestions() {
+  Widget _buildSuggestions(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -155,7 +156,7 @@ class DiagnosisFailedCard extends StatelessWidget {
         children: [
           Text(
             '建议：',
-            style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+            style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
           ),
           for (final suggestion in _displaySuggestions)
             Padding(
@@ -175,7 +176,7 @@ class DiagnosisFailedCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       suggestion,
-                      style: AppTextStyles.subBody.copyWith(height: 1.4),
+                      style: context.text.subBody.copyWith(height: 1.4),
                     ),
                   ),
                 ],
@@ -187,7 +188,7 @@ class DiagnosisFailedCard extends StatelessWidget {
   }
 
   /// 按钮行：补充内容（primary）| 继续对话（描边）
-  Widget _buildButtonRow() {
+  Widget _buildButtonRow(BuildContext context) {
     return Row(
       children: [
         Expanded(

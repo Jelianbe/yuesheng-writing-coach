@@ -16,6 +16,7 @@ import '../../data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../theme/app_typography.dart';
 
 /// 新建/编辑「其他」设定条目。成功写入返回 true（调用方据此刷新）。
 Future<bool?> showSettingEntryDialog(
@@ -149,7 +150,7 @@ class _SettingEntryDialogState extends ConsumerState<_SettingEntryDialog> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const SizedBox(height: AppSpacing.md),
-        Text('标签', style: AppTextStyles.titleMd),
+        Text('标签', style: context.text.titleMd),
         const SizedBox(height: AppSpacing.xs),
         if (_tags.isNotEmpty)
           Wrap(

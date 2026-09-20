@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 /// 趋势 → 中文标签（对齐 RN getTrendLabel）
 String _trendLabel(String trend) {
@@ -182,7 +183,7 @@ class PhaseSummaryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              _buildStatsRow(config.color),
+              _buildStatsRow(context, config.color),
               if (syndromeChanges.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 _buildChangesSection(config.color),
@@ -197,7 +198,7 @@ class PhaseSummaryCard extends StatelessWidget {
   }
 
   /// 统计行：解决症候数 / 练习次数 / 进步趋势
-  Widget _buildStatsRow(Color color) {
+  Widget _buildStatsRow(BuildContext context, Color color) {
     Widget stat(String value, String label) {
       return Expanded(
         child: Column(
@@ -211,7 +212,7 @@ class PhaseSummaryCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 2),
-            Text(label, style: AppTextStyles.microCaption),
+            Text(label, style: context.text.microCaption),
           ],
         ),
       );

@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../theme/app_typography.dart';
 
 /// 诊断历史时间线容器
 class GrowthTimeline extends StatelessWidget {
@@ -54,7 +55,7 @@ class GrowthTimelineItem extends StatelessWidget {
         children: [
           _buildLeftRail(),
           const SizedBox(width: 12),
-          Expanded(child: _buildContent()),
+          Expanded(child: _buildContent(context)),
         ],
       ),
     );
@@ -82,7 +83,7 @@ class GrowthTimelineItem extends StatelessWidget {
   }
 
   /// 右侧内容（日期 + 置信度 + 症候名）
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     // timestamp 是秒级 Unix 时间戳
     final dt = DateTime.fromMillisecondsSinceEpoch(item.timestamp * 1000);
     final dateStr =
@@ -94,7 +95,7 @@ class GrowthTimelineItem extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(dateStr, style: AppTextStyles.noteCaption),
+            Text(dateStr, style: context.text.noteCaption),
             const SizedBox(width: 8),
             Text(
               '置信度 ${(item.confidence * 100).round()}%',

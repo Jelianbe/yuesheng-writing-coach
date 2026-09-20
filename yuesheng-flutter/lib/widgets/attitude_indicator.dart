@@ -19,6 +19,7 @@ import '../config/app_theme.dart';
 import '../services/attitude_advisor.dart';
 import 'yue_sheet.dart';
 import '../types/teaching_types.dart';
+import '../theme/app_typography.dart';
 
 /// 档位展示配置（对齐 attitude-rhythm.json）
 class _AttitudeMeta {
@@ -141,9 +142,7 @@ class AttitudeIndicator extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               meta.label,
-              style: AppTextStyles.subBody.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+              style: context.text.subBody.copyWith(fontWeight: FontWeight.w500),
             ),
             const SizedBox(width: 2),
             const Icon(

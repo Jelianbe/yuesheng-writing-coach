@@ -43,6 +43,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 class WritingMenuSheet {
   const WritingMenuSheet._();
@@ -255,9 +256,7 @@ class _SectionHeader extends StatelessWidget {
         width: double.infinity,
         child: Text(
           label,
-          style: AppTextStyles.noteCaption.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: context.text.noteCaption.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -324,7 +323,7 @@ class _SaveStatusRow extends StatelessWidget {
       width: double.infinity,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(text, style: AppTextStyles.noteCaption),
+        child: Text(text, style: context.text.noteCaption),
       ),
     );
   }

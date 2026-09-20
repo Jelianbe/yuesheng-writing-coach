@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../types/teaching_types.dart';
 import 'growth_detail_labels.dart';
+import '../theme/app_typography.dart';
 
 /// 批次57：风格纠正底部弹层（纠错非重写——仅纠正五维坐标，summary 保留 AI 描述只读）
 class GrowthStyleCorrectionSheet extends StatefulWidget {
@@ -84,7 +85,7 @@ class _GrowthStyleCorrectionSheetState
       children: [
         Text(
           title,
-          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+          style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         Wrap(
@@ -159,10 +160,10 @@ class _GrowthStyleCorrectionSheetState
         Text(
           '风格由 AI 从你的文本自动识别。如判断有误，可在此纠正坐标；'
           '下次诊断仍会按你的新文本重新识别。',
-          style: AppTextStyles.noteCaption.copyWith(height: 1.5),
+          style: context.text.noteCaption.copyWith(height: 1.5),
         ),
         const SizedBox(height: 12),
-        const Text('AI 描述', style: AppTextStyles.caption),
+        Text('AI 描述', style: context.text.caption),
         const SizedBox(height: 4),
         Text(
           widget.profile.summary,

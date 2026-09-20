@@ -26,6 +26,7 @@ import '../config/app_theme.dart';
 import '../providers/practice_providers.dart';
 import '../services/spaced_repetition.dart';
 import '../types/teaching_types.dart';
+import '../theme/app_typography.dart';
 
 class PracticeTaskCard extends StatefulWidget {
   final PracticeTask task;
@@ -100,7 +101,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
         const SizedBox(height: 4),
         Text(
           '提交前自评（可选）',
-          style: AppTextStyles.subBody.copyWith(fontWeight: FontWeight.w600),
+          style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 2),
         const Text(
@@ -266,9 +267,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           if (widget.task.taskDescription.isNotEmpty) ...[
             Text(
               '任务描述',
-              style: AppTextStyles.subBody.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
@@ -285,9 +284,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           if (widget.task.taskGoal.isNotEmpty) ...[
             Text(
               '练习目标',
-              style: AppTextStyles.subBody.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Container(

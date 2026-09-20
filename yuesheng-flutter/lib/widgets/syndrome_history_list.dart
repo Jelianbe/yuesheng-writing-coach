@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/growth_service.dart';
 import '../types/teaching_types.dart';
+import '../theme/app_typography.dart';
 
 /// 症候追踪历史
 class SyndromeHistoryList extends StatelessWidget {
@@ -52,7 +53,7 @@ class SyndromeHistoryList extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text('问题发现与解决的时间线', style: AppTextStyles.caption),
+                    Text('问题发现与解决的时间线', style: context.text.caption),
                     const SizedBox(height: AppSpacing.md),
                     if (displayed.isEmpty)
                       const _EmptyState(
@@ -73,7 +74,7 @@ class SyndromeHistoryList extends StatelessWidget {
                           child: Center(
                             child: Text(
                               '共 ${events.length} 条记录',
-                              style: AppTextStyles.caption,
+                              style: context.text.caption,
                             ),
                           ),
                         ),
@@ -215,7 +216,7 @@ class _TimelineItem extends StatelessWidget {
                       const SizedBox(width: AppSpacing.md),
                       Text(
                         _formatTime(event.timestamp),
-                        style: AppTextStyles.caption,
+                        style: context.text.caption,
                       ),
                     ],
                   ),
@@ -260,7 +261,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: AppTextStyles.caption,
+            style: context.text.caption,
           ),
         ],
       ),

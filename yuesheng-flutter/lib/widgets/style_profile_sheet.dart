@@ -18,6 +18,7 @@ import '../data/repositories/student_model_repository.dart';
 import '../providers/app_providers.dart';
 import '../types/teaching_types.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 /// 维度值 → 中文标签（注释语义，用于展示）
 String _sensoryLabel(SensoryPreference v) => switch (v) {
@@ -151,7 +152,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
     }
     final p = _profile;
     if (p == null) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -160,7 +161,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
             Text(
               '还没有文风画像\n完成一次「诊断本章」后，就能看到你的写作风格',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
           ],
         ),
@@ -185,7 +186,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
           ),
         ),
         const SizedBox(height: 12),
-        const Text('你的文风五维', style: AppTextStyles.noteCaption),
+        Text('你的文风五维', style: context.text.noteCaption),
         const SizedBox(height: 6),
         _dimensionRow('感官偏好', _sensoryLabel(p.sensory)),
         _dimensionRow('句子节奏', _rhythmLabel(p.rhythm)),
@@ -200,7 +201,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
                 '识别置信度 ${(p.confidence! * 100).round()}%',
               if (p.updatedAt != null) '更新于 ${_formatTime(p.updatedAt!)}',
             ].join(' · '),
-            style: AppTextStyles.microCaption,
+            style: context.text.microCaption,
           ),
         ],
       ],
@@ -212,7 +213,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: Row(
         children: [
-          SizedBox(width: 72, child: Text(name, style: AppTextStyles.subBody)),
+          SizedBox(width: 72, child: Text(name, style: context.text.subBody)),
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.sm,

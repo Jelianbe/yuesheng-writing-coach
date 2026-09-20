@@ -20,6 +20,7 @@ import '../../data/database/database.dart';
 import '../../services/progression_builder.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
+import '../../theme/app_typography.dart';
 
 /// 详情页「章节演进」区块（角色/世界观同构挂载）。
 class SettingProgressionsSection extends StatelessWidget {
@@ -55,15 +56,19 @@ class SettingProgressionsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(height: AppSpacing.section),
-        Text('章节演进 (${points.length} 章)', style: AppTextStyles.titleMd),
+        Text('章节演进 (${points.length} 章)', style: context.text.titleMd),
         const SizedBox(height: AppSpacing.xsm),
         for (var i = 0; i < points.length; i++)
-          _buildRow(points[i], isLast: i == points.length - 1),
+          _buildRow(context, points[i], isLast: i == points.length - 1),
       ],
     );
   }
 
-  Widget _buildRow(ProgressionPoint point, {required bool isLast}) {
+  Widget _buildRow(
+    BuildContext context,
+    ProgressionPoint point, {
+    required bool isLast,
+  }) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -93,13 +98,13 @@ class SettingProgressionsSection extends StatelessWidget {
                   Text(
                     // 只吃身份；解析不出 ⇒ 「章节未知」，不编造数字（`S1`）。
                     chapterLabel(chapterNoMap, point.chapterIdentity) ?? '章节未知',
-                    style: AppTextStyles.microCaption,
+                    style: context.text.microCaption,
                   ),
                   const SizedBox(height: 2),
                   for (final item in point.items)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(item, style: AppTextStyles.body),
+                      child: Text(item, style: context.text.body),
                     ),
                 ],
               ),

@@ -25,6 +25,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 /// 返回 [query] 在 [text] 中所有匹配的起始偏移（无匹配返回空列表）
 List<int> computeMatches(String text, String query) {
@@ -390,7 +391,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
               child: Text(
                 countText,
                 textAlign: TextAlign.right,
-                style: AppTextStyles.noteCaption,
+                style: context.text.noteCaption,
               ),
             ),
           ],
@@ -420,7 +421,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
           ],
         ),
         const SizedBox(height: 4),
-        const Text('查找会在正文里标出位置，替换后即时保存', style: AppTextStyles.caption),
+        Text('查找会在正文里标出位置，替换后即时保存', style: context.text.caption),
       ],
     );
   }
@@ -663,7 +664,7 @@ class _BookResultTile extends StatelessWidget {
               _buildSnippetSpan(),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.noteCaption.copyWith(height: 1.5),
+              style: context.text.noteCaption.copyWith(height: 1.5),
             ),
           ],
         ),

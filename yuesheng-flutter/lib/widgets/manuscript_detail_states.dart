@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../theme/app_typography.dart';
 
 /// 作品元信息条（批次 37 简化 + 修复2：章节数已移到列表头右侧）
 ///
@@ -53,7 +54,7 @@ class ManuscriptMetaBar extends StatelessWidget {
               genre,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.subBody,
+              style: context.text.subBody,
             ),
           ),
         ],
@@ -101,9 +102,9 @@ class ManuscriptNotFoundView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '可能已被删除，请返回书架查看',
-              style: AppTextStyles.subBody,
+              style: context.text.subBody,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -139,12 +140,12 @@ class EmptyChaptersState extends StatelessWidget {
               color: AppColors.textTertiary,
             ),
             const SizedBox(height: 16),
-            const Text('还没有章节', style: AppTextStyles.titleLg),
+            Text('还没有章节', style: context.text.titleLg),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '点击「新建章节」开始你的第一篇',
               textAlign: TextAlign.center,
-              style: AppTextStyles.body,
+              style: context.text.body,
             ),
             const SizedBox(height: 20),
             ElevatedButton(

@@ -24,6 +24,7 @@ import '../data/repositories/teacher_suggestion_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/practice_providers.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 /// 教学决策文案映射
 const Map<String, String> _decisionText = {'guide': '引导练习', 'train': '强化训练'};
@@ -290,7 +291,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           ),
         ],
         const Spacer(),
-        const Text('训练建议', style: AppTextStyles.noteCaption),
+        Text('训练建议', style: context.text.noteCaption),
       ],
     );
   }

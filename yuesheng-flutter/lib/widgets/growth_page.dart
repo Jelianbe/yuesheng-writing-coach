@@ -33,6 +33,7 @@ import 'growth_detail_nav.dart';
 import 'observation_audit_card.dart';
 import 'proficiency_ring.dart';
 import 'severity_bar.dart';
+import '../theme/app_typography.dart';
 
 /// 成长概览页
 class GrowthPage extends ConsumerStatefulWidget {
@@ -276,7 +277,7 @@ class _GrowthContent extends StatelessWidget {
                 Center(
                   child: Text(
                     '共 $totalSessions 次写作会话',
-                    style: AppTextStyles.subBody,
+                    style: context.text.subBody,
                   ),
                 ),
               ],
@@ -405,9 +406,9 @@ class _GrowthContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '完成第一次写作后，这里会展示你的能力画像',
-              style: AppTextStyles.subBody,
+              style: context.text.subBody,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -498,7 +499,7 @@ class _ErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
             const SizedBox(height: 8),
-            const Text('加载失败', style: AppTextStyles.body),
+            Text('加载失败', style: context.text.body),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onRetry,

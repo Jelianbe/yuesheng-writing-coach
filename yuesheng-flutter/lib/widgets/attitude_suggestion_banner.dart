@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../services/attitude_advisor.dart';
+import '../theme/app_typography.dart';
 
 class AttitudeSuggestionBanner extends StatelessWidget {
   final AttitudeSuggestion suggestion;
@@ -71,7 +72,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                   suggestion.reason,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.subBody.copyWith(height: 1.4),
+                  style: context.text.subBody.copyWith(height: 1.4),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -115,7 +116,7 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                         ),
                         child: Text(
                           '暂不',
-                          style: AppTextStyles.subBody.copyWith(
+                          style: context.text.subBody.copyWith(
                             fontWeight: FontWeight.w500,
                           ),
                         ),

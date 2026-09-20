@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 批次93-2：搜索无结果空态
 class BookshelfNoSearchResult extends StatelessWidget {
@@ -36,7 +37,7 @@ class BookshelfNoSearchResult extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Center(
-          child: Text(searching ? '换个书名试试吧' : '', style: AppTextStyles.caption),
+          child: Text(searching ? '换个书名试试吧' : '', style: context.text.caption),
         ),
       ],
     );

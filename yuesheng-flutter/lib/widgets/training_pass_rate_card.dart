@@ -29,6 +29,7 @@ import '../data/repositories/training_result_repository.dart';
 import '../providers/growth_providers.dart';
 import '../services/growth_service.dart';
 import '../services/syndrome_registry.dart';
+import '../theme/app_typography.dart';
 
 /// 训练通过率看板卡片（X-041c：支持时间窗切换）
 class TrainingPassRateCard extends ConsumerStatefulWidget {
@@ -233,7 +234,7 @@ class _StatsRow extends StatelessWidget {
                   Text(
                     '通过 ${stat.passed} · 部分通过 ${stat.partial} · '
                     '未过 ${stat.failed}',
-                    style: AppTextStyles.microCaption,
+                    style: context.text.microCaption,
                   ),
                 ],
               ),

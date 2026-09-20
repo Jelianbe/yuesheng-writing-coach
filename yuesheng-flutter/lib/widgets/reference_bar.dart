@@ -26,6 +26,7 @@ import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 import 'excerpt_picker_sheet.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 class ReferenceBar extends ConsumerStatefulWidget {
   /// 会话 ID（引用列表按会话隔离）
@@ -587,7 +588,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         color: AppColors.borderSoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: Text(_typeLabel(refType), style: AppTextStyles.microCaption),
+      child: Text(_typeLabel(refType), style: context.text.microCaption),
     );
   }
 

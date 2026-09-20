@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 批次93-3：加载失败错误态（重试按钮）
 class BookshelfErrorView extends StatelessWidget {
@@ -33,7 +34,7 @@ class BookshelfErrorView extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: AppTextStyles.body,
+              style: context.text.body,
             ),
             const SizedBox(height: 16),
             FilledButton.icon(

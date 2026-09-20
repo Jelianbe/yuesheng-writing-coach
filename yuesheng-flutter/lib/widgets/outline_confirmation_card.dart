@@ -24,6 +24,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/outline_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 /// 实体类型中文映射
 const Map<String, String> _entityTypeText = {
@@ -344,7 +345,7 @@ class _OutlineConfirmationCardState
         const SizedBox(width: 6),
         Text(
           '已确认 $approved/${widget.payload.impressions.length} 条印象',
-          style: AppTextStyles.noteCaption,
+          style: context.text.noteCaption,
         ),
       ],
     );

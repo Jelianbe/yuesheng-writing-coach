@@ -20,6 +20,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/manuscript_providers.dart';
+import '../theme/app_typography.dart';
 
 /// 体裁选项（对齐 RN project-settings.tsx GENRES：长篇小说/中篇/短篇）
 const List<String> _genres = ['长篇小说', '中篇', '短篇'];
@@ -433,14 +434,14 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                     style: BorderStyle.solid,
                   ),
                 ),
-                child: const Text('+ 添加标签', style: AppTextStyles.subCaption),
+                child: Text('+ 添加标签', style: context.text.subCaption),
               ),
             ),
           ],
         ),
         // 批次94-5：热门标签预设（点击即加入，已含不再显示）
         const SizedBox(height: 14),
-        const Text('热门标签', style: AppTextStyles.subCaption),
+        Text('热门标签', style: context.text.subCaption),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -463,7 +464,7 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       border: Border.all(color: AppColors.divider),
                     ),
-                    child: Text('+ $preset', style: AppTextStyles.subBody),
+                    child: Text('+ $preset', style: context.text.subBody),
                   ),
                 ),
           ],
@@ -527,11 +528,11 @@ class _ProjectSettingsPageState extends ConsumerState<ProjectSettingsPage> {
                 ),
         ),
         const SizedBox(height: 8),
-        const Center(
+        Center(
           child: Text(
             // 批次78 L2：与删除确认框（批次59）软删语义对齐，不再宣称「不可恢复」
             '删除后作品将不再显示，章节和诊断记录会保留',
-            style: AppTextStyles.caption,
+            style: context.text.caption,
           ),
         ),
       ],

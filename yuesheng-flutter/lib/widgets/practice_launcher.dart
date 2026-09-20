@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 候选症候选项（id + 名称，来自活跃问题）
 class PracticeSyndromeOption {
@@ -190,7 +191,7 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('自主练习', style: AppTextStyles.titleLg),
+        Text('自主练习', style: context.text.titleLg),
         const SizedBox(height: 4),
         const Text(
           '选择要练的症候、练习类型和难度，练什么由你决定',

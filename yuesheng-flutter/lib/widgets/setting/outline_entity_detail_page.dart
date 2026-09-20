@@ -22,6 +22,7 @@ import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../outline_shared.dart';
 import 'setting_links_section.dart';
+import '../../theme/app_typography.dart';
 
 class OutlineEntityDetailPage extends ConsumerStatefulWidget {
   final String entityId;
@@ -179,7 +180,7 @@ class _MetaBadge extends StatelessWidget {
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
-      child: Text(label, style: AppTextStyles.caption),
+      child: Text(label, style: context.text.caption),
     );
   }
 }
@@ -192,7 +193,7 @@ class _AliasChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
-      label: Text(label, style: AppTextStyles.caption),
+      label: Text(label, style: context.text.caption),
       visualDensity: VisualDensity.compact,
     );
   }

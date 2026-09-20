@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../services/syndrome_recurrence.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 通用卡片（左侧 4dp 竹青色条，与 GrowthPage._Card 视觉一致）
 ///
@@ -51,7 +52,7 @@ class GrowthInfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(label, style: AppTextStyles.subBody),
+        Text(label, style: context.text.subBody),
         const Spacer(),
         Text(
           value,
@@ -98,7 +99,7 @@ class GrowthRecurrenceRow extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(subtitle, style: AppTextStyles.microCaption),
+              Text(subtitle, style: context.text.microCaption),
             ],
           ),
         ),

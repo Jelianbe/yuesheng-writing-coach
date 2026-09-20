@@ -25,6 +25,7 @@ import '../data/repositories/volume_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 import '../services/mention_parser.dart';
+import '../theme/app_typography.dart';
 
 class ReferencePicker extends ConsumerStatefulWidget {
   /// 选择回调：refType ∈ {manuscript, chapter, file}（default 模式）
@@ -184,10 +185,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             '选择要分析的作品或章节',
             textAlign: TextAlign.center,
-            style: AppTextStyles.subCaption,
+            style: context.text.subCaption,
           ),
           const SizedBox(height: 12),
 
@@ -255,7 +256,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   // ── 作品 Tab ──
   Widget _buildWorksTab() {
     if (_manuscripts.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl + AppSpacing.lg),
         child: Column(
           children: [
@@ -265,7 +266,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
               color: AppColors.disabledText,
             ),
             SizedBox(height: 8),
-            Text('还没有作品', style: AppTextStyles.body),
+            Text('还没有作品', style: context.text.body),
             SizedBox(height: 4),
             Text(
               '去书架创建，或通过「+」导入小说',
@@ -548,13 +549,13 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Widget _buildFilesTab() {
     final hasFiles = _filesMap.values.any((files) => files.isNotEmpty);
     if (!hasFiles) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl + AppSpacing.lg),
         child: Column(
           children: [
             Icon(Icons.attach_file, size: 40, color: AppColors.disabledText),
             SizedBox(height: 8),
-            Text('还没有素材文件', style: AppTextStyles.body),
+            Text('还没有素材文件', style: context.text.body),
             SizedBox(height: 4),
             Text(
               // 批次77：文案指向真实路径（全应用无「素材页」，素材在作品详情的文件 Tab 添加）

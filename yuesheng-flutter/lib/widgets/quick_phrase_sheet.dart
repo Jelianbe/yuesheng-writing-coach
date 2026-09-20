@@ -16,6 +16,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 class QuickPhraseSheet extends ConsumerStatefulWidget {
   /// 点击短语 → 关闭弹层 + 回调（页面在光标处插入并保存）
@@ -169,7 +170,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
             ],
           ),
           const SizedBox(height: 4),
-          const Text('最多记 30 条，点击短语就会插入到光标位置', style: AppTextStyles.caption),
+          Text('最多记 30 条，点击短语就会插入到光标位置', style: context.text.caption),
           const SizedBox(height: 8),
           SizedBox(height: 300, child: _buildList()),
         ],
@@ -188,7 +189,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
       );
     }
     if (phrases.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -197,7 +198,7 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
             Text(
               '还没有快捷短语\n把常写的句子记下来，下次一点就出来',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
           ],
         ),

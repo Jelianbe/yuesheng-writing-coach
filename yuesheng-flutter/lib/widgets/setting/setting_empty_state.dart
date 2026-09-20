@@ -23,6 +23,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 /// 资料库各子列表的通用空态。
 ///
@@ -76,13 +77,13 @@ class SettingEmptyState extends StatelessWidget {
               const SizedBox(height: AppSpacing.lg),
               Text(
                 title,
-                style: AppTextStyles.titleLg,
+                style: context.text.titleLg,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 description,
-                style: AppTextStyles.body,
+                style: context.text.body,
                 textAlign: TextAlign.center,
               ),
               ?_buildAction(),
@@ -159,7 +160,7 @@ class SettingErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: AppTextStyles.body,
+              style: context.text.body,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -218,14 +219,14 @@ class SettingSearchEmptyState extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               '没有匹配「$query」的结果',
-              style: AppTextStyles.body,
+              style: context.text.body,
               textAlign: TextAlign.center,
             ),
             if (excludedHint != null) ...[
               const SizedBox(height: AppSpacing.xs),
               Text(
                 excludedHint!,
-                style: AppTextStyles.caption,
+                style: context.text.caption,
                 textAlign: TextAlign.center,
               ),
             ],

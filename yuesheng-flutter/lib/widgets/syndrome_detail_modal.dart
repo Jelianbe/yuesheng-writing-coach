@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/syndrome_tracker.dart';
 import '../utils/time_format.dart';
+import '../theme/app_typography.dart';
 
 /// 严重度 → 矿物色配置（L1 竹青淡 / L2 矿物黄 / L3 矿物红）
 class _SeverityTheme {
@@ -115,7 +116,7 @@ class SyndromeDetailModal extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildStatsRow(),
+                    _buildStatsRow(context),
                     const SizedBox(height: 8),
                     _buildTrendSection(),
                     const SizedBox(height: 8),
@@ -172,7 +173,7 @@ class SyndromeDetailModal extends StatelessWidget {
   }
 
   // ── 统计行：出现次数 / 趋势 / 首次发现（对齐 RN statsRow）──
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       decoration: BoxDecoration(
@@ -182,18 +183,21 @@ class SyndromeDetailModal extends StatelessWidget {
       child: Row(
         children: [
           _buildStatItem(
+            context: context,
             value: '${syndrome.occurrenceCount}',
             label: '出现次数',
             color: AppColors.textPrimary,
           ),
           const _StatDivider(),
           _buildStatItem(
+            context: context,
             value: getTrendLabel(syndrome.trend),
             label: '趋势',
             color: _trendColor(syndrome.trend),
           ),
           const _StatDivider(),
           _buildStatItem(
+            context: context,
             value: formatRelativeTime(syndrome.firstSeen),
             label: '首次发现',
             color: AppColors.textPrimary,
@@ -204,6 +208,7 @@ class SyndromeDetailModal extends StatelessWidget {
   }
 
   Widget _buildStatItem({
+    required BuildContext context,
     required String value,
     required String label,
     required Color color,
@@ -222,7 +227,7 @@ class SyndromeDetailModal extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(label, style: AppTextStyles.caption),
+          Text(label, style: context.text.caption),
         ],
       ),
     );

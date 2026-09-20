@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import 'bookshelf_genre_section.dart';
+import '../theme/app_typography.dart';
 
 /// 新建作品弹窗
 class BookshelfCreateModal extends StatefulWidget {
@@ -97,10 +98,10 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   '新建作品',
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.titleLg,
+                  style: context.text.titleLg,
                 ),
                 const SizedBox(height: 20),
                 _buildTitleField(),
@@ -125,7 +126,7 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('标题', style: AppTextStyles.formLabel),
+        Text('标题', style: context.text.formLabel),
         const SizedBox(height: 6),
         TextField(
           controller: widget.titleController,

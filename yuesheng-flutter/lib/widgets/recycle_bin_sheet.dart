@@ -16,6 +16,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 class RecycleBinSheet extends ConsumerStatefulWidget {
   /// 点击条目 → 关闭弹层 + 回调（页面在光标处恢复文本并保存）
@@ -152,12 +153,12 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
             ],
           ),
           const SizedBox(height: 4),
-          const Text('删掉或剪切的长文本会留在这里，点一下就能找回', style: AppTextStyles.caption),
+          Text('删掉或剪切的长文本会留在这里，点一下就能找回', style: context.text.caption),
           // 批次87-2：恢复后自动移除开关
           SwitchListTile(
             dense: true,
             contentPadding: EdgeInsets.zero,
-            title: const Text('恢复后自动移除该条', style: AppTextStyles.subBody),
+            title: Text('恢复后自动移除该条', style: context.text.subBody),
             value: _removeOnRestore,
             activeTrackColor: AppColors.primary,
             onChanged: _toggleRemoveOnRestore,
@@ -180,7 +181,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
       );
     }
     if (items.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -189,7 +190,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
             Text(
               '回收板是空的\n删掉的长文本会自动留在这里',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
           ],
         ),
@@ -222,7 +223,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
                       const SizedBox(height: 2),
                       Text(
                         '${item.content.length} 字 · ${_formatTime(item.deletedAt)}',
-                        style: AppTextStyles.microCaption,
+                        style: context.text.microCaption,
                       ),
                     ],
                   ),

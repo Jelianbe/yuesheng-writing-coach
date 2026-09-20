@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 class ReferenceChangeCard extends StatelessWidget {
   final String action; // 'set_primary' | 'add' | 'remove'
@@ -132,7 +133,7 @@ class ReferenceChangeCard extends StatelessWidget {
                                   ),
                                   child: Text(
                                     _typeLabel,
-                                    style: AppTextStyles.microCaption,
+                                    style: context.text.microCaption,
                                   ),
                                 ),
                               ],
@@ -142,7 +143,7 @@ class ReferenceChangeCard extends StatelessWidget {
                               subtitle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.noteCaption,
+                              style: context.text.noteCaption,
                             ),
                           ],
                         ),

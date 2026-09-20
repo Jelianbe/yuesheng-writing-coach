@@ -24,6 +24,7 @@ import 'chat_self_practice.dart';
 import 'chat_teaching_controller.dart';
 import 'chat_welcome.dart';
 import 'message_list.dart';
+import '../theme/app_typography.dart';
 
 /// 消息列表分区（含练习卡 / 评估报告 / 空态欢迎）
 class ChatMessageSection extends ConsumerWidget {
@@ -117,7 +118,7 @@ class ChatBootstrapErrorView extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
           const SizedBox(height: 8),
-          const Text('初始化失败，请重试', style: AppTextStyles.body),
+          Text('初始化失败，请重试', style: context.text.body),
           const SizedBox(height: 4),
           if (kDebugMode)
             Text(

@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 /// 思考 / 诊断中的占位提示（批次49：阶段标签优先显示）
 class ThinkingPlaceholder extends StatelessWidget {
@@ -41,7 +42,7 @@ class ThinkingPlaceholder extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Text(
             label ?? (isDiagnosing ? '诊断中…' : '思考中…'),
-            style: AppTextStyles.subBody,
+            style: context.text.subBody,
           ),
         ],
       ),

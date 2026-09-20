@@ -18,6 +18,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
 import '../router/app_routes.dart';
+import '../theme/app_typography.dart';
 
 /// 章节选择回调（manuscriptId + 章节）
 typedef DiagnosisChapterCallback =
@@ -127,16 +128,16 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
-            const Text(
+            Text(
               '选择要诊断的章节',
               textAlign: TextAlign.center,
-              style: AppTextStyles.titleLg,
+              style: context.text.titleLg,
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               '选择一个章节进行写作分析',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
             const SizedBox(height: 12),
             Flexible(

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../utils/chapter_number.dart';
+import '../../theme/app_typography.dart';
 
 class CharacterEventsSection extends StatelessWidget {
   final List<EventFact> events;
@@ -41,7 +42,7 @@ class CharacterEventsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(height: AppSpacing.section),
-        Text('相关事件 (${events.length})', style: AppTextStyles.titleMd),
+        Text('相关事件 (${events.length})', style: context.text.titleMd),
         const SizedBox(height: AppSpacing.xsm),
         for (final e in events)
           ListTile(
@@ -52,20 +53,16 @@ class CharacterEventsSection extends StatelessWidget {
                 _TypeChip(eventType: e.eventType),
                 const SizedBox(width: AppSpacing.xsm),
                 Expanded(
-                  child: Text(
-                    e.name,
-                    style: AppTextStyles.titleMd,
-                    maxLines: 1,
-                  ),
+                  child: Text(e.name, style: context.text.titleMd, maxLines: 1),
                 ),
-                Text(_chapterText(e), style: AppTextStyles.microCaption),
+                Text(_chapterText(e), style: context.text.microCaption),
               ],
             ),
             subtitle: e.description.isEmpty
                 ? null
                 : Text(
                     e.description,
-                    style: AppTextStyles.caption,
+                    style: context.text.caption,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -102,7 +99,7 @@ class _TypeChip extends StatelessWidget {
       ),
       child: Text(
         eventType,
-        style: AppTextStyles.microCaption.copyWith(color: AppColors.l1Text),
+        style: context.text.microCaption.copyWith(color: AppColors.l1Text),
       ),
     );
   }

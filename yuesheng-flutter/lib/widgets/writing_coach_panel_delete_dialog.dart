@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 消息删除确认弹窗。
 class WritingCoachDeleteDialog extends StatelessWidget {
@@ -26,11 +27,11 @@ class WritingCoachDeleteDialog extends StatelessWidget {
   /// 构建 AlertDialog 本体（标题 + 内容 + 取消/删除按钮）。
   static Widget _buildDialog(BuildContext dialogCtx) {
     return AlertDialog(
-      title: const Text('删除消息', style: AppTextStyles.titleLg),
-      content: const Text(
+      title: Text('删除消息', style: dialogCtx.text.titleLg),
+      content: Text(
         '确定要删除这条消息吗？此操作不可撤销。',
         textAlign: TextAlign.center,
-        style: AppTextStyles.body,
+        style: dialogCtx.text.body,
       ),
       actions: [
         TextButton(

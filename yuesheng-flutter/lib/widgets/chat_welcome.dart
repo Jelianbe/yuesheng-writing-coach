@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 const String _welcomeTitle = '你好，我是月笙';
 const String _welcomeSubtitle = '你的专属写作教练，随时帮你诊断和提升写作';
@@ -39,14 +40,14 @@ class ChatWelcome extends StatelessWidget {
             // UI-AUDIT：走 AppTextStyles 令牌（titleLg=18/w600，空态主文字）
             // 头像：早期「精简」批次已移除（chat_welcome_test 锚定），
             // 恢复作 P2 提案待定案（对齐 RN 真源，见 UI-AUDIT 报告 §3）
-            const Text(_welcomeTitle, style: AppTextStyles.titleLg),
+            Text(_welcomeTitle, style: context.text.titleLg),
             const SizedBox(height: AppSpacing.sm),
             // UI-AUDIT：副标题改 body（14/textSecondary，对比度 4.68:1 达标；
             // 原 textTertiary 3.23:1 < 4.5:1，14px 正文不达 WCAG AA）
-            const Text(
+            Text(
               _welcomeSubtitle,
               textAlign: TextAlign.center,
-              style: AppTextStyles.body,
+              style: context.text.body,
             ),
             _buildActions(),
           ],

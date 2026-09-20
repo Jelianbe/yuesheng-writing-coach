@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../config/shared_constants.dart';
 import '../services/growth_service.dart';
+import '../theme/app_typography.dart';
 
 /// 写作成长曲线
 class WritingCurveChart extends StatelessWidget {
@@ -267,7 +268,7 @@ class _SummaryItem extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.microCaption),
+          Text(label, style: context.text.microCaption),
         ],
       ),
     );
@@ -299,7 +300,7 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.microCaption),
+        Text(label, style: context.text.microCaption),
       ],
     );
   }
@@ -336,7 +337,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: AppTextStyles.caption,
+            style: context.text.caption,
           ),
         ],
       ),

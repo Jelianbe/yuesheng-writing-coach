@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 /// 部分认同快速选项（对齐 RN DEFAULT_QUICK_OPTIONS，导出供外部引用/配置）
 const List<({String label, String value})> defaultQuickOptions = [
@@ -309,7 +310,7 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
                     ),
                     child: Text(
                       option.label,
-                      style: AppTextStyles.subBody.copyWith(
+                      style: context.text.subBody.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
                     ),

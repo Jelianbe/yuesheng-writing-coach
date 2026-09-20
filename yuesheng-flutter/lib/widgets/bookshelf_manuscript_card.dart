@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../providers/manuscript_providers.dart';
+import '../theme/app_typography.dart';
 
 /// 作品卡片（批次93-1 信息加厚：首字封面 + 章节数 + 总字数 + 相对时间 + 简介预览）
 class BookshelfManuscriptCard extends StatelessWidget {
@@ -54,7 +55,13 @@ class BookshelfManuscriptCard extends StatelessWidget {
                 _cover(firstChar, genre),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _infoColumn(title, genre, chapterCount, totalWords),
+                  child: _infoColumn(
+                    context,
+                    title,
+                    genre,
+                    chapterCount,
+                    totalWords,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 const Icon(
@@ -116,6 +123,7 @@ class BookshelfManuscriptCard extends StatelessWidget {
 
   /// 标题 + 简介预览 + 信息行
   Widget _infoColumn(
+    BuildContext context,
     String title,
     String genre,
     int chapterCount,
@@ -141,17 +149,22 @@ class BookshelfManuscriptCard extends StatelessWidget {
             manuscript.description,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.noteCaption.copyWith(height: 1.4),
+            style: context.text.noteCaption.copyWith(height: 1.4),
           ),
         ],
         const SizedBox(height: 6),
-        _metaRow(genre, chapterCount, totalWords),
+        _metaRow(context, genre, chapterCount, totalWords),
       ],
     );
   }
 
   /// 信息行：体裁 · 章节数 · 总字数 + 相对时间
-  Widget _metaRow(String genre, int chapterCount, int totalWords) {
+  Widget _metaRow(
+    BuildContext context,
+    String genre,
+    int chapterCount,
+    int totalWords,
+  ) {
     return Row(
       children: [
         if (genre.isNotEmpty) ...[
@@ -163,12 +176,12 @@ class BookshelfManuscriptCard extends StatelessWidget {
         ],
         Text(
           '$chapterCount 章 · ${_formatWords(totalWords)}',
-          style: AppTextStyles.microCaption,
+          style: context.text.microCaption,
         ),
         const Spacer(),
         Text(
           _relativeTime(manuscript.updatedAt),
-          style: AppTextStyles.microCaption,
+          style: context.text.microCaption,
         ),
       ],
     );

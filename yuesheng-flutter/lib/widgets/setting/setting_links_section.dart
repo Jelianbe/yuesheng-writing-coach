@@ -18,6 +18,7 @@ import '../../config/app_theme.dart';
 import '../../data/repositories/setting_link_repository.dart';
 import '../../providers/app_providers.dart';
 import 'setting_link_dialog.dart';
+import '../../theme/app_typography.dart';
 
 /// 详情页「关联设定」区块。
 class SettingLinksSection extends ConsumerStatefulWidget {
@@ -120,7 +121,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
       children: [
         Row(
           children: [
-            Text('关联设定', style: AppTextStyles.titleMd),
+            Text('关联设定', style: context.text.titleMd),
             const Spacer(),
             TextButton.icon(
               onPressed: _addLink,
@@ -139,7 +140,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
             padding: const EdgeInsets.all(AppSpacing.sm),
             child: Text(
               '还没有关联的设定条目',
-              style: AppTextStyles.subBody.copyWith(
+              style: context.text.subBody.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
@@ -170,12 +171,12 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
           view.link.label.isEmpty
               ? view.otherName
               : '${view.otherName} · ${view.link.label}',
-          style: AppTextStyles.body,
+          style: context.text.body,
         ),
         subtitle: Text(
           '${view.otherKind.label}'
           '${jumpable ? '' : ' · 不可跳转'}',
-          style: AppTextStyles.microCaption,
+          style: context.text.microCaption,
         ),
         trailing: IconButton(
           icon: const Icon(Icons.link_off, size: 18),

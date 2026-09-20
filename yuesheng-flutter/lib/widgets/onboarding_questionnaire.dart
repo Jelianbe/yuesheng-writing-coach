@@ -16,6 +16,7 @@ import '../config/app_motion.dart';
 import '../config/app_theme.dart';
 import '../services/onboarding_flow.dart';
 import '../types/teaching_types.dart';
+import '../theme/app_typography.dart';
 
 /// 写作偏好问卷
 ///
@@ -196,7 +197,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
             child: Center(
               child: Text(
                 _step == 0 ? '写作偏好问卷' : '第 ${_step + 1}/$_totalSteps 题',
-                style: AppTextStyles.titleLg,
+                style: context.text.titleLg,
               ),
             ),
           ),
@@ -384,9 +385,9 @@ class _QuestionPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.titleLg),
+          Text(title, style: context.text.titleLg),
           const SizedBox(height: 4),
-          Text(subtitle, style: AppTextStyles.body),
+          Text(subtitle, style: context.text.body),
           const SizedBox(height: 20),
           child,
         ],

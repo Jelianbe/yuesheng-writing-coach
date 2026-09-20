@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/repositories/diagnosis_repository.dart';
+import '../theme/app_typography.dart';
 
 /// 严重度中文标签（对齐 RN SEVERITY_LABELS）
 const Map<String, String> _severityLabels = {
@@ -69,7 +70,7 @@ class TaskPanel extends StatelessWidget {
           horizontal: AppSpacing.lg,
           vertical: 28,
         ),
-        child: const Column(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // 批次66：✅ emoji → Material 图标（taste 审核：UI 图标走图标库）
@@ -91,7 +92,7 @@ class TaskPanel extends StatelessWidget {
             Text(
               '完成诊断后会显示需要解决的问题',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
           ],
         ),

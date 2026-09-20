@@ -21,6 +21,7 @@ import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/setting_tag_overview.dart';
 import 'setting_empty_state.dart';
+import '../../theme/app_typography.dart';
 
 /// 标签总览页（全稿聚合）。
 class SettingTagOverviewPage extends ConsumerStatefulWidget {
@@ -132,7 +133,7 @@ class _SettingTagOverviewPageState
           padding: const EdgeInsets.all(AppSpacing.page),
           child: Text(
             '还没有标签\n在角色/世界观/其他设定里给条目打上标签后，这里会按标签汇总',
-            style: AppTextStyles.caption,
+            style: context.text.caption,
             textAlign: TextAlign.center,
           ),
         ),
@@ -152,7 +153,7 @@ class _SettingTagOverviewPageState
         children: [
           Text(
             '#${group.tag} (${group.items.length})',
-            style: AppTextStyles.titleMd,
+            style: context.text.titleMd,
           ),
           const SizedBox(height: AppSpacing.xs),
           for (final item in group.items)
@@ -160,7 +161,7 @@ class _SettingTagOverviewPageState
               contentPadding: EdgeInsets.zero,
               dense: true,
               leading: _KindBadge(kind: item.kind),
-              title: Text(item.name, style: AppTextStyles.body),
+              title: Text(item.name, style: context.text.body),
               trailing: item.kind == SettingEntityKind.setting
                   ? null
                   : const Icon(Icons.chevron_right, size: 18),
@@ -191,7 +192,7 @@ class _KindBadge extends StatelessWidget {
         color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
-      child: Text(kind.label, style: AppTextStyles.caption),
+      child: Text(kind.label, style: context.text.caption),
     );
   }
 }

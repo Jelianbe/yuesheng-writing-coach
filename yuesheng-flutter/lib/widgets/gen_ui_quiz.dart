@@ -20,6 +20,7 @@ import '../config/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../data/repositories/session_repository.dart';
 import '../services/message_card_service.dart';
+import '../theme/app_typography.dart';
 
 class GenUiQuiz extends ConsumerStatefulWidget {
   final String? messageId;
@@ -218,7 +219,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
           }),
           if (_submitted && explanation != null && explanation.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text('解析：$explanation', style: AppTextStyles.noteCaption),
+            Text('解析：$explanation', style: context.text.noteCaption),
           ],
         ],
       ),

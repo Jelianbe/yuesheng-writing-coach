@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/repositories/app_state_repository.dart';
+import '../theme/app_typography.dart';
 
 /// app_state KV key：隐私告知是否已确认（'1' = 已确认）
 const String kPrivacyNoticeAckKey = 'privacy_notice_acknowledged';
@@ -36,22 +37,19 @@ Future<void> showPrivacyNoticeDialog(BuildContext context) {
     context: context,
     barrierDismissible: false,
     builder: (ctx) => AlertDialog(
-      title: Text('开始之前，请了解', style: AppTextStyles.titleLg),
-      content: const Column(
+      title: Text('开始之前，请了解', style: context.text.titleLg),
+      content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '· 你的作品文本会发送至你所选的 AI 服务商 API，用于生成诊断与教学反馈。',
-            style: AppTextStyles.body,
+            style: context.text.body,
           ),
           SizedBox(height: 8),
-          Text('· 全部数据仅存储在你的设备本地，本应用无任何遥测与数据上报。', style: AppTextStyles.body),
+          Text('· 全部数据仅存储在你的设备本地，本应用无任何遥测与数据上报。', style: context.text.body),
           SizedBox(height: 8),
-          Text(
-            '· API 费用由你对应的服务商账户按用量承担，本应用不代收任何费用。',
-            style: AppTextStyles.body,
-          ),
+          Text('· API 费用由你对应的服务商账户按用量承担，本应用不代收任何费用。', style: context.text.body),
         ],
       ),
       actions: [

@@ -19,6 +19,7 @@ import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/chapter_providers.dart';
+import '../theme/app_typography.dart';
 
 /// 章节回收站页
 class ChapterRecycleBinPage extends ConsumerStatefulWidget {
@@ -184,7 +185,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
               style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
-            Text('删除的章节会先进入这里，可恢复或永久删除', style: AppTextStyles.subCaption),
+            Text('删除的章节会先进入这里，可恢复或永久删除', style: context.text.subCaption),
           ],
         ),
       );
@@ -221,7 +222,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
                     const SizedBox(height: 4),
                     Text(
                       '${c.wordCount} 字 · ${_relativeTime(c.updatedAt)}',
-                      style: AppTextStyles.noteCaption,
+                      style: context.text.noteCaption,
                     ),
                   ],
                 ),

@@ -28,6 +28,7 @@ import 'message_card_dispatcher.dart';
 import 'practice_result_indicator.dart';
 import 'practice_task_card.dart';
 import 'writing/thinking_placeholder.dart';
+import '../theme/app_typography.dart';
 
 class WritingCoachMessageList extends ConsumerWidget {
   final ChatState chatState;
@@ -185,7 +186,7 @@ class WritingCoachMessageList extends ConsumerWidget {
                 );
               }
               if (index == messages.length && chatState.isStreaming) {
-                return _buildStreamingItem();
+                return _buildStreamingItem(context);
               }
               return _buildMessageItem(
                 ref,
@@ -201,7 +202,7 @@ class WritingCoachMessageList extends ConsumerWidget {
   }
 
   /// 流式 item：占位（无内容/诊断阶段）或流式气泡（带阶段角标）。
-  Widget _buildStreamingItem() {
+  Widget _buildStreamingItem(BuildContext context) {
     // 批次51：诊断阶段即使已有流式内容也显示占位（交付物是 DiagnosisCard，
     // 隐藏流式前导文本，避免「先长文本后变卡片」跳变）。
     final isDiagnosisStage = streamStageLabel?.startsWith('正在诊断') ?? false;
@@ -241,7 +242,7 @@ class WritingCoachMessageList extends ConsumerWidget {
               left: AppSpacing.md,
               bottom: AppSpacing.xxs,
             ),
-            child: Text(streamStageLabel!, style: AppTextStyles.microCaption),
+            child: Text(streamStageLabel!, style: context.text.microCaption),
           ),
           streamBubble,
         ],

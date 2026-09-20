@@ -17,6 +17,7 @@ import '../providers/app_providers.dart';
 import '../services/growth_service.dart';
 import 'writing_curve_chart.dart';
 import 'yue_sheet.dart';
+import '../theme/app_typography.dart';
 
 class WritingStatsSheet extends ConsumerStatefulWidget {
   const WritingStatsSheet({super.key});
@@ -145,10 +146,10 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
             else ...[
               WritingCurveChart(points: _points),
               const SizedBox(height: AppSpacing.md),
-              const Text(
+              Text(
                 '每天进步一点点，成长看得见。',
                 textAlign: TextAlign.center,
-                style: AppTextStyles.caption,
+                style: context.text.caption,
               ),
             ],
           ],
@@ -186,7 +187,7 @@ class _StatsEmpty extends StatelessWidget {
           Text(
             '多写几天，这里会展示你的成长轨迹',
             textAlign: TextAlign.center,
-            style: AppTextStyles.caption,
+            style: context.text.caption,
           ),
         ],
       ),

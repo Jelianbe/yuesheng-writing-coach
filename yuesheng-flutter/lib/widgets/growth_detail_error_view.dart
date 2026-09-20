@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../theme/app_typography.dart';
 
 /// 加载失败视图（图标 + 文案 + 重新加载）
 class GrowthErrorView extends StatelessWidget {
@@ -32,7 +33,7 @@ class GrowthErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
             const SizedBox(height: 8),
-            const Text('加载失败', style: AppTextStyles.body),
+            Text('加载失败', style: context.text.body),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onRetry,

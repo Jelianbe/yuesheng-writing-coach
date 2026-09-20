@@ -19,6 +19,7 @@ import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../outline_shared.dart';
 import 'setting_empty_state.dart';
+import '../../theme/app_typography.dart';
 
 /// 状态 → 中文徽标
 String _statusLabel(String status) => switch (status) {
@@ -115,10 +116,10 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
         vertical: AppSpacing.xs,
       ),
       child: ListTile(
-        title: Text(entity.entityKey, style: AppTextStyles.titleMd),
+        title: Text(entity.entityKey, style: context.text.titleMd),
         subtitle: Text(
           '${outlineTypeLabel(entity.entityType)} · ${_statusLabel(entity.status)}',
-          style: AppTextStyles.caption,
+          style: context.text.caption,
         ),
         onTap: () => context.push(
           AppRoutes.outlineDetail,
@@ -135,7 +136,7 @@ class OutlineEntityListViewState extends ConsumerState<OutlineEntityListView> {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: const Text('确认', style: AppTextStyles.microCaption),
+                child: Text('确认', style: context.text.microCaption),
               )
             : null,
       ),

@@ -14,6 +14,7 @@ import '../../data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
+import '../../theme/app_typography.dart';
 
 /// 详情页/编辑弹窗「标签」区块（可编辑 chips）。
 class SettingTagsSection extends ConsumerStatefulWidget {
@@ -80,10 +81,10 @@ class _SettingTagsSectionState extends ConsumerState<SettingTagsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('标签', style: AppTextStyles.titleMd),
+        Text('标签', style: context.text.titleMd),
         const SizedBox(height: AppSpacing.xs),
         if (_tags.isEmpty)
-          Text('暂无标签，添加后便于检索归类', style: AppTextStyles.caption)
+          Text('暂无标签，添加后便于检索归类', style: context.text.caption)
         else
           Wrap(
             spacing: AppSpacing.sm,

@@ -16,6 +16,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../utils/time_format.dart';
+import '../theme/app_typography.dart';
 
 class RelatedSessionsTab extends ConsumerStatefulWidget {
   final String manuscriptId;
@@ -92,10 +93,10 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '通过本书发起对话，或在对话中引用本书内容后，\n对话会按活跃度显示在这里',
               textAlign: TextAlign.center,
-              style: AppTextStyles.subCaption,
+              style: context.text.subCaption,
             ),
           ],
         ),
@@ -169,7 +170,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                       item.session.preview,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.subBody,
+                      style: context.text.subBody,
                     ),
                   ],
                 ],

@@ -27,6 +27,7 @@ import '../services/progressive_diagnosis.dart';
 import '../services/syndrome_tracker.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
+import '../theme/app_typography.dart';
 
 /// 聊天页诊断与活跃问题动作
 class ChatDiagnosisController {
@@ -171,11 +172,11 @@ class ChatDiagnosisController {
       barrierDismissible: true,
       barrierColor: AppColors.overlay,
       builder: (ctx) => AlertDialog(
-        title: const Text('移除问题', style: AppTextStyles.titleLg),
-        content: const Text(
+        title: Text('移除问题', style: ctx.text.titleLg),
+        content: Text(
           '确定要从练习任务中移除这个问题吗？\n移除后需重新诊断才会再次出现。',
           textAlign: TextAlign.center,
-          style: AppTextStyles.body,
+          style: ctx.text.body,
         ),
         actions: [
           TextButton(

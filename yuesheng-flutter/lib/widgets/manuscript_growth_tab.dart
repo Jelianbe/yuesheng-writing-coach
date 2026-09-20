@@ -18,6 +18,7 @@ import '../services/syndrome_recurrence.dart';
 import '../types/teaching_types.dart';
 import '../widgets/proficiency_ring.dart';
 import '../widgets/severity_bar.dart';
+import '../theme/app_typography.dart';
 
 /// 书籍级成长页签。
 class ManuscriptGrowthTab extends ConsumerWidget {
@@ -37,17 +38,23 @@ class ManuscriptGrowthTab extends ConsumerWidget {
           padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _GrowthCard(
-              child: _buildProficiency(data.profile, data.diagnosisCount),
+              child: _buildProficiency(
+                context,
+                data.profile,
+                data.diagnosisCount,
+              ),
             ),
             const SizedBox(height: 12),
             _GrowthCard(child: _buildSeverityOverview(data.activeProblems)),
             if (data.activeProblems.isNotEmpty) ...[
               const SizedBox(height: 12),
-              _GrowthCard(child: _buildActiveProblems(data.activeProblems)),
+              _GrowthCard(
+                child: _buildActiveProblems(context, data.activeProblems),
+              ),
             ],
             if (data.recurrences.isNotEmpty) ...[
               const SizedBox(height: 12),
-              _GrowthCard(child: _buildRecurrences(data.recurrences)),
+              _GrowthCard(child: _buildRecurrences(context, data.recurrences)),
             ],
           ],
         );
@@ -56,7 +63,11 @@ class ManuscriptGrowthTab extends ConsumerWidget {
   }
 
   /// 熟练度卡：圆环 + 本书诊断数。
-  Widget _buildProficiency(StudentProfile? profile, int diagnosisCount) {
+  Widget _buildProficiency(
+    BuildContext context,
+    StudentProfile? profile,
+    int diagnosisCount,
+  ) {
     final level = profile?.proficiency ?? ProficiencyLevel.beginner;
     final confidence = profile?.confidence ?? 0;
     return Padding(
@@ -78,7 +89,7 @@ class ManuscriptGrowthTab extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           Center(
-            child: Text('本书诊断 $diagnosisCount 次', style: AppTextStyles.subBody),
+            child: Text('本书诊断 $diagnosisCount 次', style: context.text.subBody),
           ),
         ],
       ),
@@ -128,7 +139,10 @@ class ManuscriptGrowthTab extends ConsumerWidget {
   }
 
   /// 活跃问题列表（最多 5 条，克制信息量）。
-  Widget _buildActiveProblems(List<ActiveProblemView> problems) {
+  Widget _buildActiveProblems(
+    BuildContext context,
+    List<ActiveProblemView> problems,
+  ) {
     final shown = problems.take(5).toList();
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -152,7 +166,7 @@ class ManuscriptGrowthTab extends ConsumerWidget {
                   _SeverityDot(color: _severityColor(p.severity)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(p.syndromeName, style: AppTextStyles.subBody),
+                    child: Text(p.syndromeName, style: context.text.subBody),
                   ),
                 ],
               ),
@@ -163,7 +177,10 @@ class ManuscriptGrowthTab extends ConsumerWidget {
   }
 
   /// 复发卡：出现次数 + 复发次数（复用 SyndromeRecurrence 语义）。
-  Widget _buildRecurrences(List<SyndromeRecurrence> recurrences) {
+  Widget _buildRecurrences(
+    BuildContext context,
+    List<SyndromeRecurrence> recurrences,
+  ) {
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
@@ -183,7 +200,7 @@ class ManuscriptGrowthTab extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Text(
                 '${r.syndromeName}：出现 ${r.occurrences} 次 · 复发 ${r.recurrences} 次',
-                style: AppTextStyles.subBody,
+                style: context.text.subBody,
               ),
             ),
         ],
@@ -261,7 +278,7 @@ class _Legend extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: AppTextStyles.subBody),
+        Text(label, style: context.text.subBody),
       ],
     );
   }

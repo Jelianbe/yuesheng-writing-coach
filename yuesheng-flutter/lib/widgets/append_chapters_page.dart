@@ -22,6 +22,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/file_parser.dart';
 import 'import_success_sheet.dart';
+import '../theme/app_typography.dart';
 
 /// 解析后的章节（title + content）
 class AppendChapterItem {
@@ -278,7 +279,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
         const SizedBox(height: 4),
         Text(
           '将新章节追加到「${widget.manuscriptTitle}」',
-          style: AppTextStyles.subCaption,
+          style: context.text.subCaption,
         ),
         const SizedBox(height: 12),
         // 选择文件按钮（虚线边框，对齐 RN fileBtn）
@@ -371,7 +372,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
         const SizedBox(height: 6),
         Text(
           '已存在的章节会被标记，默认不选中（共 ${_chapters.length} 章，$_newChapterCount 章新增）',
-          style: AppTextStyles.subCaption,
+          style: context.text.subCaption,
         ),
         const SizedBox(height: 8),
         for (var i = 0; i < _chapters.length; i++) ...[
@@ -467,7 +468,7 @@ class _SelectAction extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
-        child: Text(text, style: AppTextStyles.subBody),
+        child: Text(text, style: context.text.subBody),
       ),
     );
   }
@@ -566,7 +567,7 @@ class _ChapterRow extends StatelessWidget {
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
-                  child: const Text('已存在', style: AppTextStyles.microCaption),
+                  child: Text('已存在', style: context.text.microCaption),
                 ),
             ],
           ),

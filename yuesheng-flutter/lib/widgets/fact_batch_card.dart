@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import '../config/app_theme.dart';
 import '../providers/fact_batch_providers.dart';
 import '../router/app_routes.dart';
+import '../theme/app_typography.dart';
 
 class FactBatchCard extends StatelessWidget {
   final FactBatchRecord record;
@@ -49,7 +50,7 @@ class FactBatchCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xsm),
                 Text(
                   '本次沉淀 ${record.count} 条人物事实',
-                  style: AppTextStyles.noteCaption.copyWith(
+                  style: context.text.noteCaption.copyWith(
                     color: AppColors.l1Text,
                   ),
                 ),

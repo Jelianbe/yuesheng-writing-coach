@@ -23,6 +23,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../providers/capability_providers.dart';
 import '../services/paragraph_selection.dart';
+import '../theme/app_typography.dart';
 
 /// 选段确认结果（区分「清除选段」与「取消关闭」——两者 pop 值不能同为 null）
 class ExcerptPickResult {
@@ -141,11 +142,11 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
               ),
             ),
           ),
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             child: Text(
               '点击段落选择重点分析范围：点区间外扩展，点区间内重选',
-              style: AppTextStyles.caption,
+              style: context.text.caption,
             ),
           ),
           const SizedBox(height: 8),
@@ -187,7 +188,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                 Text(
                   _statusLabel,
                   textAlign: TextAlign.center,
-                  style: AppTextStyles.subBody,
+                  style: context.text.subBody,
                 ),
                 const SizedBox(height: 8),
                 Row(

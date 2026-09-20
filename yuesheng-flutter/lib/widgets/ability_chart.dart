@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/growth_service.dart';
 import '../types/teaching_types.dart';
+import '../theme/app_typography.dart';
 
 /// 能力图谱
 class AbilityChart extends StatelessWidget {
@@ -109,7 +110,7 @@ class _AbilityRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(description, style: AppTextStyles.caption),
+                    Text(description, style: context.text.caption),
                   ],
                 ),
               ),
@@ -199,7 +200,7 @@ class _Section extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(description, style: AppTextStyles.caption),
+                    Text(description, style: context.text.caption),
                     const SizedBox(height: AppSpacing.md),
                     child,
                   ],
@@ -244,7 +245,7 @@ class _EmptyState extends StatelessWidget {
           Text(
             description,
             textAlign: TextAlign.center,
-            style: AppTextStyles.caption,
+            style: context.text.caption,
           ),
         ],
       ),

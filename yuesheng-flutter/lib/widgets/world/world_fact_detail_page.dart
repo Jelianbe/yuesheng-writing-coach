@@ -36,6 +36,7 @@ import '../setting/setting_links_section.dart';
 import '../setting/setting_progressions_section.dart';
 import '../setting/setting_tags_section.dart';
 import 'world_dialogs.dart';
+import '../../theme/app_typography.dart';
 
 class WorldFactDetailPage extends ConsumerStatefulWidget {
   final String worldId;
@@ -264,10 +265,10 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
   /// 断言区块（R-019 真分解：由 build 抽出）；空主题 → 「暂无设定」。
   List<Widget> _assertionWidgets(Map<int, int> chapterNoMap) {
     if (_assertions.isEmpty) {
-      return const [
+      return [
         Padding(
           padding: EdgeInsets.all(AppSpacing.section),
-          child: Text('暂无设定', style: AppTextStyles.body),
+          child: Text('暂无设定', style: context.text.body),
         ),
       ];
     }
@@ -308,7 +309,7 @@ class _WorldHeaderCard extends StatelessWidget {
           children: [
             Text(
               '$firstSeen · 共 $assertionCount 条设定',
-              style: AppTextStyles.caption,
+              style: context.text.caption,
             ),
             const SizedBox(height: AppSpacing.sm),
             Align(
@@ -353,11 +354,11 @@ class _WorldAssertionTile extends StatelessWidget {
       child: ListTile(
         title: Text(
           '${assertion.attribute}：${assertion.value}',
-          style: AppTextStyles.titleMd,
+          style: context.text.titleMd,
         ),
         subtitle: Text(
           '$chapterText · ${hasEvidence ? '✓ 有依据' : '— 无依据'}',
-          style: AppTextStyles.caption,
+          style: context.text.caption,
         ),
       ),
     );
