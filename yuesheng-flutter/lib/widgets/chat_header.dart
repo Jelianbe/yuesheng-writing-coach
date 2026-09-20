@@ -238,98 +238,132 @@ class ChatHeader extends StatelessWidget {
           color: AppColors.background,
           border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
         ),
-        child: Row(
-          children: [
-            // 左：会话列表（汉堡 → drawer，对齐 RN sessionList 按钮）
-            IconButton(
-              icon: const Icon(Icons.menu, color: AppColors.textPrimary),
-              tooltip: '会话列表',
-              onPressed: onOpenSessionDrawer,
-            ),
-            const Spacer(),
-            // 中：诊断模式保留徽章；自由对话 → 标题 + 主引用小字
-            if (_isManuscriptEntry)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    '会话',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // 左右按钮区各自贴边，不参与 Spacer 分配 ⇒ 标题恒居中；
+            // 居中主体限宽 = 总宽 − 两侧按钮区 ⇒ 主引用长文本触发省略号、
+            // 永不过流、绝不把右侧「新建对话/更多」挤掉。
+            const btnZone = 52.0; // 单个 IconButton 触控宽近似
+            final titleMaxW = (constraints.maxWidth - btnZone * 3).clamp(
+              0.0,
+              double.infinity,
+            );
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                // ① 居中主体（诊断模式徽章 / 会话 + 主引用小字），限宽
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: titleMaxW),
+                  child: _isManuscriptEntry
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text(
+                              '会话',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.sm,
+                                vertical: AppSpacing.xxs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.l2,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
+                                border: Border.all(color: AppColors.l2Text),
+                              ),
+                              child: const Text(
+                                '诊断模式',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.l2Text,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              '会话',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: onTapPrimaryRef,
+                              behavior: HitTestBehavior.opaque,
+                              child: Text(
+                                primaryRefTitle != null &&
+                                        primaryRefTitle!.isNotEmpty
+                                    ? primaryRefTitle!
+                                    : '未关联书籍 · 点此管理',
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+                // ② 左：会话列表按钮（贴左，对齐 RN sessionList 按钮）
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+                    tooltip: '会话列表',
+                    onPressed: onOpenSessionDrawer,
                   ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xxs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.l2,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(color: AppColors.l2Text),
-                    ),
-                    child: const Text(
-                      '诊断模式',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.l2Text,
+                ),
+                // ③ 右：新建对话 + 更多（贴右）
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
+                      IconButton(
+                        icon: const Icon(
+                          Icons.add_comment_outlined,
+                          color: AppColors.textPrimary,
+                        ),
+                        tooltip: '新建对话',
+                        onPressed: onNewSession,
                       ),
-                    ),
-                  ),
-                ],
-              )
-            else
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '会话',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: onTapPrimaryRef,
-                    behavior: HitTestBehavior.opaque,
-                    child: Text(
-                      primaryRefTitle != null && primaryRefTitle!.isNotEmpty
-                          ? primaryRefTitle!
-                          : '未关联书籍 · 点此管理',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.textTertiary,
+                      IconButton(
+                        icon: const Icon(
+                          Icons.more_horiz,
+                          color: AppColors.textPrimary,
+                        ),
+                        tooltip: '更多',
+                        onPressed: () => _showMoreMenu(context),
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            const Spacer(),
-            // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
-            IconButton(
-              icon: const Icon(
-                Icons.add_comment_outlined,
-                color: AppColors.textPrimary,
-              ),
-              tooltip: '新建对话',
-              onPressed: onNewSession,
-            ),
-            // 右：更多按钮
-            IconButton(
-              icon: const Icon(Icons.more_horiz, color: AppColors.textPrimary),
-              tooltip: '更多',
-              onPressed: () => _showMoreMenu(context),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

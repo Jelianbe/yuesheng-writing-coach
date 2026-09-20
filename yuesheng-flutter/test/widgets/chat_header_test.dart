@@ -180,4 +180,40 @@ void main() {
       findsOneWidget,
     );
   });
+
+  // ════════════════════════════════════════════════════════
+  // 头部布局：会话标题居中 + 主引用长文本限宽省略（不挤掉右侧按钮 / 不溢出）
+  // 平台事实 = Android 竖屏，用 360 逻辑宽模拟（默认 800 宽逼不出溢出）
+  // ════════════════════════════════════════════════════════
+
+  Future<void> usePhone(WidgetTester t) async {
+    await t.binding.setSurfaceSize(const Size(360, 740));
+    addTearDown(() => t.binding.setSurfaceSize(null));
+  }
+
+  testWidgets('#9 超长主引用（360 竖屏）→ 不溢出 + 新建/更多按钮仍在可点', (tester) async {
+    await usePhone(tester);
+    final longTitle = '一二三四五六七八九十' * 8; // 80 字，远超可用宽
+    await tester.pumpWidget(buildHeader(primaryRefTitle: longTitle));
+    await tester.pumpAndSettle();
+
+    // 旧布局（Row + Spacer + 非 flex 中心块）会 RenderFlex 溢出并被 takeException 捕获
+    expect(tester.takeException(), isNull);
+    // 右侧两个按钮未被挤掉
+    expect(find.byIcon(Icons.add_comment_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+    // 主引用行被限宽省略（TextRenderer 实际宽 < 其 80 字固有宽）
+    final box = tester.getSize(find.text(longTitle));
+    expect(box.width, lessThan(360));
+  });
+
+  testWidgets('#10 会话标题屏幕居中（左右按钮不对称下仍居中）', (tester) async {
+    await usePhone(tester);
+    await tester.pumpWidget(buildHeader());
+    await tester.pumpAndSettle();
+
+    final center = tester.getCenter(find.text('会话'));
+    // 360 逻辑宽 ⇒ 屏幕中心 x = 180；旧布局因左1右2按钮不对称会明显偏左
+    expect(center.dx, closeTo(180, 2));
+  });
 }
