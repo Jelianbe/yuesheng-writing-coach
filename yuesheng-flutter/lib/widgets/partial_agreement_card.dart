@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 部分认同快速选项（对齐 RN DEFAULT_QUICK_OPTIONS，导出供外部引用/配置）
 const List<({String label, String value})> defaultQuickOptions = [
@@ -34,14 +35,17 @@ String quickOptionLabel(String value) {
 }
 
 /// 严重度 → （文字色, 底/边框色）
-({Color text, Color bg}) _severityColors(String severity) {
+({Color text, Color bg}) _severityColors(
+  BuildContext context,
+  String severity,
+) {
   switch (severity) {
     case 'L2':
-      return (text: AppColors.l2Text, bg: AppColors.l2);
+      return (text: context.palette.l2Text, bg: context.palette.l2);
     case 'L3':
-      return (text: AppColors.l3Text, bg: AppColors.l3);
+      return (text: context.palette.l3Text, bg: context.palette.l3);
     default:
-      return (text: AppColors.l1Text, bg: AppColors.l1);
+      return (text: context.palette.l1Text, bg: context.palette.l1);
   }
 }
 
@@ -131,16 +135,18 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
 
   @override
   Widget build(BuildContext context) {
-    final severity = _severityColors(widget.severity);
+    final severity = _severityColors(context, widget.severity);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceWhite,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: context.palette.surfaceWhite,
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           child: IntrinsicHeight(
             child: Row(
@@ -160,12 +166,12 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
                           _buildSyndromeName(),
                           const SizedBox(height: 10),
                         ],
-                        const Text(
+                        Text(
                           '告诉我哪些描述不准确，我会调整诊断结果。',
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.4,
-                            color: AppColors.textTertiary,
+                            color: context.palette.textTertiary,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -190,13 +196,13 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
   Widget _buildHeader(({Color text, Color bg}) severity) {
     return Row(
       children: [
-        const Expanded(
+        Expanded(
           child: Text(
             '请补充不符合的地方',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
         ),
@@ -230,15 +236,15 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         widget.syndromeName,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       ),
     );
@@ -252,24 +258,24 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
       minLines: 3,
       maxLines: 3,
       textAlignVertical: TextAlignVertical.top,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 14, color: context.palette.textPrimary),
       decoration: InputDecoration(
         hintText: '例如：我觉得问题不严重',
-        hintStyle: const TextStyle(fontSize: 14, color: AppColors.disabledText),
+        hintStyle: TextStyle(fontSize: 14, color: context.palette.disabledText),
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: context.palette.surface,
         contentPadding: const EdgeInsets.all(AppSpacing.smx),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.borderSoft),
+          borderSide: BorderSide(color: context.palette.borderSoft),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.borderSoft),
+          borderSide: BorderSide(color: context.palette.borderSoft),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.primary),
+          borderSide: BorderSide(color: context.palette.primary),
         ),
       ),
     );
@@ -280,12 +286,12 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '快速选项：',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textTertiary,
+            color: context.palette.textTertiary,
           ),
         ),
         const SizedBox(height: 8),
@@ -304,9 +310,9 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
                     ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      border: Border.all(color: AppColors.borderSoft),
+                      border: Border.all(color: context.palette.borderSoft),
                     ),
                     child: Text(
                       option.label,
@@ -336,8 +342,8 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
             child: OutlinedButton(
               onPressed: widget.onSkip ?? () {},
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textTertiary,
-                side: const BorderSide(color: AppColors.borderSoft),
+                foregroundColor: context.palette.textTertiary,
+                side: BorderSide(color: context.palette.borderSoft),
                 padding: EdgeInsets.zero,
                 textStyle: const TextStyle(
                   fontSize: 14,
@@ -355,8 +361,8 @@ class _PartialAgreementCardState extends State<PartialAgreementCard> {
             child: FilledButton(
               onPressed: hasText ? _handleSubmit : null,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.disabled,
+                backgroundColor: context.palette.primary,
+                disabledBackgroundColor: context.palette.disabled,
                 padding: EdgeInsets.zero,
                 textStyle: const TextStyle(
                   fontSize: 14,

@@ -25,6 +25,7 @@ import '../providers/app_providers.dart';
 import '../providers/practice_providers.dart';
 import '../services/message_card_service.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 教学决策文案映射
 const Map<String, String> _decisionText = {'guide': '引导练习', 'train': '强化训练'};
@@ -209,9 +210,11 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: context.palette.background,
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           child: Row(
             children: [
@@ -256,16 +259,16 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
             vertical: 3,
           ),
           decoration: BoxDecoration(
-            color: AppColors.l1,
+            color: context.palette.l1,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text(
             // 症候名称优先，无则显示决策类型
             p.targetSyndromeName ?? decision,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
         ),
@@ -277,15 +280,15 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
               vertical: 3,
             ),
             decoration: BoxDecoration(
-              color: AppColors.l2,
+              color: context.palette.l2,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Text(
               difficulty,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.l2Text,
+                color: context.palette.l2Text,
               ),
             ),
           ),
@@ -300,10 +303,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
   Widget _buildDescription(TeacherSuggestionCardPayload p) {
     return Text(
       p.taskDescription.isEmpty ? p.naturalLanguage : p.taskDescription,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 14,
         height: 1.5,
-        color: AppColors.textPrimary,
+        color: context.palette.textPrimary,
       ),
     );
   }
@@ -341,7 +344,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 child: FilledButton(
                   onPressed: _handleStartPractice,
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.palette.primary,
                     padding: EdgeInsets.zero,
                     textStyle: const TextStyle(
                       fontSize: 13,
@@ -359,8 +362,8 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 child: OutlinedButton(
                   onPressed: _dismiss,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textDeep,
-                    side: const BorderSide(color: AppColors.borderSoft),
+                    foregroundColor: context.palette.textDeep,
+                    side: BorderSide(color: context.palette.borderSoft),
                     padding: EdgeInsets.zero,
                     textStyle: const TextStyle(
                       fontSize: 13,
@@ -382,8 +385,8 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 child: OutlinedButton(
                   onPressed: () => setState(() => _expanded = !_expanded),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textDeep,
-                    side: const BorderSide(color: AppColors.borderSoft),
+                    foregroundColor: context.palette.textDeep,
+                    side: BorderSide(color: context.palette.borderSoft),
                     padding: EdgeInsets.zero,
                     textStyle: const TextStyle(
                       fontSize: 13,
@@ -401,8 +404,8 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 child: OutlinedButton(
                   onPressed: _handleTeachPrinciple,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textDeep,
-                    side: const BorderSide(color: AppColors.borderSoft),
+                    foregroundColor: context.palette.textDeep,
+                    side: BorderSide(color: context.palette.borderSoft),
                     padding: EdgeInsets.zero,
                     textStyle: const TextStyle(
                       fontSize: 13,
@@ -422,8 +425,8 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                     onPressed: () =>
                         setState(() => _showLocations = !_showLocations),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: const BorderSide(color: AppColors.primary),
+                      foregroundColor: context.palette.primary,
+                      side: BorderSide(color: context.palette.primary),
                       padding: EdgeInsets.zero,
                       textStyle: const TextStyle(
                         fontSize: 13,
@@ -450,18 +453,18 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
-        color: AppColors.l1,
+        color: context.palette.l1,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '问题位置（自查修改，月笙不改写你的正文）：',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
           const SizedBox(height: 6),
@@ -473,19 +476,19 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                 children: [
                   Text(
                     '${i + 1}.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.primary,
+                      color: context.palette.primary,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       locations[i],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.4,
-                        color: AppColors.textDeep,
+                        color: context.palette.textDeep,
                       ),
                     ),
                   ),
@@ -505,7 +508,7 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
-        color: AppColors.l1,
+        color: context.palette.l1,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
@@ -514,10 +517,10 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           if (p.naturalLanguage.isNotEmpty) ...[
             Text(
               p.naturalLanguage,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.5,
-                color: AppColors.textDeep,
+                color: context.palette.textDeep,
               ),
             ),
             const SizedBox(height: 8),
@@ -525,31 +528,31 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
           if (taskType.isNotEmpty)
             Row(
               children: [
-                const Text(
+                Text(
                   '任务类型：',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 Text(
                   taskType,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textDeep,
+                    color: context.palette.textDeep,
                   ),
                 ),
               ],
             ),
           if (p.evaluationCriteria.isNotEmpty) ...[
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '评估标准：',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
@@ -561,19 +564,19 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
                   children: [
                     Text(
                       '${i + 1}.',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         p.evaluationCriteria[i],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           height: 1.4,
-                          color: AppColors.textDeep,
+                          color: context.palette.textDeep,
                         ),
                       ),
                     ),

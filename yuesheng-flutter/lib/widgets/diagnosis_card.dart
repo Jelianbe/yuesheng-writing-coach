@@ -39,6 +39,7 @@ import '../services/teaching_state_cache.dart';
 import '../types/teaching_types.dart';
 import 'syndrome_detail_modal.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 严重度 → 矿物色 + 文字色
 class _SeverityConfig {
@@ -47,6 +48,8 @@ class _SeverityConfig {
   const _SeverityConfig(this.bgColor, this.textColor);
 }
 
+// ⚠️ 顶层 const 色表：context.palette 是运行期值、装不进 const Map。轨道 B「选 A」裁定
+//    此色表留 P1-6 专门重构（改运行期取色 / 注入）；本批暂留焊死亮色 AppColors。
 const Map<String, _SeverityConfig> _severityMap = {
   'L1': _SeverityConfig(AppColors.l1, AppColors.primary), // 竹青淡
   'L2': _SeverityConfig(AppColors.l2, AppColors.l2Text), // 矿物黄
@@ -55,12 +58,13 @@ const Map<String, _SeverityConfig> _severityMap = {
 
 /// 教学状态 → 色点颜色（批次 45：对齐 RN SyndromeTag P0-3，
 /// 教学状态存在时色点优先显示教学状态色，否则回退严重度色）
-Color _teachingStateDotColor(TeachingState state) => switch (state) {
-  TeachingState.identified => AppColors.warning, // 刚识别 → 警告色
-  TeachingState.inProgress => AppColors.primaryDeep, // 训练中 → 信息竹青
-  TeachingState.consolidating => AppColors.primary, // 趋稳中 → 成功竹青
-  TeachingState.mastered => AppColors.disabledText, // 已掌握 → 禁用灰
-};
+Color _teachingStateDotColor(BuildContext context, TeachingState state) =>
+    switch (state) {
+      TeachingState.identified => context.palette.warning, // 刚识别 → 警告色
+      TeachingState.inProgress => context.palette.primaryDeep, // 训练中 → 信息竹青
+      TeachingState.consolidating => context.palette.primary, // 趋稳中 → 成功竹青
+      TeachingState.mastered => context.palette.disabledText, // 已掌握 → 禁用灰
+    };
 
 /// 卡片默认文案
 /// 注意：不用 record 类型，因为 record 的字段访问不能出现在 const 表达式中
@@ -249,7 +253,8 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
   }
 
   _SeverityConfig _sev(String s) =>
-      _severityMap[s] ?? const _SeverityConfig(AppColors.l1, AppColors.primary);
+      _severityMap[s] ??
+      _SeverityConfig(context.palette.l1, context.palette.primary);
 
   @override
   Widget build(BuildContext context) {
@@ -261,9 +266,11 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: context.palette.surface,
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           child: Row(children: [Expanded(child: _buildCardBody(confPct))]),
         ),
@@ -293,7 +300,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
             ),
             child: Column(
               children: [
-                const Divider(height: 1, color: AppColors.border),
+                Divider(height: 1, color: context.palette.border),
                 const SizedBox(height: 12),
                 _buildReasoningSection(),
                 const SizedBox(height: 12),
@@ -341,12 +348,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '归因',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textDeep,
+            color: context.palette.textDeep,
           ),
         ),
         const SizedBox(height: 4),
@@ -414,18 +421,18 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.analytics_outlined,
                 size: 18,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 _CardText.headerTitle,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const Spacer(),
@@ -447,7 +454,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           style: context.text.subBody,
         ),
         const SizedBox(width: 6),
-        const Text('·', style: TextStyle(color: AppColors.textTertiary)),
+        Text('·', style: TextStyle(color: context.palette.textTertiary)),
         const SizedBox(width: 6),
         Text(
           '$confPct${_CardText.confidenceSuffix}',
@@ -458,10 +465,10 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
           turns: Tween(begin: 0.0, end: 0.5).animate(
             CurvedAnimation(parent: _expandAnim, curve: Curves.easeOut),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.keyboard_arrow_down,
             size: 20,
-            color: AppColors.textTertiary,
+            color: context.palette.textTertiary,
           ),
         ),
       ],
@@ -506,15 +513,15 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.l1,
+              color: context.palette.l1,
               borderRadius: BorderRadius.circular(AppRadius.pill),
             ),
-            child: const Text(
+            child: Text(
               _CardText.emptyHint,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ),
@@ -529,7 +536,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     // 批次 45：教学状态存在时色点优先显示教学状态色（对齐 RN SyndromeTag P0-3）
     final teachingState = _teachingStates[s.syndromeId];
     final dotColor = teachingState != null
-        ? _teachingStateDotColor(teachingState)
+        ? _teachingStateDotColor(context, teachingState)
         : cfg.textColor;
     return InkWell(
       // sessionId 非空时可点击打开症候详情弹层（对齐 RN SyndromeTag onPress）
@@ -660,7 +667,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
-        decoration: const BoxDecoration(color: AppColors.l1),
+        decoration: BoxDecoration(color: context.palette.l1),
         child: Row(
           children: [
             Expanded(
@@ -669,12 +676,12 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       _CardText.rewriteTitle,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -703,19 +710,19 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
         children: [
           Text(
             '${index + 1}.',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
               widget.suggestedActions[index],
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textDeep,
+                color: context.palette.textDeep,
                 height: 1.5,
               ),
             ),
@@ -744,7 +751,7 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
 
   @override
   Widget build(BuildContext context) {
-    final sev = _SeverityConfig(AppColors.l1, AppColors.primary);
+    final sev = _SeverityConfig(context.palette.l1, context.palette.primary);
     final cfg = _severityMap[widget.syndrome.severity] ?? sev;
 
     return Row(
@@ -820,19 +827,19 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             _CardText.whyLabel,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textDeep,
+              color: context.palette.textDeep,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             why,
             style: context.text.subBody.copyWith(
-              color: AppColors.textDeep,
+              color: context.palette.textDeep,
               height: 1.5,
             ),
           ),
@@ -847,8 +854,8 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
     final tracked = widget.tracked;
     if (tracked == null) return const SizedBox.shrink();
     final (icon, text, color) = switch (tracked.trend) {
-      'improving' => ('↗', '较上次诊断好转', AppColors.primary),
-      'worsening' => ('↘', '较上次诊断加重', AppColors.danger),
+      'improving' => ('↗', '较上次诊断好转', context.palette.primary),
+      'worsening' => ('↘', '较上次诊断加重', context.palette.danger),
       _ => (null, null, null),
     };
     if (text == null) return const SizedBox.shrink();
@@ -887,12 +894,12 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 证据
-        const Text(
+        Text(
           _CardText.evidenceLabel,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textDeep,
+            color: context.palette.textDeep,
           ),
         ),
         const SizedBox(height: 4),
@@ -904,9 +911,9 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
           // 旧版数据仅有计数、无证据原文：不承诺可查看（批次80 M1 教训延续）
           Text(
             '（共 $count 处证据）',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textDeep,
+              color: context.palette.textDeep,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -928,17 +935,17 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
         children: [
           Text(
             _evidenceExpanded ? '▾ 收起证据（$count 处）' : '▸ 展开证据（$count 处）',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
           const SizedBox(width: 4),
-          const Icon(
+          Icon(
             Icons.keyboard_arrow_down,
             size: 14,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
         ],
       ),
@@ -963,17 +970,17 @@ class _EvidenceQuote extends StatelessWidget {
             height: 16,
             margin: const EdgeInsets.only(top: 2, right: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: context.palette.primary,
               borderRadius: BorderRadius.circular(AppRadius.xs),
             ),
           ),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 height: 1.5,
-                color: AppColors.textDeep,
+                color: context.palette.textDeep,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -1130,7 +1137,7 @@ class _SyndromeConfirmationBarState
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: _status == 'pending' ? _buildPending() : _buildStatus(),
@@ -1142,10 +1149,10 @@ class _SyndromeConfirmationBarState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           '这个诊断符合你的实际情况吗？',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: AppColors.textDeep),
+          style: TextStyle(fontSize: 13, color: context.palette.textDeep),
         ),
         const SizedBox(height: 10),
         Row(
@@ -1153,24 +1160,24 @@ class _SyndromeConfirmationBarState
           children: [
             _buildActionButton(
               label: '认同',
-              bg: AppColors.primary,
-              fg: AppColors.onPrimary,
+              bg: context.palette.primary,
+              fg: context.palette.onPrimary,
               onTap: () => _confirm('confirmed'),
             ),
             const SizedBox(width: 8),
             _buildActionButton(
               label: '部分认同',
-              bg: AppColors.background,
-              fg: AppColors.l2Text,
-              border: AppColors.l2,
+              bg: context.palette.background,
+              fg: context.palette.l2Text,
+              border: context.palette.l2,
               onTap: () => _confirm('partial'),
             ),
             const SizedBox(width: 8),
             _buildActionButton(
               label: '不认同',
-              bg: AppColors.background,
-              fg: AppColors.l3Text,
-              border: AppColors.l3,
+              bg: context.palette.background,
+              fg: context.palette.l3Text,
+              border: context.palette.l3,
               onTap: _dispute,
             ),
           ],
@@ -1199,12 +1206,12 @@ class _SyndromeConfirmationBarState
           textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
         child: _submitting && label == '认同'
-            ? const SizedBox(
+            ? SizedBox(
                 width: 14,
                 height: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.onPrimary,
+                  color: context.palette.onPrimary,
                 ),
               )
             : Text(label),
@@ -1219,21 +1226,21 @@ class _SyndromeConfirmationBarState
         Icons.check_circle_outline,
         '已认同',
         '可以开始针对「${widget.syndrome.name}」的练习',
-        AppColors.primary,
+        context.palette.primary,
       ),
       'partial' => (
         Icons.change_circle_outlined,
         '部分认同',
         '建议继续沟通确认',
-        AppColors.l2Text,
+        context.palette.l2Text,
       ),
       'disputed' => (
         Icons.cancel_outlined,
         '已质疑',
         '诊断已标记为不适用',
-        AppColors.l3Text,
+        context.palette.l3Text,
       ),
-      _ => (Icons.help_outline, '', '', AppColors.textSecondary),
+      _ => (Icons.help_outline, '', '', context.palette.textSecondary),
     };
 
     return Column(

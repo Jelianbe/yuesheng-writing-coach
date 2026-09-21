@@ -19,6 +19,7 @@ import '../services/genui_parser.dart';
 import '../services/message_card_service.dart';
 import 'gen_ui_quiz.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class GenUICard extends StatelessWidget {
   final String content;
@@ -36,9 +37,9 @@ class GenUICard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,14 +97,18 @@ class _GenUiHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.auto_awesome_outlined, size: 16, color: AppColors.primary),
+        Icon(
+          Icons.auto_awesome_outlined,
+          size: 16,
+          color: context.palette.primary,
+        ),
         const SizedBox(width: 6),
         Text(
           '交互组件',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
         ),
       ],
@@ -132,10 +137,10 @@ class _GenUiDiff extends StatelessWidget {
         if (title != null && title.isNotEmpty) ...[
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -177,10 +182,10 @@ class _DiffPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
-        color: emphasis ? AppColors.primarySoft : AppColors.surface,
+        color: emphasis ? context.palette.primarySoft : context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(
-          color: emphasis ? AppColors.primary : AppColors.border,
+          color: emphasis ? context.palette.primary : context.palette.border,
         ),
       ),
       child: Column(
@@ -191,16 +196,18 @@ class _DiffPanel extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: emphasis ? AppColors.primary : AppColors.textTertiary,
+              color: emphasis
+                  ? context.palette.primary
+                  : context.palette.textTertiary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             text.isEmpty ? '（空）' : text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               height: 1.5,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
         ],
@@ -236,10 +243,10 @@ class _GenUiStat extends StatelessWidget {
         if (title != null && title.isNotEmpty) ...[
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -284,9 +291,11 @@ class _StatBar extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: ratio,
                 minHeight: 8,
-                backgroundColor: AppColors.borderSoft,
+                backgroundColor: context.palette.borderSoft,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  ratio >= 0.8 ? AppColors.success : AppColors.primary,
+                  ratio >= 0.8
+                      ? context.palette.success
+                      : context.palette.primary,
                 ),
               ),
             ),
@@ -300,7 +309,9 @@ class _StatBar extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: ratio >= 0.8 ? AppColors.success : AppColors.textPrimary,
+                color: ratio >= 0.8
+                    ? context.palette.success
+                    : context.palette.textPrimary,
               ),
             ),
           ),
@@ -336,10 +347,10 @@ class _GenUiProgress extends StatelessWidget {
         if (title != null && title.isNotEmpty) ...[
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -391,15 +402,15 @@ class _ProgressNode extends StatelessWidget {
     final isDone = status == 'done';
     final isCurrent = status == 'current';
     final color = isDone
-        ? AppColors.success
+        ? context.palette.success
         : isCurrent
-        ? AppColors.primary
-        : AppColors.textTertiary;
+        ? context.palette.primary
+        : context.palette.textTertiary;
     final bgColor = isDone
-        ? AppColors.successBg
+        ? context.palette.successBg
         : isCurrent
-        ? AppColors.primarySoft
-        : AppColors.surface;
+        ? context.palette.primarySoft
+        : context.palette.surface;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -428,8 +439,8 @@ class _ProgressNode extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               color: isDone || isCurrent
-                  ? AppColors.textPrimary
-                  : AppColors.textTertiary,
+                  ? context.palette.textPrimary
+                  : context.palette.textTertiary,
             ),
           ),
         ),
@@ -449,7 +460,7 @@ class _ProgressConnector extends StatelessWidget {
       width: 20,
       height: 2,
       margin: const EdgeInsets.only(bottom: AppSpacing.section),
-      color: done ? AppColors.success : AppColors.borderSoft,
+      color: done ? context.palette.success : context.palette.borderSoft,
     );
   }
 }
@@ -480,10 +491,10 @@ class _GenUiTimeline extends StatelessWidget {
         if (title != null && title.isNotEmpty) ...[
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
@@ -533,7 +544,7 @@ class _TimelineEntry extends StatelessWidget {
                   height: 10,
                   margin: const EdgeInsets.only(top: AppSpacing.xs),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -541,7 +552,7 @@ class _TimelineEntry extends StatelessWidget {
                   Expanded(
                     child: Container(
                       width: 2,
-                      color: AppColors.borderSoft,
+                      color: context.palette.borderSoft,
                       margin: const EdgeInsets.only(top: AppSpacing.xxs),
                     ),
                   ),
@@ -555,9 +566,9 @@ class _TimelineEntry extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: AppSpacing.md),
               padding: const EdgeInsets.all(AppSpacing.smx),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: AppColors.borderSoft),
+                border: Border.all(color: context.palette.borderSoft),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,10 +578,10 @@ class _TimelineEntry extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   if (desc != null && desc!.isNotEmpty) ...[
@@ -602,13 +613,17 @@ class _GenUiPlaceholder extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.borderSoft),
+        border: Border.all(color: context.palette.borderSoft),
       ),
       child: Row(
         children: [
-          Icon(Icons.hourglass_empty, size: 16, color: AppColors.textTertiary),
+          Icon(
+            Icons.hourglass_empty,
+            size: 16,
+            color: context.palette.textTertiary,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

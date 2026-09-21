@@ -27,6 +27,7 @@ import '../providers/practice_providers.dart';
 import '../services/spaced_repetition.dart';
 import '../types/teaching_types.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class PracticeTaskCard extends StatefulWidget {
   final PracticeTask task;
@@ -104,22 +105,22 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           style: context.text.subBody.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 2),
-        const Text(
+        Text(
           '填得越完整，掌握判定越准',
-          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           '你觉得这次改得怎么样？',
-          style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
         ),
         const SizedBox(height: 6),
         _buildConfidenceChips(),
         const SizedBox(height: 10),
         // ── 5.6 回忆难度自评（批1·N2，可跳过）──
-        const Text(
+        Text(
           '这次练习对你来说有多难？',
-          style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
         ),
         const SizedBox(height: 6),
         _buildRecallRatingChips(),
@@ -193,17 +194,17 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
       minLines: 1,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.textTertiary),
+        hintStyle: TextStyle(color: context.palette.textTertiary),
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: context.palette.surface,
         isDense: true,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: context.palette.border),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       ),
-      style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 13, color: context.palette.textPrimary),
     );
   }
 
@@ -212,9 +213,9 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -223,18 +224,18 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
           // ── Header：练习任务 ──
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.edit_note,
                 size: 18,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 '练习任务',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
             ],
@@ -249,15 +250,15 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
                 vertical: AppSpacing.xs,
               ),
               decoration: BoxDecoration(
-                color: AppColors.l1,
+                color: context.palette.l1,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
               ),
               child: Text(
                 widget.task.syndromeName!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.l1Text,
+                  color: context.palette.l1Text,
                 ),
               ),
             ),
@@ -272,10 +273,10 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
             const SizedBox(height: 4),
             Text(
               widget.task.taskDescription,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.5,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -291,25 +292,25 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.smx),
               decoration: BoxDecoration(
-                color: AppColors.l1,
+                color: context.palette.l1,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.emoji_events_outlined,
                     size: 16,
-                    color: AppColors.l2Text,
+                    color: context.palette.l2Text,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       widget.task.taskGoal,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         height: 1.4,
-                        color: AppColors.l2Text,
+                        color: context.palette.l2Text,
                       ),
                     ),
                   ),
@@ -327,24 +328,24 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
             textAlignVertical: TextAlignVertical.top,
             decoration: InputDecoration(
               hintText: '在这里写下你的练习答案...',
-              hintStyle: const TextStyle(color: AppColors.textTertiary),
+              hintStyle: TextStyle(color: context.palette.textTertiary),
               filled: true,
-              fillColor: AppColors.surface,
+              fillColor: context.palette.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: context.palette.border),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: const BorderSide(color: AppColors.border),
+                borderSide: BorderSide(color: context.palette.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                borderSide: const BorderSide(color: AppColors.primary),
+                borderSide: BorderSide(color: context.palette.primary),
               ),
               contentPadding: const EdgeInsets.all(AppSpacing.md),
             ),
-            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 14, color: context.palette.textPrimary),
           ),
           _buildSelfAssessmentSection(),
           const SizedBox(height: 12),
@@ -355,7 +356,7 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
               TextButton(
                 onPressed: widget.submitting ? null : widget.onSkip,
                 style: TextButton.styleFrom(
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: context.palette.surface,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
                     vertical: 9,
@@ -364,11 +365,11 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '跳过',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -377,8 +378,8 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
               FilledButton(
                 onPressed: _handleSubmit,
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  disabledBackgroundColor: AppColors.disabled,
+                  backgroundColor: context.palette.primary,
+                  disabledBackgroundColor: context.palette.disabled,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.section,
                     vertical: 9,
@@ -388,19 +389,19 @@ class _PracticeTaskCardState extends State<PracticeTaskCard> {
                   ),
                 ),
                 child: widget.submitting
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: AppColors.onPrimary,
+                          color: context.palette.onPrimary,
                         ),
                       )
-                    : const Text(
+                    : Text(
                         '提交作答',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.onPrimary,
+                          color: context.palette.onPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
