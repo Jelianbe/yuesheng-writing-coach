@@ -639,7 +639,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   // ── + 添加引用（虚线按钮，对齐 RN addRefBtn）──
   Widget _buildAddRefBtn() {
     return CustomPaint(
-      foregroundPainter: const _DashedBorderPainter(),
+      foregroundPainter: _DashedBorderPainter(context.palette.border),
       child: InkWell(
         onTap: widget.onPressPicker,
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -662,17 +662,17 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
 }
 
 /// 轻量虚线边框（RN borderStyle: 'dashed' 等价物，不引入第三方依赖）
+/// P1-6：paint 无 BuildContext ⇒ 边框色经构造注入（build 传 context.palette.border）。
 class _DashedBorderPainter extends CustomPainter {
-  const _DashedBorderPainter();
+  final Color color;
+  const _DashedBorderPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // ⚠️ CustomPainter.paint 无 BuildContext ⇒ 不能读 context.palette（轨道 B「选 A」：
-    //    本批暂用焊死亮色 AppColors，P1-6 把 palette 色注入 painter 构造后翻色）。
     const dashWidth = 4.0;
     const dashSpace = 3.0;
     final paint = Paint()
-      ..color = AppColors.border
+      ..color = color
       ..strokeWidth = 1;
 
     void drawDash(Offset start, Offset end) {

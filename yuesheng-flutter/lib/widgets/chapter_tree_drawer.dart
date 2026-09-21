@@ -816,7 +816,7 @@ class _ChapterTreeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = chapterStatusConfig[chapter.status];
+    final status = chapterStatusConfigFor(context.palette, chapter.status);
     final title = chapter.title.trim().isEmpty ? '未命名章节' : chapter.title;
     return InkWell(
       onTap: onTap,

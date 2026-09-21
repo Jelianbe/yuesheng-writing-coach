@@ -13,7 +13,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 症候严重度计数
 class SeverityCounts {
@@ -34,18 +34,13 @@ class SeverityBar extends StatelessWidget {
 
   const SeverityBar({super.key, required this.counts, this.height = 8});
 
-  static const _l1Color = AppColors.l1;
-  static const _l2Color = AppColors.l2;
-  static const _l3Color = AppColors.l3;
-  static const _emptyColor = AppColors.border;
-
   @override
   Widget build(BuildContext context) {
     if (counts.isEmpty) {
       return Container(
         height: height,
         decoration: BoxDecoration(
-          color: _emptyColor,
+          color: context.palette.border,
           borderRadius: BorderRadius.circular(height / 2),
         ),
       );
@@ -60,17 +55,23 @@ class SeverityBar extends StatelessWidget {
             if (counts.l1 > 0)
               Expanded(
                 flex: counts.l1,
-                child: Container(decoration: BoxDecoration(color: _l1Color)),
+                child: Container(
+                  decoration: BoxDecoration(color: context.palette.l1),
+                ),
               ),
             if (counts.l2 > 0)
               Expanded(
                 flex: counts.l2,
-                child: Container(decoration: BoxDecoration(color: _l2Color)),
+                child: Container(
+                  decoration: BoxDecoration(color: context.palette.l2),
+                ),
               ),
             if (counts.l3 > 0)
               Expanded(
                 flex: counts.l3,
-                child: Container(decoration: BoxDecoration(color: _l3Color)),
+                child: Container(
+                  decoration: BoxDecoration(color: context.palette.l3),
+                ),
               ),
           ],
         ),

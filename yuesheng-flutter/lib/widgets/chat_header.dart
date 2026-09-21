@@ -39,12 +39,11 @@ import '../config/app_palette.dart';
 void _ignoreTierChange(String _) {}
 
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
-/// ⚠️ 顶层 const 表：context.palette 是运行期值装不进 const List。轨道 B「选 A」：
-///    本批暂留焊死亮色 AppColors，P1-6 改运行期取色后翻色。
-const List<(AttitudeLevel, String, Color)> _attitudeOptions = [
-  (AttitudeLevel.doubao, '豆包', AppColors.l1Text),
-  (AttitudeLevel.yuesheng, '月笙如歌', AppColors.l2Text),
-  (AttitudeLevel.sensei, 'sensei', AppColors.l3Text),
+/// P1-6：const List 装不进运行期 palette ⇒ 改 **palette 驱动函数**，随主题翻。
+List<(AttitudeLevel, String, Color)> _attitudeOptionsFor(AppPalette p) => [
+  (AttitudeLevel.doubao, '豆包', p.l1Text),
+  (AttitudeLevel.yuesheng, '月笙如歌', p.l2Text),
+  (AttitudeLevel.sensei, 'sensei', p.l3Text),
 ];
 
 class ChatHeader extends StatelessWidget {
@@ -116,8 +115,9 @@ class ChatHeader extends StatelessWidget {
                 label: '态度档位',
                 child: Row(
                   children: [
-                    for (final (attitude, label, color)
-                        in _attitudeOptions) ...[
+                    for (final (attitude, label, color) in _attitudeOptionsFor(
+                      context.palette,
+                    )) ...[
                       _AttitudeChip(
                         label: label,
                         color: color,

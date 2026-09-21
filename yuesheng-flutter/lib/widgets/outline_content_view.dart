@@ -137,21 +137,21 @@ class OutlineContentView extends ConsumerWidget {
 
     if (viewAsync == null) return _OutlineEmpty(onOpenCoach: onOpenCoach);
     return viewAsync.when(
-      loading: _buildLoading,
+      loading: () => _buildLoading(context),
       error: (e, _) => _OutlineEmpty(onOpenCoach: onOpenCoach),
       data: (view) => _buildLoaded(context, ref, msId, view),
     );
   }
 
   /// 加载中（R-019 清偿拆出，N6）。⚠️ 当前无调用点（N6 拆出后未被接线）；
-  /// static 无 BuildContext ⇒ 暂留焊死亮色 AppColors（轨道 B「选 A」，P1-6 接线时改）。
-  static Widget _buildLoading() => Center(
+  /// P1-6：改收 BuildContext 取 palette 色（接线即随主题翻）。
+  static Widget _buildLoading(BuildContext context) => Center(
     child: SizedBox(
       width: 18,
       height: 18,
       child: CircularProgressIndicator(
         strokeWidth: 2,
-        color: AppColors.primary,
+        color: context.palette.primary,
       ),
     ),
   );

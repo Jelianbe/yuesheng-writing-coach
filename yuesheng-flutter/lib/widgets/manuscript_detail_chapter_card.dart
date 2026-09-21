@@ -27,17 +27,20 @@ class ChapterStatusConfig {
 }
 
 /// 章节状态配置表
-/// ⚠️ 顶层 const 色表：context.palette 是运行期值装不进 const Map。轨道 B「选 A」：
-///    本批暂留焊死亮色 AppColors，P1-6 改运行期取色后翻色。
-const Map<String, ChapterStatusConfig> chapterStatusConfig = {
-  'draft': ChapterStatusConfig('草稿', AppColors.border, AppColors.textDeep),
-  'revising': ChapterStatusConfig(
-    '修改中',
-    AppColors.warningBg,
-    AppColors.warning,
-  ),
-  'complete': ChapterStatusConfig('完成', AppColors.l1, AppColors.primary),
-};
+/// ⚠️ P1-6 改造：const Map 装不进运行期 palette ⇒ 改 **palette 驱动函数**（恰 3 键、
+/// 表外状态返回 null——V-5 裁定「不编造」语义不变；`AppPalette.light` 恒等 AppColors，
+/// V-5 值域锁测试传 light 逐项对账）。
+ChapterStatusConfig? chapterStatusConfigFor(AppPalette p, String status) {
+  switch (status) {
+    case 'draft':
+      return ChapterStatusConfig('草稿', p.border, p.textDeep);
+    case 'revising':
+      return ChapterStatusConfig('修改中', p.warningBg, p.warning);
+    case 'complete':
+      return ChapterStatusConfig('完成', p.l1, p.primary);
+  }
+  return null;
+}
 
 /// 章节卡片（修复1：移除序号色块，改为纯文字；修复3：行尾增加编辑图标用于重命名）
 class ChapterCard extends StatelessWidget {
@@ -79,7 +82,7 @@ class ChapterCard extends StatelessWidget {
     //（原 `?? chapterStatusConfig['draft']!` 会把未知状态显示成「草稿」）。
     // 实测 chapters.status 带 CHECK 约束（tables.dart，v24 重建即带），
     // 表外值 DB 层进不来 ⇒ 本次统一不动任何线上呈现，消的是两表分叉。
-    final statusCfg = chapterStatusConfig[chapter.status];
+    final statusCfg = chapterStatusConfigFor(context.palette, chapter.status);
 
     return Material(
       color: Colors.transparent,

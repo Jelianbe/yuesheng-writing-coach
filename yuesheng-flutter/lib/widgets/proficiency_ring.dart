@@ -17,7 +17,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 import '../types/teaching_types.dart';
 
 /// 熟练度竹青进度环 — 方案 A（progress = 等级位置）
@@ -32,10 +32,6 @@ class ProficiencyRing extends StatelessWidget {
     required this.confidence,
     this.size = 120,
   });
-
-  static const _progressColor = AppColors.primary;
-  static const _trackColor = AppColors.border;
-  static const _textColor = AppColors.textPrimary;
 
   /// 数据不足阈值（confidence < 0.3 视为数据不足）
   static const _insufficientThreshold = 0.3;
@@ -91,8 +87,8 @@ class ProficiencyRing extends StatelessWidget {
             size: Size(size, size),
             painter: _RingPainter(
               progress: _progress,
-              progressColor: _progressColor,
-              trackColor: _trackColor,
+              progressColor: context.palette.primary,
+              trackColor: context.palette.border,
               strokeWidth: _strokeWidth,
             ),
           ),
@@ -102,7 +98,7 @@ class ProficiencyRing extends StatelessWidget {
             style: TextStyle(
               fontSize: size * 0.15, // 120 → 18
               fontWeight: FontWeight.w700,
-              color: _textColor,
+              color: context.palette.textPrimary,
             ),
           ),
         ],

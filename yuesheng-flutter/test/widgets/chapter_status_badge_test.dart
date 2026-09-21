@@ -19,6 +19,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/widgets/manuscript_detail_chapter_card.dart';
@@ -61,28 +62,50 @@ Future<void> _pumpCard(WidgetTester tester, Chapter chapter) async {
 }
 
 void main() {
-  group('① 值域锁：chapterStatusConfig 逐项对账', () {
-    test('恰 3 键，无多无少（加状态须同步两页消费点，先在这撞线）', () {
-      expect(chapterStatusConfig.keys.toSet(), {
-        'draft',
-        'revising',
-        'complete',
-      });
+  group('① 值域锁：chapterStatusConfigFor 逐项对账（P1-6 const 表→palette 驱动函数）', () {
+    // P1-6：const Map 改为 chapterStatusConfigFor(AppPalette, status)；light 恒等
+    // AppColors（护栏锁）⇒ 逐项断言语义不变；函数对表外状态返回 null（不编造）。
+    const p = AppPalette.light;
+
+    test('恰 3 键：表内状态返回配置、表外状态返回 null（加状态须同步两页消费点）', () {
+      expect(chapterStatusConfigFor(p, 'draft'), isNotNull);
+      expect(chapterStatusConfigFor(p, 'revising'), isNotNull);
+      expect(chapterStatusConfigFor(p, 'complete'), isNotNull);
+      expect(chapterStatusConfigFor(p, 'paused'), isNull);
+      expect(chapterStatusConfigFor(p, ''), isNull);
     });
 
     test('标签锁定（改文案 = 用户可见变化，必须显式过这里）', () {
-      expect(chapterStatusConfig['draft']!.label, '草稿');
-      expect(chapterStatusConfig['revising']!.label, '修改中');
-      expect(chapterStatusConfig['complete']!.label, '完成');
+      expect(chapterStatusConfigFor(p, 'draft')!.label, '草稿');
+      expect(chapterStatusConfigFor(p, 'revising')!.label, '修改中');
+      expect(chapterStatusConfigFor(p, 'complete')!.label, '完成');
     });
 
     test('9 色值锁定 = 收敛前两表的逐字值（等价迁移证明，非新造配色）', () {
-      expect(chapterStatusConfig['draft']!.bgColor, AppColors.border);
-      expect(chapterStatusConfig['draft']!.textColor, AppColors.textDeep);
-      expect(chapterStatusConfig['revising']!.bgColor, AppColors.warningBg);
-      expect(chapterStatusConfig['revising']!.textColor, AppColors.warning);
-      expect(chapterStatusConfig['complete']!.bgColor, AppColors.l1);
-      expect(chapterStatusConfig['complete']!.textColor, AppColors.primary);
+      expect(chapterStatusConfigFor(p, 'draft')!.bgColor, AppColors.border);
+      expect(chapterStatusConfigFor(p, 'draft')!.textColor, AppColors.textDeep);
+      expect(
+        chapterStatusConfigFor(p, 'revising')!.bgColor,
+        AppColors.warningBg,
+      );
+      expect(
+        chapterStatusConfigFor(p, 'revising')!.textColor,
+        AppColors.warning,
+      );
+      expect(chapterStatusConfigFor(p, 'complete')!.bgColor, AppColors.l1);
+      expect(
+        chapterStatusConfigFor(p, 'complete')!.textColor,
+        AppColors.primary,
+      );
+    });
+
+    test('★ P1-6 暗色真翻：同键 dark 配色 != light（const 表时代做不到的事）', () {
+      const d = AppPalette.dark;
+      expect(
+        chapterStatusConfigFor(d, 'draft')!.bgColor,
+        isNot(chapterStatusConfigFor(p, 'draft')!.bgColor),
+      );
+      expect(chapterStatusConfigFor(d, 'complete')!.textColor, d.primary);
     });
   });
 
@@ -116,7 +139,10 @@ void main() {
     ).readAsStringSync();
 
     test('抽屉真源引用在场（读的是那张表，不是自己抄一份）', () {
-      expect(drawerSrc, contains('chapterStatusConfig[chapter.status]'));
+      expect(
+        drawerSrc,
+        contains('chapterStatusConfigFor(context.palette, chapter.status)'),
+      );
       expect(
         drawerSrc,
         contains('_buildStatusBadge(ChapterStatusConfig status)'),

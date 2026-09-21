@@ -27,13 +27,19 @@ class _SeverityTheme {
   const _SeverityTheme(this.bg, this.fg);
 }
 
-// ⚠️ 顶层 const 色表：context.palette 是运行期值、装不进 const Map。轨道 B「选 A」裁定
-//    留 P1-6 专门重构；本批暂留焊死亮色 AppColors（_TrendChartPainter.paint 同此）。
-const Map<String, _SeverityTheme> _severityTheme = {
-  'L1': _SeverityTheme(AppColors.l1, AppColors.primary),
-  'L2': _SeverityTheme(AppColors.l2, AppColors.l2Text),
-  'L3': _SeverityTheme(AppColors.l3, AppColors.l3Text),
-};
+/// 严重度 → 配色（P1-6：const Map 改 **palette 驱动函数**，随主题翻；
+/// painter 持有 [AppPalette] 亦可直呼本函数——无 BuildContext 也能取色）。
+_SeverityTheme _severityThemeFor(AppPalette p, String s) {
+  switch (s) {
+    case 'L1':
+      return _SeverityTheme(p.l1, p.primary);
+    case 'L2':
+      return _SeverityTheme(p.l2, p.l2Text);
+    case 'L3':
+      return _SeverityTheme(p.l3, p.l3Text);
+  }
+  return _SeverityTheme(p.l1, p.primary);
+}
 
 const Map<String, String> _severityLabel = {'L1': '轻微', 'L2': '中等', 'L3': '严重'};
 
@@ -45,8 +51,7 @@ class SyndromeDetailModal extends StatelessWidget {
   const SyndromeDetailModal({super.key, required this.syndrome});
 
   _SeverityTheme _sev(BuildContext context, String s) =>
-      _severityTheme[s] ??
-      _SeverityTheme(context.palette.l1, context.palette.primary);
+      _severityThemeFor(context.palette, s);
 
   /// 趋势 → 主题色（对齐 RN getTrendColor：success/neutral/danger）
   Color _trendColor(BuildContext context, String trend) => switch (trend) {
@@ -274,7 +279,7 @@ class SyndromeDetailModal extends StatelessWidget {
                       height: 64,
                       width: double.infinity,
                       child: CustomPaint(
-                        painter: _TrendChartPainter(points),
+                        painter: _TrendChartPainter(points, context.palette),
                         child: const SizedBox.expand(),
                       ),
                     ),
@@ -398,7 +403,10 @@ class _StatDivider extends StatelessWidget {
 /// Y 轴：L1(1) 底部 → L3(3) 顶部；X 轴按时间点均分
 class _TrendChartPainter extends CustomPainter {
   final List<SyndromeTrendPoint> points;
-  const _TrendChartPainter(this.points);
+
+  /// P1-6：paint 无 BuildContext ⇒ 持有 [AppPalette]（build 时注入）取色，随主题翻。
+  final AppPalette palette;
+  _TrendChartPainter(this.points, this.palette);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -420,11 +428,10 @@ class _TrendChartPainter extends CustomPainter {
       xs.add(n == 1 ? size.width / 2 : size.width * i / (n - 1));
     }
 
-    // ⚠️ CustomPainter.paint 无 BuildContext ⇒ 不能读 context.palette（轨道 B「选 A」：
-    //    本批暂用焊死亮色 AppColors，P1-6 把 palette 色注入 painter 构造后翻色）。
+    // P1-6：paint 无 BuildContext ⇒ 色取自构造注入的 [palette]，随主题翻。
     // 网格参考线（L1/L2/L3 三档）
     final gridPaint = Paint()
-      ..color = AppColors.borderSoft
+      ..color = palette.borderSoft
       ..strokeWidth = 1;
     for (var s = 1; s <= 3; s++) {
       final y = size.height - bottomPadding - chartHeight * (s - 1) / 2;
@@ -433,7 +440,7 @@ class _TrendChartPainter extends CustomPainter {
 
     // 折线
     final linePaint = Paint()
-      ..color = AppColors.primary.withValues(alpha: 0.6)
+      ..color = palette.primary.withValues(alpha: 0.6)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -447,16 +454,14 @@ class _TrendChartPainter extends CustomPainter {
 
     // 数据点（严重度配色）
     for (var i = 0; i < n; i++) {
-      final sev =
-          _severityTheme[points[i].severity] ??
-          _SeverityTheme(AppColors.l1, AppColors.primary);
+      final sev = _severityThemeFor(palette, points[i].severity);
       final center = Offset(xs[i], yFor(points[i].severity));
       canvas.drawCircle(center, 5, Paint()..color = sev.fg);
       canvas.drawCircle(
         center,
         5,
         Paint()
-          ..color = AppColors.surfaceWhite
+          ..color = palette.surfaceWhite
           ..strokeWidth = 1.5
           ..style = PaintingStyle.stroke,
       );

@@ -48,13 +48,19 @@ class _SeverityConfig {
   const _SeverityConfig(this.bgColor, this.textColor);
 }
 
-// ⚠️ 顶层 const 色表：context.palette 是运行期值、装不进 const Map。轨道 B「选 A」裁定
-//    此色表留 P1-6 专门重构（改运行期取色 / 注入）；本批暂留焊死亮色 AppColors。
-const Map<String, _SeverityConfig> _severityMap = {
-  'L1': _SeverityConfig(AppColors.l1, AppColors.primary), // 竹青淡
-  'L2': _SeverityConfig(AppColors.l2, AppColors.l2Text), // 矿物黄
-  'L3': _SeverityConfig(AppColors.l3, AppColors.l3Text), // 矿物红
-};
+/// 严重度 → 配色（P1-6：const Map 改 **palette 驱动函数**，随主题翻；
+/// 未知 key 回退 L1 配色——与原 `_severityMap[s] ?? L1` 调用方语义一致）。
+_SeverityConfig _severityConfigFor(AppPalette p, String s) {
+  switch (s) {
+    case 'L1':
+      return _SeverityConfig(p.l1, p.primary); // 竹青淡
+    case 'L2':
+      return _SeverityConfig(p.l2, p.l2Text); // 矿物黄
+    case 'L3':
+      return _SeverityConfig(p.l3, p.l3Text); // 矿物红
+  }
+  return _SeverityConfig(p.l1, p.primary);
+}
 
 /// 教学状态 → 色点颜色（批次 45：对齐 RN SyndromeTag P0-3，
 /// 教学状态存在时色点优先显示教学状态色，否则回退严重度色）
@@ -252,9 +258,7 @@ class _DiagnosisCardState extends ConsumerState<DiagnosisCard>
     });
   }
 
-  _SeverityConfig _sev(String s) =>
-      _severityMap[s] ??
-      _SeverityConfig(context.palette.l1, context.palette.primary);
+  _SeverityConfig _sev(String s) => _severityConfigFor(context.palette, s);
 
   @override
   Widget build(BuildContext context) {
@@ -751,8 +755,7 @@ class _SyndromeBlockState extends State<_SyndromeBlock> {
 
   @override
   Widget build(BuildContext context) {
-    final sev = _SeverityConfig(context.palette.l1, context.palette.primary);
-    final cfg = _severityMap[widget.syndrome.severity] ?? sev;
+    final cfg = _severityConfigFor(context.palette, widget.syndrome.severity);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
