@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 更多菜单 bottom sheet（批次 20，对齐 RN MoreMenuSheet）
 class MoreMenuSheet extends StatelessWidget {
@@ -40,8 +41,8 @@ class MoreMenuSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
-            ..._buildMenuItems(),
+            _buildHandle(context),
+            ..._buildMenuItems(context),
             const SizedBox(height: 8),
             _buildCancelButton(context),
           ],
@@ -51,54 +52,54 @@ class MoreMenuSheet extends StatelessWidget {
   }
 
   /// 菜单项列表：项目设置 / 导出整书 / 回收站 / 删除项目（R-019 清偿拆出）。
-  List<Widget> _buildMenuItems() {
+  List<Widget> _buildMenuItems(BuildContext context) {
     return [
       // 批次77：移除「导出项目」「分享」开发中死菜单项（对齐写作页 E3 清理，
       // 菜单只保留真实功能：项目设置 / 删除项目）
       MenuActionItem(
         icon: Icons.settings_outlined,
         label: '项目设置',
-        iconColor: AppColors.textPrimary,
-        labelColor: AppColors.textPrimary,
+        iconColor: context.palette.textPrimary,
+        labelColor: context.palette.textPrimary,
         onTap: onOpenSettings,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       // 批次94-1：导出整书（批次77 曾移除的「导出项目」死菜单，现为真实功能）
       MenuActionItem(
         icon: Icons.ios_share_outlined,
         label: '导出整书',
-        iconColor: AppColors.primary,
-        labelColor: AppColors.textPrimary,
+        iconColor: context.palette.primary,
+        labelColor: context.palette.textPrimary,
         onTap: onExport,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       // 批次94-2：章节回收站（软删章节恢复/永久删除）
       MenuActionItem(
         icon: Icons.delete_sweep_outlined,
         label: '回收站',
-        iconColor: AppColors.textPrimary,
-        labelColor: AppColors.textPrimary,
+        iconColor: context.palette.textPrimary,
+        labelColor: context.palette.textPrimary,
         onTap: onRecycleBin,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       MenuActionItem(
         icon: Icons.delete_outline,
         label: '删除项目',
-        iconColor: AppColors.danger,
-        labelColor: AppColors.danger,
+        iconColor: context.palette.danger,
+        labelColor: context.palette.danger,
         onTap: onDelete,
       ),
     ];
   }
 
   /// 顶部把手（R-019 清偿拆出）。
-  Widget _buildHandle() {
+  Widget _buildHandle(BuildContext context) {
     return Container(
       width: 36,
       height: 4,
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.border,
+        color: context.palette.border,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
     );
@@ -112,8 +113,8 @@ class MoreMenuSheet extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(),
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(44),
-          side: const BorderSide(color: AppColors.border),
-          foregroundColor: AppColors.textSecondary,
+          side: BorderSide(color: context.palette.border),
+          foregroundColor: context.palette.textSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),

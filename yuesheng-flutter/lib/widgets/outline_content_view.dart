@@ -74,6 +74,7 @@ import '../utils/chapter_number.dart';
 import '../utils/volume_group.dart';
 import 'outline_shared.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 「章节结构」投影段的根节点 Key（N6）。
 ///
@@ -142,8 +143,9 @@ class OutlineContentView extends ConsumerWidget {
     );
   }
 
-  /// 加载中（R-019 清偿拆出，N6）。
-  static Widget _buildLoading() => const Center(
+  /// 加载中（R-019 清偿拆出，N6）。⚠️ 当前无调用点（N6 拆出后未被接线）；
+  /// static 无 BuildContext ⇒ 暂留焊死亮色 AppColors（轨道 B「选 A」，P1-6 接线时改）。
+  static Widget _buildLoading() => Center(
     child: SizedBox(
       width: 18,
       height: 18,
@@ -465,10 +467,10 @@ class _ChapterStructureSection extends StatelessWidget {
             ),
           ),
           if (onJump != null)
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 16,
-              color: AppColors.placeholder,
+              color: context.palette.placeholder,
             ),
         ],
       ),
@@ -559,9 +561,9 @@ class _EntityCard extends StatelessWidget {
         AppSpacing.smx,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.borderSoft),
+        border: Border.all(color: context.palette.borderSoft),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -632,19 +634,23 @@ class _EntityCard extends StatelessWidget {
           const SizedBox(width: 6),
           _Tag(
             label: typeTag!,
-            bg: AppColors.borderSoft,
-            fg: AppColors.textTertiary,
+            bg: context.palette.borderSoft,
+            fg: context.palette.textTertiary,
           ),
         ],
         if (isPendingEntity) ...[
           const SizedBox(width: 8),
-          _Tag(label: '待确认', bg: AppColors.warningBg, fg: AppColors.warning),
+          _Tag(
+            label: '待确认',
+            bg: context.palette.warningBg,
+            fg: context.palette.warning,
+          ),
           const SizedBox(width: 4),
           // 批次87-4：抽屉内快速确认
           TextButton(
             onPressed: onConfirm,
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
+              foregroundColor: context.palette.primary,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
               minimumSize: const Size(0, 24),
@@ -685,8 +691,8 @@ class _ImpressionRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSummaryRow(chapterTag, isPending),
-          if (isPending) _buildActionRow(),
+          _buildSummaryRow(context, chapterTag, isPending),
+          if (isPending) _buildActionRow(context),
         ],
       ),
     );
@@ -700,7 +706,11 @@ class _ImpressionRow extends StatelessWidget {
   ///
   /// ★ `chapterTag == null` 时整段**不渲染**章标（ADR-C95 裁定 2），
   ///   而不是渲染一个空 tag。
-  Widget _buildSummaryRow(String? chapterTag, bool isPending) {
+  Widget _buildSummaryRow(
+    BuildContext context,
+    String? chapterTag,
+    bool isPending,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -710,8 +720,8 @@ class _ImpressionRow extends StatelessWidget {
             // 「第3章」）⇒ 给稳定锚点，使该口径的断言不必依赖文本计数。
             key: outlineImpressionTagKey(impression.id),
             label: chapterTag,
-            bg: AppColors.primarySoft,
-            fg: AppColors.primary,
+            bg: context.palette.primarySoft,
+            fg: context.palette.primary,
           ),
           const SizedBox(width: 6),
         ],
@@ -721,7 +731,7 @@ class _ImpressionRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               height: 1.4,
-              color: AppColors.textBody,
+              color: context.palette.textBody,
             ),
           ),
         ),
@@ -731,8 +741,8 @@ class _ImpressionRow extends StatelessWidget {
             padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: _Tag(
               label: '待确认',
-              bg: AppColors.warningBg,
-              fg: AppColors.warning,
+              bg: context.palette.warningBg,
+              fg: context.palette.warning,
             ),
           ),
         ],
@@ -741,14 +751,14 @@ class _ImpressionRow extends StatelessWidget {
   }
 
   /// 操作行（批次87-4）：抽屉内快速确认 / 拒绝，仅 pending 时渲染。
-  Widget _buildActionRow() {
+  Widget _buildActionRow(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         TextButton(
           onPressed: onConfirm,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.success,
+            foregroundColor: context.palette.success,
             visualDensity: VisualDensity.compact,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
             minimumSize: const Size(0, 24),
@@ -758,7 +768,7 @@ class _ImpressionRow extends StatelessWidget {
         TextButton(
           onPressed: onReject,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.textTertiary,
+            foregroundColor: context.palette.textTertiary,
             visualDensity: VisualDensity.compact,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xsm),
             minimumSize: const Size(0, 24),
@@ -826,10 +836,10 @@ class _OutlineEmpty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.article_outlined,
               size: 40,
-              color: AppColors.placeholder,
+              color: context.palette.placeholder,
             ),
             const SizedBox(height: 12),
             Text('还没有大纲', style: context.text.body),

@@ -25,6 +25,7 @@ import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 差异段类型：same=两版共有 / added=版本新增（相对当前）/ removed=当前有而版本删掉的
 enum DiffKind { same, added, removed }
@@ -285,10 +286,10 @@ class _VersionTimeMachineSheetState
         children: [
           Text(
             _selected != null ? '版本详情' : '版本时光机',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           if (_selected == null) ...[
@@ -325,9 +326,9 @@ class _VersionTimeMachineSheetState
           style: context.text.noteCaption,
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           '恢复时当前内容会先自动保存为新版本，不会丢失。',
-          style: TextStyle(fontSize: 12, color: AppColors.textDeep),
+          style: TextStyle(fontSize: 12, color: context.palette.textDeep),
         ),
         if (hasContent) ...[
           const SizedBox(height: 4),
@@ -335,7 +336,9 @@ class _VersionTimeMachineSheetState
             hasDiff ? '相对当前内容：新增标绿 · 删除划线' : '与当前内容一致',
             style: TextStyle(
               fontSize: 12,
-              color: hasDiff ? AppColors.textSecondary : AppColors.success,
+              color: hasDiff
+                  ? context.palette.textSecondary
+                  : context.palette.success,
             ),
           ),
         ],
@@ -345,17 +348,17 @@ class _VersionTimeMachineSheetState
             width: double.infinity,
             padding: const EdgeInsets.all(AppSpacing.smx),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: SingleChildScrollView(
               child: hasContent
                   ? _buildDiffBody(segments)
-                  : const Text(
+                  : Text(
                       '（空内容）',
                       style: TextStyle(
                         fontSize: 13,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
             ),
@@ -373,7 +376,7 @@ class _VersionTimeMachineSheetState
             Expanded(
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.palette.primary,
                 ),
                 onPressed: () => _restore(v),
                 child: const Text('恢复此版本'),
@@ -389,10 +392,10 @@ class _VersionTimeMachineSheetState
   Widget _buildDiffBody(List<DiffSegment> segments) {
     return RichText(
       text: TextSpan(
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           height: 1.5,
-          color: AppColors.textBody,
+          color: context.palette.textBody,
         ),
         children: [
           for (final s in segments)
@@ -400,16 +403,16 @@ class _VersionTimeMachineSheetState
               DiffKind.same => TextSpan(text: s.text),
               DiffKind.added => TextSpan(
                 text: s.text,
-                style: const TextStyle(
-                  color: AppColors.success,
-                  backgroundColor: AppColors.successBg,
+                style: TextStyle(
+                  color: context.palette.success,
+                  backgroundColor: context.palette.successBg,
                 ),
               ),
               DiffKind.removed => TextSpan(
                 text: s.text,
-                style: const TextStyle(
-                  color: AppColors.danger,
-                  backgroundColor: AppColors.dangerBg,
+                style: TextStyle(
+                  color: context.palette.danger,
+                  backgroundColor: context.palette.dangerBg,
                   decoration: TextDecoration.lineThrough,
                 ),
               ),
@@ -422,8 +425,8 @@ class _VersionTimeMachineSheetState
   Widget _buildList() {
     final versions = _versions;
     if (versions == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return Center(
+        child: CircularProgressIndicator(color: context.palette.primary),
       );
     }
     if (versions.isEmpty) {
@@ -431,7 +434,7 @@ class _VersionTimeMachineSheetState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history, size: 40, color: AppColors.placeholder),
+            Icon(Icons.history, size: 40, color: context.palette.placeholder),
             SizedBox(height: 8),
             Text(
               '还没有版本记录\n写到 200 字时会自动保存一个版本',
@@ -471,9 +474,9 @@ class _VersionTimeMachineSheetState
                     _preview(v),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textInk,
+                      color: context.palette.textInk,
                     ),
                   ),
                 ),
@@ -488,18 +491,18 @@ class _VersionTimeMachineSheetState
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: added > 0 && removed > 0
-                          ? AppColors.textTertiary
+                          ? context.palette.textTertiary
                           : added > 0
-                          ? AppColors.success
-                          : AppColors.danger,
+                          ? context.palette.success
+                          : context.palette.danger,
                     ),
                   ),
                 ],
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
                   size: 16,
-                  color: AppColors.placeholder,
+                  color: context.palette.placeholder,
                 ),
               ],
             ),

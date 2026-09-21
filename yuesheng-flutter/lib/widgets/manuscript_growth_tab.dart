@@ -19,6 +19,7 @@ import '../types/teaching_types.dart';
 import '../widgets/proficiency_ring.dart';
 import '../widgets/severity_bar.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 书籍级成长页签。
 class ManuscriptGrowthTab extends ConsumerWidget {
@@ -45,7 +46,9 @@ class ManuscriptGrowthTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 12),
-            _GrowthCard(child: _buildSeverityOverview(data.activeProblems)),
+            _GrowthCard(
+              child: _buildSeverityOverview(context, data.activeProblems),
+            ),
             if (data.activeProblems.isNotEmpty) ...[
               const SizedBox(height: 12),
               _GrowthCard(
@@ -75,12 +78,12 @@ class ManuscriptGrowthTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '本书能力画像',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -97,7 +100,10 @@ class ManuscriptGrowthTab extends ConsumerWidget {
   }
 
   /// 症候概览卡：SeverityBar + 活跃数 + 图例。
-  Widget _buildSeverityOverview(List<ActiveProblemView> problems) {
+  Widget _buildSeverityOverview(
+    BuildContext context,
+    List<ActiveProblemView> problems,
+  ) {
     final counts = _countSeverities(problems);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -106,18 +112,18 @@ class ManuscriptGrowthTab extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '本书症候概览',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: context.palette.textSecondary,
                 ),
               ),
               const Spacer(),
               Text(
                 '${problems.length} 个活跃',
-                style: const TextStyle(fontSize: 12, color: AppColors.primary),
+                style: TextStyle(fontSize: 12, color: context.palette.primary),
               ),
             ],
           ),
@@ -126,11 +132,11 @@ class ManuscriptGrowthTab extends ConsumerWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              _Legend(color: AppColors.l1, label: 'L1 ${counts.l1}'),
+              _Legend(color: context.palette.l1, label: 'L1 ${counts.l1}'),
               const SizedBox(width: 12),
-              _Legend(color: AppColors.l2, label: 'L2 ${counts.l2}'),
+              _Legend(color: context.palette.l2, label: 'L2 ${counts.l2}'),
               const SizedBox(width: 12),
-              _Legend(color: AppColors.l3, label: 'L3 ${counts.l3}'),
+              _Legend(color: context.palette.l3, label: 'L3 ${counts.l3}'),
             ],
           ),
         ],
@@ -149,12 +155,12 @@ class ManuscriptGrowthTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '活跃问题',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -163,7 +169,7 @@ class ManuscriptGrowthTab extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  _SeverityDot(color: _severityColor(p.severity)),
+                  _SeverityDot(color: _severityColor(context, p.severity)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(p.syndromeName, style: context.text.subBody),
@@ -186,12 +192,12 @@ class ManuscriptGrowthTab extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '本书复发追踪',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 8),
@@ -227,14 +233,14 @@ class ManuscriptGrowthTab extends ConsumerWidget {
     return SeverityCounts(l1: l1, l2: l2, l3: l3);
   }
 
-  Color _severityColor(String severity) {
+  Color _severityColor(BuildContext context, String severity) {
     switch (severity) {
       case 'L1':
-        return AppColors.l1;
+        return context.palette.l1;
       case 'L3':
-        return AppColors.l3;
+        return context.palette.l3;
       default:
-        return AppColors.l2;
+        return context.palette.l2;
     }
   }
 }
@@ -251,8 +257,8 @@ class _GrowthCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border.all(color: AppColors.border),
+          color: context.palette.surface,
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(children: [Expanded(child: child)]),
       ),
@@ -311,17 +317,27 @@ class _EmptyView extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.auto_graph, size: 48, color: AppColors.textSecondary),
+          children: [
+            Icon(
+              Icons.auto_graph,
+              size: 48,
+              color: context.palette.textSecondary,
+            ),
             SizedBox(height: 12),
             Text(
               '这本书还没有诊断记录',
-              style: TextStyle(fontSize: 15, color: AppColors.textPrimary),
+              style: TextStyle(
+                fontSize: 15,
+                color: context.palette.textPrimary,
+              ),
             ),
             SizedBox(height: 4),
             Text(
               '去写作并让教练诊断，就能看到本书的成长',
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.textTertiary,
+              ),
             ),
           ],
         ),
@@ -343,7 +359,7 @@ class _ErrorView extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Text(
           '成长数据加载失败：$message',
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 12, color: context.palette.textSecondary),
           textAlign: TextAlign.center,
         ),
       ),

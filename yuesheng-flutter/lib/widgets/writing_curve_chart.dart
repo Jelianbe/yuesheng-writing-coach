@@ -15,6 +15,7 @@ import '../config/app_theme.dart';
 import '../config/shared_constants.dart';
 import '../services/growth_service.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 写作成长曲线
 class WritingCurveChart extends StatelessWidget {
@@ -36,8 +37,8 @@ class WritingCurveChart extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border.all(color: AppColors.border),
+          color: context.palette.surface,
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(
           children: [
@@ -47,20 +48,20 @@ class WritingCurveChart extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '写作成长曲线',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       '每日字数与诊断次数趋势',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -77,7 +78,7 @@ class WritingCurveChart extends StatelessWidget {
                           vertical: AppSpacing.sm,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.background,
+                          color: context.palette.background,
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Row(
@@ -95,11 +96,17 @@ class WritingCurveChart extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.md),
                       // 图例
-                      const Row(
+                      Row(
                         children: [
-                          _LegendItem(color: AppColors.primary, label: '字数'),
+                          _LegendItem(
+                            color: context.palette.primary,
+                            label: '字数',
+                          ),
                           SizedBox(width: AppSpacing.lg),
-                          _LegendItem(color: AppColors.warning, label: '诊断'),
+                          _LegendItem(
+                            color: context.palette.warning,
+                            label: '诊断',
+                          ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.sm),
@@ -161,8 +168,8 @@ class _ChartBody extends StatelessWidget {
                       height: _barHeight(points[i]),
                       decoration: BoxDecoration(
                         color: i == points.length - 1
-                            ? AppColors.primaryDeep
-                            : AppColors.primary,
+                            ? context.palette.primaryDeep
+                            : context.palette.primary,
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -186,18 +193,18 @@ class _ChartBody extends StatelessWidget {
                             Container(
                               width: 6,
                               height: 6,
-                              decoration: const BoxDecoration(
-                                color: AppColors.warning,
+                              decoration: BoxDecoration(
+                                color: context.palette.warning,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             if (p.diagnosisCount > 1)
                               Text(
                                 '${p.diagnosisCount}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.warning,
+                                  color: context.palette.warning,
                                 ),
                               ),
                           ],
@@ -224,8 +231,8 @@ class _ChartBody extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 9,
                             color: i == points.length - 1
-                                ? AppColors.primary
-                                : AppColors.textTertiary,
+                                ? context.palette.primary
+                                : context.palette.textTertiary,
                             fontWeight: i == points.length - 1
                                 ? FontWeight.w600
                                 : FontWeight.w400,
@@ -261,10 +268,10 @@ class _SummaryItem extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -280,7 +287,7 @@ class _SummaryDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 24, color: AppColors.border);
+    return Container(width: 1, height: 24, color: context.palette.border);
   }
 }
 
@@ -323,14 +330,14 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
-          Icon(icon, size: 40, color: AppColors.textTertiary),
+          Icon(icon, size: 40, color: context.palette.textTertiary),
           const SizedBox(height: AppSpacing.sm),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 4),

@@ -15,6 +15,7 @@ import '../config/app_theme.dart';
 import '../services/growth_service.dart';
 import '../types/teaching_types.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 能力图谱
 class AbilityChart extends StatelessWidget {
@@ -22,25 +23,25 @@ class AbilityChart extends StatelessWidget {
 
   const AbilityChart({super.key, required this.scores});
 
-  /// 分数着色（复刻 RN getScoreColor）
-  static Color scoreColor(int score) {
-    if (score >= 80) return AppColors.success; // 正向
-    if (score >= 60) return AppColors.primary; // 竹青
-    if (score >= 45) return AppColors.warning; // 警示
-    return AppColors.danger; // 红
+  /// 分数着色（复刻 RN getScoreColor）。palette 驱动：随主题翻（测试传 AppPalette.light）。
+  static Color scoreColor(AppPalette p, int score) {
+    if (score >= 80) return p.success; // 正向
+    if (score >= 60) return p.primary; // 竹青
+    if (score >= 45) return p.warning; // 警示
+    return p.danger; // 红
   }
 
   /// 趋势箭头文案 + 颜色（复刻 RN getTrendIcon / getTrendColor）
-  static (String, Color) trendGlyph(Trend trend) {
+  static (String, Color) trendGlyph(AppPalette p, Trend trend) {
     switch (trend) {
       case Trend.improving:
-        return ('↑', AppColors.success);
+        return ('↑', p.success);
       case Trend.worsening:
-        return ('↓', AppColors.danger);
+        return ('↓', p.danger);
       case Trend.stable:
-        return ('→', AppColors.textTertiary);
+        return ('→', p.textTertiary);
       case Trend.unknown:
-        return ('→', AppColors.textTertiary);
+        return ('→', p.textTertiary);
     }
   }
 
@@ -85,8 +86,8 @@ class _AbilityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = AbilityChart.scoreColor(score);
-    final (glyph, glyphColor) = AbilityChart.trendGlyph(trend);
+    final color = AbilityChart.scoreColor(context.palette, score);
+    final (glyph, glyphColor) = AbilityChart.trendGlyph(context.palette, trend);
     final fillWidth = (score < 2 ? 2 : score).clamp(0, 100).toDouble();
 
     return Padding(
@@ -103,10 +104,10 @@ class _AbilityRow extends StatelessWidget {
                   children: [
                     Text(
                       dimension,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -147,7 +148,7 @@ class _AbilityRow extends StatelessWidget {
               height: 8,
               child: Stack(
                 children: [
-                  Container(color: AppColors.surface),
+                  Container(color: context.palette.surface),
                   FractionallySizedBox(
                     widthFactor: fillWidth / 100,
                     child: Container(color: color),
@@ -180,8 +181,8 @@ class _Section extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border.all(color: AppColors.border),
+          color: context.palette.surface,
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(
           children: [
@@ -193,10 +194,10 @@ class _Section extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -231,14 +232,14 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
-          Icon(icon, size: 40, color: AppColors.textTertiary),
+          Icon(icon, size: 40, color: context.palette.textTertiary),
           const SizedBox(height: AppSpacing.sm),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 4),

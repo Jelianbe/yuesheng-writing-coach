@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_motion.dart';
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 引导页数据（对齐 RN PAGES）
 class _OnboardingPage {
@@ -90,7 +91,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   Widget build(BuildContext context) {
     final isLast = _page == _pages.length - 1;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       body: SafeArea(
         child: Column(
           children: [
@@ -106,11 +107,11 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                 ),
                 child: TextButton(
                   onPressed: widget.onComplete,
-                  child: const Text(
+                  child: Text(
                     '跳过',
                     style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ),
@@ -137,7 +138,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                   width: active ? 24 : 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: active ? AppColors.primary : AppColors.border,
+                    color: active
+                        ? context.palette.primary
+                        : context.palette.border,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                 );
@@ -159,8 +162,8 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                       ? widget.onComplete
                       : () => _goToPage(_page + 1),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
+                    backgroundColor: context.palette.primary,
+                    foregroundColor: context.palette.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: Row(
@@ -176,10 +179,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                       ),
                       if (!isLast) ...[
                         const SizedBox(width: 6),
-                        const Icon(
+                        Icon(
                           Icons.arrow_forward,
                           size: 18,
-                          color: AppColors.onPrimary,
+                          color: context.palette.onPrimary,
                         ),
                       ],
                     ],
@@ -203,28 +206,28 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             width: 88,
             height: 88,
             decoration: BoxDecoration(
-              color: AppColors.l1,
+              color: context.palette.l1,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: Icon(page.icon, size: 44, color: AppColors.primary),
+            child: Icon(page.icon, size: 44, color: context.palette.primary),
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
             page.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             page.subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -240,19 +243,19 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceWhite,
+                      color: context.palette.surfaceWhite,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Row(
                       children: [
-                        Icon(f.icon, size: 18, color: AppColors.primary),
+                        Icon(f.icon, size: 18, color: context.palette.primary),
                         const SizedBox(width: AppSpacing.sm),
                         Text(
                           f.text,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                         const SizedBox(width: AppSpacing.sm),
@@ -260,9 +263,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                           child: Text(
                             f.desc,
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.textSecondary,
+                              color: context.palette.textSecondary,
                             ),
                           ),
                         ),
@@ -275,10 +278,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
             Text(
               page.description!,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.6,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
         ],

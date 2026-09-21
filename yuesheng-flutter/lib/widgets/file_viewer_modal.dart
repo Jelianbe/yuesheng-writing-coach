@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/capability_providers.dart';
+import '../config/app_palette.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',
@@ -127,7 +128,7 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('删除', style: TextStyle(color: AppColors.danger)),
+            child: Text('删除', style: TextStyle(color: context.palette.danger)),
           ),
         ],
       ),
@@ -151,10 +152,10 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         leading: IconButton(
@@ -170,14 +171,14 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
         ),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+          ? Center(
+              child: CircularProgressIndicator(color: context.palette.primary),
             )
           : _file == null
-          ? const Center(
+          ? Center(
               child: Text(
                 '文件不存在或已被删除',
-                style: TextStyle(color: AppColors.textTertiary),
+                style: TextStyle(color: context.palette.textTertiary),
               ),
             )
           : Column(
@@ -196,24 +197,24 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.primarySoft,
+                          color: context.palette.primarySoft,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           _roleLabels[_file!.fileRole] ?? _file!.fileRole,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
+                            color: context.palette.primary,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         _formatSize(_file!.byteSize),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textTertiary,
+                          color: context.palette.textTertiary,
                         ),
                       ),
                     ],
@@ -225,10 +226,10 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     child: SelectableText(
                       _file!.content,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         height: 1.6,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                   ),
@@ -248,14 +249,16 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                           onPressed: _handleChangeRole,
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
-                            side: const BorderSide(color: AppColors.borderSoft),
+                            side: BorderSide(color: context.palette.borderSoft),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             '更改角色',
-                            style: TextStyle(color: AppColors.textSecondary),
+                            style: TextStyle(
+                              color: context.palette.textSecondary,
+                            ),
                           ),
                         ),
                       ),
@@ -265,8 +268,8 @@ class _FileViewerModalState extends ConsumerState<FileViewerModal> {
                           onPressed: _handleDelete,
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(44),
-                            backgroundColor: AppColors.dangerBg,
-                            foregroundColor: AppColors.danger,
+                            backgroundColor: context.palette.dangerBg,
+                            foregroundColor: context.palette.danger,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(AppRadius.md),
                             ),

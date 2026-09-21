@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/app_theme.dart';
+import '../../../config/app_palette.dart';
 
 /// 千位分隔符格式化（如 3256 → "3,256"）
 String _formatNum(int n) {
@@ -54,21 +55,21 @@ class WritingOfflineBanner extends StatelessWidget {
     if (!isOffline) return const SizedBox.shrink();
     return Container(
       width: double.infinity,
-      color: AppColors.warningBg,
+      color: context.palette.warningBg,
       padding:
           // X-039-Batch1：16→lg / 10→smx
           const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.smx,
           ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.cloud_off, size: 16, color: AppColors.warning),
+          Icon(Icons.cloud_off, size: 16, color: context.palette.warning),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               '当前离线，内容自动保存为本地草稿，恢复网络后将同步',
-              style: TextStyle(fontSize: 12, color: AppColors.warning),
+              style: TextStyle(fontSize: 12, color: context.palette.warning),
             ),
           ),
         ],
@@ -79,7 +80,7 @@ class WritingOfflineBanner extends StatelessWidget {
 
 /// 批次60：保存状态条——编辑器底部轻量指示「保存中… / 已保存 HH:MM / 保存失败」
 /// 让用户直观确认内容已落库（数据安全感），失败时给出可见但温和的提示
-/// 批次 X-037-P0-1 H2/C1：暗夜保存状态条联动走 AppColors.editorDark* 令牌
+/// 批次 X-037-P0-1 H2/C1：暗夜保存状态条联动走 context.palette.editorDark* 令牌
 /// （消除硬编码；muted 用 editorDarkMuted 4.56:1 达 AA）
 class WritingSaveStatusBar extends StatelessWidget {
   const WritingSaveStatusBar({
@@ -99,8 +100,12 @@ class WritingSaveStatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textTertiary;
-    final barBg = darkUi ? AppColors.editorDarkPanel : AppColors.background;
+    final muted = darkUi
+        ? context.palette.editorDarkMuted
+        : context.palette.textTertiary;
+    final barBg = darkUi
+        ? context.palette.editorDarkPanel
+        : context.palette.background;
     final Widget content;
     if (isSaving) {
       content = Row(
@@ -119,7 +124,7 @@ class WritingSaveStatusBar extends StatelessWidget {
       // 入档批次：连续失败 >= 3 暂停自动保存时给持续可见提示
       content = Text(
         autosavePaused ? '自动保存已暂停，请手动保存' : '保存失败，请稍后重试',
-        style: const TextStyle(fontSize: 11, color: AppColors.warning),
+        style: TextStyle(fontSize: 11, color: context.palette.warning),
       );
     } else if (lastSavedAt != null) {
       content = Text(
@@ -171,9 +176,9 @@ class WritingGoalProgressBar extends StatelessWidget
       minHeight: 2,
       // 批次 X-037-P0-1 H2：进度条暗夜底走 editorDarkDeepMuted 令牌（消除 0xFF3A3F45 硬编码）
       backgroundColor: darkUi
-          ? AppColors.editorDarkDeepMuted
-          : AppColors.placeholder,
-      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ? context.palette.editorDarkDeepMuted
+          : context.palette.placeholder,
+      valueColor: AlwaysStoppedAnimation<Color>(context.palette.primary),
     );
   }
 }
@@ -200,10 +205,10 @@ class WritingWordCountIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final String text;
     final Color color;
-    final secondary = mutedColor ?? AppColors.textSecondary;
+    final secondary = mutedColor ?? context.palette.textSecondary;
     if (goalWords > 0) {
       text = '${_formatNum(wordCount)}/${_formatNum(goalWords)}';
-      color = wordCount >= goalWords ? AppColors.primary : secondary;
+      color = wordCount >= goalWords ? context.palette.primary : secondary;
     } else {
       text = _formatWordCount(wordCount);
       color = secondary;
@@ -251,18 +256,18 @@ class WritingCompletionBadge extends StatelessWidget {
       final done = wordCount >= goalWords;
       if (done) {
         label = '已达成';
-        bg = AppColors.successBg;
-        fg = AppColors.success;
+        bg = context.palette.successBg;
+        fg = context.palette.success;
       } else {
         final pct = (wordCount / goalWords * 100).round();
         label = '$pct%';
-        bg = AppColors.primarySoft;
-        fg = AppColors.primaryDeep;
+        bg = context.palette.primarySoft;
+        fg = context.palette.primaryDeep;
       }
     } else {
       label = _chapterScaleLabel(wordCount);
-      bg = AppColors.primarySoft;
-      fg = AppColors.primaryDeep;
+      bg = context.palette.primarySoft;
+      fg = context.palette.primaryDeep;
     }
     return Container(
       key: const Key('completionBadge'),

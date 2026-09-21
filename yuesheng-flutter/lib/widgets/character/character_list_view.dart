@@ -31,6 +31,7 @@ import 'character_detail_page.dart';
 import 'character_dialogs.dart';
 import 'pending_confirm_card.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 断言摘要最多展示的条目数
 const int _kSummaryMax = 3;
@@ -367,7 +368,7 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
     final total = _characters.fold<int>(0, (sum, r) => sum + _newCount(r));
     return Container(
       width: double.infinity,
-      color: AppColors.primarySoft,
+      color: context.palette.primarySoft,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.page,
         vertical: AppSpacing.sm,
@@ -377,12 +378,14 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
           Expanded(
             child: Text(
               '最近批次沉淀 $total 条（按断言落库时间过滤；提示卡仅本次会话内有效）',
-              style: context.text.noteCaption.copyWith(color: AppColors.l1Text),
+              style: context.text.noteCaption.copyWith(
+                color: context.palette.l1Text,
+              ),
             ),
           ),
           GestureDetector(
             onTap: () => setState(() => _since = null),
-            child: const Icon(Icons.close, size: 16, color: AppColors.l1Text),
+            child: Icon(Icons.close, size: 16, color: context.palette.l1Text),
           ),
         ],
       ),
@@ -475,12 +478,14 @@ class CharacterListViewState extends ConsumerState<CharacterListView> {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         '+$newCount 新',
-        style: context.text.microCaption.copyWith(color: AppColors.l1Text),
+        style: context.text.microCaption.copyWith(
+          color: context.palette.l1Text,
+        ),
       ),
     );
   }

@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../config/app_palette.dart';
 
 /// 章节长按操作弹层
 class ChapterActionsSheet extends StatelessWidget {
@@ -51,7 +52,7 @@ class ChapterActionsSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
+            _buildHandle(context),
             ..._buildEditActions(context),
             ..._buildOrganizeActions(context),
             const SizedBox(height: 8),
@@ -70,28 +71,28 @@ class ChapterActionsSheet extends StatelessWidget {
         context,
         icon: Icons.edit_outlined,
         label: '重命名《$_name》',
-        color: AppColors.primary,
+        color: context.palette.primary,
         onTap: onRename,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       // 批次96-1：卷内上移（同卷前一章交换 sort_order）
       _actionItem(
         context,
         icon: Icons.arrow_upward_outlined,
         label: '上移',
-        color: AppColors.primary,
+        color: context.palette.primary,
         onTap: onMoveUp,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       // 批次96-1：卷内下移（同卷后一章交换 sort_order）
       _actionItem(
         context,
         icon: Icons.arrow_downward_outlined,
         label: '下移',
-        color: AppColors.primary,
+        color: context.palette.primary,
         onTap: onMoveDown,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
     ];
   }
 
@@ -103,38 +104,38 @@ class ChapterActionsSheet extends StatelessWidget {
         context,
         icon: Icons.drive_file_move_outlined,
         label: '移动到卷',
-        color: AppColors.primary,
+        color: context.palette.primary,
         onTap: onMoveToVolume,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       // 批次94-1：导出本章（重命名与删除之间）
       _actionItem(
         context,
         icon: Icons.ios_share_outlined,
         label: '导出《$_name》',
-        color: AppColors.primary,
+        color: context.palette.primary,
         onTap: onExport,
       ),
-      const Divider(height: 1, color: AppColors.divider),
+      Divider(height: 1, color: context.palette.divider),
       _actionItem(
         context,
         icon: Icons.delete_outline,
         label: '删除《$_name》',
-        color: AppColors.danger,
-        labelColor: AppColors.danger,
+        color: context.palette.danger,
+        labelColor: context.palette.danger,
         onTap: onDelete,
       ),
     ];
   }
 
   /// 顶部把手
-  Widget _buildHandle() {
+  Widget _buildHandle(BuildContext context) {
     return Container(
       width: 36,
       height: 4,
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.border,
+        color: context.palette.border,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
     );
@@ -169,7 +170,7 @@ class ChapterActionsSheet extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: labelColor ?? AppColors.textPrimary,
+                color: labelColor ?? context.palette.textPrimary,
               ),
             ),
           ],
@@ -186,8 +187,8 @@ class ChapterActionsSheet extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(),
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(44),
-          side: const BorderSide(color: AppColors.border),
-          foregroundColor: AppColors.textSecondary,
+          side: BorderSide(color: context.palette.border),
+          foregroundColor: context.palette.textSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),

@@ -9,9 +9,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/app_palette.dart';
+import 'package:writingcoach/config/app_theme.dart' show AppColors;
+import 'package:writingcoach/theme/app_theme.dart'
+    show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/widgets/thinking_chain.dart';
 
-Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
+Widget _wrap(Widget child, {ThemeData? theme}) => MaterialApp(
+  theme: theme,
+  home: Scaffold(body: child),
+);
 
 const _steps = [
   ThinkingStep(label: '文本分析', detail: '扫描文本，定位 6 处问题片段'),
@@ -94,6 +101,34 @@ void main() {
 
       expect(find.text('文本分析'), findsOneWidget);
       expect(find.text('症候匹配'), findsOneWidget);
+    });
+  });
+
+  // ── P1 轨道B 成对断言：标题色随主题翻 ──
+  group('轨道B 主题翻色：标题 textPrimary', () {
+    Future<void> pump(WidgetTester t, ThemeData theme) async {
+      await t.pumpWidget(
+        _wrap(
+          const ThinkingChain(title: '诊断依据', steps: _steps),
+          theme: theme,
+        ),
+      );
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('亮色 == AppColors.textPrimary', (t) async {
+      await pump(t, buildAppTheme());
+      expect(
+        t.widget<Text>(find.text('诊断依据')).style!.color,
+        AppColors.textPrimary,
+      );
+    });
+
+    testWidgets('暗色 == AppPalette.dark.textPrimary（且 != 亮色）', (t) async {
+      await pump(t, buildDarkTheme());
+      final c = t.widget<Text>(find.text('诊断依据')).style!.color!;
+      expect(c, AppPalette.dark.textPrimary);
+      expect(c, isNot(AppColors.textPrimary));
     });
   });
 }

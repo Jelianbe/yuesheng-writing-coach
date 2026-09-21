@@ -9,7 +9,7 @@
 //   - doNotInvent：horizontal-chain（不横向排）/ animated-expand
 //
 // 竹青化适配（月笙令牌，不引入墨蓝/Sora/暖白/5px 间距）：
-//   - 主色 AppColors.primary（#2D5A52 竹青），连接线 primary 30% 透明度
+//   - 主色 context.palette.primary（#2D5A52 竹青），连接线 primary 30% 透明度
 //   - 置信点 3 颗 4px 圆点：low=0.25 / mid=0.55 / high=1.0 透明度（沿用
 //     Editorial Ink 层级语义，但色相用竹青）
 //   - 间距/圆角/字号全部走 AppSpacing / AppRadius / AppTextStyles 令牌
@@ -22,6 +22,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 单个步骤
 class ThinkingStep {
@@ -60,15 +61,15 @@ class _ThinkingChainState extends State<ThinkingChain> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
+        color: context.palette.surface,
+        border: Border.all(color: context.palette.border),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
         children: [
           _buildHeader(),
           if (_expanded) ...[
-            const Divider(height: 1, color: AppColors.border),
+            Divider(height: 1, color: context.palette.border),
             _buildStepList(),
           ],
         ],
@@ -90,19 +91,19 @@ class _ThinkingChainState extends State<ThinkingChain> {
           ),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.route_outlined,
                 size: 16,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   widget.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
               ),
@@ -111,7 +112,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
               Icon(
                 _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 size: 18,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ],
           ),
@@ -128,15 +129,15 @@ class _ThinkingChainState extends State<ThinkingChain> {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(
         '${widget.steps.length} 步',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       ),
     );
@@ -163,7 +164,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
       width: 1,
       height: AppSpacing.lg,
       margin: const EdgeInsets.only(left: AppSpacing.smx),
-      color: AppColors.primary.withValues(alpha: 0.30),
+      color: context.palette.primary.withValues(alpha: 0.30),
     );
   }
 
@@ -188,16 +189,16 @@ class _ThinkingChainState extends State<ThinkingChain> {
           width: 20,
           height: 20,
           decoration: BoxDecoration(
-            color: AppColors.primary,
+            color: context.palette.primary,
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
           child: Text(
             '${index + 1}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.onPrimary,
+              color: context.palette.onPrimary,
             ),
           ),
         ),
@@ -220,7 +221,7 @@ class _ThinkingChainState extends State<ThinkingChain> {
             height: 4,
             margin: const EdgeInsets.only(left: 2),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(
+              color: context.palette.primary.withValues(
                 alpha: _dotAlpha(i, confidence),
               ),
               shape: BoxShape.circle,
@@ -248,19 +249,19 @@ class _ThinkingChainState extends State<ThinkingChain> {
       children: [
         Text(
           step.label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         if (step.detail != null) ...[
           const SizedBox(height: 2),
           Text(
             step.detail!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
               height: 1.5,
             ),
           ),

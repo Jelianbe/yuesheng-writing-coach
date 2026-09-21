@@ -14,6 +14,7 @@ import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../providers/manuscript_providers.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 作品卡片（批次93-1 信息加厚：首字封面 + 章节数 + 总字数 + 相对时间 + 简介预览）
 class BookshelfManuscriptCard extends StatelessWidget {
@@ -49,10 +50,11 @@ class BookshelfManuscriptCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: _cardBody(
+            context,
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _cover(firstChar, genre),
+                _cover(context, firstChar, genre),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _infoColumn(
@@ -64,10 +66,10 @@ class BookshelfManuscriptCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
                   size: 18,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
               ],
             ),
@@ -78,11 +80,11 @@ class BookshelfManuscriptCard extends StatelessWidget {
   }
 
   /// 卡片外壳：圆角容器 + 左侧 4dp 竹青色条（月色竹青主色锚点）+ 内边距
-  Widget _cardBody(Widget child) {
+  Widget _cardBody(BuildContext context, Widget child) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
+        color: context.palette.surface,
+        border: Border.all(color: context.palette.border),
       ),
       child: Row(
         children: [
@@ -101,21 +103,21 @@ class BookshelfManuscriptCard extends StatelessWidget {
   }
 
   /// 首字封面（体裁色 + 圆角 + 书名首汉字，48px）
-  Widget _cover(String firstChar, String genre) {
+  Widget _cover(BuildContext context, String firstChar, String genre) {
     return Container(
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: _genreColor(genre),
+        color: _genreColor(context, genre),
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       alignment: Alignment.center,
       child: Text(
         firstChar,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          color: AppColors.onPrimary,
+          color: context.palette.onPrimary,
         ),
       ),
     );
@@ -136,10 +138,10 @@ class BookshelfManuscriptCard extends StatelessWidget {
           title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         if (manuscript.description.isNotEmpty) ...[
@@ -170,7 +172,7 @@ class BookshelfManuscriptCard extends StatelessWidget {
         if (genre.isNotEmpty) ...[
           Text(
             genre,
-            style: const TextStyle(fontSize: 11, color: AppColors.textDeep),
+            style: TextStyle(fontSize: 11, color: context.palette.textDeep),
           ),
           const SizedBox(width: 8),
         ],
@@ -199,24 +201,24 @@ String _formatWords(int n) {
 }
 
 /// 批次93-1：体裁 → 首字封面底色（全部收敛到月色竹青既有令牌）
-Color _genreColor(String genre) {
+Color _genreColor(BuildContext context, String genre) {
   switch (genre.trim()) {
     case '奇幻':
-      return AppColors.primary;
+      return context.palette.primary;
     case '都市':
-      return AppColors.textDeep;
+      return context.palette.textDeep;
     case '言情':
-      return AppColors.warning;
+      return context.palette.warning;
     case '科幻':
-      return AppColors.success;
+      return context.palette.success;
     case '武侠':
-      return AppColors.l2Text;
+      return context.palette.l2Text;
     case '悬疑':
-      return AppColors.l3Text;
+      return context.palette.l3Text;
     case '历史':
-      return AppColors.primaryDeep;
+      return context.palette.primaryDeep;
     default:
-      return AppColors.textTertiary;
+      return context.palette.textTertiary;
   }
 }
 

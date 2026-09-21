@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/services/growth_service.dart';
 import 'package:writingcoach/types/display_types.dart';
@@ -122,20 +123,25 @@ void main() {
     });
 
     test('#4b 分数/趋势色走月色竹青令牌（批次22 UI 打磨：无 Material 硬编码绿）', () {
+      // P1 轨道B：static 改 palette 驱动；light 恒等 AppColors（护栏锁），断言语义不变
+      const p = AppPalette.light;
       // 分数着色：≥80 正向绿（AppColors.success），非 Material 绿
-      expect(AbilityChart.scoreColor(85), AppColors.success);
-      expect(AbilityChart.scoreColor(80), AppColors.success);
-      expect(AbilityChart.scoreColor(79), AppColors.primary);
-      expect(AbilityChart.scoreColor(60), AppColors.primary);
-      expect(AbilityChart.scoreColor(59), AppColors.warning);
-      expect(AbilityChart.scoreColor(45), AppColors.warning);
-      expect(AbilityChart.scoreColor(44), AppColors.danger);
+      expect(AbilityChart.scoreColor(p, 85), AppColors.success);
+      expect(AbilityChart.scoreColor(p, 80), AppColors.success);
+      expect(AbilityChart.scoreColor(p, 79), AppColors.primary);
+      expect(AbilityChart.scoreColor(p, 60), AppColors.primary);
+      expect(AbilityChart.scoreColor(p, 59), AppColors.warning);
+      expect(AbilityChart.scoreColor(p, 45), AppColors.warning);
+      expect(AbilityChart.scoreColor(p, 44), AppColors.danger);
       // 趋势箭头：improving 正向绿，worsening 矿物红
-      expect(AbilityChart.trendGlyph(Trend.improving).$2, AppColors.success);
-      expect(AbilityChart.trendGlyph(Trend.worsening).$2, AppColors.danger);
-      expect(AbilityChart.trendGlyph(Trend.stable).$2, AppColors.textTertiary);
+      expect(AbilityChart.trendGlyph(p, Trend.improving).$2, AppColors.success);
+      expect(AbilityChart.trendGlyph(p, Trend.worsening).$2, AppColors.danger);
+      expect(
+        AbilityChart.trendGlyph(p, Trend.stable).$2,
+        AppColors.textTertiary,
+      );
       // 全库不得再出现 Material 默认绿硬编码
-      final source = AbilityChart.scoreColor(85).toString();
+      final source = AbilityChart.scoreColor(p, 85).toString();
       expect(source.contains('2E7D32'), isFalse);
     });
   });

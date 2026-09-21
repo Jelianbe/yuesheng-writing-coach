@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../config/app_palette.dart';
 
 /// 章节状态 → 中文标签 + 矿物色配色
 class ChapterStatusConfig {
@@ -26,6 +27,8 @@ class ChapterStatusConfig {
 }
 
 /// 章节状态配置表
+/// ⚠️ 顶层 const 色表：context.palette 是运行期值装不进 const Map。轨道 B「选 A」：
+///    本批暂留焊死亮色 AppColors，P1-6 改运行期取色后翻色。
 const Map<String, ChapterStatusConfig> chapterStatusConfig = {
   'draft': ChapterStatusConfig('草稿', AppColors.border, AppColors.textDeep),
   'revising': ChapterStatusConfig(
@@ -87,9 +90,9 @@ class ChapterCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.surfaceWhite,
+            color: context.palette.surfaceWhite,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.palette.divider),
           ),
           child: Row(
             children: [
@@ -98,14 +101,14 @@ class ChapterCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildTitleRow(statusCfg),
+                    _buildTitleRow(context, statusCfg),
                     const SizedBox(height: 6),
-                    _buildMetaRow(),
+                    _buildMetaRow(context),
                   ],
                 ),
               ),
               const SizedBox(width: 4),
-              _buildTrailingActions(),
+              _buildTrailingActions(context),
             ],
           ),
         ),
@@ -116,7 +119,7 @@ class ChapterCard extends StatelessWidget {
   /// 标题行：章节名 + 状态标签（R-019 清偿拆出）。
   /// V-5：`statusCfg == null`（表外状态）时不渲染徽标 —— 与章节树抽屉
   /// 的 `if (status != null)` 同一判据、同一张表（单一真源）。
-  Widget _buildTitleRow(ChapterStatusConfig? statusCfg) {
+  Widget _buildTitleRow(BuildContext context, ChapterStatusConfig? statusCfg) {
     return Row(
       children: [
         Expanded(
@@ -124,10 +127,10 @@ class ChapterCard extends StatelessWidget {
             chapter.title.isEmpty ? '未命名章节' : chapter.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
         ),
@@ -156,30 +159,30 @@ class ChapterCard extends StatelessWidget {
   }
 
   /// 元信息行：字数 + 已诊断（R-019 清偿拆出）。
-  Widget _buildMetaRow() {
+  Widget _buildMetaRow(BuildContext context) {
     return Row(
       children: [
-        const Icon(
+        Icon(
           Icons.sticky_note_2_outlined,
           size: 12,
-          color: AppColors.textTertiary,
+          color: context.palette.textTertiary,
         ),
         const SizedBox(width: 4),
         Text(
           _formatWords(chapter.wordCount),
-          style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+          style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
         ),
         if (chapter.lastDiagnosedAt != null) ...[
           const SizedBox(width: 12),
-          const Icon(
+          Icon(
             Icons.check_circle_outline,
             size: 12,
-            color: AppColors.textDeep,
+            color: context.palette.textDeep,
           ),
           const SizedBox(width: 4),
-          const Text(
+          Text(
             '已诊断',
-            style: TextStyle(fontSize: 12, color: AppColors.textDeep),
+            style: TextStyle(fontSize: 12, color: context.palette.textDeep),
           ),
         ],
       ],
@@ -187,17 +190,17 @@ class ChapterCard extends StatelessWidget {
   }
 
   /// 行尾操作：重命名 + 删除 + 跳转箭头（R-019 清偿拆出）。
-  Widget _buildTrailingActions() {
+  Widget _buildTrailingActions(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // 修复3：行尾铅笔图标（直接重命名章节名）
         IconButton(
           onPressed: onRename,
-          icon: const Icon(
+          icon: Icon(
             Icons.edit_outlined,
             size: 18,
-            color: AppColors.textSecondary,
+            color: context.palette.textSecondary,
           ),
           tooltip: '重命名章节',
           visualDensity: VisualDensity.compact,
@@ -205,18 +208,18 @@ class ChapterCard extends StatelessWidget {
         // 批次79 C：行尾可见删除入口
         IconButton(
           onPressed: onDelete,
-          icon: const Icon(
+          icon: Icon(
             Icons.delete_outline,
             size: 18,
-            color: AppColors.danger,
+            color: context.palette.danger,
           ),
           tooltip: '删除章节',
           visualDensity: VisualDensity.compact,
         ),
-        const Icon(
+        Icon(
           Icons.chevron_right,
           size: 20,
-          color: AppColors.textTertiary,
+          color: context.palette.textTertiary,
         ),
       ],
     );

@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/capability_providers.dart';
+import '../config/app_palette.dart';
 
 /// 文件角色（对齐 RN FileRole：general/outline/material）
 const List<({String key, String label})> _fileRoles = [
@@ -133,38 +134,38 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.borderSoft,
+                color: context.palette.borderSoft,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
             ),
-            const Text(
+            Text(
               '保存到文件',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '保存到《${widget.bookTitle}》',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
             const SizedBox(height: 16),
 
             // 文件角色
-            const Text(
+            Text(
               '文件角色',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -183,12 +184,12 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
             const SizedBox(height: 12),
 
             // 文件名
-            const Text(
+            Text(
               '文件名',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
@@ -198,7 +199,7 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
                 hintText: '请输入文件名',
                 isDense: true,
                 filled: true,
-                fillColor: AppColors.surface,
+                fillColor: context.palette.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   borderSide: BorderSide.none,
@@ -221,14 +222,14 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
                         : () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
-                      side: const BorderSide(color: AppColors.borderSoft),
+                      side: BorderSide(color: context.palette.borderSoft),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '取消',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.palette.textSecondary),
                     ),
                   ),
                 ),
@@ -238,14 +239,14 @@ class _SaveToFileSheetState extends ConsumerState<SaveToFileSheet> {
                     onPressed: _saving ? null : _handleSave,
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.palette.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: Text(
                       _saving ? '保存中...' : '保存',
-                      style: const TextStyle(color: AppColors.onPrimary),
+                      style: TextStyle(color: context.palette.onPrimary),
                     ),
                   ),
                 ),
@@ -281,10 +282,12 @@ class _RoleChip extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: active ? AppColors.primarySoft : AppColors.surface,
+          color: active ? context.palette.primarySoft : context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: active ? AppColors.primary : AppColors.borderSoft,
+            color: active
+                ? context.palette.primary
+                : context.palette.borderSoft,
           ),
         ),
         child: Text(
@@ -292,7 +295,9 @@ class _RoleChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-            color: active ? AppColors.primary : AppColors.textTertiary,
+            color: active
+                ? context.palette.primary
+                : context.palette.textTertiary,
           ),
         ),
       ),

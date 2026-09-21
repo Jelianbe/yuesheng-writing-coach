@@ -20,6 +20,7 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../config/app_palette.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -87,9 +88,11 @@ class MessageBubble extends StatelessWidget {
                   vertical: AppSpacing.smx,
                 ),
                 decoration: BoxDecoration(
-                  color: isFailed ? AppColors.dangerBg : AppColors.primary,
+                  color: isFailed
+                      ? context.palette.dangerBg
+                      : context.palette.primary,
                   border: isFailed
-                      ? Border.all(color: AppColors.dangerBorder)
+                      ? Border.all(color: context.palette.dangerBorder)
                       : null,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(AppRadius.md),
@@ -103,7 +106,9 @@ class MessageBubble extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.4,
-                    color: isFailed ? AppColors.danger : AppColors.onPrimary,
+                    color: isFailed
+                        ? context.palette.danger
+                        : context.palette.onPrimary,
                   ),
                 ),
               ),
@@ -117,7 +122,7 @@ class MessageBubble extends StatelessWidget {
             if (isFailed && onRetry != null) ...[
               GestureDetector(
                 onTap: () => onRetry!(message.id),
-                child: const Padding(
+                child: Padding(
                   padding: EdgeInsets.only(
                     top: AppSpacing.xxs,
                     bottom: AppSpacing.xs,
@@ -125,13 +130,17 @@ class MessageBubble extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.warning, size: 14, color: AppColors.danger),
+                      Icon(
+                        Icons.warning,
+                        size: 14,
+                        color: context.palette.danger,
+                      ),
                       SizedBox(width: 4),
                       Text(
                         '发送失败，点击重试',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.danger,
+                          color: context.palette.danger,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -147,7 +156,7 @@ class MessageBubble extends StatelessWidget {
                 _formatTime(message.timestamp),
                 style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.onPrimary.withValues(alpha: 0.6),
+                  color: context.palette.onPrimary.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -172,15 +181,15 @@ class MessageBubble extends StatelessWidget {
               right: AppSpacing.sm,
               top: AppSpacing.xs,
             ),
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: context.palette.primary,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const Text(
+            child: Text(
               '月',
               style: TextStyle(
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -210,8 +219,8 @@ class MessageBubble extends StatelessWidget {
                         vertical: AppSpacing.smx,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        border: Border.all(color: AppColors.borderSoft),
+                        color: context.palette.surface,
+                        border: Border.all(color: context.palette.borderSoft),
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(AppRadius.md),
                           topRight: Radius.circular(AppRadius.md),
@@ -221,10 +230,10 @@ class MessageBubble extends StatelessWidget {
                       ),
                       child: GptMarkdown(
                         message.content,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           height: 1.4,
-                          color: AppColors.textPrimary,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                     ),
@@ -237,9 +246,9 @@ class MessageBubble extends StatelessWidget {
                     children: [
                       Text(
                         _formatTime(message.timestamp),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondary,
+                          color: context.palette.textSecondary,
                         ),
                       ),
                       // 操作区：保存到文件（对齐 RN messageMetaRow.actionBtnGroup）
@@ -248,20 +257,20 @@ class MessageBubble extends StatelessWidget {
                         InkWell(
                           onTap: () => onSaveToFile!(message),
                           borderRadius: BorderRadius.circular(AppRadius.xs),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.save_alt,
                                 size: 12,
-                                color: AppColors.primary,
+                                color: context.palette.primary,
                               ),
                               SizedBox(width: 2),
                               Text(
                                 '保存到文件',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.primary,
+                                  color: context.palette.primary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -363,13 +372,13 @@ class _ReferenceBadge extends StatelessWidget {
           vertical: 3,
         ),
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
+          color: context.palette.primarySoft,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 12, color: AppColors.primaryDeep),
+            Icon(icon, size: 12, color: context.palette.primaryDeep),
             const SizedBox(width: 3),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 180),
@@ -377,9 +386,9 @@ class _ReferenceBadge extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.primaryDeep,
+                  color: context.palette.primaryDeep,
                 ),
               ),
             ),
