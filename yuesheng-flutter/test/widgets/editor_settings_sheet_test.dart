@@ -15,6 +15,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:writingcoach/config/app_palette.dart';
+import 'package:writingcoach/config/app_theme.dart' show AppColors;
+import 'package:writingcoach/theme/app_theme.dart'
+    show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
@@ -45,11 +49,14 @@ void main() {
   });
 
   /// 泵一个带 Scaffold 的宿主，再打开排版设置弹层
-  Future<void> pumpSheet(WidgetTester tester) async {
+  Future<void> pumpSheet(WidgetTester tester, {ThemeData? theme}) async {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: Scaffold(body: SizedBox())),
+        child: MaterialApp(
+          theme: theme,
+          home: const Scaffold(body: SizedBox()),
+        ),
       ),
     );
     final ctx = tester.element(find.byType(Scaffold));
@@ -349,6 +356,24 @@ void main() {
       );
       expect(sw2.value, isFalse);
       expect(await AppStateRepository(db).getFabVisible(), isFalse);
+    });
+  });
+
+  // ── P1 轨道B 成对断言：弹层迁移色随主题翻（端到端）──
+  group('轨道B 主题翻色：排版设置标题', () {
+    testWidgets('亮色 == AppColors.textPrimary', (tester) async {
+      await pumpSheet(tester, theme: buildAppTheme());
+      expect(
+        tester.widget<Text>(find.text('排版设置')).style!.color,
+        AppColors.textPrimary,
+      );
+    });
+
+    testWidgets('暗色 == AppPalette.dark.textPrimary（且 != 亮色）', (tester) async {
+      await pumpSheet(tester, theme: buildDarkTheme());
+      final c = tester.widget<Text>(find.text('排版设置')).style!.color!;
+      expect(c, AppPalette.dark.textPrimary);
+      expect(c, isNot(AppColors.textPrimary));
     });
   });
 }

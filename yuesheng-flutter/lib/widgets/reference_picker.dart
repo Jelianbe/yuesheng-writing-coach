@@ -26,6 +26,7 @@ import '../providers/app_providers.dart';
 import '../providers/capability_providers.dart';
 import '../services/mention_parser.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class ReferencePicker extends ConsumerStatefulWidget {
   /// 选择回调：refType ∈ {manuscript, chapter, file}（default 模式）
@@ -144,12 +145,12 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
         path,
-        style: const TextStyle(fontSize: 11, color: AppColors.primary),
+        style: TextStyle(fontSize: 11, color: context.palette.primary),
       ),
     );
   }
@@ -170,18 +171,18 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
               bottom: AppSpacing.md,
             ),
             decoration: BoxDecoration(
-              color: AppColors.borderSoft,
+              color: context.palette.borderSoft,
               borderRadius: BorderRadius.circular(AppRadius.xs),
             ),
             alignment: Alignment.center,
           ),
-          const Text(
+          Text(
             '选择引用',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -197,7 +198,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             padding: const EdgeInsets.all(AppSpacing.xxs),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Row(
@@ -237,14 +238,14 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                side: const BorderSide(color: AppColors.borderSoft),
+                side: BorderSide(color: context.palette.borderSoft),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '取消',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: context.palette.textSecondary),
               ),
             ),
           ),
@@ -263,14 +264,17 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
             Icon(
               Icons.library_books_outlined,
               size: 40,
-              color: AppColors.disabledText,
+              color: context.palette.disabledText,
             ),
             SizedBox(height: 8),
             Text('还没有作品', style: context.text.body),
             SizedBox(height: 4),
             Text(
               '去书架创建，或通过「+」导入小说',
-              style: TextStyle(fontSize: 12, color: AppColors.disabledText),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.disabledText,
+              ),
             ),
           ],
         ),
@@ -304,10 +308,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                           m.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.textPrimary,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                       ),
@@ -332,12 +336,15 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                       vertical: AppSpacing.xxs,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primarySoft,
+                      color: context.palette.primarySoft,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
-                    child: const Text(
+                    child: Text(
                       '引用整本书',
-                      style: TextStyle(fontSize: 12, color: AppColors.primary),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.palette.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -347,17 +354,17 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                       ? Icons.keyboard_arrow_down
                       : Icons.keyboard_arrow_right,
                   size: 18,
-                  color: AppColors.disabledText,
+                  color: context.palette.disabledText,
                 ),
               ],
             ),
           ),
         ),
         if (expanded) ...[
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           _buildChapterList(m),
         ],
-        const Divider(height: 1, color: AppColors.borderSoft),
+        Divider(height: 1, color: context.palette.borderSoft),
       ],
     );
   }
@@ -365,12 +372,12 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
   Widget _buildChapterList(Manuscript m) {
     final chapters = _chaptersMap[m.id] ?? const <Chapter>[];
     if (chapters.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
         child: Text(
           '暂无章节',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13, color: AppColors.disabledText),
+          style: TextStyle(fontSize: 13, color: context.palette.disabledText),
         ),
       );
     }
@@ -409,7 +416,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         ),
         if (expanded)
           for (final c in inVol) _buildChapterRow(m, c, inVolume: v),
-        const Divider(height: 1, color: AppColors.borderSoft),
+        Divider(height: 1, color: context.palette.borderSoft),
       ],
     );
   }
@@ -437,10 +444,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                 v.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
             ),
@@ -466,7 +473,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         child: Icon(
           expanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right,
           size: 18,
-          color: AppColors.disabledText,
+          color: context.palette.disabledText,
         ),
       ),
     );
@@ -483,7 +490,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
       ),
       child: Text(
         '未分卷（$count）',
-        style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
       ),
     );
   }
@@ -523,9 +530,9 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                     c.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ),
@@ -538,7 +545,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
           ),
           Text(
             '${c.wordCount} 字',
-            style: const TextStyle(fontSize: 12, color: AppColors.disabledText),
+            style: TextStyle(fontSize: 12, color: context.palette.disabledText),
           ),
         ],
       ),
@@ -553,14 +560,21 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
         padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl + AppSpacing.lg),
         child: Column(
           children: [
-            Icon(Icons.attach_file, size: 40, color: AppColors.disabledText),
+            Icon(
+              Icons.attach_file,
+              size: 40,
+              color: context.palette.disabledText,
+            ),
             SizedBox(height: 8),
             Text('还没有素材文件', style: context.text.body),
             SizedBox(height: 4),
             Text(
               // 批次77：文案指向真实路径（全应用无「素材页」，素材在作品详情的文件 Tab 添加）
               '在作品详情的「文件」中添加素材文件',
-              style: TextStyle(fontSize: 12, color: AppColors.disabledText),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.disabledText,
+              ),
             ),
           ],
         ),
@@ -597,10 +611,10 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                     m.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -609,7 +623,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                       ? Icons.keyboard_arrow_down
                       : Icons.keyboard_arrow_right,
                   size: 18,
-                  color: AppColors.disabledText,
+                  color: context.palette.disabledText,
                 ),
               ],
             ),
@@ -638,9 +652,9 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                         files[fIndex].fileName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: context.palette.textSecondary,
                         ),
                       ),
                     ),
@@ -657,7 +671,7 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
                 ),
               ),
             ),
-        const Divider(height: 1, color: AppColors.borderSoft),
+        Divider(height: 1, color: context.palette.borderSoft),
       ],
     );
   }
@@ -683,7 +697,7 @@ class _TabButton extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: active ? AppColors.surfaceWhite : null,
+            color: active ? context.palette.surfaceWhite : null,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           alignment: Alignment.center,
@@ -692,7 +706,9 @@ class _TabButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-              color: active ? AppColors.textPrimary : AppColors.textTertiary,
+              color: active
+                  ? context.palette.textPrimary
+                  : context.palette.textTertiary,
             ),
           ),
         ),

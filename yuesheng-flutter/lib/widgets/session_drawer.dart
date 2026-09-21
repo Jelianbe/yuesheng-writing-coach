@@ -14,6 +14,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../utils/time_format.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class SessionDrawer extends StatefulWidget {
   /// 会话列表（listSessionsWithPhase，pinned DESC, updatedAt DESC）
@@ -63,7 +64,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColors.surfaceWhite,
+      backgroundColor: context.palette.surfaceWhite,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,29 +84,29 @@ class _SessionDrawerState extends State<SessionDrawer> {
         horizontal: AppSpacing.lg,
         vertical: 14,
       ),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.palette.borderSoft)),
       ),
       child: Row(
         children: [
           if (_multiSelect)
             TextButton(
               onPressed: _exitMultiSelect,
-              child: const Text(
+              child: Text(
                 '取消',
-                style: TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(color: context.palette.textPrimary),
               ),
             )
           else
             const SizedBox(width: 48),
-          const Expanded(
+          Expanded(
             child: Text(
               '对话',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ),
@@ -121,16 +122,16 @@ class _SessionDrawerState extends State<SessionDrawer> {
       child: _multiSelect
           ? Text(
               '已选 ${_selected.length}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             )
           : IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.more_horiz,
                 size: 22,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
               tooltip: '批量管理',
               onPressed: () => setState(() => _multiSelect = true),
@@ -143,7 +144,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
     return ListView.separated(
       itemCount: widget.sessions.length,
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
       itemBuilder: (context, i) => _buildCard(context, widget.sessions[i]),
     );
   }
@@ -153,18 +154,18 @@ class _SessionDrawerState extends State<SessionDrawer> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.chat_bubble_outline,
             size: 40,
-            color: AppColors.disabledText,
+            color: context.palette.disabledText,
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             '还没有会话',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -180,8 +181,8 @@ class _SessionDrawerState extends State<SessionDrawer> {
               widget.onCreate();
             },
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: context.palette.primary,
+              foregroundColor: context.palette.onPrimary,
             ),
             child: const Text('发起第一次对话'),
           ),
@@ -224,7 +225,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
       padding: const EdgeInsets.only(right: 8),
       child: Icon(
         checked ? Icons.check_circle : Icons.circle_outlined,
-        color: checked ? AppColors.primary : AppColors.disabledText,
+        color: checked ? context.palette.primary : context.palette.disabledText,
         size: 22,
       ),
     );
@@ -235,7 +236,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.surface,
+        color: isActive ? context.palette.primary : context.palette.surface,
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
@@ -244,7 +245,9 @@ class _SessionDrawerState extends State<SessionDrawer> {
         style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w600,
-          color: isActive ? AppColors.onPrimary : AppColors.textTertiary,
+          color: isActive
+              ? context.palette.onPrimary
+              : context.palette.textTertiary,
         ),
       ),
     );
@@ -257,19 +260,23 @@ class _SessionDrawerState extends State<SessionDrawer> {
         Row(
           children: [
             if (isPinned)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(right: 4),
-                child: Icon(Icons.push_pin, size: 13, color: AppColors.primary),
+                child: Icon(
+                  Icons.push_pin,
+                  size: 13,
+                  color: context.palette.primary,
+                ),
               ),
             Expanded(
               child: Text(
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
             ),
@@ -285,7 +292,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
           item.session.preview.isEmpty ? '暂无消息' : item.session.preview,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+          style: TextStyle(fontSize: 13, color: context.palette.textTertiary),
         ),
       ],
     );
@@ -359,14 +366,18 @@ class _SessionDrawerState extends State<SessionDrawer> {
           Icon(
             icon,
             size: 20,
-            color: danger ? AppColors.danger : AppColors.textPrimary,
+            color: danger
+                ? context.palette.danger
+                : context.palette.textPrimary,
           ),
           const SizedBox(width: 12),
           Text(
             label,
             style: TextStyle(
               fontSize: 15,
-              color: danger ? AppColors.danger : AppColors.textPrimary,
+              color: danger
+                  ? context.palette.danger
+                  : context.palette.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -400,7 +411,9 @@ class _SessionDrawerState extends State<SessionDrawer> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
             child: const Text('保存'),
           ),
         ],
@@ -420,7 +433,7 @@ class _SessionDrawerState extends State<SessionDrawer> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      barrierColor: AppColors.overlay,
+      barrierColor: context.palette.overlay,
       builder: (ctx) => AlertDialog(
         title: Text('删除会话', style: context.text.titleLg),
         content: Text(
@@ -431,21 +444,23 @@ class _SessionDrawerState extends State<SessionDrawer> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
+            child: Text(
               '取消',
               style: TextStyle(
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.danger,
+            ),
+            child: Text(
               '删除',
               style: TextStyle(
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -467,8 +482,8 @@ class _SessionDrawerState extends State<SessionDrawer> {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.sm,
         ),
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.borderSoft)),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: context.palette.borderSoft)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -479,20 +494,22 @@ class _SessionDrawerState extends State<SessionDrawer> {
                   ..clear()
                   ..addAll(widget.sessions.map((s) => s.session.id)),
               ),
-              child: const Text(
+              child: Text(
                 '全选',
-                style: TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(color: context.palette.textPrimary),
               ),
             ),
             FilledButton(
               onPressed: _selected.isEmpty
                   ? null
                   : () => _confirmBatchDelete(context),
-              style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.danger,
+              ),
               child: Text(
                 '删除 ${_selected.isEmpty ? '' : _selected.length}',
-                style: const TextStyle(
-                  color: AppColors.onPrimary,
+                style: TextStyle(
+                  color: context.palette.onPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -517,10 +534,12 @@ class _SessionDrawerState extends State<SessionDrawer> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-            child: const Text(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.danger,
+            ),
+            child: Text(
               '删除',
-              style: TextStyle(color: AppColors.onPrimary),
+              style: TextStyle(color: context.palette.onPrimary),
             ),
           ),
         ],

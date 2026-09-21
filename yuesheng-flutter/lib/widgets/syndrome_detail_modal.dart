@@ -18,6 +18,7 @@ import '../config/app_theme.dart';
 import '../services/syndrome_tracker.dart';
 import '../utils/time_format.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 严重度 → 矿物色配置（L1 竹青淡 / L2 矿物黄 / L3 矿物红）
 class _SeverityTheme {
@@ -26,6 +27,8 @@ class _SeverityTheme {
   const _SeverityTheme(this.bg, this.fg);
 }
 
+// ⚠️ 顶层 const 色表：context.palette 是运行期值、装不进 const Map。轨道 B「选 A」裁定
+//    留 P1-6 专门重构；本批暂留焊死亮色 AppColors（_TrendChartPainter.paint 同此）。
 const Map<String, _SeverityTheme> _severityTheme = {
   'L1': _SeverityTheme(AppColors.l1, AppColors.primary),
   'L2': _SeverityTheme(AppColors.l2, AppColors.l2Text),
@@ -41,20 +44,20 @@ class SyndromeDetailModal extends StatelessWidget {
 
   const SyndromeDetailModal({super.key, required this.syndrome});
 
-  _SeverityTheme _sev(String s) =>
+  _SeverityTheme _sev(BuildContext context, String s) =>
       _severityTheme[s] ??
-      const _SeverityTheme(AppColors.l1, AppColors.primary);
+      _SeverityTheme(context.palette.l1, context.palette.primary);
 
   /// 趋势 → 主题色（对齐 RN getTrendColor：success/neutral/danger）
-  Color _trendColor(String trend) => switch (trend) {
-    'improving' => AppColors.primary,
-    'worsening' => AppColors.danger,
-    _ => AppColors.textTertiary,
+  Color _trendColor(BuildContext context, String trend) => switch (trend) {
+    'improving' => context.palette.primary,
+    'worsening' => context.palette.danger,
+    _ => context.palette.textTertiary,
   };
 
   @override
   Widget build(BuildContext context) {
-    final sev = _sev(syndrome.currentSeverity);
+    final sev = _sev(context, syndrome.currentSeverity);
 
     return SafeArea(
       child: ConstrainedBox(
@@ -74,7 +77,7 @@ class SyndromeDetailModal extends StatelessWidget {
                 bottom: AppSpacing.smx,
               ),
               decoration: BoxDecoration(
-                color: AppColors.borderLight,
+                color: context.palette.borderLight,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
@@ -94,12 +97,12 @@ class SyndromeDetailModal extends StatelessWidget {
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
+                      backgroundColor: context.palette.surface,
                     ),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.close,
                       size: 18,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ],
@@ -118,9 +121,9 @@ class SyndromeDetailModal extends StatelessWidget {
                   children: [
                     _buildStatsRow(context),
                     const SizedBox(height: 8),
-                    _buildTrendSection(),
+                    _buildTrendSection(context),
                     const SizedBox(height: 8),
-                    _buildRecordsSection(),
+                    _buildRecordsSection(context),
                   ],
                 ),
               ),
@@ -177,7 +180,7 @@ class SyndromeDetailModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
@@ -186,21 +189,21 @@ class SyndromeDetailModal extends StatelessWidget {
             context: context,
             value: '${syndrome.occurrenceCount}',
             label: '出现次数',
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
           const _StatDivider(),
           _buildStatItem(
             context: context,
             value: getTrendLabel(syndrome.trend),
             label: '趋势',
-            color: _trendColor(syndrome.trend),
+            color: _trendColor(context, syndrome.trend),
           ),
           const _StatDivider(),
           _buildStatItem(
             context: context,
             value: formatRelativeTime(syndrome.firstSeen),
             label: '首次发现',
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ],
       ),
@@ -234,17 +237,17 @@ class SyndromeDetailModal extends StatelessWidget {
   }
 
   // ── 趋势变化 section（对齐 RN chartContainer + legend）──
-  Widget _buildTrendSection() {
+  Widget _buildTrendSection(BuildContext context) {
     final points = syndrome.recentPoints;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '趋势变化',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 10),
@@ -252,16 +255,16 @@ class SyndromeDetailModal extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.section),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: points.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     '暂无趋势数据',
                     style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.disabledText,
+                      color: context.palette.disabledText,
                     ),
                   ),
                 )
@@ -278,9 +281,9 @@ class SyndromeDetailModal extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       '最近 ${points.length} 次诊断',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.disabledText,
+                        color: context.palette.disabledText,
                       ),
                     ),
                   ],
@@ -291,17 +294,17 @@ class SyndromeDetailModal extends StatelessWidget {
   }
 
   // ── 诊断记录 section（对齐 RN records + recordItem）──
-  Widget _buildRecordsSection() {
+  Widget _buildRecordsSection(BuildContext context) {
     final points = syndrome.recentPoints;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '诊断记录',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -310,25 +313,36 @@ class SyndromeDetailModal extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 '暂无诊断记录',
-                style: TextStyle(fontSize: 13, color: AppColors.disabledText),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.palette.disabledText,
+                ),
               ),
             ),
           )
         else
           for (var i = 0; i < points.length; i++)
-            _buildRecordItem(points[i], isLast: i == points.length - 1),
+            _buildRecordItem(
+              context,
+              points[i],
+              isLast: i == points.length - 1,
+            ),
       ],
     );
   }
 
-  Widget _buildRecordItem(SyndromeTrendPoint point, {required bool isLast}) {
-    final sev = _sev(point.severity);
+  Widget _buildRecordItem(
+    BuildContext context,
+    SyndromeTrendPoint point, {
+    required bool isLast,
+  }) {
+    final sev = _sev(context, point.severity);
     final label = _severityLabel[point.severity] ?? point.severity;
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
@@ -336,7 +350,7 @@ class SyndromeDetailModal extends StatelessWidget {
         border: Border(
           bottom: isLast
               ? BorderSide.none
-              : const BorderSide(color: AppColors.borderSoft),
+              : BorderSide(color: context.palette.borderSoft),
         ),
       ),
       child: Row(
@@ -354,16 +368,16 @@ class SyndromeDetailModal extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
           ),
           Text(
             formatRelativeTime(point.timestamp),
-            style: const TextStyle(fontSize: 12, color: AppColors.disabledText),
+            style: TextStyle(fontSize: 12, color: context.palette.disabledText),
           ),
         ],
       ),
@@ -376,7 +390,7 @@ class _StatDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 32, color: AppColors.borderLight);
+    return Container(width: 1, height: 32, color: context.palette.borderLight);
   }
 }
 
@@ -406,6 +420,8 @@ class _TrendChartPainter extends CustomPainter {
       xs.add(n == 1 ? size.width / 2 : size.width * i / (n - 1));
     }
 
+    // ⚠️ CustomPainter.paint 无 BuildContext ⇒ 不能读 context.palette（轨道 B「选 A」：
+    //    本批暂用焊死亮色 AppColors，P1-6 把 palette 色注入 painter 构造后翻色）。
     // 网格参考线（L1/L2/L3 三档）
     final gridPaint = Paint()
       ..color = AppColors.borderSoft
@@ -433,7 +449,7 @@ class _TrendChartPainter extends CustomPainter {
     for (var i = 0; i < n; i++) {
       final sev =
           _severityTheme[points[i].severity] ??
-          const _SeverityTheme(AppColors.l1, AppColors.primary);
+          _SeverityTheme(AppColors.l1, AppColors.primary);
       final center = Offset(xs[i], yFor(points[i].severity));
       canvas.drawCircle(center, 5, Paint()..color = sev.fg);
       canvas.drawCircle(

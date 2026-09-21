@@ -27,6 +27,7 @@ import '../providers/capability_providers.dart';
 import 'excerpt_picker_sheet.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class ReferenceBar extends ConsumerStatefulWidget {
   /// 会话 ID（引用列表按会话隔离）
@@ -230,9 +231,9 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
     final isSelectMode = _selectedRefs.isNotEmpty;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
-        border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+      decoration: BoxDecoration(
+        color: context.palette.surfaceWhite,
+        border: Border(bottom: BorderSide(color: context.palette.borderSoft)),
       ),
       child: Column(
         // 批次76：mainAxisSize.min —— 弹层内容自适应高度，不再撑满全屏
@@ -250,12 +251,12 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
             ),
             child: Row(
               children: [
-                const Text(
+                Text(
                   '引用管理',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -265,16 +266,16 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                     vertical: AppSpacing.xxs,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
-                    border: Border.all(color: AppColors.borderSoft),
+                    border: Border.all(color: context.palette.borderSoft),
                   ),
                   child: Text(
                     '${_references.length} 个引用',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ),
@@ -291,10 +292,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
               ),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.menu_book_outlined,
                     size: 20,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -306,10 +307,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                                 _mainLabel(primaryRef.refType),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.primary,
+                                  color: context.palette.primary,
                                 ),
                               ),
                               const SizedBox(height: 1),
@@ -319,22 +320,22 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                                     : primaryRef.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.textPrimary,
+                                  color: context.palette.textPrimary,
                                 ),
                               ),
                             ],
                           )
-                        : const Text(
+                        : Text(
                             // 批次76：空态文案明确引导——点下方「+ 添加引用」按钮
                             '还没有引用作品，点下方按钮添加',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.disabledText,
+                              color: context.palette.disabledText,
                             ),
                           ),
                   ),
@@ -346,15 +347,15 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                         vertical: AppSpacing.xxs,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
+                        color: context.palette.primarySoft,
                         borderRadius: BorderRadius.circular(AppRadius.pill),
                       ),
                       child: Text(
                         '+$otherCount',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.primary,
+                          color: context.palette.primary,
                         ),
                       ),
                     ),
@@ -365,7 +366,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
                     size: 20,
-                    color: AppColors.disabledText,
+                    color: context.palette.disabledText,
                   ),
                 ],
               ),
@@ -374,9 +375,9 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
 
           // ── 展开列表 ──
           if (_expanded) ...[
-            const Divider(height: 1, color: AppColors.borderSoft),
+            Divider(height: 1, color: context.palette.borderSoft),
             Container(
-              color: AppColors.surface,
+              color: context.palette.surface,
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md,
                 AppSpacing.md,
@@ -422,22 +423,22 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         vertical: AppSpacing.xsm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.primarySoft),
+        border: Border.all(color: context.palette.primarySoft),
       ),
       child: Row(
         children: [
           InkWell(
             onTap: _handleDeselectAll,
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.xsm),
               child: Text(
                 '取消',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
+                  color: context.palette.textSecondary,
                 ),
               ),
             ),
@@ -446,10 +447,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
             child: Center(
               child: Text(
                 '已选 ${_selectedRefs.length} 项',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
             ),
@@ -462,15 +463,15 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                 vertical: AppSpacing.xsm,
               ),
               decoration: BoxDecoration(
-                color: AppColors.dangerBg,
+                color: context.palette.dangerBg,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: const Text(
+              child: Text(
                 '删除选中',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.danger,
+                  color: context.palette.danger,
                 ),
               ),
             ),
@@ -486,7 +487,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
     final isSelected = _selectedRefs.contains(key);
     return Container(
       decoration: BoxDecoration(
-        color: isSelected ? AppColors.primarySoft : null,
+        color: isSelected ? context.palette.primarySoft : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
@@ -499,18 +500,20 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
               height: 22,
               margin: const EdgeInsets.only(right: AppSpacing.smx),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : null,
+                color: isSelected ? context.palette.primary : null,
                 border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
+                  color: isSelected
+                      ? context.palette.primary
+                      : context.palette.border,
                   width: 2,
                 ),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: isSelected
-                  ? const Icon(
+                  ? Icon(
                       Icons.check,
                       size: 16,
-                      color: AppColors.onPrimary,
+                      color: context.palette.onPrimary,
                     )
                   : null,
             ),
@@ -532,9 +535,9 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
                         ref.title,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary,
+                          color: context.palette.textSecondary,
                         ),
                       ),
                     ),
@@ -555,10 +558,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
               onPressed: () => _handlePickExcerpt(ref),
               tooltip: '选段',
               visualDensity: VisualDensity.compact,
-              icon: const Icon(
+              icon: Icon(
                 Icons.content_cut,
                 size: 18,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ],
@@ -567,10 +570,10 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
             IconButton(
               onPressed: () => _handleRemove(ref),
               visualDensity: VisualDensity.compact,
-              icon: const Icon(
+              icon: Icon(
                 Icons.close,
                 size: 18,
-                color: AppColors.disabledText,
+                color: context.palette.disabledText,
               ),
             ),
         ],
@@ -585,7 +588,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.borderSoft,
+        color: context.palette.borderSoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(_typeLabel(refType), style: context.text.microCaption),
@@ -599,15 +602,15 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: const Text(
+      child: Text(
         '主引用',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       ),
     );
@@ -617,7 +620,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
   Widget _buildSelectAll() {
     return InkWell(
       onTap: _handleSelectAll,
-      child: const Padding(
+      child: Padding(
         padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Center(
           child: Text(
@@ -625,7 +628,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
         ),
@@ -640,7 +643,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
       child: InkWell(
         onTap: widget.onPressPicker,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        child: const Padding(
+        child: Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
           child: Center(
             child: Text(
@@ -648,7 +651,7 @@ class _ReferenceBarState extends ConsumerState<ReferenceBar> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ),
@@ -664,6 +667,8 @@ class _DashedBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // ⚠️ CustomPainter.paint 无 BuildContext ⇒ 不能读 context.palette（轨道 B「选 A」：
+    //    本批暂用焊死亮色 AppColors，P1-6 把 palette 色注入 painter 构造后翻色）。
     const dashWidth = 4.0;
     const dashSpace = 3.0;
     final paint = Paint()

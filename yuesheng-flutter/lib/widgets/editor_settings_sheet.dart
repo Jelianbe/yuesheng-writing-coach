@@ -21,6 +21,7 @@ import '../providers/writing_providers.dart';
 import 'punctuation_bar.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class EditorSettingsSheet extends ConsumerWidget {
   final String chapterId;
@@ -76,12 +77,12 @@ class EditorSettingsSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '排版设置',
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -164,13 +165,13 @@ class EditorSettingsSheet extends ConsumerWidget {
         SwitchListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          title: const Text(
+          title: Text(
             '行段聚焦',
-            style: TextStyle(fontSize: 14, color: AppColors.textInk),
+            style: TextStyle(fontSize: 14, color: context.palette.textInk),
           ),
           subtitle: Text('淡化当前段以外的内容，专注当前行段', style: context.text.caption),
           value: state.focusMode,
-          activeTrackColor: AppColors.primary,
+          activeTrackColor: context.palette.primary,
           onChanged: (v) {
             store.setFocusMode(v);
             store.persistEditorSettings();
@@ -179,13 +180,13 @@ class EditorSettingsSheet extends ConsumerWidget {
         SwitchListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          title: const Text(
+          title: Text(
             '智能标点',
-            style: TextStyle(fontSize: 14, color: AppColors.textInk),
+            style: TextStyle(fontSize: 14, color: context.palette.textInk),
           ),
           subtitle: Text('输入「自动补全对应右符', style: context.text.caption),
           value: state.smartPunctOn,
-          activeTrackColor: AppColors.primary,
+          activeTrackColor: context.palette.primary,
           onChanged: (v) {
             store.setSmartPunctOn(v);
             store.persistEditorSettings();
@@ -211,13 +212,13 @@ class EditorSettingsSheet extends ConsumerWidget {
         SwitchListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          title: const Text(
+          title: Text(
             '显示对话按钮',
-            style: TextStyle(fontSize: 14, color: AppColors.textInk),
+            style: TextStyle(fontSize: 14, color: context.palette.textInk),
           ),
           subtitle: Text('底部悬浮的 AI 对话入口，长按可拖动位置', style: context.text.caption),
           value: state.fabVisible,
-          activeTrackColor: AppColors.primary,
+          activeTrackColor: context.palette.primary,
           onChanged: (v) {
             store.setFabVisible(v);
             store.persistEditorSettings();
@@ -230,7 +231,7 @@ class EditorSettingsSheet extends ConsumerWidget {
               TextButton(
                 onPressed: onResetFabPosition,
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
+                  foregroundColor: context.palette.primary,
                   visualDensity: VisualDensity.compact,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
@@ -268,7 +269,7 @@ class EditorSettingsSheet extends ConsumerWidget {
                       state.blankLineBetween,
                     ),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
+                foregroundColor: context.palette.primary,
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
@@ -279,13 +280,13 @@ class EditorSettingsSheet extends ConsumerWidget {
         SwitchListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          title: const Text(
+          title: Text(
             '自动首行缩进',
-            style: TextStyle(fontSize: 14, color: AppColors.textInk),
+            style: TextStyle(fontSize: 14, color: context.palette.textInk),
           ),
           subtitle: Text('回车换行时自动补两格缩进', style: context.text.caption),
           value: state.indentParagraph,
-          activeTrackColor: AppColors.primary,
+          activeTrackColor: context.palette.primary,
           onChanged: (v) {
             store.setIndentParagraph(v);
             store.persistEditorSettings();
@@ -294,13 +295,13 @@ class EditorSettingsSheet extends ConsumerWidget {
         SwitchListTile(
           dense: true,
           contentPadding: EdgeInsets.zero,
-          title: const Text(
+          title: Text(
             '段间空行',
-            style: TextStyle(fontSize: 14, color: AppColors.textInk),
+            style: TextStyle(fontSize: 14, color: context.palette.textInk),
           ),
           subtitle: Text('段落之间留出空行', style: context.text.caption),
           value: state.blankLineBetween,
-          activeTrackColor: AppColors.primary,
+          activeTrackColor: context.palette.primary,
           onChanged: (v) {
             store.setBlankLineBetween(v);
             store.persistEditorSettings();
@@ -334,10 +335,10 @@ class EditorSettingsSheet extends ConsumerWidget {
         Expanded(
           child: SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: AppColors.primary,
-              inactiveTrackColor: AppColors.surface,
-              thumbColor: AppColors.primary,
-              overlayColor: AppColors.primary.withValues(alpha: 0.12),
+              activeTrackColor: context.palette.primary,
+              inactiveTrackColor: context.palette.surface,
+              thumbColor: context.palette.primary,
+              overlayColor: context.palette.primary.withValues(alpha: 0.12),
               trackHeight: 2,
             ),
             child: Slider(
@@ -390,7 +391,9 @@ class _BackgroundOption extends StatelessWidget {
               color: preset.color,
               shape: BoxShape.circle,
               border: Border.all(
-                color: selected ? AppColors.primary : AppColors.border,
+                color: selected
+                    ? context.palette.primary
+                    : context.palette.border,
                 width: selected ? 2.5 : 1,
               ),
             ),
@@ -400,7 +403,9 @@ class _BackgroundOption extends StatelessWidget {
             preset.label,
             style: TextStyle(
               fontSize: 11,
-              color: selected ? AppColors.primary : AppColors.textTertiary,
+              color: selected
+                  ? context.palette.primary
+                  : context.palette.textTertiary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
@@ -511,7 +516,9 @@ class _PunctuationBarConfigSectionState
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('添加'),
           ),
@@ -587,7 +594,7 @@ class _PunctuationBarConfigSectionState
             TextButton.icon(
               onPressed: _promptAdd,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
+                foregroundColor: context.palette.primary,
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
@@ -597,7 +604,7 @@ class _PunctuationBarConfigSectionState
             TextButton(
               onPressed: _resetToDefault,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
+                foregroundColor: context.palette.textSecondary,
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
@@ -678,29 +685,31 @@ class _ConfigRow extends StatelessWidget {
           width: 40,
           child: Text(
             item.display,
-            style: const TextStyle(fontSize: 16, color: AppColors.textInk),
+            style: TextStyle(fontSize: 16, color: context.palette.textInk),
           ),
         ),
         const Spacer(),
         if (visible) ...[
           IconButton(
             icon: const Icon(Icons.arrow_upward, size: 16),
-            color: canMoveUp ? AppColors.textSecondary : AppColors.disabledText,
+            color: canMoveUp
+                ? context.palette.textSecondary
+                : context.palette.disabledText,
             visualDensity: VisualDensity.compact,
             onPressed: canMoveUp ? onMoveUp : null,
           ),
           IconButton(
             icon: const Icon(Icons.arrow_downward, size: 16),
             color: canMoveDown
-                ? AppColors.textSecondary
-                : AppColors.disabledText,
+                ? context.palette.textSecondary
+                : context.palette.disabledText,
             visualDensity: VisualDensity.compact,
             onPressed: canMoveDown ? onMoveDown : null,
           ),
           if (isCustom)
             IconButton(
               icon: const Icon(Icons.delete_outline, size: 16),
-              color: AppColors.warning,
+              color: context.palette.warning,
               visualDensity: VisualDensity.compact,
               tooltip: '删除',
               onPressed: onDelete,
@@ -709,7 +718,7 @@ class _ConfigRow extends StatelessWidget {
             TextButton(
               onPressed: onHide,
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.textTertiary,
+                foregroundColor: context.palette.textTertiary,
                 visualDensity: VisualDensity.compact,
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               ),
@@ -719,7 +728,7 @@ class _ConfigRow extends StatelessWidget {
           TextButton(
             onPressed: onRestore,
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
+              foregroundColor: context.palette.primary,
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             ),

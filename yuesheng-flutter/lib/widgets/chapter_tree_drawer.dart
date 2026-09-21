@@ -27,6 +27,7 @@ import '../utils/volume_group.dart';
 import 'manuscript_detail_chapter_card.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 // V-5：章节状态→配色收敛到**单一真源** `chapterStatusConfig`
 // （定义在 manuscript_detail_chapter_card.dart）。本文件曾自持一张与其 9 值
@@ -83,7 +84,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
         (store?.isLoading ?? false) || (volumesAsync?.isLoading ?? false);
 
     return Drawer(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -110,18 +111,18 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.menu_book_outlined,
             size: 18,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
           const SizedBox(width: AppSpacing.sm),
-          const Text(
+          Text(
             '章节列表',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textInk,
+              color: context.palette.textInk,
             ),
           ),
           const Spacer(),
@@ -131,10 +132,10 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             onPressed: hasMsId ? _handleCreateVolume : null,
             visualDensity: VisualDensity.compact,
             tooltip: '新建卷',
-            icon: const Icon(
+            icon: Icon(
               Icons.create_new_folder_outlined,
               size: 20,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
           Text('$chapterCount 章', style: context.text.caption),
@@ -149,13 +150,13 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     bool loading,
   ) {
     if (loading && chapters.isEmpty && volumes.isEmpty) {
-      return const Center(
+      return Center(
         child: SizedBox(
           width: 18,
           height: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
         ),
       );
@@ -282,7 +283,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('保存'),
           ),
@@ -336,28 +339,28 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             ),
             child: Text(
               chapter.title.trim().isEmpty ? '未命名章节' : chapter.title.trim(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.edit_outlined,
               size: 18,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             title: const Text('重命名章节'),
             onTap: () => Navigator.pop(ctx, 'rename'),
           ),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.drive_file_move_outlined,
               size: 18,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
             title: const Text('移动到卷'),
             onTap: () => Navigator.pop(ctx, 'move'),
@@ -370,31 +373,7 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
 
   /// 新建卷：弹输入框（空 → 自动命名「第X卷」）
   Future<void> _handleCreateVolume() async {
-    final controller = TextEditingController();
-    final input = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('新建卷'),
-        content: TextField(
-          key: const ValueKey('new-volume-field'),
-          controller: controller,
-          autofocus: true,
-          maxLength: 12,
-          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('创建'),
-          ),
-        ],
-      ),
-    );
+    final input = await _promptNewVolumeName();
     if (input == null) return;
     final trimmed = input.trim();
     try {
@@ -417,6 +396,37 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
       if (!mounted) return;
       _snack('新建卷失败，请稍后再试');
     }
+  }
+
+  /// 新建卷输入框——从 _handleCreateVolume 抽出（R-019 职责提取）。
+  Future<String?> _promptNewVolumeName() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建卷'),
+        content: TextField(
+          key: const ValueKey('new-volume-field'),
+          controller: controller,
+          autofocus: true,
+          maxLength: 12,
+          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('创建'),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 长按卷头 → 卷操作弹层（重命名卷 / 删除卷）
@@ -449,26 +459,26 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             ),
             child: Text(
               volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.edit_outlined,
               size: 18,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             title: const Text('重命名卷'),
             onTap: () => Navigator.pop(ctx, 'rename'),
           ),
           ListTile(
-            leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-            title: const Text('删除卷', style: TextStyle(color: AppColors.danger)),
+            leading: Icon(Icons.delete_outline, color: context.palette.danger),
+            title: Text('删除卷', style: TextStyle(color: context.palette.danger)),
             subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
             onTap: () => Navigator.pop(ctx, 'delete'),
           ),
@@ -498,7 +508,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('保存'),
           ),
@@ -534,7 +546,9 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.danger,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('删除'),
           ),
@@ -609,12 +623,12 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
             AppSpacing.section,
             AppSpacing.sm,
           ),
-          child: const Text(
+          child: Text(
             '移动到卷',
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
         ),
@@ -635,26 +649,26 @@ class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
     return [
       for (final v in volumes)
         ListTile(
-          leading: const Icon(
+          leading: Icon(
             Icons.collections_bookmark_outlined,
             size: 18,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
           title: Text(v.title.trim().isEmpty ? '未命名卷' : v.title.trim()),
           trailing: chapter.volumeId == v.id
-              ? const Icon(Icons.check, size: 18, color: AppColors.primary)
+              ? Icon(Icons.check, size: 18, color: context.palette.primary)
               : null,
           onTap: () => Navigator.pop(ctx, v.id),
         ),
       ListTile(
-        leading: const Icon(
+        leading: Icon(
           Icons.notes_outlined,
           size: 18,
-          color: AppColors.textTertiary,
+          color: context.palette.textTertiary,
         ),
         title: const Text('未分卷'),
         trailing: chapter.volumeId == null
-            ? const Icon(Icons.check, size: 18, color: AppColors.primary)
+            ? Icon(Icons.check, size: 18, color: context.palette.primary)
             : null,
         onTap: () => Navigator.pop(ctx, unassignedMarker),
       ),
@@ -691,7 +705,7 @@ class _VolumeHeader extends StatelessWidget {
       onTap: onToggle,
       onLongPress: onLongPress,
       child: Container(
-        color: AppColors.background,
+        color: context.palette.background,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.smx,
@@ -701,7 +715,7 @@ class _VolumeHeader extends StatelessWidget {
             Icon(
               collapsed ? Icons.chevron_right : Icons.expand_more,
               size: 18,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(width: AppSpacing.xs),
             Icon(
@@ -709,7 +723,9 @@ class _VolumeHeader extends StatelessWidget {
                   ? Icons.notes_outlined
                   : Icons.collections_bookmark_outlined,
               size: 16,
-              color: isUnassigned ? AppColors.textTertiary : AppColors.primary,
+              color: isUnassigned
+                  ? context.palette.textTertiary
+                  : context.palette.primary,
             ),
             const SizedBox(width: AppSpacing.xsm),
             Expanded(
@@ -736,7 +752,7 @@ class _VolumeHeader extends StatelessWidget {
           InkWell(
             onTap: onRename,
             borderRadius: BorderRadius.circular(AppRadius.xs),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.xs,
                 vertical: AppSpacing.xxs,
@@ -744,7 +760,7 @@ class _VolumeHeader extends StatelessWidget {
               child: Icon(
                 Icons.edit_outlined,
                 size: 14,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
           ),
@@ -806,19 +822,19 @@ class _ChapterTreeItem extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Container(
-        color: isCurrent ? AppColors.primarySoft : Colors.transparent,
+        color: isCurrent ? context.palette.primarySoft : Colors.transparent,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.smx,
         ),
         child: Row(
           children: [
-            Expanded(child: _buildTitle(title)),
+            Expanded(child: _buildTitle(context, title)),
             // 修复3：铅笔小图标（点击直接重命名，不占过多空间）
             InkWell(
               onTap: onRename,
               borderRadius: BorderRadius.circular(AppRadius.xs),
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: AppSpacing.xs,
                   vertical: AppSpacing.xxs,
@@ -826,7 +842,7 @@ class _ChapterTreeItem extends StatelessWidget {
                 child: Icon(
                   Icons.edit_outlined,
                   size: 14,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
               ),
             ),
@@ -849,14 +865,14 @@ class _ChapterTreeItem extends StatelessWidget {
   }
 
   /// 章节标题（当前章高亮；R-019 清偿拆出）。
-  Widget _buildTitle(String title) {
+  Widget _buildTitle(BuildContext context, String title) {
     return Text(
       title,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontSize: 14,
-        color: isCurrent ? AppColors.primary : AppColors.textInk,
+        color: isCurrent ? context.palette.primary : context.palette.textInk,
         fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
       ),
     );
@@ -894,7 +910,7 @@ class _EmptyChapters extends StatelessWidget {
           Icon(
             Icons.menu_book_outlined,
             size: 40,
-            color: AppColors.placeholder,
+            color: context.palette.placeholder,
           ),
           SizedBox(height: AppSpacing.md),
           Text('还没有章节', style: context.text.body),
@@ -924,18 +940,18 @@ class _NewChapterRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.add_circle_outline,
               size: 18,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             const SizedBox(width: AppSpacing.sm),
             Text(
               '新建章节',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ],

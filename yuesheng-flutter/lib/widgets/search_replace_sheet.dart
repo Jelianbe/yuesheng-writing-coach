@@ -26,6 +26,7 @@ import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 返回 [query] 在 [text] 中所有匹配的起始偏移（无匹配返回空列表）
 List<int> computeMatches(String text, String query) {
@@ -315,10 +316,10 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
               Text(
                 // 批次96-11：独立「全文搜索」入口 → 标题显示「全文搜索」
                 _viewAllBook && widget.initialBookView ? '全文搜索' : '查找替换',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textInk,
+                  color: context.palette.textInk,
                 ),
               ),
               const Spacer(),
@@ -326,16 +327,16 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
                 TextButton.icon(
                   onPressed: _viewAllBook ? null : _searchAllBook,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
+                    foregroundColor: context.palette.primary,
                   ),
                   icon: const Icon(Icons.menu_book_outlined, size: 16),
                   label: const Text('搜索全书', style: TextStyle(fontSize: 12)),
                 ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close,
                   size: 20,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
                 tooltip: '关闭',
                 onPressed: () => Navigator.of(context).pop(),
@@ -375,16 +376,16 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
               tooltip: '上一个',
               onPressed: hasMatches ? _prev : null,
               color: hasMatches
-                  ? AppColors.textPrimary
-                  : AppColors.disabledText,
+                  ? context.palette.textPrimary
+                  : context.palette.disabledText,
             ),
             IconButton(
               icon: const Icon(Icons.keyboard_arrow_down, size: 20),
               tooltip: '下一个',
               onPressed: hasMatches ? _next : null,
               color: hasMatches
-                  ? AppColors.textPrimary
-                  : AppColors.disabledText,
+                  ? context.palette.textPrimary
+                  : context.palette.disabledText,
             ),
             SizedBox(
               width: 64,
@@ -410,12 +411,16 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
             const SizedBox(width: 6),
             TextButton(
               onPressed: hasMatches ? _replaceCurrent : null,
-              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              style: TextButton.styleFrom(
+                foregroundColor: context.palette.primary,
+              ),
               child: const Text('替换', style: TextStyle(fontSize: 12)),
             ),
             TextButton(
               onPressed: hasMatches ? _replaceAll : null,
-              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              style: TextButton.styleFrom(
+                foregroundColor: context.palette.primary,
+              ),
               child: const Text('全部替换', style: TextStyle(fontSize: 12)),
             ),
           ],
@@ -435,10 +440,10 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
     return TextField(
       controller: controller,
       autofocus: isFind,
-      style: const TextStyle(fontSize: 14, color: AppColors.textInk),
+      style: TextStyle(fontSize: 14, color: context.palette.textInk),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(fontSize: 13, color: AppColors.hintText),
+        hintStyle: TextStyle(fontSize: 13, color: context.palette.hintText),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.smx,
@@ -446,15 +451,15 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.borderSoft),
+          borderSide: BorderSide(color: context.palette.borderSoft),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.borderSoft),
+          borderSide: BorderSide(color: context.palette.borderSoft),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: AppColors.primary),
+          borderSide: BorderSide(color: context.palette.primary),
         ),
       ),
     );
@@ -485,7 +490,7 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
                 _bookSearchTimer?.cancel();
                 _searchAllBook();
               },
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ],
         ),
@@ -509,13 +514,13 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
     String q,
   ) {
     if (results == null) {
-      return const Center(
+      return Center(
         child: SizedBox(
           width: 18,
           height: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
         ),
       );
@@ -525,17 +530,17 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.search_off,
               size: 36,
-              color: AppColors.placeholder,
+              color: context.palette.placeholder,
             ),
             const SizedBox(height: 8),
             Text(
               q.trim().isEmpty ? '输入关键词搜索全书章节' : '全书没有找到相关内容',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
           ],
@@ -586,7 +591,7 @@ class _BookResultTile extends StatelessWidget {
   });
 
   /// 片段内所有 query 出现处高亮（primary 色，其余常规）
-  TextSpan _buildSnippetSpan() {
+  TextSpan _buildSnippetSpan(BuildContext context) {
     if (query.isEmpty) {
       return TextSpan(text: snippet);
     }
@@ -604,8 +609,8 @@ class _BookResultTile extends StatelessWidget {
       spans.add(
         TextSpan(
           text: snippet.substring(hit, hit + query.length),
-          style: const TextStyle(
-            color: AppColors.primary,
+          style: TextStyle(
+            color: context.palette.primary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -626,10 +631,10 @@ class _BookResultTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.article_outlined,
                   size: 16,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -637,31 +642,31 @@ class _BookResultTile extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textInk,
+                      color: context.palette.textInk,
                     ),
                   ),
                 ),
                 Text(
                   '$count 处',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(
+                Icon(
                   Icons.chevron_right,
                   size: 16,
-                  color: AppColors.placeholder,
+                  color: context.palette.placeholder,
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text.rich(
-              _buildSnippetSpan(),
+              _buildSnippetSpan(context),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: context.text.noteCaption.copyWith(height: 1.5),

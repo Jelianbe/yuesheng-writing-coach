@@ -15,6 +15,7 @@ import '../config/app_theme.dart';
 import '../data/repositories/reference_repository.dart';
 import '../providers/capability_providers.dart';
 import '../services/file_parser.dart';
+import '../config/app_palette.dart';
 
 /// 素材类型（对齐 RN FileRole：general/outline/material）
 const List<({String key, String label})> _fileRoles = [
@@ -193,7 +194,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.borderSoft,
+                color: context.palette.borderSoft,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
@@ -201,10 +202,10 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
             Text(
               '添加素材到《${widget.bookTitle}》',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 16),
@@ -214,20 +215,20 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: Column(
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       _progressText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                   ],
@@ -252,12 +253,12 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
               // 表单（有内容后显示）
               if (_pendingContent != null) ...[
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   '素材类型：',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -274,12 +275,12 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   '素材名称：',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -289,7 +290,7 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                     hintText: '请输入文件名',
                     isDense: true,
                     filled: true,
-                    fillColor: AppColors.surface,
+                    fillColor: context.palette.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                       borderSide: BorderSide.none,
@@ -307,15 +308,15 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.dangerBg,
+                    color: context.palette.dangerBg,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     _error!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.danger,
+                      color: context.palette.danger,
                     ),
                   ),
                 ),
@@ -330,14 +331,14 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                     onPressed: () => Navigator.of(context).pop(),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(44),
-                      side: const BorderSide(color: AppColors.borderSoft),
+                      side: BorderSide(color: context.palette.borderSoft),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '取消',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: context.palette.textSecondary),
                     ),
                   ),
                 ),
@@ -348,14 +349,14 @@ class _MaterialUploadSheetState extends ConsumerState<MaterialUploadSheet> {
                       onPressed: _handleSave,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(44),
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.palette.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         '保存',
-                        style: TextStyle(color: AppColors.onPrimary),
+                        style: TextStyle(color: context.palette.onPrimary),
                       ),
                     ),
                   ),
@@ -391,12 +392,12 @@ class _OptionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: AppColors.textPrimary),
+            Icon(icon, size: 22, color: context.palette.textPrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -404,24 +405,24 @@ class _OptionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.disabledText),
+            Icon(Icons.chevron_right, color: context.palette.disabledText),
           ],
         ),
       ),
@@ -452,10 +453,12 @@ class _RoleChip extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: active ? AppColors.primarySoft : AppColors.surface,
+          color: active ? context.palette.primarySoft : context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: active ? AppColors.primary : AppColors.borderSoft,
+            color: active
+                ? context.palette.primary
+                : context.palette.borderSoft,
           ),
         ),
         child: Text(
@@ -463,7 +466,9 @@ class _RoleChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-            color: active ? AppColors.primary : AppColors.textTertiary,
+            color: active
+                ? context.palette.primary
+                : context.palette.textTertiary,
           ),
         ),
       ),
