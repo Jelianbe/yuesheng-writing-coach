@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_motion.dart';
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
@@ -220,7 +221,7 @@ class _MessageListState extends ConsumerState<MessageList> {
   Future<void> _showMessageActions(Message message) async {
     final action = await showModalBottomSheet<String>(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.palette.surface,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

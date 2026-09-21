@@ -18,7 +18,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/growth_providers.dart';
@@ -88,7 +88,7 @@ class GrowthDetailNavigator {
     if (profile == null) return;
     await showYueModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       isScrollControlled: true,
       builder: (_) => GrowthStyleCorrectionSheet(
         profile: profile,

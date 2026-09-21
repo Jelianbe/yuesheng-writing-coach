@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/database/utils.dart';
@@ -104,7 +105,7 @@ class _OutlineEntityDetailPageState
   Widget build(BuildContext context) {
     final entity = _entity;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(title: Text(entity?.entityKey ?? '大纲实体')),
       body: _loading || entity == null
           ? const Center(child: CircularProgressIndicator())

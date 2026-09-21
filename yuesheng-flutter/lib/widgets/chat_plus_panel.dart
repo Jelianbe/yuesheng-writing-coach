@@ -14,6 +14,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 
 /// 「+」面板内容：功能项列表（当前为 上传作品 / 思考开关）。
@@ -51,7 +52,7 @@ class ChatPlusPanel extends StatelessWidget {
     return Container(
       width: width,
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.borderSoft, width: 0.5),
         boxShadow: const [

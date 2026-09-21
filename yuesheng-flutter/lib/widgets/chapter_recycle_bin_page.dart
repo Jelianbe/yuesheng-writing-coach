@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
@@ -135,10 +136,10 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('章节回收站'),
-        backgroundColor: AppColors.background,
+        backgroundColor: context.palette.background,
         foregroundColor: AppColors.textPrimary,
         toolbarHeight: 48,
         elevation: 0,

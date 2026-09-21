@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 
 /// 标点项（id 供自定义工具栏配置标识；display 展示；insert 插入文本）
@@ -127,7 +128,7 @@ class PunctuationBar extends StatelessWidget {
     final items = _visibleItems;
     return Container(
       height: 36,
-      color: backgroundColor ?? AppColors.background,
+      color: backgroundColor ?? context.palette.background,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [

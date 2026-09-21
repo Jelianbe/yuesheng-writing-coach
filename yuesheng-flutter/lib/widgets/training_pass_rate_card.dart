@@ -24,6 +24,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/training_result_repository.dart';
 import '../providers/growth_providers.dart';
@@ -101,7 +102,7 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(

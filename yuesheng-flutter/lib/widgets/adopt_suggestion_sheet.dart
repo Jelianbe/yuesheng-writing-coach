@@ -17,6 +17,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../data/repositories/chapter_repository.dart';
@@ -201,7 +202,7 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
               constraints: const BoxConstraints(maxHeight: 200),
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: context.palette.background,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: SingleChildScrollView(

@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/editor_observation_repository.dart';
@@ -99,7 +100,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.divider),
       ),

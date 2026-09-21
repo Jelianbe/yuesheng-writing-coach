@@ -23,6 +23,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../providers/chat_store.dart';
 import '../types/teaching_types.dart';
@@ -227,8 +228,8 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
     // 批次82 P0-④：教练面板改为右侧可收起侧栏（正文不被覆盖）。
     // 面板填满父容器高度，不再有半屏高度比 + 拖拽手柄（收起交给页面侧开关）。
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceWhite,
+      decoration: BoxDecoration(
+        color: context.palette.surfaceWhite,
         border: Border(left: BorderSide(color: AppColors.borderSoft)),
       ),
       child: Column(

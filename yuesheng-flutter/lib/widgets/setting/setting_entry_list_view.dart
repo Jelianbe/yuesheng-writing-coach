@@ -17,6 +17,7 @@ import '../../data/database/database.dart';
 import '../../data/repositories/setting_entry_repository.dart';
 import '../../data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
+import '../../config/app_palette.dart';
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
 import 'setting_empty_state.dart';
@@ -232,7 +233,7 @@ class _EntryCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: context.palette.surface,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
                         child: Text('#$tag', style: context.text.caption),

@@ -10,6 +10,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -105,7 +106,7 @@ class NewChapterRow extends StatelessWidget {
         child: Container(
           height: 48,
           decoration: BoxDecoration(
-            color: AppColors.background,
+            color: context.palette.background,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.border),
           ),

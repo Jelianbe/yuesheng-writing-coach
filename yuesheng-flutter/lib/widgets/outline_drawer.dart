@@ -27,6 +27,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import 'outline_content_view.dart';
 
@@ -62,7 +63,7 @@ class OutlineDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       child: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

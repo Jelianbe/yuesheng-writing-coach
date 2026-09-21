@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../config/app_palette.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/editor_background_presets.dart';
 import '../../../providers/writing_providers.dart';
@@ -148,7 +149,7 @@ class WritingPageScaffold extends ConsumerWidget {
             bottom: 0,
             height: MediaQuery.sizeOf(context).height * 0.75,
             child: Material(
-              color: AppColors.background,
+              color: context.palette.background,
               elevation: 8,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppRadius.lg),

@@ -11,6 +11,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../providers/ui_overlay_provider.dart';
 
@@ -88,7 +89,7 @@ class _ToastCard extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.borderSoft),
         boxShadow: const [
@@ -141,19 +142,19 @@ class _ConfirmScrim extends StatelessWidget {
       child: Container(
         color: AppColors.overlay,
         alignment: Alignment.center,
-        child: GestureDetector(onTap: () {}, child: _buildDialogCard()),
+        child: GestureDetector(onTap: () {}, child: _buildDialogCard(context)),
       ),
     );
   }
 
   /// 确认卡片本体（R-019 拆出 _ConfirmScrim.build）
-  Widget _buildDialogCard() {
+  Widget _buildDialogCard(BuildContext context) {
     return Container(
       width: 300,
       margin: const EdgeInsets.symmetric(horizontal: 32),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(

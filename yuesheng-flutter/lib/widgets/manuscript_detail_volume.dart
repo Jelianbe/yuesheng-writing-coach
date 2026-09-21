@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../utils/volume_group.dart';
@@ -107,14 +108,14 @@ class DetailVolumeHeader extends StatelessWidget {
         ? '未分卷'
         : (volume!.title.trim().isEmpty ? '未命名卷' : volume!.title.trim());
     return Material(
-      color: AppColors.background,
+      color: context.palette.background,
       child: InkWell(
         onTap: onToggle,
         onLongPress: onLongPress,
         child: Container(
           height: VolumeHeaderDelegate._height,
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceWhite,
+          decoration: BoxDecoration(
+            color: context.palette.surfaceWhite,
             border: Border(
               bottom: BorderSide(color: AppColors.divider, width: 1),
             ),

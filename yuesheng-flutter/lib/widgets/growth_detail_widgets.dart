@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 import '../services/syndrome_recurrence.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -32,7 +33,7 @@ class GrowthInfoCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(children: [Expanded(child: child)]),

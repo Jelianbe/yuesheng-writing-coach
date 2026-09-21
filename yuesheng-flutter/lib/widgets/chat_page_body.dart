@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../config/reasoning_tier.dart';
 import '../data/repositories/diagnosis_repository.dart';
@@ -319,8 +320,8 @@ class TaskToggleBar extends StatelessWidget {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.smx,
         ),
-        decoration: const BoxDecoration(
-          color: AppColors.background,
+        decoration: BoxDecoration(
+          color: context.palette.background,
           border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
         ),
         child: Row(

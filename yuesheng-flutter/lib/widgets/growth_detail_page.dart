@@ -30,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../providers/growth_providers.dart';
 import 'growth_detail_content.dart';
@@ -59,10 +60,10 @@ class _GrowthDetailPageState extends ConsumerState<GrowthDetailPage> {
     final navigator = GrowthDetailNavigator(ref);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('能力画像'),
-        backgroundColor: AppColors.background,
+        backgroundColor: context.palette.background,
         foregroundColor: AppColors.textPrimary,
         toolbarHeight: 48,
         elevation: 0,

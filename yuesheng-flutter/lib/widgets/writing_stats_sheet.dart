@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../providers/app_providers.dart';
 import '../services/growth_service.dart';
@@ -115,7 +116,7 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
                     selected: _days == d,
                     showCheckmark: false,
                     visualDensity: VisualDensity.compact,
-                    backgroundColor: AppColors.surface,
+                    backgroundColor: context.palette.surface,
                     selectedColor: AppColors.primarySoft,
                     side: BorderSide(
                       color: _days == d ? AppColors.primary : AppColors.border,

@@ -14,6 +14,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import 'file_section.dart';
@@ -83,8 +84,8 @@ class ManuscriptDetailView extends StatelessWidget {
   Widget build(BuildContext context) {
     final ms = manuscript;
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: _buildAppBar(appBarTitle),
+      backgroundColor: context.palette.background,
+      appBar: _buildAppBar(context, appBarTitle),
       body: SafeArea(
         // P3-3：加载中显示 LoadingView，作品不存在显示错误视图，否则正常布局
         child: !isLoaded
@@ -108,10 +109,10 @@ class ManuscriptDetailView extends StatelessWidget {
   }
 
   /// AppBar：返回书架 + 新建卷（仅章节 Tab）+ 更多。
-  PreferredSizeWidget _buildAppBar(String appBarTitle) {
+  PreferredSizeWidget _buildAppBar(BuildContext context, String appBarTitle) {
     return AppBar(
       title: Text(appBarTitle),
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       foregroundColor: AppColors.textPrimary,
       toolbarHeight: 48,
       elevation: 0,

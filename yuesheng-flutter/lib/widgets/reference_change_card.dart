@@ -12,6 +12,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
 import '../theme/app_typography.dart';
@@ -79,8 +80,8 @@ class ReferenceChangeCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
+          decoration: BoxDecoration(
+            color: context.palette.surface,
             border: Border.fromBorderSide(
               BorderSide(color: AppColors.borderSoft),
             ),

@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import 'bookshelf_genre_section.dart';
 import '../theme/app_typography.dart';
@@ -90,7 +91,7 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
           padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: AppColors.surfaceWhite,
+            color: context.palette.surfaceWhite,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: SingleChildScrollView(

@@ -8,6 +8,12 @@
 // N4-1：提级为「章节切换」一级入口 —— 传入 [onTap] 时整行成为可点区。
 // **缺省（onTap == null）行为与改造前逐字等价**（仍是纯 Text，无 InkWell），
 // 故既有调用方与被钉住的测试零破坏。
+//
+// ★ R5 修复（2026-09-21）：**分卷 / 未分卷两分支的文本色从此统一**。
+// 旧实现里未分卷分支传 `null` ⇒ 颜色缺省 ⇒ 继承 AppBar 主题前景色；主题切暗后
+// 该默认色变浅，而 AppBar 底色被 `darkUi` 三元锁死为亮色 ⇒ 真机实测对比度
+// **1.13:1**（同栏返回箭头同底色 12.10:1）。故本文件**不再是**「与原实现逐字等价」，
+// 唯一差异即「未分卷分支改用宿主下发的 [color]」。见 `.ai/reports/2026-09-21-模拟器暗色全量验收.md §4-R5`。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -40,7 +46,13 @@ class WritingPageBreadcrumb extends ConsumerWidget {
   /// 所属作品 ID（null = 深链未带 → 仅显示章名）
   final String? manuscriptId;
 
-  /// 文本色（暗夜背景时取反；未分卷分支沿用默认色，与原实现一致）
+  /// 文本色（暗夜背景时取反）。
+  ///
+  /// ⚠️ **R5 修复（2026-09-21）**：本字段此前**只在分卷分支生效** ——
+  /// 未分卷分支传 `null` 给 [_buildLine] ⇒ `TextStyle.color` 缺省 ⇒ 文字继承
+  /// AppBar 主题默认前景色。主题切暗后该默认色变浅，而 AppBar 底色被
+  /// `darkUi` 三元锁死为亮色 ⇒ **浅压浅**（真机实测 WCAG 对比度 **1.13:1**，
+  /// 同栏返回箭头同底色下为 12.10:1）。现两分支**统一使用**本字段。
   final Color color;
 
   /// N4-1：点击回调（null = 不可点 ⇒ 与原实现逐字等价）
@@ -53,8 +65,8 @@ class WritingPageBreadcrumb extends ConsumerWidget {
     final volId = volumeId;
     final msId = manuscriptId;
     if (volId == null || msId == null) {
-      // 未分卷/深链未带作品 ID：仅章名，且沿用默认文本色（与原实现一致）
-      return _buildLine(fallback, null);
+      // 未分卷/深链未带作品 ID：仅章名（**仍用宿主下发的 color**，见下 R5）
+      return _buildLine(fallback, color);
     }
     final volumes = ref.watch(volumeListProvider(msId));
     return volumes.when(
@@ -76,12 +88,16 @@ class WritingPageBreadcrumb extends ConsumerWidget {
     );
   }
 
-  /// 面包屑单行文本（`color == null` = 不指定颜色，即原未分卷分支的行为）
+  /// 面包屑单行文本。
+  ///
+  /// R5 修复（2026-09-21）：[color] 由 `Color?` 收紧为 **非空 `Color`** ——
+  /// 原可变空签名正是「传 null ⇒ 静默继承主题前景色 ⇒ 暗色下浅压浅」这条
+  /// 缺陷的**唯一入口**；收紧后该形态**不可表达**。
   ///
   /// N4-1：`onTap != null` 时外包一层命中区 ≥48dp 的 [InkWell]。
   /// 与 `leading` 返回键**天然不重叠**：AppBar `title` 由 NavigationToolbar
   /// 布局在 `leading` 之后（`kLeadingWidth` = 56 > 48），本层再留 4dp 内边距成缝。
-  Widget _buildLine(String text, Color? color) {
+  Widget _buildLine(String text, Color color) {
     final label = Text(
       text,
       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: color),

@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../services/conflict_detector.dart';
 import '../../types/character_types.dart';
@@ -96,7 +97,7 @@ class CharacterHeaderCard extends StatelessWidget {
                 vertical: AppSpacing.xxs,
               ),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.palette.surface,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               child: Text(alias, style: context.text.noteCaption),

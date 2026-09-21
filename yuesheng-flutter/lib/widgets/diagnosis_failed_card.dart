@@ -13,6 +13,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../config/shared_constants.dart';
 import '../services/message_card_service.dart';
@@ -86,8 +87,8 @@ class DiagnosisFailedCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceWhite,
+          decoration: BoxDecoration(
+            color: context.palette.surfaceWhite,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -97,8 +98,8 @@ class DiagnosisFailedCard extends StatelessWidget {
               Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
+                decoration: BoxDecoration(
+                  color: context.palette.surface,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -148,7 +149,7 @@ class DiagnosisFailedCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(

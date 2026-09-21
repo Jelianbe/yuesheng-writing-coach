@@ -12,6 +12,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/session_repository.dart';
 import '../providers/app_providers.dart';
@@ -118,8 +119,8 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
             Container(
               width: 40,
               height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
+              decoration: BoxDecoration(
+                color: context.palette.surface,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,

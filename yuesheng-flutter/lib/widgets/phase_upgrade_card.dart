@@ -12,6 +12,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
 import '../services/progress_service.dart';
@@ -78,8 +79,8 @@ class PhaseUpgradeCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceWhite,
+          decoration: BoxDecoration(
+            color: context.palette.surfaceWhite,
             border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
           ),
           padding: const EdgeInsets.all(AppSpacing.lg),

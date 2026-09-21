@@ -15,6 +15,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../services/attitude_advisor.dart';
 import 'yue_sheet.dart';
@@ -68,7 +69,7 @@ class AttitudeIndicator extends StatelessWidget {
   Future<void> _showSheet(BuildContext context) async {
     final selected = await showYueModalBottomSheet<AttitudeLevel>(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       builder: (sheetCtx) {
         return SafeArea(
           child: Padding(
@@ -124,7 +125,7 @@ class AttitudeIndicator extends StatelessWidget {
           vertical: AppSpacing.xsm,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(color: AppColors.borderLight),
         ),
@@ -184,7 +185,7 @@ class _AttitudeOption extends StatelessWidget {
           vertical: AppSpacing.md,
         ),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.l1 : AppColors.surface,
+          color: isActive ? AppColors.l1 : context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: isActive
               ? Border.all(color: meta.color)

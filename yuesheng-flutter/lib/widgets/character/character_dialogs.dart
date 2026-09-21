@@ -13,6 +13,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../services/setting_library_service.dart';
@@ -546,7 +547,7 @@ class _ConflictResolutionDialogState extends State<_ConflictResolutionDialog> {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: context.palette.surface,
             borderRadius: BorderRadius.circular(AppSpacing.sm),
           ),
           child: Text(_aiAnalysis!, style: context.text.subBody),

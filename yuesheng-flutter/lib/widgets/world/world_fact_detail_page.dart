@@ -22,6 +22,7 @@ import '../setting/setting_description_card.dart';
 import '../setting/setting_extract_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../data/repositories/world_fact_repository.dart';
@@ -213,7 +214,7 @@ class _WorldFactDetailPageState extends ConsumerState<WorldFactDetailPage> {
       ref.watch(chapterListProvider(widget.manuscriptId)),
     );
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(title: Text(row?.name ?? '设定主题')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

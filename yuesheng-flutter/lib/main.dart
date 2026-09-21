@@ -14,7 +14,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'config/app_theme.dart';
 import 'data/repositories/app_state_repository.dart';
 import 'data/repositories/chapter_repository.dart';
 import 'data/repositories/manuscript_repository.dart';
@@ -215,10 +214,7 @@ class _YueshengAppState extends ConsumerState<YueshengApp> {
         debugShowCheckedModeBanner: false,
         theme: theme,
         themeMode: ThemeMode.light,
-        home: const Scaffold(
-          backgroundColor: AppColors.background,
-          body: SizedBox.shrink(),
-        ),
+        home: const Scaffold(body: SizedBox.shrink()),
       );
     }
     return MaterialApp.router(

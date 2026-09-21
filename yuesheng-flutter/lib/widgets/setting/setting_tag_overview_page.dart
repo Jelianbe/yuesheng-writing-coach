@@ -15,6 +15,7 @@ import '../../data/repositories/character_fact_repository.dart';
 import '../../data/repositories/setting_entry_repository.dart';
 import '../../data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
+import '../../config/app_palette.dart';
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
@@ -114,7 +115,7 @@ class _SettingTagOverviewPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(title: const Text('标签总览')),
       body: _buildBody(),
     );

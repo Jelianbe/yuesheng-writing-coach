@@ -12,6 +12,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
@@ -241,7 +242,7 @@ class _SourceBadge extends StatelessWidget {
       height: 20,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isUser ? AppColors.primarySoft : AppColors.surface,
+        color: isUser ? AppColors.primarySoft : context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.xs),
         border: Border.all(
           color: isUser ? AppColors.primary : AppColors.border,

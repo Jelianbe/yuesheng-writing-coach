@@ -13,6 +13,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../types/teaching_types.dart';
 import 'growth_detail_labels.dart';
@@ -98,7 +99,7 @@ class _GrowthStyleCorrectionSheetState
                 selected: opt == selected,
                 onSelected: (_) => onChanged(opt),
                 selectedColor: AppColors.primary,
-                backgroundColor: AppColors.surface,
+                backgroundColor: context.palette.surface,
                 side: BorderSide(color: AppColors.border),
                 labelStyle: TextStyle(
                   fontSize: 12,

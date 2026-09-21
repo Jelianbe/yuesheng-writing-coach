@@ -30,6 +30,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import 'chat_plus_panel.dart';
 
@@ -249,8 +250,8 @@ class ChatInputState extends State<ChatInput> {
         AppSpacing.lg,
         AppSpacing.lg + MediaQuery.of(context).padding.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
+      decoration: BoxDecoration(
+        color: context.palette.background,
         border: Border(
           top: BorderSide(color: AppColors.borderSoft, width: 0.5),
         ),
@@ -268,7 +269,7 @@ class ChatInputState extends State<ChatInput> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Row(

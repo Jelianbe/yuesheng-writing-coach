@@ -13,6 +13,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/student_model_repository.dart';
 import '../providers/app_providers.dart';
@@ -220,7 +221,7 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
               vertical: 3,
             ),
             decoration: BoxDecoration(
-              color: AppColors.surfaceWhite,
+              color: context.palette.surfaceWhite,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.borderSoft),
             ),

@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../services/growth_service.dart';
 import '../types/display_types.dart';
@@ -206,7 +207,7 @@ class _Section extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           border: Border.all(color: AppColors.border),
         ),
         child: Column(

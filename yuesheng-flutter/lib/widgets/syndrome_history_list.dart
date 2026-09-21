@@ -11,6 +11,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../services/growth_service.dart';
 import '../types/teaching_types.dart';
@@ -33,7 +34,7 @@ class SyndromeHistoryList extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           border: Border.all(color: AppColors.border),
         ),
         child: Row(

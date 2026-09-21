@@ -16,6 +16,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
 
@@ -69,7 +70,7 @@ class PracticeLauncherSheet {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.palette.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -278,7 +279,7 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
                       ? FontWeight.w600
                       : FontWeight.normal,
                 ),
-                backgroundColor: AppColors.background,
+                backgroundColor: context.palette.background,
                 side: BorderSide(
                   color: selected == e.key
                       ? AppColors.primary
@@ -311,7 +312,7 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.border),
       ),

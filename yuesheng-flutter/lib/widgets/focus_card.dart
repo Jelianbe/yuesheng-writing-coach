@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../services/focus_card_builder.dart';
 
@@ -122,7 +123,7 @@ class _Card extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        decoration: const BoxDecoration(color: AppColors.surface),
+        decoration: BoxDecoration(color: context.palette.surface),
         child: child,
       ),
     );

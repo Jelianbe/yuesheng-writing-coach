@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/decode_guard.dart';
 
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/session_repository.dart';
@@ -178,7 +179,7 @@ class ChatReferenceController {
     showYueModalBottomSheet<void>(
       context: host.context,
       isScrollControlled: true,
-      backgroundColor: AppColors.background,
+      backgroundColor: host.context.palette.background,
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.only(

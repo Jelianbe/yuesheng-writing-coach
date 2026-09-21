@@ -38,6 +38,7 @@ import '../../services/chat_context_builder.dart';
 import '../../services/conflict_detector.dart';
 import '../../services/fact_stale_service.dart';
 import '../../services/setting_library_service.dart' as sls;
+import '../../config/app_palette.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
 import 'character_detail_sections.dart';
@@ -257,7 +258,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
   Widget build(BuildContext context) {
     final row = _row;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: _buildAppBar(row),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -653,7 +654,7 @@ class _ConflictBanner extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
       child: Material(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppSpacing.sm),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppSpacing.sm),

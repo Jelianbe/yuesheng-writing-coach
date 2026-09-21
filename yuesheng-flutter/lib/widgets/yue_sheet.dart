@@ -2,7 +2,11 @@
 // yue_sheet — 月笙弹窗统一入口（批次68 弹窗弹出收敛）
 //
 // 收敛点（对齐 Material 标准但全局一致）：
-//   - 背景：AppColors.surfaceWhite（白底弹窗，区别于页面灰白底）
+//   - 背景：`context.palette.surfaceWhite`（白底弹窗，区别于页面灰白底）
+//     ★ 2026-09-21（D1-a）：此前写死为**静态白话表面色**（`surfaceWhite` 静态
+//     const）⇒ 暗色下仍是白底。此处是**全仓弹层统一入口**，扇出 35 个调用点
+//     （仅 4 个显式传背景）⇒ 改这一行即收敛 ≈31 个弹层。亮色下两者
+//     逐字节同值（`0xFFFFFFFF`）⇒ 像素级零变化。
 //   - 圆角：AppRadius.lg（顶部大圆角）
 //   - 遮罩：AppColors.overlay（批次57 令牌）
 //   - 动画：200ms easeOutCubic（默认 250ms）——起步快、收尾缓，弹出更跟手
@@ -12,6 +16,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_motion.dart';
+import '../config/app_palette.dart';
 import '../config/app_theme.dart';
 
 /// 月笙统一底部弹层入口（替代散落的 showModalBottomSheet）
@@ -35,7 +40,7 @@ Future<T?> showYueModalBottomSheet<T>({
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     showDragHandle: showDragHandle,
-    backgroundColor: backgroundColor ?? AppColors.surfaceWhite,
+    backgroundColor: backgroundColor ?? context.palette.surfaceWhite,
     barrierColor: AppColors.overlay,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),

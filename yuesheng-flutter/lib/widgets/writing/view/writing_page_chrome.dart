@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../config/app_palette.dart';
 import '../../../config/app_theme.dart';
 
 /// 加载失败视图（含重试）
@@ -74,7 +75,7 @@ class WritingSelectionMenu extends StatelessWidget {
       left: position.dx,
       top: position.dy,
       child: Material(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         elevation: 2,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Column(

@@ -16,7 +16,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../config/app_theme.dart';
+import '../../config/app_palette.dart';
 import 'world_fact_list_view.dart';
 
 /// 世界观设定页（独立路由 /worlds 落地页）。
@@ -55,7 +55,7 @@ class _WorldFactPageState extends ConsumerState<WorldFactPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: Text(_count >= 0 ? '世界观 ($_count)' : '世界观'),
         actions: [TextButton(onPressed: _create, child: const Text('+ 新建'))],

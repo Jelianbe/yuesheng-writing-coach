@@ -19,7 +19,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../config/app_theme.dart';
+import '../../config/app_palette.dart';
 import 'character_list_view.dart';
 
 /// 角色列表页（独立路由 /characters 落地页）。
@@ -62,7 +62,7 @@ class _CharacterPageState extends ConsumerState<CharacterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: Text(_count >= 0 ? '角色 ($_count)' : '角色'),
         actions: [
