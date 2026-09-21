@@ -26,9 +26,13 @@ class WritingPageDocumentController {
   void onContentChanged(String content) {
     _host.dirty = true;
     // 批次86-1：回收板——用户删除/剪切 ≥8 字的连续片段 → 自动入回收板
+    // 编辑器性能-1（2026-09-21）：调用方先做**净缩短护栏**——纯删除 ≥8 字必然
+    // 净缩短 ≥8，净缩短 <8 时扫描结果必不合格（null 或 <8）⇒ 直接跳过 O(全文)
+    // 扫描。退格/连续输入每击从 O(全文) 降为 O(1)；回收板入库语义零变化
+    //（纯函数 extractRemovedText 契约不动，其单测仍锁定 <8 字片段的返回值）。
     final prev = _host.lastEditorText;
     _host.lastEditorText = content;
-    if (prev != null) {
+    if (prev != null && prev.length - content.length >= _minRecycleBinLength) {
       final removed = extractRemovedText(prev, content);
       if (removed != null && removed.length >= _minRecycleBinLength) {
         AppStateRepository(

@@ -175,7 +175,10 @@ class WritingEditorView extends StatelessWidget {
       child: Stack(
         key: editorStackKey, // 批次95-1：划词菜单位置反查用
         children: [
-          _buildContentField(titleColor, hintColor),
+          // 编辑器性能-1（2026-09-21）：RepaintBoundary 隔离重绘——正文光标闪烁
+          // （每 500ms）与内部滚动重绘只落在编辑器层，不再连带面包屑/保存状态条/
+          // 标点栏整页重绘。
+          RepaintBoundary(child: _buildContentField(titleColor, hintColor)),
           // B3 划词诊断：浮动菜单跟随选区（批次95-1：RenderEditable 定位 + 屏幕外翻转）
           if (showSelectionMenu && selectionMenuPos != null)
             WritingSelectionMenu(
