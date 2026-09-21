@@ -100,7 +100,7 @@ class ManuscriptDetailView extends StatelessWidget {
                     chapterCount: chapters.length,
                   ),
                   // 四 Tab（章节 / 角色 / 文件 / 相关对话）
-                  _buildTabBar(),
+                  _buildTabBar(context),
                   Expanded(child: _buildTabBarView(ms)),
                 ],
               ),
@@ -113,7 +113,7 @@ class ManuscriptDetailView extends StatelessWidget {
     return AppBar(
       title: Text(appBarTitle),
       backgroundColor: context.palette.background,
-      foregroundColor: AppColors.textPrimary,
+      foregroundColor: context.palette.textPrimary,
       toolbarHeight: 48,
       elevation: 0,
       leading: IconButton(
@@ -139,11 +139,11 @@ class ManuscriptDetailView extends StatelessWidget {
   }
 
   /// 三 Tab 栏（章节 / 文件 / 相关对话）。
-  Widget _buildTabBar() {
+  Widget _buildTabBar(BuildContext context) {
     return TabBar(
       controller: tabController,
-      labelColor: AppColors.primary,
-      unselectedLabelColor: AppColors.textSecondary,
+      labelColor: context.palette.primary,
+      unselectedLabelColor: context.palette.textSecondary,
       indicatorColor: AppColors.primary,
       indicatorSize: TabBarIndicatorSize.label,
       labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),

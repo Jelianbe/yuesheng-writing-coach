@@ -140,7 +140,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       appBar: AppBar(
         title: const Text('章节回收站'),
         backgroundColor: context.palette.background,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
       ),

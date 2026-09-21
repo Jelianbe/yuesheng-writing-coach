@@ -64,7 +64,7 @@ class _GrowthDetailPageState extends ConsumerState<GrowthDetailPage> {
       appBar: AppBar(
         title: const Text('能力画像'),
         backgroundColor: context.palette.background,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         leading: IconButton(
