@@ -24,22 +24,32 @@ import '../types/display_types.dart';
 import '../services/syndrome_recurrence.dart';
 import 'teaching_state_badge.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 趋势 → 图标 + 文案 + 配色
 ({IconData icon, String label, Color color}) _trendConfig(
+  BuildContext context,
   EvaluationTrend trend,
 ) {
   switch (trend) {
     case EvaluationTrend.improving:
-      return (icon: Icons.trending_up, label: '改善', color: AppColors.l1Text);
+      return (
+        icon: Icons.trending_up,
+        label: '改善',
+        color: context.palette.l1Text,
+      );
     case EvaluationTrend.stable:
       return (
         icon: Icons.arrow_forward,
         label: '稳定',
-        color: AppColors.textTertiary,
+        color: context.palette.textTertiary,
       );
     case EvaluationTrend.worsening:
-      return (icon: Icons.trending_down, label: '恶化', color: AppColors.l3Text);
+      return (
+        icon: Icons.trending_down,
+        label: '恶化',
+        color: context.palette.l3Text,
+      );
   }
 }
 
@@ -86,15 +96,15 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
   @override
   Widget build(BuildContext context) {
     final evaluation = widget.evaluation;
-    final trend = _trendConfig(evaluation.trend);
+    final trend = _trendConfig(context, evaluation.trend);
     final passRatePercent = (evaluation.passRate * 100).round();
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: context.palette.background,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -118,7 +128,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                       vertical: AppSpacing.xs,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: context.palette.surface,
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: Text(
@@ -133,9 +143,9 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                   const Spacer(),
                   Text(
                     '达标率 $passRatePercent%',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -145,7 +155,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
                     size: 18,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                 ],
               ),
@@ -153,7 +163,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
           ),
           // ── 详情 ──
           if (_expanded) ...[
-            Container(height: 1, color: AppColors.borderLight),
+            Container(height: 1, color: context.palette.borderLight),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 14,
@@ -179,10 +189,10 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                               : '${evaluation.severityDelta}',
                           label: '严重度变化',
                           valueColor: evaluation.severityDelta! < 0
-                              ? AppColors.l1Text
+                              ? context.palette.l1Text
                               : evaluation.severityDelta! > 0
-                              ? AppColors.l3Text
-                              : AppColors.textPrimary,
+                              ? context.palette.l3Text
+                              : context.palette.textPrimary,
                         ),
                       ],
                     ],
@@ -194,7 +204,7 @@ class _EvaluationReportPanelState extends State<EvaluationReportPanel> {
                     child: LinearProgressIndicator(
                       value: evaluation.passRate.clamp(0.0, 1.0),
                       minHeight: 6,
-                      backgroundColor: AppColors.background,
+                      backgroundColor: context.palette.background,
                       valueColor: AlwaysStoppedAnimation(trend.color),
                     ),
                   ),
@@ -250,7 +260,7 @@ class _StatItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: valueColor ?? AppColors.textPrimary,
+              color: valueColor ?? context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -267,7 +277,7 @@ class _StatDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 30, color: AppColors.border);
+    return Container(width: 1, height: 30, color: context.palette.border);
   }
 }
 
@@ -279,14 +289,14 @@ class _SyndromeItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trend = _trendConfig(detail.trend);
+    final trend = _trendConfig(context, detail.trend);
     final note = _recurrenceNoteText(detail);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
@@ -297,10 +307,10 @@ class _SyndromeItem extends StatelessWidget {
               Expanded(
                 child: Text(
                   detail.syndromeName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
               ),
@@ -347,7 +357,7 @@ class _RecurrenceNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.history, size: 12, color: AppColors.textTertiary),
+        Icon(Icons.history, size: 12, color: context.palette.textTertiary),
         const SizedBox(width: 4),
         Expanded(child: Text(text, style: context.text.microCaption)),
       ],
@@ -378,7 +388,7 @@ class _PanelActions extends StatelessWidget {
               icon: const Icon(Icons.insights_outlined, size: 16),
               label: const Text('查看成长记录', style: labelStyle),
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
+                foregroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.md,
                   vertical: AppSpacing.xsm,
@@ -390,7 +400,7 @@ class _PanelActions extends StatelessWidget {
           TextButton(
             onPressed: onDismiss,
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.textTertiary,
+              foregroundColor: context.palette.textTertiary,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.lg,
                 vertical: AppSpacing.xsm,

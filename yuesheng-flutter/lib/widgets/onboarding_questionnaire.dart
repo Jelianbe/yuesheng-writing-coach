@@ -17,6 +17,7 @@ import '../config/app_theme.dart';
 import '../services/onboarding_flow.dart';
 import '../types/teaching_types.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 写作偏好问卷
 ///
@@ -147,7 +148,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
         widget.onSkip();
       },
       child: Scaffold(
-        backgroundColor: AppColors.background, // 冷青灰白
+        backgroundColor: context.palette.background, // 冷青灰白
         body: SafeArea(
           child: Column(
             children: [
@@ -183,10 +184,10 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
         children: [
           if (_step > 0)
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.arrow_back,
                 size: 22,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
               onPressed: () => _goToStep(_step - 1),
               tooltip: '上一题',
@@ -208,8 +209,8 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
               _isSubmitting ? '处理中…' : '跳过问卷',
               style: TextStyle(
                 color: _isSubmitting
-                    ? AppColors.disabledText
-                    : AppColors.textSecondary,
+                    ? context.palette.disabledText
+                    : context.palette.textSecondary,
               ),
             ),
           ),
@@ -237,7 +238,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
               color: isActive || isCompleted
                   ? AppColors
                         .primary // 月色竹青
-                  : AppColors.placeholder,
+                  : context.palette.placeholder,
             ),
           );
         }),
@@ -322,7 +323,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
                 onPressed: () => _goToStep(_step - 1),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  side: const BorderSide(color: AppColors.placeholder),
+                  side: BorderSide(color: context.palette.placeholder),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
@@ -339,9 +340,9 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
                   ? (isLastStep ? _handleComplete : () => _goToStep(_step + 1))
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.onPrimary,
-                disabledBackgroundColor: AppColors.disabled,
+                backgroundColor: context.palette.primary,
+                foregroundColor: context.palette.onPrimary,
+                disabledBackgroundColor: context.palette.disabled,
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -423,10 +424,10 @@ class _RadioCard extends StatelessWidget {
             color: selected
                 ? AppColors
                       .l1 // 竹青浅
-                : AppColors.surface,
+                : context.palette.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected ? AppColors.primary : Colors.transparent,
+              color: selected ? context.palette.primary : Colors.transparent,
               width: 2,
             ),
           ),
@@ -442,8 +443,8 @@ class _RadioCard extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: selected
-                        ? AppColors.primary
-                        : AppColors.textTertiary,
+                        ? context.palette.primary
+                        : context.palette.textTertiary,
                     width: 2,
                   ),
                 ),
@@ -452,9 +453,9 @@ class _RadioCard extends StatelessWidget {
                         child: Container(
                           width: 12,
                           height: 12,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.primary,
+                            color: context.palette.primary,
                           ),
                         ),
                       )
@@ -471,17 +472,17 @@ class _RadioCard extends StatelessWidget {
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                         color: selected
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
+                            ? context.palette.primary
+                            : context.palette.textPrimary,
                       ),
                     ),
                     if (sample != null) ...[
                       const SizedBox(height: 6),
                       Text(
                         sample!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.hintText,
+                          color: context.palette.hintText,
                           height: 1.5,
                           fontStyle: FontStyle.italic,
                         ),
@@ -520,10 +521,10 @@ class _CheckCard extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: selected ? AppColors.l1 : AppColors.surface,
+            color: selected ? context.palette.l1 : context.palette.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected ? AppColors.primary : Colors.transparent,
+              color: selected ? context.palette.primary : Colors.transparent,
               width: 2,
             ),
           ),
@@ -537,17 +538,19 @@ class _CheckCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                   border: Border.all(
                     color: selected
-                        ? AppColors.primary
-                        : AppColors.textTertiary,
+                        ? context.palette.primary
+                        : context.palette.textTertiary,
                     width: 2,
                   ),
-                  color: selected ? AppColors.primary : Colors.transparent,
+                  color: selected
+                      ? context.palette.primary
+                      : Colors.transparent,
                 ),
                 child: selected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
                         size: 16,
-                        color: AppColors.onPrimary,
+                        color: context.palette.onPrimary,
                       )
                     : null,
               ),
@@ -558,7 +561,9 @@ class _CheckCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: selected ? AppColors.primary : AppColors.textPrimary,
+                    color: selected
+                        ? context.palette.primary
+                        : context.palette.textPrimary,
                   ),
                 ),
               ),

@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../data/repositories/diagnosis_repository.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 严重度中文标签（对齐 RN SEVERITY_LABELS）
 const Map<String, String> _severityLabels = {
@@ -25,14 +26,17 @@ const Map<String, String> _severityLabels = {
 };
 
 /// 严重度 → （文字/圆点/边框色, 底色）
-({Color text, Color bg}) _severityColors(String severity) {
+({Color text, Color bg}) _severityColors(
+  BuildContext context,
+  String severity,
+) {
   switch (severity) {
     case 'L2':
-      return (text: AppColors.l2Text, bg: AppColors.l2);
+      return (text: context.palette.l2Text, bg: context.palette.l2);
     case 'L3':
-      return (text: AppColors.l3Text, bg: AppColors.l3);
+      return (text: context.palette.l3Text, bg: context.palette.l3);
     default:
-      return (text: AppColors.l1Text, bg: AppColors.l1);
+      return (text: context.palette.l1Text, bg: context.palette.l1);
   }
 }
 
@@ -64,7 +68,7 @@ class TaskPanel extends StatelessWidget {
     if (problems.isEmpty) {
       // 空态（对齐 RN EmptyState：icon ✅ + 标题 + 描述）
       return Container(
-        color: AppColors.background,
+        color: context.palette.background,
         width: double.infinity,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
@@ -77,7 +81,7 @@ class TaskPanel extends StatelessWidget {
             Icon(
               Icons.check_circle_outline,
               size: 40,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             SizedBox(height: 10),
             Text(
@@ -85,7 +89,7 @@ class TaskPanel extends StatelessWidget {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             SizedBox(height: 6),
@@ -100,7 +104,7 @@ class TaskPanel extends StatelessWidget {
     }
 
     return Container(
-      color: AppColors.background,
+      color: context.palette.background,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
@@ -112,13 +116,13 @@ class TaskPanel extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     '练习任务',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -128,23 +132,23 @@ class TaskPanel extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   child: Text(
                     '${problems.length} 个问题',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: context.palette.divider),
           // 问题行
-          for (final problem in problems) _buildProblemRow(problem),
+          for (final problem in problems) _buildProblemRow(context, problem),
           // 交互批 #5：「练」的常驻可达点——「练」是六步闭环一环，此前唯一
           // 自选入口只挂在欢迎态（有历史即消失）。页脚挂在面板非空态：
           // 活跃问题在场 = 反向漏斗有候选 = 入口赚到了它的位置。
@@ -165,7 +169,7 @@ class TaskPanel extends StatelessWidget {
                     style: TextStyle(fontSize: 13),
                   ),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
+                    foregroundColor: context.palette.primary,
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
@@ -180,13 +184,15 @@ class TaskPanel extends StatelessWidget {
   }
 
   /// 问题行：severity 色左边框 + 圆点 + 症候名 + 严重度标签 + 完成按钮
-  Widget _buildProblemRow(ActiveProblemView problem) {
-    final severity = _severityColors(problem.severity);
+  Widget _buildProblemRow(BuildContext context, ActiveProblemView problem) {
+    final severity = _severityColors(context, problem.severity);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.surface, width: 1)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: context.palette.surface, width: 1),
+        ),
       ),
       child: Row(
         children: [
@@ -213,10 +219,10 @@ class TaskPanel extends StatelessWidget {
                   child: Text(
                     problem.syndromeName,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -243,15 +249,15 @@ class TaskPanel extends StatelessWidget {
                   vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: context.palette.primary,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                child: const Text(
+                child: Text(
                   '完成',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.onPrimary,
+                    color: context.palette.onPrimary,
                   ),
                 ),
               ),
@@ -268,15 +274,15 @@ class TaskPanel extends StatelessWidget {
                   vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.danger),
+                  border: Border.all(color: context.palette.danger),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                child: const Text(
+                child: Text(
                   '移除',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.danger,
+                    color: context.palette.danger,
                   ),
                 ),
               ),

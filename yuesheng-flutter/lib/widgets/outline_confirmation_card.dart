@@ -25,6 +25,7 @@ import '../data/repositories/outline_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/message_card_service.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 实体类型中文映射
 const Map<String, String> _entityTypeText = {
@@ -154,9 +155,11 @@ class _OutlineConfirmationCardState
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: context.palette.background,
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           child: Row(
             children: [
@@ -204,12 +207,12 @@ class _OutlineConfirmationCardState
             vertical: AppSpacing.xxs,
           ),
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
+            color: context.palette.primarySoft,
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Text(
             typeName,
-            style: const TextStyle(fontSize: 11, color: AppColors.primary),
+            style: TextStyle(fontSize: 11, color: context.palette.primary),
           ),
         ),
         const SizedBox(width: 8),
@@ -220,8 +223,8 @@ class _OutlineConfirmationCardState
           ),
           decoration: BoxDecoration(
             color: p.isNewEntity
-                ? AppColors.primarySoft
-                : AppColors.border.withValues(alpha: 0.5),
+                ? context.palette.primarySoft
+                : context.palette.border.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Text(
@@ -229,8 +232,8 @@ class _OutlineConfirmationCardState
             style: TextStyle(
               fontSize: 11,
               color: p.isNewEntity
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
+                  ? context.palette.primary
+                  : context.palette.textSecondary,
             ),
           ),
         ),
@@ -254,14 +257,16 @@ class _OutlineConfirmationCardState
   ) {
     final isConflict = im.conflictWith != null;
     final isStale = _isStale(im.id);
-    final baseColor = isStale ? AppColors.disabledText : AppColors.textPrimary;
+    final baseColor = isStale
+        ? context.palette.disabledText
+        : context.palette.textPrimary;
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
         color: isConflict
-            ? AppColors.warningBg
-            : (isStale ? AppColors.background : AppColors.surface),
+            ? context.palette.warningBg
+            : (isStale ? context.palette.background : context.palette.surface),
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Column(
@@ -270,17 +275,17 @@ class _OutlineConfirmationCardState
           if (isConflict) ...[
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.warning_amber_rounded,
                   size: 14,
-                  color: AppColors.warning,
+                  color: context.palette.warning,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '与既有认知矛盾：接受将更新记忆，拒绝保留原有认知',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.warning,
+                    color: context.palette.warning,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -296,13 +301,13 @@ class _OutlineConfirmationCardState
           Row(
             children: [
               if (isStale)
-                const Expanded(
+                Expanded(
                   child: Text(
                     '已过期/已处理',
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.disabledText,
+                      color: context.palette.disabledText,
                     ),
                   ),
                 )
@@ -337,10 +342,10 @@ class _OutlineConfirmationCardState
         .length;
     return Row(
       children: [
-        const Icon(
+        Icon(
           Icons.check_circle_outline,
           size: 14,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
         const SizedBox(width: 6),
         Text(
@@ -362,7 +367,7 @@ class _OutlineConfirmationCardState
           ? FilledButton(
               onPressed: onTap,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.palette.primary,
                 padding: EdgeInsets.zero,
               ),
               child: const Text('接受', style: TextStyle(fontSize: 12)),
@@ -371,8 +376,8 @@ class _OutlineConfirmationCardState
               onPressed: onTap,
               style: OutlinedButton.styleFrom(
                 padding: EdgeInsets.zero,
-                side: const BorderSide(color: AppColors.border),
-                foregroundColor: AppColors.textSecondary,
+                side: BorderSide(color: context.palette.border),
+                foregroundColor: context.palette.textSecondary,
               ),
               child: const Text('拒绝', style: TextStyle(fontSize: 12)),
             ),

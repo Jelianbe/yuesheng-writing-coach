@@ -364,4 +364,32 @@ void main() {
       expect(_labelColor(tester), isNot(AppColors.textTertiary));
     });
   });
+
+  // ── P1 轨道B 成对断言：趋势徽章色（_trendConfig → context.palette.l1Text）──
+  group('轨道B 主题翻色：趋势徽章(l1Text) 随主题', () {
+    Future<void> pumpTheme(WidgetTester tester, ThemeData theme) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          home: Scaffold(body: EvaluationReportPanel(evaluation: _report())),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('亮色 == AppColors.l1Text', (tester) async {
+      await pumpTheme(tester, buildAppTheme());
+      expect(
+        tester.widget<Text>(find.text('改善').first).style!.color,
+        AppColors.l1Text,
+      );
+    });
+
+    testWidgets('暗色 == AppPalette.dark.l1Text（且 != 亮色）', (tester) async {
+      await pumpTheme(tester, buildDarkTheme());
+      final c = tester.widget<Text>(find.text('改善').first).style!.color!;
+      expect(c, AppPalette.dark.l1Text);
+      expect(c, isNot(AppColors.l1Text));
+    });
+  });
 }

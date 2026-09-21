@@ -19,6 +19,7 @@ import '../data/repositories/manuscript_repository.dart';
 import '../providers/app_providers.dart';
 import '../router/app_routes.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 章节选择回调（manuscriptId + 章节）
 typedef DiagnosisChapterCallback =
@@ -124,7 +125,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                 bottom: AppSpacing.md,
               ),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.palette.border,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
@@ -142,11 +143,11 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
             const SizedBox(height: 12),
             Flexible(
               child: _loading
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 120,
                       child: Center(
                         child: CircularProgressIndicator(
-                          color: AppColors.primary,
+                          color: context.palette.primary,
                         ),
                       ),
                     )
@@ -161,8 +162,8 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
               child: OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                  side: const BorderSide(color: AppColors.border),
+                  foregroundColor: context.palette.textSecondary,
+                  side: BorderSide(color: context.palette.border),
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
@@ -187,9 +188,9 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             '还没有作品',
-            style: TextStyle(fontSize: 15, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 15, color: context.palette.textTertiary),
           ),
           const SizedBox(height: 8),
           InkWell(
@@ -199,9 +200,9 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
               Navigator.of(context).pop();
               context.go(AppRoutes.bookshelf);
             },
-            child: const Text(
+            child: Text(
               '去书架创建 →',
-              style: TextStyle(fontSize: 14, color: AppColors.primary),
+              style: TextStyle(fontSize: 14, color: context.palette.primary),
             ),
           ),
         ],
@@ -235,10 +236,10 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                           m.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                       ),
@@ -247,8 +248,8 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                         style: TextStyle(
                           fontSize: 12,
                           color: expanded
-                              ? AppColors.primary
-                              : AppColors.disabledText,
+                              ? context.palette.primary
+                              : context.palette.disabledText,
                         ),
                       ),
                     ],
@@ -257,7 +258,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
               ),
               if (expanded) _buildChapters(m.id),
               if (index < _manuscripts.length - 1)
-                const Divider(height: 1, color: AppColors.borderSoft),
+                Divider(height: 1, color: context.palette.borderSoft),
             ],
           );
         },
@@ -268,14 +269,14 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
   Widget _buildChapters(String manuscriptId) {
     final chapters = _chaptersMap[manuscriptId] ?? const <Chapter>[];
     if (chapters.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.md,
         ),
         child: Text(
           '暂无章节',
-          style: TextStyle(fontSize: 13, color: AppColors.disabledText),
+          style: TextStyle(fontSize: 13, color: context.palette.disabledText),
         ),
       );
     }
@@ -288,7 +289,7 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
     final hasMore = visibleCount < chapters.length;
 
     return Container(
-      color: AppColors.surface,
+      color: context.palette.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -310,32 +311,32 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                             ch.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
-                              color: AppColors.textSecondary,
+                              color: context.palette.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${ch.wordCount} 字',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: AppColors.disabledText,
+                              color: context.palette.disabledText,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right,
                       size: 20,
-                      color: AppColors.primary,
+                      color: context.palette.primary,
                     ),
                   ],
                 ),
               ),
             ),
-            const Divider(height: 1, color: AppColors.borderLight),
+            Divider(height: 1, color: context.palette.borderLight),
           ],
           if (hasMore)
             InkWell(
@@ -345,9 +346,9 @@ class _DiagnosisPickerSheetState extends ConsumerState<DiagnosisPickerSheet> {
                 child: Text(
                   '加载更多（${chapters.length - visibleCount} 章未显示）',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

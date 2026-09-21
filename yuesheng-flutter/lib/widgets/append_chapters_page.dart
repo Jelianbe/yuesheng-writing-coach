@@ -23,6 +23,7 @@ import '../providers/app_providers.dart';
 import '../services/file_parser.dart';
 import 'import_success_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 解析后的章节（title + content）
 class AppendChapterItem {
@@ -224,11 +225,11 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       appBar: AppBar(
         title: const Text('追加章节'),
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: context.palette.background,
+        foregroundColor: context.palette.textPrimary,
         toolbarHeight: 48,
         elevation: 0,
         leading: IconButton(
@@ -268,12 +269,12 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '选择导入方式',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
@@ -289,29 +290,29 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
           child: Container(
             height: 64,
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
+              color: context.palette.primarySoft,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.primary, width: 2),
+              border: Border.all(color: context.palette.primary, width: 2),
             ),
             child: _picking
-                ? const Center(
+                ? Center(
                     child: SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // 批次66：📁 emoji → Material 图标（taste 审核：UI 图标走图标库）
                       Icon(
                         Icons.folder_open,
                         size: 20,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                       SizedBox(width: 8),
                       Text(
@@ -319,7 +320,7 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          color: context.palette.primary,
                         ),
                       ),
                     ],
@@ -331,12 +332,12 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
           Container(
             padding: const EdgeInsets.all(AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.dangerBg,
+              color: context.palette.dangerBg,
               borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Text(
               _error!,
-              style: const TextStyle(fontSize: 13, color: AppColors.danger),
+              style: TextStyle(fontSize: 13, color: context.palette.danger),
             ),
           ),
         ],
@@ -352,12 +353,12 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               '章节列表',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             Row(
@@ -393,9 +394,9 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
   Widget _buildFooter() {
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 8, AppSpacing.lg, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.borderSoft)),
+      decoration: BoxDecoration(
+        color: context.palette.background,
+        border: Border(top: BorderSide(color: context.palette.borderSoft)),
       ),
       child: SafeArea(
         child: Row(
@@ -403,9 +404,9 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
           children: [
             Text(
               '已选 ${_selected.length} 章',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
             FilledButton(
@@ -413,8 +414,8 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
                   ? null
                   : _handleConfirm,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.disabled,
+                backgroundColor: context.palette.primary,
+                disabledBackgroundColor: context.palette.disabled,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.xxl,
                   vertical: AppSpacing.md,
@@ -424,20 +425,20 @@ class _AppendChaptersPageState extends ConsumerState<AppendChaptersPage> {
                 ),
               ),
               child: _importing
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.onPrimary,
+                        color: context.palette.onPrimary,
                       ),
                     )
-                  : const Text(
+                  : Text(
                       '确认导入',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onPrimary,
+                        color: context.palette.onPrimary,
                       ),
                     ),
             ),
@@ -465,7 +466,7 @@ class _SelectAction extends StatelessWidget {
           vertical: AppSpacing.xsm,
         ),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Text(text, style: context.text.subBody),
@@ -500,9 +501,9 @@ class _ChapterRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.surfaceWhite,
+            color: context.palette.surfaceWhite,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.divider),
+            border: Border.all(color: context.palette.divider),
           ),
           child: Row(
             children: [
@@ -511,23 +512,25 @@ class _ChapterRow extends StatelessWidget {
                 width: 20,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  color: isSelected
+                      ? context.palette.primary
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                   border: Border.all(
                     color: isSelected
-                        ? AppColors.primary
+                        ? context.palette.primary
                         : isDisabled
-                        ? AppColors.disabled
-                        : AppColors.border,
+                        ? context.palette.disabled
+                        : context.palette.border,
                     width: 2,
                   ),
                 ),
                 alignment: Alignment.center,
                 child: isSelected
-                    ? const Icon(
+                    ? Icon(
                         Icons.check,
                         size: 14,
-                        color: AppColors.onPrimary,
+                        color: context.palette.onPrimary,
                       )
                     : null,
               ),
@@ -540,18 +543,18 @@ class _ChapterRow extends StatelessWidget {
                       item.title.isEmpty ? '未命名章节' : item.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${item.content.length} 字',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.disabledText,
+                        color: context.palette.disabledText,
                       ),
                     ),
                   ],
@@ -564,7 +567,7 @@ class _ChapterRow extends StatelessWidget {
                     vertical: AppSpacing.xxs,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text('已存在', style: context.text.microCaption),

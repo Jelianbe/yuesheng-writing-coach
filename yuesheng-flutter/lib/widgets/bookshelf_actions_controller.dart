@@ -16,7 +16,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
@@ -26,6 +25,7 @@ import 'bookshelf_edit_manuscript_dialog.dart';
 import 'bookshelf_long_press_sheet.dart';
 import 'bookshelf_page_host.dart';
 import 'yue_sheet.dart';
+import '../config/app_palette.dart';
 
 /// 书架页作品卡片动作（点按 / 长按菜单 / 置顶 / 删除 / 编辑）
 class BookshelfActionsController {
@@ -154,7 +154,9 @@ class BookshelfActionsController {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: dialogContext.palette.danger,
+            ),
             child: const Text('删除'),
           ),
         ],

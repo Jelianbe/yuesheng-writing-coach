@@ -19,6 +19,7 @@ import '../data/repositories/reference_repository.dart';
 import '../providers/capability_providers.dart';
 import 'file_viewer_modal.dart';
 import 'material_upload_sheet.dart';
+import '../config/app_palette.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',
@@ -80,7 +81,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('删除', style: TextStyle(color: AppColors.danger)),
+            child: Text('删除', style: TextStyle(color: context.palette.danger)),
           ),
         ],
       ),
@@ -124,12 +125,12 @@ class _FileSectionState extends ConsumerState<FileSection> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               '素材文件',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             InkWell(
@@ -141,20 +142,24 @@ class _FileSectionState extends ConsumerState<FileSection> {
                   vertical: AppSpacing.xsm,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceWhite,
+                  color: context.palette.surfaceWhite,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(color: AppColors.borderSoft),
+                  border: Border.all(color: context.palette.borderSoft),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.attach_file, size: 14, color: AppColors.primary),
+                    Icon(
+                      Icons.attach_file,
+                      size: 14,
+                      color: context.palette.primary,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       '添加素材',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                   ],
@@ -172,23 +177,23 @@ class _FileSectionState extends ConsumerState<FileSection> {
               horizontal: AppSpacing.lg,
             ),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: context.palette.surface,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Column(
               children: [
-                const Icon(
+                Icon(
                   Icons.folder_open,
                   size: 36,
-                  color: AppColors.disabledText,
+                  color: context.palette.disabledText,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '还没有素材文件',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -198,7 +203,7 @@ class _FileSectionState extends ConsumerState<FileSection> {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.5,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -207,8 +212,8 @@ class _FileSectionState extends ConsumerState<FileSection> {
                   icon: const Icon(Icons.upload_file, size: 16),
                   label: const Text('上传素材'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
+                    foregroundColor: context.palette.primary,
+                    side: BorderSide(color: context.palette.primary),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
@@ -227,16 +232,16 @@ class _FileSectionState extends ConsumerState<FileSection> {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: context.palette.surface,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.borderSoft),
+                    border: Border.all(color: context.palette.borderSoft),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.description_outlined,
                         size: 26,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -250,10 +255,10 @@ class _FileSectionState extends ConsumerState<FileSection> {
                                     file.fileName,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
+                                      color: context.palette.textPrimary,
                                     ),
                                   ),
                                 ),
@@ -264,17 +269,17 @@ class _FileSectionState extends ConsumerState<FileSection> {
                                     vertical: AppSpacing.xxs,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primarySoft,
+                                    color: context.palette.primarySoft,
                                     borderRadius: BorderRadius.circular(
                                       AppRadius.sm,
                                     ),
                                   ),
                                   child: Text(
                                     _roleLabels[file.fileRole] ?? file.fileRole,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.primary,
+                                      color: context.palette.primary,
                                     ),
                                   ),
                                 ),
@@ -283,9 +288,9 @@ class _FileSectionState extends ConsumerState<FileSection> {
                             const SizedBox(height: 4),
                             Text(
                               _formatSize(file.byteSize),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: AppColors.textTertiary,
+                                color: context.palette.textTertiary,
                               ),
                             ),
                           ],
@@ -293,17 +298,17 @@ class _FileSectionState extends ConsumerState<FileSection> {
                       ),
                       // 批次75：删除按钮可见化——行尾提供删除入口（长按仍可用）
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline,
                           size: 20,
-                          color: AppColors.danger,
+                          color: context.palette.danger,
                         ),
                         tooltip: '删除文件',
                         onPressed: () => _delete(file),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.chevron_right,
-                        color: AppColors.disabledText,
+                        color: context.palette.disabledText,
                       ),
                     ],
                   ),

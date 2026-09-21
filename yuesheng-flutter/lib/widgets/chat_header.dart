@@ -33,11 +33,14 @@ import '../config/app_theme.dart';
 import '../config/reasoning_tier.dart';
 import 'yue_sheet.dart';
 import '../types/teaching_types.dart';
+import '../config/app_palette.dart';
 
 /// 未接线时的思考档位回调占位：菜单入口**不随接线状态忽隐忽现**。
 void _ignoreTierChange(String _) {}
 
 /// 态度档位行内配置（对齐 RN attitude-rhythm 语义）
+/// ⚠️ 顶层 const 表：context.palette 是运行期值装不进 const List。轨道 B「选 A」：
+///    本批暂留焊死亮色 AppColors，P1-6 改运行期取色后翻色。
 const List<(AttitudeLevel, String, Color)> _attitudeOptions = [
   (AttitudeLevel.doubao, '豆包', AppColors.l1Text),
   (AttitudeLevel.yuesheng, '月笙如歌', AppColors.l2Text),
@@ -95,7 +98,7 @@ class ChatHeader extends StatelessWidget {
   void _showMoreMenu(BuildContext context) {
     showYueModalBottomSheet<void>(
       context: context,
-      backgroundColor: AppColors.background,
+      backgroundColor: context.palette.background,
       builder: (sheetCtx) => SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(
@@ -109,6 +112,7 @@ class ChatHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _menuSection(
+                context,
                 label: '态度档位',
                 child: Row(
                   children: [
@@ -131,6 +135,7 @@ class ChatHeader extends StatelessWidget {
               // 思考档位（批次 TH 三）：与设置页「模型行为」同源同值，
               // 输入框上方开关是二值快捷入口，此处是完整四档
               _menuSection(
+                context,
                 label: '思考档位',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,9 +158,9 @@ class ChatHeader extends StatelessWidget {
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       reasoningTierOf(reasoningTier).hint,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                   ],
@@ -174,11 +179,11 @@ class ChatHeader extends StatelessWidget {
                     vertical: AppSpacing.md,
                   ),
                   child: Row(
-                    children: const [
+                    children: [
                       Icon(
                         Icons.person_outline,
                         size: 22,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                       SizedBox(width: AppSpacing.md),
                       Text(
@@ -186,7 +191,7 @@ class ChatHeader extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
+                          color: context.palette.textPrimary,
                         ),
                       ),
                     ],
@@ -200,22 +205,26 @@ class ChatHeader extends StatelessWidget {
     );
   }
 
-  Widget _menuSection({required String label, required Widget child}) {
+  Widget _menuSection(
+    BuildContext context, {
+    required String label,
+    required Widget child,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: context.palette.borderSoft)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -234,9 +243,9 @@ class ChatHeader extends StatelessWidget {
       child: Container(
         height: 56,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+        decoration: BoxDecoration(
+          color: context.palette.background,
+          border: Border(bottom: BorderSide(color: context.palette.borderSoft)),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -259,13 +268,13 @@ class ChatHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               '会话',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.palette.textPrimary,
                               ),
                             ),
                             const SizedBox(width: AppSpacing.sm),
@@ -275,18 +284,20 @@ class ChatHeader extends StatelessWidget {
                                 vertical: AppSpacing.xxs,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.l2,
+                                color: context.palette.l2,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.sm,
                                 ),
-                                border: Border.all(color: AppColors.l2Text),
+                                border: Border.all(
+                                  color: context.palette.l2Text,
+                                ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 '诊断模式',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: AppColors.l2Text,
+                                  color: context.palette.l2Text,
                                 ),
                               ),
                             ),
@@ -296,13 +307,13 @@ class ChatHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               '会话',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: context.palette.textPrimary,
                               ),
                             ),
                             GestureDetector(
@@ -316,10 +327,10 @@ class ChatHeader extends StatelessWidget {
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
-                                  color: AppColors.textTertiary,
+                                  color: context.palette.textTertiary,
                                 ),
                               ),
                             ),
@@ -330,7 +341,7 @@ class ChatHeader extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
-                    icon: const Icon(Icons.menu, color: AppColors.textPrimary),
+                    icon: Icon(Icons.menu, color: context.palette.textPrimary),
                     tooltip: '会话列表',
                     onPressed: onOpenSessionDrawer,
                   ),
@@ -343,17 +354,17 @@ class ChatHeader extends StatelessWidget {
                     children: [
                       // 批次 29：新建对话快捷入口（⋯ 左侧，避免进抽屉才能新建）
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.add_comment_outlined,
-                          color: AppColors.textPrimary,
+                          color: context.palette.textPrimary,
                         ),
                         tooltip: '新建对话',
                         onPressed: onNewSession,
                       ),
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.more_horiz,
-                          color: AppColors.textPrimary,
+                          color: context.palette.textPrimary,
                         ),
                         tooltip: '更多',
                         onPressed: () => _showMoreMenu(context),
@@ -395,11 +406,11 @@ class _AttitudeChip extends StatelessWidget {
           vertical: AppSpacing.xsm,
         ),
         decoration: BoxDecoration(
-          color: active ? AppColors.surface : Colors.transparent,
+          color: active ? context.palette.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: active
               ? Border.all(color: color)
-              : Border.all(color: AppColors.borderSoft),
+              : Border.all(color: context.palette.borderSoft),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -412,10 +423,10 @@ class _AttitudeChip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ],
@@ -449,10 +460,12 @@ class _TierChip extends StatelessWidget {
           vertical: AppSpacing.xsm,
         ),
         decoration: BoxDecoration(
-          color: active ? AppColors.surface : Colors.transparent,
+          color: active ? context.palette.surface : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.pill),
           border: Border.all(
-            color: active ? AppColors.primary : AppColors.borderSoft,
+            color: active
+                ? context.palette.primary
+                : context.palette.borderSoft,
           ),
         ),
         child: Text(
@@ -460,7 +473,9 @@ class _TierChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-            color: active ? AppColors.primary : AppColors.textPrimary,
+            color: active
+                ? context.palette.primary
+                : context.palette.textPrimary,
           ),
         ),
       ),

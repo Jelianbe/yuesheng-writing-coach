@@ -62,20 +62,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
 
     return Scaffold(
       backgroundColor: context.palette.background,
-      appBar: AppBar(
-        title: const Text('成长'),
-        backgroundColor: context.palette.background,
-        foregroundColor: context.palette.textPrimary,
-        toolbarHeight: 48,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline, size: 22),
-            onPressed: widget.onOpenDetail,
-            tooltip: '能力画像详情',
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context),
       body: Column(
         children: [
           // 快捷入口（批次 11：对齐 RN GROWTH_ENTRIES，总显示）
@@ -86,8 +73,10 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
           ),
           Expanded(
             child: state.isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: context.palette.primary,
+                    ),
                   )
                 : state.error != null
                 ? _ErrorView(
@@ -103,6 +92,24 @@ class _GrowthPageState extends ConsumerState<GrowthPage> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 顶栏（信息入口）——从 build 抽出（R-019 职责提取）。
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
+    return AppBar(
+      title: const Text('成长'),
+      backgroundColor: context.palette.background,
+      foregroundColor: context.palette.textPrimary,
+      toolbarHeight: 48,
+      elevation: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.info_outline, size: 22),
+          onPressed: widget.onOpenDetail,
+          tooltip: '能力画像详情',
+        ),
+      ],
     );
   }
 
@@ -153,16 +160,16 @@ class _QuickEntries extends StatelessWidget {
         0,
       ),
       decoration: BoxDecoration(
-        color: AppColors.surfaceWhite,
+        color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.palette.divider),
       ),
       child: Column(
         children: [
           _entry(context, '设置', Icons.settings_outlined, onSettings),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           _entry(context, '写作诊断', Icons.search, onDiagnosis),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           // 批次 38：原「敬请期待」占位替换为「学习进度」真实入口
           _entry(context, '学习进度', Icons.trending_up, onProgress),
         ],
@@ -185,22 +192,22 @@ class _QuickEntries extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.textTertiary),
+            Icon(icon, size: 20, color: context.palette.textTertiary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 20,
-              color: AppColors.disabledText,
+              color: context.palette.disabledText,
             ),
           ],
         ),
@@ -258,12 +265,12 @@ class _GrowthContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   '能力画像',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    color: context.palette.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -294,20 +301,20 @@ class _GrowthContent extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       '症候概览',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                     const Spacer(),
                     Text(
                       '${state.activeProblems.length} 个活跃',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                   ],
@@ -317,11 +324,20 @@ class _GrowthContent extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _Legend(color: AppColors.l1, label: 'L1 ${counts.l1}'),
+                    _Legend(
+                      color: context.palette.l1,
+                      label: 'L1 ${counts.l1}',
+                    ),
                     const SizedBox(width: 12),
-                    _Legend(color: AppColors.l2, label: 'L2 ${counts.l2}'),
+                    _Legend(
+                      color: context.palette.l2,
+                      label: 'L2 ${counts.l2}',
+                    ),
                     const SizedBox(width: 12),
-                    _Legend(color: AppColors.l3, label: 'L3 ${counts.l3}'),
+                    _Legend(
+                      color: context.palette.l3,
+                      label: 'L3 ${counts.l3}',
+                    ),
                   ],
                 ),
               ],
@@ -334,7 +350,7 @@ class _GrowthContent extends StatelessWidget {
           _Card(
             child: InkWell(
               onTap: onOpenDetail,
-              child: const Padding(
+              child: Padding(
                 padding: EdgeInsets.all(AppSpacing.lg),
                 child: Row(
                   children: [
@@ -343,14 +359,14 @@ class _GrowthContent extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     Spacer(),
                     Icon(
                       Icons.chevron_right,
                       size: 20,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ],
                 ),
@@ -391,18 +407,18 @@ class _GrowthContent extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.edit_note,
               size: 48,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '还没有写作记录',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -415,7 +431,7 @@ class _GrowthContent extends StatelessWidget {
             FilledButton(
               onPressed: () => context.go('/bookshelf'),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.xl,
                   vertical: AppSpacing.md,
@@ -447,8 +463,8 @@ class _Card extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: Border.all(color: AppColors.border),
+          color: context.palette.surface,
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(children: [Expanded(child: child)]),
       ),
@@ -477,7 +493,7 @@ class _Legend extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 11, color: context.palette.textSecondary),
         ),
       ],
     );
@@ -497,14 +513,14 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
+            Icon(Icons.error_outline, size: 32, color: context.palette.danger),
             const SizedBox(height: 8),
             Text('加载失败', style: context.text.body),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onRetry,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.section,
                   vertical: AppSpacing.smx,

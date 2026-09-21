@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/message_card_service.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 趋势 → 中文标签（对齐 RN getTrendLabel）
 String _trendLabel(String trend) {
@@ -32,38 +33,38 @@ String _trendLabel(String trend) {
 
 /// 结果配置（对齐 RN resultStyles：图标/标题/颜色/底/鼓励文案）
 ({IconData icon, String title, Color color, Color bgColor, String encourage})
-_resultConfig(String result) {
+_resultConfig(BuildContext context, String result) {
   switch (result) {
     case 'passed':
       return (
         icon: Icons.celebration,
         title: '训练达标',
-        color: AppColors.l1Text,
-        bgColor: AppColors.l1,
+        color: context.palette.l1Text,
+        bgColor: context.palette.l1,
         encourage: '太棒了！你的努力得到了回报，继续保持！',
       );
     case 'failed':
       return (
         icon: Icons.fitness_center,
         title: '继续加油',
-        color: AppColors.l3Text,
-        bgColor: AppColors.l3,
+        color: context.palette.l3Text,
+        bgColor: context.palette.l3,
         encourage: '别灰心，调整策略后继续努力！',
       );
     case 'partial':
       return (
         icon: Icons.auto_awesome,
         title: '部分达标',
-        color: AppColors.l2Text,
-        bgColor: AppColors.l2,
+        color: context.palette.l2Text,
+        bgColor: context.palette.l2,
         encourage: '进步明显，还有一些细节可以优化。',
       );
     default:
       return (
         icon: Icons.insert_chart_outlined,
         title: '阶段总结',
-        color: AppColors.textTertiary,
-        bgColor: AppColors.surface,
+        color: context.palette.textTertiary,
+        bgColor: context.palette.surface,
         encourage: '总结经验，继续前行。',
       );
   }
@@ -138,16 +139,18 @@ class PhaseSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _resultConfig(result);
+    final config = _resultConfig(context, result);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          decoration: const BoxDecoration(
-            color: AppColors.surfaceWhite,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            color: context.palette.surfaceWhite,
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -166,30 +169,30 @@ class PhaseSummaryCard extends StatelessWidget {
               Text(
                 config.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 config.encourage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   height: 1.4,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
               ),
               const SizedBox(height: 14),
               _buildStatsRow(context, config.color),
               if (syndromeChanges.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                _buildChangesSection(config.color),
+                _buildChangesSection(context, config.color),
               ],
               const SizedBox(height: 12),
-              _buildButtons(config.color),
+              _buildButtons(context, config.color),
             ],
           ),
         ),
@@ -219,12 +222,12 @@ class PhaseSummaryCard extends StatelessWidget {
     }
 
     Widget divider() =>
-        Container(width: 1, height: 30, color: AppColors.border);
+        Container(width: 1, height: 30, color: context.palette.border);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
@@ -240,28 +243,28 @@ class PhaseSummaryCard extends StatelessWidget {
   }
 
   /// 症候变化列表（≤ MAX_SYNDROME_CHANGES）
-  Widget _buildChangesSection(Color color) {
+  Widget _buildChangesSection(BuildContext context, Color color) {
     final changes = syndromeChanges.length > 5
         ? syndromeChanges.sublist(0, 5)
         : syndromeChanges;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '症候变化',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
+            color: context.palette.textSecondary,
           ),
         ),
         const SizedBox(height: 6),
         for (final change in changes) ...[
           Container(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xsm),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: AppColors.divider, width: 0.5),
+                bottom: BorderSide(color: context.palette.divider, width: 0.5),
               ),
             ),
             child: Row(
@@ -270,10 +273,10 @@ class PhaseSummaryCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     change.syndromeName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -294,7 +297,7 @@ class PhaseSummaryCard extends StatelessWidget {
   }
 
   /// 按钮：继续训练（primary 色底）| 查看学员画像 + 返回对话（描边）
-  Widget _buildButtons(Color color) {
+  Widget _buildButtons(BuildContext context, Color color) {
     return Column(
       children: [
         SizedBox(
@@ -322,8 +325,8 @@ class PhaseSummaryCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onViewProfile ?? () {},
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textTertiary,
-                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: context.palette.textTertiary,
+                    side: BorderSide(color: context.palette.border),
                     padding: EdgeInsets.zero,
                     textStyle: const TextStyle(
                       fontSize: 14,
@@ -341,8 +344,8 @@ class PhaseSummaryCard extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: onBackToChat ?? () {},
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textTertiary,
-                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: context.palette.textTertiary,
+                    side: BorderSide(color: context.palette.border),
                     padding: EdgeInsets.zero,
                     textStyle: const TextStyle(
                       fontSize: 14,

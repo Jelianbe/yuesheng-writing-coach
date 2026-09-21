@@ -21,6 +21,7 @@ import '../providers/app_providers.dart';
 import '../data/repositories/session_repository.dart';
 import '../services/message_card_service.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class GenUiQuiz extends ConsumerStatefulWidget {
   final String? messageId;
@@ -115,10 +116,10 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
         if (title != null && title.isNotEmpty) ...[
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -143,19 +144,19 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
       margin: const EdgeInsets.only(bottom: AppSpacing.smx),
       padding: const EdgeInsets.all(AppSpacing.smx),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: AppColors.borderSoft),
+        border: Border.all(color: context.palette.borderSoft),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '${itemIdx + 1}. $question',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -167,11 +168,11 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
             Color? textColor;
             if (_submitted) {
               if (isChosen && isCorrect) {
-                tileColor = AppColors.successBg;
-                textColor = AppColors.success;
+                tileColor = context.palette.successBg;
+                textColor = context.palette.success;
               } else if (isChosen && !isCorrect) {
-                tileColor = AppColors.dangerBg;
-                textColor = AppColors.danger;
+                tileColor = context.palette.dangerBg;
+                textColor = context.palette.danger;
               }
             }
             return GestureDetector(
@@ -188,11 +189,13 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
                   color:
                       tileColor ??
                       (isChosen
-                          ? AppColors.primarySoft
-                          : AppColors.surfaceWhite),
+                          ? context.palette.primarySoft
+                          : context.palette.surfaceWhite),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: isChosen ? AppColors.primary : AppColors.border,
+                    color: isChosen
+                        ? context.palette.primary
+                        : context.palette.border,
                   ),
                 ),
                 child: Row(
@@ -202,7 +205,7 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
                         optText,
                         style: TextStyle(
                           fontSize: 13,
-                          color: textColor ?? AppColors.textBody,
+                          color: textColor ?? context.palette.textBody,
                         ),
                       ),
                     ),
@@ -237,8 +240,8 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
                 : Icons.lightbulb_outline,
             size: 16,
             color: _correctCount == total
-                ? AppColors.success
-                : AppColors.textTertiary,
+                ? context.palette.success
+                : context.palette.textTertiary,
           ),
           const SizedBox(width: 6),
           Text(
@@ -247,8 +250,8 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: _correctCount == total
-                  ? AppColors.success
-                  : AppColors.textPrimary,
+                  ? context.palette.success
+                  : context.palette.textPrimary,
             ),
           ),
         ],
@@ -259,10 +262,10 @@ class _GenUiQuizState extends ConsumerState<GenUiQuiz> {
       child: ElevatedButton(
         onPressed: _allAnswered ? _onSubmit : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          disabledBackgroundColor: AppColors.disabled,
-          disabledForegroundColor: AppColors.disabledText,
+          backgroundColor: context.palette.primary,
+          foregroundColor: context.palette.onPrimary,
+          disabledBackgroundColor: context.palette.disabled,
+          disabledForegroundColor: context.palette.disabledText,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
         ),
         child: Text(_allAnswered ? '提交' : '请完成所有题目'),
