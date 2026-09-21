@@ -115,20 +115,20 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '当前文风',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textInk,
+                  color: context.palette.textInk,
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close,
                   size: 20,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
                 tooltip: '关闭',
                 onPressed: () => Navigator.of(context).pop(),
@@ -144,10 +144,10 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
 
   Widget _buildBody() {
     if (!_loaded) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       );
     }
@@ -157,7 +157,11 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.brush_outlined, size: 40, color: AppColors.placeholder),
+            Icon(
+              Icons.brush_outlined,
+              size: 40,
+              color: context.palette.placeholder,
+            ),
             SizedBox(height: 10),
             Text(
               '还没有文风画像\n完成一次「诊断本章」后，就能看到你的写作风格',
@@ -174,15 +178,15 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
         Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: AppColors.primarySoft,
+            color: context.palette.primarySoft,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Text(
             p.summary,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               height: 1.5,
-              color: AppColors.primaryDeep,
+              color: context.palette.primaryDeep,
             ),
           ),
         ),
@@ -223,13 +227,13 @@ class _StyleProfileSheetState extends ConsumerState<StyleProfileSheet> {
             decoration: BoxDecoration(
               color: context.palette.surfaceWhite,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.borderSoft),
+              border: Border.all(color: context.palette.borderSoft),
             ),
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textInk,
+                color: context.palette.textInk,
                 fontWeight: FontWeight.w500,
               ),
             ),

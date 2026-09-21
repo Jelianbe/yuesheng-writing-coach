@@ -35,7 +35,7 @@ class SyndromeHistoryList extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: context.palette.surface,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(
           children: [
@@ -45,12 +45,12 @@ class SyndromeHistoryList extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '症候追踪历史',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -98,14 +98,14 @@ class _TimelineItem extends StatelessWidget {
   const _TimelineItem({required this.event, required this.isLast});
 
   /// 严重度色（复刻 RN severityColor）
-  static Color _severityColor(Severity severity) {
+  static Color _severityColor(BuildContext context, Severity severity) {
     switch (severity) {
       case Severity.l1:
-        return AppColors.l1Text;
+        return context.palette.l1Text;
       case Severity.l2:
-        return AppColors.l2Text;
+        return context.palette.l2Text;
       case Severity.l3:
-        return AppColors.l3Text;
+        return context.palette.l3Text;
     }
   }
 
@@ -126,8 +126,8 @@ class _TimelineItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isResolved = event.eventType == 'resolved';
     final accentColor = isResolved
-        ? AppColors.success
-        : _severityColor(event.severity);
+        ? context.palette.success
+        : _severityColor(context, event.severity);
 
     return IntrinsicHeight(
       child: Row(
@@ -152,7 +152,7 @@ class _TimelineItem extends StatelessWidget {
                     child: Container(
                       width: 1,
                       margin: const EdgeInsets.only(top: AppSpacing.xxs),
-                      color: AppColors.border,
+                      color: context.palette.border,
                     ),
                   ),
               ],
@@ -173,10 +173,10 @@ class _TimelineItem extends StatelessWidget {
                           event.syndromeName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                       ),
@@ -188,16 +188,16 @@ class _TimelineItem extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isResolved
-                              ? AppColors.success
-                              : AppColors.danger,
+                              ? context.palette.success
+                              : context.palette.danger,
                           borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: Text(
                           isResolved ? '解决' : '发现',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.onPrimary,
+                            color: context.palette.onPrimary,
                           ),
                         ),
                       ),
@@ -211,7 +211,7 @@ class _TimelineItem extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: _severityColor(event.severity),
+                          color: _severityColor(context, event.severity),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.md),
@@ -248,14 +248,14 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
-          Icon(icon, size: 40, color: AppColors.textTertiary),
+          Icon(icon, size: 40, color: context.palette.textTertiary),
           const SizedBox(height: AppSpacing.sm),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 4),

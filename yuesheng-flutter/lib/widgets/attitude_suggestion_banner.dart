@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import '../services/attitude_advisor.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class AttitudeSuggestionBanner extends StatelessWidget {
   final AttitudeSuggestion suggestion;
@@ -29,9 +30,15 @@ class AttitudeSuggestionBanner extends StatelessWidget {
     final isUpgrade = suggestion.direction == 'upgrade';
     final targetLabel = getAttitudeLabel(suggestion.targetLevel);
 
-    final bgColor = isUpgrade ? AppColors.warningBg : AppColors.primarySoft;
-    final borderColor = isUpgrade ? AppColors.l2 : AppColors.primary;
-    final iconColor = isUpgrade ? AppColors.warning : AppColors.primary;
+    final bgColor = isUpgrade
+        ? context.palette.warningBg
+        : context.palette.primarySoft;
+    final borderColor = isUpgrade
+        ? context.palette.l2
+        : context.palette.primary;
+    final iconColor = isUpgrade
+        ? context.palette.warning
+        : context.palette.primary;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(
@@ -61,10 +68,10 @@ class AttitudeSuggestionBanner extends StatelessWidget {
               children: [
                 Text(
                   isUpgrade ? '建议提升指导强度' : '建议调整为轻松模式',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -87,15 +94,15 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.textPrimary,
+                          color: context.palette.textPrimary,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(
                           '切换到$targetLabel',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.onPrimary,
+                            color: context.palette.onPrimary,
                           ),
                         ),
                       ),
@@ -111,7 +118,9 @@ class AttitudeSuggestionBanner extends StatelessWidget {
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.onPrimary.withValues(alpha: 0.5),
+                          color: context.palette.onPrimary.withValues(
+                            alpha: 0.5,
+                          ),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Text(

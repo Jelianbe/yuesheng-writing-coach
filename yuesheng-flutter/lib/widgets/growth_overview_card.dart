@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../config/shared_constants.dart';
+import '../config/app_palette.dart';
 
 /// 成长总览卡
 class GrowthOverviewCard extends StatelessWidget {
@@ -38,7 +39,7 @@ class GrowthOverviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: context.palette.primary,
         borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       child: Column(
@@ -50,22 +51,22 @@ class GrowthOverviewCard extends StatelessWidget {
               Container(
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
-                  color: AppColors.onPrimaryFaint,
+                decoration: BoxDecoration(
+                  color: context.palette.onPrimaryFaint,
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: const Text(
+                child: Text(
                   '月',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.onPrimary,
+                    color: context.palette.onPrimary,
                   ),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -73,7 +74,7 @@ class GrowthOverviewCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.onPrimary,
+                      color: context.palette.onPrimary,
                     ),
                   ),
                   SizedBox(height: 2),
@@ -81,7 +82,7 @@ class GrowthOverviewCard extends StatelessWidget {
                     '写作提升中',
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.onPrimaryDim,
+                      color: context.palette.onPrimaryDim,
                     ),
                   ),
                 ],
@@ -96,32 +97,32 @@ class GrowthOverviewCard extends StatelessWidget {
               _StatItem(
                 value: formatWordCount(totalWords),
                 label: '累计创作',
-                valueColor: AppColors.onPrimary,
+                valueColor: context.palette.onPrimary,
               ),
               _StatItem(
                 value: '$diagnosisCount',
                 label: '诊断次数',
-                valueColor: AppColors.onPrimary,
+                valueColor: context.palette.onPrimary,
               ),
               _StatItem(
                 value: '$aiInterventions',
                 label: 'AI 介入',
-                valueColor: AppColors.onPrimary,
+                valueColor: context.palette.onPrimary,
               ),
               _StatItem(
                 value: '$resolvedCount',
                 label: '已解决问题',
-                valueColor: AppColors.l1,
+                valueColor: context.palette.l1,
               ),
             ],
           ),
           if (onViewDetail != null) ...[
             const SizedBox(height: AppSpacing.md),
-            Container(height: 1, color: AppColors.onPrimaryFaint),
+            Container(height: 1, color: context.palette.onPrimaryFaint),
             const SizedBox(height: AppSpacing.md),
             InkWell(
               onTap: onViewDetail,
-              child: const Row(
+              child: Row(
                 children: [
                   Expanded(
                     child: Text(
@@ -129,7 +130,7 @@ class GrowthOverviewCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.onPrimary,
+                        color: context.palette.onPrimary,
                       ),
                     ),
                   ),
@@ -137,7 +138,7 @@ class GrowthOverviewCard extends StatelessWidget {
                     '›',
                     style: TextStyle(
                       fontSize: 20,
-                      color: AppColors.onPrimaryDim,
+                      color: context.palette.onPrimaryDim,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -177,7 +178,7 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: AppColors.onPrimaryDim),
+          style: TextStyle(fontSize: 12, color: context.palette.onPrimaryDim),
         ),
       ],
     );

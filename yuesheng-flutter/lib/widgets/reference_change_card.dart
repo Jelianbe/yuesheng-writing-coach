@@ -83,7 +83,7 @@ class ReferenceChangeCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.palette.surface,
             border: Border.fromBorderSide(
-              BorderSide(color: AppColors.borderSoft),
+              BorderSide(color: context.palette.borderSoft),
             ),
           ),
           child: Row(
@@ -99,11 +99,15 @@ class ReferenceChangeCard extends StatelessWidget {
                       Container(
                         width: 34,
                         height: 34,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primarySoft,
+                        decoration: BoxDecoration(
+                          color: context.palette.primarySoft,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(icon, size: 18, color: AppColors.primary),
+                        child: Icon(
+                          icon,
+                          size: 18,
+                          color: context.palette.primary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -114,10 +118,10 @@ class ReferenceChangeCard extends StatelessWidget {
                               children: [
                                 Text(
                                   title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
+                                    color: context.palette.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(width: 6),
@@ -127,7 +131,7 @@ class ReferenceChangeCard extends StatelessWidget {
                                     vertical: 1,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.borderSoft,
+                                    color: context.palette.borderSoft,
                                     borderRadius: BorderRadius.circular(
                                       AppRadius.xs,
                                     ),

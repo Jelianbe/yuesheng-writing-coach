@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 教练鼓励文案池（对齐 RN ENCOURAGEMENTS，15 条）
 const List<String> encouragements = [
@@ -62,24 +63,24 @@ class EncouragementText extends StatelessWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.chat_bubble_outline,
             size: 14,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ),

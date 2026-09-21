@@ -66,6 +66,11 @@
 # ============================================================
 set -u
 
+# ★ Python 子进程输出编码：Windows 中文 locale 下 python 的 stdout 是 GBK，打「✓」即崩 ⇒ 该道假红。
+#   同 gate-fast.sh（2026-09-21 实证：pre-commit 快道 5 道 FAIL，而收尾门禁经带 UTF-8 的桥跑 12/12）。
+#   已有显式设定则不覆盖。
+export PYTHONIOENCODING="${PYTHONIOENCODING:-utf-8}"
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT" || exit 1
 

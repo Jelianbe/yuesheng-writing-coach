@@ -81,7 +81,9 @@ class PhaseUpgradeCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: context.palette.surfaceWhite,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -90,23 +92,23 @@ class PhaseUpgradeCard extends StatelessWidget {
               Container(
                 width: 56,
                 height: 56,
-                decoration: const BoxDecoration(
-                  color: AppColors.primarySoft,
+                decoration: BoxDecoration(
+                  color: context.palette.primarySoft,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.celebration_outlined,
                   size: 28,
-                  color: AppColors.primary,
+                  color: context.palette.primary,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '进入新阶段！',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 10),
@@ -117,15 +119,15 @@ class PhaseUpgradeCard extends StatelessWidget {
                   vertical: AppSpacing.sm,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
+                  color: context.palette.primarySoft,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: Text(
                   _phaseLabel,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                   ),
                 ),
               ),
@@ -133,18 +135,18 @@ class PhaseUpgradeCard extends StatelessWidget {
               Text(
                 _unlockText,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: context.palette.textSecondary,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 _encourageText,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -153,9 +155,9 @@ class PhaseUpgradeCard extends StatelessWidget {
                 Text(
                   reason!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.disabledText,
+                    color: context.palette.disabledText,
                   ),
                 ),
               ],

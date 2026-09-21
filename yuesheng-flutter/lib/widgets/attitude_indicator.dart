@@ -35,23 +35,28 @@ class _AttitudeMeta {
   });
 }
 
-const Map<AttitudeLevel, _AttitudeMeta> _attitudeMeta = {
-  AttitudeLevel.doubao: _AttitudeMeta(
-    label: '豆包',
-    description: '温和、鼓励、先肯定',
-    color: AppColors.l1Text,
-  ),
-  AttitudeLevel.yuesheng: _AttitudeMeta(
-    label: '月笙如歌',
-    description: '直接、精准、理性',
-    color: AppColors.l2Text,
-  ),
-  AttitudeLevel.sensei: _AttitudeMeta(
-    label: 'sensei',
-    description: '一针见血、刺痛但不侮辱',
-    color: AppColors.l3Text,
-  ),
-};
+/// 调色板驱动（P1-6 同族正解）：原为**顶层 `const` 色表**，编译期常量装不进运行期
+/// `context.palette` ⇒ 改收 `AppPalette` 的函数。表外 key 仍由**调用点 `!` 显式判空**
+/// （回退语义零变更，R-009「不编造」）。
+Map<AttitudeLevel, _AttitudeMeta> _attitudeMetaFor(AppPalette palette) {
+  return {
+    AttitudeLevel.doubao: _AttitudeMeta(
+      label: '豆包',
+      description: '温和、鼓励、先肯定',
+      color: palette.l1Text,
+    ),
+    AttitudeLevel.yuesheng: _AttitudeMeta(
+      label: '月笙如歌',
+      description: '直接、精准、理性',
+      color: palette.l2Text,
+    ),
+    AttitudeLevel.sensei: _AttitudeMeta(
+      label: 'sensei',
+      description: '一针见血、刺痛但不侮辱',
+      color: palette.l3Text,
+    ),
+  };
+}
 
 class AttitudeIndicator extends StatelessWidget {
   final AttitudeLevel currentAttitude;
@@ -83,13 +88,13 @@ class AttitudeIndicator extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Center(
+                Center(
                   child: Text(
                     '选择态度档位',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                 ),
@@ -97,7 +102,7 @@ class AttitudeIndicator extends StatelessWidget {
                 for (final attitude in attitudeOrder)
                   _AttitudeOption(
                     attitude: attitude,
-                    meta: _attitudeMeta[attitude]!,
+                    meta: _attitudeMetaFor(context.palette)[attitude]!,
                     isActive: attitude == currentAttitude,
                     onTap: () => Navigator.pop(sheetCtx, attitude),
                   ),
@@ -114,7 +119,7 @@ class AttitudeIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _attitudeMeta[currentAttitude]!;
+    final meta = _attitudeMetaFor(context.palette)[currentAttitude]!;
 
     return InkWell(
       onTap: () => _showSheet(context),
@@ -127,7 +132,7 @@ class AttitudeIndicator extends StatelessWidget {
         decoration: BoxDecoration(
           color: context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.pill),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border.all(color: context.palette.borderLight),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -146,10 +151,10 @@ class AttitudeIndicator extends StatelessWidget {
               style: context.text.subBody.copyWith(fontWeight: FontWeight.w500),
             ),
             const SizedBox(width: 2),
-            const Icon(
+            Icon(
               Icons.expand_more,
               size: 16,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
           ],
         ),
@@ -185,11 +190,11 @@ class _AttitudeOption extends StatelessWidget {
           vertical: AppSpacing.md,
         ),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.l1 : context.palette.surface,
+          color: isActive ? context.palette.l1 : context.palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: isActive
               ? Border.all(color: meta.color)
-              : Border.all(color: AppColors.borderLight),
+              : Border.all(color: context.palette.borderLight),
         ),
         child: Row(
           children: [
@@ -208,18 +213,18 @@ class _AttitudeOption extends StatelessWidget {
                 children: [
                   Text(
                     meta.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     meta.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ],

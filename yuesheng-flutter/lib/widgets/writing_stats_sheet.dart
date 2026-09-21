@@ -81,18 +81,18 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
           children: [
             Row(
               children: [
-                const Text(
+                Text(
                   '写作统计',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textInk,
+                    color: context.palette.textInk,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close, size: 20),
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -109,17 +109,19 @@ class _WritingStatsSheetState extends ConsumerState<WritingStatsSheet> {
                       style: TextStyle(
                         fontSize: 12,
                         color: _days == d
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
+                            ? context.palette.primary
+                            : context.palette.textSecondary,
                       ),
                     ),
                     selected: _days == d,
                     showCheckmark: false,
                     visualDensity: VisualDensity.compact,
                     backgroundColor: context.palette.surface,
-                    selectedColor: AppColors.primarySoft,
+                    selectedColor: context.palette.primarySoft,
                     side: BorderSide(
-                      color: _days == d ? AppColors.primary : AppColors.border,
+                      color: _days == d
+                          ? context.palette.primary
+                          : context.palette.border,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -170,18 +172,18 @@ class _StatsEmpty extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
       child: Column(
         children: [
-          const Icon(
+          Icon(
             Icons.trending_up,
             size: 40,
-            color: AppColors.textTertiary,
+            color: context.palette.textTertiary,
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
+          Text(
             '还没有写作记录',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 4),

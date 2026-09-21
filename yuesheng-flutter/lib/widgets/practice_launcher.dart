@@ -194,9 +194,9 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
       children: [
         Text('自主练习', style: context.text.titleLg),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           '选择要练的症候、练习类型和难度，练什么由你决定',
-          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 13, color: context.palette.textSecondary),
         ),
       ],
     );
@@ -209,7 +209,7 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
       height: 44,
       child: FilledButton(
         onPressed: _syndromeId == null ? null : _start,
-        style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+        style: FilledButton.styleFrom(backgroundColor: context.palette.primary),
         child: const Text(
           '开始练习',
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
@@ -221,9 +221,9 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
   /// 症候区：无候选时显示引导文案。
   Widget _buildSyndromeSection() {
     if (widget.syndromes.isEmpty) {
-      return const Text(
+      return Text(
         '暂时没有活跃的写作问题——先去写一段，诊断后这里会出现可选症候',
-        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
       );
     }
     return _buildSection(
@@ -253,10 +253,10 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -269,12 +269,12 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
                 label: Text(e.value),
                 selected: selected == e.key,
                 onSelected: (_) => onSelect(e.key),
-                selectedColor: AppColors.l1,
+                selectedColor: context.palette.l1,
                 labelStyle: TextStyle(
                   fontSize: 13,
                   color: selected == e.key
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
+                      ? context.palette.primary
+                      : context.palette.textSecondary,
                   fontWeight: selected == e.key
                       ? FontWeight.w600
                       : FontWeight.normal,
@@ -282,8 +282,8 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
                 backgroundColor: context.palette.background,
                 side: BorderSide(
                   color: selected == e.key
-                      ? AppColors.primary
-                      : AppColors.border,
+                      ? context.palette.primary
+                      : context.palette.border,
                 ),
               ),
           ],
@@ -314,11 +314,11 @@ class _PracticeLauncherBodyState extends State<_PracticeLauncherBody> {
       decoration: BoxDecoration(
         color: context.palette.background,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.palette.border),
       ),
       child: Text(
         _description(),
-        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+        style: TextStyle(fontSize: 12, color: context.palette.textSecondary),
       ),
     );
   }

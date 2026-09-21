@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../providers/chat_store.dart';
+import '../config/app_palette.dart';
 
 /// 按钮行：快速观察 | 诊断本章（左）| 关闭 ✕（右）
 ///
@@ -44,12 +45,14 @@ class WritingCoachButtonRow extends StatelessWidget {
     return Row(
       children: [
         _iconButton(
+          context: context,
           style: btnStyle,
           icon: Icons.bolt,
           label: '快速观察',
           onPressed: isStreaming ? null : onObserve,
         ),
         _iconButton(
+          context: context,
           style: btnStyle,
           icon: Icons.analytics_outlined,
           label: '诊断本章',
@@ -63,14 +66,15 @@ class WritingCoachButtonRow extends StatelessWidget {
 
   /// 单个图标按钮（禁用态置灰，保持与旧实现一致的配色）。
   Widget _iconButton({
+    required BuildContext context,
     required ButtonStyle style,
     required IconData icon,
     required String label,
     required VoidCallback? onPressed,
   }) {
     final color = onPressed == null
-        ? AppColors.disabledText
-        : AppColors.primary;
+        ? context.palette.disabledText
+        : context.palette.primary;
     return TextButton.icon(
       style: style,
       onPressed: onPressed,
@@ -97,23 +101,23 @@ class WritingCoachErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.dangerBg,
+      color: context.palette.dangerBg,
       // X-039-Batch1：12→md
       padding: const EdgeInsets.all(AppSpacing.md),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
+          Icon(Icons.error_outline, color: context.palette.danger, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               // release 静默：不向用户展示异常技术细节（对齐 P2-7 铁律）
               kDebugMode ? error : '发送失败，请稍后重试',
-              style: const TextStyle(color: AppColors.danger, fontSize: 13),
+              style: TextStyle(color: context.palette.danger, fontSize: 13),
             ),
           ),
           GestureDetector(
             onTap: onDismiss,
-            child: const Icon(Icons.close, size: 16, color: AppColors.danger),
+            child: Icon(Icons.close, size: 16, color: context.palette.danger),
           ),
         ],
       ),
@@ -153,8 +157,8 @@ class WritingCoachInputBar extends StatelessWidget {
         AppSpacing.lg,
         AppSpacing.sm + bottomInset,
       ),
-      decoration: const BoxDecoration(
-        border: Border(top: BorderSide(color: AppColors.borderLight)),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: context.palette.borderLight)),
       ),
       child: Row(
         children: [
@@ -179,18 +183,18 @@ class WritingCoachInputBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          _buildSendStopButton(),
+          _buildSendStopButton(context),
         ],
       ),
     );
   }
 
   /// ADR-C87：发送 / 停止生成按钮（流式进行中切换为停止，可中止生成）。
-  Widget _buildSendStopButton() {
+  Widget _buildSendStopButton(BuildContext context) {
     return IconButton(
       icon: chatState.isStreaming
-          ? const Icon(Icons.stop, color: AppColors.primary)
-          : const Icon(Icons.send, color: AppColors.primary),
+          ? Icon(Icons.stop, color: context.palette.primary)
+          : Icon(Icons.send, color: context.palette.primary),
       tooltip: chatState.isStreaming ? '停止生成' : '发送',
       onPressed: chatState.isStreaming ? onStop : onSend,
     );

@@ -92,7 +92,7 @@ class CharacterAssertionTile extends StatelessWidget {
     return Text(
       assertion.value,
       style: context.text.body.copyWith(
-        color: gray ? AppColors.textTertiary : AppColors.textInk,
+        color: gray ? context.palette.textTertiary : context.palette.textInk,
         decoration: _rejected ? TextDecoration.lineThrough : null,
         fontSize: 15,
       ),
@@ -101,10 +101,20 @@ class CharacterAssertionTile extends StatelessWidget {
 
   Widget _buildStateBadge(BuildContext context) {
     if (_rejected) {
-      return _badge(context, '已拒绝', AppColors.dangerBg, AppColors.danger);
+      return _badge(
+        context,
+        '已拒绝',
+        context.palette.dangerBg,
+        context.palette.danger,
+      );
     }
     if (_stale) {
-      return _badge(context, '章节已改写', AppColors.warningBg, AppColors.warning);
+      return _badge(
+        context,
+        '章节已改写',
+        context.palette.warningBg,
+        context.palette.warning,
+      );
     }
     return const SizedBox.shrink();
   }
@@ -242,16 +252,18 @@ class _SourceBadge extends StatelessWidget {
       height: 20,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: isUser ? AppColors.primarySoft : context.palette.surface,
+        color: isUser ? context.palette.primarySoft : context.palette.surface,
         borderRadius: BorderRadius.circular(AppRadius.xs),
         border: Border.all(
-          color: isUser ? AppColors.primary : AppColors.border,
+          color: isUser ? context.palette.primary : context.palette.border,
         ),
       ),
       child: Text(
         isUser ? '手' : 'AI',
         style: context.text.microCaption.copyWith(
-          color: isUser ? AppColors.primary : AppColors.textTertiary,
+          color: isUser
+              ? context.palette.primary
+              : context.palette.textTertiary,
           fontWeight: FontWeight.w600,
         ),
       ),

@@ -9,6 +9,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 类型区：ChoiceChip 预设（奇幻/都市/言情/…/其他）+ 选中「其他」时展开自定义输入
 class BookshelfGenreSection extends StatelessWidget {
@@ -46,47 +47,49 @@ class BookshelfGenreSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           '类型（可选）',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
+            color: context.palette.textBody,
           ),
         ),
         const SizedBox(height: 8),
-        _buildChips(),
+        _buildChips(context),
         // 选中「其他」→ 展开自定义体裁输入
         if (custom) ...[const SizedBox(height: 10), _buildCustomField()],
       ],
     );
   }
 
-  Widget _buildChips() {
+  Widget _buildChips(BuildContext context) {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: [for (final preset in presets) _buildChip(preset)],
+      children: [for (final preset in presets) _buildChip(context, preset)],
     );
   }
 
   /// 单个体裁 Chip
-  Widget _buildChip(String preset) {
+  Widget _buildChip(BuildContext context, String preset) {
     final isSelected = selected == preset;
     return ChoiceChip(
       key: ValueKey('genre-chip-$preset'),
       label: Text(preset),
       selected: isSelected,
-      selectedColor: AppColors.primarySoft,
+      selectedColor: context.palette.primarySoft,
       labelStyle: TextStyle(
         fontSize: 13,
-        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+        color: isSelected
+            ? context.palette.primary
+            : context.palette.textSecondary,
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.pill),
         side: BorderSide(
-          color: isSelected ? AppColors.primary : AppColors.border,
+          color: isSelected ? context.palette.primary : context.palette.border,
         ),
       ),
       onSelected: enabled ? (_) => onPresetSelected(preset) : null,

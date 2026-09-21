@@ -330,7 +330,7 @@ class _CharacterDetailPageState extends ConsumerState<CharacterDetailPage> {
             tooltip: row.pinned == 1 ? '取消钉住（不再常驻注入）' : '钉住（当轮正文未提及也常驻注入设定）',
             icon: Icon(
               row.pinned == 1 ? Icons.push_pin : Icons.push_pin_outlined,
-              color: row.pinned == 1 ? AppColors.primary : null,
+              color: row.pinned == 1 ? context.palette.primary : null,
             ),
             onPressed: () => _togglePinned(row),
           ),
@@ -663,10 +663,10 @@ class _ConflictBanner extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.report_problem_outlined,
                   size: 18,
-                  color: AppColors.warning,
+                  color: context.palette.warning,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(

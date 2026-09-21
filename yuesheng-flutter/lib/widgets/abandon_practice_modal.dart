@@ -63,35 +63,35 @@ class AbandonPracticeDialog extends StatelessWidget {
             Container(
               width: 56,
               height: 56,
-              decoration: const BoxDecoration(
-                color: AppColors.dangerBg,
+              decoration: BoxDecoration(
+                color: context.palette.dangerBg,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.warning_amber_rounded,
                 size: 28,
-                color: AppColors.danger,
+                color: context.palette.danger,
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '确定跳过本次练习？',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               '已输入的内容将丢失，练习进度不会保存。',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 height: 1.45,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
             const SizedBox(height: 20),
@@ -105,17 +105,17 @@ class AbandonPracticeDialog extends StatelessWidget {
                     },
                     style: FilledButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.palette.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '继续练习',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.onPrimary,
+                        color: context.palette.onPrimary,
                       ),
                     ),
                   ),
@@ -129,17 +129,17 @@ class AbandonPracticeDialog extends StatelessWidget {
                     },
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: context.palette.border),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       '确认跳过',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textSecondary,
+                        color: context.palette.textSecondary,
                       ),
                     ),
                   ),

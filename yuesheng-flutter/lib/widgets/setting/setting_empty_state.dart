@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 资料库各子列表的通用空态。
 ///
@@ -73,7 +74,7 @@ class SettingEmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildIcon(),
+              _buildIcon(context),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 title,
@@ -95,15 +96,15 @@ class SettingEmptyState extends StatelessWidget {
   }
 
   /// 弱化圆形底板 + 主题色图标（R-019：由 [build] 抽出）。
-  Widget _buildIcon() {
+  Widget _buildIcon(BuildContext context) {
     return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, size: 26, color: AppColors.primary),
+      child: Icon(icon, size: 26, color: context.palette.primary),
     );
   }
 
@@ -156,7 +157,7 @@ class SettingErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: AppColors.danger),
+            Icon(icon, size: 32, color: context.palette.danger),
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
@@ -211,10 +212,10 @@ class SettingSearchEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.search_off_outlined,
               size: 32,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

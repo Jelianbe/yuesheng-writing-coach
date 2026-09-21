@@ -12,6 +12,7 @@ import '../../config/app_theme.dart';
 import '../../data/database/database.dart';
 import '../../utils/chapter_number.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 class CharacterEventsSection extends StatelessWidget {
   final List<EventFact> events;
@@ -94,12 +95,14 @@ class _TypeChip extends StatelessWidget {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
         eventType,
-        style: context.text.microCaption.copyWith(color: AppColors.l1Text),
+        style: context.text.microCaption.copyWith(
+          color: context.palette.l1Text,
+        ),
       ),
     );
   }

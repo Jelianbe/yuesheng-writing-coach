@@ -102,7 +102,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.divider),
+        border: Border.all(color: context.palette.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,19 +122,19 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.visibility_outlined,
                     size: 20,
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Editor 观察记录',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                   ),
@@ -144,9 +144,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                         _collapsedSummary,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textTertiary,
+                          color: context.palette.textTertiary,
                         ),
                       ),
                     ),
@@ -155,7 +155,7 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
                     size: 20,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                 ],
               ),
@@ -173,13 +173,15 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
             else if (_error != null)
               Text(
                 '错误：$_error',
-                style: const TextStyle(fontSize: 13, color: AppColors.danger),
+                style: TextStyle(fontSize: 13, color: context.palette.danger),
               )
             else if (_loading)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                  child: CircularProgressIndicator(
+                    color: context.palette.primary,
+                  ),
                 ),
               )
             else if (_total == null)
@@ -216,9 +218,9 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.sm,
                     ),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: AppColors.divider),
+                        bottom: BorderSide(color: context.palette.divider),
                       ),
                     ),
                     child: Column(
@@ -251,8 +253,8 @@ class _ObservationAuditCardState extends ConsumerState<ObservationAuditCard> {
                   icon: const Icon(Icons.refresh, size: 16),
                   label: const Text('刷新'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primarySoft),
+                    foregroundColor: context.palette.primary,
+                    side: BorderSide(color: context.palette.primarySoft),
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.smx,
                     ),
@@ -280,25 +282,25 @@ class _StatItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.primarySoft,
+          color: context.palette.primarySoft,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Column(
           children: [
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
           ],

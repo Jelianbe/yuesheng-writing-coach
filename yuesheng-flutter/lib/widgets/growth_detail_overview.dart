@@ -17,6 +17,7 @@ import '../services/progress_service.dart';
 import '../types/teaching_types.dart';
 import 'growth_detail_widgets.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 写作总览六格网格（批次 51c，对齐 RN growth-detail overviewGrid：
 /// 写作天数 / 当前阶段 / 已解决 / 待改进 + 首次/最近写作整宽两格）
@@ -43,12 +44,12 @@ class GrowthOverviewGrid extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '写作总览',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -122,10 +123,10 @@ class GrowthGridItem extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 2),
@@ -144,7 +145,7 @@ class GrowthProgressLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.primarySoft,
+      color: context.palette.primarySoft,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
@@ -154,7 +155,7 @@ class GrowthProgressLink extends StatelessWidget {
             horizontal: AppSpacing.lg,
             vertical: 14,
           ),
-          child: const Row(
+          child: Row(
             children: [
               Expanded(
                 child: Text(
@@ -162,7 +163,7 @@ class GrowthProgressLink extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                   ),
                 ),
               ),
@@ -171,7 +172,7 @@ class GrowthProgressLink extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+                  color: context.palette.primary,
                 ),
               ),
             ],

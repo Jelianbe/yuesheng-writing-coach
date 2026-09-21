@@ -16,9 +16,11 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../types/teaching_types.dart';
+import '../config/app_palette.dart';
 
 /// 训练结果 → 文案 + 配色
 ({String text, IconData icon, Color color, Color bg}) _resultConfig(
+  BuildContext context,
   TrainingResult result,
 ) {
   switch (result) {
@@ -26,22 +28,22 @@ import '../types/teaching_types.dart';
       return (
         text: '达标！你掌握了这个要点',
         icon: Icons.check_circle_outline,
-        color: AppColors.primary,
-        bg: AppColors.l1,
+        color: context.palette.primary,
+        bg: context.palette.l1,
       );
     case TrainingResult.partial:
       return (
         text: '部分达标，方向正确，细节需打磨',
         icon: Icons.change_circle_outlined,
-        color: AppColors.l2Text,
-        bg: AppColors.l2,
+        color: context.palette.l2Text,
+        bg: context.palette.l2,
       );
     case TrainingResult.failed:
       return (
         text: '未达标，建议重新理解要求',
         icon: Icons.cancel_outlined,
-        color: AppColors.l3Text,
-        bg: AppColors.l3,
+        color: context.palette.l3Text,
+        bg: context.palette.l3,
       );
   }
 }
@@ -66,7 +68,7 @@ class PracticeResultIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cfg = _resultConfig(result);
+    final cfg = _resultConfig(context, result);
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -98,10 +100,10 @@ class PracticeResultIndicator extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               details!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.5,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ],
@@ -113,7 +115,7 @@ class PracticeResultIndicator extends StatelessWidget {
                 TextButton(
                   onPressed: onRetry,
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.l3Text,
+                    foregroundColor: context.palette.l3Text,
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
                       vertical: AppSpacing.xsm,
@@ -129,7 +131,7 @@ class PracticeResultIndicator extends StatelessWidget {
               TextButton(
                 onPressed: onDismiss,
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textTertiary,
+                  foregroundColor: context.palette.textTertiary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
                     vertical: AppSpacing.xsm,

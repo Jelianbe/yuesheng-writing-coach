@@ -37,6 +37,13 @@
 # ============================================================
 set -u
 
+# ★ Python 子进程输出编码：Windows 中文 locale 下 python 的 stdout 是 GBK，门禁脚本打印
+#   「✓」等字符即 UnicodeEncodeError 崩溃 ⇒ 该道被记 **FAIL（假红）**。实证代价（2026-09-21）：
+#   pre-commit 快道因此 5 道 FAIL（门禁 5/7/9/10/11 全是打 ✓ 的 python 检查器），而**同一棵树**
+#   经 run_bash_win.py（自带 UTF-8）跑收尾门禁 **12/12 全绿**。此处显式定死编码，
+#   覆盖「裸 bash 直调 wrapper」这条此前无人守的路径（已有显式设定则不覆盖）。
+export PYTHONIOENCODING="${PYTHONIOENCODING:-utf-8}"
+
 # 定位仓库根：用参数展开而非 `dirname`。
 # 会话沙箱的 MSYS bash 缺 dirname（PATH 被重写），`$(dirname "$0")` 会算出空 ROOT，
 # 之后所有门禁行为不可信。参数展开零外部命令依赖。

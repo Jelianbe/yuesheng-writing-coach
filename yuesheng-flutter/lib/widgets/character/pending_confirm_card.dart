@@ -18,6 +18,7 @@ import '../../providers/app_providers.dart';
 import '../../services/setting_library_service.dart';
 import '../../types/character_types.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// C78 D-7 拒绝理由 chips（与角色详情页拒绝理由同一枚举，见 character_dialogs）
 const List<String> _kRejectReasons = ['抽取错误', '章节已改写', '重复', '其他'];
@@ -55,7 +56,7 @@ class PendingConfirmCard extends ConsumerWidget {
         vertical: AppSpacing.sm,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Column(
@@ -83,15 +84,15 @@ class PendingConfirmCard extends ConsumerWidget {
   Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        const Icon(
+        Icon(
           Icons.fact_check_outlined,
           size: 18,
-          color: AppColors.l1Text,
+          color: context.palette.l1Text,
         ),
         const SizedBox(width: AppSpacing.xsm),
         Text(
           'AI 抽取待确认 · ${items.length} 条',
-          style: context.text.caption.copyWith(color: AppColors.l1Text),
+          style: context.text.caption.copyWith(color: context.palette.l1Text),
         ),
       ],
     );

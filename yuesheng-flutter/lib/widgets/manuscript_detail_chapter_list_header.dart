@@ -37,12 +37,12 @@ class ChapterListHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Text(
+          Text(
             '章节列表',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(width: 6),
@@ -57,15 +57,15 @@ class ChapterListHeader extends StatelessWidget {
                 vertical: AppSpacing.xsm,
               ),
               decoration: BoxDecoration(
-                color: AppColors.primarySoft,
+                color: context.palette.primarySoft,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: const Text(
+              child: Text(
                 '导入',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
+                  color: context.palette.primary,
                 ),
               ),
             ),
@@ -108,20 +108,23 @@ class NewChapterRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.palette.background,
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.palette.border),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.add_circle_outline,
                 size: 18,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
               SizedBox(width: 8),
               Text(
                 '新建章节',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.palette.textSecondary,
+                ),
               ),
             ],
           ),

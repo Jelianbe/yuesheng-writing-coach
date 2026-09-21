@@ -25,6 +25,7 @@ import 'chat_teaching_controller.dart';
 import 'chat_welcome.dart';
 import 'message_list.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 消息列表分区（含练习卡 / 评估报告 / 空态欢迎）
 class ChatMessageSection extends ConsumerWidget {
@@ -116,16 +117,16 @@ class ChatBootstrapErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
+          Icon(Icons.error_outline, size: 32, color: context.palette.danger),
           const SizedBox(height: 8),
           Text('初始化失败，请重试', style: context.text.body),
           const SizedBox(height: 4),
           if (kDebugMode)
             Text(
               '$error',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -148,7 +149,7 @@ class ChatErrorBar extends ConsumerWidget {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.sm,
       ),
-      color: AppColors.dangerBg,
+      color: context.palette.dangerBg,
       child: Row(
         children: [
           const Icon(Icons.error_outline, size: 18),
@@ -156,7 +157,7 @@ class ChatErrorBar extends ConsumerWidget {
           Expanded(
             child: Text(
               kDebugMode ? chatState.error! : '发送失败，请稍后重试',
-              style: const TextStyle(fontSize: 13, color: AppColors.danger),
+              style: TextStyle(fontSize: 13, color: context.palette.danger),
             ),
           ),
           IconButton(

@@ -34,7 +34,7 @@ class GrowthInfoCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: context.palette.surface,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(children: [Expanded(child: child)]),
       ),
@@ -57,10 +57,10 @@ class GrowthInfoRow extends StatelessWidget {
         const Spacer(),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
       ],
@@ -93,10 +93,10 @@ class GrowthRecurrenceRow extends StatelessWidget {
             children: [
               Text(
                 recurrence.syndromeName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
@@ -109,7 +109,9 @@ class GrowthRecurrenceRow extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: rate >= 50 ? AppColors.danger : AppColors.primary,
+            color: rate >= 50
+                ? context.palette.danger
+                : context.palette.primary,
           ),
         ),
       ],
@@ -126,10 +128,10 @@ class SeverityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = switch (severity) {
-      'L1' => AppColors.l1,
-      'L2' => AppColors.l2,
-      'L3' => AppColors.l3,
-      _ => AppColors.border,
+      'L1' => context.palette.l1,
+      'L2' => context.palette.l2,
+      'L3' => context.palette.l3,
+      _ => context.palette.border,
     };
 
     return Container(
@@ -143,7 +145,7 @@ class SeverityChip extends StatelessWidget {
       ),
       child: Text(
         severity,
-        style: const TextStyle(fontSize: 11, color: AppColors.textPrimary),
+        style: TextStyle(fontSize: 11, color: context.palette.textPrimary),
       ),
     );
   }

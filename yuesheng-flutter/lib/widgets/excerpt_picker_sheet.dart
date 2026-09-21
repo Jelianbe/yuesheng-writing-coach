@@ -24,6 +24,7 @@ import '../config/app_theme.dart';
 import '../providers/capability_providers.dart';
 import '../services/paragraph_selection.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 选段确认结果（区分「清除选段」与「取消关闭」——两者 pop 值不能同为 null）
 class ExcerptPickResult {
@@ -135,10 +136,10 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
               '选段：${widget.chapterTitle}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ),
@@ -152,12 +153,12 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           const SizedBox(height: 8),
           Flexible(
             child: _paras.isEmpty
-                ? const Padding(
+                ? Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
                     child: Text(
                       '本章暂无内容',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.disabledText),
+                      style: TextStyle(color: context.palette.disabledText),
                     ),
                   )
                 : SingleChildScrollView(
@@ -174,7 +175,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                     ),
                   ),
           ),
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
@@ -196,24 +197,24 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                     if (_hasSelection)
                       TextButton(
                         onPressed: _handleClear,
-                        child: const Text(
+                        child: Text(
                           '清除选段',
-                          style: TextStyle(color: AppColors.textTertiary),
+                          style: TextStyle(color: context.palette.textTertiary),
                         ),
                       ),
                     const Spacer(),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
+                      child: Text(
                         '取消',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style: TextStyle(color: context.palette.textSecondary),
                       ),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: _handleConfirm,
                       style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        backgroundColor: context.palette.primary,
                       ),
                       child: const Text('确定'),
                     ),
@@ -240,7 +241,7 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primarySoft : null,
+          color: selected ? context.palette.primarySoft : null,
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(
@@ -248,9 +249,9 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
           children: [
             Text(
               '${index + 1}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
-                color: AppColors.disabledText,
+                color: context.palette.disabledText,
               ),
             ),
             const SizedBox(width: 8),
@@ -261,8 +262,8 @@ class _ExcerptPickerSheetState extends ConsumerState<ExcerptPickerSheet> {
                   fontSize: 14,
                   height: 1.5,
                   color: text.isEmpty
-                      ? AppColors.disabledText
-                      : AppColors.textPrimary,
+                      ? context.palette.disabledText
+                      : context.palette.textPrimary,
                 ),
               ),
             ),

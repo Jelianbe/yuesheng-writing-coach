@@ -104,11 +104,11 @@ class CharacterHeaderCard extends StatelessWidget {
             ),
         GestureDetector(
           onTap: onEditAliases,
-          child: const Text(
+          child: Text(
             '编辑+',
             style: TextStyle(
               fontSize: 12,
-              color: AppColors.primary,
+              color: context.palette.primary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -134,7 +134,7 @@ class CharacterRecentBanner extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: AppSpacing.sm),
       width: double.infinity,
-      color: AppColors.primarySoft,
+      color: context.palette.primarySoft,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
         vertical: AppSpacing.sm,
@@ -144,14 +144,16 @@ class CharacterRecentBanner extends StatelessWidget {
           Expanded(
             child: Text(
               '正在查看最近批次沉淀（$visibleCount 条，按落库时间过滤）',
-              style: context.text.noteCaption.copyWith(color: AppColors.l1Text),
+              style: context.text.noteCaption.copyWith(
+                color: context.palette.l1Text,
+              ),
             ),
           ),
           GestureDetector(
             onTap: onShowAll,
-            child: const Text(
+            child: Text(
               '查看全部',
-              style: TextStyle(fontSize: 12, color: AppColors.primary),
+              style: TextStyle(fontSize: 12, color: context.palette.primary),
             ),
           ),
         ],
@@ -178,7 +180,7 @@ class CharacterConflictsCard extends StatelessWidget {
     if (conflicts.isEmpty) return const SizedBox.shrink();
     return Card(
       margin: const EdgeInsets.only(top: AppSpacing.md),
-      color: AppColors.warningBg,
+      color: context.palette.warningBg,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -186,7 +188,9 @@ class CharacterConflictsCard extends StatelessWidget {
           children: [
             Text(
               '⚠ 时序矛盾（${conflicts.length}）',
-              style: context.text.titleMd.copyWith(color: AppColors.warning),
+              style: context.text.titleMd.copyWith(
+                color: context.palette.warning,
+              ),
             ),
             const SizedBox(height: AppSpacing.xsm),
             for (final o in conflicts)
@@ -195,7 +199,7 @@ class CharacterConflictsCard extends StatelessWidget {
                 child: Text(
                   _conflictText(o),
                   style: context.text.noteCaption.copyWith(
-                    color: AppColors.textPrimary,
+                    color: context.palette.textPrimary,
                   ),
                 ),
               ),

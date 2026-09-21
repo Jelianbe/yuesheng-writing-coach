@@ -16,6 +16,7 @@ import '../config/app_theme.dart';
 import '../providers/fact_batch_providers.dart';
 import '../router/app_routes.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class FactBatchCard extends StatelessWidget {
   final FactBatchRecord record;
@@ -29,7 +30,7 @@ class FactBatchCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Material(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -42,24 +43,24 @@ class FactBatchCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.inventory_2_outlined,
                   size: 14,
-                  color: AppColors.l1Text,
+                  color: context.palette.l1Text,
                 ),
                 const SizedBox(width: AppSpacing.xsm),
                 Text(
                   '本次沉淀 ${record.count} 条人物事实',
                   style: context.text.noteCaption.copyWith(
-                    color: AppColors.l1Text,
+                    color: context.palette.l1Text,
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                const Text(
+                Text(
                   '查看 ›',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.primary,
+                    color: context.palette.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

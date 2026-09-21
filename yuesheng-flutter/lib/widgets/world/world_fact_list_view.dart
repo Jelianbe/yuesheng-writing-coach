@@ -32,6 +32,7 @@ import '../setting/setting_empty_state.dart';
 import 'world_dialogs.dart';
 import 'world_fact_detail_page.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 断言摘要最多展示的条目数（照搬 character_list_view.dart:30）
 const int _kSummaryMax = 3;
@@ -498,9 +499,9 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
             Expanded(
               child: Text(row.name, style: context.text.titleMd, maxLines: 1),
             ),
-            if (_isArchived(row)) _buildTag('已归档', AppColors.l2Text),
+            if (_isArchived(row)) _buildTag('已归档', context.palette.l2Text),
             if (!_hasValidAssertion(row))
-              _buildTag(kWorldThemeEmptyHint, AppColors.textTertiary),
+              _buildTag(kWorldThemeEmptyHint, context.palette.textTertiary),
           ],
         ),
         subtitle: _buildItemSubtitle(row, chapterNoMap),
@@ -518,7 +519,7 @@ class WorldFactListViewState extends ConsumerState<WorldFactListView> {
         vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(

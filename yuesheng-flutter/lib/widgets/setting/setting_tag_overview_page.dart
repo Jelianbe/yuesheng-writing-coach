@@ -190,7 +190,7 @@ class _KindBadge extends StatelessWidget {
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primarySoft,
+        color: context.palette.primarySoft,
         borderRadius: BorderRadius.circular(AppRadius.pill),
       ),
       child: Text(kind.label, style: context.text.caption),

@@ -85,30 +85,33 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.borderSoft,
+                color: context.palette.borderSoft,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
             ),
-            const Text(
+            Text(
               '导入书籍',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               '从 TXT 文件导入小说，自动按章节拆分',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.palette.textTertiary,
+              ),
             ),
             const SizedBox(height: 16),
 
             if (_uploading)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: Center(
                   child: SizedBox(
@@ -116,7 +119,7 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      color: AppColors.primary,
+                      color: context.palette.primary,
                     ),
                   ),
                 ),
@@ -134,13 +137,13 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
               Container(
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  color: AppColors.dangerBg,
+                  color: context.palette.dangerBg,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Text(
                   _error!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: AppColors.danger),
+                  style: TextStyle(fontSize: 13, color: context.palette.danger),
                 ),
               ),
             ],
@@ -150,14 +153,14 @@ class _BookImportSheetState extends ConsumerState<BookImportSheet> {
               onPressed: _uploading ? null : () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                side: const BorderSide(color: AppColors.borderSoft),
+                side: BorderSide(color: context.palette.borderSoft),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '取消',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: context.palette.textSecondary),
               ),
             ),
           ],
@@ -194,7 +197,7 @@ class _OptionCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: AppColors.textPrimary),
+            Icon(icon, size: 22, color: context.palette.textPrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -202,24 +205,24 @@ class _OptionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.disabledText),
+            Icon(Icons.chevron_right, color: context.palette.disabledText),
           ],
         ),
       ),

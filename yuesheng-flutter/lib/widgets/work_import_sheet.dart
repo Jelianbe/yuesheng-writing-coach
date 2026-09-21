@@ -150,7 +150,7 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
               decoration: BoxDecoration(
-                color: AppColors.borderSoft,
+                color: context.palette.borderSoft,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
@@ -158,17 +158,20 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
             Text(
               '导入作品',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               '从文件导入小说，自动按章节拆分',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.palette.textTertiary,
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -177,20 +180,20 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                 child: Column(
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: AppColors.primary,
+                        color: context.palette.primary,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       _progressText,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                   ],
@@ -215,15 +218,15 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.md),
                   decoration: BoxDecoration(
-                    color: AppColors.dangerBg,
+                    color: context.palette.dangerBg,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     _error!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.danger,
+                      color: context.palette.danger,
                     ),
                   ),
                 ),
@@ -235,14 +238,14 @@ class _WorkImportSheetState extends ConsumerState<WorkImportSheet> {
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                side: const BorderSide(color: AppColors.borderSoft),
+                side: BorderSide(color: context.palette.borderSoft),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '取消',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: context.palette.textSecondary),
               ),
             ),
           ],
@@ -279,7 +282,7 @@ class _OptionCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: AppColors.textPrimary),
+            Icon(icon, size: 22, color: context.palette.textPrimary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -287,24 +290,24 @@ class _OptionCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.disabledText),
+            Icon(Icons.chevron_right, color: context.palette.disabledText),
           ],
         ),
       ),

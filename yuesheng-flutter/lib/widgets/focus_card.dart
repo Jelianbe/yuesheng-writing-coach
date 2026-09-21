@@ -43,34 +43,34 @@ class _CardBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '当前焦点',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             '建议先关注：${data.focusName}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             data.progressNarrative,
-            style: const TextStyle(fontSize: 12, color: AppColors.primary),
+            style: TextStyle(fontSize: 12, color: context.palette.primary),
           ),
           const SizedBox(height: 6),
           Text(
             data.reason,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 10),
@@ -78,7 +78,7 @@ class _CardBody extends StatelessWidget {
             '下一步：可练「${data.focusName}」的 ${data.skillLevel.value} '
             '${data.skillLevel.label} · ${data.intervention.value}'
             '（${data.intervention.label}）',
-            style: const TextStyle(fontSize: 13, color: AppColors.primary),
+            style: TextStyle(fontSize: 13, color: context.palette.primary),
           ),
         ],
       ),
@@ -101,12 +101,12 @@ class _StagnationBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.warningBg,
+        color: context.palette.warningBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 12, color: AppColors.warning),
+        style: TextStyle(fontSize: 12, color: context.palette.warning),
       ),
     );
   }
