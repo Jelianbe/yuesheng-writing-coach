@@ -115,26 +115,29 @@ final List<(String, Color, Color)> _lightParity = [
   ('placeholder', AppPalette.light.placeholder, AppColors.placeholder),
   ('hintText', AppPalette.light.hintText, AppColors.hintText),
   // ── 编辑器暗夜联动色 ──
+  //
+  // ★ 2026-09-22（批次 M2）：对照源由 `AppColors.editorDark*` 改为
+  //   **`EditorDarkAxis.*`（唯一真源）**。
+  //   动因：M1 把五色的唯一真源收敛到 `EditorDarkAxis`，`AppColors.editorDark*`
+  //   降级为转发别名；M2 删除该别名后，此表若仍指 `AppColors` 会**编译失败**。
+  //   ★ 但这 5 项**不能删** —— 本文件另有一条结构性守卫
+  //   「表的项数 == AppPalette 字段数」（堵手写表 fail-open），
+  //   删项会让 `declared.difference(listed)` 报红（实测：Expected <44> Actual <39>）。
+  //   ⇒ 正确处置 = **换对照源，不删项**：本条钉的不变式仍是
+  //   「`AppPalette` 的编辑器令牌必须等于唯一真源」，且**更强**
+  //   （原先只钉「两个副本互等」，两边一起改错也测不出）。
   (
     'editorDarkSurface',
     AppPalette.light.editorDarkSurface,
-    AppColors.editorDarkSurface,
+    EditorDarkAxis.surface,
   ),
-  (
-    'editorDarkPanel',
-    AppPalette.light.editorDarkPanel,
-    AppColors.editorDarkPanel,
-  ),
-  ('editorDarkText', AppPalette.light.editorDarkText, AppColors.editorDarkText),
-  (
-    'editorDarkMuted',
-    AppPalette.light.editorDarkMuted,
-    AppColors.editorDarkMuted,
-  ),
+  ('editorDarkPanel', AppPalette.light.editorDarkPanel, EditorDarkAxis.panel),
+  ('editorDarkText', AppPalette.light.editorDarkText, EditorDarkAxis.text),
+  ('editorDarkMuted', AppPalette.light.editorDarkMuted, EditorDarkAxis.muted),
   (
     'editorDarkDeepMuted',
     AppPalette.light.editorDarkDeepMuted,
-    AppColors.editorDarkDeepMuted,
+    EditorDarkAxis.deepMuted,
   ),
   // ── 正向色 ──
   ('success', AppPalette.light.success, AppColors.success),
@@ -462,29 +465,41 @@ void _metaTests() {
       multiLine: true,
     ).allMatches(src).map((m) => m.group(1)!).toSet();
 
-    test('AppPalette 字段数与 AppColors 令牌数相等', () {
+    test('AppColors 令牌集是 AppPalette 字段集的子集（单向收敛）', () {
       final themeSrc = File('lib/config/app_theme.dart').readAsStringSync();
       final colorsDeclared = RegExp(
         r'static\s+const\s+Color\s+(\w+)\s*=',
       ).allMatches(themeSrc).map((m) => m.group(1)!).toSet();
-      expect(
-        declared.length,
-        colorsDeclared.length,
-        reason:
-            'AppPalette 有 ${declared.length} 个字段，AppColors 有 '
-            '${colorsDeclared.length} 个令牌 —— 数量不等说明迁移不完整',
-      );
-      expect(
-        declared.difference(colorsDeclared),
-        isEmpty,
-        reason:
-            'AppPalette 多出 AppColors 没有的字段：${declared.difference(colorsDeclared)}',
-      );
+      // ★ 2026-09-22（批次 M2）判据升级：由「**数量相等**」改为「**单向子集**」。
+      //
+      //   旧判据：`declared.length == colorsDeclared.length`，理由写「数量不等
+      //   说明迁移不完整」。
+      //   ⚠️ 该判据在 M2 后**方向反了** —— 它把「两边令牌数相等」当作健康指标，
+      //   等于**要求永远保留两份定义**；而本轮工作的目标恰是消除「同值两写」
+      //   （同一组颜色在 `AppPalette` 与 `AppColors` 各写一遍），让 `AppPalette`
+      //   成为唯一真源、`AppColors` 逐步退役。
+      //   ⇒ 迁移**越成功，两个数差得越多**。旧判据会在每次成功收敛时报红，
+      //     构成「**惩罚正确方向**」的逆向激励（与 M1 修掉的「注释计入迁移债」同族）。
+      //
+      //   新判据（方向正确且更强）：
+      //     · `AppColors` ⊆ `AppPalette`  —— AppColors 里不得有 AppPalette 没有的令牌
+      //       （那才是真缺陷：静态表私藏了一个真源里不存在、无法被主题驱动的色）。
+      //     · `AppPalette` ⊋ 允许 —— 真源可以更多（`editorDark*` 即此类）。
+      //   且「子集中的同名令牌必须同值」由本文件 ① 组 `_lightParity` 逐项钉住。
       expect(
         colorsDeclared.difference(declared),
         isEmpty,
         reason:
-            'AppColors 有但 AppPalette 缺的令牌：${colorsDeclared.difference(declared)}',
+            'AppColors 有但 AppPalette 缺的令牌：'
+            '${colorsDeclared.difference(declared)} —— '
+            '这些色不在唯一真源里，无法被主题驱动（真缺陷，必须消除）',
+      );
+      expect(
+        declared.length,
+        greaterThanOrEqualTo(colorsDeclared.length),
+        reason:
+            'AppPalette 应 ⊇ AppColors：AppPalette ${declared.length} 个 / '
+            'AppColors ${colorsDeclared.length} 个',
       );
     });
 

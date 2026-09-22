@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import 'bookshelf_long_press_action.dart';
+import '../config/app_palette.dart';
 
 /// 长按操作菜单（顶部把手 + 作品标题 + 四项动作 + 取消）
 class BookshelfLongPressSheet extends StatelessWidget {
@@ -41,8 +42,8 @@ class BookshelfLongPressSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHandle(),
-            _buildTitle(),
+            _buildHandle(context),
+            _buildTitle(context),
             ..._buildItems(context),
             const SizedBox(height: 8),
             _buildCancel(context),
@@ -59,48 +60,48 @@ class BookshelfLongPressSheet extends StatelessWidget {
         context,
         icon: Icons.edit_note_outlined,
         label: '继续写作',
-        color: AppColors.primary,
+        color: context.palette.primary,
         onTap: onContinueWriting,
       ),
       _buildItem(
         context,
         icon: Icons.edit_outlined,
         label: '编辑信息',
-        color: AppColors.textPrimary,
+        color: context.palette.textPrimary,
         onTap: onEditInfo,
       ),
       _buildItem(
         context,
         icon: Icons.push_pin_outlined,
         label: '置顶',
-        color: AppColors.textPrimary,
+        color: context.palette.textPrimary,
         onTap: onPin,
       ),
       _buildItem(
         context,
         icon: Icons.delete_outline,
         label: '删除',
-        color: AppColors.danger,
+        color: context.palette.danger,
         onTap: onDelete,
       ),
     ];
   }
 
   /// 顶部把手
-  Widget _buildHandle() {
+  Widget _buildHandle(BuildContext context) {
     return Container(
       width: 36,
       height: 4,
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: AppColors.border,
+        color: context.palette.border,
         borderRadius: BorderRadius.circular(2),
       ),
     );
   }
 
   /// 菜单作品标题
-  Widget _buildTitle() {
+  Widget _buildTitle(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.md,
@@ -112,10 +113,10 @@ class BookshelfLongPressSheet extends StatelessWidget {
         title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: context.palette.textPrimary,
         ),
       ),
     );
@@ -156,7 +157,7 @@ class BookshelfLongPressSheet extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(44),
           side: const BorderSide(color: AppColors.border),
-          foregroundColor: AppColors.textSecondary,
+          foregroundColor: context.palette.textSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),
           ),

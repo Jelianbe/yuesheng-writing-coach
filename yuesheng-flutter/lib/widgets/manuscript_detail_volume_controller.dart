@@ -18,6 +18,7 @@ import '../providers/manuscript_providers.dart';
 import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
 import 'yue_sheet.dart';
+import '../config/app_palette.dart';
 
 /// 作品详情页卷动作
 class ManuscriptDetailVolumeController {
@@ -46,7 +47,7 @@ class ManuscriptDetailVolumeController {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(backgroundColor: ctx.palette.primary),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('创建'),
           ),
@@ -94,7 +95,7 @@ class ManuscriptDetailVolumeController {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(backgroundColor: ctx.palette.primary),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('保存'),
           ),
@@ -146,7 +147,7 @@ class ManuscriptDetailVolumeController {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(backgroundColor: ctx.palette.danger),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('删除'),
           ),
@@ -185,7 +186,7 @@ class _VolumeActionsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           const Divider(height: 1),
           ..._buildActionTiles(context),
           const SizedBox(height: 8),
@@ -195,7 +196,7 @@ class _VolumeActionsSheet extends StatelessWidget {
   }
 
   /// 弹层标题（卷名 / 未命名卷）
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.section,
@@ -205,10 +206,10 @@ class _VolumeActionsSheet extends StatelessWidget {
       ),
       child: Text(
         volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: context.palette.textPrimary,
         ),
       ),
     );
@@ -218,28 +219,28 @@ class _VolumeActionsSheet extends StatelessWidget {
   List<Widget> _buildActionTiles(BuildContext context) {
     return [
       ListTile(
-        leading: const Icon(
+        leading: Icon(
           Icons.ios_share_outlined,
           size: 18,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
         title: const Text('导出本卷'),
         onTap: () => Navigator.pop(context, 'export'),
       ),
       ListTile(
-        leading: const Icon(
+        leading: Icon(
           Icons.edit_outlined,
           size: 18,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
         title: const Text('重命名卷'),
         onTap: () => Navigator.pop(context, 'rename'),
       ),
       ListTile(
-        leading: const Icon(
+        leading: Icon(
           Icons.delete_outline,
           size: 18,
-          color: AppColors.danger,
+          color: context.palette.danger,
         ),
         title: const Text('删除卷', style: TextStyle(color: AppColors.danger)),
         subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),

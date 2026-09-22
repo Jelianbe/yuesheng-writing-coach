@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 消息删除确认弹窗。
 class WritingCoachDeleteDialog extends StatelessWidget {
@@ -19,7 +20,7 @@ class WritingCoachDeleteDialog extends StatelessWidget {
     return showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      barrierColor: AppColors.overlay,
+      barrierColor: context.palette.overlay,
       builder: (ctx) => _buildDialog(ctx),
     );
   }
@@ -37,10 +38,10 @@ class WritingCoachDeleteDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.pop(dialogCtx, false),
           style: AppButtonStyles.secondary,
-          child: const Text(
+          child: Text(
             '取消',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: dialogCtx.palette.textPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -49,7 +50,7 @@ class WritingCoachDeleteDialog extends StatelessWidget {
         FilledButton(
           onPressed: () => Navigator.pop(dialogCtx, true),
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.danger,
+            backgroundColor: dialogCtx.palette.danger,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
@@ -59,10 +60,10 @@ class WritingCoachDeleteDialog extends StatelessWidget {
               vertical: AppSpacing.md,
             ),
           ),
-          child: const Text(
+          child: Text(
             '删除',
             style: TextStyle(
-              color: AppColors.onPrimary,
+              color: dialogCtx.palette.onPrimary,
               fontWeight: FontWeight.w500,
             ),
           ),

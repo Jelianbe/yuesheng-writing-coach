@@ -6,7 +6,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 书架加载中视图
 class BookshelfLoadingView extends StatelessWidget {
@@ -14,8 +14,8 @@ class BookshelfLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primary),
+    return Center(
+      child: CircularProgressIndicator(color: context.palette.primary),
     );
   }
 }

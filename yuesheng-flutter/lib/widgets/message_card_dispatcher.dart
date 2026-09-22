@@ -25,6 +25,7 @@ import 'phase_summary_card.dart';
 import 'phase_upgrade_card.dart';
 import 'reference_change_card.dart';
 import 'teacher_suggestion_card.dart';
+import '../config/app_palette.dart';
 
 /// 按 messageType 分派结构化消息卡片。
 ///
@@ -44,6 +45,7 @@ import 'teacher_suggestion_card.dart';
 ///   [onPartialAgreementSubmit] PartialAgreementCard「提交反馈/快速选项」回调
 ///   [onPartialAgreementSkip] PartialAgreementCard「跳过此症候」回调
 Widget? dispatchMessageCard({
+  required BuildContext context,
   required Message msg,
   required bool isStreamingBubble,
   EvaluationData? evaluationReport,
@@ -185,9 +187,9 @@ Widget? dispatchMessageCard({
               minimumSize: const Size(0, 28),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
+            child: Text(
               '采纳',
-              style: TextStyle(fontSize: 12, color: AppColors.primary),
+              style: TextStyle(fontSize: 12, color: context.palette.primary),
             ),
           ),
         ),

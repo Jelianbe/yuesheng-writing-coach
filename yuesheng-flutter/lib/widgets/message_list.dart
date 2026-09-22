@@ -519,6 +519,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                     //  reference_change/phase_upgrade/partial_agreement/phase_summary/
                     //  diagnosis_failed/评估报告 均由其处理；不命中回退 MessageBubble）
                     final card = dispatchMessageCard(
+                      context: context,
                       msg: msg,
                       isStreamingBubble: isStreamingBubble,
                       evaluationReport: widget.evaluationReports[msg.id],

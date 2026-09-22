@@ -28,6 +28,7 @@ import '../services/syndrome_tracker.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 聊天页诊断与活跃问题动作
 class ChatDiagnosisController {
@@ -170,7 +171,7 @@ class ChatDiagnosisController {
     final confirmed = await showDialog<bool>(
       context: host.context,
       barrierDismissible: true,
-      barrierColor: AppColors.overlay,
+      barrierColor: host.context.palette.overlay,
       builder: (ctx) => AlertDialog(
         title: Text('移除问题', style: ctx.text.titleLg),
         content: Text(
@@ -181,22 +182,22 @@ class ChatDiagnosisController {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
+            child: Text(
               '取消',
-              style: TextStyle(color: AppColors.textPrimary),
+              style: TextStyle(color: host.context.palette.textPrimary),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: host.context.palette.danger,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
-            child: const Text(
+            child: Text(
               '移除',
-              style: TextStyle(color: AppColors.onPrimary),
+              style: TextStyle(color: host.context.palette.onPrimary),
             ),
           ),
         ],

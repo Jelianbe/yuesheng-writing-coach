@@ -437,8 +437,12 @@ const Set<String> _coveredTokens = {
   'primary', 'primaryDeep', 'danger', 'warning', 'success', 'hintText',
   // 专底前景（5）
   'l1Text', 'l2Text', 'l3Text', 'onPrimary', 'onPrimaryDim',
-  // 暗夜前景（2）
-  'editorDarkText', 'editorDarkMuted',
+  // ★ 2026-09-22（批次 M2）：`editorDarkText` / `editorDarkMuted` 已从本表移除。
+  //   动因：批次 M1 把编辑器暗夜五色的唯一真源收敛到 `EditorDarkAxis`，
+  //   `AppColors.editorDark*` 于 M2 删除 ⇒ 本文件（守 `AppColors`）不再有这两项。
+  //   ⚠️ 它们**没有被取消守护**，只是**换了守护者**：
+  //   `app_palette_contrast_test.dart` 的 `_lightParity` 现钉
+  //   `AppPalette.light.editorDark* == EditorDarkAxis.*`（对照源已是唯一真源）。
 };
 
 /// 显式豁免的令牌（25 个）—— 每条**必须附原因**，否则 meta 断言不认可
@@ -455,9 +459,10 @@ const Map<String, String> _exemptTokens = {
   'warningBg': '底色',
   'successBg': '底色',
   'dangerBg': '底色',
-  'editorDarkSurface': '底色',
-  'editorDarkPanel': '底色',
-  'editorDarkDeepMuted': '底色（非前景；app_theme.dart:89 自陈「输入框/分隔底」）',
+  // ★ 2026-09-22（批次 M2）：原 `editorDarkSurface` / `editorDarkPanel` /
+  //   `editorDarkDeepMuted` 三条豁免已随 `AppColors.editorDark*` 别名一起移除
+  //   （见上方 `_coveredTokens` 处的同族说明）。底色属性的守护已转移到
+  //   `app_palette_contrast_test.dart` 的 `_lightParity`（对照 `EditorDarkAxis`）。
   'overlay': '遮罩',
   // 图形 / 装饰（边界项 2：不卡 3:1 —— 卡了会一次红 4-6 处且无从修复）
   'border': '装饰性分隔',

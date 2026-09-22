@@ -15,8 +15,6 @@
 
 import 'package:flutter/material.dart';
 
-import 'app_palette.dart';
-
 /// 月色竹青调色板
 abstract final class AppColors {
   // ── 主色 ──
@@ -87,25 +85,26 @@ abstract final class AppColors {
 
   // ── 编辑器暗夜联动色（批次 X-037-P0-1 UI 审查，供写作页 AppBar/goal bar 与暗夜 preset 配平）──
   //
-  // ★ 2026-09-22（批次 M1）：**唯一真源已迁至 `AppPalette`**（`app_palette.dart`）。
-  //   此处保留同名字段作**转发别名**，仅为兼容尚未迁移的调用点与既有对比度测试；
-  //   **禁止在此重新写死字面量** —— 否则同一组颜色会出现两份定义（本次清理的病灶）。
-  //   迁移完成后本组别名应删除（届时全局搜 `AppColors.editorDark` 应为 0 命中）。
+  // ★ 2026-09-22（批次 M1 收敛真源 / 批次 M2 删除别名）：
+  //   **唯一真源是 `EditorDarkAxis`**（`app_palette.dart`，`abstract final class`）。
+  //   `AppPalette.light` / `AppPalette.dark` 两套实例的 `editorDark*` 字段
+  //   **均引用 `EditorDarkAxis.*`**。
+  //
+  //   ⚠️ **此处**（`AppColors`）**原有的五个转发别名已于 M2 删除**，不要重新加回：
+  //     它们与 `AppPalette` 构成「同值两写」（同一组颜色字面量存在两份定义），
+  //     是本轮清理的**病灶本身**。消费端一律走：
+  //       `EditorDarkAxis.*`（静态便捷值，无 `BuildContext` 时）
+  //       或 `editorPaletteFor(key)` + `palette.editorDark*`（有 `BuildContext` 时，推荐）。
   //
   //   为何 light / dark 两套 palette 取同值：编辑器预设轴**独立于全局 ThemeMode**
   //   （R4 裁定 + Visual Studio 官方文档同构：「editor color setting is separate
   //   from the IDE color theme」）⇒ 它本就不该随全局明暗变化。
   //
-  //   对比度（对 #26282B 基底，批次 V-3 复算订正）：
-  //     editorDarkText       12.26:1
-  //     editorDarkMuted       7.48:1
-  //     editorDarkDeepMuted   1.39:1  —— ⚠️ 它**不是前景**，是**底色**
+  //   对比度（对 #26282B 基底，批次 V-3 复算订正，配置在 EditorDarkAxis 上）：
+  //     EditorDarkAxis.text       12.26:1
+  //     EditorDarkAxis.muted       7.48:1
+  //     EditorDarkAxis.deepMuted   1.39:1  —— ⚠️ 它**不是前景**，是**底色**
   //                                     （输入框/分隔底），不适用 WCAG 前景阈值。
-  static const Color editorDarkSurface = EditorDarkAxis.surface;
-  static const Color editorDarkPanel = EditorDarkAxis.panel;
-  static const Color editorDarkText = EditorDarkAxis.text;
-  static const Color editorDarkMuted = EditorDarkAxis.muted;
-  static const Color editorDarkDeepMuted = EditorDarkAxis.deepMuted;
 
   // ── 正向色（成功/已解决，矿物色系延伸，批次22）──
   // 批次 V-3（P0-2）加深：旧值 #3E7C5B 对 successBg 仅 4.25:1、对卡片底 4.48:1

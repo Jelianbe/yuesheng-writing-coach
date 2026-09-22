@@ -14,6 +14,7 @@ import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import 'bookshelf_page_host.dart';
 import 'bookshelf_sort_mode.dart';
+import '../config/app_palette.dart';
 
 /// 书架页搜索与排序动作
 class BookshelfFilterController {
@@ -51,9 +52,12 @@ class BookshelfFilterController {
       key: const Key('bookshelf-search-field'),
       autofocus: true,
       textInputAction: TextInputAction.search,
-      decoration: const InputDecoration(
+      decoration: InputDecoration(
         hintText: '搜索书名',
-        hintStyle: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+        hintStyle: TextStyle(
+          fontSize: 14,
+          color: host.context.palette.textTertiary,
+        ),
         border: InputBorder.none,
         isDense: true,
       ),

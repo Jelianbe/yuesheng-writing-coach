@@ -13,7 +13,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
 import '../providers/chat_store.dart';
 import '../providers/manuscript_providers.dart';
 import '../router/app_routes.dart';
@@ -21,6 +20,7 @@ import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
 import 'manuscript_detail_menu.dart';
 import 'yue_sheet.dart';
+import '../config/app_palette.dart';
 
 /// 作品详情页导航动作
 class ManuscriptDetailNavigator {
@@ -105,7 +105,9 @@ class ManuscriptDetailNavigator {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: dialogContext.palette.danger,
+            ),
             child: const Text('删除'),
           ),
         ],

@@ -21,6 +21,7 @@ import '../types/teaching_types.dart';
 import 'growth_detail_labels.dart';
 import 'growth_detail_widgets.dart';
 import 'proficiency_ring.dart';
+import '../config/app_palette.dart';
 
 /// 空状态视图（无诊断数据）
 class GrowthEmptyState extends StatelessWidget {
@@ -36,17 +37,17 @@ class GrowthEmptyState extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.xl),
             child: Column(
               children: [
-                const Icon(
+                Icon(
                   Icons.insights_outlined,
                   size: 32,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '暂无诊断数据',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textSecondary,
+                    color: context.palette.textSecondary,
                   ),
                 ),
               ],
@@ -75,10 +76,10 @@ class GrowthSectionTitle extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.textSecondary,
+          color: context.palette.textSecondary,
         ),
       ),
     );
@@ -100,12 +101,12 @@ class GrowthAbilityProfileCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '能力画像',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -153,14 +154,14 @@ class GrowthStyleProfileCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             const SizedBox(height: 8),
             Text(
               profile.summary,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.5,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -172,15 +173,15 @@ class GrowthStyleProfileCard extends StatelessWidget {
   }
 
   /// 标题行（「写作风格」 + 「纠正」按钮）
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        const Text(
+        Text(
           '写作风格',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
+            color: context.palette.textSecondary,
           ),
         ),
         const Spacer(),
@@ -192,9 +193,9 @@ class GrowthStyleProfileCard extends StatelessWidget {
             minimumSize: const Size(0, 32),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: const Text(
+          child: Text(
             '纠正',
-            style: TextStyle(fontSize: 13, color: AppColors.primary),
+            style: TextStyle(fontSize: 13, color: context.palette.primary),
           ),
         ),
       ],
@@ -237,9 +238,12 @@ class GrowthRecurrenceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '同一种问题，好转后是否再次出现',
-              style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+              style: TextStyle(
+                fontSize: 12,
+                color: context.palette.textTertiary,
+              ),
             ),
             const SizedBox(height: 12),
             for (int i = 0; i < recurrences.length; i++) ...[

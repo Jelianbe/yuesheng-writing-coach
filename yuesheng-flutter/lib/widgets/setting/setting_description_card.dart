@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 正文展示卡：正文优先（无正文 → 「尚未写设定正文」占位 + 编辑引导）。
 class SettingDescriptionCard extends StatelessWidget {
@@ -49,7 +50,7 @@ class SettingDescriptionCard extends StatelessWidget {
                   child: Text(
                     '尚未写设定正文——点此写下这个设定是什么',
                     style: context.text.body.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.palette.textSecondary,
                     ),
                   ),
                 ),

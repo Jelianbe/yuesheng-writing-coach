@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../config/app_theme.dart';
+import '../../config/app_palette.dart';
 
 /// 独立 StatefulWidget 持有 TextEditingController，保证控制器随路由
 /// 退出动画结束后再 dispose（避免「dispose 后再使用」崩溃）
@@ -41,9 +41,9 @@ class _GoalDialogState extends State<GoalDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '目标字数（0 表示不设目标）',
-            style: TextStyle(fontSize: 12, color: AppColors.textBody),
+            style: TextStyle(fontSize: 12, color: context.palette.textBody),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -69,7 +69,9 @@ class _GoalDialogState extends State<GoalDialog> {
           child: const Text('取消'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.primary,
+          ),
           onPressed: () {
             final v = int.tryParse(_controller.text.trim()) ?? 0;
             Navigator.of(context).pop(v < 0 ? 0 : v);

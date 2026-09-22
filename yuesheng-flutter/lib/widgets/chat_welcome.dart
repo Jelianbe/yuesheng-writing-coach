@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 const String _welcomeTitle = '你好，我是月笙';
 const String _welcomeSubtitle = '你的专属写作教练，随时帮你诊断和提升写作';
@@ -49,7 +50,7 @@ class ChatWelcome extends StatelessWidget {
               textAlign: TextAlign.center,
               style: context.text.body,
             ),
-            _buildActions(),
+            _buildActions(context),
           ],
         ),
       ),
@@ -57,7 +58,7 @@ class ChatWelcome extends StatelessWidget {
   }
 
   /// 空态行动按钮（批次62「去书架写一写」+ P1-6「自主练习」）。
-  Widget _buildActions() {
+  Widget _buildActions(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -66,8 +67,8 @@ class ChatWelcome extends StatelessWidget {
           FilledButton(
             onPressed: onStartWriting,
             style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.onPrimary,
+              backgroundColor: context.palette.primary,
+              foregroundColor: context.palette.onPrimary,
             ),
             child: const Text('去书架写一写'),
           ),
@@ -77,7 +78,7 @@ class ChatWelcome extends StatelessWidget {
           OutlinedButton(
             onPressed: onSelfPractice,
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
+              foregroundColor: context.palette.primary,
               side: const BorderSide(color: AppColors.primary),
             ),
             child: const Text('自主练习'),

@@ -7,8 +7,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class PlaceholderPage extends StatelessWidget {
   final String title;
@@ -25,17 +25,17 @@ class PlaceholderPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
+        backgroundColor: context.palette.primary,
+        foregroundColor: context.palette.onPrimary,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.construction,
               size: 48,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: 16),
             Text(title, style: context.text.titleLg),

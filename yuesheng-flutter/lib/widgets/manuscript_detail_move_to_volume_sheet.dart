@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../config/app_palette.dart';
 
 /// 移动到卷弹层（目标：全部卷 + 未分卷）
 class MoveToVolumeSheet extends StatelessWidget {
@@ -33,7 +34,7 @@ class MoveToVolumeSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildHeader(),
+        _buildHeader(context),
         const Divider(height: 1),
         ..._buildVolumeTiles(context),
         _buildUnassignedTile(context),
@@ -43,7 +44,7 @@ class MoveToVolumeSheet extends StatelessWidget {
   }
 
   /// 弹层标题（章节名 + 「到」）
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.section,
@@ -53,10 +54,10 @@ class MoveToVolumeSheet extends StatelessWidget {
       ),
       child: Text(
         '移动《${chapter.title.isEmpty ? '未命名章节' : chapter.title}》到',
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 17,
           fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
+          color: context.palette.textPrimary,
         ),
       ),
     );
@@ -67,10 +68,10 @@ class MoveToVolumeSheet extends StatelessWidget {
     return [
       for (final v in volumes)
         ListTile(
-          leading: const Icon(
+          leading: Icon(
             Icons.collections_bookmark_outlined,
             size: 18,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
           title: Text(v.title.trim().isEmpty ? '未命名卷' : v.title.trim()),
           trailing: chapter.volumeId == v.id
@@ -84,10 +85,10 @@ class MoveToVolumeSheet extends StatelessWidget {
   /// 「未分卷」目标（当前未分卷时打勾）
   Widget _buildUnassignedTile(BuildContext context) {
     return ListTile(
-      leading: const Icon(
+      leading: Icon(
         Icons.notes_outlined,
         size: 18,
-        color: AppColors.textTertiary,
+        color: context.palette.textTertiary,
       ),
       title: const Text('未分卷'),
       trailing: chapter.volumeId == null

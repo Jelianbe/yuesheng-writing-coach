@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_theme.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 思考 / 诊断中的占位提示（批次49：阶段标签优先显示）
 class ThinkingPlaceholder extends StatelessWidget {
@@ -25,17 +26,17 @@ class ThinkingPlaceholder extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: context.palette.primary,
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
-            child: const SizedBox(
+            child: SizedBox(
               width: 14,
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
               ),
             ),
           ),

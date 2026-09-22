@@ -17,6 +17,7 @@ import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class QuickPhraseSheet extends ConsumerStatefulWidget {
   /// 点击短语 → 关闭弹层 + 回调（页面在光标处插入并保存）
@@ -103,20 +104,20 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '快捷短语',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textInk,
+                  color: context.palette.textInk,
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close,
                   size: 20,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
                 tooltip: '关闭',
                 onPressed: () => Navigator.of(context).pop(),
@@ -130,15 +131,15 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
               Expanded(
                 child: TextField(
                   controller: _inputCtrl,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.textInk,
+                    color: context.palette.textInk,
                   ),
                   decoration: InputDecoration(
                     hintText: '写一句常用的话，点一下就能插入',
-                    hintStyle: const TextStyle(
+                    hintStyle: TextStyle(
                       fontSize: 13,
-                      color: AppColors.hintText,
+                      color: context.palette.hintText,
                     ),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
@@ -164,7 +165,9 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
               const SizedBox(width: 6),
               TextButton(
                 onPressed: _add,
-                style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                style: TextButton.styleFrom(
+                  foregroundColor: context.palette.primary,
+                ),
                 child: const Text('添加', style: TextStyle(fontSize: 13)),
               ),
             ],
@@ -181,10 +184,10 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
   Widget _buildList() {
     final phrases = _phrases;
     if (phrases == null) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       );
     }
@@ -193,7 +196,11 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.format_quote, size: 36, color: AppColors.placeholder),
+            Icon(
+              Icons.format_quote,
+              size: 36,
+              color: context.palette.placeholder,
+            ),
             SizedBox(height: 8),
             Text(
               '还没有快捷短语\n把常写的句子记下来，下次一点就出来',
@@ -220,18 +227,18 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
                     phrase,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: AppColors.textInk,
+                      color: context.palette.textInk,
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline,
                     size: 18,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                   tooltip: '删除',
                   onPressed: () => _remove(phrase),

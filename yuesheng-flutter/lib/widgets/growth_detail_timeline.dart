@@ -12,9 +12,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 诊断历史时间线容器
 class GrowthTimeline extends StatelessWidget {
@@ -53,7 +53,7 @@ class GrowthTimelineItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildLeftRail(),
+          _buildLeftRail(context),
           const SizedBox(width: 12),
           Expanded(child: _buildContent(context)),
         ],
@@ -62,7 +62,7 @@ class GrowthTimelineItem extends StatelessWidget {
   }
 
   /// 左侧竖线 + 圆点
-  Widget _buildLeftRail() {
+  Widget _buildLeftRail(BuildContext context) {
     return SizedBox(
       width: 16,
       child: Column(
@@ -70,13 +70,15 @@ class GrowthTimelineItem extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: context.palette.primary,
               shape: BoxShape.circle,
             ),
           ),
           if (!isLast)
-            Expanded(child: Container(width: 2, color: AppColors.primary)),
+            Expanded(
+              child: Container(width: 2, color: context.palette.primary),
+            ),
         ],
       ),
     );
@@ -99,22 +101,22 @@ class GrowthTimelineItem extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '置信度 ${(item.confidence * 100).round()}%',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ],
         ),
         // E3：展示本次诊断出的症候名（从 syndromes JSON 解析），
         // 让时间线不再是"只有时间+置信度"的空壳信息
-        ..._buildSyndromeNames(),
+        ..._buildSyndromeNames(context),
       ],
     );
   }
 
   /// 从 DiagnosisRow.syndromes JSON 解析症候名（最多 3 个，超过显示 +N）
-  List<Widget> _buildSyndromeNames() {
+  List<Widget> _buildSyndromeNames(BuildContext context) {
     try {
       final list = jsonDecode(item.syndromes) as List<dynamic>;
       final names = <String>[];
@@ -131,10 +133,10 @@ class GrowthTimelineItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           display + suffix,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             height: 1.4,
-            color: AppColors.textDeep,
+            color: context.palette.textDeep,
           ),
         ),
       ];

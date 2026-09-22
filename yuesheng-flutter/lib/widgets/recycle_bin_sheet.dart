@@ -17,6 +17,7 @@ import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class RecycleBinSheet extends ConsumerStatefulWidget {
   /// 点击条目 → 关闭弹层 + 回调（页面在光标处恢复文本并保存）
@@ -122,30 +123,30 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
         children: [
           Row(
             children: [
-              const Text(
+              Text(
                 '回收板',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textInk,
+                  color: context.palette.textInk,
                 ),
               ),
               const Spacer(),
               if (items != null && items.isNotEmpty)
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_sweep_outlined,
                     size: 20,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                   tooltip: '清空回收板',
                   onPressed: _clearAll,
                 ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.close,
                   size: 20,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
                 tooltip: '关闭',
                 onPressed: () => Navigator.of(context).pop(),
@@ -160,7 +161,7 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
             contentPadding: EdgeInsets.zero,
             title: Text('恢复后自动移除该条', style: context.text.subBody),
             value: _removeOnRestore,
-            activeTrackColor: AppColors.primary,
+            activeTrackColor: context.palette.primary,
             onChanged: _toggleRemoveOnRestore,
           ),
           const SizedBox(height: 8),
@@ -173,10 +174,10 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
   Widget _buildList() {
     final items = _items;
     if (items == null) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       );
     }
@@ -185,7 +186,11 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.delete_outline, size: 36, color: AppColors.placeholder),
+            Icon(
+              Icons.delete_outline,
+              size: 36,
+              color: context.palette.placeholder,
+            ),
             SizedBox(height: 8),
             Text(
               '回收板是空的\n删掉的长文本会自动留在这里',
@@ -215,9 +220,9 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
                         item.content,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textInk,
+                          color: context.palette.textInk,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -230,10 +235,10 @@ class _RecycleBinSheetState extends ConsumerState<RecycleBinSheet> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.delete_outline,
                     size: 18,
-                    color: AppColors.textTertiary,
+                    color: context.palette.textTertiary,
                   ),
                   tooltip: '移除',
                   onPressed: () => _removeAt(index),

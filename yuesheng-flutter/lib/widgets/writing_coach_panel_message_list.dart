@@ -29,6 +29,7 @@ import 'practice_result_indicator.dart';
 import 'practice_task_card.dart';
 import 'writing/thinking_placeholder.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class WritingCoachMessageList extends ConsumerWidget {
   final ChatState chatState;
@@ -96,8 +97,8 @@ class WritingCoachMessageList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // P2-3：初始化未完成时显示 loading，避免先闪空状态再突然出现消息
     if (isInitLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return Center(
+        child: CircularProgressIndicator(color: context.palette.primary),
       );
     }
     // T3：练习任务卡 + 结果指示器（activePracticeTask / trainingResult 非空时渲染在列表底部）
@@ -106,24 +107,27 @@ class WritingCoachMessageList extends ConsumerWidget {
     final evaluationState = ref.watch(evaluationReportsProvider);
     final practiceWidgets = _buildPracticeWidgets(ref, practiceState);
     if (chatState.messages.isEmpty && !chatState.isStreaming) {
-      return _buildEmptyState();
+      return _buildEmptyState(context);
     }
     return _buildScrollList(ref, context, practiceWidgets, evaluationState);
   }
 
   /// 空状态：居中「有问题问教练」提示。
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
+        children: [
           Icon(
             Icons.chat_bubble_outline,
             size: 48,
-            color: AppColors.disabledText,
+            color: context.palette.disabledText,
           ),
           SizedBox(height: 8),
-          Text('有问题问教练', style: TextStyle(color: AppColors.textSecondary)),
+          Text(
+            '有问题问教练',
+            style: TextStyle(color: context.palette.textSecondary),
+          ),
         ],
       ),
     );
@@ -293,6 +297,7 @@ class WritingCoachMessageList extends ConsumerWidget {
     EvaluationReportsState evaluationState,
   ) {
     return dispatchMessageCard(
+      context: context,
       msg: msg,
       isStreamingBubble: false,
       evaluationReport: evaluationState.reports[msg.id],

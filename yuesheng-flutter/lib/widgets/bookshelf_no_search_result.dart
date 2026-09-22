@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 批次93-2：搜索无结果空态
 class BookshelfNoSearchResult extends StatelessWidget {
@@ -29,10 +30,13 @@ class BookshelfNoSearchResult extends StatelessWidget {
         const SizedBox(height: 120),
         const Icon(Icons.search_off, size: 48, color: AppColors.textTertiary),
         const SizedBox(height: 12),
-        const Center(
+        Center(
           child: Text(
             '没有找到相关作品',
-            style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
+            style: TextStyle(
+              fontSize: 15,
+              color: context.palette.textSecondary,
+            ),
           ),
         ),
         const SizedBox(height: 6),

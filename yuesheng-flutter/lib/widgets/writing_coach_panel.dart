@@ -24,7 +24,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_palette.dart';
-import '../config/app_theme.dart';
 import '../providers/chat_store.dart';
 import '../types/teaching_types.dart';
 import 'writing_coach_panel_bootstrapper.dart';
@@ -230,7 +229,7 @@ class _WritingCoachPanelState extends ConsumerState<WritingCoachPanel>
     return Container(
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,
-        border: Border(left: BorderSide(color: AppColors.borderSoft)),
+        border: Border(left: BorderSide(color: context.palette.borderSoft)),
       ),
       child: Column(
         children: [

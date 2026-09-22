@@ -14,7 +14,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/volume_repository.dart';
@@ -27,6 +26,7 @@ import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
 import 'manuscript_detail_move_to_volume_sheet.dart';
 import 'yue_sheet.dart';
+import '../config/app_palette.dart';
 
 /// 作品详情页章节动作
 class ManuscriptDetailChapterController {
@@ -122,7 +122,7 @@ class ManuscriptDetailChapterController {
             child: const Text('取消'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+            style: FilledButton.styleFrom(backgroundColor: ctx.palette.primary),
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: const Text('保存'),
           ),
@@ -219,7 +219,9 @@ class ManuscriptDetailChapterController {
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: dialogContext.palette.danger,
+            ),
             child: const Text('删除'),
           ),
         ],

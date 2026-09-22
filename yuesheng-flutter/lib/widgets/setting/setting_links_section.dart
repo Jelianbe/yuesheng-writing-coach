@@ -19,6 +19,7 @@ import '../../data/repositories/setting_link_repository.dart';
 import '../../providers/app_providers.dart';
 import 'setting_link_dialog.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 详情页「关联设定」区块。
 class SettingLinksSection extends ConsumerStatefulWidget {
@@ -141,7 +142,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
             child: Text(
               '还没有关联的设定条目',
               style: context.text.subBody.copyWith(
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
           )
@@ -165,7 +166,7 @@ class _SettingLinksSectionState extends ConsumerState<SettingLinksSection> {
             SettingEntityKind.setting => Icons.label_outline,
           },
           size: 18,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
         title: Text(
           view.link.label.isEmpty

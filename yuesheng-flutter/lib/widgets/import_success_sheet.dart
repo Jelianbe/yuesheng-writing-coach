@@ -10,6 +10,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 class ImportSuccessSheet extends StatelessWidget {
   /// 作品标题
@@ -66,7 +67,7 @@ class ImportSuccessSheet extends StatelessWidget {
               height: 4,
               margin: const EdgeInsets.only(bottom: AppSpacing.section),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.palette.border,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               alignment: Alignment.center,
@@ -76,42 +77,45 @@ class ImportSuccessSheet extends StatelessWidget {
               width: 56,
               height: 56,
               margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                color: context.palette.primary,
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.check,
                 size: 24,
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
               ),
             ),
-            const Text(
+            Text(
               '导入成功！',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               '已成功导入 $chapterCount 个章节到\n「$manuscriptTitle」',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 height: 1.55,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
             if (diagnoseEnabled) ...[
-              const Text(
+              Text(
                 '是否立即发送给月笙诊断？',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: context.palette.textTertiary,
+                ),
               ),
               const SizedBox(height: 20),
             ],
@@ -123,17 +127,17 @@ class ImportSuccessSheet extends StatelessWidget {
               },
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(46),
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.palette.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: Text(
                 diagnoseEnabled ? '立即诊断' : '返回作品',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onPrimary,
+                  color: context.palette.onPrimary,
                 ),
               ),
             ),
@@ -152,12 +156,12 @@ class ImportSuccessSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   '稍后再说',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: context.palette.textSecondary,
                   ),
                 ),
               ),

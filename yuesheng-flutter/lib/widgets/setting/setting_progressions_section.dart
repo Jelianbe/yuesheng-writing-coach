@@ -21,6 +21,7 @@ import '../../services/progression_builder.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
 import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 详情页「章节演进」区块（角色/世界观同构挂载）。
 class SettingProgressionsSection extends StatelessWidget {
@@ -73,21 +74,7 @@ class SettingProgressionsSection extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Column(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              if (!isLast)
-                Expanded(child: Container(width: 2, color: AppColors.border)),
-            ],
-          ),
+          _buildTrack(context, isLast: isLast),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Padding(
@@ -112,6 +99,31 @@ class SettingProgressionsSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  /// 时间轴刻度：实心圆点 + （非末行时）向下延伸的连接线。
+  ///
+  /// ★ 2026-09-22（批次 M3）：由 `_buildRow` 抽出 —— 该函数因补
+  ///   `BuildContext` 形参 + 迁 `context.palette` 从 <=50 行涨到 53 行，
+  ///   触红 R-019（只卡新增）。抽出这个内聚单元后回到限内，
+  ///   且**不靠豁免**（不是把债登记成基线，而是真的拆开）。
+  Widget _buildTrack(BuildContext context, {required bool isLast}) {
+    final palette = context.palette;
+    return Column(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          margin: const EdgeInsets.only(top: 6),
+          decoration: BoxDecoration(
+            color: palette.primary,
+            shape: BoxShape.circle,
+          ),
+        ),
+        if (!isLast)
+          Expanded(child: Container(width: 2, color: palette.border)),
+      ],
     );
   }
 }

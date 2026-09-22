@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../types/teaching_types.dart';
+import '../config/app_palette.dart';
 
 /// 徽章尺寸档位（对齐 RN BADGE_LAYOUT.sizes）
 enum TeachingStateBadgeSize { sm, md, lg }
@@ -46,11 +47,17 @@ class TeachingStateBadge extends StatelessWidget {
   });
 
   /// 状态色（对齐 RN warning/info/success/textDisabled 语义）
-  Color get _dotColor => switch (state) {
-    TeachingState.identified => AppColors.warning,
-    TeachingState.inProgress => AppColors.primaryDeep,
-    TeachingState.consolidating => AppColors.primary,
-    TeachingState.mastered => AppColors.disabledText,
+  ///
+  /// ★ 2026-09-22（批次 M3）：由 `get _dotColor` 改为**接受 `BuildContext` 的方法**。
+  ///   动因：令牌迁到 `context.palette.*` 后，getter 无法拿到 `BuildContext`
+  ///   ⇒ `dart analyze` 报 `undefined_identifier`。本仓 P1 批同型处置先例：
+  ///   `progress_detail_page._severityColor` / `manuscript_detail_modal._trendColor`
+  ///   均改为「方法 + `BuildContext` 首参」，而非回退静态令牌。
+  Color _dotColorOf(BuildContext context) => switch (state) {
+    TeachingState.identified => context.palette.warning,
+    TeachingState.inProgress => context.palette.primaryDeep,
+    TeachingState.consolidating => context.palette.primary,
+    TeachingState.mastered => context.palette.disabledText,
   };
 
   double get _dotSize => switch (size) {
@@ -73,7 +80,10 @@ class TeachingStateBadge extends StatelessWidget {
         Container(
           width: _dotSize,
           height: _dotSize,
-          decoration: BoxDecoration(color: _dotColor, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+            color: _dotColorOf(context),
+            shape: BoxShape.circle,
+          ),
         ),
         if (showLabel) ...[
           const SizedBox(width: AppSpacing.sm),
@@ -82,7 +92,7 @@ class TeachingStateBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: _fontSize,
               fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
           ),
         ],

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 批次93-3：加载失败错误态（重试按钮）
 class BookshelfErrorView extends StatelessWidget {
@@ -39,7 +40,9 @@ class BookshelfErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onRetry,
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.primary,
+              ),
               icon: const Icon(Icons.refresh, size: 18),
               label: const Text('重试'),
             ),

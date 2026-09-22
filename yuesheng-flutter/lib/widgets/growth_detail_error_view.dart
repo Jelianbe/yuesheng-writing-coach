@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 加载失败视图（图标 + 文案 + 重新加载）
 class GrowthErrorView extends StatelessWidget {
@@ -38,7 +39,7 @@ class GrowthErrorView extends StatelessWidget {
             FilledButton(
               onPressed: onRetry,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.palette.primary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.section,
                   vertical: AppSpacing.smx,

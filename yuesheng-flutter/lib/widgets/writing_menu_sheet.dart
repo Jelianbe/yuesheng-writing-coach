@@ -44,6 +44,7 @@ import 'package:flutter/material.dart';
 import '../config/app_theme.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 class WritingMenuSheet {
   const WritingMenuSheet._();
@@ -199,7 +200,7 @@ class WritingMenuSheet {
                       ),
                       _MenuItem(
                         label: '打开教练面板',
-                        textColor: AppColors.primary,
+                        textColor: context.palette.primary,
                         bold: true,
                         onTap: () {
                           Navigator.pop(ctx);
@@ -227,7 +228,7 @@ class WritingMenuSheet {
                       const Divider(height: 20),
                       _MenuItem(
                         label: '取消',
-                        textColor: AppColors.textSecondary,
+                        textColor: context.palette.textSecondary,
                         onTap: () => Navigator.pop(ctx),
                       ),
                     ],
@@ -267,13 +268,22 @@ class _SectionHeader extends StatelessWidget {
 class _MenuItem extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  final Color textColor;
+
+  /// 可空：`null` 时在 `build` 里回退到 `context.palette.textInk`。
+  ///
+  /// ★ 2026-09-22（批次 M3）：原默认值直接写 `context.palette.textInk` ——
+  ///   但 `const` 构造器的默认值**必须是编译期常量**，取不到 `BuildContext`
+  ///   ⇒ `dart analyze` 报 `undefined_identifier`。
+  ///   改法：默认值改 `null` + 在 `build`（有 context）里 `??` 回退。
+  ///   **行为完全不变**（14 个调用点中 12 个不传 ⇒ 原默认值即 `textInk`；
+  ///   另 2 个显式传 `primary` / `textSecondary` 不受影响）。
+  final Color? textColor;
   final bool bold;
 
   const _MenuItem({
     required this.label,
     required this.onTap,
-    this.textColor = AppColors.textInk,
+    this.textColor,
     this.bold = false,
   });
 
@@ -291,7 +301,7 @@ class _MenuItem extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 15,
-              color: textColor,
+              color: textColor ?? context.palette.textInk,
               fontWeight: bold ? FontWeight.bold : FontWeight.normal,
             ),
           ),

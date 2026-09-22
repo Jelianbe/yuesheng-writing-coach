@@ -41,7 +41,7 @@ Future<T?> showYueModalBottomSheet<T>({
     enableDrag: enableDrag,
     showDragHandle: showDragHandle,
     backgroundColor: backgroundColor ?? context.palette.surfaceWhite,
-    barrierColor: AppColors.overlay,
+    barrierColor: context.palette.overlay,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
     ),

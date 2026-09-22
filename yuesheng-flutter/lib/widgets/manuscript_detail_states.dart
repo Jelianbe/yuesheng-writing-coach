@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 作品元信息条（批次 37 简化 + 修复2：章节数已移到列表头右侧）
 ///
@@ -43,10 +44,10 @@ class ManuscriptMetaBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.menu_book_outlined,
             size: 14,
-            color: AppColors.textTertiary,
+            color: context.palette.textTertiary,
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -69,8 +70,8 @@ class ManuscriptLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primary),
+    return Center(
+      child: CircularProgressIndicator(color: context.palette.primary),
     );
   }
 }
@@ -87,18 +88,18 @@ class ManuscriptNotFoundView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               size: 48,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '作品不存在或已删除',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -134,10 +135,10 @@ class EmptyChaptersState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.description_outlined,
               size: 56,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: 16),
             Text('还没有章节', style: context.text.titleLg),

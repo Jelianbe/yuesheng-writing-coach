@@ -18,6 +18,7 @@ import '../providers/app_providers.dart';
 import '../services/export_service.dart';
 import 'manuscript_detail_host.dart';
 import 'yue_sheet.dart';
+import '../config/app_palette.dart';
 
 /// 作品详情页导出动作
 class ManuscriptDetailExporter {
@@ -117,7 +118,7 @@ class _ExportFormatSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(
               AppSpacing.section,
               AppSpacing.lg,
@@ -129,25 +130,25 @@ class _ExportFormatSheet extends StatelessWidget {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.description_outlined,
               size: 18,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             title: const Text('TXT 纯文本'),
             onTap: () => Navigator.pop(context, ExportFormat.txt),
           ),
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.notes_rounded,
               size: 18,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
             title: const Text('Markdown'),
             onTap: () => Navigator.pop(context, ExportFormat.markdown),

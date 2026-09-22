@@ -13,7 +13,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
 import '../providers/manuscript_providers.dart';
 import '../router/app_routes.dart';
 import '../services/decode_guard.dart';
@@ -22,6 +21,7 @@ import 'book_import_sheet.dart';
 import 'bookshelf_create_modal.dart';
 import 'bookshelf_page_host.dart';
 import 'yue_sheet.dart';
+import '../config/app_palette.dart';
 
 /// 书架页新建作品 / 文本导入动作
 class BookshelfCreateController {
@@ -37,7 +37,7 @@ class BookshelfCreateController {
     showDialog<void>(
       context: host.context,
       barrierDismissible: true,
-      barrierColor: AppColors.overlay,
+      barrierColor: host.context.palette.overlay,
       builder: (ctx) {
         return BookshelfCreateModal(
           titleController: host.titleController,

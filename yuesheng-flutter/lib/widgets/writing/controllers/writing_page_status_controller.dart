@@ -9,11 +9,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../config/app_theme.dart';
 import '../../../providers/writing_providers.dart';
 import '../goal_dialog.dart';
 import '../writing_page_host.dart';
 import 'writing_page_document_controller.dart';
+import '../../../config/app_palette.dart';
 
 class WritingPageStatusController {
   WritingPageStatusController(this._host, this._document);
@@ -46,7 +46,7 @@ class WritingPageStatusController {
               ),
               FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: ctx.palette.primary,
                 ),
                 onPressed: () {
                   Navigator.of(ctx).pop();

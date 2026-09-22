@@ -8,8 +8,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
+import '../config/app_palette.dart';
 
 /// 编辑弹窗返回值（已 trim 的三项文本）
 class ManuscriptEditInput {
@@ -106,7 +106,9 @@ class _BookshelfEditManuscriptDialogState
           child: const Text('取消'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+          style: FilledButton.styleFrom(
+            backgroundColor: context.palette.primary,
+          ),
           onPressed: _submit,
           child: const Text('保存'),
         ),

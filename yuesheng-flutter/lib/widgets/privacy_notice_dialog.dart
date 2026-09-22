@@ -10,9 +10,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// app_state KV key：隐私告知是否已确认（'1' = 已确认）
 const String kPrivacyNoticeAckKey = 'privacy_notice_acknowledged';
@@ -56,8 +56,8 @@ Future<void> showPrivacyNoticeDialog(BuildContext context) {
         FilledButton(
           onPressed: () => Navigator.pop(ctx),
           style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.onPrimary,
+            backgroundColor: context.palette.primary,
+            foregroundColor: context.palette.onPrimary,
           ),
           child: const Text('我知道了'),
         ),

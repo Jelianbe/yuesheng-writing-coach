@@ -17,6 +17,7 @@ import '../types/teaching_types.dart';
 import 'growth_detail_widgets.dart';
 import 'teaching_state_badge.dart';
 import '../theme/app_typography.dart';
+import '../config/app_palette.dart';
 
 /// 按教学状态分组渲染症候列表（批次 48，对齐 RN syndromeGroups 顺序：
 /// in_progress → identified → consolidating → mastered）
@@ -61,7 +62,7 @@ class GrowthSyndromeGroupList extends StatelessWidget {
           .where((p) => _stateOf(p) == ts)
           .toList();
       if (items.isEmpty) continue;
-      widgets.add(_buildGroupTitle(_titles[ts]!));
+      widgets.add(_buildGroupTitle(context, _titles[ts]!));
       for (final problem in items) {
         widgets.add(
           Padding(
@@ -77,7 +78,7 @@ class GrowthSyndromeGroupList extends StatelessWidget {
     );
   }
 
-  Widget _buildGroupTitle(String title) {
+  Widget _buildGroupTitle(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.only(
         left: AppSpacing.xs,
@@ -86,10 +87,10 @@ class GrowthSyndromeGroupList extends StatelessWidget {
       ),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: AppColors.textTertiary,
+          color: context.palette.textTertiary,
         ),
       ),
     );
@@ -121,10 +122,10 @@ class GrowthSyndromeCard extends StatelessWidget {
                 children: [
                   Text(
                     problem.syndromeName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),

@@ -19,6 +19,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import '../config/app_palette.dart';
 
 /// 置信条：label + 4px 轨道 + 竹青填充 + 百分比
 class ConfidenceBar extends StatelessWidget {
@@ -48,15 +49,15 @@ class ConfidenceBar extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
         ],
-        Expanded(child: _buildTrack()),
+        Expanded(child: _buildTrack(context)),
         if (showValue) ...[
           const SizedBox(width: AppSpacing.sm),
           Text(
             '${((value.clamp(0.0, 1.0)) * 100).round()}%',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+              color: context.palette.primary,
             ),
           ),
         ],
@@ -65,16 +66,16 @@ class ConfidenceBar extends StatelessWidget {
   }
 
   /// 轨道 + 竹青填充（宽度按 value 比例，4px 高）
-  Widget _buildTrack() {
+  Widget _buildTrack(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.xs),
       child: Container(
         height: 4,
-        color: AppColors.placeholder,
+        color: context.palette.placeholder,
         alignment: Alignment.centerLeft,
         child: FractionallySizedBox(
           widthFactor: value.clamp(0.0, 1.0),
-          child: Container(color: AppColors.primary),
+          child: Container(color: context.palette.primary),
         ),
       ),
     );
