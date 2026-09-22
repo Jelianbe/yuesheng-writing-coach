@@ -12,7 +12,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_palette.dart';
-import '../config/app_theme.dart';
 import '../providers/ui_overlay_provider.dart';
 
 /// 全局覆盖层宿主（挂 MaterialApp.builder）
@@ -70,16 +69,16 @@ class _ToastCard extends StatelessWidget {
   final UiToast toast;
   const _ToastCard({required this.toast});
 
-  Color get _accent {
+  Color _accentOf(BuildContext context) {
     switch (toast.kind) {
       case UiToastKind.success:
-        return AppColors.success;
+        return context.palette.success;
       case UiToastKind.warning:
-        return AppColors.warning;
+        return context.palette.warning;
       case UiToastKind.error:
-        return AppColors.danger;
+        return context.palette.danger;
       case UiToastKind.info:
-        return AppColors.primary;
+        return context.palette.primary;
     }
   }
 
@@ -91,7 +90,7 @@ class _ToastCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderSoft),
+        border: Border.all(color: context.palette.borderSoft),
         boxShadow: const [
           BoxShadow(
             color: Color(0x14000000),
@@ -106,15 +105,18 @@ class _ToastCard extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(color: _accent, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: _accentOf(context),
+              shape: BoxShape.circle,
+            ),
           ),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               toast.message,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
           ),
@@ -140,7 +142,7 @@ class _ConfirmScrim extends StatelessWidget {
       // 点遮罩 = 取消
       onTap: () => onResolve(false),
       child: Container(
-        color: AppColors.overlay,
+        color: context.palette.overlay,
         alignment: Alignment.center,
         child: GestureDetector(onTap: () {}, child: _buildDialogCard(context)),
       ),
@@ -163,30 +165,30 @@ class _ConfirmScrim extends StatelessWidget {
         children: [
           Text(
             request.title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             request.message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               height: 1.5,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 16),
-          _buildActions(),
+          _buildActions(context),
         ],
       ),
     );
   }
 
   /// 确认/取消按钮行（R-019 拆出 _buildDialogCard）
-  Widget _buildActions() {
+  Widget _buildActions(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -194,7 +196,7 @@ class _ConfirmScrim extends StatelessWidget {
           onPressed: () => onResolve(false),
           child: Text(
             request.cancelText,
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: TextStyle(color: context.palette.textSecondary),
           ),
         ),
         const SizedBox(width: 8),
@@ -202,8 +204,8 @@ class _ConfirmScrim extends StatelessWidget {
           onPressed: () => onResolve(true),
           child: Text(
             request.confirmText,
-            style: const TextStyle(
-              color: AppColors.danger,
+            style: TextStyle(
+              color: context.palette.danger,
               fontWeight: FontWeight.w600,
             ),
           ),

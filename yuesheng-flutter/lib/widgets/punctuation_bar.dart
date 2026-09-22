@@ -12,7 +12,6 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_palette.dart';
-import '../config/app_theme.dart';
 
 /// 标点项（id 供自定义工具栏配置标识；display 展示；insert 插入文本）
 class PunctuationItem {
@@ -89,7 +88,11 @@ class PunctuationBar extends StatelessWidget {
   }
 
   /// 批次91-3：常驻操作项（撤销/重做图标，点击走 onUndo/onRedo）
-  Widget _buildActionItem(IconData icon, VoidCallback? onTap) {
+  Widget _buildActionItem(
+    BuildContext context,
+    IconData icon,
+    VoidCallback? onTap,
+  ) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -100,14 +103,14 @@ class PunctuationBar extends StatelessWidget {
         child: Icon(
           icon,
           size: 18,
-          color: actionColor ?? AppColors.textTertiary,
+          color: actionColor ?? context.palette.textTertiary,
         ),
       ),
     );
   }
 
   /// 单个标点项（点击插入对应字符）
-  Widget _buildPunctItem(PunctuationItem item) {
+  Widget _buildPunctItem(BuildContext context, PunctuationItem item) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => onTap(item.insert),
@@ -117,7 +120,10 @@ class PunctuationBar extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           item.display,
-          style: TextStyle(fontSize: 16, color: itemColor ?? AppColors.textInk),
+          style: TextStyle(
+            fontSize: 16,
+            color: itemColor ?? context.palette.textInk,
+          ),
         ),
       ),
     );
@@ -133,9 +139,9 @@ class PunctuationBar extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         children: [
           // 批次91-3：撤销/重做常驻最前两位（不随 visibleIds 隐藏；批次96-10 唯一入口）
-          _buildActionItem(Icons.undo, onUndo),
-          _buildActionItem(Icons.redo, onRedo),
-          for (final item in items) _buildPunctItem(item),
+          _buildActionItem(context, Icons.undo, onUndo),
+          _buildActionItem(context, Icons.redo, onRedo),
+          for (final item in items) _buildPunctItem(context, item),
         ],
       ),
     );

@@ -98,14 +98,14 @@ class _GrowthStyleCorrectionSheetState
                 label: Text(label(opt)),
                 selected: opt == selected,
                 onSelected: (_) => onChanged(opt),
-                selectedColor: AppColors.primary,
+                selectedColor: context.palette.primary,
                 backgroundColor: context.palette.surface,
-                side: BorderSide(color: AppColors.border),
+                side: BorderSide(color: context.palette.border),
                 labelStyle: TextStyle(
                   fontSize: 12,
                   color: opt == selected
-                      ? AppColors.onPrimary
-                      : AppColors.textPrimary,
+                      ? context.palette.onPrimary
+                      : context.palette.textPrimary,
                 ),
               ),
           ],
@@ -149,12 +149,12 @@ class _GrowthStyleCorrectionSheetState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           '纠正风格画像',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -168,10 +168,10 @@ class _GrowthStyleCorrectionSheetState
         const SizedBox(height: 4),
         Text(
           widget.profile.summary,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             height: 1.5,
-            color: AppColors.textPrimary,
+            color: context.palette.textPrimary,
           ),
         ),
       ],
@@ -230,7 +230,7 @@ class _GrowthStyleCorrectionSheetState
       child: FilledButton(
         onPressed: _saving ? null : _save,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: context.palette.primary,
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),

@@ -31,7 +31,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../config/app_palette.dart';
-import '../config/app_theme.dart';
 import '../providers/growth_providers.dart';
 import 'growth_detail_content.dart';
 import 'growth_detail_error_view.dart';
@@ -75,8 +74,8 @@ class _GrowthDetailPageState extends ConsumerState<GrowthDetailPage> {
         ),
       ),
       body: state.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
+          ? Center(
+              child: CircularProgressIndicator(color: context.palette.primary),
             )
           : state.error != null
           ? GrowthErrorView(

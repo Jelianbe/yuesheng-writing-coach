@@ -102,26 +102,26 @@ class _DrawerHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.article_outlined,
             size: 18,
-            color: AppColors.primary,
+            color: context.palette.primary,
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             '大纲',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textInk,
+              color: context.palette.textInk,
             ),
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(
+            icon: Icon(
               Icons.close,
               size: 20,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             tooltip: '关闭大纲',
             onPressed: onClose,

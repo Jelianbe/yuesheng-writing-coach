@@ -43,8 +43,8 @@ class WritingPageScaffold extends ConsumerWidget {
       key: host.scaffoldKey,
       // 批次 X-037-P0-1 H4/C1：正文壳与当前预设配平，暗夜用 editorDarkSurface 令牌（WCAG AA 可达）
       backgroundColor: isDarkEditorPreset(state.editorBackground)
-          ? AppColors.editorDarkSurface
-          : AppColors.background,
+          ? context.palette.editorDarkSurface
+          : context.palette.background,
       // 批次83：章节树抽屉（每次打开以新 key 重建 → 列表/标题保持最新）
       drawer: controllers.chapterNav.buildChapterTreeDrawer(),
       onDrawerChanged: controllers.chapterNav.handleDrawerChanged,
@@ -86,8 +86,8 @@ class WritingPageScaffold extends ConsumerWidget {
 
   Widget _buildMainContent(BuildContext context) {
     if (state.isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return Center(
+        child: CircularProgressIndicator(color: context.palette.primary),
       );
     }
     if (state.error != null) {
@@ -192,6 +192,10 @@ class WritingPageScaffold extends ConsumerWidget {
   /// AppBar（视图层独立类：返回 / 面包屑 / 字数指示 / 一键排版 / ⋮ 菜单）
   PreferredSizeWidget _buildAppBar(WidgetRef ref) {
     // 批次 X-037-P0-1 C1：暗夜色走 AppColors.editorDark* 令牌
+    // ★ 此处**刻意不迁 context.palette**（R4 已裁定，`.ai/DECISIONS.md` 2026-09-21）：
+    //   写作页编辑器与其 chrome 随**编辑器背景预设**（米纸 / 暗夜）取色，**不随全局 ThemeMode 翻**；
+    //   若改吃 `context.palette.textPrimary`，「全局暗 + 米纸编辑器」下会亮字压亮底（不可读）。
+    //   配对守卫对本文件登记了**带原因的豁免**（`.ai/tools/check_app_pairing.py` EXEMPT），勿再盲迁。
     final darkUi = isDarkEditorPreset(state.editorBackground);
     final fg = darkUi ? AppColors.editorDarkText : AppColors.textPrimary;
     final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textSecondary;

@@ -103,7 +103,7 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
       child: Container(
         decoration: BoxDecoration(
           color: context.palette.surface,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.palette.border),
         ),
         child: Row(
           children: [
@@ -116,13 +116,13 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
                     // 标题行：左标题 + 右时间窗切换
                     Row(
                       children: [
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             '训练通过率',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
+                              color: context.palette.textSecondary,
                             ),
                           ),
                         ),
@@ -133,14 +133,14 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
                     Text(
                       '${_stats.length} 个症候 · 共 $totalPractices 次练习 · '
                       '整体通过率 ${(overallRate * 100).round()}%',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textTertiary,
+                        color: context.palette.textTertiary,
                       ),
                     ),
                     const SizedBox(height: 12),
                     if (_loading)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         child: Center(
                           child: SizedBox(
@@ -148,19 +148,19 @@ class _TrainingPassRateCardState extends ConsumerState<TrainingPassRateCard> {
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.primary,
+                              color: context.palette.primary,
                             ),
                           ),
                         ),
                       )
                     else if (_stats.isEmpty)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           '该时段暂无训练记录',
                           style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.textTertiary,
+                            color: context.palette.textTertiary,
                           ),
                         ),
                       )
@@ -225,10 +225,10 @@ class _StatsRow extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -245,7 +245,7 @@ class _StatsRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: _rateColor(stat.passRate),
+                color: _rateColor(context, stat.passRate),
               ),
             ),
           ],
@@ -256,8 +256,8 @@ class _StatsRow extends StatelessWidget {
           child: LinearProgressIndicator(
             value: stat.passRate,
             minHeight: 4,
-            backgroundColor: AppColors.border,
-            color: _rateColor(stat.passRate),
+            backgroundColor: context.palette.border,
+            color: _rateColor(context, stat.passRate),
           ),
         ),
       ],
@@ -265,9 +265,9 @@ class _StatsRow extends StatelessWidget {
   }
 
   /// 通过率颜色：≥80% primary（掌握良好）/ 50-80% warning（待巩固）/ <50% danger（需加强）
-  Color _rateColor(double rate) {
-    if (rate >= 0.8) return AppColors.primary;
-    if (rate >= 0.5) return AppColors.warning;
-    return AppColors.danger;
+  Color _rateColor(BuildContext context, double rate) {
+    if (rate >= 0.8) return context.palette.primary;
+    if (rate >= 0.5) return context.palette.warning;
+    return context.palette.danger;
   }
 }

@@ -26,7 +26,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../config/app_palette.dart';
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import '../providers/manuscript_providers.dart';
 import 'bookshelf_actions_controller.dart';
@@ -205,7 +204,7 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
       child: Row(
         children: [
           if (mode == _sortMode) ...[
-            const Icon(Icons.check, size: 16, color: AppColors.primary),
+            Icon(Icons.check, size: 16, color: context.palette.primary),
             const SizedBox(width: 6),
           ] else
             const SizedBox(width: 22),
@@ -249,7 +248,7 @@ class _BookshelfPageState extends ConsumerState<BookshelfPage>
     return RefreshIndicator(
       // 批次93-6：下拉刷新（章节统计缓存一并失效）
       onRefresh: () async => refreshBookshelf(),
-      color: AppColors.primary,
+      color: context.palette.primary,
       child: state.manuscripts.isEmpty
           ? BookshelfEmptyState(onCreate: _create.openCreateModal)
           : visible.isEmpty

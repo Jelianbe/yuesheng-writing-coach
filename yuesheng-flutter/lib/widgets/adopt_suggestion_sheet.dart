@@ -181,18 +181,18 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: AppSpacing.lg),
                 decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: context.palette.border,
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
             ),
             // 标题
-            const Text(
+            Text(
               '采纳建议',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textInk,
+                color: context.palette.textInk,
               ),
             ),
             const SizedBox(height: 12),
@@ -208,10 +208,10 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
               child: SingleChildScrollView(
                 child: Text(
                   widget.suggestion,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
-                    color: AppColors.textInk,
+                    color: context.palette.textInk,
                   ),
                 ),
               ),
@@ -225,8 +225,8 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
                 icon: const Icon(Icons.merge_type, size: 18),
                 label: const Text('局部合并'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.onPrimary,
+                  backgroundColor: context.palette.primary,
+                  foregroundColor: context.palette.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -243,8 +243,8 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
                 icon: const Icon(Icons.find_replace, size: 18),
                 label: const Text('替换全部'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
+                  foregroundColor: context.palette.primary,
+                  side: BorderSide(color: context.palette.primary),
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -265,7 +265,7 @@ class _AdoptSuggestionSheetState extends ConsumerState<AdoptSuggestionSheet> {
                   icon: const Icon(Icons.undo, size: 18),
                   label: const Text('撤销上次采纳'),
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
+                    foregroundColor: context.palette.textSecondary,
                     padding: const EdgeInsets.symmetric(
                       vertical: AppSpacing.smx,
                     ),

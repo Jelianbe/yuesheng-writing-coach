@@ -58,8 +58,8 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
+      return Center(
+        child: CircularProgressIndicator(color: context.palette.primary),
       );
     }
     if (_sessions.isEmpty) return _buildEmpty(context);
@@ -67,7 +67,7 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       itemCount: _sessions.length,
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, color: AppColors.borderSoft),
+          Divider(height: 1, color: context.palette.borderSoft),
       itemBuilder: (context, index) => _buildSessionCard(_sessions[index]),
     );
   }
@@ -79,18 +79,18 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.forum_outlined,
               size: 48,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '还没有相关对话',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -124,12 +124,12 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: const Text(
+              child: Text(
                 '月',
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
               ),
             ),
@@ -148,19 +148,19 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
                               : item.session.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: context.palette.textPrimary,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         formatRelativeTime(item.session.updatedAt),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.textTertiary,
+                          color: context.palette.textTertiary,
                         ),
                       ),
                     ],
@@ -178,10 +178,10 @@ class _RelatedSessionsTabState extends ConsumerState<RelatedSessionsTab> {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
+            Icon(
               Icons.chevron_right,
               size: 20,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
           ],
         ),

@@ -15,7 +15,6 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_palette.dart';
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import 'file_section.dart';
 import 'manuscript_detail_chapter_list.dart';
@@ -144,7 +143,7 @@ class ManuscriptDetailView extends StatelessWidget {
       controller: tabController,
       labelColor: context.palette.primary,
       unselectedLabelColor: context.palette.textSecondary,
-      indicatorColor: AppColors.primary,
+      indicatorColor: context.palette.primary,
       indicatorSize: TabBarIndicatorSize.label,
       labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       unselectedLabelStyle: const TextStyle(fontSize: 14),

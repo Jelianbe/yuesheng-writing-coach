@@ -117,12 +117,12 @@ class DetailVolumeHeader extends StatelessWidget {
           decoration: BoxDecoration(
             color: context.palette.surfaceWhite,
             border: Border(
-              bottom: BorderSide(color: AppColors.divider, width: 1),
+              bottom: BorderSide(color: context.palette.divider, width: 1),
             ),
           ),
           child: Row(
             children: [
-              _buildLeading(isUnassigned, collapsed),
+              _buildLeading(context, isUnassigned, collapsed),
               Expanded(
                 child: Text(
                   title,
@@ -142,7 +142,11 @@ class DetailVolumeHeader extends StatelessWidget {
 
   /// 左侧：折叠箭头 + 卷图标（R-019 清偿拆出；批次 V-2 删左侧色条）。
   /// 首间距取页面内容基准 16 —— 原为「3dp 色条 + 10dp 间距」的合成值 13。
-  Widget _buildLeading(bool isUnassigned, bool collapsed) {
+  Widget _buildLeading(
+    BuildContext context,
+    bool isUnassigned,
+    bool collapsed,
+  ) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -150,7 +154,7 @@ class DetailVolumeHeader extends StatelessWidget {
         Icon(
           collapsed ? Icons.chevron_right : Icons.expand_more,
           size: 18,
-          color: AppColors.textTertiary,
+          color: context.palette.textTertiary,
         ),
         const SizedBox(width: 4),
         Icon(
@@ -158,7 +162,9 @@ class DetailVolumeHeader extends StatelessWidget {
               ? Icons.notes_outlined
               : Icons.collections_bookmark_outlined,
           size: 16,
-          color: isUnassigned ? AppColors.textTertiary : AppColors.primary,
+          color: isUnassigned
+              ? context.palette.textTertiary
+              : context.palette.primary,
         ),
         const SizedBox(width: 6),
       ],
@@ -181,7 +187,7 @@ class DetailVolumeHeader extends StatelessWidget {
           InkWell(
             onTap: onRename,
             borderRadius: BorderRadius.circular(AppRadius.xs),
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.xs,
                 vertical: AppSpacing.xxs,
@@ -189,7 +195,7 @@ class DetailVolumeHeader extends StatelessWidget {
               child: Icon(
                 Icons.edit_outlined,
                 size: 14,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
           ),

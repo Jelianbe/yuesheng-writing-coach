@@ -253,7 +253,7 @@ class ChatInputState extends State<ChatInput> {
       decoration: BoxDecoration(
         color: context.palette.background,
         border: Border(
-          top: BorderSide(color: AppColors.borderSoft, width: 0.5),
+          top: BorderSide(color: context.palette.borderSoft, width: 0.5),
         ),
       ),
       child: OverlayPortal(
@@ -292,11 +292,15 @@ class ChatInputState extends State<ChatInput> {
         child: InkWell(
           onTap: _togglePanel,
           customBorder: const CircleBorder(),
-          child: const SizedBox(
+          child: SizedBox(
             width: 40,
             height: 40,
             child: Center(
-              child: Icon(Icons.add, size: 20, color: AppColors.textPrimary),
+              child: Icon(
+                Icons.add,
+                size: 20,
+                color: context.palette.textPrimary,
+              ),
             ),
           ),
         ),
@@ -319,7 +323,7 @@ class ChatInputState extends State<ChatInput> {
         onChanged: _handleChanged,
         decoration: InputDecoration(
           hintText: _placeholder,
-          hintStyle: const TextStyle(color: AppColors.textTertiary),
+          hintStyle: TextStyle(color: context.palette.textTertiary),
           filled: false,
           isDense: true,
           border: InputBorder.none,
@@ -329,7 +333,7 @@ class ChatInputState extends State<ChatInput> {
             vertical: AppSpacing.smx,
           ),
         ),
-        style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+        style: TextStyle(fontSize: 15, color: context.palette.textPrimary),
       ),
     );
   }
@@ -343,27 +347,27 @@ class ChatInputState extends State<ChatInput> {
           ? FilledButton(
               onPressed: widget.onStop,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.danger,
+                backgroundColor: context.palette.danger,
                 shape: const CircleBorder(),
                 padding: EdgeInsets.zero,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.stop,
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
                 size: 18,
               ),
             )
           : FilledButton(
               onPressed: _canSend ? _handleSend : null,
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.disabled,
+                backgroundColor: context.palette.primary,
+                disabledBackgroundColor: context.palette.disabled,
                 shape: const CircleBorder(),
                 padding: EdgeInsets.zero,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_upward,
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
                 size: 18,
               ),
             ),

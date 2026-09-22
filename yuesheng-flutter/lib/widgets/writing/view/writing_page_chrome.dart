@@ -31,20 +31,22 @@ class WritingErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
+            Icon(Icons.error_outline, size: 48, color: context.palette.danger),
             const SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onRetry,
-              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.primary,
+              ),
               child: const Text('重试'),
             ),
           ],
@@ -118,13 +120,13 @@ class _WritingSelectionMenuItem extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: AppColors.textPrimary),
+            Icon(icon, size: 16, color: context.palette.textPrimary),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -178,12 +180,12 @@ class WritingDraggableFab extends StatelessWidget {
         onLongPressEnd: (_) => onDragEnd(),
         child: FloatingActionButton(
           key: const Key('aiChatFab'),
-          backgroundColor: AppColors.primary,
+          backgroundColor: context.palette.primary,
           // 点击 = 切换教练面板（与长按拖动互不冲突）
           onPressed: onPressed,
           child: Icon(
             isPanelOpen ? Icons.close : Icons.chat_bubble_outline,
-            color: AppColors.onPrimary,
+            color: context.palette.onPrimary,
           ),
         ),
       ),

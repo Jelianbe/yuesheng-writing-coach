@@ -89,7 +89,9 @@ class DiagnosisFailedCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: context.palette.surfaceWhite,
-            border: Border.fromBorderSide(BorderSide(color: AppColors.border)),
+            border: Border.fromBorderSide(
+              BorderSide(color: context.palette.border),
+            ),
           ),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
@@ -102,20 +104,20 @@ class DiagnosisFailedCard extends StatelessWidget {
                   color: context.palette.surface,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.search,
                   size: 28,
-                  color: AppColors.textTertiary,
+                  color: context.palette.textTertiary,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 '未检测到明显问题',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -130,10 +132,13 @@ class DiagnosisFailedCard extends StatelessWidget {
               _buildButtonRow(context),
               if (showHint) ...[
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   '提示：多次诊断失败后建议主动描述问题',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12, color: AppColors.disabledText),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.palette.disabledText,
+                  ),
                 ),
               ],
             ],
@@ -165,12 +170,12 @@ class DiagnosisFailedCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '•',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: context.palette.primary,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -198,7 +203,7 @@ class DiagnosisFailedCard extends StatelessWidget {
             child: FilledButton(
               onPressed: onAddContent ?? () {},
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
+                backgroundColor: context.palette.primary,
                 padding: EdgeInsets.zero,
                 textStyle: const TextStyle(
                   fontSize: 14,
@@ -216,8 +221,8 @@ class DiagnosisFailedCard extends StatelessWidget {
             child: OutlinedButton(
               onPressed: onContinueChat ?? () {},
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textTertiary,
-                side: const BorderSide(color: AppColors.border),
+                foregroundColor: context.palette.textTertiary,
+                side: BorderSide(color: context.palette.border),
                 padding: EdgeInsets.zero,
                 textStyle: const TextStyle(
                   fontSize: 14,

@@ -54,7 +54,7 @@ class ChatPlusPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.palette.surfaceWhite,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.borderSoft, width: 0.5),
+        border: Border.all(color: context.palette.borderSoft, width: 0.5),
         boxShadow: const [
           BoxShadow(
             color: Color(0x1A000000),
@@ -100,12 +100,12 @@ class _PanelDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
+    return Divider(
       height: 1,
       thickness: 0.5,
       indent: AppSpacing.md,
       endIndent: AppSpacing.md,
-      color: AppColors.borderSoft,
+      color: context.palette.borderSoft,
     );
   }
 }
@@ -135,7 +135,7 @@ class _PanelActionRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: AppColors.primary),
+            Icon(icon, size: 18, color: context.palette.primary),
             const SizedBox(width: AppSpacing.smx),
             Expanded(
               child: Column(
@@ -144,18 +144,18 @@ class _PanelActionRow extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.palette.textPrimary,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.textTertiary,
+                      color: context.palette.textTertiary,
                     ),
                   ),
                 ],
@@ -183,7 +183,9 @@ class _PanelThinkingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = enabled ? AppColors.primary : AppColors.textTertiary;
+    final color = enabled
+        ? context.palette.primary
+        : context.palette.textTertiary;
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -197,12 +199,12 @@ class _PanelThinkingRow extends StatelessWidget {
             color: color,
           ),
           const SizedBox(width: AppSpacing.smx),
-          const Text(
+          Text(
             '思考',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
+              color: context.palette.textPrimary,
             ),
           ),
           const SizedBox(width: AppSpacing.xsm),
@@ -210,9 +212,9 @@ class _PanelThinkingRow extends StatelessWidget {
             child: Text(
               enabled ? tierLabel : '已关闭',
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textTertiary,
+                color: context.palette.textTertiary,
               ),
             ),
           ),

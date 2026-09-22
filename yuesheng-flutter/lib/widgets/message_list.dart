@@ -227,18 +227,18 @@ class _MessageListState extends ConsumerState<MessageList> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.copy_rounded,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
               title: Text('复制内容', style: context.text.body),
               onTap: () => Navigator.pop(ctx, 'copy'),
             ),
             if (widget.onDelete != null)
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.delete_outline,
-                  color: AppColors.danger,
+                  color: context.palette.danger,
                 ),
                 title: Text('删除', style: context.text.body),
                 onTap: () => Navigator.pop(ctx, 'delete'),
@@ -268,7 +268,7 @@ class _MessageListState extends ConsumerState<MessageList> {
     final confirmed = await showDialog<bool>(
       context: context,
       barrierDismissible: true,
-      barrierColor: AppColors.overlay,
+      barrierColor: context.palette.overlay,
       builder: (ctx) {
         return AlertDialog(
           title: Text('确认删除', style: context.text.titleLg),
@@ -281,10 +281,10 @@ class _MessageListState extends ConsumerState<MessageList> {
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               style: AppButtonStyles.secondary,
-              child: const Text(
+              child: Text(
                 '取消',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: context.palette.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -292,7 +292,7 @@ class _MessageListState extends ConsumerState<MessageList> {
             FilledButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: FilledButton.styleFrom(
-                backgroundColor: AppColors.danger,
+                backgroundColor: context.palette.danger,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
@@ -301,10 +301,10 @@ class _MessageListState extends ConsumerState<MessageList> {
                   vertical: AppSpacing.md,
                 ),
               ),
-              child: const Text(
+              child: Text(
                 '删除',
                 style: TextStyle(
-                  color: AppColors.onPrimary,
+                  color: context.palette.onPrimary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -440,7 +440,7 @@ class _MessageListState extends ConsumerState<MessageList> {
             children: [
               if (isEmpty)
                 widget.emptyWidget ??
-                    const Center(
+                    Center(
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: AppSpacing.xxl,
@@ -451,7 +451,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                             Icon(
                               Icons.chat_bubble_outline,
                               size: 40,
-                              color: AppColors.textTertiary,
+                              color: context.palette.textTertiary,
                             ),
                             SizedBox(height: 12),
                             Text(
@@ -459,7 +459,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.textSecondary,
+                                color: context.palette.textSecondary,
                               ),
                             ),
                             SizedBox(height: 4),
@@ -467,7 +467,7 @@ class _MessageListState extends ConsumerState<MessageList> {
                               '写作遇到卡壳、不知道怎么改，直接问就行',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: AppColors.textTertiary,
+                                color: context.palette.textTertiary,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -618,12 +618,12 @@ class ThinkingIndicator extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          const SizedBox(
+          SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(width: 8),

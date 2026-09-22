@@ -322,18 +322,18 @@ class TaskToggleBar extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: context.palette.background,
-          border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+          border: Border(bottom: BorderSide(color: context.palette.borderSoft)),
         ),
         child: Row(
           children: [
-            const Icon(Icons.task_alt, size: 16, color: AppColors.primary),
+            Icon(Icons.task_alt, size: 16, color: context.palette.primary),
             const SizedBox(width: 6),
             Text(
               showTaskPanel ? '收起任务' : '任务 ($problemCount)',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                color: context.palette.primary,
               ),
             ),
           ],

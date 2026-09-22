@@ -110,7 +110,9 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            style: TextButton.styleFrom(
+              foregroundColor: context.palette.danger,
+            ),
             child: const Text('永久删除'),
           ),
         ],
@@ -157,10 +159,10 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline,
               size: 48,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: 12),
             const Text('加载失败，请稍后重试'),
@@ -175,15 +177,18 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.delete_sweep_outlined,
               size: 48,
-              color: AppColors.textTertiary,
+              color: context.palette.textTertiary,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '回收站是空的',
-              style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
+              style: TextStyle(
+                fontSize: 15,
+                color: context.palette.textSecondary,
+              ),
             ),
             const SizedBox(height: 8),
             Text('删除的章节会先进入这里，可恢复或永久删除', style: context.text.subCaption),
@@ -198,7 +203,7 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
       ),
       itemCount: _items.length,
       separatorBuilder: (_, _) =>
-          const Divider(height: 1, color: AppColors.divider),
+          Divider(height: 1, color: context.palette.divider),
       itemBuilder: (context, index) {
         final c = _items[index];
         final title = c.title.trim().isEmpty ? '未命名章节' : c.title.trim();
@@ -214,10 +219,10 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textPrimary,
+                        color: context.palette.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -229,19 +234,19 @@ class _ChapterRecycleBinPageState extends ConsumerState<ChapterRecycleBinPage> {
                 ),
               ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.restore,
                   size: 20,
-                  color: AppColors.primary,
+                  color: context.palette.primary,
                 ),
                 tooltip: '恢复',
                 onPressed: () => _restore(c),
               ),
               IconButton(
-                icon: const Icon(
+                icon: Icon(
                   Icons.delete_forever_outlined,
                   size: 20,
-                  color: AppColors.danger,
+                  color: context.palette.danger,
                 ),
                 tooltip: '永久删除',
                 onPressed: () => _purge(c),

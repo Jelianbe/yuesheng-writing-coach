@@ -144,7 +144,7 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
           const SizedBox(height: 6),
           Text(
             _titleError!,
-            style: const TextStyle(fontSize: 13, color: AppColors.danger),
+            style: TextStyle(fontSize: 13, color: context.palette.danger),
           ),
         ],
       ],
@@ -156,12 +156,12 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
+        Text(
           '简介（可选）',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppColors.textBody,
+            color: context.palette.textBody,
           ),
         ),
         const SizedBox(height: 6),
@@ -205,10 +205,10 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
     return TextButton(
       onPressed: _isLoading ? null : widget.onCancel,
       style: AppButtonStyles.secondary,
-      child: const Text(
+      child: Text(
         '取消',
         style: TextStyle(
-          color: AppColors.textPrimary,
+          color: context.palette.textPrimary,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -219,25 +219,25 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
     return ElevatedButton(
       onPressed: _isLoading ? null : _handleCreate,
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
+        backgroundColor: context.palette.primary,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       ),
       child: _isLoading
-          ? const SizedBox(
+          ? SizedBox(
               width: 18,
               height: 18,
               child: CircularProgressIndicator(
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
                 strokeWidth: 2,
               ),
             )
-          : const Text(
+          : Text(
               '创建',
               style: TextStyle(
-                color: AppColors.onPrimary,
+                color: context.palette.onPrimary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -248,17 +248,17 @@ class _BookshelfCreateModalState extends State<BookshelfCreateModal> {
   Widget _buildImportButton() {
     return TextButton.icon(
       onPressed: _isLoading ? null : widget.onImportTap,
-      icon: const Icon(
+      icon: Icon(
         Icons.file_open_outlined,
         size: 18,
-        color: AppColors.primary,
+        color: context.palette.primary,
       ),
-      label: const Text(
+      label: Text(
         '从 TXT 文件导入书籍',
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: AppColors.primary,
+          color: context.palette.primary,
         ),
       ),
     );

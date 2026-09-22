@@ -80,7 +80,11 @@ class _ChartCanvas extends StatelessWidget {
       height: 160,
       width: double.infinity,
       child: CustomPaint(
-        painter: _CurvePainter(series: series, pointCount: pointCount),
+        painter: _CurvePainter(
+          series: series,
+          pointCount: pointCount,
+          gridColor: context.palette.borderSoft,
+        ),
       ),
     );
   }
@@ -91,7 +95,15 @@ class _CurvePainter extends CustomPainter {
   final List<({String dimension, List<int> scores})> series;
   final int pointCount;
 
-  _CurvePainter({required this.series, required this.pointCount});
+  /// 网格线色：paint 拿不到 BuildContext ⇒ 由 build 注入（P1-6「palette 注入 painter」同族，
+  /// 本处只取一色，故只传该色参，不塞整个 palette）。
+  final Color gridColor;
+
+  _CurvePainter({
+    required this.series,
+    required this.pointCount,
+    required this.gridColor,
+  });
 
   static const _colors = [
     Color(0xFF2D5A52),
@@ -113,7 +125,7 @@ class _CurvePainter extends CustomPainter {
 
     // 网格（25/50/75 分三条浅线）
     final gridPaint = Paint()
-      ..color = AppColors.borderSoft
+      ..color = gridColor
       ..strokeWidth = 1;
     for (final v in [25.0, 50.0, 75.0]) {
       final y = top + plotH * (1 - v / 100);
@@ -175,9 +187,9 @@ class _Legend extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 series[i].dimension,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: AppColors.textSecondary,
+                  color: context.palette.textSecondary,
                 ),
               ),
             ],
@@ -208,25 +220,25 @@ class _Section extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: context.palette.surface,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.palette.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+                color: context.palette.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: AppColors.textSecondary,
+                color: context.palette.textSecondary,
               ),
             ),
             const SizedBox(height: 12),
@@ -256,21 +268,21 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Column(
         children: [
-          Icon(icon, size: 36, color: AppColors.textTertiary),
+          Icon(icon, size: 36, color: context.palette.textTertiary),
           const SizedBox(height: 8),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: context.palette.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 12, color: context.palette.textTertiary),
           ),
         ],
       ),

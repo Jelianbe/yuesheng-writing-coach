@@ -387,7 +387,7 @@ class _WorldArchiveAction extends StatelessWidget {
           : OutlinedButton(
               onPressed: onArchive,
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.danger,
+                foregroundColor: context.palette.danger,
               ),
               child: const Text('归档本主题'),
             ),
