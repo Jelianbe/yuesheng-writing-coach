@@ -382,9 +382,15 @@ class _BackgroundOption extends StatelessWidget {
     //   旧形态 `preset.color`（预设表自带静态色）已随改造移除 ——
     //   预设表只保留 key/label，颜色统一经 `editorPaletteFor` 从 palette 取。
     //   预览色与写作页实际底色**同源**，故「预览所见 = 切换后所得」有结构性保证。
+    //
+    // ★ 2026-09-22（批次 M5）：「跟随主题」预设在**当前**全局主题下解析 ——
+    //   否则该色块会恒按亮色预览，与用户点下去得到的底色不一致（破坏上面那条
+    //   「预览所见 = 切换后所得」的保证）。
+    final globalIsDark = Theme.of(context).brightness == Brightness.dark;
     final swatch = editorBackgroundColorFor(
-      editorPaletteFor(preset.key),
+      editorPaletteFor(preset.key, globalIsDark: globalIsDark),
       preset.key,
+      globalIsDark: globalIsDark,
     );
     return InkWell(
       onTap: onTap,

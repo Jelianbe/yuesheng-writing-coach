@@ -36,6 +36,8 @@ import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/config/editor_background_presets.dart';
+import 'package:writingcoach/theme/app_theme.dart'
+    show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
@@ -168,10 +170,12 @@ void main() {
     VoidCallback? onBack,
     String? msId,
     void Function(String chapterId, String title)? onJumpToChapter,
+    ThemeData? theme,
   }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
+        theme: theme,
         home: WritingPage(
           chapterId: id ?? chapterId,
           manuscriptId: msId,
@@ -3545,6 +3549,95 @@ void main() {
             .first,
       );
       expect(punctContainer.color, lightAxis.background);
+    });
+  });
+
+  // ★ 2026-09-22（批次 M5）：「跟随主题」预设端到端 —— 本批的**核心行为**。
+  //
+  // 为何必须有这一组：上面的「对比度护栏」只证 `editorPaletteFor` 的纯函数行为；
+  // 而本批真正的缺陷是「**接线**没到位」—— 若某个消费点忘了把 `globalIsDark`
+  // 传下去，纯函数测试照样全绿，而设备上编辑器依旧亮底。故这里走**真实 widget**
+  // 渲染路径（真 MaterialApp + buildDarkTheme），断言渲染结果。
+  group('批次M5：编辑器「跟随主题」预设', () {
+    testWidgets('#M5-1 全局暗 + 跟随主题 → 编辑器底色/字色为暗色（缺陷修复点）', (tester) async {
+      // 显式预置 auto（而非依赖默认值）—— 使本用例只测「跟随」行为，
+      // 不把「默认值是否正确」混进来（后者由 #M5-3 单独钉）。
+      await AppStateRepository(db).setValue('editor_background', editorBgAuto);
+
+      await tester.pumpWidget(buildWritingPage(theme: buildDarkTheme()));
+      await tester.pumpAndSettle();
+
+      final editor = tester.widget<Container>(
+        find.byKey(const Key('editorContainer')),
+      );
+      // 底：应为暗色 paper（而非修复前的亮羊皮纸 0xFFF5F1E8）
+      expect(
+        editor.color,
+        editorPaletteFor(editorBgAuto, globalIsDark: true).paper,
+        reason: '全局暗 + 跟随主题 ⇒ 编辑器底应翻暗',
+      );
+      expect(
+        editor.color,
+        isNot(editorPaletteFor(editorBgPaper).paper),
+        reason: '若仍等于米纸底 ⇒ 本缺陷未修复（这正是修复前的实测表现）',
+      );
+
+      // 字：应为浅色 textInk（与暗底成对，保证可读）
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('chapterContentField')),
+      );
+      expect(
+        field.style?.color,
+        editorPaletteFor(editorBgAuto, globalIsDark: true).textInk,
+      );
+
+      // AppBar 前景亦须成对翻暗（R4 不变式：仍走 editorPaletteFor，不吃 context.palette）
+      expect(
+        editorPaletteFor(editorBgAuto, globalIsDark: true).textPrimary,
+        isNot(editorPaletteFor(editorBgAuto, globalIsDark: false).textPrimary),
+        reason: 'auto 预设的 AppBar 前景在两种全局主题下必须是不同色，否则未跟随',
+      );
+    });
+
+    testWidgets('#M5-2 全局亮 + 跟随主题 → 与米纸预设渲染结果一致', (tester) async {
+      await AppStateRepository(db).setValue('editor_background', editorBgAuto);
+      await tester.pumpWidget(buildWritingPage(theme: buildAppTheme()));
+      await tester.pumpAndSettle();
+
+      final autoEditor = tester.widget<Container>(
+        find.byKey(const Key('editorContainer')),
+      );
+      expect(autoEditor.color, editorPaletteFor(editorBgPaper).paper);
+    });
+
+    testWidgets('#M5-3 新用户默认预设为「跟随主题」', (tester) async {
+      // 不预置任何 app_state —— 模拟全新用户
+      await tester.pumpWidget(buildWritingPage(theme: buildDarkTheme()));
+      await tester.pumpAndSettle();
+
+      final editor = tester.widget<Container>(
+        find.byKey(const Key('editorContainer')),
+      );
+      expect(
+        editor.color,
+        editorPaletteFor(editorBgAuto, globalIsDark: true).paper,
+        reason: '新用户默认应为「跟随主题」，故全局暗下编辑器须翻暗',
+      );
+    });
+
+    testWidgets('#M5-4 显式选「米纸」→ 全局暗仍保持米纸（R4 不变式，不被本批推翻）', (tester) async {
+      await AppStateRepository(db).setValue('editor_background', editorBgPaper);
+      await tester.pumpWidget(buildWritingPage(theme: buildDarkTheme()));
+      await tester.pumpAndSettle();
+
+      final editor = tester.widget<Container>(
+        find.byKey(const Key('editorContainer')),
+      );
+      expect(
+        editor.color,
+        editorPaletteFor(editorBgPaper).paper,
+        reason: '用户显式选米纸 ⇒ 必须尊重其选择，不随全局主题翻（R4 独立预设裁定）',
+      );
     });
   });
 

@@ -325,38 +325,92 @@ void _editorPresetTests() {
   // P0-5 契约：每个预设的 hint 色对其**自身底色**必须 ≥4.5。
   // 该断言正是为堵住「预设底 × 未联动的写死 hint 色」这一类缺陷
   // （暗夜预设下 textTertiary 曾仅 2.79:1，而既有暗夜用例恰好绕开了它）。
+  //
+  // ★ 2026-09-22（批次 M5）：新增「跟随主题」预设后，本组对每个 (预设 × 全局主题)
+  //   组合各断言一次 —— 共 4 预设 × 2 态 = 8 组。
+  //   为何必须两态都测：`auto` 在 `globalIsDark=false` 下与「米纸」完全同色，
+  //   只测单态会**结构性看不见** `auto + 全局暗` 这一支（本批新增的唯一分支）。
   for (final preset in editorBackgroundPresets) {
-    final p = editorPaletteFor(preset.key);
-    final bg = editorBackgroundColorFor(p, preset.key);
-    final hint = editorHintColorFor(p, preset.key);
-    final ratio = _contrastRatio(hint, bg);
-    test('编辑器预设「${preset.label}」hint 色对自身底 ≥4.5:1'
-        '（实际 ${ratio.toStringAsFixed(2)}:1）', () {
-      expect(
-        ratio,
-        greaterThanOrEqualTo(4.5),
-        reason:
-            '预设「${preset.label}」底(#${_hex(bg)}) 上的 '
-            'hint 色(#${_hex(hint)}) 仅 ${ratio.toStringAsFixed(2)}:1 '
-            '< 4.5:1 —— 空输入框时占位提示对用户不可读',
+    for (final globalIsDark in const [false, true]) {
+      final themeLabel = globalIsDark ? '全局暗' : '全局亮';
+      final p = editorPaletteFor(preset.key, globalIsDark: globalIsDark);
+      final bg = editorBackgroundColorFor(
+        p,
+        preset.key,
+        globalIsDark: globalIsDark,
       );
-    });
+      final hint = editorHintColorFor(
+        p,
+        preset.key,
+        globalIsDark: globalIsDark,
+      );
+      final ratio = _contrastRatio(hint, bg);
+      test('编辑器预设「${preset.label}」/ $themeLabel hint 色对自身底 ≥4.5:1'
+          '（实际 ${ratio.toStringAsFixed(2)}:1）', () {
+        expect(
+          ratio,
+          greaterThanOrEqualTo(4.5),
+          reason:
+              '预设「${preset.label}」($themeLabel) 底(#${_hex(bg)}) 上的 '
+              'hint 色(#${_hex(hint)}) 仅 ${ratio.toStringAsFixed(2)}:1 '
+              '< 4.5:1 —— 空输入框时占位提示对用户不可读',
+        );
+      });
 
-    // ★ 新增（批次 M1）：编辑器轴所选 palette **必须与预设亮度同向**。
-    // 这是「编辑器轴 = 选哪套 palette」这一定义本身的守卫 ——
-    // 若将来有人把 editorPaletteFor 的映射写反（暗夜⇒light），本用例立刻变红。
-    test('编辑器预设「${preset.label}」正文字色对自身底 ≥4.5:1', () {
-      final bodyRatio = _contrastRatio(editorTextColorFor(p, preset.key), bg);
-      expect(
-        bodyRatio,
-        greaterThanOrEqualTo(4.5),
-        reason:
-            '预设「${preset.label}」底(#${_hex(bg)}) 上的正文色 '
-            '仅 ${bodyRatio.toStringAsFixed(2)}:1 < 4.5:1 —— '
-            '编辑器轴所选 palette 与预设亮度不匹配（暗底配暗字 / 亮底配亮字）',
-      );
-    });
+      // ★ 新增（批次 M1）：编辑器轴所选 palette **必须与预设亮度同向**。
+      // 这是「编辑器轴 = 选哪套 palette」这一定义本身的守卫 ——
+      // 若将来有人把 editorPaletteFor 的映射写反（暗夜⇒light），本用例立刻变红。
+      test('编辑器预设「${preset.label}」/ $themeLabel 正文字色对自身底 ≥4.5:1', () {
+        final bodyRatio = _contrastRatio(
+          editorTextColorFor(p, preset.key, globalIsDark: globalIsDark),
+          bg,
+        );
+        expect(
+          bodyRatio,
+          greaterThanOrEqualTo(4.5),
+          reason:
+              '预设「${preset.label}」($themeLabel) 底(#${_hex(bg)}) 上的正文色 '
+              '仅 ${bodyRatio.toStringAsFixed(2)}:1 < 4.5:1 —— '
+              '编辑器轴所选 palette 与预设亮度不匹配（暗底配暗字 / 亮底配亮字）',
+        );
+      });
+    }
   }
+
+  // ★ 2026-09-22（批次 M5）：「跟随主题」的**定义**守卫 ——
+  //   它必须真的跟随：全局亮 ⇒ 与米纸同色；全局暗 ⇒ 与暗夜同色。
+  //   （上面那组只证「可读」，这组证「确实跟着走」，两者不可互替。）
+  test('「跟随主题」预设确实跟随全局主题（亮⇒米纸同色 / 暗⇒暗夜同色）', () {
+    final autoLight = editorPaletteFor(editorBgAuto, globalIsDark: false);
+    final autoDark = editorPaletteFor(editorBgAuto, globalIsDark: true);
+    expect(
+      autoLight.paper,
+      editorPaletteFor(editorBgPaper).paper,
+      reason: '全局亮时「跟随主题」应与「米纸」同底色',
+    );
+    expect(
+      autoDark.paper,
+      editorPaletteFor(editorBgDark).paper,
+      reason: '全局暗时「跟随主题」应与「暗夜」同底色',
+    );
+    expect(
+      autoLight.paper,
+      isNot(autoDark.paper),
+      reason: '「跟随主题」在两种全局主题下必须是**不同**底色，否则它没在跟随',
+    );
+  });
+
+  // ★ 2026-09-22（批次 M5）：三套静态预设**不得**被全局主题影响（R4 不变式）。
+  //   这条与上一条构成一对：auto 跟、其它三个不跟。缺任一半都不足以描述本批行为。
+  test('三套静态预设不随全局主题变（R4 不变式）', () {
+    for (final key in const [editorBgPaper, editorBgGreen, editorBgDark]) {
+      expect(
+        editorPaletteFor(key, globalIsDark: false).paper,
+        editorPaletteFor(key, globalIsDark: true).paper,
+        reason: '预设 `$key` 的底色被全局主题影响了 —— 违反 R4「独立预设」裁定',
+      );
+    }
+  });
 }
 
 /// H. PopupMenu 浮层钉底/字（真机三批#3 护栏，批次99b 既有；2026-09-20 暗色启用后按主题分档）

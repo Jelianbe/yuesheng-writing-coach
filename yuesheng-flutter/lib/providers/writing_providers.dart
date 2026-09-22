@@ -95,7 +95,12 @@ class WritingState {
     this.wordCount = 0,
     this.fontSize = 16.0,
     this.lineSpacing = 1.6,
-    this.editorBackground = editorBgPaper,
+    // ★ 2026-09-22（批次 M5）：默认由 `editorBgPaper`（米纸）改为 `editorBgAuto`
+    //   （跟随主题）。动因：米纸作默认时，全局暗色下编辑器仍是亮羊皮纸
+    //   （实测亮底占屏 89%），与「整页已翻暗」观感割裂 —— 舰长裁定此为缺陷。
+    //   既有用户若已显式选过预设，其在 `app_state['editor_background']` 的值
+    //   不变（本行只影响**从未选过**的新用户与重置路径）。
+    this.editorBackground = editorBgAuto,
     this.indentParagraph = true,
     this.blankLineBetween = false,
     this.focusMode = false,

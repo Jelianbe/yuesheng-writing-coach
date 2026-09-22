@@ -68,33 +68,20 @@ class WritingEditorView extends StatelessWidget {
     // 批次82 P0-④：面板改为右侧侧栏，正文不被覆盖 → 标点栏不再随面板隐藏
     // 批次90：标题/正文完全独立（用户参考图要求：标题独立大区块 + 正文分开）
     //
-    // ★ 2026-09-22（批次 M1）：编辑器三色改由 **palette 驱动**。
-    //   改造前直接调 `editorTextColorFor(key)`（内部读静态 `AppColors.*`），
-    //   使编辑器预设轴游离于主题体系之外 —— 加第 N 套主题时这些色不会跟随。
-    //   现在统一从 `context.palette` 取，与全局主题同构。
-    final palette = context.palette;
-    final titleColor = editorTextColorFor(palette, state.editorBackground);
-    // 批次 V-3（P0-5）：占位提示色随预设联动。
-    // 此前两处 hintStyle 硬编码 AppColors.textTertiary ⇒「暗夜」预设下
-    // 提示对 editorDarkPanel 仅 2.79:1，几乎不可见。
-    final hintColor = editorHintColorFor(palette, state.editorBackground);
-    final darkUi = isDarkEditorPreset(state.editorBackground);
-    // 分隔线：判据改用 **预设 key**（表现无关）而非**颜色值比较**。
-    // 改造前为 `titleColor == AppColors.textPrimary` —— 依赖「颜色相等」推断
-    // 「当前是否暗夜」，一旦 token 值调整（或加第三套主题）即静默失效。
-    final dividerColor = darkUi
-        ? palette.textTertiary.withValues(alpha: 0.25)
-        : palette.divider;
-
+    // ★ 2026-09-22（批次 M5）：配色解析抽到 `_resolveColors` —— 本批新增
+    //   `globalIsDark` 后 `build` 达 65 行（R-019 上限 50）。抽的是**独立方法 +
+    //   显式参数**（真分解），与 `_buildEditorContainer` 同先例。
+    final c = _resolveColors(context);
     return Column(
       children: [
         WritingOfflineBanner(isOffline: state.isOffline),
         Expanded(
           child: _buildEditorContainer(
-            palette,
-            titleColor,
-            hintColor,
-            dividerColor,
+            c.palette,
+            c.titleColor,
+            c.hintColor,
+            c.dividerColor,
+            c.globalIsDark,
           ),
         ),
         WritingSaveStatusBar(
@@ -102,10 +89,63 @@ class WritingEditorView extends StatelessWidget {
           saveError: state.saveError,
           autosavePaused: state.autosavePaused,
           lastSavedAt: state.lastSavedAt,
-          darkUi: darkUi,
+          darkUi: c.darkUi,
         ),
-        _buildPunctuationBar(palette, darkUi),
+        _buildPunctuationBar(c.palette, c.darkUi),
       ],
+    );
+  }
+
+  /// 解析编辑器配色（纯计算，无副作用）。
+  ///
+  /// ★ 2026-09-22（批次 M5）从 `build` 抽出以回到 R-019 上限内。
+  ///
+  /// 配色来源与判据（三层，改动前请先读）：
+  ///   · **三色**（正文 / hint / 底色）统一经 `editorXxxColorFor(key)` 取 ——
+  ///     它们由**编辑器预设轴**决定，不吃全局 `context.palette`（R4 不变式）。
+  ///   · **`globalIsDark`** = 全局主题是否暗（`Theme.of(context).brightness`）——
+  ///     这是「跟随主题」预设的**唯一**外部输入。用 `Theme.of` 而非
+  ///     `context.palette` 的色值，因为前者是主题的**权威声明**，
+  ///     后者在预设轴语境下会被 `editorPaletteFor` 覆盖掉（易误读）。
+  ///   · **`darkUi`** = 周边 UI（保存条 / 标点栏 / 分隔线）是否按暗底处理 ——
+  ///     M5 起用 `isDarkEditorEffectiveFor`（key + 全局主题）而非
+  ///     `isDarkEditorPreset`（只看 key），否则 `auto` 恒被判成亮底。
+  _EditorColors _resolveColors(BuildContext context) {
+    // 批次 M1 注：编辑器三色改由 **palette 驱动**。
+    //   改造前直接调 `editorTextColorFor(key)`（内部读静态 `AppColors.*`），
+    //   使编辑器预设轴游离于主题体系之外 —— 加第 N 套主题时这些色不会跟随。
+    final palette = context.palette;
+    final globalIsDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = editorTextColorFor(
+      palette,
+      state.editorBackground,
+      globalIsDark: globalIsDark,
+    );
+    // 批次 V-3（P0-5）：占位提示色随预设联动。
+    // 此前两处 hintStyle 硬编码 AppColors.textTertiary ⇒「暗夜」预设下
+    // 提示对 editorDarkPanel 仅 2.79:1，几乎不可见。
+    final hintColor = editorHintColorFor(
+      palette,
+      state.editorBackground,
+      globalIsDark: globalIsDark,
+    );
+    final darkUi = isDarkEditorEffectiveFor(
+      state.editorBackground,
+      globalIsDark: globalIsDark,
+    );
+    // 分隔线：判据改用 **预设 key**（表现无关）而非**颜色值比较**。
+    // 改造前为 `titleColor == AppColors.textPrimary` —— 依赖「颜色相等」推断
+    // 「当前是否暗夜」，一旦 token 值调整（或加第三套主题）即静默失效。
+    final dividerColor = darkUi
+        ? palette.textTertiary.withValues(alpha: 0.25)
+        : palette.divider;
+    return _EditorColors(
+      palette: palette,
+      titleColor: titleColor,
+      hintColor: hintColor,
+      dividerColor: dividerColor,
+      darkUi: darkUi,
+      globalIsDark: globalIsDark,
     );
   }
 
@@ -118,10 +158,15 @@ class WritingEditorView extends StatelessWidget {
     Color titleColor,
     Color hintColor,
     Color dividerColor,
+    bool globalIsDark,
   ) {
     return Container(
       key: const Key('editorContainer'),
-      color: editorBackgroundColorFor(palette, state.editorBackground),
+      color: editorBackgroundColorFor(
+        palette,
+        state.editorBackground,
+        globalIsDark: globalIsDark,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -160,7 +205,14 @@ class WritingEditorView extends StatelessWidget {
           fontWeight: FontWeight.w800,
           letterSpacing: 0.4,
         ),
-        decoration: InputDecoration.collapsed(
+        // 方案A（边框溯源 ff7c61d4）：与正文一致，显式 disabled 全局兜底描边。
+        decoration: InputDecoration(
+          isCollapsed: true,
+          contentPadding: EdgeInsets.zero,
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           hintText: '未命名章节',
           hintStyle: TextStyle(
             fontSize: 28,
@@ -226,14 +278,20 @@ class WritingEditorView extends StatelessWidget {
         height: state.lineSpacing,
         color: titleColor,
       ),
-      decoration: InputDecoration.collapsed(
+      // 方案A（边框溯源 ff7c61d4）：同上，显式 disabled 全局兜底描边。
+      decoration: InputDecoration(
+        isCollapsed: true,
+        contentPadding: EdgeInsets.zero,
+        filled: false,
+        border: InputBorder.none,
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
         hintText: '请输入正文内容',
         hintStyle: TextStyle(
           color: hintColor,
           fontSize: state.fontSize,
           height: state.lineSpacing,
         ),
-        border: InputBorder.none,
       ),
       onChanged: onContentChanged,
     );
@@ -257,4 +315,31 @@ class WritingEditorView extends StatelessWidget {
       onTap: onPunctuationTap,
     );
   }
+}
+
+/// [_resolveColors] 的返回值 —— 编辑器一次 build 所需的全部配色决策。
+///
+/// 独立类而非 `record` / `Map`：字段含义需随代码留存（尤其 `globalIsDark`
+/// 与 `darkUi` **语义不同**，命名相近最易误用 —— 前者是「全局主题是否暗」，
+/// 后者是「编辑器周边 UI 是否按暗底渲染」，`auto` 预设下两者才相等）。
+class _EditorColors {
+  final AppPalette palette;
+  final Color titleColor;
+  final Color hintColor;
+  final Color dividerColor;
+
+  /// 编辑器周边 UI（保存状态条 / 标点栏 / 分隔线）是否按暗底渲染。
+  final bool darkUi;
+
+  /// 全局主题是否暗色 —— 「跟随主题」预设的解析输入。
+  final bool globalIsDark;
+
+  const _EditorColors({
+    required this.palette,
+    required this.titleColor,
+    required this.hintColor,
+    required this.dividerColor,
+    required this.darkUi,
+    required this.globalIsDark,
+  });
 }

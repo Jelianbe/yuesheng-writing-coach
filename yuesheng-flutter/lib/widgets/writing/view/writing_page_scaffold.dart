@@ -46,7 +46,13 @@ class WritingPageScaffold extends ConsumerWidget {
       //   暗夜预设 ⇒ AppPalette.dark（底 0xFF1A1C1F），其余 ⇒ AppPalette.light。
       //   与 AppBar / 编辑器正文取**同一套 palette**，消除原先「底色走 context.palette、
       //   前景走 AppColors」的半迁移形态（该形态正是配对守卫的判据对象）。
-      backgroundColor: editorPaletteFor(state.editorBackground).background,
+      //
+      // ★ 2026-09-22（批次 M5）：「跟随主题」预设下本底色随全局主题翻 ——
+      //   传 `globalIsDark` 使 auto 预设能解析出正确的 palette 实例。
+      backgroundColor: editorPaletteFor(
+        state.editorBackground,
+        globalIsDark: Theme.of(context).brightness == Brightness.dark,
+      ).background,
       // 批次83：章节树抽屉（每次打开以新 key 重建 → 列表/标题保持最新）
       drawer: controllers.chapterNav.buildChapterTreeDrawer(),
       onDrawerChanged: controllers.chapterNav.handleDrawerChanged,
@@ -59,7 +65,7 @@ class WritingPageScaffold extends ConsumerWidget {
         onJumpToChapter: controllers.chapterNav.handleJumpToChapter,
       ),
       onEndDrawerChanged: controllers.chapterNav.handleEndDrawerChanged,
-      appBar: _buildAppBar(ref),
+      appBar: _buildAppBar(context, ref),
       // 批次88-2：对话按钮从 Scaffold FAB 改为 body Stack 内可拖动浮层
       // （长按拖动换位 + 松手持久化；⋮ 菜单可隐藏/显示，隐藏后菜单找回）
       body: _buildBody(context),
@@ -192,23 +198,30 @@ class WritingPageScaffold extends ConsumerWidget {
   }
 
   /// AppBar（视图层独立类：返回 / 面包屑 / 字数指示 / 一键排版 / ⋮ 菜单）
-  PreferredSizeWidget _buildAppBar(WidgetRef ref) {
-    // 批次 X-037-P0-1 C1：暗夜色随**编辑器预设轴**取色，不随全局 ThemeMode 翻。
-    //
-    // ★ R4 裁定（`.ai/DECISIONS.md` 2026-09-21）：写作页 AppBar 前景**刻意不随
-    //   全局主题翻** —— 编辑器与其 chrome 跟随**编辑器背景预设**（米纸/护眼/暗夜）。
-    //   `long_tail_theme_test.dart` 对该不变式有源码钉（要求本函数含「R4」字样 +
-    //   含 `editorPaletteFor(` + **不得**含 `context.palette.textPrimary`）。
-    //
-    // ★ 2026-09-22（批次 M1）：由「静态 AppColors + 配对守卫文件级豁免」改为
-    //   **`editorPaletteFor(key)` 驱动**。原注释的顾虑（「全局暗 + 米纸编辑器下
-    //   取 context.palette 会亮字压亮底」）**实测成立** —— 该配对仅 1.07:1：
-    //     米纸底 0xFFF5F1E8 vs AppPalette.dark.textPrimary ⇒ 1.07:1（不可读）
-    //   但它**不构成**「必须用静态 AppColors」的理由：正解是编辑器轴**自己决定
-    //   取哪套 palette**（暗夜⇒dark，米纸/护眼⇒light），从而既解耦、又同构。
-    //   本改动后，`.ai/tools/check_app_pairing.py` 对本文件的豁免**已移除**。
-    final editorPalette = editorPaletteFor(state.editorBackground);
-    final darkUi = isDarkEditorPreset(state.editorBackground);
+  ///
+  /// ★ R4 裁定（`.ai/DECISIONS.md` 2026-09-21）：写作页 AppBar 前景**刻意不随
+  ///   全局主题翻** —— 编辑器与其 chrome 跟随**编辑器背景预设**。
+  ///   `long_tail_theme_test.dart` 对该不变式有源码钉（要求本函数含「R4」字样 +
+  ///   含 `editorPaletteFor(` + **不得**含 `context.palette.textPrimary`）。
+  ///   ★ 批次 M5 起：新增「跟随主题」预设后前景仍**只**经 `editorPaletteFor`
+  ///   取（由预设 key + 全局暗否共同决定），仍**不**吃 `context.palette`
+  ///   ⇒ 源码钉两条断言逐条仍成立，本批**未改**该钉。
+  ///
+  /// 批次 M1 起由静态 `AppColors` 改为 `editorPaletteFor(key)` 驱动。原顾虑
+  /// （「全局暗 + 米纸编辑器取 context.palette 会亮字压亮底」）实测成立
+  /// （该配对 1.07:1），但正解是编辑器轴**自己选 palette 实例**，而非退回静态色。
+  PreferredSizeWidget _buildAppBar(BuildContext context, WidgetRef ref) {
+    // R4 注因（源码钉要求本函数体内含此字样，勿挪走）：前景只经 editorPaletteFor
+    // 取（预设 key + 全局暗否），不吃 context.palette.text* —— 这是 R4 的核心禁令。
+    final globalIsDark = Theme.of(context).brightness == Brightness.dark;
+    final editorPalette = editorPaletteFor(
+      state.editorBackground,
+      globalIsDark: globalIsDark,
+    );
+    final darkUi = isDarkEditorEffectiveFor(
+      state.editorBackground,
+      globalIsDark: globalIsDark,
+    );
     final fg = editorPalette.textPrimary;
     final muted = editorPalette.textSecondary;
     return WritingPageAppBar(
