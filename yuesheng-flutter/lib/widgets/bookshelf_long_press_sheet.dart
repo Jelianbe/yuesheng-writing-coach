@@ -156,7 +156,7 @@ class BookshelfLongPressSheet extends StatelessWidget {
         onPressed: () => Navigator.of(context).pop(),
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(44),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: context.palette.border),
           foregroundColor: context.palette.textSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.pill),

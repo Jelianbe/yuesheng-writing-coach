@@ -1,27 +1,32 @@
 // ─────────────────────────────────────────────────────────────
-// M3 迁移成对断言（2026-09-22）
+// M3+M4 迁移成对断言（2026-09-22，M4 批升级）
 //
 // M3 把 widget 层 119 处「裸色直读」（`AppColors.x`）迁到
-// `context.palette.x`。迁移的**全部收益**是「这些色现在随主题翻」——
-// 但本仓既有测试的 `_wrap` 多是裸 `MaterialApp`（无 palette 扩展），
-// 会**静默回退 `AppPalette.light`** ⇒ 亮色断言照样通过，
-// **迁移写错也无法被发现**（「假绿」的经典形态）。
+// `context.palette.x`；M4 把最后 14 处 `const` 上下文长尾一并迁完
+// ⇒ **`lib/widgets` + `lib/pages` 代码区裸色归零**（守卫基线 14/11 → 0/0）。
+//
+// 迁移的**全部收益**是「这些色现在随主题翻」—— 但本仓既有测试的 `_wrap`
+// 多是裸 `MaterialApp`（无 palette 扩展），会**静默回退 `AppPalette.light`**
+// ⇒ 亮色断言照样通过，**迁移写错也无法被发现**（「假绿」的经典形态）。
 //
 // 本文件按 `bookshelf_empty_state_theme_test.dart` 既有范式补断言：
 //   · `buildAppTheme()`  下 → 取值 == `AppColors.x`（亮色零变化）
 //   · `buildDarkTheme()` 下 → 取值 == `AppPalette.dark.x`（真翻）
 //                            且 **!= 亮色值**（防「焊死在某一份」）
 //
-// ★ 覆盖 M3 各类处置方式的代表：
+// ★ 覆盖 M3+M4 各类处置方式的代表：
 //   ① `teaching_state_badge` —— `get _dotColor` → `_dotColorOf(context)`
 //   ② `thinking_placeholder` —— 补 `BuildContext` 形参
 //   ③ `knowledge_card`       —— `const TextStyle(...)` 内色（去 const）
-//   ④ ★ **长尾现状钉**：`bookshelf_error_view` / `bookshelf_no_search_result`
-//      / `growth_detail_error_view` 的**图标色**属 M3 未迁的 14 处
-//      （落 `const Icon(...)`，去 const 代价待裁定）。
-//      本组断言**钉住「它们当前不随主题翻」这一事实** —— 一旦后续批次
-//      迁移它们，本组会变红提醒同步更新，而不是让现状**无人知晓**。
-//      （仓内既有惯例：`long_tail_theme_test.dart` 正是干的这件事。）
+//   ④ 三个错误/空态视图的**图标色** —— 原落 `const Icon(...)`，
+//      M4 批去 const 后已随主题翻
+//
+// ★★ 本文件 M4 批的**语义反转**（重要先例）：
+//   M3 批时 ③④ 两组是「**长尾现状钉**」—— 断言「两轴恒同值」以钉住
+//   「当前不随主题翻」。M4 批迁完后该断言**必红**，故本轮把两组**整体
+//   改写为「随主题翻」**（亮 == 静态令牌、暗 == dark 令牌 且 != 亮）。
+//   ⇒ 纪律：**现状钉是「带保质期的断言」**，钉的对象一旦被修，
+//     断言必须**同步反转**，而不是删掉了事（删了就等于放弃鉴别力）。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -154,43 +159,48 @@ void main() {
     });
   });
 
-  // ③ ★ 长尾现状钉（一）：`ConfidenceBar` 的 label 色
-  //    —— `knowledge_card.dart:48` 仍是 `const TextStyle(color: AppColors.textTertiary)`，
-  //    属 M3 未迁的 14 处之一。断言「两轴恒同值」= 确认它**不翻**。
-  //    ★ 初版本文件误以为它已迁移（断言 == dark.textTertiary），实测红：
-  //      暗色下仍是亮色值 0.396/0.423/0.462。**测试写错也会红**，
-  //      这正是本文件要补的鉴别力（旧测试全是裸 MaterialApp，无法暴露）。
-  group('③ 长尾现状钉（一）：ConfidenceBar label 色当前**不**随主题翻', () {
-    testWidgets('两轴恒为 AppColors.textTertiary', (t) async {
+  // ③ `ConfidenceBar` label 色 —— 原 M3 长尾（`knowledge_card.dart:48` 的
+  //    `const TextStyle(color: AppColors.textTertiary)`），M4 去 const 已迁。
+  //    ★ 本组由 M3 的「现状钉」**反转为「随主题翻」**（见文件头「语义反转」）。
+  group('③ ConfidenceBar label 色随主题翻（原 const 长尾，M4 已迁）', () {
+    testWidgets('亮色 == AppColors.textTertiary', (t) async {
       await _pump(
         t,
         buildAppTheme(),
         const ConfidenceBar(label: '诊断信心', value: 0.8),
       );
-      final light = t.widget<Text>(find.text('诊断信心')).style!.color;
-      expect(light, AppColors.textTertiary);
-
-      await _pump(
-        t,
-        buildDarkTheme(),
-        const ConfidenceBar(label: '诊断信心', value: 0.8),
-      );
       expect(
         t.widget<Text>(find.text('诊断信心')).style!.color,
-        light,
-        reason:
-            '本处仍是 `const TextStyle(AppColors.textTertiary)` ⇒ 不随主题翻。'
-            '若变红 ⇒ 该处已迁移，请把本组移入「随主题翻」类。',
+        AppColors.textTertiary,
       );
     });
 
-    testWidgets('同文件的 track/fill 色**已**随主题翻（半新半旧的对照）', (t) async {
+    testWidgets('暗色 == dark.textTertiary 且 != 亮色', (t) async {
       await _pump(
         t,
         buildDarkTheme(),
         const ConfidenceBar(label: '诊断信心', value: 0.8),
       );
-      // fill 色已迁到 context.palette.primary（:60）
+      final dark = t.widget<Text>(find.text('诊断信心')).style!.color;
+      expect(
+        dark,
+        AppPalette.dark.textTertiary,
+        reason: '本处应已随主题翻；若红 ⇒ 迁移回退了（或令牌接错）',
+      );
+      expect(
+        dark,
+        isNot(AppColors.textTertiary),
+        reason: '暗色仍取到亮色静态值 ⇒ 该处**没有真的翻**',
+      );
+    });
+
+    testWidgets('同文件 track/fill 色亦随主题翻（不再半新半旧）', (t) async {
+      await _pump(
+        t,
+        buildDarkTheme(),
+        const ConfidenceBar(label: '诊断信心', value: 0.8),
+      );
+      // fill 色已迁到 context.palette.primary（:78）
       final fill = t
           .widgetList<Container>(find.byType(Container))
           .where((w) => w.color == AppPalette.dark.primary);
@@ -198,66 +208,71 @@ void main() {
     });
   });
 
-  // ④ ★ 长尾现状钉：这三个视图的**图标色**属 M3 未迁的 14 处
-  //    （落 `const Icon(...)`）。断言「两主题下都是同一个静态值」
-  //    —— 即**确认它不翻**。一旦迁移，本组变红 ⇒ 强制同步更新。
-  group('④ 长尾现状钉：错误/空态图标色当前**不**随主题翻（14 处之一）', () {
-    testWidgets('bookshelf_error_view 图标色两轴恒为 AppColors.danger', (t) async {
+  // ④ 三个错误/空态视图的**图标色** —— 原落 `const Icon(...)`（M3 长尾），
+  //    M4 批去 const 后已随主题翻。
+  //    ★ 本组同样由「现状钉」**反转为「随主题翻」**。
+  group('④ 错误/空态视图图标色随主题翻（原 const 长尾，M4 已迁）', () {
+    testWidgets('bookshelf_error_view：亮 == danger，暗 == dark.danger 且 != 亮', (
+      t,
+    ) async {
       await _pump(
         t,
         buildAppTheme(),
         BookshelfErrorView(message: '加载失败', onRetry: () {}),
       );
-      final light = _iconColor(t, Icons.error_outline);
-      expect(light, AppColors.danger);
+      expect(_iconColor(t, Icons.error_outline), AppColors.danger);
 
       await _pump(
         t,
         buildDarkTheme(),
         BookshelfErrorView(message: '加载失败', onRetry: () {}),
       );
-      expect(
-        _iconColor(t, Icons.error_outline),
-        light,
-        reason:
-            '本处仍是 `const Icon(AppColors.danger)` ⇒ 不随主题翻。'
-            '若此断言变红，说明该处已迁移 —— 请把本组移入「随主题翻」类。',
-      );
+      final dark = _iconColor(t, Icons.error_outline);
+      expect(dark, AppPalette.dark.danger);
+      expect(dark, isNot(AppColors.danger), reason: '未真的翻');
     });
 
-    testWidgets('bookshelf_no_search_result 图标色两轴恒为 textTertiary', (t) async {
-      await _pump(
-        t,
-        buildAppTheme(),
-        const BookshelfNoSearchResult(query: 'xyz', searching: false),
-      );
-      final light = _iconColor(t, Icons.search_off);
-      expect(light, AppColors.textTertiary);
+    testWidgets(
+      'bookshelf_no_search_result：亮 == textTertiary，暗 == dark 且 != 亮',
+      (t) async {
+        await _pump(
+          t,
+          buildAppTheme(),
+          const BookshelfNoSearchResult(query: 'xyz', searching: false),
+        );
+        expect(_iconColor(t, Icons.search_off), AppColors.textTertiary);
 
-      await _pump(
-        t,
-        buildDarkTheme(),
-        const BookshelfNoSearchResult(query: 'xyz', searching: false),
-      );
-      expect(_iconColor(t, Icons.search_off), light);
-    });
+        await _pump(
+          t,
+          buildDarkTheme(),
+          const BookshelfNoSearchResult(query: 'xyz', searching: false),
+        );
+        final dark = _iconColor(t, Icons.search_off);
+        expect(dark, AppPalette.dark.textTertiary);
+        expect(dark, isNot(AppColors.textTertiary), reason: '未真的翻');
+      },
+    );
 
-    testWidgets('growth_detail_error_view 图标色两轴恒为 AppColors.danger', (t) async {
-      await _pump(
-        t,
-        buildAppTheme(),
-        GrowthErrorView(error: '出错了', onRetry: () {}),
-      );
-      final light = _iconColor(t, Icons.error_outline);
-      expect(light, AppColors.danger);
+    testWidgets(
+      'growth_detail_error_view：亮 == danger，暗 == dark.danger 且 != 亮',
+      (t) async {
+        await _pump(
+          t,
+          buildAppTheme(),
+          GrowthErrorView(error: '出错了', onRetry: () {}),
+        );
+        expect(_iconColor(t, Icons.error_outline), AppColors.danger);
 
-      await _pump(
-        t,
-        buildDarkTheme(),
-        GrowthErrorView(error: '出错了', onRetry: () {}),
-      );
-      expect(_iconColor(t, Icons.error_outline), light);
-    });
+        await _pump(
+          t,
+          buildDarkTheme(),
+          GrowthErrorView(error: '出错了', onRetry: () {}),
+        );
+        final dark = _iconColor(t, Icons.error_outline);
+        expect(dark, AppPalette.dark.danger);
+        expect(dark, isNot(AppColors.danger), reason: '未真的翻');
+      },
+    );
   });
 }
 

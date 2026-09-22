@@ -242,7 +242,7 @@ class _VolumeActionsSheet extends StatelessWidget {
           size: 18,
           color: context.palette.danger,
         ),
-        title: const Text('删除卷', style: TextStyle(color: AppColors.danger)),
+        title: Text('删除卷', style: TextStyle(color: context.palette.danger)),
         subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
         onTap: () => Navigator.pop(context, 'delete'),
       ),

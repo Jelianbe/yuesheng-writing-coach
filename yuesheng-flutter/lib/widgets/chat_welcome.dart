@@ -79,7 +79,7 @@ class ChatWelcome extends StatelessWidget {
             onPressed: onSelfPractice,
             style: OutlinedButton.styleFrom(
               foregroundColor: context.palette.primary,
-              side: const BorderSide(color: AppColors.primary),
+              side: BorderSide(color: context.palette.primary),
             ),
             child: const Text('自主练习'),
           ),

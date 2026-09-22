@@ -151,7 +151,7 @@ class ImportSuccessSheet extends StatelessWidget {
                 },
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(46),
-                  side: const BorderSide(color: AppColors.border),
+                  side: BorderSide(color: context.palette.border),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),

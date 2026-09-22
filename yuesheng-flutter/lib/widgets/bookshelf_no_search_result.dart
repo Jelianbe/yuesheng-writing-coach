@@ -7,7 +7,6 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
 
@@ -28,7 +27,7 @@ class BookshelfNoSearchResult extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         const SizedBox(height: 120),
-        const Icon(Icons.search_off, size: 48, color: AppColors.textTertiary),
+        Icon(Icons.search_off, size: 48, color: context.palette.textTertiary),
         const SizedBox(height: 12),
         Center(
           child: Text(

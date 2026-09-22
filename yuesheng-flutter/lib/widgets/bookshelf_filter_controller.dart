@@ -10,7 +10,6 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
 import '../data/database/database.dart';
 import 'bookshelf_page_host.dart';
 import 'bookshelf_sort_mode.dart';
@@ -61,7 +60,7 @@ class BookshelfFilterController {
         border: InputBorder.none,
         isDense: true,
       ),
-      style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+      style: TextStyle(fontSize: 15, color: host.context.palette.textPrimary),
       onChanged: host.setQuery,
     );
   }

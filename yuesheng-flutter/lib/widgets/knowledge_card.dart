@@ -45,7 +45,7 @@ class ConfidenceBar extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(fontSize: 11, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 11, color: context.palette.textTertiary),
           ),
           const SizedBox(width: AppSpacing.sm),
         ],

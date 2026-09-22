@@ -75,7 +75,7 @@ class MoveToVolumeSheet extends StatelessWidget {
           ),
           title: Text(v.title.trim().isEmpty ? '未命名卷' : v.title.trim()),
           trailing: chapter.volumeId == v.id
-              ? const Icon(Icons.check, size: 18, color: AppColors.primary)
+              ? Icon(Icons.check, size: 18, color: context.palette.primary)
               : null,
           onTap: () => Navigator.pop(context, v.id),
         ),
@@ -92,7 +92,7 @@ class MoveToVolumeSheet extends StatelessWidget {
       ),
       title: const Text('未分卷'),
       trailing: chapter.volumeId == null
-          ? const Icon(Icons.check, size: 18, color: AppColors.primary)
+          ? Icon(Icons.check, size: 18, color: context.palette.primary)
           : null,
       onTap: () => Navigator.pop(context, unassignedMarker),
     );

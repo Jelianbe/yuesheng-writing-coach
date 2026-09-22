@@ -148,15 +148,15 @@ class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.borderSoft),
+                      borderSide: BorderSide(color: context.palette.borderSoft),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.borderSoft),
+                      borderSide: BorderSide(color: context.palette.borderSoft),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.sm),
-                      borderSide: const BorderSide(color: AppColors.primary),
+                      borderSide: BorderSide(color: context.palette.primary),
                     ),
                   ),
                   onSubmitted: (_) => _add(),

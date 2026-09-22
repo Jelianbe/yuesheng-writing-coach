@@ -32,7 +32,7 @@ class GrowthErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 32, color: AppColors.danger),
+            Icon(Icons.error_outline, size: 32, color: context.palette.danger),
             const SizedBox(height: 8),
             Text('加载失败', style: context.text.body),
             const SizedBox(height: 16),
