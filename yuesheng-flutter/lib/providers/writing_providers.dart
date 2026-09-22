@@ -32,17 +32,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/database/database.dart';
+import '../config/editor_background_presets.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/chapter_scoped_keys.dart';
 import '../services/error_handler.dart';
 import 'app_providers.dart';
 
-/// 编辑器背景预设 key（批次82：排版设置）
-/// 'paper' 米纸（默认） | 'green' 护眼绿 | 'dark' 暗夜
-const String editorBgPaper = 'paper';
-const String editorBgGreen = 'green';
-const String editorBgDark = 'dark';
+// 编辑器背景预设 key 真源已迁至 `config/editor_background_presets.dart`
+// （2026-09-22 批次 M1：此前本文件与预设表**各定义一遍**同值常量，属重复真源）。
+// 预设 key 为 `editorBgPaper` / `editorBgGreen` / `editorBgDark`，经上方 import 引入。
 
 /// 写作页状态（不可变）
 class WritingState {

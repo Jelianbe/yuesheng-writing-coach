@@ -10,13 +10,14 @@
 
 import 'package:flutter/material.dart';
 
-import '../../../config/app_theme.dart';
+import '../../../config/app_palette.dart';
 
 /// 写作页 AppBar（返回 / 面包屑 / 字数指示 / 一键排版 / ⋮ 菜单）
 class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   const WritingPageAppBar({
     super.key,
     required this.darkUi,
+    required this.editorPalette,
     required this.foregroundColor,
     required this.goalWords,
     required this.breadcrumb,
@@ -27,8 +28,16 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
     required this.onOpenMenu,
   });
 
-  /// 暗夜编辑器背景（决定底色令牌）
+  /// 是否暗夜编辑器背景（决定底色取本 palette 的暗色支还是常规支）
   final bool darkUi;
+
+  /// ★ 2026-09-22（批次 M1）：编辑器 presets 轴所选 palette（**由宿主下发**）。
+  ///
+  /// 此前本组件自带 `darkUi` 布尔 + 直读静态 `AppColors.editorDarkSurface` /
+  /// `AppColors.background`，使编辑器轴无法接入主题体系。现改为接收
+  /// `editorPaletteFor(state.editorBackground)` 的结果 —— 与宿主、与编辑器正文
+  /// **取同一套 palette**，取消「布尔 + 两处静态常量」的双真源形态。
+  final AppPalette editorPalette;
 
   /// 前景色（由宿主统一计算并下发，避免与宿主各算一次而重复）
   final Color foregroundColor;
@@ -50,8 +59,8 @@ class WritingPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       backgroundColor: darkUi
-          ? AppColors.editorDarkSurface
-          : AppColors.background,
+          ? editorPalette.editorDarkSurface
+          : editorPalette.background,
       elevation: 0,
       toolbarHeight: 48,
       leading: IconButton(

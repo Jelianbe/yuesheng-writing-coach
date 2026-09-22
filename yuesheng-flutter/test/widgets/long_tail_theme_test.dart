@@ -160,7 +160,7 @@ void main() {
       expect(File(src).existsSync(), isTrue, reason: '路径漂移 ⇒ 本钉失效，先修路径');
     });
 
-    test('_buildAppBar 内仍取静态 AppColors，且带 R4 注因', () {
+    test('_buildAppBar 内**不**按全局主题取色，且带 R4 注因', () {
       final body = File(src).readAsStringSync().replaceAll('\r\n', '\n');
       final i = body.indexOf('PreferredSizeWidget _buildAppBar');
       expect(i, greaterThan(0), reason: '函数改名/删除 ⇒ 本钉须同步，不得静默通过');
@@ -169,19 +169,42 @@ void main() {
       //   拿原文做反向断言会被自家注释误伤（本钉初版正是这么假失败的）。
       final code = _stripLineComments(fn);
 
+      // ★★ 2026-09-22（批次 M1）契约升级 —— 本钉从「钉实现」改为「钉不变式」。
+      //
+      // 旧判据（已作废）：`code` 必须含 `AppColors.textPrimary` / `AppColors.editorDarkText`。
+      //   它钉的是**实现细节**（前景留在静态令牌上），而非**防护意图**。
+      //   批次 M1 查明：该实现细节**不是唯一解**，且它带来的代价正是「编辑器轴
+      //   游离于 palette 之外、加第 N 套主题要再长一族静态色」。
+      //
+      // 新判据（本处）钉的是**原始防护意图本身**，且**更强**：
+      //   「全局主题翻暗时，编辑器前景**不得**跟着翻」
+      //   —— 旧钉只能验证「没写 context.palette」，但**无法**回答
+      //      「那它到底会不会随全局主题变」；新钉直接验证**取值来源的稳定性**：
+      //      前景必须来自 `editorPaletteFor(...)`（由**编辑器预设 key** 决定），
+      //      而**不得**来自 `context.palette`（由**全局 ThemeMode** 决定）。
+      //
+      // 语义等价性论证（为何新判据仍守住 R4）：
+      //   实测反例（2026-09-22，WCAG 实算）：
+      //     · 米纸底 vs AppPalette.dark.textPrimary  ⇒ 1.07:1（不可读）
+      //     · 暗夜底 vs AppPalette.light.textPrimary ⇒ 1.15:1（不可读）
+      //   ⇒ 「跟全局翻」无论哪个方向都不可读。旧实现的规避手段是「退回静态常量」；
+      //     新实现的手段是「按**预设 key** 选 palette 实例」（暗夜⇒dark，其余⇒light），
+      //     两者都满足「不随全局翻」，但后者仍是 palette 体系成员 ⇒ 可复用。
       expect(
         code,
-        contains('AppColors.textPrimary'),
-        reason: 'R4：编辑器保持米纸底 ⇒ 前景必须留在静态令牌上（全局暗时亮字压亮底）',
+        contains('editorPaletteFor('),
+        reason:
+            'R4：编辑器前景必须由**编辑器预设 key** 选 palette（editorPaletteFor），'
+            '而非跟随全局 ThemeMode；否则「全局暗 + 米纸编辑器」下亮字压亮底不可读',
       );
-      expect(code, contains('AppColors.editorDarkText'));
       expect(fn, contains('R4'), reason: '注因必须在场，否则下批无从判断这是刻意而非漏迁');
-      // ★ 反向钉：该函数**代码**内不得出现运行期前景取色（机械脚本顺手迁回这里 = 红）
+      // ★ 反向钉（**保留不变**）：该函数**代码**内不得出现运行期全局前景取色
+      //   —— 这是 R4 的核心禁令，无论实现怎么换都必须成立。
       expect(
         code.contains('context.palette.textPrimary') ||
             code.contains('context.palette.textSecondary'),
         isFalse,
-        reason: '该处一旦吃 context.palette，「全局暗 + 米纸编辑器」下即不可读',
+        reason: '该处一旦吃全局 context.palette，「全局暗 + 米纸编辑器」下即不可读',
       );
     });
   });

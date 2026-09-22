@@ -278,11 +278,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     placeholder: Color(0xFFD8DCE0),
     hintText: Color(0xFF6B6E76),
     // 编辑器暗夜联动色（亮色主题下沿用既有暗夜值，保持写作页暗夜预设可用）
-    editorDarkSurface: Color(0xFF1E2126),
-    editorDarkPanel: Color(0xFF26282B),
-    editorDarkText: Color(0xFFE8EAED),
-    editorDarkMuted: Color(0xFFB4B9BE),
-    editorDarkDeepMuted: Color(0xFF3A3F45),
+    editorDarkSurface: EditorDarkAxis.surface,
+    editorDarkPanel: EditorDarkAxis.panel,
+    editorDarkText: EditorDarkAxis.text,
+    editorDarkMuted: EditorDarkAxis.muted,
+    editorDarkDeepMuted: EditorDarkAxis.deepMuted,
     // 正向色
     success: Color(0xFF3A7355),
     successBg: Color(0xFFE6F0E9),
@@ -359,11 +359,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
     placeholder: Color(0xFF3F444A),
     hintText: Color(0xFF8A9098),
     // 编辑器暗夜联动色（暗色主题下与页面同调，不再需要单独一套暗夜底）
-    editorDarkSurface: Color(0xFF1E2126),
-    editorDarkPanel: Color(0xFF26282B),
-    editorDarkText: Color(0xFFE8EAED),
-    editorDarkMuted: Color(0xFFB4B9BE),
-    editorDarkDeepMuted: Color(0xFF3A3F45),
+    editorDarkSurface: EditorDarkAxis.surface,
+    editorDarkPanel: EditorDarkAxis.panel,
+    editorDarkText: EditorDarkAxis.text,
+    editorDarkMuted: EditorDarkAxis.muted,
+    editorDarkDeepMuted: EditorDarkAxis.deepMuted,
     // 正向色（暗底上提亮，保 AA）
     success: Color(0xFF6FC08E),
     successBg: Color(0xFF22332A),
@@ -524,6 +524,34 @@ class AppPalette extends ThemeExtension<AppPalette> {
       successBg: Color.lerp(successBg, other.successBg, t)!,
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────
+// editorDarkAxis — 编辑器「暗夜预设轴」的常量真源
+//
+// 为何单独成类，而不挂在 `AppPalette` 里：
+//   Dart **禁止静态成员与实例成员同名** ⇒ 无法在 `AppPalette` 内既声明实例字段
+//   `editorDarkSurface` 又声明同名静态常量（实测报 `conflicting_static_and_instance`）。
+//   ⇒ 静态便捷值必须另起命名空间。
+//
+// 与 `AppPalette.editorDark*`（实例字段）的关系：
+//   两者的值**必须一致**。一致性由 `test/config/app_palette_contrast_test.dart`
+//   的成对断言守着 —— 它不是「又一份真源」，而是**无 BuildContext 语境下的视图**。
+//
+// ⚠️ 这是**过渡形态**：`editor_background_presets.dart` 的 `const` 列表在无
+//    BuildContext 时只能读 const 字面量，故暂需本例。预设表迁往 palette 驱动
+//    （批次 M2）后，本类应随之删除。
+//
+// 取值依据：`AppPalette.light` 与 `AppPalette.dark` 本组 5 值**实测逐字节相同**
+// （编辑器预设轴独立于全局 ThemeMode —— R4 裁定 + Visual Studio 官方文档同构：
+// 「editor color setting is separate from the IDE color theme」），故常量无歧义。
+// ─────────────────────────────────────────────────────────────
+abstract final class EditorDarkAxis {
+  static const Color surface = Color(0xFF1E2126); // AppBar/工具条暗夜底
+  static const Color panel = Color(0xFF26282B); // 暗夜正文底
+  static const Color text = Color(0xFFE8EAED); // 暗夜主文字
+  static const Color muted = Color(0xFFB4B9BE); // 暗夜次级文字
+  static const Color deepMuted = Color(0xFF3A3F45); // 暗夜输入框/分隔底
 }
 
 /// 便捷取用扩展：`context.palette.textPrimary`

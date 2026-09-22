@@ -35,6 +35,7 @@ import 'package:writingcoach/data/repositories/teacher_suggestion_repository.dar
 import 'package:writingcoach/data/repositories/teaching_state_repository.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/config/app_theme.dart';
+import 'package:writingcoach/config/editor_background_presets.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/providers/writing_providers.dart';
@@ -776,13 +777,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // 编辑器容器背景切换为暗夜
+      // ★ 2026-09-22（批次 M1）：色值由 `editorDarkPanel`(0xFF26282B) 改为
+      //   `AppPalette.dark.paper`(0xFF1E2126) —— 编辑器轴改为**选 palette 实例**后，
+      //   底色随 `dark` palette 走。**判据同步升级**：不再钉死字面量，而钉
+      //   「== 该预设轴所选 palette 的对应令牌」，使加第 N 套主题时本用例**自动跟随**。
       final editor = tester.widget<Container>(
         find.byKey(const Key('editorContainer')),
       );
-      expect(editor.color, const Color(0xFF26282B));
-      // 文字色切换为浅色
+      expect(
+        editor.color,
+        editorPaletteFor(editorBgDark).paper,
+        reason: '暗夜编辑器底色应为编辑器轴所选 palette（AppPalette.dark）的 paper 令牌',
+      );
+      // 文字色切换为浅色（同理由 palette 供给）
       final field = tester.widget<TextField>(editorTextField());
-      expect(field.style?.color, const Color(0xFFE8EAED));
+      expect(
+        field.style?.color,
+        editorPaletteFor(editorBgDark).textInk,
+        reason: '暗夜正文色应为编辑器轴所选 palette 的 textInk 令牌',
+      );
       // 落库（用户级，跨章节生效）
       final repo = AppStateRepository(db);
       expect(await repo.getValue('editor_background'), 'dark');
@@ -3474,16 +3487,22 @@ void main() {
       await tester.pumpAndSettle();
 
       // 编辑器容器背景（既有 #82-2 断言，保持）
+      // ★ 2026-09-22（批次 M1）：值随编辑器轴改走 `AppPalette.dark.paper`；
+      //   判据改为**引用 palette 令牌**而非字面量（见 #82-2 同处说明）。
       final editor = tester.widget<Container>(
         find.byKey(const Key('editorContainer')),
       );
-      expect(editor.color, const Color(0xFF26282B));
+      expect(editor.color, editorPaletteFor(editorBgDark).paper);
 
-      // AppBar 底色取反（暗夜 = #1E2126）
+      // AppBar 底色取反（暗夜 ⇒ 该 palette 的 editorDarkSurface）
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(appBar.backgroundColor, const Color(0xFF1E2126));
+      expect(
+        appBar.backgroundColor,
+        editorPaletteFor(editorBgDark).editorDarkSurface,
+        reason: '暗夜 AppBar 底色应取自编辑器轴 palette 的 editorDarkSurface',
+      );
 
-      // 标点栏容器底色取反（暗夜 = #26282B）
+      // 标点栏容器底色取反（暗夜 ⇒ 该 palette 的 editorDarkPanel）
       final punctContainer = tester.widget<Container>(
         find
             .descendant(
@@ -3492,19 +3511,30 @@ void main() {
             )
             .first,
       );
-      expect(punctContainer.color, const Color(0xFF26282B));
+      expect(
+        punctContainer.color,
+        editorPaletteFor(editorBgDark).editorDarkPanel,
+        reason: '暗夜标点栏底色应取自编辑器轴 palette 的 editorDarkPanel',
+      );
 
-      // 标点文字色取反（浅色）
+      // 标点文字色取反（浅色 ⇒ 该 palette 的 editorDarkText）
       final commaText = tester.widget<Text>(find.text('，'));
-      expect(commaText.style?.color, const Color(0xFFE8EAED));
+      expect(
+        commaText.style?.color,
+        editorPaletteFor(editorBgDark).editorDarkText,
+        reason: '暗夜标点文字色应取自编辑器轴 palette 的 editorDarkText',
+      );
     });
 
     testWidgets('#94-4 亮色背景（默认米纸）→ 周边保持亮色令牌不变', (tester) async {
       await tester.pumpWidget(buildWritingPage());
       await tester.pumpAndSettle();
 
+      // ★ 2026-09-22（批次 M1）：判据由 `AppColors.background` 改为
+      //   编辑器轴所选 palette（米纸 ⇒ AppPalette.light）的 background —— 同源化。
+      final lightAxis = editorPaletteFor(editorBgPaper);
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(appBar.backgroundColor, AppColors.background);
+      expect(appBar.backgroundColor, lightAxis.background);
 
       final punctContainer = tester.widget<Container>(
         find
@@ -3514,7 +3544,7 @@ void main() {
             )
             .first,
       );
-      expect(punctContainer.color, AppColors.background);
+      expect(punctContainer.color, lightAxis.background);
     });
   });
 

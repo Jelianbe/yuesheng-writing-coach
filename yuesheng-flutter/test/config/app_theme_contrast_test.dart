@@ -300,34 +300,60 @@ void _hierarchyTest() {
 }
 
 /// G. 编辑器暗夜联动色 + 三预设立 hint 契约（P0-5）
+///
+/// ★ 2026-09-22（批次 M1）：预设轴改为 **palette 驱动**后，本组用例同步改造：
+///   · 旧形态：读 `preset.color` / `preset.hintColor`（预设表**自带**静态色）
+///   · 新形态：读 `editorBackgroundColorFor(p, key)` 等**函数**（色来自 palette）
+///   断言实质**不变**（仍是「hint 对本预设底 ≥4.5:1」），但新增一条更根本的守卫：
+///   **编辑器轴所选 palette 与预设亮度必须匹配** —— 防「暗底配暗字」这类
+///   跨轴错配（实测反例：米纸底 vs `AppPalette.dark.textPrimary` = 1.07:1）。
 void _editorPresetTests() {
-  test('暗夜编辑色对 editorDarkPanel ≥4.5:1', () {
+  test('暗夜编辑色对暗夜底 ≥4.5:1', () {
+    final darkPalette = editorPaletteFor(editorBgDark);
     final text = _contrastRatio(
-      AppColors.editorDarkText,
-      AppColors.editorDarkPanel,
+      editorTextColorFor(darkPalette, editorBgDark),
+      editorBackgroundColorFor(darkPalette, editorBgDark),
     );
-    final muted = _contrastRatio(
-      AppColors.editorDarkMuted,
-      AppColors.editorDarkPanel,
+    final hint = _contrastRatio(
+      editorHintColorFor(darkPalette, editorBgDark),
+      editorBackgroundColorFor(darkPalette, editorBgDark),
     );
-    expect(text, greaterThanOrEqualTo(4.5));
-    expect(muted, greaterThanOrEqualTo(4.5));
+    expect(text, greaterThanOrEqualTo(4.5), reason: '暗夜正文对暗夜底不足 4.5:1');
+    expect(hint, greaterThanOrEqualTo(4.5), reason: '暗夜 hint 对暗夜底不足 4.5:1');
   });
 
   // P0-5 契约：每个预设的 hint 色对其**自身底色**必须 ≥4.5。
   // 该断言正是为堵住「预设底 × 未联动的写死 hint 色」这一类缺陷
   // （暗夜预设下 textTertiary 曾仅 2.79:1，而既有暗夜用例恰好绕开了它）。
   for (final preset in editorBackgroundPresets) {
-    final ratio = _contrastRatio(preset.hintColor, preset.color);
+    final p = editorPaletteFor(preset.key);
+    final bg = editorBackgroundColorFor(p, preset.key);
+    final hint = editorHintColorFor(p, preset.key);
+    final ratio = _contrastRatio(hint, bg);
     test('编辑器预设「${preset.label}」hint 色对自身底 ≥4.5:1'
         '（实际 ${ratio.toStringAsFixed(2)}:1）', () {
       expect(
         ratio,
         greaterThanOrEqualTo(4.5),
         reason:
-            '预设「${preset.label}」底(#${_hex(preset.color)}) 上的 '
-            'hint 色(#${_hex(preset.hintColor)}) 仅 ${ratio.toStringAsFixed(2)}:1 '
+            '预设「${preset.label}」底(#${_hex(bg)}) 上的 '
+            'hint 色(#${_hex(hint)}) 仅 ${ratio.toStringAsFixed(2)}:1 '
             '< 4.5:1 —— 空输入框时占位提示对用户不可读',
+      );
+    });
+
+    // ★ 新增（批次 M1）：编辑器轴所选 palette **必须与预设亮度同向**。
+    // 这是「编辑器轴 = 选哪套 palette」这一定义本身的守卫 ——
+    // 若将来有人把 editorPaletteFor 的映射写反（暗夜⇒light），本用例立刻变红。
+    test('编辑器预设「${preset.label}」正文字色对自身底 ≥4.5:1', () {
+      final bodyRatio = _contrastRatio(editorTextColorFor(p, preset.key), bg);
+      expect(
+        bodyRatio,
+        greaterThanOrEqualTo(4.5),
+        reason:
+            '预设「${preset.label}」底(#${_hex(bg)}) 上的正文色 '
+            '仅 ${bodyRatio.toStringAsFixed(2)}:1 < 4.5:1 —— '
+            '编辑器轴所选 palette 与预设亮度不匹配（暗底配暗字 / 亮底配亮字）',
       );
     });
   }

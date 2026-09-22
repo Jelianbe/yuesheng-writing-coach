@@ -10,6 +10,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../config/app_palette.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/editor_background_presets.dart';
 import '../../../providers/writing_providers.dart';
@@ -66,21 +67,35 @@ class WritingEditorView extends StatelessWidget {
   Widget build(BuildContext context) {
     // 批次82 P0-④：面板改为右侧侧栏，正文不被覆盖 → 标点栏不再随面板隐藏
     // 批次90：标题/正文完全独立（用户参考图要求：标题独立大区块 + 正文分开）
-    final titleColor = editorTextColorFor(state.editorBackground);
+    //
+    // ★ 2026-09-22（批次 M1）：编辑器三色改由 **palette 驱动**。
+    //   改造前直接调 `editorTextColorFor(key)`（内部读静态 `AppColors.*`），
+    //   使编辑器预设轴游离于主题体系之外 —— 加第 N 套主题时这些色不会跟随。
+    //   现在统一从 `context.palette` 取，与全局主题同构。
+    final palette = context.palette;
+    final titleColor = editorTextColorFor(palette, state.editorBackground);
     // 批次 V-3（P0-5）：占位提示色随预设联动。
     // 此前两处 hintStyle 硬编码 AppColors.textTertiary ⇒「暗夜」预设下
     // 提示对 editorDarkPanel 仅 2.79:1，几乎不可见。
-    final hintColor = editorHintColorFor(state.editorBackground);
-    final dividerColor = (titleColor == AppColors.textPrimary)
-        ? AppColors.divider
-        : AppColors.textTertiary.withValues(alpha: 0.25);
+    final hintColor = editorHintColorFor(palette, state.editorBackground);
     final darkUi = isDarkEditorPreset(state.editorBackground);
+    // 分隔线：判据改用 **预设 key**（表现无关）而非**颜色值比较**。
+    // 改造前为 `titleColor == AppColors.textPrimary` —— 依赖「颜色相等」推断
+    // 「当前是否暗夜」，一旦 token 值调整（或加第三套主题）即静默失效。
+    final dividerColor = darkUi
+        ? palette.textTertiary.withValues(alpha: 0.25)
+        : palette.divider;
 
     return Column(
       children: [
         WritingOfflineBanner(isOffline: state.isOffline),
         Expanded(
-          child: _buildEditorContainer(titleColor, hintColor, dividerColor),
+          child: _buildEditorContainer(
+            palette,
+            titleColor,
+            hintColor,
+            dividerColor,
+          ),
         ),
         WritingSaveStatusBar(
           isSaving: state.isSaving,
@@ -89,7 +104,7 @@ class WritingEditorView extends StatelessWidget {
           lastSavedAt: state.lastSavedAt,
           darkUi: darkUi,
         ),
-        _buildPunctuationBar(darkUi),
+        _buildPunctuationBar(palette, darkUi),
       ],
     );
   }
@@ -99,13 +114,14 @@ class WritingEditorView extends StatelessWidget {
   /// 批次 V-3 从 `build` 抽出：`build` 因新增 hint 联动已达 53 行（R-019 上限 50）。
   /// 抽的是**独立方法 + 显式参数**（真分解），不是 `part`/`extension` 伪拆分。
   Widget _buildEditorContainer(
+    AppPalette palette,
     Color titleColor,
     Color hintColor,
     Color dividerColor,
   ) {
     return Container(
       key: const Key('editorContainer'),
-      color: editorBackgroundColorFor(state.editorBackground),
+      color: editorBackgroundColorFor(palette, state.editorBackground),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -223,17 +239,21 @@ class WritingEditorView extends StatelessWidget {
     );
   }
 
-  /// 底部标点栏（批次91-3：最前两位常驻撤销/重做；暗夜联动走 AppColors 令牌）
-  Widget _buildPunctuationBar(bool darkUi) {
+  /// 底部标点栏（批次91-3：最前两位常驻撤销/重做；暗夜联动走 palette 令牌）
+  ///
+  /// ★ 2026-09-22（批次 M1）：三色由 `AppColors.editorDark*` 改为 `palette.*`。
+  ///   两处取值**逐字节相同**（`AppPalette` 与 `AppColors` 本就重复定义同一组色），
+  ///   故视觉零变化；改的是**来源**，使编辑器轴接入主题体系。
+  Widget _buildPunctuationBar(AppPalette palette, bool darkUi) {
     return PunctuationBar(
       visibleIds: punctBarIds,
       // 批次88-5：自定义标点项
       customItems: punctCustomItems,
       onUndo: onUndo,
       onRedo: onRedo,
-      backgroundColor: darkUi ? AppColors.editorDarkPanel : null,
-      itemColor: darkUi ? AppColors.editorDarkText : null,
-      actionColor: darkUi ? AppColors.editorDarkMuted : null,
+      backgroundColor: darkUi ? palette.editorDarkPanel : null,
+      itemColor: darkUi ? palette.editorDarkText : null,
+      actionColor: darkUi ? palette.editorDarkMuted : null,
       onTap: onPunctuationTap,
     );
   }

@@ -41,10 +41,12 @@ class WritingPageScaffold extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       key: host.scaffoldKey,
-      // 批次 X-037-P0-1 H4/C1：正文壳与当前预设配平，暗夜用 editorDarkSurface 令牌（WCAG AA 可达）
-      backgroundColor: isDarkEditorPreset(state.editorBackground)
-          ? context.palette.editorDarkSurface
-          : context.palette.background,
+      // 批次 X-037-P0-1 H4/C1：正文壳与当前预设配平。
+      // ★ 2026-09-22（批次 M1）：改由 `editorPaletteFor(key)` 统一驱动 ——
+      //   暗夜预设 ⇒ AppPalette.dark（底 0xFF1A1C1F），其余 ⇒ AppPalette.light。
+      //   与 AppBar / 编辑器正文取**同一套 palette**，消除原先「底色走 context.palette、
+      //   前景走 AppColors」的半迁移形态（该形态正是配对守卫的判据对象）。
+      backgroundColor: editorPaletteFor(state.editorBackground).background,
       // 批次83：章节树抽屉（每次打开以新 key 重建 → 列表/标题保持最新）
       drawer: controllers.chapterNav.buildChapterTreeDrawer(),
       onDrawerChanged: controllers.chapterNav.handleDrawerChanged,
@@ -191,16 +193,27 @@ class WritingPageScaffold extends ConsumerWidget {
 
   /// AppBar（视图层独立类：返回 / 面包屑 / 字数指示 / 一键排版 / ⋮ 菜单）
   PreferredSizeWidget _buildAppBar(WidgetRef ref) {
-    // 批次 X-037-P0-1 C1：暗夜色走 AppColors.editorDark* 令牌
-    // ★ 此处**刻意不迁 context.palette**（R4 已裁定，`.ai/DECISIONS.md` 2026-09-21）：
-    //   写作页编辑器与其 chrome 随**编辑器背景预设**（米纸 / 暗夜）取色，**不随全局 ThemeMode 翻**；
-    //   若改吃 `context.palette.textPrimary`，「全局暗 + 米纸编辑器」下会亮字压亮底（不可读）。
-    //   配对守卫对本文件登记了**带原因的豁免**（`.ai/tools/check_app_pairing.py` EXEMPT），勿再盲迁。
+    // 批次 X-037-P0-1 C1：暗夜色随**编辑器预设轴**取色，不随全局 ThemeMode 翻。
+    //
+    // ★ R4 裁定（`.ai/DECISIONS.md` 2026-09-21）：写作页 AppBar 前景**刻意不随
+    //   全局主题翻** —— 编辑器与其 chrome 跟随**编辑器背景预设**（米纸/护眼/暗夜）。
+    //   `long_tail_theme_test.dart` 对该不变式有源码钉（要求本函数含「R4」字样 +
+    //   含 `editorPaletteFor(` + **不得**含 `context.palette.textPrimary`）。
+    //
+    // ★ 2026-09-22（批次 M1）：由「静态 AppColors + 配对守卫文件级豁免」改为
+    //   **`editorPaletteFor(key)` 驱动**。原注释的顾虑（「全局暗 + 米纸编辑器下
+    //   取 context.palette 会亮字压亮底」）**实测成立** —— 该配对仅 1.07:1：
+    //     米纸底 0xFFF5F1E8 vs AppPalette.dark.textPrimary ⇒ 1.07:1（不可读）
+    //   但它**不构成**「必须用静态 AppColors」的理由：正解是编辑器轴**自己决定
+    //   取哪套 palette**（暗夜⇒dark，米纸/护眼⇒light），从而既解耦、又同构。
+    //   本改动后，`.ai/tools/check_app_pairing.py` 对本文件的豁免**已移除**。
+    final editorPalette = editorPaletteFor(state.editorBackground);
     final darkUi = isDarkEditorPreset(state.editorBackground);
-    final fg = darkUi ? AppColors.editorDarkText : AppColors.textPrimary;
-    final muted = darkUi ? AppColors.editorDarkMuted : AppColors.textSecondary;
+    final fg = editorPalette.textPrimary;
+    final muted = editorPalette.textSecondary;
     return WritingPageAppBar(
       darkUi: darkUi,
+      editorPalette: editorPalette,
       foregroundColor: fg,
       goalWords: state.goalWords,
       breadcrumb: WritingPageBreadcrumb(

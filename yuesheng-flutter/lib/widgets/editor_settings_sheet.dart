@@ -378,6 +378,14 @@ class _BackgroundOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ★ 2026-09-22（批次 M1）：色块预览改由 palette 驱动。
+    //   旧形态 `preset.color`（预设表自带静态色）已随改造移除 ——
+    //   预设表只保留 key/label，颜色统一经 `editorPaletteFor` 从 palette 取。
+    //   预览色与写作页实际底色**同源**，故「预览所见 = 切换后所得」有结构性保证。
+    final swatch = editorBackgroundColorFor(
+      editorPaletteFor(preset.key),
+      preset.key,
+    );
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -388,7 +396,7 @@ class _BackgroundOption extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: preset.color,
+              color: swatch,
               shape: BoxShape.circle,
               border: Border.all(
                 color: selected
