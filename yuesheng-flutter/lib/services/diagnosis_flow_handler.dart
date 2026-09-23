@@ -453,6 +453,14 @@ class DiagnosisFlowHandler {
     var content = displayContent;
     if (content.trim().isEmpty) {
       content = '诊断完成';
+      // FIX-1（2026-09-23）：空输出静默兜底补留痕——此前仅 debugPrint，release
+      // 构建完全静默（真机复现证据：logcat 被拒原因=suggested_actions_invalid +
+      // error_logs 无记录 + diagnosis_results 无落库，用户只见「诊断完成」）。
+      ErrorHandler.instance.captureError(
+        level: 'error',
+        category: 'diagnosis',
+        message: '[FIX-1] 诊断输出为空，已兜底「诊断完成」| sessionId=$sessionId',
+      );
     }
     final messageId = await _sessionRepo.addMessage(
       sessionId,

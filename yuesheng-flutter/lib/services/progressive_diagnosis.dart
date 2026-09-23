@@ -269,6 +269,21 @@ const String _kChunkOutputFormat = '''请输出JSON格式的笔记，不要包�
   ]
 }''';
 
+/// FIX-1（2026-09-23）：分块合并输出约束——自然语言正文 + 顶层字段格式。
+/// 根因：旧 prompt 结尾只要求协议标记，模型可省略自然语言正文且 suggested_actions
+/// 无格式约束 → 整块被拒（suggested_actions_invalid）→ 空输出兜底「诊断完成」。
+const String _kMergeOutputRequirement = '''输出要求（两部分都必须输出，缺一不可）：
+1. 先输出面向学员的自然语言诊断正文——直接可读的诊断总结与教学建议（核心结论、最值得先改的一点、鼓励性收尾），不得省略；
+2. 再输出 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 包裹的标准诊断 JSON 块。
+
+[YS_DIAGNOSIS] 块顶层字段要求：
+- syndromes (object[]): 症候列表（格式见上），必填
+- suggested_actions (string[]): 建议动作编号数组（如 ["A009","A005"]），必填且必须为字符串数组
+- confidence (number): 0-1 置信度，必填
+- root_cause_analysis / next_focus / feedback_summary: 可选
+
+请输出标准诊断格式，包含 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 标记。''';
+
 /// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
 ///
 /// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
@@ -389,7 +404,7 @@ syndrome 对象格式要求：
 - explanation (string): 诊断解释
 - reader_impact (string): 一句话说明"不改这段，读者会有什么体验影响"。示例："不改这段，读者会在前 200 字内走神，无法进入后续剧情"
 
-请输出标准诊断格式，包含 [YS_DIAGNOSIS] 和 [/YS_DIAGNOSIS] 标记。''';
+$_kMergeOutputRequirement''';
 }
 
 /// 简易 JSON 编码器（仅用于合并 prompt 中展示 notes，不做校验）。

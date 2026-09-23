@@ -256,6 +256,32 @@ void main() {
       expect(prompt, contains('P003'));
     });
 
+    test('#4-3 FIX-1：prompt 要求自然语言正文 + suggested_actions/confidence 字段格式', () {
+      final chunkResults = <ChunkAnalysisResult>[
+        ChunkAnalysisResult(
+          chunkIndex: 0,
+          notes: [
+            ChunkNote(
+              syndromeId: 'P003',
+              description: '情绪标签化',
+              evidence: ['她非常愤怒'],
+              severity: 'L1',
+            ),
+          ],
+          success: true,
+        ),
+      ];
+      final prompt = buildMergePrompt(chunkResults, diagnosisContext: '');
+      // FIX-1：自然语言正文约束（修复「诊断完成」空输出的根因 A）
+      expect(prompt, contains('自然语言诊断正文'));
+      expect(prompt, contains('不得省略'));
+      // 顶层字段格式约束（suggested_actions_invalid 被拒根因）
+      expect(prompt, contains('suggested_actions'));
+      expect(prompt, contains('confidence'));
+      expect(prompt, contains('字符串数组'));
+      expect(prompt, contains('必填'));
+    });
+
     test('#4-2 注入前次诊断上下文（diagnosisContext 非空时出现在 prompt 顶部）', () {
       final chunkResults = <ChunkAnalysisResult>[
         ChunkAnalysisResult(
