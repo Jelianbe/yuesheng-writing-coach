@@ -189,6 +189,28 @@ void main() {
     );
   });
 
+  // FIX-7：API Key 输入框显隐切换（默认密码态，可临时显示支持粘贴）
+  testWidgets('#F7 API Key 显隐切换', (tester) async {
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+
+    final keyField = tester.widget<TextField>(find.byType(TextField).at(0));
+    expect(keyField.obscureText, isTrue, reason: '默认应为密码态');
+    expect(find.byIcon(Icons.visibility), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.visibility));
+    await tester.pump();
+
+    final shownField = tester.widget<TextField>(find.byType(TextField).at(0));
+    expect(shownField.obscureText, isFalse, reason: '点击眼睛后应明文显示');
+    expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.visibility_off));
+    await tester.pump();
+
+    final hiddenAgain = tester.widget<TextField>(find.byType(TextField).at(0));
+    expect(hiddenAgain.obscureText, isTrue, reason: '再点应回到密码态');
+  });
   testWidgets('#3 保存配置 → 建账号（ADR-C91 多账号）', (tester) async {
     await tester.pumpWidget(buildSettings());
     await tester.pumpAndSettle();

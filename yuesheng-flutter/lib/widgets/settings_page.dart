@@ -103,6 +103,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   final TextEditingController _modelCtrl = TextEditingController();
 
   bool _configLoaded = false;
+  bool _apiKeyVisible = false;
   bool _isSaving = false;
   bool _isTestingConn = false;
   TestConnectionResult? _connResult;
@@ -970,9 +971,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _FieldLabel('API Key'),
           TextField(
             controller: _apiKeyCtrl,
-            obscureText: true,
+            obscureText: !_apiKeyVisible,
             autocorrect: false,
-            decoration: _inputDecoration('sk-...'),
+            decoration: _inputDecoration('sk-...').copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _apiKeyVisible ? Icons.visibility_off : Icons.visibility,
+                  size: 18,
+                ),
+                tooltip: _apiKeyVisible ? '隐藏 API Key' : '显示 API Key',
+                onPressed: () =>
+                    setState(() => _apiKeyVisible = !_apiKeyVisible),
+              ),
+            ),
           ),
           _FieldLabel('Base URL'),
           TextField(
