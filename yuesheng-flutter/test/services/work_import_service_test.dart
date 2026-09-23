@@ -3,7 +3,7 @@
 // 验证：事务内建稿件 + 逐章建章节 + 设主引用，失败整体回滚
 // ─────────────────────────────────────────────────────────────
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
@@ -11,6 +11,7 @@ import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/services/file_parser.dart';
 import 'package:writingcoach/services/work_import_service.dart';
 
@@ -29,6 +30,7 @@ void main() {
       msRepo,
       ChapterRepository(db),
       ReferenceRepository(db),
+      VolumeRepository(db),
     );
   });
 
@@ -94,9 +96,43 @@ void main() {
       expect(refs.single.sessionId, sessionId);
     });
 
-    test('重复导入同一解析结果 → 各建一份稿件，互不冲突', () async {
+    test('带 volumeTitle 的章节 → 自动建卷并挂卷', () async {
       final sessionId = await sessRepo.createBlankSession();
+      final parsed = ParsedFile(
+        title: '卷书',
+        genre: '未知',
+        chapters: const [
+          ParsedChapter(title: '第一章', content: '正文一', volumeTitle: '第一卷 风起'),
+          ParsedChapter(title: '第二章', content: '正文二', volumeTitle: '第一卷 风起'),
+          ParsedChapter(title: '第三章', content: '正文三', volumeTitle: '第二卷 云涌'),
+          ParsedChapter(title: '尾声', content: '正文四'),
+        ],
+      );
+
+      final result = await service.importWork(
+        sessionId: sessionId,
+        parsed: parsed,
+      );
+
+      expect(result.chapterCount, 4);
+
+      // 卷：两个不同卷标题 → 2 卷，标题/序号正确
+      final volumes = await db.select(db.volumes).get();
+      expect(volumes.length, 2);
+      expect(volumes.map((v) => v.title).toSet(), {'第一卷 风起', '第二卷 云涌'});
+
+      // 章节挂卷：第一/二章归卷1，第三章归卷2，尾声未分卷
+      final chapters = await listChapters(result.manuscriptId);
+      final volByTitle = {for (final v in volumes) v.title: v.id};
+      expect(chapters[0].volumeId, volByTitle['第一卷 风起']);
+      expect(chapters[1].volumeId, volByTitle['第一卷 风起']);
+      expect(chapters[2].volumeId, volByTitle['第二卷 云涌']);
+      expect(chapters[3].volumeId, isNull);
+    });
+
+    test('重复导入同一解析结果 → 各建一份稿件，互不冲突', () async {
       final parsed = sampleParsed();
+      final sessionId = await sessRepo.createBlankSession();
 
       final first = await service.importWork(
         sessionId: sessionId,

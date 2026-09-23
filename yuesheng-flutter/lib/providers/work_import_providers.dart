@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/chapter_repository.dart';
 import '../data/repositories/manuscript_repository.dart';
+import '../data/repositories/volume_repository.dart';
 import '../services/work_import_service.dart';
 import 'app_providers.dart';
 import 'capability_providers.dart';
@@ -23,5 +24,6 @@ final workImportServiceProvider = Provider<WorkImportService>((ref) {
     ChapterRepository(db),
     // CR-47：watch 而非 read（同 CR-35 / capability_providers 的 mentionParser）
     ref.watch(referenceCapabilityProvider),
+    VolumeRepository(db),
   );
 });

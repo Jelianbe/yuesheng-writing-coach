@@ -23,6 +23,7 @@ import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
+import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/manuscript_providers.dart';
@@ -44,7 +45,8 @@ class _FakeImportService extends WorkImportService {
     ManuscriptRepository manuscriptRepo,
     ChapterRepository chapterRepo,
     ReferenceCapability referenceRepo,
-  ) : super(db, manuscriptRepo, chapterRepo, referenceRepo);
+    VolumeRepository volumeRepo,
+  ) : super(db, manuscriptRepo, chapterRepo, referenceRepo, volumeRepo);
 
   @override
   Future<WorkImportResult?> importBookFromFile() async {
@@ -78,6 +80,7 @@ void main() {
             ManuscriptRepository(db),
             ChapterRepository(db),
             ReferenceRepository(db),
+            VolumeRepository(db),
           ),
         ),
       ],
