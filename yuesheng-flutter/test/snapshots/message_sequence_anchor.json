@@ -49,8 +49,8 @@
   "p1_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 65553,
-      "fnv": "98affc0a896a10d"
+      "len": 62717,
+      "fnv": "3f5c88a288b1d268"
     },
     {
       "role": "system",
@@ -71,8 +71,8 @@
   "p2_yuesheng_diagnosis": [
     {
       "role": "system",
-      "len": 67336,
-      "fnv": "6182e917245b0956"
+      "len": 64500,
+      "fnv": "454916d168fc1879"
     },
     {
       "role": "system",
@@ -115,8 +115,8 @@
   "p3_yuesheng_advanced": [
     {
       "role": "system",
-      "len": 49543,
-      "fnv": "a2edb2a559d876c"
+      "len": 46707,
+      "fnv": "55957e635282c4ad"
     },
     {
       "role": "system",
@@ -137,8 +137,8 @@
   "p3_sensei_advanced": [
     {
       "role": "system",
-      "len": 49351,
-      "fnv": "4bfb3c2b25775bc"
+      "len": 46515,
+      "fnv": "14dee5b50b1296bd"
     },
     {
       "role": "system",
