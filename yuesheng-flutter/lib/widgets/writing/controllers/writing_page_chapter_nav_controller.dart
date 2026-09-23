@@ -138,8 +138,9 @@ class WritingPageChapterNavController {
     Navigator.of(_host.context).pop(); // 关闭抽屉（LocalHistoryEntry）
     if (targetId == _host.chapterId) {
       // 批次96-11：目标即当前章 → 直接在编辑器内定位命中处
-      if (cursorOffset != null) {
-        _host.locateCursor(cursorOffset);
+      // FIX-5：定位失败（offset 越界/文本不匹配）留痕，不静默
+      if (cursorOffset != null && !_host.locateCursor(cursorOffset)) {
+        debugPrint('[WritingPage] 当前章定位失败 cursorOffset=$cursorOffset');
       }
       return;
     }

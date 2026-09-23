@@ -58,6 +58,8 @@ class WritingPageFindReplaceController {
   }
 
   /// 批次84-2：查找定位 → 设选区（程序化选区，不弹划词菜单）
+  /// FIX-5：定位后补 focus + scroll-to-caret（当前章查找「上一个/下一个」
+  /// 同样需要滚动补偿，否则长文下匹配在屏幕外时用户看不到）。
   void locateMatch(int start, int end) {
     _host.suppressSelectionMenu = true;
     _host.editorController.selection = TextSelection(
@@ -65,5 +67,6 @@ class WritingPageFindReplaceController {
       extentOffset: end,
     );
     _host.suppressSelectionMenu = false;
+    _host.revealCaret(end);
   }
 }

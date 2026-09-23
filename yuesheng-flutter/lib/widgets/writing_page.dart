@@ -272,11 +272,42 @@ class _WritingPageState extends ConsumerState<WritingPage>
   }
 
   @override
-  void locateCursor(int offset) {
-    if (offset < 0 || offset > _controller.text.length) return;
+  bool locateCursor(int offset) {
+    if (offset < 0 || offset > _controller.text.length) return false;
     _suppressSelectionMenu = true;
     _controller.selection = TextSelection.collapsed(offset: offset);
     _suppressSelectionMenu = false;
+    revealCaret(offset);
+    return true;
+  }
+
+  /// FIX-5：scroll-to-caret——请求焦点（未聚焦时 Flutter 原生 focus 路径
+  /// 触发 `_scheduleShowCaretOnScreen`，见 editable_text.dart:4846-4848）；
+  /// 已聚焦场景 requestFocus 不产生焦点变化，需手动滚动兜底。
+  @override
+  void revealCaret(int offset) {
+    final hadFocus = _focusNode.hasFocus;
+    _focusNode.requestFocus();
+    if (hadFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scrollEditorToCaret(offset);
+      });
+    }
+  }
+
+  /// FIX-5：手动滚动编辑器视口使光标可见（已聚焦场景兜底）。
+  /// 经 [EditableTextState.renderEditable] 拿光标局部矩形，再 showOnScreen
+  /// 沿祖先链滚动（Scrollable）到可见。
+  void _scrollEditorToCaret(int offset) {
+    final editableState = _focusNode.context
+        ?.findAncestorStateOfType<EditableTextState>();
+    final renderEditable = editableState?.renderEditable;
+    if (renderEditable == null || !renderEditable.attached) return;
+    final caretRect = renderEditable.getLocalRectForCaret(
+      TextPosition(offset: offset),
+    );
+    renderEditable.showOnScreen(rect: caretRect);
   }
 
   @override

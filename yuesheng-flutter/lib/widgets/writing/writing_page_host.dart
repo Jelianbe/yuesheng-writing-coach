@@ -111,7 +111,13 @@ abstract interface class WritingPageHost {
 
   // ── 跨控制器共享的编辑器操作（由宿主统一实现，避免控制器互相 import）──
   /// 批次96-11：跨章全文搜索定位 → 光标折叠定位到命中处（程序化选区不弹划词菜单）。
-  void locateCursor(int offset);
+  /// FIX-5：返回是否定位成功（offset 越界/文本不匹配返回 false，供调用方决定重试）。
+  bool locateCursor(int offset);
+
+  /// FIX-5：请求编辑器焦点并把光标滚动到 [offset] 处（scroll-to-caret）。
+  /// 未聚焦时 requestFocus 触发 Flutter 原生 focus 路径滚动；已聚焦时手动兜底。
+  /// 供当前章查找定位（onLocate）与跨章定位（locateCursor）复用。
+  void revealCaret(int offset);
 
   /// 编辑器内容变更（由文档控制器实现，供查找替换等复用）。
   void onContentChanged(String content);

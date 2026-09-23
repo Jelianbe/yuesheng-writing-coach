@@ -272,13 +272,18 @@ class _SearchReplaceSheetState extends ConsumerState<SearchReplaceSheet> {
           })
         >[];
     for (final ch in chapters) {
+      // FIX-5：定位坐标系收敛——当前章用编辑器文本快照 `_text`（sheet 打开时
+      // = controller.text，与定位目标同坐标系），跨章仍用 DB 原文（新页加载
+      // 后 controller.text = DB 内容，偏移一致；若草稿恢复致错位，由
+      // maybeLocateSearchCursor 失败重试兜底）。
+      final source = ch.id == widget.currentChapterId ? _text : ch.content;
       // 批次96-11：标题 + 正文都参与匹配（标题命中无正文命中时 snippet 用标题）
-      final contentMatches = computeMatches(ch.content, q);
+      final contentMatches = computeMatches(source, q);
       final titleHit = ch.title.contains(q);
       if (contentMatches.isNotEmpty || titleHit) {
         final title = ch.title.trim().isEmpty ? '未命名章节' : ch.title;
         final snippet = contentMatches.isNotEmpty
-            ? buildSnippet(ch.content, contentMatches.first, q.length)
+            ? buildSnippet(source, contentMatches.first, q.length)
             : (titleHit ? title : '');
         results.add((
           chapterId: ch.id,

@@ -110,15 +110,18 @@ class WritingPageStoreSyncController {
     }
   }
 
-  /// 批次96-11：跨章全文搜索定位——内容就绪后一次性定位到命中处
+  /// 批次96-11：跨章全文搜索定位——内容就绪后定位到命中处
   /// （initialCursorOffset 来自路由 extra，搜索 sheet 点击跨章结果时携带）
+  /// FIX-5：定位失败（offset 越界/文本不匹配）**不置位** [searchCursorLocated]，
+  /// 内容后续变化时再次尝试（草稿恢复/未保存编辑致 DB 与编辑器坐标系错位时，
+  /// 原 offset 可能失效，等待新文本就绪后重试）。
   void maybeLocateSearchCursor() {
     final offset = _host.initialCursorOffset;
-    if (offset != null &&
-        !_host.searchCursorLocated &&
-        _host.editorController.text.isNotEmpty) {
+    if (offset == null || _host.searchCursorLocated) return;
+    final text = _host.editorController.text;
+    if (text.isEmpty) return; // 内容未就绪 → 等待下次同步
+    if (_host.locateCursor(offset)) {
       _host.searchCursorLocated = true;
-      _host.locateCursor(offset);
     }
   }
 

@@ -169,6 +169,7 @@ void main() {
     String? id,
     VoidCallback? onBack,
     String? msId,
+    int? initialCursorOffset,
     void Function(String chapterId, String title)? onJumpToChapter,
     ThemeData? theme,
   }) {
@@ -179,6 +180,7 @@ void main() {
         home: WritingPage(
           chapterId: id ?? chapterId,
           manuscriptId: msId,
+          initialCursorOffset: initialCursorOffset,
           onBack: onBack,
           onJumpToChapter: onJumpToChapter,
         ),
@@ -2153,6 +2155,50 @@ void main() {
 
       expect(jumpedId, ch2Id);
       expect(jumpedTitle, '第二章：风雪');
+    });
+
+    testWidgets('FIX-5 全书搜索当前章结果 → 用编辑器快照定位（未保存编辑不串位）', (tester) async {
+      await tester.pumpWidget(buildWritingPage(msId: manuscriptId));
+      await tester.pumpAndSettle();
+      // 编辑器先输入未保存文本（「大雪」在 [10,12)；DB 原文里该词在 [4,6)）
+      await tester.enterText(editorTextField(), '开头补了一段文字，大雪纷飞。');
+      await tester.pumpAndSettle();
+      await openFullTextSearch(tester);
+
+      await typeQuery(tester, '大雪');
+
+      // 命中 1 处（当前章，编辑器快照坐标系）
+      expect(find.text('1 处'), findsOneWidget);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('第一章：启程'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // sheet 关闭 + 编辑器选中编辑器文本里的命中词 [10,12)（非 DB 的 [4,6)）
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(
+        editorSelection(tester),
+        const TextSelection(baseOffset: 9, extentOffset: 11),
+      );
+    });
+
+    testWidgets('FIX-5 越界 initialCursorOffset → 定位失败不置位（可重试、不越界崩溃）', (
+      tester,
+    ) async {
+      // 构造越界 offset（999 > 内容 12 字）→ maybeLocateSearchCursor 拒绝定位
+      // （失败不置位 searchCursorLocated → 内容变化后重试；不静默也不越界崩溃）
+      await tester.pumpWidget(
+        buildWritingPage(msId: manuscriptId, initialCursorOffset: 999),
+      );
+      await tester.pumpAndSettle();
+
+      // 越界定位失败不抛异常；编辑器内容完整未损坏
+      expect(tester.takeException(), isNull);
+      final field = tester.widget<TextField>(editorTextField());
+      expect(field.controller!.text, '这是一个大雪纷飞的夜晚。');
     });
   });
 
