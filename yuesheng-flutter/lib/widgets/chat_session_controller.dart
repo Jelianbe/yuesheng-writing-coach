@@ -150,5 +150,7 @@ class ChatSessionController {
     host.ref.read(practiceStoreProvider.notifier).resetPractice();
     host.ref.read(evaluationReportsProvider.notifier).resetReports();
     host.clearComposerState();
+    host.setPrimaryRefTitle(null);
+    host.ref.read(pendingDiagnosisChapterProvider.notifier).state = null;
   }
 }

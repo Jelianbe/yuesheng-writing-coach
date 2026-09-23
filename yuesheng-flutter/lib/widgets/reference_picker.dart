@@ -139,18 +139,23 @@ class _ReferencePickerState extends ConsumerState<ReferencePicker> {
 
   /// mention 模式下的路径徽章
   Widget _mentionBadge(String path) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.xsm,
-        vertical: AppSpacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: context.palette.primarySoft,
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-      ),
-      child: Text(
-        path,
-        style: TextStyle(fontSize: 11, color: context.palette.primary),
+    // FIX-4：长书名+长章名路径溢出 → Flexible（Row 直接子级）+ maxLines 1 + ellipsis
+    return Flexible(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xsm,
+          vertical: AppSpacing.xxs,
+        ),
+        decoration: BoxDecoration(
+          color: context.palette.primarySoft,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
+        ),
+        child: Text(
+          path,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 11, color: context.palette.primary),
+        ),
       ),
     );
   }

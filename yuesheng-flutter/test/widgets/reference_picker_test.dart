@@ -382,6 +382,51 @@ void main() {
     expect(find.text('选择引用'), findsNothing);
   });
 
+  // FIX-4：长书名+长章名 → mention 徽章 ellipsis 截断，无 RenderFlex 溢出
+  testWidgets('#6b FIX-4 长路径徽章不溢出（ellipsis 截断）', (tester) async {
+    final longTitle = '超长书名用于验证引用路径徽章溢出收敛行为测试之卷';
+    final longChapter = '超长章节名称用于验证路径徽章是否溢出需要被截断显示之章';
+    final msId = await msRepo.createManuscript(title: longTitle);
+    await chRepo.createChapter(
+      msId,
+      title: longChapter,
+      content: '正文',
+      sortOrder: 0,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (_) => ReferencePicker(mode: 'mention'),
+                  ),
+                  child: const Text('打开'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('打开'));
+    await tester.pumpAndSettle();
+
+    // 作品行徽章存在（内容超长则被截断，但绝不能抛 RenderFlex overflow）
+    expect(tester.takeException(), isNull);
+    final badge = find.textContaining('@');
+    expect(badge, findsWidgets);
+    // 展开章节 → 章节徽章同样不溢出
+    await tester.tap(find.text(longTitle));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('批次97 分卷作品：卷行=选中卷，箭头=展开卷内章节', (tester) async {
     final msId2 = await msRepo.createManuscript(title: '长篇');
     final volRepo = VolumeRepository(db);

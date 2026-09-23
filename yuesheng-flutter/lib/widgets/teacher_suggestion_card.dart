@@ -253,22 +253,28 @@ class _TeacherSuggestionCardState extends ConsumerState<TeacherSuggestionCard> {
 
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: 3,
-          ),
-          decoration: BoxDecoration(
-            color: context.palette.l1,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: Text(
-            // 症候名称优先，无则显示决策类型
-            p.targetSyndromeName ?? decision,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: context.palette.primary,
+        Flexible(
+          flex: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 3,
+            ),
+            decoration: BoxDecoration(
+              color: context.palette.l1,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            // FIX-4：长症候名在 Row 内溢出 → maxLines 1 + ellipsis
+            child: Text(
+              // 症候名称优先，无则显示决策类型
+              p.targetSyndromeName ?? decision,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: context.palette.primary,
+              ),
             ),
           ),
         ),

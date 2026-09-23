@@ -23,6 +23,7 @@ import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
 import 'package:writingcoach/data/repositories/error_log_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
+import 'package:writingcoach/providers/chat_store.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/attitude_advisor.dart';
 import 'package:writingcoach/services/error_handler.dart';
@@ -170,6 +171,22 @@ void main() {
         host.sessions.map((s) => s.session.id),
         isNot(contains(drop)),
         reason: '宿主列表应已刷新',
+      );
+    });
+
+    // FIX-2：resetSessionScopedState 重置主引用标题 + pending 诊断章节（防跨会话串引用/串诊断）
+    testWidgets('resetSessionScopedState 清空引用标题与 pending 诊断', (tester) async {
+      final host = await pumpHost(tester, database: db);
+      host.setPrimaryRefTitle('旧书');
+      host.ref.read(pendingDiagnosisChapterProvider.notifier).state = 'ch-old';
+
+      host.controller.resetSessionScopedState();
+
+      expect(host.primaryRefTitle, isNull, reason: '旧书名不得残留到新会话');
+      expect(
+        host.ref.read(pendingDiagnosisChapterProvider),
+        isNull,
+        reason: 'pending 诊断章节不得跨会话存活',
       );
     });
   });
