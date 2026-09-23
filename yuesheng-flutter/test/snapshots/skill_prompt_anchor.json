@@ -48,16 +48,16 @@
       "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,beginner-path,gap-detector,narrative-design,plot-design,writer-psychology,coaching-rhythm"
     },
     "diagnosis_p1_yuesheng": {
-      "len": 62717,
-      "fnv": "3f5c88a288b1d268",
-      "tokens": 62717,
-      "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,coaching-actions-v2,syndrome-diagnosis-index,narrative-design,plot-design,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
+      "len": 51175,
+      "fnv": "79daa0055d04b22e",
+      "tokens": 51175,
+      "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "diagnosis_yuesheng": {
-      "len": 64500,
-      "fnv": "454916d168fc1879",
-      "tokens": 64500,
-      "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,coaching-actions-v2,syndrome-diagnosis-index,narrative-design,plot-design,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
+      "len": 52958,
+      "fnv": "278da4562705821b",
+      "tokens": 52958,
+      "skills": "core-iron-triangle,core-product-identity,writing-anchors,teaching-strategy,phase-mapper,scenario-rules,validation-rules,teaching-modes,reply-voice,attitude-yuesheng,coaching-actions-v2,syndrome-diagnosis-index,reader-awareness,writing-style,diagnosis-confirmation,feedback-cognition,coaching-rhythm"
     },
     "training_yuesheng": {
       "len": 67427,

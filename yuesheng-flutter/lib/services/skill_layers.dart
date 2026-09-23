@@ -78,8 +78,8 @@ const Map<L2Mode, List<SkillRef>> l2SkillMap = {
     // 勿「修复」为索引优先：顺序即缓存契约，改动须重生成两处锚点并做行为采样。
     SkillRef('coaching-actions', '诊断语境：把症候映射到推荐动作卡'),
     SkillRef('syndrome-diagnosis-index'), // 仅症候索引+通用规则 (~1800 tokens)
-    SkillRef('narrative-design', '诊断语境：核对世界观/角色构建是否薄弱，给可操作重建步骤'),
-    SkillRef('plot-design', '诊断语境：定位情节断裂/张力缺失，给因果链追问工具'),
+    // ADR-C99：narrative-design + plot-design 移出 diagnosis 组（~4000 tokens）
+    // 理由：构建引导工具，非诊断工具；结构性症候修复由 L3 详情承载
     SkillRef('reader-awareness', '诊断语境：审视读者视角漏洞（信息/情绪/认知）'),
     SkillRef('writing-style'), // ~2800 tokens (正向风格识别，与症候诊断互补)
     SkillRef(

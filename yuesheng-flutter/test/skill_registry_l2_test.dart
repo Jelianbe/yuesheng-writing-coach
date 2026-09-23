@@ -138,8 +138,7 @@ void main() {
         'diagnosis-confirmation',
         'feedback-cognition',
         'coaching-rhythm',
-        'narrative-design',
-        'plot-design',
+        // ADR-C99：narrative-design + plot-design 移出 diagnosis 组
         // 2026-08-08 批次 22 步骤②：索引 skill 注册后不再跳过
         'syndrome-diagnosis-index',
       ]) {
