@@ -84,3 +84,21 @@ UPDATE_SNAPSHOTS=true flutter test test/services/skill_prompt_anchor_test.dart
 | `chat_service_message_sequence_anchor_test.dart` | 消息序列锚点 |
 
 改 prompt 之后，先跑快照测试，确认变化是预期的。
+
+
+---
+
+## 批量操作注意事项
+
+### ⚠️ PowerShell 处理 UTF-8 有坑
+
+**事故记录**：2026-09-24，用 PowerShell 批量替换 import 路径，把所有 dart 文件的 UTF-8 编码搞坏了（GBK 误读 + 错误写回）。
+
+**正确姿势**：
+1. 批量改文件**不要用 PowerShell**——用 Python 脚本或 IDE 的全局替换
+2. Python 处理 UTF-8 更可靠：`open(path, 'r', encoding='utf-8')` + `open(path, 'w', encoding='utf-8')`
+3. 用 IDE（Android Studio）的 rename/refactor 功能——对 Dart 的 import 迁移是安全的
+4. 大重构一定要小步提交：一个目录一个目录改，每步跑测试，别一次性全量替换
+5. 改完先 `git diff --stat` 检查文件数和行数是否异常——编码坏了 git diff 会立刻显形
+
+**教训**：工具事故 ≠ 架构风险。不要因为一次操作失误就放弃合理的重构。
