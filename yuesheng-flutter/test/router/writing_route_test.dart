@@ -25,7 +25,7 @@ import 'package:writingcoach/features/bookshelf/bookshelf_page.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 import 'package:writingcoach/widgets/growth_detail_page.dart';
 import 'package:writingcoach/widgets/growth_page.dart';
-import 'package:writingcoach/widgets/manuscript_detail_page.dart';
+import 'package:writingcoach/features/manuscript/manuscript_detail_page.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
 import 'package:writingcoach/widgets/writing_page.dart';
 

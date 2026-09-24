@@ -13,10 +13,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 作品元信息条（批次 37 简化 + 修复2：章节数已移到列表头右侧）
 ///

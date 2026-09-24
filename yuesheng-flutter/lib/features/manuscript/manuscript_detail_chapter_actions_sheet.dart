@@ -11,9 +11,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../config/app_palette.dart';
 
 /// 章节长按操作弹层
 class ChapterActionsSheet extends StatelessWidget {

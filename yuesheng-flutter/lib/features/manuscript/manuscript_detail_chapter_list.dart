@@ -9,9 +9,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../utils/volume_group.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../utils/volume_group.dart';
 import 'manuscript_detail_chapter_card.dart';
 import 'manuscript_detail_chapter_list_header.dart';
 import 'manuscript_detail_volume.dart';

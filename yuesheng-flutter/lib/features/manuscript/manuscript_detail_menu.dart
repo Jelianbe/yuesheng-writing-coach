@@ -10,8 +10,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/app_palette.dart';
 
 /// 更多菜单 bottom sheet（批次 20，对齐 RN MoreMenuSheet）
 class MoreMenuSheet extends StatelessWidget {

@@ -30,7 +30,7 @@ import '../widgets/character/character_page.dart';
 import '../widgets/chapter_recycle_bin_page.dart';
 import '../widgets/growth_detail_page.dart';
 import '../widgets/growth_page.dart';
-import '../widgets/manuscript_detail_page.dart';
+import '../features/manuscript/manuscript_detail_page.dart';
 import '../widgets/placeholder_page.dart';
 import '../widgets/progress_detail_page.dart';
 import '../features/app_settings/project_settings_page.dart';

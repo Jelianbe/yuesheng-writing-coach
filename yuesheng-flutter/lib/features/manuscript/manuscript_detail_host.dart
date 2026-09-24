@@ -14,7 +14,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/database/database.dart';
+import '../../data/database/database.dart';
 
 /// 作品详情页宿主对动作控制器暴露的能力（最小集）
 abstract class ManuscriptDetailHost {

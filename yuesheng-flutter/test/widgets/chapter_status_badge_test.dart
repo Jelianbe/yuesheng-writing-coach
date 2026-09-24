@@ -22,7 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/data/database/database.dart';
-import 'package:writingcoach/widgets/manuscript_detail_chapter_card.dart';
+import 'package:writingcoach/features/manuscript/manuscript_detail_chapter_card.dart';
 
 /// 纯数据构造 Chapter（drift 数据类不经 DB，CHECK 约束管不到它 ——
 /// 这正是能测「表外状态」分支的原因；DB 路径实测进不来表外值）。

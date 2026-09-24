@@ -13,14 +13,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/chat_store.dart';
-import '../providers/manuscript_providers.dart';
-import '../router/app_routes.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/manuscript_providers.dart';
+import '../../router/app_routes.dart';
 import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
 import 'manuscript_detail_menu.dart';
-import 'yue_sheet.dart';
-import '../config/app_palette.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../config/app_palette.dart';
 
 /// 作品详情页导航动作
 class ManuscriptDetailNavigator {

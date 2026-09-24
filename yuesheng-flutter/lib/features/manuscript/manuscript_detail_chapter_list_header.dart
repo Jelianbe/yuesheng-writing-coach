@@ -10,9 +10,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 /// 章节列表头：「章节列表 X 章」+ 新建卷 + 导入（修复2：章节数移到右侧区域）
 class ChapterListHeader extends StatelessWidget {

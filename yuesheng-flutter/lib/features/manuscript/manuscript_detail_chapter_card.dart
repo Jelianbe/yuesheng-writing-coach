@@ -14,9 +14,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../config/app_palette.dart';
 
 /// 章节状态 → 中文标签 + 矿物色配色
 class ChapterStatusConfig {

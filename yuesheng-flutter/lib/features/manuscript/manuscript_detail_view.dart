@@ -14,16 +14,16 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../data/database/database.dart';
-import 'file_section.dart';
+import '../../config/app_palette.dart';
+import '../../data/database/database.dart';
+import '../../widgets/file_section.dart';
 import 'manuscript_detail_chapter_list.dart';
 import 'manuscript_detail_chapter_list_header.dart';
 import 'manuscript_detail_states.dart';
-import 'related_sessions_tab.dart';
-import 'manuscript_growth_tab.dart';
-import 'setting/setting_empty_state.dart';
-import 'setting/setting_library_tab.dart';
+import '../../widgets/related_sessions_tab.dart';
+import '../../widgets/manuscript_growth_tab.dart';
+import '../../widgets/setting/setting_empty_state.dart';
+import '../../widgets/setting/setting_library_tab.dart';
 
 /// 作品详情页装配视图（无状态）
 class ManuscriptDetailView extends StatelessWidget {

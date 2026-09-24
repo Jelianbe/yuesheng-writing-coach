@@ -24,7 +24,7 @@ import '../providers/app_providers.dart';
 import '../providers/chapter_providers.dart';
 import '../providers/manuscript_providers.dart';
 import '../utils/volume_group.dart';
-import 'manuscript_detail_chapter_card.dart';
+import '../features/manuscript/manuscript_detail_chapter_card.dart';
 import 'yue_sheet.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';

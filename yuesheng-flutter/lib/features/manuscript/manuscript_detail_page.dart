@@ -29,11 +29,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../data/database/database.dart';
-import '../data/repositories/app_state_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chapter_providers.dart';
-import '../providers/manuscript_providers.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/app_state_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chapter_providers.dart';
+import '../../providers/manuscript_providers.dart';
 import 'manuscript_detail_chapter_controller.dart';
 import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';

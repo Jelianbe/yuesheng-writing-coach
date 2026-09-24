@@ -9,16 +9,16 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../data/repositories/volume_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chapter_providers.dart';
-import '../providers/manuscript_providers.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/volume_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chapter_providers.dart';
+import '../../providers/manuscript_providers.dart';
 import 'manuscript_detail_exporter.dart';
 import 'manuscript_detail_host.dart';
-import 'yue_sheet.dart';
-import '../config/app_palette.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../config/app_palette.dart';
 
 /// 作品详情页卷动作
 class ManuscriptDetailVolumeController {
