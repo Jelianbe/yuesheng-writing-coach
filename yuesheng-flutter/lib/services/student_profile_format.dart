@@ -56,16 +56,6 @@ String _cognitiveStyleLabel(CognitiveStyle s) {
   }
 }
 
-String _cognitiveStyleDesc(CognitiveStyle s) {
-  switch (s) {
-    case CognitiveStyle.analytical:
-      return '偏好深度讲解';
-    case CognitiveStyle.intuitive:
-      return '偏好快速迭代';
-    case CognitiveStyle.mixed:
-      return '边练边讲';
-  }
-}
 
 /// 格式化画像文本
 ///
@@ -112,21 +102,36 @@ void _appendOnboardingSection(
 ) {
   if (onboarding == null) return;
   sections.add('【学员初始画像】');
-  sections.add('- 写作经验：${_proficiencyLabel(onboarding.proficiency)}');
+  sections.add('- 写作水平：${_proficiencyLabel(onboarding.proficiency)}');
+
+  // 教学方式约束：从"陈述事实"改成"明确行为指令"
+  // 让 LLM 知道具体要怎么根据学员水平调整输出
+  if (onboarding.proficiency == ProficiencyLevel.beginner) {
+    sections.add('- 教学方式约束（新手）：');
+    sections.add('  · 避免专业术语，遇到新概念必须展开解释');
+    sections.add('  · 技术建议优先配具体例子，帮助理解');
+    sections.add('  · 语气以鼓励为主，先肯定做得好的部分再指出问题');
+    sections.add('  · 诊断时先解释"这是什么问题"，再说"怎么改"');
+  } else if (onboarding.proficiency == ProficiencyLevel.intermediate) {
+    sections.add('- 教学方式约束（进阶）：');
+    sections.add('  · 可使用专业术语，基础概念不用展开解释');
+    sections.add('  · 诊断直接指出问题，配一句原因解释');
+    sections.add('  · 给可操作的修改建议，不用铺垫');
+  } else {
+    sections.add('- 教学方式约束（高手）：');
+    sections.add('  · 纯技术分析，直接指出问题，不用铺垫');
+    sections.add('  · 用专业术语，给进阶技巧和参考案例');
+    sections.add('  · 不用基础练习和常识解释');
+  }
+
   if (onboarding.focusAreas.isNotEmpty) {
     sections.add('- 关注领域：${onboarding.focusAreas.join('、')}');
+    sections.add('- 诊断优先级：发现上述领域问题时重点展开分析，其他领域问题点到为止');
   }
-  sections.add(
-    '- 学习偏好：${_cognitiveStyleLabel(onboarding.cognitiveStyle)}（${_cognitiveStyleDesc(onboarding.cognitiveStyle)}）',
-  );
+
+  sections.add('- 学习偏好：${_cognitiveStyleLabel(onboarding.cognitiveStyle)}');
   sections.add('- 写作目标：${onboarding.writingGoal}');
-  // ADR-C71 §3.4：此前本节只陈述不消费——补一段明确的教学加权指令。
-  // 保持通用（不建静态映射表）；R-009 优先级显式写明：当轮请求压过问卷画像。
-  sections.add(
-    '- 教学加权（系统指令）：选择练习类型与举例素材时优先倾向「关注领域」，'
-    '按「学习偏好」调整讲解与练习的密度配比；'
-    '与学员当轮的明确请求冲突时，一律以当轮为准',
-  );
+  sections.add('- 优先级：与学员当轮的明确请求冲突时，一律以当轮为准');
   sections.add('');
 }
 

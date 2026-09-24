@@ -47,7 +47,7 @@ class OnboardingQuestionnaire extends StatefulWidget {
 }
 
 class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
-  static const int _totalSteps = kOnboardingQuestionCount; // 3
+  static const int _totalSteps = 1; // 简化：只留关注领域 1 题
 
   int _step = 0;
   ProficiencyLevel? _proficiency;
@@ -80,33 +80,23 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
   }
 
   bool _canProceed(int index) {
-    // 漏洞 4 修复：提交中禁用所有前进按钮
     if (_isSubmitting) return false;
-    switch (index) {
-      case 0:
-        return _proficiency != null;
-      case 1:
-        return true; // 多选可空
-      case 2:
-        return _cognitiveStyle != null;
-      default:
-        return false;
-    }
+    // 简化问卷：只有 1 题（关注领域，可选），总是可以提交
+    return true;
   }
 
   void _handleComplete() {
-    // 漏洞 4 修复：提交中直接返回，避免连点重复触发回调
     if (_isSubmitting) return;
-    if (_proficiency == null || _cognitiveStyle == null) return;
 
-    // 立即标记 + setState 禁用按钮，防止回调执行期间再次点击
     setState(() => _isSubmitting = true);
 
+    // 简化问卷：只收集 focusAreas，其他默认 beginner/mixed
+    // 后续根据诊断结果自动调整
     widget.onComplete(
       OnboardingData(
-        proficiency: _proficiency!,
+        proficiency: ProficiencyLevel.beginner,
         focusAreas: _focusAreas.toList(),
-        cognitiveStyle: _cognitiveStyle!,
+        cognitiveStyle: CognitiveStyle.mixed,
         writingGoal: '',
         completedAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         skipped: false,
@@ -158,7 +148,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
-                  children: [_buildQ1(), _buildQ2(), _buildQ3()],
+                  children: [_buildQ2()], // 简化：只留关注领域
                 ),
               ),
               _buildFooter(isLastStep),
@@ -246,25 +236,6 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
     );
   }
 
-  // ════════════ Q1: 4 级文本示例 ════════════
-
-  Widget _buildQ1() {
-    return _QuestionPage(
-      title: 'Q1. 哪段文字最接近你的写作水平？',
-      subtitle: '选一段最像你平时写的',
-      child: Column(
-        children: kProficiencyExamples.map((ex) {
-          final selected = _proficiency == ex.proficiency;
-          return _RadioCard(
-            selected: selected,
-            label: ex.label,
-            sample: ex.sample,
-            onTap: () => setState(() => _proficiency = ex.proficiency),
-          );
-        }).toList(),
-      ),
-    );
-  }
 
   // ════════════ Q2: 提升方向（多选） ════════════
 
@@ -285,25 +256,6 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
     );
   }
 
-  // ════════════ Q3: 学习偏好 ════════════
-
-  Widget _buildQ3() {
-    return _QuestionPage(
-      title: 'Q3. 你的学习偏好？',
-      subtitle: '选最适合你的方式',
-      child: Column(
-        children: kCognitiveStyleOptions.map((opt) {
-          final selected = _cognitiveStyle == opt.value;
-          return _RadioCard(
-            selected: selected,
-            label: opt.label,
-            sample: null,
-            onTap: () => setState(() => _cognitiveStyle = opt.value),
-          );
-        }).toList(),
-      ),
-    );
-  }
 
   // ════════════ Footer ════════════
 
@@ -396,109 +348,6 @@ class _QuestionPage extends StatelessWidget {
     );
   }
 }
-
-class _RadioCard extends StatelessWidget {
-  final bool selected;
-  final String label;
-  final String? sample;
-  final VoidCallback onTap;
-
-  const _RadioCard({
-    required this.selected,
-    required this.label,
-    required this.sample,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors
-                      .l1 // 竹青浅
-                : context.palette.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: selected ? context.palette.primary : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 单选圆圈
-              Container(
-                width: 22,
-                height: 22,
-                margin: const EdgeInsets.only(top: AppSpacing.xxs),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: selected
-                        ? context.palette.primary
-                        : context.palette.textTertiary,
-                    width: 2,
-                  ),
-                ),
-                child: selected
-                    ? Center(
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: context.palette.primary,
-                          ),
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: selected
-                            ? context.palette.primary
-                            : context.palette.textPrimary,
-                      ),
-                    ),
-                    if (sample != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        sample!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: context.palette.hintText,
-                          height: 1.5,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _CheckCard extends StatelessWidget {
   final bool selected;
   final String label;
