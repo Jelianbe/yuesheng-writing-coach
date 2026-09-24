@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "cases": {
+    "beginner_empty": {
+      "length": 222,
+      "hash": "-562b42a081e0e285"
+    },
+    "beginner_with_onboarding": {
+      "length": 462,
+      "hash": "-318830d8f16316be"
+    },
+    "elementary_with_syndromes": {
+      "length": 622,
+      "hash": "-15f22d382030e308"
+    }
+  }
+}
