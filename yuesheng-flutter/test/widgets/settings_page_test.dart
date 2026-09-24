@@ -45,7 +45,7 @@ import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/services/llm_cost.dart';
 import 'package:writingcoach/services/llm_usage.dart';
-import 'package:writingcoach/widgets/settings_page.dart';
+import 'package:writingcoach/features/app_settings/settings_page.dart';
 
 /// Fake 配置存储：内存 map，避免触碰 flutter_secure_storage
 class _FakeConfigStorage extends LlmConfigStorage {

@@ -10,7 +10,7 @@ import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/widgets/growth_detail_page.dart';
 import 'package:writingcoach/widgets/growth_page.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
-import 'package:writingcoach/widgets/settings_page.dart';
+import 'package:writingcoach/features/app_settings/settings_page.dart';
 
 void main() {
   late AppDatabase db;

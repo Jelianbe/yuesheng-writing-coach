@@ -37,7 +37,7 @@ import 'package:writingcoach/widgets/chapter_recycle_bin_page.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 import 'package:writingcoach/widgets/manuscript_detail_page.dart';
 import 'package:writingcoach/widgets/manuscript_detail_volume.dart';
-import 'package:writingcoach/widgets/project_settings_page.dart';
+import 'package:writingcoach/features/app_settings/project_settings_page.dart';
 import 'package:writingcoach/widgets/writing_page.dart';
 
 import '../helpers/mock_last_session_storage.dart';

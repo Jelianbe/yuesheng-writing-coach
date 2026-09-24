@@ -20,7 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/widgets/project_settings_page.dart';
+import 'package:writingcoach/features/app_settings/project_settings_page.dart';
 
 void main() {
   late AppDatabase db;

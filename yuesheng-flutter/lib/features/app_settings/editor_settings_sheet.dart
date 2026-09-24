@@ -18,8 +18,8 @@ import '../config/editor_background_presets.dart';
 import '../data/repositories/app_state_repository.dart';
 import '../providers/app_providers.dart';
 import '../providers/writing_providers.dart';
-import 'punctuation_bar.dart';
-import 'yue_sheet.dart';
+import '../widgets/punctuation_bar.dart';
+import '../widgets/yue_sheet.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
 

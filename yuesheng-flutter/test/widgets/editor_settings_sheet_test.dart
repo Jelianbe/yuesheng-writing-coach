@@ -24,7 +24,7 @@ import 'package:writingcoach/data/repositories/app_state_repository.dart';
 import 'package:writingcoach/data/repositories/chapter_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/widgets/editor_settings_sheet.dart';
+import 'package:writingcoach/features/app_settings/editor_settings_sheet.dart';
 import 'package:writingcoach/widgets/punctuation_bar.dart';
 
 void main() {

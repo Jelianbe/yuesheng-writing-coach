@@ -36,7 +36,7 @@ import '../services/llm_cost.dart';
 import '../services/llm_usage_report.dart';
 import '../services/progress_service.dart';
 import '../services/session_export_service.dart';
-import 'privacy_notice_dialog.dart';
+import '../widgets/privacy_notice_dialog.dart';
 import '../theme/app_typography.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
