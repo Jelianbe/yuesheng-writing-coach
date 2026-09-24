@@ -6,8 +6,8 @@
 // + 三列表构建名称映射）。
 // ─────────────────────────────────────────────────────────────
 
-import '../../data/database/database.dart';
-import '../../data/repositories/setting_link_repository.dart'
+import '../data/database/database.dart';
+import '../data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
 
 /// 一个条目（类型 + id + 名称）。

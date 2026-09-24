@@ -23,8 +23,8 @@
 //   - 空输入 → 空列表（区块据此隐藏）。
 // ─────────────────────────────────────────────────────────────
 
-import '../../data/database/database.dart';
-import '../../types/character_types.dart';
+import '../data/database/database.dart';
+import '../types/character_types.dart';
 
 /// 单个时间轴节点（一个章节）。
 class ProgressionPoint {
