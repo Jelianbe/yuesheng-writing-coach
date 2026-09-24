@@ -51,11 +51,11 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    // 走完 3 页（末页按钮与页标题都叫「开始使用」，用按钮精确 finder）
-    await tester.tap(find.text('下一步'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('下一步'));
-    await tester.pumpAndSettle();
+    // 走完 6 页（点 5 次下一步到最后一页）
+    for (var i = 0; i < 5; i++) {
+      await tester.tap(find.text('下一步'));
+      await tester.pumpAndSettle();
+    }
     await tester.tap(find.widgetWithText(FilledButton, '开始使用'));
     await tester.pumpAndSettle();
 

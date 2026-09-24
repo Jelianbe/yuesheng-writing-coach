@@ -50,9 +50,7 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
   static const int _totalSteps = 1; // 简化：只留关注领域 1 题
 
   int _step = 0;
-  ProficiencyLevel? _proficiency;
   final Set<String> _focusAreas = {};
-  CognitiveStyle? _cognitiveStyle;
 
   // 漏洞 4 修复：提交中标志，防止连点重复触发 onComplete
   // 设置后立即 setState 禁用按钮，回调返回前不可再次点击
