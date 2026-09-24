@@ -16,7 +16,7 @@ import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart' show AppColors;
 import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
-import 'package:writingcoach/widgets/bookshelf_empty_state.dart';
+import 'package:writingcoach/features/bookshelf/bookshelf_empty_state.dart';
 
 Color _colorOf(WidgetTester t, String text) =>
     t.widget<Text>(find.text(text)).style!.color!;

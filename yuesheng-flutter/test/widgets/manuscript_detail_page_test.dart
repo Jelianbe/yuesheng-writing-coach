@@ -32,7 +32,7 @@ import 'package:writingcoach/providers/manuscript_providers.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
-import 'package:writingcoach/widgets/bookshelf_page.dart';
+import 'package:writingcoach/features/bookshelf/bookshelf_page.dart';
 import 'package:writingcoach/widgets/chapter_recycle_bin_page.dart';
 import 'package:writingcoach/widgets/chat_page.dart';
 import 'package:writingcoach/widgets/manuscript_detail_page.dart';

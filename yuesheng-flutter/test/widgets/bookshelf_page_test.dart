@@ -32,8 +32,8 @@ import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/services/file_parser.dart';
 import 'package:writingcoach/services/work_import_service.dart';
-import 'package:writingcoach/widgets/book_import_sheet.dart';
-import 'package:writingcoach/widgets/bookshelf_page.dart';
+import 'package:writingcoach/features/bookshelf/book_import_sheet.dart';
+import 'package:writingcoach/features/bookshelf/bookshelf_page.dart';
 import 'package:writingcoach/widgets/manuscript_detail_page.dart';
 import 'package:writingcoach/widgets/writing_page.dart';
 

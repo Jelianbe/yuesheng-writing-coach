@@ -24,7 +24,7 @@ import '../providers/manuscript_providers.dart';
 import 'bookshelf_edit_manuscript_dialog.dart';
 import 'bookshelf_long_press_sheet.dart';
 import 'bookshelf_page_host.dart';
-import 'yue_sheet.dart';
+import '../widgets/yue_sheet.dart';
 import '../config/app_palette.dart';
 
 /// 书架页作品卡片动作（点按 / 长按菜单 / 置顶 / 删除 / 编辑）

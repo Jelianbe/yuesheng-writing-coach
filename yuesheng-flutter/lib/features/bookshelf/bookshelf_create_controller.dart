@@ -20,7 +20,7 @@ import '../services/work_import_service.dart';
 import 'book_import_sheet.dart';
 import 'bookshelf_create_modal.dart';
 import 'bookshelf_page_host.dart';
-import 'yue_sheet.dart';
+import '../widgets/yue_sheet.dart';
 import '../config/app_palette.dart';
 
 /// 书架页新建作品 / 文本导入动作

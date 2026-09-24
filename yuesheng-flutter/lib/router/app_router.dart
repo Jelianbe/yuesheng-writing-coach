@@ -23,7 +23,7 @@ import 'package:go_router/go_router.dart';
 import '../config/app_motion.dart';
 import '../config/app_palette.dart';
 import '../config/app_theme.dart';
-import '../widgets/bookshelf_page.dart';
+import '../features/bookshelf/bookshelf_page.dart';
 import '../widgets/chat_page.dart';
 import '../widgets/append_chapters_page.dart';
 import '../widgets/character/character_page.dart';
