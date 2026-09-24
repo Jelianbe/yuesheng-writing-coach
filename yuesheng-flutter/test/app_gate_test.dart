@@ -51,8 +51,10 @@ void main() {
     await tester.pumpWidget(buildApp());
     await tester.pumpAndSettle();
 
-    // 走完 6 页（点 5 次下一步到最后一页）
-    for (var i = 0; i < 5; i++) {
+    // 走完 3 页引导（OnboardingFlow._pages 恰 3 个元素）：非末页点「下一步」2 次到末页
+    // 注：6b04d639 误将问卷(onboarding_questionnaire)的 6 页当成引导页数改坏本测试，
+    // 此处还原。引导页末页按钮与页标题同名「开始使用」，故用按钮精确 finder。
+    for (var i = 0; i < 2; i++) {
       await tester.tap(find.text('下一步'));
       await tester.pumpAndSettle();
     }
