@@ -1177,4 +1177,72 @@ void main() {
       expect(finalDisplay, isNotNull);
     });
   });
+
+  // ─────────────────────────────────────────────────────────────
+  // 特征化测试：完整迁移路径序列（P0→P1→P2→P3→P4）
+  //
+  // 目的：钉住"渐进式阶段迁移"的完整路径，不是单步规则。
+  //      未来如果要改状态机架构，这个测试会告诉你"改之前行为是什么"。
+  // ─────────────────────────────────────────────────────────────
+  group('特征化测试：完整迁移路径序列', () {
+    test('P0 → P1 → P2 → P3 → P4 渐进式迁移', () async {
+      // 初始状态：P0 + N3
+      await setTeachingState(
+        phase: TeachingPhase.p0Engage,
+        level: BeginnerLevel.n3Diagnose,
+      );
+
+      // ── 第 1 轮：AI 建议 P0→P1 ──
+      final svc1 = buildChatService(
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P1_WORLD')),
+      );
+      await svc1.sendMessage(
+        sessionId,
+        '帮我诊断',
+        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
+        const SendMessageOptions(phase: TeachingPhase.p0Engage, attitude: AttitudeLevel.doubao),
+      );
+      var ts = await stateRepo.getTeachingState(sessionId);
+      expect(ts?.currentPhase, TeachingPhase.p1World.value, reason: '第1轮后应从 P0 迁移到 P1');
+
+      // ── 第 2 轮：AI 建议 P1→P2 ──
+      final svc2 = buildChatService(
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P2_PRACTICE_LOOP')),
+      );
+      await svc2.sendMessage(
+        sessionId,
+        '继续诊断',
+        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
+        const SendMessageOptions(phase: TeachingPhase.p1World, attitude: AttitudeLevel.doubao),
+      );
+      ts = await stateRepo.getTeachingState(sessionId);
+      expect(ts?.currentPhase, TeachingPhase.p2PracticeLoop.value, reason: '第2轮后应从 P1 迁移到 P2');
+
+      // ── 第 3 轮：AI 建议 P2→P3 ──
+      final svc3 = buildChatService(
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P3_TRAINING')),
+      );
+      await svc3.sendMessage(
+        sessionId,
+        '再诊断一次',
+        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
+        const SendMessageOptions(phase: TeachingPhase.p2PracticeLoop, attitude: AttitudeLevel.doubao),
+      );
+      ts = await stateRepo.getTeachingState(sessionId);
+      expect(ts?.currentPhase, TeachingPhase.p3Training.value, reason: '第3轮后应从 P2 迁移到 P3');
+
+      // ── 第 4 轮：AI 建议 P3→P4 ──
+      final svc4 = buildChatService(
+        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P4_REVIEW')),
+      );
+      await svc4.sendMessage(
+        sessionId,
+        '最后诊断',
+        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
+        const SendMessageOptions(phase: TeachingPhase.p3Training, attitude: AttitudeLevel.doubao),
+      );
+      ts = await stateRepo.getTeachingState(sessionId);
+      expect(ts?.currentPhase, TeachingPhase.p4Review.value, reason: '第4轮后应从 P3 迁移到 P4');
+    });
+  });
 }
