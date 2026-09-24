@@ -7,7 +7,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
+import '../../config/app_theme.dart';
 
 /// 批次93-7：长按操作菜单项
 class BookshelfLongPressAction extends StatelessWidget {

@@ -13,13 +13,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../data/repositories/student_model_repository.dart';
-import '../providers/app_providers.dart';
-import '../types/teaching_types.dart';
-import '../widgets/yue_sheet.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/student_model_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../types/teaching_types.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../theme/app_typography.dart';
 
 /// 维度值 → 中文标签（注释语义，用于展示）
 String _sensoryLabel(SensoryPreference v) => switch (v) {

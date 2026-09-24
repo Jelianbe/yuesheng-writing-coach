@@ -8,8 +8,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/app_palette.dart';
 
 /// 类型区：ChoiceChip 预设（奇幻/都市/言情/…/其他）+ 选中「其他」时展开自定义输入
 class BookshelfGenreSection extends StatelessWidget {

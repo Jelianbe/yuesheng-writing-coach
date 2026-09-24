@@ -8,9 +8,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
+import '../../config/app_theme.dart';
 import 'bookshelf_long_press_action.dart';
-import '../config/app_palette.dart';
+import '../../config/app_palette.dart';
 
 /// 长按操作菜单（顶部把手 + 作品标题 + 四项动作 + 取消）
 class BookshelfLongPressSheet extends StatelessWidget {

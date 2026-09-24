@@ -7,8 +7,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 批次93-2：搜索无结果空态
 class BookshelfNoSearchResult extends StatelessWidget {

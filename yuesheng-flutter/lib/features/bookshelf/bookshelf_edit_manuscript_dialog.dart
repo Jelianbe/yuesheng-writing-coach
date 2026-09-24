@@ -8,8 +8,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../data/database/database.dart';
-import '../config/app_palette.dart';
+import '../../data/database/database.dart';
+import '../../config/app_palette.dart';
 
 /// 编辑弹窗返回值（已 trim 的三项文本）
 class ManuscriptEditInput {

@@ -13,15 +13,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../providers/manuscript_providers.dart';
-import '../router/app_routes.dart';
-import '../services/decode_guard.dart';
-import '../services/work_import_service.dart';
+import '../../providers/manuscript_providers.dart';
+import '../../router/app_routes.dart';
+import '../../services/decode_guard.dart';
+import '../../services/work_import_service.dart';
 import 'book_import_sheet.dart';
 import 'bookshelf_create_modal.dart';
 import 'bookshelf_page_host.dart';
-import '../widgets/yue_sheet.dart';
-import '../config/app_palette.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../config/app_palette.dart';
 
 /// 书架页新建作品 / 文本导入动作
 class BookshelfCreateController {

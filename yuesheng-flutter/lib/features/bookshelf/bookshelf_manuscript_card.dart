@@ -10,11 +10,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../providers/manuscript_providers.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../providers/manuscript_providers.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 作品卡片（批次93-1 信息加厚：首字封面 + 章节数 + 总字数 + 相对时间 + 简介预览）
 class BookshelfManuscriptCard extends StatelessWidget {

@@ -10,10 +10,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../data/database/database.dart';
+import '../../data/database/database.dart';
 import 'bookshelf_page_host.dart';
 import 'bookshelf_sort_mode.dart';
-import '../config/app_palette.dart';
+import '../../config/app_palette.dart';
 
 /// 书架页搜索与排序动作
 class BookshelfFilterController {

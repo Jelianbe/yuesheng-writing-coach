@@ -25,9 +25,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../data/database/database.dart';
-import '../providers/manuscript_providers.dart';
+import '../../config/app_palette.dart';
+import '../../data/database/database.dart';
+import '../../providers/manuscript_providers.dart';
 import 'bookshelf_actions_controller.dart';
 import 'bookshelf_create_controller.dart';
 import 'bookshelf_empty_state.dart';

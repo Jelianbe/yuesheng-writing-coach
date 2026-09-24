@@ -16,12 +16,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
-import '../data/repositories/manuscript_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/manuscript_providers.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/manuscript_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/manuscript_providers.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 体裁选项（对齐 RN project-settings.tsx GENRES：长篇小说/中篇/短篇）
 const List<String> _genres = ['长篇小说', '中篇', '短篇'];

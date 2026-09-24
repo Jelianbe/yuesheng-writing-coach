@@ -6,7 +6,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
+import '../../config/app_palette.dart';
 
 /// 书架加载中视图
 class BookshelfLoadingView extends StatelessWidget {
