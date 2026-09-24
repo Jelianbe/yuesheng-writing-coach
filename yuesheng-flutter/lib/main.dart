@@ -23,7 +23,7 @@ import 'providers/app_providers.dart';
 import 'router/app_router.dart';
 import 'services/error_handler.dart';
 import 'theme/theme_controller.dart';
-import 'widgets/onboarding_flow.dart';
+import 'package:writingcoach/features/onboarding/onboarding_flow.dart';
 import 'widgets/privacy_notice_dialog.dart';
 import 'package:writingcoach/widgets/ui_overlay_host.dart';
 

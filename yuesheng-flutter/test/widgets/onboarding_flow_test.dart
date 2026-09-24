@@ -11,7 +11,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/onboarding_flow.dart';
+import 'package:writingcoach/features/onboarding/onboarding_flow.dart';
 
 void main() {
   Widget buildFlow({required VoidCallback onComplete}) {

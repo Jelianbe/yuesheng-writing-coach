@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/onboarding_questionnaire.dart';
+import 'package:writingcoach/features/onboarding/onboarding_questionnaire.dart';
 
 void main() {
   // ═══════════════════════════════════════════════════════════
