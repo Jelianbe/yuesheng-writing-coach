@@ -1,5 +1,5 @@
 name: writingcoach
-description: "月笙写作教练 - AI 驱动的小说写作辅助应用（React Native → Flutter 迁移版）"
+description: "月笙写作教练 - AI 驱动的中文小说写作辅导应用（早期 Electron + React 原型迁移至 Flutter）"
 publish_to: 'none'
 # v0.1.0+2 — 首次内测分发（beta 语义；versionCode 递增，舰长确认前为本批提案值）
 version: 0.1.0+2
@@ -88,6 +88,7 @@ flutter:
 # P0 阶段：只做纯色背景，不引入 logo 视觉资源（后续批次再补）
 flutter_native_splash:
   color: "#F7F8F6"            # 冷青灰白（暖米纸背景）
+  image: assets/app_icon.png  # 月笙 logo（月亮+钢笔）
   android: true
   ios: false
   web: false
