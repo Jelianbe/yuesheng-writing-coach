@@ -312,25 +312,25 @@
       "lines": 171
     },
     {
-      "file": "lib/widgets/onboarding_flow.dart",
+      "file": "lib/features/onboarding/onboarding_flow.dart",
       "func": "build",
-      "start": 90,
-      "end": 194,
-      "lines": 105
+      "start": 91,
+      "end": 197,
+      "lines": 107
     },
     {
-      "file": "lib/widgets/onboarding_flow.dart",
+      "file": "lib/features/onboarding/onboarding_flow.dart",
       "func": "_buildPage",
-      "start": 196,
-      "end": 287,
+      "start": 199,
+      "end": 290,
       "lines": 92
     },
     {
-      "file": "lib/widgets/onboarding_questionnaire.dart",
+      "file": "lib/features/onboarding/onboarding_questionnaire.dart",
       "func": "build",
-      "start": 412,
-      "end": 497,
-      "lines": 86
+      "start": 361,
+      "end": 422,
+      "lines": 62
     },
     {
       "file": "lib/widgets/onboarding_questionnaire.dart",
