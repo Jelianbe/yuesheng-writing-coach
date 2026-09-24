@@ -41,7 +41,7 @@ class _AttitudeMeta {
 Map<AttitudeLevel, _AttitudeMeta> _attitudeMetaFor(AppPalette palette) {
   return {
     AttitudeLevel.doubao: _AttitudeMeta(
-      label: '豆包',
+      label: '温和',
       description: '温和、鼓励、先肯定',
       color: palette.l1Text,
     ),
