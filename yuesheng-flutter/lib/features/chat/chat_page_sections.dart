@@ -10,22 +10,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
-import '../providers/chat_store.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../providers/evaluation_providers.dart';
-import '../providers/fact_batch_providers.dart';
-import '../providers/practice_providers.dart';
-import '../router/app_routes.dart';
+import '../../config/app_theme.dart';
+import '../../providers/chat_store.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../providers/evaluation_providers.dart';
+import '../../providers/fact_batch_providers.dart';
+import '../../providers/practice_providers.dart';
+import '../../router/app_routes.dart';
 import 'chat_input.dart';
 import 'chat_messages_controller.dart';
 import 'chat_reference_controller.dart';
 import 'chat_self_practice.dart';
 import 'chat_teaching_controller.dart';
 import 'chat_welcome.dart';
-import 'message_list.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../widgets/message_list.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 消息列表分区（含练习卡 / 评估报告 / 空态欢迎）
 class ChatMessageSection extends ConsumerWidget {

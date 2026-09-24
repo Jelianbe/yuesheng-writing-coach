@@ -49,7 +49,7 @@ import 'package:writingcoach/services/chat_context_builder.dart'
     show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/chat_page.dart';
+import 'package:writingcoach/features/chat/chat_page.dart';
 import 'package:writingcoach/widgets/encouragement_text.dart';
 import 'package:writingcoach/widgets/message_list.dart';
 import 'package:writingcoach/widgets/partial_agreement_card.dart';

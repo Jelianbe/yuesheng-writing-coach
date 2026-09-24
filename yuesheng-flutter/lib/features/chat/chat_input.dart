@@ -30,8 +30,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
 import 'chat_plus_panel.dart';
 
 class ChatInput extends StatefulWidget {

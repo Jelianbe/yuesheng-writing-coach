@@ -11,9 +11,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 const String _welcomeTitle = '你好，我是月笙';
 const String _welcomeSubtitle = '你的专属写作教练，随时帮你诊断和提升写作';

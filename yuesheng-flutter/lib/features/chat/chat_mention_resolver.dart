@@ -12,9 +12,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../contracts/mention_capability.dart';
-import '../contracts/reference_capability.dart';
-import '../providers/capability_providers.dart';
+import '../../contracts/mention_capability.dart';
+import '../../contracts/reference_capability.dart';
+import '../../providers/capability_providers.dart';
 import 'chat_page_host.dart';
 
 /// @ 引用解析结果（发送前收集，供反馈与落库使用）。

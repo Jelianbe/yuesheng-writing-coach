@@ -15,10 +15,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/diagnosis_repository.dart';
-import '../data/repositories/session_repository.dart';
-import '../services/attitude_advisor.dart';
-import '../types/teaching_types.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../services/attitude_advisor.dart';
+import '../../types/teaching_types.dart';
 import 'chat_input.dart';
 
 /// 聊天页宿主对动作控制器暴露的能力（最小集）。

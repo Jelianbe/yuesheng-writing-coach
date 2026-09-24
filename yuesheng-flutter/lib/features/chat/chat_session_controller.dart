@@ -12,13 +12,13 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chat_store.dart';
-import '../providers/evaluation_providers.dart';
-import '../providers/practice_providers.dart';
-import '../providers/session_providers.dart';
-import '../services/decode_guard.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/evaluation_providers.dart';
+import '../../providers/practice_providers.dart';
+import '../../providers/session_providers.dart';
+import '../../services/decode_guard.dart';
 import 'chat_page_host.dart';
 
 /// 聊天页会话管理动作

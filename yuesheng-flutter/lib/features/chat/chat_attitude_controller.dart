@@ -16,13 +16,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/database/database.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/session_providers.dart';
-import '../services/decode_guard.dart';
-import '../services/attitude_advisor.dart';
-import '../types/teaching_types.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/session_providers.dart';
+import '../../services/decode_guard.dart';
+import '../../services/attitude_advisor.dart';
+import '../../types/teaching_types.dart';
 import 'chat_diagnosis_controller.dart';
 import 'chat_page_host.dart';
 

@@ -9,18 +9,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../config/reasoning_tier.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../providers/chat_store.dart';
-import '../providers/evaluation_providers.dart';
-import '../providers/fact_batch_providers.dart';
-import '../providers/practice_providers.dart';
-import '../providers/reasoning_tier_provider.dart';
-import '../services/attitude_advisor.dart';
-import '../types/teaching_types.dart';
-import 'attitude_suggestion_banner.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/reasoning_tier.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/evaluation_providers.dart';
+import '../../providers/fact_batch_providers.dart';
+import '../../providers/practice_providers.dart';
+import '../../providers/reasoning_tier_provider.dart';
+import '../../services/attitude_advisor.dart';
+import '../../types/teaching_types.dart';
+import '../../widgets/attitude_suggestion_banner.dart';
 import 'chat_attitude_controller.dart';
 import 'chat_self_practice.dart';
 import 'chat_diagnosis_controller.dart';
@@ -31,8 +31,8 @@ import 'chat_page_sections.dart';
 import 'chat_reference_controller.dart';
 import 'chat_session_controller.dart';
 import 'chat_teaching_controller.dart';
-import 'encouragement_text.dart';
-import 'task_panel.dart';
+import '../../widgets/encouragement_text.dart';
+import '../../widgets/task_panel.dart';
 
 /// 聊天页主体（bootstrap 就绪后）
 class ChatPageBody extends ConsumerWidget {

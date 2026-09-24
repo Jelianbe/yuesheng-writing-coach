@@ -20,7 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/config/reasoning_tier.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/chat_header.dart';
+import 'package:writingcoach/features/chat/chat_header.dart';
 
 void main() {
   Widget buildHeader({

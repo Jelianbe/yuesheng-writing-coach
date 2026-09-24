@@ -15,16 +15,16 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../data/repositories/session_repository.dart';
-import '../data/repositories/student_model_repository.dart';
-import '../data/repositories/training_result_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chat_store.dart';
-import '../providers/evaluation_providers.dart';
-import '../providers/practice_providers.dart';
-import '../providers/session_providers.dart';
-import '../services/chat_message_types.dart';
-import '../types/teaching_types.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../data/repositories/student_model_repository.dart';
+import '../../data/repositories/training_result_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/evaluation_providers.dart';
+import '../../providers/practice_providers.dart';
+import '../../providers/session_providers.dart';
+import '../../services/chat_message_types.dart';
+import '../../types/teaching_types.dart';
 import 'chat_mention_resolver.dart';
 import 'chat_page_host.dart';
 

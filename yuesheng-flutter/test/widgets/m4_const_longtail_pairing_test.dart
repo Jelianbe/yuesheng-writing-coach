@@ -28,7 +28,7 @@ import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart' show AppColors;
 import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
-import 'package:writingcoach/widgets/chat_welcome.dart';
+import 'package:writingcoach/features/chat/chat_welcome.dart';
 import 'package:writingcoach/widgets/import_success_sheet.dart';
 import 'package:writingcoach/widgets/quick_phrase_sheet.dart';
 

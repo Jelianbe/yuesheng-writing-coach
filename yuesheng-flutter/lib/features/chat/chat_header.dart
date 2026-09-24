@@ -29,11 +29,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../config/reasoning_tier.dart';
-import 'yue_sheet.dart';
-import '../types/teaching_types.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/reasoning_tier.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../types/teaching_types.dart';
+import '../../config/app_palette.dart';
 
 /// 未接线时的思考档位回调占位：菜单入口**不随接线状态忽隐忽现**。
 void _ignoreTierChange(String _) {}

@@ -10,7 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/chat_welcome.dart';
+import 'package:writingcoach/features/chat/chat_welcome.dart';
 
 void main() {
   Widget buildWelcome() {

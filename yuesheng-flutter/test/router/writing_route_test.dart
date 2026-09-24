@@ -22,7 +22,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/features/bookshelf/bookshelf_page.dart';
-import 'package:writingcoach/widgets/chat_page.dart';
+import 'package:writingcoach/features/chat/chat_page.dart';
 import 'package:writingcoach/widgets/growth_detail_page.dart';
 import 'package:writingcoach/widgets/growth_page.dart';
 import 'package:writingcoach/features/manuscript/manuscript_detail_page.dart';

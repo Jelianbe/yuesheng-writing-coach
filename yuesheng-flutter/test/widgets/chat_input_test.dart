@@ -12,8 +12,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/chat_input.dart';
-import 'package:writingcoach/widgets/chat_plus_panel.dart';
+import 'package:writingcoach/features/chat/chat_input.dart';
+import 'package:writingcoach/features/chat/chat_plus_panel.dart';
 
 /// 统一装配：默认传齐两个面板能力，「+」才会出现。
 Widget buildInput({

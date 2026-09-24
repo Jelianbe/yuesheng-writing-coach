@@ -15,30 +15,30 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/decode_guard.dart';
+import '../../services/decode_guard.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/capability_providers.dart';
-import '../providers/chat_store.dart';
-import '../providers/practice_providers.dart';
-import '../providers/session_providers.dart';
-import '../providers/ui_overlay_provider.dart';
-import '../services/message_card_service.dart';
-import '../services/work_import_service.dart';
-import '../types/teaching_types.dart';
-import 'abandon_practice_modal.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/capability_providers.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/practice_providers.dart';
+import '../../providers/session_providers.dart';
+import '../../providers/ui_overlay_provider.dart';
+import '../../services/message_card_service.dart';
+import '../../services/work_import_service.dart';
+import '../../types/teaching_types.dart';
+import '../../widgets/abandon_practice_modal.dart';
 import 'chat_page_host.dart';
 import 'chat_session_controller.dart';
-import 'import_success_sheet.dart';
-import 'reference_bar.dart';
-import 'reference_picker.dart';
-import 'save_to_file_sheet.dart';
-import 'work_import_sheet.dart';
-import 'yue_sheet.dart';
+import '../../widgets/import_success_sheet.dart';
+import '../../widgets/reference_bar.dart';
+import '../../widgets/reference_picker.dart';
+import '../../widgets/save_to_file_sheet.dart';
+import '../../widgets/work_import_sheet.dart';
+import '../../widgets/yue_sheet.dart';
 
 /// 聊天页引用与文件相关动作
 class ChatReferenceController {

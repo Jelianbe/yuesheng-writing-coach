@@ -1,7 +1,7 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 433,
+  "fileCount": 439,
   "violations": [
     {
       "file": "lib/main_dev.dart",
@@ -116,14 +116,14 @@
       "lines": 104
     },
     {
-      "file": "lib/widgets/chat_header.dart",
+      "file": "lib/features/chat/chat_header.dart",
       "func": "_showMoreMenu",
       "start": 95,
       "end": 201,
       "lines": 107
     },
     {
-      "file": "lib/widgets/chat_header.dart",
+      "file": "lib/features/chat/chat_header.dart",
       "func": "build",
       "start": 229,
       "end": 336,

@@ -9,16 +9,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chat_store.dart';
-import '../providers/evaluation_providers.dart';
-import '../providers/reasoning_tier_provider.dart';
-import '../providers/session_providers.dart';
-import '../services/attitude_advisor.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_palette.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/evaluation_providers.dart';
+import '../../providers/reasoning_tier_provider.dart';
+import '../../providers/session_providers.dart';
+import '../../services/attitude_advisor.dart';
+import '../../types/teaching_types.dart';
 import 'chat_attitude_controller.dart';
 import 'chat_diagnosis_controller.dart';
 import 'chat_input.dart';
@@ -30,7 +30,7 @@ import 'chat_reference_controller.dart';
 import 'chat_session_controller.dart';
 import 'chat_teaching_controller.dart';
 import 'package:writingcoach/features/onboarding/onboarding_questionnaire.dart';
-import 'session_drawer.dart';
+import '../../widgets/session_drawer.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});

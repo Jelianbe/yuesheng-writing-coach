@@ -46,7 +46,7 @@ import 'package:writingcoach/services/message_injector.dart';
 import 'package:writingcoach/services/chat_context_builder.dart'
     show MaterialCapabilityImpl;
 import 'package:writingcoach/services/llm_client.dart';
-import 'package:writingcoach/widgets/chat_page.dart';
+import 'package:writingcoach/features/chat/chat_page.dart';
 
 import '../helpers/mock_last_session_storage.dart';
 

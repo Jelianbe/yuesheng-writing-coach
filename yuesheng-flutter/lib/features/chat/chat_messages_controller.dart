@@ -14,18 +14,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../data/repositories/app_state_repository.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chat_store.dart';
-import '../providers/practice_providers.dart';
-import '../providers/session_providers.dart';
-import '../router/app_routes.dart';
-import '../types/teaching_types.dart';
+import '../../data/repositories/app_state_repository.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/practice_providers.dart';
+import '../../providers/session_providers.dart';
+import '../../router/app_routes.dart';
+import '../../types/teaching_types.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
-import 'partial_agreement_card.dart';
-import 'privacy_notice_dialog.dart';
+import '../../widgets/partial_agreement_card.dart';
+import '../../widgets/privacy_notice_dialog.dart';
 
 /// 聊天页消息与画像相关动作
 class ChatMessagesController {

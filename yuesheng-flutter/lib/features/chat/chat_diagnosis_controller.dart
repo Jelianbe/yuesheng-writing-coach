@@ -14,21 +14,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
-import '../config/shared_constants.dart';
-import '../data/database/database.dart';
-import '../data/repositories/chapter_repository.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/chat_store.dart';
-import '../providers/session_providers.dart';
-import '../services/progressive_diagnosis.dart';
-import '../services/syndrome_tracker.dart';
+import '../../config/app_theme.dart';
+import '../../config/shared_constants.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/session_providers.dart';
+import '../../services/progressive_diagnosis.dart';
+import '../../services/syndrome_tracker.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 聊天页诊断与活跃问题动作
 class ChatDiagnosisController {

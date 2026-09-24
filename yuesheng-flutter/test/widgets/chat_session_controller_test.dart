@@ -28,9 +28,9 @@ import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/attitude_advisor.dart';
 import 'package:writingcoach/services/error_handler.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/chat_input.dart';
-import 'package:writingcoach/widgets/chat_page_host.dart';
-import 'package:writingcoach/widgets/chat_session_controller.dart';
+import 'package:writingcoach/features/chat/chat_input.dart';
+import 'package:writingcoach/features/chat/chat_page_host.dart';
+import 'package:writingcoach/features/chat/chat_session_controller.dart';
 
 import '../helpers/mock_last_session_storage.dart';
 
