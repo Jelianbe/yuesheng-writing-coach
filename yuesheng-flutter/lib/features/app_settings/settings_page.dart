@@ -935,231 +935,258 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (hasConfig)
-            Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.md),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.smx,
-              ),
-              decoration: BoxDecoration(
-                color: context.palette.dangerBg,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(color: context.palette.dangerBorder),
-              ),
-              child: Text(
-                '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
-                style: TextStyle(fontSize: 13, color: context.palette.danger),
-              ),
-            ),
+          if (hasConfig) _buildApiWarning(),
           _buildAccountList(),
-          if (_editingAccountId != null)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  foregroundColor: context.palette.primary,
-                ),
-                onPressed: (_isSaving || _isTestingConn || _isDeleting)
-                    ? null
-                    : _startNewAccount,
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('添加新账号', style: TextStyle(fontSize: 12)),
-              ),
-            ),
-          _FieldLabel('API Key'),
-          TextField(
-            controller: _apiKeyCtrl,
-            obscureText: !_apiKeyVisible,
-            autocorrect: false,
-            decoration: _inputDecoration('sk-...').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _apiKeyVisible ? Icons.visibility_off : Icons.visibility,
-                  size: 18,
-                ),
-                tooltip: _apiKeyVisible ? '隐藏 API Key' : '显示 API Key',
-                onPressed: () =>
-                    setState(() => _apiKeyVisible = !_apiKeyVisible),
-              ),
-            ),
-          ),
-          _FieldLabel('Base URL'),
-          TextField(
-            controller: _baseUrlCtrl,
-            autocorrect: false,
-            keyboardType: TextInputType.url,
-            decoration: _inputDecoration('https://api.deepseek.com'),
-          ),
-          _FieldLabel('Model'),
-          TextField(
-            controller: _modelCtrl,
-            autocorrect: false,
-            decoration: _inputDecoration('deepseek-v4-flash'),
-          ),
-          // ADR-C83：供应商预设快捷入口（点选自动填 Base URL + Model）
+          if (_editingAccountId != null) _buildAddAccountButton(),
+          _buildApiKeyField(),
+          _buildBaseUrlField(),
+          _buildModelField(),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final preset in _llmPresets)
-                ActionChip(
-                  label: Text(
-                    preset.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.palette.textSecondary,
-                    ),
-                  ),
-                  visualDensity: VisualDensity.compact,
-                  side: BorderSide(color: context.palette.border),
-                  backgroundColor: context.palette.surface,
-                  onPressed: (_isSaving || _isTestingConn)
-                      ? null
-                      : () => _applyPreset(preset),
-                ),
-            ],
-          ),
+          _buildPresetChips(),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isSaving ? null : _handleSaveConfig,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.palette.primary,
-                    foregroundColor: context.palette.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.palette.onPrimary,
-                          ),
-                        )
-                      : const Text(
-                          '保存配置',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isTestingConn ? null : _handleTestConnection,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.palette.primary,
-                    side: BorderSide(color: context.palette.primary),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                  ),
-                  child: _isTestingConn
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.palette.primary,
-                          ),
-                        )
-                      : const Text(
-                          '测试连接',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                ),
-              ),
-            ],
-          ),
+          _buildSaveTestRow(),
           const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: (_isSaving || _isTestingConn)
-                ? null
-                : () {
-                    setState(() {
-                      _baseUrlCtrl.text = 'https://api.deepseek.com';
-                      _modelCtrl.text = 'deepseek-v4-flash';
-                    });
-                  },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: context.palette.textSecondary,
-              side: BorderSide(color: context.palette.border),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-            ),
-            child: const Text('填充示例配置'),
-          ),
+          _buildFillExampleButton(),
           const SizedBox(height: 4),
-          TextButton(
-            onPressed: (_isSaving || _isTestingConn)
-                ? null
-                : _handleClearConfig,
-            child: Text(
-              '清空配置',
-              style: TextStyle(
-                color: context.palette.danger,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: _handleShowKeyGuide,
-            child: Text(
-              '如何获取 API Key →',
-              style: TextStyle(
-                color: context.palette.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          if (_connResult != null)
-            Container(
-              margin: const EdgeInsets.only(top: AppSpacing.sm),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.smx,
-              ),
-              decoration: BoxDecoration(
-                color: _connResult!.success
-                    ? context.palette.primarySoft
-                    : context.palette.dangerBg,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                border: Border.all(
-                  color: _connResult!.success
-                      ? context.palette.primary
-                      : context.palette.dangerBorder,
-                ),
-              ),
-              child: Text(
-                '${_connResult!.success ? '✓ ' : '✗ '}${_connResult!.message}',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _connResult!.success
-                      ? context.palette.primary
-                      : context.palette.danger,
-                ),
-              ),
-            ),
+          _buildConfigActions(),
+          if (_connResult != null) _buildConnResultBox(),
         ],
       ),
     );
   }
+
+  /// 未配置 API 时的「免费测试模式」提示条
+  Widget _buildApiWarning() => Container(
+    margin: const EdgeInsets.only(bottom: AppSpacing.md),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.smx,
+    ),
+    decoration: BoxDecoration(
+      color: context.palette.dangerBg,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      border: Border.all(color: context.palette.dangerBorder),
+    ),
+    child: Text(
+      '尚未配置 API，当前为免费测试模式（离线示例）。填写以下信息以启用完整功能',
+      style: TextStyle(fontSize: 13, color: context.palette.danger),
+    ),
+  );
+
+  /// 「添加新账号」按钮（编辑某账号时显示，回到新增模式）
+  Widget _buildAddAccountButton() => Align(
+    alignment: Alignment.centerLeft,
+    child: TextButton.icon(
+      style: TextButton.styleFrom(
+        visualDensity: VisualDensity.compact,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        foregroundColor: context.palette.primary,
+      ),
+      onPressed: (_isSaving || _isTestingConn || _isDeleting)
+          ? null
+          : _startNewAccount,
+      icon: const Icon(Icons.add, size: 16),
+      label: const Text('添加新账号', style: TextStyle(fontSize: 12)),
+    ),
+  );
+
+  Widget _buildApiKeyField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _FieldLabel('API Key'),
+      TextField(
+        controller: _apiKeyCtrl,
+        obscureText: !_apiKeyVisible,
+        autocorrect: false,
+        decoration: _inputDecoration('sk-...').copyWith(
+          suffixIcon: IconButton(
+            icon: Icon(
+              _apiKeyVisible ? Icons.visibility_off : Icons.visibility,
+              size: 18,
+            ),
+            tooltip: _apiKeyVisible ? '隐藏 API Key' : '显示 API Key',
+            onPressed: () => setState(() => _apiKeyVisible = !_apiKeyVisible),
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildBaseUrlField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _FieldLabel('Base URL'),
+      TextField(
+        controller: _baseUrlCtrl,
+        autocorrect: false,
+        keyboardType: TextInputType.url,
+        decoration: _inputDecoration('https://api.deepseek.com'),
+      ),
+    ],
+  );
+
+  Widget _buildModelField() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _FieldLabel('Model'),
+      TextField(
+        controller: _modelCtrl,
+        autocorrect: false,
+        decoration: _inputDecoration('deepseek-v4-flash'),
+      ),
+    ],
+  );
+
+  /// ADR-C83：供应商预设快捷入口（点选自动填 Base URL + Model）
+  Widget _buildPresetChips() => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      for (final preset in _llmPresets)
+        ActionChip(
+          label: Text(
+            preset.name,
+            style: TextStyle(
+              fontSize: 12,
+              color: context.palette.textSecondary,
+            ),
+          ),
+          visualDensity: VisualDensity.compact,
+          side: BorderSide(color: context.palette.border),
+          backgroundColor: context.palette.surface,
+          onPressed: (_isSaving || _isTestingConn)
+              ? null
+              : () => _applyPreset(preset),
+        ),
+    ],
+  );
+
+  /// 保存 / 测试连接 双按钮行
+  Widget _buildSaveTestRow() => Row(
+    children: [
+      Expanded(child: _buildSaveButton()),
+      const SizedBox(width: 12),
+      Expanded(child: _buildTestButton()),
+    ],
+  );
+
+  Widget _buildSaveButton() => FilledButton(
+    onPressed: _isSaving ? null : _handleSaveConfig,
+    style: FilledButton.styleFrom(
+      backgroundColor: context.palette.primary,
+      foregroundColor: context.palette.onPrimary,
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+    ),
+    child: _isSaving
+        ? SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: context.palette.onPrimary,
+            ),
+          )
+        : const Text('保存配置', style: TextStyle(fontWeight: FontWeight.w600)),
+  );
+
+  Widget _buildTestButton() => OutlinedButton(
+    onPressed: _isTestingConn ? null : _handleTestConnection,
+    style: OutlinedButton.styleFrom(
+      foregroundColor: context.palette.primary,
+      side: BorderSide(color: context.palette.primary),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+    ),
+    child: _isTestingConn
+        ? SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: context.palette.primary,
+            ),
+          )
+        : const Text('测试连接', style: TextStyle(fontWeight: FontWeight.w600)),
+  );
+
+  Widget _buildFillExampleButton() => OutlinedButton(
+    onPressed: (_isSaving || _isTestingConn)
+        ? null
+        : () {
+            setState(() {
+              _baseUrlCtrl.text = 'https://api.deepseek.com';
+              _modelCtrl.text = 'deepseek-v4-flash';
+            });
+          },
+    style: OutlinedButton.styleFrom(
+      foregroundColor: context.palette.textSecondary,
+      side: BorderSide(color: context.palette.border),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+    ),
+    child: const Text('填充示例配置'),
+  );
+
+  /// 清空配置 + 如何获取 API Key 两个文字按钮
+  Widget _buildConfigActions() => Column(
+    children: [
+      TextButton(
+        onPressed: (_isSaving || _isTestingConn) ? null : _handleClearConfig,
+        child: Text(
+          '清空配置',
+          style: TextStyle(
+            color: context.palette.danger,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+      TextButton(
+        onPressed: _handleShowKeyGuide,
+        child: Text(
+          '如何获取 API Key →',
+          style: TextStyle(
+            color: context.palette.primary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildConnResultBox() => Container(
+    margin: const EdgeInsets.only(top: AppSpacing.sm),
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: AppSpacing.smx,
+    ),
+    decoration: BoxDecoration(
+      color: _connResult!.success
+          ? context.palette.primarySoft
+          : context.palette.dangerBg,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      border: Border.all(
+        color: _connResult!.success
+            ? context.palette.primary
+            : context.palette.dangerBorder,
+      ),
+    ),
+    child: Text(
+      '${_connResult!.success ? '✓ ' : '✗ '}${_connResult!.message}',
+      style: TextStyle(
+        fontSize: 13,
+        color: _connResult!.success
+            ? context.palette.primary
+            : context.palette.danger,
+      ),
+    ),
+  );
 
   // ── 维护 ──
   Widget _buildMaintenanceSection() {
@@ -1376,121 +1403,128 @@ class _ProgressSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 阶段徽章 + 完成度（对齐 RN phaseBadge + progressSection）
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.smx,
-                  vertical: AppSpacing.xs,
-                ),
-                decoration: BoxDecoration(
-                  color: context.palette.primarySoft,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Text(
-                  phaseLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: context.palette.primary,
-                  ),
-                ),
-              ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    '${progress.round()}%',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: context.palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text('完成度', style: context.text.caption),
-                ],
-              ),
-            ],
-          ),
+          _buildProgressHeader(context, phaseLabel, progress),
           const SizedBox(height: 10),
-          // 进度条
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.xs),
-            child: LinearProgressIndicator(
-              value: progress / 100,
-              minHeight: 6,
-              backgroundColor: context.palette.background,
-              valueColor: AlwaysStoppedAnimation(context.palette.primary),
-            ),
-          ),
+          _buildProgressBar(context, progress),
           const SizedBox(height: 12),
-          // 统计行（对齐 RN statsRow）
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
-            decoration: BoxDecoration(
-              color: context.palette.background,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Row(
-              children: [
-                _ProgressStat(value: '${summary.totalProblems}', label: '总问题'),
-                Container(width: 1, height: 28, color: context.palette.divider),
-                _ProgressStat(
-                  value: '${summary.resolvedProblems}',
-                  label: '已解决',
-                ),
-                Container(width: 1, height: 28, color: context.palette.divider),
-                _ProgressStat(value: '${summary.activeProblems}', label: '待改进'),
-              ],
-            ),
-          ),
+          _buildProgressStats(context),
           const SizedBox(height: 4),
-          // 详情入口（对齐 RN footer）
-          InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '诊断 ${summary.totalDiagnoses} 次',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.palette.disabledText,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        '查看详情',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: context.palette.primary,
-                        ),
-                      ),
-                      SizedBox(width: 2),
-                      Icon(
-                        Icons.chevron_right,
-                        size: 18,
-                        color: context.palette.primary,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildProgressDetailEntry(context),
         ],
       ),
     );
   }
+
+  Widget _buildProgressHeader(
+    BuildContext context,
+    String phaseLabel,
+    double progress,
+  ) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      _buildPhaseBadge(context, phaseLabel),
+      _buildCompletionLabel(context, progress),
+    ],
+  );
+
+  Widget _buildPhaseBadge(BuildContext context, String phaseLabel) => Container(
+    padding: const EdgeInsets.symmetric(
+      horizontal: AppSpacing.smx,
+      vertical: AppSpacing.xs,
+    ),
+    decoration: BoxDecoration(
+      color: context.palette.primarySoft,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+    ),
+    child: Text(
+      phaseLabel,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: context.palette.primary,
+      ),
+    ),
+  );
+
+  Widget _buildCompletionLabel(BuildContext context, double progress) => Row(
+    crossAxisAlignment: CrossAxisAlignment.baseline,
+    textBaseline: TextBaseline.alphabetic,
+    children: [
+      Text(
+        '${progress.round()}%',
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: context.palette.textPrimary,
+        ),
+      ),
+      const SizedBox(width: 4),
+      Text('完成度', style: context.text.caption),
+    ],
+  );
+
+  Widget _buildProgressBar(BuildContext context, double progress) => ClipRRect(
+    borderRadius: BorderRadius.circular(AppRadius.xs),
+    child: LinearProgressIndicator(
+      value: progress / 100,
+      minHeight: 6,
+      backgroundColor: context.palette.background,
+      valueColor: AlwaysStoppedAnimation(context.palette.primary),
+    ),
+  );
+
+  Widget _buildProgressStats(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+    decoration: BoxDecoration(
+      color: context.palette.background,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+    ),
+    child: Row(
+      children: [
+        _ProgressStat(value: '${summary.totalProblems}', label: '总问题'),
+        Container(width: 1, height: 28, color: context.palette.divider),
+        _ProgressStat(value: '${summary.resolvedProblems}', label: '已解决'),
+        Container(width: 1, height: 28, color: context.palette.divider),
+        _ProgressStat(value: '${summary.activeProblems}', label: '待改进'),
+      ],
+    ),
+  );
+
+  /// 详情入口（对齐 RN footer）：诊断次数 + 查看详情
+  Widget _buildProgressDetailEntry(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(AppRadius.sm),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '诊断 ${summary.totalDiagnoses} 次',
+            style: TextStyle(fontSize: 12, color: context.palette.disabledText),
+          ),
+          Row(
+            children: [
+              Text(
+                '查看详情',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: context.palette.primary,
+                ),
+              ),
+              SizedBox(width: 2),
+              Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: context.palette.primary,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// 进度区块统计项（对齐 RN statItem）

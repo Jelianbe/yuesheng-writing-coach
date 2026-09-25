@@ -1,315 +1,322 @@
 {
   "dir": "lib",
   "limit": 50,
-  "fileCount": 439,
+  "fileCount": 436,
   "violations": [
-    {
-      "file": "lib/main_dev.dart",
-      "func": "_seedTestData",
-      "start": 38,
-      "end": 140,
-      "lines": 103
-    },
     {
       "file": "lib/config/app_palette.dart",
       "func": "copyWith",
-      "start": 372,
-      "end": 464,
+      "start": 373,
+      "end": 465,
       "lines": 93
     },
     {
       "file": "lib/config/app_palette.dart",
       "func": "lerp",
-      "start": 467,
-      "end": 525,
+      "start": 468,
+      "end": 526,
       "lines": 59
-    },
-    {
-      "file": "lib/preview/message_list_preview.dart",
-      "func": "build",
-      "start": 175,
-      "end": 236,
-      "lines": 62
-    },
-    {
-      "file": "lib/providers/growth_providers.dart",
-      "func": "loadGrowthData",
-      "start": 126,
-      "end": 199,
-      "lines": 74
-    },
-    {
-      "file": "lib/providers/writing_providers.dart",
-      "func": "copyWith",
-      "start": 121,
-      "end": 174,
-      "lines": 54
-    },
-    {
-      "file": "lib/features/chat/abandon_practice_modal.dart",
-      "func": "build",
-      "start": 45,
-      "end": 152,
-      "lines": 108
-    },
-    {
-      "file": "lib/features/growth/ability_chart.dart",
-      "func": "build",
-      "start": 86,
-      "end": 161,
-      "lines": 76
-    },
-    {
-      "file": "lib/widgets/adopt_suggestion_sheet.dart",
-      "func": "build",
-      "start": 163,
-      "end": 279,
-      "lines": 117
-    },
-    {
-      "file": "lib/widgets/append_chapters_page.dart",
-      "func": "_buildImportSection",
-      "start": 266,
-      "end": 344,
-      "lines": 79
-    },
-    {
-      "file": "lib/widgets/append_chapters_page.dart",
-      "func": "_buildFooter",
-      "start": 392,
-      "end": 447,
-      "lines": 56
-    },
-    {
-      "file": "lib/widgets/append_chapters_page.dart",
-      "func": "build",
-      "start": 493,
-      "end": 576,
-      "lines": 84
-    },
-    {
-      "file": "lib/widgets/attitude_indicator.dart",
-      "func": "build",
-      "start": 176,
-      "end": 233,
-      "lines": 58
-    },
-    {
-      "file": "lib/features/chat/attitude_suggestion_banner.dart",
-      "func": "build",
-      "start": 27,
-      "end": 132,
-      "lines": 106
-    },
-    {
-      "file": "lib/features/bookshelf/book_import_sheet.dart",
-      "func": "build",
-      "start": 68,
-      "end": 166,
-      "lines": 99
-    },
-    {
-      "file": "lib/widgets/chapter_recycle_bin_page.dart",
-      "func": "_buildBody",
-      "start": 149,
-      "end": 252,
-      "lines": 104
-    },
-    {
-      "file": "lib/features/chat/chat_header.dart",
-      "func": "_showMoreMenu",
-      "start": 95,
-      "end": 201,
-      "lines": 107
-    },
-    {
-      "file": "lib/features/chat/chat_header.dart",
-      "func": "build",
-      "start": 229,
-      "end": 336,
-      "lines": 108
-    },
-    {
-      "file": "lib/widgets/diagnosis_failed_card.dart",
-      "func": "build",
-      "start": 80,
-      "end": 142,
-      "lines": 63
-    },
-    {
-      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
-      "func": "build",
-      "start": 109,
-      "end": 180,
-      "lines": 72
-    },
-    {
-      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
-      "func": "_buildList",
-      "start": 212,
-      "end": 265,
-      "lines": 54
-    },
-    {
-      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
-      "func": "_buildChapters",
-      "start": 267,
-      "end": 358,
-      "lines": 92
     },
     {
       "file": "lib/features/app_settings/editor_settings_sheet.dart",
       "func": "build",
-      "start": 61,
-      "end": 147,
+      "start": 63,
+      "end": 149,
       "lines": 87
     },
     {
       "file": "lib/features/app_settings/editor_settings_sheet.dart",
       "func": "_buildParagraphSection",
-      "start": 245,
-      "end": 306,
-      "lines": 62
+      "start": 249,
+      "end": 312,
+      "lines": 64
     },
     {
       "file": "lib/features/app_settings/editor_settings_sheet.dart",
       "func": "_promptAdd",
-      "start": 490,
-      "end": 544,
+      "start": 515,
+      "end": 571,
+      "lines": 57
+    },
+    {
+      "file": "lib/features/app_settings/editor_settings_sheet.dart",
+      "func": "build",
+      "start": 587,
+      "end": 663,
+      "lines": 77
+    },
+    {
+      "file": "lib/features/app_settings/editor_settings_sheet.dart",
+      "func": "build",
+      "start": 695,
+      "end": 753,
+      "lines": 59
+    },
+    {
+      "file": "lib/features/app_settings/project_settings_page.dart",
+      "func": "build",
+      "start": 234,
+      "end": 288,
       "lines": 55
     },
     {
-      "file": "lib/features/app_settings/editor_settings_sheet.dart",
-      "func": "build",
-      "start": 560,
-      "end": 641,
-      "lines": 82
+      "file": "lib/features/app_settings/project_settings_page.dart",
+      "func": "_buildInfoSection",
+      "start": 291,
+      "end": 376,
+      "lines": 86
     },
     {
-      "file": "lib/features/app_settings/editor_settings_sheet.dart",
-      "func": "build",
-      "start": 673,
-      "end": 729,
-      "lines": 57
+      "file": "lib/features/app_settings/project_settings_page.dart",
+      "func": "_buildTagsSection",
+      "start": 379,
+      "end": 479,
+      "lines": 101
     },
     {
-      "file": "lib/widgets/evaluation_report_panel.dart",
-      "func": "build",
-      "start": 86,
-      "end": 231,
-      "lines": 146
+      "file": "lib/features/app_settings/style_profile_sheet.dart",
+      "func": "_buildBody",
+      "start": 145,
+      "end": 214,
+      "lines": 70
     },
     {
-      "file": "lib/widgets/evaluation_report_panel.dart",
+      "file": "lib/features/bookshelf/book_import_sheet.dart",
       "func": "build",
-      "start": 280,
-      "end": 336,
-      "lines": 57
+      "start": 69,
+      "end": 170,
+      "lines": 102
     },
     {
-      "file": "lib/widgets/excerpt_picker_sheet.dart",
+      "file": "lib/features/chat/abandon_practice_modal.dart",
       "func": "build",
-      "start": 120,
-      "end": 227,
+      "start": 46,
+      "end": 153,
       "lines": 108
     },
     {
-      "file": "lib/features/manuscript/file_section.dart",
+      "file": "lib/features/chat/attitude_suggestion_banner.dart",
       "func": "build",
-      "start": 119,
-      "end": 315,
-      "lines": 197
+      "start": 29,
+      "end": 142,
+      "lines": 114
     },
     {
-      "file": "lib/widgets/file_viewer_modal.dart",
-      "func": "build",
-      "start": 152,
-      "end": 283,
-      "lines": 132
+      "file": "lib/features/chat/chat_header.dart",
+      "func": "_showMoreMenu",
+      "start": 97,
+      "end": 206,
+      "lines": 110
     },
     {
-      "file": "lib/widgets/gen_ui_card.dart",
+      "file": "lib/features/chat/chat_header.dart",
       "func": "build",
-      "start": 520,
-      "end": 586,
-      "lines": 67
-    },
-    {
-      "file": "lib/widgets/gen_ui_quiz.dart",
-      "func": "_buildItem",
-      "start": 132,
-      "end": 226,
-      "lines": 95
-    },
-    {
-      "file": "lib/features/growth/growth_overview_card.dart",
-      "func": "build",
-      "start": 37,
-      "end": 151,
-      "lines": 115
-    },
-    {
-      "file": "lib/features/growth/growth_page.dart",
-      "func": "build",
-      "start": 245,
-      "end": 386,
-      "lines": 142
+      "start": 238,
+      "end": 381,
+      "lines": 144
     },
     {
       "file": "lib/features/chat/import_success_sheet.dart",
       "func": "build",
-      "start": 50,
-      "end": 169,
-      "lines": 120
-    },
-    {
-      "file": "lib/widgets/material_upload_sheet.dart",
-      "func": "build",
-      "start": 177,
-      "end": 370,
-      "lines": 194
-    },
-    {
-      "file": "lib/widgets/message_bubble.dart",
-      "func": "_buildUserBubble",
-      "start": 64,
-      "end": 158,
-      "lines": 95
-    },
-    {
-      "file": "lib/widgets/message_bubble.dart",
-      "func": "_buildAssistantBubble",
-      "start": 161,
-      "end": 281,
-      "lines": 121
-    },
-    {
-      "file": "lib/widgets/message_card_dispatcher.dart",
-      "func": "dispatchMessageCard",
-      "start": 46,
-      "end": 199,
-      "lines": 154
+      "start": 51,
+      "end": 173,
+      "lines": 123
     },
     {
       "file": "lib/features/chat/message_list.dart",
       "func": "_showDeleteConfirm",
-      "start": 265,
-      "end": 317,
+      "start": 267,
+      "end": 319,
       "lines": 53
     },
     {
       "file": "lib/features/chat/message_list.dart",
       "func": "build",
-      "start": 372,
-      "end": 597,
-      "lines": 226
+      "start": 374,
+      "end": 600,
+      "lines": 227
+    },
+    {
+      "file": "lib/features/chat/partial_agreement_card.dart",
+      "func": "build",
+      "start": 137,
+      "end": 193,
+      "lines": 57
+    },
+    {
+      "file": "lib/features/chat/reference_bar.dart",
+      "func": "build",
+      "start": 228,
+      "end": 416,
+      "lines": 189
+    },
+    {
+      "file": "lib/features/chat/reference_bar.dart",
+      "func": "_buildActionBar",
+      "start": 419,
+      "end": 482,
+      "lines": 64
+    },
+    {
+      "file": "lib/features/chat/reference_bar.dart",
+      "func": "_buildRefRow",
+      "start": 485,
+      "end": 582,
+      "lines": 98
+    },
+    {
+      "file": "lib/features/chat/reference_picker.dart",
+      "func": "build",
+      "start": 164,
+      "end": 260,
+      "lines": 97
+    },
+    {
+      "file": "lib/features/chat/reference_picker.dart",
+      "func": "_buildManuscriptTile",
+      "start": 294,
+      "end": 375,
+      "lines": 82
+    },
+    {
+      "file": "lib/features/chat/reference_picker.dart",
+      "func": "_buildFileGroup",
+      "start": 597,
+      "end": 682,
+      "lines": 86
+    },
+    {
+      "file": "lib/features/chat/save_to_file_sheet.dart",
+      "func": "build",
+      "start": 118,
+      "end": 259,
+      "lines": 142
+    },
+    {
+      "file": "lib/features/chat/task_panel.dart",
+      "func": "build",
+      "start": 67,
+      "end": 184,
+      "lines": 118
+    },
+    {
+      "file": "lib/features/chat/task_panel.dart",
+      "func": "_buildProblemRow",
+      "start": 187,
+      "end": 294,
+      "lines": 108
+    },
+    {
+      "file": "lib/features/chat/work_import_sheet.dart",
+      "func": "build",
+      "start": 134,
+      "end": 255,
+      "lines": 122
+    },
+    {
+      "file": "lib/features/growth/ability_chart.dart",
+      "func": "build",
+      "start": 88,
+      "end": 163,
+      "lines": 76
+    },
+    {
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
+      "func": "build",
+      "start": 111,
+      "end": 182,
+      "lines": 72
+    },
+    {
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
+      "func": "_buildList",
+      "start": 214,
+      "end": 267,
+      "lines": 54
+    },
+    {
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
+      "func": "_buildChapters",
+      "start": 269,
+      "end": 360,
+      "lines": 92
+    },
+    {
+      "file": "lib/features/growth/growth_overview_card.dart",
+      "func": "build",
+      "start": 38,
+      "end": 152,
+      "lines": 115
+    },
+    {
+      "file": "lib/features/growth/growth_page.dart",
+      "func": "build",
+      "start": 231,
+      "end": 381,
+      "lines": 151
     },
     {
       "file": "lib/features/growth/observation_audit_card.dart",
       "func": "build",
-      "start": 95,
+      "start": 97,
+      "end": 269,
+      "lines": 173
+    },
+    {
+      "file": "lib/features/growth/syndrome_history_list.dart",
+      "func": "build",
+      "start": 28,
+      "end": 91,
+      "lines": 64
+    },
+    {
+      "file": "lib/features/growth/syndrome_history_list.dart",
+      "func": "build",
+      "start": 126,
+      "end": 231,
+      "lines": 106
+    },
+    {
+      "file": "lib/features/growth/training_pass_rate_card.dart",
+      "func": "build",
+      "start": 88,
+      "end": 180,
+      "lines": 93
+    },
+    {
+      "file": "lib/features/growth/training_pass_rate_card.dart",
+      "func": "build",
+      "start": 212,
       "end": 265,
-      "lines": 171
+      "lines": 54
+    },
+    {
+      "file": "lib/features/growth/writing_curve_chart.dart",
+      "func": "build",
+      "start": 27,
+      "end": 127,
+      "lines": 101
+    },
+    {
+      "file": "lib/features/growth/writing_curve_chart.dart",
+      "func": "build",
+      "start": 152,
+      "end": 248,
+      "lines": 97
+    },
+    {
+      "file": "lib/features/manuscript/file_section.dart",
+      "func": "build",
+      "start": 120,
+      "end": 320,
+      "lines": 201
+    },
+    {
+      "file": "lib/features/manuscript/related_sessions_tab.dart",
+      "func": "_buildSessionCard",
+      "start": 108,
+      "end": 190,
+      "lines": 83
     },
     {
       "file": "lib/features/onboarding/onboarding_flow.dart",
@@ -328,387 +335,338 @@
     {
       "file": "lib/features/onboarding/onboarding_questionnaire.dart",
       "func": "build",
-      "start": 361,
-      "end": 422,
+      "start": 360,
+      "end": 421,
       "lines": 62
     },
     {
-      "file": "lib/widgets/onboarding_questionnaire.dart",
+      "file": "lib/features/writing/quick_phrase_sheet.dart",
       "func": "build",
-      "start": 512,
-      "end": 569,
-      "lines": 58
+      "start": 93,
+      "end": 182,
+      "lines": 90
     },
     {
-      "file": "lib/widgets/outline_confirmation_card.dart",
-      "func": "_buildHeader",
+      "file": "lib/features/writing/quick_phrase_sheet.dart",
+      "func": "_buildList",
       "start": 184,
-      "end": 242,
-      "lines": 59
-    },
-    {
-      "file": "lib/widgets/outline_confirmation_card.dart",
-      "func": "_buildImpressionRow",
-      "start": 246,
-      "end": 326,
-      "lines": 81
-    },
-    {
-      "file": "lib/widgets/paragraph_format_formatter.dart",
-      "func": "formatEditUpdate",
-      "start": 28,
-      "end": 102,
-      "lines": 75
-    },
-    {
-      "file": "lib/features/chat/partial_agreement_card.dart",
-      "func": "build",
-      "start": 132,
-      "end": 186,
-      "lines": 55
-    },
-    {
-      "file": "lib/widgets/phase_summary_card.dart",
-      "func": "build",
-      "start": 139,
-      "end": 197,
-      "lines": 59
-    },
-    {
-      "file": "lib/widgets/phase_summary_card.dart",
-      "func": "_buildChangesSection",
-      "start": 242,
-      "end": 293,
-      "lines": 52
-    },
-    {
-      "file": "lib/widgets/phase_summary_card.dart",
-      "func": "_buildButtons",
-      "start": 296,
-      "end": 359,
-      "lines": 64
-    },
-    {
-      "file": "lib/widgets/phase_upgrade_card.dart",
-      "func": "build",
-      "start": 75,
-      "end": 166,
-      "lines": 92
-    },
-    {
-      "file": "lib/widgets/practice_result_indicator.dart",
-      "func": "build",
-      "start": 68,
-      "end": 148,
-      "lines": 81
-    },
-    {
-      "file": "lib/widgets/practice_task_card.dart",
-      "func": "build",
-      "start": 210,
-      "end": 416,
-      "lines": 207
-    },
-    {
-      "file": "lib/features/app_settings/project_settings_page.dart",
-      "func": "build",
-      "start": 228,
-      "end": 282,
-      "lines": 55
-    },
-    {
-      "file": "lib/features/app_settings/project_settings_page.dart",
-      "func": "_buildInfoSection",
-      "start": 285,
-      "end": 370,
-      "lines": 86
-    },
-    {
-      "file": "lib/features/app_settings/project_settings_page.dart",
-      "func": "_buildTagsSection",
-      "start": 373,
-      "end": 473,
-      "lines": 101
-    },
-    {
-      "file": "lib/features/writing/quick_phrase_sheet.dart",
-      "func": "build",
-      "start": 91,
-      "end": 178,
-      "lines": 88
-    },
-    {
-      "file": "lib/features/writing/quick_phrase_sheet.dart",
-      "func": "_buildList",
-      "start": 180,
-      "end": 244,
-      "lines": 65
+      "end": 252,
+      "lines": 69
     },
     {
       "file": "lib/features/writing/recycle_bin_sheet.dart",
       "func": "build",
-      "start": 109,
-      "end": 170,
+      "start": 111,
+      "end": 172,
       "lines": 62
     },
     {
       "file": "lib/features/writing/recycle_bin_sheet.dart",
       "func": "_buildList",
-      "start": 172,
-      "end": 246,
-      "lines": 75
-    },
-    {
-      "file": "lib/features/chat/reference_bar.dart",
-      "func": "build",
-      "start": 226,
-      "end": 414,
-      "lines": 189
-    },
-    {
-      "file": "lib/features/chat/reference_bar.dart",
-      "func": "_buildActionBar",
-      "start": 417,
-      "end": 480,
-      "lines": 64
-    },
-    {
-      "file": "lib/features/chat/reference_bar.dart",
-      "func": "_buildRefRow",
-      "start": 483,
-      "end": 578,
-      "lines": 96
-    },
-    {
-      "file": "lib/widgets/reference_change_card.dart",
-      "func": "build",
-      "start": 73,
-      "end": 159,
-      "lines": 87
-    },
-    {
-      "file": "lib/features/chat/reference_picker.dart",
-      "func": "build",
-      "start": 157,
-      "end": 253,
-      "lines": 97
-    },
-    {
-      "file": "lib/features/chat/reference_picker.dart",
-      "func": "_buildManuscriptTile",
-      "start": 284,
-      "end": 362,
+      "start": 174,
+      "end": 252,
       "lines": 79
-    },
-    {
-      "file": "lib/features/chat/reference_picker.dart",
-      "func": "_buildFileGroup",
-      "start": 577,
-      "end": 662,
-      "lines": 86
-    },
-    {
-      "file": "lib/features/manuscript/related_sessions_tab.dart",
-      "func": "_buildSessionCard",
-      "start": 106,
-      "end": 188,
-      "lines": 83
-    },
-    {
-      "file": "lib/features/chat/save_to_file_sheet.dart",
-      "func": "build",
-      "start": 117,
-      "end": 258,
-      "lines": 142
     },
     {
       "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "build",
-      "start": 295,
-      "end": 354,
+      "start": 302,
+      "end": 361,
       "lines": 60
     },
     {
       "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "_buildChapterView",
-      "start": 357,
-      "end": 426,
-      "lines": 70
+      "start": 364,
+      "end": 437,
+      "lines": 74
     },
     {
       "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "_buildBookResultList",
-      "start": 497,
-      "end": 568,
+      "start": 508,
+      "end": 579,
       "lines": 72
     },
     {
       "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "build",
-      "start": 618,
-      "end": 672,
+      "start": 629,
+      "end": 683,
       "lines": 55
-    },
-    {
-      "file": "lib/features/app_settings/settings_page.dart",
-      "func": "_buildApiSection",
-      "start": 890,
-      "end": 1112,
-      "lines": 223
-    },
-    {
-      "file": "lib/features/app_settings/settings_page.dart",
-      "func": "build",
-      "start": 1316,
-      "end": 1443,
-      "lines": 128
-    },
-    {
-      "file": "lib/features/app_settings/style_profile_sheet.dart",
-      "func": "_buildBody",
-      "start": 143,
-      "end": 208,
-      "lines": 66
-    },
-    {
-      "file": "lib/widgets/syndrome_detail_modal.dart",
-      "func": "build",
-      "start": 55,
-      "end": 131,
-      "lines": 77
-    },
-    {
-      "file": "lib/widgets/syndrome_detail_modal.dart",
-      "func": "_buildTrendSection",
-      "start": 232,
-      "end": 286,
-      "lines": 55
-    },
-    {
-      "file": "lib/widgets/syndrome_detail_modal.dart",
-      "func": "paint",
-      "start": 385,
-      "end": 443,
-      "lines": 59
-    },
-    {
-      "file": "lib/features/growth/syndrome_history_list.dart",
-      "func": "build",
-      "start": 26,
-      "end": 89,
-      "lines": 64
-    },
-    {
-      "file": "lib/features/growth/syndrome_history_list.dart",
-      "func": "build",
-      "start": 124,
-      "end": 229,
-      "lines": 106
-    },
-    {
-      "file": "lib/features/chat/task_panel.dart",
-      "func": "build",
-      "start": 57,
-      "end": 145,
-      "lines": 89
-    },
-    {
-      "file": "lib/features/chat/task_panel.dart",
-      "func": "_buildProblemRow",
-      "start": 148,
-      "end": 253,
-      "lines": 106
-    },
-    {
-      "file": "lib/widgets/teacher_suggestion_card.dart",
-      "func": "_buildHeader",
-      "start": 225,
-      "end": 277,
-      "lines": 53
-    },
-    {
-      "file": "lib/widgets/teacher_suggestion_card.dart",
-      "func": "_buildButtons",
-      "start": 312,
-      "end": 426,
-      "lines": 115
-    },
-    {
-      "file": "lib/widgets/teacher_suggestion_card.dart",
-      "func": "_buildDetails",
-      "start": 481,
-      "end": 567,
-      "lines": 87
-    },
-    {
-      "file": "lib/features/growth/training_pass_rate_card.dart",
-      "func": "build",
-      "start": 86,
-      "end": 178,
-      "lines": 93
-    },
-    {
-      "file": "lib/features/growth/training_pass_rate_card.dart",
-      "func": "build",
-      "start": 210,
-      "end": 263,
-      "lines": 54
     },
     {
       "file": "lib/features/writing/version_time_machine_sheet.dart",
       "func": "_charDiff",
-      "start": 132,
-      "end": 184,
+      "start": 134,
+      "end": 186,
       "lines": 53
     },
     {
       "file": "lib/features/writing/version_time_machine_sheet.dart",
       "func": "_buildDetail",
-      "start": 312,
-      "end": 385,
-      "lines": 74
+      "start": 314,
+      "end": 389,
+      "lines": 76
     },
     {
       "file": "lib/features/writing/version_time_machine_sheet.dart",
       "func": "_buildList",
-      "start": 421,
-      "end": 509,
+      "start": 425,
+      "end": 513,
       "lines": 89
-    },
-    {
-      "file": "lib/features/chat/work_import_sheet.dart",
-      "func": "build",
-      "start": 133,
-      "end": 251,
-      "lines": 119
-    },
-    {
-      "file": "lib/features/growth/writing_curve_chart.dart",
-      "func": "build",
-      "start": 25,
-      "end": 119,
-      "lines": 95
-    },
-    {
-      "file": "lib/features/growth/writing_curve_chart.dart",
-      "func": "build",
-      "start": 144,
-      "end": 240,
-      "lines": 97
     },
     {
       "file": "lib/features/writing/writing_menu_sheet.dart",
       "func": "show",
-      "start": 50,
-      "end": 239,
+      "start": 52,
+      "end": 241,
       "lines": 190
     },
     {
       "file": "lib/features/writing/writing_stats_sheet.dart",
       "func": "build",
-      "start": 67,
-      "end": 158,
-      "lines": 92
+      "start": 69,
+      "end": 162,
+      "lines": 94
+    },
+    {
+      "file": "lib/providers/growth_providers.dart",
+      "func": "loadGrowthData",
+      "start": 126,
+      "end": 199,
+      "lines": 74
+    },
+    {
+      "file": "lib/providers/writing_providers.dart",
+      "func": "copyWith",
+      "start": 125,
+      "end": 178,
+      "lines": 54
+    },
+    {
+      "file": "lib/widgets/adopt_suggestion_sheet.dart",
+      "func": "build",
+      "start": 164,
+      "end": 280,
+      "lines": 117
+    },
+    {
+      "file": "lib/widgets/append_chapters_page.dart",
+      "func": "_buildImportSection",
+      "start": 268,
+      "end": 346,
+      "lines": 79
+    },
+    {
+      "file": "lib/widgets/append_chapters_page.dart",
+      "func": "_buildFooter",
+      "start": 394,
+      "end": 449,
+      "lines": 56
+    },
+    {
+      "file": "lib/widgets/append_chapters_page.dart",
+      "func": "build",
+      "start": 495,
+      "end": 580,
+      "lines": 86
+    },
+    {
+      "file": "lib/widgets/chapter_recycle_bin_page.dart",
+      "func": "_buildBody",
+      "start": 153,
+      "end": 259,
+      "lines": 107
+    },
+    {
+      "file": "lib/widgets/diagnosis_failed_card.dart",
+      "func": "build",
+      "start": 82,
+      "end": 149,
+      "lines": 68
+    },
+    {
+      "file": "lib/widgets/evaluation_report_panel.dart",
+      "func": "build",
+      "start": 97,
+      "end": 242,
+      "lines": 146
+    },
+    {
+      "file": "lib/widgets/evaluation_report_panel.dart",
+      "func": "build",
+      "start": 291,
+      "end": 347,
+      "lines": 57
+    },
+    {
+      "file": "lib/widgets/excerpt_picker_sheet.dart",
+      "func": "build",
+      "start": 122,
+      "end": 229,
+      "lines": 108
+    },
+    {
+      "file": "lib/widgets/file_viewer_modal.dart",
+      "func": "build",
+      "start": 153,
+      "end": 286,
+      "lines": 134
+    },
+    {
+      "file": "lib/widgets/gen_ui_card.dart",
+      "func": "build",
+      "start": 532,
+      "end": 598,
+      "lines": 67
+    },
+    {
+      "file": "lib/widgets/gen_ui_quiz.dart",
+      "func": "_buildItem",
+      "start": 134,
+      "end": 230,
+      "lines": 97
+    },
+    {
+      "file": "lib/widgets/material_upload_sheet.dart",
+      "func": "build",
+      "start": 178,
+      "end": 370,
+      "lines": 193
+    },
+    {
+      "file": "lib/widgets/message_bubble.dart",
+      "func": "_buildUserBubble",
+      "start": 65,
+      "end": 167,
+      "lines": 103
+    },
+    {
+      "file": "lib/widgets/message_bubble.dart",
+      "func": "_buildAssistantBubble",
+      "start": 170,
+      "end": 290,
+      "lines": 121
+    },
+    {
+      "file": "lib/widgets/message_card_dispatcher.dart",
+      "func": "dispatchMessageCard",
+      "start": 47,
+      "end": 201,
+      "lines": 155
+    },
+    {
+      "file": "lib/widgets/outline_confirmation_card.dart",
+      "func": "_buildHeader",
+      "start": 192,
+      "end": 250,
+      "lines": 59
+    },
+    {
+      "file": "lib/widgets/outline_confirmation_card.dart",
+      "func": "_buildImpressionRow",
+      "start": 254,
+      "end": 336,
+      "lines": 83
+    },
+    {
+      "file": "lib/widgets/paragraph_format_formatter.dart",
+      "func": "formatEditUpdate",
+      "start": 74,
+      "end": 152,
+      "lines": 79
+    },
+    {
+      "file": "lib/widgets/phase_summary_card.dart",
+      "func": "build",
+      "start": 141,
+      "end": 201,
+      "lines": 61
+    },
+    {
+      "file": "lib/widgets/phase_summary_card.dart",
+      "func": "_buildChangesSection",
+      "start": 246,
+      "end": 297,
+      "lines": 52
+    },
+    {
+      "file": "lib/widgets/phase_summary_card.dart",
+      "func": "_buildButtons",
+      "start": 300,
+      "end": 363,
+      "lines": 64
+    },
+    {
+      "file": "lib/widgets/phase_upgrade_card.dart",
+      "func": "build",
+      "start": 76,
+      "end": 169,
+      "lines": 94
+    },
+    {
+      "file": "lib/widgets/practice_result_indicator.dart",
+      "func": "build",
+      "start": 70,
+      "end": 150,
+      "lines": 81
+    },
+    {
+      "file": "lib/widgets/practice_task_card.dart",
+      "func": "build",
+      "start": 212,
+      "end": 414,
+      "lines": 203
+    },
+    {
+      "file": "lib/widgets/reference_change_card.dart",
+      "func": "build",
+      "start": 75,
+      "end": 165,
+      "lines": 91
+    },
+    {
+      "file": "lib/widgets/syndrome_detail_modal.dart",
+      "func": "build",
+      "start": 64,
+      "end": 140,
+      "lines": 77
+    },
+    {
+      "file": "lib/widgets/syndrome_detail_modal.dart",
+      "func": "_buildTrendSection",
+      "start": 245,
+      "end": 299,
+      "lines": 55
+    },
+    {
+      "file": "lib/widgets/syndrome_detail_modal.dart",
+      "func": "paint",
+      "start": 412,
+      "end": 469,
+      "lines": 58
+    },
+    {
+      "file": "lib/widgets/teacher_suggestion_card.dart",
+      "func": "_buildHeader",
+      "start": 248,
+      "end": 306,
+      "lines": 59
+    },
+    {
+      "file": "lib/widgets/teacher_suggestion_card.dart",
+      "func": "_buildButtons",
+      "start": 341,
+      "end": 455,
+      "lines": 115
+    },
+    {
+      "file": "lib/widgets/teacher_suggestion_card.dart",
+      "func": "_buildDetails",
+      "start": 510,
+      "end": 596,
+      "lines": 87
     }
   ]
 }
