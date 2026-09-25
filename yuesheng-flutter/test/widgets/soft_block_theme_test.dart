@@ -3,7 +3,6 @@
 //
 // 覆盖本批四类代表性渲染点（**同一族令牌、四种载体**）：
 //   · `PracticeResultIndicator` —— 底 `l1` + 前景 `primary`（顶层函数补 context 的首例）
-//   · `AttitudeIndicator`       —— 圆点色来自 `_attitudeMetaFor(palette)`（**顶层 const 色表转 palette 函数**）
 //   · `SettingEmptyState`       —— 图标圆底 `primarySoft`（**F2 型**：整块亮底）
 //   · `PhaseUpgradeCard`        —— 庆祝圆底 + 徽标底 `primarySoft`（**F3 型**）
 //
@@ -19,7 +18,6 @@ import 'package:writingcoach/config/app_theme.dart' show AppColors;
 import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/attitude_indicator.dart';
 import 'package:writingcoach/widgets/phase_upgrade_card.dart';
 import 'package:writingcoach/widgets/practice_result_indicator.dart';
 import 'package:writingcoach/features/manuscript/setting_empty_state.dart';
@@ -70,34 +68,7 @@ void main() {
     });
   });
 
-  group('② AttitudeIndicator：顶层 const 色表 → _attitudeMetaFor(palette)', () {
-    testWidgets('亮色：圆点 == AppColors.l1Text（与迁移前逐字节同值）', (t) async {
-      await _pump(
-        t,
-        buildAppTheme(),
-        AttitudeIndicator(
-          currentAttitude: AttitudeLevel.doubao,
-          onSelect: (_) {},
-        ),
-      );
-      expect(_bgs(t), contains(AppColors.l1Text));
-    });
-
-    testWidgets('暗色：圆点 == dark.l1Text 且 != 亮色（色表函数化生效）', (t) async {
-      await _pump(
-        t,
-        buildDarkTheme(),
-        AttitudeIndicator(
-          currentAttitude: AttitudeLevel.doubao,
-          onSelect: (_) {},
-        ),
-      );
-      expect(_bgs(t), contains(AppPalette.dark.l1Text));
-      expect(_bgs(t), isNot(contains(AppColors.l1Text)));
-    });
-  });
-
-  group('③ SettingEmptyState：图标圆底 primarySoft（F2 型）', () {
+  group('② SettingEmptyState：图标圆底 primarySoft（F2 型）', () {
     Future<void> pump(WidgetTester t, ThemeData theme) => _pump(
       t,
       theme,
@@ -120,7 +91,7 @@ void main() {
     });
   });
 
-  group('④ PhaseUpgradeCard：庆祝底 + 徽标底 primarySoft（F3 型）', () {
+  group('③ PhaseUpgradeCard：庆祝底 + 徽标底 primarySoft（F3 型）', () {
     Future<void> pump(WidgetTester t, ThemeData theme) =>
         _pump(t, theme, const PhaseUpgradeCard(from: 'P1', to: 'P2'));
 
