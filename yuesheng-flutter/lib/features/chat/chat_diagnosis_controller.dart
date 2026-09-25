@@ -107,6 +107,7 @@ class ChatDiagnosisController {
           .commitDiagnosisFromContent(
             sessionId: bootstrap.sessionId,
             fullContent: progressive.fullContent,
+            chapterContent: chapter.content,
           );
     } else {
       // 2. 回退：单次诊断 prompt。对话历史只展示简洁消息（「已发送章节」），

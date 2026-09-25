@@ -320,15 +320,14 @@ class DiagnosisFlowHandler {
   // 4 个诊断链方法 — 4 步委派 + 1 公开 API
   // ════════════════════════════════════════════════════════════
 
-  /// 公开 API：处理分块诊断生成的完整 AI 输出（D4-A）。
-  ///
-  /// 当 runProgressiveDiagnosis 返回非 null 时，由 WritingCoachPanel 调用。
-  /// 复用 sendMessage 的步骤 9-11（解析 + 持久化 + 卡片），不含 Teacher 触发。
+  /// 公开 API：分块诊断完整输出落库（D4-A）。由 WritingCoachPanel /
+  /// ChatDiagnosisController 调用；[chapterContent] 非空时补齐长文链路原先
+  /// 缺失的教师建议 + GenUI 卡片（AI-002：长/短链路下游副作用须一致）。
   Future<String> commitDiagnosisFromContent({
     required String sessionId,
     required String fullContent,
+    String? chapterContent,
   }) async {
-    // 步骤 9: 解析诊断
     final rawParse = _diagnosis.parseDiagnosis(fullContent);
     final parsed = await _parseDiagnosisFromContent(
       fullContent: fullContent,
@@ -343,34 +342,98 @@ class DiagnosisFlowHandler {
       sessionId,
       persisted.cleaned,
     );
-    // C78 批次3（FR-10）：messageId 已知 → 登记批次提示卡（内存态）
     _notifyFactBatch(
       messageId: messageId,
       count: persisted.factCount,
       manuscriptId: persisted.factManuscriptId,
     );
     final diagnosis = parsed.diagnosis;
-
-    // 步骤 11: 持久化诊断结果 + 卡片
+    // C103：长文链路补齐 GenUI 卡片（短链路在 commit 前插入，卡片顺序一致）。
+    await _insertGenuiCardFromContent(sessionId, fullContent);
     if (diagnosis != null) {
-      final ref = await _resolvePrimaryRef(sessionId);
-      await _runDiagnosisCommitSequence(
+      await _commitDiagnosisWithTeacher(
         sessionId: sessionId,
         messageId: messageId,
         diagnosis: diagnosis,
-        refType: ref.refType,
-        refId: ref.refId,
+        chapterContent: chapterContent,
       );
     }
-
-    // B1：诊断连续失败计数（attempted 恒 true）
     await _recordDiagnosisOutcome(
       sessionId,
       attempted: true,
       success: diagnosis != null,
     );
-
     return messageId;
+  }
+
+  /// C103：长文（批处理）链路「诊断落库序列 + 教师建议」组合（短链路在
+  /// [commitDiagnosisAndSuggestions] 内等价编排）。抽出以把 [commitDiagnosisFromContent]
+  /// 控制在 50 行内，并保持 GenUI（commit 前）→ commit → 教师（commit 后）顺序。
+  Future<void> _commitDiagnosisWithTeacher({
+    required String sessionId,
+    required String messageId,
+    required ParsedDiagnosis diagnosis,
+    required String? chapterContent,
+  }) async {
+    final ref = await _resolvePrimaryRef(sessionId);
+    await _runDiagnosisCommitSequence(
+      sessionId: sessionId,
+      messageId: messageId,
+      diagnosis: diagnosis,
+      refType: ref.refType,
+      refId: ref.refId,
+    );
+    if (chapterContent != null) {
+      await _triggerTeacherForLongPath(
+        sessionId: sessionId,
+        messageId: messageId,
+        diagnosis: diagnosis,
+        chapterContent: chapterContent,
+      );
+    }
+  }
+
+  /// C103：长文（批处理）链路 GenUI 卡片补齐（短链路在 commit 前插入同一卡片）。
+  ///
+  /// 原长文链路 [commitDiagnosisFromContent] 完全未解析/插入 GenUI 组件，导致
+  /// 长文诊断不展示 GenUI 卡。复用短链路同一 [_insertGenuiCardIfAny]。
+  Future<void> _insertGenuiCardFromContent(
+    String sessionId,
+    String fullContent,
+  ) async {
+    await _insertGenuiCardIfAny(sessionId, _genUi.parseGenuiBlock(fullContent));
+  }
+
+  /// C103：长文（批处理）链路教师建议补齐（短链路经 [_triggerTeacherForDiagnosis]）。
+  ///
+  /// 长文为批处理提交、主回复流式已结束，故直调 [callTeacherStream] 并传
+  /// no-op onStream（不触发流式 UI）。仅在 [shouldTriggerTeacherForDiagnosis]
+  /// 命中时触发，结果经 [_persistTeacherSuggestionIfAny] 落库为建议卡。
+  Future<void> _triggerTeacherForLongPath({
+    required String sessionId,
+    required String messageId,
+    required ParsedDiagnosis diagnosis,
+    required String chapterContent,
+  }) async {
+    if (!shouldTriggerTeacherForDiagnosis(diagnosis.syndromes)) return;
+    final teacherStream = await callTeacherStream(
+      _llmClient,
+      TeacherDiagnosisInput(
+        diagnosis: diagnosis,
+        chapterContent: chapterContent,
+      ),
+      (_) {},
+    );
+    if (teacherStream.teacher != null) {
+      await _persistTeacherSuggestionIfAny(
+        sessionId: sessionId,
+        teacherResult: teacherStream.teacher!,
+        messageId: messageId,
+        diagnosis: diagnosis,
+        rapidFire: false,
+        flowBypassed: false,
+      );
+    }
   }
 
   /// 私有 helper：解析 + 第二层 JSON 校验（提取自 commitDiagnosisFromContent）。

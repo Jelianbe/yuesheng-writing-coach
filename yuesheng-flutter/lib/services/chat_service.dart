@@ -159,10 +159,12 @@ class ChatService {
   Future<String> commitDiagnosisFromContent({
     required String sessionId,
     required String fullContent,
+    String? chapterContent,
   }) async {
     return _diagnosisFlowHandler.commitDiagnosisFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
+      chapterContent: chapterContent,
     );
   }
 

@@ -101,6 +101,7 @@ class WritingCoachDiagnosisRunner {
       await chatService.commitDiagnosisFromContent(
         sessionId: sid,
         fullContent: progressive.fullContent,
+        chapterContent: content,
       );
       await handleComplete(sid);
       return;
