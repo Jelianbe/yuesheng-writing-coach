@@ -75,17 +75,22 @@ void main() {
     );
   }
 
-  test('#M commitDiagnosis 抛异常 → 不追加 teaching_history', () async {
+  test('#M commitDiagnosis 抛异常 → 向上抛出（不再静默吞），下游不写 teaching_history', () async {
     final svc = DiagnosisService(
       diagnosisRepo: _ThrowingDiagRepo(db),
       studentModelRepo: studentModelRepo,
     );
-    await svc.commitDiagnosisWithHistory(input([syndrome('P003', 'L2')]));
+    // D03 / ADR-C101：核心步骤失败必须向上抛出，由调用方中止下游并留痕。
+    // 原实现为 catch 后 return —— 调用方无从知晓、仍继续落库（一致性缺口）。
+    expect(
+      () => svc.commitDiagnosisWithHistory(input([syndrome('P003', 'L2')])),
+      throwsA(isA<Exception>()),
+    );
 
     final rows = await (db.select(
       db.studentModels,
     )..where((t) => t.sessionId.equals(sessionId))).get();
-    expect(rows, isEmpty, reason: 'commit 失败应立即返回，不写 teaching_history');
+    expect(rows, isEmpty, reason: 'commit 失败应抛出，下游步骤（teaching_history 等）不得执行');
   });
 
   group('shouldUnlockSyndrome（R-019 批次七补测）', () {

@@ -64,15 +64,17 @@ const Set<String> _kBlockingFixTypes = {'V-03', 'V-04'};
 /// 完整校验结果 等 DTO 已上移至 contracts/diagnosis_capability.dart，
 /// 本文件经 import 复用，不再重复定义。
 
-/// syndromes 字段整体校验（非空数组 + 逐项，R-019 拆出）。
+/// syndromes 字段整体校验（必须是数组 + 逐项，R-019 拆出）。
+/// 允许空数组：零症候诊断（clean / insufficient 档）合法，下游由 diagnosis_card
+/// 渲染「本次未发现显著问题」兜底（D04 / ADR-C102）。
 void _validateSyndromesField(
   dynamic syndromes,
   List<ValidationError> errors,
   List<String> parsedSyndromeIds,
 ) {
-  if (syndromes is! List || syndromes.isEmpty) {
+  if (syndromes is! List) {
     errors.add(
-      const ValidationError(field: 'syndromes', message: 'syndromes 必须为非空数组'),
+      const ValidationError(field: 'syndromes', message: 'syndromes 必须为数组'),
     );
     return;
   }
@@ -143,7 +145,7 @@ DiagnosisValidationResult validateDiagnosisSchema(dynamic raw) {
   final errors = <ValidationError>[];
   final parsedSyndromeIds = <String>[];
 
-  // syndromes: 非空数组（逐项校验拆至 _validateSyndromesField）
+  // syndromes: 数组（允许为空，零症候合法；逐项校验拆至 _validateSyndromesField）
   _validateSyndromesField(raw['syndromes'], errors, parsedSyndromeIds);
 
   // suggested_actions: string[]

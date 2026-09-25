@@ -77,6 +77,33 @@ void main() {
       expect(result.valid, isTrue);
       expect(result.warnings, isEmpty);
     });
+
+    // ── D04 / ADR-C102：零症候合法，仅放宽「空数组」判据，类型守卫不动 ──
+    Map<String, dynamic> diagnosisWithSyndromes(dynamic syndromes) {
+      return {
+        'syndromes': syndromes,
+        'suggested_actions': ['动作1'],
+        'confidence': 0.8,
+      };
+    }
+
+    test('空数组 syndromes（零症候 clean/insufficient）→ valid=true', () {
+      final result = validateDiagnosisSchema(diagnosisWithSyndromes([]));
+      expect(result.valid, isTrue, reason: '零症候合法，不应判为整条拒');
+      expect(result.errors, isEmpty);
+    });
+
+    test('syndromes 为 null → valid=false（类型守卫保留）', () {
+      final result = validateDiagnosisSchema(diagnosisWithSyndromes(null));
+      expect(result.valid, isFalse);
+      expect(result.errors, isNotEmpty);
+    });
+
+    test('syndromes 为非数组（字符串）→ valid=false（类型守卫保留）', () {
+      final result = validateDiagnosisSchema(diagnosisWithSyndromes('P003'));
+      expect(result.valid, isFalse);
+      expect(result.errors, isNotEmpty);
+    });
   });
 
   group('validateNaturalLanguage V-02 判决词（4.6 共享常量）', () {

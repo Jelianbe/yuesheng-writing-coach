@@ -302,18 +302,21 @@ class DiagnosisService {
   /// 提交诊断结果：分步落库，每步独立降级，失败可观测（批次2-D1）
   ///
   /// 步骤：commitDiagnosis → appendTeachingHistory → checkAndResolveMastered → autoCheckAndUnlock
-  /// 核心步骤（commitDiagnosis）失败立即返回，避免后续步骤基于空诊断运行。
+  /// 核心步骤（commitDiagnosis）失败必须向上抛出：由唯一调用方
+  /// _runDiagnosisCommitSequence 的 catch 记录 error_logs 并中止后续（结果卡 /
+  /// 阶段迁移 / 风格画像）落库，避免下游基于「未提交的诊断」运行。
+  /// （原实现为 catch 后 return —— 调用方无从知晓、仍会继续落库，属一致性缺口 D03/ADR-C101）
   Future<void> commitDiagnosisWithHistory(DiagnosisInput input) async {
     final maxSeverity = _resolveMaxSeverity(input.syndromes);
 
-    // 1. 提交诊断结果（核心步骤，失败必须记录并立即返回）
+    // 1. 提交诊断结果（核心步骤，失败必须记录并向上抛出，由调用方中止下游）
     try {
       await _diagnosisRepo.commitDiagnosis(input);
     } catch (e) {
       debugPrint(
         '[Diagnosis] commitDiagnosis 失败 session=${input.sessionId}: $e',
       );
-      return;
+      rethrow;
     }
 
     // 2. 追加 teaching_history

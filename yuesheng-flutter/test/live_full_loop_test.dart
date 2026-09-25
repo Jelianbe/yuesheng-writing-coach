@@ -68,8 +68,9 @@ const String _kModel = 'deepseek-v4-flash';
 /// 迁移轮专用：返回"已 resolve 症候"的诊断块。
 ///
 /// 触发 _applyPhaseMigration 的约束链：
-///   - validateDiagnosisSchema 要求 syndromes 必须为非空数组（空数组会被
-///     二次校验判为 diagnosis=null，_applyPhaseMigration 不被调用）
+///   - validateDiagnosisSchema 现已允许 syndromes 为空数组（D04 / ADR-C102 放宽
+///     「零症候合法」）；但本用例刻意返回"已 resolve 症候"（非空），以验证
+///     resolved 症候不重新激活（status=resolved → continue）的独立逻辑。
 ///   - commitDiagnosis 对已 resolve 的症候不重新激活（status=resolved → continue）
 ///   - 因此返回"已 resolve 症候"既能通过 schema 校验，又保持活跃列表为空，
 ///     使 M4-A 的 remaining.isEmpty + passRate>=0.7 条件成立 → 阶段推进。
