@@ -88,7 +88,9 @@ void main() {
     }
 
     test('空数组 syndromes（零症候 clean/insufficient）→ valid=true', () {
-      final result = validateDiagnosisSchema(diagnosisWithSyndromes([]));
+      final result = validateDiagnosisSchema(
+        diagnosisWithSyndromes(<String>[]),
+      );
       expect(result.valid, isTrue, reason: '零症候合法，不应判为整条拒');
       expect(result.errors, isEmpty);
     });
