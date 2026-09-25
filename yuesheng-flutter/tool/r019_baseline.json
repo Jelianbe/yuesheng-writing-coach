@@ -53,7 +53,7 @@
       "lines": 108
     },
     {
-      "file": "lib/widgets/ability_chart.dart",
+      "file": "lib/features/growth/ability_chart.dart",
       "func": "build",
       "start": 86,
       "end": 161,
@@ -137,21 +137,21 @@
       "lines": 63
     },
     {
-      "file": "lib/widgets/diagnosis_picker_sheet.dart",
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
       "func": "build",
       "start": 109,
       "end": 180,
       "lines": 72
     },
     {
-      "file": "lib/widgets/diagnosis_picker_sheet.dart",
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
       "func": "_buildList",
       "start": 212,
       "end": 265,
       "lines": 54
     },
     {
-      "file": "lib/widgets/diagnosis_picker_sheet.dart",
+      "file": "lib/features/growth/diagnosis_picker_sheet.dart",
       "func": "_buildChapters",
       "start": 267,
       "end": 358,
@@ -242,14 +242,14 @@
       "lines": 95
     },
     {
-      "file": "lib/widgets/growth_overview_card.dart",
+      "file": "lib/features/growth/growth_overview_card.dart",
       "func": "build",
       "start": 37,
       "end": 151,
       "lines": 115
     },
     {
-      "file": "lib/widgets/growth_page.dart",
+      "file": "lib/features/growth/growth_page.dart",
       "func": "build",
       "start": 245,
       "end": 386,
@@ -305,7 +305,7 @@
       "lines": 226
     },
     {
-      "file": "lib/widgets/observation_audit_card.dart",
+      "file": "lib/features/growth/observation_audit_card.dart",
       "func": "build",
       "start": 95,
       "end": 265,
@@ -592,14 +592,14 @@
       "lines": 59
     },
     {
-      "file": "lib/widgets/syndrome_history_list.dart",
+      "file": "lib/features/growth/syndrome_history_list.dart",
       "func": "build",
       "start": 26,
       "end": 89,
       "lines": 64
     },
     {
-      "file": "lib/widgets/syndrome_history_list.dart",
+      "file": "lib/features/growth/syndrome_history_list.dart",
       "func": "build",
       "start": 124,
       "end": 229,
@@ -641,14 +641,14 @@
       "lines": 87
     },
     {
-      "file": "lib/widgets/training_pass_rate_card.dart",
+      "file": "lib/features/growth/training_pass_rate_card.dart",
       "func": "build",
       "start": 86,
       "end": 178,
       "lines": 93
     },
     {
-      "file": "lib/widgets/training_pass_rate_card.dart",
+      "file": "lib/features/growth/training_pass_rate_card.dart",
       "func": "build",
       "start": 210,
       "end": 263,
@@ -683,14 +683,14 @@
       "lines": 119
     },
     {
-      "file": "lib/widgets/writing_curve_chart.dart",
+      "file": "lib/features/growth/writing_curve_chart.dart",
       "func": "build",
       "start": 25,
       "end": 119,
       "lines": 95
     },
     {
-      "file": "lib/widgets/writing_curve_chart.dart",
+      "file": "lib/features/growth/writing_curve_chart.dart",
       "func": "build",
       "start": 144,
       "end": 240,

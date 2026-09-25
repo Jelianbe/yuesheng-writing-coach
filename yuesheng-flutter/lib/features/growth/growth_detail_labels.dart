@@ -12,7 +12,7 @@
 // 全部为纯查表函数，无副作用、无依赖。
 // ─────────────────────────────────────────────────────────────
 
-import '../types/teaching_types.dart';
+import '../../types/teaching_types.dart';
 
 /// 批次53c：感官偏好中文标签（对齐 writing-style.ts 五维坐标）
 String styleSensoryLabel(SensoryPreference v) {

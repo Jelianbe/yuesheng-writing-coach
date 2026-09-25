@@ -22,7 +22,7 @@ import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/types/display_types.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/ability_progress_chart.dart';
+import 'package:writingcoach/features/growth/ability_progress_chart.dart';
 import 'package:writingcoach/widgets/punctuation_bar.dart';
 
 /// 只剥 `//` 行注释（本钉够用；源码对账不涉字符串内的 `//`）。

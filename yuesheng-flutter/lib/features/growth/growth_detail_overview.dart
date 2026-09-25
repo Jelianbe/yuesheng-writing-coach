@@ -11,13 +11,13 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../services/growth_service.dart';
-import '../services/progress_service.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_theme.dart';
+import '../../services/growth_service.dart';
+import '../../services/progress_service.dart';
+import '../../types/teaching_types.dart';
 import 'growth_detail_widgets.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 写作总览六格网格（批次 51c，对齐 RN growth-detail overviewGrid：
 /// 写作天数 / 当前阶段 / 已解决 / 待改进 + 首次/最近写作整宽两格）

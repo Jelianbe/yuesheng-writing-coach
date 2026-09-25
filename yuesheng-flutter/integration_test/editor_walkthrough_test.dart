@@ -29,7 +29,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/widgets/punctuation_bar.dart';
-import 'package:writingcoach/widgets/writing_curve_chart.dart';
+import 'package:writingcoach/features/growth/writing_curve_chart.dart';
 import 'package:writingcoach/features/writing/writing_page.dart';
 
 void main() {

@@ -8,9 +8,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../services/focus_card_builder.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../services/focus_card_builder.dart';
 
 /// 当前焦点卡。data == null 时调用方不应渲染本组件。
 class FocusCard extends StatelessWidget {

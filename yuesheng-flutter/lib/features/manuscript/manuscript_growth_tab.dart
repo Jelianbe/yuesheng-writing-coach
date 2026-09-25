@@ -16,8 +16,8 @@ import '../../data/repositories/diagnosis_repository.dart';
 import '../../providers/manuscript_growth_provider.dart';
 import '../../services/syndrome_recurrence.dart';
 import '../../types/teaching_types.dart';
-import '../../widgets/proficiency_ring.dart';
-import '../../widgets/severity_bar.dart';
+import '../growth/proficiency_ring.dart';
+import '../growth/severity_bar.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
 

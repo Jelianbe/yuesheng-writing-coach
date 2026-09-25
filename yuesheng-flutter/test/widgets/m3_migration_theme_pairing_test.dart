@@ -39,7 +39,7 @@ import 'package:writingcoach/theme/app_theme.dart'
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/features/bookshelf/bookshelf_error_view.dart';
 import 'package:writingcoach/features/bookshelf/bookshelf_no_search_result.dart';
-import 'package:writingcoach/widgets/growth_detail_error_view.dart';
+import 'package:writingcoach/features/growth/growth_detail_error_view.dart';
 import 'package:writingcoach/widgets/knowledge_card.dart';
 import 'package:writingcoach/widgets/teaching_state_badge.dart';
 import 'package:writingcoach/features/writing/thinking_placeholder.dart';

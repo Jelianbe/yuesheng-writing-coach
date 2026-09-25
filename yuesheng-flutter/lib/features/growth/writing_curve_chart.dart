@@ -11,11 +11,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../config/shared_constants.dart';
-import '../services/growth_service.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/shared_constants.dart';
+import '../../services/growth_service.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 写作成长曲线
 class WritingCurveChart extends StatelessWidget {

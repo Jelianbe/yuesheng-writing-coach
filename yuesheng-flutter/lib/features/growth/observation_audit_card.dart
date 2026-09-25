@@ -13,12 +13,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../data/repositories/editor_observation_repository.dart';
-import '../providers/app_providers.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/editor_observation_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../theme/app_typography.dart';
 
 /// Editor 观察记录审计卡片（用户态）
 class ObservationAuditCard extends ConsumerStatefulWidget {

@@ -17,9 +17,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../providers/growth_providers.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_theme.dart';
+import '../../providers/growth_providers.dart';
+import '../../types/teaching_types.dart';
 import 'ability_chart.dart';
 import 'ability_progress_chart.dart';
 import 'growth_detail_overview.dart';

@@ -13,11 +13,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../types/teaching_types.dart';
 import 'growth_detail_labels.dart';
-import '../theme/app_typography.dart';
+import '../../theme/app_typography.dart';
 
 /// 批次57：风格纠正底部弹层（纠错非重写——仅纠正五维坐标，summary 保留 AI 描述只读）
 class GrowthStyleCorrectionSheet extends StatefulWidget {

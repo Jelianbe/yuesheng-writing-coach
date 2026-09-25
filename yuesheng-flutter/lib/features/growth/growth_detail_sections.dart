@@ -15,13 +15,13 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../services/growth_service.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_theme.dart';
+import '../../services/growth_service.dart';
+import '../../types/teaching_types.dart';
 import 'growth_detail_labels.dart';
 import 'growth_detail_widgets.dart';
 import 'proficiency_ring.dart';
-import '../config/app_palette.dart';
+import '../../config/app_palette.dart';
 
 /// 空状态视图（无诊断数据）
 class GrowthEmptyState extends StatelessWidget {

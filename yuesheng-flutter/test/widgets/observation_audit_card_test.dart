@@ -18,7 +18,7 @@ import 'package:writingcoach/data/repositories/editor_observation_repository.dar
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/services/editor_validator.dart';
-import 'package:writingcoach/widgets/observation_audit_card.dart';
+import 'package:writingcoach/features/growth/observation_audit_card.dart';
 
 void main() {
   late AppDatabase db;

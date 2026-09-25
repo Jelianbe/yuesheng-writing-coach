@@ -11,15 +11,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_theme.dart';
-import '../config/shared_constants.dart';
-import '../data/database/database.dart';
-import '../data/repositories/chapter_repository.dart';
-import '../data/repositories/manuscript_repository.dart';
-import '../providers/app_providers.dart';
-import '../router/app_routes.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/shared_constants.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../data/repositories/manuscript_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../router/app_routes.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 章节选择回调（manuscriptId + 章节）
 typedef DiagnosisChapterCallback =

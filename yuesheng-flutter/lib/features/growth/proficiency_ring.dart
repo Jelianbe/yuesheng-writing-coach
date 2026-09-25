@@ -17,8 +17,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_palette.dart';
+import '../../types/teaching_types.dart';
 
 /// 熟练度竹青进度环 — 方案 A（progress = 等级位置）
 class ProficiencyRing extends StatelessWidget {

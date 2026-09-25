@@ -12,11 +12,11 @@
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
-import '../services/syndrome_recurrence.dart';
+import '../../services/syndrome_recurrence.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 /// 通用卡片（左侧 4dp 竹青色条，与 GrowthPage._Card 视觉一致）
 ///

@@ -18,22 +18,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import 'yue_sheet.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../providers/chat_store.dart';
-import '../providers/growth_providers.dart';
-import '../services/focus_card_builder.dart';
-import '../widgets/focus_card.dart';
-import '../router/app_routes.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../providers/chat_store.dart';
+import '../../providers/growth_providers.dart';
+import '../../services/focus_card_builder.dart';
+import 'focus_card.dart';
+import '../../router/app_routes.dart';
+import '../../types/teaching_types.dart';
 import 'diagnosis_picker_sheet.dart';
 import 'growth_detail_nav.dart';
 import 'observation_audit_card.dart';
 import 'proficiency_ring.dart';
 import 'severity_bar.dart';
-import '../theme/app_typography.dart';
+import '../../theme/app_typography.dart';
 
 /// 成长概览页
 class GrowthPage extends ConsumerStatefulWidget {

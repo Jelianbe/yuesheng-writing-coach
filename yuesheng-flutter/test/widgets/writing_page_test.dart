@@ -57,7 +57,7 @@ import 'package:writingcoach/features/writing/recycle_bin_sheet.dart';
 import 'package:writingcoach/features/writing/search_replace_sheet.dart';
 import 'package:writingcoach/features/writing/version_time_machine_sheet.dart';
 import 'package:writingcoach/features/writing/writing_coach_panel.dart';
-import 'package:writingcoach/widgets/writing_curve_chart.dart';
+import 'package:writingcoach/features/growth/writing_curve_chart.dart';
 import 'package:writingcoach/features/writing/writing_page.dart';
 import 'package:writingcoach/features/writing/writing_page_breadcrumb.dart';
 import 'package:writingcoach/features/writing/focus_aware_editing_controller.dart';

@@ -13,7 +13,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
+import '../../config/app_palette.dart';
 
 /// 症候严重度计数
 class SeverityCounts {

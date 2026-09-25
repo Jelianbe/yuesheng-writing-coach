@@ -24,13 +24,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../data/repositories/training_result_repository.dart';
-import '../providers/growth_providers.dart';
-import '../services/growth_service.dart';
-import '../services/syndrome_registry.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/training_result_repository.dart';
+import '../../providers/growth_providers.dart';
+import '../../services/growth_service.dart';
+import '../../services/syndrome_registry.dart';
+import '../../theme/app_typography.dart';
 
 /// 训练通过率看板卡片（X-041c：支持时间窗切换）
 class TrainingPassRateCard extends ConsumerStatefulWidget {

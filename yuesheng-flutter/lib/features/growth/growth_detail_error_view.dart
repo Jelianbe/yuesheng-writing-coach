@@ -9,9 +9,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 加载失败视图（图标 + 文案 + 重新加载）
 class GrowthErrorView extends StatelessWidget {

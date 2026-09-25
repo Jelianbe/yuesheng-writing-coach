@@ -10,14 +10,14 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../providers/growth_providers.dart';
-import '../types/teaching_types.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../providers/growth_providers.dart';
+import '../../types/teaching_types.dart';
 import 'growth_detail_widgets.dart';
-import 'teaching_state_badge.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../widgets/teaching_state_badge.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 按教学状态分组渲染症候列表（批次 48，对齐 RN syndromeGroups 顺序：
 /// in_progress → identified → consolidating → mastered）

@@ -11,11 +11,11 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../services/growth_service.dart';
-import '../types/teaching_types.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../services/growth_service.dart';
+import '../../types/teaching_types.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 能力图谱
 class AbilityChart extends StatelessWidget {

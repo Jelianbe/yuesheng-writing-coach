@@ -11,10 +11,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../services/growth_service.dart';
-import '../types/display_types.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../services/growth_service.dart';
+import '../../types/display_types.dart';
 
 /// 能力进步曲线（P1-5）
 class AbilityProgressChart extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/widgets/severity_bar.dart';
+import 'package:writingcoach/features/growth/severity_bar.dart';
 
 void main() {
   group('SeverityBar', () {

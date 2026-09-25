@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/proficiency_ring.dart';
+import 'package:writingcoach/features/growth/proficiency_ring.dart';
 
 void main() {
   group('ProficiencyRing 视觉规范（月色竹青）', () {

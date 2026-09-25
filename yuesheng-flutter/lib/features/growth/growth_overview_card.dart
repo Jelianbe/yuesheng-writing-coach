@@ -11,9 +11,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../config/shared_constants.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/shared_constants.dart';
+import '../../config/app_palette.dart';
 
 /// 成长总览卡
 class GrowthOverviewCard extends StatelessWidget {

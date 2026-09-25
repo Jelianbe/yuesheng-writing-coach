@@ -16,7 +16,7 @@ import '../../config/app_palette.dart';
 import '../../config/app_theme.dart';
 import '../../providers/app_providers.dart';
 import '../../services/growth_service.dart';
-import '../../widgets/writing_curve_chart.dart';
+import '../growth/writing_curve_chart.dart';
 import '../../widgets/yue_sheet.dart';
 import '../../theme/app_typography.dart';
 

@@ -17,11 +17,11 @@ import 'package:writingcoach/config/app_theme.dart';
 import 'package:writingcoach/services/growth_service.dart';
 import 'package:writingcoach/types/display_types.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/ability_chart.dart';
-import 'package:writingcoach/widgets/ability_progress_chart.dart';
-import 'package:writingcoach/widgets/growth_overview_card.dart';
-import 'package:writingcoach/widgets/syndrome_history_list.dart';
-import 'package:writingcoach/widgets/writing_curve_chart.dart';
+import 'package:writingcoach/features/growth/ability_chart.dart';
+import 'package:writingcoach/features/growth/ability_progress_chart.dart';
+import 'package:writingcoach/features/growth/growth_overview_card.dart';
+import 'package:writingcoach/features/growth/syndrome_history_list.dart';
+import 'package:writingcoach/features/growth/writing_curve_chart.dart';
 
 void main() {
   group('GrowthOverviewCard', () {
