@@ -105,16 +105,8 @@ void main() {
       // 应弹出问卷
       expect(find.text('写作偏好问卷'), findsOneWidget);
 
-      // 走完 3 题
-      await tester.tap(find.text('写过一些片段'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, '下一题'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      // 单题制（8f6aaf29 简化）：只留关注领域一题，可直接完成
       await tester.tap(find.text('人物塑造'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, '下一题'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 300));
-      await tester.tap(find.text('边练边讲'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, '开始写作之旅'));
       await tester.pumpAndSettle();
@@ -426,24 +418,16 @@ void main() {
   });
 
   group('完成问卷后状态持久化', () {
-    testWidgets('#5 elementary → N1_ELEMENTS + onboarding_data 完整', (
+    testWidgets('#5 单题制默认 beginner → N0_ENGAGE + onboarding_data 完整', (
       tester,
     ) async {
       await tester.pumpWidget(buildChatPage());
       await tester.pumpAndSettle();
 
-      // 走完 3 题，选 elementary
-      await tester.tap(find.text('写过一些片段'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, '下一题'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 300));
+      // 单题制（8f6aaf29 简化）：只选关注领域，等级/偏好走默认值
       await tester.tap(find.text('人物塑造'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('情节设计'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ElevatedButton, '下一题'));
-      await tester.pumpAndSettle(const Duration(milliseconds: 300));
-      await tester.tap(find.text('边练边讲'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(ElevatedButton, '开始写作之旅'));
       await tester.pumpAndSettle();
@@ -456,16 +440,16 @@ void main() {
       final smRepo = StudentModelRepository(db);
       final saved = await smRepo.getOnboardingData(sessionId);
       expect(saved, isNotNull);
-      expect(saved!['proficiency'], 'elementary');
+      expect(saved!['proficiency'], 'beginner');
       expect(saved['focusAreas'], ['人物塑造', '情节设计']);
       expect(saved['cognitiveStyle'], 'mixed');
       expect(saved['skipped'], false);
 
-      // 验证 beginner_level
+      // 验证 beginner_level（beginner 经 proficiencyToBeginnerLevel 映射 N0_ENGAGE）
       final stateRepo = TeachingStateRepository(db);
       final ts = await stateRepo.getTeachingState(sessionId);
       expect(ts, isNotNull);
-      expect(ts!.beginnerLevel, BeginnerLevel.n1Elements.value);
+      expect(ts!.beginnerLevel, BeginnerLevel.n0Engage.value);
     });
   });
 

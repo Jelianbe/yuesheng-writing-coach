@@ -56,7 +56,6 @@ String _cognitiveStyleLabel(CognitiveStyle s) {
   }
 }
 
-
 /// 格式化画像文本
 ///
 /// 真源：student-profile-format.ts formatProfileText

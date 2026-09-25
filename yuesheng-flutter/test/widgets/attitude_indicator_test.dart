@@ -29,7 +29,8 @@ void main() {
         ),
       );
 
-      expect(find.text('豆包'), findsOneWidget);
+      // d26d82c2 起档位 label 为「温和」（消商标风险），不再是「豆包」
+      expect(find.text('温和'), findsOneWidget);
     });
 
     testWidgets('#2 点击 → 弹出选择面板（含三档名称与说明）', (tester) async {
@@ -48,8 +49,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('选择态度档位'), findsOneWidget);
-      // 当前档位「豆包」出现 2 处：顶部指示器 + 面板选项
-      expect(find.text('豆包'), findsNWidgets(2));
+      // 当前档位「温和」出现 2 处：顶部指示器 + 面板选项
+      expect(find.text('温和'), findsNWidgets(2));
       expect(find.text('月笙如歌'), findsOneWidget);
       expect(find.text('sensei'), findsOneWidget);
       expect(find.text('温和、鼓励、先肯定'), findsOneWidget);

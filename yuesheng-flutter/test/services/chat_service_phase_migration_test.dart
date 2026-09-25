@@ -1199,24 +1199,48 @@ void main() {
       await svc1.sendMessage(
         sessionId,
         '帮我诊断',
-        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
-        const SendMessageOptions(phase: TeachingPhase.p0Engage, attitude: AttitudeLevel.doubao),
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p0Engage,
+          attitude: AttitudeLevel.doubao,
+        ),
       );
       var ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentPhase, TeachingPhase.p1World.value, reason: '第1轮后应从 P0 迁移到 P1');
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p1World.value,
+        reason: '第1轮后应从 P0 迁移到 P1',
+      );
 
       // ── 第 2 轮：AI 建议 P1→P2 ──
       final svc2 = buildChatService(
-        FakeLlmClient(buildDiagnosisResponse(suggestedPhase: 'P2_PRACTICE_LOOP')),
+        FakeLlmClient(
+          buildDiagnosisResponse(suggestedPhase: 'P2_PRACTICE_LOOP'),
+        ),
       );
       await svc2.sendMessage(
         sessionId,
         '继续诊断',
-        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
-        const SendMessageOptions(phase: TeachingPhase.p1World, attitude: AttitudeLevel.doubao),
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p1World,
+          attitude: AttitudeLevel.doubao,
+        ),
       );
       ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentPhase, TeachingPhase.p2PracticeLoop.value, reason: '第2轮后应从 P1 迁移到 P2');
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p2PracticeLoop.value,
+        reason: '第2轮后应从 P1 迁移到 P2',
+      );
 
       // ── 第 3 轮：AI 建议 P2→P3 ──
       final svc3 = buildChatService(
@@ -1225,11 +1249,22 @@ void main() {
       await svc3.sendMessage(
         sessionId,
         '再诊断一次',
-        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
-        const SendMessageOptions(phase: TeachingPhase.p2PracticeLoop, attitude: AttitudeLevel.doubao),
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p2PracticeLoop,
+          attitude: AttitudeLevel.doubao,
+        ),
       );
       ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentPhase, TeachingPhase.p3Training.value, reason: '第3轮后应从 P2 迁移到 P3');
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p3Training.value,
+        reason: '第3轮后应从 P2 迁移到 P3',
+      );
 
       // ── 第 4 轮：AI 建议 P3→P4 ──
       final svc4 = buildChatService(
@@ -1238,11 +1273,22 @@ void main() {
       await svc4.sendMessage(
         sessionId,
         '最后诊断',
-        SendMessageCallbacks(onStream: (_) {}, onComplete: (_, __) {}, onError: (_) {}),
-        const SendMessageOptions(phase: TeachingPhase.p3Training, attitude: AttitudeLevel.doubao),
+        SendMessageCallbacks(
+          onStream: (_) {},
+          onComplete: (_, __) {},
+          onError: (_) {},
+        ),
+        const SendMessageOptions(
+          phase: TeachingPhase.p3Training,
+          attitude: AttitudeLevel.doubao,
+        ),
       );
       ts = await stateRepo.getTeachingState(sessionId);
-      expect(ts?.currentPhase, TeachingPhase.p4Review.value, reason: '第4轮后应从 P3 迁移到 P4');
+      expect(
+        ts?.currentPhase,
+        TeachingPhase.p4Review.value,
+        reason: '第4轮后应从 P3 迁移到 P4',
+      );
     });
   });
 }

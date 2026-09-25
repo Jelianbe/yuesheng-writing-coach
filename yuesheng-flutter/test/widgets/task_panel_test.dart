@@ -175,11 +175,16 @@ void main() {
 
   test('#11 源码对账：自选练习唯一实存在，两处接线引用同一函数（防 copy 复辟）', () {
     // #6/V-5 教训：共享逻辑一旦私有化在消费文件里，第二处必然复制。
-    final impl = File('lib/widgets/chat_self_practice.dart').readAsStringSync();
-    final sections = File(
-      'lib/widgets/chat_page_sections.dart',
+    // 批次 4（6229c40a）起 chat 家族迁至 lib/features/chat/
+    final impl = File(
+      'lib/features/chat/chat_self_practice.dart',
     ).readAsStringSync();
-    final body = File('lib/widgets/chat_page_body.dart').readAsStringSync();
+    final sections = File(
+      'lib/features/chat/chat_page_sections.dart',
+    ).readAsStringSync();
+    final body = File(
+      'lib/features/chat/chat_page_body.dart',
+    ).readAsStringSync();
     expect(impl.contains('void openSelfPracticeSheet('), isTrue);
     expect(sections.contains('openSelfPracticeSheet(context, ref'), isTrue);
     expect(body.contains('openSelfPracticeSheet(context, ref'), isTrue);

@@ -143,16 +143,18 @@ void main() {
       if (update || !file.existsSync()) {
         // 写新基线
         file.parent.createSync(recursive: true);
-        file.writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
-          'version': 1,
-          'cases': current,
-        }));
+        file.writeAsStringSync(
+          const JsonEncoder.withIndent(
+            '  ',
+          ).convert({'version': 1, 'cases': current}),
+        );
         print('[anchor] 已写入新基线：${kProfileCases.length} 个用例');
         return;
       }
 
       // 比对
-      final baseline = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+      final baseline =
+          jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
       final baselineCases = baseline['cases'] as Map<String, dynamic>;
 
       for (final c in kProfileCases) {

@@ -234,7 +234,6 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
     );
   }
 
-
   // ════════════ Q2: 提升方向（多选） ════════════
 
   Widget _buildQ2() {
@@ -253,7 +252,6 @@ class _OnboardingQuestionnaireState extends State<OnboardingQuestionnaire> {
       ),
     );
   }
-
 
   // ════════════ Footer ════════════
 
@@ -346,6 +344,7 @@ class _QuestionPage extends StatelessWidget {
     );
   }
 }
+
 class _CheckCard extends StatelessWidget {
   final bool selected;
   final String label;

@@ -55,8 +55,8 @@ void main() {
 
       expect(result.text, contains('【学员初始画像】'));
       expect(result.text, contains('关注领域：人物塑造'));
-      // F2：消费指令随初始画像出现
-      expect(result.text, contains('教学加权'));
+      // F2：消费指令随初始画像出现（8f6aaf29 起文案为「教学方式约束」行为指令化）
+      expect(result.text, contains('教学方式约束'));
     });
 
     test('来源问卷为 skipped → 不作为有效回退来源', () async {
@@ -126,7 +126,7 @@ void main() {
         ),
       );
 
-      expect(text, contains('教学加权'));
+      expect(text, contains('教学方式约束'));
       expect(text, contains('一律以当轮为准'));
       expect(text, contains('学习偏好：'));
       // 与「学习偏好」同源同值的第二步认知风格段不再重复输出
@@ -152,7 +152,7 @@ void main() {
 
       expect(text, contains('认知风格：'));
       expect(text, contains('关键词使用频率推断'));
-      expect(text, isNot(contains('教学加权')));
+      expect(text, isNot(contains('教学方式约束')));
     });
 
     test('A-1c：LLM 注入路径 includeCognitiveStyle=false 时画像不含认知风格段', () {
