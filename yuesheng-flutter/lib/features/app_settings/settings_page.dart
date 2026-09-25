@@ -370,6 +370,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (confirmed != true) return;
     try {
+      await _accountRepo.clearAll();
       await _configStorage.clearLlmConfig();
       if (mounted) {
         setState(() {

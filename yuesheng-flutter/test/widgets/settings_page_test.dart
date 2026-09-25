@@ -42,6 +42,7 @@ import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/services/llm_call_log_sink.dart';
 import 'package:writingcoach/services/llm_client.dart';
+import 'package:writingcoach/services/llm_config_resolver.dart';
 import 'package:writingcoach/services/llm_config_storage.dart';
 import 'package:writingcoach/services/llm_cost.dart';
 import 'package:writingcoach/services/llm_usage.dart';
@@ -317,6 +318,44 @@ void main() {
       tester.widget<TextField>(find.byType(TextField).at(0)).controller!.text,
       '',
     );
+  });
+
+  testWidgets('#7b 清空配置 → resolveLlmConfig 返回 null（D01 验收：账号表 + 旧键全清）', (
+    tester,
+  ) async {
+    // 清空前种入默认账号 + 旧三键，证明「清空前确有可用配置」
+    final repo = AIAccountRepository(db);
+    await repo.createAccount(
+      name: '默认账号',
+      baseUrl: 'https://api.example.com',
+      model: 'model-x',
+      apiKey: 'sk-seed',
+      isDefault: true,
+    );
+    storage.stored = const LlmConfigValues(
+      apiKey: 'sk-seed',
+      baseUrl: 'https://api.example.com',
+      model: 'model-x',
+    );
+    // 清空前：默认账号优先 → 解析器给出非 null 配置
+    expect(await resolveLlmConfig(db, legacyStorage: storage), isNotNull);
+
+    await tester.pumpWidget(buildSettings());
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('清空配置'),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('清空配置'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('清空'));
+    await tester.pumpAndSettle();
+
+    // 清空后：账号表删空 + 旧键清空 → 解析器返回 null（无可用配置）
+    expect(await repo.listAccounts(), isEmpty);
+    expect(await resolveLlmConfig(db, legacyStorage: storage), isNull);
   });
 
   testWidgets('#8 清除缓存 → 删除孤儿会话（保留有消息的）', (tester) async {

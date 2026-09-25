@@ -170,6 +170,18 @@ class AIAccountRepository {
         await _writeKeysMap(map);
       });
 
+  /// 全量清空（「清空配置」专用核武器）：删表 + 整键删除 secure key map。
+  ///
+  /// 与 [deleteAccount] 的「至少保留一个」语义**无关** —— 本方法用于整体重置，
+  /// 允许删空账号表；调用方（设置页清空配置）须自行承担「清空后无可用配置」后果。
+  /// 不写空 map：直接整键删除 `_kKeysMapKey`，避免遗留空壳键。
+  Future<void> clearAll() => guardRepoWrite('ai_account', 'clearAll', () async {
+    await _db.transaction(() async {
+      await _db.delete(_db.aiAccounts).go();
+      await _storage.delete(key: _kKeysMapKey);
+    });
+  });
+
   // ───────────── 内部 ─────────────
 
   /// 清除全部默认标记（createAccount 设默认前调用，事务外幂等）

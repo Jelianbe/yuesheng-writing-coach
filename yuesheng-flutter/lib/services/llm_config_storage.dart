@@ -62,12 +62,13 @@ class LlmConfigStorage {
     ]);
   }
 
-  /// 清除配置
+  /// 清除配置（含 B1-1 备选端点链 `_kKeyApiFallbacks`）
   Future<void> clearLlmConfig() async {
     await Future.wait([
       _storage.delete(key: _kKeyApiKey),
       _storage.delete(key: _kKeyApiBaseUrl),
       _storage.delete(key: _kKeyApiModel),
+      _storage.delete(key: _kKeyApiFallbacks),
     ]);
   }
 

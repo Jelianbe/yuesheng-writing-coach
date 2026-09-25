@@ -54,4 +54,32 @@ void main() {
       expect(parseTrainingResult(''), isNull);
     });
   });
+
+  group('parseTrainingResult 否定式归一（ADR-C100 回归护栏）', () {
+    // 这些「单句纯否定」用例同时是 ADR-C100 的负向验证：若序3（否定式归一）
+    // 被摘掉，下列输入会落到序5 passed 关键词（含「通过」「达标」「完成」）
+    // 而误判 passed —— 届时本组整体变红，门禁拦下回归。
+    test('「这次没有通过，请重试」→ failed（否定式归一）', () {
+      expect(parseTrainingResult('这次没有通过，请重试'), TrainingResult.failed);
+    });
+    test('「目标是达标，本次未通过」→ failed', () {
+      expect(parseTrainingResult('目标是达标，本次未通过'), TrainingResult.failed);
+    });
+    test('「本次还不达标」→ failed', () {
+      expect(parseTrainingResult('本次还不达标'), TrainingResult.failed);
+    });
+    test('「本次练习不达标」→ failed', () {
+      expect(parseTrainingResult('本次练习不达标'), TrainingResult.failed);
+    });
+    test('「没有完成」→ failed', () {
+      expect(parseTrainingResult('没有完成'), TrainingResult.failed);
+    });
+    test('「不通过」→ failed（不互为「未通过」子串）', () {
+      expect(parseTrainingResult('不通过'), TrainingResult.failed);
+    });
+    test('「还没达标，但方向对了」→ partial（partial 先于否定式）', () {
+      // 混合句：方向对了（partial 关键词）优先于否定式，归 partial（保守偏置）。
+      expect(parseTrainingResult('还没达标，但方向对了'), TrainingResult.partial);
+    });
+  });
 }
