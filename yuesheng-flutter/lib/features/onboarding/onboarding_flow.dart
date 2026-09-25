@@ -58,6 +58,16 @@ const List<_OnboardingPage> _pages = [
     subtitle: '开启写作之旅',
     description: '导入你的作品，让我来帮你诊断和提升',
   ),
+  _OnboardingPage(
+    icon: Icons.explore,
+    title: '怎么开始',
+    subtitle: '三步用起来',
+    features: [
+      (text: '选中文字', desc: '划词即可诊断', icon: Icons.gesture),
+      (text: '导入作品', desc: '带来你的初稿', icon: Icons.upload_file),
+      (text: '问月笙', desc: '随时聊写作', icon: Icons.chat_bubble_outline),
+    ],
+  ),
 ];
 
 class OnboardingFlow extends StatefulWidget {

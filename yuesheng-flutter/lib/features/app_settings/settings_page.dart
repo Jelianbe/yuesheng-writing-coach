@@ -29,6 +29,7 @@ import '../../providers/session_providers.dart';
 import '../../theme/theme_controller.dart';
 import '../../theme/theme_registry.dart';
 import '../../router/app_routes.dart';
+import '../../features/onboarding/onboarding_flow.dart';
 import '../../services/error_handler.dart';
 import '../../services/llm_client.dart';
 import '../../services/llm_config_storage.dart';
@@ -1220,7 +1221,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             label: '隐私与费用说明',
             onTap: () => showPrivacyNoticeDialog(context),
           ),
+          _ActionRow(label: '重看新手引导', onTap: _replayOnboarding),
         ],
+      ),
+    );
+  }
+
+  /// 重看新手引导（设置页「关于」区块入口）。
+  /// 仅以全屏路由覆盖层重新展示 [OnboardingFlow]，关闭即消失；
+  /// **不回写** `onboarding_completed`（该 flag 由首启门管理，且 SEED_DEMO 也写它，
+  /// 重看逻辑必须独立，避免误触发或无法关闭）。
+  void _replayOnboarding() {
+    final ctx = context;
+    Navigator.of(ctx).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            OnboardingFlow(onComplete: () => Navigator.of(ctx).pop()),
       ),
     );
   }
