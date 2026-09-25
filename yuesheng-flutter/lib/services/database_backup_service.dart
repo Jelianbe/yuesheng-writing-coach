@@ -26,6 +26,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -102,11 +103,31 @@ class DatabaseBackupService {
     }
   }
 
-  /// 从备份文件恢复。调用方须先 close 数据库连接；还原后清理残留
-  /// WAL/SHM（防旧 WAL 回放覆盖还原数据）。
-  /// 注意：连接已关闭，无法写入 restored 状态记录；restored 标记由
-  /// 恢复流程重开连接后另行处理（本期不实现 UI，故不写状态）。
-  Future<void> restoreBackup(String backupPath) async {
+  /// 从备份文件恢复（ADR-C104 协调器）。
+  ///
+  /// 受控序列：**前置校验 → 强制关 DB → 原子复制（先留 rollback 副本）→ 恢复后校验 → 通知重建**。
+  /// 不再是无校验的裸复制（旧实现：直接 `File.copy` + 删 -wal/-shm，无完整性/
+  /// 高 schema 拒绝、无回滚、无原子性、无 provider 重建）。
+  ///
+  /// 前置校验（拒绝不安全恢复）：
+  ///   1. 备份文件存在且非空；
+  ///   2. 对备份开只读连接跑 `PRAGMA integrity_check` 通过；
+  ///   3. 备份 `user_version` ≤ 当前 schema ⇒ 拒绝高版本备份（高版本不能恢复到低版本 App）。
+  ///
+  /// 原子 + 回滚：覆盖前把生产库三件套复制到 `pre_restore_<ts>/`；备份先复制到同目录
+  /// 临时文件 → 校验临时文件完整 → `rename` 覆盖生产库（同文件系统 rename 原子）；
+  /// 失败则从 rollback 副本回退。
+  ///
+  /// 不触碰 `flutter_secure_storage`：本协调器只动 SQLite 文件，密钥/凭据留在设备安全
+  /// 存储、不随备份流动 ⇒ 备份文件本身不含密钥（符合 R-029）。
+  ///
+  /// [onReopen]：恢复完成且文件已替换后触发，供调用方失效/重建 Riverpod provider
+  /// （如 `ref.invalidate(appDatabaseProvider)`）。当前无生产调用方，故可选；未来恢复
+  /// UI 必须传入，否则 App 会持有着失效的连接句柄。
+  Future<void> restoreBackup(
+    String backupPath, {
+    Future<void> Function()? onReopen,
+  }) async {
     final dbPath = await _resolveDbPath();
     if (dbPath == null) {
       throw StateError('数据库路径不可用，无法恢复');
@@ -114,11 +135,131 @@ class DatabaseBackupService {
     if (!await File(backupPath).exists()) {
       throw FileSystemException('备份文件不存在', backupPath);
     }
-    await File(backupPath).copy(dbPath);
+
+    // 1. 前置校验（只读打开备份，不碰生产库）
+    await _validateBackupReadonly(backupPath, dbPath);
+
+    // 2. 强制关闭持有的生产连接（rename 覆盖前必须无打开句柄）
+    await _closeProductionConnection();
+
+    // 3. 原子恢复 + 回滚副本
+    final rollbackDir = await _stashPreRestore(dbPath);
+    try {
+      await _atomicSwap(backupPath, dbPath);
+      // 4. 恢复后校验（只读打开新生产库）
+      await _validateFileReadonly(dbPath);
+      // 5. 成功 → 清理 rollback 副本
+      await rollbackDir?.delete(recursive: true);
+    } catch (e) {
+      // 回滚：把 pre_restore 副本复制回生产位
+      await _restoreFromStash(rollbackDir, dbPath);
+      rethrow;
+    } finally {
+      // 6. 通知调用方重建 provider（拿到新连接）
+      if (onReopen != null) await onReopen();
+    }
+  }
+
+  /// 只读式打开 [path] 跑 `PRAGMA integrity_check` + `PRAGMA user_version`。
+  /// [enableMigrations] 关闭 ⇒ 走 `NoVersionDelegate`，`_runMigrations` 不写
+  /// `user_version`、也不会因版本差异改写备份文件（见 drift `DelegatedDatabase`
+  /// 实现）。[beforeOpen] 为 no-op。全程无写入 ⇒ 备份/生产库文件零变异。
+  /// 返回 user_version（高版本拒绝判断用）。校验失败抛 [StateError]。
+  Future<int> _readSchemaAndIntegrity(String path) async {
+    final executor = NativeDatabase(File(path), enableMigrations: false);
+    try {
+      await executor.ensureOpen(const _ReadonlyValidationUser());
+      final integrity = await executor.runSelect(
+        'PRAGMA integrity_check',
+        const <Variable<Object?>>[],
+      );
+      final ok =
+          integrity.length == 1 &&
+          '${integrity.first.values.first}'.trim().toLowerCase() == 'ok';
+      if (!ok) {
+        throw StateError('备份文件完整性校验失败：$integrity');
+      }
+      final version = await executor.runSelect(
+        'PRAGMA user_version',
+        const <Variable<Object?>>[],
+      );
+      final v = (version.first.values.first as num?)?.toInt() ?? 0;
+      return v;
+    } finally {
+      await executor.close();
+    }
+  }
+
+  /// 前置校验：备份存在/非空/完整/版本不高于当前 ⇒ 否则抛 [StateError]。
+  Future<void> _validateBackupReadonly(String backupPath, String dbPath) async {
+    final size = await File(backupPath).length();
+    if (size == 0) {
+      throw StateError('备份文件为空，拒绝恢复');
+    }
+    final backupVersion = await _readSchemaAndIntegrity(backupPath);
+    if (backupVersion > database.schemaVersion) {
+      throw StateError(
+        '备份版本($backupVersion) 高于当前数据库版本(${database.schemaVersion})，'
+        '拒绝恢复（高版本备份不能恢复到低版本 App）',
+      );
+    }
+  }
+
+  /// 恢复后校验：新生产库完整性通过。
+  Future<void> _validateFileReadonly(String path) async {
+    await _readSchemaAndIntegrity(path);
+  }
+
+  /// 强制关闭持有的生产连接（已被调用方关闭时静默忽略）。
+  Future<void> _closeProductionConnection() async {
+    try {
+      await database.close();
+    } catch (_) {
+      // 已关闭或关闭中：rename 前只需保证无打开句柄，异常不阻断恢复。
+    }
+  }
+
+  /// 覆盖前把生产库三件套复制到 `pre_restore_<ts>/` 作 rollback 副本。
+  /// 生产库不存在（首次）时返回 null。
+  Future<Directory?> _stashPreRestore(String dbPath) async {
+    final main = File(dbPath);
+    if (!await main.exists()) return null;
+    final stamp = _timestamp();
+    final dir = Directory(p.join(p.dirname(dbPath), 'pre_restore_$stamp'));
+    await dir.create(recursive: true);
+    for (final suffix in const ['', '-wal', '-shm']) {
+      final src = File(dbPath + suffix);
+      if (await src.exists()) {
+        await src.copy(p.join(dir.path, 'yuesheng$suffix'));
+      }
+    }
+    return dir;
+  }
+
+  /// 原子恢复：备份 → 同目录临时文件 → 校验 → rename 覆盖生产库 → 删残留 WAL/SHM。
+  Future<void> _atomicSwap(String backupPath, String dbPath) async {
+    final dir = p.dirname(dbPath);
+    final temp = p.join(dir, 'restore_temp_${_timestamp()}.db');
+    await File(backupPath).copy(temp);
+    // 校验临时文件完整（rename 前兜底）
+    await _readSchemaAndIntegrity(temp);
+    await File(temp).rename(dbPath);
+    // 备份是 checkpoint 后的单文件干净快照：删残留 WAL/SHM 防旧 WAL 回放覆盖
     for (final suffix in const ['-wal', '-shm']) {
       final f = File(dbPath + suffix);
       if (await f.exists()) {
         await f.delete();
+      }
+    }
+  }
+
+  /// 回滚：把 pre_restore 副本复制回生产位（忽略缺失，确保幂等）。
+  Future<void> _restoreFromStash(Directory? rollbackDir, String dbPath) async {
+    if (rollbackDir == null || !await rollbackDir.exists()) return;
+    for (final suffix in const ['', '-wal', '-shm']) {
+      final src = File(p.join(rollbackDir.path, 'yuesheng$suffix'));
+      if (await src.exists()) {
+        await src.copy(dbPath + suffix);
       }
     }
   }
@@ -223,4 +364,21 @@ class DatabaseBackupService {
       debugPrint('[DB] backup_history 记录跳过（表不存在或写入失败）: $e');
     }
   }
+}
+
+/// 仅供 `_readSchemaAndIntegrity` 使用的最小 [QueryExecutorUser]。
+/// [enableMigrations] 已关闭 ⇒ `beforeOpen` 不会被用来跑迁移；此处保持 no-op，
+/// [schemaVersion] 仅被读入 `OpeningDetails` 而永不写回（见 drift `NoVersionDelegate`
+/// 分支），因此不会改写被校验文件。
+class _ReadonlyValidationUser implements QueryExecutorUser {
+  const _ReadonlyValidationUser();
+
+  @override
+  int get schemaVersion => 0;
+
+  @override
+  Future<void> beforeOpen(
+    QueryExecutor executor,
+    OpeningDetails details,
+  ) async {}
 }
