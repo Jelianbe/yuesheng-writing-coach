@@ -16,7 +16,7 @@ import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/services/work_import_service.dart';
-import 'package:writingcoach/widgets/work_import_sheet.dart';
+import 'package:writingcoach/features/chat/work_import_sheet.dart';
 
 void main() {
   late AppDatabase db;

@@ -18,7 +18,7 @@ import '../../data/repositories/outline_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../outline_shared.dart';
-import 'setting_empty_state.dart';
+import '../../features/manuscript/setting_empty_state.dart';
 import '../../theme/app_typography.dart';
 
 /// 状态 → 中文徽标

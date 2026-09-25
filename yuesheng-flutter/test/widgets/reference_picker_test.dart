@@ -22,7 +22,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/volume_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/widgets/reference_picker.dart';
+import 'package:writingcoach/features/chat/reference_picker.dart';
 
 // ── 契约扫描 helper（抗文件搬迁：锚定「语义」而非「硬编码文件路径」） ──────────
 

@@ -16,9 +16,9 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../theme/app_typography.dart';
 
 /// 候选症候选项（id + 名称，来自活跃问题）
 class PracticeSyndromeOption {

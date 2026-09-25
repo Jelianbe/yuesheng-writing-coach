@@ -20,7 +20,7 @@ import '../../providers/practice_providers.dart';
 import '../../providers/reasoning_tier_provider.dart';
 import '../../services/attitude_advisor.dart';
 import '../../types/teaching_types.dart';
-import '../../widgets/attitude_suggestion_banner.dart';
+import 'attitude_suggestion_banner.dart';
 import 'chat_attitude_controller.dart';
 import 'chat_self_practice.dart';
 import 'chat_diagnosis_controller.dart';
@@ -31,8 +31,8 @@ import 'chat_page_sections.dart';
 import 'chat_reference_controller.dart';
 import 'chat_session_controller.dart';
 import 'chat_teaching_controller.dart';
-import '../../widgets/encouragement_text.dart';
-import '../../widgets/task_panel.dart';
+import 'encouragement_text.dart';
+import 'task_panel.dart';
 
 /// 聊天页主体（bootstrap 就绪后）
 class ChatPageBody extends ConsumerWidget {

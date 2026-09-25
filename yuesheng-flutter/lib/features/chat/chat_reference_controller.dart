@@ -30,14 +30,14 @@ import '../../providers/ui_overlay_provider.dart';
 import '../../services/message_card_service.dart';
 import '../../services/work_import_service.dart';
 import '../../types/teaching_types.dart';
-import '../../widgets/abandon_practice_modal.dart';
+import 'abandon_practice_modal.dart';
 import 'chat_page_host.dart';
 import 'chat_session_controller.dart';
-import '../../widgets/import_success_sheet.dart';
-import '../../widgets/reference_bar.dart';
-import '../../widgets/reference_picker.dart';
-import '../../widgets/save_to_file_sheet.dart';
-import '../../widgets/work_import_sheet.dart';
+import 'import_success_sheet.dart';
+import 'reference_bar.dart';
+import 'reference_picker.dart';
+import 'save_to_file_sheet.dart';
+import 'work_import_sheet.dart';
 import '../../widgets/yue_sheet.dart';
 
 /// 聊天页引用与文件相关动作

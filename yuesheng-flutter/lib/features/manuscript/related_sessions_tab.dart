@@ -12,12 +12,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
-import '../data/repositories/session_repository.dart';
-import '../providers/app_providers.dart';
-import '../utils/time_format.dart';
-import '../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/session_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../utils/time_format.dart';
+import '../../theme/app_typography.dart';
 
 class RelatedSessionsTab extends ConsumerStatefulWidget {
   final String manuscriptId;

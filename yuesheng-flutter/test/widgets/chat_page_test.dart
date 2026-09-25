@@ -50,13 +50,13 @@ import 'package:writingcoach/services/chat_context_builder.dart'
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/features/chat/chat_page.dart';
-import 'package:writingcoach/widgets/encouragement_text.dart';
-import 'package:writingcoach/widgets/message_list.dart';
-import 'package:writingcoach/widgets/partial_agreement_card.dart';
+import 'package:writingcoach/features/chat/encouragement_text.dart';
+import 'package:writingcoach/features/chat/message_list.dart';
+import 'package:writingcoach/features/chat/partial_agreement_card.dart';
 import 'package:writingcoach/widgets/practice_task_card.dart';
 import 'package:writingcoach/widgets/privacy_notice_dialog.dart';
-import 'package:writingcoach/widgets/reference_bar.dart';
-import 'package:writingcoach/widgets/task_panel.dart';
+import 'package:writingcoach/features/chat/reference_bar.dart';
+import 'package:writingcoach/features/chat/task_panel.dart';
 import 'package:writingcoach/widgets/ui_overlay_host.dart';
 
 import 'package:writingcoach/services/chat_message_types.dart'

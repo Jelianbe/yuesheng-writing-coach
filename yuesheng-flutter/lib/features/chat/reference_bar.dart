@@ -19,15 +19,15 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
-import '../contracts/reference_capability.dart';
-import '../data/repositories/chapter_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/capability_providers.dart';
-import 'excerpt_picker_sheet.dart';
-import 'yue_sheet.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../contracts/reference_capability.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/capability_providers.dart';
+import '../../widgets/excerpt_picker_sheet.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 class ReferenceBar extends ConsumerStatefulWidget {
   /// 会话 ID（引用列表按会话隔离）

@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/providers/chat_store.dart';
-import 'package:writingcoach/widgets/message_list.dart';
+import 'package:writingcoach/features/chat/message_list.dart';
 
 void main() {
   group('流式渲染联调', () {

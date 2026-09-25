@@ -46,7 +46,7 @@
       "lines": 54
     },
     {
-      "file": "lib/widgets/abandon_practice_modal.dart",
+      "file": "lib/features/chat/abandon_practice_modal.dart",
       "func": "build",
       "start": 45,
       "end": 152,
@@ -95,7 +95,7 @@
       "lines": 58
     },
     {
-      "file": "lib/widgets/attitude_suggestion_banner.dart",
+      "file": "lib/features/chat/attitude_suggestion_banner.dart",
       "func": "build",
       "start": 27,
       "end": 132,
@@ -214,7 +214,7 @@
       "lines": 108
     },
     {
-      "file": "lib/widgets/file_section.dart",
+      "file": "lib/features/manuscript/file_section.dart",
       "func": "build",
       "start": 119,
       "end": 315,
@@ -256,7 +256,7 @@
       "lines": 142
     },
     {
-      "file": "lib/widgets/import_success_sheet.dart",
+      "file": "lib/features/chat/import_success_sheet.dart",
       "func": "build",
       "start": 50,
       "end": 169,
@@ -291,14 +291,14 @@
       "lines": 154
     },
     {
-      "file": "lib/widgets/message_list.dart",
+      "file": "lib/features/chat/message_list.dart",
       "func": "_showDeleteConfirm",
       "start": 265,
       "end": 317,
       "lines": 53
     },
     {
-      "file": "lib/widgets/message_list.dart",
+      "file": "lib/features/chat/message_list.dart",
       "func": "build",
       "start": 372,
       "end": 597,
@@ -361,7 +361,7 @@
       "lines": 75
     },
     {
-      "file": "lib/widgets/partial_agreement_card.dart",
+      "file": "lib/features/chat/partial_agreement_card.dart",
       "func": "build",
       "start": 132,
       "end": 186,
@@ -459,21 +459,21 @@
       "lines": 75
     },
     {
-      "file": "lib/widgets/reference_bar.dart",
+      "file": "lib/features/chat/reference_bar.dart",
       "func": "build",
       "start": 226,
       "end": 414,
       "lines": 189
     },
     {
-      "file": "lib/widgets/reference_bar.dart",
+      "file": "lib/features/chat/reference_bar.dart",
       "func": "_buildActionBar",
       "start": 417,
       "end": 480,
       "lines": 64
     },
     {
-      "file": "lib/widgets/reference_bar.dart",
+      "file": "lib/features/chat/reference_bar.dart",
       "func": "_buildRefRow",
       "start": 483,
       "end": 578,
@@ -487,35 +487,35 @@
       "lines": 87
     },
     {
-      "file": "lib/widgets/reference_picker.dart",
+      "file": "lib/features/chat/reference_picker.dart",
       "func": "build",
       "start": 157,
       "end": 253,
       "lines": 97
     },
     {
-      "file": "lib/widgets/reference_picker.dart",
+      "file": "lib/features/chat/reference_picker.dart",
       "func": "_buildManuscriptTile",
       "start": 284,
       "end": 362,
       "lines": 79
     },
     {
-      "file": "lib/widgets/reference_picker.dart",
+      "file": "lib/features/chat/reference_picker.dart",
       "func": "_buildFileGroup",
       "start": 577,
       "end": 662,
       "lines": 86
     },
     {
-      "file": "lib/widgets/related_sessions_tab.dart",
+      "file": "lib/features/manuscript/related_sessions_tab.dart",
       "func": "_buildSessionCard",
       "start": 106,
       "end": 188,
       "lines": 83
     },
     {
-      "file": "lib/widgets/save_to_file_sheet.dart",
+      "file": "lib/features/chat/save_to_file_sheet.dart",
       "func": "build",
       "start": 117,
       "end": 258,
@@ -606,14 +606,14 @@
       "lines": 106
     },
     {
-      "file": "lib/widgets/task_panel.dart",
+      "file": "lib/features/chat/task_panel.dart",
       "func": "build",
       "start": 57,
       "end": 145,
       "lines": 89
     },
     {
-      "file": "lib/widgets/task_panel.dart",
+      "file": "lib/features/chat/task_panel.dart",
       "func": "_buildProblemRow",
       "start": 148,
       "end": 253,
@@ -676,7 +676,7 @@
       "lines": 89
     },
     {
-      "file": "lib/widgets/work_import_sheet.dart",
+      "file": "lib/features/chat/work_import_sheet.dart",
       "func": "build",
       "start": 133,
       "end": 251,

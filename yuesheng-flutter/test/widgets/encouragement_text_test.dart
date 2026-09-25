@@ -10,7 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/encouragement_text.dart';
+import 'package:writingcoach/features/chat/encouragement_text.dart';
 
 void main() {
   Widget buildText(EncouragementText text) {

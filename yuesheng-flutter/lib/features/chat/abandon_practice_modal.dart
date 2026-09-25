@@ -10,8 +10,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_palette.dart';
-import '../config/app_theme.dart';
+import '../../config/app_palette.dart';
+import '../../config/app_theme.dart';
 
 class AbandonPracticeDialog extends StatelessWidget {
   /// 继续练习：关闭弹窗，保留任务

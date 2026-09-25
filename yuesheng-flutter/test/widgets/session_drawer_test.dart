@@ -14,7 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
-import 'package:writingcoach/widgets/session_drawer.dart';
+import 'package:writingcoach/features/chat/session_drawer.dart';
 
 void main() {
   SessionWithPhase makeSession({

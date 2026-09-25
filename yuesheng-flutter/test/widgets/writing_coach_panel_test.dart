@@ -44,7 +44,7 @@ import 'package:writingcoach/services/chat_context_builder.dart'
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
-import 'package:writingcoach/widgets/partial_agreement_card.dart';
+import 'package:writingcoach/features/chat/partial_agreement_card.dart';
 import 'package:writingcoach/widgets/practice_task_card.dart';
 import 'package:writingcoach/widgets/writing_coach_panel.dart';
 

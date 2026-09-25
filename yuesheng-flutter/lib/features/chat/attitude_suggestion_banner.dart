@@ -8,10 +8,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../services/attitude_advisor.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../services/attitude_advisor.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 class AttitudeSuggestionBanner extends StatelessWidget {
   final AttitudeSuggestion suggestion;

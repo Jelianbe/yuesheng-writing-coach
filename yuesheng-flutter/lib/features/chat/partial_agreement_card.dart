@@ -13,10 +13,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../services/message_card_service.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../services/message_card_service.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 部分认同快速选项（对齐 RN DEFAULT_QUICK_OPTIONS，导出供外部引用/配置）
 const List<({String label, String value})> defaultQuickOptions = [

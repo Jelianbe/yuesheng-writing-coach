@@ -30,7 +30,7 @@ import 'chat_reference_controller.dart';
 import 'chat_session_controller.dart';
 import 'chat_teaching_controller.dart';
 import 'package:writingcoach/features/onboarding/onboarding_questionnaire.dart';
-import '../../widgets/session_drawer.dart';
+import 'session_drawer.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({super.key});

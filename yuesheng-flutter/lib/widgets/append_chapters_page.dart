@@ -21,7 +21,7 @@ import 'yue_sheet.dart';
 import '../data/repositories/chapter_repository.dart';
 import '../providers/app_providers.dart';
 import '../services/file_parser.dart';
-import 'import_success_sheet.dart';
+import '../features/chat/import_success_sheet.dart';
 import '../theme/app_typography.dart';
 import '../config/app_palette.dart';
 

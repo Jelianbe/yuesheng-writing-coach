@@ -28,7 +28,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
-import '../setting/setting_empty_state.dart';
+import '../../features/manuscript/setting_empty_state.dart';
 import 'world_dialogs.dart';
 import 'world_fact_detail_page.dart';
 import '../../theme/app_typography.dart';

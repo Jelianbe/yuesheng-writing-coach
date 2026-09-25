@@ -13,13 +13,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
-import 'yue_sheet.dart';
-import '../data/repositories/reference_repository.dart';
-import '../providers/capability_providers.dart';
-import 'file_viewer_modal.dart';
-import 'material_upload_sheet.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../data/repositories/reference_repository.dart';
+import '../../providers/capability_providers.dart';
+import '../../widgets/file_viewer_modal.dart';
+import '../../widgets/material_upload_sheet.dart';
+import '../../config/app_palette.dart';
 
 const Map<String, String> _roleLabels = {
   'outline': '大纲',

@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/data/repositories/diagnosis_repository.dart';
-import 'package:writingcoach/widgets/task_panel.dart';
+import 'package:writingcoach/features/chat/task_panel.dart';
 
 void main() {
   Widget buildPanel(TaskPanel panel) {

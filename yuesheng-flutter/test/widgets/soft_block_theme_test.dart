@@ -22,7 +22,7 @@ import 'package:writingcoach/types/teaching_types.dart';
 import 'package:writingcoach/widgets/attitude_indicator.dart';
 import 'package:writingcoach/widgets/phase_upgrade_card.dart';
 import 'package:writingcoach/widgets/practice_result_indicator.dart';
-import 'package:writingcoach/widgets/setting/setting_empty_state.dart';
+import 'package:writingcoach/features/manuscript/setting_empty_state.dart';
 
 /// 收集树里所有 `Container` 的 `BoxDecoration.color`（底色取证，不依赖节点顺序）。
 Set<Color> _bgs(WidgetTester t) => t

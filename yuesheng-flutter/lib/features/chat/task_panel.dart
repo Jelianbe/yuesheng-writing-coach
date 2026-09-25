@@ -13,10 +13,10 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 严重度中文标签（对齐 RN SEVERITY_LABELS）
 const Map<String, String> _severityLabels = {

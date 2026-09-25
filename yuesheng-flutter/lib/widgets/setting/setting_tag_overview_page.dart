@@ -21,7 +21,7 @@ import '../../data/repositories/world_fact_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
 import '../../services/setting_tag_overview.dart';
-import 'setting_empty_state.dart';
+import '../../features/manuscript/setting_empty_state.dart';
 import '../../theme/app_typography.dart';
 
 /// 标签总览页（全稿聚合）。

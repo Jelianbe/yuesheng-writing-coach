@@ -8,7 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/import_success_sheet.dart';
+import 'package:writingcoach/features/chat/import_success_sheet.dart';
 
 void main() {
   Widget buildHost({

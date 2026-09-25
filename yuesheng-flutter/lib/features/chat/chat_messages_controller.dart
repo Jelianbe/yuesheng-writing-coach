@@ -24,7 +24,7 @@ import '../../router/app_routes.dart';
 import '../../types/teaching_types.dart';
 import 'chat_page_host.dart';
 import 'chat_teaching_controller.dart';
-import '../../widgets/partial_agreement_card.dart';
+import 'partial_agreement_card.dart';
 import '../../widgets/privacy_notice_dialog.dart';
 
 /// 聊天页消息与画像相关动作

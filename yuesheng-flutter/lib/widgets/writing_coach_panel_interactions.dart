@@ -6,7 +6,7 @@
 // 无副作用、无 Flutter 依赖，便于单测与复用。
 // ─────────────────────────────────────────────────────────────
 
-import 'partial_agreement_card.dart' show quickOptionLabel;
+import '../features/chat/partial_agreement_card.dart' show quickOptionLabel;
 
 /// 批次81 H3：部分认同「部分认同」反馈 → 组装发送文案（含快速选项展开）。
 ///

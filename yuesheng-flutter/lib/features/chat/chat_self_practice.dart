@@ -17,7 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/diagnosis_repository.dart';
 import '../../providers/practice_providers.dart';
-import '../../widgets/practice_launcher.dart';
+import 'practice_launcher.dart';
 
 /// P1-6：打开自主练习选择器并启动练习。
 /// 反向漏斗：症候仅列当前活跃问题（chatState.activeProblems），

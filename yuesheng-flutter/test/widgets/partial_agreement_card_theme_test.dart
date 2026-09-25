@@ -8,7 +8,7 @@ import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart' show AppColors;
 import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
-import 'package:writingcoach/widgets/partial_agreement_card.dart';
+import 'package:writingcoach/features/chat/partial_agreement_card.dart';
 
 void main() {
   const hint = '告诉我哪些描述不准确，我会调整诊断结果。';

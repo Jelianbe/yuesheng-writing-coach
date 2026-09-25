@@ -10,7 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/practice_launcher.dart';
+import 'package:writingcoach/features/chat/practice_launcher.dart';
 
 void main() {
   const syndromes = [

@@ -13,8 +13,8 @@
 
 import 'package:flutter/material.dart';
 
-import '../config/app_theme.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../config/app_palette.dart';
 
 /// 教练鼓励文案池（对齐 RN ENCOURAGEMENTS，15 条）
 const List<String> encouragements = [

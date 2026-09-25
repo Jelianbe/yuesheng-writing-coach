@@ -17,7 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/services/message_card_service.dart';
-import 'package:writingcoach/widgets/partial_agreement_card.dart';
+import 'package:writingcoach/features/chat/partial_agreement_card.dart';
 
 void main() {
   Widget buildCard(PartialAgreementCard card) {

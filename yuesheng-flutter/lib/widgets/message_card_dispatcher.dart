@@ -20,7 +20,7 @@ import 'evaluation_report_panel.dart';
 import 'gen_ui_card.dart';
 import 'message_bubble.dart';
 import 'outline_confirmation_card.dart';
-import 'partial_agreement_card.dart';
+import '../features/chat/partial_agreement_card.dart';
 import 'phase_summary_card.dart';
 import 'phase_upgrade_card.dart';
 import 'reference_change_card.dart';

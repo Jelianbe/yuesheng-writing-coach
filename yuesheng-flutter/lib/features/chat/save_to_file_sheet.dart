@@ -10,10 +10,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
-import '../data/repositories/reference_repository.dart';
-import '../providers/capability_providers.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/reference_repository.dart';
+import '../../providers/capability_providers.dart';
+import '../../config/app_palette.dart';
 
 /// 文件角色（对齐 RN FileRole：general/outline/material）
 const List<({String key, String label})> _fileRoles = [

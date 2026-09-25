@@ -23,7 +23,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/reference_repository.dart';
 import 'package:writingcoach/data/repositories/session_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/widgets/reference_bar.dart';
+import 'package:writingcoach/features/chat/reference_bar.dart';
 
 void main() {
   late AppDatabase db;

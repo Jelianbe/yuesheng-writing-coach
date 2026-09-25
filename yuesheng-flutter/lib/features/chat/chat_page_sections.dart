@@ -23,7 +23,7 @@ import 'chat_reference_controller.dart';
 import 'chat_self_practice.dart';
 import 'chat_teaching_controller.dart';
 import 'chat_welcome.dart';
-import '../../widgets/message_list.dart';
+import 'message_list.dart';
 import '../../theme/app_typography.dart';
 import '../../config/app_palette.dart';
 

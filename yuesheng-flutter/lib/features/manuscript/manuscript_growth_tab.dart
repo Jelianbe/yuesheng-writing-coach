@@ -11,15 +11,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
-import '../data/repositories/diagnosis_repository.dart';
-import '../providers/manuscript_growth_provider.dart';
-import '../services/syndrome_recurrence.dart';
-import '../types/teaching_types.dart';
-import '../widgets/proficiency_ring.dart';
-import '../widgets/severity_bar.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/repositories/diagnosis_repository.dart';
+import '../../providers/manuscript_growth_provider.dart';
+import '../../services/syndrome_recurrence.dart';
+import '../../types/teaching_types.dart';
+import '../../widgets/proficiency_ring.dart';
+import '../../widgets/severity_bar.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 /// 书籍级成长页签。
 class ManuscriptGrowthTab extends ConsumerWidget {

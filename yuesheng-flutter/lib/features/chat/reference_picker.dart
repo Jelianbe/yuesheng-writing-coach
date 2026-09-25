@@ -16,17 +16,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config/app_theme.dart';
-import '../data/database/database.dart';
-import '../data/repositories/chapter_repository.dart';
-import '../data/repositories/manuscript_repository.dart';
-import '../data/repositories/reference_repository.dart';
-import '../data/repositories/volume_repository.dart';
-import '../providers/app_providers.dart';
-import '../providers/capability_providers.dart';
-import '../services/mention_parser.dart';
-import '../theme/app_typography.dart';
-import '../config/app_palette.dart';
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../data/repositories/manuscript_repository.dart';
+import '../../data/repositories/reference_repository.dart';
+import '../../data/repositories/volume_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/capability_providers.dart';
+import '../../services/mention_parser.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
 
 class ReferencePicker extends ConsumerStatefulWidget {
   /// 选择回调：refType ∈ {manuscript, chapter, file}（default 模式）

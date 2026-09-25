@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:writingcoach/services/attitude_advisor.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/attitude_suggestion_banner.dart';
+import 'package:writingcoach/features/chat/attitude_suggestion_banner.dart';
 
 Widget _build({
   required AttitudeSuggestion suggestion,
