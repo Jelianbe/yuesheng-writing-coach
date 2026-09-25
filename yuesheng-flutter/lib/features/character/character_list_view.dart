@@ -26,7 +26,7 @@ import '../../providers/app_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
-import '../../features/manuscript/setting_empty_state.dart';
+import '../manuscript/setting_empty_state.dart';
 import 'character_detail_page.dart';
 import 'character_dialogs.dart';
 import 'pending_confirm_card.dart';

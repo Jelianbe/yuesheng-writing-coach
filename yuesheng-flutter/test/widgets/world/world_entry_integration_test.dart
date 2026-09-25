@@ -20,7 +20,7 @@ import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
-import 'package:writingcoach/widgets/world/world_fact_page.dart';
+import 'package:writingcoach/features/world/world_fact_page.dart';
 import 'package:writingcoach/features/writing/writing_menu_sheet.dart';
 import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/features/writing/writing_page_menu_actions.dart';

@@ -32,8 +32,8 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/world/world_dialogs.dart';
-import 'package:writingcoach/widgets/world/world_fact_list_view.dart';
+import 'package:writingcoach/features/world/world_dialogs.dart';
+import 'package:writingcoach/features/world/world_fact_list_view.dart';
 
 void main() {
   late AppDatabase db;

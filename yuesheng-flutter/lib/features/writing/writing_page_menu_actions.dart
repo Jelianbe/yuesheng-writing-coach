@@ -18,7 +18,7 @@ import '../../router/app_routes.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/manuscript_providers.dart';
 import '../../providers/writing_providers.dart';
-import '../../widgets/character/character_page.dart';
+import '../character/character_page.dart';
 import '../app_settings/editor_settings_sheet.dart';
 import 'quick_phrase_sheet.dart';
 import 'recycle_bin_sheet.dart';

@@ -21,8 +21,8 @@ import 'package:writingcoach/data/repositories/setting_link_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_routes.dart';
-import 'package:writingcoach/widgets/character/character_detail_page.dart';
-import 'package:writingcoach/widgets/world/world_fact_detail_page.dart';
+import 'package:writingcoach/features/character/character_detail_page.dart';
+import 'package:writingcoach/features/world/world_fact_detail_page.dart';
 
 void main() {
   late AppDatabase db;

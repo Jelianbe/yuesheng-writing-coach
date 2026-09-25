@@ -25,8 +25,8 @@ import 'package:writingcoach/data/repositories/event_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/character/character_assertion_tile.dart';
-import 'package:writingcoach/widgets/character/character_detail_page.dart';
+import 'package:writingcoach/features/character/character_assertion_tile.dart';
+import 'package:writingcoach/features/character/character_detail_page.dart';
 
 void main() {
   late AppDatabase db;

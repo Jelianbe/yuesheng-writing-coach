@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/services/setting_library_service.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/character/character_dialogs.dart';
+import 'package:writingcoach/features/character/character_dialogs.dart';
 
 const _a = CharacterAssertion(
   attribute: '身份',

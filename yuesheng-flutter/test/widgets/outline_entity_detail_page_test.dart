@@ -19,7 +19,7 @@ import 'package:writingcoach/data/repositories/outline_repository.dart';
 import 'package:writingcoach/data/repositories/setting_link_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_routes.dart';
-import 'package:writingcoach/widgets/character/character_detail_page.dart';
+import 'package:writingcoach/features/character/character_detail_page.dart';
 import 'package:writingcoach/widgets/setting/outline_entity_detail_page.dart';
 import 'package:writingcoach/widgets/setting/outline_entity_list_view.dart';
 

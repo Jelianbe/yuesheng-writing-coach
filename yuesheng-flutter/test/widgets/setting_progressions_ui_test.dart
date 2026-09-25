@@ -27,7 +27,7 @@ import 'package:writingcoach/data/repositories/character_fact_repository.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/character/character_detail_page.dart';
+import 'package:writingcoach/features/character/character_detail_page.dart';
 import 'package:writingcoach/widgets/setting/setting_progressions_section.dart';
 
 void main() {

@@ -21,7 +21,7 @@ import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/character/character_detail_page.dart';
+import 'package:writingcoach/features/character/character_detail_page.dart';
 import 'package:writingcoach/widgets/setting/setting_tag_overview_page.dart';
 
 void main() {

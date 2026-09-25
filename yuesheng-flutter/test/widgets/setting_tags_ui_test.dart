@@ -21,7 +21,7 @@ import 'package:writingcoach/data/repositories/setting_link_repository.dart'
     show SettingEntityKind;
 import 'package:writingcoach/data/repositories/setting_tag_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/widgets/character/character_detail_page.dart';
+import 'package:writingcoach/features/character/character_detail_page.dart';
 import 'package:writingcoach/widgets/setting/setting_entry_list_view.dart';
 
 void main() {

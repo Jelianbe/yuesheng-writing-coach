@@ -16,8 +16,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/app_theme.dart';
 import '../../router/app_routes.dart';
-import '../../widgets/character/character_list_view.dart';
-import '../../widgets/world/world_fact_list_view.dart';
+import '../character/character_list_view.dart';
+import '../world/world_fact_list_view.dart';
 import '../../widgets/setting/outline_entity_list_view.dart';
 import '../../widgets/setting/setting_entry_list_view.dart';
 
