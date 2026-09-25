@@ -68,6 +68,16 @@ const List<_OnboardingPage> _pages = [
       (text: '问月笙', desc: '随时聊写作', icon: Icons.chat_bubble_outline),
     ],
   ),
+  _OnboardingPage(
+    icon: Icons.vpn_key,
+    title: '配置 API',
+    subtitle: '解锁完整功能',
+    description:
+        '本应用需接入你自己的 AI 服务商 API 才能做真实诊断与教学；'
+        '未配置时可用免费测试模式（离线示例）体验。怎么获取：去服务商官网注册'
+        '（DeepSeek 为 platform.deepseek.com）→ 在「设置 → API」填入 '
+        'Key / Base URL / 模型。费用按用量计入你的服务商账户。',
+  ),
 ];
 
 class OnboardingFlow extends StatefulWidget {

@@ -21,6 +21,7 @@ import '../../providers/session_providers.dart';
 import '../../services/chat_message_types.dart'
     show SendMessageCallbacks, SendMessageOptions;
 import '../../types/teaching_types.dart';
+import '../onboarding/api_config_nudge.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
 import 'writing_coach_panel_host.dart';
 
@@ -62,6 +63,12 @@ class WritingCoachChatRunner {
   }) async {
     final text = _host.inputController.text.trim();
     if (text.isEmpty) return;
+
+    // C2：首次在教练面板对话里发起真实请求且未配 API → 弹一次性引导。
+    await maybeShowApiConfigNudge(
+      _host.context,
+      _ref.read(appDatabaseProvider),
+    );
 
     // ADR-C81 懒创建：发送是「产生内容」入口，此处才真正创建会话
     final sid = await ensureSession();

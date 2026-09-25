@@ -100,6 +100,12 @@ abstract interface class WritingPageHost {
   bool get saveErrorShown;
   set saveErrorShown(bool value);
 
+  /// C3（2026-09-25）：写作页首次进入的一次性情境提示横幅是否显示。
+  bool get showWritingIntroBanner;
+
+  /// C3：关闭写作页首次情境提示横幅并持久化标记（app_state.writing_intro_seen）。
+  void dismissWritingIntroBanner();
+
   List<String>? get punctBarIds;
   List<PunctuationItem> get punctCustomItems;
 

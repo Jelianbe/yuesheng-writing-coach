@@ -15,6 +15,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/repositories/app_state_repository.dart';
+import '../../providers/app_providers.dart';
 import '../../providers/writing_providers.dart';
 import 'focus_aware_editing_controller.dart';
 import '../../widgets/punctuation_bar.dart';
@@ -84,8 +86,12 @@ class _WritingPageState extends ConsumerState<WritingPage>
   /// 批次82：写作目标达标已提示标志（跨过目标线只轻提示一次）
   bool _goalCelebrated = false;
 
-  /// 批次86-1：回收板——编辑器上一次文本（供 onChanged 时 diff 删除片段）
+  // 批次86-1：回收板——编辑器上一次文本（供 onChanged 时 diff 删除片段）
   String? _lastEditorText;
+
+  /// C3（2026-09-25）：写作页首次情境提示横幅是否显示（一次性；与
+  /// onboarding_completed 解耦，独立标记 app_state.writing_intro_seen）。
+  bool _showWritingIntroBanner = false;
 
   /// 批次86-2：标点栏可见项 id 顺序（null = 默认全部，用户级持久化）
   List<String>? _punctBarIds;
@@ -137,6 +143,8 @@ class _WritingPageState extends ConsumerState<WritingPage>
     _controllers.fab.loadFabPosition();
     // 对齐 RN useNetInfo：网络状态变化 → 写入 store（离线草稿/恢复同步）
     _controllers.storeSync.bindConnectivity();
+    // C3：首次进入写作页 → 加载「情境提示横幅」一次性标记。
+    _loadWritingIntroBanner();
   }
 
   @override
@@ -254,6 +262,25 @@ class _WritingPageState extends ConsumerState<WritingPage>
   bool get saveErrorShown => _saveErrorShown;
   @override
   set saveErrorShown(bool value) => _saveErrorShown = value;
+
+  @override
+  bool get showWritingIntroBanner => _showWritingIntroBanner;
+  @override
+  void dismissWritingIntroBanner() => _dismissWritingIntroBanner();
+
+  /// C3：未看过情境提示（writing_intro_seen）时，首次进入展示一次性横幅。
+  void _loadWritingIntroBanner() {
+    final repo = AppStateRepository(ref.read(appDatabaseProvider));
+    repo.getWritingIntroSeen().then((seen) {
+      if (!seen && mounted) setState(() => _showWritingIntroBanner = true);
+    });
+  }
+
+  /// C3：关闭横幅并持久化标记（写作页内不重复弹）。
+  void _dismissWritingIntroBanner() {
+    setState(() => _showWritingIntroBanner = false);
+    AppStateRepository(ref.read(appDatabaseProvider)).setWritingIntroSeen(true);
+  }
 
   @override
   List<String>? get punctBarIds => _punctBarIds;

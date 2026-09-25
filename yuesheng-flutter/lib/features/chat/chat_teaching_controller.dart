@@ -25,6 +25,7 @@ import '../../providers/practice_providers.dart';
 import '../../providers/session_providers.dart';
 import '../../services/chat_message_types.dart';
 import '../../types/teaching_types.dart';
+import '../onboarding/api_config_nudge.dart';
 import 'chat_mention_resolver.dart';
 import 'chat_page_host.dart';
 
@@ -51,6 +52,11 @@ class ChatTeachingController {
     String? chapterFullText,
   }) async {
     if (text.isEmpty) return;
+    // C2：首次在对话里发起真实请求且未配 API → 弹一次性「配置 API」引导。
+    await maybeShowApiConfigNudge(
+      host.context,
+      host.ref.read(appDatabaseProvider),
+    );
     final bootstrap = host.ref.read(sessionBootstrapProvider).valueOrNull;
     if (bootstrap == null) return;
 

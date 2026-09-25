@@ -74,6 +74,54 @@ class AppStateRepository {
             );
       });
 
+  // ════════════ API 配置教学（A3 + 首启/首次使用，2026-09-25） ════════════
+
+  /// 获取「首次使用 API 配置提示」是否已展示（一次性）
+  /// key='api_config_hint_seen'；与 onboarding_completed / questionnaire_completed 区分
+  Future<bool> getApiConfigHintSeen() async {
+    final row = await (_db.select(
+      _db.appStates,
+    )..where((t) => t.key.equals('api_config_hint_seen'))).getSingleOrNull();
+    return row?.value == 'true';
+  }
+
+  /// 设置「首次使用 API 配置提示」已展示
+  Future<void> setApiConfigHintSeen(bool seen) =>
+      guardRepoWrite('app_state', 'setApiConfigHintSeen', () async {
+        await _db
+            .into(_db.appStates)
+            .insertOnConflictUpdate(
+              AppStatesCompanion.insert(
+                key: 'api_config_hint_seen',
+                value: Value(seen ? 'true' : 'false'),
+                updatedAt: Value(nowSec()),
+              ),
+            );
+      });
+
+  /// 获取「写作页首次情境提示」是否已展示（一次性，与 onboarding_completed 解耦）
+  /// key='writing_intro_seen'
+  Future<bool> getWritingIntroSeen() async {
+    final row = await (_db.select(
+      _db.appStates,
+    )..where((t) => t.key.equals('writing_intro_seen'))).getSingleOrNull();
+    return row?.value == 'true';
+  }
+
+  /// 设置「写作页首次情境提示」已展示
+  Future<void> setWritingIntroSeen(bool seen) =>
+      guardRepoWrite('app_state', 'setWritingIntroSeen', () async {
+        await _db
+            .into(_db.appStates)
+            .insertOnConflictUpdate(
+              AppStatesCompanion.insert(
+                key: 'writing_intro_seen',
+                value: Value(seen ? 'true' : 'false'),
+                updatedAt: Value(nowSec()),
+              ),
+            );
+      });
+
   // ════════════ 通用 key-value ════════════
 
   /// 读取 key-value

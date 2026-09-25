@@ -27,6 +27,7 @@ import '../../providers/evaluation_providers.dart';
 import '../../providers/writing_providers.dart';
 import '../../services/phase_transition.dart';
 import '../../types/teaching_types.dart';
+import '../onboarding/api_config_nudge.dart';
 import 'writing_coach_panel_store.dart' show writingCoachStoreProvider;
 import 'writing_coach_panel_diagnosis_runner.dart';
 import 'writing_coach_panel_host.dart';
@@ -75,6 +76,11 @@ class WritingCoachTeachingController {
     // 存在「按钮尚未变灰」的点击空窗 ⇒ 连点会并发进本方法 ⇒ 重复请求 + 重复计费。
     // 在入口即挡（早于任何 await），与流式守卫同理。
     if (_host.isDiagnosing) return;
+    // C2：首次发起诊断且未配 API → 弹一次性「配置 API」引导。
+    await maybeShowApiConfigNudge(
+      _host.context,
+      _ref.read(appDatabaseProvider),
+    );
     // ADR-C81 懒创建：诊断（整章/划词）是「产生内容」入口，此处才真正创建会话
     final sid = await ensureSession();
     if (sid == null) return;

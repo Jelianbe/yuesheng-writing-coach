@@ -178,22 +178,82 @@ class WritingPageScaffold extends ConsumerWidget {
 
   /// 编辑器主体（视图层独立类：离线横幅 / 标题 / 正文 / 划词菜单 / 保存状态条 / 标点栏）
   Widget _buildEditor() {
-    return WritingEditorView(
-      state: state,
-      titleController: host.titleController,
-      contentController: host.editorController,
-      focusNode: host.focusNode,
-      editorStackKey: host.editorStackKey,
-      punctBarIds: host.punctBarIds,
-      punctCustomItems: host.punctCustomItems,
-      showSelectionMenu: host.showSelectionMenu,
-      selectionMenuPos: host.selectionMenuPos,
-      onTitleChanged: controllers.document.onTitleChanged,
-      onContentChanged: controllers.document.onContentChanged,
-      onDiagnoseSelection: controllers.selectionAi.handleDiagnoseSelection,
-      onUndo: controllers.document.undo,
-      onRedo: controllers.document.redo,
-      onPunctuationTap: controllers.document.handlePunctuationTap,
+    return Column(
+      children: [
+        if (host.showWritingIntroBanner) _buildWritingIntroBanner(host.context),
+        Expanded(
+          child: WritingEditorView(
+            state: state,
+            titleController: host.titleController,
+            contentController: host.editorController,
+            focusNode: host.focusNode,
+            editorStackKey: host.editorStackKey,
+            punctBarIds: host.punctBarIds,
+            punctCustomItems: host.punctCustomItems,
+            showSelectionMenu: host.showSelectionMenu,
+            selectionMenuPos: host.selectionMenuPos,
+            onTitleChanged: controllers.document.onTitleChanged,
+            onContentChanged: controllers.document.onContentChanged,
+            onDiagnoseSelection:
+                controllers.selectionAi.handleDiagnoseSelection,
+            onUndo: controllers.document.undo,
+            onRedo: controllers.document.redo,
+            onPunctuationTap: controllers.document.handlePunctuationTap,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// C3（2026-09-25）：写作页首次进入的一次性情境提示横幅。
+  /// 仅做 orientation（用法 + 软 API 注记），不阻断编辑；〔知道了〕置 writing_intro_seen。
+  Widget _buildWritingIntroBanner(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      color: palette.surfaceWhite,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.sm,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '写作页怎么用',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '划词即可诊断、点开 AI 面板可随时问问题。未配置 API 时走'
+                  '「免费测试模式」（离线示例），配置后做真实诊断与教学。',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.5,
+                    color: palette.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: host.dismissWritingIntroBanner,
+            child: Text(
+              '知道了',
+              style: TextStyle(fontSize: 13, color: palette.primary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
