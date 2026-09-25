@@ -1,0 +1,90 @@
+name: Release APK (signed internal test package)
+
+# ---------------------------------------------------------------------------
+# ★ ENG-001 / D12 交付物之一：让「产签名内测候选包」可由 CI 复现产出。
+#
+# 设计要点（对照 AGENTS 纪律 + ENG-001 裁定）：
+# 1. 本 workflow 与验证型 flutter_ci.yaml 解耦 —— 只由「手动 dispatch」或
+#    「推送 v* tag」触发，**不**在每次 push main 时跑，避免污染每推送的验证门禁。
+# 2. 签名密钥**不入库**（R-029 零硬编码）：keystore 以 base64 存于
+#    GitHub Repo Secrets（YUESHENG_KEYSTORE_BASE64），key.properties 全文存于
+#    YUESHENG_KEY_PROPERTIES；CI 运行时解码落盘，绝不写死明文。
+# 3. **fail-fast**（ENG-001「SDK/签名缺失须失败」）：任一密钥缺失 → 显式
+#    `exit 1` 并打印指引，不会静默回退 debug 签名误发。
+# 4. 本地等价命令（已实证可出签名包）：
+#      flutter build apk --release
+#    （需本地 android/key.properties + android/app/upload-keystore.jks，均 gitignored）
+#
+# ★ 首次使用前，船长须在 GitHub Repo Settings → Secrets 配置两项：
+#    - YUESHENG_KEYSTORE_BASE64：本地 `base64 -w0 android/app/upload-keystore.jks` 的输出
+#    - YUESHENG_KEY_PROPERTIES：本地 android/key.properties 全文
+#      （含 storeFile=upload-keystore.jks / keyAlias / storePassword / keyPassword）
+# ---------------------------------------------------------------------------
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'APK 版本标签（仅作 artifact 命名，不强制与 tag 一致）'
+        required: false
+        default: 'manual'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-release-apk:
+    name: Build signed release APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: yuesheng-flutter
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          # 与本地开发 SDK / 根 flutter_ci.yaml 对齐（Flutter 3.44.8 / Dart 3.12.2）。
+          flutter-version: '3.44.8'
+          channel: 'stable'
+          cache: true
+
+      - name: Skip Flutter update check (avoid network hang)
+        run: echo "FLUTTER_SKIP_UPDATE_CHECK=true" >> "$GITHUB_ENV"
+
+      - name: Restore signing keystore + key.properties (fail-fast if missing)
+        env:
+          KEYSTORE_B64: ${{ secrets.YUESHENG_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.YUESHENG_KEY_PROPERTIES }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEY_PROPERTIES" ]; then
+            echo "❌ 签名密钥缺失：未在 GitHub Repo Secrets 配置 YUESHENG_KEYSTORE_BASE64 / YUESHENG_KEY_PROPERTIES。"
+            echo "   详见本 workflow 头部注释的「首次使用前」配置说明。"
+            echo "   按 ENG-001「签名缺失须失败」纪律，构建中止（不得静默回退 debug 签名）。"
+            exit 1
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > android/app/upload-keystore.jks
+          printf '%s' "$KEY_PROPERTIES" > android/key.properties
+          echo "✅ 签名配置已落地（keystore + key.properties）"
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: Build signed release APK
+        # android/app/build.gradle.kts 已对 release 构建做 fail-fast：
+        # key.properties 不完整 → 抛 GradleException（不会用 debug 签名误发）。
+        run: flutter build apk --release
+
+      - name: Upload signed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yuesheng-release-apk-${{ github.sha }}
+          path: yuesheng-flutter/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
