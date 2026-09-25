@@ -34,7 +34,7 @@ import 'package:writingcoach/widgets/evaluation_report_panel.dart';
 import 'package:writingcoach/widgets/practice_result_indicator.dart';
 import 'package:writingcoach/widgets/practice_task_card.dart';
 import 'package:writingcoach/widgets/teacher_suggestion_card.dart';
-import 'package:writingcoach/widgets/writing_coach_panel.dart';
+import 'package:writingcoach/features/writing/writing_coach_panel.dart';
 
 /// 诊断 LLM 响应（合法 YS_DIAGNOSIS 块；severity L2 → 触发 Teacher 二次调用）
 const String diagResponse =

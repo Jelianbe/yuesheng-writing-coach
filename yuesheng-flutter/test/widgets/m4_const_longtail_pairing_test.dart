@@ -30,7 +30,7 @@ import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
 import 'package:writingcoach/features/chat/chat_welcome.dart';
 import 'package:writingcoach/features/chat/import_success_sheet.dart';
-import 'package:writingcoach/widgets/quick_phrase_sheet.dart';
+import 'package:writingcoach/features/writing/quick_phrase_sheet.dart';
 
 Future<void> _pump(WidgetTester t, ThemeData theme, Widget child) async {
   await t.pumpWidget(

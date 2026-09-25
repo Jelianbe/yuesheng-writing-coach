@@ -1,0 +1,253 @@
+// ─────────────────────────────────────────────────────────────
+// QuickPhraseSheet — 快捷短语弹层（批次85-3 快捷短语）
+// 对标起点/笔落/灯果「快捷短语/常用语」：常用语管理 + 光标一键插入。
+//
+// 交互：
+//   - 顶部输入框 + 「添加」→ 存为常用语（去重，上限 30）
+//   - 列表显示已有短语 → 点击插入到光标位置（关闭弹层 + onInsert 回调交页面）
+//   - 列表行删除按钮 → 移除
+// 存储走 app_state key-value（quick_phrases JSON 数组，零 schema 改动）。
+// ─────────────────────────────────────────────────────────────
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../config/app_theme.dart';
+import '../../data/repositories/app_state_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+
+class QuickPhraseSheet extends ConsumerStatefulWidget {
+  /// 点击短语 → 关闭弹层 + 回调（页面在光标处插入并保存）
+  final ValueChanged<String> onInsert;
+
+  const QuickPhraseSheet({super.key, required this.onInsert});
+
+  /// 打开快捷短语弹层
+  static Future<void> show(
+    BuildContext context, {
+    required ValueChanged<String> onInsert,
+  }) {
+    return showYueModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => QuickPhraseSheet(onInsert: onInsert),
+    );
+  }
+
+  @override
+  ConsumerState<QuickPhraseSheet> createState() => _QuickPhraseSheetState();
+}
+
+class _QuickPhraseSheetState extends ConsumerState<QuickPhraseSheet> {
+  /// null = 加载中
+  List<String>? _phrases;
+  late final TextEditingController _inputCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _inputCtrl = TextEditingController();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _inputCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final phrases = await AppStateRepository(
+      ref.read(appDatabaseProvider),
+    ).listQuickPhrases();
+    if (!mounted) return;
+    setState(() => _phrases = phrases);
+  }
+
+  Future<void> _add() async {
+    final text = _inputCtrl.text.trim();
+    if (text.isEmpty) return;
+    final repo = AppStateRepository(ref.read(appDatabaseProvider));
+    await repo.addQuickPhrase(text);
+    _inputCtrl.clear();
+    await _load();
+  }
+
+  Future<void> _remove(String phrase) async {
+    await AppStateRepository(
+      ref.read(appDatabaseProvider),
+    ).removeQuickPhrase(phrase);
+    await _load();
+  }
+
+  /// 点击短语 → 关闭 + 回调页面插入
+  void _insert(String phrase) {
+    Navigator.of(context).pop();
+    widget.onInsert(phrase);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.section,
+        AppSpacing.md,
+        AppSpacing.section,
+        AppSpacing.lg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(
+                '快捷短语',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: context.palette.textInk,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: Icon(
+                  Icons.close,
+                  size: 20,
+                  color: context.palette.textTertiary,
+                ),
+                tooltip: '关闭',
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // 添加行：输入 + 添加
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _inputCtrl,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.palette.textInk,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '写一句常用的话，点一下就能插入',
+                    hintStyle: TextStyle(
+                      fontSize: 13,
+                      color: context.palette.hintText,
+                    ),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.smx,
+                      vertical: AppSpacing.sm,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderSide: BorderSide(color: context.palette.borderSoft),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderSide: BorderSide(color: context.palette.borderSoft),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      borderSide: BorderSide(color: context.palette.primary),
+                    ),
+                  ),
+                  onSubmitted: (_) => _add(),
+                ),
+              ),
+              const SizedBox(width: 6),
+              TextButton(
+                onPressed: _add,
+                style: TextButton.styleFrom(
+                  foregroundColor: context.palette.primary,
+                ),
+                child: const Text('添加', style: TextStyle(fontSize: 13)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('最多记 30 条，点击短语就会插入到光标位置', style: context.text.caption),
+          const SizedBox(height: 8),
+          SizedBox(height: 300, child: _buildList()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList() {
+    final phrases = _phrases;
+    if (phrases == null) {
+      return Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: context.palette.primary,
+        ),
+      );
+    }
+    if (phrases.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.format_quote,
+              size: 36,
+              color: context.palette.placeholder,
+            ),
+            SizedBox(height: 8),
+            Text(
+              '还没有快捷短语\n把常写的句子记下来，下次一点就出来',
+              textAlign: TextAlign.center,
+              style: context.text.subCaption,
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: phrases.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final phrase = phrases[index];
+        return InkWell(
+          onTap: () => _insert(phrase),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.smx),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    phrase,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: context.palette.textInk,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: context.palette.textTertiary,
+                  ),
+                  tooltip: '删除',
+                  onPressed: () => _remove(phrase),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

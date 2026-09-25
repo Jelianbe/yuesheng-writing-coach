@@ -7,7 +7,9 @@
 // 零门禁 ⇒ 本文件即那条缺失的执行点。
 //
 // 三条断言（缺一不可，防三种复发形态）：
-//   ① 假按钮文案（敬请期待/即将上线/开发中）在 lib/widgets 注释外零命中
+//   ① 假按钮文案（敬请期待/即将上线/开发中）在 lib 全域注释外零命中
+//      （2026-09-25 Batch 6 起扫描面从 lib/widgets 扩为 lib 全域：
+//       features 领域分层迁移后 UI 主体已不在 widgets/，原范围看守面静默缩水）
 //   ② 单行空回调（onTap/onPressed/onChanged: () {}）仅允许白名单那一条
 //   ③ ★ 阳性对照：白名单项**必须真的被检出逻辑命中** ——
 //      堵「扫描器正则静默失效 ⇒ ①② 以零命中假绿」（§4 系列教训：
@@ -40,7 +42,7 @@ class _ScanResult {
 _ScanResult _scanWidgets() {
   final fake = <String>[];
   final empty = <String>[];
-  for (final entity in Directory('lib/widgets').listSync(recursive: true)) {
+  for (final entity in Directory('lib').listSync(recursive: true)) {
     if (entity is! File ||
         !entity.path.endsWith('.dart') ||
         entity.path.endsWith('.g.dart')) {

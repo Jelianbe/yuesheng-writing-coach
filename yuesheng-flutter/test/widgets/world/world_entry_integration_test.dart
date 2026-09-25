@@ -21,10 +21,10 @@ import 'package:writingcoach/router/app_router.dart';
 import 'package:writingcoach/router/app_routes.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
 import 'package:writingcoach/widgets/world/world_fact_page.dart';
-import 'package:writingcoach/widgets/writing_menu_sheet.dart';
+import 'package:writingcoach/features/writing/writing_menu_sheet.dart';
 import 'package:writingcoach/providers/session_providers.dart';
-import 'package:writingcoach/widgets/writing/view/writing_page_menu_actions.dart';
-import 'package:writingcoach/widgets/writing/writing_page_host.dart';
+import 'package:writingcoach/features/writing/writing_page_menu_actions.dart';
+import 'package:writingcoach/features/writing/writing_page_host.dart';
 
 import '../../helpers/mock_last_session_storage.dart';
 

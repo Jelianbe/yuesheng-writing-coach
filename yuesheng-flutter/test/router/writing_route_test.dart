@@ -27,7 +27,7 @@ import 'package:writingcoach/widgets/growth_detail_page.dart';
 import 'package:writingcoach/widgets/growth_page.dart';
 import 'package:writingcoach/features/manuscript/manuscript_detail_page.dart';
 import 'package:writingcoach/widgets/placeholder_page.dart';
-import 'package:writingcoach/widgets/writing_page.dart';
+import 'package:writingcoach/features/writing/writing_page.dart';
 
 // ── 测试专用：独立构建一份 GoRouter，避免全局 appRouter 跨测试污染 ──
 GoRouter buildTestRouter() {

@@ -12,7 +12,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/smart_punctuation_formatter.dart';
+import 'package:writingcoach/features/writing/smart_punctuation_formatter.dart';
 
 void main() {
   const formatter = SmartPunctuationFormatter();

@@ -50,17 +50,17 @@ import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/services/realtime_observation_service.dart';
 import 'package:writingcoach/types/teaching_types.dart';
-import 'package:writingcoach/widgets/chapter_tree_drawer.dart';
+import 'package:writingcoach/features/writing/chapter_tree_drawer.dart';
 import 'package:writingcoach/widgets/outline_content_view.dart';
 import 'package:writingcoach/widgets/punctuation_bar.dart';
-import 'package:writingcoach/widgets/recycle_bin_sheet.dart';
-import 'package:writingcoach/widgets/search_replace_sheet.dart';
-import 'package:writingcoach/widgets/version_time_machine_sheet.dart';
-import 'package:writingcoach/widgets/writing_coach_panel.dart';
+import 'package:writingcoach/features/writing/recycle_bin_sheet.dart';
+import 'package:writingcoach/features/writing/search_replace_sheet.dart';
+import 'package:writingcoach/features/writing/version_time_machine_sheet.dart';
+import 'package:writingcoach/features/writing/writing_coach_panel.dart';
 import 'package:writingcoach/widgets/writing_curve_chart.dart';
-import 'package:writingcoach/widgets/writing_page.dart';
-import 'package:writingcoach/widgets/writing/view/writing_page_breadcrumb.dart';
-import 'package:writingcoach/widgets/editing/focus_aware_editing_controller.dart';
+import 'package:writingcoach/features/writing/writing_page.dart';
+import 'package:writingcoach/features/writing/writing_page_breadcrumb.dart';
+import 'package:writingcoach/features/writing/focus_aware_editing_controller.dart';
 
 import 'package:writingcoach/services/diagnosis_flow_handler.dart';
 import 'package:writingcoach/services/diagnosis_parser.dart'

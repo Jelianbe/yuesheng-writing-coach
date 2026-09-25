@@ -10,7 +10,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:writingcoach/widgets/writing_menu_sheet.dart';
+import 'package:writingcoach/features/writing/writing_menu_sheet.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

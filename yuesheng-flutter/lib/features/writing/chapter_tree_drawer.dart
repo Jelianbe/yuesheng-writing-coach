@@ -1,0 +1,962 @@
+// ─────────────────────────────────────────────────────────────
+// ChapterTreeDrawer — 章节树侧栏（批次83 章节树侧栏 / 批次89-2 卷分组）
+// 写作页左侧抽屉：作品全部章节 + 当前章高亮 + 快速跳转 + 新建章节。
+//
+// 设计说明：
+//   - 批次83 第一版为扁平章列表；批次89-2 起按卷分组折叠展示：
+//     卷按 sort_order 展示，未分卷章节归入末尾「未分卷」组；卷头可
+//     点击折叠/展开（折叠态为组件内本地状态，随抽屉重建重置）。
+//   - 无卷的作品（volumes 为空）保持扁平列表，行为与批次83 一致。
+//   - 抽屉每次打开由 WritingPage 以新 ValueKey 重建 + 失效
+//     chapterStoreProvider（ADR-C90 单一真源）/ volumeListProvider
+//   - 跳转/新建动作通过回调交给 WritingPage 执行（本组件保持纯 UI）
+// ─────────────────────────────────────────────────────────────
+
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../config/app_theme.dart';
+import '../../data/database/database.dart';
+import '../../data/repositories/volume_repository.dart';
+import '../../data/repositories/chapter_repository.dart';
+import '../../providers/app_providers.dart';
+import '../../providers/chapter_providers.dart';
+import '../../providers/manuscript_providers.dart';
+import '../../utils/volume_group.dart';
+import '../manuscript/manuscript_detail_chapter_card.dart';
+import '../../widgets/yue_sheet.dart';
+import '../../theme/app_typography.dart';
+import '../../config/app_palette.dart';
+
+// V-5：章节状态→配色收敛到**单一真源** `chapterStatusConfig`
+// （定义在 manuscript_detail_chapter_card.dart）。本文件曾自持一张与其 9 值
+// 逐字相同的私有表 `_statusConfig`，且**兜底已分叉**（详情页 `?? draft` 渲染
+// 「草稿」/ 抽屉判空不渲染）⇒ 同一份数据两个页面在「表外状态」上呈现不同。
+// 统一语义 = **表外状态不渲染徽标、不编造状态**（取抽屉侧行为；与 S1
+// 「无身份不渲染数字，不编造」同纪律）。实测 chapters.status 带 CHECK 约束
+// （tables.dart，v24 重建即带），表外值 DB 层进不来 ⇒ 本次统一不动任何线上
+// 呈现，消的是「改一处漏一处」的复发土壤。回归网见
+// test/widgets/chapter_status_badge_test.dart（值域锁 + 兜底行为锁 + 源码对账）。
+
+class ChapterTreeDrawer extends ConsumerStatefulWidget {
+  final String currentChapterId;
+
+  /// 所属作品 ID（null/空 = 无法加载列表，走空态）
+  final String? manuscriptId;
+
+  /// 点击某章 → 快速跳转（由 WritingPage 执行）
+  final void Function(String chapterId, String title) onJumpToChapter;
+
+  /// 点击「新建章节」（由 WritingPage 执行）
+  final VoidCallback onCreateChapter;
+
+  const ChapterTreeDrawer({
+    super.key,
+    required this.currentChapterId,
+    required this.manuscriptId,
+    required this.onJumpToChapter,
+    required this.onCreateChapter,
+  });
+
+  @override
+  ConsumerState<ChapterTreeDrawer> createState() => _ChapterTreeDrawerState();
+}
+
+class _ChapterTreeDrawerState extends ConsumerState<ChapterTreeDrawer> {
+  /// 已折叠的卷 id
+  final Set<String> _collapsed = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final msId = widget.manuscriptId ?? '';
+    // ADR-C90：chapterListProvider 已派生自 chapterStoreProvider（同步 List），
+    // 加载态从 store 取——写操作经 store 后自动同步，无需手工 invalidate。
+    final store = msId.isEmpty ? null : ref.watch(chapterStoreProvider(msId));
+    final chapters = msId.isEmpty
+        ? const <Chapter>[]
+        : ref.watch(chapterListProvider(msId));
+    final volumesAsync = msId.isEmpty
+        ? null
+        : ref.watch(volumeListProvider(msId));
+    final volumes = volumesAsync?.value ?? const <Volume>[];
+    final loading =
+        (store?.isLoading ?? false) || (volumesAsync?.isLoading ?? false);
+
+    return Drawer(
+      backgroundColor: context.palette.background,
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── 头部：标题 + 章节数 ──
+            _buildHeaderRow(chapters.length, msId.isNotEmpty),
+            const Divider(height: 1),
+            // ── 章节列表 / 加载中 / 空态 ──
+            Expanded(child: _buildBody(chapters, volumes, loading)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 抽屉头部：标题 + 章节数 + 新建卷入口（R-019 清偿拆出）。
+  Widget _buildHeaderRow(int chapterCount, bool hasMsId) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.md,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.menu_book_outlined,
+            size: 18,
+            color: context.palette.primary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            '章节列表',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: context.palette.textInk,
+            ),
+          ),
+          const Spacer(),
+          // 批次89-3：新建卷入口（始终可用，卷可在任何时候追加）
+          IconButton(
+            key: const ValueKey('create-volume-btn'),
+            onPressed: hasMsId ? _handleCreateVolume : null,
+            visualDensity: VisualDensity.compact,
+            tooltip: '新建卷',
+            icon: Icon(
+              Icons.create_new_folder_outlined,
+              size: 20,
+              color: context.palette.primary,
+            ),
+          ),
+          Text('$chapterCount 章', style: context.text.caption),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(
+    List<Chapter> chapters,
+    List<Volume> volumes,
+    bool loading,
+  ) {
+    if (loading && chapters.isEmpty && volumes.isEmpty) {
+      return Center(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: context.palette.primary,
+          ),
+        ),
+      );
+    }
+
+    final children = <Widget>[];
+    if (chapters.isEmpty && volumes.isEmpty) {
+      // 空态：引导提示 + 末尾「新建章节」行（底部无独立按钮）
+      children.add(
+        const Padding(
+          padding: EdgeInsets.only(
+            top: AppSpacing.xxl + AppSpacing.xl,
+            bottom: AppSpacing.sm,
+          ),
+          child: _EmptyChapters(),
+        ),
+      );
+    } else if (volumes.isEmpty) {
+      // 无卷 → 扁平章节列表（批次83 原行为，兼容既有测试）
+      _buildFlatChapters(chapters, children);
+    } else {
+      // 有卷 → 按全局序渲染段（批次96-4：散落章节平铺无组头，卷组自然穿插）
+      _buildSectionsChildren(chapters, volumes, children);
+    }
+    // 批次89-4：列表末尾「新建章节」行（新建卷唯一入口 = 头部「＋」图标）
+    children.add(_NewChapterRow(onTap: widget.onCreateChapter));
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      children: children,
+    );
+  }
+
+  /// 无卷 → 扁平章节列表（批次83 原行为，兼容既有测试；R-019 清偿拆出）。
+  void _buildFlatChapters(List<Chapter> chapters, List<Widget> children) {
+    for (final ch in chapters) {
+      children.add(_buildChapterItem(ch));
+    }
+  }
+
+  /// 有卷 → 按全局序渲染段（散落章节平铺、卷组自然穿插；R-019 清偿拆出）。
+  void _buildSectionsChildren(
+    List<Chapter> chapters,
+    List<Volume> volumes,
+    List<Widget> children,
+  ) {
+    final sections = buildChapterSections(volumes, chapters);
+    for (final sec in sections) {
+      final loose = sec.looseChapter;
+      if (loose != null) {
+        children.add(_buildChapterItem(loose));
+        continue;
+      }
+      final volume = sec.volume!;
+      final key = volume.id;
+      final collapsed = _collapsed.contains(key);
+      children.add(
+        _VolumeHeader(
+          volume: volume,
+          count: sec.chapters.length,
+          collapsed: collapsed,
+          onToggle: () => setState(() {
+            if (!_collapsed.add(key)) _collapsed.remove(key);
+          }),
+          onLongPress: () => _showVolumeActions(volume),
+          onRename: () => _handleRenameVolume(volume),
+        ),
+      );
+      if (collapsed) continue;
+      if (sec.chapters.isEmpty) {
+        children.add(const _EmptyVolumeHint());
+        continue;
+      }
+      for (final ch in sec.chapters) {
+        children.add(_buildChapterItem(ch));
+      }
+    }
+  }
+
+  Widget _buildChapterItem(Chapter ch) {
+    final isCurrent = ch.id == widget.currentChapterId;
+    return _ChapterTreeItem(
+      // 当前章唯一标记（测试高亮断言用）
+      key: isCurrent ? ValueKey('tree-current-${ch.id}') : null,
+      chapter: ch,
+      isCurrent: isCurrent,
+      onTap: () => widget.onJumpToChapter(ch.id, ch.title),
+      // 批次89-3：长按章节 → 操作弹层（先重命名再移卷）
+      onLongPress: () => _showChapterActionsSheet(ch),
+      // 修复3：行尾铅笔图标 → 直接重命名
+      onRename: () => _handleRenameChapter(ch),
+    );
+  }
+
+  // ── 批次89-3：卷管理交互（新建卷 / 删卷 / 章节移到卷）──
+  // ── 修复3：章节管理交互（重命名 + 移卷）──
+
+  String get _msId => widget.manuscriptId ?? '';
+
+  void _snack(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
+  }
+
+  /// 修复3：重命名章节（铅笔图标 + 操作弹层均走这里）
+  Future<void> _handleRenameChapter(Chapter chapter) async {
+    final controller = TextEditingController(text: chapter.title);
+    final input = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名章节'),
+        content: TextField(
+          key: ValueKey('tree-rename-${chapter.id}'),
+          controller: controller,
+          autofocus: true,
+          maxLength: 30,
+          decoration: const InputDecoration(hintText: '输入章节标题'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (input == null) return;
+    final trimmed = input.trim();
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final repo = ChapterRepository(db);
+      await repo.updateChapterTitle(chapter.id, trimmed);
+      // ADR-C90：chapterListProvider 已派生自 store——直写 repo 后刷新 store
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
+      if (!mounted) return;
+      _snack(trimmed.isEmpty ? '已重命名为「未命名章节」' : '已重命名为《$trimmed》');
+    } catch (e) {
+      debugPrint('[ChapterTreeDrawer] 重命名章节失败: $e');
+      if (!mounted) return;
+      _snack('重命名失败，请稍后再试');
+    }
+  }
+
+  /// 修复3：长按章节 → 先弹操作菜单（重命名 / 移动到卷），选移卷再进卷列表
+  Future<void> _showChapterActionsSheet(Chapter chapter) async {
+    final action = await showYueModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => _buildChapterActionsSheet(ctx, chapter),
+    );
+    if (!mounted || action == null) return;
+    if (action == 'rename') {
+      await _handleRenameChapter(chapter);
+    } else if (action == 'move') {
+      await _showMoveToVolumeSheet(chapter);
+    }
+  }
+
+  /// 章节操作弹层内容（重命名 / 移动到卷；R-019 清偿拆出）。
+  Widget _buildChapterActionsSheet(BuildContext ctx, Chapter chapter) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.section,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              chapter.title.trim().isEmpty ? '未命名章节' : chapter.title.trim(),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: context.palette.textPrimary,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: context.palette.primary,
+            ),
+            title: const Text('重命名章节'),
+            onTap: () => Navigator.pop(ctx, 'rename'),
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.drive_file_move_outlined,
+              size: 18,
+              color: context.palette.textPrimary,
+            ),
+            title: const Text('移动到卷'),
+            onTap: () => Navigator.pop(ctx, 'move'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ),
+    );
+  }
+
+  /// 新建卷：弹输入框（空 → 自动命名「第X卷」）
+  Future<void> _handleCreateVolume() async {
+    final input = await _promptNewVolumeName();
+    if (input == null) return;
+    final trimmed = input.trim();
+    try {
+      final db = ref.read(appDatabaseProvider);
+      final repo = VolumeRepository(db);
+      // CR-21：先算自动标题再建卷——createVolume 后列表已含新卷，
+      // nextVolumeTitle 按 MAX(sort_order)+1 推导会大一号
+      // （实测建出「第一卷」却提示「已创建《第二卷》」）。
+      final title = trimmed.isNotEmpty
+          ? trimmed
+          : repo.nextVolumeTitle(await repo.listVolumes(_msId));
+      await repo.createVolume(_msId, title: title);
+      ref.invalidate(volumeListProvider(_msId));
+      // ADR-C90：直写 repo 后刷新 store（建卷不影响章节，删卷会软删卷内章节）
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
+      if (!mounted) return;
+      _snack('已创建《$title》');
+    } catch (e) {
+      debugPrint('[ChapterTreeDrawer] 新建卷失败: $e');
+      if (!mounted) return;
+      _snack('新建卷失败，请稍后再试');
+    }
+  }
+
+  /// 新建卷输入框——从 _handleCreateVolume 抽出（R-019 职责提取）。
+  Future<String?> _promptNewVolumeName() {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新建卷'),
+        content: TextField(
+          key: const ValueKey('new-volume-field'),
+          controller: controller,
+          autofocus: true,
+          maxLength: 12,
+          decoration: const InputDecoration(hintText: '留空自动命名「第一卷/第二卷…」'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('创建'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 长按卷头 → 卷操作弹层（重命名卷 / 删除卷）
+  /// 批次92-2：新增「重命名卷」项（鱼写作长按驱动模型：长按 → 重命名/删除）
+  Future<void> _showVolumeActions(Volume volume) async {
+    final action = await showYueModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => _buildVolumeActionsSheet(ctx, volume),
+    );
+    if (action == 'rename' && mounted) {
+      await _handleRenameVolume(volume);
+    } else if (action == 'delete' && mounted) {
+      await _confirmDeleteVolume(volume);
+    }
+  }
+
+  /// 卷操作弹层内容（重命名卷 / 删除卷；R-019 清偿拆出）。
+  Widget _buildVolumeActionsSheet(BuildContext ctx, Volume volume) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.section,
+              AppSpacing.lg,
+              AppSpacing.section,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim(),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: context.palette.textPrimary,
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: context.palette.primary,
+            ),
+            title: const Text('重命名卷'),
+            onTap: () => Navigator.pop(ctx, 'rename'),
+          ),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: context.palette.danger),
+            title: Text('删除卷', style: TextStyle(color: context.palette.danger)),
+            subtitle: const Text('卷内章节将一并删除', style: TextStyle(fontSize: 12)),
+            onTap: () => Navigator.pop(ctx, 'delete'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+      ),
+    );
+  }
+
+  /// 批次92-2：重命名卷（长按菜单 + 铅笔图标均走这里）
+  Future<void> _handleRenameVolume(Volume volume) async {
+    final controller = TextEditingController(text: volume.title);
+    final input = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('重命名卷'),
+        content: TextField(
+          key: const ValueKey('tree-rename-volume-field'),
+          controller: controller,
+          autofocus: true,
+          maxLength: 12,
+          decoration: const InputDecoration(hintText: '输入卷名'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.primary,
+            ),
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (input == null) return;
+    final trimmed = input.trim();
+    try {
+      final repo = VolumeRepository(ref.read(appDatabaseProvider));
+      await repo.updateVolumeTitle(volume.id, trimmed);
+      ref.invalidate(volumeListProvider(_msId));
+      if (!mounted) return;
+      _snack(trimmed.isEmpty ? '已重命名为「未命名卷」' : '已重命名为《$trimmed》');
+    } catch (e) {
+      debugPrint('[ChapterTreeDrawer] 重命名卷失败: $e');
+      if (!mounted) return;
+      _snack('重命名失败，请稍后再试');
+    }
+  }
+
+  /// 删除卷二次确认（批次96-4：卷内章节一并软删进回收站，不再散落）
+  Future<void> _confirmDeleteVolume(Volume volume) async {
+    final title = volume.title.trim().isEmpty ? '未命名卷' : volume.title.trim();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('删除《$title》？'),
+        content: const Text('删除后，卷内所有章节将一并删除（可在回收站恢复），不再散落。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.danger,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      final repo = VolumeRepository(ref.read(appDatabaseProvider));
+      await repo.deleteVolume(volume.id);
+      ref.invalidate(volumeListProvider(_msId));
+      // ADR-C90：删卷会软删卷内章节——刷新 store 让列表同步
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
+      if (!mounted) return;
+      _snack('已删除《$title》');
+    } catch (e) {
+      debugPrint('[ChapterTreeDrawer] 删除卷失败: $e');
+      if (!mounted) return;
+      _snack('删除卷失败，请稍后再试');
+    }
+  }
+
+  /// 长按章节 → 移动到卷弹层（目标：全部卷 + 未分卷）
+  Future<void> _showMoveToVolumeSheet(Chapter chapter) async {
+    final volumes = await ref.read(volumeListProvider(_msId).future);
+    if (!mounted) return;
+    final db = ref.read(appDatabaseProvider);
+    final repo = VolumeRepository(db);
+    // 「未分卷」用固定标记区分于遮罩关闭（都返回可空 String）
+    const unassignedMarker = '__unassigned__';
+    final selected = await showYueModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => _buildMoveToVolumeSheet(
+        ctx,
+        volumes: volumes,
+        chapter: chapter,
+        unassignedMarker: unassignedMarker,
+      ),
+    );
+    if (!mounted || selected == null) return; // 遮罩关闭：不执行
+    final target = selected == unassignedMarker ? null : selected;
+    if (chapter.volumeId == target) return;
+    try {
+      // 批次96-1：统一走「落到目标卷末位」语义（与详情页移卷一致，
+      // 避免原 sort_order 保留导致章节插入目标卷任意位置）
+      await repo.moveChapterToVolumeEnd(chapter.id, target);
+      ref.invalidate(volumeListProvider(_msId));
+      // ADR-C90：移章改了 volumeId/sortOrder——刷新 store
+      unawaited(ref.read(chapterStoreProvider(_msId).notifier).loadChapters());
+    } catch (e) {
+      debugPrint('[ChapterTreeDrawer] 移动章节失败: $e');
+      if (!mounted) return;
+      _snack('移动失败，请稍后再试');
+    }
+  }
+
+  /// 移动到卷弹层内容（全部卷 + 未分卷；R-019 清偿拆出）。
+  Widget _buildMoveToVolumeSheet(
+    BuildContext ctx, {
+    required List<Volume> volumes,
+    required Chapter chapter,
+    required String unassignedMarker,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.section,
+            AppSpacing.lg,
+            AppSpacing.section,
+            AppSpacing.sm,
+          ),
+          child: Text(
+            '移动到卷',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: context.palette.textPrimary,
+            ),
+          ),
+        ),
+        const Divider(height: 1),
+        ..._buildVolumeOptions(ctx, volumes, chapter, unassignedMarker),
+        const SizedBox(height: AppSpacing.sm),
+      ],
+    );
+  }
+
+  /// 移动到卷弹层选项：全部卷 + 未分卷（当前归属打勾；R-019 清偿拆出）。
+  List<Widget> _buildVolumeOptions(
+    BuildContext ctx,
+    List<Volume> volumes,
+    Chapter chapter,
+    String unassignedMarker,
+  ) {
+    return [
+      for (final v in volumes)
+        ListTile(
+          leading: Icon(
+            Icons.collections_bookmark_outlined,
+            size: 18,
+            color: context.palette.primary,
+          ),
+          title: Text(v.title.trim().isEmpty ? '未命名卷' : v.title.trim()),
+          trailing: chapter.volumeId == v.id
+              ? Icon(Icons.check, size: 18, color: context.palette.primary)
+              : null,
+          onTap: () => Navigator.pop(ctx, v.id),
+        ),
+      ListTile(
+        leading: Icon(
+          Icons.notes_outlined,
+          size: 18,
+          color: context.palette.textTertiary,
+        ),
+        title: const Text('未分卷'),
+        trailing: chapter.volumeId == null
+            ? Icon(Icons.check, size: 18, color: context.palette.primary)
+            : null,
+        onTap: () => Navigator.pop(ctx, unassignedMarker),
+      ),
+    ];
+  }
+}
+
+/// 卷头：图标 + 卷名 + 章节数 + 折叠箭头（点击折叠/展开，长按卷操作）
+/// 批次92-2：行尾新增铅笔小图标 → 直接重命名
+class _VolumeHeader extends StatelessWidget {
+  final Volume? volume;
+  final int count;
+  final bool collapsed;
+  final VoidCallback onToggle;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onRename;
+
+  const _VolumeHeader({
+    required this.volume,
+    required this.count,
+    required this.collapsed,
+    required this.onToggle,
+    this.onLongPress,
+    this.onRename,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isUnassigned = volume == null;
+    final title = volume == null
+        ? '未分卷'
+        : (volume!.title.trim().isEmpty ? '未命名卷' : volume!.title.trim());
+    return InkWell(
+      onTap: onToggle,
+      onLongPress: onLongPress,
+      child: Container(
+        color: context.palette.background,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.smx,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              collapsed ? Icons.chevron_right : Icons.expand_more,
+              size: 18,
+              color: context.palette.textTertiary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Icon(
+              isUnassigned
+                  ? Icons.notes_outlined
+                  : Icons.collections_bookmark_outlined,
+              size: 16,
+              color: isUnassigned
+                  ? context.palette.textTertiary
+                  : context.palette.primary,
+            ),
+            const SizedBox(width: AppSpacing.xsm),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.text.titleMd,
+              ),
+            ),
+            _buildTrailing(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 尾部：重命名按钮 + 章节数（R-019 清偿拆出）。
+  Widget _buildTrailing(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (onRename != null)
+          InkWell(
+            onTap: onRename,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xs,
+                vertical: AppSpacing.xxs,
+              ),
+              child: Icon(
+                Icons.edit_outlined,
+                size: 14,
+                color: context.palette.textTertiary,
+              ),
+            ),
+          ),
+        Text('$count 章', style: context.text.microCaption),
+      ],
+    );
+  }
+}
+
+/// 空卷占位提示
+class _EmptyVolumeHint extends StatelessWidget {
+  const _EmptyVolumeHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xxl + AppSpacing.lg,
+        AppSpacing.xs,
+        AppSpacing.lg,
+        AppSpacing.sm,
+      ),
+      child: Text('暂无章节', style: context.text.caption),
+    );
+  }
+}
+
+/// 单章行：纯文字（标题 + 字数 + 状态标签）；当前章高亮竹青；
+/// 修复3：行尾追加铅笔小图标 → 直接重命名
+class _ChapterTreeItem extends StatelessWidget {
+  final Chapter chapter;
+  final bool isCurrent;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final VoidCallback onRename;
+
+  const _ChapterTreeItem({
+    super.key,
+    required this.chapter,
+    required this.isCurrent,
+    required this.onTap,
+    this.onLongPress,
+    required this.onRename,
+  });
+
+  /// 千位分隔符格式化（如 3256 → "3,256"）
+  String _formatNum(int n) {
+    return n.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final status = chapterStatusConfigFor(context.palette, chapter.status);
+    final title = chapter.title.trim().isEmpty ? '未命名章节' : chapter.title;
+    return InkWell(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        color: isCurrent ? context.palette.primarySoft : Colors.transparent,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.smx,
+        ),
+        child: Row(
+          children: [
+            Expanded(child: _buildTitle(context, title)),
+            // 修复3：铅笔小图标（点击直接重命名，不占过多空间）
+            InkWell(
+              onTap: onRename,
+              borderRadius: BorderRadius.circular(AppRadius.xs),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xxs,
+                ),
+                child: Icon(
+                  Icons.edit_outlined,
+                  size: 14,
+                  color: context.palette.textTertiary,
+                ),
+              ),
+            ),
+            if (chapter.wordCount > 0)
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.xs),
+                child: Text(
+                  '${_formatNum(chapter.wordCount)}字',
+                  style: context.text.microCaption,
+                ),
+              ),
+            if (status != null) ...[
+              const SizedBox(width: AppSpacing.sm),
+              _buildStatusBadge(status),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 章节标题（当前章高亮；R-019 清偿拆出）。
+  Widget _buildTitle(BuildContext context, String title) {
+    return Text(
+      title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: 14,
+        color: isCurrent ? context.palette.primary : context.palette.textInk,
+        fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+      ),
+    );
+  }
+
+  /// 状态徽章（草稿/修改中/完成；表外状态由调用侧判空跳过，不编造）。
+  Widget _buildStatusBadge(ChapterStatusConfig status) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xsm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: status.bgColor,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Text(
+        status.label,
+        style: TextStyle(fontSize: 10, color: status.textColor),
+      ),
+    );
+  }
+}
+
+/// 空态：作品还没有章节时引导新建
+class _EmptyChapters extends StatelessWidget {
+  const _EmptyChapters();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.menu_book_outlined,
+            size: 40,
+            color: context.palette.placeholder,
+          ),
+          SizedBox(height: AppSpacing.md),
+          Text('还没有章节', style: context.text.body),
+          SizedBox(height: AppSpacing.xs),
+          Text('点下面的「新建章节」开个头吧', style: context.text.caption),
+        ],
+      ),
+    );
+  }
+}
+
+/// 列表末尾「新建章节」行（批次89-4：新建章节入口挂在章节列表末尾，
+/// 与章节同级；新建卷唯一入口 = 头部「＋」图标）
+class _NewChapterRow extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _NewChapterRow({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.add_circle_outline,
+              size: 18,
+              color: context.palette.primary,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Text(
+              '新建章节',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: context.palette.primary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

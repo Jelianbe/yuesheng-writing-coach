@@ -40,7 +40,7 @@ import '../widgets/setting/outline_entity_detail_page.dart';
 import '../widgets/character/character_detail_page.dart';
 import '../widgets/world/world_fact_detail_page.dart';
 import '../widgets/world/world_fact_page.dart';
-import '../widgets/writing_page.dart';
+import '../features/writing/writing_page.dart';
 import 'app_routes.dart';
 
 /// 根 Navigator key（main.dart 轮播结束后借它取主界面 context 弹隐私告知）

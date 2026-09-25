@@ -52,7 +52,7 @@ import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/providers/chapter_providers.dart';
 import 'package:writingcoach/providers/manuscript_providers.dart';
 import 'package:writingcoach/widgets/outline_content_view.dart';
-import 'package:writingcoach/widgets/outline_drawer.dart';
+import 'package:writingcoach/features/writing/outline_drawer.dart';
 
 void main() {
   late AppDatabase db;

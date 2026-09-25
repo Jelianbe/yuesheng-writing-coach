@@ -135,7 +135,7 @@ void main() {
 
   group('③ 源码对账 meta：单一真源在场、抽屉本地表不得复现', () {
     final drawerSrc = File(
-      'lib/widgets/chapter_tree_drawer.dart',
+      'lib/features/writing/chapter_tree_drawer.dart',
     ).readAsStringSync();
 
     test('抽屉真源引用在场（读的是那张表，不是自己抄一份）', () {

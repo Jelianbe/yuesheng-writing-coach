@@ -154,7 +154,7 @@ void main() {
   });
 
   group('③ ★ R4 源码钉：写作页 AppBar 前景刻意不随全局主题翻', () {
-    const src = 'lib/widgets/writing/view/writing_page_scaffold.dart';
+    const src = 'lib/features/writing/writing_page_scaffold.dart';
 
     test('文件在（防路径漂移导致断言静默空跑）', () {
       expect(File(src).existsSync(), isTrue, reason: '路径漂移 ⇒ 本钉失效，先修路径');

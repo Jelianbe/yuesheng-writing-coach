@@ -24,7 +24,7 @@ import 'package:writingcoach/config/app_palette.dart';
 import 'package:writingcoach/config/app_theme.dart' show AppColors;
 import 'package:writingcoach/theme/app_theme.dart'
     show buildAppTheme, buildDarkTheme;
-import 'package:writingcoach/widgets/writing/view/writing_page_breadcrumb.dart';
+import 'package:writingcoach/features/writing/writing_page_breadcrumb.dart';
 
 /// WCAG 相对亮度（0-1）—— 与 `test/config/app_theme_contrast_test.dart` 同式。
 double _relativeLuminance(Color c) {

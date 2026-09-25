@@ -42,7 +42,7 @@ import 'package:writingcoach/features/bookshelf/bookshelf_no_search_result.dart'
 import 'package:writingcoach/widgets/growth_detail_error_view.dart';
 import 'package:writingcoach/widgets/knowledge_card.dart';
 import 'package:writingcoach/widgets/teaching_state_badge.dart';
-import 'package:writingcoach/widgets/writing/thinking_placeholder.dart';
+import 'package:writingcoach/features/writing/thinking_placeholder.dart';
 
 Future<void> _pump(WidgetTester t, ThemeData theme, Widget child) async {
   await t.pumpWidget(

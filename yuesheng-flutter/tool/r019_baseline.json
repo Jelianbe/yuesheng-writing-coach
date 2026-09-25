@@ -431,28 +431,28 @@
       "lines": 101
     },
     {
-      "file": "lib/widgets/quick_phrase_sheet.dart",
+      "file": "lib/features/writing/quick_phrase_sheet.dart",
       "func": "build",
       "start": 91,
       "end": 178,
       "lines": 88
     },
     {
-      "file": "lib/widgets/quick_phrase_sheet.dart",
+      "file": "lib/features/writing/quick_phrase_sheet.dart",
       "func": "_buildList",
       "start": 180,
       "end": 244,
       "lines": 65
     },
     {
-      "file": "lib/widgets/recycle_bin_sheet.dart",
+      "file": "lib/features/writing/recycle_bin_sheet.dart",
       "func": "build",
       "start": 109,
       "end": 170,
       "lines": 62
     },
     {
-      "file": "lib/widgets/recycle_bin_sheet.dart",
+      "file": "lib/features/writing/recycle_bin_sheet.dart",
       "func": "_buildList",
       "start": 172,
       "end": 246,
@@ -522,28 +522,28 @@
       "lines": 142
     },
     {
-      "file": "lib/widgets/search_replace_sheet.dart",
+      "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "build",
       "start": 295,
       "end": 354,
       "lines": 60
     },
     {
-      "file": "lib/widgets/search_replace_sheet.dart",
+      "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "_buildChapterView",
       "start": 357,
       "end": 426,
       "lines": 70
     },
     {
-      "file": "lib/widgets/search_replace_sheet.dart",
+      "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "_buildBookResultList",
       "start": 497,
       "end": 568,
       "lines": 72
     },
     {
-      "file": "lib/widgets/search_replace_sheet.dart",
+      "file": "lib/features/writing/search_replace_sheet.dart",
       "func": "build",
       "start": 618,
       "end": 672,
@@ -655,21 +655,21 @@
       "lines": 54
     },
     {
-      "file": "lib/widgets/version_time_machine_sheet.dart",
+      "file": "lib/features/writing/version_time_machine_sheet.dart",
       "func": "_charDiff",
       "start": 132,
       "end": 184,
       "lines": 53
     },
     {
-      "file": "lib/widgets/version_time_machine_sheet.dart",
+      "file": "lib/features/writing/version_time_machine_sheet.dart",
       "func": "_buildDetail",
       "start": 312,
       "end": 385,
       "lines": 74
     },
     {
-      "file": "lib/widgets/version_time_machine_sheet.dart",
+      "file": "lib/features/writing/version_time_machine_sheet.dart",
       "func": "_buildList",
       "start": 421,
       "end": 509,
@@ -697,14 +697,14 @@
       "lines": 97
     },
     {
-      "file": "lib/widgets/writing_menu_sheet.dart",
+      "file": "lib/features/writing/writing_menu_sheet.dart",
       "func": "show",
       "start": 50,
       "end": 239,
       "lines": 190
     },
     {
-      "file": "lib/widgets/writing_stats_sheet.dart",
+      "file": "lib/features/writing/writing_stats_sheet.dart",
       "func": "build",
       "start": 67,
       "end": 158,

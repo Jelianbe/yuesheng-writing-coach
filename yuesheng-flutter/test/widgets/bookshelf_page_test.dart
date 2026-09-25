@@ -35,7 +35,7 @@ import 'package:writingcoach/services/work_import_service.dart';
 import 'package:writingcoach/features/bookshelf/book_import_sheet.dart';
 import 'package:writingcoach/features/bookshelf/bookshelf_page.dart';
 import 'package:writingcoach/features/manuscript/manuscript_detail_page.dart';
-import 'package:writingcoach/widgets/writing_page.dart';
+import 'package:writingcoach/features/writing/writing_page.dart';
 
 /// 批次 35：fake 导入服务——绕过 file_picker（widget 测试不可用），
 /// 覆写 importBookFromFile 直接走真实 importWork 入库链路。
