@@ -381,7 +381,7 @@ void main() {
       expect(logs.last.context?['error'], contains('网络错误'));
     });
 
-    test('#10 F2 取不出 observation → stage=parse + head160 归因', () async {
+    test('#10 F2 取不出 observation → stage=parse + 结构化归因（无内容泄露）', () async {
       final raw = '[YS_EDITOR]\n{"bad": json}\n[/YS_EDITOR]';
 
       await callEditorStream(FakeLlmClient(raw), '测试文本', (_) {});
@@ -390,7 +390,8 @@ void main() {
       expect(logs.last.context?['stage'], 'parse');
       expect(logs.last.context?['reason'], 'json_invalid');
       expect(logs.last.context?['contentLength'], raw.length);
-      expect(logs.last.context?['head160'], contains('[YS_EDITOR]'));
+      // D11：日志上下文不再承载用户可读内容（前 160 字符已移除，截断判定由 truncated 承担）
+      expect(logs.last.context?.containsKey('head160'), isFalse);
     });
 
     test('#11 F4 硬限制拦截 → stage=hardlimit + violations', () async {

@@ -827,7 +827,7 @@ extension ChatServiceSend on ChatService {
     SendMessageOptions options,
   ) {
     debugPrint(
-      '[ChatService] sendMessage 开始 | session=$sessionId | content="${content.length > 50 ? '${content.substring(0, 50)}...' : content}" | phase=${options.phase} | attitude=${options.attitude}',
+      '[ChatService] sendMessage 开始 | session=$sessionId | contentLen=${content.length} | phase=${options.phase} | attitude=${options.attitude}',
     );
   }
 

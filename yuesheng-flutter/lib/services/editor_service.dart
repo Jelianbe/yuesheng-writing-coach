@@ -14,7 +14,7 @@
 //
 // 失败留痕（ADR-C88 观测增强）：除用户取消外的失败路径统一经
 // _logObserveFailure 落 error_logs，带 stage（api/parse/hardlimit）+
-// contentLength + head160，真机失败可直接归因、不再靠猜。
+// contentLength + truncated（前 160 字符已移除：不承载用户可读内容，truncated 标记已足以判断是否截断），真机失败可直接归因、不再靠猜。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:dio/dio.dart';
@@ -209,7 +209,8 @@ void _logHardLimitFailure(
 ///
 /// [stage] api/parse/hardlimit；[reason] 具体原因（api_error / no_marker /
 /// truncated / json_invalid / schema_invalid / verdict_words …）；
-/// [content] 原始响应（只取长度与前 160 字符入 context，便于判断是否截断）。
+/// [content] 原始响应（只取长度 + truncated 标记入 context；前 160 字符已移除，
+/// 不承载用户可读内容，截断判定由 [truncated] 承担）。
 /// 用户取消（F3）不调用本方法——取消是预期行为，记入会污染 error_logs。
 void _logObserveFailure({
   required String stage,
@@ -231,7 +232,6 @@ void _logObserveFailure({
       'stage': stage,
       'reason': reason,
       'contentLength': content.length,
-      'head160': content.length > 160 ? content.substring(0, 160) : content,
       'truncated': truncated,
       'finishReason': ?finishReason,
       'error': ?error?.toString(),
