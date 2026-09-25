@@ -32,7 +32,7 @@ import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/data/repositories/world_fact_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/setting/setting_progressions_section.dart';
+import 'package:writingcoach/features/app_settings/setting_progressions_section.dart';
 import 'package:writingcoach/features/world/world_fact_detail_page.dart';
 
 void main() {

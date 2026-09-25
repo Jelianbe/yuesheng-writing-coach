@@ -18,8 +18,8 @@ import '../../config/app_theme.dart';
 import '../../router/app_routes.dart';
 import '../character/character_list_view.dart';
 import '../world/world_fact_list_view.dart';
-import '../../widgets/setting/outline_entity_list_view.dart';
-import '../../widgets/setting/setting_entry_list_view.dart';
+import '../app_settings/outline_entity_list_view.dart';
+import '../app_settings/setting_entry_list_view.dart';
 
 /// 四子列表的段标识
 enum _Section { character, outline, world, other }

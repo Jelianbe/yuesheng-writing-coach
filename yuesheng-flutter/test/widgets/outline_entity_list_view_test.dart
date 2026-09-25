@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:writingcoach/data/database/database.dart';
 import 'package:writingcoach/data/repositories/manuscript_repository.dart';
 import 'package:writingcoach/providers/app_providers.dart';
-import 'package:writingcoach/widgets/setting/outline_entity_list_view.dart';
+import 'package:writingcoach/features/app_settings/outline_entity_list_view.dart';
 
 void main() {
   late AppDatabase db;

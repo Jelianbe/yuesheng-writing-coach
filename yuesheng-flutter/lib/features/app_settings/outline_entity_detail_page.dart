@@ -21,7 +21,7 @@ import '../../data/repositories/outline_repository.dart';
 import '../../data/repositories/setting_link_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../router/app_routes.dart';
-import '../outline_shared.dart';
+import '../../widgets/outline_shared.dart';
 import 'setting_links_section.dart';
 import '../../theme/app_typography.dart';
 

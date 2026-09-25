@@ -13,8 +13,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-import '../../widgets/setting/setting_description_card.dart';
-import '../../widgets/setting/setting_extract_bar.dart';
+import '../app_settings/setting_description_card.dart';
+import '../app_settings/setting_extract_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -43,9 +43,9 @@ import '../../types/character_types.dart';
 import '../../utils/chapter_number.dart';
 import 'character_detail_sections.dart';
 import 'character_dialogs.dart';
-import '../../widgets/setting/setting_links_section.dart';
-import '../../widgets/setting/setting_progressions_section.dart';
-import '../../widgets/setting/setting_tags_section.dart';
+import '../app_settings/setting_links_section.dart';
+import '../app_settings/setting_progressions_section.dart';
+import '../app_settings/setting_tags_section.dart';
 import 'character_events_section.dart';
 import '../../theme/app_typography.dart';
 

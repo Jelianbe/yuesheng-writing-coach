@@ -9,7 +9,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:writingcoach/widgets/setting/setting_description_card.dart';
+import 'package:writingcoach/features/app_settings/setting_description_card.dart';
 
 void main() {
   Widget host({String description = '', required VoidCallback onEdit}) {

@@ -20,7 +20,7 @@ import '../../data/repositories/setting_link_repository.dart'
 import '../../config/app_palette.dart';
 import '../../data/repositories/setting_tag_repository.dart';
 import '../../providers/app_providers.dart';
-import '../../features/manuscript/setting_empty_state.dart';
+import '../manuscript/setting_empty_state.dart';
 import 'setting_entry_dialogs.dart';
 import '../../theme/app_typography.dart';
 

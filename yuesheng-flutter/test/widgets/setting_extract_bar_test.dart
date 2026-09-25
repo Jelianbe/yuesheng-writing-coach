@@ -32,7 +32,7 @@ import 'package:writingcoach/providers/session_providers.dart';
 import 'package:writingcoach/services/llm_client.dart';
 import 'package:writingcoach/services/llm_retry.dart';
 import 'package:writingcoach/types/character_types.dart';
-import 'package:writingcoach/widgets/setting/setting_extract_bar.dart';
+import 'package:writingcoach/features/app_settings/setting_extract_bar.dart';
 
 /// Fake LLM：预设响应串，可选抛异常 / 挂起（骨架同 `editor_service_test.dart:35`）。
 ///
