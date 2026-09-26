@@ -89,7 +89,7 @@ class WritingCoachDiagnosisRunner {
       title: title,
       llmClient: _ref.read(llmClientProvider),
       sessionId: sid,
-      disabledSyndromeIds: diagPrefs?.disabledIds ?? const {},
+      disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       onContent: (delta) {
         _ref
             .read(writingCoachStoreProvider(_chapterId).notifier)
@@ -101,7 +101,7 @@ class WritingCoachDiagnosisRunner {
 
     final store = _ref.read(writingCoachStoreProvider(_chapterId).notifier);
     final chatService = _ref.read(chatServiceProvider)
-      ..disabledSyndromeIds = diagPrefs?.disabledIds ?? const {};
+      ..disabledSyndromeIds = diagPrefs?.effectiveDisabledIds ?? const {};
     if (progressive != null) {
       // D4-A：分块链路完成 → 解析+持久化+卡片插入
       await chatService.commitDiagnosisFromContent(

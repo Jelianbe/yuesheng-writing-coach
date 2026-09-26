@@ -97,14 +97,14 @@ class ChatDiagnosisController {
     ).getDiagnosisPrefs();
     // 诊断编辑器：短文本链路（单次 sendMessage）也用同一启用集
     host.ref.read(chatServiceProvider).disabledSyndromeIds =
-        diagPrefs?.disabledIds ?? const {};
+        diagPrefs?.effectiveDisabledIds ?? const {};
     final progressive = await runProgressiveDiagnosis(
       content: chapter.content,
       title: chapter.title,
       llmClient: host.ref.read(llmClientProvider),
       sessionId: bootstrap.sessionId,
       diagnosisContext: historySection,
-      disabledSyndromeIds: diagPrefs?.disabledIds ?? const {},
+      disabledSyndromeIds: diagPrefs?.effectiveDisabledIds ?? const {},
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },

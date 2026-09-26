@@ -827,6 +827,74 @@ class DiagnosisPrefs {
   /// 该症候是否被用户关闭（未配置偏好时 = false，即全启用）。
   bool isDisabled(String syndromeId) => disabledIds.contains(syndromeId);
 
+  /// 运行时真正传给 prompt 的禁用集 = 用户手动关 ∪ 档禁用集。
+  Set<String> get effectiveDisabledIds {
+    final set = <String>{...disabledIds};
+    if (genre == 'setting') {
+      set.addAll(_tierAll.difference(_l3));
+      return Set.unmodifiable(set);
+    }
+    switch (tier) {
+      case 'beginner':
+        set.addAll(_l2.union(_l3).union(_l4).union(_l5));
+      case 'story':
+        set.addAll(_l5);
+    }
+    if (genre == 'literary') set.addAll(_commercial);
+    return Set.unmodifiable(set);
+  }
+
+  static const _l1 = {'P003', 'P007', 'P008', 'P011', 'P022'};
+  static const _l2 = {
+    'P004',
+    'P006',
+    'P020',
+    'P021',
+    'P029',
+    'P035',
+    'P036',
+    'P037',
+  };
+  static const _l3 = {
+    'P009',
+    'P010',
+    'P018',
+    'P019',
+    'P031',
+    'P034',
+    'P039',
+    'P040',
+    'P041',
+  };
+  static const _l4 = {
+    'P005',
+    'P012',
+    'P013',
+    'P014',
+    'P015',
+    'P016',
+    'P017',
+    'P030',
+  };
+  static const _l5 = {'P042'};
+  static const _commercial = {
+    'P023',
+    'P024',
+    'P025',
+    'P026',
+    'P027',
+    'P032',
+    'P033',
+  };
+  static const _tierAll = {
+    ..._l1,
+    ..._l2,
+    ..._l3,
+    ..._l4,
+    ..._l5,
+    ..._commercial,
+  };
+
   DiagnosisPrefs copyWith({
     Set<String>? disabledIds,
     String? tier,
