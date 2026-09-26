@@ -178,16 +178,16 @@ class _GrowthDiagnosisPrefsCardState
   }
 
   Widget _groupLabel(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: context.palette.textSecondary,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        color: context.palette.textSecondary,
+      ),
+    ),
+  );
 
   Widget _optionRow(
     BuildContext context, {
@@ -209,36 +209,42 @@ class _GrowthDiagnosisPrefsCardState
         decoration: BoxDecoration(
           color: selected ? palette.primarySoft : palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: selected ? palette.primary : palette.border),
+          border: Border.all(
+            color: selected ? palette.primary : palette.border,
+          ),
         ),
         child: Row(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    desc,
-                    style: TextStyle(fontSize: 12, color: palette.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            if (selected) Icon(Icons.check_circle, size: 18, color: palette.primary),
+            _optionNameDesc(palette, label, desc),
+            if (selected)
+              Icon(Icons.check_circle, size: 18, color: palette.primary),
           ],
         ),
       ),
     );
   }
+
+  Widget _optionNameDesc(AppPalette palette, String label, String desc) =>
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: palette.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              desc,
+              style: TextStyle(fontSize: 12, color: palette.textSecondary),
+            ),
+          ],
+        ),
+      );
 
   List<Widget> _disabledSection(BuildContext context, Set<String> disabled) {
     final palette = context.palette;
@@ -261,37 +267,37 @@ class _GrowthDiagnosisPrefsCardState
         ],
       ),
       const SizedBox(height: 8),
-      ...disabled.map(
-        (id) => Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: palette.dangerBg,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: palette.dangerBorder),
-                ),
-                child: Text(
-                  _nameOf(id),
-                  style: TextStyle(fontSize: 12, color: palette.danger),
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => _restoreOne(id),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: const Text('恢复', style: TextStyle(fontSize: 12)),
-              ),
-            ],
-          ),
-        ),
-      ),
+      ...disabled.map((id) => _disabledRow(palette, id)),
     ];
   }
+
+  Widget _disabledRow(AppPalette palette, String id) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: palette.dangerBg,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: palette.dangerBorder),
+          ),
+          child: Text(
+            _nameOf(id),
+            style: TextStyle(fontSize: 12, color: palette.danger),
+          ),
+        ),
+        const Spacer(),
+        TextButton(
+          onPressed: () => _restoreOne(id),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('恢复', style: TextStyle(fontSize: 12)),
+        ),
+      ],
+    ),
+  );
 }

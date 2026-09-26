@@ -65,18 +65,18 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       if (mounted) setState(() => _current = level.name);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('教练切换失败，请稍后再试')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('教练切换失败，请稍后再试')));
       }
     }
   }
 
   Color _attitudeColor(AppPalette p, AttitudeLevel a) => switch (a) {
-        AttitudeLevel.doubao => p.l1Text,
-        AttitudeLevel.yuesheng => p.l2Text,
-        AttitudeLevel.sensei => p.l3Text,
-      };
+    AttitudeLevel.doubao => p.l1Text,
+    AttitudeLevel.yuesheng => p.l2Text,
+    AttitudeLevel.sensei => p.l3Text,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -92,32 +92,7 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Icon(Icons.psychology_outlined, size: 18, color: palette.primary),
-              const SizedBox(width: 6),
-              Text(
-                '教练人格',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: palette.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: palette.primarySoft,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Text(
-                  '全局',
-                  style: TextStyle(fontSize: 11, color: palette.primary),
-                ),
-              ),
-            ],
-          ),
+          _headerRow(palette),
           const SizedBox(height: 4),
           Text(
             '换一种说话方式。切换后下次启动沿用。',
@@ -143,6 +118,33 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
     );
   }
 
+  Widget _headerRow(AppPalette palette) => Row(
+    children: [
+      Icon(Icons.psychology_outlined, size: 18, color: palette.primary),
+      const SizedBox(width: 6),
+      Text(
+        '教练人格',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: palette.textPrimary,
+        ),
+      ),
+      const SizedBox(width: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: palette.primarySoft,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          '全局',
+          style: TextStyle(fontSize: 11, color: palette.primary),
+        ),
+      ),
+    ],
+  );
+
   Widget _coachRow(
     BuildContext context, {
     required AttitudeLevel level,
@@ -165,7 +167,9 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
         decoration: BoxDecoration(
           color: selected ? palette.primarySoft : palette.surface,
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(color: selected ? palette.primary : palette.border),
+          border: Border.all(
+            color: selected ? palette.primary : palette.border,
+          ),
         ),
         child: Row(
           children: [
@@ -175,30 +179,34 @@ class _CoachSelectorCardState extends ConsumerState<CoachSelectorCard> {
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: palette.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    desc,
-                    style: TextStyle(fontSize: 12, color: palette.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            if (selected) Icon(Icons.check_circle, size: 18, color: palette.primary),
+            _coachNameDesc(palette, name, desc),
+            if (selected)
+              Icon(Icons.check_circle, size: 18, color: palette.primary),
           ],
         ),
       ),
     );
   }
+
+  Widget _coachNameDesc(AppPalette palette, String name, String desc) =>
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: palette.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              desc,
+              style: TextStyle(fontSize: 12, color: palette.textSecondary),
+            ),
+          ],
+        ),
+      );
 }
