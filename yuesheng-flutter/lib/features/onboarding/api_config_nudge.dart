@@ -38,8 +38,9 @@ Future<void> maybeShowApiConfigNudge(
     await repo.setApiConfigHintSeen(true); // 已配：静默标记，不再提示
     return;
   }
-  // 先标记已展示（防快速重复发送叠弹），再弹。
-  await repo.setApiConfigHintSeen(true);
+  // 先判挂载再置 flag：context 已卸载时**不消费**提示（否则一次性提示被消耗却从未展示）。
+  if (!context.mounted) return;
+  await repo.setApiConfigHintSeen(true); // 防快速重复发送叠弹
   if (!context.mounted) return;
   final goSettings = await showDialog<bool>(
     context: context,

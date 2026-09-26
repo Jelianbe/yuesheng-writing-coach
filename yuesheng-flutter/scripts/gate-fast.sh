@@ -130,7 +130,8 @@ fi
 
 # ---------- 推导本次受影响的测试文件 ----------
 # 判据两条（并集，宁多勿少）：
-#   a) test/ 下**自己**被改动的 .dart（新写的测试、改过的测试）
+#   a) test/ 下**自己**被改动的 *_test.dart（新写的测试、改过的测试；
+#      ★ 仅 *_test.dart —— helper/fixture 无 main()，喂给 flutter test 会假失败「loading … failed」）
 #   b) lib/**.dart 改动 ⇒ 在 test/ 下按**同名约定**找 `<basename>_test.dart`
 # `core.quotepath=false` 必须有：否则含中文的路径会被 git 转义成 \"\\346...\" 形式，
 # 后续 [ -f ] / find 全部失配（静默少跑测试 = 快道最危险的失效形态）。
@@ -158,7 +159,7 @@ derive_tests() {
   {
     for f in $changed; do
       case "$f" in
-        "${PREFIX}test/"*.dart)
+        "${PREFIX}test/"*_test.dart)
           rel="${f#"$PREFIX"}"
           [ -f "$rel" ] && printf '%s\n' "$rel" ;;
       esac
