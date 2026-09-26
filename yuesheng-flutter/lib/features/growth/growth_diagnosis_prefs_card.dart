@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 // growth_diagnosis_prefs_card — 诊断编辑器：成长页偏好管理
 //
-// 展示：当前档名 + 已关闭症候列表 + 每项「恢复」+ 全局「恢复默认」。
-// 这是用户「关错了」的退路——诊断卡确认栏只能关，这里能开回来。
+// 展示：档位选择（写作阶段 × 写什么）+ 已关闭症候列表 + 恢复。
+// 用户在这里选档，诊断时按档过滤症候；诊断卡里关的也能在这里开回来。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -20,19 +20,13 @@ String _nameOf(String id) {
   return hit?.name ?? id;
 }
 
-String _tierLabel(String? tier) => switch (tier) {
-  'beginner' => '先写顺（只查文字层）',
-  'story' => '完整故事（文字+角色+结构）',
-  'full' => '想被挑刺（全开）',
-  _ => '默认（全开）',
-};
+const _tiers = [('beginner', '先写顺'), ('story', '完整故事'), ('full', '想被挑刺')];
 
-String _genreLabel(String? genre) => switch (genre) {
-  'literary' => '纯文学',
-  'webnovel' => '连载网文',
-  'setting' => '设定优先（只查角色）',
-  _ => '通用',
-};
+const _genres = [
+  ('literary', '纯文学'),
+  ('webnovel', '连载网文'),
+  ('setting', '设定优先'),
+];
 
 class GrowthDiagnosisPrefsCard extends ConsumerStatefulWidget {
   const GrowthDiagnosisPrefsCard({super.key});
@@ -65,30 +59,123 @@ class _GrowthDiagnosisPrefsCardState
     }
   }
 
-  Future<void> _restoreOne(String id) async {
-    final cur = _prefs ?? DiagnosisPrefs();
-    final next = cur.copyWith(disabledIds: {...cur.disabledIds}..remove(id));
+  Future<void> _save(DiagnosisPrefs next) async {
     await AppStateRepository(
       ref.read(appDatabaseProvider),
     ).setDiagnosisPrefs(next);
     if (mounted) setState(() => _prefs = next);
   }
 
-  Future<void> _restoreAll() async {
-    await AppStateRepository(
-      ref.read(appDatabaseProvider),
-    ).setDiagnosisPrefs(DiagnosisPrefs());
-    if (mounted) setState(() => _prefs = DiagnosisPrefs());
+  Future<void> _restoreOne(String id) async {
+    final cur = _prefs ?? DiagnosisPrefs();
+    _save(cur.copyWith(disabledIds: {...cur.disabledIds}..remove(id)));
   }
 
-  List<Widget> _buildDisabledList(BuildContext context, Set<String> disabled) {
+  Future<void> _restoreAll() => _save(DiagnosisPrefs());
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const SizedBox.shrink();
+    final cur = _prefs ?? DiagnosisPrefs();
+    return _buildBody(context, cur);
+  }
+
+  Widget _buildBody(BuildContext context, DiagnosisPrefs cur) {
+    final disabled = cur.disabledIds;
+    return GrowthInfoCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _headerRow(context, cur, disabled),
+            const SizedBox(height: 10),
+            Text(
+              '你写到哪了？',
+              style: TextStyle(fontSize: 13, color: context.palette.l2Text),
+            ),
+            const SizedBox(height: 6),
+            _chipRow(
+              context,
+              selected: cur.tier,
+              options: _tiers,
+              onSelect: (v) => _save(cur.copyWith(tier: v, customized: true)),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '主要写什么？',
+              style: TextStyle(fontSize: 13, color: context.palette.l2Text),
+            ),
+            const SizedBox(height: 6),
+            _chipRow(
+              context,
+              selected: cur.genre,
+              options: _genres,
+              onSelect: (v) => _save(cur.copyWith(genre: v, customized: true)),
+            ),
+            if (disabled.isNotEmpty) ..._disabledList(context, disabled),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _headerRow(
+    BuildContext context,
+    DiagnosisPrefs cur,
+    Set<String> disabled,
+  ) {
+    return Row(
+      children: [
+        Icon(Icons.tune_outlined, size: 18, color: context.palette.primary),
+        const SizedBox(width: 6),
+        Text(
+          '诊断偏好',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: context.palette.textPrimary,
+          ),
+        ),
+        const Spacer(),
+        if (disabled.isNotEmpty || cur.tier != null || cur.genre != null)
+          TextButton(
+            onPressed: _restoreAll,
+            child: const Text('恢复默认', style: TextStyle(fontSize: 12)),
+          ),
+      ],
+    );
+  }
+
+  Widget _chipRow(
+    BuildContext context, {
+    required String? selected,
+    required List<(String, String)> options,
+    required void Function(String) onSelect,
+  }) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        for (final (id, label) in options)
+          ChoiceChip(
+            label: Text(label, style: const TextStyle(fontSize: 12)),
+            selected: selected == id,
+            onSelected: (_) => onSelect(id),
+            selectedColor: context.palette.primarySoft,
+          ),
+      ],
+    );
+  }
+
+  List<Widget> _disabledList(BuildContext context, Set<String> disabled) {
     return [
-      const SizedBox(height: 12),
+      const SizedBox(height: 14),
       Text(
         '已关闭 ${disabled.length} 项',
         style: TextStyle(fontSize: 13, color: context.palette.l3Text),
       ),
-      const SizedBox(height: 6),
+      const SizedBox(height: 4),
       ...disabled.map(
         (id) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 2),
@@ -111,56 +198,5 @@ class _GrowthDiagnosisPrefsCardState
         ),
       ),
     ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) return const SizedBox.shrink();
-    final disabled = _prefs?.disabledIds ?? const {};
-    // 没关任何东西 + 没选过档 → 不渲染（别给新用户看空卡片）
-    if (disabled.isEmpty && _prefs?.tier == null && _prefs?.genre == null) {
-      return const SizedBox.shrink();
-    }
-
-    return GrowthInfoCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.tune_outlined,
-                  size: 18,
-                  color: context.palette.primary,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '诊断偏好',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: context.palette.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                if (disabled.isNotEmpty || _prefs?.customized == true)
-                  TextButton(
-                    onPressed: _restoreAll,
-                    child: const Text('恢复默认', style: TextStyle(fontSize: 12)),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '档位：${_tierLabel(_prefs?.tier)} · ${_genreLabel(_prefs?.genre)}',
-              style: TextStyle(fontSize: 13, color: context.palette.l2Text),
-            ),
-            if (disabled.isNotEmpty) ..._buildDisabledList(context, disabled),
-          ],
-        ),
-      ),
-    );
   }
 }
