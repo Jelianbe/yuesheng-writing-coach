@@ -1,8 +1,10 @@
 // ─────────────────────────────────────────────────────────────
-// growth_diagnosis_prefs_card — 诊断编辑器：成长页偏好管理
+// growth_diagnosis_prefs_card — 诊断偏好（教练侧重，不关诊断）
 //
-// 展示：档位选择（写作阶段 × 写什么）+ 已关闭症候列表 + 恢复。
-// 用户在这里选档，诊断时按档过滤症候；诊断卡里关的也能在这里开回来。
+// 方案 A（见 .ai/reports/2026-09-26-诊断偏好-方案A-ADR.md）：
+// - 档位（写作阶段）× 类型（写什么）是「教练侧重」软信号，只提示教练优先强调什么，
+//   不剥夺任何诊断（不再硬映射成禁用维度）。
+// - 用户真正能关掉的只有「不适用」维度（disabledIds），独立成区，可单条/全部恢复。
 // ─────────────────────────────────────────────────────────────
 
 import 'package:flutter/material.dart';
@@ -20,12 +22,18 @@ String _nameOf(String id) {
   return hit?.name ?? id;
 }
 
-const _tiers = [('beginner', '先写顺'), ('story', '完整故事'), ('full', '想被挑刺')];
+/// 第一问：写作阶段（教练侧重，非过滤）
+const _tiers = [
+  ('beginner', '先写顺', '把基础语病讲透，结构与节奏先不急'),
+  ('story', '完整故事', '文字、角色、结构都管'),
+  ('full', '想被挑刺', '全开，连细微毛病也点出来'),
+];
 
+/// 第二问：主要写什么（教练侧重，非过滤）
 const _genres = [
-  ('literary', '纯文学'),
-  ('webnovel', '连载网文'),
-  ('setting', '设定优先'),
+  ('literary', '纯文学', '重语言质感与文风'),
+  ('webnovel', '连载网文', '重节奏与读者追更感'),
+  ('setting', '设定优先', '重世界观与人物'),
 ];
 
 class GrowthDiagnosisPrefsCard extends ConsumerStatefulWidget {
@@ -85,6 +93,7 @@ class _GrowthDiagnosisPrefsCardState
   }
 
   Widget _buildBody(BuildContext context, DiagnosisPrefs cur) {
+    final palette = context.palette;
     final disabled = cur.disabledIds;
     return GrowthInfoCard(
       child: Padding(
@@ -93,31 +102,35 @@ class _GrowthDiagnosisPrefsCardState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _headerRow(context, cur, disabled),
-            const SizedBox(height: 10),
-            Text(
-              '你写到哪了？',
-              style: TextStyle(fontSize: 13, color: context.palette.l2Text),
-            ),
             const SizedBox(height: 6),
-            _chipRow(
-              context,
-              selected: cur.tier,
-              options: _tiers,
-              onSelect: (v) => _save(cur.copyWith(tier: v, customized: true)),
-            ),
-            const SizedBox(height: 10),
             Text(
-              '主要写什么？',
-              style: TextStyle(fontSize: 13, color: context.palette.l2Text),
+              '告诉教练你现在的阶段和题材，它会更侧重对应方向——'
+              '但不会因此跳过任何诊断。',
+              style: TextStyle(fontSize: 12, color: palette.textTertiary),
             ),
-            const SizedBox(height: 6),
-            _chipRow(
-              context,
-              selected: cur.genre,
-              options: _genres,
-              onSelect: (v) => _save(cur.copyWith(genre: v, customized: true)),
+            const SizedBox(height: 14),
+            _groupLabel(context, '你写到哪了？'),
+            ..._tiers.map(
+              (t) => _optionRow(
+                context,
+                label: t.$2,
+                desc: t.$3,
+                selected: cur.tier == t.$1,
+                onTap: () => _save(cur.copyWith(tier: t.$1, customized: true)),
+              ),
             ),
-            if (disabled.isNotEmpty) ..._disabledList(context, disabled),
+            const SizedBox(height: 12),
+            _groupLabel(context, '主要写什么？'),
+            ..._genres.map(
+              (g) => _optionRow(
+                context,
+                label: g.$2,
+                desc: g.$3,
+                selected: cur.genre == g.$1,
+                onTap: () => _save(cur.copyWith(genre: g.$1, customized: true)),
+              ),
+            ),
+            if (disabled.isNotEmpty) ..._disabledSection(context, disabled),
           ],
         ),
       ),
@@ -129,16 +142,29 @@ class _GrowthDiagnosisPrefsCardState
     DiagnosisPrefs cur,
     Set<String> disabled,
   ) {
+    final palette = context.palette;
     return Row(
       children: [
-        Icon(Icons.tune_outlined, size: 18, color: context.palette.primary),
+        Icon(Icons.tune_outlined, size: 18, color: palette.primary),
         const SizedBox(width: 6),
         Text(
           '诊断偏好',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: context.palette.textPrimary,
+            color: palette.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            color: palette.primarySoft,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Text(
+            '教练侧重',
+            style: TextStyle(fontSize: 11, color: palette.primary),
           ),
         ),
         const Spacer(),
@@ -151,43 +177,108 @@ class _GrowthDiagnosisPrefsCardState
     );
   }
 
-  Widget _chipRow(
-    BuildContext context, {
-    required String? selected,
-    required List<(String, String)> options,
-    required void Function(String) onSelect,
-  }) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 4,
-      children: [
-        for (final (id, label) in options)
-          ChoiceChip(
-            label: Text(label, style: const TextStyle(fontSize: 12)),
-            selected: selected == id,
-            onSelected: (_) => onSelect(id),
-            selectedColor: context.palette.primarySoft,
+  Widget _groupLabel(BuildContext context, String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: context.palette.textSecondary,
           ),
-      ],
+        ),
+      );
+
+  Widget _optionRow(
+    BuildContext context, {
+    required String label,
+    required String desc,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    final palette = context.palette;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? palette.primarySoft : palette.surface,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: selected ? palette.primary : palette.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: palette.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    desc,
+                    style: TextStyle(fontSize: 12, color: palette.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            if (selected) Icon(Icons.check_circle, size: 18, color: palette.primary),
+          ],
+        ),
+      ),
     );
   }
 
-  List<Widget> _disabledList(BuildContext context, Set<String> disabled) {
+  List<Widget> _disabledSection(BuildContext context, Set<String> disabled) {
+    final palette = context.palette;
     return [
       const SizedBox(height: 14),
-      Text(
-        '已关闭 ${disabled.length} 项',
-        style: TextStyle(fontSize: 13, color: context.palette.l3Text),
+      Divider(height: 1, color: palette.borderSoft),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Icon(Icons.block_outlined, size: 16, color: palette.danger),
+          const SizedBox(width: 6),
+          Text(
+            '你关掉的维度（不适用）',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: palette.textPrimary,
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 4),
+      const SizedBox(height: 8),
       ...disabled.map(
         (id) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.only(bottom: 6),
           child: Row(
             children: [
-              Expanded(
-                child: Text(_nameOf(id), style: const TextStyle(fontSize: 13)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: palette.dangerBg,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: palette.dangerBorder),
+                ),
+                child: Text(
+                  _nameOf(id),
+                  style: TextStyle(fontSize: 12, color: palette.danger),
+                ),
               ),
+              const Spacer(),
               TextButton(
                 onPressed: () => _restoreOne(id),
                 style: TextButton.styleFrom(

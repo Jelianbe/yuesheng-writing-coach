@@ -39,6 +39,7 @@ import '../../services/progress_service.dart';
 import '../../services/session_export_service.dart';
 import '../../widgets/privacy_notice_dialog.dart';
 import '../../theme/app_typography.dart';
+import 'coach_selector_card.dart';
 
 /// 与 pubspec.yaml version 同步（发布前人工核对）
 const String _appVersion = '0.1.0';
@@ -575,6 +576,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           _buildAppearanceSection(themeId),
           const SizedBox(height: 12),
           _buildModelBehaviorSection(reasoningTier),
+          const SizedBox(height: 12),
+          const CoachSelectorCard(),
           const SizedBox(height: 12),
           _buildMaintenanceSection(),
           const SizedBox(height: 12),

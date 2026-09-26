@@ -818,9 +818,16 @@ class RecycleBinItem {
 /// 诊断编辑器偏好（用户全局启用集）。
 ///
 /// - [disabledIds]：用户永久关闭（「不适用于我」）的症候 ID 集合。空 = 全启用。
-/// - [tier]：写作阶段档（beginner=只 L1 / story=L1-L4 / full=全开）；null=未引导。
-/// - [genre]：写作类型（literary=纯文学 / webnovel=连载网文 / setting=设定优先）。
+///   这是**唯一**会真正从诊断中移除一条症候的字段。
+/// - [tier]：写作阶段（先写顺 / 完整故事 / 想被挑刺）；null=未引导。
+/// - [genre]：写作类型（纯文学 / 连载网文 / 设定优先）。
 /// - [customized]：用户是否在档基础上手动改过单条（用于 UI 显示「自定义」）。
+///
+/// ⚠️ 方案 A（见 .ai/reports/2026-09-26-诊断偏好-方案A-ADR.md）：[tier]/[genre]
+/// 是**教练侧重**信号（软偏好），**不剥夺任何诊断**——不产生禁用集。
+/// 旧版 ADR §三曾把它们硬映射成禁用维度（beginner 禁 L2–L5 等），本轮已撤销：
+/// 在核心闭环未验证、学员群体未定之前，硬编码档位过滤会把编辑部裁决与
+/// tier×genre 分类学提前焊死。
 class DiagnosisPrefs {
   final Set<String> disabledIds;
   final String? tier;
@@ -837,74 +844,10 @@ class DiagnosisPrefs {
   /// 该症候是否被用户关闭（未配置偏好时 = false，即全启用）。
   bool isDisabled(String syndromeId) => disabledIds.contains(syndromeId);
 
-  /// 运行时真正传给 prompt 的禁用集 = 用户手动关 ∪ 档禁用集。
-  Set<String> get effectiveDisabledIds {
-    final set = <String>{...disabledIds};
-    if (genre == 'setting') {
-      set.addAll(_tierAll.difference(_l3));
-      return Set.unmodifiable(set);
-    }
-    switch (tier) {
-      case 'beginner':
-        set.addAll(_l2.union(_l3).union(_l4).union(_l5));
-      case 'story':
-        set.addAll(_l5);
-    }
-    if (genre == 'literary') set.addAll(_commercial);
-    return Set.unmodifiable(set);
-  }
-
-  static const _l1 = {'P003', 'P007', 'P008', 'P011', 'P022'};
-  static const _l2 = {
-    'P004',
-    'P006',
-    'P020',
-    'P021',
-    'P029',
-    'P035',
-    'P036',
-    'P037',
-  };
-  static const _l3 = {
-    'P009',
-    'P010',
-    'P018',
-    'P019',
-    'P031',
-    'P034',
-    'P039',
-    'P040',
-    'P041',
-  };
-  static const _l4 = {
-    'P005',
-    'P012',
-    'P013',
-    'P014',
-    'P015',
-    'P016',
-    'P017',
-    'P030',
-  };
-  static const _l5 = {'P042'};
-  static const _commercial = {
-    'P023',
-    'P024',
-    'P025',
-    'P026',
-    'P027',
-    'P032',
-    'P033',
-  };
-  static const _tierAll = {
-    ..._l1,
-    ..._l2,
-    ..._l3,
-    ..._l4,
-    ..._l5,
-    ..._commercial,
-  };
-
+  /// 运行时真正传给 prompt 的禁用集 = 用户手动「不适用」关闭的症候 ID。
+  ///
+  /// 方案 A：只并 [disabledIds]。[tier]/[genre] 不进入禁用集（详见类注释）。
+  Set<String> get effectiveDisabledIds => Set.unmodifiable({...disabledIds});
   DiagnosisPrefs copyWith({
     Set<String>? disabledIds,
     String? tier,
