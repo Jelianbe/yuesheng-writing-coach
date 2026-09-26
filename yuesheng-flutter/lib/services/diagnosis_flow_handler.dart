@@ -62,7 +62,6 @@ import 'package:writingcoach/services/message_card_service.dart'
         DiagnosisResultCardPayload,
         DiagnosisSyndromeCard,
         GenuiCardPayload,
-        PhaseSummaryCardPayload,
         TeacherSuggestionCardPayload,
         insertDiagnosisFailedCard,
         insertDiagnosisResultCard,
@@ -152,6 +151,10 @@ class DiagnosisFlowHandler {
   // ─── 能力（capability 注入）───
   final DiagnosisCapability _diagnosis;
   final GenUiCapability _genUi;
+
+  /// 硬兜底：诊断结果解析后，把这些 ID 的症候从卡片里剥掉。
+  /// chat_service 在每次诊断前同步设置（与 prompt 层软过滤互补）。
+  Set<String> disabledSyndromeIds = const {};
 
   // ─── 可选仓储：装配后启用大纲服务懒加载 ───
   final OutlineRepository? _outlineRepo;
@@ -328,7 +331,7 @@ class DiagnosisFlowHandler {
     required String fullContent,
     String? chapterContent,
   }) async {
-    final rawParse = _diagnosis.parseDiagnosis(fullContent);
+    final rawParse = _filterDisabled(_diagnosis.parseDiagnosis(fullContent));
     final parsed = await _parseDiagnosisFromContent(
       fullContent: fullContent,
       rawParse: rawParse,
@@ -676,7 +679,7 @@ class DiagnosisFlowHandler {
     required ReferenceItem? primaryRef,
     required SendMessageOptions options,
   }) async {
-    final rawParse = _diagnosis.parseDiagnosis(fullContent);
+    final rawParse = _filterDisabled(_diagnosis.parseDiagnosis(fullContent));
     debugPrint(
       '[ChatService] 步骤9: parseDiagnosis | displayContent 长度=${rawParse.displayContent.length} | diagnosis=${rawParse.diagnosis != null ? "有(${rawParse.diagnosis!.syndromes.length} 症候)" : "无"}'
       '${_diagnosisDropLog(rawParse)}',
@@ -1357,8 +1360,31 @@ class DiagnosisFlowHandler {
   // / commitDiagnosisAndSuggestions / handleTrainingResult 三步走。
   @visibleForTesting
   Type get k9Surface => DiagnosisFlowHandler;
-}
 
-/// K-9 公开门面：解决 PhaseSummaryCardPayload 引用 + 类型导入，
-/// 保持 ChatService 端只需 import 'diagnosis_flow_handler.dart'。
-typedef K9PhaseSummaryCard = PhaseSummaryCardPayload;
+  /// 硬兜底：prompt 层软过滤后，AI 仍可能报索引表外/已禁用症候——这里剥掉。
+  ParseResult _filterDisabled(ParseResult r) {
+    final d = r.diagnosis;
+    if (disabledSyndromeIds.isEmpty || d == null) return r;
+    final kept = d.syndromes
+        .where((s) => !disabledSyndromeIds.contains(s.syndromeId))
+        .toList();
+    if (kept.length == d.syndromes.length) return r;
+    return ParseResult(
+      displayContent: r.displayContent,
+      diagnosis: ParsedDiagnosis(
+        syndromes: kept,
+        suggestedActions: d.suggestedActions,
+        confidence: d.confidence,
+        rootCauseAnalysis: d.rootCauseAnalysis,
+        nextFocus: d.nextFocus,
+        feedbackSummary: d.feedbackSummary,
+        suggestedPhase: d.suggestedPhase,
+        suggestedBeginnerLevel: d.suggestedBeginnerLevel,
+        teachingMode: d.teachingMode,
+        currentTeachingFocusId: d.currentTeachingFocusId,
+        focusReason: d.focusReason,
+        styleProfile: d.styleProfile,
+      ),
+    );
+  }
+}

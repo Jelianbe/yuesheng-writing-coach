@@ -165,6 +165,7 @@ class ChatService {
     required String fullContent,
     String? chapterContent,
   }) async {
+    _diagnosisFlowHandler.disabledSyndromeIds = disabledSyndromeIds;
     return _diagnosisFlowHandler.commitDiagnosisFromContent(
       sessionId: sessionId,
       fullContent: fullContent,
@@ -373,6 +374,7 @@ class ChatService {
     SendMessageOptions options, {
     TeachingSubphase? subphase,
   }) async {
+    _diagnosisFlowHandler.disabledSyndromeIds = disabledSyndromeIds;
     await _sendMessageCore(
       sessionId,
       content,
