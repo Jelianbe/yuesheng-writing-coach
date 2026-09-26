@@ -455,6 +455,16 @@ class AppStateRepository {
   Future<void> setReasoningTier(String tierKey) =>
       setValue(kReasoningTierKey, tierKey);
 
+  // ════════════ 教练人格（全局默认 attitude） ════════════
+  // key='coach_attitude' → 'doubao' | 'yuesheng' | 'sensei'
+  // 无记录 = doubao（默认温和）。chat_header 切档时同步写这里。
+
+  /// 读全局教练人格偏好（无记录 = doubao）
+  Future<String?> getCoachAttitude() => getValue('coach_attitude');
+
+  /// 写全局教练人格偏好
+  Future<void> setCoachAttitude(String a) => setValue('coach_attitude', a);
+
   // ════════════ 写作菜单高度（批次96-7 拖拽调整篇幅） ════════════
   // key 规约：editor_menu_height → '0.55'（字符串小数，默认 0.55，clamp 0.30-0.85）
   // 写作页 ⋮ 更多菜单 DraggableScrollableSheet 拖拽调整后的高度占比（用户级记忆）

@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_palette.dart';
 import '../../data/repositories/diagnosis_repository.dart';
+import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
@@ -127,7 +128,13 @@ class _ChatPageState extends ConsumerState<ChatPage> implements ChatPageHost {
   void setInputText(String value) => setState(() => _inputText = value);
 
   @override
-  void setAttitude(AttitudeLevel value) => setState(() => _attitude = value);
+  void setAttitude(AttitudeLevel value) {
+    setState(() => _attitude = value);
+    // 全局记忆：用户切档 = 下次新 session 默认这个
+    AppStateRepository(
+      ref.read(appDatabaseProvider),
+    ).setCoachAttitude(value.name);
+  }
 
   @override
   void applyAttitudeState(AttitudeLevel attitude, TeachingPhase phase) =>
