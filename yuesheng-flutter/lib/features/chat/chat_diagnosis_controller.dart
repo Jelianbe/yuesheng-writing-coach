@@ -17,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_theme.dart';
 import '../../config/shared_constants.dart';
 import '../../data/database/database.dart';
+import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/chapter_repository.dart';
 import '../../data/repositories/diagnosis_repository.dart';
 import '../../data/repositories/session_repository.dart';
@@ -90,12 +91,17 @@ class ChatDiagnosisController {
       bootstrap.sessionId,
     );
     // 1. 超长分块（>4000 字）优先，质量更好（对齐 RN T-011）
+    // 诊断编辑器：读用户全局启用集，关闭的症候不进分块 prompt
+    final diagPrefs = await AppStateRepository(
+      host.ref.read(appDatabaseProvider),
+    ).getDiagnosisPrefs();
     final progressive = await runProgressiveDiagnosis(
       content: chapter.content,
       title: chapter.title,
       llmClient: host.ref.read(llmClientProvider),
       sessionId: bootstrap.sessionId,
       diagnosisContext: historySection,
+      disabledSyndromeIds: diagPrefs?.disabledIds ?? const {},
       onContent: (delta) {
         host.ref.read(chatStoreProvider.notifier).appendStreamingContent(delta);
       },

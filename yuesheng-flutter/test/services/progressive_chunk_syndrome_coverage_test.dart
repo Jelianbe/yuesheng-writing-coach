@@ -169,7 +169,7 @@ void main() {
             '必须写成由 _syndromeIdRange() 派生的插值，不得回退为手写区间。',
       );
       expect(
-        _count(src, r'症候编号 ${_syndromeIdRange()}'),
+        _count(src, r'症候编号 ${_syndromeIdRange(disabledSyndromeIds)}'),
         1,
         reason: '「症候编号」应由 _syndromeIdRange() 派生，出现 1 次',
       );
@@ -205,15 +205,13 @@ void main() {
   group('⑤ 生效性：分块链路真的用了 kChunkSystemPrompt', () {
     test('analyzeChunk 的调用处引用该常量', () {
       final src = _readSrc(kProgressive);
+      // 诊断编辑器：空集时走全启用默认 kChunkSystemPrompt，非空时运行时构造。
       expect(
-        _count(
-          src,
-          'ChatMessage(role: \'system\', content: kChunkSystemPrompt)',
-        ),
+        _count(src, '? kChunkSystemPrompt'),
         1,
         reason:
             '$kProgressive 中 analyzeChunk 应以 kChunkSystemPrompt 作为 system '
-            'message，出现 1 次。\n'
+            'message 的空集默认分支，出现 1 次。\n'
             '（ADR-C69 §4：即使清单派生正确，若链路没用上也白搭）',
       );
     });

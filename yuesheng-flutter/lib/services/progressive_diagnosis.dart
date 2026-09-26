@@ -210,10 +210,13 @@ void _mergeSmallLastChunk(List<String> chunks) {
 // 跟随；一致性由 progressive_chunk_syndrome_coverage_test.dart 兜底。
 
 /// 注册表内全部未退役症候，按 ID 升序，形如 `P003 情绪标签化`。
-List<String> _activeSyndromeLabels() {
+///
+/// [disabled] 为用户永久关闭（「不适用于我」）的症候 ID 集合，从中剔除。
+/// 空集 = 全启用（与历史行为一致）。
+List<String> _activeSyndromeLabels([Set<String> disabled = const {}]) {
   final rows =
       kSyndromeRegistry
-          .where((s) => s.retired != true)
+          .where((s) => s.retired != true && !disabled.contains(s.id))
           .map((s) => '${s.id} ${s.name}')
           .toList()
         ..sort();
@@ -224,10 +227,11 @@ List<String> _activeSyndromeLabels() {
 ///
 /// ADR-C69：merge prompt 原硬编码「P003-P027」，与注册表（P003-P041）不符，
 /// 会压制后段症候的输出。改由同一真源派生，杜绝两套范围。
-String _syndromeIdRange() {
+/// [disabled] 同 [_activeSyndromeLabels]。
+String _syndromeIdRange([Set<String> disabled = const {}]) {
   final ids =
       kSyndromeRegistry
-          .where((s) => s.retired != true)
+          .where((s) => s.retired != true && !disabled.contains(s.id))
           .map((s) => s.id)
           .toList()
         ..sort();
@@ -287,8 +291,9 @@ const String _kMergeOutputRequirement = '''输出要求（两部分都必须输�
 /// 构造单块系统提示词：症候清单由注册表派生（ADR-C69）。
 ///
 /// 每行 4 个，沿用 RN 逐字移植时的紧凑排布，避免 39 条摊成 39 行。
-String _buildChunkSystemPrompt() {
-  final labels = _activeSyndromeLabels();
+/// [disabled] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
+String _buildChunkSystemPrompt([Set<String> disabled = const {}]) {
+  final labels = _activeSyndromeLabels(disabled);
   final listBlock = <String>[];
   for (var i = 0; i < labels.length; i += 4) {
     final end = i + 4 > labels.length ? labels.length : i + 4;
@@ -304,7 +309,8 @@ $_kChunkExceptionGuide
 $_kChunkOutputFormat''';
 }
 
-/// 单块系统提示词：症候清单由注册表派生，调用处无需感知（ADR-C69）。
+/// 单块系统提示词（全启用默认值）：症候清单由注册表派生，调用处无需感知（ADR-C69）。
+/// 运行时按用户启用集构造请用 [_buildChunkSystemPrompt]。
 final String kChunkSystemPrompt = _buildChunkSystemPrompt();
 
 // ── JSON 提取（对齐 RN extractJson：优先 code block，否则按括号平衡）──
@@ -341,9 +347,11 @@ String extractJson(String text) {
 /// 构造跨分片合并的系统 prompt。
 ///
 /// [diagnosisContext] 来自前次活跃症候累积（对齐 RN buildDiagnosisContext）。
+/// [disabledSyndromeIds] 为用户永久关闭的症候 ID 集合（空 = 全启用）。
 String buildMergePrompt(
   List<ChunkAnalysisResult> chunkResults, {
   String diagnosisContext = '',
+  Set<String> disabledSyndromeIds = const {},
 }) {
   final allNotesJson = <String>[];
 
@@ -397,7 +405,7 @@ ${allNotesJson.join('\n\n')}
 3. 更基础的问题优先（如 P003 情绪标签化优先于 P008 语言堆砌）
 
 syndrome 对象格式要求：
-- syndrome_id (string): 症候编号 ${_syndromeIdRange()}（由注册表派生，ADR-C69）
+- syndrome_id (string): 症候编号 ${_syndromeIdRange(disabledSyndromeIds)}（由注册表派生，ADR-C69）
 - name (string): 症候名称
 - severity (L1|L2|L3): 严重度
 - evidence (string[]): 原文证据片段，每条症候至少 1 条证据
@@ -461,6 +469,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   String? sessionId,
   String diagnosisContext = '',
   CancelToken? cancelToken,
+  Set<String> disabledSyndromeIds = const {},
 }) async {
   if (content.length <= kDiagnosisChunkThreshold) {
     return null;
@@ -484,6 +493,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
       chunkIndex: i,
       chunkCount: chunks.length,
       onProgress: onProgress,
+      disabledSyndromeIds: disabledSyndromeIds,
     );
     if (!result.success) failedChunks++;
     chunkResults.add(result);
@@ -495,6 +505,7 @@ Future<ProgressiveResult?> runProgressiveDiagnosis({
   final mergePrompt = buildMergePrompt(
     chunkResults,
     diagnosisContext: diagnosisContext,
+    disabledSyndromeIds: disabledSyndromeIds,
   );
   var fullContent = '';
 
@@ -578,11 +589,18 @@ List<ChatMessage> _chunkMessages(
   String title,
   String chunk,
   int chunkIndex,
-  int chunkCount,
-) {
+  int chunkCount, {
+  Set<String> disabledSyndromeIds = const {},
+}) {
   return [
-    // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉
-    ChatMessage(role: 'system', content: kChunkSystemPrompt),
+    // ADR-C69：kChunkSystemPrompt 改由注册表派生（非 const），此处 const 去掉。
+    // 诊断编辑器：按用户启用集运行时构造 prompt（空集 = 全启用默认）。
+    ChatMessage(
+      role: 'system',
+      content: disabledSyndromeIds.isEmpty
+          ? kChunkSystemPrompt
+          : _buildChunkSystemPrompt(disabledSyndromeIds),
+    ),
     ChatMessage(
       role: 'user',
       content: '章节标题：$title\n\n文本片段 ${chunkIndex + 1}/$chunkCount：\n\n$chunk',
@@ -606,8 +624,15 @@ Future<ChunkAnalysisResult> _analyzeSingleChunk(
   required int chunkIndex,
   required int chunkCount,
   required ProgressCallback? onProgress,
+  Set<String> disabledSyndromeIds = const {},
 }) async {
-  final messages = _chunkMessages(title, chunk, chunkIndex, chunkCount);
+  final messages = _chunkMessages(
+    title,
+    chunk,
+    chunkIndex,
+    chunkCount,
+    disabledSyndromeIds: disabledSyndromeIds,
+  );
   try {
     // TH 九批：分块分析（含 fallback 重发）同属诊断链路 —— 每次调用前
     // 重新标注，因为标记是一次性消费的。

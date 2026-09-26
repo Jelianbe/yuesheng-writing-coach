@@ -10,6 +10,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/repositories/app_state_repository.dart';
 import '../../data/repositories/session_repository.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/chat_store.dart';
@@ -80,11 +81,16 @@ class WritingCoachDiagnosisRunner {
     required CancelToken cancelToken,
   }) async {
     // D2：长度路由 — 先尝试分块链路（长文本）
+    // 诊断编辑器：读用户全局启用集，关闭的症候不进分块 prompt
+    final diagPrefs = await AppStateRepository(
+      _ref.read(appDatabaseProvider),
+    ).getDiagnosisPrefs();
     final progressive = await runProgressiveDiagnosis(
       content: content,
       title: title,
       llmClient: _ref.read(llmClientProvider),
       sessionId: sid,
+      disabledSyndromeIds: diagPrefs?.disabledIds ?? const {},
       onContent: (delta) {
         _ref
             .read(writingCoachStoreProvider(_chapterId).notifier)

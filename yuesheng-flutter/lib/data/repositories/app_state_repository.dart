@@ -706,6 +706,45 @@ class AppStateRepository {
   ) async {
     await setValue('volume_collapsed_$manuscriptId', jsonEncode(keys.toList()));
   }
+
+  // ════════════ 诊断偏好（诊断编辑器：用户全局启用集） ════════════
+  // key 规约：diagnosis_prefs → JSON
+  //   {"disabledIds":["P008",...],"tier":"beginner|story|full",
+  //    "genre":"literary|webnovel|setting","customized":bool}
+  // 空/缺省 = 全启用（与现状零行为变化）。disabledIds 是关闭列表，不是启用列表——
+  // 老用户升级后无记录 = 全启用，不破坏存量诊断行为。
+
+  /// 读取诊断偏好；无记录返回 null（=全启用，走默认）。
+  Future<DiagnosisPrefs?> getDiagnosisPrefs() async {
+    final json = await getValue('diagnosis_prefs');
+    if (json == null || json.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(json);
+      if (decoded is! Map<String, dynamic>) return null;
+      return DiagnosisPrefs(
+        disabledIds: (decoded['disabledIds'] as List? ?? [])
+            .whereType<String>()
+            .toSet(),
+        tier: decoded['tier'] as String?,
+        genre: decoded['genre'] as String?,
+        customized: decoded['customized'] as bool? ?? false,
+      );
+    } catch (e, st) {
+      logDecodeFailure(field: 'app_state.diagnosis_prefs', error: e, stack: st);
+      return null;
+    }
+  }
+
+  /// 保存诊断偏好。
+  Future<void> setDiagnosisPrefs(DiagnosisPrefs prefs) => setValue(
+    'diagnosis_prefs',
+    jsonEncode({
+      'disabledIds': prefs.disabledIds.toList(),
+      if (prefs.tier != null) 'tier': prefs.tier,
+      if (prefs.genre != null) 'genre': prefs.genre,
+      'customized': prefs.customized,
+    }),
+  );
 }
 
 /// 章节版本快照（批次82 时光机）
@@ -762,6 +801,43 @@ class RecycleBinItem {
     return RecycleBinItem(
       content: json['content'] as String? ?? '',
       deletedAt: json['deletedAt'] as int? ?? 0,
+    );
+  }
+}
+
+/// 诊断编辑器偏好（用户全局启用集）。
+///
+/// - [disabledIds]：用户永久关闭（「不适用于我」）的症候 ID 集合。空 = 全启用。
+/// - [tier]：写作阶段档（beginner=只 L1 / story=L1-L4 / full=全开）；null=未引导。
+/// - [genre]：写作类型（literary=纯文学 / webnovel=连载网文 / setting=设定优先）。
+/// - [customized]：用户是否在档基础上手动改过单条（用于 UI 显示「自定义」）。
+class DiagnosisPrefs {
+  final Set<String> disabledIds;
+  final String? tier;
+  final String? genre;
+  final bool customized;
+
+  const DiagnosisPrefs({
+    this.disabledIds = const {},
+    this.tier,
+    this.genre,
+    this.customized = false,
+  });
+
+  /// 该症候是否被用户关闭（未配置偏好时 = false，即全启用）。
+  bool isDisabled(String syndromeId) => disabledIds.contains(syndromeId);
+
+  DiagnosisPrefs copyWith({
+    Set<String>? disabledIds,
+    String? tier,
+    String? genre,
+    bool? customized,
+  }) {
+    return DiagnosisPrefs(
+      disabledIds: disabledIds ?? this.disabledIds,
+      tier: tier ?? this.tier,
+      genre: genre ?? this.genre,
+      customized: customized ?? this.customized,
     );
   }
 }
